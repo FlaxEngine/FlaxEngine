@@ -24,13 +24,14 @@ public:
         {
             { 18, 19, &Upgrade_18_To_19 },
             { 19, 20, &Upgrade_19_To_20 },
+            { 20, 21, &Upgrade_20_To_21 },
         };
         setup(upgraders, ARRAY_COUNT(upgraders));
     }
 
 private:
     // ============================================
-    //              Versions 18,19,20:
+    //              Versions 18,19,20,21:
     // Designed: 7/24/2019
     // Custom Data: Header
     // Chunk 0: Material Params
@@ -41,9 +42,46 @@ private:
     // ============================================
 
     typedef ShaderStorage::Header Header;
+    typedef ShaderStorage::Header21 Header21;
     typedef ShaderStorage::Header20 Header20;
     typedef ShaderStorage::Header19 Header19;
     typedef ShaderStorage::Header18 Header18;
+
+    static bool Upgrade_20_To_21(AssetMigrationContext& context)
+    {
+        ASSERT(context.Input.SerializedVersion == 20 && context.Output.SerializedVersion == 21);
+
+        // Convert header
+        if (context.Input.CustomData.IsInvalid())
+            return true;
+        auto& oldHeader = *(Header20*)context.Input.CustomData.Get();
+        Header21 newHeader;
+        Platform::MemoryClear(&newHeader, sizeof(newHeader));
+        if (context.Input.Header.TypeName == TEXT("FlaxEngine.ParticleEmitter"))
+        {
+            newHeader.ParticleEmitter.GraphVersion = oldHeader.ParticleEmitter.GraphVersion;
+            newHeader.ParticleEmitter.CustomDataSize = oldHeader.ParticleEmitter.CustomDataSize;
+        }
+        else if (context.Input.Header.TypeName == TEXT("FlaxEngine.Material"))
+        {
+            newHeader.Material.GraphVersion = oldHeader.Material.GraphVersion;
+            newHeader.Material.Info = oldHeader.Material.Info;
+            newHeader.Material.Info.MinDepth = 0.0f;
+            newHeader.Material.Info.MaxDepth = 1.0f;
+        }
+        else if (context.Input.Header.TypeName == TEXT("FlaxEngine.Shader"))
+        {
+        }
+        else
+        {
+            LOG(Warning, "Unknown input asset type.");
+            return true;
+        }
+        context.Output.CustomData.Copy(&newHeader);
+
+        // Copy all chunks
+        return CopyChunks(context);
+    }
 
     static bool Upgrade_19_To_20(AssetMigrationContext& context)
     {

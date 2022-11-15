@@ -652,6 +652,21 @@ DRAW:
                 vbOffsets[vbCount] = 0;
             }
 
+            Viewport oldviewport;
+            bool bRestoreViewport = false;
+            auto info = drawCall.Material->GetInfo();
+
+            // Check if we need to change max/min depth before rendering.
+            if (renderContext.Task && (info.MinDepth != 0.0f || info.MaxDepth != 1.0f))
+            {
+                oldviewport = renderContext.Task->GetViewport();
+                Viewport newviewport = oldviewport;
+                newviewport.MaxDepth = info.MaxDepth;
+                newviewport.MinDepth = info.MinDepth;
+                context->SetViewportAndScissors(newviewport);
+                bRestoreViewport = true;
+            }
+
             bindParams.FirstDrawCall = &drawCall;
             bindParams.DrawCallsCount = batch.BatchSize;
             drawCall.Material->Bind(bindParams);
@@ -683,6 +698,11 @@ DRAW:
                     context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.InstanceCount, instanceBufferOffset, 0, drawCall.Draw.StartIndex);
                     instanceBufferOffset += batch.BatchSize;
                 }
+            }
+
+            if (bRestoreViewport)
+            {
+                context->SetViewportAndScissors(oldviewport);
             }
         }
         for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
