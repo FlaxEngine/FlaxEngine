@@ -213,7 +213,7 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
 
     // Push draw call to the render list
-    renderContext.List->AddDrawCall(drawModes, StaticFlags::None, drawCall, entry.ReceiveDecals);
+    renderContext.List->AddDrawCall(renderContext, drawModes, StaticFlags::None, drawCall, entry.ReceiveDecals);
 }
 
 void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& info, float lodDitherFactor) const

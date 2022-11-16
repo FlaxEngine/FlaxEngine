@@ -416,7 +416,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             // Submit draw call
             SpriteRenderer.SetupDrawCall(drawCall);
             drawCall.InstanceCount = buffer->CPU.Count;
-            renderContext.List->AddDrawCall(dp, staticFlags, drawCall, false);
+            renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false);
 
             break;
         }
@@ -444,7 +444,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                 // Submit draw call
                 mesh.GetDrawCallGeometry(drawCall);
                 drawCall.InstanceCount = buffer->CPU.Count;
-                renderContext.List->AddDrawCall(dp, staticFlags, drawCall, false);
+                renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false);
             }
 
             break;
@@ -504,7 +504,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             drawCall.Draw.StartIndex = ribbonModulesDrawIndicesStart[ribbonModuleIndex];
             drawCall.Draw.IndicesCount = ribbonModulesDrawIndicesCount[ribbonModuleIndex];
             drawCall.InstanceCount = 1;
-            renderContext.List->AddDrawCall(dp, staticFlags, drawCall, false);
+            renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false);
 
             ribbonModuleIndex++;
 
@@ -828,7 +828,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             drawCall.Draw.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
             drawCall.Draw.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
             if (dp != DrawPass::None)
-                renderContext.List->AddDrawCall(dp, staticFlags, drawCall, false);
+                renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false);
             indirectDrawCallIndex++;
 
             break;
@@ -858,7 +858,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                 drawCall.Draw.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
                 drawCall.Draw.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
                 if (dp != DrawPass::None)
-                    renderContext.List->AddDrawCall(dp, staticFlags, drawCall, false);
+                    renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false);
                 indirectDrawCallIndex++;
             }
 

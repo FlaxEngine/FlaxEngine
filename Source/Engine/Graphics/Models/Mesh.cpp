@@ -436,7 +436,7 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     drawCall.PerInstanceRandom = perInstanceRandom;
 
     // Push draw call to the render list
-    renderContext.List->AddDrawCall(drawModes, flags, drawCall, receiveDecals);
+    renderContext.List->AddDrawCall(renderContext, drawModes, flags, drawCall, receiveDecals);
 }
 
 void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float lodDitherFactor) const
@@ -497,7 +497,7 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
 
     // Push draw call to the render list
-    renderContext.List->AddDrawCall(drawModes, info.Flags, drawCall, entry.ReceiveDecals);
+    renderContext.List->AddDrawCall(renderContext, drawModes, info.Flags, drawCall, entry.ReceiveDecals);
 }
 
 void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& info, float lodDitherFactor) const

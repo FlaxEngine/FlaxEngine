@@ -270,6 +270,11 @@ struct DrawCall
     float PerInstanceRandom;
 
     /// <summary>
+    /// The sorting key for the draw call calculate by RenderList.
+    /// </summary>
+    uint64 SortKey;
+
+    /// <summary>
     /// Does nothing.
     /// </summary>
     DrawCall()

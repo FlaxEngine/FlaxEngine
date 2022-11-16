@@ -434,7 +434,7 @@ void SplineModel::Draw(RenderContext& renderContext)
             mesh->GetDrawCallGeometry(drawCall);
             drawCall.Material = material;
             drawCall.WorldDeterminantSign = Math::FloatSelect(worldDeterminantSign * instance.RotDeterminant, 1, -1);
-            renderContext.List->AddDrawCall(drawModes, _staticFlags, drawCall, entry.ReceiveDecals);
+            renderContext.List->AddDrawCall(renderContext, drawModes, _staticFlags, drawCall, entry.ReceiveDecals);
         }
     }
 }

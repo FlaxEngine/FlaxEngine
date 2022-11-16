@@ -478,11 +478,12 @@ public:
     /// <summary>
     /// Adds the draw call to the draw lists.
     /// </summary>
+    /// <param name="renderContext">The rendering context.</param>
     /// <param name="drawModes">The object draw modes.</param>
     /// <param name="staticFlags">The object static flags.</param>
     /// <param name="drawCall">The draw call data.</param>
     /// <param name="receivesDecals">True if the rendered mesh can receive decals.</param>
-    void AddDrawCall(DrawPass drawModes, StaticFlags staticFlags, const DrawCall& drawCall, bool receivesDecals);
+    void AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals);
 
     /// <summary>
     /// Adds the draw call to the draw lists and references it in other render contexts. Performs additional per-context frustum culling.
@@ -494,7 +495,7 @@ public:
     /// <param name="bounds">The object bounds.</param>
     /// <param name="drawCall">The draw call data.</param>
     /// <param name="receivesDecals">True if the rendered mesh can receive decals.</param>
-    void AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, const DrawCall& drawCall, bool receivesDecals);
+    void AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals);
 
     /// <summary>
     /// Sorts the collected draw calls list.

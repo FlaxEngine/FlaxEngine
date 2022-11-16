@@ -391,7 +391,7 @@ void TextRender::Draw(RenderContext& renderContext)
             drawCall.Draw.IndicesCount = e.IndicesCount;
             drawCall.Draw.StartIndex = e.StartIndex;
             drawCall.Material = e.Material;
-            renderContext.List->AddDrawCall(drawModes, GetStaticFlags(), drawCall, true);
+            renderContext.List->AddDrawCall(renderContext, drawModes, GetStaticFlags(), drawCall, true);
         }
     }
 
