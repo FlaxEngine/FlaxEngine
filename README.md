@@ -33,8 +33,9 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 ## Windows
 
 * Install Visual Studio 2015 or newer
-* Install Windows 8.1 SDK or newer
-* Install Microsoft Visual C++ 2015 v140 toolset or newer
+* Install Windows 8.1 SDK or newer (via Visual Studio Installer)
+* Install Microsoft Visual C++ 2015 v140 toolset or newer (via Visual Studio Installer)
+* Install .Net Framework 4.5.2 SDK/Targeting Pack (via Visual Studio Installer)
 * Clone repo (with LFS)
 * Run **GenerateProjectFiles.bat**
 * Open `Flax.sln` and set solution configuration to **Editor.Development** and solution platform to **Win64**
