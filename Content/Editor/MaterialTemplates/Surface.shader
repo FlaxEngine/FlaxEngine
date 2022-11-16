@@ -57,7 +57,7 @@ struct VertexOutput
 	float4 Position : SV_Position;
 	GeometryData Geometry;
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
-	float4 CustomVSToPS[CUSTOM_VERTEX_INTERPOLATORS_COUNT] : TEXCOORD9;
+	float4 CustomVSToPS[CUSTOM_VERTEX_INTERPOLATORS_COUNT] : TEXCOORD11;
 #endif
 #if USE_TESSELLATION
     float TessellationMultiplier : TESS;
@@ -70,7 +70,7 @@ struct PixelInput
 	float4 Position : SV_Position;
 	GeometryData Geometry;
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
-	float4 CustomVSToPS[CUSTOM_VERTEX_INTERPOLATORS_COUNT] : TEXCOORD9;
+	float4 CustomVSToPS[CUSTOM_VERTEX_INTERPOLATORS_COUNT] : TEXCOORD11;
 #endif
 	bool IsFrontFace : SV_IsFrontFace;
 };
