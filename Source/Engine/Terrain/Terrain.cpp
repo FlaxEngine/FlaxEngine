@@ -28,6 +28,7 @@ Terrain::Terrain(const SpawnParams& params)
     , _boundsExtent(Vector3::Zero)
     , _cachedScale(1.0f)
 {
+    _drawCategory = SceneRendering::SceneDrawAsync;
     PhysicalMaterial.Changed.Bind<Terrain, &Terrain::OnPhysicalMaterialChanged>(this);
 }
 
@@ -49,7 +50,7 @@ void Terrain::UpdateBounds()
     }
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void Terrain::CacheNeighbors()
@@ -789,7 +790,7 @@ RigidBody* Terrain::GetAttachedRigidBody() const
 
 void Terrain::OnEnable()
 {
-    GetSceneRendering()->AddActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if TERRAIN_USE_PHYSICS_DEBUG
     GetSceneRendering()->AddPhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
 #endif
@@ -800,7 +801,7 @@ void Terrain::OnEnable()
 
 void Terrain::OnDisable()
 {
-    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 #if TERRAIN_USE_PHYSICS_DEBUG
     GetSceneRendering()->RemovePhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
 #endif
@@ -841,7 +842,7 @@ void Terrain::OnLayerChanged()
 
     UpdateLayerBits();
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void Terrain::OnActiveInTreeChanged()

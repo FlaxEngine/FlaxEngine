@@ -25,6 +25,7 @@ StaticModel::StaticModel(const SpawnParams& params)
     , _vertexColorsDirty(false)
     , _vertexColorsCount(0)
 {
+    _drawCategory = SceneRendering::SceneDrawAsync;
     Model.Changed.Bind<StaticModel, &StaticModel::OnModelChanged>(this);
     Model.Loaded.Bind<StaticModel, &StaticModel::OnModelLoaded>(this);
 }
@@ -173,7 +174,7 @@ void StaticModel::OnModelChanged()
     if (Model && !Model->IsLoaded())
         UpdateBounds();
     else if (!Model && _sceneRenderingKey != -1)
-        GetSceneRendering()->RemoveActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+        GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 }
 
 void StaticModel::OnModelLoaded()
@@ -190,7 +191,7 @@ void StaticModel::OnModelLoaded()
         }
         else
         {
-            GetSceneRendering()->AddActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+            GetSceneRendering()->AddActor(this, _sceneRenderingKey);
         }
     }
 }
@@ -199,7 +200,7 @@ void StaticModel::OnModelResidencyChanged()
 {
     if (_sceneRenderingKey == -1 && _scene && Model && Model->GetLoadedLODs() > 0 && _residencyChangedModel)
     {
-        GetSceneRendering()->AddActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+        GetSceneRendering()->AddActor(this, _sceneRenderingKey);
         _residencyChangedModel->ResidencyChanged.Unbind<StaticModel, &StaticModel::OnModelResidencyChanged>(this);
         _residencyChangedModel = nullptr;
     }
@@ -219,7 +220,7 @@ void StaticModel::UpdateBounds()
     }
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void StaticModel::FlushVertexColors()
@@ -561,7 +562,7 @@ void StaticModel::OnEnable()
         }
         else
         {
-            GetSceneRendering()->AddActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+            GetSceneRendering()->AddActor(this, _sceneRenderingKey);
         }
     }
 
@@ -576,7 +577,7 @@ void StaticModel::OnDisable()
 
     if (_sceneRenderingKey != -1)
     {
-        GetSceneRendering()->RemoveActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+        GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
     }
     if (_residencyChangedModel)
     {

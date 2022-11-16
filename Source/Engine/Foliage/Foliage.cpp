@@ -22,13 +22,6 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Utilities/Encryption.h"
 
-// When using separate quad-tree for each foliage type we can run async job to draw them in separate, otherwise just draw whole foliage in async as one
-#if FOLIAGE_USE_SINGLE_QUAD_TREE
-#define FOLIAGE_SCENE_DRAW_CATEGORY SceneRendering::SceneDrawAsync
-#else
-#define FOLIAGE_SCENE_DRAW_CATEGORY SceneRendering::SceneDraw
-#endif
-
 #define FOLIAGE_GET_DRAW_MODES(renderContext, type) static_cast<DrawPass>(type.DrawModes & renderContext.View.Pass & (int32)renderContext.View.GetShadowsDrawPassMask(type.ShadowsMode))
 #define FOLIAGE_CAN_DRAW(renderContext, type) (type.IsReady() && FOLIAGE_GET_DRAW_MODES(renderContext, type) != DrawPass::None && type.Model->CanBeRendered())
 
@@ -36,6 +29,13 @@ Foliage::Foliage(const SpawnParams& params)
     : Actor(params)
 {
     _disableFoliageTypeEvents = false;
+
+    // When using separate quad-tree for each foliage type we can run async job to draw them in separate, otherwise just draw whole foliage in async as one
+#if FOLIAGE_USE_SINGLE_QUAD_TREE
+    _drawCategory = SceneRendering::SceneDrawAsync;
+#else
+    _drawCategory = SceneRendering::SceneDraw;
+#endif
 }
 
 void Foliage::AddToCluster(ChunkedArray<FoliageCluster, FOLIAGE_CLUSTER_CHUNKS_SIZE>& clusters, FoliageCluster* cluster, FoliageInstance& instance)
@@ -795,7 +795,7 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
         }
         BoundingSphere::FromBox(_box, _sphere);
         if (_sceneRenderingKey != -1)
-            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, FOLIAGE_SCENE_DRAW_CATEGORY);
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
     }
     {
         PROFILE_CPU_NAMED("Create Clusters");
@@ -842,7 +842,7 @@ void Foliage::RebuildClusters()
         _box = BoundingBox(_transform.Translation, _transform.Translation);
         _sphere = BoundingSphere(_transform.Translation, 0.0f);
         if (_sceneRenderingKey != -1)
-            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, FOLIAGE_SCENE_DRAW_CATEGORY);
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
         return;
     }
 
@@ -932,7 +932,7 @@ void Foliage::RebuildClusters()
         _box = totalBounds;
         BoundingSphere::FromBox(_box, _sphere);
         if (_sceneRenderingKey != -1)
-            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, FOLIAGE_SCENE_DRAW_CATEGORY);
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
     }
 
     // Insert all instances to the clusters
@@ -1459,12 +1459,12 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
 void Foliage::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, FOLIAGE_SCENE_DRAW_CATEGORY);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void Foliage::OnEnable()
 {
-    GetSceneRendering()->AddActor(this, _sceneRenderingKey, FOLIAGE_SCENE_DRAW_CATEGORY);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnEnable();
@@ -1472,7 +1472,7 @@ void Foliage::OnEnable()
 
 void Foliage::OnDisable()
 {
-    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey, FOLIAGE_SCENE_DRAW_CATEGORY);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();

@@ -84,6 +84,7 @@ Actor::Actor(const SpawnParams& params)
     , HideFlags(HideFlags::None)
 {
     _drawNoCulling = 0;
+    _drawCategory = 0;
 }
 
 SceneRendering* Actor::GetSceneRendering() const

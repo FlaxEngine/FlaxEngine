@@ -71,28 +71,6 @@ bool DirectionalLight::IntersectsItself(const Ray& ray, Real& distance, Vector3&
     return false;
 }
 
-void DirectionalLight::OnEnable()
-{
-    GetSceneRendering()->AddActor(this, _sceneRenderingKey, SceneRendering::PreRender);
-#if USE_EDITOR
-    GetSceneRendering()->AddViewportIcon(this);
-#endif
-
-    // Base
-    LightWithShadow::OnEnable();
-}
-
-void DirectionalLight::OnDisable()
-{
-#if USE_EDITOR
-    GetSceneRendering()->RemoveViewportIcon(this);
-#endif
-    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey, SceneRendering::PreRender);
-
-    // Base
-    LightWithShadow::OnDisable();
-}
-
 void DirectionalLight::OnTransformChanged()
 {
     // Base

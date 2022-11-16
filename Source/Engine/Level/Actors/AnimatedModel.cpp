@@ -22,6 +22,7 @@ AnimatedModel::AnimatedModel(const SpawnParams& params)
     , _lastMinDstSqr(MAX_Real)
     , _lastUpdateFrame(0)
 {
+    _drawCategory = SceneRendering::SceneDrawAsync;
     GraphInstance.Object = this;
     _box = _boxLocal = BoundingBox(Vector3::Zero);
     _sphere = BoundingSphere(Vector3::Zero, 0.0f);
@@ -555,7 +556,7 @@ void AnimatedModel::UpdateBounds()
     BoundingBox::Transform(_boxLocal, _transform, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void AnimatedModel::UpdateSockets()
@@ -960,7 +961,7 @@ void AnimatedModel::OnTransformChanged()
     BoundingBox::Transform(_boxLocal, _transform, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void AnimatedModel::WaitForModelLoad()

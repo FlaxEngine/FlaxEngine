@@ -264,12 +264,16 @@ void SceneRenderTask::OnCollectDrawCalls(RenderContextBatch& renderContextBatch,
     // Draw actors (collect draw calls)
     if ((ActorsSource & ActorsSources::CustomActors) != 0)
     {
-        if (_customActorsScene == nullptr)
-            _customActorsScene = New<SceneRendering>();
-        else
-            _customActorsScene->Clear();
-        for (Actor* a : CustomActors)
-            AddActorToSceneRendering(_customActorsScene, a);
+        if (category == SceneRendering::DrawCategory::PreRender)
+        {
+            if (_customActorsScene == nullptr)
+                _customActorsScene = New<SceneRendering>();
+            else
+                _customActorsScene->Clear();
+            for (Actor* a : CustomActors)
+                AddActorToSceneRendering(_customActorsScene, a);
+        }
+        ASSERT_LOW_LAYER(_customActorsScene);
         _customActorsScene->Draw(renderContextBatch, (SceneRendering::DrawCategory)category);
     }
     if ((ActorsSource & ActorsSources::Scenes) != 0)

@@ -51,14 +51,10 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
     _drawBatch = &renderContextBatch;
 
     // Setup frustum data
-    auto& frustumsData = _drawFrustumsData;
     const int32 frustumsCount = renderContextBatch.Contexts.Count();
-    if (frustumsCount != 1)
-    {
-        frustumsData.Resize(frustumsCount);
-        for (int32 i = 0; i < frustumsCount; i++)
-            frustumsData.Get()[i] = renderContextBatch.Contexts[i].View.CullingFrustum;
-    }
+    _drawFrustumsData.Resize(frustumsCount);
+    for (int32 i = 0; i < frustumsCount; i++)
+        _drawFrustumsData.Get()[i] = renderContextBatch.Contexts.Get()[i].View.CullingFrustum;
 
     // Draw all visual components
     _drawListIndex = -1;
@@ -119,12 +115,13 @@ void SceneRendering::Clear()
 #endif
 }
 
-void SceneRendering::AddActor(Actor* a, int32& key, DrawCategory category)
+void SceneRendering::AddActor(Actor* a, int32& key)
 {
     if (key != -1)
         return;
+    const int32 category = a->_drawCategory;
     ScopeLock lock(Locker);
-    auto& list = Actors[(int32)category];
+    auto& list = Actors[category];
     // TODO: track removedCount and skip searching for free entry if there is none
     key = 0;
     for (; key < list.Count(); key++)
@@ -143,10 +140,11 @@ void SceneRendering::AddActor(Actor* a, int32& key, DrawCategory category)
         listener->OnSceneRenderingAddActor(a);
 }
 
-void SceneRendering::UpdateActor(Actor* a, int32 key, DrawCategory category)
+void SceneRendering::UpdateActor(Actor* a, int32 key)
 {
+    const int32 category = a->_drawCategory;
     ScopeLock lock(Locker);
-    auto& list = Actors[(int32)category];
+    auto& list = Actors[category];
     if (list.IsEmpty())
         return;
     auto& e = list[key];
@@ -157,10 +155,11 @@ void SceneRendering::UpdateActor(Actor* a, int32 key, DrawCategory category)
     e.Bounds = a->GetSphere();
 }
 
-void SceneRendering::RemoveActor(Actor* a, int32& key, DrawCategory category)
+void SceneRendering::RemoveActor(Actor* a, int32& key)
 {
+    const int32 category = a->_drawCategory;
     ScopeLock lock(Locker);
-    auto& list = Actors[(int32)category];
+    auto& list = Actors[category];
     if (list.HasItems())
     {
         auto& e = list[key];

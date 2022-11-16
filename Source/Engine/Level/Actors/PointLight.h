@@ -15,7 +15,6 @@ API_CLASS() class FLAXENGINE_API PointLight : public LightWithShadow
 private:
     Float3 _direction;
     float _radius;
-    int32 _sceneRenderingKey = -1;
 
 public:
     /// <summary>
@@ -104,7 +103,5 @@ public:
 
 protected:
     // [LightWithShadow]
-    void OnEnable() override;
-    void OnDisable() override;
     void OnTransformChanged() override;
 };

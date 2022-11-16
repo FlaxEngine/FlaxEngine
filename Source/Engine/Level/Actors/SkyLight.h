@@ -32,7 +32,6 @@ public:
 private:
     AssetReference<CubeTexture> _bakedProbe;
     float _radius;
-    int32 _sceneRenderingKey = -1;
 
 public:
     /// <summary>
@@ -112,7 +111,5 @@ public:
 
 protected:
     // [Light]
-    void OnEnable() override;
-    void OnDisable() override;
     void OnTransformChanged() override;
 };

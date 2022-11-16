@@ -10,6 +10,7 @@
 Light::Light(const SpawnParams& params)
     : Actor(params)
 {
+    _drawCategory = SceneRendering::PreRender;
 }
 
 void Light::AdjustBrightness(const RenderView& view, float& brightness) const
@@ -18,6 +19,28 @@ void Light::AdjustBrightness(const RenderView& view, float& brightness) const
 #if USE_EDITOR
     brightness *= IsRunningRadiancePass && view.IsOfflinePass ? IndirectLightingIntensity * GetScene()->Info.LightmapSettings.IndirectLightingIntensity : 1.0f;
 #endif
+}
+
+void Light::OnEnable()
+{
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
+#if USE_EDITOR
+    GetSceneRendering()->AddViewportIcon(this);
+#endif
+
+    // Base
+    Actor::OnEnable();
+}
+
+void Light::OnDisable()
+{
+#if USE_EDITOR
+    GetSceneRendering()->RemoveViewportIcon(this);
+#endif
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
+
+    // Base
+    Actor::OnDisable();
 }
 
 void Light::Serialize(SerializeStream& stream, const void* otherObj)

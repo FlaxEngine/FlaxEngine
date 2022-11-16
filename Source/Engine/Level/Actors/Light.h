@@ -12,6 +12,9 @@
 API_CLASS(Abstract) class FLAXENGINE_API Light : public Actor
 {
     DECLARE_SCENE_OBJECT_ABSTRACT(Light);
+protected:
+    int32 _sceneRenderingKey = -1;
+
 public:
     /// <summary>
     /// Color of the light
@@ -55,6 +58,8 @@ protected:
 
 public:
     // [Actor]
+    void OnEnable() override;
+    void OnDisable() override;
 #if USE_EDITOR
     BoundingBox GetEditorBox() const override
     {

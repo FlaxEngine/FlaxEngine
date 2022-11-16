@@ -10,9 +10,6 @@
 API_CLASS() class FLAXENGINE_API DirectionalLight : public LightWithShadow
 {
     DECLARE_SCENE_OBJECT(DirectionalLight);
-private:
-    int32 _sceneRenderingKey = -1;
-
 public:
     /// <summary>
     /// The number of cascades used for slicing the range of depth covered by the light. Values are 1, 2 or 4 cascades; a typical scene uses 4 cascades.
@@ -29,7 +26,5 @@ public:
 
 protected:
     // [LightWithShadow]
-    void OnEnable() override;
-    void OnDisable() override;
     void OnTransformChanged() override;
 };

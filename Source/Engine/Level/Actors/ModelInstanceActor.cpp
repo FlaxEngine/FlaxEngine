@@ -20,7 +20,7 @@ void ModelInstanceActor::SetEntries(const Array<ModelInstanceEntry>& value)
         Entries[i] = value[i];
     }
     if (anyChanged && _sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void ModelInstanceActor::SetMaterial(int32 entryIndex, MaterialBase* material)
@@ -33,7 +33,7 @@ void ModelInstanceActor::SetMaterial(int32 entryIndex, MaterialBase* material)
         return;
     Entries[entryIndex].Material = material;
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 MaterialInstance* ModelInstanceActor::CreateAndSetVirtualMaterialInstance(int32 entryIndex)
@@ -45,7 +45,7 @@ MaterialInstance* ModelInstanceActor::CreateAndSetVirtualMaterialInstance(int32 
     const auto result = material->CreateVirtualInstance();
     Entries[entryIndex].Material = result;
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
     return result;
 }
 
@@ -56,12 +56,12 @@ void ModelInstanceActor::WaitForModelLoad()
 void ModelInstanceActor::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void ModelInstanceActor::OnEnable()
 {
-    GetSceneRendering()->AddActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnEnable();
@@ -72,5 +72,5 @@ void ModelInstanceActor::OnDisable()
     // Base
     Actor::OnDisable();
 
-    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 }

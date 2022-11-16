@@ -20,7 +20,6 @@ private:
     float _cosOuterCone;
     float _cosInnerCone;
     float _invCosConeDifference;
-    int32 _sceneRenderingKey = -1;
 
 public:
     /// <summary>
@@ -134,7 +133,5 @@ public:
 
 protected:
     // [LightWithShadow]
-    void OnEnable() override;
-    void OnDisable() override;
     void OnTransformChanged() override;
 };

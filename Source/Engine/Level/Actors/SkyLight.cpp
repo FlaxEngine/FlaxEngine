@@ -179,28 +179,6 @@ bool SkyLight::HasContentLoaded() const
     return true;
 }
 
-void SkyLight::OnEnable()
-{
-    GetSceneRendering()->AddActor(this, _sceneRenderingKey, SceneRendering::PreRender);
-#if USE_EDITOR
-    GetSceneRendering()->AddViewportIcon(this);
-#endif
-
-    // Base
-    Light::OnEnable();
-}
-
-void SkyLight::OnDisable()
-{
-#if USE_EDITOR
-    GetSceneRendering()->RemoveViewportIcon(this);
-#endif
-    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey, SceneRendering::PreRender);
-
-    // Base
-    Light::OnDisable();
-}
-
 void SkyLight::OnTransformChanged()
 {
     // Base

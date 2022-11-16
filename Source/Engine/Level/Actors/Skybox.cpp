@@ -15,6 +15,7 @@ Skybox::Skybox(const SpawnParams& params)
     : Actor(params)
 {
     _drawNoCulling = 1;
+    _drawCategory = SceneRendering::PreRender;
 }
 
 void Skybox::setupProxy()
@@ -127,7 +128,7 @@ void Skybox::ApplySky(GPUContext* context, RenderContext& renderContext, const M
 
 void Skybox::OnEnable()
 {
-    GetSceneRendering()->AddActor(this, _sceneRenderingKey, SceneRendering::PreRender);
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -141,7 +142,7 @@ void Skybox::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey, SceneRendering::PreRender);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();

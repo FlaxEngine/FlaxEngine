@@ -23,6 +23,7 @@
 SplineModel::SplineModel(const SpawnParams& params)
     : ModelInstanceActor(params)
 {
+    _drawCategory = SceneRendering::SceneDrawAsync;
     Model.Changed.Bind<SplineModel, &SplineModel::OnModelChanged>(this);
     Model.Loaded.Bind<SplineModel, &SplineModel::OnModelLoaded>(this);
 }
@@ -210,7 +211,7 @@ void SplineModel::OnSplineUpdated()
         BoundingSphere::Merge(_sphere, _instances[i].Sphere, _sphere);
     BoundingBox::FromSphere(_sphere, _box);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::SceneDrawAsync);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void SplineModel::UpdateDeformationBuffer()

@@ -66,29 +66,7 @@ void PointLight::UpdateBounds()
     BoundingBox::FromSphere(_sphere, _box);
 
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::PreRender);
-}
-
-void PointLight::OnEnable()
-{
-    GetSceneRendering()->AddActor(this, _sceneRenderingKey, SceneRendering::PreRender);
-#if USE_EDITOR
-    GetSceneRendering()->AddViewportIcon(this);
-#endif
-
-    // Base
-    LightWithShadow::OnEnable();
-}
-
-void PointLight::OnDisable()
-{
-#if USE_EDITOR
-    GetSceneRendering()->RemoveViewportIcon(this);
-#endif
-    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey, SceneRendering::PreRender);
-
-    // Base
-    LightWithShadow::OnDisable();
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void PointLight::OnTransformChanged()
@@ -170,7 +148,7 @@ void PointLight::OnDebugDrawSelected()
 void PointLight::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, SceneRendering::PreRender);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
 void PointLight::Serialize(SerializeStream& stream, const void* otherObj)
