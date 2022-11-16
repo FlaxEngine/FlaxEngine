@@ -433,7 +433,7 @@ namespace Flax.Build
                                     else if (dependencyModule.BinaryModuleName == "FlaxEngine")
                                     {
                                         // TODO: instead of this hack find a way to reference the prebuilt target bindings binary (example: game C# project references FlaxEngine C# prebuilt dll)
-                                        project.CSharp.FileReferences.Add(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), "Development/FlaxEngine.CSharp.dll"));
+                                        project.CSharp.FileReferences.Add(Path.Combine(Globals.EngineRoot, "Binaries/Editor/Win64/Development/FlaxEngine.CSharp.dll"));
                                     }
                                 }
                             }
