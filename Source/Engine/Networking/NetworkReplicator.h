@@ -154,8 +154,27 @@ public:
     /// <param name="obj">The network object.</param>
     API_FUNCTION() static void DirtyObject(ScriptingObject* obj);
 
+public:
+    /// <summary>
+    /// Begins invoking the RPC and returns the Network Stream to serialize parameters to.
+    /// </summary>
+    /// <returns>Network Stream to write RPC parameters to.</returns>
+    API_FUNCTION() static NetworkStream* BeginInvokeRPC();
+
+    /// <summary>
+    /// Ends invoking the RPC.
+    /// </summary>
+    /// <param name="obj">The target object to invoke RPC.</param>
+    /// <param name="type">The RPC type.</param>
+    /// <param name="name">The RPC name.</param>
+    /// <param name="argsStream">The RPC serialized arguments stream returned from BeginInvokeRPC.</param>
+    static void EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream);
+
 private:
 #if !COMPILE_WITHOUT_CSHARP
-    API_FUNCTION(NoProxy) static void AddSerializer(const ScriptingTypeHandle& type, const Function<void(void*, void*)>& serialize, const Function<void(void*, void*)>& deserialize);
+    API_FUNCTION(NoProxy) static void AddSerializer(const ScriptingTypeHandle& typeHandle, const Function<void(void*, void*)>& serialize, const Function<void(void*, void*)>& deserialize);
+    API_FUNCTION(NoProxy) static void AddRPC(const ScriptingTypeHandle& typeHandle, const StringAnsiView& name, const Function<void(void*, void*)>& execute, bool isServer, bool isClient, NetworkChannelType channel);
+    API_FUNCTION(NoProxy) static void CSharpEndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream);
+    static StringAnsiView GetCSharpCachedName(const StringAnsiView& name);
 #endif
 };

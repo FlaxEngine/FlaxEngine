@@ -9,6 +9,7 @@
 #include "NetworkPeer.h"
 #include "NetworkChannelType.h"
 #include "NetworkEvent.h"
+#include "NetworkRpc.h"
 #include "INetworkSerializable.h"
 #include "INetworkObject.h"
 #include "Engine/Core/Log.h"
@@ -71,6 +72,15 @@ PACK_STRUCT(struct NetworkMessageObjectRole
     uint32 OwnerClientId;
     });
 
+PACK_STRUCT(struct NetworkMessageObjectRpc
+    {
+    NetworkMessageIDs ID = NetworkMessageIDs::ObjectRpc;
+    Guid ObjectId;
+    char RpcTypeName[128]; // TODO: introduce networked-name to synchronize unique names as ushort (less data over network)
+    char RpcName[128]; // TODO: introduce networked-name to synchronize unique names as ushort (less data over network)
+    uint16 ArgsSize;
+    });
+
 struct NetworkReplicatedObject
 {
     ScriptingObjectReference<ScriptingObject> Object;
@@ -128,18 +138,30 @@ struct SpawnItem
     NetworkObjectRole Role;
 };
 
+struct RpcItem
+{
+    ScriptingObjectReference<ScriptingObject> Object;
+    NetworkRpcName Name;
+    NetworkRpcInfo Info;
+    BytesContainer ArgsData;
+};
+
 namespace
 {
     CriticalSection ObjectsLock;
     HashSet<NetworkReplicatedObject> Objects;
     Array<SpawnItem> SpawnQueue;
     Array<Guid> DespawnQueue;
+    Array<RpcItem> RpcQueue;
     Dictionary<Guid, Guid> IdsRemappingTable;
     NetworkStream* CachedWriteStream = nullptr;
     NetworkStream* CachedReadStream = nullptr;
     Array<NetworkClient*> NewClients;
     Array<NetworkConnection> CachedTargets;
     Dictionary<ScriptingTypeHandle, Serializer> SerializersTable;
+#if !COMPILE_WITHOUT_CSHARP
+    Dictionary<StringAnsiView, StringAnsi*> CSharpCachedNames;
+#endif
 }
 
 class NetworkReplicationService : public EngineService
@@ -156,6 +178,9 @@ public:
 void NetworkReplicationService::Dispose()
 {
     NetworkInternal::NetworkReplicatorClear();
+#if !COMPILE_WITHOUT_CSHARP
+    CSharpCachedNames.ClearDelete();
+#endif
 }
 
 NetworkReplicationService NetworkReplicationServiceInstance;
@@ -270,6 +295,12 @@ FORCE_INLINE void BuildCachedTargets(const NetworkReplicatedObject& item)
     BuildCachedTargets(NetworkManager::Clients, item.TargetClientIds, item.OwnerClientId);
 }
 
+FORCE_INLINE void GetNetworkName(char buffer[128], const StringAnsiView& name)
+{
+    Platform::MemoryCopy(buffer, name.Get(), name.Length());
+    buffer[name.Length()] = 0;
+}
+
 void SendObjectSpawnMessage(const NetworkReplicatedObject& item, ScriptingObject* obj)
 {
     NetworkMessageObjectSpawn msgData;
@@ -291,9 +322,7 @@ void SendObjectSpawnMessage(const NetworkReplicatedObject& item, ScriptingObject
         msgData.PrefabObjectID = objScene->GetPrefabObjectID();
     }
     msgData.OwnerClientId = item.OwnerClientId;
-    const StringAnsiView& objectTypeName = obj->GetType().Fullname;
-    Platform::MemoryCopy(msgData.ObjectTypeName, objectTypeName.Get(), objectTypeName.Length());
-    msgData.ObjectTypeName[objectTypeName.Length()] = 0;
+    GetNetworkName(msgData.ObjectTypeName, obj->GetType().Fullname);
     auto* peer = NetworkManager::Peer;
     NetworkMessage msg = peer->BeginSendMessage();
     msg.WriteStructure(msgData);
@@ -366,6 +395,48 @@ void NetworkReplicator::AddSerializer(const ScriptingTypeHandle& typeHandle, con
 {
     // This assumes that C# glue code passed static method pointer (via Marshal.GetFunctionPointerForDelegate)
     AddSerializer(typeHandle, INetworkSerializable_Managed, INetworkSerializable_Managed, (void*)*(SerializeFunc*)&serialize, (void*)*(SerializeFunc*)&deserialize);
+}
+
+void RPC_Execute_Managed(ScriptingObject* obj, NetworkStream* stream, void* tag)
+{
+    auto signature = (Function<void(void*, void*)>::Signature)tag;
+    signature(obj, stream);
+}
+
+void NetworkReplicator::AddRPC(const ScriptingTypeHandle& typeHandle, const StringAnsiView& name, const Function<void(void*, void*)>& execute, bool isServer, bool isClient, NetworkChannelType channel)
+{
+    if (!typeHandle)
+        return;
+
+    const NetworkRpcName rpcName(typeHandle, GetCSharpCachedName(name));
+
+    NetworkRpcInfo rpcInfo;
+    rpcInfo.Server = isServer;
+    rpcInfo.Client = isClient;
+    rpcInfo.Channel = (uint8)channel;
+    rpcInfo.Invoke = nullptr; // C# RPCs invoking happens on C# side (build-time code generation)
+    rpcInfo.Execute = RPC_Execute_Managed;
+    rpcInfo.Tag = (void*)*(SerializeFunc*)&execute;
+
+    // Add to the global RPCs table
+    NetworkRpcInfo::RPCsTable[rpcName] = rpcInfo;
+}
+
+void NetworkReplicator::CSharpEndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream)
+{
+    EndInvokeRPC(obj, type, GetCSharpCachedName(name), argsStream);
+}
+
+StringAnsiView NetworkReplicator::GetCSharpCachedName(const StringAnsiView& name)
+{
+    // Cache method name on a heap to support C# hot-reloads (also glue code from C# passes view to the stack-only text so cache it here)
+    StringAnsi* result;
+    if (!CSharpCachedNames.TryGet(name, result))
+    {
+        result = New<StringAnsi>(name);
+        CSharpCachedNames.Add(StringAnsiView(*result), result);
+    }
+    return StringAnsiView(*result);
 }
 
 #endif
@@ -610,6 +681,32 @@ void NetworkReplicator::DirtyObject(ScriptingObject* obj)
     // TODO: implement objects state replication frequency and dirtying
 }
 
+Dictionary<NetworkRpcName, NetworkRpcInfo> NetworkRpcInfo::RPCsTable;
+
+NetworkStream* NetworkReplicator::BeginInvokeRPC()
+{
+    if (CachedWriteStream == nullptr)
+        CachedWriteStream = New<NetworkStream>();
+    CachedWriteStream->Initialize();
+    return CachedWriteStream;
+}
+
+void NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream)
+{
+    const NetworkRpcInfo* info = NetworkRpcInfo::RPCsTable.TryGet(NetworkRpcName(type, name));
+    if (!info || !obj)
+        return;
+    ObjectsLock.Lock();
+    auto& rpc = RpcQueue.AddOne();
+    rpc.Object = obj;
+    rpc.Name.First = type;
+    rpc.Name.Second = name;
+    rpc.Info = *info;
+    const Span<byte> argsData(argsStream->GetBuffer(), argsStream->GetPosition());
+    rpc.ArgsData.Copy(argsData);
+    ObjectsLock.Unlock();
+}
+
 void NetworkInternal::NetworkReplicatorClientConnected(NetworkClient* client)
 {
     ScopeLock lock(ObjectsLock);
@@ -685,6 +782,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
     if (CachedWriteStream == nullptr)
         CachedWriteStream = New<NetworkStream>();
     const bool isClient = NetworkManager::IsClient();
+    const bool isServer = NetworkManager::IsServer();
     NetworkStream* stream = CachedWriteStream;
     NetworkPeer* peer = NetworkManager::Peer;
 
@@ -763,6 +861,8 @@ void NetworkInternal::NetworkReplicatorUpdate()
         for (auto& e : SpawnQueue)
         {
             ScriptingObject* obj = e.Object.Get();
+            if (!obj)
+                continue;
             auto it = Objects.Find(obj->GetID());
             if (it == Objects.End())
             {
@@ -848,9 +948,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 IdsRemappingTable.KeyOf(msgData.ObjectId, &msgData.ObjectId);
                 IdsRemappingTable.KeyOf(msgData.ParentId, &msgData.ParentId);
             }
-            const StringAnsiView& objectTypeName = obj->GetType().Fullname;
-            Platform::MemoryCopy(msgData.ObjectTypeName, objectTypeName.Get(), objectTypeName.Length());
-            msgData.ObjectTypeName[objectTypeName.Length()] = 0;
+            GetNetworkName(msgData.ObjectTypeName, obj->GetType().Fullname);
             msgData.DataSize = size;
             // TODO: split object data (eg. more messages) if needed
             NetworkMessage msg = peer->BeginSendMessage();
@@ -868,6 +966,47 @@ void NetworkInternal::NetworkReplicatorUpdate()
             // TODO: stats for bytes send per object type
         }
     }
+
+    // Invoke RPCs
+    for (auto& e : RpcQueue)
+    {
+        ScriptingObject* obj = e.Object.Get();
+        if (!obj)
+            continue;
+        auto it = Objects.Find(obj->GetID());
+        if (it == Objects.End())
+            continue;
+        auto& item = it->Item;
+
+        // Send despawn message
+        //NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Rpc {}::{} object ID={}", e.Name.First.ToString(), String(e.Name.Second), item.ToString());
+        NetworkMessageObjectRpc msgData;
+        msgData.ObjectId = item.ObjectId;
+        if (isClient)
+        {
+            // Remap local client object ids into server ids
+            IdsRemappingTable.KeyOf(msgData.ObjectId, &msgData.ObjectId);
+        }
+        GetNetworkName(msgData.RpcTypeName, e.Name.First.GetType().Fullname);
+        GetNetworkName(msgData.RpcName, e.Name.Second);
+        msgData.ArgsSize = (uint16)e.ArgsData.Length();
+        NetworkMessage msg = peer->BeginSendMessage();
+        msg.WriteStructure(msgData);
+        msg.WriteBytes(e.ArgsData.Get(), e.ArgsData.Length());
+        NetworkChannelType channel = (NetworkChannelType)e.Info.Channel;
+        if (e.Info.Server && isClient)
+        {
+            // Client -> Server
+            peer->EndSendMessage(channel, msg);
+        }
+        else if (e.Info.Client && isServer)
+        {
+            // Server -> Client(s)
+            BuildCachedTargets(item);
+            peer->EndSendMessage(channel, msg, CachedTargets);
+        }
+    }
+    RpcQueue.Clear();
 
     // Clear networked objects mapping table
     Scripting::ObjectsLookupIdMapping.Set(nullptr);
@@ -1019,7 +1158,7 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
         else
         {
             // Spawn object
-            const ScriptingTypeHandle objectType = Scripting::FindScriptingType(StringAnsiView(msgData.ObjectTypeName));
+            const ScriptingTypeHandle objectType = Scripting::FindScriptingType(msgData.ObjectTypeName);
             obj = ScriptingObject::NewObject(objectType);
             if (!obj)
             {
@@ -1137,5 +1276,56 @@ void NetworkInternal::OnNetworkMessageObjectRole(NetworkEvent& event, NetworkCli
     else
     {
         NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Unknown object role update {}", msgData.ObjectId);
+    }
+}
+
+void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
+{
+    NetworkMessageObjectRpc msgData;
+    event.Message.ReadStructure(msgData);
+    ScopeLock lock(ObjectsLock);
+    NetworkReplicatedObject* e = ResolveObject(msgData.ObjectId);
+    if (e)
+    {
+        auto& item = *e;
+        ScriptingObject* obj = item.Object.Get();
+        if (!obj)
+            return;
+
+        // Find RPC info
+        NetworkRpcName name;
+        name.First = Scripting::FindScriptingType(msgData.RpcTypeName);
+        name.Second = msgData.RpcName;
+        const NetworkRpcInfo* info = NetworkRpcInfo::RPCsTable.TryGet(name);
+        if (!info)
+        {
+            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Unknown object {} RPC {}::{}", msgData.ObjectId, String(msgData.RpcTypeName), String(msgData.RpcName));
+            return;
+        }
+
+        // Validate RPC
+        if (info->Server && NetworkManager::IsClient())
+        {
+            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Cannot invoke server RPC {}::{} on client", String(msgData.RpcTypeName), String(msgData.RpcName));
+            return;
+        }
+        if (info->Client && NetworkManager::IsServer())
+        {
+            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Cannot invoke client RPC {}::{} on server", String(msgData.RpcTypeName), String(msgData.RpcName));
+            return;
+        }
+
+        // Setup message reading stream
+        if (CachedReadStream == nullptr)
+            CachedReadStream = New<NetworkStream>();
+        NetworkStream* stream = CachedReadStream;
+        stream->Initialize(event.Message.Buffer + event.Message.Position, msgData.ArgsSize);
+
+        // Execute RPC
+        info->Execute(obj, stream, info->Tag);
+    }
+    else
+    {
+        NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Unknown object {} RPC {}::{}", msgData.ObjectId, String(msgData.RpcTypeName), String(msgData.RpcName));
     }
 }

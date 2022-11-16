@@ -13,6 +13,7 @@ enum class NetworkMessageIDs : uint8
     ObjectSpawn,
     ObjectDespawn,
     ObjectRole,
+    ObjectRpc,
 
     MAX,
 };
@@ -29,4 +30,5 @@ public:
     static void OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer);
     static void OnNetworkMessageObjectDespawn(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer);
     static void OnNetworkMessageObjectRole(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer);
+    static void OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer);
 };

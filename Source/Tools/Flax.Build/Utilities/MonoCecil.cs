@@ -41,7 +41,7 @@ namespace Flax.Build
 
         public static MethodDefinition GetMethod(this TypeDefinition type, string name, int argCount)
         {
-            var result = type.Methods.First(x => x.Name == name && x.Parameters.Count == argCount);
+            var result = type.Methods.FirstOrDefault(x => x.Name == name && x.Parameters.Count == argCount);
             if (result == null)
                 throw new Exception($"Failed to find method '{name}' (args={argCount}) in '{type.FullName}'.");
             return result;
@@ -49,10 +49,30 @@ namespace Flax.Build
 
         public static FieldDefinition GetField(this TypeDefinition type, string name)
         {
-            var result = type.Fields.First(x => x.Name == name);
+            var result = type.Fields.FirstOrDefault(x => x.Name == name);
             if (result == null)
                 throw new Exception($"Failed to find field '{name}' in '{type.FullName}'.");
             return result;
+        }
+
+        public static CustomAttributeNamedArgument GetField(this CustomAttribute attribute, string name)
+        {
+            foreach (var f in attribute.Fields)
+            {
+                if (f.Name == name)
+                    return f;
+            }
+            throw new Exception($"Failed to find field '{name}' in '{attribute.AttributeType.FullName}'.");
+        }
+
+        public static object GetFieldValue(this CustomAttribute attribute, string name, object defaultValue)
+        {
+            foreach (var f in attribute.Fields)
+            {
+                if (f.Name == name)
+                    return f.Argument.Value;
+            }
+            return defaultValue;
         }
 
         public static bool IsScriptingObject(this TypeDefinition type)
