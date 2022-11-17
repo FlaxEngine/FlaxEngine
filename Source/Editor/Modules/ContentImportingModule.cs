@@ -375,7 +375,9 @@ namespace FlaxEditor.Modules
             Thread.Sleep(0);
 
             _workerThread.Join(1000);
-            _workerThread.Abort();
+#if !USE_NETCORE
+            _workerThread.Abort(); // Deprecated in .NET 7
+#endif
             _workerThread = null;
         }
 

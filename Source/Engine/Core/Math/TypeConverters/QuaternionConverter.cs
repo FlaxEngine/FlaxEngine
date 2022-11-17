@@ -19,12 +19,22 @@ namespace FlaxEngine.TypeConverters
         }
 
         /// <inheritdoc />
+        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        {
+            if (destinationType == typeof(string))
+            {
+                return false;
+            }
+            return base.CanConvertTo(context, destinationType);
+        }
+
+        /// <inheritdoc />
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
             if (value is string str)
             {
                 string[] v = str.Split(',');
-                return new Quaternion(float.Parse(v[0]), float.Parse(v[1]), float.Parse(v[2]), float.Parse(v[3]));
+                return new Quaternion(float.Parse(v[0], culture), float.Parse(v[1], culture), float.Parse(v[2], culture), float.Parse(v[3], culture));
             }
             return base.ConvertFrom(context, culture, value);
         }
@@ -35,7 +45,7 @@ namespace FlaxEngine.TypeConverters
             if (destinationType == typeof(string))
             {
                 var v = (Quaternion)value;
-                return v.X + "," + v.Y + "," + v.Z + "," + v.W;
+                return v.X.ToString(culture) + "," + v.Y.ToString(culture) + "," + v.Z.ToString(culture) + "," + v.W.ToString(culture);
             }
             return base.ConvertTo(context, culture, value, destinationType);
         }

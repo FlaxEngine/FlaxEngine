@@ -903,6 +903,7 @@ ScriptingObject* Scripting::FindObject(const MObject* managedInstance)
 
 void Scripting::OnManagedInstanceDeleted(ScriptingObject* obj)
 {
+    SCRIPTING_EXPORT("FlaxEngine.Object::Internal_ManagedInstanceDeleted")
     PROFILE_CPU();
     ASSERT(obj);
 

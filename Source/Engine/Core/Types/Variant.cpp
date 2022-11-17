@@ -619,7 +619,11 @@ Variant::Variant(Asset* v)
 Variant::Variant(_MonoObject* v)
     : Type(VariantType::ManagedObject, v ? mono_object_get_class(v) : nullptr)
 {
-    AsUint = v ? mono_gchandle_new(v, true) : 0;
+#if USE_NETCORE
+    AsUint64 = v ? MUtils::NewGCHandle(v, true) : 0;
+#else
+    AsUint = v ? MUtils::NewGCHandle(v, true) : 0;
+#endif
 }
 
 #else
@@ -957,9 +961,13 @@ Variant::~Variant()
         Delete(AsDictionary);
         break;
     case VariantType::ManagedObject:
-#if USE_MONO
+#if USE_NETCORE
+        if (AsUint64)
+            MUtils::FreeGCHandle(AsUint64);
+        break;
+#elif USE_MONO
         if (AsUint)
-            mono_gchandle_free(AsUint);
+            MUtils::FreeGCHandle(AsUint);
         break;
 #endif
     default: ;
@@ -1088,8 +1096,10 @@ Variant& Variant::operator=(const Variant& other)
             AsDictionary = New<Dictionary<Variant, Variant>>(*other.AsDictionary);
         break;
     case VariantType::ManagedObject:
-#if USE_MONO
-        AsUint = other.AsUint ? mono_gchandle_new(mono_gchandle_get_target(other.AsUint), true) : 0;
+#if USE_NETCORE
+        AsUint64 = other.AsUint64 ? MUtils::NewGCHandle(MUtils::GetGCHandleTarget(other.AsUint64), true) : 0;
+#elif USE_MONO
+        AsUint = other.AsUint ? MUtils::NewGCHandle(MUtils::GetGCHandleTarget(other.AsUint), true) : 0;
 #endif
         break;
     case VariantType::Null:
@@ -1217,7 +1227,7 @@ bool Variant::operator==(const Variant& other) const
         case VariantType::ManagedObject:
 #if USE_MONO
             // TODO: invoke C# Equality logic?
-            return AsUint == other.AsUint || mono_gchandle_get_target(AsUint) == mono_gchandle_get_target(other.AsUint);
+            return AsUint == other.AsUint || MUtils::GetGCHandleTarget(AsUint) == MUtils::GetGCHandleTarget(other.AsUint);
 #endif
         default:
             return false;
@@ -1308,8 +1318,10 @@ Variant::operator bool() const
     case VariantType::Asset:
         return AsAsset != nullptr;
     case VariantType::ManagedObject:
-#if USE_MONO
-        return AsUint != 0 && mono_gchandle_get_target(AsUint) != nullptr;
+#if USE_NETCORE
+        return AsUint64 != 0 && MUtils::GetGCHandleTarget(AsUint64) != nullptr;
+#elif USE_MONO
+        return AsUint != 0 && MUtils::GetGCHandleTarget(AsUint) != nullptr;
 #endif
     default:
         return false;
@@ -1578,8 +1590,10 @@ Variant::operator void*() const
     case VariantType::Blob:
         return AsBlob.Data;
     case VariantType::ManagedObject:
-#if USE_MONO
-        return AsUint ? mono_gchandle_get_target(AsUint) : nullptr;
+#if USE_NETCORE
+        return AsUint64 ? MUtils::GetGCHandleTarget(AsUint64) : nullptr;
+#elif USE_MONO
+        return AsUint ? MUtils::GetGCHandleTarget(AsUint) : nullptr;
 #endif
     default:
         return nullptr;
@@ -1623,8 +1637,10 @@ Variant::operator ScriptingObject*() const
 
 Variant::operator _MonoObject*() const
 {
-#if USE_MONO
-    return Type.Type == VariantType::ManagedObject && AsUint ? mono_gchandle_get_target(AsUint) : nullptr;
+#if USE_NETCORE
+    return Type.Type == VariantType::ManagedObject && AsUint64 ? MUtils::GetGCHandleTarget(AsUint64) : nullptr;
+#elif USE_MONO
+    return Type.Type == VariantType::ManagedObject && AsUint ? MUtils::GetGCHandleTarget(AsUint) : nullptr;
 #else
     return nullptr;
 #endif
@@ -2337,9 +2353,14 @@ void Variant::SetType(const VariantType& type)
             Delete(AsDictionary);
         break;
     case VariantType::ManagedObject:
-#if USE_MONO
+#if USE_NETCORE
+        if (AsUint64)
+            MUtils::FreeGCHandle(AsUint64);
+        break;
+#elif USE_MONO
         if (AsUint)
-            mono_gchandle_free(AsUint);
+            MUtils::FreeGCHandle(AsUint);
+        break;
 #endif
         break;
     default: ;
@@ -2447,9 +2468,14 @@ void Variant::SetType(VariantType&& type)
             Delete(AsDictionary);
         break;
     case VariantType::ManagedObject:
-#if USE_MONO
+#if USE_NETCORE
+        if (AsUint64)
+            MUtils::FreeGCHandle(AsUint64);
+        break;
+#elif USE_MONO
         if (AsUint)
-            mono_gchandle_free(AsUint);
+            MUtils::FreeGCHandle(AsUint);
+        break;
 #endif
         break;
     default: ;
@@ -2632,7 +2658,11 @@ void Variant::SetManagedObject(_MonoObject* object)
     {
         if (Type.Type != VariantType::ManagedObject)
             SetType(VariantType(VariantType::ManagedObject, mono_object_get_class(object)));
-        AsUint = mono_gchandle_new(object, true);
+#if USE_NETCORE
+        AsUint64 = MUtils::NewGCHandle(object, true);
+#else
+        AsUint = MUtils::NewGCHandle(object, true);
+#endif
     }
     else
     {
@@ -2751,8 +2781,10 @@ String Variant::ToString() const
     case VariantType::Typename:
         return String((const char*)AsBlob.Data, AsBlob.Length ? AsBlob.Length - 1 : 0);
     case VariantType::ManagedObject:
-#if USE_MONO
-        return AsUint ? String(MUtils::ToString(mono_object_to_string(mono_gchandle_get_target(AsUint), nullptr))) : TEXT("null");
+#if USE_NETCORE
+        return AsUint64 ? String(MUtils::ToString(mono_object_to_string(MUtils::GetGCHandleTarget(AsUint64), nullptr))) : TEXT("null");
+#elif USE_MONO
+        return AsUint ? String(MUtils::ToString(mono_object_to_string(MUtils::GetGCHandleTarget(AsUint), nullptr))) : TEXT("null");
 #endif
     default:
         return String::Empty;
@@ -3671,7 +3703,12 @@ void Variant::AllocStructure()
             Platform::MemoryCopy(AsBlob.Data, data, AsBlob.Length);
 #else
             Type.Type = VariantType::ManagedObject;
-            AsUint = mono_gchandle_new(instance, true);
+
+#if USE_NETCORE
+            AsUint64 = MUtils::NewGCHandle(instance, true);
+#else
+            AsUint = MUtils::NewGCHandle(instance, true);
+#endif
 #endif
         }
         else
@@ -3763,8 +3800,10 @@ uint32 GetHash(const Variant& key)
     case VariantType::Typename:
         return GetHash((const char*)key.AsBlob.Data);
     case VariantType::ManagedObject:
-#if USE_MONO
-        return key.AsUint ? (uint32)mono_object_hash(mono_gchandle_get_target(key.AsUint)) : 0;
+#if USE_NETCORE
+        return key.AsUint64 ? (uint32)mono_object_hash(MUtils::GetGCHandleTarget(key.AsUint64)) : 0;
+#elif USE_MONO
+        return key.AsUint ? (uint32)mono_object_hash(MUtils::GetGCHandleTarget(key.AsUint)) : 0;
 #endif
     default:
         return 0;

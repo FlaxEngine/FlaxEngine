@@ -5,6 +5,8 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Threading;
 using System.Threading.Tasks;
 using FlaxEngine.GUI;
@@ -65,7 +67,7 @@ namespace FlaxEngine
     /// <summary>
     /// C# scripting service.
     /// </summary>
-    public static class Scripting
+    public static partial class Scripting
     {
         private static readonly List<Action> UpdateActions = new List<Action>();
         private static readonly MainThreadTaskScheduler MainThreadTaskScheduler = new MainThreadTaskScheduler();
@@ -207,6 +209,21 @@ namespace FlaxEngine
             return result;
         }
 
+        internal static IntPtr VersionToManaged(int major, int minor, int build, int revision)
+        {
+            Version version = new Version(major, minor, Math.Max(build, 0), Math.Max(revision, 0));
+            return GCHandle.ToIntPtr(GCHandle.Alloc(version));
+        }
+
+        internal static void VersionToNative(IntPtr versionHandle, IntPtr nativePtr)
+        {
+            Version version = (Version)GCHandle.FromIntPtr(versionHandle).Target;
+            Marshal.WriteInt32(nativePtr, 0, version.Major);
+            Marshal.WriteInt32(nativePtr, 4, version.Minor);
+            Marshal.WriteInt32(nativePtr, 8, version.Build);
+            Marshal.WriteInt32(nativePtr, 12, version.Revision);
+        }
+
         private static void CreateGuiStyle()
         {
             var style = new Style
@@ -283,21 +300,23 @@ namespace FlaxEngine
         /// Returns true if game scripts assembly has been loaded.
         /// </summary>
         /// <returns>True if game scripts assembly is loaded, otherwise false.</returns>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool HasGameModulesLoaded();
+        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Scripting::HasGameModulesLoaded", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static partial bool HasGameModulesLoaded();
 
         /// <summary>
         /// Returns true if given type is from one of the game scripts assemblies.
         /// </summary>
         /// <returns>True if the type is from game assembly, otherwise false.</returns>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool IsTypeFromGameScripts(Type type);
+        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Scripting::IsTypeFromGameScripts", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static partial bool IsTypeFromGameScripts([MarshalUsing(typeof(SystemTypeMarshaller))] Type type);
 
         /// <summary>
         /// Flushes the removed objects (disposed objects using Object.Destroy).
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void FlushRemovedObjects();
+        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Scripting::FlushRemovedObjects", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        public static partial void FlushRemovedObjects();
     }
 
     /// <summary>
@@ -306,32 +325,32 @@ namespace FlaxEngine
     /// <remarks>
     /// Profiler is available in the editor and Debug/Development builds. Release builds don't have profiling tools.
     /// </remarks>
-    public static class Profiler
+    public static partial class Profiler
     {
         /// <summary>
         /// Begins profiling a piece of code with a custom label.
         /// </summary>
         /// <param name="name">The name of the event.</param>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void BeginEvent(string name);
+        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Profiler::BeginEvent", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        public static partial void BeginEvent(string name);
 
         /// <summary>
         /// Ends profiling an event.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void EndEvent();
+        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Profiler::EndEvent", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        public static partial void EndEvent();
 
         /// <summary>
         /// Begins GPU profiling a piece of code with a custom label.
         /// </summary>
         /// <param name="name">The name of the event.</param>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void BeginEventGPU(string name);
+        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Profiler::BeginEventGPU", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        public static partial void BeginEventGPU(string name);
 
         /// <summary>
         /// Ends GPU profiling an event.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void EndEventGPU();
+        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Profiler::EndEventGPU", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        public static partial void EndEventGPU();
     }
 }

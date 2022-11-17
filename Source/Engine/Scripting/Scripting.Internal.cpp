@@ -40,6 +40,7 @@ namespace ProfilerInternal
 
     void BeginEvent(MonoString* nameObj)
     {
+        SCRIPTING_EXPORT("FlaxEngine.Profiler::BeginEvent")
 #if COMPILE_WITH_PROFILER
         const StringView name((const Char*)mono_string_chars(nameObj), mono_string_length(nameObj));
         ProfilerCPU::BeginEvent(*name);
@@ -78,6 +79,7 @@ namespace ProfilerInternal
 
     void EndEvent()
     {
+        SCRIPTING_EXPORT("FlaxEngine.Profiler::EndEvent")
 #if COMPILE_WITH_PROFILER
 #if TRACY_ENABLE
         tracy::ScopedZone::End();
@@ -88,6 +90,7 @@ namespace ProfilerInternal
 
     void BeginEventGPU(MonoString* nameObj)
     {
+        SCRIPTING_EXPORT("FlaxEngine.Profiler::BeginEventGPU")
 #if COMPILE_WITH_PROFILER
         const auto index = ProfilerGPU::BeginEvent((const Char*)mono_string_chars(nameObj));
         ManagedEventsGPU.Push(index);
@@ -96,6 +99,7 @@ namespace ProfilerInternal
 
     void EndEventGPU()
     {
+        SCRIPTING_EXPORT("FlaxEngine.Profiler::EndEventGPU")
 #if COMPILE_WITH_PROFILER
         const auto index = ManagedEventsGPU.Pop();
         ProfilerGPU::EndEvent(index);
@@ -111,16 +115,19 @@ public:
 #if USE_MONO
     static bool HasGameModulesLoaded()
     {
+        SCRIPTING_EXPORT("FlaxEngine.Scripting::HasGameModulesLoaded")
         return Scripting::HasGameModulesLoaded();
     }
 
     static bool IsTypeFromGameScripts(MonoReflectionType* type)
     {
+        SCRIPTING_EXPORT("FlaxEngine.Scripting::IsTypeFromGameScripts")
         return Scripting::IsTypeFromGameScripts(Scripting::FindClass(MUtils::GetClass(type)));
     }
 
     static void FlushRemovedObjects()
     {
+        SCRIPTING_EXPORT("FlaxEngine.Scripting::FlushRemovedObjects")
         ASSERT(IsInMainThread());
         ObjectsRemovalService::Flush();
     }

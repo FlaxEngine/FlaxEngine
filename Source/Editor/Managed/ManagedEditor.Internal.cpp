@@ -323,20 +323,25 @@ namespace CustomEditorsUtilInternal
 {
     MonoReflectionType* GetCustomEditor(MonoReflectionType* targetType)
     {
+        SCRIPTING_EXPORT("FlaxEditor.CustomEditors.CustomEditorsUtil::Internal_GetCustomEditor")
         return CustomEditorsUtil::GetCustomEditor(targetType);
     }
 }
 
 namespace LayersAndTagsSettingsInternal1
 {
-    MonoArray* GetCurrentTags()
+    MonoArray* GetCurrentTags(int* tagsCount)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Content.Settings.LayersAndTagsSettings::GetCurrentTags")
+        *tagsCount = Level::Tags.Count();
         return MUtils::ToArray(Level::Tags);
     }
 
-    MonoArray* GetCurrentLayers()
+    MonoArray* GetCurrentLayers(int* layersCount)
     {
-        return MUtils::ToArray(Span<String>(Level::Layers, Math::Max(1, Level::GetNonEmptyLayerNamesCount())));
+        SCRIPTING_EXPORT("FlaxEditor.Content.Settings.LayersAndTagsSettings::GetCurrentLayers")
+        *layersCount = Math::Max(1, Level::GetNonEmptyLayerNamesCount());
+        return MUtils::ToArray(Span<String>(Level::Layers, *layersCount));
     }
 }
 
@@ -344,6 +349,7 @@ namespace GameSettingsInternal1
 {
     void Apply()
     {
+        SCRIPTING_EXPORT("FlaxEditor.Content.Settings.GameSettings::Apply")
         LOG(Info, "Apply game settings");
         GameSettings::Load();
     }
@@ -380,6 +386,7 @@ class ManagedEditorInternal
 public:
     static bool IsDevInstance()
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::IsDevInstance")
 #if COMPILE_WITH_DEV_ENV
         return true;
 #else
@@ -389,6 +396,7 @@ public:
 
     static bool IsOfficialBuild()
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::IsOfficialBuild")
 #if OFFICIAL_BUILD
         return true;
 #else
@@ -398,18 +406,20 @@ public:
 
     static bool IsPlayMode()
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_IsPlayMode")
         return Editor::IsPlayMode;
     }
 
-    static int32 ReadOutputLogs(MonoArray* outMessages, MonoArray* outLogTypes, MonoArray* outLogTimes)
+    static int32 ReadOutputLogs(MonoArray** outMessages, MonoArray** outLogTypes, MonoArray** outLogTimes, int outArraySize)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_ReadOutputLogs")
         ScopeLock lock(CachedLogDataLocker);
 
         if (CachedLogData.IsEmpty() || CachedLogData.Get() == nullptr)
             return 0;
 
         int32 count = 0;
-        const int32 maxCount = (int32)mono_array_length(outMessages);
+        const int32 maxCount = outArraySize;//(int32)mono_array_length(*outMessages);
 
         byte* ptr = CachedLogData.Get();
         byte* end = ptr + CachedLogData.Count();
@@ -429,9 +439,9 @@ public:
 
             auto msgObj = MUtils::ToString(StringView(msg, length));
 
-            mono_array_setref(outMessages, count, msgObj);
-            mono_array_set(outLogTypes, byte, count, type);
-            mono_array_set(outLogTimes, int64, count, time);
+            mono_array_setref(*outMessages, count, msgObj);
+            mono_array_set(*outLogTypes, byte, count, type);
+            mono_array_set(*outLogTimes, int64, count, time);
 
             count++;
         }
@@ -445,21 +455,25 @@ public:
 
     static void SetPlayMode(bool value)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_SetPlayMode")
         Editor::IsPlayMode = value;
     }
 
     static MonoString* GetProjectPath()
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetProjectPath")
         return MUtils::ToString(Editor::Project->ProjectPath);
     }
 
     static void CloseSplashScreen()
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CloseSplashScreen")
         Editor::CloseSplashScreen();
     }
 
     static bool CloneAssetFile(MonoString* dstPathObj, MonoString* srcPathObj, Guid* dstId)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CloneAssetFile")
         // Get normalized paths
         String dstPath, srcPath;
         MUtils::ToString(dstPathObj, dstPath);
@@ -489,6 +503,7 @@ public:
 
     static bool CreateAsset(NewAssetType type, MonoString* outputPathObj)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CreateAsset")
         String tag;
         switch (type)
         {
@@ -541,6 +556,7 @@ public:
 
     static bool CreateVisualScript(MonoString* outputPathObj, MonoString* baseTypenameObj)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CreateVisualScript")
         String outputPath;
         MUtils::ToString(outputPathObj, outputPath);
         FileSystem::NormalizePath(outputPath);
@@ -551,6 +567,7 @@ public:
 
     static MonoString* CanImport(MonoString* extensionObj)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CanImport")
         String extension;
         MUtils::ToString(extensionObj, extension);
         if (extension.Length() > 0 && extension[0] == '.')
@@ -561,6 +578,7 @@ public:
 
     static bool Import(MonoString* inputPathObj, MonoString* outputPathObj, void* arg)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_Import")
         String inputPath, outputPath;
         MUtils::ToString(inputPathObj, inputPath);
         MUtils::ToString(outputPathObj, outputPath);
@@ -572,6 +590,7 @@ public:
 
     static bool ImportTexture(MonoString* inputPathObj, MonoString* outputPathObj, InternalTextureOptions* optionsObj)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_ImportTexture")
         ImportTexture::Options options;
         InternalTextureOptions::Convert(optionsObj, &options);
 
@@ -580,6 +599,7 @@ public:
 
     static bool ImportModel(MonoString* inputPathObj, MonoString* outputPathObj, InternalModelOptions* optionsObj)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_ImportModel")
         ImportModelFile::Options options;
         InternalModelOptions::Convert(optionsObj, &options);
 
@@ -588,6 +608,7 @@ public:
 
     static bool ImportAudio(MonoString* inputPathObj, MonoString* outputPathObj, InternalAudioOptions* optionsObj)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_ImportAudio")
         ImportAudio::Options options;
         InternalAudioOptions::Convert(optionsObj, &options);
 
@@ -596,6 +617,7 @@ public:
 
     static void GetAudioClipMetadata(AudioClip* clip, int32* originalSize, int32* importedSize)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetAudioClipMetadata")
         INTERNAL_CALL_CHECK(clip);
         *originalSize = clip->AudioHeader.OriginalSize;
         *importedSize = clip->AudioHeader.ImportedSize;
@@ -603,6 +625,7 @@ public:
 
     static bool SaveJsonAsset(MonoString* outputPathObj, MonoString* dataObj, MonoString* dataTypeNameObj)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_SaveJsonAsset")
         String outputPath;
         MUtils::ToString(outputPathObj, outputPath);
         FileSystem::NormalizePath(outputPath);
@@ -623,6 +646,8 @@ public:
 
     static bool GetTextureImportOptions(MonoString* pathObj, InternalTextureOptions* result)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Content.Import.TextureImportEntry::Internal_GetTextureImportOptions")
+
         String path;
         MUtils::ToString(pathObj, path);
         FileSystem::NormalizePath(path);
@@ -641,6 +666,7 @@ public:
 
     static void GetModelImportOptions(MonoString* pathObj, InternalModelOptions* result)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Content.Import.ModelImportEntry::Internal_GetModelImportOptions")
         // Initialize defaults   
         ImportModelFile::Options options;
         if (const auto* graphicsSettings = GraphicsSettings::Get())
@@ -660,6 +686,7 @@ public:
 
     static bool GetAudioImportOptions(MonoString* pathObj, InternalAudioOptions* result)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Content.Import.AudioImportEntry::Internal_GetAudioImportOptions")
         String path;
         MUtils::ToString(pathObj, path);
         FileSystem::NormalizePath(path);
@@ -678,6 +705,7 @@ public:
 
     static bool CanExport(MonoString* pathObj)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CanExport")
 #if COMPILE_WITH_ASSETS_EXPORTER
         String path;
         MUtils::ToString(pathObj, path);
@@ -691,6 +719,7 @@ public:
 
     static bool Export(MonoString* inputPathObj, MonoString* outputFolderObj)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_Export")
 #if COMPILE_WITH_ASSETS_EXPORTER
         String inputPath;
         MUtils::ToString(inputPathObj, inputPath);
@@ -708,11 +737,13 @@ public:
 
     static void CopyCache(Guid* dstId, Guid* srcId)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CopyCache")
         ShaderCacheManager::CopyCache(*dstId, *srcId);
     }
 
     static void BakeLightmaps(bool cancel)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_BakeLightmaps")
         auto builder = ShadowsOfMordor::Builder::Instance();
         if (cancel)
             builder->CancelBuild();
@@ -722,6 +753,7 @@ public:
 
     static MonoString* GetShaderAssetSourceCode(BinaryAsset* obj)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetShaderAssetSourceCode")
         INTERNAL_CALL_CHECK_RETURN(obj, nullptr);
         if (obj->WaitForLoaded())
             DebugLog::ThrowNullReference();
@@ -747,6 +779,7 @@ public:
 
     static bool CookMeshCollision(MonoString* pathObj, CollisionDataType type, ModelBase* modelObj, int32 modelLodIndex, uint32 materialSlotsMask, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CookMeshCollision")
 #if COMPILE_WITH_PHYSICS_COOKING
         CollisionCooking::Argument arg;
         String path;
@@ -767,6 +800,7 @@ public:
 
     static void GetCollisionWires(CollisionData* collisionData, MonoArray** triangles, MonoArray** indices)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetCollisionWires")
         if (!collisionData || collisionData->WaitForLoaded() || collisionData->GetOptions().Type == CollisionDataType::None)
             return;
 
@@ -792,32 +826,38 @@ public:
 
     static void GetEditorBoxWithChildren(Actor* obj, BoundingBox* result)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetEditorBoxWithChildren")
         INTERNAL_CALL_CHECK(obj);
         *result = obj->GetEditorBoxChildren();
     }
 
     static void SetOptions(ManagedEditor::InternalOptions* options)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_SetOptions")
         ManagedEditor::ManagedEditorOptions = *options;
     }
 
     static void DrawNavMesh()
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_DrawNavMesh")
         Navigation::DrawNavMesh();
     }
 
     static bool GetIsEveryAssemblyLoaded()
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetIsEveryAssemblyLoaded")
         return Scripting::IsEveryAssemblyLoaded();
     }
 
     static int32 GetLastProjectOpenedEngineBuild()
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetLastProjectOpenedEngineBuild")
         return Editor::LastProjectOpenedEngineBuild;
     }
 
     static bool GetIsCSGActive()
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetIsCSGActive")
 #if COMPILE_WITH_CSG_BUILDER
         return CSG::Builder::IsActive();
 #else
@@ -827,6 +867,7 @@ public:
 
     static void RunVisualScriptBreakpointLoopTick(float deltaTime)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_RunVisualScriptBreakpointLoopTick")
         // Update
         Platform::Tick();
         Engine::HasFocus = (Engine::MainWindow && Engine::MainWindow->IsFocused()) || Platform::GetHasFocus();
@@ -921,6 +962,7 @@ public:
 
     static MonoArray* GetVisualScriptLocals()
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetVisualScriptLocals")
         MonoArray* result = nullptr;
         const auto stack = VisualScripting::GetThreadStackTop();
         if (stack && stack->Scope)
@@ -969,6 +1011,7 @@ public:
 
     static MonoArray* GetVisualScriptStackFrames()
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetVisualScriptStackFrames")
         MonoArray* result = nullptr;
         const auto stack = VisualScripting::GetThreadStackTop();
         if (stack)
@@ -1022,6 +1065,7 @@ public:
 
     static bool EvaluateVisualScriptLocal(VisualScript* script, VisualScriptLocalManaged* local)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_EvaluateVisualScriptLocal")
         Variant v;
         if (VisualScripting::Evaluate(script, VisualScripting::GetThreadStackTop()->Instance, local->NodeId, local->BoxId, v))
         {
@@ -1034,6 +1078,7 @@ public:
 
     static void DeserializeSceneObject(SceneObject* sceneObject, MonoString* jsonObj)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_DeserializeSceneObject")
         PROFILE_CPU_NAMED("DeserializeSceneObject");
 
         StringAnsi json;
@@ -1062,11 +1107,13 @@ public:
 
     static void LoadAsset(Guid* id)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_LoadAsset")
         Content::LoadAsync<Asset>(*id);
     }
 
     static bool CanSetToRoot(Prefab* prefab, Actor* targetActor)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CanSetToRoot")
         // Reference: Prefab::ApplyAll(Actor* targetActor)
         if (targetActor->GetPrefabID() != prefab->GetID())
             return false;
@@ -1089,11 +1136,13 @@ public:
 
     static float GetAnimationTime(AnimatedModel* animatedModel)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetAnimationTime")
         return animatedModel && animatedModel->GraphInstance.State.Count() == 1 ? animatedModel->GraphInstance.State[0].Animation.TimePosition : 0.0f;
     }
 
     static void SetAnimationTime(AnimatedModel* animatedModel, float time)
     {
+        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_SetAnimationTime")
         if (animatedModel && animatedModel->GraphInstance.State.Count() == 1)
             animatedModel->GraphInstance.State[0].Animation.TimePosition = time;
     }

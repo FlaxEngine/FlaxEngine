@@ -31,7 +31,7 @@ typedef void MObject;
 #else
 
 #define USE_MONO 1
-#define USE_NETCORE 0
+#define USE_NETCORE 1
 
 // Enables using single (root) app domain for the user scripts
 #define USE_SCRIPTING_SINGLE_DOMAIN 1
@@ -47,6 +47,17 @@ typedef void MObject;
 #ifndef USE_MONO_AOT
 #define USE_MONO_AOT 0
 #define USE_MONO_AOT_MODE MONO_AOT_MODE_NONE
+#endif
+
+#if USE_NETCORE
+struct _MonoDomain {};
+struct _MonoThread {};
+#endif
+
+#if USE_NETCORE
+typedef unsigned long long gchandle;
+#else
+typedef uint32 gchandle;
 #endif
 
 // Mono types declarations

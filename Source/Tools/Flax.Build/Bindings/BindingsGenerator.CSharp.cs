@@ -278,15 +278,15 @@ namespace Flax.Build.Bindings
             }
 
             // Object reference property
-            if ((typeInfo.Type == "ScriptingObjectReference" ||
-                 typeInfo.Type == "AssetReference" ||
-                 typeInfo.Type == "WeakAssetReference" ||
-                 typeInfo.Type == "SoftAssetReference" ||
-                 typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
+            if (typeInfo.IsObjectRef)
                 return GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller);
 
             // Array or Span or DataContainer
+#if USE_NETCORE
+            if ((typeInfo.Type == "Array" || typeInfo.Type == "Span" || typeInfo.Type == "DataContainer" || typeInfo.Type == "MonoArray") && typeInfo.GenericArgs != null)
+#else
             if ((typeInfo.Type == "Array" || typeInfo.Type == "Span" || typeInfo.Type == "DataContainer") && typeInfo.GenericArgs != null)
+#endif
                 return GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller) + "[]";
 
             // Dictionary
@@ -361,11 +361,7 @@ namespace Flax.Build.Bindings
             }
 
             // Object reference property
-            if ((typeInfo.Type == "ScriptingObjectReference" ||
-                 typeInfo.Type == "AssetReference" ||
-                 typeInfo.Type == "WeakAssetReference" ||
-                 typeInfo.Type == "SoftAssetReference" ||
-                 typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
+            if (typeInfo.IsObjectRef)
                 return "IntPtr";
 
             // Function
@@ -419,11 +415,7 @@ namespace Flax.Build.Bindings
                 }
 
                 // Object reference property
-                if ((typeInfo.Type == "ScriptingObjectReference" ||
-                     typeInfo.Type == "AssetReference" ||
-                     typeInfo.Type == "WeakAssetReference" ||
-                     typeInfo.Type == "SoftAssetReference" ||
-                     typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
+                if (typeInfo.IsObjectRef)
                     return "FlaxEngine.Object.GetUnmanagedPtr({0})";
 
                 // Default
@@ -443,8 +435,38 @@ namespace Flax.Build.Bindings
                 returnValueType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType, caller);
             }
 
+#if USE_NETCORE
+            string returnMarshalType = "";
+            if (returnValueType == "bool")
+                returnMarshalType = "MarshalAs(UnmanagedType.U1)";
+            else if (returnValueType == "System.Type")
+                returnMarshalType = "MarshalUsing(typeof(FlaxEngine.SystemTypeMarshaller))";
+            else if (returnValueType == "CultureInfo")
+                returnMarshalType = "MarshalUsing(typeof(FlaxEngine.CultureInfoMarshaller))";
+            else if (functionInfo.ReturnType.Type == "Variant")
+                returnMarshalType = "MarshalUsing(typeof(FlaxEngine.GCHandleMarshaller))";
+            else if (FindApiTypeInfo(buildData, functionInfo.ReturnType, caller)?.IsInterface ?? false)
+            {
+                // Interfaces are not supported by NativeMarshallingAttribute, marshal the parameter
+                returnMarshalType = $"MarshalUsing(typeof({returnValueType}Marshaller))";
+            }
+            else if (returnValueType == "byte[]")
+                returnMarshalType = $"MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), ConstantElementCount = 0)";
+            else if (returnValueType == "bool[]")
+            {
+                // Boolean arrays does not support custom marshalling for some unkown reason...
+                returnMarshalType = $"MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1, SizeParamIndex = {functionInfo.Parameters.Count + (functionInfo.Glue.CustomParameters?.Count ?? 0)})";
+            }
+#endif
+#if !USE_NETCORE
             contents.AppendLine().Append(indent).Append("[MethodImpl(MethodImplOptions.InternalCall)]");
-            contents.AppendLine().Append(indent).Append("internal static extern ");
+            contents.AppendLine().Append(indent).Append("internal static partial ");
+#else
+            contents.AppendLine().Append(indent).Append($"[LibraryImport(\"FlaxEngine\", EntryPoint = \"{caller.FullNameManaged}::Internal_{functionInfo.UniqueName}\", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]");
+            if (!string.IsNullOrEmpty(returnMarshalType))
+                contents.AppendLine().Append(indent).Append($"[return: {returnMarshalType}]");
+            contents.AppendLine().Append(indent).Append("internal static partial ");
+#endif
             contents.Append(returnValueType).Append(" Internal_").Append(functionInfo.UniqueName).Append('(');
 
             var separator = false;
@@ -461,6 +483,30 @@ namespace Flax.Build.Bindings
                 separator = true;
 
                 var nativeType = GenerateCSharpManagedToNativeType(buildData, parameterInfo.Type, caller);
+#if USE_NETCORE
+                string parameterMarshalType = "";
+                if (nativeType == "System.Type")
+                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.SystemTypeMarshaller))";
+                else if (parameterInfo.Type.Type == "CultureInfo")
+                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.CultureInfoMarshaller))";
+                else if (parameterInfo.Type.Type == "Variant") // object
+                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.GCHandleMarshaller))";
+                else if (parameterInfo.Type.Type == "MonoArray")
+                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.SystemArrayMarshaller))";
+                else if (parameterInfo.Type.Type == "Array" && parameterInfo.Type.GenericArgs.Count > 0 && parameterInfo.Type.GenericArgs[0].Type == "bool")
+                    parameterMarshalType = $"MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1, SizeParamIndex = {(!functionInfo.IsStatic ? 1 : 0) + functionInfo.Parameters.Count + (functionInfo.Glue.CustomParameters.FindIndex(x => x.Name == parameterInfo.Name + "Count"))})";
+                else if (parameterInfo.Type.Type == "Array" || parameterInfo.Type.Type == "Span" || parameterInfo.Type.Type == "DataContainer" || parameterInfo.Type.Type == "BytesContainer" || nativeType == "Array")
+                    parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = \"{parameterInfo.Name}Count\")";
+                else if (parameterInfo.Type.Type == "Dictionary")
+                    parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.DictionaryMarshaller<,>), ConstantElementCount = 0)";
+                else if (nativeType == "bool")
+                    parameterMarshalType = "MarshalAs(UnmanagedType.U1)";
+                else if (nativeType == "char")
+                    parameterMarshalType = "MarshalAs(UnmanagedType.I2)";
+
+                if (!string.IsNullOrEmpty(parameterMarshalType))
+                    contents.Append($"[{parameterMarshalType}] ");
+#endif
                 if (parameterInfo.IsOut)
                     contents.Append("out ");
                 else if (parameterInfo.IsRef || UsePassByReference(buildData, parameterInfo.Type, caller))
@@ -484,6 +530,21 @@ namespace Flax.Build.Bindings
                 separator = true;
 
                 var nativeType = GenerateCSharpManagedToNativeType(buildData, parameterInfo.Type, caller);
+#if USE_NETCORE
+                string parameterMarshalType = "";
+                if (parameterInfo.IsOut && parameterInfo.DefaultValue == "var resultAsRef")
+                {
+                    if (functionInfo.Glue.UseResultReferenceCount)
+                        parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = \"{parameterInfo.Name}Count\")";
+                    else if (parameterInfo.Type.Type == "Dictionary")
+                        parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.DictionaryMarshaller<,>), ConstantElementCount = 0)";
+                }
+                if (nativeType == "System.Type")
+                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.SystemTypeMarshaller))";
+
+                if (!string.IsNullOrEmpty(parameterMarshalType))
+                    contents.Append($"[{parameterMarshalType}] ");
+#endif
                 if (parameterInfo.IsOut)
                     contents.Append("out ");
                 else if (parameterInfo.IsRef || UsePassByReference(buildData, parameterInfo.Type, caller))
@@ -500,6 +561,17 @@ namespace Flax.Build.Bindings
 
         private static void GenerateCSharpWrapperFunctionCall(BuildData buildData, StringBuilder contents, ApiTypeInfo caller, FunctionInfo functionInfo, bool isSetter = false)
         {
+#if USE_NETCORE
+            for (var i = 0; i < functionInfo.Parameters.Count; i++)
+            {
+                var parameterInfo = functionInfo.Parameters[i];
+                if (parameterInfo.Type.IsArray || parameterInfo.Type.Type == "Array" || parameterInfo.Type.Type == "Span" || parameterInfo.Type.Type == "BytesContainer" || parameterInfo.Type.Type == "DataContainer" || parameterInfo.Type.Type == "BitArray")
+                {
+                    if (!parameterInfo.IsOut)
+                        contents.Append($"var {parameterInfo.Name}Count = {(isSetter ? "value" : parameterInfo.Name)}?.Length ?? 0; ");
+                }
+            }
+#endif
             if (functionInfo.Glue.UseReferenceForResult)
             {
             }
@@ -613,6 +685,9 @@ namespace Flax.Build.Bindings
             {
                 // Write attribute for C++ calling code
                 contents.Append(indent).AppendLine("[Unmanaged]");
+
+                // Skip boilerplate code when using debugger
+                //contents.Append(indent).AppendLine("[System.Diagnostics.DebuggerStepThrough]");
             }
             if (isDeprecated || apiTypeInfo.IsDeprecated)
             {
@@ -698,6 +773,15 @@ namespace Flax.Build.Bindings
 
             // Class begin
             GenerateCSharpAttributes(buildData, contents, indent, classInfo, useUnmanaged);
+#if USE_NETCORE
+            string marshallerName = "";
+            if (!classInfo.IsStatic)
+            {
+                marshallerName = classInfo.Name + "Marshaller";
+                contents.Append(indent).AppendLine($"[NativeMarshalling(typeof({marshallerName}))]");
+                //contents.Append(indent).AppendLine($"[NativeMarshalling(typeof(FlaxEngine.GCHandleMarshaller2<{classInfo.Name}>.GCHandleMarshaller3<{classInfo.Name}>))]");
+            }
+#endif
             contents.Append(indent);
             GenerateCSharpAccessLevel(contents, classInfo.Access);
             if (classInfo.IsStatic)
@@ -862,11 +946,19 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).Append('}').AppendLine();
 
                 contents.AppendLine();
+#if !USE_NETCORE
                 contents.Append(indent).Append("[MethodImpl(MethodImplOptions.InternalCall)]").AppendLine();
                 contents.Append(indent).Append($"internal static extern void Internal_{eventInfo.Name}_Bind(");
                 if (!eventInfo.IsStatic)
                     contents.Append("IntPtr obj, ");
                 contents.Append("bool bind);");
+#else
+                contents.Append(indent).Append($"[LibraryImport(\"FlaxEngine\", EntryPoint = \"{classInfo.FullNameManaged}::Internal_{eventInfo.Name}_Bind\", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]").AppendLine();
+                contents.Append(indent).Append($"internal static partial void Internal_{eventInfo.Name}_Bind(");
+                if (!eventInfo.IsStatic)
+                    contents.Append("IntPtr obj, ");
+                contents.Append("[MarshalAs(UnmanagedType.U1)] bool bind);");
+#endif
                 contents.AppendLine();
             }
 
@@ -1100,6 +1192,64 @@ namespace Flax.Build.Bindings
             indent = indent.Substring(0, indent.Length - 4);
             contents.AppendLine(indent + "}");
 
+#if USE_NETCORE
+            if (!string.IsNullOrEmpty(marshallerName))
+            {
+                string marshallerDefinition = $$"""
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ManagedToUnmanagedIn, typeof({{marshallerName}}.ManagedToNative))]
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.UnmanagedToManagedOut, typeof({{marshallerName}}.ManagedToNative))]
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ElementIn, typeof({{marshallerName}}.ManagedToNative))]
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ManagedToUnmanagedOut, typeof({{marshallerName}}.NativeToManaged))]
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.UnmanagedToManagedIn, typeof({{marshallerName}}.NativeToManaged))]
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ElementOut, typeof({{marshallerName}}.NativeToManaged))]
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ManagedToUnmanagedRef, typeof({{marshallerName}}.Bidirectional))]
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.UnmanagedToManagedRef, typeof({{marshallerName}}.Bidirectional))]
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ElementRef, typeof({{marshallerName}}))]
+                internal static class {{marshallerName}}
+                {
+                	public static class NativeToManaged
+                	{
+                		public static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => ({{classInfo.Name}})GCHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged);
+                		public static void Free(IntPtr unmanaged)  => GCHandleMarshaller.NativeToManaged.Free(unmanaged);
+                	}
+                	public static class ManagedToNative
+                	{
+                		public static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => GCHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);
+                		public static void Free(IntPtr unmanaged) => GCHandleMarshaller.ManagedToNative.Free(unmanaged);
+                	}
+                	public struct Bidirectional
+                	{
+                		GCHandleMarshaller.Bidirectional marsh;
+                		public void FromManaged({{classInfo.Name}} managed) => marsh.FromManaged(managed);
+                		public IntPtr ToUnmanaged() => marsh.ToUnmanaged();
+                		public void FromUnmanaged(IntPtr unmanaged) => marsh.FromUnmanaged(unmanaged);
+                		public {{classInfo.Name}} ToManaged() => ({{classInfo.Name}})marsh.ToManaged();
+                		public void Free() => marsh.Free();
+                	}
+                	internal static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => ({{classInfo.Name}})GCHandleMarshaller.ConvertToManaged(unmanaged);
+                	internal static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => GCHandleMarshaller.ConvertToUnmanaged(managed);
+                	internal static void Free(IntPtr unmanaged) => GCHandleMarshaller.Free(unmanaged);
+
+                	internal static {{classInfo.Name}} ToManaged(IntPtr managed) => ({{classInfo.Name}})GCHandleMarshaller.ToManaged(managed);
+                	internal static IntPtr ToNative({{classInfo.Name}} managed) => GCHandleMarshaller.ToNative(managed);
+                }
+                """;
+                contents.AppendLine(marshallerDefinition);
+
+                /*contents.AppendLine();
+
+                contents.Append(indent).AppendLine("/// <summary>");
+                contents.Append(indent).AppendLine("/// ");
+                contents.Append(indent).AppendLine("/// </summary>");
+                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({classInfo.Name}), MarshalMode.Default, typeof({marshallerName}))]");
+                contents.Append(indent).AppendLine($"public static class {marshallerName}");
+                contents.Append(indent).AppendLine("{");
+                contents.Append(indent + "    ").AppendLine($"internal static {classInfo.Name} ConvertToManaged(IntPtr unmanaged) => ({classInfo.Name})GCHandleMarshaller.ConvertToManaged(unmanaged);");
+                contents.Append(indent + "    ").AppendLine($"internal static IntPtr ConvertToUnmanaged({classInfo.Name} managed) => GCHandleMarshaller.ConvertToUnmanaged(managed);");
+                contents.Append(indent + "    ").AppendLine("internal static void Free(IntPtr unmanaged) => GCHandleMarshaller.Free(unmanaged);");
+                contents.Append(indent).AppendLine("}");*/
+            }
+#endif
             // Namespace end
             if (!string.IsNullOrEmpty(classInfo.Namespace))
             {
@@ -1119,13 +1269,318 @@ namespace Flax.Build.Bindings
                 contents.AppendLine("{");
                 indent += "    ";
             }
+#if USE_NETCORE
+            // Generate blittable structure
+            string structNativeMarshaling = "";
+            if (UseCustomMarshalling(buildData, structureInfo, structureInfo))
+            {
+                string marshallerName = structureInfo.Name + "Marshaller";
+                structNativeMarshaling = $"[NativeMarshalling(typeof({marshallerName}))]";
 
+                contents.Append(indent).AppendLine($"/// <summary>");
+                contents.Append(indent).AppendLine($"/// Marshaller for unblittable type <see cref=\"{structureInfo.Name}\"/>.");
+                contents.Append(indent).AppendLine($"/// </summary>");
+                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ManagedToUnmanagedIn, typeof({marshallerName}.ManagedToNative))]");
+                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.UnmanagedToManagedOut, typeof({marshallerName}.ManagedToNative))]");
+                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ElementIn, typeof({marshallerName}.ManagedToNative))]");
+                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ManagedToUnmanagedOut, typeof({marshallerName}.NativeToManaged))]");
+                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.UnmanagedToManagedIn, typeof({marshallerName}.NativeToManaged))]");
+                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ElementOut, typeof({marshallerName}.NativeToManaged))]");
+                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ManagedToUnmanagedRef, typeof({marshallerName}.Bidirectional))]");
+                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.UnmanagedToManagedRef, typeof({marshallerName}.Bidirectional))]");
+                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ElementRef, typeof({marshallerName}))]");
+                contents.Append(indent).AppendLine($"internal static unsafe class {marshallerName}");
+                contents.Append(indent).AppendLine("{");
+
+                indent += "    ";
+
+                StringBuilder toManagedContent = new StringBuilder();
+                StringBuilder toNativeContent = new StringBuilder();
+                StringBuilder freeContents = new StringBuilder();
+                StringBuilder freeContents2 = new StringBuilder();
+
+                {
+                    // Native struct begin
+                    GenerateCSharpAttributes(buildData, contents, indent, structureInfo, true);
+                    contents.Append(indent).AppendLine("[StructLayout(LayoutKind.Sequential)]");
+                    contents.Append(indent);
+                    contents.Append("internal struct ").Append(structureInfo.Name).Append("Internal");
+                    if (structureInfo.BaseType != null && structureInfo.IsPod)
+                        contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo { Type = structureInfo.BaseType.Name }, structureInfo));
+                    contents.AppendLine();
+                    contents.Append(indent + "{");
+                    indent += "    ";
+
+                    toNativeContent.Append($"return new {structureInfo.Name}Internal() {{ ");
+                    toManagedContent.Append($"return new {structureInfo.Name}() {{ ");
+
+                    bool useSeparator = false;
+                    foreach (var fieldInfo in structureInfo.Fields)
+                    {
+                        if (fieldInfo.IsStatic || fieldInfo.IsConstexpr)
+                            continue;
+
+                        contents.AppendLine();
+
+                        string type, originalType;
+                        if (fieldInfo.Type.IsArray && (fieldInfo.NoArray || structureInfo.IsPod))
+                        {
+                            // Fixed-size array that needs to be inlined into structure instead of passing it as managed array
+                            fieldInfo.Type.IsArray = false;
+                            originalType = type = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
+                            fieldInfo.Type.IsArray = true;
+                        }
+                        else
+                            originalType = type = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
+
+                        contents.Append(indent);
+                        if (fieldInfo.Access == AccessLevel.Public)
+                            contents.Append("public ");
+                        else if (fieldInfo.Access == AccessLevel.Protected)
+                            contents.Append("protected ");
+                        else if (fieldInfo.Access == AccessLevel.Private)
+                            contents.Append("private ");
+                        if (fieldInfo.IsConstexpr)
+                            contents.Append("const ");
+                        else if (fieldInfo.IsStatic)
+                            contents.Append("static ");
+
+                        var apiType = FindApiTypeInfo(buildData, fieldInfo.Type, structureInfo);
+                        bool internalType = apiType is StructureInfo fieldStructureInfo && UseCustomMarshalling(buildData, fieldStructureInfo, structureInfo);
+                        string internalTypeMarshaler = "";
+
+                        if (fieldInfo.Type.IsArray && (fieldInfo.NoArray || structureInfo.IsPod))
+                        {
+                            contents.Append(type).Append(' ').Append(fieldInfo.Name + "0;").AppendLine();
+                            for (int i = 1; i < fieldInfo.Type.ArraySize; i++)
+                            {
+                                contents.AppendLine();
+                                GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic);
+                                contents.Append(indent);
+                                if (fieldInfo.Access == AccessLevel.Public)
+                                    contents.Append("public ");
+                                else if (fieldInfo.Access == AccessLevel.Protected)
+                                    contents.Append("protected ");
+                                else if (fieldInfo.Access == AccessLevel.Private)
+                                    contents.Append("private ");
+                                if (fieldInfo.IsStatic)
+                                    contents.Append("static ");
+                                contents.Append(type).Append(' ').Append(fieldInfo.Name + i).Append(';').AppendLine();
+                            }
+                        }
+                        else
+                        {
+                            if (fieldInfo.Type.IsObjectRef || fieldInfo.Type.Type == "Dictionary")
+                                type = "IntPtr";
+                            else if (fieldInfo.Type.IsPtr && !originalType.EndsWith("*"))
+                                type = "IntPtr";
+                            else if (fieldInfo.Type.Type == "Array")
+                            {
+                                type = "IntPtr";
+                                apiType = FindApiTypeInfo(buildData, fieldInfo.Type.GenericArgs[0], structureInfo);
+                                internalType = apiType is StructureInfo elementStructureInfo && UseCustomMarshalling(buildData, elementStructureInfo, structureInfo);
+                            }
+                            else if (fieldInfo.Type.Type == "Version")
+                                type = "IntPtr";
+                            else if (type == "string")
+                                type = "IntPtr";
+                            else if (type == "bool")
+                                type = "byte";
+                            else if (type == "object")
+                                type = "VariantNative";
+                            else if (internalType)
+                            {
+                                internalTypeMarshaler = type + "Marshaller";
+                                type = $"{internalTypeMarshaler}.{type}Internal";
+                            }
+                            //else if (type == "Guid")
+                            //    type = "GuidNative";
+
+                            contents.Append(type).Append(' ').Append(fieldInfo.Name);
+                            contents.Append(';').AppendLine();
+                        }
+
+                        // Generate struct constructor/getter and deconstructor/setter function
+                        if (fieldInfo.NoArray && fieldInfo.Type.IsArray)
+                            continue;
+
+                        if (type == "VariantNative")
+                            continue; // FIXME
+
+                        if (useSeparator)
+                        {
+                            toManagedContent.Append(", ");
+                            toNativeContent.Append(", ");
+                            freeContents2.Append("");
+                            freeContents.Append("");
+                        }
+                        useSeparator = true;
+
+                        toManagedContent.Append(fieldInfo.Name);
+                        toManagedContent.Append(" = ");
+
+                        toNativeContent.Append(fieldInfo.Name);
+                        toNativeContent.Append(" = ");
+
+                        if (fieldInfo.Type.IsObjectRef)
+                        {
+                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? ({fieldInfo.Type.GenericArgs[0].Type})GCHandle.FromIntPtr(managed.{fieldInfo.Name}).Target : null");
+                            toNativeContent.Append($"managed.{fieldInfo.Name} != null ? GCHandle.ToIntPtr(GCHandle.Alloc(managed.{fieldInfo.Name}, GCHandleType.Weak)) : IntPtr.Zero");
+                            freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
+
+                            // ScriptingObject handle is passed from native side, do not release it
+                            //freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
+                        }
+                        else if (fieldInfo.Type.Type == "ScriptingObject")
+                        {
+                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? (FlaxEngine.Object)GCHandle.FromIntPtr(managed.{fieldInfo.Name}).Target : null");
+                            toNativeContent.Append($"managed.{fieldInfo.Name} != null ? GCHandle.ToIntPtr(GCHandle.Alloc(managed.{fieldInfo.Name}, GCHandleType.Weak)) : IntPtr.Zero");
+                            freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
+                            freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
+                        }
+                        else if (fieldInfo.Type.IsPtr && originalType != "IntPtr" && !originalType.EndsWith("*"))
+                        {
+                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? ({originalType})GCHandle.FromIntPtr(managed.{fieldInfo.Name}).Target : null");
+                            toNativeContent.Append($"managed.{fieldInfo.Name} != null ? GCHandle.ToIntPtr(GCHandle.Alloc(managed.{fieldInfo.Name}, GCHandleType.Weak)) : IntPtr.Zero");
+                            freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
+                            freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
+                        }
+                        else if (fieldInfo.Type.Type == "Dictionary")
+                        {
+                            string dictionaryArgs = String.Join(", ",
+                                fieldInfo.Type.GenericArgs.Select(x => CSharpNativeToManagedBasicTypes.ContainsKey(x.Type) ? CSharpNativeToManagedBasicTypes[x.Type] : x.Type).ToArray());
+                            toManagedContent.Append(
+                                $"managed.{fieldInfo.Name} != IntPtr.Zero ? (System.Collections.Generic.{fieldInfo.Type.Type}<{dictionaryArgs}>)GCHandle.FromIntPtr(managed.{fieldInfo.Name}).Target : null");
+                            toNativeContent.Append(
+                                $"GCHandle.ToIntPtr(GCHandle.Alloc(managed.{fieldInfo.Name}, GCHandleType.Weak))");
+                            freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
+                            freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
+                        }
+                        else if (fieldInfo.Type.Type == "Array")
+                        {
+                            if (internalType)
+                            {
+                                string originalElementType = originalType.Substring(0, originalType.Length - 2);
+                                string originalElementTypeMarshaller = originalElementType + "Marshaller";
+                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.NativeArrayToManagedArray<{originalElementType}, {originalElementTypeMarshaller}.{originalElementType}Internal>(((ManagedArray)GCHandle.FromIntPtr(managed.{fieldInfo.Name}).Target).array as {originalElementTypeMarshaller}.{originalElementType}Internal[], {originalElementTypeMarshaller}.ToManaged) : null");
+                                toNativeContent.Append($"GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.Get(managed.{fieldInfo.Name}), GCHandleType.Weak))");
+                            }
+                            else if (fieldInfo.Type.GenericArgs[0].IsObjectRef)
+                            {
+                                string originalElementType = originalType.Substring(0, originalType.Length - 2);
+                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.GCHandleArrayToManagedArray<{originalElementType}>((ManagedArray)GCHandle.FromIntPtr(managed.{fieldInfo.Name}).Target) : null");
+                                toNativeContent.Append($"managed.{fieldInfo.Name}?.Length > 0 ? GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.Get(NativeInterop.ManagedArrayToGCHandleArray(managed.{fieldInfo.Name})), GCHandleType.Weak)) : IntPtr.Zero");
+                            }
+                            else
+                            {
+                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? ({originalType})(((ManagedArray)GCHandle.FromIntPtr(managed.{fieldInfo.Name}).Target).array) : null");
+                                toNativeContent.Append($"managed.{fieldInfo.Name}?.Length > 0 ? GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.Get(managed.{fieldInfo.Name}), GCHandleType.Weak)) : IntPtr.Zero");
+                            }
+                            freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle handle = GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Unsafe.Unbox<ManagedArray>(handle.Target).Release(); handle.Free(); }}");
+                            freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle handle = GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Unsafe.Unbox<ManagedArray>(handle.Target).Release(); handle.Free(); }}");
+                        }
+                        else if (fieldInfo.Type.Type == "Version")
+                        {
+                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? ({originalType})GCHandle.FromIntPtr(managed.{fieldInfo.Name}).Target : null");
+                            toNativeContent.Append($"GCHandle.ToIntPtr(GCHandle.Alloc(managed.{fieldInfo.Name}, GCHandleType.Weak))");
+                            freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
+                            freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
+                        }
+                        else if (originalType == "string")
+                        {
+                            toManagedContent.Append($"ManagedString.ToManaged(managed.{fieldInfo.Name})");
+                            toNativeContent.Append($"ManagedString.ToNative(managed.{fieldInfo.Name})");
+                            freeContents.AppendLine($"ManagedString.Free(unmanaged.{fieldInfo.Name});");
+                            freeContents2.AppendLine($"ManagedString.Free(unmanaged.{fieldInfo.Name});");
+                        }
+                        else if (originalType == "bool")
+                        {
+                            toManagedContent.Append($"managed.{fieldInfo.Name} != 0");
+                            toNativeContent.Append($"managed.{fieldInfo.Name} ? (byte)1 : (byte)0");
+                        }
+                        else if (internalType)
+                        {
+                            toManagedContent.Append($"{internalTypeMarshaler}.ToManaged(managed.{fieldInfo.Name})");
+                            toNativeContent.Append($"{internalTypeMarshaler}.ToNative(managed.{fieldInfo.Name})");
+                            freeContents.AppendLine($"{internalTypeMarshaler}.Free(unmanaged.{fieldInfo.Name});");
+                            freeContents2.AppendLine($"{internalTypeMarshaler}.Free(unmanaged.{fieldInfo.Name});");
+                        }
+                        /*else if (originalType == "Guid")
+                        {
+                            toManagedContent.Append("(Guid)managed.").Append(fieldInfo.Name);
+                            toNativeContent.Append("(GuidNative)managed.").Append(fieldInfo.Name);
+                        }*/
+                        else
+                        {
+                            toManagedContent.Append("managed.").Append(fieldInfo.Name);
+                            toNativeContent.Append("managed.").Append(fieldInfo.Name);
+                        }
+                    }
+
+                    // Native struct end
+                    indent = indent.Substring(0, indent.Length - 4);
+                    contents.AppendLine(indent + "}").AppendLine();
+
+                    toManagedContent.AppendLine(" };");
+                    toNativeContent.AppendLine(" };");
+                }
+
+                var indent2 = indent + "    ";
+                var indent3 = indent2 + "    ";
+
+                // NativeToManaged stateless shape
+                // NOTE: GCHandles of FlaxEngine.Object must not be released in this case
+                contents.Append(indent).AppendLine($"public static class NativeToManaged").Append(indent).AppendLine("{");
+                contents.Append(indent2).AppendLine($"public static {structureInfo.Name} ConvertToManaged({structureInfo.Name}Internal unmanaged) => {marshallerName}.ToManaged(unmanaged);");
+                contents.Append(indent2).AppendLine($"public static void Free({structureInfo.Name}Internal unmanaged)");
+                contents.Append(indent2).AppendLine("{").Append(indent3).AppendLine(freeContents2.Replace("\n", "\n" + indent3).ToString().TrimEnd()).Append(indent2).AppendLine("}");
+                contents.Append(indent).AppendLine("}");
+
+                // ManagedToNative stateless shape
+                contents.Append(indent).AppendLine($"public static class ManagedToNative").Append(indent).AppendLine("{");
+                contents.Append(indent2).AppendLine($"public static {structureInfo.Name}Internal ConvertToUnmanaged({structureInfo.Name} managed) => {marshallerName}.ToNative(managed);");
+                contents.Append(indent2).AppendLine($"public static void Free({structureInfo.Name}Internal unmanaged) => {marshallerName}.Free(unmanaged);");
+                contents.Append(indent).AppendLine("}");
+
+                // Bidirectional stateful shape
+                // NOTE: GCHandles of FlaxEngine.Object must not be released unless they were allocated by this marshaller
+                contents.Append(indent).AppendLine($"public struct Bidirectional").Append(indent).AppendLine("{");
+                contents.Append(indent2).AppendLine($"{structureInfo.Name} managed;");
+                contents.Append(indent2).AppendLine($"{structureInfo.Name}Internal? unmanaged;");
+                contents.Append(indent2).AppendLine($"public void FromManaged({structureInfo.Name} managed) {{ this.managed = managed; }}");
+                contents.Append(indent2).AppendLine($"public {structureInfo.Name}Internal ToUnmanaged() {{ unmanaged = {marshallerName}.ToNative(managed); return unmanaged.Value; }}");
+                //contents.Append(indent2).AppendLine($"public void FromUnmanaged({structureInfo.Name}Internal unmanaged) {{ {marshallerName}.Free(this.unmanaged.Value); this.unmanaged = unmanaged; }}");
+                contents.Append(indent2).AppendLine($"public void FromUnmanaged({structureInfo.Name}Internal unmanaged) {{ this.unmanaged = unmanaged; }}");
+                contents.Append(indent2).AppendLine($"public {structureInfo.Name} ToManaged() {{ managed = {marshallerName}.ToManaged(unmanaged.Value); unmanaged = null; return managed; }}");
+                contents.Append(indent2).AppendLine($"public void Free() {{ if (unmanaged.HasValue) {{ NativeToManaged.Free(unmanaged.Value); unmanaged = null; }} }}");
+                contents.Append(indent).AppendLine("}");
+
+                // Bidirectional stateless shape
+                contents.Append(indent).AppendLine($"internal static {structureInfo.Name} ConvertToManaged({structureInfo.Name}Internal unmanaged) => ToManaged(unmanaged);");
+                contents.Append(indent).AppendLine($"internal static {structureInfo.Name}Internal ConvertToUnmanaged({structureInfo.Name} managed) => ToNative(managed);");
+                contents.Append(indent).AppendLine($"internal static void Free({structureInfo.Name}Internal unmanaged)");
+                contents.Append(indent).AppendLine("{").Append(indent2).AppendLine(freeContents.Replace("\n", "\n" + indent2).ToString().TrimEnd()).Append(indent).AppendLine("}");
+
+                // Managed/native converters
+                contents.Append(indent).AppendLine($"internal static {structureInfo.Name} ToManaged({structureInfo.Name}Internal managed)");
+                contents.Append(indent).AppendLine("{").Append(indent2).AppendLine(toManagedContent.Replace("\n", "\n" + indent2).ToString().TrimEnd()).Append(indent).AppendLine("}");
+                contents.Append(indent).AppendLine($"internal static {structureInfo.Name}Internal ToNative({structureInfo.Name} managed)");
+                contents.Append(indent).AppendLine("{").Append(indent2).AppendLine(toNativeContent.Replace("\n", "\n" + indent2).ToString().TrimEnd()).Append(indent).AppendLine("}");
+
+                indent = indent.Substring(0, indent.Length - 4);
+                contents.Append(indent).AppendLine("}");
+            }
+#endif
             // Struct docs
             GenerateCSharpComment(contents, indent, structureInfo.Comment);
 
             // Struct begin
             GenerateCSharpAttributes(buildData, contents, indent, structureInfo, true);
             contents.Append(indent).AppendLine("[StructLayout(LayoutKind.Sequential)]");
+#if USE_NETCORE
+            if (!string.IsNullOrEmpty(structNativeMarshaling))
+                contents.Append(indent).AppendLine(structNativeMarshaling);
+#endif
             contents.Append(indent);
             GenerateCSharpAccessLevel(contents, structureInfo.Access);
             contents.Append("unsafe partial struct ").Append(structureInfo.Name);
@@ -1142,6 +1597,12 @@ namespace Flax.Build.Bindings
                 contents.AppendLine();
                 GenerateCSharpComment(contents, indent, fieldInfo.Comment);
                 GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic, fieldInfo.DefaultValue, fieldInfo.Type);
+#if USE_NETCORE
+                if (fieldInfo.Type.Type == "String")
+                    contents.Append(indent).AppendLine("[MarshalAs(UnmanagedType.LPWStr)]");
+                else if (fieldInfo.Type.Type == "bool")
+                    contents.Append(indent).AppendLine("[MarshalAs(UnmanagedType.U1)]");
+#endif
                 contents.Append(indent);
                 GenerateCSharpAccessLevel(contents, fieldInfo.Access);
                 if (fieldInfo.IsConstexpr)
@@ -1153,21 +1614,32 @@ namespace Flax.Build.Bindings
 
                 if (fieldInfo.Type.IsArray && (fieldInfo.NoArray || structureInfo.IsPod))
                 {
-                    // Fixed-size array that needs to be inlined into structure instead of passing it as managed array
                     fieldInfo.Type.IsArray = false;
                     type = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
                     fieldInfo.Type.IsArray = true;
-                    contents.Append(type).Append(' ').Append(fieldInfo.Name + "0;").AppendLine();
-                    for (int i = 1; i < fieldInfo.Type.ArraySize; i++)
+#if USE_NETCORE
+                    // Use fixed statement with primitive types of buffers
+                    if (type == "char")
                     {
-                        contents.AppendLine();
-                        GenerateCSharpComment(contents, indent, fieldInfo.Comment);
-                        GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic);
-                        contents.Append(indent);
-                        GenerateCSharpAccessLevel(contents, fieldInfo.Access);
-                        if (fieldInfo.IsStatic)
-                            contents.Append("static ");
-                        contents.Append(type).Append(' ').Append(fieldInfo.Name + i).Append(';').AppendLine();
+                        // char's are not blittable, store as short instead
+                        contents.Append($"fixed short {fieldInfo.Name}0[{fieldInfo.Type.ArraySize}]; // {type}*").AppendLine();
+                    }
+                    else
+#endif
+                    {
+                        // Padding in structs for fixed-size array
+                        contents.Append(type).Append(' ').Append(fieldInfo.Name + "0;").AppendLine();
+                        for (int i = 1; i < fieldInfo.Type.ArraySize; i++)
+                        {
+                            contents.AppendLine();
+                            GenerateCSharpComment(contents, indent, fieldInfo.Comment);
+                            GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic);
+                            contents.Append(indent);
+                            GenerateCSharpAccessLevel(contents, fieldInfo.Access);
+                            if (fieldInfo.IsStatic)
+                                contents.Append("static ");
+                            contents.Append(type).Append(' ').Append(fieldInfo.Name + i).Append(';').AppendLine();
+                        }
                     }
                     continue;
                 }
@@ -1393,6 +1865,23 @@ namespace Flax.Build.Bindings
             contents.AppendLine(indent + "}");
             if (!string.IsNullOrEmpty(interfaceInfo.Namespace))
                 contents.AppendLine("}");
+#if USE_NETCORE
+            {
+                string marshallerName = interfaceInfo.Name + "Marshaller";
+                contents.AppendLine();
+
+                contents.Append(indent).AppendLine("/// <summary>");
+                contents.Append(indent).AppendLine("/// ");
+                contents.Append(indent).AppendLine("/// </summary>");
+                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({interfaceInfo.Name}), MarshalMode.Default, typeof({marshallerName}))]");
+                contents.Append(indent).AppendLine($"internal static class {marshallerName}");
+                contents.Append(indent).AppendLine("{");
+                contents.Append(indent + "    ").AppendLine($"internal static {interfaceInfo.Name} ConvertToManaged(IntPtr unmanaged) => ({interfaceInfo.Name})GCHandleMarshaller.ConvertToManaged(unmanaged);");
+                contents.Append(indent + "    ").AppendLine($"internal static IntPtr ConvertToUnmanaged({interfaceInfo.Name} managed) => GCHandleMarshaller.ConvertToUnmanaged(managed);");
+                contents.Append(indent + "    ").AppendLine("internal static void Free(IntPtr unmanaged) => GCHandleMarshaller.Free(unmanaged);");
+                contents.Append(indent).AppendLine("}");
+            }
+#endif
         }
 
         private static bool GenerateCSharpType(BuildData buildData, StringBuilder contents, string indent, object type)
@@ -1456,6 +1945,9 @@ namespace Flax.Build.Bindings
             CSharpUsedNamespaces.Add("System.Globalization");
             CSharpUsedNamespaces.Add("System.Runtime.CompilerServices");
             CSharpUsedNamespaces.Add("System.Runtime.InteropServices");
+#if USE_NETCORE
+            CSharpUsedNamespaces.Add("System.Runtime.InteropServices.Marshalling");
+#endif
             CSharpUsedNamespaces.Add("FlaxEngine");
 
             // Process all API types from the file

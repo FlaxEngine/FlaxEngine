@@ -15,7 +15,9 @@ namespace FlaxEngine
         /// <param name="customActors">The custom set of actors to render. If empty, the loaded scenes will be rendered.</param>
         public static void DrawSceneDepth(GPUContext context, SceneRenderTask task, GPUTexture output, List<Actor> customActors)
         {
-            Internal_DrawSceneDepth(FlaxEngine.Object.GetUnmanagedPtr(context), FlaxEngine.Object.GetUnmanagedPtr(task), FlaxEngine.Object.GetUnmanagedPtr(output), Utils.ExtractArrayFromList(customActors));
+            var temp = Utils.ExtractArrayFromList(customActors);
+            var tempCount = temp.Length;
+            Internal_DrawSceneDepth(FlaxEngine.Object.GetUnmanagedPtr(context), FlaxEngine.Object.GetUnmanagedPtr(task), FlaxEngine.Object.GetUnmanagedPtr(output), ref temp, ref tempCount);
         }
     }
 }

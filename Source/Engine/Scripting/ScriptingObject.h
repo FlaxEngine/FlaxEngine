@@ -21,7 +21,7 @@ public:
 
 protected:
 
-    uint32 _gcHandle;
+    gchandle _gcHandle;
     ScriptingTypeHandle _type;
     Guid _id;
 

@@ -8,6 +8,7 @@ using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Utilities;
 using FlaxEngine;
+using FlaxEngine.Utilities;
 using Utils = FlaxEditor.Utilities.Utils;
 
 namespace FlaxEditor.Surface

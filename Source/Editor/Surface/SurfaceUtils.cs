@@ -10,6 +10,7 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.Scripting;
 using FlaxEditor.Utilities;
+using FlaxEngine.Utilities;
 using FlaxEngine;
 
 namespace FlaxEditor.Surface

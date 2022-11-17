@@ -445,7 +445,7 @@ namespace FlaxEditor.Windows
             int logCount;
             do
             {
-                logCount = Editor.Internal_ReadOutputLogs(_outMessages, _outLogTypes, _outLogTimes);
+                logCount = Editor.Internal_ReadOutputLogs(ref _outMessages, ref _outLogTypes, ref _outLogTimes, OutCapacity);
 
                 for (int i = 0; i < logCount; i++)
                 {

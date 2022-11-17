@@ -13,6 +13,7 @@
 #include "Engine/Threading/MainThreadTask.h"
 #include "Engine/Threading/ConcurrentTaskQueue.h"
 #if USE_MONO
+#include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include <ThirdParty/mono-2.0/mono/metadata/mono-gc.h>
 #endif
 
@@ -270,7 +271,7 @@ void Asset::OnManagedInstanceDeleted()
     if (_gcHandle)
     {
 #if USE_MONO
-        mono_gchandle_free(_gcHandle);
+        MUtils::FreeGCHandle(_gcHandle);
 #endif
         _gcHandle = 0;
     }

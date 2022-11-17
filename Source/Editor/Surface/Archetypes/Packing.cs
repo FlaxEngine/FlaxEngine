@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
+using FlaxEngine.Utilities;
 using FlaxEngine;
 
 namespace FlaxEditor.Surface.Archetypes
@@ -167,7 +168,7 @@ namespace FlaxEditor.Surface.Archetypes
                             for (int i = 0; i < fieldsLength; i++)
                             {
                                 Utilities.Utils.WriteStr(writer, fields[i].Name, 11); // Field type
-                                Utilities.VariantUtils.WriteVariantType(writer, fields[i].ValueType); // Field type
+                                VariantUtils.WriteVariantType(writer, fields[i].ValueType); // Field type
                             }
                             Values[1] = stream.ToArray();
                         }
@@ -184,7 +185,7 @@ namespace FlaxEditor.Surface.Archetypes
                         for (int i = 0; i < fieldsLength; i++)
                         {
                             var fieldName = Utilities.Utils.ReadStr(reader, 11); // Field name
-                            var fieldType = Utilities.VariantUtils.ReadVariantType(reader); // Field type
+                            var fieldType = VariantUtils.ReadVariantType(reader); // Field type
                             MakeBox(i + 1, fieldName, new ScriptType(fieldType));
                         }
                     }

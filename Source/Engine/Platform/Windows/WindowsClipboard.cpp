@@ -16,6 +16,7 @@ typedef struct _DROPFILES
 
 void WindowsClipboard::Clear()
 {
+    SCRIPTING_EXPORT("FlaxEngine.Clipboard::Internal_Clear");
     OpenClipboard(nullptr);
     EmptyClipboard();
     CloseClipboard();

@@ -14,6 +14,11 @@
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
+#if USE_NETCORE
+#include "Engine/Scripting/DotNet/CoreCLR.h"
+#include "Engine/Core/Collections/BitArray.h"
+#endif
+
 struct Version;
 
 namespace MUtils
@@ -53,6 +58,19 @@ struct MConverter
     void ToNativeArray(Array<T, AllocationType>& result, MonoArray* data, int32 length);
 };
 
+#if USE_NETCORE
+// Pass-through converter for ScriptingObjects (passed as GCHandles)
+template<>
+struct MConverter<void*>
+{
+    void Unbox(void*& result, MonoObject* data)
+    {
+        CHECK(data);
+        result = data;
+    }
+};
+#endif
+
 // Converter for POD types (that can use raw memory copy).
 template<typename T>
 struct MConverter<T, typename TEnableIf<TAnd<TIsPODType<T>, TNot<TIsBaseOf<class ScriptingObject, typename TRemovePointer<T>::Type>>>::Value>::Type>
@@ -86,12 +104,22 @@ struct MConverter<String>
 {
     MonoObject* Box(const String& data, MonoClass* klass)
     {
+#if USE_NETCORE
+        MonoString* str = MUtils::ToString(data);
+        return mono_value_box(nullptr, klass, str);
+#else
         return (MonoObject*)MUtils::ToString(data);
+#endif
     }
 
     void Unbox(String& result, MonoObject* data)
     {
+#if USE_NETCORE
+        MonoString* str = (MonoString*)mono_object_unbox(data);
+        result = MUtils::ToString(str);
+#else
         result = MUtils::ToString((MonoString*)data);
+#endif
     }
 
     void ToManagedArray(MonoArray* result, const Span<String>& data)
@@ -562,6 +590,72 @@ namespace MUtils
     FORCE_INLINE MonoArray* ToArray(const Array<String>& data)
     {
         return ToArray(Span<String>(data.Get(), data.Count()), mono_get_string_class());
+    }
+
+#if USE_NETCORE
+    /// <summary>
+    /// Allocates new boolean array and copies data from the given unmanaged data container.
+    /// The managed runtime is responsible for releasing the returned array data.
+    /// </summary>
+    /// <param name="data">The input data.</param>
+    /// <returns>The output array.</returns>
+    FORCE_INLINE bool* ToBoolArray(const Array<bool>& data)
+    {
+        bool* arr = (bool*)CoreCLR::Allocate(data.Count() * sizeof(bool));
+        memcpy(arr, data.Get(), data.Count() * sizeof(bool));
+        return arr;
+    }
+
+    /// <summary>
+    /// Allocates new boolean array and copies data from the given unmanaged data container.
+    /// The managed runtime is responsible for releasing the returned array data.
+    /// </summary>
+    /// <param name="data">The input data.</param>
+    /// <returns>The output array.</returns>
+    FORCE_INLINE bool* ToBoolArray(const BitArray<>& data)
+    {
+        bool* arr = (bool*)CoreCLR::Allocate(data.Count() * sizeof(bool));
+        //memcpy(arr, data.Get(), data.Count() * sizeof(bool));
+        for (int i = 0; i < data.Count(); i++)
+            arr[i] = data[i];
+        return arr;
+    }
+#endif
+
+    FORCE_INLINE gchandle NewGCHandle(MonoObject* obj, bool pinned)
+    {
+#if USE_NETCORE
+        return CoreCLR::NewGCHandle(obj, pinned);
+#else
+        return mono_gchandle_new(obj, pinned);
+#endif
+    }
+
+    FORCE_INLINE gchandle NewGCHandleWeakref(MonoObject* obj, bool track_resurrection)
+    {
+#if USE_NETCORE
+        return CoreCLR::NewGCHandleWeakref(obj, track_resurrection);
+#else
+        return mono_gchandle_new_weak_ref(obj, track_resurrection);
+#endif
+    }
+
+    FORCE_INLINE MonoObject* GetGCHandleTarget(const gchandle& handle)
+    {
+#if USE_NETCORE
+        return (MonoObject*)CoreCLR::GetGCHandleTarget(handle);
+#else
+        return mono_gchandle_get_target(handle);
+#endif
+    }
+
+    FORCE_INLINE void FreeGCHandle(const gchandle& handle)
+    {
+#if USE_NETCORE
+        CoreCLR::FreeGCHandle(handle);
+#else
+        mono_gchandle_free(handle);
+#endif
     }
 
     extern void* VariantToManagedArgPtr(Variant& value, const MType& type, bool& failed);

@@ -440,6 +440,13 @@ namespace Flax.Build.Bindings
                 // Array or Span or DataContainer
                 if ((typeInfo.Type == "Array" || typeInfo.Type == "Span" || typeInfo.Type == "DataContainer") && typeInfo.GenericArgs != null)
                 {
+#if USE_NETCORE
+                    if (typeInfo.GenericArgs[0].Type == "bool")
+                    {
+                        type = "bool*";
+                        return "MUtils::ToBoolArray({0})";
+                    }
+#endif
                     type = "MonoArray*";
                     return "MUtils::ToArray({0}, " + GenerateCppGetNativeClass(buildData, typeInfo.GenericArgs[0], caller, functionInfo) + ")";
                 }
@@ -472,8 +479,13 @@ namespace Flax.Build.Bindings
                 if (typeInfo.Type == "BitArray" && typeInfo.GenericArgs != null)
                 {
                     CppIncludeFiles.Add("Engine/Scripting/InternalCalls/ManagedBitArray.h");
+#if USE_NETCORE
+                    type = "bool*";
+                    return "MUtils::ToBoolArray({0})";
+#else
                     type = "MonoObject*";
                     return "ManagedBitArray::ToManaged({0})";
+#endif
                 }
 
                 // Function
@@ -817,6 +829,7 @@ namespace Flax.Build.Bindings
                 return true;
             if (typeInfo.IsPtr || typeInfo.IsRef || typeInfo.IsArray || typeInfo.IsBitField || (typeInfo.GenericArgs != null && typeInfo.GenericArgs.Count != 0))
                 return false;
+#if !USE_NETCORE
             if (CSharpNativeToManagedBasicTypes.ContainsKey(typeInfo.Type) || CSharpNativeToManagedBasicTypes.ContainsValue(typeInfo.Type))
                 return true;
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
@@ -825,6 +838,7 @@ namespace Flax.Build.Bindings
                 if (apiType.IsEnum)
                     return true;
             }
+#endif
             return false;
         }
 
@@ -880,7 +894,38 @@ namespace Flax.Build.Bindings
                     },
                     IsOut = true,
                 });
+#if USE_NETCORE
+                if (functionInfo.ReturnType.Type == "Array" || functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "DataContainer")
+                {
+                    functionInfo.Glue.UseResultReferenceCount = true;
+                    functionInfo.Glue.CustomParameters.Add(new FunctionInfo.ParameterInfo
+                    {
+                        Name = "resultAsRefCount",
+                        DefaultValue = "var resultAsRefCount",
+                        Type = new TypeInfo
+                        {
+                            Type = "int"
+                        },
+                        IsOut = true,
+                    });
+                }
+#endif
             }
+#if USE_NETCORE
+            else if (functionInfo.ReturnType.Type == "BitArray" || functionInfo.ReturnType.Type == "BytesContainer")//returnValueType == "byte[]")
+            {
+                functionInfo.Glue.CustomParameters.Add(new FunctionInfo.ParameterInfo
+                {
+                    Name = "returnCount",
+                    DefaultValue = "var returnCount",
+                    Type = new TypeInfo
+                    {
+                        Type = "int"
+                    },
+                    IsOut = true,
+                });
+            }
+#endif
 
             CppInternalCalls.Add(new KeyValuePair<string, string>(functionInfo.UniqueName, functionInfo.UniqueName));
             contents.AppendFormat("    static {0} {1}(", returnValueType, functionInfo.UniqueName);
@@ -945,6 +990,23 @@ namespace Flax.Build.Bindings
                         CppParamsThatNeedConversionWrappers[i] = GenerateCppWrapperNativeToManaged(buildData, parameterInfo.Type, caller, out CppParamsThatNeedConversionTypes[i], functionInfo);
                     }
                 }
+#if USE_NETCORE
+                if (parameterInfo.Type.IsArray || parameterInfo.Type.Type == "Array" || parameterInfo.Type.Type == "Span" || parameterInfo.Type.Type == "BytesContainer" || parameterInfo.Type.Type == "DataContainer" || parameterInfo.Type.Type == "BitArray")
+                {
+                    // We need additional output parameters for array sizes
+                    functionInfo.Glue.CustomParameters.Add(new FunctionInfo.ParameterInfo
+                    {
+                        Name = parameterInfo.Name + "Count",
+                        DefaultValue = parameterInfo.IsOut ? "int _" : parameterInfo.Name + "Count",
+                        Type = new TypeInfo
+                        {
+                            Type = "int"
+                        },
+                        IsOut = parameterInfo.IsOut,
+                        IsRef = isRefOut || parameterInfo.Type.IsRef,
+                    });
+                }
+#endif
             }
 
             for (var i = 0; i < functionInfo.Glue.CustomParameters.Count; i++)
@@ -965,6 +1027,9 @@ namespace Flax.Build.Bindings
             contents.Append(')');
             contents.AppendLine();
             contents.AppendLine("    {");
+#if USE_NETCORE
+            contents.AppendLine(String.Format("        SCRIPTING_EXPORT(\"{0}\")", caller.FullNameManaged + "::Internal_" + functionInfo.UniqueName));
+#endif
             if (!functionInfo.IsStatic)
                 contents.AppendLine("        if (obj == nullptr) DebugLog::ThrowNullReference();");
 
@@ -981,6 +1046,17 @@ namespace Flax.Build.Bindings
                     callBegin += "auto __result = ";
             }
 
+#if USE_NETCORE
+            string callBegin2 = "";
+            if (functionInfo.Glue.UseResultReferenceCount)
+            {
+                callBegin2 = "        ";
+                if (functionInfo.ReturnType.Type == "Span")
+                    callBegin2 += "*resultAsRefCount = {0}.Length();";
+                else
+                    callBegin2 += "*resultAsRefCount = {0}.Count();";
+            }
+#endif
             string call;
             if (functionInfo.IsStatic)
             {
@@ -1017,6 +1093,16 @@ namespace Flax.Build.Bindings
                 }
                 else
                 {
+#if USE_NETCORE
+                    // FIXME
+                    if (parameterInfo.Type.Type == "Span" ||
+                        parameterInfo.Type.Type == "Array" ||
+                        parameterInfo.Type.Type == "DataContainer" ||
+                        parameterInfo.Type.Type == "Dictionary")
+                    {
+                        name = '*' + name;
+                    }
+#endif
                     // Convert value
                     param += string.Format(CppParamsWrappersCache[i], name);
                 }
@@ -1059,8 +1145,20 @@ namespace Flax.Build.Bindings
                 }
             }
 
-            contents.Append(callBegin);
-            call = string.Format(callFormat, call, callParams);
+#if USE_NETCORE
+            if (!string.IsNullOrEmpty(callBegin2))
+            {
+                contents.Append("        ").Append("auto& callTemp = ").Append(string.Format(callFormat, call, callParams)).Append(";").AppendLine();
+                call = "callTemp";
+                contents.Append(callBegin);
+                callBegin2 = string.Format(callBegin2, call);
+            }
+            else
+#endif
+            {
+                contents.Append(callBegin);
+                call = string.Format(callFormat, call, callParams);
+            }
             if (!string.IsNullOrEmpty(returnValueConvert))
             {
                 contents.AppendFormat(returnValueConvert, call);
@@ -1072,6 +1170,13 @@ namespace Flax.Build.Bindings
 
             contents.Append(';');
             contents.AppendLine();
+#if USE_NETCORE
+            if (!string.IsNullOrEmpty(callBegin2))
+            {
+                contents.Append(callBegin2);
+                contents.AppendLine();
+            }
+#endif
 
             // Convert special parameters back to managed world
             if (!useInlinedReturn)
@@ -1094,6 +1199,12 @@ namespace Flax.Build.Bindings
                                 if (apiType.IsClass)
                                 {
                                     contents.AppendFormat("        mono_gc_wbarrier_generic_store({0}, (MonoObject*){1});", parameterInfo.Name, value).AppendLine();
+#if USE_NETCORE
+                                    if (parameterInfo.Type.Type == "Array")
+                                    {
+                                        contents.AppendFormat("        *{0}Count = {1}.Count();", parameterInfo.Name, parameterInfo.Name + "Temp").AppendLine();
+                                    }
+#endif
                                     continue;
                                 }
                                 if (apiType.IsStruct && !apiType.IsPod)
@@ -1109,9 +1220,10 @@ namespace Flax.Build.Bindings
                                 if (parameterInfo.Type.Type == "BytesContainer" && parameterInfo.Type.GenericArgs == null)
                                 {
                                     contents.AppendFormat("        mono_gc_wbarrier_generic_store({0}, (MonoObject*){1});", parameterInfo.Name, value).AppendLine();
+                                    contents.AppendFormat("        *{0}Count = {1}.Length();", parameterInfo.Name, parameterInfo.Name + "Temp").AppendLine();
                                     continue;
                                 }
-
+                                
                                 throw new Exception($"Unsupported type of parameter '{parameterInfo}' in method '{functionInfo}' to be passed using 'out'");
                             }
                         }
@@ -1646,6 +1758,9 @@ namespace Flax.Build.Bindings
                         contents.AppendFormat("{0}* obj, ", classTypeNameNative);
                     contents.Append("bool bind)").AppendLine();
                     contents.Append("    {").AppendLine();
+#if USE_NETCORE
+                    contents.AppendLine(String.Format("        SCRIPTING_EXPORT(\"{0}\")", classTypeNameManagedInternalCall + "::Internal_" + eventInfo.Name + "_Bind"));
+#endif
                     contents.Append("        Function<void(");
                     for (var i = 0; i < paramsCount; i++)
                     {
@@ -2276,6 +2391,9 @@ namespace Flax.Build.Bindings
             contents.AppendLine("#include \"Engine/Scripting/Scripting.h\"");
             contents.AppendLine("#include \"Engine/Scripting/InternalCalls.h\"");
             contents.AppendLine("#include \"Engine/Scripting/ManagedCLR/MUtils.h\"");
+#if USE_NETCORE
+            contents.AppendLine("#include \"Engine/Scripting/DotNet/CoreCLR.h\"");
+#endif
             contents.AppendLine($"#include \"{moduleInfo.Name}.Gen.h\"");
             for (int i = 0; i < moduleInfo.Children.Count; i++)
             {

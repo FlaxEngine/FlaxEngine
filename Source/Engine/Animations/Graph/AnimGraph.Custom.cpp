@@ -13,8 +13,8 @@
 #include "Engine/Content/Assets/SkinnedModel.h"
 
 #if USE_MONO
-
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#endif
 
 struct InternalInitData
 {
@@ -52,6 +52,7 @@ namespace AnimGraphInternal
 {
     bool HasConnection(InternalContext* context, int32 boxId)
     {
+        SCRIPTING_EXPORT("FlaxEngine.AnimationGraph::Internal_HasConnection")
         const auto box = context->Node->TryGetBox(boxId);
         if (box == nullptr)
             DebugLog::ThrowArgumentOutOfRange("boxId");
@@ -60,6 +61,7 @@ namespace AnimGraphInternal
 
     MonoObject* GetInputValue(InternalContext* context, int32 boxId)
     {
+        SCRIPTING_EXPORT("FlaxEngine.AnimationGraph::Internal_GetInputValue")
         const auto box = context->Node->TryGetBox(boxId);
         if (box == nullptr)
             DebugLog::ThrowArgumentOutOfRange("boxId");
@@ -77,13 +79,12 @@ namespace AnimGraphInternal
 
     AnimGraphImpulse* GetOutputImpulseData(InternalContext* context)
     {
+        SCRIPTING_EXPORT("FlaxEngine.AnimationGraph::Internal_GetOutputImpulseData")
         const auto nodes = context->Node->GetNodes(context->GraphExecutor);
         context->GraphExecutor->InitNodes(nodes);
         return nodes;
     }
 }
-
-#endif
 
 void AnimGraphExecutor::initRuntime()
 {
@@ -122,7 +123,7 @@ void AnimGraphExecutor::ProcessGroupCustom(Box* boxBase, Node* nodeBase, Value& 
     internalContext.Instance = context.Data->Object ? context.Data->Object->GetOrCreateManagedInstance() : nullptr;
 
     // Peek managed object
-    const auto obj = mono_gchandle_get_target(data.Handle);
+    const auto obj = MUtils::GetGCHandleTarget(data.Handle);
     if (obj == nullptr)
     {
         LOG(Warning, "Custom node instance is null.");
@@ -166,7 +167,7 @@ void AnimGraph::ClearCustomNode(Node* node)
     if (data.Handle)
     {
 #if USE_MONO
-        mono_gchandle_free(data.Handle);
+        MUtils::FreeGCHandle(data.Handle);
 #endif
         data.Handle = 0;
     }
@@ -216,7 +217,7 @@ bool AnimGraph::InitCustomNode(Node* node)
 
     // Allocate managed node object (create GC handle to prevent destruction)
     const auto obj = type->CreateInstance();
-    const auto handleGC = mono_gchandle_new(obj, false);
+    const auto handleGC = MUtils::NewGCHandle(obj, false);
 
     // Initialize node
     InternalInitData initData;
@@ -228,7 +229,7 @@ bool AnimGraph::InitCustomNode(Node* node)
     load->Invoke(obj, params, &exception);
     if (exception)
     {
-        mono_gchandle_free(handleGC);
+        MUtils::FreeGCHandle(handleGC);
 
         MException ex(exception);
         ex.Log(LogType::Warning, TEXT("AnimGraph"));

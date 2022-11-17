@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using FlaxEngine;
 
 namespace FlaxEditor.Content.Import
@@ -93,6 +94,7 @@ namespace FlaxEditor.Content.Import
         [StructLayout(LayoutKind.Sequential)]
         internal struct InternalOptions
         {
+            [MarshalAs(UnmanagedType.I1)]
             public AudioFormat Format;
             public byte DisableStreaming;
             public byte Is3D;
@@ -144,7 +146,7 @@ namespace FlaxEditor.Content.Import
     /// Audio asset import entry.
     /// </summary>
     /// <seealso cref="AssetImportEntry" />
-    public class AudioImportEntry : AssetImportEntry
+    public partial class AudioImportEntry : AssetImportEntry
     {
         private AudioImportSettings _settings = new AudioImportSettings();
 
@@ -182,8 +184,9 @@ namespace FlaxEditor.Content.Import
 
         #region Internal Calls
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_GetAudioImportOptions(string path, out AudioImportSettings.InternalOptions result);
+        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Content.Import.AudioImportEntry::Internal_GetAudioImportOptions", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool Internal_GetAudioImportOptions(string path, out AudioImportSettings.InternalOptions result);
 
         #endregion
     }

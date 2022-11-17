@@ -820,22 +820,33 @@ MMethod* ManagedBinaryModule::FindMethod(MClass* mclass, const ScriptingTypeMeth
     {
 #if USE_MONO
         MonoMethodSignature* sig = mono_method_signature(method->GetNative());
-        if (method->IsStatic() != signature.IsStatic ||
+        /*if (method->IsStatic() != signature.IsStatic ||
             method->GetName() != signature.Name ||
             (int32)mono_signature_get_param_count(sig) != signature.Params.Count())
+            continue;*/
+        if (method->IsStatic() != signature.IsStatic)
+            continue;
+        if (method->GetName() != signature.Name)
+            continue;
+        if ((int32)mono_signature_get_param_count(sig) != signature.Params.Count())
             continue;
         void* sigParams = nullptr;
-        mono_signature_get_params(sig, &sigParams);
+        MonoType* type = mono_signature_get_params(sig, &sigParams);
         bool isValid = true;
-        for (int32 paramIdx = 0; paramIdx < signature.Params.Count(); paramIdx++)
+        int paramIdx = 0;
+        while (type != nullptr)
         {
             auto& param = signature.Params[paramIdx];
             if (param.IsOut != (mono_signature_param_is_out(sig, paramIdx) != 0) ||
-                !VariantTypeEquals(param.Type, ((MonoType**)sigParams)[paramIdx]))
+                !VariantTypeEquals(param.Type, type))
             {
+                auto asdf = VariantTypeEquals(param.Type, type);
                 isValid = false;
                 break;
             }
+
+            type = mono_signature_get_params(sig, &sigParams);
+            paramIdx++;
         }
         if (isValid && VariantTypeEquals(signature.ReturnType, mono_signature_get_return_type(sig)))
             return method;
@@ -1187,8 +1198,6 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
 #if USE_MONO
     const auto mMethod = (MMethod*)method;
     MonoMethodSignature* signature = mono_method_signature(mMethod->GetNative());
-    void* signatureParams = nullptr;
-    mono_signature_get_params(signature, &signatureParams);
     const int32 parametersCount = mono_signature_get_param_count(signature);
     if (paramValues.Length() != parametersCount)
     {
@@ -1222,20 +1231,25 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
     void** params = (void**)alloca(parametersCount * sizeof(void*));
     bool failed = false;
     bool hasOutParams = false;
-    for (int32 paramIdx = 0; paramIdx < parametersCount; paramIdx++)
+    void* sigParams = nullptr;
+    MonoType* type = mono_signature_get_params(signature, &sigParams);
+    for (int paramIdx = 0; type != nullptr;)
     {
         auto& paramValue = paramValues[paramIdx];
         const bool isOut = mono_signature_param_is_out(signature, paramIdx) != 0;
         hasOutParams |= isOut;
 
         // Marshal parameter for managed method
-        MType paramType(((MonoType**)signatureParams)[paramIdx]);
+        MType paramType(type);
         params[paramIdx] = MUtils::VariantToManagedArgPtr(paramValue, paramType, failed);
         if (failed)
         {
             LOG(Error, "Failed to marshal parameter {5}:{4} of method '{0}.{1}' (args count: {2}), value type: {6}, value: {3}", String(mMethod->GetParentClass()->GetFullName()), String(mMethod->GetName()), parametersCount, paramValue, paramType.ToString(), paramIdx, paramValue.Type);
             return true;
         }
+
+        type = mono_signature_get_params(signature, &sigParams);
+        paramIdx++;
     }
 
     // Invoke the method

@@ -257,7 +257,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             {
                 Profiler.BeginEvent("GetXmlDocs");
 
-                var uri = new UriBuilder(assembly.CodeBase);
+                var uri = new UriBuilder(Utils.GetAssemblyLocation(assembly));
                 var path = Uri.UnescapeDataString(uri.Path);
                 var name = assembly.GetName().Name;
                 var xmlFilePath = Path.Combine(Path.GetDirectoryName(path), name + ".xml");

@@ -93,3 +93,14 @@
 #endif
 
 #define PACK_STRUCT(__Declaration__) PACK_BEGIN() __Declaration__ PACK_END()
+#define SCRIPTING_EXPORT(name)	__pragma(comment(linker, "/EXPORT:" #name "=" __FUNCDNAME__))
+#define SCRIPTING_EXPORT_DEBUG(name)	__pragma(message("/EXPORT:" #name "=" __FUNCDNAME__)) \
+										__pragma(comment(linker, "/EXPORT:" #name "=" __FUNCDNAME__))
+
+// TODO: try this one with clang:
+//#ifdef _MSC_VER
+//#define SCRIPTING_EXPORT(name)	__pragma(comment(linker, "/EXPORT:" #name "=" __FUNCDNAME__))
+//#endif
+//#ifdef __GNUC__
+//#define SCRIPTING_EXPORT(name)	asm(".section .drectve\n\t.ascii \" -export:" #name "=" __FUNCDNAME__ "\"");
+//#endif
