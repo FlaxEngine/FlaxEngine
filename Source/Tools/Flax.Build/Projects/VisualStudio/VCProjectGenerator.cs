@@ -103,6 +103,7 @@ namespace Flax.Build.Projects.VisualStudio
             vcProjectFileContent.AppendLine("    <TargetRuntime>Native</TargetRuntime>");
             vcProjectFileContent.AppendLine("    <CharacterSet>Unicode</CharacterSet>");
             vcProjectFileContent.AppendLine("    <Keyword>MakeFileProj</Keyword>");
+            vcProjectFileContent.AppendLine("    <ResolveNuGetPackages>false</ResolveNuGetPackages>");
             vcProjectFileContent.AppendLine("  </PropertyGroup>");
 
             // Default properties
