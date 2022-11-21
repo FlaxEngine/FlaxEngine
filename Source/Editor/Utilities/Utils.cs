@@ -738,9 +738,10 @@ namespace FlaxEditor.Utilities
 
             var settings = CreateWindowSettings.Default;
             settings.ActivateWhenFirstShown = true;
-            settings.AllowMaximize = false;
+            settings.AllowMaximize = true;
             settings.AllowMinimize = false;
-            settings.HasSizingFrame = false;
+            settings.HasSizingFrame = true;
+            settings.HasBorder = true;
             settings.StartPosition = WindowStartPosition.CenterParent;
             settings.Size = new Float2(500, 600) * (parentWindow?.DpiScale ?? Platform.DpiScale);
             settings.Parent = parentWindow;
@@ -754,10 +755,25 @@ namespace FlaxEditor.Utilities
             };
             copyButton.Clicked += () => Clipboard.Text = source;
 
-            var sourceTextBox = new TextBox(true, 2, copyButton.Bottom + 4, settings.Size.X - 4);
-            sourceTextBox.Height = settings.Size.Y - sourceTextBox.Top - 2;
+            var backPanel = new Panel
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(0, 0, copyButton.Bottom + 4, 0),
+                ScrollBars = ScrollBars.Both,
+                IsScrollable = true,
+                Parent = dialog.GUI,
+            };
+
+            var sourceTextBox = new TextBox(true, 0, 0, 0);
+            sourceTextBox.Parent = backPanel;
+            sourceTextBox.AnchorPreset = AnchorPresets.HorizontalStretchTop;
             sourceTextBox.Text = source;
-            sourceTextBox.Parent = dialog.GUI;
+            sourceTextBox.Height = sourceTextBox.TextSize.Y;
+            sourceTextBox.IsReadOnly = true;
+            sourceTextBox.IsMultilineScrollable = false;
+            sourceTextBox.IsScrollable = true;
+
+            backPanel.SizeChanged += control => { sourceTextBox.Width = (control.Size.X >= sourceTextBox.TextSize.X) ? control.Width : sourceTextBox.TextSize.X + 30; };
 
             dialog.Show();
             dialog.Focus();
