@@ -11,6 +11,7 @@ namespace FlaxEditor.Content
     /// A <see cref="AnimationGraph"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
+    [ContentContextMenu("New/Animation/Animation Graph")]
     public class AnimationGraphProxy : BinaryAssetProxy
     {
         /// <inheritdoc />

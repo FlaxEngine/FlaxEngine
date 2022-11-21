@@ -15,6 +15,7 @@ namespace FlaxEditor.Content
     /// A <see cref="ParticleEmitter"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
+    [ContentContextMenu("New/Particles/Particle Emitter")]
     public class ParticleEmitterProxy : BinaryAssetProxy
     {
         private ParticleEmitterPreview _preview;

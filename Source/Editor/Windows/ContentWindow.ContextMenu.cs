@@ -39,7 +39,6 @@ namespace FlaxEditor.Windows
 
             // Create context menu
             ContextMenuButton b;
-            ContextMenuChildMenu c;
             ContextMenu cm = new ContextMenu
             {
                 Tag = item
@@ -149,22 +148,77 @@ namespace FlaxEditor.Windows
             {
                 cm.AddButton("New folder", NewFolder);
             }
-
-            c = cm.AddChildMenu("New");
-            c.ContextMenu.Tag = item;
-            c.ContextMenu.AutoSort = true;
-            int newItems = 0;
-            for (int i = 0; i < Editor.ContentDatabase.Proxy.Count; i++)
+            
+            // loop through each proxy and user defined json type and add them to the context menu
+            foreach (var type in Editor.CodeEditing.All.Get())
             {
-                var p = Editor.ContentDatabase.Proxy[i];
+                if (type.IsAbstract || !type.HasAttribute(typeof(ContentContextMenuAttribute), true) || Editor.CodeEditing.Actors.Get().Contains(type) || Editor.CodeEditing.Scripts.Get().Contains(type))
+                    continue;
+
+                ContentContextMenuAttribute attribute = null;
+                foreach (var typeAttribute in type.GetAttributes(true))
+                {
+                    if (typeAttribute is ContentContextMenuAttribute contentContextMenuAttribute)
+                    {
+                        attribute = contentContextMenuAttribute;
+                        break;
+                    }
+                }
+
+                ContentProxy p;
+                if (type.Type.IsSubclassOf(typeof(ContentProxy)))
+                {
+                    p = Editor.ContentDatabase.Proxy.Find(T => T.GetType() == type.Type);
+                }
+                else
+                {
+                    // user can use attribute to put their own assets into the content context menu
+                    var generic = typeof(SpawnableJsonAssetProxy<>).MakeGenericType(type.Type);
+                    var instance = Activator.CreateInstance(generic);
+                    p = instance as AssetProxy;
+                }
+                
+                if (p == null)
+                    continue;
+                
+                // create menus
                 if (p.CanCreate(folder))
                 {
-                    c.ContextMenu.AddButton(p.Name, () => NewItem(p));
-                    newItems++;
+                    var splitPath = attribute.Path.Split('/');
+                    ContextMenuChildMenu childCM = null;
+                    bool mainCM = true;
+                    for (int i = 0; i < splitPath?.Length; i++)
+                    {
+                        if (i == splitPath.Length - 1)
+                        {
+                            if (mainCM)
+                            {
+                                cm.AddButton(splitPath[i].Trim(), () => NewItem(p));
+                                mainCM = false;
+                            }
+                            else
+                            {
+                                childCM?.ContextMenu.AddButton(splitPath[i].Trim(), () => NewItem(p));
+                                childCM.ContextMenu.AutoSort = true;
+                            }
+                        }
+                        else
+                        {
+                            if (mainCM)
+                            {
+                                childCM = cm.GetOrAddChildMenu(splitPath[i].Trim());
+                                mainCM = false;
+                            }
+                            else
+                            {
+                                childCM = childCM?.ContextMenu.GetOrAddChildMenu(splitPath[i].Trim());
+                            }
+                            childCM.ContextMenu.AutoSort = true;
+                        }
+                    }
                 }
             }
-            c.Enabled = newItems > 0;
-
+            
             if (folder.CanHaveAssets)
             {
                 cm.AddButton("Import file", () =>

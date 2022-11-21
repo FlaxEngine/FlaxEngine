@@ -15,6 +15,7 @@ namespace FlaxEditor.Content
     /// A <see cref="VisualScript"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
+    [ContentContextMenu("New/Visual Script")]
     public class VisualScriptProxy : BinaryAssetProxy, IScriptTypesContainer
     {
         internal VisualScriptProxy()
