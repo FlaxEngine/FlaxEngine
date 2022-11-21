@@ -539,6 +539,7 @@ namespace FlaxEditor.Viewport
                 // Orthographic
                 {
                     var ortho = ViewWidgetButtonMenu.AddButton("Orthographic");
+                    ortho.CloseMenuOnClick = false;
                     var orthoValue = new CheckBox(90, 2, _isOrtho)
                     {
                         Parent = ortho
@@ -578,6 +579,7 @@ namespace FlaxEditor.Viewport
                 // Field of View
                 {
                     var fov = ViewWidgetButtonMenu.AddButton("Field Of View");
+                    fov.CloseMenuOnClick = false;
                     var fovValue = new FloatValueBox(1, 90, 2, 70.0f, 35.0f, 160.0f, 0.1f)
                     {
                         Parent = fov
@@ -594,6 +596,7 @@ namespace FlaxEditor.Viewport
                 // Ortho Scale
                 {
                     var orthoSize = ViewWidgetButtonMenu.AddButton("Ortho Scale");
+                    orthoSize.CloseMenuOnClick = false;
                     var orthoSizeValue = new FloatValueBox(_orthoSize, 90, 2, 70.0f, 0.001f, 100000.0f, 0.01f)
                     {
                         Parent = orthoSize
@@ -610,6 +613,7 @@ namespace FlaxEditor.Viewport
                 // Near Plane
                 {
                     var nearPlane = ViewWidgetButtonMenu.AddButton("Near Plane");
+                    nearPlane.CloseMenuOnClick = false;
                     var nearPlaneValue = new FloatValueBox(2.0f, 90, 2, 70.0f, 0.001f, 1000.0f)
                     {
                         Parent = nearPlane
@@ -621,6 +625,7 @@ namespace FlaxEditor.Viewport
                 // Far Plane
                 {
                     var farPlane = ViewWidgetButtonMenu.AddButton("Far Plane");
+                    farPlane.CloseMenuOnClick = false;
                     var farPlaneValue = new FloatValueBox(1000, 90, 2, 70.0f, 10.0f)
                     {
                         Parent = farPlane
@@ -632,6 +637,7 @@ namespace FlaxEditor.Viewport
                 // Brightness
                 {
                     var brightness = ViewWidgetButtonMenu.AddButton("Brightness");
+                    brightness.CloseMenuOnClick = false;
                     var brightnessValue = new FloatValueBox(1.0f, 90, 2, 70.0f, 0.001f, 10.0f, 0.001f)
                     {
                         Parent = brightness
@@ -643,6 +649,7 @@ namespace FlaxEditor.Viewport
                 // Resolution
                 {
                     var resolution = ViewWidgetButtonMenu.AddButton("Resolution");
+                    resolution.CloseMenuOnClick = false;
                     var resolutionValue = new FloatValueBox(1.0f, 90, 2, 70.0f, 0.1f, 4.0f, 0.001f)
                     {
                         Parent = resolution
@@ -654,6 +661,7 @@ namespace FlaxEditor.Viewport
                 // Invert Panning
                 {
                     var invert = ViewWidgetButtonMenu.AddButton("Invert Panning");
+                    invert.CloseMenuOnClick = false;
                     var invertValue = new CheckBox(90, 2, _invertPanning)
                     {
                         Parent = invert
