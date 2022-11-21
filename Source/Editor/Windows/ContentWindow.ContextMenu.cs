@@ -3,6 +3,7 @@
 using System;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.Assertions;
 using FlaxEngine.Json;
@@ -148,13 +149,18 @@ namespace FlaxEditor.Windows
             {
                 cm.AddButton("New folder", NewFolder);
             }
-            
-            // loop through each proxy and user defined json type and add them to the context menu
+
+            // Loop through each proxy and user defined json type and add them to the context menu
+            var actorType = new ScriptType(typeof(Actor));
+            var scriptType = new ScriptType(typeof(Script));
             foreach (var type in Editor.CodeEditing.All.Get())
             {
-                if (type.IsAbstract || !type.HasAttribute(typeof(ContentContextMenuAttribute), true) || Editor.CodeEditing.Actors.Get().Contains(type) || Editor.CodeEditing.Scripts.Get().Contains(type))
+                if (type.IsAbstract)
+                    continue;
+                if (actorType.IsAssignableFrom(type) || scriptType.IsAssignableFrom(type))
                     continue;
 
+                // Get attribute
                 ContentContextMenuAttribute attribute = null;
                 foreach (var typeAttribute in type.GetAttributes(true))
                 {
@@ -164,41 +170,43 @@ namespace FlaxEditor.Windows
                         break;
                     }
                 }
+                if (attribute == null)
+                    continue;
 
+                // Get context proxy
                 ContentProxy p;
                 if (type.Type.IsSubclassOf(typeof(ContentProxy)))
                 {
-                    p = Editor.ContentDatabase.Proxy.Find(T => T.GetType() == type.Type);
+                    p = Editor.ContentDatabase.Proxy.Find(x => x.GetType() == type.Type);
                 }
                 else
                 {
-                    // user can use attribute to put their own assets into the content context menu
+                    // User can use attribute to put their own assets into the content context menu
                     var generic = typeof(SpawnableJsonAssetProxy<>).MakeGenericType(type.Type);
                     var instance = Activator.CreateInstance(generic);
                     p = instance as AssetProxy;
                 }
-                
                 if (p == null)
                     continue;
-                
-                // create menus
+
                 if (p.CanCreate(folder))
                 {
-                    var splitPath = attribute.Path.Split('/');
+                    var parts = attribute.Path.Split('/');
                     ContextMenuChildMenu childCM = null;
                     bool mainCM = true;
-                    for (int i = 0; i < splitPath?.Length; i++)
+                    for (int i = 0; i < parts?.Length; i++)
                     {
-                        if (i == splitPath.Length - 1)
+                        var part = parts[i].Trim();
+                        if (i == parts.Length - 1)
                         {
                             if (mainCM)
                             {
-                                cm.AddButton(splitPath[i].Trim(), () => NewItem(p));
+                                cm.AddButton(part, () => NewItem(p));
                                 mainCM = false;
                             }
-                            else
+                            else if (childCM != null)
                             {
-                                childCM?.ContextMenu.AddButton(splitPath[i].Trim(), () => NewItem(p));
+                                childCM.ContextMenu.AddButton(part, () => NewItem(p));
                                 childCM.ContextMenu.AutoSort = true;
                             }
                         }
@@ -206,19 +214,20 @@ namespace FlaxEditor.Windows
                         {
                             if (mainCM)
                             {
-                                childCM = cm.GetOrAddChildMenu(splitPath[i].Trim());
+                                childCM = cm.GetOrAddChildMenu(part);
+                                childCM.ContextMenu.AutoSort = true;
                                 mainCM = false;
                             }
-                            else
+                            else if (childCM != null)
                             {
-                                childCM = childCM?.ContextMenu.GetOrAddChildMenu(splitPath[i].Trim());
+                                childCM = childCM.ContextMenu.GetOrAddChildMenu(part);
+                                childCM.ContextMenu.AutoSort = true;
                             }
-                            childCM.ContextMenu.AutoSort = true;
                         }
                     }
                 }
             }
-            
+
             if (folder.CanHaveAssets)
             {
                 cm.AddButton("Import file", () =>
