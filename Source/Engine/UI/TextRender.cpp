@@ -386,12 +386,13 @@ void TextRender::Draw(RenderContext& renderContext)
         // Submit draw calls
         for (const auto& e : _drawChunks)
         {
-            if ((drawModes & e.Material->GetDrawModes()) == 0)
+            auto chunkDrawModes = drawModes & e.Material->GetDrawModes();
+            if (chunkDrawModes == 0)
                 continue;
             drawCall.Draw.IndicesCount = e.IndicesCount;
             drawCall.Draw.StartIndex = e.StartIndex;
             drawCall.Material = e.Material;
-            renderContext.List->AddDrawCall(renderContext, drawModes, GetStaticFlags(), drawCall, true);
+            renderContext.List->AddDrawCall(renderContext, (DrawPass)chunkDrawModes, GetStaticFlags(), drawCall, true);
         }
     }
 
