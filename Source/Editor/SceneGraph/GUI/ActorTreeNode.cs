@@ -9,6 +9,8 @@ using FlaxEditor.GUI.Drag;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.Scripting;
 using FlaxEditor.Utilities;
+using FlaxEditor.Windows;
+using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using Object = FlaxEngine.Object;
@@ -266,7 +268,7 @@ namespace FlaxEditor.SceneGraph.GUI
         /// <summary>
         /// Starts the actor renaming action.
         /// </summary>
-        public void StartRenaming()
+        public void StartRenaming(EditorWindow window)
         {
             // Block renaming during scripts reload
             if (Editor.Instance.ProgressReporting.CompileScripts.IsActive)
@@ -274,16 +276,22 @@ namespace FlaxEditor.SceneGraph.GUI
 
             Select();
 
-            // Disable scrolling of scene view
-            Editor.Instance.Windows.SceneWin.ScrollingOnSceneTreeView(false);
+            // Disable scrolling of view
+            if (window is SceneTreeWindow)
+                (window as SceneTreeWindow).ScrollingOnSceneTreeView(false);
+            else if (window is PrefabWindow)
+                (window as PrefabWindow).ScrollingOnTreeView(false);
 
             // Start renaming the actor
             var dialog = RenamePopup.Show(this, HeaderRect, _actorNode.Name, false);
             dialog.Renamed += OnRenamed;
             dialog.Closed += popup =>
             {
-                // Enable scrolling of scene view
-                Editor.Instance.Windows.SceneWin.ScrollingOnSceneTreeView(true);
+                // Enable scrolling of view
+                if (window is SceneTreeWindow)
+                    (window as SceneTreeWindow).ScrollingOnSceneTreeView(true);
+                else if (window is PrefabWindow)
+                    (window as PrefabWindow).ScrollingOnTreeView(true);
             };
         }
 
@@ -291,9 +299,6 @@ namespace FlaxEditor.SceneGraph.GUI
         {
             using (new UndoBlock(ActorNode.Root.Undo, Actor, "Rename"))
                 Actor.Name = renamePopup.Text;
-
-            // Enable scrolling of scene view
-            Editor.Instance.Windows.SceneWin.ScrollingOnSceneTreeView(true);
         }
 
         /// <inheritdoc />

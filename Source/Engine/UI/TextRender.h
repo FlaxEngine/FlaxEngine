@@ -19,7 +19,7 @@
 /// <summary>
 /// Text rendering object.
 /// </summary>
-API_CLASS() class FLAXENGINE_API TextRender : public Actor
+API_CLASS(Attributes="ActorContextMenu(\"New/UI/Text Render\")") class FLAXENGINE_API TextRender : public Actor
 {
     DECLARE_SCENE_OBJECT(TextRender);
 private:

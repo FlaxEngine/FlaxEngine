@@ -332,6 +332,7 @@ public:
     const BoundingBox& AsBoundingBox() const;
     Ray& AsRay();
     const Ray& AsRay() const;
+    Transform& AsTransform();
     const Transform& AsTransform() const;
     const Matrix& AsMatrix() const;
     Array<Variant, HeapAllocation>& AsArray();

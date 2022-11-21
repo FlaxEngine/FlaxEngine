@@ -160,7 +160,7 @@ public:
 /// It also allows you to constrain limits to only specific axes or completely lock specific axes.
 /// </summary>
 /// <seealso cref="Joint" />
-API_CLASS() class FLAXENGINE_API D6Joint : public Joint
+API_CLASS(Attributes="ActorContextMenu(\"New/Physics/D6 Joint\")") class FLAXENGINE_API D6Joint : public Joint
 {
     DECLARE_SCENE_OBJECT(D6Joint);
 private:
@@ -174,9 +174,7 @@ public:
     /// <summary>
     /// Gets the motion type around the specified axis.
     /// </summary>
-    /// <remarks>
-    /// Each axis may independently specify that the degree of freedom is locked (blocking relative movement along or around this axis), limited by the corresponding limit, or free.
-    /// </remarks>
+    /// <remarks>Each axis may independently specify that the degree of freedom is locked (blocking relative movement along or around this axis), limited by the corresponding limit, or free.</remarks>
     /// <param name="axis">The axis the degree of freedom around which the motion type is specified.</param>
     /// <returns>The value.</returns>
     API_FUNCTION() FORCE_INLINE D6JointMotion GetMotion(const D6JointAxis axis) const
@@ -187,9 +185,7 @@ public:
     /// <summary>
     /// Sets the motion type around the specified axis.
     /// </summary>
-    /// <remarks>
-    /// Each axis may independently specify that the degree of freedom is locked (blocking relative movement along or around this axis), limited by the corresponding limit, or free.
-    /// </remarks>
+    /// <remarks>Each axis may independently specify that the degree of freedom is locked (blocking relative movement along or around this axis), limited by the corresponding limit, or free.</remarks>
     /// <param name="axis">The axis the degree of freedom around which the motion type is specified.</param>
     /// <param name="value">The value.</param>
     API_FUNCTION() void SetMotion(const D6JointAxis axis, const D6JointMotion value);

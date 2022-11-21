@@ -14,7 +14,7 @@ class Collider;
 /// Physics simulation driven object.
 /// </summary>
 /// <seealso cref="Actor" />
-API_CLASS() class FLAXENGINE_API RigidBody : public Actor, public IPhysicsActor
+API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Rigid Body\")") class FLAXENGINE_API RigidBody : public Actor, public IPhysicsActor
 {
     DECLARE_SCENE_OBJECT(RigidBody);
 protected:
@@ -79,9 +79,7 @@ public:
     /// <summary>
     /// Gets the 'drag' force added to reduce linear movement.
     /// </summary>
-    /// <remarks>
-    /// Linear damping can be used to slow down an object. The higher the drag the more the object slows down.
-    /// </remarks>
+    /// <remarks>Linear damping can be used to slow down an object. The higher the drag the more the object slows down.</remarks>
     API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(0.01f), Limit(0), EditorDisplay(\"Rigid Body\")")
     FORCE_INLINE float GetLinearDamping() const
     {
@@ -91,18 +89,14 @@ public:
     /// <summary>
     /// Sets the 'drag' force added to reduce linear movement.
     /// </summary>
-    /// <remarks>
-    /// Linear damping can be used to slow down an object. The higher the drag the more the object slows down.
-    /// </remarks>
+    /// <remarks>Linear damping can be used to slow down an object. The higher the drag the more the object slows down.</remarks>
     /// <param name="value">The value.</param>
     API_PROPERTY() void SetLinearDamping(float value);
 
     /// <summary>
     /// Gets the 'drag' force added to reduce angular movement.
     /// </summary>
-    /// <remarks>
-    /// Angular damping can be used to slow down the rotation of an object. The higher the drag the more the rotation slows down.
-    /// </remarks>
+    /// <remarks>Angular damping can be used to slow down the rotation of an object. The higher the drag the more the rotation slows down.</remarks>
     API_PROPERTY(Attributes="EditorOrder(70), DefaultValue(0.05f), Limit(0), EditorDisplay(\"Rigid Body\")")
     FORCE_INLINE float GetAngularDamping() const
     {
@@ -112,9 +106,7 @@ public:
     /// <summary>
     /// Sets the 'drag' force added to reduce angular movement.
     /// </summary>
-    /// <remarks>
-    /// Angular damping can be used to slow down the rotation of an object. The higher the drag the more the rotation slows down.
-    /// </remarks>
+    /// <remarks>Angular damping can be used to slow down the rotation of an object. The higher the drag the more the rotation slows down.</remarks>
     /// <param name="value">The value.</param>
     API_PROPERTY() void SetAngularDamping(float value);
 
@@ -287,46 +279,35 @@ public:
     /// <summary>
     /// Gets the linear velocity of the rigidbody.
     /// </summary>
-    /// <remarks>
-    /// It's used mostly to get the current velocity. Manual modifications may result in unrealistic behaviour.
-    /// </remarks>
+    /// <remarks>It's used mostly to get the current velocity. Manual modifications may result in unrealistic behaviour. </remarks>
     API_PROPERTY(Attributes="HideInEditor")
     Vector3 GetLinearVelocity() const;
 
     /// <summary>
     /// Sets the linear velocity of the rigidbody.
     /// </summary>
-    /// <remarks>
-    /// It's used mostly to get the current velocity. Manual modifications may result in unrealistic behaviour.
-    /// </remarks>
+    /// <remarks>It's used mostly to get the current velocity. Manual modifications may result in unrealistic behaviour. </remarks>
     /// <param name="value">The value.</param>
     API_PROPERTY() void SetLinearVelocity(const Vector3& value) const;
 
     /// <summary>
     /// Gets the angular velocity of the rigidbody measured in radians per second.
     /// </summary>
-    /// <remarks>
-    /// It's used mostly to get the current angular velocity. Manual modifications may result in unrealistic behaviour.
-    /// </remarks>
+    /// <remarks>It's used mostly to get the current angular velocity. Manual modifications may result in unrealistic behaviour. </remarks>
     API_PROPERTY(Attributes="HideInEditor")
     Vector3 GetAngularVelocity() const;
 
     /// <summary>
     /// Sets the angular velocity of the rigidbody measured in radians per second.
     /// </summary>
-    /// <remarks>
-    /// It's used mostly to get the current angular velocity. Manual modifications may result in unrealistic behaviour.
-    /// </remarks>
+    /// <remarks>It's used mostly to get the current angular velocity. Manual modifications may result in unrealistic behaviour.</remarks>
     /// <param name="value">The value.</param>
     API_PROPERTY() void SetAngularVelocity(const Vector3& value) const;
 
     /// <summary>
     /// Gets the maximum depenetration velocity when rigidbody moving out of penetrating state.
     /// </summary>
-    /// <remarks>
-    /// This value controls how much velocity the solver can introduce to correct for penetrations in contacts. 
-    /// Using this property can smooth objects moving out of colliding state and prevent unstable motion.
-    /// </remarks>
+    /// <remarks>This value controls how much velocity the solver can introduce to correct for penetrations in contacts. Using this property can smooth objects moving out of colliding state and prevent unstable motion.</remarks>
     /// <returns>The value</returns>
     API_PROPERTY(Attributes="HideInEditor")
     float GetMaxDepenetrationVelocity() const;
@@ -334,19 +315,14 @@ public:
     /// <summary>
     /// Sets the maximum depenetration velocity when rigidbody moving out of penetrating state.
     /// </summary>
-    /// <remarks>
-    /// This value controls how much velocity the solver can introduce to correct for penetrations in contacts. 
-    /// Using this property can smooth objects moving out of colliding state and prevent unstable motion.
-    /// </remarks>
+    /// <remarks>This value controls how much velocity the solver can introduce to correct for penetrations in contacts. Using this property can smooth objects moving out of colliding state and prevent unstable motion.</remarks>
     /// <param name="value">The value.</param>
     API_PROPERTY() void SetMaxDepenetrationVelocity(const float value) const;
 
     /// <summary>
     /// Gets the mass-normalized kinetic energy threshold below which an actor may go to sleep.
     /// </summary>
-    /// <remarks>
-    /// Actors whose kinetic energy divided by their mass is below this threshold will be candidates for sleeping.
-    /// </remarks>
+    /// <remarks>Actors whose kinetic energy divided by their mass is below this threshold will be candidates for sleeping.</remarks>
     /// <returns>The value</returns>
     API_PROPERTY(Attributes="HideInEditor")
     float GetSleepThreshold() const;
@@ -354,9 +330,7 @@ public:
     /// <summary>
     /// Sets the mass-normalized kinetic energy threshold below which an actor may go to sleep.
     /// </summary>
-    /// <remarks>
-    /// Actors whose kinetic energy divided by their mass is below this threshold will be candidates for sleeping.
-    /// </remarks>
+    /// <remarks>Actors whose kinetic energy divided by their mass is below this threshold will be candidates for sleeping.</remarks>
     /// <param name="value">The value.</param>
     API_PROPERTY() void SetSleepThreshold(const float value) const;
 

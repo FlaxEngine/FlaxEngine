@@ -2268,6 +2268,11 @@ const Ray& Variant::AsRay() const
 #endif
 }
 
+Transform& Variant::AsTransform()
+{
+    return *(Transform*)AsBlob.Data;
+}
+
 const Transform& Variant::AsTransform() const
 {
     return *(const Transform*)AsBlob.Data;

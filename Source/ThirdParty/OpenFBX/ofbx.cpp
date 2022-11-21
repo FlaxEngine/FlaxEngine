@@ -2131,6 +2131,7 @@ template <> const char* fromString<Matrix>(const char* str, const char* end, Mat
 
 template <typename T> static void parseTextArray(const Property& property, std::vector<T>* out)
 {
+	out->clear();
 	const u8* iter = property.value.begin;
 	for (int i = 0; i < property.count; ++i)
 	{

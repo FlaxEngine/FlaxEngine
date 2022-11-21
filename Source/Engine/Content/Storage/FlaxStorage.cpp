@@ -622,6 +622,33 @@ bool FlaxStorage::LoadAssetChunk(FlaxChunk* chunk)
         // Seek
         stream->SetPosition(chunk->LocationInFile.Address);
 
+        if (stream->HasError())
+        {
+            // Sometimes stream->HasError() from setposition. result in a crash or missing media in release (stream _file._handle = nullptr).
+            // When retrying, it looks like it works and we can continue. We need this to success.
+
+            for (int retry = 0; retry < 5; retry++)
+            {
+                Platform::Sleep(50);
+                stream = OpenFile();
+                failed = stream == nullptr;
+                if (!failed)
+                {
+                    stream->SetPosition(chunk->LocationInFile.Address);
+                }
+                if (!stream->HasError())
+                    break;
+            }
+        }
+
+        if (stream->HasError())
+        {
+            failed = true;
+            UnlockChunks();
+            LOG(Warning, "SetPosition failed on chunk {0}.", ToString());
+            return failed;
+        }
+
         // Load data
         auto size = chunk->LocationInFile.Size;
         if (chunk->Flags & FlaxChunkFlags::CompressedLZ4)
