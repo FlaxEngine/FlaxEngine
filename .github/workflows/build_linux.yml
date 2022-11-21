@@ -9,7 +9,7 @@ jobs:
     runs-on: "ubuntu-20.04"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Install dependencies
       run: |
         sudo rm -f /etc/apt/sources.list.d/*
@@ -32,7 +32,7 @@ jobs:
     runs-on: "ubuntu-20.04"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Install dependencies
       run: |
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev

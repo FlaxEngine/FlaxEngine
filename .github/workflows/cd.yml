@@ -12,7 +12,7 @@ jobs:
     runs-on: "windows-2019"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Checkout LFS
       run: |
         git lfs version
@@ -23,12 +23,12 @@ jobs:
       run: |
         .\PackageEditor.bat -arch=x64 -platform=Windows -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: Windows-Editor
         path: Output/Editor.zip
     - name: Upload
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: Windows-EditorDebugSymbols
         path: Output/EditorDebugSymbols.zip
@@ -37,7 +37,7 @@ jobs:
     runs-on: "windows-2019"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Checkout LFS
       run: |
         git lfs version
@@ -48,7 +48,7 @@ jobs:
       run: |
         .\PackagePlatforms.bat -arch=x64 -platform=Windows -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: Windows-Game
         path: Output/Windows.zip
@@ -59,7 +59,7 @@ jobs:
     runs-on: "ubuntu-20.04"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Checkout LFS
       run: |
         git lfs version
@@ -76,7 +76,7 @@ jobs:
       run: |
         ./PackageEditor.sh -arch=x64 -platform=Linux -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: Linux-Editor
         path: Output/FlaxEditorLinux.zip
@@ -85,7 +85,7 @@ jobs:
     runs-on: "ubuntu-20.04"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Checkout LFS
       run: |
         git lfs version
@@ -102,7 +102,7 @@ jobs:
       run: |
         ./PackagePlatforms.sh -arch=x64 -platform=Linux -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: Linux-Game
         path: Output/Linux.zip
@@ -113,7 +113,7 @@ jobs:
     runs-on: "macos-latest"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Checkout LFS
       run: |
         git lfs version
@@ -124,7 +124,7 @@ jobs:
       run: |
         ./PackageEditor.command -arch=x64 -platform=Mac -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: Mac-Editor
         path: Output/FlaxEditorMac.zip
@@ -133,7 +133,7 @@ jobs:
     runs-on: "macos-latest"
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Checkout LFS
       run: |
         git lfs version
@@ -144,7 +144,7 @@ jobs:
       run: |
         ./PackagePlatforms.command -arch=x64 -platform=Mac -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: Mac-Game
         path: Output/Mac.zip
