@@ -230,9 +230,9 @@ namespace FlaxEngine.GUI
         public bool ClipText { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets a value indicating whether you can scroll the text in the text box
+        /// Gets or sets a value indicating whether you can scroll the text in the text box (eg. with a mouse wheel).
         /// </summary>
-        public bool CanScrollMultilineText { get; set; } = true;
+        public bool IsMultilineScrollable { get; set; } = true;
 
         /// <summary>
         /// Gets or sets textbox background color when the control is selected (has focus).
@@ -1162,7 +1162,7 @@ namespace FlaxEngine.GUI
                 return true;
 
             // Multiline scroll
-            if (IsMultiline && _text.Length != 0 && CanScrollMultilineText)
+            if (IsMultiline && _text.Length != 0 && IsMultilineScrollable)
             {
                 TargetViewOffset = Float2.Clamp(_targetViewOffset - new Float2(0, delta * 10.0f), Float2.Zero, new Float2(_targetViewOffset.X, _textSize.Y));
                 return true;
