@@ -316,6 +316,8 @@ GPUTextureView* GBufferPass::RenderSkybox(RenderContext& renderContext, GPUConte
     return result;
 }
 
+#if USE_EDITOR
+
 void GBufferPass::OverrideDrawCalls(RenderContext& renderContext)
 {
     // Override draw calls material to use material debug shader
@@ -344,8 +346,6 @@ void GBufferPass::OverrideDrawCalls(RenderContext& renderContext)
         _materialComplexity->DebugOverrideDrawCallsMaterial(renderContext);
     }
 }
-
-#if USE_EDITOR
 
 void GBufferPass::DrawMaterialComplexity(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer)
 {
