@@ -250,6 +250,7 @@ namespace Flax.Build.Plugins
                         contents.AppendLine("    {");
                         contents.AppendLine("        NetworkRpcInfo info;");
                         contents.AppendLine($"        info.Server = {(isServer ? "1" : "0")};");
+                        contents.AppendLine($"        info.Client = {(isClient ? "1" : "0")};");
                         contents.AppendLine($"        info.Execute = {functionInfo.Name}_Execute;");
                         contents.AppendLine($"        info.Invoke = {functionInfo.Name}_Invoke;");
                         contents.AppendLine($"        info.Channel = (uint8)NetworkChannelType::{channelType};");
