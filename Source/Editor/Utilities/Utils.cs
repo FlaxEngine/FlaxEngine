@@ -754,7 +754,7 @@ namespace FlaxEditor.Utilities
                 Parent = dialog.GUI,
             };
             copyButton.Clicked += () => Clipboard.Text = source;
-            
+
             var backPanel = new Panel
             {
                 AnchorPreset = AnchorPresets.StretchAll,
@@ -763,18 +763,18 @@ namespace FlaxEditor.Utilities
                 IsScrollable = true,
                 Parent = dialog.GUI,
             };
-            
+
             var sourceTextBox = new TextBox(true, 0, 0, 0);
             sourceTextBox.Parent = backPanel;
             sourceTextBox.AnchorPreset = AnchorPresets.HorizontalStretchTop;
             sourceTextBox.Text = source;
             sourceTextBox.Height = sourceTextBox.TextSize.Y;
             sourceTextBox.IsReadOnly = true;
-            sourceTextBox.CanScrollMultilineText = false;
+            sourceTextBox.IsMultilineScrollable = false;
             sourceTextBox.IsScrollable = true;
 
             backPanel.SizeChanged += control => { sourceTextBox.Width = (control.Size.X >= sourceTextBox.TextSize.X) ? control.Width : sourceTextBox.TextSize.X + 30; };
-            
+
             dialog.Show();
             dialog.Focus();
         }
