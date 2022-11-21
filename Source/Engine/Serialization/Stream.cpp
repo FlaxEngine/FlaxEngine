@@ -438,7 +438,7 @@ void ReadStream::ReadVariant(Variant* data)
         ReadBytes(&data->AsData, sizeof(Quaternion));
         break;
     case VariantType::Transform:
-        ReadTransform((Transform*)&data->AsData);
+        ReadTransform(&data->AsTransform());
         break;
     case VariantType::Rectangle:
         ReadBytes(&data->AsData, sizeof(Rectangle));

@@ -344,7 +344,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
         Deserialize(value, v.AsBoundingBox(), modifier);
         break;
     case VariantType::Transform:
-        Deserialize(value, *(Transform*)v.AsBlob.Data, modifier);
+        Deserialize(value, v.AsTransform(), modifier);
         break;
     case VariantType::Ray:
         Deserialize(value, v.AsRay(), modifier);
