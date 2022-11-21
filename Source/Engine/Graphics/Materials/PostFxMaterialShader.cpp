@@ -18,6 +18,7 @@ PACK_STRUCT(struct PostFxMaterialShaderData {
     Float4 ViewInfo;
     Float4 ScreenSize;
     Float4 TemporalAAJitter;
+    Matrix InverseViewProjectionMatrix;
     });
 
 void PostFxMaterialShader::Bind(BindParameters& params)
@@ -44,6 +45,7 @@ void PostFxMaterialShader::Bind(BindParameters& params)
     // Setup material constants
     {
         Matrix::Transpose(view.View, materialData->ViewMatrix);
+        Matrix::Transpose(view.IVP, materialData->InverseViewProjectionMatrix);
         materialData->ViewPos = view.Position;
         materialData->ViewFar = view.Far;
         materialData->ViewDir = view.Direction;

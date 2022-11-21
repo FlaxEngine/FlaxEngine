@@ -416,6 +416,23 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
             value = writeLocal(VariantType::Int, String::Format(TEXT("(int)({0}.a * 3.999)"), gBuffer1Sample->Value), node);
             break;
         }
+        case MaterialSceneTextures::WorldPosition:
+        {
+            auto depthParam = findOrAddSceneTexture(MaterialSceneTextures::SceneDepth);
+            auto depthSample = sampleTextureRaw(node, value, box, &depthParam);
+            if (depthSample == nullptr)
+                break;
+            const auto parent = box->GetParent<ShaderGraphNode<>>();
+            MaterialGraphBox* uvBox = parent->GetBox(0);
+            bool useCustomUVs = uvBox->HasConnection();
+            String uv;
+            if (useCustomUVs)
+                uv = MaterialValue::Cast(tryGetValue(uvBox, getUVs), VariantType::Float2).Value;
+            else
+                uv = TEXT("input.TexCoord.xy");
+            value = writeLocal(VariantType::Float3, String::Format(TEXT("GetWorldPos({1}, {0}.rgb)"), depthSample->Value, uv), node);
+            break;
+        }
         default:
         {
             // Sample single texture

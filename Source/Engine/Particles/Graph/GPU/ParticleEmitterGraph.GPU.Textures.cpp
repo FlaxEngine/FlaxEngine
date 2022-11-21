@@ -245,6 +245,9 @@ void ParticleEmitterGPUGenerator::ProcessGroupTextures(Box* box, Node* node, Val
             value = writeLocal(VariantType::Int, String::Format(TEXT("(int)({0}.a * 3.999)"), gBuffer1Sample.Value), node);
             break;
         }
+        case MaterialSceneTextures::WorldPosition:
+            value = Value::Zero; // Not implemented
+            break;
         default:
         {
             // Sample single texture
