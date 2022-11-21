@@ -11,6 +11,7 @@ namespace FlaxEditor.Content
     /// Content proxy for json settings assets (e.g <see cref="GameSettings"/> or <see cref="TimeSettings"/>).
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.JsonAssetProxy" />
+    [ContentContextMenu("New/Settings")]
     public class SettingsProxy : JsonAssetProxy
     {
         private readonly Type _type;

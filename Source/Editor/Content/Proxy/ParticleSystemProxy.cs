@@ -39,6 +39,7 @@ namespace FlaxEditor.Content
     /// A <see cref="ParticleSystem"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
+    [ContentContextMenu("New/Particles/Particle System")]
     public class ParticleSystemProxy : BinaryAssetProxy
     {
         private ParticleSystemPreview _preview;
