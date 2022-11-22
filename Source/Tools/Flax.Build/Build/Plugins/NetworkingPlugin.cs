@@ -345,6 +345,8 @@ namespace Flax.Build.Plugins
                 if (serialize)
                 {
                     contents.AppendLine($"        {{Guid id = {name} ? {name}->GetID() : Guid::Empty;");
+                    contents.AppendLine($"        const auto idsMapping = Scripting::ObjectsLookupIdMapping.Get();");
+                    contents.AppendLine($"        if (idsMapping) idsMapping->KeyOf(id, &id);"); // Perform inverse mapping from clientId into serverId (NetworkReplicator binds ObjectsLookupIdMapping table)
                     OnGenerateCppWriteRaw(contents, "id", serialize);
                     contents.AppendLine("        }");
                 }
