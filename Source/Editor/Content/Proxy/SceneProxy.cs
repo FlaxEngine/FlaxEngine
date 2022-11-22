@@ -10,6 +10,7 @@ namespace FlaxEditor.Content
     /// Content proxy for <see cref="SceneItem"/>.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.JsonAssetBaseProxy" />
+    [ContentContextMenu("New/Scene")]
     public sealed class SceneProxy : JsonAssetBaseProxy
     {
         /// <summary>

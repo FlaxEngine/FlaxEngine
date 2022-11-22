@@ -57,7 +57,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                 _list.Clear();
                 _hasValidData = true;
 
-                Editor.Log("Searching for valid " + _type);
+                Editor.Log("Searching for valid " + (_type != ScriptType.Null ? _type.ToString() : "types"));
                 Profiler.BeginEvent("Search " + _type);
                 var start = DateTime.Now;
 

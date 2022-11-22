@@ -15,6 +15,7 @@ namespace FlaxEditor.Content
     /// A <see cref="Material"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
+    [ContentContextMenu("New/Material/Material")]
     public class MaterialProxy : BinaryAssetProxy
     {
         private MaterialPreview _preview;

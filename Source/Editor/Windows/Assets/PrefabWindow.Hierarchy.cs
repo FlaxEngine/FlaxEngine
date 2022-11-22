@@ -263,21 +263,22 @@ namespace FlaxEditor.Windows.Assets
                 }
                 if (attribute == null)
                     continue;
-                var splitPath = attribute.Path.Split('/');
+                var parts = attribute.Path.Split('/');
                 ContextMenuChildMenu childCM = null;
                 bool mainCM = true;
-                for (int i = 0; i < splitPath?.Length; i++)
+                for (int i = 0; i < parts.Length; i++)
                 {
-                    if (i == splitPath.Length - 1)
+                    var part = parts[i].Trim();
+                    if (i == parts.Length - 1)
                     {
                         if (mainCM)
                         {
-                            contextMenu.AddButton(splitPath[i].Trim(), () => Spawn(actorType.Type));
+                            contextMenu.AddButton(part, () => Spawn(actorType.Type));
                             mainCM = false;
                         }
-                        else
+                        else if (childCM != null)
                         {
-                            childCM?.ContextMenu.AddButton(splitPath[i].Trim(), () => Spawn(actorType.Type));
+                            childCM.ContextMenu.AddButton(part, () => Spawn(actorType.Type));
                             childCM.ContextMenu.AutoSort = true;
                         }
                     }
@@ -285,14 +286,15 @@ namespace FlaxEditor.Windows.Assets
                     {
                         if (mainCM)
                         {
-                            childCM = contextMenu.GetOrAddChildMenu(splitPath[i].Trim());
+                            childCM = contextMenu.GetOrAddChildMenu(part);
+                            childCM.ContextMenu.AutoSort = true;
                             mainCM = false;
                         }
-                        else
+                        else if (childCM != null)
                         {
-                            childCM = childCM?.ContextMenu.GetOrAddChildMenu(splitPath[i].Trim());
+                            childCM = childCM.ContextMenu.GetOrAddChildMenu(part);
+                            childCM.ContextMenu.AutoSort = true;
                         }
-                        childCM.ContextMenu.AutoSort = true;
                     }
                 }
             }

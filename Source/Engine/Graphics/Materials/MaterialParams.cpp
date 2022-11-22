@@ -439,6 +439,7 @@ void MaterialParameter::Bind(BindMeta& meta) const
             switch (type)
             {
             case MaterialSceneTextures::SceneDepth:
+            case MaterialSceneTextures::WorldPosition:
                 view = meta.CanSampleDepth
                            ? meta.Buffers->DepthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView
                                  ? meta.Buffers->DepthBuffer->ViewReadOnlyDepth()

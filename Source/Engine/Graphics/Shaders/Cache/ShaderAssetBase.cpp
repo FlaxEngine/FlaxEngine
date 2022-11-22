@@ -113,6 +113,11 @@ bool ShaderAssetBase::Save()
 
 bool IsValidShaderCache(DataContainer<byte>& shaderCache, Array<String>& includes)
 {
+    if (shaderCache.Length() == 0)
+    {
+        return false;
+    }
+
     MemoryReadStream stream(shaderCache.Get(), shaderCache.Length());
 
     // Read cache format version

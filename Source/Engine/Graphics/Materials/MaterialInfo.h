@@ -435,6 +435,11 @@ API_ENUM() enum class MaterialSceneTextures
     /// The material shading mode.
     /// </summary>
     ShadingModel = 10,
+
+    /// <summary>
+    /// The scene world-space position (relative to the render view origin).
+    /// </summary>
+    WorldPosition = 11,
 };
 
 /// <summary>

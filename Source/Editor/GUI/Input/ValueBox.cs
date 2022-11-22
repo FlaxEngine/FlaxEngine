@@ -248,7 +248,7 @@ namespace FlaxEditor.GUI.Input
 
                 // Hide cursor and cache location
                 Cursor = CursorType.Hidden;
-                _mouseClickedPosition = location;
+                _mouseClickedPosition = PointToWindow(location);
                 _cursorChanged = true;
 
                 SlidingStart?.Invoke();
@@ -293,7 +293,7 @@ namespace FlaxEditor.GUI.Input
             if (button == MouseButton.Left && _isSliding)
             {
                 // End sliding and return mouse to original location
-                Root.MousePosition = ScreenPos + _mouseClickedPosition;
+                RootWindow.MousePosition = _mouseClickedPosition;
                 EndSliding();
                 return true;
             }
