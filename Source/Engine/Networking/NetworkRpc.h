@@ -47,7 +47,15 @@ FORCE_INLINE void NetworkRpcInitArg(Array<void*, FixedAllocation<16>>& args, con
 // Network RPC implementation (placed in the beginning of the method body)
 #define NETWORK_RPC_IMPL(type, name, ...) \
     { \
-    const NetworkRpcInfo& rpcInfo = NetworkRpcInfo::RPCsTable[NetworkRpcName(type::TypeInitializer, StringAnsiView(#name))]; \
+    const NetworkRpcInfo* rpcInfoPtr = NetworkRpcInfo::RPCsTable.TryGet(NetworkRpcName(type::TypeInitializer, StringAnsiView(#name))); \
+    if (rpcInfoPtr == nullptr) \
+    { \
+        if (Platform::IsDebuggerPresent()) \
+            PLATFORM_DEBUG_BREAK; \
+        Platform::Assert("Invalid RPC. Ensure to use proper type name and method name.", __FILE__, __LINE__); \
+        return; \
+    } \
+    const NetworkRpcInfo& rpcInfo = *rpcInfoPtr; \
     const NetworkManagerMode networkMode = NetworkManager::Mode; \
     if ((rpcInfo.Server && networkMode == NetworkManagerMode::Client) || (rpcInfo.Client && networkMode != NetworkManagerMode::Client)) \
     { \
