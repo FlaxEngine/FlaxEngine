@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.Scripting;
@@ -100,7 +99,7 @@ namespace FlaxEditor.Windows
 
         private TextBox _searchBox;
         private ContainerControl _groupSearch;
-        private Tabs actorGroups;
+        private Tabs _actorGroups;
 
         /// <summary>
         /// The editor instance.
@@ -120,7 +119,7 @@ namespace FlaxEditor.Windows
             ScriptsBuilder.ScriptsReload += OnScriptsReload;
             ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
 
-            actorGroups = new Tabs
+            _actorGroups = new Tabs
             {
                 Orientation = Orientation.Vertical,
                 UseScroll = true,
@@ -129,20 +128,20 @@ namespace FlaxEditor.Windows
                 TabsSize = new Float2(120, 32),
                 Parent = this,
             };
-            
-            _groupSearch = CreateGroupWithList(actorGroups, "Search", 26);
+
+            _groupSearch = CreateGroupWithList(_actorGroups, "Search", 26);
             _searchBox = new TextBox
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 WatermarkText = "Search...",
                 Parent = _groupSearch.Parent.Parent,
-                Bounds = new Rectangle(4, 4, actorGroups.Width - 8, 18),
+                Bounds = new Rectangle(4, 4, _actorGroups.Width - 8, 18),
             };
             _searchBox.TextChanged += OnSearchBoxTextChanged;
 
             RefreshActorTabs();
-            
-            actorGroups.SelectedTabIndex = 1;
+
+            _actorGroups.SelectedTabIndex = 1;
         }
 
         private void OnScriptsReload()
@@ -160,9 +159,9 @@ namespace FlaxEditor.Windows
 
         private void RefreshActorTabs()
         {
-            // Remove tabs 
-            List<Tab> tabs = new List<Tab>();
-            foreach (var child in actorGroups.Children)
+            // Remove tabs
+            var tabs = new List<Tab>();
+            foreach (var child in _actorGroups.Children)
             {
                 if (child is Tab tab)
                 {
@@ -170,34 +169,33 @@ namespace FlaxEditor.Windows
                         tabs.Add(tab);
                 }
             }
-            
             foreach (var tab in tabs)
             {
-                var group = actorGroups.Children.Find(T => T == tab);
+                var group = _actorGroups.Children.Find(T => T == tab);
                 group.Dispose();
             }
-            
-            var groupBasicModels = CreateGroupWithList(actorGroups, "Basic Models");
+
+            // Setup primitives tabs
+            var groupBasicModels = CreateGroupWithList(_actorGroups, "Basic Models");
             groupBasicModels.AddChild(CreateEditorAssetItem("Cube", "Primitives/Cube.flax"));
             groupBasicModels.AddChild(CreateEditorAssetItem("Sphere", "Primitives/Sphere.flax"));
             groupBasicModels.AddChild(CreateEditorAssetItem("Plane", "Primitives/Plane.flax"));
             groupBasicModels.AddChild(CreateEditorAssetItem("Cylinder", "Primitives/Cylinder.flax"));
             groupBasicModels.AddChild(CreateEditorAssetItem("Cone", "Primitives/Cone.flax"));
             groupBasicModels.AddChild(CreateEditorAssetItem("Capsule", "Primitives/Capsule.flax"));
-            
+
             // Created first to order specific tabs
-            CreateGroupWithList(actorGroups, "Lights");
-            CreateGroupWithList(actorGroups, "Visuals");
-            CreateGroupWithList(actorGroups, "Physics");
-            CreateGroupWithList(actorGroups, "GUI");
-            CreateGroupWithList(actorGroups, "Other");
-            
+            CreateGroupWithList(_actorGroups, "Lights");
+            CreateGroupWithList(_actorGroups, "Visuals");
+            CreateGroupWithList(_actorGroups, "Physics");
+            CreateGroupWithList(_actorGroups, "GUI");
+            CreateGroupWithList(_actorGroups, "Other");
+
             // Add other actor types to respective tab based on attribute
             foreach (var actorType in Editor.CodeEditing.Actors.Get())
             {
                 if (actorType.IsAbstract)
                     continue;
-
                 ActorToolboxAttribute attribute = null;
                 foreach (var e in actorType.GetAttributes(false))
                 {
@@ -207,19 +205,17 @@ namespace FlaxEditor.Windows
                         break;
                     }
                 }
-
                 if (attribute == null)
                     continue;
-
-                var groupName = attribute.Group;
+                var groupName = attribute.Group.Trim();
 
                 // Check if tab already exists and add it to the tab
                 var actorTabExists = false;
-                foreach (var child in actorGroups.Children)
+                foreach (var child in _actorGroups.Children)
                 {
                     if (child is Tab tab)
                     {
-                        if (tab.Text == groupName.Trim())
+                        if (string.Equals(tab.Text, groupName, StringComparison.OrdinalIgnoreCase))
                         {
                             var tree = tab.GetChild<Panel>().GetChild<Tree>();
                             if (tree != null)
@@ -234,8 +230,8 @@ namespace FlaxEditor.Windows
                 }
                 if (actorTabExists)
                     continue;
-                
-                var  group = CreateGroupWithList(actorGroups, groupName.Trim());
+
+                var group = CreateGroupWithList(_actorGroups, groupName);
                 group.AddChild(string.IsNullOrEmpty(attribute.Name) ? CreateActorItem(Utilities.Utils.GetPropertyNameUI(actorType.Name), actorType) : CreateActorItem(attribute.Name, actorType));
                 group.SortChildren();
             }

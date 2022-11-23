@@ -9,7 +9,8 @@
 /// <summary>
 /// A special type of volume that blends custom set of post process settings into the rendering.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Post Fx Volume\"), ActorToolbox(\"Visuals\")") class FLAXENGINE_API PostFxVolume : public BoxVolume, public IPostFxSettingsProvider
+API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Post Fx Volume\"), ActorToolbox(\"Visuals\")")
+class FLAXENGINE_API PostFxVolume : public BoxVolume, public IPostFxSettingsProvider
 {
     DECLARE_SCENE_OBJECT(PostFxVolume);
 private:

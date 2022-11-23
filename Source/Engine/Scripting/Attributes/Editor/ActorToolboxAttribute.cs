@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace FlaxEngine
 {
@@ -18,24 +18,24 @@ namespace FlaxEngine
         /// The name to be used for the actor in the tool box. Will default to actor name if now used.
         /// </summary>
         public string Name;
-        
+
         /// <summary>
-        /// Initializes a new instance of the  <see cref="ActorToolboxAttribute"/> class.
+        /// Initializes a new instance of the <see cref="ActorToolboxAttribute"/> class.
         /// </summary>
-        /// <param name="group">The group to use to create the tab</param>
+        /// <param name="group">The group to use to create the tab.</param>
         public ActorToolboxAttribute(string group)
         {
             Group = group;
         }
-        
+
         /// <summary>
-        /// Initializes a new instance of the  <see cref="ActorToolboxAttribute"/> class.
+        /// Initializes a new instance of the <see cref="ActorToolboxAttribute"/> class.
         /// </summary>
-        /// <param name="group">The group used to creat the tab</param>
-        /// <param name="name">The name to use rather than default</param>
+        /// <param name="group">The group used to create the tab.</param>
+        /// <param name="name">The name to use rather than default.</param>
         public ActorToolboxAttribute(string group, string name)
-        : this(group)
         {
+            Group = group;
             Name = name;
         }
     }

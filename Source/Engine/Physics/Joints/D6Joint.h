@@ -160,7 +160,8 @@ public:
 /// It also allows you to constrain limits to only specific axes or completely lock specific axes.
 /// </summary>
 /// <seealso cref="Joint" />
-API_CLASS(Attributes="ActorContextMenu(\"New/Physics/D6 Joint\"), ActorToolbox(\"Physics\")") class FLAXENGINE_API D6Joint : public Joint
+API_CLASS(Attributes="ActorContextMenu(\"New/Physics/D6 Joint\"), ActorToolbox(\"Physics\")")
+class FLAXENGINE_API D6Joint : public Joint
 {
     DECLARE_SCENE_OBJECT(D6Joint);
 private:

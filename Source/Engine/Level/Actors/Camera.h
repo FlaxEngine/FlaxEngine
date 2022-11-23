@@ -3,7 +3,6 @@
 #pragma once
 
 #include "../Actor.h"
-#include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/BoundingFrustum.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Math/Ray.h"
@@ -18,7 +17,8 @@
 /// <summary>
 /// Describes the camera projection and view. Provides information about how to render scene (viewport location and direction, etc.).
 /// </summary>
-API_CLASS(Sealed, Attributes="ActorContextMenu(\"New/Camera\"), ActorToolbox(\"Visuals\")") class FLAXENGINE_API Camera : public Actor
+API_CLASS(Sealed, Attributes="ActorContextMenu(\"New/Camera\"), ActorToolbox(\"Visuals\")")
+class FLAXENGINE_API Camera : public Actor
 {
     DECLARE_SCENE_OBJECT(Camera);
 
