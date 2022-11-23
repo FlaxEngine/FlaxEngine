@@ -67,7 +67,7 @@ public:
 /// Physics joint that removes all but a single rotation degree of freedom from its two attached bodies (for example a door hinge).
 /// </summary>
 /// <seealso cref="Joint" />
-API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Hinge Joint\")") class FLAXENGINE_API HingeJoint : public Joint
+API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Hinge Joint\"), ActorToolbox(\"Physics\")") class FLAXENGINE_API HingeJoint : public Joint
 {
     DECLARE_SCENE_OBJECT(HingeJoint);
 private:
