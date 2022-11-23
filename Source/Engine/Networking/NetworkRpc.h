@@ -38,7 +38,7 @@ FORCE_INLINE void NetworkRpcInitArg(Array<void*, FixedAllocation<16>>& args, con
 
 // Gets the pointers to the RPC arguments into the args buffer
 template<typename T, typename... Params>
-FORCE_INLINE void NetworkRpcInitArg(Array<void*, FixedAllocation<16>>& args, const T& first, Params&... params)
+FORCE_INLINE void NetworkRpcInitArg(Array<void*, FixedAllocation<16>>& args, const T& first, Params&&... params)
 {
     NetworkRpcInitArg(args, first);
     NetworkRpcInitArg(args, Forward<Params>(params)...);
@@ -50,9 +50,10 @@ FORCE_INLINE void NetworkRpcInitArg(Array<void*, FixedAllocation<16>>& args, con
     const NetworkRpcInfo* rpcInfoPtr = NetworkRpcInfo::RPCsTable.TryGet(NetworkRpcName(type::TypeInitializer, StringAnsiView(#name))); \
     if (rpcInfoPtr == nullptr) \
     { \
+        LOG(Error, "Invalid RPC {0}::{1}. Ensure to use proper type name and method name (and 'Network' tag on a code module).", TEXT(#type), TEXT(#name)); \
         if (Platform::IsDebuggerPresent()) \
             PLATFORM_DEBUG_BREAK; \
-        Platform::Assert("Invalid RPC. Ensure to use proper type name and method name.", __FILE__, __LINE__); \
+        Platform::Assert("Invalid RPC.", __FILE__, __LINE__); \
         return; \
     } \
     const NetworkRpcInfo& rpcInfo = *rpcInfoPtr; \

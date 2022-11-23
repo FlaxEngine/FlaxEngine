@@ -21,7 +21,7 @@ ENetPacketFlag ChannelTypeToPacketFlag(const NetworkChannelType channel)
     int flag = 0; // Maybe use ENET_PACKET_FLAG_NO_ALLOCATE?
 
     // Add reliable flag when it is "reliable" channel
-    if (channel > NetworkChannelType::UnreliableOrdered)
+    if (channel == NetworkChannelType::Reliable || channel == NetworkChannelType::ReliableOrdered)
         flag |= ENET_PACKET_FLAG_RELIABLE;
 
     // Use unsequenced flag when the flag is unreliable. We have to sequence all other packets.

@@ -46,6 +46,7 @@ namespace Flax.Build.Bindings
         public static event Action<BuildData, IGrouping<string, Module>, StringBuilder> GenerateCppBinaryModuleHeader;
         public static event Action<BuildData, IGrouping<string, Module>, StringBuilder> GenerateCppBinaryModuleSource;
         public static event Action<BuildData, ModuleInfo, StringBuilder> GenerateCppModuleSource;
+        public static event Action<BuildData, ApiTypeInfo, StringBuilder> GenerateCppTypeInternalsStatics;
         public static event Action<BuildData, ApiTypeInfo, StringBuilder> GenerateCppTypeInternals;
         public static event Action<BuildData, ApiTypeInfo, StringBuilder> GenerateCppTypeInitRuntime;
         public static event Action<BuildData, VirtualClassInfo, FunctionInfo, int, int, StringBuilder> GenerateCppScriptWrapperFunction;
@@ -1553,6 +1554,7 @@ namespace Flax.Build.Bindings
 
             if (classInfo.IsAutoSerialization)
                 GenerateCppAutoSerialization(buildData, contents, moduleInfo, classInfo, classTypeNameNative);
+            GenerateCppTypeInternalsStatics?.Invoke(buildData, classInfo, contents);
 
             contents.AppendLine();
             contents.AppendFormat("class {0}Internal", classTypeNameInternal).AppendLine();
@@ -1868,6 +1870,7 @@ namespace Flax.Build.Bindings
 
             if (structureInfo.IsAutoSerialization)
                 GenerateCppAutoSerialization(buildData, contents, moduleInfo, structureInfo, structureTypeNameNative);
+            GenerateCppTypeInternalsStatics?.Invoke(buildData, structureInfo, contents);
 
             contents.AppendLine();
             contents.AppendFormat("class {0}Internal", structureTypeNameInternal).AppendLine();
@@ -2096,6 +2099,8 @@ namespace Flax.Build.Bindings
             var interfaceTypeNameNative = interfaceInfo.FullNameNative;
             var interfaceTypeNameManaged = interfaceInfo.FullNameManaged;
             var interfaceTypeNameInternal = interfaceInfo.FullNameNativeInternal;
+
+            GenerateCppTypeInternalsStatics?.Invoke(buildData, interfaceInfo, contents);
 
             // Wrapper interface implement to invoke scripting if inherited in C# or VS
             contents.AppendLine();

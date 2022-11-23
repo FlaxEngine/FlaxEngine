@@ -90,20 +90,20 @@ namespace Flax.Build.Plugins
 
         private void OnParseMemberTag(ref bool valid, BindingsGenerator.TagParameter tag, MemberInfo memberInfo)
         {
-            if (tag.Tag == NetworkReplicated)
+            if (string.Equals(tag.Tag, NetworkReplicated, StringComparison.OrdinalIgnoreCase))
             {
                 // Mark member as replicated
                 valid = true;
                 memberInfo.SetTag(NetworkReplicated, string.Empty);
             }
-            else if (tag.Tag == NetworkRpc)
+            else if (string.Equals(tag.Tag, NetworkRpc, StringComparison.OrdinalIgnoreCase))
             {
                 // Mark member as rpc
                 valid = true;
                 memberInfo.SetTag(NetworkRpc, tag.Value);
             }
         }
-        
+
         private void OnGenerateCppTypeInternals(Builder.BuildData buildData, ApiTypeInfo typeInfo, StringBuilder contents)
         {
             // Skip modules that don't use networking
@@ -466,6 +466,10 @@ namespace Flax.Build.Plugins
 
         private void OnBuildDotNetAssembly(TaskGraph graph, Builder.BuildData buildData, NativeCpp.BuildOptions buildOptions, Task buildTask, IGrouping<string, Module> binaryModule)
         {
+            // Skip FlaxEngine.dll
+            if (string.Equals(binaryModule.Key, "FlaxEngine", StringComparison.Ordinal))
+                return;
+
             // Skip assemblies not using netowrking
             if (!binaryModule.Any(module => module.Tags.ContainsKey(Network)))
                 return;
