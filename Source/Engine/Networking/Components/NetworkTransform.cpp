@@ -53,7 +53,7 @@ void NetworkTransform::OnEnable()
 {
     // Initialize state
     _bufferHasDeltas = false;
-    _currentSequenceIndex = 0.0f;
+    _currentSequenceIndex = 0;
     _lastFrameTransform = GetActor() ? GetActor()->GetTransform() : Transform::Identity;
     _buffer.Clear();
 
