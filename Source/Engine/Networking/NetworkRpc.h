@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/Pair.h"
 #include "Engine/Core/Collections/Array.h"

@@ -13,6 +13,7 @@ public class Networking : EngineModule
     {
         base.Setup(options);
 
+        Tags["Network"] = string.Empty;
         options.PublicDefinitions.Add("COMPILE_WITH_NETWORKING");
     }
 }
