@@ -181,7 +181,7 @@ void SceneRendering::RemoveActor(Actor* a, int32& key)
 #define DRAW_ACTOR(mode) e.Actor->Draw(mode)
 #endif
 
-void SceneRendering::DrawActorsJob(int32 i)
+void SceneRendering::DrawActorsJob(int32)
 {
     PROFILE_CPU();
     auto& mainContext = _drawBatch->GetMainContext();

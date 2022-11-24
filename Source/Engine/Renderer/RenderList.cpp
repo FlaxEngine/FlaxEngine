@@ -637,27 +637,27 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
     if (useInstancing)
     {
         // Prepare buffer memory
-        int32 batchesCount = 0;
+        int32 instancedBatchesCount = 0;
         for (int32 i = 0; i < list.Batches.Count(); i++)
         {
             auto& batch = batchesData[i];
             if (batch.BatchSize > 1)
-                batchesCount += batch.BatchSize;
+                instancedBatchesCount += batch.BatchSize;
         }
         for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
         {
             auto& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
             if (batch.Instances.Count() > 1)
-                batchesCount += batch.Instances.Count();
+                instancedBatchesCount += batch.Instances.Count();
         }
-        if (batchesCount == 0)
+        if (instancedBatchesCount == 0)
         {
             // Faster path if none of the draw batches requires instancing
             useInstancing = false;
             goto DRAW;
         }
         _instanceBuffer.Clear();
-        _instanceBuffer.Data.Resize(batchesCount * sizeof(InstanceData));
+        _instanceBuffer.Data.Resize(instancedBatchesCount * sizeof(InstanceData));
         auto instanceData = (InstanceData*)_instanceBuffer.Data.Get();
 
         // Write to instance buffer

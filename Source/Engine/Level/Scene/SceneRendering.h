@@ -171,5 +171,5 @@ private:
     volatile int64 _drawListIndex;
     RenderContextBatch* _drawBatch;
 
-    void DrawActorsJob(int32 i);
+    void DrawActorsJob(int32);
 };
