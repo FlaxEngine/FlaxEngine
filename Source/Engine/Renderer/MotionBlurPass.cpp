@@ -213,7 +213,7 @@ void MotionBlurPass::RenderMotionVectors(RenderContext& renderContext)
     // Render camera motion vectors (background)
     if (!data.TemporalAAJitter.IsZero() || data.CurrentVP != data.PreviousVP)
     {
-        PROFILE_GPU_CPU("Camera Motion Vectors");
+        PROFILE_GPU("Camera Motion Vectors");
         context->SetRenderTarget(motionVectors->View());
         context->SetState(_psCameraMotionVectors);
         context->DrawFullscreenTriangle();
@@ -229,7 +229,6 @@ void MotionBlurPass::RenderMotionVectors(RenderContext& renderContext)
     context->SetRenderTarget(depthBuffer->View(), motionVectors->View());
     renderContext.View.Pass = DrawPass::MotionVectors;
     // TODO: maybe update material PerFrame data because render viewport can be other size than ScreenSize from render buffers
-    renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::MotionVectors);
     renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::MotionVectors);
 
     // Cleanup

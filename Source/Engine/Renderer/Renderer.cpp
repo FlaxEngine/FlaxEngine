@@ -323,11 +323,12 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 
     // Build batch of render contexts (main view and shadow projections)
     const bool isGBufferDebug = GBufferPass::IsDebugView(renderContext.View.Mode);
+    const bool needMotionVectors = Renderer::NeedMotionVectors(renderContext);
     {
         PROFILE_CPU_NAMED("Collect Draw Calls");
 
         view.Pass = DrawPass::GBuffer | DrawPass::Forward | DrawPass::Distortion;
-        if (Renderer::NeedMotionVectors(renderContext))
+        if (needMotionVectors)
             view.Pass |= DrawPass::MotionVectors;
         renderContextBatch.GetMainContext() = renderContext; // Sync render context in batch with the current value
 
@@ -369,6 +370,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::GBufferNoDecals);
         renderContext.List->SortDrawCalls(renderContext, true, DrawCallsListType::Forward);
         renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::Distortion);
+        if (needMotionVectors)
+            renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::MotionVectors);
         for (int32 i = 1; i < renderContextBatch.Contexts.Count(); i++)
         {
             auto& shadowContext = renderContextBatch.Contexts[i];
