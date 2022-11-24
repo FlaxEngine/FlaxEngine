@@ -314,10 +314,9 @@ void NetworkTransform::Deserialize(NetworkStream* stream)
         transform.Orientation = transformLocal.Orientation;
 
         // If local simulation is very close to the authoritative server value then ignore slight error (based relative delta threshold)
-        const Transform transformDeltaAfter = transformAuthoritative - transformLocal;
-        const Transform transformDeltaDelta = transformDeltaAfter - transformDeltaBefore;
-        if (IsWithinPrecision(transformDeltaDelta.Translation, transformDeltaAfter.Translation) &&
-            IsWithinPrecision(transformDeltaDelta.Scale, transformDeltaAfter.Scale)
+        const Transform transformDeltaAfter = transformAuthoritative - transform;
+        if (IsWithinPrecision(transformDeltaBefore.Translation, transformDeltaAfter.Translation) &&
+            IsWithinPrecision(transformDeltaBefore.Scale, transformDeltaAfter.Scale)
         )
         {
             return;
