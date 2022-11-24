@@ -5,6 +5,7 @@
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Content/Upgraders/ShaderAssetUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
+#include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Materials/MaterialShader.h"
 #include "Engine/Graphics/Shaders/Cache/ShaderCacheManager.h"
@@ -123,6 +124,18 @@ Asset::LoadResult Material::load()
 {
     ASSERT(_materialShader == nullptr);
     FlaxChunk* materialParamsChunk;
+
+    // Wait for the GPU Device to be ready (eg. case when loading material before GPU init)
+#define IS_GPU_NOT_READY() (GPUDevice::Instance == nullptr || GPUDevice::Instance->GetState() != GPUDevice::DeviceState::Ready || GPUDevice::Instance->QuadShader == nullptr)
+    if (!IsInMainThread() && IS_GPU_NOT_READY())
+    {
+        int32 timeout = 1000;
+        while (IS_GPU_NOT_READY() && timeout-- > 0)
+            Platform::Sleep(1);
+        if (IS_GPU_NOT_READY())
+            return LoadResult::InvalidData;
+    }
+#undef IS_GPU_NOT_READY
 
     // Special case for Null renderer
     if (IsNullRenderer())
