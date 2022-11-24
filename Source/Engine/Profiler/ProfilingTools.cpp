@@ -29,6 +29,8 @@ ProfilingToolsService ProfilingToolsServiceInstance;
 
 void ProfilingToolsService::Update()
 {
+    ZoneScoped;
+
     // Capture stats
     {
         auto& stats = ProfilingTools::Stats;
