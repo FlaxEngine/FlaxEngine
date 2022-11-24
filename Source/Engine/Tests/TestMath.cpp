@@ -15,6 +15,31 @@ static Quaternion RotationX(float angle)
     return Quaternion(Math::Sin(halfAngle), 0.0f, 0.0f, Math::Cos(halfAngle));
 }
 
+TEST_CASE("Math")
+{
+    SECTION("Test")
+    {
+        CHECK(Math::RoundUpToPowerOf2(0) == 0);
+        CHECK(Math::RoundUpToPowerOf2(1) == 1);
+        CHECK(Math::RoundUpToPowerOf2(2) == 2);
+        CHECK(Math::RoundUpToPowerOf2(3) == 4);
+        CHECK(Math::RoundUpToPowerOf2(4) == 4);
+        CHECK(Math::RoundUpToPowerOf2(5) == 8);
+        CHECK(Math::RoundUpToPowerOf2(6) == 8);
+        CHECK(Math::RoundUpToPowerOf2(7) == 8);
+        CHECK(Math::RoundUpToPowerOf2(8) == 8);
+        CHECK(Math::RoundUpToPowerOf2(9) == 16);
+        CHECK(Math::RoundUpToPowerOf2(10) == 16);
+        CHECK(Math::RoundUpToPowerOf2(11) == 16);
+        CHECK(Math::RoundUpToPowerOf2(12) == 16);
+        CHECK(Math::RoundUpToPowerOf2(13) == 16);
+        CHECK(Math::RoundUpToPowerOf2(14) == 16);
+        CHECK(Math::RoundUpToPowerOf2(15) == 16);
+        CHECK(Math::RoundUpToPowerOf2(16) == 16);
+        CHECK(Math::RoundUpToPowerOf2(17) == 32);
+    }
+}
+
 TEST_CASE("FloatR10G10B10A2")
 {
     SECTION("Test Conversion")
