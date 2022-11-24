@@ -214,11 +214,8 @@ namespace Math
     /// <returns>The power of 2.</returns>
     static int32 RoundUpToPowerOf2(int32 value)
     {
-        // Source:
-        // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-        if (value < 0)
-            return 0;
-        value++;
+        // Source: http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+        value--;
         value |= value >> 1;
         value |= value >> 2;
         value |= value >> 4;
@@ -234,9 +231,8 @@ namespace Math
     /// <returns>The power of 2.</returns>
     static uint32 RoundUpToPowerOf2(uint32 value)
     {
-        // Source:
-        // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-        value++;
+        // Source: http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+        value--;
         value |= value >> 1;
         value |= value >> 2;
         value |= value >> 4;
@@ -252,11 +248,8 @@ namespace Math
     /// <returns>The power of 2.</returns>
     static int64 RoundUpToPowerOf2(int64 value)
     {
-        // Source:
-        // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-        if (value < 0)
-            return 0;
-        value++;
+        // Source: http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+        value--;
         value |= value >> 1;
         value |= value >> 2;
         value |= value >> 4;
@@ -273,9 +266,8 @@ namespace Math
     /// <returns>The power of 2.</returns>
     static uint64 RoundUpToPowerOf2(uint64 value)
     {
-        // Source:
-        // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-        value++;
+        // Source: http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+        value--;
         value |= value >> 1;
         value |= value >> 2;
         value |= value >> 4;
