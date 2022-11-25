@@ -8,6 +8,7 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Scripting/ScriptingType.h"
+#include "Engine/Networking/NetworkManager.h"
 
 class NetworkStream;
 

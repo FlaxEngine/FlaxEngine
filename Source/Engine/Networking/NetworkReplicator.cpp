@@ -90,9 +90,6 @@ struct NetworkReplicatedObject
     uint32 LastOwnerFrame = 0;
     NetworkObjectRole Role;
     uint8 Spawned = false;
-#if NETWORK_REPLICATOR_DEBUG_LOG
-    uint8 InvalidTypeWarn = false;
-#endif
     DataContainer<uint32> TargetClientIds;
     INetworkObject* AsNetworkObject;
 
@@ -138,6 +135,12 @@ struct SpawnItem
     NetworkObjectRole Role;
 };
 
+struct DespawnItem
+{
+    Guid Id;
+    DataContainer<uint32> Targets;
+};
+
 struct RpcItem
 {
     ScriptingObjectReference<ScriptingObject> Object;
@@ -151,7 +154,7 @@ namespace
     CriticalSection ObjectsLock;
     HashSet<NetworkReplicatedObject> Objects;
     Array<SpawnItem> SpawnQueue;
-    Array<Guid> DespawnQueue;
+    Array<DespawnItem> DespawnQueue;
     Array<RpcItem> RpcQueue;
     Dictionary<Guid, Guid> IdsRemappingTable;
     NetworkStream* CachedWriteStream = nullptr;
@@ -226,7 +229,8 @@ NetworkReplicatedObject* ResolveObject(Guid objectId, Guid parentId, char object
         if (item.LastOwnerFrame == 0 &&
             item.ParentId == parentId &&
             obj &&
-            obj->GetTypeHandle() == objectType)
+            obj->GetTypeHandle() == objectType &&
+            !IdsRemappingTable.ContainsValue(item.ObjectId))
         {
             // Boost future lookups by using indirection
             NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Remap object ID={} into object {}:{}", objectId, item.ToString(), obj->GetType().ToString());
@@ -351,8 +355,13 @@ void SendObjectRoleMessage(const NetworkReplicatedObject& item, const NetworkCli
     }
 }
 
-FORCE_INLINE void DeleteNetworkObject(ScriptingObject* obj)
+void DeleteNetworkObject(ScriptingObject* obj)
 {
+    // Remove from the mapping table
+    const Guid id = obj->GetID();
+    IdsRemappingTable.Remove(id);
+    IdsRemappingTable.RemoveValue(id);
+
     if (obj->Is<Script>() && ((Script*)obj)->GetParent())
         ((Script*)obj)->GetParent()->DeleteObject();
     else
@@ -499,6 +508,10 @@ void NetworkReplicator::AddObject(ScriptingObject* obj, ScriptingObject* parent)
             parent = sceneObject->GetParent();
     }
 
+    // Ensure to register object in a scripting system (eg. lookup by ObjectId will work)
+    if (!obj->IsRegistered())
+        obj->RegisterObject();
+
     // Add object to the list
     NetworkReplicatedObject item;
     item.Object = obj;
@@ -541,9 +554,9 @@ void NetworkReplicator::SpawnObject(ScriptingObject* obj, const DataContainer<ui
         return; // Skip if object was already spawned
 
     // Register for spawning (batched during update)
-    auto& item = SpawnQueue.AddOne();
-    item.Object = obj;
-    item.Targets.Copy(clientIds);
+    auto& spawn = SpawnQueue.AddOne();
+    spawn.Object = obj;
+    spawn.Targets.Copy(clientIds);
 }
 
 void NetworkReplicator::DespawnObject(ScriptingObject* obj)
@@ -559,9 +572,9 @@ void NetworkReplicator::DespawnObject(ScriptingObject* obj)
         return;
 
     // Register for despawning (batched during update)
-    const Guid id = obj->GetID();
-    ASSERT_LOW_LAYER(!DespawnQueue.Contains(id));
-    DespawnQueue.Add(id);
+    auto& despawn = DespawnQueue.AddOne();
+    despawn.Id = obj->GetID();
+    despawn.Targets = item.TargetClientIds;
 
     // Prevent spawning
     for (int32 i = 0; i < SpawnQueue.Count(); i++)
@@ -727,8 +740,9 @@ void NetworkInternal::NetworkReplicatorClientDisconnected(NetworkClient* client)
         if (obj && item.Spawned && item.OwnerClientId == clientId)
         {
             // Register for despawning (batched during update)
-            const Guid id = obj->GetID();
-            DespawnQueue.Add(id);
+            auto& despawn = DespawnQueue.AddOne();
+            despawn.Id = obj->GetID();
+            despawn.Targets = MoveTemp(item.TargetClientIds);
 
             // Delete object locally
             if (item.AsNetworkObject)
@@ -816,12 +830,12 @@ void NetworkInternal::NetworkReplicatorUpdate()
     if (DespawnQueue.Count() != 0)
     {
         PROFILE_CPU_NAMED("DespawnQueue");
-        for (const Guid& e : DespawnQueue)
+        for (DespawnItem& e : DespawnQueue)
         {
             // Send despawn message
-            NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Despawn object ID={}", e.ToString());
+            NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Despawn object ID={}", e.Id.ToString());
             NetworkMessageObjectDespawn msgData;
-            msgData.ObjectId = e;
+            msgData.ObjectId = e.Id;
             if (isClient)
             {
                 // Remap local client object ids into server ids
@@ -829,7 +843,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
             }
             NetworkMessage msg = peer->BeginSendMessage();
             msg.WriteStructure(msgData);
-            // TODO: use TargetClientIds for object despawning (send despawn message only to relevant clients)
+            BuildCachedTargets(NetworkManager::Clients, e.Targets);
             if (isClient)
                 peer->EndSendMessage(NetworkChannelType::ReliableOrdered, msg);
             else
@@ -842,7 +856,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
     if (SpawnQueue.Count() != 0)
     {
         PROFILE_CPU_NAMED("SpawnQueue");
-        for (auto& e : SpawnQueue)
+        for (SpawnItem& e : SpawnQueue)
         {
             // Propagate hierarchical ownership from spawned parent to spawned child objects (eg. spawned script and spawned actor with set hierarchical ownership on actor which should affect script too)
             if (e.HasOwnership && e.HierarchicalOwnership)
@@ -858,7 +872,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 }
             }
         }
-        for (auto& e : SpawnQueue)
+        for (SpawnItem& e : SpawnQueue)
         {
             ScriptingObject* obj = e.Object.Get();
             if (!obj)
@@ -924,13 +938,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
         const bool failed = NetworkReplicator::InvokeSerializer(obj->GetTypeHandle(), obj, stream, true);
         if (failed)
         {
-#if NETWORK_REPLICATOR_DEBUG_LOG
-            if (!item.InvalidTypeWarn)
-            {
-                item.InvalidTypeWarn = true;
-                NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Cannot serialize object {} of type {} (missing serialization logic)", item.ToString(), obj->GetType().ToString());
-            }
-#endif
+            //NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Cannot serialize object {} of type {} (missing serialization logic)", item.ToString(), obj->GetType().ToString());
             continue;
         }
 
@@ -1048,13 +1056,7 @@ void NetworkInternal::OnNetworkMessageObjectReplicate(NetworkEvent& event, Netwo
         const bool failed = NetworkReplicator::InvokeSerializer(obj->GetTypeHandle(), obj, stream, false);
         if (failed)
         {
-#if NETWORK_REPLICATOR_DEBUG_LOG
-            if (failed && !item.InvalidTypeWarn)
-            {
-                item.InvalidTypeWarn = true;
-                NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Cannot serialize object {} of type {} (missing serialization logic)", item.ToString(), obj->GetType().ToString());
-            }
-#endif
+            //NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Cannot serialize object {} of type {} (missing serialization logic)", item.ToString(), obj->GetType().ToString());
         }
 
         if (item.AsNetworkObject)

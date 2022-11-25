@@ -139,6 +139,10 @@ void NetworkTransform::OnUpdate()
             Transform::Lerp(b0.Value, b1.Value, alpha, transform);
             Set(transform);
         }
+        else if (_buffer.Count() == 1 && _buffer[0].Timestamp <= gameTime)
+        {
+            Set(_buffer[0].Value);
+        }
     }
 }
 
