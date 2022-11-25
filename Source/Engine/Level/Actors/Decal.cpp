@@ -75,8 +75,7 @@ void Decal::Draw(RenderContext& renderContext)
         Material->IsLoaded() &&
         Material->IsDecal())
     {
-        const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
-        const float screenRadiusSquared = RenderTools::ComputeBoundsScreenRadiusSquared(_sphere.Center - renderContext.View.Origin, (float)_sphere.Radius, *lodView) * renderContext.View.ModelLODDistanceFactorSqrt;
+        const float screenRadiusSquared = RenderTools::ComputeBoundsScreenRadiusSquared(_sphere.Center - renderContext.View.Origin, (float)_sphere.Radius, renderContext.View) * renderContext.View.ModelLODDistanceFactorSqrt;
 
         // Check if decal is being culled
         if (Math::Square(DrawMinScreenSize * 0.5f) > screenRadiusSquared)

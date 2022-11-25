@@ -441,8 +441,7 @@ float RenderTools::ComputeBoundsScreenRadiusSquared(const Float3& origin, float 
 
 int32 RenderTools::ComputeModelLOD(const Model* model, const Float3& origin, float radius, const RenderContext& renderContext)
 {
-    const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
-    const float screenRadiusSquared = ComputeBoundsScreenRadiusSquared(origin, radius, *lodView) * renderContext.View.ModelLODDistanceFactorSqrt;
+    const float screenRadiusSquared = ComputeBoundsScreenRadiusSquared(origin, radius, renderContext.View) * renderContext.View.ModelLODDistanceFactorSqrt;
 
     // Check if model is being culled
     if (Math::Square(model->MinScreenSize * 0.5f) > screenRadiusSquared)
@@ -466,8 +465,7 @@ int32 RenderTools::ComputeModelLOD(const Model* model, const Float3& origin, flo
 
 int32 RenderTools::ComputeSkinnedModelLOD(const SkinnedModel* model, const Float3& origin, float radius, const RenderContext& renderContext)
 {
-    const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
-    const float screenRadiusSquared = ComputeBoundsScreenRadiusSquared(origin, radius, *lodView) * renderContext.View.ModelLODDistanceFactorSqrt;
+    const float screenRadiusSquared = ComputeBoundsScreenRadiusSquared(origin, radius, renderContext.View) * renderContext.View.ModelLODDistanceFactorSqrt;
 
     // Check if model is being culled
     if (Math::Square(model->MinScreenSize * 0.5f) > screenRadiusSquared)

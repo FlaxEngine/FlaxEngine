@@ -427,11 +427,6 @@ API_STRUCT(NoDefault) struct RenderContext
     API_FIELD() SceneRenderTask* Task = nullptr;
 
     /// <summary>
-    /// The proxy render view used to synchronize objects level of detail during rendering (eg. during shadow maps rendering passes). It's optional.
-    /// </summary>
-    API_FIELD() RenderView* LodProxyView = nullptr;
-
-    /// <summary>
     /// The render view.
     /// </summary>
     API_FIELD() RenderView View;
