@@ -111,8 +111,8 @@ public:
             }
             else
             {
-                // Round up to the next power of 2 and multiply by 2
-                capacity++;
+                // Round up to the next power of 2 and multiply by 2 (http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2)
+                capacity--;
                 capacity |= capacity >> 1;
                 capacity |= capacity >> 2;
                 capacity |= capacity >> 4;

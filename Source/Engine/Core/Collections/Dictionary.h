@@ -502,14 +502,14 @@ public:
         _deletedCount = _elementsCount = 0;
         if (capacity != 0 && (capacity & (capacity - 1)) != 0)
         {
-            // Align capacity value to the next power of two (if it's not)
-            capacity++;
+            // Align capacity value to the next power of two (http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2)
+            capacity--;
             capacity |= capacity >> 1;
             capacity |= capacity >> 2;
             capacity |= capacity >> 4;
             capacity |= capacity >> 8;
             capacity |= capacity >> 16;
-            capacity = capacity + 1;
+            capacity++;
         }
         if (capacity)
         {
