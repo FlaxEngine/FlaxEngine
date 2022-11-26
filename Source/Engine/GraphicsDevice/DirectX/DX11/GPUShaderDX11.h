@@ -18,16 +18,7 @@ private:
     ID3D11Buffer* _resource;
 
 public:
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUConstantBufferDX11"/> class.
-    /// </summary>
-    /// <param name="device">The graphics device.</param>
-    /// <param name="name">The resource name.</param>
-    /// <param name="size">The buffer size (in bytes).</param>
-    /// <param name="memorySize">The buffer memory size (in bytes).</param>
-    /// <param name="buffer">The buffer.</param>
-    GPUConstantBufferDX11(GPUDeviceDX11* device, const String& name, uint32 size, uint32 memorySize, ID3D11Buffer* buffer) noexcept
+    GPUConstantBufferDX11(GPUDeviceDX11* device, uint32 size, uint32 memorySize, ID3D11Buffer* buffer, const StringView& name) noexcept
         : GPUResourceDX11(device, name)
         , _resource(buffer)
     {
@@ -97,7 +88,6 @@ protected:
 
     // [GPUShader]
     GPUShaderProgram* CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize, MemoryReadStream& stream) override;
-    GPUConstantBuffer* CreateCB(const String& name, uint32 size, MemoryReadStream& stream) override;
     void OnReleaseGPU() override;
 
 public:

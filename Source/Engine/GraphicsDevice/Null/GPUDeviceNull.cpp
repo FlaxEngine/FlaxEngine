@@ -189,6 +189,11 @@ GPUSwapChain* GPUDeviceNull::CreateSwapChain(Window* window)
     return New<GPUSwapChainNull>(window);
 }
 
+GPUConstantBuffer* GPUDeviceNull::CreateConstantBuffer(uint32 size, const StringView& name)
+{
+    return nullptr;
+}
+
 GPUDevice* CreateGPUDeviceNull()
 {
     return GPUDeviceNull::Create();

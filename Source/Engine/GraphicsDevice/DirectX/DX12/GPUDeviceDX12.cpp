@@ -14,7 +14,6 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Graphics/RenderTask.h"
-#include "Engine/Graphics/Async/GPUTasksExecutor.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Core/Log.h"
@@ -793,6 +792,11 @@ GPUSampler* GPUDeviceDX12::CreateSampler()
 GPUSwapChain* GPUDeviceDX12::CreateSwapChain(Window* window)
 {
     return New<GPUSwapChainDX12>(this, window);
+}
+
+GPUConstantBuffer* GPUDeviceDX12::CreateConstantBuffer(uint32 size, const StringView& name)
+{
+    return New<GPUConstantBufferDX12>(this, size, name);
 }
 
 void GPUDeviceDX12::AddResourceToLateRelease(IGraphicsUnknown* resource, uint32 safeFrameCount)

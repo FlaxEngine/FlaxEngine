@@ -4,6 +4,7 @@
 #include "GPUConstantBuffer.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 
 GPUShaderProgramsContainer::GPUShaderProgramsContainer()
@@ -148,7 +149,7 @@ bool GPUShader::Create(MemoryReadStream& stream)
 			String name;
 #endif
             ASSERT(_constantBuffers[slotIndex] == nullptr);
-            const auto cb = CreateCB(name, size, stream);
+            const auto cb = GPUDevice::Instance->CreateConstantBuffer(size, name);
             if (cb == nullptr)
             {
                 LOG(Warning, "Failed to create shader constant buffer.");
@@ -196,7 +197,14 @@ GPUResource::ResourceType GPUShader::GetResourceType() const
 
 void GPUShader::OnReleaseGPU()
 {
+    for (GPUConstantBuffer*& cb : _constantBuffers)
+    {
+        if (cb)
+        {
+            SAFE_DELETE_GPU_RESOURCE(cb);
+            cb = nullptr;
+        }
+    }
     _memoryUsage = 0;
     _shaders.Clear();
-    Platform::MemoryClear(_constantBuffers, sizeof(_constantBuffers));
 }

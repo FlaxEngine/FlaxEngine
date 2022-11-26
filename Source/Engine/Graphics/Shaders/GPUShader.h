@@ -179,7 +179,6 @@ public:
 protected:
     GPUShaderProgram* GetShader(ShaderStage stage, const StringAnsiView& name, int32 permutationIndex) const;
     virtual GPUShaderProgram* CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize, MemoryReadStream& stream) = 0;
-    virtual GPUConstantBuffer* CreateCB(const String& name, uint32 size, MemoryReadStream& stream) = 0;
 
 public:
     // [GPUResource]

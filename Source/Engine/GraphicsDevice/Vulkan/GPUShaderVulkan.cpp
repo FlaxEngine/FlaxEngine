@@ -234,16 +234,4 @@ GPUShaderProgram* GPUShaderVulkan::CreateGPUShaderProgram(ShaderStage type, cons
     return shader;
 }
 
-GPUConstantBuffer* GPUShaderVulkan::CreateCB(const String& name, uint32 size, MemoryReadStream& stream)
-{
-    return new(_cbs) GPUConstantBufferVulkan(_device, size);
-}
-
-void GPUShaderVulkan::OnReleaseGPU()
-{
-    _cbs.Clear();
-
-    GPUShader::OnReleaseGPU();
-}
-
 #endif

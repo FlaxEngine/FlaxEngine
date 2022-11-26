@@ -14,14 +14,8 @@
 class GPUConstantBufferDX12 : public GPUResourceDX12<GPUConstantBuffer>
 {
 public:
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUConstantBufferDX12"/> class.
-    /// </summary>
-    /// <param name="device">The graphics device.</param>
-    /// <param name="size">The buffer size (in bytes).</param>
-    GPUConstantBufferDX12(GPUDeviceDX12* device, uint32 size) noexcept
-        : GPUResourceDX12(device, String::Empty)
+    GPUConstantBufferDX12(GPUDeviceDX12* device, uint32 size, const StringView& name) noexcept
+        : GPUResourceDX12(device, name)
         , GPUAddress(0)
     {
         _size = size;
@@ -40,10 +34,6 @@ public:
 /// </summary>
 class GPUShaderDX12 : public GPUResourceDX12<GPUShader>
 {
-private:
-
-    Array<GPUConstantBufferDX12, FixedAllocation<MAX_CONSTANT_BUFFER_SLOTS>> _cbs;
-
 public:
 
     /// <summary>
@@ -60,8 +50,6 @@ protected:
 
     // [GPUShader]
     GPUShaderProgram* CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize, MemoryReadStream& stream) override;
-    GPUConstantBuffer* CreateCB(const String& name, uint32 size, MemoryReadStream& stream) override;
-    void OnReleaseGPU() override;
 };
 
 #endif

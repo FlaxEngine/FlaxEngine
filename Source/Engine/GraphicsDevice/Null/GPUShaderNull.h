@@ -19,11 +19,6 @@ protected:
         return nullptr;
     }
 
-    GPUConstantBuffer* CreateCB(const String& name, uint32 size, MemoryReadStream& stream) override
-    {
-        return nullptr;
-    }
-
 public:
 
     // [GPUShader]

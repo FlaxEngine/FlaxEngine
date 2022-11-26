@@ -127,18 +127,6 @@ GPUShaderProgram* GPUShaderDX12::CreateGPUShaderProgram(ShaderStage type, const 
     return shader;
 }
 
-GPUConstantBuffer* GPUShaderDX12::CreateCB(const String& name, uint32 size, MemoryReadStream& stream)
-{
-    return new(_cbs) GPUConstantBufferDX12(_device, size);
-}
-
-void GPUShaderDX12::OnReleaseGPU()
-{
-    _cbs.Clear();
-
-    GPUShader::OnReleaseGPU();
-}
-
 ID3D12PipelineState* GPUShaderProgramCSDX12::GetOrCreateState()
 {
     if (_state)

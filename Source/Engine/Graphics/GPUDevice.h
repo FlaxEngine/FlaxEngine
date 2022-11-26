@@ -365,6 +365,14 @@ public:
     virtual GPUSwapChain* CreateSwapChain(Window* window) = 0;
 
     /// <summary>
+    /// Creates the constant buffer.
+    /// </summary>
+    /// <param name="name">The resource name.</param>
+    /// <param name="size">The buffer size (in bytes).</param>
+    /// <returns>The constant buffer.</returns>
+    virtual GPUConstantBuffer* CreateConstantBuffer(uint32 size, const StringView& name = StringView::Empty) = 0;
+
+    /// <summary>
     /// Creates the GPU tasks context.
     /// </summary>
     /// <returns>The GPU tasks context.</returns>

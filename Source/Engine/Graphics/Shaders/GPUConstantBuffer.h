@@ -16,7 +16,6 @@ public:
     /// <summary>
     /// Gets the buffer size (in bytes).
     /// </summary>
-    /// <returns>The buffer size (in bytes).</returns>
     FORCE_INLINE uint32 GetSize() const
     {
         return _size;

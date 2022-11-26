@@ -2045,6 +2045,11 @@ GPUSwapChain* GPUDeviceVulkan::CreateSwapChain(Window* window)
     return New<GPUSwapChainVulkan>(this, window);
 }
 
+GPUConstantBuffer* GPUDeviceVulkan::CreateConstantBuffer(uint32 size, const StringView& name)
+{
+    return New<GPUConstantBufferVulkan>(this, size);
+}
+
 SemaphoreVulkan::SemaphoreVulkan(GPUDeviceVulkan* device)
     : _device(device)
 {
