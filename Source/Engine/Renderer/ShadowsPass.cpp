@@ -193,6 +193,9 @@ void ShadowsPass::SetupRenderContext(RenderContext& renderContext, RenderContext
 {
     const auto& view = renderContext.View;
 
+    // Use the current render view to sync model LODs with the shadow maps rendering stage
+    shadowContext.LodProxyView = &renderContext.View;
+
     // Prepare properties
     auto& shadowView = shadowContext.View;
     shadowView.Flags = view.Flags;
