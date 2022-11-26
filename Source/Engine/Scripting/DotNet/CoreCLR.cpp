@@ -20,13 +20,13 @@
 #if COMPILE_WITH_PROFILER
 #endif
 
-namespace CoreCLRPrivate
-{
-}
-
 static Dictionary<String, void*> cachedFunctions;
 static String assemblyName = TEXT("FlaxEngine.CSharp");
-static Char* typeName = TEXT("FlaxEngine.NativeInterop, FlaxEngine.CSharp");
+#if PLATFORM_WINDOWS
+static const char_t* typeName = TEXT("FlaxEngine.NativeInterop, FlaxEngine.CSharp");
+#else
+static const char_t* typeName = "FlaxEngine.NativeInterop, FlaxEngine.CSharp";
+#endif
 
 hostfxr_initialize_for_runtime_config_fn hostfxr_initialize_for_runtime_config;
 hostfxr_initialize_for_dotnet_command_line_fn hostfxr_initialize_for_dotnet_command_line;
@@ -38,9 +38,9 @@ hostfxr_set_error_writer_fn hostfxr_set_error_writer;
 hostfxr_get_dotnet_environment_info_result_fn hostfxr_get_dotnet_environment_info_result;
 hostfxr_run_app_fn hostfxr_run_app;
 
-bool CoreCLR::LoadHostfxr(const String& library_path)
+bool CoreCLR::LoadHostfxr(const String& library_path_)
 {
-    Platform::SetEnvironmentVariable(TEXT("DOTNET_MULTILEVEL_LOOKUP"), TEXT("0")); // FIXME: not needed with .NET 7
+    const FLAX_CORECLR_STRING& library_path = FLAX_CORECLR_STRING(library_path_);
 
     Platform::SetEnvironmentVariable(TEXT("DOTNET_TieredPGO"), TEXT("1"));
     Platform::SetEnvironmentVariable(TEXT("DOTNET_TC_QuickJitForLoops"), TEXT("1"));
@@ -60,9 +60,10 @@ bool CoreCLR::LoadHostfxr(const String& library_path)
         LOG(Error, "Failed to find hostfxr: {0:x}", (unsigned int)rc);
         return false;
     }
-    LOG(Info, "Found hostfxr in {0}", hostfxrPath);
+    String path(hostfxrPath);
+    LOG(Info, "Found hostfxr in {0}", path);
 
-    void *hostfxr = Platform::LoadLibrary(hostfxrPath);
+    void *hostfxr = Platform::LoadLibrary(path.Get());
     hostfxr_initialize_for_runtime_config = (hostfxr_initialize_for_runtime_config_fn)Platform::GetProcAddress(hostfxr, "hostfxr_initialize_for_runtime_config");
     hostfxr_initialize_for_dotnet_command_line = (hostfxr_initialize_for_dotnet_command_line_fn)Platform::GetProcAddress(hostfxr, "hostfxr_initialize_for_dotnet_command_line");
     hostfxr_get_runtime_delegate = (hostfxr_get_runtime_delegate_fn)Platform::GetProcAddress(hostfxr, "hostfxr_get_runtime_delegate");
@@ -74,9 +75,10 @@ bool CoreCLR::LoadHostfxr(const String& library_path)
     return true;
 }
 
-bool CoreCLR::InitHostfxr(const String& config_path, const String& library_path)
+bool CoreCLR::InitHostfxr(const String& config_path, const String& library_path_)
 {
-    const wchar_t* argv[1] = { library_path.Get() };
+    const FLAX_CORECLR_STRING& library_path = FLAX_CORECLR_STRING(library_path_);
+    const char_t* argv[1] = { library_path.Get() };
 
     hostfxr_initialize_parameters params;
     params.size = sizeof(hostfxr_initialize_parameters);
@@ -115,7 +117,7 @@ void* CoreCLR::GetFunctionPointerFromDelegate(const String& methodName)
 
     String delegateTypeName = String::Format(TEXT("{0}+{1}Delegate, {2}"), TEXT("FlaxEngine.NativeInterop"), methodName, assemblyName);
 
-    int rc = get_function_pointer(typeName, methodName.Get(), delegateTypeName.Get(), nullptr, nullptr, &fun);
+    int rc = get_function_pointer(typeName, FLAX_CORECLR_STRING(methodName).Get(), FLAX_CORECLR_STRING(delegateTypeName).Get(), nullptr, nullptr, &fun);
     if (rc != 0)
         LOG(Fatal, "Failed to get unmanaged function pointer for method {0}: 0x{1:x}", methodName.Get(), (unsigned int)rc);
 
@@ -130,7 +132,7 @@ void* CoreCLR::GetStaticMethodPointer(const String& methodName)
     if (cachedFunctions.TryGet(methodName, fun))
         return fun;
 
-    int rc = get_function_pointer(typeName, methodName.Get(), UNMANAGEDCALLERSONLY_METHOD, nullptr, nullptr, &fun);
+    int rc = get_function_pointer(typeName, FLAX_CORECLR_STRING(methodName).Get(), UNMANAGEDCALLERSONLY_METHOD, nullptr, nullptr, &fun);
     if (rc != 0)
         LOG(Fatal, "Failed to get unmanaged function pointer for method {0}: 0x{1:x}", methodName.Get(), (unsigned int)rc);
 

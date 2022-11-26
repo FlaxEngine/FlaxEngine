@@ -658,7 +658,7 @@ MONO_API MonoString* mono_string_empty(MonoDomain* domain)
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoString* mono_string_new_utf16(MonoDomain* domain, const mono_unichar2* text, int32_t len)
 {
-    return (MonoString*)CoreCLR::CallStaticMethodInternal<void*, const wchar_t*, int>(TEXT("NewStringUTF16"), text, len);
+    return (MonoString*)CoreCLR::CallStaticMethodInternal<void*, const mono_unichar2*, int>(TEXT("NewStringUTF16"), text, len);
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoString* mono_string_new(MonoDomain* domain, const char* text)
@@ -673,7 +673,7 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoString* mono_string_new_len(MonoDomain* domai
 
 MONO_API MONO_RT_EXTERNAL_ONLY char* mono_string_to_utf8(MonoString* string_obj)
 {
-    Char* strw = string_obj != nullptr ? mono_string_chars(string_obj) : nullptr;
+    Char* strw = string_obj != nullptr ? (Char*)mono_string_chars(string_obj) : nullptr;
     auto len = string_obj != nullptr ? mono_string_length(string_obj) : 0;
     ASSERT(len >= 0)
     char* stra = (char*)CoreCLR::Allocate(sizeof(char) * (len + 1));

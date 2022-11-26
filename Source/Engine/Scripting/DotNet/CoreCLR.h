@@ -8,8 +8,10 @@
 
 #if defined(_WIN32)
 #define CORECLR_DELEGATE_CALLTYPE __stdcall
+#define FLAX_CORECLR_STRING String
 #else
 #define CORECLR_DELEGATE_CALLTYPE
+#define FLAX_CORECLR_STRING StringAnsi
 #endif
 
 class CoreCLR

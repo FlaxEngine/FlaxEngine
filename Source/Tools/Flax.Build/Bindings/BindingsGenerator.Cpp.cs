@@ -1148,7 +1148,7 @@ namespace Flax.Build.Bindings
 #if USE_NETCORE
             if (!string.IsNullOrEmpty(callBegin2))
             {
-                contents.Append("        ").Append("auto& callTemp = ").Append(string.Format(callFormat, call, callParams)).Append(";").AppendLine();
+                contents.Append("        ").Append("const auto& callTemp = ").Append(string.Format(callFormat, call, callParams)).Append(";").AppendLine();
                 call = "callTemp";
                 contents.Append(callBegin);
                 callBegin2 = string.Format(callBegin2, call);

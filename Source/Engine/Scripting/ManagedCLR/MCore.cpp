@@ -135,7 +135,7 @@ bool MCore::LoadEngine()
         LOG(Fatal, "LoadAssembly failed");
 
     const String hostExecutable = Platform::GetExecutableFilePath();
-    CoreCLR::CallStaticMethodInternal<void, const wchar_t*>(TEXT("Init"), hostExecutable.Get());
+    CoreCLR::CallStaticMethodInternal<void, const Char*>(TEXT("Init"), hostExecutable.Get());
 
     MRootDomain = New<MDomain>("Root");
     MDomains.Add(MRootDomain);
