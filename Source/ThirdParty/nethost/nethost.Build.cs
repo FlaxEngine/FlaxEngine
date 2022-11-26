@@ -47,12 +47,16 @@ public class nethost : ThirdPartyModule
 
         options.SourceFiles.Clear();
 
+        string arch = "x64"; //options.Architecture == TargetArchitecture.x64 ? "x64" : "x86";
+
+        string dotnetVersion;
         string appHostRuntimePath;
+
+        // NOTE: nethost is bundled with SDK, not runtime. Should C# scripting have a hard requirement for SDK to be installed?
+
         if (options.Platform.Target == TargetPlatform.Windows)
         {
-            // NOTE: nethost is bundled with SDK, not runtime. Should C# scripting have a hard requirement for SDK to be installed?
-
-            string arch = "x64"; //options.Architecture == TargetArchitecture.x64 ? "x64" : "x86";
+            string os = $"win-{arch}";
 
             using RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
 
@@ -62,7 +66,7 @@ public class nethost : ThirdPartyModule
             using RegistryKey runtimeKey = baseKey.OpenSubKey(@$"SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{arch}\sharedfx\Microsoft.NETCore.App");
             string[] versions = runtimeKey.GetValueNames();
 
-            string dotnetVersion = versions.OrderByDescending(x => ParseVersion(x)).FirstOrDefault();
+            dotnetVersion = versions.OrderByDescending(x => ParseVersion(x)).FirstOrDefault();
 
             if (string.IsNullOrEmpty(dotnetPath))
                 dotnetPath = Environment.GetEnvironmentVariable("DOTNET_ROOT");
@@ -74,16 +78,32 @@ public class nethost : ThirdPartyModule
             if (majorVersion < 7)
                 throw new Exception($"Unsupported dotnet version found, minimum version required is .NET 7 (found {dotnetVersion})");
 
-            appHostRuntimePath = String.Format("{0}packs\\Microsoft.NETCore.App.Host.win-{1}\\{2}\\runtimes\\win-{1}\\native", dotnetPath, arch, dotnetVersion);
+            appHostRuntimePath = String.Format("{0}packs\\Microsoft.NETCore.App.Host.{1}\\{2}\\runtimes\\{1}\\native", dotnetPath, os, dotnetVersion);
             options.OutputFiles.Add(Path.Combine(appHostRuntimePath, "nethost.lib"));
             options.DependencyFiles.Add(Path.Combine(appHostRuntimePath, "nethost.dll"));
             options.PublicIncludePaths.Add(appHostRuntimePath);
         }
-        else
+        else if (options.Platform.Target == TargetPlatform.Linux)
         {
-            // /etc/dotnet/install_location
-            throw new InvalidPlatformException(options.Platform.Target);
+            // TODO: Support /etc/dotnet/install_location
+            string dotnetPath = "/usr/share/dotnet/";
+            string os = $"linux-{arch}";
+
+            string[] versions = Directory.GetDirectories($"{dotnetPath}host/fxr/").Select(x => Path.GetFileName(x)).ToArray();
+
+            dotnetVersion = versions.OrderByDescending(x => ParseVersion(x)).FirstOrDefault();
+
+            int majorVersion = int.Parse(dotnetVersion.Substring(0, dotnetVersion.IndexOf(".")));
+            if (majorVersion < 7)
+                throw new Exception($"Unsupported dotnet version found, minimum version required is .NET 7 (found {dotnetVersion})");
+
+            appHostRuntimePath = String.Format("{0}packs/Microsoft.NETCore.App.Host.{1}/{2}/runtimes/{1}/native", dotnetPath, os, dotnetVersion);
+            options.OutputFiles.Add(Path.Combine(appHostRuntimePath, "libnethost.a"));
+            options.DependencyFiles.Add(Path.Combine(appHostRuntimePath, "libnethost.so"));
+            options.PublicIncludePaths.Add(appHostRuntimePath);
         }
+        else
+            throw new InvalidPlatformException(options.Platform.Target);
 
         options.PublicIncludePaths.Add(appHostRuntimePath);
         options.ScriptingAPI.Defines.Add("USE_NETCORE");

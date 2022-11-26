@@ -149,6 +149,20 @@ namespace Flax.Build
 
         private static void BuildDotNet(TaskGraph graph, BuildData buildData, NativeCpp.BuildOptions buildOptions, string name, List<string> sourceFiles, HashSet<string> fileReferences = null, IGrouping<string, Module> binaryModule = null)
         {
+#if USE_NETCORE
+            static Version ParseVersion(string version)
+            {
+                // Give precedence to final releases over release candidate / beta releases
+                int rev = 9999;
+                if (version.Contains("-")) // e.g. 7.0.0-rc.2.22472.3
+                {
+                    version = version.Substring(0, version.IndexOf("-"));
+                    rev = 0;
+                }
+                Version ver = new Version(version);
+                return new Version(ver.Major, ver.Minor, ver.Build, rev);
+            }
+#endif
             // Setup build options
             var buildPlatform = Platform.BuildTargetPlatform;
             var outputPath = Path.GetDirectoryName(buildData.Target.GetOutputFilePath(buildOptions));
@@ -165,21 +179,10 @@ namespace Flax.Build
                 monoPath = null;
                 cscPath = Path.Combine(Path.GetDirectoryName(VCEnvironment.MSBuildPath), "Roslyn", "csc.exe");
 
+#if USE_NETCORE
                 // dotnet
                 if (WindowsPlatformBase.TryReadDirRegistryKey(@"HKEY_LOCAL_MACHINE\SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedhost", "Path", out string dotnetPath))
                 {
-                    static Version ParseVersion(string version)
-                    {
-                        // Give precedence to final releases over release candidate / beta releases
-                        int rev = 9999;
-                        if (version.Contains("-")) // e.g. 7.0.0-rc.2.22472.3
-                        {
-                            version = version.Substring(0, version.IndexOf("-"));
-                            rev = 0;
-                        }
-                        Version ver = new Version(version);
-                        return new Version(ver.Major, ver.Minor, ver.Build, rev);
-                    }
 #pragma warning disable CA1416
                     string arch = "x64";
                     using RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
@@ -189,13 +192,13 @@ namespace Flax.Build
 
                     string dotnetSdkVersion = sdkVersionsKey.GetValueNames().OrderByDescending(x => ParseVersion(x)).FirstOrDefault();
                     string dotnetSharedfxVersion = sharedfxVersionsKey.GetValueNames().OrderByDescending(x => ParseVersion(x)).FirstOrDefault();
-                    string dotnetHostfxrVersion = (string)hostfxrKey.GetValue("Version");
 #pragma warning restore CA1416
                     cscPath = @$"{dotnetPath}sdk\{dotnetSdkVersion}\Roslyn\bincore\csc.dll";
                     referenceAssemblies = @$"{dotnetPath}shared\Microsoft.NETCore.App\{dotnetSharedfxVersion}\";
                     referenceAnalyzers = @$"{dotnetPath}packs\Microsoft.NETCore.App.Ref\{dotnetSharedfxVersion}\analyzers\dotnet\cs\";
                 }
                 else //if (!File.Exists(cscPath))
+#endif
                 {
                     // Fallback to Mono binaries
                     monoPath = Path.Combine(monoRoot, "bin", "mono.exe");
@@ -206,12 +209,38 @@ namespace Flax.Build
                 break;
             }
             case TargetPlatform.Linux:
-                monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Linux", "Mono");
-                monoPath = Path.Combine(monoRoot, "bin", "mono");
-                cscPath = Path.Combine(monoRoot, "lib", "mono", "4.5", "csc.exe");
-                referenceAssemblies = Path.Combine(monoRoot, "lib", "mono", "4.5-api");
-                referenceAnalyzers = "";
+            {
+#if USE_NETCORE
+                // TODO: Support /etc/dotnet/install_location
+                string dotnetPath = "/usr/share/dotnet/";
+                string arch = "x64";
+                string os = $"linux-{arch}";
+                monoPath = null;
+
+                string[] sharedfxVersions = Directory.GetDirectories($"{dotnetPath}shared/Microsoft.NETCore.App/").Select(x => Path.GetFileName(x)).ToArray();
+                string dotnetSharedfxVersion = sharedfxVersions.OrderByDescending(x => ParseVersion(x)).FirstOrDefault();
+
+                string[] sdkVersions = Directory.GetDirectories($"{dotnetPath}sdk/").Select(x => Path.GetFileName(x)).ToArray();
+                string dotnetSdkVersion = sdkVersions.OrderByDescending(x => ParseVersion(x)).FirstOrDefault();
+
+                int majorVersion = int.Parse(dotnetSdkVersion.Substring(0, dotnetSdkVersion.IndexOf(".")));
+                if (majorVersion >= 7)
+                {
+                    cscPath = @$"{dotnetPath}sdk/{dotnetSdkVersion}/Roslyn/bincore/csc.dll";
+                    referenceAssemblies = @$"{dotnetPath}shared/Microsoft.NETCore.App/{dotnetSharedfxVersion}/";
+                    referenceAnalyzers = @$"{dotnetPath}packs/Microsoft.NETCore.App.Ref/{dotnetSharedfxVersion}/analyzers/dotnet/cs/";
+                }
+                else
+#endif
+                {
+                    monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Linux", "Mono");
+                    monoPath = Path.Combine(monoRoot, "bin", "mono");
+                    cscPath = Path.Combine(monoRoot, "lib", "mono", "4.5", "csc.exe");
+                    referenceAssemblies = Path.Combine(monoRoot, "lib", "mono", "4.5-api");
+                    referenceAnalyzers = "";
+                }
                 break;
+            }
             case TargetPlatform.Mac:
                 monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Mac", "Mono");
                 monoPath = Path.Combine(monoRoot, "bin", "mono");
@@ -291,7 +320,7 @@ namespace Flax.Build
                 // The "/shared" flag enables the compiler server support:
                 // https://github.com/dotnet/roslyn/blob/main/docs/compilers/Compiler%20Server.md
 
-                task.CommandPath = "dotnet.exe";
+                task.CommandPath = "dotnet";
                 task.CommandArguments = $"exec \"{cscPath}\" /noconfig /shared @\"{responseFile}\"";
             }
 

@@ -31,7 +31,7 @@ copy /y Cache\Intermediate\Build\Flax.Build.Files.txt Cache\Intermediate\Build\F
 %MSBUILD_PATH% /nologo /verbosity:quiet Source\Tools\Flax.Build\Flax.Build.csproj /target:Restore /property:RestorePackagesConfig=True
 %MSBUILD_PATH% /nologo /verbosity:quiet Source\Tools\Flax.Build\Flax.Build.csproj /property:Configuration=Release /property:Platform=AnyCPU /target:Clean
 :SkipClean
-%MSBUILD_PATH% /nologo /verbosity:quiet Source\Tools\Flax.Build\Flax.Build.csproj /property:Configuration=Release /property:Platform=AnyCPU /target:Build,Publish /p:PublishDir=C:\dev\Flax\FlaxEngine\Binaries\Tools /p:SelfContained=true /p:RuntimeIdentifier=win-x64
+%MSBUILD_PATH% /nologo /verbosity:quiet Source\Tools\Flax.Build\Flax.Build.csproj /property:Configuration=Release /property:Platform=AnyCPU /target:Build,Publish /p:PublishDir=Binaries\Tools /p:SelfContained=true /p:RuntimeIdentifier=win-x64
 ::/p:PublishSingleFile=true /p:RuntimeIdentifier=win-x64
 if errorlevel 1 goto Error_CompilationFailed
 
