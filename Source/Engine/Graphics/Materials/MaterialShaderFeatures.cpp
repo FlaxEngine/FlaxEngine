@@ -13,7 +13,6 @@
 
 void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv)
 {
-    auto context = params.GPUContext;
     auto cache = params.RenderContext.List;
     auto& view = params.RenderContext.View;
     auto& drawCall = *params.FirstDrawCall;
@@ -44,11 +43,11 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
         if (useShadow)
         {
             data.DirectionalLightShadow = shadowPass->LastDirLight;
-            context->BindSR(dirLightShaderRegisterIndex, shadowPass->LastDirLightShadowMap);
+            params.GPUContext->BindSR(dirLightShaderRegisterIndex, shadowPass->LastDirLightShadowMap);
         }
         else
         {
-            context->UnBindSR(dirLightShaderRegisterIndex);
+            params.GPUContext->UnBindSR(dirLightShaderRegisterIndex);
         }
         dirLight.SetupLightData(&data.DirectionalLight, useShadow);
     }
@@ -56,7 +55,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     {
         data.DirectionalLight.Color = Float3::Zero;
         data.DirectionalLight.CastShadows = 0.0f;
-        context->UnBindSR(dirLightShaderRegisterIndex);
+        params.GPUContext->UnBindSR(dirLightShaderRegisterIndex);
     }
 
     // Set sky light
@@ -65,12 +64,12 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
         auto& skyLight = cache->SkyLights.First();
         skyLight.SetupLightData(&data.SkyLight, false);
         const auto texture = skyLight.Image ? skyLight.Image->GetTexture() : nullptr;
-        context->BindSR(skyLightShaderRegisterIndex, GET_TEXTURE_VIEW_SAFE(texture));
+        params.GPUContext->BindSR(skyLightShaderRegisterIndex, GET_TEXTURE_VIEW_SAFE(texture));
     }
     else
     {
         Platform::MemoryClear(&data.SkyLight, sizeof(data.SkyLight));
-        context->UnBindSR(skyLightShaderRegisterIndex);
+        params.GPUContext->UnBindSR(skyLightShaderRegisterIndex);
     }
 
     // Set reflection probe data
@@ -89,12 +88,12 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     if (probe && probe->GetProbe())
     {
         probe->SetupProbeData(params.RenderContext, &data.EnvironmentProbe);
-        context->BindSR(envProbeShaderRegisterIndex, probe->GetProbe());
+        params.GPUContext->BindSR(envProbeShaderRegisterIndex, probe->GetProbe());
     }
     else
     {
         data.EnvironmentProbe.Data1 = Float4::Zero;
-        context->UnBindSR(envProbeShaderRegisterIndex);
+        params.GPUContext->UnBindSR(envProbeShaderRegisterIndex);
     }
 
     // Set local lights
@@ -124,13 +123,10 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
 
 bool LightmapFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv)
 {
-    auto context = params.GPUContext;
-    auto& view = params.RenderContext.View;
     auto& drawCall = *params.FirstDrawCall;
-    auto& data = *(Data*)cb.Get();
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(Data));
 
-    const bool useLightmap = view.Flags & ViewFlags::GI
+    const bool useLightmap = params.RenderContext.View.Flags & ViewFlags::GI
 #if USE_EDITOR
             && EnableLightmapsUsage
 #endif
@@ -140,11 +136,12 @@ bool LightmapFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& c
         // Bind lightmap textures
         GPUTexture *lightmap0, *lightmap1, *lightmap2;
         drawCall.Features.Lightmap->GetTextures(&lightmap0, &lightmap1, &lightmap2);
-        context->BindSR(srv + 0, lightmap0);
-        context->BindSR(srv + 1, lightmap1);
-        context->BindSR(srv + 2, lightmap2);
+        params.GPUContext->BindSR(srv + 0, lightmap0);
+        params.GPUContext->BindSR(srv + 1, lightmap1);
+        params.GPUContext->BindSR(srv + 2, lightmap2);
 
         // Set lightmap data
+        auto& data = *(Data*)cb.Get();
         data.LightmapArea = drawCall.Features.LightmapUVsArea;
     }
 

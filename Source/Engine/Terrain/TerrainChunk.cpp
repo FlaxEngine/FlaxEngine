@@ -44,8 +44,7 @@ bool TerrainChunk::PrepareDraw(const RenderContext& renderContext)
         const float chunkEdgeSize = (_patch->_terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX);
 
         // Calculate chunk distance to view
-        const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
-        const float distance = Float3::Distance(_boundsCenter - lodView->Origin, lodView->Position);
+        const float distance = Float3::Distance(_boundsCenter - renderContext.View.Origin, renderContext.View.Position);
         lod = (int32)Math::Pow(distance / chunkEdgeSize, lodDistribution);
         lod += lodBias;
 
