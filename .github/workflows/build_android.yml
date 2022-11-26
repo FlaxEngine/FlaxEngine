@@ -5,6 +5,7 @@ jobs:
 
   # Game
   game-windows:
+    if: ${{ false }}
     name: Game (Android, Release ARM64)
     runs-on: "windows-2019"
     steps:
