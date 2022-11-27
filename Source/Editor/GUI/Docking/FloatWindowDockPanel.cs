@@ -53,8 +53,14 @@ namespace FlaxEditor.GUI.Docking
 
             // Check if window is maximized
             if (_window.IsMaximized)
-                return;
-
+            {
+                // Restore window and set position to mouse.
+                var mousePos = _window.MousePosition;
+                var previousSize = _window.Size;
+                _window.Restore();
+                _window.Window.Position = FlaxEngine.Input.MouseScreenPosition - mousePos * _window.Size / previousSize;
+            }
+            
             // Create docking hint window
             DockHintWindow.Create(this);
         }
