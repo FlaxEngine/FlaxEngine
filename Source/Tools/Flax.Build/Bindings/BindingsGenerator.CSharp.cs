@@ -1235,19 +1235,6 @@ namespace Flax.Build.Bindings
                 }
                 """;
                 contents.AppendLine(marshallerDefinition);
-
-                /*contents.AppendLine();
-
-                contents.Append(indent).AppendLine("/// <summary>");
-                contents.Append(indent).AppendLine("/// ");
-                contents.Append(indent).AppendLine("/// </summary>");
-                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({classInfo.Name}), MarshalMode.Default, typeof({marshallerName}))]");
-                contents.Append(indent).AppendLine($"public static class {marshallerName}");
-                contents.Append(indent).AppendLine("{");
-                contents.Append(indent + "    ").AppendLine($"internal static {classInfo.Name} ConvertToManaged(IntPtr unmanaged) => ({classInfo.Name})GCHandleMarshaller.ConvertToManaged(unmanaged);");
-                contents.Append(indent + "    ").AppendLine($"internal static IntPtr ConvertToUnmanaged({classInfo.Name} managed) => GCHandleMarshaller.ConvertToUnmanaged(managed);");
-                contents.Append(indent + "    ").AppendLine("internal static void Free(IntPtr unmanaged) => GCHandleMarshaller.Free(unmanaged);");
-                contents.Append(indent).AppendLine("}");*/
             }
 #endif
             // Namespace end
@@ -1428,7 +1415,7 @@ namespace Flax.Build.Bindings
                             toNativeContent.Append($"managed.{fieldInfo.Name} != null ? GCHandle.ToIntPtr(GCHandle.Alloc(managed.{fieldInfo.Name}, GCHandleType.Weak)) : IntPtr.Zero");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
 
-                            // ScriptingObject handle is passed from native side, do not release it
+                            // Permanent ScriptingObject handle is passed from native side, do not release it
                             //freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                         }
                         else if (fieldInfo.Type.Type == "ScriptingObject")
@@ -1436,14 +1423,18 @@ namespace Flax.Build.Bindings
                             toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? (FlaxEngine.Object)GCHandle.FromIntPtr(managed.{fieldInfo.Name}).Target : null");
                             toNativeContent.Append($"managed.{fieldInfo.Name} != null ? GCHandle.ToIntPtr(GCHandle.Alloc(managed.{fieldInfo.Name}, GCHandleType.Weak)) : IntPtr.Zero");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
-                            freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
+
+                            // Permanent ScriptingObject handle is passed from native side, do not release it
+                            //freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                         }
                         else if (fieldInfo.Type.IsPtr && originalType != "IntPtr" && !originalType.EndsWith("*"))
                         {
                             toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? ({originalType})GCHandle.FromIntPtr(managed.{fieldInfo.Name}).Target : null");
                             toNativeContent.Append($"managed.{fieldInfo.Name} != null ? GCHandle.ToIntPtr(GCHandle.Alloc(managed.{fieldInfo.Name}, GCHandleType.Weak)) : IntPtr.Zero");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
-                            freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
+
+                            // Permanent ScriptingObject handle is passed from native side, do not release it
+                            //freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                         }
                         else if (fieldInfo.Type.Type == "Dictionary")
                         {
