@@ -21,7 +21,6 @@ public:
     static bool LoadHostfxr(const String& library_path);
     static bool InitHostfxr(const String& config_path, const String& library_path);
 
-    static void* GetFunctionPointerFromDelegate(const String& methodName);
     static void* GetStaticMethodPointer(const String& methodName);
 
     template<typename RetType, typename ...Args>

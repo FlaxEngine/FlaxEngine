@@ -110,6 +110,7 @@ public:
     ~CoreCLRAssembly()
     {
         _classes.ClearDelete();
+        assemblyHandles.Remove(_assemblyHandle);
     }
 
     void* GetHandle()

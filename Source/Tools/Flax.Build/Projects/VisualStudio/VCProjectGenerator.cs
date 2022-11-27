@@ -176,9 +176,9 @@ namespace Flax.Build.Projects.VisualStudio
                 vcProjectFileContent.AppendLine("    <LibraryWPath />");
                 vcProjectFileContent.AppendLine("    <SourcePath />");
                 vcProjectFileContent.AppendLine("    <ExcludePath />");
-                vcProjectFileContent.AppendLine(string.Format("    <NMakeBuildCommandLine>dotnet {0} -build</NMakeBuildCommandLine>", cmdLine));
-                vcProjectFileContent.AppendLine(string.Format("    <NMakeReBuildCommandLine>dotnet {0} -rebuild</NMakeReBuildCommandLine>", cmdLine));
-                vcProjectFileContent.AppendLine(string.Format("    <NMakeCleanCommandLine>dotnet {0} -clean</NMakeCleanCommandLine>", cmdLine));
+                vcProjectFileContent.AppendLine(string.Format("    <NMakeBuildCommandLine>{0} -build</NMakeBuildCommandLine>", cmdLine));
+                vcProjectFileContent.AppendLine(string.Format("    <NMakeReBuildCommandLine>{0} -rebuild</NMakeReBuildCommandLine>", cmdLine));
+                vcProjectFileContent.AppendLine(string.Format("    <NMakeCleanCommandLine>{0} -clean</NMakeCleanCommandLine>", cmdLine));
                 vcProjectFileContent.AppendLine(string.Format("    <NMakeOutput>{0}</NMakeOutput>", outputTargetFilePath));
 
                 if (preprocessorDefinitions.Count != 0)

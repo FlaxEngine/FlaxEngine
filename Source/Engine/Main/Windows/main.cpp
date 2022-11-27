@@ -50,14 +50,14 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmd
 #endif
 
     Platform::PreInit(hInstance);
-    //__try
+    __try
     {
         return Engine::Main(lpCmdLine);
     }
-    /*__except (SehExceptionHandler(GetExceptionInformation()))
+    __except (SehExceptionHandler(GetExceptionInformation()))
     {
         return -1;
-    }*/
+    }
 }
 
 #endif

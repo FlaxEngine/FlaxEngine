@@ -109,23 +109,6 @@ bool CoreCLR::InitHostfxr(const String& config_path, const String& library_path_
     return true;
 }
 
-void* CoreCLR::GetFunctionPointerFromDelegate(const String& methodName)
-{
-    void* fun;
-    if (cachedFunctions.TryGet(methodName, fun))
-        return fun;
-
-    String delegateTypeName = String::Format(TEXT("{0}+{1}Delegate, {2}"), TEXT("FlaxEngine.NativeInterop"), methodName, assemblyName);
-
-    int rc = get_function_pointer(typeName, FLAX_CORECLR_STRING(methodName).Get(), FLAX_CORECLR_STRING(delegateTypeName).Get(), nullptr, nullptr, &fun);
-    if (rc != 0)
-        LOG(Fatal, "Failed to get unmanaged function pointer for method {0}: 0x{1:x}", methodName.Get(), (unsigned int)rc);
-
-    cachedFunctions.Add(String(methodName), fun);
-
-    return fun;
-}
-
 void* CoreCLR::GetStaticMethodPointer(const String& methodName)
 {
     void* fun;
