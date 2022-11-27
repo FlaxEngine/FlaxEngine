@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Engine/Level/Actor.h"
-#include "Engine/Core/Math/Matrix.h"
 #include "Engine/Render2D/TextLayoutOptions.h"
 #include "Engine/Render2D/FontAsset.h"
 #include "Engine/Renderer/DrawCall.h"
@@ -19,7 +18,8 @@
 /// <summary>
 /// Text rendering object.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/UI/Text Render\")") class FLAXENGINE_API TextRender : public Actor
+API_CLASS(Attributes="ActorContextMenu(\"New/UI/Text Render\"), ActorToolbox(\"GUI\")")
+class FLAXENGINE_API TextRender : public Actor
 {
     DECLARE_SCENE_OBJECT(TextRender);
 private:
@@ -138,16 +138,13 @@ public:
     API_FUNCTION() void UpdateLayout();
 
 #if USE_PRECISE_MESH_INTERSECTS
-
     /// <summary>
     /// Gets the collision proxy used by the text geometry.
     /// </summary>
-    /// <returns>The collisions proxy container object reference.</returns>
     FORCE_INLINE const CollisionProxy& GetCollisionProxy() const
     {
         return _collisionProxy;
     }
-
 #endif
 
 private:

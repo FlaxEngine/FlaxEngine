@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace FlaxEngine
 {
@@ -17,7 +17,7 @@ namespace FlaxEngine
         /// <summary>
         /// Initializes a new instance of the  <see cref="ContentContextMenuAttribute"/> class.
         /// </summary>
-        /// <param name="path">The path to use to create the context menu</param>
+        /// <param name="path">The path to use to create the context menu.</param>
         public ContentContextMenuAttribute(string path)
         {
             Path = path;

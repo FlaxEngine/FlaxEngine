@@ -2,6 +2,7 @@
 
 #include "Camera.h"
 #include "Engine/Level/SceneObjectsFactory.h"
+#include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Content.h"

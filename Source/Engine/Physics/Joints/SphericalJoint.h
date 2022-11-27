@@ -29,7 +29,8 @@ DECLARE_ENUM_OPERATORS(SphericalJointFlag);
 /// rotate around the anchor points, and their rotation can be limited by an elliptical cone.
 /// </summary>
 /// <seealso cref="Joint" />
-API_CLASS(Attributes = "ActorContextMenu(\"New/Physics/Spherical Joint\")") class FLAXENGINE_API SphericalJoint : public Joint
+API_CLASS(Attributes = "ActorContextMenu(\"New/Physics/Spherical Joint\"), ActorToolbox(\"Physics\")")
+class FLAXENGINE_API SphericalJoint : public Joint
 {
     DECLARE_SCENE_OBJECT(SphericalJoint);
 private:

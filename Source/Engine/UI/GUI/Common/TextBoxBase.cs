@@ -370,7 +370,7 @@ namespace FlaxEngine.GUI
         {
             Focus();
             SetText(value);
-            Defocus();
+            RemoveFocus();
         }
 
         /// <summary>
@@ -907,6 +907,14 @@ namespace FlaxEngine.GUI
             return HitTestText(location);
         }
 
+        private void RemoveFocus()
+        {
+            if (Parent != null)
+                Parent.Focus();
+            else
+                Defocus();
+        }
+
         /// <summary>
         /// Calculates total text size. Called by <see cref="OnTextChanged"/> to cache the text size.
         /// </summary>
@@ -1297,7 +1305,7 @@ namespace FlaxEngine.GUI
                 _text = _onStartEditValue;
 
                 if (!IsNavFocused)
-                    Defocus();
+                    RemoveFocus();
                 OnTextChanged();
 
                 return true;
@@ -1311,7 +1319,7 @@ namespace FlaxEngine.GUI
                 else if (!IsNavFocused)
                 {
                     // End editing
-                    Defocus();
+                    RemoveFocus();
                 }
                 return true;
             case KeyboardKeys.Home:

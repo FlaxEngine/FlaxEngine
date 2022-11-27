@@ -14,7 +14,8 @@ class GPUPipelineState;
 /// <summary>
 /// Sky actor renders atmosphere around the scene with fog and sky.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Sky\")") class FLAXENGINE_API Sky : public Actor, public IAtmosphericFogRenderer, public ISkyRenderer
+API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Sky\"), ActorToolbox(\"Visuals\")")
+class FLAXENGINE_API Sky : public Actor, public IAtmosphericFogRenderer, public ISkyRenderer
 {
     DECLARE_SCENE_OBJECT(Sky);
 private:
