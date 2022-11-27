@@ -23,7 +23,8 @@ public:
 private:
     volatile int64 _count;
     volatile int64 _capacity;
-    volatile int64 _threads = 0;
+    volatile int64 _threadsAdding = 0;
+    volatile int64 _threadsResizing = 0;
     AllocationData _allocation;
     CriticalSection _locker;
 
@@ -298,13 +299,11 @@ public:
     /// </summary>
     /// <param name="item">The item to add.</param>
     /// <returns>Index of the added element.</returns>
-    int32 Add(const T& item)
+    FORCE_INLINE int32 Add(const T& item)
     {
         const int32 index = AddOne();
-        auto ptr = _allocation.Get();
         Memory::ConstructItems(_allocation.Get() + index, &item, 1);
-        ASSERT(ptr == _allocation.Get());
-        Platform::InterlockedDecrement(&_threads);
+        Platform::InterlockedDecrement(&_threadsAdding);
         return index;
     }
 
@@ -313,25 +312,47 @@ public:
     /// </summary>
     /// <param name="item">The item to add.</param>
     /// <returns>Index of the added element.</returns>
-    int32 Add(T&& item)
+    FORCE_INLINE int32 Add(T&& item)
     {
         const int32 index = AddOne();
-        auto ptr = _allocation.Get();
         Memory::MoveItems(_allocation.Get() + index, &item, 1);
-        ASSERT(ptr == _allocation.Get());
-        Platform::InterlockedDecrement(&_threads);
+        Platform::InterlockedDecrement(&_threadsAdding);
         return index;
     }
 
 private:
-    FORCE_INLINE int32 AddOne()
+    int32 AddOne()
     {
-        Platform::InterlockedIncrement(&_threads);
-        const int32 count = (int32)Platform::AtomicRead(&_count);
-        const int32 capacity = (int32)Platform::AtomicRead(&_capacity);
+        Platform::InterlockedIncrement(&_threadsAdding);
+        int32 count = (int32)Platform::AtomicRead(&_count);
+        int32 capacity = (int32)Platform::AtomicRead(&_capacity);
         const int32 minCapacity = GetMinCapacity(count);
-        if (minCapacity > capacity)
-            EnsureCapacity(minCapacity);
+        if (minCapacity > capacity || Platform::AtomicRead(&_threadsResizing)) // Resize if not enough space or someone else is already doing it (don't add mid-resizing)
+        {
+            // Move from adding to resizing
+            Platform::InterlockedIncrement(&_threadsResizing);
+            Platform::InterlockedDecrement(&_threadsAdding);
+
+            // Wait for all threads to stop adding items before resizing can happen
+            while (Platform::AtomicRead(&_threadsAdding))
+                Platform::Sleep(0);
+
+            // Thread-safe resizing
+            _locker.Lock();
+            capacity = (int32)Platform::AtomicRead(&_capacity);
+            if (capacity < minCapacity)
+            {
+                capacity = _allocation.CalculateCapacityGrow(capacity, minCapacity);
+                count = (int32)Platform::AtomicRead(&_count);
+                _allocation.Relocate(capacity, count, count);
+                Platform::AtomicStore(&_capacity, capacity);
+            }
+            _locker.Unlock();
+            
+            // Move from resizing to adding
+            Platform::InterlockedIncrement(&_threadsAdding);
+            Platform::InterlockedDecrement(&_threadsResizing);
+        }
         return (int32)Platform::InterlockedIncrement(&_count) - 1;
     }
 
@@ -342,7 +363,7 @@ private:
         int32 capacity = count + slack;
         {
             // Round up to the next power of 2 and multiply by 2
-            capacity++;
+            capacity--;
             capacity |= capacity >> 1;
             capacity |= capacity >> 2;
             capacity |= capacity >> 4;
@@ -351,6 +372,5 @@ private:
             capacity = (capacity + 1) * 2;
         }
         return capacity;
-        return count + slack;
     }
 };
