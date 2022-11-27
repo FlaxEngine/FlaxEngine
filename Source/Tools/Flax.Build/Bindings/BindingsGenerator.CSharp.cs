@@ -451,7 +451,7 @@ namespace Flax.Build.Bindings
                 returnMarshalType = $"MarshalUsing(typeof({returnValueType}Marshaller))";
             }
             else if (returnValueType == "byte[]")
-                returnMarshalType = $"MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), ConstantElementCount = 0)";
+                returnMarshalType = $"MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = \"returnCount\")";
             else if (returnValueType == "bool[]")
             {
                 // Boolean arrays does not support custom marshalling for some unkown reason...
