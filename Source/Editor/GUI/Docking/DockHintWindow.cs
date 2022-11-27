@@ -37,6 +37,16 @@ namespace FlaxEditor.GUI.Docking
             // Focus window
             window.Focus();
 
+            // Check if window is maximized and restore window.
+            if (window.IsMaximized)
+            {
+                // Restore window and set position to mouse.
+                var mousePos = window.MousePosition;
+                var previousSize = window.Size;
+                window.Restore();
+                window.Position = FlaxEngine.Input.MouseScreenPosition - mousePos * window.Size / previousSize;
+            }
+
             // Calculate dragging offset and move window to the destination position
             var mouseScreenPosition = FlaxEngine.Input.MouseScreenPosition;
 
