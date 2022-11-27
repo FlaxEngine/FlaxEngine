@@ -896,6 +896,16 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
+        public override bool OnMouseDown(Float2 location, MouseButton button)
+        {
+            // Navigate through directories using the side mouse buttons
+            if (button == MouseButton.Extended1) NavigateBackward();
+            else if (button == MouseButton.Extended2) NavigateForward();
+
+            return base.OnMouseDown(location, button);
+        }
+
+        /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             // Check if it's a right mouse button
