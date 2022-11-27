@@ -334,6 +334,7 @@ private:
             Platform::InterlockedDecrement(&_threadsAdding);
 
             // Wait for all threads to stop adding items before resizing can happen
+        RETRY:
             while (Platform::AtomicRead(&_threadsAdding))
                 Platform::Sleep(0);
 
@@ -342,16 +343,24 @@ private:
             capacity = (int32)Platform::AtomicRead(&_capacity);
             if (capacity < minCapacity)
             {
+                if (Platform::AtomicRead(&_threadsAdding))
+                {
+                    // Other thread entered during mutex locking so give them a chance to do safe resizing
+                    _locker.Unlock();
+                    goto RETRY;
+                }
                 capacity = _allocation.CalculateCapacityGrow(capacity, minCapacity);
                 count = (int32)Platform::AtomicRead(&_count);
                 _allocation.Relocate(capacity, count, count);
                 Platform::AtomicStore(&_capacity, capacity);
             }
-            _locker.Unlock();
-            
+
             // Move from resizing to adding
             Platform::InterlockedIncrement(&_threadsAdding);
             Platform::InterlockedDecrement(&_threadsResizing);
+
+            // Let other thread enter resizing-area
+            _locker.Unlock();
         }
         return (int32)Platform::InterlockedIncrement(&_count) - 1;
     }
