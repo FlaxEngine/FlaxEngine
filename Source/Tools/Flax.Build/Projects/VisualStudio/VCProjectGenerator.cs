@@ -134,7 +134,7 @@ namespace Flax.Build.Projects.VisualStudio
             vcProjectFileContent.AppendLine("  <PropertyGroup Label=\"UserMacros\" />");
 
             // Per configuration options
-            var buildToolPath = Utilities.MakePathRelativeTo(typeof(Builder).Assembly.Location, projectDirectory);
+            var buildToolPath = Path.ChangeExtension(Utilities.MakePathRelativeTo(typeof(Builder).Assembly.Location, projectDirectory), null);
             var preprocessorDefinitions = new HashSet<string>();
             var includePaths = new HashSet<string>();
             foreach (var configuration in project.Configurations)
