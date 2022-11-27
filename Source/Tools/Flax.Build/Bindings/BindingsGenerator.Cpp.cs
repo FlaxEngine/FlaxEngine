@@ -912,7 +912,7 @@ namespace Flax.Build.Bindings
 #endif
             }
 #if USE_NETCORE
-            else if (functionInfo.ReturnType.Type == "BitArray" || functionInfo.ReturnType.Type == "BytesContainer")//returnValueType == "byte[]")
+            else if (functionInfo.ReturnType.Type == "BitArray" || functionInfo.ReturnType.Type == "BytesContainer")
             {
                 functionInfo.Glue.CustomParameters.Add(new FunctionInfo.ParameterInfo
                 {
@@ -1051,10 +1051,18 @@ namespace Flax.Build.Bindings
             if (functionInfo.Glue.UseResultReferenceCount)
             {
                 callBegin2 = "        ";
-                if (functionInfo.ReturnType.Type == "Span")
+                if (functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "BytesContainer")
                     callBegin2 += "*resultAsRefCount = {0}.Length();";
                 else
                     callBegin2 += "*resultAsRefCount = {0}.Count();";
+            }
+            else if (functionInfo.ReturnType.Type == "BitArray" || functionInfo.ReturnType.Type == "BytesContainer")
+            {
+                callBegin2 = "        ";
+                if (functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "BytesContainer")
+                    callBegin2 += "*returnCount = {0}.Length();";
+                else
+                    callBegin2 += "*returnCount = {0}.Count();";
             }
 #endif
             string call;
@@ -1150,8 +1158,9 @@ namespace Flax.Build.Bindings
             {
                 contents.Append("        ").Append("const auto& callTemp = ").Append(string.Format(callFormat, call, callParams)).Append(";").AppendLine();
                 call = "callTemp";
+                contents.Append(string.Format(callBegin2, call));
+                contents.AppendLine();
                 contents.Append(callBegin);
-                callBegin2 = string.Format(callBegin2, call);
             }
             else
 #endif
@@ -1170,13 +1179,6 @@ namespace Flax.Build.Bindings
 
             contents.Append(';');
             contents.AppendLine();
-#if USE_NETCORE
-            if (!string.IsNullOrEmpty(callBegin2))
-            {
-                contents.Append(callBegin2);
-                contents.AppendLine();
-            }
-#endif
 
             // Convert special parameters back to managed world
             if (!useInlinedReturn)
