@@ -433,6 +433,7 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
     // Prepare
     DrawCall drawCall;
     MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
+    bindParams.BindViewData();
     drawCall.Material = nullptr;
     drawCall.WorldDeterminantSign = 1.0f;
 

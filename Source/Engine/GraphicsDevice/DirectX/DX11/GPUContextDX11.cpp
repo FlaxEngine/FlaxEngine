@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
-#include "Engine/Profiler/ProfilerCPU.h"
 #if GRAPHICS_API_DIRECTX11
 
 #include "GPUContextDX11.h"
@@ -349,7 +348,6 @@ void GPUContextDX11::BindUA(int32 slot, GPUResourceView* view)
 
 void GPUContextDX11::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets)
 {
-    PROFILE_CPU();
     ASSERT(vertexBuffers.Length() >= 0 && vertexBuffers.Length() <= GPU_MAX_VB_BINDED);
 
     bool vbEdited = false;
@@ -374,7 +372,6 @@ void GPUContextDX11::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32*
 
 void GPUContextDX11::BindIB(GPUBuffer* indexBuffer)
 {
-    PROFILE_CPU();
     const auto ibDX11 = static_cast<GPUBufferDX11*>(indexBuffer);
     if (ibDX11 != _ibHandle)
     {
@@ -455,7 +452,6 @@ void GPUContextDX11::ResolveMultisample(GPUTexture* sourceMultisampleTexture, GP
 
 void GPUContextDX11::DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex)
 {
-    PROFILE_CPU();
     onDrawCall();
     if (instanceCount > 1)
         _context->DrawInstanced(verticesCount, instanceCount, startVertex, startInstance);
@@ -466,7 +462,6 @@ void GPUContextDX11::DrawInstanced(uint32 verticesCount, uint32 instanceCount, i
 
 void GPUContextDX11::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex)
 {
-    PROFILE_CPU();
     onDrawCall();
     if (instanceCount > 1)
         _context->DrawIndexedInstanced(indicesCount, instanceCount, startIndex, startVertex, startInstance);
@@ -477,7 +472,6 @@ void GPUContextDX11::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCo
 
 void GPUContextDX11::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
-    PROFILE_CPU();
     ASSERT(bufferForArgs && bufferForArgs->GetFlags() & GPUBufferFlags::Argument);
 
     const auto bufferForArgsDX11 = static_cast<GPUBufferDX11*>(bufferForArgs);
@@ -489,7 +483,6 @@ void GPUContextDX11::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offs
 
 void GPUContextDX11::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
-    PROFILE_CPU();
     ASSERT(bufferForArgs && bufferForArgs->GetFlags() & GPUBufferFlags::Argument);
 
     const auto bufferForArgsDX11 = static_cast<GPUBufferDX11*>(bufferForArgs);
@@ -880,7 +873,6 @@ void GPUContextDX11::flushOM()
 
 void GPUContextDX11::onDrawCall()
 {
-    PROFILE_CPU();
     flushCBs();
     flushSRVs();
     flushUAVs();

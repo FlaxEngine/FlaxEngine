@@ -2,6 +2,7 @@
 // Version: @0
 
 #define MATERIAL 1
+#define USE_PER_VIEW_CONSTANTS 1
 @3
 
 #include "./Flax/Common.hlsl"
@@ -10,17 +11,9 @@
 @7
 // Primary constant buffer (with additional material parameters)
 META_CB_BEGIN(0, Data)
-float4x4 ViewProjectionMatrix;
 float4x4 WorldMatrix;
-float4x4 ViewMatrix;
 float4x4 InvWorld;
 float4x4 SVPositionToWorld;
-float3 ViewPos;
-float ViewFar;
-float3 ViewDir;
-float TimeParam;
-float4 ViewInfo;
-float4 ScreenSize;
 @1META_CB_END
 
 // Use depth buffer for per-pixel decal layering

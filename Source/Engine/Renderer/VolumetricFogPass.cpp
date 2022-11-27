@@ -536,6 +536,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         customData.GridSize = cache.GridSize;
         customData.VolumetricFogMaxDistance = cache.Data.VolumetricFogMaxDistance;
         bindParams.CustomData = &customData;
+        bindParams.BindViewData();
 
         for (auto& drawCall : renderContext.List->VolumetricFogParticles)
         {

@@ -119,6 +119,7 @@ void RendererService::Dispose()
     {
         PassList[i]->Dispose();
     }
+    SAFE_DELETE_GPU_RESOURCE(IMaterial::BindParameters::PerViewConstants);
 }
 
 void RenderAntiAliasingPass(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)

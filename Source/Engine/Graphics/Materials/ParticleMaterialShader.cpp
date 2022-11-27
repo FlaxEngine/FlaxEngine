@@ -15,15 +15,7 @@
 #include "Engine/Particles/Graph/CPU/ParticleEmitterGraph.CPU.h"
 
 PACK_STRUCT(struct ParticleMaterialShaderData {
-    Matrix ViewProjectionMatrix;
     Matrix WorldMatrix;
-    Matrix ViewMatrix;
-    Float3 ViewPos;
-    float ViewFar;
-    Float3 ViewDir;
-    float TimeParam;
-    Float4 ViewInfo;
-    Float4 ScreenSize;
     uint32 SortedIndicesOffset;
     float PerInstanceRandom;
     int32 ParticleStride;
@@ -109,15 +101,7 @@ void ParticleMaterialShader::Bind(BindParameters& params)
         static StringView ParticleScaleOffset(TEXT("Scale"));
         static StringView ParticleModelFacingModeOffset(TEXT("ModelFacingMode"));
 
-        Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);
         Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
-        Matrix::Transpose(view.View, materialData->ViewMatrix);
-        materialData->ViewPos = view.Position;
-        materialData->ViewFar = view.Far;
-        materialData->ViewDir = view.Direction;
-        materialData->TimeParam = params.TimeParam;
-        materialData->ViewInfo = view.ViewInfo;
-        materialData->ScreenSize = view.ScreenSize;
         materialData->SortedIndicesOffset = drawCall.Particle.Particles->GPU.SortedIndices && params.RenderContext.View.Pass != DrawPass::Depth ? sortedIndicesOffset : 0xFFFFFFFF;
         materialData->PerInstanceRandom = drawCall.PerInstanceRandom;
         materialData->ParticleStride = drawCall.Particle.Particles->Stride;

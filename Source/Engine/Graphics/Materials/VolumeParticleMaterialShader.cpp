@@ -15,17 +15,9 @@
 #include "Engine/Particles/Graph/CPU/ParticleEmitterGraph.CPU.h"
 
 PACK_STRUCT(struct VolumeParticleMaterialShaderData {
-    Matrix ViewProjectionMatrix;
     Matrix InverseViewProjectionMatrix;
-    Matrix ViewMatrix;
     Matrix WorldMatrix;
     Matrix WorldMatrixInverseTransposed;
-    Float3 ViewPos;
-    float ViewFar;
-    Float3 ViewDir;
-    float TimeParam;
-    Float4 ViewInfo;
-    Float4 ScreenSize;
     Float3 GridSize;
     float PerInstanceRandom;
     float Dummy0;
@@ -83,17 +75,9 @@ void VolumeParticleMaterialShader::Bind(BindParameters& params)
 
     // Setup material constants
     {
-        Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);
         Matrix::Transpose(view.IVP, materialData->InverseViewProjectionMatrix);
-        Matrix::Transpose(view.View, materialData->ViewMatrix);
         Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
         Matrix::Invert(drawCall.World, materialData->WorldMatrixInverseTransposed);
-        materialData->ViewPos = view.Position;
-        materialData->ViewFar = view.Far;
-        materialData->ViewDir = view.Direction;
-        materialData->TimeParam = params.TimeParam;
-        materialData->ViewInfo = view.ViewInfo;
-        materialData->ScreenSize = view.ScreenSize;
         materialData->GridSize = customData->GridSize;
         materialData->PerInstanceRandom = drawCall.PerInstanceRandom;
         materialData->VolumetricFogMaxDistance = customData->VolumetricFogMaxDistance;

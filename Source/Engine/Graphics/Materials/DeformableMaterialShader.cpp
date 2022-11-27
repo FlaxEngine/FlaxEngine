@@ -15,23 +15,14 @@
 #include "Engine/Graphics/RenderTask.h"
 
 PACK_STRUCT(struct DeformableMaterialShaderData {
-    Matrix ViewProjectionMatrix;
     Matrix WorldMatrix;
     Matrix LocalMatrix;
-    Matrix ViewMatrix;
-    Float3 ViewPos;
-    float ViewFar;
-    Float3 ViewDir;
-    float TimeParam;
-    Float4 ViewInfo;
-    Float4 ScreenSize;
     Float3 Dummy0;
     float WorldDeterminantSign;
     float MeshMinZ;
     float Segment;
     float ChunksPerSegment;
     float PerInstanceRandom;
-    Float4 TemporalAAJitter;
     Float3 GeometrySize;
     float MeshMaxZ;
     });
@@ -69,23 +60,14 @@ void DeformableMaterialShader::Bind(BindParameters& params)
 
     // Setup material constants
     {
-        Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);
         Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
         Matrix::Transpose(drawCall.Deformable.LocalMatrix, materialData->LocalMatrix);
-        Matrix::Transpose(view.View, materialData->ViewMatrix);
-        materialData->ViewPos = view.Position;
-        materialData->ViewFar = view.Far;
-        materialData->ViewDir = view.Direction;
-        materialData->TimeParam = params.TimeParam;
-        materialData->ViewInfo = view.ViewInfo;
-        materialData->ScreenSize = view.ScreenSize;
         materialData->WorldDeterminantSign = drawCall.WorldDeterminantSign;
         materialData->Segment = drawCall.Deformable.Segment;
         materialData->ChunksPerSegment = drawCall.Deformable.ChunksPerSegment;
         materialData->MeshMinZ = drawCall.Deformable.MeshMinZ;
         materialData->MeshMaxZ = drawCall.Deformable.MeshMaxZ;
         materialData->PerInstanceRandom = drawCall.PerInstanceRandom;
-        materialData->TemporalAAJitter = view.TemporalAAJitter;
         materialData->GeometrySize = drawCall.Deformable.GeometrySize;
     }
 

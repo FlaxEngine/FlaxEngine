@@ -55,6 +55,9 @@
 #ifndef USE_DITHERED_LOD_TRANSITION
 #define USE_DITHERED_LOD_TRANSITION 0
 #endif
+#ifndef USE_PER_VIEW_CONSTANTS
+#define USE_PER_VIEW_CONSTANTS 0
+#endif
 #ifndef MATERIAL_TESSELLATION
 #define MATERIAL_TESSELLATION MATERIAL_TESSELLATION_NONE
 #endif
@@ -87,6 +90,25 @@ struct Material
 	float4 CustomVSToPS[CUSTOM_VERTEX_INTERPOLATORS_COUNT];
 #endif
 };
+
+// Secondary constant buffer (with per-view constants at slot 1)
+#if USE_PER_VIEW_CONSTANTS
+cbuffer ViewData : register(b1)
+{
+    float4x4 ViewMatrix;
+    float4x4 ViewProjectionMatrix;
+    float4x4 PrevViewProjectionMatrix;
+    float4x4 MainViewProjectionMatrix;
+    float4 MainScreenSize;
+    float3 ViewPos;
+    float ViewFar;
+    float3 ViewDir;
+    float TimeParam;
+    float4 ViewInfo;
+    float4 ScreenSize;
+    float4 TemporalAAJitter;
+};
+#endif
 
 struct ModelInput
 {

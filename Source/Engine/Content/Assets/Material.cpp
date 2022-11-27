@@ -482,7 +482,7 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
             options.Macros.Add({ "MATERIAL_TESSELLATION", "MATERIAL_TESSELLATION_PHONG" });
             break;
         }
-        options.Macros.Add({ "MAX_TESSELLATION_FACTOR", Numbers[info.MaxTessellationFactor] });
+        options.Macros.Add({ "MAX_TESSELLATION_FACTOR", Numbers[Math::Min<int32>(info.MaxTessellationFactor, ARRAY_COUNT(Numbers) - 1)] });
     }
 
     // Helper macros (used by the parser)

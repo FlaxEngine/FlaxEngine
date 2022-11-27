@@ -104,6 +104,7 @@ void Skybox::ApplySky(GPUContext* context, RenderContext& renderContext, const M
     drawCall.WorldDeterminantSign = Math::FloatSelect(world.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = GetPerInstanceRandom();
     MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
+    bindParams.BindViewData();
 
     // Check if use custom material
     if (CustomMaterial)

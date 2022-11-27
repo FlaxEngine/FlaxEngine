@@ -4,6 +4,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
@@ -17,6 +18,21 @@
 #include "ParticleMaterialShader.h"
 #include "DeformableMaterialShader.h"
 #include "VolumeParticleMaterialShader.h"
+
+PACK_STRUCT(struct MaterialShaderDataPerView {
+    Matrix ViewMatrix;
+    Matrix ViewProjectionMatrix;
+    Matrix PrevViewProjectionMatrix;
+    Matrix MainViewProjectionMatrix;
+    Float4 MainScreenSize;
+    Float3 ViewPos;
+    float ViewFar;
+    Float3 ViewDir;
+    float TimeParam;
+    Float4 ViewInfo;
+    Float4 ScreenSize;
+    Float4 TemporalAAJitter;
+    });
 
 IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext)
     : GPUContext(context)
@@ -43,6 +59,37 @@ IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderC
     , DrawCallsCount(drawCallsCount)
     , TimeParam(Time::Draw.UnscaledTime.GetTotalSeconds())
 {
+}
+
+GPUConstantBuffer* IMaterial::BindParameters::PerViewConstants = nullptr;
+
+void IMaterial::BindParameters::BindViewData()
+{
+    // Lazy-init
+    if (!PerViewConstants)
+    {
+        PerViewConstants = GPUDevice::Instance->CreateConstantBuffer(sizeof(MaterialShaderDataPerView), TEXT("PerViewConstants"));
+    }
+
+    // Setup data
+    MaterialShaderDataPerView cb;
+    int aa1 = sizeof(MaterialShaderDataPerView);
+    Matrix::Transpose(RenderContext.View.Frustum.GetMatrix(), cb.ViewProjectionMatrix);
+    Matrix::Transpose(RenderContext.View.View, cb.ViewMatrix);
+    Matrix::Transpose(RenderContext.View.PrevViewProjection, cb.PrevViewProjectionMatrix);
+    Matrix::Transpose(RenderContext.View.MainViewProjection, cb.MainViewProjectionMatrix);
+    cb.MainScreenSize = RenderContext.View.MainScreenSize;
+    cb.ViewPos = RenderContext.View.Position;
+    cb.ViewFar = RenderContext.View.Far;
+    cb.ViewDir = RenderContext.View.Direction;
+    cb.TimeParam = TimeParam;
+    cb.ViewInfo = RenderContext.View.ViewInfo;
+    cb.ScreenSize = RenderContext.View.ScreenSize;
+    cb.TemporalAAJitter = RenderContext.View.TemporalAAJitter;
+
+    // Update constants
+    GPUContext->UpdateCB(PerViewConstants, &cb);
+    GPUContext->BindCB(1, PerViewConstants);
 }
 
 GPUPipelineState* MaterialShader::PipelineStateCache::InitPS(CullMode mode, bool wireframe)

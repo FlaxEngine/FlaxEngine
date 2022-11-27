@@ -695,6 +695,7 @@ DRAW:
     // Execute draw calls
     MaterialBase::BindParameters bindParams(context, renderContext);
     bindParams.Input = input;
+    bindParams.BindViewData();
     if (useInstancing)
     {
         int32 instanceBufferOffset = 0;

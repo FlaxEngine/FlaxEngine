@@ -48,6 +48,7 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
     Platform::MemoryClear(&drawCall, sizeof(DrawCall));
     drawCall.PerInstanceRandom = 1.0f;
     MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
+    bindParams.BindViewData();
     renderContext.View.Pass = DrawPass::QuadOverdraw;
     context->SetRenderTarget(*renderContext.Buffers->DepthBuffer, (GPUTextureView*)nullptr);
     renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::GBuffer);
