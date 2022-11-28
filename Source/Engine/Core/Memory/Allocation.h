@@ -105,7 +105,9 @@ public:
 
         FORCE_INLINE int32 CalculateCapacityGrow(int32 capacity, int32 minCapacity) const
         {
-            if (capacity == 0)
+            if (capacity < minCapacity)
+                capacity = minCapacity;
+            if (capacity < 8)
             {
                 capacity = 8;
             }
@@ -120,8 +122,6 @@ public:
                 capacity |= capacity >> 16;
                 capacity = (capacity + 1) * 2;
             }
-            if (capacity < minCapacity)
-                capacity = minCapacity;
             return capacity;
         }
 
