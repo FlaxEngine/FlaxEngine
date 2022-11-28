@@ -132,7 +132,7 @@ void AudioSource::Play()
             Clip->RequestStreamingUpdate();
 
             // If we are looping and streaming also update streaming buffers
-            if (_loop)
+            if (_loop || state == States::Stopped)
                 RequestStreamingBuffersUpdate();
         }
     }

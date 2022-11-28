@@ -1275,8 +1275,16 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         // Trim the animation keyframes range if need to
         if (options.Duration == AnimationDuration::Custom)
         {
-            const float start = (float)(options.FramesRange.X / data.Animation.FramesPerSecond);
-            const float end = (float)(options.FramesRange.Y / data.Animation.FramesPerSecond);
+            // PE: This is wrong, FramesRange is Frame Index start end, not the frame time.
+            // PE: To extract Frame Index you has to enter Frame*FramesPerSecond or it will not work.
+            // PE: This also makes another problem as the "length" get wrong and your not able to loop animatons.
+            // const float start = (float)(options.FramesRange.X / data.Animation.FramesPerSecond);
+            // const float end = (float)(options.FramesRange.Y / data.Animation.FramesPerSecond);
+            // data.Animation.Duration = (end - start); // *data.Animation.FramesPerSecond;
+
+            // PE: Custom animation import , frame index start and end, is now correct and the real index.
+            const float start = (float)(options.FramesRange.X);
+            const float end = (float)(options.FramesRange.Y);
             for (int32 i = 0; i < data.Animation.Channels.Count(); i++)
             {
                 auto& anim = data.Animation.Channels[i];
@@ -1285,7 +1293,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                 anim.Rotation.Trim(start, end);
                 anim.Scale.Trim(start, end);
             }
-            data.Animation.Duration = (end - start) * data.Animation.FramesPerSecond;
+            data.Animation.Duration = (end - start);
         }
 
         // Change the sampling rate if need to

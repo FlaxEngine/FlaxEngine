@@ -229,6 +229,57 @@ struct OpenFbxImporterData
                     ImportMaterialTexture(result, mat, ofbx::Texture::EMISSIVE, material.Emissive.TextureIndex, TextureEntry::TypeHint::ColorRGB);
                     ImportMaterialTexture(result, mat, ofbx::Texture::NORMAL, material.Normals.TextureIndex, TextureEntry::TypeHint::Normals);
 
+                    // PE: FBX dont always store normal maps inside the object.
+                    if (material.Diffuse.TextureIndex != -1 && material.Normals.TextureIndex == -1)
+                    {
+                        // PE: If missing , try to locate a normal map in the same path as the diffuse.
+                        const String srcFolder = String(StringUtils::GetDirectoryName(result.Textures[material.Diffuse.TextureIndex].FilePath));
+                        const String srcName = StringUtils::GetFileNameWithoutExtension(result.Textures[material.Diffuse.TextureIndex].FilePath);
+                        String srcSearch;
+
+                        const int32 num = srcName.FindLast('_');
+                        String srcSmallName = srcName;
+                        if (num != -1)
+                        {
+                            srcSmallName = srcName.Substring(0, num);
+                        }
+
+                        bool bNormal = false;
+                        for (int iext = 0; iext < 6; iext++)
+                        {
+                            String sext = TEXT(".dds");
+                            if (iext == 1) sext = TEXT(".png");
+                            if (iext == 2) sext = TEXT(".jpg");
+                            if (iext == 3) sext = TEXT(".jpeg");
+                            if (iext == 4) sext = TEXT(".tif");
+                            if (iext == 5) sext = TEXT(".tga");
+                            for (int i = 0; i < 5; i++)
+                            {
+                                String sfind = TEXT("_normal" + sext);
+                                if (i == 1) sfind = TEXT("_n" + sext);
+                                if (i == 2) sfind = TEXT("_nm" + sext);
+                                if (i == 3) sfind = TEXT("_nmp" + sext);
+                                if (i == 4) sfind = TEXT("_nor" + sext);
+                                srcSearch = srcFolder + TEXT("/") + srcSmallName + sfind;
+                                if (FileSystem::FileExists(srcSearch))
+                                {
+                                    bNormal = true;
+                                    break;
+                                }
+                            }
+                            if (bNormal)
+                                break;
+                        }
+                        if (bNormal)
+                        {
+                            auto& texture = result.Textures.AddOne();
+                            texture.FilePath = srcSearch;
+                            texture.Type = TextureEntry::TypeHint::Normals;
+                            texture.AssetID = Guid::Empty;
+                            material.Normals.TextureIndex = result.Textures.Count() - 1;
+                        }
+                    }
+
                     if (material.Diffuse.TextureIndex != -1)
                     {
                         // Detect using alpha mask in diffuse texture
