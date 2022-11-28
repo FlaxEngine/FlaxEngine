@@ -229,48 +229,54 @@ struct OpenFbxImporterData
                     ImportMaterialTexture(result, mat, ofbx::Texture::EMISSIVE, material.Emissive.TextureIndex, TextureEntry::TypeHint::ColorRGB);
                     ImportMaterialTexture(result, mat, ofbx::Texture::NORMAL, material.Normals.TextureIndex, TextureEntry::TypeHint::Normals);
 
-                    // PE: FBX dont always store normal maps inside the object.
+                    // FBX don't always store normal maps inside the object
                     if (material.Diffuse.TextureIndex != -1 && material.Normals.TextureIndex == -1)
                     {
-                        // PE: If missing , try to locate a normal map in the same path as the diffuse.
+                        // If missing, try to locate a normal map in the same path as the diffuse
                         const String srcFolder = String(StringUtils::GetDirectoryName(result.Textures[material.Diffuse.TextureIndex].FilePath));
                         const String srcName = StringUtils::GetFileNameWithoutExtension(result.Textures[material.Diffuse.TextureIndex].FilePath);
                         String srcSearch;
-
                         const int32 num = srcName.FindLast('_');
                         String srcSmallName = srcName;
                         if (num != -1)
-                        {
                             srcSmallName = srcName.Substring(0, num);
-                        }
 
-                        bool bNormal = false;
-                        for (int iext = 0; iext < 6; iext++)
+                        bool isNormal = false;
+                        for (int32 iExt = 0; iExt < 6; iExt++)
                         {
-                            String sext = TEXT(".dds");
-                            if (iext == 1) sext = TEXT(".png");
-                            if (iext == 2) sext = TEXT(".jpg");
-                            if (iext == 3) sext = TEXT(".jpeg");
-                            if (iext == 4) sext = TEXT(".tif");
-                            if (iext == 5) sext = TEXT(".tga");
-                            for (int i = 0; i < 5; i++)
+                            String sExit = TEXT(".dds");
+                            if (iExt == 1)
+                                sExit = TEXT(".png");
+                            else if (iExt == 2)
+                                sExit = TEXT(".jpg");
+                            else if (iExt == 3)
+                                sExit = TEXT(".jpeg");
+                            else if (iExt == 4)
+                                sExit = TEXT(".tif");
+                            else if (iExt == 5)
+                                sExit = TEXT(".tga");
+                            for (int32 i = 0; i < 5; i++)
                             {
-                                String sfind = TEXT("_normal" + sext);
-                                if (i == 1) sfind = TEXT("_n" + sext);
-                                if (i == 2) sfind = TEXT("_nm" + sext);
-                                if (i == 3) sfind = TEXT("_nmp" + sext);
-                                if (i == 4) sfind = TEXT("_nor" + sext);
-                                srcSearch = srcFolder + TEXT("/") + srcSmallName + sfind;
+                                String sFind = TEXT("_normal" + sExit);
+                                if (i == 1)
+                                    sFind = TEXT("_n" + sExit);
+                                else if (i == 2)
+                                    sFind = TEXT("_nm" + sExit);
+                                else if (i == 3)
+                                    sFind = TEXT("_nmp" + sExit);
+                                else if (i == 4)
+                                    sFind = TEXT("_nor" + sExit);
+                                srcSearch = srcFolder + TEXT("/") + srcSmallName + sFind;
                                 if (FileSystem::FileExists(srcSearch))
                                 {
-                                    bNormal = true;
+                                    isNormal = true;
                                     break;
                                 }
                             }
-                            if (bNormal)
+                            if (isNormal)
                                 break;
                         }
-                        if (bNormal)
+                        if (isNormal)
                         {
                             auto& texture = result.Textures.AddOne();
                             texture.FilePath = srcSearch;

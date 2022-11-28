@@ -101,7 +101,7 @@ bool WaveDecoder::ParseHeader(AudioDataInfo& info)
                 }
             }
 
-            // PE: Support wav with "extra format bytes", just ignore not needed.
+            // Support wav with "extra format bytes", just ignore not needed.
             while (totalread < subChunkSize)
             {
                 uint8 singlebyte;
@@ -167,7 +167,7 @@ void WaveDecoder::Read(byte* samples, uint32 numSamples)
             samples[i] = *((uint8*)&val);
         }
     }
-        // IEEE float need to be converted into signed PCM data
+    // IEEE float need to be converted into signed PCM data
     else if (mFormat == WAVE_FORMAT_IEEE_FLOAT)
     {
         AudioTool::ConvertFromFloat((const float*)samples, (int32*)samples, numSamples);

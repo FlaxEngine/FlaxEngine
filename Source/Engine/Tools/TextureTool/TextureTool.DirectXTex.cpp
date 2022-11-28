@@ -624,16 +624,12 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     }
 
     bool bKeepAsIs = false;
-    if (!options.FlipY &&options.Compress && type == ImageType::DDS && mipLevels == sourceMipLevels && DirectX::IsCompressed(sourceDxgiFormat))
+    if (!options.FlipY && options.Compress && type == ImageType::DDS && mipLevels == sourceMipLevels && DirectX::IsCompressed(sourceDxgiFormat) && !DirectX::IsSRGB(sourceDxgiFormat))
     {
-        if (!DirectX::IsSRGB(sourceDxgiFormat))
-        {
-            // PE: Keep image in the current compressed format (artist choice) so we dont have to run the slow mipmap generation.
-            // PE: Also converting a BC1 normal map to BC5 will not improve it but just use double gpu mem.
-            bKeepAsIs = true;
-            targetDxgiFormat = sourceDxgiFormat;
-            targetFormat = ToPixelFormat(currentImage->GetMetadata().format);
-        }
+        // Keep image in the current compressed format (artist choice) so we don't have to run the slow mipmap generation
+        bKeepAsIs = true;
+        targetDxgiFormat = sourceDxgiFormat;
+        targetFormat = ToPixelFormat(currentImage->GetMetadata().format);
     }
 
     // Decompress if texture is compressed (next steps need decompressed input data, for eg. mip maps generation or format changing)
@@ -897,7 +893,7 @@ bool TextureTool::ConvertDirectXTex(TextureData& dst, const TextureData& src, co
             return true;
         }
     }
-        // Check if convert data
+    // Check if convert data
     else if (inImage->GetMetadata().format != dstFormatDxgi)
     {
         result = DirectX::Convert(inImage->GetImages(), inImage->GetImageCount(), inImage->GetMetadata(), dstFormatDxgi, DirectX::TEX_FILTER_DEFAULT, DirectX::TEX_THRESHOLD_DEFAULT, dstImage);
