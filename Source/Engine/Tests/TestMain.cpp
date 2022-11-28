@@ -26,6 +26,13 @@ TestsRunnerService TestsRunnerServiceInstance;
 
 void TestsRunnerService::Update()
 {
+    // End if failed to perform a startup
+    if (ScriptsBuilder::LastCompilationFailed())
+    {
+        Engine::RequestExit(-1);
+        return;
+    }
+
     // Wait for Editor to be ready for running tests (eg. scripting loaded)
     if (!ScriptsBuilder::IsReady() ||
         !Scripting::IsEveryAssemblyLoaded() ||
