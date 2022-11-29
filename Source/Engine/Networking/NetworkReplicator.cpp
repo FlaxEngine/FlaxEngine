@@ -165,6 +165,7 @@ namespace
 #if !COMPILE_WITHOUT_CSHARP
     Dictionary<StringAnsiView, StringAnsi*> CSharpCachedNames;
 #endif
+    Array<Guid> DespawnedObjects;
 }
 
 class NetworkReplicationService : public EngineService
@@ -232,9 +233,12 @@ NetworkReplicatedObject* ResolveObject(Guid objectId, Guid parentId, char object
             obj->GetTypeHandle() == objectType &&
             !IdsRemappingTable.ContainsValue(item.ObjectId))
         {
-            // Boost future lookups by using indirection
-            NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Remap object ID={} into object {}:{}", objectId, item.ToString(), obj->GetType().ToString());
-            IdsRemappingTable.Add(objectId, item.ObjectId);
+            if (NetworkManager::IsClient())
+            {
+                // Boost future lookups by using indirection
+                NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Remap object ID={} into object {}:{}", objectId, item.ToString(), obj->GetType().ToString());
+                IdsRemappingTable.Add(objectId, item.ObjectId);
+            }
 
             return &item;
         }
@@ -587,8 +591,11 @@ void NetworkReplicator::DespawnObject(ScriptingObject* obj)
     }
 
     // Delete object locally
+    NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Despawn object {}", item.ObjectId);
+    DespawnedObjects.Add(item.ObjectId);
     if (item.AsNetworkObject)
         item.AsNetworkObject->OnNetworkDespawn();
+    Objects.Remove(it);
     DeleteNetworkObject(obj);
 }
 
@@ -745,6 +752,7 @@ void NetworkInternal::NetworkReplicatorClientDisconnected(NetworkClient* client)
             despawn.Targets = MoveTemp(item.TargetClientIds);
 
             // Delete object locally
+            NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Despawn object {}", item.ObjectId);
             if (item.AsNetworkObject)
                 item.AsNetworkObject->OnNetworkDespawn();
             DeleteNetworkObject(obj);
@@ -779,6 +787,7 @@ void NetworkInternal::NetworkReplicatorClear()
     SAFE_DELETE(CachedReadStream);
     NewClients.Clear();
     CachedTargets.Clear();
+    DespawnedObjects.Clear();
 }
 
 void NetworkInternal::NetworkReplicatorPreUpdate()
@@ -1025,6 +1034,8 @@ void NetworkInternal::OnNetworkMessageObjectReplicate(NetworkEvent& event, Netwo
     NetworkMessageObjectReplicate msgData;
     event.Message.ReadStructure(msgData);
     ScopeLock lock(ObjectsLock);
+    if (DespawnedObjects.Contains(msgData.ObjectId))
+        return; // Skip replicating not-existing objects
     NetworkReplicatedObject* e = ResolveObject(msgData.ObjectId, msgData.ParentId, msgData.ObjectTypeName);
     if (e)
     {
@@ -1227,6 +1238,8 @@ void NetworkInternal::OnNetworkMessageObjectDespawn(NetworkEvent& event, Network
             return;
 
         // Remove object
+        NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Despawn object {}", msgData.ObjectId);
+        DespawnedObjects.Add(msgData.ObjectId);
         if (item.AsNetworkObject)
             item.AsNetworkObject->OnNetworkDespawn();
         Objects.Remove(obj);
