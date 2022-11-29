@@ -765,31 +765,31 @@ namespace FlaxEngine
             return FindType(internalAssemblyQualifiedName);
         }
 
+        private static IntPtr EnsureAlignment(IntPtr ptr, int alignment)
+        {
+            if (ptr % alignment != 0)
+                ptr = IntPtr.Add(ptr, alignment - (int)(ptr % alignment));
+            return ptr;
+        }
+
         internal static void MarshalFromObject(object obj, Type objectType, ref IntPtr targetPtr)
         {
-            void EnsureAlignment(ref IntPtr ptr, int alignment)
-            {
-                int paddingSize = (int)(ptr.ToInt64() % alignment);
-                if (paddingSize != 0)
-                    ptr = IntPtr.Add(ptr, alignment - paddingSize);
-            }
-
             int readOffset = 0;
             if (objectType == typeof(IntPtr))
             {
-                EnsureAlignment(ref targetPtr, IntPtr.Size);
+                targetPtr = EnsureAlignment(targetPtr, IntPtr.Size);
                 Marshal.WriteIntPtr(targetPtr, (IntPtr)obj);
                 readOffset = IntPtr.Size;
             }
             else if (objectType == typeof(byte))
             {
-                EnsureAlignment(ref targetPtr, sizeof(byte));
+                targetPtr = EnsureAlignment(targetPtr, sizeof(byte));
                 Marshal.WriteByte(targetPtr, (byte)obj);
                 readOffset = sizeof(byte);
             }
             else if (objectType == typeof(bool))
             {
-                EnsureAlignment(ref targetPtr, sizeof(byte));
+                targetPtr = EnsureAlignment(targetPtr, sizeof(byte));
                 Marshal.WriteByte(targetPtr, ((bool)obj) ? (byte)1 : (byte)0);
                 readOffset = sizeof(byte);
             }
@@ -799,25 +799,25 @@ namespace FlaxEngine
             }
             else if (objectType == typeof(int) || objectType.Name == "Int32&")
             {
-                EnsureAlignment(ref targetPtr, sizeof(int));
+                targetPtr = EnsureAlignment(targetPtr, sizeof(int));
                 Marshal.WriteInt32(targetPtr, (int)obj);
                 readOffset = sizeof(int);
             }
             else if (objectType == typeof(long))
             {
-                EnsureAlignment(ref targetPtr, sizeof(long));
+                targetPtr = EnsureAlignment(targetPtr, sizeof(long));
                 Marshal.WriteInt64(targetPtr, (long)obj);
                 readOffset = sizeof(long);
             }
             else if (objectType == typeof(short))
             {
-                EnsureAlignment(ref targetPtr, sizeof(short));
+                targetPtr = EnsureAlignment(targetPtr, sizeof(short));
                 Marshal.WriteInt16(targetPtr, (short)obj);
                 readOffset = sizeof(short);
             }
             else if (objectType == typeof(string))
             {
-                EnsureAlignment(ref targetPtr, IntPtr.Size);
+                targetPtr = EnsureAlignment(targetPtr, IntPtr.Size);
                 IntPtr strPtr = ManagedString.ToNative(obj as string);
                 Marshal.WriteIntPtr(targetPtr, strPtr);
                 readOffset = IntPtr.Size;
@@ -828,7 +828,7 @@ namespace FlaxEngine
             {
                 if (objectType.IsPointer)
                 {
-                    EnsureAlignment(ref targetPtr, IntPtr.Size);
+                    targetPtr = EnsureAlignment(targetPtr, IntPtr.Size);
                     var unboxed = Pointer.Unbox(obj);
                     if (unboxed == null)
                         Marshal.WriteIntPtr(targetPtr, IntPtr.Zero);
@@ -840,7 +840,7 @@ namespace FlaxEngine
                 }
                 else
                 {
-                    EnsureAlignment(ref targetPtr, IntPtr.Size);
+                    targetPtr = EnsureAlignment(targetPtr, IntPtr.Size);
                     Marshal.WriteIntPtr(targetPtr, obj != null ? GCHandle.ToIntPtr(GCHandle.Alloc(obj, GCHandleType.Weak)) : IntPtr.Zero);
                     readOffset = IntPtr.Size;
                 }
@@ -913,22 +913,16 @@ namespace FlaxEngine
                 if (ptr == IntPtr.Zero)
                     return null;
 
+                Type elementType = type.GetElementType();
                 ManagedArray arr = (ManagedArray)GCHandle.FromIntPtr(ptr).Target;
-                if (type.Name == "Type[]")
-                {
-                    var intPtrArr = arr.array as IntPtr[];
-                    Type[] typeArr = intPtrArr.Select(x => GCHandle.FromIntPtr(x).Target).OfType<Type>().ToArray();
-                    return typeArr;
-                }
-                if (arr.array.GetType().GetElementType() == typeof(string))
-                {
-                    string[] strs = new string[arr.Length];
-                    IntPtr[] ptrs = ((IntPtr[])arr.array);
-                    for (int i = 0; i < strs.Length; i++)
-                        strs[i] = ManagedString.ToManaged(ptrs[i]);
-                    return strs;
-                }
-                return arr.array;
+                if (arr.array.GetType().GetElementType() == elementType)
+                    return arr.array;
+
+                IntPtr[] ptrs = (IntPtr[])arr.array;
+                Array marshalledArray = Array.CreateInstance(elementType, ptrs.Length);
+                for (int i = 0; i < marshalledArray.Length; i++)
+                    marshalledArray.SetValue(MarshalToObject(elementType, ptrs[i], out _), i);
+                return marshalledArray;
             }
             else if (type.IsClass)
             {
@@ -937,7 +931,6 @@ namespace FlaxEngine
                     return null;
 
                 var obj = GCHandle.FromIntPtr(ptr).Target;
-                Assert.IsTrue(obj == null || obj.GetType() == type || obj.GetType().IsSubclassOf(type) || (obj.GetType().FullName == "System.RuntimeType" && type == typeof(Type)));
                 return obj;
             }
             else if (type.IsValueType)
@@ -956,18 +949,6 @@ namespace FlaxEngine
                             fieldValue = MarshalToObject(field.FieldType, Marshal.ReadIntPtr(fieldPtr), out size);
                         else
                         {
-                            void EnsureAlignment(ref IntPtr ptr2, ref int readSize, int alignment)
-                            {
-                                int paddingSize = (int)(ptr2.ToInt64() % alignment);
-                                if (paddingSize != 0)
-                                {
-                                    int offset = alignment - paddingSize;
-                                    ptr2 = IntPtr.Add(ptr2, offset);
-                                    readSize += offset;
-                                }
-                            }
-
-                            int fieldReadSize = 0;
                             int fieldSize;
                             Type fieldType = field.FieldType;
                             if (field.FieldType.IsEnum)
@@ -981,7 +962,7 @@ namespace FlaxEngine
                                 fieldSize = IntPtr.Size;
                             else
                                 fieldSize = Marshal.SizeOf(fieldType);
-                            EnsureAlignment(ref fieldPtr, ref fieldReadSize, fieldSize);
+                            fieldPtr = EnsureAlignment(fieldPtr, fieldSize);
 
                             fieldValue = MarshalToObject(field.FieldType, fieldPtr, out size);
                         }
