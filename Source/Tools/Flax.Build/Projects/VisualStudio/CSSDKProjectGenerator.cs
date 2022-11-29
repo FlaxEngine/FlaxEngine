@@ -148,7 +148,7 @@ namespace Flax.Build.Projects.VisualStudio
                 csProjectFileContent.AppendLine(string.Format("  <PropertyGroup Condition=\"'$(Configuration)|$(Platform)' == '{0}' or '$(Configuration)|$(Platform)' == '{1}'\">", configuration.Name, configuration.Name.Replace(configuration.ArchitectureName, "AnyCPU")));
                 csProjectFileContent.AppendLine("    <DebugSymbols>true</DebugSymbols>");
                 csProjectFileContent.AppendLine("    <DebugType>portable</DebugType>");
-                csProjectFileContent.AppendLine(string.Format("    <Optimize>{0}</Optimize>", configuration.Configuration == TargetConfiguration.Debug ? "false" : "true"));
+                csProjectFileContent.AppendLine(string.Format("    <Optimize>{0}</Optimize>", configuration.Configuration == TargetConfiguration.Release ? "true" : "false"));
                 csProjectFileContent.AppendLine(string.Format("    <OutputPath>{0}\\</OutputPath>", outputPath));
                 csProjectFileContent.AppendLine(string.Format("    <BaseIntermediateOutputPath>{0}\\</BaseIntermediateOutputPath>", intermediateOutputPath));
                 csProjectFileContent.AppendLine(string.Format("    <IntermediateOutputPath>{0}\\</IntermediateOutputPath>", intermediateOutputPath));
@@ -164,6 +164,7 @@ namespace Flax.Build.Projects.VisualStudio
             }
 
             // Nuget Package References
+            // TODO: Support custom Nuget package references
             csProjectFileContent.AppendLine("  <ItemGroup>");
             csProjectFileContent.AppendLine("    <PackageReference Include=\"DotNetZip\" Version=\"1.16\" />");
             csProjectFileContent.AppendLine("    <PackageReference Include=\"Microsoft.CodeAnalysis.CSharp\" Version=\"4.3\" />");

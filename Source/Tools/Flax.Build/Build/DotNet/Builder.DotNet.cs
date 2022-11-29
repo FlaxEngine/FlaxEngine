@@ -275,11 +275,20 @@ namespace Flax.Build
             args.Add("/unsafe");
             args.Add("/fullpaths");
             args.Add("/filealign:512");
+#if USE_NETCORE
             args.Add("/langversion:latest");
+            args.Add("-nowarn:8632"); // Nullable
+#else
+            args.Add("/langversion:7.3");
+#endif
             if (buildOptions.ScriptingAPI.IgnoreMissingDocumentationWarnings)
                 args.Add("-nowarn:1591");
-            args.Add("-nowarn:8632"); // nullable
+#if USE_NETCORE
+            // Optimizations prevent debugging, only enable in release builds
+            args.Add(buildData.Configuration == TargetConfiguration.Release ? "/optimize+" : "/optimize-");
+#else
             args.Add(buildData.Configuration == TargetConfiguration.Debug ? "/optimize-" : "/optimize+");
+#endif
             args.Add(string.Format("/out:\"{0}\"", outputFile));
             args.Add(string.Format("/doc:\"{0}\"", outputDocFile));
             if (buildOptions.ScriptingAPI.Defines.Count != 0)
@@ -291,8 +300,10 @@ namespace Flax.Build
                 args.Add(string.Format("/reference:\"{0}{1}.dll\"", referenceAssemblies, reference));
             foreach (var reference in fileReferences)
                 args.Add(string.Format("/reference:\"{0}\"", reference));
+#if USE_NETCORE
             foreach (var analyzer in buildOptions.ScriptingAPI.SystemAnalyzers)
                 args.Add(string.Format("/analyzer:\"{0}{1}.dll\"", referenceAnalyzers, analyzer));
+#endif
             foreach (var sourceFile in sourceFiles)
                 args.Add("\"" + sourceFile + "\"");
 
@@ -320,8 +331,13 @@ namespace Flax.Build
                 // The "/shared" flag enables the compiler server support:
                 // https://github.com/dotnet/roslyn/blob/main/docs/compilers/Compiler%20Server.md
 
+#if USE_NETCORE
                 task.CommandPath = "dotnet";
                 task.CommandArguments = $"exec \"{cscPath}\" /noconfig /shared @\"{responseFile}\"";
+#else
+                task.CommandPath = cscPath;
+                task.CommandArguments = $"/noconfig /shared @\"{responseFile}\"";
+#endif
             }
 
             BuildDotNetAssembly?.Invoke(graph, buildData, buildOptions, task, binaryModule);
