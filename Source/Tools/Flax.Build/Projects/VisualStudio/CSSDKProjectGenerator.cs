@@ -165,12 +165,12 @@ namespace Flax.Build.Projects.VisualStudio
 
             // Nuget Package References
             csProjectFileContent.AppendLine("  <ItemGroup>");
-            csProjectFileContent.AppendLine("    <PackageReference Include=\"DotNetZip\" Version=\"1.16.0\" />");
-            csProjectFileContent.AppendLine("    <PackageReference Include=\"Microsoft.CodeAnalysis.CSharp\" Version=\"4.3.0-2.final\" />");
-            csProjectFileContent.AppendLine("    <PackageReference Include=\"Microsoft.VisualStudio.Setup.Configuration.Interop\" Version=\"3.2.2146\" />");
-            csProjectFileContent.AppendLine("    <PackageReference Include=\"Microsoft.Windows.Compatibility\" Version=\"6.0.0\" />");
-            csProjectFileContent.AppendLine("    <PackageReference Include=\"Newtonsoft.Json\" Version=\"13.0.2-beta1\" />");
-            csProjectFileContent.AppendLine("    <PackageReference Include=\"System.CodeDom\" Version=\"6.0.2-mauipre.1.22102.15\" />");
+            csProjectFileContent.AppendLine("    <PackageReference Include=\"DotNetZip\" Version=\"1.16\" />");
+            csProjectFileContent.AppendLine("    <PackageReference Include=\"Microsoft.CodeAnalysis.CSharp\" Version=\"4.3\" />");
+            csProjectFileContent.AppendLine("    <PackageReference Include=\"Microsoft.VisualStudio.Setup.Configuration.Interop\" Version=\"3.2\" />");
+            csProjectFileContent.AppendLine("    <PackageReference Include=\"Microsoft.Windows.Compatibility\" Version=\"6.0\" />");
+            csProjectFileContent.AppendLine("    <PackageReference Include=\"Newtonsoft.Json\" Version=\"13.0\" />");
+            csProjectFileContent.AppendLine("    <PackageReference Include=\"System.CodeDom\" Version=\"6.0\" />");
             csProjectFileContent.AppendLine("  </ItemGroup>");
 
             // References

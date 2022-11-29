@@ -5,11 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <Configurations>Debug;Release</Configurations>
-    <Platforms>AnyCPU</Platforms>
     <BaseOutputPath>..\..\..\Binaries\Tools</BaseOutputPath>
     <OutDir>..\..\..\Binaries\Tools</OutDir>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
     <DefineConstants>USE_NETCORE</DefineConstants>
   </PropertyGroup>
@@ -27,13 +25,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="DotNetZip" Version="1.16.0"/>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3.0-2.final"/>
-    <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="3.2.2146"/>
-    <PackageReference Include="Microsoft.Windows.Compatibility" Version="6.0.0"/>
+    <PackageReference Include="DotNetZip" Version="1.16"/>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3"/>
+    <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="3.2"/>
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="6.0"/>
     <PackageReference Include="Mono.Cecil" Version="0.11.4"/>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.2-beta1"/>
-    <PackageReference Include="System.CodeDom" Version="6.0.2-mauipre.1.22102.15"/>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0"/>
+    <PackageReference Include="System.CodeDom" Version="6.0"/>
   </ItemGroup>
 
 </Project>
