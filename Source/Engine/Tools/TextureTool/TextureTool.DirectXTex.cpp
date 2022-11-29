@@ -623,8 +623,17 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         sliceData.Mips.Resize(mipLevels);
     }
 
+    bool keepAsIs = false;
+    if (!options.FlipY && options.Compress && type == ImageType::DDS && mipLevels == sourceMipLevels && DirectX::IsCompressed(sourceDxgiFormat) && !DirectX::IsSRGB(sourceDxgiFormat))
+    {
+        // Keep image in the current compressed format (artist choice) so we don't have to run the slow mipmap generation
+        keepAsIs = true;
+        targetDxgiFormat = sourceDxgiFormat;
+        targetFormat = ToPixelFormat(currentImage->GetMetadata().format);
+    }
+
     // Decompress if texture is compressed (next steps need decompressed input data, for eg. mip maps generation or format changing)
-    if (DirectX::IsCompressed(sourceDxgiFormat))
+    if (!keepAsIs && DirectX::IsCompressed(sourceDxgiFormat))
     {
         auto& tmpImg = GET_TMP_IMG();
 
@@ -640,7 +649,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     }
 
     // Fix sRGB problem
-    if (DirectX::IsSRGB(sourceDxgiFormat))
+    if (!keepAsIs && DirectX::IsSRGB(sourceDxgiFormat))
     {
         sourceDxgiFormat = ToDxgiFormat(PixelFormatExtensions::ToNonsRGB(ToPixelFormat(sourceDxgiFormat)));
         ((DirectX::TexMetadata&)currentImage->GetMetadata()).format = sourceDxgiFormat;
@@ -649,7 +658,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     }
 
     // Remove alpha if source texture has it but output should not, valid for compressed output only (DirectX seams to use alpha to pre-multiply colors because BC1 format has no place for alpha)
-    if (DirectX::HasAlpha(sourceDxgiFormat) && options.Type == TextureFormatType::ColorRGB && options.Compress)
+    if (!keepAsIs && DirectX::HasAlpha(sourceDxgiFormat) && options.Type == TextureFormatType::ColorRGB && options.Compress)
     {
         auto& tmpImg = GET_TMP_IMG();
 
@@ -674,7 +683,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     }
 
     // Check flip/rotate source image
-    if (options.FlipY)
+    if (!keepAsIs && options.FlipY)
     {
         auto& tmpImg = GET_TMP_IMG();
 
@@ -691,7 +700,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     }
 
     // Generate mip maps chain
-    if (useMipLevels && options.GenerateMipMaps)
+    if (!keepAsIs && useMipLevels && options.GenerateMipMaps)
     {
         auto& tmpImg = GET_TMP_IMG();
 
@@ -714,7 +723,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     }
 
     // Preserve mipmap alpha coverage (if requested)
-    if (DirectX::HasAlpha(currentImage->GetMetadata().format) && options.PreserveAlphaCoverage && useMipLevels)
+    if (!keepAsIs && DirectX::HasAlpha(currentImage->GetMetadata().format) && options.PreserveAlphaCoverage && useMipLevels)
     {
         auto& tmpImg = GET_TMP_IMG();
 
@@ -746,7 +755,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     ASSERT((int32)currentImage->GetMetadata().mipLevels >= mipLevels);
 
     // Compress mip maps or convert image
-    if (targetDxgiFormat != sourceDxgiFormat)
+    if (!keepAsIs && targetDxgiFormat != sourceDxgiFormat)
     {
         auto& tmpImg = GET_TMP_IMG();
 
@@ -884,7 +893,7 @@ bool TextureTool::ConvertDirectXTex(TextureData& dst, const TextureData& src, co
             return true;
         }
     }
-        // Check if convert data
+    // Check if convert data
     else if (inImage->GetMetadata().format != dstFormatDxgi)
     {
         result = DirectX::Convert(inImage->GetImages(), inImage->GetImageCount(), inImage->GetMetadata(), dstFormatDxgi, DirectX::TEX_FILTER_DEFAULT, DirectX::TEX_THRESHOLD_DEFAULT, dstImage);
