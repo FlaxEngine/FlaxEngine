@@ -604,6 +604,12 @@ API_STRUCT() struct FLAXENGINE_API MaterialInfo
     /// </summary>
     API_FIELD() float MaxDepth;
 
+    /// <summary>
+    /// Reserved for future use, just add a float before this line and count it down.
+    /// Will be initialised with -2.0 so can be used in most cases, also new initialising is possible if < -1.0.
+    /// </summary>
+    float for_future_use[10];
+
     MaterialInfo()
     {
     }

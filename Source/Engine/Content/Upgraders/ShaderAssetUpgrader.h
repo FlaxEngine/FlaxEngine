@@ -68,6 +68,10 @@ private:
             newHeader.Material.Info = oldHeader.Material.Info;
             newHeader.Material.Info.MinDepth = 0.0f;
             newHeader.Material.Info.MaxDepth = 1.0f;
+            for (int i = 0; i < 10; i++)
+            {
+                newHeader.Material.Info.for_future_use[i] = -2.0f;
+            }
         }
         else if (context.Input.Header.TypeName == TEXT("FlaxEngine.Shader"))
         {
