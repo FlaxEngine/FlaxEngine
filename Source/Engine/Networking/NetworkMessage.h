@@ -83,11 +83,24 @@ public:
     /// Should be of the same length as length or longer.
     /// </param>
     /// <param name="numBytes">The minimal amount of bytes that the buffer contains.</param>
-    FORCE_INLINE void ReadBytes(uint8* bytes, const int numBytes)
+    FORCE_INLINE void ReadBytes(uint8* bytes, const int32 numBytes)
     {
         ASSERT(Position + numBytes < BufferSize);
         Platform::MemoryCopy(bytes, Buffer + Position, numBytes);
         Position += numBytes;
+    }
+
+    /// <summary>
+    /// Skips bytes from the message.
+    /// </summary>
+    /// <param name="numBytes">Amount of bytes to skip.</param>
+    /// <returns>Pointer to skipped data beginning.</returns>
+    FORCE_INLINE void* SkipBytes(const int32 numBytes)
+    {
+        ASSERT(Position + numBytes < BufferSize);
+        byte* result = Buffer + Position;
+        Position += numBytes;
+        return result;
     }
 
     template<typename T>
@@ -225,7 +238,7 @@ public:
     /// </summary>
     FORCE_INLINE Guid ReadGuid()
     {
-        Guid value = Guid();
+        Guid value;
         ReadBytes((uint8*)&value, sizeof(Guid));
         return value;
     }
