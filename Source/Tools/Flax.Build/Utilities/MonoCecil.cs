@@ -11,12 +11,7 @@ namespace Flax.Build
     /// </summary>
     internal static class MonoCecil
     {
-        public static bool HasAttribute(this TypeDefinition type, string fullName)
-        {
-            return type.CustomAttributes.Any(x => x.AttributeType.FullName == fullName);
-        }
-
-        public static bool HasAttribute(this FieldDefinition type, string fullName)
+        public static bool HasAttribute(this ICustomAttributeProvider type, string fullName)
         {
             return type.CustomAttributes.Any(x => x.AttributeType.FullName == fullName);
         }
