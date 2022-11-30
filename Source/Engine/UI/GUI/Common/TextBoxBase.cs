@@ -140,6 +140,12 @@ namespace FlaxEngine.GUI
         public event Action<KeyboardKeys> KeyUp;
 
         /// <summary>
+        /// Gets or sets a value indicating whether the text box can end edit via left click outside of the control
+        /// </summary>
+        [HideInEditor]
+        public bool CanEndEditByClick { get; set; } = false;
+        
+        /// <summary>
         /// Gets or sets a value indicating whether this is a multiline text box control.
         /// </summary>
         [EditorOrder(40), Tooltip("If checked, the textbox will support multiline text input.")]
@@ -1041,6 +1047,26 @@ namespace FlaxEngine.GUI
 
             // Animate view offset
             _viewOffset = isDeltaSlow ? _targetViewOffset : Float2.Lerp(_viewOffset, _targetViewOffset, deltaTime * 20.0f);
+            
+            // Clicking outside of the text box will end text editing. Left will keep the value, right will restore original value
+            if (_isEditing && CanEndEditByClick)
+            {
+                if (!IsMouseOver && RootWindow.ContainsFocus)
+                {
+                    if (Input.GetMouseButtonDown(MouseButton.Left))
+                    {
+                        RemoveFocus();
+                    }
+                    else if (Input.GetMouseButtonDown(MouseButton.Right))
+                    {
+                        // Restore text from start
+                        SetSelection(-1);
+                        _text = _onStartEditValue;
+                        OnTextChanged();
+                        RemoveFocus();
+                    }
+                }
+            }
 
             base.Update(deltaTime);
         }
