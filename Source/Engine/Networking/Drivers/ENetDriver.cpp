@@ -254,6 +254,8 @@ NetworkDriverStats ENetDriver::GetStats(NetworkConnection target)
     if (peer)
     {
         stats.RTT = (float)peer->roundTripTime;
+        stats.TotalDataSent = peer->totalDataSent;
+        stats.TotalDataReceived = peer->totalDataReceived;
     }
     return stats;
 }

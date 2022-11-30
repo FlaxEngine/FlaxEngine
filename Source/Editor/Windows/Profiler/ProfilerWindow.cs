@@ -182,6 +182,7 @@ namespace FlaxEditor.Windows.Profiler
             AddMode(new CPU());
             AddMode(new GPU());
             AddMode(new Memory());
+            AddMode(new Network());
 
             // Init view
             _frameIndex = -1;
