@@ -8,7 +8,6 @@
 
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Engine/Engine.h"
-#include "Engine/Engine/Screen.h"
 #include "Engine/Platform/IGuiData.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
