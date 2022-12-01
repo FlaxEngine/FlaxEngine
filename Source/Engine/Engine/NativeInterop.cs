@@ -201,8 +201,7 @@ namespace FlaxEngine
     /// <summary>
     /// Wrapper for managed arrays that needs to be pinned.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct ManagedArray
+    internal class ManagedArray
     {
         internal Array array = null;
         internal GCHandle handle;
@@ -213,6 +212,12 @@ namespace FlaxEngine
             handle = GCHandle.Alloc(arr, GCHandleType.Pinned);
             elementSize = Marshal.SizeOf(arr.GetType().GetElementType());
             array = arr;
+        }
+
+        ~ManagedArray()
+        {
+            if (array != null)
+                Release();
         }
 
         internal void Release()
@@ -239,11 +244,15 @@ namespace FlaxEngine
 
     internal static class ManagedString
     {
+        internal static GCHandle EmptyStringHandle = GCHandle.Alloc(string.Empty);
+
         [System.Diagnostics.DebuggerStepThrough]
         internal static unsafe IntPtr ToNative(string str)
         {
             if (str == null)
                 return IntPtr.Zero;
+            else if (str == string.Empty)
+                return GCHandle.ToIntPtr(EmptyStringHandle);
 #if false
             // HACK: Pin the string and pass the address to it including the length, no marshalling required
             GCHandle handle = GCHandle.Alloc(str, GCHandleType.Pinned);
@@ -258,7 +267,7 @@ namespace FlaxEngine
             // We assume the string content is copied in native side before GC frees it.
             IntPtr ptr = (Unsafe.Read<IntPtr>(Unsafe.AsPointer(ref str)) + sizeof(int) * 2);
 #endif
-            IntPtr ptr = GCHandle.ToIntPtr(GCHandle.Alloc(str));
+            IntPtr ptr = GCHandle.ToIntPtr(GCHandle.Alloc(str, GCHandleType.Weak));
             return ptr;
         }
 
@@ -277,7 +286,11 @@ namespace FlaxEngine
             if (ptr == IntPtr.Zero)
                 return;
 
-            GCHandle.FromIntPtr(ptr).Free();
+            GCHandle handle = GCHandle.FromIntPtr(ptr);
+            if (handle == EmptyStringHandle)
+                return;
+
+            handle.Free();
         }
     }
 
@@ -450,11 +463,160 @@ namespace FlaxEngine
         }
     }
 
-    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.Default, typeof(ArrayMarshaller<,>))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ManagedToUnmanagedIn, typeof(ArrayMarshaller<,>.ManagedToNative))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.UnmanagedToManagedOut, typeof(ArrayMarshaller<,>.ManagedToNative))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ElementIn, typeof(ArrayMarshaller<,>.ManagedToNative))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ManagedToUnmanagedOut, typeof(ArrayMarshaller<,>.NativeToManaged))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.UnmanagedToManagedIn, typeof(ArrayMarshaller<,>.NativeToManaged))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ElementOut, typeof(ArrayMarshaller<,>.NativeToManaged))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ManagedToUnmanagedRef, typeof(ArrayMarshaller<,>.Bidirectional))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.UnmanagedToManagedRef, typeof(ArrayMarshaller<,>.Bidirectional))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ElementRef, typeof(ArrayMarshaller<,>))]
     [ContiguousCollectionMarshaller]
     internal static unsafe class ArrayMarshaller<T, TUnmanagedElement>
     where TUnmanagedElement : unmanaged
     {
+        public static class NativeToManaged
+        {
+            internal static T[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
+            {
+                if (unmanaged is null)
+                    return null;
+
+                ManagedArray array = (ManagedArray)GCHandle.FromIntPtr(new IntPtr(unmanaged)).Target;
+                return new T[numElements];
+            }
+
+            internal static Span<T> GetManagedValuesDestination(T[]? managed)
+                => managed;
+
+            internal static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements)
+            {
+                if (unmanagedValue == null)
+                    return ReadOnlySpan<TUnmanagedElement>.Empty;
+
+                ManagedArray array = (ManagedArray)GCHandle.FromIntPtr(new IntPtr(unmanagedValue)).Target;
+                return new ReadOnlySpan<TUnmanagedElement>(array.array as TUnmanagedElement[]);
+            }
+
+            internal static void Free(TUnmanagedElement* unmanaged)
+            {
+                if (unmanaged == null)
+                    return;
+
+                GCHandle handle = GCHandle.FromIntPtr(new IntPtr(unmanaged));
+                ((ManagedArray)handle.Target).Release();
+                handle.Free();
+            }
+
+            internal static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
+            {
+                if (unmanaged == null)
+                    return Span<TUnmanagedElement>.Empty;
+
+                ManagedArray array = (ManagedArray)GCHandle.FromIntPtr(new IntPtr(unmanaged)).Target;
+                return new Span<TUnmanagedElement>(array.array as TUnmanagedElement[]);
+            }
+        }
+        public static class ManagedToNative
+        {
+            internal static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
+            {
+                if (managed is null)
+                {
+                    numElements = 0;
+                    return null;
+                }
+
+                numElements = managed.Length;
+
+                ManagedArray array = ManagedArray.Get(new TUnmanagedElement[numElements]);
+                var ptr = GCHandle.ToIntPtr(GCHandle.Alloc(array));
+
+                return (TUnmanagedElement*)ptr;
+            }
+
+            internal static ReadOnlySpan<T> GetManagedValuesSource(T[]? managed)
+                => managed;
+
+            internal static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
+            {
+                if (unmanaged == null)
+                    return Span<TUnmanagedElement>.Empty;
+
+                ManagedArray array = (ManagedArray)GCHandle.FromIntPtr(new IntPtr(unmanaged)).Target;
+                return new Span<TUnmanagedElement>(array.array as TUnmanagedElement[]);
+            }
+
+            internal static void Free(TUnmanagedElement* unmanaged)
+            {
+                if (unmanaged == null)
+                    return;
+
+                GCHandle handle = GCHandle.FromIntPtr(new IntPtr(unmanaged));
+                ((ManagedArray)handle.Target).Release();
+                handle.Free();
+            }
+        }
+        public struct Bidirectional
+        {
+            T[] managedArray;
+            ManagedArray unmanagedArray;
+            GCHandle handle;
+
+            public void FromManaged(T[]? managed)
+            {
+                if (managed == null)
+                    return;
+
+                managedArray = managed;
+                unmanagedArray = ManagedArray.Get(new TUnmanagedElement[managed.Length]);
+                handle = GCHandle.Alloc(unmanagedArray);
+            }
+
+            public ReadOnlySpan<T> GetManagedValuesSource()
+                => managedArray;
+
+            public Span<TUnmanagedElement> GetUnmanagedValuesDestination()
+            {
+                if (unmanagedArray == null)
+                    return Span<TUnmanagedElement>.Empty;
+
+                return new Span<TUnmanagedElement>(unmanagedArray.array as TUnmanagedElement[]);
+            }
+
+            public TUnmanagedElement* ToUnmanaged()
+            {
+                return (TUnmanagedElement*)GCHandle.ToIntPtr(handle);
+            }
+
+            public void FromUnmanaged(TUnmanagedElement* value)
+            {
+                ManagedArray arr = (ManagedArray)GCHandle.FromIntPtr(new IntPtr(value)).Target;
+                managedArray = new T[arr.Length];
+            }
+
+            public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements)
+            {
+                if (unmanagedArray == null)
+                    return ReadOnlySpan<TUnmanagedElement>.Empty;
+
+                return new ReadOnlySpan<TUnmanagedElement>(unmanagedArray.array as TUnmanagedElement[]);
+            }
+
+            public Span<T> GetManagedValuesDestination(int numElements)
+                => managedArray;
+
+            public T[] ToManaged()
+                => managedArray;
+
+            public void Free()
+            {
+                unmanagedArray.Release();
+                handle.Free();
+            }
+        }
+
         internal static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
         {
             if (managed is null)
@@ -510,7 +672,7 @@ namespace FlaxEngine
                 return;
 
             GCHandle handle = GCHandle.FromIntPtr(new IntPtr(unmanaged));
-            Unsafe.Unbox<ManagedArray>(handle.Target).Release();
+            ((ManagedArray)handle.Target).Release();
             handle.Free();
         }
 
@@ -584,7 +746,7 @@ namespace FlaxEngine
         internal static IntPtr ToNative(string managed) => ManagedString.ToNative(managed);
     }
 
-#endregion
+    #endregion
 
     /// <summary>
     /// Provides a Mono-like API for native code to access managed runtime.
@@ -610,6 +772,7 @@ namespace FlaxEngine
         private static Dictionary<string, GCHandle> typeHandleCacheCollectible = new Dictionary<string, GCHandle>();
         private static List<GCHandle> fieldHandleCache = new();
         private static List<GCHandle> fieldHandleCacheCollectible = new();
+        private static Dictionary<object, GCHandle> classAttributesCacheCollectible = new();
         private static Dictionary<Assembly, GCHandle> assemblyHandles = new Dictionary<Assembly, GCHandle>();
 
         private static string hostExecutable;
@@ -638,6 +801,11 @@ namespace FlaxEngine
             scriptingAssemblyLoadContext = new AssemblyLoadContext(null, true);
 
             DelegateHelpers.Init();
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void Exit()
+        {
         }
 
         internal static T[] GCHandleArrayToManagedArray<T>(ManagedArray array)
@@ -1172,7 +1340,11 @@ namespace FlaxEngine
             {
                 IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<ClassAttribute>() * i);
 
-                GCHandle attributeHandle = GCHandle.Alloc(attributeValues[i]);
+                if (!classAttributesCacheCollectible.TryGetValue(attributeValues[i], out GCHandle attributeHandle))
+                {
+                    attributeHandle = GCHandle.Alloc(attributeValues[i]);
+                    classAttributesCacheCollectible.Add(attributeValues[i], attributeHandle);
+                }
                 GCHandle attributeTypeHandle = GetOrAddTypeGCHandle(attributeTypes[i]);
 
                 ClassAttribute classAttribute = new ClassAttribute()
@@ -1315,29 +1487,25 @@ namespace FlaxEngine
         [UnmanagedCallersOnly]
         internal static IntPtr GetStringEmpty()
         {
-            string str = "";
-            return GCHandle.ToIntPtr(GCHandle.Alloc(str));
+            return ManagedString.ToNative(string.Empty);
         }
 
         [UnmanagedCallersOnly]
         internal static IntPtr NewStringUTF16(char* text, int length)
         {
-            string str = new string(new ReadOnlySpan<char>(text, length));
-            return GCHandle.ToIntPtr(GCHandle.Alloc(str));
+            return ManagedString.ToNative(new string(new ReadOnlySpan<char>(text, length)));
         }
 
         [UnmanagedCallersOnly]
         internal static IntPtr NewString(sbyte* text)
         {
-            string str = new string(text);
-            return GCHandle.ToIntPtr(GCHandle.Alloc(str));
+            return ManagedString.ToNative(new string(text));
         }
 
         [UnmanagedCallersOnly]
         internal static IntPtr NewStringLength(sbyte* text, int length)
         {
-            string str = new string(text, 0, length);
-            return GCHandle.ToIntPtr(GCHandle.Alloc(str));
+            return ManagedString.ToNative(new string(text, 0, length));
         }
 
         /// <summary>
@@ -1638,6 +1806,10 @@ namespace FlaxEngine
             foreach (var handle in fieldHandleCacheCollectible)
                 handle.Free();
             fieldHandleCacheCollectible.Clear();
+
+            foreach (var pair in classAttributesCacheCollectible)
+                pair.Value.Free();
+            classAttributesCacheCollectible.Clear();
 
             // Unload the ALC
             bool unloading = true;

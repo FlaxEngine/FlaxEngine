@@ -241,11 +241,12 @@ bool ScriptingObject::CreateManaged()
         return true;
 
     // Prevent from object GC destruction
-    auto handle = MUtils::NewGCHandle(managedInstance, false);
 #if USE_NETCORE
+    auto handle = (gchandle)managedInstance;
     auto oldHandle = Platform::InterlockedCompareExchange((int64*)&_gcHandle, *(int64*)&handle, 0);
     if (*(uint64*)&oldHandle != 0)
 #else
+    auto handle = MUtils::NewGCHandle(managedInstance, false);
     auto oldHandle = Platform::InterlockedCompareExchange((int32*)&_gcHandle, *(int32*)&handle, 0);
     if (*(uint32*)&oldHandle != 0)
 #endif
@@ -457,11 +458,12 @@ bool ManagedScriptingObject::CreateManaged()
         return true;
 
     // Cache the GC handle to the object (used to track the target object because it can be moved in a memory)
-    auto handle = MUtils::NewGCHandleWeakref(managedInstance, false);
 #if USE_NETCORE
+    auto handle = (gchandle)managedInstance;
     auto oldHandle = Platform::InterlockedCompareExchange((int64*)&_gcHandle, *(int64*)&handle, 0);
     if (*(uint64*)&oldHandle != 0)
 #else
+    auto handle = MUtils::NewGCHandleWeakref(managedInstance, false);
     auto oldHandle = Platform::InterlockedCompareExchange((int32*)&_gcHandle, *(int32*)&handle, 0);
     if (*(uint32*)&oldHandle != 0)
 #endif
@@ -642,12 +644,20 @@ public:
         if (auto* managedScriptingObject = dynamic_cast<ManagedScriptingObject*>(obj))
         {
             // Managed
+#if USE_NETCORE
+            managedScriptingObject->_gcHandle = (gchandle)managedInstance;
+#else
             managedScriptingObject->_gcHandle = MUtils::NewGCHandleWeakref(managedInstance, false);
+#endif
         }
         else
         {
             // Persistent
+#if USE_NETCORE
+            obj->_gcHandle = (gchandle)managedInstance;
+#else
             obj->_gcHandle = MUtils::NewGCHandle(managedInstance, false);
+#endif
         }
 
         MClass* monoClass = obj->GetClass();

@@ -122,33 +122,35 @@ bool MCore::LoadEngine()
     const String csharpLibraryPath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.dll");
     const String csharpRuntimeConfigPath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.runtimeconfig.json");
     if (!FileSystem::FileExists(csharpLibraryPath))
-        LOG(Fatal, "LoadHostfxr failed");
+        LOG(Fatal, "Failed to initialize managed runtime, FlaxEngine.CSharp.dll is missing.");
     if (!FileSystem::FileExists(csharpRuntimeConfigPath))
-        LOG(Fatal, "LoadHostfxr failed");
+        LOG(Fatal, "Failed to initialize managed runtime, FlaxEngine.CSharp.runtimeconfig.json is missing.");
 
     // Locate hostfxr and load it
     if (!CoreCLR::LoadHostfxr(csharpLibraryPath))
-        LOG(Fatal, "LoadHostfxr failed");
+        return false;
 
     // Initialize hosting component
     if (!CoreCLR::InitHostfxr(csharpRuntimeConfigPath, csharpLibraryPath))
-        LOG(Fatal, "LoadAssembly failed");
+        return false;
 
+    // Prepare managed side
     const String hostExecutable = Platform::GetExecutableFilePath();
     CoreCLR::CallStaticMethodInternal<void, const Char*>(TEXT("Init"), hostExecutable.Get());
 
     MRootDomain = New<MDomain>("Root");
     MDomains.Add(MRootDomain);
 
-    /*char* buildInfo = mono_get_runtime_build_info();
-    LOG(Info, "Managed runtime version: {0} (.NET)", String(buildInfo));
-    mono_free(buildInfo);*/
+    char* buildInfo = mono_get_runtime_build_info();
+    LOG(Info, ".NET runtime version: {0}", String(buildInfo));
+    mono_free(buildInfo);
 
     return false;
 }
 
 void MCore::UnloadEngine()
 {
+    CoreCLR::CallStaticMethodInternal<void>(TEXT("Exit"));
     MDomains.ClearDelete();
     MRootDomain = nullptr;
 }
@@ -594,7 +596,7 @@ bool MCore::LoadEngine()
 
     // Info
     char* buildInfo = mono_get_runtime_build_info();
-    LOG(Info, "Managed runtime version: {0} (Mono)", String(buildInfo));
+    LOG(Info, "Mono runtime version: {0}", String(buildInfo));
     mono_free(buildInfo);
 
     return false;
