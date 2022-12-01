@@ -372,7 +372,7 @@ namespace FlaxEditor.Surface
                 return;
             }
             var parameters = window.VisjectSurface.Parameters;
-            CustomEditors.Editors.GenericEditor.OnGroupUsage();
+            CustomEditors.Editors.GenericEditor.OnGroupsBegin();
             for (int i = 0; i < parameters.Count; i++)
             {
                 var p = parameters[i];
@@ -429,7 +429,7 @@ namespace FlaxEditor.Surface
                 var property = itemLayout.AddPropertyItem(propertyLabel, tooltipText);
                 property.Property("Value", propertyValue);
             }
-            CustomEditors.Editors.GenericEditor.OnGroupUsage();
+            CustomEditors.Editors.GenericEditor.OnGroupsEnd();
 
             // Parameters creating
             var newParameterTypes = window.NewParameterTypes;

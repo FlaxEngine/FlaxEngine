@@ -248,18 +248,6 @@ bool ProcessMesh(ImportedModelData& result, AssimpImporterData& data, const aiMe
         }
     }
 
-    // Normals
-    if (aMesh->mNormals)
-    {
-        mesh.Normals.Set((const Float3*)aMesh->mNormals, aMesh->mNumVertices);
-    }
-
-    // Tangents
-    if (aMesh->mTangents)
-    {
-        mesh.Tangents.Set((const Float3*)aMesh->mTangents, aMesh->mNumVertices);
-    }
-
     // Indices
     const int32 indicesCount = aMesh->mNumFaces * 3;
     mesh.Indices.Resize(indicesCount, false);
@@ -275,6 +263,27 @@ bool ProcessMesh(ImportedModelData& result, AssimpImporterData& data, const aiMe
         mesh.Indices[i++] = face->mIndices[0];
         mesh.Indices[i++] = face->mIndices[1];
         mesh.Indices[i++] = face->mIndices[2];
+    }
+
+    // Normals
+    if (data.Options.CalculateNormals || !aMesh->mNormals)
+    {
+        // Support generation of normals when using assimp.
+        if (mesh.GenerateNormals(data.Options.SmoothingNormalsAngle))
+        {
+            errorMsg = TEXT("Failed to generate normals.");
+            return true;
+        }
+    }
+    else if (aMesh->mNormals)
+    {
+        mesh.Normals.Set((const Float3*)aMesh->mNormals, aMesh->mNumVertices);
+    }
+
+    // Tangents
+    if (aMesh->mTangents)
+    {
+        mesh.Tangents.Set((const Float3*)aMesh->mTangents, aMesh->mNumVertices);
     }
 
     // Lightmap UVs

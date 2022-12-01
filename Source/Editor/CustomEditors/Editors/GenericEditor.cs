@@ -225,7 +225,8 @@ namespace FlaxEditor.CustomEditors.Editors
         }
 
         private static HashSet<PropertiesList> _visibleIfPropertiesListsCache;
-        private static Dictionary<string, GroupElement> _groups;
+        private static Stack<Dictionary<string, GroupElement>> _groups;
+        private static List<Dictionary<string, GroupElement>> _groupsPool;
         private VisibleIfCache[] _visibleIfCaches;
         private bool _isNull;
 
@@ -514,17 +515,38 @@ namespace FlaxEditor.CustomEditors.Editors
             menu.Show(groupPanel, location);
         }
 
-        internal static void OnGroupUsage()
+        internal static void OnGroupsBegin()
         {
-            if (_groups != null)
-                _groups.Clear();
+            if (_groups == null)
+                _groups = new Stack<Dictionary<string, GroupElement>>();
+            if (_groupsPool == null)
+                _groupsPool = new List<Dictionary<string, GroupElement>>();
+            Dictionary<string, GroupElement> group;
+            if (_groupsPool.Count != 0)
+            {
+                group = _groupsPool[0];
+                _groupsPool.RemoveAt(0);
+            }
+            else
+            {
+                group = new Dictionary<string, GroupElement>();
+            }
+            _groups.Push(group);
+        }
+
+        internal static void OnGroupsEnd()
+        {
+            var groups = _groups.Pop();
+            groups.Clear();
+            _groupsPool.Add(groups);
         }
 
         internal static LayoutElementsContainer OnGroup(LayoutElementsContainer layout, EditorDisplayAttribute display)
         {
             if (display?.Group != null)
             {
-                if (_groups != null && _groups.TryGetValue(display.Group, out var group))
+                var groups = _groups.Peek();
+                if (groups.TryGetValue(display.Group, out var group))
                 {
                     // Reuse group
                     layout = group;
@@ -532,12 +554,10 @@ namespace FlaxEditor.CustomEditors.Editors
                 else
                 {
                     // Add new group
-                    if (_groups == null)
-                        _groups = new Dictionary<string, GroupElement>();
                     group = layout.Group(display.Group);
                     group.Panel.Tag = group;
                     group.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
-                    _groups.Add(display.Group, group);
+                    groups.Add(display.Group, group);
                     layout = group;
                 }
             }
@@ -713,7 +733,7 @@ namespace FlaxEditor.CustomEditors.Editors
             items.Sort();
 
             // Add items
-            OnGroupUsage();
+            OnGroupsBegin();
             for (int i = 0; i < items.Count; i++)
             {
                 var item = items[i];
@@ -759,7 +779,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     } while (c != null);
                 }
             }
-            OnGroupUsage();
+            OnGroupsEnd();
         }
 
         /// <inheritdoc />
