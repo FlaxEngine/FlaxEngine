@@ -272,6 +272,9 @@ RigidBody* CharacterController::GetAttachedRigidBody() const
 
 void CharacterController::OnActiveTransformChanged()
 {
+    if (!_shape)
+        return;
+
     // Change actor transform (but with locking)
     ASSERT(!_isUpdatingTransform);
     _isUpdatingTransform = true;
