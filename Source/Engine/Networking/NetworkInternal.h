@@ -10,6 +10,7 @@ enum class NetworkMessageIDs : uint8
     Handshake,
     HandshakeReply,
     ObjectReplicate,
+    ObjectReplicatePart,
     ObjectSpawn,
     ObjectDespawn,
     ObjectRole,
@@ -27,6 +28,7 @@ public:
     static void NetworkReplicatorPreUpdate();
     static void NetworkReplicatorUpdate();
     static void OnNetworkMessageObjectReplicate(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer);
+    static void OnNetworkMessageObjectReplicatePart(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer);
     static void OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer);
     static void OnNetworkMessageObjectDespawn(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer);
     static void OnNetworkMessageObjectRole(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer);

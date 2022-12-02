@@ -69,7 +69,7 @@ public:
     /// <param name="numBytes">The amount of bytes to write from the bytes pointer.</param>
     FORCE_INLINE void WriteBytes(uint8* bytes, const int numBytes)
     {
-        ASSERT(Position + numBytes < BufferSize);
+        ASSERT(Position + numBytes <= BufferSize);
         Platform::MemoryCopy(Buffer + Position, bytes, numBytes);
         Position += numBytes;
         Length = Position;
@@ -85,7 +85,7 @@ public:
     /// <param name="numBytes">The minimal amount of bytes that the buffer contains.</param>
     FORCE_INLINE void ReadBytes(uint8* bytes, const int32 numBytes)
     {
-        ASSERT(Position + numBytes < BufferSize);
+        ASSERT(Position + numBytes <= BufferSize);
         Platform::MemoryCopy(bytes, Buffer + Position, numBytes);
         Position += numBytes;
     }
@@ -97,7 +97,7 @@ public:
     /// <returns>Pointer to skipped data beginning.</returns>
     FORCE_INLINE void* SkipBytes(const int32 numBytes)
     {
-        ASSERT(Position + numBytes < BufferSize);
+        ASSERT(Position + numBytes <= BufferSize);
         byte* result = Buffer + Position;
         Position += numBytes;
         return result;
