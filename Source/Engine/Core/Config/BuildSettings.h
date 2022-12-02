@@ -6,6 +6,7 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Content/AssetReference.h"
+#include "Engine/Content/SceneReference.h"
 
 /// <summary>
 /// The game building rendering settings.
@@ -50,6 +51,12 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(1000), EditorDisplay(\"Additional Data\")")
     Array<AssetReference<Asset>> AdditionalAssets;
+    
+    /// <summary>
+    /// The list of additional scenes to include into build (into root assets set).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(1000), EditorDisplay(\"Additional Data\")")
+    Array<SceneReference> AdditionalScenes;
 
     /// <summary>
     /// The list of additional folders with assets to include into build (into root assets set). Paths relative to the project directory (or absolute).
