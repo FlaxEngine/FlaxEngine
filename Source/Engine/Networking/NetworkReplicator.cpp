@@ -31,7 +31,7 @@
 #include "Engine/Threading/ThreadLocal.h"
 
 // Enables verbose logging for Network Replicator actions (dev-only)
-#define NETWORK_REPLICATOR_DEBUG_LOG 1
+#define NETWORK_REPLICATOR_DEBUG_LOG 0
 
 #if NETWORK_REPLICATOR_DEBUG_LOG
 #define NETWORK_REPLICATOR_LOG(messageType, format, ...) LOG(messageType, format, ##__VA_ARGS__)
@@ -757,6 +757,11 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
     }
 }
 
+void DirtyObjectImpl(NetworkReplicatedObject& item, ScriptingObject* obj)
+{
+    // TODO: implement objects state replication frequency and dirtying
+}
+
 void NetworkReplicator::DirtyObject(ScriptingObject* obj)
 {
     ScopeLock lock(ObjectsLock);
@@ -766,7 +771,7 @@ void NetworkReplicator::DirtyObject(ScriptingObject* obj)
     auto& item = it->Item;
     if (item.Object != obj || item.Role != NetworkObjectRole::OwnedAuthoritative)
         return;
-    // TODO: implement objects state replication frequency and dirtying
+    DirtyObjectImpl(item, obj);
 }
 
 Dictionary<NetworkRpcName, NetworkRpcInfo> NetworkRpcInfo::RPCsTable;
@@ -1167,7 +1172,9 @@ void NetworkInternal::OnNetworkMessageObjectReplicate(NetworkEvent& event, Netwo
         if (item.AsNetworkObject)
             item.AsNetworkObject->OnNetworkDeserialize();
 
-        // TODO: speed up replication of client-owned object to other clients from server
+        // Speed up replication of client-owned objects to other clients from server to reduce lag (data has to go from client to server and then to other clients)
+        if (NetworkManager::IsServer())
+            DirtyObjectImpl(item, obj);
     }
     else
     {
