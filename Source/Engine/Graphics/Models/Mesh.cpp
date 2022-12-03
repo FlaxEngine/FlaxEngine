@@ -441,7 +441,7 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     drawCall.PerInstanceRandom = perInstanceRandom;
 #if USE_EDITOR
     const ViewMode viewMode = renderContext.View.Mode;
-    if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::VertexColors)
+    if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
         GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
 #endif
 
@@ -507,7 +507,7 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
 #if USE_EDITOR
     const ViewMode viewMode = renderContext.View.Mode;
-    if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::VertexColors)
+    if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
         GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
 #endif
 
@@ -567,7 +567,7 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
 #if USE_EDITOR
     const ViewMode viewMode = renderContextBatch.GetMainContext().View.Mode;
-    if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::VertexColors)
+    if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
         GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
 #endif
 
