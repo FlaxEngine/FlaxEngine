@@ -8,8 +8,9 @@
 #include "RenderToolsVulkan.h"
 #include "CmdBufferVulkan.h"
 #include "Types.h"
-#include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"
+#include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 
 #if PLATFORM_DESKTOP

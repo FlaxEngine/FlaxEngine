@@ -6,6 +6,7 @@
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"

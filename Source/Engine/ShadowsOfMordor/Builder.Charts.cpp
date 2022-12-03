@@ -6,6 +6,7 @@
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/ContentImporters/ImportTexture.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Level/SceneQuery.h"
 #include "Engine/Level/Scene/Lightmap.h"

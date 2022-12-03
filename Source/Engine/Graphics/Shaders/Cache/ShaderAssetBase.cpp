@@ -3,6 +3,7 @@
 #include "ShaderAssetBase.h"
 #include "ShaderStorage.h"
 #include "ShaderCacheManager.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"

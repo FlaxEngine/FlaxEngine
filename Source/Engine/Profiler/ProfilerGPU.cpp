@@ -3,9 +3,11 @@
 #if COMPILE_WITH_PROFILER
 
 #include "ProfilerGPU.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUTimerQuery.h"
+#include "Engine/Graphics/GPUContext.h"
 
 RenderStatsData RenderStatsData::Counter;
 

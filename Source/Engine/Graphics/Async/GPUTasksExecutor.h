@@ -37,7 +37,6 @@ public:
     /// <summary>
     /// Gets the context list.
     /// </summary>
-    /// <returns>GPU contexts</returns>
     FORCE_INLINE const Array<GPUTasksContext*>* GetContextList() const
     {
         return &_contextList;

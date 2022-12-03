@@ -2,6 +2,7 @@
 
 #include "GPUSampler.h"
 #include "GPUSamplerDescription.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Graphics/GPUDevice.h"
 

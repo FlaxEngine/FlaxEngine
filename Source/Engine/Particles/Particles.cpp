@@ -12,6 +12,7 @@
 #include "Engine/Graphics/GPUPipelineStatePermutations.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/DynamicBuffer.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/DrawCall.h"

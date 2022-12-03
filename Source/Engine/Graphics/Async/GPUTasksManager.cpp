@@ -7,26 +7,13 @@
 
 void GPUTask::Enqueue()
 {
-    GPUDevice::Instance->TasksManager._tasks.Add(this);
+    GPUDevice::Instance->GetTasksManager()->_tasks.Add(this);
 }
 
-GPUTasksManager::GPUTasksManager(GPUDevice* device)
-    : _device(device)
-    , _executor(nullptr)
-    , _bufferIndex(0)
+GPUTasksManager::GPUTasksManager()
 {
     _buffers[0].EnsureCapacity(64);
     _buffers[1].EnsureCapacity(64);
-
-    // Setup executor
-    SetExecutor(device->CreateTasksExecutor());
-    ASSERT(_executor != nullptr);
-}
-
-GPUTasksManager::~GPUTasksManager()
-{
-    // Ensure that Dispose has been called
-    ASSERT(_executor == nullptr);
 }
 
 void GPUTasksManager::SetExecutor(GPUTasksExecutor* value)
@@ -113,4 +100,9 @@ int32 GPUTasksManager::RequestWork(GPUTask** buffer, int32 maxCount)
     _bufferIndex = b2Index;
 
     return count;
+}
+
+String GPUTasksManager::ToString() const
+{
+    return TEXT("GPU Tasks Manager");
 }

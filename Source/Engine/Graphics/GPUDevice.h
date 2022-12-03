@@ -3,8 +3,9 @@
 #pragma once
 
 #include "Engine/Platform/Platform.h"
+#include "Engine/Core/Enums.h"
+#include "Engine/Core/NonCopyable.h"
 #include "Engine/Scripting/ScriptingObject.h"
-#include "Async/GPUTasksManager.h"
 #include "GPUResourcesCollection.h"
 #include "GPUAdapter.h"
 #include "GPULimits.h"
@@ -20,7 +21,11 @@ class GPUTexture;
 class GPUBuffer;
 class GPUSampler;
 class GPUPipelineState;
+class GPUConstantBuffer;
+class GPUTasksContext;
+class GPUTasksExecutor;
 class GPUSwapChain;
+class GPUTasksManager;
 class Shader;
 class Model;
 class Material;
@@ -104,11 +109,6 @@ public:
     /// The GPU resources collection.
     /// </summary>
     GPUResourcesCollection Resources;
-
-    /// <summary>
-    /// GPU asynchronous work manager.
-    /// </summary>
-    GPUTasksManager TasksManager;
 
 public:
     /// <summary>
@@ -219,6 +219,11 @@ public:
     /// Gets the amount of memory usage by all the GPU resources (in bytes).
     /// </summary>
     API_PROPERTY() uint64 GetMemoryUsage() const;
+
+    /// <summary>
+    /// Gets the GPU asynchronous work manager.
+    /// </summary>
+    GPUTasksManager* GetTasksManager() const;
 
     /// <summary>
     /// Gets the default material.

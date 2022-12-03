@@ -3,6 +3,7 @@
 #include "ForwardMaterialShader.h"
 #include "MaterialShaderFeatures.h"
 #include "MaterialParams.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/RenderView.h"

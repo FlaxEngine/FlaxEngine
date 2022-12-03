@@ -3,6 +3,7 @@
 #include "GPUDeviceVulkan.h"
 #include "RenderToolsVulkan.h"
 #include "Config.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/ArrayExtensions.h"
 #include "Engine/Core/Collections/Sorting.h"
 

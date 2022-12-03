@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "ModelLOD.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Transform.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Serialization/MemoryReadStream.h"

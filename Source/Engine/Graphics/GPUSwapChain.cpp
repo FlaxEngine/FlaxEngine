@@ -4,6 +4,7 @@
 #include "GPUDevice.h"
 #include "Textures/GPUTexture.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Threading/Task.h"
 
 class GPUSwapChainDownloadTask : public Task
 {

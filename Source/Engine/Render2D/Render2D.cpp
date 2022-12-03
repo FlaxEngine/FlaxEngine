@@ -20,6 +20,7 @@
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Animations/AnimationUtils.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Half.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Engine/EngineService.h"

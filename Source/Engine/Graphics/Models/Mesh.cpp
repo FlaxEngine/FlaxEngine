@@ -4,6 +4,7 @@
 #include "ModelInstanceEntry.h"
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Assets/Model.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Transform.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
@@ -11,6 +12,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Threading/Task.h"
 #include "Engine/Threading/Threading.h"
 #if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>

@@ -2,7 +2,9 @@
 
 #include "DecalMaterialShader.h"
 #include "MaterialParams.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Math/OrientedBoundingBox.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/RenderBuffers.h"

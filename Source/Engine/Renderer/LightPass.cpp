@@ -9,6 +9,7 @@
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Content/Assets/CubeTexture.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTask.h"
 
 PACK_STRUCT(struct PerLight{

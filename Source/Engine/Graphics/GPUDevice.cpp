@@ -9,10 +9,12 @@
 #include "Graphics.h"
 #include "Shaders/GPUShader.h"
 #include "Async/DefaultGPUTasksExecutor.h"
+#include "Async/GPUTasksManager.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/SoftAssetReference.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Render2D/Render2D.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/Engine.h"
@@ -263,6 +265,7 @@ struct GPUDevice::PrivateData
     AssetReference<Texture> DefaultNormalMap;
     AssetReference<Texture> DefaultWhiteTexture;
     AssetReference<Texture> DefaultBlackTexture;
+    GPUTasksManager TasksManager;
 };
 
 GPUDevice* GPUDevice::Instance = nullptr;
@@ -277,7 +280,6 @@ GPUDevice::GPUDevice(RendererType type, ShaderProfile profile)
     , _shaderProfile(profile)
     , _featureLevel(RenderTools::GetFeatureLevel(profile))
     , _res(New<PrivateData>())
-    , TasksManager(this)
     , TotalGraphicsMemory(0)
     , QuadShader(nullptr)
     , CurrentTask(nullptr)
@@ -296,6 +298,7 @@ GPUDevice::~GPUDevice()
 
 bool GPUDevice::Init()
 {
+    _res->TasksManager.SetExecutor(CreateTasksExecutor());
     LOG(Info, "Total graphics memory: {0}", Utilities::BytesToText(TotalGraphicsMemory));
     return false;
 }
@@ -492,7 +495,7 @@ void GPUDevice::Draw()
     // Begin frame
     context->FrameBegin();
     RenderBegin();
-    TasksManager.FrameBegin();
+    _res->TasksManager.FrameBegin();
     Render2D::BeginFrame();
 
     // Perform actual drawing
@@ -502,7 +505,7 @@ void GPUDevice::Draw()
 
     // End frame
     Render2D::EndFrame();
-    TasksManager.FrameEnd();
+    _res->TasksManager.FrameEnd();
     RenderEnd();
     context->FrameEnd();
 
@@ -518,6 +521,11 @@ void GPUDevice::Dispose()
 uint64 GPUDevice::GetMemoryUsage() const
 {
     return Resources.GetMemoryUsage();
+}
+
+GPUTasksManager* GPUDevice::GetTasksManager() const
+{
+    return &_res->TasksManager;
 }
 
 MaterialBase* GPUDevice::GetDefaultMaterial() const

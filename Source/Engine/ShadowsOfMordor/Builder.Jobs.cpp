@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "Builder.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Renderer/Renderer.h"

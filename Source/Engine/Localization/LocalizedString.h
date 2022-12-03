@@ -34,9 +34,9 @@ public:
     LocalizedString& operator=(const StringView& value);
     LocalizedString& operator=(String&& value) noexcept;
 
-    friend bool operator==(const LocalizedString& a, const LocalizedString& b)
+    bool operator==(const LocalizedString& other) const
     {
-        return a.Id == b.Id && a.Value == b.Value;
+        return Id == other.Id && Value == other.Value;
     }
 
     friend bool operator!=(const LocalizedString& a, const LocalizedString& b)

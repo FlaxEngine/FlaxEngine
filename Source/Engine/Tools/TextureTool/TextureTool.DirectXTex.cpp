@@ -9,6 +9,7 @@
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Platform/ConditionVariable.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/Async/GPUTask.h"
 #include "Engine/Graphics/Textures/TextureUtils.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"

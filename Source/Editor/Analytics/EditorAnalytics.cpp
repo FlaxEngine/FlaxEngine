@@ -7,6 +7,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Types/DateTime.h"
+#include "Engine/Core/Types/TimeSpan.h"
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
 #include "Engine/Engine/EngineService.h"

@@ -81,14 +81,14 @@ public:
         return *this;
     }
 
-    friend bool operator==(const Pair& a, const Pair& b)
+    bool operator==(const Pair& other) const
     {
-        return a.First == b.First && a.Second == b.Second;
+        return First == other.First && Second == other.Second;
     }
 
-    friend bool operator!=(const Pair& a, const Pair& b)
+    bool operator!=(const Pair& other) const
     {
-        return a.First != b.First || a.Second != b.Second;
+        return First != other.First || Second != other.Second;
     }
 };
 

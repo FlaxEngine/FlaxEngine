@@ -15,6 +15,7 @@
 #include "Engine/Platform/Window.h"
 #include "Utils/MultiScaler.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTask.h"
 
 #define RESOLVE_PASS_OUTPUT_FORMAT PixelFormat::R16G16B16A16_Float

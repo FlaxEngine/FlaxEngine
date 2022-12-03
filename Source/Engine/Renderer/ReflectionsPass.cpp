@@ -6,6 +6,7 @@
 #include "ScreenSpaceReflectionsPass.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderTask.h"

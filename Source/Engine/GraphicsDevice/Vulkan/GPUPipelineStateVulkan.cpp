@@ -4,9 +4,10 @@
 
 #include "GPUPipelineStateVulkan.h"
 #include "RenderToolsVulkan.h"
-#include "Engine/Profiler/ProfilerCPU.h"
 #include "DescriptorSetVulkan.h"
 #include "GPUShaderProgramVulkan.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 
 GPUShaderProgramCSVulkan::~GPUShaderProgramCSVulkan()
 {

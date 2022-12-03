@@ -11,6 +11,7 @@
 #include "Engine/Content/Assets/CubeTexture.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Graphics/GPUContext.h"
 
 // Must match shader source
 int32 VolumetricFogGridInjectionGroupSize = 4;

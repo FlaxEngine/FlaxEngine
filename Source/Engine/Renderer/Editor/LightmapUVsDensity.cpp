@@ -6,6 +6,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUPipelineState.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"

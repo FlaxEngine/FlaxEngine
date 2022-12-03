@@ -8,6 +8,7 @@
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #endif
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Level/Actors/EnvironmentProbe.h"
 

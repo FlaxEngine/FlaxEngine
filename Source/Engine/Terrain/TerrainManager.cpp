@@ -12,6 +12,7 @@
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Content/AssetReference.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Renderer/DrawCall.h"
 
 // Must match structure defined in Terrain.shader

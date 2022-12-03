@@ -6,6 +6,7 @@
 #include "Engine/Core/Collections/HashSet.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -117,9 +118,9 @@ struct RasterizeChunkKey
         Hash += RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution * RasterizeChunkKeyHashResolution;
     }
 
-    friend bool operator==(const RasterizeChunkKey& a, const RasterizeChunkKey& b)
+    bool operator==(const RasterizeChunkKey& other) const
     {
-        return a.Hash == b.Hash && a.Coord == b.Coord && a.Layer == b.Layer;
+        return Hash == other.Hash && Coord == other.Coord && Layer == other.Layer;
     }
 };
 

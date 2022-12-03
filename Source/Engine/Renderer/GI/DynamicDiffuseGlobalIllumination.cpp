@@ -14,6 +14,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Debug/DebugDraw.h"
 #include "Engine/Engine/Time.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
