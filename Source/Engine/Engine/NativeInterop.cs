@@ -797,6 +797,12 @@ namespace FlaxEngine
             hostExecutable = Marshal.PtrToStringUni(hostExecutableName);
             NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), InternalDllResolver);
 
+            // Change default culture to match with Mono runtime default culture
+            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+            System.Threading.Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            System.Threading.Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
+
             // TODO: benchmark collectible setting performance, maybe enable it only in editor builds?
             scriptingAssemblyLoadContext = new AssemblyLoadContext(null, true);
 
