@@ -347,6 +347,9 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         }
         if (drawShadows)
             ShadowsPass::Instance()->SetupShadows(renderContext, renderContextBatch);
+#if USE_EDITOR
+        GBufferPass::Instance()->PreOverrideDrawCalls(renderContext);
+#endif
 
         // Dispatch drawing (via JobSystem - multiple job batches for every scene)
         JobSystem::SetJobStartingOnDispatch(false);

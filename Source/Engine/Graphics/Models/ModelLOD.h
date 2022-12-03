@@ -17,6 +17,7 @@ API_CLASS(NoSpawn) class FLAXENGINE_API ModelLOD : public ScriptingObject
     friend Mesh;
 private:
     Model* _model = nullptr;
+    int32 _lodIndex = 0;
     uint32 _verticesCount;
 
 public:
@@ -38,6 +39,14 @@ public:
     {
         // Note: we initialize all meshes at once so the last one can be used to check it.
         return Meshes.HasItems() && Meshes.Last().IsInitialized();
+    }
+
+    /// <summary>
+    /// Gets the model LOD index.
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE int32 GetLODIndex() const
+    {
+        return _lodIndex;
     }
 
     /// <summary>

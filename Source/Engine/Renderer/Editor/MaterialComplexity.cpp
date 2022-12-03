@@ -102,6 +102,8 @@ MaterialComplexityMaterialShader::MaterialComplexityMaterialShader()
 
 void MaterialComplexityMaterialShader::DebugOverrideDrawCallsMaterial(RenderContext& renderContext)
 {
+    PROFILE_CPU();
+
     // Cache 'ready' state for wrappers
     bool isReady[ARRAY_COUNT(_wrappers) + 1];
     for (int32 i = 0; i < ARRAY_COUNT(_wrappers); i++)

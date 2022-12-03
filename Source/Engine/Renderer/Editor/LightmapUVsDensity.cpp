@@ -7,6 +7,7 @@
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Renderer/GBufferPass.h"
 #include "Engine/Graphics/GPUPipelineState.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
@@ -125,7 +126,9 @@ void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
     float scaleInLightmap = 1.0f;
     if (params.RenderContext.Task)
     {
-        if (params.RenderContext.Task->ActorsSource & ActorsSources::CustomActors)
+        // Skip this lookup as it's too slow
+
+        /*if (params.RenderContext.Task->ActorsSource & ActorsSources::CustomActors)
         {
             for (auto actor : params.RenderContext.Task->CustomActors)
             {
@@ -142,33 +145,7 @@ void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
                 if (drawCallActor)
                     break;
             }
-        }
-    }
-
-    // Find the model that produced this draw call
-    const Model* drawCallModel = nullptr;
-    const ModelLOD* drawCallModelLod = nullptr;
-    const Mesh* drawCallMesh = nullptr;
-    for (auto& e : Content::GetAssetsRaw())
-    {
-        auto model = ScriptingObject::Cast<Model>(e.Value);
-        if (!model)
-            continue;
-        for (const auto& lod : model->LODs)
-        {
-            for (const auto& mesh : lod.Meshes)
-            {
-                if (mesh.GetIndexBuffer() == drawCall.Geometry.IndexBuffer)
-                {
-                    drawCallModel = model;
-                    drawCallModelLod = &lod;
-                    drawCallMesh = &mesh;
-                    break;
-                }
-            }
-        }
-        if (drawCallModel)
-            break;
+        }*/
     }
 
     // Bind constants
@@ -188,21 +165,19 @@ void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
         data.LightmapTexelsPerWorldUnit = ShadowsOfMordor::LightmapTexelsPerWorldUnit;
         data.LightmapSize = 1024.0f;
         data.LightmapArea = drawCall.Surface.LightmapUVsArea;
-        if (drawCallModel)
+        const ModelLOD* drawCallModelLod;
+        if (GBufferPass::IndexBufferToModelLOD.TryGet(drawCall.Geometry.IndexBuffer, drawCallModelLod))
         {
             // Calculate current lightmap slot size for the object (matches the ShadowsOfMordor calculations when baking the lighting)
             float globalObjectsScale = 1.0f;
             int32 atlasSize = 1024;
             int32 chartsPadding = 3;
-            if (drawCallActor)
+            const Scene* drawCallScene = drawCallActor ? drawCallActor->GetScene() : (Level::Scenes.Count() != 0 ? Level::Scenes[0] : nullptr);
+            if (drawCallScene)
             {
-                const Scene* drawCallScene = drawCallActor->GetScene();
-                if (drawCallScene)
-                {
-                    globalObjectsScale = drawCallScene->Info.LightmapSettings.GlobalObjectsScale;
-                    atlasSize = (int32)drawCallScene->Info.LightmapSettings.AtlasSize;
-                    chartsPadding = drawCallScene->Info.LightmapSettings.ChartsPadding;
-                }
+                globalObjectsScale = drawCallScene->Info.LightmapSettings.GlobalObjectsScale;
+                atlasSize = (int32)drawCallScene->Info.LightmapSettings.AtlasSize;
+                chartsPadding = drawCallScene->Info.LightmapSettings.ChartsPadding;
             }
             BoundingBox box = drawCallModelLod->GetBox(drawCall.World);
             Float3 size = box.GetSize();
@@ -219,7 +194,7 @@ void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
             const int32 maximumChartSize = atlasSize - chartsPadding * 2;
             int32 width = Math::Clamp(Math::CeilToInt(scale), ShadowsOfMordor::LightmapMinChartSize, maximumChartSize);
             int32 height = Math::Clamp(Math::CeilToInt(scale), ShadowsOfMordor::LightmapMinChartSize, maximumChartSize);
-            float invSize = 1.0f / atlasSize;
+            float invSize = 1.0f / (float)atlasSize;
             data.LightmapArea = Rectangle(0, 0, width * invSize, height * invSize);
             data.LightmapSize = (float)atlasSize;
         }

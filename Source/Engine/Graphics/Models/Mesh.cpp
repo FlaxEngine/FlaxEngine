@@ -14,6 +14,9 @@
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Threading/Task.h"
 #include "Engine/Threading/Threading.h"
+#if USE_EDITOR
+#include "Engine/Renderer/GBufferPass.h"
+#endif
 #if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 #endif
@@ -436,6 +439,11 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     drawCall.Surface.LODDitherFactor = 0.0f;
     drawCall.WorldDeterminantSign = Math::FloatSelect(world.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = perInstanceRandom;
+#if USE_EDITOR
+    const ViewMode viewMode = renderContext.View.Mode;
+    if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::VertexColors)
+        GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
+#endif
 
     // Push draw call to the render list
     renderContext.List->AddDrawCall(renderContext, drawModes, flags, drawCall, receiveDecals);
@@ -497,6 +505,11 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
     drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
+#if USE_EDITOR
+    const ViewMode viewMode = renderContext.View.Mode;
+    if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::VertexColors)
+        GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
+#endif
 
     // Push draw call to the render list
     renderContext.List->AddDrawCall(renderContext, drawModes, info.Flags, drawCall, entry.ReceiveDecals);
@@ -552,6 +565,11 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
     drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
+#if USE_EDITOR
+    const ViewMode viewMode = renderContextBatch.GetMainContext().View.Mode;
+    if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::VertexColors)
+        GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
+#endif
 
     // Push draw call to the render lists
     const auto shadowsMode = (ShadowsCastingMode)(entry.ShadowsMode & slot.ShadowsMode);

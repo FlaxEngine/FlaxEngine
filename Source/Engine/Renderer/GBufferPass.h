@@ -3,6 +3,9 @@
 #pragma once
 
 #include "RendererPass.h"
+#if USE_EDITOR
+#include "Engine/Core/Collections/Dictionary.h"
+#endif
 
 /// <summary>
 /// Rendering scene to the GBuffer
@@ -46,6 +49,17 @@ public:
     GPUTextureView* RenderSkybox(RenderContext& renderContext, GPUContext* context);
 
 #if USE_EDITOR
+    // Temporary cache for faster debug previews drawing (used only during frame rendering).
+    static Dictionary<GPUBuffer*, const ModelLOD*> IndexBufferToModelLOD;
+    static CriticalSection Locker;
+
+    FORCE_INLINE static void AddIndexBufferToModelLOD(GPUBuffer* indexBuffer, const ModelLOD* modelLod)
+    {
+        Locker.Lock();
+        IndexBufferToModelLOD[indexBuffer] = modelLod;
+        Locker.Unlock();
+    }
+    void PreOverrideDrawCalls(RenderContext& renderContext);
     void OverrideDrawCalls(RenderContext& renderContext);
     void DrawMaterialComplexity(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer);
 #endif
