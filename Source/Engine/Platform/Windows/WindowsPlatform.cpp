@@ -1079,7 +1079,6 @@ int32 WindowsPlatform::RunProcess(const StringView& cmdLine, const StringView& w
 
     HANDLE stdOutRead = nullptr;
     HANDLE stdErrRead = nullptr;
-    Array<byte> attributeList;
 
     if (captureStdOut)
     {
@@ -1101,8 +1100,7 @@ int32 WindowsPlatform::RunProcess(const StringView& cmdLine, const StringView& w
         SIZE_T bufferSize = 0;
         if (!InitializeProcThreadAttributeList(nullptr, 1, 0, &bufferSize) && GetLastError() == ERROR_INSUFFICIENT_BUFFER)
         {
-            attributeList.Resize((int32)bufferSize);
-            startupInfoEx.lpAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST)attributeList.Get();
+            startupInfoEx.lpAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST)Allocator::Allocate(bufferSize);
             if (!InitializeProcThreadAttributeList(startupInfoEx.lpAttributeList, 1, 0, &bufferSize))
             {
                 LOG(Warning, "InitializeProcThreadAttributeList failed");
@@ -1125,9 +1123,6 @@ int32 WindowsPlatform::RunProcess(const StringView& cmdLine, const StringView& w
         LOG(Warning, "Cannot start process '{0}'. Error code: 0x{1:x}", cmdLine, static_cast<int64>(GetLastError()));
         goto ERROR_EXIT;
     }
-
-    if (environmentStr)
-        Allocator::Free(environmentStr);
 
     if (stdOutRead != nullptr)
     {
@@ -1176,7 +1171,10 @@ ERROR_EXIT:
     if (startupInfoEx.lpAttributeList != nullptr)
     {
         DeleteProcThreadAttributeList(startupInfoEx.lpAttributeList);
+        Allocator::Free(startupInfoEx.lpAttributeList);
     }
+    if (environmentStr)
+        Allocator::Free(environmentStr);
 
     return result;
 }
