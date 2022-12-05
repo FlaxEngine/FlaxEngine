@@ -605,10 +605,15 @@ API_STRUCT() struct FLAXENGINE_API MaterialInfo
     API_FIELD() float MaxDepth;
 
     /// <summary>
+    /// Static FOV material will always use this FOV no matter what the camera use.
+    /// </summary>
+    API_FIELD() float StaticFOV;
+
+    /// <summary>
     /// Reserved for future use, just add a float before this line and count it down.
     /// Will be initialised with -2.0 so can be used in most cases, also new initialising is possible if < -1.0.
     /// </summary>
-    float for_future_use[10];
+    float for_future_use[9];
 
     MaterialInfo()
     {

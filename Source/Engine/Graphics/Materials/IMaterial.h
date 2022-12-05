@@ -151,6 +151,11 @@ public:
         /// </summary>
         GPUTextureView* Input = nullptr;
 
+        /// <summary>
+        /// Custom Frustum , used to change view projection matrix for static FOV.
+        /// </summary>
+        Matrix* CustomFrustum = nullptr;
+
         BindParameters(::GPUContext* context, const ::RenderContext& renderContext);
         BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const DrawCall& drawCall);
         BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const DrawCall* firstDrawCall, int32 drawCallsCount);

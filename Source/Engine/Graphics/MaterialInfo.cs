@@ -24,6 +24,9 @@ namespace FlaxEngine
                 OpacityThreshold = 0.12f,
                 TessellationMode = TessellationMethod.None,
                 MaxTessellationFactor = 15,
+                MinDepth = 0.0f,
+                MaxDepth = 1.0f,
+                StaticFOV = 0.0f,
             };
         }
 
@@ -69,7 +72,8 @@ namespace FlaxEngine
                    && TessellationMode == other.TessellationMode
                    && MaxTessellationFactor == other.MaxTessellationFactor
                    && MinDepth == other.MinDepth
-                   && MaxDepth == other.MaxDepth;
+                   && MaxDepth == other.MaxDepth
+                   && StaticFOV == other.StaticFOV;
         }
 
         /// <inheritdoc />
@@ -95,7 +99,7 @@ namespace FlaxEngine
                 hashCode = (hashCode * 397) ^ (int)(OpacityThreshold * 1000.0f);
                 hashCode = (hashCode * 397) ^ (int)TessellationMode;
                 hashCode = (hashCode * 397) ^ MaxTessellationFactor;
-                hashCode = (hashCode * 397) ^ (int)((MinDepth + MaxDepth) * 100.0f);
+                hashCode = (hashCode * 397) ^ (int)((MinDepth + MaxDepth + StaticFOV) * 100.0f);
                 return hashCode;
             }
         }

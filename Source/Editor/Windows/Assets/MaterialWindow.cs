@@ -134,6 +134,8 @@ namespace FlaxEditor.Windows.Assets
             [EditorOrder(460), DefaultValue(1.0f), EditorDisplay("Misc"), Tooltip("Maximum depth used for rendering."), Limit(0.0f, 1.0f, 0.001f)]
             public float MaxDepth;
 
+            [EditorOrder(470), DefaultValue(0.0f), EditorDisplay("Misc"), Tooltip("Static FOV, will not change even when camara FOV change. Use 0 to disable."), Limit(0.0f, 170.0f, 0.001f)]
+            public float StaticFOV;
             // Parameters
 
             [EditorOrder(1000), EditorDisplay("Parameters"), CustomEditor(typeof(ParametersEditor)), NoSerialize]
@@ -181,6 +183,7 @@ namespace FlaxEditor.Windows.Assets
                 Domain = info.Domain;
                 MinDepth = info.MinDepth;
                 MaxDepth = info.MaxDepth;
+                StaticFOV = info.StaticFOV;
 
                 // Link
                 Window = window;
@@ -228,6 +231,7 @@ namespace FlaxEditor.Windows.Assets
                 info.Domain = Domain;
                 info.MinDepth = MinDepth;
                 info.MaxDepth = MaxDepth;
+                info.StaticFOV = StaticFOV;
             }
 
             /// <summary>

@@ -653,7 +653,9 @@ DRAW:
             }
 
             Viewport oldviewport;
-            bool bRestoreViewport = false;
+            RenderView customView;
+            bool RestoreViewport = false;
+            bool RestoreFov = false;
             auto info = drawCall.Material->GetInfo();
 
             // Check if we need to change max/min depth before rendering.
@@ -664,7 +666,18 @@ DRAW:
                 newviewport.MaxDepth = info.MaxDepth;
                 newviewport.MinDepth = info.MinDepth;
                 context->SetViewportAndScissors(newviewport);
-                bRestoreViewport = true;
+                RestoreViewport = true;
+            }
+            if (renderContext.Task && info.StaticFOV > 0.0f)
+            {
+                Matrix proj;
+                auto viewport = renderContext.Task->GetViewport();
+                const float aspectRatio = viewport.Width / viewport.Height;
+                Matrix::PerspectiveFov(info.StaticFOV * DegreesToRadians, aspectRatio, renderContext.View.Near, renderContext.View.Far, proj);
+                customView = renderContext.View;
+                customView.SetUp(renderContext.Task->View.View, proj);
+                bindParams.CustomFrustum = &customView.Frustum.GetMatrix();
+                RestoreFov = true;
             }
 
             bindParams.FirstDrawCall = &drawCall;
@@ -700,9 +713,13 @@ DRAW:
                 }
             }
 
-            if (bRestoreViewport)
+            if (RestoreViewport)
             {
                 context->SetViewportAndScissors(oldviewport);
+            }
+            if (RestoreFov)
+            {
+                bindParams.CustomFrustum = nullptr;
             }
         }
         for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
@@ -766,10 +783,13 @@ DRAW:
             {
                 auto& drawCall = DrawCalls[list.Indices[batch.StartIndex + j]];
 
-                // Check if we need to change max/min depth before rendering.
                 Viewport oldviewport;
-                bool bRestoreViewport = false;
+                RenderView customView;
+                bool RestoreViewport = false;
+                bool RestoreFov = false;
                 auto info = drawCall.Material->GetInfo();
+
+                // Check if we need to change max/min depth before rendering.
                 if (renderContext.Task && (info.MinDepth != 0.0f || info.MaxDepth != 1.0f))
                 {
                     oldviewport = renderContext.Task->GetViewport();
@@ -777,7 +797,18 @@ DRAW:
                     newviewport.MaxDepth = info.MaxDepth;
                     newviewport.MinDepth = info.MinDepth;
                     context->SetViewportAndScissors(newviewport);
-                    bRestoreViewport = true;
+                    RestoreViewport = true;
+                }
+                if (renderContext.Task && info.StaticFOV > 0.0f)
+                {
+                    Matrix proj;
+                    auto viewport = renderContext.Task->GetViewport();
+                    const float aspectRatio = viewport.Width / viewport.Height;
+                    Matrix::PerspectiveFov(info.StaticFOV * DegreesToRadians, aspectRatio, renderContext.View.Near, renderContext.View.Far, proj);
+                    customView = renderContext.View;
+                    customView.SetUp(renderContext.Task->View.View, proj);
+                    bindParams.CustomFrustum = &customView.Frustum.GetMatrix();
+                    RestoreFov = true;
                 }
 
                 bindParams.FirstDrawCall = &drawCall;
@@ -795,9 +826,13 @@ DRAW:
                     context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, drawCall.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
                 }
 
-                if (bRestoreViewport)
+                if (RestoreViewport)
                 {
                     context->SetViewportAndScissors(oldviewport);
+                }
+                if (RestoreFov)
+                {
+                    bindParams.CustomFrustum = nullptr;
                 }
             }
         }

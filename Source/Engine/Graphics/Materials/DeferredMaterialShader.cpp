@@ -83,7 +83,20 @@ void DeferredMaterialShader::Bind(BindParameters& params)
 
     // Setup material constants
     {
-        Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);
+        if (params.CustomFrustum)
+        {
+            // Copy custom frustum matrix and transpose.
+            Matrix ViewProjection;
+            ViewProjection.SetRow1(params.CustomFrustum->GetRow1());
+            ViewProjection.SetRow2(params.CustomFrustum->GetRow2());
+            ViewProjection.SetRow3(params.CustomFrustum->GetRow3());
+            ViewProjection.SetRow4(params.CustomFrustum->GetRow4());
+            Matrix::Transpose(ViewProjection, materialData->ViewProjectionMatrix);
+        }
+        else
+        {
+            Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);
+        }
         Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
         Matrix::Transpose(view.View, materialData->ViewMatrix);
         Matrix::Transpose(drawCall.Surface.PrevWorld, materialData->PrevWorldMatrix);
