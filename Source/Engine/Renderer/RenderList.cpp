@@ -654,6 +654,7 @@ DRAW:
 
             Viewport oldviewport;
             RenderView customView;
+            Matrix CustomFrustum;
             bool RestoreViewport = false;
             bool RestoreFov = false;
             auto info = drawCall.Material->GetInfo();
@@ -676,7 +677,8 @@ DRAW:
                 Matrix::PerspectiveFov(info.StaticFOV * DegreesToRadians, aspectRatio, renderContext.View.Near, renderContext.View.Far, proj);
                 customView = renderContext.View;
                 customView.SetUp(renderContext.Task->View.View, proj);
-                bindParams.CustomFrustum = &customView.Frustum.GetMatrix();
+                CustomFrustum = customView.Frustum.GetMatrix();
+                bindParams.CustomFrustum = &CustomFrustum;
                 RestoreFov = true;
             }
 
@@ -785,6 +787,7 @@ DRAW:
 
                 Viewport oldviewport;
                 RenderView customView;
+                Matrix CustomFrustum;
                 bool RestoreViewport = false;
                 bool RestoreFov = false;
                 auto info = drawCall.Material->GetInfo();
@@ -807,7 +810,8 @@ DRAW:
                     Matrix::PerspectiveFov(info.StaticFOV * DegreesToRadians, aspectRatio, renderContext.View.Near, renderContext.View.Far, proj);
                     customView = renderContext.View;
                     customView.SetUp(renderContext.Task->View.View, proj);
-                    bindParams.CustomFrustum = &customView.Frustum.GetMatrix();
+                    CustomFrustum = customView.Frustum.GetMatrix();
+                    bindParams.CustomFrustum = &CustomFrustum;
                     RestoreFov = true;
                 }
 
