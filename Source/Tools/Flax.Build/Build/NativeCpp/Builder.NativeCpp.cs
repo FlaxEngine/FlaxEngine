@@ -31,6 +31,25 @@ namespace Flax.Build
             public IGrouping<string, Module>[] BinaryModules;
             public BuildTargetInfo BuildInfo;
             public Dictionary<ProjectInfo, BuildData> ReferenceBuilds = new Dictionary<ProjectInfo, BuildData>();
+
+            public BuildTargetBinaryModuleInfo FinReferenceBuildModule(string name)
+            {
+                if (BuildInfo != null && BuildInfo.BinaryModules != null)
+                {
+                    foreach (var e in BuildInfo.BinaryModules)
+                    {
+                        if (string.Equals(e.Name, name, StringComparison.Ordinal))
+                            return e;
+                    }
+                }
+                foreach (var e in ReferenceBuilds)
+                {
+                    var q = e.Value.FinReferenceBuildModule(name);
+                    if (q != null)
+                        return q;
+                }
+                return null;
+            }
         }
 
         public class BuildTargetBinaryModuleInfo
@@ -751,6 +770,7 @@ namespace Flax.Build
                 buildData.BinaryModules = GetBinaryModules(project, target, buildData.Modules);
 
                 // Inject binary modules symbols import/export defines
+                var moduleNamesUsed = new HashSet<string>();
                 for (int i = 0; i < buildData.BinaryModules.Length; i++)
                 {
                     var binaryModule = buildData.BinaryModules[i];
@@ -765,22 +785,28 @@ namespace Flax.Build
                                 moduleOptions.CompileEnv.PreprocessorDefinitions.Add(binaryModuleNameUpper + (target.UseSymbolsExports ? "_API=" + toolchain.DllExport : "_API="));
 
                                 // Import symbols from binary modules containing the referenced modules (from this project only, external ones are handled via ReferenceBuilds below)
-                                foreach (var moduleName in moduleOptions.PrivateDependencies)
+                                foreach (var moduleName in moduleOptions.PrivateDependencies.Concat(moduleOptions.PublicDependencies))
                                 {
                                     var dependencyModule = buildData.Rules.GetModule(moduleName);
-                                    if (dependencyModule != null && !string.IsNullOrEmpty(dependencyModule.BinaryModuleName) && dependencyModule.BinaryModuleName != binaryModule.Key && IsModuleFromProject(dependencyModule, project) && buildData.Modules.TryGetValue(dependencyModule, out var dependencyOptions))
+                                    if (dependencyModule != null && 
+                                        !string.IsNullOrEmpty(dependencyModule.BinaryModuleName) && 
+                                        dependencyModule.BinaryModuleName != binaryModule.Key && 
+                                        !moduleNamesUsed.Contains(dependencyModule.BinaryModuleName) &&
+                                        GetModuleProject(dependencyModule, project) != null && 
+                                        buildData.Modules.TryGetValue(dependencyModule, out var dependencyOptions))
                                     {
                                         // Import symbols from referenced binary module
                                         moduleOptions.CompileEnv.PreprocessorDefinitions.Add(dependencyModule.BinaryModuleName.ToUpperInvariant() + "_API=" + toolchain.DllImport);
-                                    }
-                                }
-                                foreach (var moduleName in moduleOptions.PublicDependencies)
-                                {
-                                    var dependencyModule = buildData.Rules.GetModule(moduleName);
-                                    if (dependencyModule != null && !string.IsNullOrEmpty(dependencyModule.BinaryModuleName) && dependencyModule.BinaryModuleName != binaryModule.Key && IsModuleFromProject(dependencyModule, project) && buildData.Modules.TryGetValue(dependencyModule, out var dependencyOptions))
-                                    {
-                                        // Import symbols from referenced binary module
-                                        moduleOptions.CompileEnv.PreprocessorDefinitions.Add(dependencyModule.BinaryModuleName.ToUpperInvariant() + "_API=" + toolchain.DllImport);
+
+                                        var dependencyModuleBuild =  buildData.FinReferenceBuildModule(moduleName);
+                                        if (dependencyModuleBuild != null)
+                                        {
+                                            // Link against the referenced binary module
+                                            if (toolchain.UseImportLibraryWhenLinking)
+                                                moduleOptions.LinkEnv.InputLibraries.Add(Path.ChangeExtension(dependencyModuleBuild.NativePath, toolchain.Platform.StaticLibraryFileExtension));
+                                            else
+                                                moduleOptions.LinkEnv.InputLibraries.Add(dependencyModuleBuild.NativePath);
+                                        }
                                     }
                                 }
                             }
@@ -825,6 +851,7 @@ namespace Flax.Build
                             }
                         }
                     }
+                    moduleNamesUsed.Clear();
                 }
             }
 
