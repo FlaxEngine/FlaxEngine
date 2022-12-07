@@ -166,7 +166,6 @@ namespace FlaxEditor.Windows.Profiler
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            Clear();
             _timelineEventsCache?.Clear();
             _tableRowsCache?.Clear();
 

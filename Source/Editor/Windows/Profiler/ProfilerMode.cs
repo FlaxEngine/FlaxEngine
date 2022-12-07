@@ -83,6 +83,14 @@ namespace FlaxEditor.Windows.Profiler
         {
         }
 
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            Clear();
+
+            base.OnDestroy();
+        }
+
         /// <summary>
         /// Initializes this instance.
         /// </summary>
