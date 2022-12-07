@@ -10,18 +10,19 @@
 #include "Shaders/GPUShader.h"
 #include "Async/DefaultGPUTasksExecutor.h"
 #include "Async/GPUTasksManager.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Core/Utilities.h"
+#include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/SoftAssetReference.h"
-#include "Engine/Core/Log.h"
 #include "Engine/Render2D/Render2D.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Renderer/RenderList.h"
-#include "Engine/Core/Utilities.h"
 
 GPUPipelineState* GPUPipelineState::Spawn(const SpawnParams& params)
 {
@@ -280,6 +281,7 @@ GPUDevice::GPUDevice(RendererType type, ShaderProfile profile)
     , _shaderProfile(profile)
     , _featureLevel(RenderTools::GetFeatureLevel(profile))
     , _res(New<PrivateData>())
+    , _resources(1024)
     , TotalGraphicsMemory(0)
     , QuadShader(nullptr)
     , CurrentTask(nullptr)
@@ -367,8 +369,69 @@ bool GPUDevice::CanDraw()
     return true;
 }
 
+void GPUDevice::AddResource(GPUResource* resource)
+{
+    Locker.Lock();
+    ASSERT(resource && !_resources.Contains(resource));
+    _resources.Add(resource);
+    Locker.Unlock();
+}
+
+void GPUDevice::RemoveResource(GPUResource* resource)
+{
+    Locker.Lock();
+    ASSERT(resource && _resources.Contains(resource));
+    _resources.Remove(resource);
+    Locker.Unlock();
+}
+
+void GPUDevice::DumpResourcesToLog() const
+{
+    StringBuilder output;
+    Locker.Lock();
+
+    output.AppendFormat(TEXT("GPU Resources dump. Count: {0}, total GPU memory used: {1}"), _resources.Count(), Utilities::BytesToText(GetMemoryUsage()));
+    output.AppendLine();
+    output.AppendLine();
+
+    for (int32 typeIndex = 0; typeIndex < GPUResource::ResourceType_Count; typeIndex++)
+    {
+        const auto type = static_cast<GPUResource::ResourceType>(typeIndex);
+
+        output.AppendFormat(TEXT("Group: {0}s"), GPUResource::ToString(type));
+        output.AppendLine();
+
+        int32 count = 0;
+        uint64 memUsage = 0;
+        for (int32 i = 0; i < _resources.Count(); i++)
+        {
+            const GPUResource* resource = _resources[i];
+            if (resource->GetResourceType() == type)
+            {
+                count++;
+                memUsage += resource->GetMemoryUsage();
+                auto str = resource->ToString();
+                if (str.HasChars())
+                {
+                    output.Append(TEXT('\t'));
+                    output.Append(str);
+                    output.AppendLine();
+                }
+            }
+        }
+
+        output.AppendFormat(TEXT("Total count: {0}, memory usage: {1}"), count, Utilities::BytesToText(memUsage));
+        output.AppendLine();
+        output.AppendLine();
+    }
+
+    Locker.Unlock();
+    LOG_STR(Info, output.ToStringView());
+}
+
 void GPUDevice::preDispose()
 {
+    Locker.Lock();
     RenderTargetPool::Flush();
 
     // Release resources
@@ -383,7 +446,12 @@ void GPUDevice::preDispose()
 
     // Release GPU resources memory and unlink from device
     // Note: after that no GPU resources should be used/created, only deleted
-    Resources.OnDeviceDispose();
+    for (int32 i = _resources.Count() - 1; i >= 0 && i < _resources.Count(); i--)
+    {
+        _resources[i]->OnDeviceDispose();
+    }
+    _resources.Clear();
+    Locker.Unlock();
 }
 
 void GPUDevice::DrawBegin()
@@ -520,7 +588,20 @@ void GPUDevice::Dispose()
 
 uint64 GPUDevice::GetMemoryUsage() const
 {
-    return Resources.GetMemoryUsage();
+    uint64 result = 0;
+    Locker.Lock();
+    for (int32 i = 0; i < _resources.Count(); i++)
+        result += _resources[i]->GetMemoryUsage();
+    Locker.Unlock();
+    return result;
+}
+
+Array<GPUResource*> GPUDevice::GetResources() const
+{
+    Locker.Lock();
+    Array<GPUResource*> result = _resources;
+    Locker.Unlock();
+    return result;
 }
 
 GPUTasksManager* GPUDevice::GetTasksManager() const

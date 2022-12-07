@@ -3,10 +3,11 @@
 #pragma once
 
 #include "Engine/Platform/Platform.h"
+#include "Engine/Platform/CriticalSection.h"
 #include "Engine/Core/Enums.h"
 #include "Engine/Core/NonCopyable.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingObject.h"
-#include "GPUResourcesCollection.h"
 #include "GPUAdapter.h"
 #include "GPULimits.h"
 #include "Enums.h"
@@ -14,6 +15,7 @@
 
 class ITextureOwner;
 class RenderTask;
+class GPUResource;
 class GPUContext;
 class GPUShader;
 class GPUTimerQuery;
@@ -84,6 +86,7 @@ protected:
     // Private resources (hidden with declaration)
     struct PrivateData;
     PrivateData* _res;
+    Array<GPUResource*> _resources;
 
 protected:
     /// <summary>
@@ -105,12 +108,6 @@ public:
     /// </summary>
     CriticalSection Locker;
 
-    /// <summary>
-    /// The GPU resources collection.
-    /// </summary>
-    GPUResourcesCollection Resources;
-
-public:
     /// <summary>
     /// The total amount of graphics memory in bytes.
     /// </summary>
@@ -221,6 +218,11 @@ public:
     API_PROPERTY() uint64 GetMemoryUsage() const;
 
     /// <summary>
+    /// Gets the list with all active GPU resources.
+    /// </summary>
+    API_PROPERTY() Array<GPUResource*> GetResources() const;
+
+    /// <summary>
     /// Gets the GPU asynchronous work manager.
     /// </summary>
     GPUTasksManager* GetTasksManager() const;
@@ -298,6 +300,15 @@ public:
     /// Wait for GPU end doing submitted work
     /// </summary>
     virtual void WaitForGPU() = 0;
+
+public:
+    void AddResource(GPUResource* resource);
+    void RemoveResource(GPUResource* resource);
+
+    /// <summary>
+    /// Dumps all GPU resources information to the log.
+    /// </summary>
+    void DumpResourcesToLog() const;
 
 protected:
     virtual void preDispose();

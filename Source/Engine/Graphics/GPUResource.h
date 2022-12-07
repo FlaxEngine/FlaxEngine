@@ -137,7 +137,7 @@ public:
 #if GPU_ENABLE_RESOURCE_NAMING
         GPUResource::_name = name;
 #endif
-        device->Resources.Add(this);
+        device->AddResource(this);
     }
 
     /// <summary>
@@ -146,7 +146,7 @@ public:
     virtual ~GPUResourceBase()
     {
         if (_device)
-            _device->Resources.Remove(this);
+            _device->RemoveResource(this);
     }
 
 public:
