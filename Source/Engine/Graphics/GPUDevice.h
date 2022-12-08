@@ -4,7 +4,6 @@
 
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/CriticalSection.h"
-#include "Engine/Core/Enums.h"
 #include "Engine/Core/NonCopyable.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingObject.h"
@@ -43,7 +42,15 @@ public:
     /// <summary>
     /// Graphics Device states that describe its lifetime.
     /// </summary>
-    DECLARE_ENUM_6(DeviceState, Missing, Created, Ready, Removed, Disposing, Disposed);
+    enum class DeviceState
+    {
+        Missing = 0,
+        Created,
+        Ready,
+        Removed,
+        Disposing,
+        Disposed
+    };
 
     /// <summary>
     /// Describes a video output display mode.

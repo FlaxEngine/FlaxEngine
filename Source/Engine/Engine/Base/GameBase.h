@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "Engine/Core/Enums.h"
-
 /// <summary>
 /// Build game header flags.
 /// </summary>

@@ -395,14 +395,9 @@ String GPUBuffer::ToString() const
 #endif
 }
 
-GPUResource::ResourceType GPUBuffer::GetResourceType() const
+GPUResourceType GPUBuffer::GetResourceType() const
 {
-    return ResourceType::Buffer;
-}
-
-GPUResource::ObjectType GPUBuffer::GetObjectType() const
-{
-    return ObjectType::Buffer;
+    return GPUResourceType::Buffer;
 }
 
 void GPUBuffer::OnReleaseGPU()

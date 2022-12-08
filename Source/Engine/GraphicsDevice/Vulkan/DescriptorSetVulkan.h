@@ -87,7 +87,7 @@ namespace DescriptorSet
             return ShaderStage::Geometry;
         default:
         CRASH;
-            return static_cast<ShaderStage>(ShaderStage_Count);
+            return (ShaderStage)ShaderStage_Count;
         }
     }
 

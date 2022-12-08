@@ -575,18 +575,13 @@ String GPUTexture::ToString() const
 #endif
 }
 
-GPUResource::ResourceType GPUTexture::GetResourceType() const
+GPUResourceType GPUTexture::GetResourceType() const
 {
     if (IsVolume())
-        return ResourceType::VolumeTexture;
+        return GPUResourceType::VolumeTexture;
     if (IsCubeMap())
-        return ResourceType::CubeTexture;
-    return IsRegularTexture() ? ResourceType::Texture : ResourceType::RenderTarget;
-}
-
-GPUResource::ObjectType GPUTexture::GetObjectType() const
-{
-    return ObjectType::Texture;
+        return GPUResourceType::CubeTexture;
+    return IsRegularTexture() ? GPUResourceType::Texture : GPUResourceType::RenderTarget;
 }
 
 void GPUTexture::OnReleaseGPU()

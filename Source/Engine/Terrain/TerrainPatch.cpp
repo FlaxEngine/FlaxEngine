@@ -3,6 +3,7 @@
 #include "TerrainPatch.h"
 #include "Terrain.h"
 #include "Engine/Serialization/Serialization.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Physics/Physics.h"

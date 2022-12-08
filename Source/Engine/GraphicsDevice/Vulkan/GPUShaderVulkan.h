@@ -67,9 +67,9 @@ public:
 public:
 
     // [GPUResourceVulkan]
-    ResourceType GetResourceType() const final override
+    GPUResourceType GetResourceType() const final override
     {
-        return ResourceType::Buffer;
+        return GPUResourceType::Buffer;
     }
 
     // [ResourceOwnerVulkan]

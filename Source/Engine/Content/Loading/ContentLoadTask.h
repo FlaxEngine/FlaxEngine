@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Engine/Threading/Task.h"
-#include "Engine/Core/Types/String.h"
 
 class Asset;
 class LoadingThread;
@@ -46,7 +45,6 @@ public:
     /// <summary>
     /// Gets a task type.
     /// </summary>
-    /// <returns>The type.</returns>
     FORCE_INLINE Type GetType() const
     {
         return _type;
@@ -68,13 +66,7 @@ protected:
 
 public:
     // [Task]
-    String ToString() const override
-    {
-        return String::Format(TEXT("Content Load Task {0} ({1})"),
-                              ToString(GetType()),
-                              ::ToString(GetState())
-        );
-    }
+    String ToString() const override;
 
 protected:
     // [Task]

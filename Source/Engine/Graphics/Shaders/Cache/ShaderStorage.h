@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Engine/Core/Types/BaseTypes.h"
-#include "Engine/Core/Enums.h"
 #include "Engine/Graphics/Config.h"
 #include "Engine/Graphics/Materials/MaterialInfo.h"
 #include "../Config.h"
@@ -31,7 +30,12 @@ public:
     /// <summary>
     /// Different shader cache storage modes (disabled, inside asset and in project cache)
     /// </summary>
-    DECLARE_ENUM_3(CachingMode, Disabled, AssetInternal, ProjectCache);
+    enum class CachingMode
+    {
+        Disabled = 0,
+        AssetInternal,
+        ProjectCache
+    };
 
     /// <summary>
     /// Current shaders caching mode to use

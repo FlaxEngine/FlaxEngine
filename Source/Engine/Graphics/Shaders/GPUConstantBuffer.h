@@ -23,8 +23,8 @@ public:
 
 public:
     // [GPUResource]
-    ResourceType GetResourceType() const override
+    GPUResourceType GetResourceType() const override
     {
-        return ResourceType::Buffer;
+        return GPUResourceType::Buffer;
     }
 };

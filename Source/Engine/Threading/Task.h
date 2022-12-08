@@ -13,7 +13,15 @@
 /// <summary>
 /// Represents the current stage in the lifecycle of a Task.
 /// </summary>
-DECLARE_ENUM_EX_6(TaskState, int64, 0, Created, Failed, Canceled, Queued, Running, Finished);
+enum class TaskState : int64
+{
+    Created = 0,
+    Failed,
+    Canceled,
+    Queued,
+    Running,
+    Finished
+};
 
 /// <summary>
 /// Represents an asynchronous operation.

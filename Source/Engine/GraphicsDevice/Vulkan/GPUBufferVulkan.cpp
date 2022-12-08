@@ -5,6 +5,7 @@
 #include "GPUBufferVulkan.h"
 #include "GPUContextVulkan.h"
 #include "RenderToolsVulkan.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Graphics/Async/Tasks/GPUUploadBufferTask.h"
 

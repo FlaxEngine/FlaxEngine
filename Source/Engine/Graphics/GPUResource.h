@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Engine/Core/Enums.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Config.h"
 
@@ -13,22 +12,40 @@
 #define SAFE_DELETE_GPU_RESOURCES(x) for (auto& e : (x)) if (e) { e->DeleteObjectNow(); e = nullptr; }
 
 /// <summary>
+/// GPU resources types.
+/// </summary>
+API_ENUM() enum class GPUResourceType
+{
+    // GPU render target texture
+    RenderTarget = 0,
+    // GPU texture
+    Texture,
+    // GPU cube texture (cubemap)
+    CubeTexture,
+    // GPU volume texture (3D)
+    VolumeTexture,
+    // GPU buffer
+    Buffer,
+    // GPU shader
+    Shader,
+    // GPU pipeline state object (PSO)
+    PipelineState,
+    // GPU binding descriptor
+    Descriptor,
+    // GPU timer query
+    Query,
+    // GPU texture sampler
+    Sampler,
+
+    MAX
+};
+
+/// <summary>
 /// The base class for all GPU resources.
 /// </summary>
 API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API GPUResource : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUResource);
-public:
-    /// <summary>
-    /// GPU Resources types.
-    /// </summary>
-    DECLARE_ENUM_10(ResourceType, RenderTarget, Texture, CubeTexture, VolumeTexture, Buffer, Shader, PipelineState, Descriptor, Query, Sampler);
-
-    /// <summary>
-    /// GPU Resources object types. Used to detect Texture objects from subset of Types:  RenderTarget, Texture, CubeTexture, VolumeTexture which use the same API object.
-    /// </summary>
-    DECLARE_ENUM_3(ObjectType, Texture, Buffer, Other);
-
 protected:
     uint64 _memoryUsage = 0;
 #if GPU_ENABLE_RESOURCE_NAMING
@@ -65,21 +82,16 @@ public:
 
 public:
     /// <summary>
-    /// Gets the resource type.
+    /// Gets the GPU resource type.
     /// </summary>
-    virtual ResourceType GetResourceType() const = 0;
-
-    /// <summary>
-    /// Gets resource object type.
-    /// </summary>
-    virtual ObjectType GetObjectType() const;
+    API_PROPERTY() virtual GPUResourceType GetResourceType() const = 0;
 
     /// <summary>
     /// Gets amount of GPU memory used by this resource (in bytes). It's a rough estimation. GPU memory may be fragmented, compressed or sub-allocated so the actual memory pressure from this resource may vary (also depends on the current graphics backend).
     /// </summary>
     API_PROPERTY() uint64 GetMemoryUsage() const;
 
-#if GPU_ENABLE_RESOURCE_NAMING
+#if !BUILD_RELEASE
     /// <summary>
     /// Gets the resource name.
     /// </summary>

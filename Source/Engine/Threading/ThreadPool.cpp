@@ -7,6 +7,7 @@
 #include "ConcurrentTaskQueue.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Types/String.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Platform/ConditionVariable.h"
@@ -25,6 +26,11 @@ namespace ThreadPoolImpl
     ConcurrentTaskQueue<ThreadPoolTask> Jobs; // Hello Steve!
     ConditionVariable JobsSignal;
     CriticalSection JobsMutex;
+}
+
+String ThreadPoolTask::ToString() const
+{
+    return String::Format(TEXT("Thread Pool Task ({0})"), (int32)GetState());
 }
 
 void ThreadPoolTask::Enqueue()

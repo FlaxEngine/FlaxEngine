@@ -128,9 +128,9 @@ void DescriptorHeapWithSlotsDX12::ReleaseSlot(uint32 index)
     value &= ~mask;
 }
 
-GPUResource::ResourceType DescriptorHeapWithSlotsDX12::GetResourceType() const
+GPUResourceType DescriptorHeapWithSlotsDX12::GetResourceType() const
 {
-    return ResourceType::Descriptor;
+    return GPUResourceType::Descriptor;
 }
 
 DescriptorHeapPoolDX12::DescriptorHeapPoolDX12(GPUDeviceDX12* device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32 descriptorsCountPerHeap, bool shaderVisible)

@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Engine/Core/Enums.h"
 #include "Engine/Core/Math/Packed.h"
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Math/Vector3.h"
@@ -23,7 +22,15 @@ struct RenderView;
 /// <summary>
 /// Importing model lightmap UVs source
 /// </summary>
-DECLARE_ENUM_6(ModelLightmapUVsSource, Disable, Generate, Channel0, Channel1, Channel2, Channel3);
+enum class ModelLightmapUVsSource
+{
+    Disable = 0,
+    Generate,
+    Channel0,
+    Channel1,
+    Channel2,
+    Channel3
+};
 
 /// <summary>
 /// The mesh buffer types.

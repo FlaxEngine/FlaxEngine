@@ -181,6 +181,7 @@ namespace FlaxEditor.Windows.Profiler
             AddMode(new Overall());
             AddMode(new CPU());
             AddMode(new GPU());
+            AddMode(new MemoryGPU());
             AddMode(new Memory());
             AddMode(new Network());
 

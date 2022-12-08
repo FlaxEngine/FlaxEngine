@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Task.h"
-#include "Engine/Core/Types/String.h"
 
 class ThreadPool;
 
@@ -28,10 +27,7 @@ protected:
 public:
 
     // [Task]
-    String ToString() const override
-    {
-        return String::Format(TEXT("Thread Pool Task ({0})"), ::ToString(GetState()));
-    }
+    String ToString() const override;
 
 protected:
 

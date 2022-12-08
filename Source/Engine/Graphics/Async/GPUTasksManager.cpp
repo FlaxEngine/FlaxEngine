@@ -3,7 +3,41 @@
 #include "GPUTasksManager.h"
 #include "GPUTask.h"
 #include "GPUTasksExecutor.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Core/Types/String.h"
 #include "Engine/Graphics/GPUDevice.h"
+
+void GPUTask::Execute(GPUTasksContext* context)
+{
+    // Begin
+    ASSERT(IsQueued() && _context == nullptr);
+    _state = TaskState::Running;
+
+    // Perform an operation
+    const auto result = run(context);
+
+    // Process result
+    if (IsCancelRequested())
+    {
+        _state = TaskState::Canceled;
+    }
+    else if (result != Result::Ok)
+    {
+        LOG(Warning, "\'{0}\' failed with result: {1}", ToString(), ToString(result));
+        OnFail();
+    }
+    else
+    {
+        // Save task completion point (for synchronization)
+        _syncPoint = context->GetCurrentSyncPoint();
+        _context = context;
+    }
+}
+
+String GPUTask::ToString() const
+{
+    return String::Format(TEXT("GPU Async Task {0} ({1})"), ToString(GetType()), (int32)GetState());
+}
 
 void GPUTask::Enqueue()
 {

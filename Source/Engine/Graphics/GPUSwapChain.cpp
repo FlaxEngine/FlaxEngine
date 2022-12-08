@@ -95,7 +95,7 @@ String GPUSwapChain::ToString() const
 #endif
 }
 
-GPUResource::ResourceType GPUSwapChain::GetResourceType() const
+GPUResourceType GPUSwapChain::GetResourceType() const
 {
-    return ResourceType::Texture;
+    return GPUResourceType::Texture;
 }

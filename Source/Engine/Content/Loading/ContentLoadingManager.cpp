@@ -211,6 +211,11 @@ void ContentLoadingManagerService::Dispose()
     Tasks.CancelAll();
 }
 
+String ContentLoadTask::ToString() const
+{
+    return String::Format(TEXT("Content Load Task {0} ({1})"), ToString(GetType()), (int32)GetState());
+}
+
 void ContentLoadTask::Enqueue()
 {
     Tasks.Add(this);

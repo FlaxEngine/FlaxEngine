@@ -160,5 +160,5 @@ public:
 public:
     // [GPUResource]
     String ToString() const override;
-    ResourceType GetResourceType() const final override;
+    GPUResourceType GetResourceType() const final override;
 };

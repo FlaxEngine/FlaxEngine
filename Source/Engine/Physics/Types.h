@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Engine/Core/Enums.h"
 #include "Engine/Core/Config.h"
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Math/Vector3.h"

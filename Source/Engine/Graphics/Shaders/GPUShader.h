@@ -182,7 +182,7 @@ protected:
 
 public:
     // [GPUResource]
-    ResourceType GetResourceType() const final override;
+    GPUResourceType GetResourceType() const final override;
 
 protected:
     // [GPUResource]

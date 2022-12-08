@@ -2,6 +2,7 @@
 
 #include "GPUTasksContext.h"
 #include "GPUTask.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Threading/Threading.h"
 

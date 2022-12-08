@@ -251,7 +251,7 @@ bool Mesh::Load(uint32 vertices, uint32 triangles, void* vb0, void* vb1, void* v
 
     // Create GPU buffers
 #if GPU_ENABLE_RESOURCE_NAMING
-#define MESH_BUFFER_NAME(postfix) GetModel()->ToString() + TEXT(postfix)
+#define MESH_BUFFER_NAME(postfix) GetModel()->GetPath() + TEXT(postfix)
 #else
 #define MESH_BUFFER_NAME(postfix) String::Empty
 #endif

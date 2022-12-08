@@ -119,9 +119,8 @@ public:
 public:
 
     /// <summary>
-    /// Gets shader function meta stage type
+    /// Gets shader function meta stage type.
     /// </summary>
-    /// <returns>Shader Stage type</returns>
     virtual ShaderStage GetStage() const = 0;
 };
 

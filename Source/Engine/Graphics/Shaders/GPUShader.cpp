@@ -190,9 +190,9 @@ GPUShaderProgram* GPUShader::GetShader(ShaderStage stage, const StringAnsiView& 
     return shader;
 }
 
-GPUResource::ResourceType GPUShader::GetResourceType() const
+GPUResourceType GPUShader::GetResourceType() const
 {
-    return ResourceType::Shader;
+    return GPUResourceType::Shader;
 }
 
 void GPUShader::OnReleaseGPU()

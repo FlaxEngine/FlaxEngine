@@ -23,6 +23,7 @@
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Scripting/Enums.h"
 
 GPUPipelineState* GPUPipelineState::Spawn(const SpawnParams& params)
 {
@@ -79,9 +80,9 @@ bool GPUPipelineState::Init(const Description& desc)
     return false;
 }
 
-GPUResource::ResourceType GPUPipelineState::GetResourceType() const
+GPUResourceType GPUPipelineState::GetResourceType() const
 {
-    return ResourceType::PipelineState;
+    return GPUResourceType::PipelineState;
 }
 
 GPUPipelineState::Description GPUPipelineState::Description::Default =
@@ -193,15 +194,12 @@ GPUResource::~GPUResource()
 #endif
 }
 
-GPUResource::ObjectType GPUResource::GetObjectType() const
-{
-    return ObjectType::Other;
-}
-
 uint64 GPUResource::GetMemoryUsage() const
 {
     return _memoryUsage;
 }
+
+static_assert((GPU_ENABLE_RESOURCE_NAMING) == (!BUILD_RELEASE), "Update build condition on around GPUResource Name property getter/setter.");
 
 #if GPU_ENABLE_RESOURCE_NAMING
 
@@ -394,11 +392,11 @@ void GPUDevice::DumpResourcesToLog() const
     output.AppendLine();
     output.AppendLine();
 
-    for (int32 typeIndex = 0; typeIndex < GPUResource::ResourceType_Count; typeIndex++)
+    for (int32 typeIndex = 0; typeIndex < (int32)GPUResourceType::MAX; typeIndex++)
     {
-        const auto type = static_cast<GPUResource::ResourceType>(typeIndex);
+        const auto type = static_cast<GPUResourceType>(typeIndex);
 
-        output.AppendFormat(TEXT("Group: {0}s"), GPUResource::ToString(type));
+        output.AppendFormat(TEXT("Group: {0}s"), ScriptingEnum::ToString(type));
         output.AppendLine();
 
         int32 count = 0;
