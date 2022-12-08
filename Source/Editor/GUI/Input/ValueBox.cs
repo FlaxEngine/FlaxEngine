@@ -125,7 +125,7 @@ namespace FlaxEditor.GUI.Input
             _min = min;
             _max = max;
             _slideSpeed = sliderSpeed;
-            CanEndEditByClick = true;
+            EndEditOnClick = true;
         }
 
         /// <summary>
@@ -174,7 +174,7 @@ namespace FlaxEditor.GUI.Input
         private void EndSliding()
         {
             _isSliding = false;
-            CanEndEditByClick = true;
+            EndEditOnClick = true;
             EndMouseCapture();
             if (_cursorChanged)
             {
@@ -247,7 +247,7 @@ namespace FlaxEditor.GUI.Input
                 _startSlideLocation = location;
                 _startSlideValue = _value;
                 StartMouseCapture(true);
-                CanEndEditByClick = false;
+                EndEditOnClick = false;
 
                 // Hide cursor and cache location
                 Cursor = CursorType.Hidden;

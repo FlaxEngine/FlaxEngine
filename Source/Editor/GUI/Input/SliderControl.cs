@@ -371,7 +371,7 @@ namespace FlaxEditor.GUI.Input
                 Parent = this,
                 Location = new Float2(split, 0),
                 Size = new Float2(Height, TextBoxSize),
-                CanEndEditByClick = true,
+                EndEditOnClick = true,
             };
             _textBox.EditEnd += OnTextBoxEditEnd;
         }

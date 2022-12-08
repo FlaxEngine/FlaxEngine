@@ -143,7 +143,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets a value indicating whether the text box can end edit via left click outside of the control
         /// </summary>
         [HideInEditor]
-        public bool CanEndEditByClick { get; set; } = false;
+        public bool EndEditOnClick { get; set; } = false;
         
         /// <summary>
         /// Gets or sets a value indicating whether this is a multiline text box control.
@@ -1049,7 +1049,7 @@ namespace FlaxEngine.GUI
             _viewOffset = isDeltaSlow ? _targetViewOffset : Float2.Lerp(_viewOffset, _targetViewOffset, deltaTime * 20.0f);
             
             // Clicking outside of the text box will end text editing. Left will keep the value, right will restore original value
-            if (_isEditing && CanEndEditByClick)
+            if (_isEditing && EndEditOnClick)
             {
                 if (!IsMouseOver && RootWindow.ContainsFocus)
                 {
@@ -1059,16 +1059,24 @@ namespace FlaxEngine.GUI
                     }
                     else if (Input.GetMouseButtonDown(MouseButton.Right))
                     {
-                        // Restore text from start
-                        SetSelection(-1);
-                        _text = _onStartEditValue;
-                        OnTextChanged();
+                        RestoreTextFromStart();
                         RemoveFocus();
                     }
                 }
             }
 
             base.Update(deltaTime);
+        }
+
+        /// <summary>
+        /// Restores the Text from the start.
+        /// </summary>
+        public void RestoreTextFromStart()
+        {
+            // Restore text from start
+            SetSelection(-1);
+            _text = _onStartEditValue;
+            OnTextChanged();
         }
 
         /// <inheritdoc />
@@ -1326,13 +1334,10 @@ namespace FlaxEngine.GUI
             }
             case KeyboardKeys.Escape:
             {
-                // Restore text from start
-                SetSelection(-1);
-                _text = _onStartEditValue;
+                RestoreTextFromStart();
 
                 if (!IsNavFocused)
                     RemoveFocus();
-                OnTextChanged();
 
                 return true;
             }
