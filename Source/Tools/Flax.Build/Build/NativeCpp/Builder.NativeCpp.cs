@@ -798,7 +798,7 @@ namespace Flax.Build
                                         // Import symbols from referenced binary module
                                         moduleOptions.CompileEnv.PreprocessorDefinitions.Add(dependencyModule.BinaryModuleName.ToUpperInvariant() + "_API=" + toolchain.DllImport);
 
-                                        var dependencyModuleBuild =  buildData.FinReferenceBuildModule(moduleName);
+                                        var dependencyModuleBuild = buildData.FinReferenceBuildModule(moduleName);
                                         if (dependencyModuleBuild != null)
                                         {
                                             // Link against the referenced binary module
