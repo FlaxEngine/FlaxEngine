@@ -125,7 +125,6 @@ namespace FlaxEditor.GUI.Input
             _min = min;
             _max = max;
             _slideSpeed = sliderSpeed;
-            EndEditOnClick = true;
         }
 
         /// <summary>

@@ -143,7 +143,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets a value indicating whether the text box can end edit via left click outside of the control
         /// </summary>
         [HideInEditor]
-        public bool EndEditOnClick { get; set; } = false;
+        public bool EndEditOnClick { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether this is a multiline text box control.

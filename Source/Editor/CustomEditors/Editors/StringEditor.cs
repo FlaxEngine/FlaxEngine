@@ -30,7 +30,6 @@ namespace FlaxEditor.CustomEditors.Editors
             }
 
             _element = layout.TextBox(isMultiLine);
-            _element.TextBox.EndEditOnClick = true;
             _element.TextBox.EditEnd += () => SetValue(_element.Text);
         }
 
