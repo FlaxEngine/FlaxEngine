@@ -144,7 +144,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         [HideInEditor]
         public bool EndEditOnClick { get; set; } = false;
-        
+
         /// <summary>
         /// Gets or sets a value indicating whether this is a multiline text box control.
         /// </summary>
