@@ -52,10 +52,8 @@ namespace FlaxEditor.Windows.Profiler
                 if (_frameIndex != value)
                 {
                     _frameIndex = value;
-
                     UpdateButtons();
-                    if (_tabs.SelectedTab is ProfilerMode mode)
-                        mode.UpdateView(_frameIndex, _showOnlyLastUpdateEvents);
+                    UpdateView();
                 }
             }
         }
@@ -71,10 +69,8 @@ namespace FlaxEditor.Windows.Profiler
                 if (_showOnlyLastUpdateEvents != value)
                 {
                     _showOnlyLastUpdateEvents = value;
-
                     UpdateButtons();
-                    if (_tabs.SelectedTab is ProfilerMode mode)
-                        mode.UpdateView(_frameIndex, _showOnlyLastUpdateEvents);
+                    UpdateView();
                 }
             }
         }
@@ -152,7 +148,9 @@ namespace FlaxEditor.Windows.Profiler
                 if (_tabs.Children[i] is ProfilerMode mode)
                 {
                     mode.Clear();
+                    FlaxEngine.Profiler.BeginEvent("ProfilerWindow.UpdateView");
                     mode.UpdateView(ViewFrameIndex, _showOnlyLastUpdateEvents);
+                    FlaxEngine.Profiler.EndEvent();
                 }
             }
 
@@ -162,7 +160,11 @@ namespace FlaxEditor.Windows.Profiler
         private void OnSelectedTabChanged(Tabs tabs)
         {
             if (tabs.SelectedTab is ProfilerMode mode)
+            {
+                FlaxEngine.Profiler.BeginEvent("ProfilerWindow.UpdateView");
                 mode.UpdateView(ViewFrameIndex, _showOnlyLastUpdateEvents);
+                FlaxEngine.Profiler.EndEvent();
+            }
         }
 
         private void UpdateButtons()
@@ -172,6 +174,16 @@ namespace FlaxEditor.Windows.Profiler
             _nextFrameButton.Enabled = (_framesCount - _frameIndex - 1) > 0;
             _lastFrameButton.Enabled = _framesCount > 0;
             _showOnlyLastUpdateEventsButton.Checked = _showOnlyLastUpdateEvents;
+        }
+
+        private void UpdateView()
+        {
+            if (_tabs.SelectedTab is ProfilerMode mode)
+            {
+                FlaxEngine.Profiler.BeginEvent("ProfilerWindow.UpdateView");
+                mode.UpdateView(_frameIndex, _showOnlyLastUpdateEvents);
+                FlaxEngine.Profiler.EndEvent();
+            }
         }
 
         /// <inheritdoc />
@@ -208,11 +220,19 @@ namespace FlaxEditor.Windows.Profiler
                 for (int i = 0; i < _tabs.ChildrenCount; i++)
                 {
                     if (_tabs.Children[i] is ProfilerMode mode)
+                    {
+                        FlaxEngine.Profiler.BeginEvent(mode.GetType().FullName);
                         mode.Update(ref sharedData);
+                        FlaxEngine.Profiler.EndEvent();
+                    }
                 }
                 {
                     if (_tabs.SelectedTab is ProfilerMode mode)
+                    {
+                        FlaxEngine.Profiler.BeginEvent("ProfilerWindow.UpdateView");
                         mode.UpdateView(_frameIndex, _showOnlyLastUpdateEvents);
+                        FlaxEngine.Profiler.EndEvent();
+                    }
                 }
                 sharedData.End();
 
