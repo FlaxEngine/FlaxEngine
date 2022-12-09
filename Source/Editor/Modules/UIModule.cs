@@ -740,9 +740,7 @@ namespace FlaxEditor.Modules
             // Find layout to use
             var searchFolder = StringUtils.CombinePaths(Editor.LocalCachePath, "LayoutsCache") ;
             if (!Directory.Exists(searchFolder))
-            {
                 Directory.CreateDirectory(searchFolder);
-            }
             var files = Directory.GetFiles(searchFolder, "Layout_*.xml", SearchOption.TopDirectoryOnly);
             var layouts = _menuWindowApplyWindowLayout.ContextMenu;
             layouts.DisposeAllItems();
