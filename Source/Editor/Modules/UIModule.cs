@@ -750,7 +750,8 @@ namespace FlaxEditor.Modules
                 var name = file.Substring(searchFolder.Length + 8, file.Length - searchFolder.Length - 12);
                 var nameCM = layouts.AddChildMenu(name);
                 var applyButton = nameCM.ContextMenu.AddButton("Apply", OnApplyLayoutButtonClicked);
-                nameCM.ContextMenu.AddButton("Delete", () => File.Delete(file));
+                applyButton.TooltipText = "Applies the selected layout.";
+                nameCM.ContextMenu.AddButton("Delete", () => File.Delete(file)).TooltipText = "Permanently deletes the selected layout.";
                 applyButton.Tag = file;
             }
             _menuWindowApplyWindowLayout.Enabled = files.Length > 0;
