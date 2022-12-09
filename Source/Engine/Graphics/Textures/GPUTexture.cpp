@@ -220,7 +220,7 @@ GPUTexture* GPUTexture::New()
 }
 
 GPUTexture::GPUTexture()
-    : GPUResource(SpawnParams(Guid::New(), GPUTexture::TypeInitializer))
+    : GPUResource(SpawnParams(Guid::New(), TypeInitializer))
     , _residentMipLevels(0)
     , _sRGB(false)
     , _isBlockCompressed(false)
@@ -423,7 +423,6 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
 
         break;
     }
-
     case TextureDimensions::VolumeTexture:
     {
         if (desc.IsDepthStencil())
@@ -461,7 +460,6 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
 
         break;
     }
-
     case TextureDimensions::CubeTexture:
     {
         if (desc.HasPerSliceViews())

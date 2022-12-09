@@ -35,6 +35,11 @@ GPUPipelineState* GPUPipelineState::New()
     return GPUDevice::Instance->CreatePipelineState();
 }
 
+GPUPipelineState::GPUPipelineState()
+    : GPUResource(SpawnParams(Guid::New(), TypeInitializer))
+{
+}
+
 bool GPUPipelineState::Init(const Description& desc)
 {
     // Cache description in debug builds
@@ -177,7 +182,7 @@ GPUPipelineState::Description GPUPipelineState::Description::DefaultFullscreenTr
 };
 
 GPUResource::GPUResource()
-    : ScriptingObject(SpawnParams(Guid::New(), GPUResource::TypeInitializer))
+    : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
 {
 }
 

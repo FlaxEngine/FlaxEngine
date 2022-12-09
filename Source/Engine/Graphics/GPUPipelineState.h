@@ -109,6 +109,8 @@ public:
 protected:
     ShaderBindings _meta;
 
+    GPUPipelineState();
+
 public:
 #if BUILD_DEBUG
     /// <summary>

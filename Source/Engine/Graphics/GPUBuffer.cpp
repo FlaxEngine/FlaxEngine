@@ -137,6 +137,7 @@ GPUBuffer* GPUBuffer::New()
 }
 
 GPUBuffer::GPUBuffer()
+    : GPUResource(SpawnParams(Guid::New(), TypeInitializer))
 {
     // Buffer with size 0 is considered to be invalid
     _desc.Size = 0;

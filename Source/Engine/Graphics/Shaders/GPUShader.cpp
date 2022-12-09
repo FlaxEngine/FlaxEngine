@@ -59,6 +59,7 @@ uint32 GPUShaderProgramsContainer::CalculateHash(const StringAnsiView& name, int
 }
 
 GPUShader::GPUShader()
+    : GPUResource(SpawnParams(Guid::New(), TypeInitializer))
 {
     Platform::MemoryClear(_constantBuffers, sizeof(_constantBuffers));
 }

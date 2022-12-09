@@ -79,9 +79,6 @@ protected:
     bool _sRGB, _isBlockCompressed;
     GPUTextureDescription _desc;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUTexture"/> class.
-    /// </summary>
     GPUTexture();
 
 public:

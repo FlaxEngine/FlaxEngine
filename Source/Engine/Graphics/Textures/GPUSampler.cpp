@@ -76,6 +76,7 @@ GPUSampler* GPUSampler::New()
 }
 
 GPUSampler::GPUSampler()
+    : GPUResource(SpawnParams(Guid::New(), TypeInitializer))
 {
 }
 

@@ -74,9 +74,6 @@ protected:
     GPUShaderProgramsContainer _shaders;
     GPUConstantBuffer* _constantBuffers[MAX_CONSTANT_BUFFER_SLOTS];
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUShader"/> class.
-    /// </summary>
     GPUShader();
 
 public:

@@ -144,7 +144,8 @@ public:
     /// <param name="device">The graphics device.</param>
     /// <param name="name">The resource name.</param>
     GPUResourceBase(DeviceType* device, const StringView& name) noexcept
-        : _device(device)
+        : BaseType()
+        , _device(device)
     {
 #if GPU_ENABLE_RESOURCE_NAMING
         if (name.HasChars())

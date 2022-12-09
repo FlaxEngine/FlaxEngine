@@ -128,7 +128,7 @@ public:
     /// <param name="device">The graphics device.</param>
     /// <param name="name">The resource name.</param>
     GPUResourceDX11(GPUDeviceDX11* device, const StringView& name) noexcept
-        : GPUResourceBase(device, name)
+        : GPUResourceBase<GPUDeviceDX11, BaseType>(device, name)
     {
     }
 };
