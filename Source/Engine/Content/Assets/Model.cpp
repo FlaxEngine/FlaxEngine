@@ -979,7 +979,13 @@ Asset::LoadResult Model::load()
             ModelSDFHeader data;
             sdfStream.ReadBytes(&data, sizeof(data));
             if (!SDF.Texture)
-                SDF.Texture = GPUTexture::New();
+            {
+                String name;
+#if !BUILD_RELEASE
+                name = GetPath() + TEXT(".SDF");
+#endif
+                SDF.Texture = GPUDevice::Instance->CreateTexture(name);
+            }
             if (SDF.Texture->Init(GPUTextureDescription::New3D(data.Width, data.Height, data.Depth, data.Format, GPUTextureFlags::ShaderResource, data.MipLevels)))
                 return LoadResult::Failed;
             SDF.LocalToUVWMul = data.LocalToUVWMul;

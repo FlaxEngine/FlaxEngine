@@ -134,6 +134,9 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
             SAFE_DELETE_GPU_RESOURCE(outputSDF->Texture);
             return true;
         }
+#if !BUILD_RELEASE
+        outputSDF->Texture->SetName(TEXT("ModelSDF"));
+#endif
     }
 
     // TODO: support GPU to generate model SDF on-the-fly (if called during rendering)

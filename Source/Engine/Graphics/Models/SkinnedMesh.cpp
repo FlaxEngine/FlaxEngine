@@ -53,7 +53,7 @@ bool SkinnedMesh::Load(uint32 vertices, uint32 triangles, void* vb0, void* ib, b
 
     // Create vertex buffer
 #if GPU_ENABLE_RESOURCE_NAMING
-    vertexBuffer = GPUDevice::Instance->CreateBuffer(GetSkinnedModel()->ToString() + TEXT(".VB"));
+    vertexBuffer = GPUDevice::Instance->CreateBuffer(GetSkinnedModel()->GetPath() + TEXT(".VB"));
 #else
 	vertexBuffer = GPUDevice::Instance->CreateBuffer(String::Empty);
 #endif
@@ -62,7 +62,7 @@ bool SkinnedMesh::Load(uint32 vertices, uint32 triangles, void* vb0, void* ib, b
 
     // Create index buffer
 #if GPU_ENABLE_RESOURCE_NAMING
-    indexBuffer = GPUDevice::Instance->CreateBuffer(GetSkinnedModel()->ToString() + TEXT(".IB"));
+    indexBuffer = GPUDevice::Instance->CreateBuffer(GetSkinnedModel()->GetPath() + TEXT(".IB"));
 #else
 	indexBuffer = GPUDevice::Instance->CreateBuffer(String::Empty);
 #endif

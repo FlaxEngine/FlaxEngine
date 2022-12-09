@@ -147,7 +147,8 @@ public:
         : _device(device)
     {
 #if GPU_ENABLE_RESOURCE_NAMING
-        GPUResource::_name = name;
+        if (name.HasChars())
+            GPUResource::_name = name;
 #endif
         device->AddResource(this);
     }

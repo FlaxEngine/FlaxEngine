@@ -35,6 +35,13 @@ public:
     }
 };
 
+GPUSwapChain::GPUSwapChain()
+{
+#if GPU_ENABLE_RESOURCE_NAMING
+    _name = TEXT("Swap Chain (backbuffers)");
+#endif
+}
+
 Task* GPUSwapChain::DownloadDataAsync(TextureData& result)
 {
     if (_downloadTask)

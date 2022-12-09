@@ -24,9 +24,7 @@ protected:
     Window* _window = nullptr;
     Task* _downloadTask = nullptr;
 
-    GPUSwapChain()
-    {
-    }
+    GPUSwapChain();
 
 public:
     /// <summary>
