@@ -555,8 +555,8 @@ namespace FlaxEditor.Modules
                 }
 
                 base.OnSubmit();
-
-                var path = StringUtils.CombinePaths(Globals.ProjectCacheFolder, "Layout_" + name + ".xml");
+                
+                var path = StringUtils.CombinePaths(Editor.LocalCachePath, "LayoutsCache", "Layout_" + name + ".xml");
                 Editor.Instance.Windows.SaveLayout(path);
             }
         }
