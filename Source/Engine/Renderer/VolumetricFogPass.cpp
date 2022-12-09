@@ -254,6 +254,7 @@ GPUTextureView* VolumetricFogPass::GetLocalShadowedLightScattering(RenderContext
         ASSERT(renderContext.Buffers->LastFrameVolumetricFog == Engine::FrameCount);
         const GPUTextureDescription volumeDescRGB = GPUTextureDescription::New3D(_cache.GridSize, PixelFormat::R11G11B10_Float, GPUTextureFlags::RenderTarget | GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess);
         const auto texture = RenderTargetPool::Get(volumeDescRGB);
+        RENDER_TARGET_POOL_SET_NAME(texture, "VolumetricFog.LocalShadowedLightScattering");
         renderContext.Buffers->LocalShadowedLightScattering = texture;
         context->Clear(texture->ViewVolume(), Color::Transparent);
     }
@@ -496,8 +497,11 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     const GPUTextureDescription volumeDesc = GPUTextureDescription::New3D(cache.GridSize, PixelFormat::R16G16B16A16_Float, GPUTextureFlags::RenderTarget | GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess);
     const GPUTextureDescription volumeDescRGB = GPUTextureDescription::New3D(cache.GridSize, PixelFormat::R11G11B10_Float, GPUTextureFlags::RenderTarget | GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess);
     auto vBufferA = RenderTargetPool::Get(volumeDesc);
+    RENDER_TARGET_POOL_SET_NAME(vBufferA, "VolumetricFog.VBufferA");
     auto vBufferB = RenderTargetPool::Get(volumeDescRGB);
+    RENDER_TARGET_POOL_SET_NAME(vBufferB, "VolumetricFog.VBufferB");
     const auto lightScattering = RenderTargetPool::Get(volumeDesc);
+    RENDER_TARGET_POOL_SET_NAME(lightScattering, "VolumetricFog.LightScattering");
 
     int32 groupCountX = Math::DivideAndRoundUp((int32)cache.GridSize.X, VolumetricFogGridInjectionGroupSize);
     int32 groupCountY = Math::DivideAndRoundUp((int32)cache.GridSize.Y, VolumetricFogGridInjectionGroupSize);
@@ -703,6 +707,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
             RenderTargetPool::Release(integratedLightScattering);
         }
         integratedLightScattering = RenderTargetPool::Get(volumeDesc);
+        RENDER_TARGET_POOL_SET_NAME(integratedLightScattering, "VolumetricFog.Integrated");
         renderContext.Buffers->VolumetricFog = integratedLightScattering;
     }
     renderContext.Buffers->LastFrameVolumetricFog = Engine::FrameCount;

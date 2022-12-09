@@ -222,8 +222,10 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
 
         auto tempDesc = GPUTextureDescription::New2D(atlasSize, atlasSize, HemispheresFormatToPixelFormat[CACHE_POSITIONS_FORMAT]);
         auto resultPositions = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(_cachePositions, "ShadowsOfMordor.Positions");
         tempDesc.Format = HemispheresFormatToPixelFormat[CACHE_NORMALS_FORMAT];
         auto resultNormals = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(_cachePositions, "ShadowsOfMordor.Normals");
         if (resultPositions == nullptr || resultNormals == nullptr)
         {
             RenderTargetPool::Release(resultPositions);

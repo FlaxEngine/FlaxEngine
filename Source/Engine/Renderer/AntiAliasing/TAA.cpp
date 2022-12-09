@@ -92,6 +92,7 @@ void TAA::Render(const RenderContext& renderContext, GPUTexture* input, GPUTextu
     {
         // Missing temporal buffer
         renderContext.Buffers->TemporalAA = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(renderContext.Buffers->TemporalAA, "TemporalAA");
         resetHistory = true;
     }
     else if (renderContext.Buffers->TemporalAA->Width() != tempDesc.Width || renderContext.Buffers->TemporalAA->Height() != tempDesc.Height)
@@ -99,10 +100,12 @@ void TAA::Render(const RenderContext& renderContext, GPUTexture* input, GPUTextu
         // Wrong size temporal buffer
         RenderTargetPool::Release(renderContext.Buffers->TemporalAA);
         renderContext.Buffers->TemporalAA = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(renderContext.Buffers->TemporalAA, "TemporalAA");
         resetHistory = true;
     }
     auto inputHistory = renderContext.Buffers->TemporalAA;
     const auto outputHistory = RenderTargetPool::Get(tempDesc);
+    RENDER_TARGET_POOL_SET_NAME(outputHistory, "TemporalAA");
 
     // Duplicate the current frame to the history buffer if need to reset the temporal history
     float blendStrength = 1.0f;

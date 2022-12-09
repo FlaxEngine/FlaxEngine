@@ -292,6 +292,7 @@ GPUTextureView* GBufferPass::RenderSkybox(RenderContext& renderContext, GPUConte
             skyboxData.Skybox = RenderTargetPool::Get(desc);
             if (!skyboxData.Skybox)
                 return nullptr;
+            RENDER_TARGET_POOL_SET_NAME(skyboxData.Skybox, "GBuffer.Skybox");
             dirty = true;
         }
 

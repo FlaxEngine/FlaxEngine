@@ -109,6 +109,7 @@ void ForwardPass::Render(RenderContext& renderContext, GPUTexture* input, GPUTex
         const int32 distortionHeight = height;
         const auto tempDesc = GPUTextureDescription::New2D(distortionWidth, distortionHeight, Distortion_Pass_Output_Format);
         auto distortionRT = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(distortionRT, "Forward.Distortion");
 
         // Clear distortion vectors
         context->Clear(distortionRT->View(), Color::Transparent);

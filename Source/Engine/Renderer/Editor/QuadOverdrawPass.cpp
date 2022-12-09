@@ -31,6 +31,9 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
     auto lockTexture = RenderTargetPool::Get(tempDesc);
     auto overdrawTexture = RenderTargetPool::Get(tempDesc);
     auto liveCountTexture = RenderTargetPool::Get(tempDesc);
+    RENDER_TARGET_POOL_SET_NAME(lockTexture, "QuadOverdraw.Lock");
+    RENDER_TARGET_POOL_SET_NAME(overdrawTexture, "QuadOverdraw.Overdraw");
+    RENDER_TARGET_POOL_SET_NAME(liveCountTexture, "QuadOverdraw.LiveCount");
 
     // Clear buffers
     uint32 clearValueUINT[4] = { 0 };

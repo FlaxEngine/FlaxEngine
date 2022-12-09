@@ -307,13 +307,17 @@ void AmbientOcclusionPass::InitRTs(const RenderContext& renderContext)
         // TODO: maybe instead of using whole mip chain request only SSAO_DEPTH_MIP_LEVELS?
         tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, 0, SSAO_DEPTH_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
         m_halfDepths[i] = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(m_halfDepths[i], "SSAO.HalfDepth");
     }
     tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, SSAO_AO_RESULT_FORMAT);
     m_pingPongHalfResultA = RenderTargetPool::Get(tempDesc);
+    RENDER_TARGET_POOL_SET_NAME(m_pingPongHalfResultA, "SSAO.ResultsHalfA");
     tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, SSAO_AO_RESULT_FORMAT);
     m_pingPongHalfResultB = RenderTargetPool::Get(tempDesc);
+    RENDER_TARGET_POOL_SET_NAME(m_pingPongHalfResultA, "SSAO.ResultsHalfB");
     tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, SSAO_AO_RESULT_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget, 4);
     m_finalResults = RenderTargetPool::Get(tempDesc);
+    RENDER_TARGET_POOL_SET_NAME(m_finalResults, "SSAO.Results");
 }
 
 void AmbientOcclusionPass::ReleaseRTs(const RenderContext& renderContext)

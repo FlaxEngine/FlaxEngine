@@ -195,12 +195,16 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     // Prepare buffers
     auto tempDesc = GPUTextureDescription::New2D(width / 2, height / 2, 0, PixelFormat::R11G11B10_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
     auto colorBuffer0 = RenderTargetPool::Get(tempDesc);
+    RENDER_TARGET_POOL_SET_NAME(colorBuffer0, "SSR.ColorBuffer0");
     // TODO: maybe allocate colorBuffer1 smaller because mip0 is not used (the same as PostProcessingPass for Bloom), keep in sync to use the same buffer in frame
     auto colorBuffer1 = RenderTargetPool::Get(tempDesc);
+    RENDER_TARGET_POOL_SET_NAME(colorBuffer1, "SSR.ColorBuffer1");
     tempDesc = GPUTextureDescription::New2D(traceWidth, traceHeight, PixelFormat::R16G16B16A16_Float);
     auto traceBuffer = RenderTargetPool::Get(tempDesc);
+    RENDER_TARGET_POOL_SET_NAME(traceBuffer, "SSR.TraceBuffer");
     tempDesc = GPUTextureDescription::New2D(resolveWidth, resolveHeight, RESOLVE_PASS_OUTPUT_FORMAT);
     auto resolveBuffer = RenderTargetPool::Get(tempDesc);
+    RENDER_TARGET_POOL_SET_NAME(resolveBuffer, "SSR.ResolveBuffer");
 
     // Pick effect settings
     int32 maxTraceSamples = 60;
@@ -262,6 +266,7 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
                 RenderTargetPool::Release(buffers->TemporalSSR);
             tempDesc = GPUTextureDescription::New2D(temporalWidth, temporalHeight, RESOLVE_PASS_OUTPUT_FORMAT);
             buffers->TemporalSSR = RenderTargetPool::Get(tempDesc);
+            RENDER_TARGET_POOL_SET_NAME(buffers->TemporalSSR, "SSR.TemporalSSR");
         }
     }
     else
@@ -386,6 +391,7 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     {
         tempDesc = GPUTextureDescription::New2D(temporalWidth, temporalHeight, RESOLVE_PASS_OUTPUT_FORMAT);
         auto newTemporal = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(newTemporal, "SSR.TemporalSSR");
         const auto oldTemporal = buffers->TemporalSSR;
         const auto motionVectors = buffers->MotionVectors;
 

@@ -112,6 +112,8 @@ void SMAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureVie
     const auto tempDesc = GPUTextureDescription::New2D((int32)renderContext.View.ScreenSize.X, (int32)renderContext.View.ScreenSize.Y, PixelFormat::R8G8B8A8_UNorm);
     auto edges = RenderTargetPool::Get(tempDesc);
     auto weights = RenderTargetPool::Get(tempDesc);
+    RENDER_TARGET_POOL_SET_NAME(edges, "SMAA.Edges");
+    RENDER_TARGET_POOL_SET_NAME(weights,"SMAA.Weights");
 
     // Bind constants
     Data data;

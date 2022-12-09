@@ -95,6 +95,7 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
         auto tempDesc = GPUTextureDescription::New2D(halfDepthWidth, halfDepthHeight, halfDepthFormat);
         tempDesc.Flags = GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil;
         HalfResDepth = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(HalfResDepth, "HalfResDepth");
     }
     else if (HalfResDepth->Width() != halfDepthWidth || HalfResDepth->Height() != halfDepthHeight || HalfResDepth->Format() != halfDepthFormat)
     {
@@ -103,6 +104,7 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
         auto tempDesc = GPUTextureDescription::New2D(halfDepthWidth, halfDepthHeight, halfDepthFormat);
         tempDesc.Flags = GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil;
         HalfResDepth = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(HalfResDepth, "HalfResDepth");
     }
 
     // Generate depth

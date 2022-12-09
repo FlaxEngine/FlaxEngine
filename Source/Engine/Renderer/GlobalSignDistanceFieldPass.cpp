@@ -435,6 +435,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                 texture = RenderTargetPool::Get(desc);
                 if (!texture)
                     return true;
+                RENDER_TARGET_POOL_SET_NAME(texture, "GlobalSDF.Cascade");
             }
         }
         desc.Width = resolutionMip * cascadesCount;
@@ -451,6 +452,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                 texture = RenderTargetPool::Get(desc);
                 if (!texture)
                     return true;
+                RENDER_TARGET_POOL_SET_NAME(texture, "GlobalSDF.Cascade");
             }
         }
         uint64 memoryUsage = sdfData.Texture->GetMemoryUsage() + sdfData.TextureMip->GetMemoryUsage();
@@ -840,6 +842,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                 tmpMip = RenderTargetPool::Get(desc);
                 if (!tmpMip)
                     return true;
+                RENDER_TARGET_POOL_SET_NAME(tmpMip, "GlobalSDF.Mip");
             }
             GPUTextureView* tmpMipView = tmpMip->ViewVolume();
 

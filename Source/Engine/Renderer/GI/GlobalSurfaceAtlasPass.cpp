@@ -398,7 +398,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         auto desc = GPUTextureDescription::New2D(resolution, resolution, PixelFormat::Unknown);
         uint64 memUsage = 0;
         // TODO: try using BC4/BC5/BC7 block compression for Surface Atlas (eg. for Tiles material properties)
-#define INIT_ATLAS_TEXTURE(texture, format) desc.Format = format; surfaceAtlasData.texture = RenderTargetPool::Get(desc); if (!surfaceAtlasData.texture) return true; memUsage += surfaceAtlasData.texture->GetMemoryUsage()
+#define INIT_ATLAS_TEXTURE(texture, format) desc.Format = format; surfaceAtlasData.texture = RenderTargetPool::Get(desc); if (!surfaceAtlasData.texture) return true; memUsage += surfaceAtlasData.texture->GetMemoryUsage(); RENDER_TARGET_POOL_SET_NAME(surfaceAtlasData.texture, "GlobalSurfaceAtlas." #texture);
         INIT_ATLAS_TEXTURE(AtlasEmissive, PixelFormat::R11G11B10_Float);
         INIT_ATLAS_TEXTURE(AtlasGBuffer0, GBUFFER0_FORMAT);
         INIT_ATLAS_TEXTURE(AtlasGBuffer1, GBUFFER1_FORMAT);

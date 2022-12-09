@@ -234,6 +234,10 @@ void RenderList::RunPostFxPass(GPUContext* context, RenderContext& renderContext
 
     auto tempDesc = inputOutput->GetDescription();
     auto temp = needTempTarget ? RenderTargetPool::Get(tempDesc) : nullptr;
+    if (needTempTarget)
+    {
+        RENDER_TARGET_POOL_SET_NAME(temp, "RenderList.RunPostFxPassTemp");
+    }
 
     auto input = inputOutput;
     auto output = temp;

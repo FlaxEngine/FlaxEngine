@@ -370,7 +370,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         // Allocate probes textures
         uint64 memUsage = 0;
         auto desc = GPUTextureDescription::New2D(probesCountTotalX, probesCountTotalY, PixelFormat::Unknown);
-#define INIT_TEXTURE(texture, format, width, height) desc.Format = format; desc.Width = width; desc.Height = height; ddgiData.texture = RenderTargetPool::Get(desc); if (!ddgiData.texture) return true; memUsage += ddgiData.texture->GetMemoryUsage()
+#define INIT_TEXTURE(texture, format, width, height) desc.Format = format; desc.Width = width; desc.Height = height; ddgiData.texture = RenderTargetPool::Get(desc); if (!ddgiData.texture) return true; memUsage += ddgiData.texture->GetMemoryUsage(); RENDER_TARGET_POOL_SET_NAME(ddgiData.texture, "DDGI." #texture)
         desc.Flags = GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess;
         INIT_TEXTURE(ProbesTrace, PixelFormat::R16G16B16A16_Float, probeRaysCount, Math::Min(probesCountCascade, DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT));
         INIT_TEXTURE(ProbesState, PixelFormat::R8G8B8A8_SNorm, probesCountTotalX, probesCountTotalY);

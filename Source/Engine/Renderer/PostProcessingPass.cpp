@@ -310,8 +310,10 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
 
     auto tempDesc = GPUTextureDescription::New2D(w2, h2, 0, output->Format(), GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
     auto bloomTmp1 = RenderTargetPool::Get(tempDesc);
+    RENDER_TARGET_POOL_SET_NAME(bloomTmp1, "PostProcessing.Bloom");
     // TODO: bloomTmp2 could be quarter res because we don't use it's first mip
     auto bloomTmp2 = RenderTargetPool::Get(tempDesc);
+    RENDER_TARGET_POOL_SET_NAME(bloomTmp2, "PostProcessing.Bloom");
 
     // Check if use bloom
     if (useBloom)

@@ -388,6 +388,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     auto outputFormat = renderContext.Buffers->GetOutputFormat();
     auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), outputFormat);
     auto lightBuffer = RenderTargetPool::Get(tempDesc);
+    RENDER_TARGET_POOL_SET_NAME(lightBuffer, "Lighting");
 
 #if USE_EDITOR
     if (renderContext.View.Mode == ViewMode::QuadOverdraw)

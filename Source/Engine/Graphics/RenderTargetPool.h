@@ -30,3 +30,10 @@ public:
     /// <param name="rt">The reference to temporary target to release.</param>
     API_FUNCTION() static void Release(GPUTexture* rt);
 };
+
+// Utility to set name to the pooled render target (compiled-put in Release builds)
+#if GPU_ENABLE_RESOURCE_NAMING
+#define RENDER_TARGET_POOL_SET_NAME(rt, name) rt->SetName(TEXT(name));
+#else
+#define RENDER_TARGET_POOL_SET_NAME(rt, name)
+#endif

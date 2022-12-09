@@ -148,6 +148,7 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
         lutDesc = GPUTextureDescription::New2D(LutSize * LutSize, LutSize, 1, _lutFormat);
     }
     const auto lut = RenderTargetPool::Get(lutDesc);
+    RENDER_TARGET_POOL_SET_NAME(lut, "ColorGrading.LUT");
 
     // Prepare the parameters
     Data data;

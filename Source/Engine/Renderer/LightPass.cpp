@@ -234,6 +234,7 @@ void LightPass::RenderLight(RenderContextBatch& renderContextBatch, GPUTextureVi
     if (!shadowMask) { \
         auto rtDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), _shadowMaskFormat); \
         shadowMask = RenderTargetPool::Get(rtDesc); \
+        RENDER_TARGET_POOL_SET_NAME(shadowMask, "ShadowMask"); \
     } \
     auto shadowMaskView = shadowMask->View()
 
