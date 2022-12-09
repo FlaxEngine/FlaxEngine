@@ -558,6 +558,14 @@ public:
     }
 
     /// <summary>
+    /// Gets the current capacity of delegate table (amount of function to store before resizing).
+    /// </summary>
+    int32 Capacity() const
+    {
+        return (int32)Platform::AtomicRead((intptr volatile*)&_size);
+    }
+
+    /// <summary>
     /// Determines whether any function is binded.
     /// </summary>
     /// <returns><c>true</c> if any function is binded; otherwise, <c>false</c>.</returns>

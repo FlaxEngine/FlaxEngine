@@ -313,6 +313,17 @@ bool Asset::ShouldDeleteFileOnUnload() const
 
 #endif
 
+uint64 Asset::GetMemoryUsage() const
+{
+    uint64 result = sizeof(Asset);
+    Locker.Lock();
+    if (_loadingTask)
+        result += sizeof(ContentLoadTask);
+    result += (OnLoaded.Capacity() + OnReloading.Capacity() + OnUnloaded.Capacity()) * sizeof(EventType::FunctionType);
+    Locker.Unlock();
+    return result;
+}
+
 void Asset::Reload()
 {
     // Virtual assets are memory-only so reloading them makes no sense

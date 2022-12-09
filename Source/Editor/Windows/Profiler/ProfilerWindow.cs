@@ -195,6 +195,7 @@ namespace FlaxEditor.Windows.Profiler
             AddMode(new GPU());
             AddMode(new MemoryGPU());
             AddMode(new Memory());
+            AddMode(new Assets());
             AddMode(new Network());
 
             // Init view
@@ -206,6 +207,8 @@ namespace FlaxEditor.Windows.Profiler
             }
 
             UpdateButtons();
+
+            ScriptsBuilder.ScriptsReloadEnd += Clear; // Prevent crashes if any of the profiler tabs has some scripting types cached (eg. asset type info)
         }
 
         /// <inheritdoc />
