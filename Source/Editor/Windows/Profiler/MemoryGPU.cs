@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 using FlaxEditor.GUI;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -17,9 +18,11 @@ namespace FlaxEditor.Windows.Profiler
         private struct Resource
         {
             public string Name;
+            public string Tooltip;
             public GPUResourceType Type;
             public ulong MemoryUsage;
             public Guid AssetId;
+            public bool IsAssetItem;
         }
 
         private readonly SingleChart _memoryUsageChart;
@@ -29,6 +32,7 @@ namespace FlaxEditor.Windows.Profiler
         private string[] _resourceTypesNames;
         private Dictionary<string, Guid> _assetPathToId;
         private Dictionary<Guid, Resource> _resourceCache;
+        private StringBuilder _stringBuilder;
 
         public MemoryGPU()
         : base("GPU Memory")
@@ -111,10 +115,14 @@ namespace FlaxEditor.Windows.Profiler
                 _resourceCache = new Dictionary<Guid, Resource>();
             if (_assetPathToId == null)
                 _assetPathToId = new Dictionary<string, Guid>();
+            if (_stringBuilder == null)
+                _stringBuilder = new StringBuilder();
 
             // Capture current GPU resources usage info
+            var contentDatabase = Editor.Instance.ContentDatabase;
             var gpuResources = GPUDevice.Instance.Resources;
             var resources = new Resource[gpuResources.Length];
+            var sb = _stringBuilder;
             for (int i = 0; i < resources.Length; i++)
             {
                 var gpuResource = gpuResources[i];
@@ -129,6 +137,35 @@ namespace FlaxEditor.Windows.Profiler
                         Type = gpuResource.ResourceType,
                     };
 
+                    // Create tooltip
+                    sb.Clear();
+                    if (gpuResource is GPUTexture gpuTexture)
+                    {
+                        var desc = gpuTexture.Description;
+                        sb.Append("Format: ").Append(desc.Format).AppendLine();
+                        sb.Append("Size: ").Append(desc.Width).Append('x').Append(desc.Height);
+                        if (desc.Depth != 1)
+                            sb.Append('x').Append(desc.Depth);
+                        if (desc.ArraySize != 1)
+                            sb.Append('[').Append(desc.ArraySize).Append(']');
+                        sb.AppendLine();
+                        sb.Append("Mip Levels: ").Append(desc.MipLevels).AppendLine();
+                        if (desc.IsMultiSample)
+                            sb.Append("MSAA: ").Append('x').Append((int)desc.MultiSampleLevel).AppendLine();
+                        sb.Append("Flags: ").Append(desc.Flags).AppendLine();
+                        sb.Append("Usage: ").Append(desc.Usage);
+                    }
+                    else if (gpuResource is GPUBuffer gpuBuffer)
+                    {
+                        var desc = gpuBuffer.Description;
+                        sb.Append("Format: ").Append(desc.Format).AppendLine();
+                        sb.Append("Stride: ").Append(desc.Stride).AppendLine();
+                        sb.Append("Elements: ").Append(desc.ElementsCount).AppendLine();
+                        sb.Append("Flags: ").Append(desc.Flags).AppendLine();
+                        sb.Append("Usage: ").Append(desc.Usage);
+                    }
+                    resource.Tooltip = _stringBuilder.ToString();
+
                     // Detect asset path in the resource name
                     int ext = resource.Name.LastIndexOf(".flax", StringComparison.OrdinalIgnoreCase);
                     if (ext != -1)
@@ -140,6 +177,12 @@ namespace FlaxEditor.Windows.Profiler
                             if (asset != null)
                                 resource.AssetId = asset.ID;
                             _assetPathToId.Add(assetPath, resource.AssetId);
+                        }
+                        var assetItem = contentDatabase.FindAsset(resource.AssetId);
+                        if (assetItem != null)
+                        {
+                            resource.IsAssetItem = true;
+                            resource.Name = assetItem.NamePath + resource.Name.Substring(ext + 5); // Use text after asset path to display (eg. subobject)
                         }
                     }
 
@@ -190,6 +233,7 @@ namespace FlaxEditor.Windows.Profiler
             _resourceCache?.Clear();
             _assetPathToId?.Clear();
             _tableRowsCache?.Clear();
+            _stringBuilder?.Clear();
 
             base.OnDestroy();
         }
@@ -234,7 +278,6 @@ namespace FlaxEditor.Windows.Profiler
 
             // Add rows
             var rowColor2 = Style.Current.Background * 1.4f;
-            var contentDatabase = Editor.Instance.ContentDatabase;
             for (int i = 0; i < resources.Length; i++)
             {
                 ref var e = ref resources[i];
@@ -259,15 +302,12 @@ namespace FlaxEditor.Windows.Profiler
                 row.Values[2] = e.MemoryUsage;
 
                 // Setup row interactions
-                row.TooltipText = null;
-                row.DoubleClick = null;
-                var assetItem = contentDatabase.FindAsset(e.AssetId);
-                if (assetItem != null)
+                row.Tag = e;
+                row.TooltipText = e.Tooltip;
+                row.RowDoubleClick = null;
+                if (e.IsAssetItem)
                 {
-                    row.Values[0] = assetItem.NamePath;
-                    assetItem.UpdateTooltipText();
-                    row.TooltipText = assetItem.TooltipText;
-                    row.DoubleClick = () => { Editor.Instance.ContentEditing.Open(assetItem); };
+                    row.RowDoubleClick = OnRowDoubleClickAsset;
                 }
 
                 // Add row to the table
@@ -275,6 +315,13 @@ namespace FlaxEditor.Windows.Profiler
                 row.BackgroundColor = i % 2 == 0 ? rowColor2 : Color.Transparent;
                 row.Parent = _table;
             }
+        }
+
+        private void OnRowDoubleClickAsset(ClickableRow row)
+        {
+            var e = (Resource)row.Tag;
+            var assetItem = Editor.Instance.ContentDatabase.FindAsset(e.AssetId);
+            Editor.Instance.ContentEditing.Open(assetItem);
         }
     }
 }

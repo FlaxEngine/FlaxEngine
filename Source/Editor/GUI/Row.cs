@@ -218,11 +218,27 @@ namespace FlaxEditor.GUI
         /// </summary>
         public Action RightClick;
 
+        /// <summary>
+        /// The double click event.
+        /// </summary>
+        public Action<ClickableRow> RowDoubleClick;
+
+        /// <summary>
+        /// The left mouse button click event.
+        /// </summary>
+        public Action<ClickableRow> RowLeftClick;
+
+        /// <summary>
+        /// The right mouse button click event.
+        /// </summary>
+        public Action<ClickableRow> RowRightClick;
+
         /// <inheritdoc />
         public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             DoubleClick?.Invoke();
-
+            RowDoubleClick?.Invoke(this);
+            
             return base.OnMouseDoubleClick(location, button);
         }
 
@@ -244,11 +260,13 @@ namespace FlaxEditor.GUI
             {
                 _leftClick = false;
                 LeftClick?.Invoke();
+                RowLeftClick?.Invoke(this);
             }
             else if (button == MouseButton.Right && _isRightDown)
             {
                 _isRightDown = false;
                 RightClick?.Invoke();
+                RowRightClick?.Invoke(this);
             }
 
             return base.OnMouseUp(location, button);
