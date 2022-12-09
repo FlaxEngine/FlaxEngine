@@ -733,6 +733,11 @@ public:
             _keyframes[i].Time = _keyframes[i].Time * timeScale + timeOffset;;
     }
 
+    uint64 GetMemoryUsage() const
+    {
+        return _keyframes.Capacity() * sizeof(KeyFrame);
+    }
+
 public:
     FORCE_INLINE KeyFrame& operator[](int32 index)
     {

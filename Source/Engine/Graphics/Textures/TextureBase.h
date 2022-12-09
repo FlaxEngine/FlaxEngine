@@ -221,6 +221,7 @@ private:
 
 public:
     // [BinaryAsset]
+    uint64 GetMemoryUsage() const override;
     void CancelStreaming() override;
 
     // [ITextureOwner]

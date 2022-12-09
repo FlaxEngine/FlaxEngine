@@ -452,6 +452,22 @@ const String& BinaryAsset::GetPath() const
 #endif
 }
 
+uint64 BinaryAsset::GetMemoryUsage() const
+{
+    Locker.Lock();
+    uint64 result = Asset::GetMemoryUsage();
+    result += sizeof(BinaryAsset) - sizeof(Asset);
+    result += _dependantAssets.Capacity() * sizeof(BinaryAsset*);
+    for (int32 i = 0; i < ASSET_FILE_DATA_CHUNKS; i++)
+    {
+        auto chunk = _header.Chunks[i];
+        if (chunk != nullptr && chunk->IsLoaded())
+            result += chunk->Size();
+    }
+    Locker.Unlock();
+    return result;
+}
+
 /// <summary>
 /// Helper task used to initialize binary asset and upgrade it if need to in background.
 /// </summary>

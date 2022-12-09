@@ -93,6 +93,17 @@ const String& JsonAssetBase::GetPath() const
 #endif
 }
 
+uint64 JsonAssetBase::GetMemoryUsage() const
+{
+    Locker.Lock();
+    uint64 result = Asset::GetMemoryUsage();
+    result += sizeof(JsonAssetBase) - sizeof(Asset);
+    if (Data)
+        result += Document.GetAllocator().Capacity();
+    Locker.Unlock();
+    return result;
+}
+
 #if USE_EDITOR
 
 void FindIds(ISerializable::DeserializeStream& node, Array<Guid>& output)
@@ -246,6 +257,17 @@ JsonAsset::JsonAsset(const SpawnParams& params, const AssetInfo* info)
     : JsonAssetBase(params, info)
     , Instance(nullptr)
 {
+}
+
+uint64 JsonAsset::GetMemoryUsage() const
+{
+    Locker.Lock();
+    uint64 result = JsonAssetBase::GetMemoryUsage();
+    result += sizeof(JsonAsset) - sizeof(JsonAssetBase);
+    if (Instance && InstanceType)
+        result += InstanceType.GetType().Size;
+    Locker.Unlock();
+    return result;
 }
 
 Asset::LoadResult JsonAsset::loadAsset()
