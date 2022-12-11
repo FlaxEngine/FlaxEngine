@@ -587,6 +587,30 @@ const char* CoreCLR::GetClassFullname(void* klass)
     return ((CoreCLRClass*)klass)->GetFullname().Get();
 }
 
+bool CoreCLR::HasCustomAttribute(void* klass, void* attribClass)
+{
+    return CoreCLR::GetCustomAttribute(klass, attribClass) != nullptr;
+}
+bool CoreCLR::HasCustomAttribute(void* klass)
+{
+    return CoreCLR::GetCustomAttribute(klass, nullptr) != nullptr;
+}
+void* CoreCLR::GetCustomAttribute(void* klass, void* attribClass)
+{
+    return CoreCLR::CallStaticMethodInternal<void*, void*, void*>(TEXT("GetCustomAttribute"), ((CoreCLRClass*)klass)->GetTypeHandle(), ((CoreCLRClass*)attribClass)->GetTypeHandle());
+}
+Array<void*> CoreCLR::GetCustomAttributes(void* klass)
+{
+    Array<CoreCLRCustomAttribute*> attrib = ((CoreCLRClass*)klass)->GetCustomAttributes();
+
+    Array<void*> attributes;
+    attributes.Resize(attrib.Count(), false);
+    for (int i = 0; i < attrib.Count(); i++)
+        attributes.Add(attrib[i]->GetHandle());
+
+    return attributes;
+}
+
 /*
  * loader.h
 */

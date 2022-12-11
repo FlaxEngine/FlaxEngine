@@ -1366,6 +1366,18 @@ namespace FlaxEngine
         }
 
         [UnmanagedCallersOnly]
+        internal static IntPtr GetCustomAttribute(IntPtr typeHandle, IntPtr attribHandle)
+        {
+            Type type = (Type)GCHandle.FromIntPtr(typeHandle).Target;
+            Type attribType = (Type)GCHandle.FromIntPtr(attribHandle).Target;
+            object attrib = type.GetCustomAttributes(false).FirstOrDefault(x => x.GetType() == attribType);
+
+            if (attrib != null)
+                return GCHandle.ToIntPtr(GCHandle.Alloc(attrib, GCHandleType.Weak));
+            return IntPtr.Zero;
+        }
+
+        [UnmanagedCallersOnly]
         internal static void GetClassInterfaces(IntPtr typeHandle, IntPtr* classInterfaces, int* classInterfacesCount)
         {
             Type type = (Type)GCHandle.FromIntPtr(typeHandle).Target;
