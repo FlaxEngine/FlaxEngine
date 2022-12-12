@@ -148,7 +148,16 @@ namespace FlaxEditor.Surface
         public void GetConnectionColor(ScriptType type, ConnectionsHint hint, out Color color)
         {
             if (type == ScriptType.Null)
-                color = Colors.Default;
+            {
+                if (hint == ConnectionsHint.Vector)
+                    color = Colors.Vector;
+                else if (hint == ConnectionsHint.Scalar)
+                    color = Colors.Float;
+                else if (hint == ConnectionsHint.Enum)
+                    color = Colors.Enum;
+                else
+                    color = Colors.Default;
+            }
             else if (type.IsPointer || type.IsReference)
             {
                 // Find underlying type without `*` or `&`
