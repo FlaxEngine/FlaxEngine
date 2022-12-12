@@ -290,11 +290,6 @@ namespace FlaxEditor.Windows
             return new Item(name, GUI.Drag.DragItems.GetDragData(path));
         }
 
-        private Item CreateActorItem(string name, Type type)
-        {
-            return CreateActorItem(name, new ScriptType(type));
-        }
-
         private Item CreateActorItem(string name, ScriptType type)
         {
             return new ScriptTypeItem(name, type, GUI.Drag.DragActorType.GetDragData(type));
