@@ -54,9 +54,6 @@ public:
         GPUTexture* GBuffer[4];
     };
 
-    GPUTexture* RT1_FloatRGB;
-    GPUTexture* RT2_FloatRGB;
-
     // Helper target for the eye adaptation
     float LastEyeAdaptationTime = 0.0f;
     GPUTexture* LuminanceMap = nullptr;

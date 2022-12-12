@@ -388,7 +388,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     auto outputFormat = renderContext.Buffers->GetOutputFormat();
     auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), outputFormat);
     auto lightBuffer = RenderTargetPool::Get(tempDesc);
-    RENDER_TARGET_POOL_SET_NAME(lightBuffer, "Lighting");
+    RENDER_TARGET_POOL_SET_NAME(lightBuffer, "LightBuffer");
 
 #if USE_EDITOR
     if (renderContext.View.Mode == ViewMode::QuadOverdraw)
@@ -471,7 +471,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     if (renderContext.View.Mode == ViewMode::LightBuffer)
     {
         auto colorGradingLUT = ColorGradingPass::Instance()->RenderLUT(renderContext);
-        GPUTexture* tempBuffer = renderContext.Buffers->RT2_FloatRGB;
+        auto tempBuffer = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(tempBuffer, "TempBuffer");
         EyeAdaptationPass::Instance()->Render(renderContext, lightBuffer);
         PostProcessingPass::Instance()->Render(renderContext, lightBuffer, tempBuffer, colorGradingLUT);
         RenderTargetPool::Release(colorGradingLUT);
@@ -480,6 +481,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         context->SetRenderTarget(task->GetOutputView());
         context->SetViewportAndScissors(task->GetOutputViewport());
         context->Draw(tempBuffer);
+        RenderTargetPool::Release(tempBuffer);
         return;
     }
 
@@ -519,8 +521,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     }
 
     // Run forward pass
-    GPUTexture* frameBuffer = renderContext.Buffers->RT1_FloatRGB;
-    GPUTexture* tempBuffer = renderContext.Buffers->RT2_FloatRGB;
+    auto frameBuffer = RenderTargetPool::Get(tempDesc);
+    RENDER_TARGET_POOL_SET_NAME(frameBuffer, "FrameBuffer");
     ForwardPass::Instance()->Render(renderContext, lightBuffer, frameBuffer);
 
     // Cleanup
@@ -535,10 +537,13 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         context->SetRenderTarget(task->GetOutputView());
         context->SetViewportAndScissors(task->GetOutputViewport());
         context->Draw(frameBuffer);
+        RenderTargetPool::Release(frameBuffer);
         return;
     }
 
     // Material and Custom PostFx
+    auto tempBuffer = RenderTargetPool::Get(tempDesc);
+    RENDER_TARGET_POOL_SET_NAME(tempBuffer, "TempBuffer");
     renderContext.List->RunMaterialPostFxPass(context, renderContext, MaterialPostFxLocation::BeforePostProcessingPass, frameBuffer, tempBuffer);
     renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::BeforePostProcessingPass, frameBuffer, tempBuffer);
 
@@ -588,6 +593,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         context->SetRenderTarget(task->GetOutputView());
         context->SetViewportAndScissors(task->GetOutputViewport());
         MotionBlurPass::Instance()->RenderDebug(renderContext, frameBuffer->View());
+        RenderTargetPool::Release(tempBuffer);
+        RenderTargetPool::Release(frameBuffer);
         return;
     }
 
@@ -623,4 +630,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
             MultiScaler::Instance()->Upscale(context, task->GetOutputViewport(), frameBuffer, task->GetOutputView());
         }
     }
+
+    RenderTargetPool::Release(tempBuffer);
+    RenderTargetPool::Release(frameBuffer);
 }

@@ -1126,7 +1126,8 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         Float2 outputSizeThird = outputSize * 0.333f;
         Float2 outputSizeTwoThird = outputSize * 0.666f;
 
-        GPUTexture* tempBuffer = renderContext.Buffers->RT2_FloatRGB;
+        auto tempBuffer = RenderTargetPool::Get(output->GetDescription());
+        RENDER_TARGET_POOL_SET_NAME(tempBuffer, "GlobalSurfaceAtlas.TempBuffer");
         context->Clear(tempBuffer->View(), Color::Black);
         context->SetRenderTarget(tempBuffer->View());
 
