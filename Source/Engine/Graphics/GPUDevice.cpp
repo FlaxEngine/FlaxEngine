@@ -374,24 +374,24 @@ bool GPUDevice::CanDraw()
 
 void GPUDevice::AddResource(GPUResource* resource)
 {
-    Locker.Lock();
+    _resourcesLock.Lock();
     ASSERT(resource && !_resources.Contains(resource));
     _resources.Add(resource);
-    Locker.Unlock();
+    _resourcesLock.Unlock();
 }
 
 void GPUDevice::RemoveResource(GPUResource* resource)
 {
-    Locker.Lock();
+    _resourcesLock.Lock();
     ASSERT(resource && _resources.Contains(resource));
     _resources.Remove(resource);
-    Locker.Unlock();
+    _resourcesLock.Unlock();
 }
 
 void GPUDevice::DumpResourcesToLog() const
 {
     StringBuilder output;
-    Locker.Lock();
+    _resourcesLock.Lock();
 
     output.AppendFormat(TEXT("GPU Resources dump. Count: {0}, total GPU memory used: {1}"), _resources.Count(), Utilities::BytesToText(GetMemoryUsage()));
     output.AppendLine();
@@ -428,7 +428,7 @@ void GPUDevice::DumpResourcesToLog() const
         output.AppendLine();
     }
 
-    Locker.Unlock();
+    _resourcesLock.Unlock();
     LOG_STR(Info, output.ToStringView());
 }
 
@@ -449,11 +449,13 @@ void GPUDevice::preDispose()
 
     // Release GPU resources memory and unlink from device
     // Note: after that no GPU resources should be used/created, only deleted
+    _resourcesLock.Lock();
     for (int32 i = _resources.Count() - 1; i >= 0 && i < _resources.Count(); i--)
     {
         _resources[i]->OnDeviceDispose();
     }
     _resources.Clear();
+    _resourcesLock.Unlock();
     Locker.Unlock();
 }
 
@@ -592,18 +594,18 @@ void GPUDevice::Dispose()
 uint64 GPUDevice::GetMemoryUsage() const
 {
     uint64 result = 0;
-    Locker.Lock();
+    _resourcesLock.Lock();
     for (int32 i = 0; i < _resources.Count(); i++)
         result += _resources[i]->GetMemoryUsage();
-    Locker.Unlock();
+    _resourcesLock.Unlock();
     return result;
 }
 
 Array<GPUResource*> GPUDevice::GetResources() const
 {
-    Locker.Lock();
+    _resourcesLock.Lock();
     Array<GPUResource*> result = _resources;
-    Locker.Unlock();
+    _resourcesLock.Unlock();
     return result;
 }
 

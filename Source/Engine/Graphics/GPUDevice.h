@@ -94,6 +94,7 @@ protected:
     struct PrivateData;
     PrivateData* _res;
     Array<GPUResource*> _resources;
+    CriticalSection _resourcesLock;
 
 protected:
     /// <summary>
