@@ -122,12 +122,10 @@ void RendererService::Dispose()
     SAFE_DELETE_GPU_RESOURCE(IMaterial::BindParameters::PerViewConstants);
 }
 
-void RenderAntiAliasingPass(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)
+void RenderAntiAliasingPass(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output, const Viewport& outputViewport)
 {
     auto context = GPUDevice::Instance->GetMainContext();
-    auto screenSize = renderContext.View.ScreenSize;
-    context->SetViewportAndScissors(screenSize.X, screenSize.Y);
-
+    context->SetViewportAndScissors(outputViewport);
     const auto aaMode = renderContext.List->Settings.AntiAliasing.Mode;
     if (aaMode == AntialiasingMode::FastApproximateAntialiasing)
     {
@@ -554,6 +552,27 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         Swap(frameBuffer, tempBuffer);
     }
 
+    // Upscaling after scene rendering but before post processing
+    bool useUpscaling = task->RenderingPercentage < 1.0f;
+    const Viewport outputViewport = task->GetOutputViewport();
+    if (useUpscaling && task->UpscaleLocation == RenderingUpscaleLocation::BeforePostProcessingPass)
+    {
+        useUpscaling = false;
+        RenderTargetPool::Release(tempBuffer);
+        tempDesc.Width = (int32)outputViewport.Width;
+        tempDesc.Height = (int32)outputViewport.Height;
+        tempBuffer = RenderTargetPool::Get(tempDesc);
+        context->ResetSR();
+        if (renderContext.List->HasAnyPostFx(renderContext, PostProcessEffectLocation::CustomUpscale))
+            renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::CustomUpscale, frameBuffer, tempBuffer);
+        else
+            MultiScaler::Instance()->Upscale(context, outputViewport, frameBuffer, tempBuffer->View());
+        if (tempBuffer->Width() == tempDesc.Width)
+            Swap(frameBuffer, tempBuffer);
+        RenderTargetPool::Release(tempBuffer);
+        tempBuffer = RenderTargetPool::Get(tempDesc);
+    }
+
     // Depth of Field
     auto dofTemporary = DepthOfFieldPass::Instance()->Render(renderContext, frameBuffer);
     frameBuffer = dofTemporary ? dofTemporary : frameBuffer;
@@ -591,7 +610,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     {
         context->ResetRenderTarget();
         context->SetRenderTarget(task->GetOutputView());
-        context->SetViewportAndScissors(task->GetOutputViewport());
+        context->SetViewportAndScissors(outputViewport);
         MotionBlurPass::Instance()->RenderDebug(renderContext, frameBuffer->View());
         RenderTargetPool::Release(tempBuffer);
         RenderTargetPool::Release(frameBuffer);
@@ -599,35 +618,58 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     }
 
     // Anti Aliasing
-    if (!renderContext.List->HasAnyPostFx(renderContext, PostProcessEffectLocation::AfterAntiAliasingPass, MaterialPostFxLocation::AfterAntiAliasingPass) && Math::IsOne(task->RenderingPercentage))
+    GPUTextureView* outputView = task->GetOutputView();
+    if (!renderContext.List->HasAnyPostFx(renderContext, PostProcessEffectLocation::AfterAntiAliasingPass, MaterialPostFxLocation::AfterAntiAliasingPass) && !useUpscaling)
     {
         // AA -> Back Buffer
-        RenderAntiAliasingPass(renderContext, frameBuffer, task->GetOutputView());
+        RenderAntiAliasingPass(renderContext, frameBuffer, outputView, outputViewport);
     }
     else
     {
         // AA -> PostFx
-        RenderAntiAliasingPass(renderContext, frameBuffer, *tempBuffer);
+        RenderAntiAliasingPass(renderContext, frameBuffer, *tempBuffer, Viewport(Float2(renderContext.View.ScreenSize)));
         context->ResetRenderTarget();
         Swap(frameBuffer, tempBuffer);
         renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::AfterAntiAliasingPass, frameBuffer, tempBuffer);
         renderContext.List->RunMaterialPostFxPass(context, renderContext, MaterialPostFxLocation::AfterAntiAliasingPass, frameBuffer, tempBuffer);
 
         // PostFx -> (up-scaling) -> Back Buffer
-        if (task->RenderingPercentage >= 1.0f)
+        if (!useUpscaling)
         {
             PROFILE_GPU("Copy frame");
-            context->SetRenderTarget(task->GetOutputView());
-            context->SetViewportAndScissors(task->GetOutputViewport());
+            context->SetRenderTarget(outputView);
+            context->SetViewportAndScissors(outputViewport);
             context->Draw(frameBuffer);
         }
-        else if (renderContext.List->HasAnyPostFx(renderContext, PostProcessEffectLocation::CustomUpscale, MaterialPostFxLocation::MAX))
+        else if (renderContext.List->HasAnyPostFx(renderContext, PostProcessEffectLocation::CustomUpscale))
         {
-            renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::CustomUpscale, frameBuffer, frameBuffer);
+            if (outputView->GetParent()->Is<GPUTexture>())
+            {
+                // Upscale directly to the output texture
+                auto outputTexture = (GPUTexture*)outputView->GetParent();
+                renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::CustomUpscale, frameBuffer, outputTexture);
+                if (frameBuffer == (GPUTexture*)outputView->GetParent())
+                    Swap(frameBuffer, outputTexture);
+            }
+            else
+            {
+                // Use temporary buffer for upscaled frame if GetOutputView is owned by GPUSwapChain
+                RenderTargetPool::Release(tempBuffer);
+                tempDesc.Width = (int32)outputViewport.Width;
+                tempDesc.Height = (int32)outputViewport.Height;
+                tempBuffer = RenderTargetPool::Get(tempDesc);
+                renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::CustomUpscale, frameBuffer, tempBuffer);
+                {
+                    PROFILE_GPU("Copy frame");
+                    context->SetRenderTarget(outputView);
+                    context->SetViewportAndScissors(outputViewport);
+                    context->Draw(frameBuffer);
+                }
+            }
         }
         else
         {
-            MultiScaler::Instance()->Upscale(context, task->GetOutputViewport(), frameBuffer, task->GetOutputView());
+            MultiScaler::Instance()->Upscale(context, outputViewport, frameBuffer, outputView);
         }
     }
 

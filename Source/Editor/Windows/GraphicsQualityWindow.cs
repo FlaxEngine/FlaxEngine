@@ -113,6 +113,17 @@ namespace FlaxEditor.Windows
                 set => MainRenderTask.Instance.RenderingPercentage = value;
             }
 
+            [NoSerialize, DefaultValue(RenderingUpscaleLocation.AfterAntiAliasingPass), VisibleIf(nameof(UpscaleLocation_Visible))]
+            [EditorOrder(1401), EditorDisplay("Quality")]
+            [Tooltip("The image resolution upscale location within rendering pipeline.")]
+            public RenderingUpscaleLocation UpscaleLocation
+            {
+                get => MainRenderTask.Instance.UpscaleLocation;
+                set => MainRenderTask.Instance.UpscaleLocation = value;
+            }
+
+            private bool UpscaleLocation_Visible => MainRenderTask.Instance.RenderingPercentage < 1.0f;
+
             [NoSerialize, DefaultValue(1.0f), Limit(0, 1)]
             [EditorOrder(1500), EditorDisplay("Quality"), Tooltip("The global density scale for all foliage instances. The default value is 1. Use values from range 0-1. Lower values decrease amount of foliage instances in-game. Use it to tweak game performance for slower devices.")]
             public float FoliageDensityScale

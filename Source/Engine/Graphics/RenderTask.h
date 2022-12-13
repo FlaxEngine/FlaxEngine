@@ -183,6 +183,22 @@ API_ENUM(Attributes="Flags") enum class ActorsSources
 DECLARE_ENUM_OPERATORS(ActorsSources);
 
 /// <summary>
+/// The Post Process effect rendering location within the rendering pipeline.
+/// </summary>
+API_ENUM() enum class RenderingUpscaleLocation
+{
+    /// <summary>
+    /// The up-scaling happens directly to the output buffer (backbuffer) after post processing and anti-aliasing.
+    /// </summary>
+    AfterAntiAliasingPass = 0,
+    
+    /// <summary>
+    /// The up-scaling happens before the post processing after scene rendering (after geometry, lighting, volumetrics, transparency and SSR/SSAO).
+    /// </summary>
+    BeforePostProcessingPass = 1,
+};
+
+/// <summary>
 /// Render task which draws scene actors into the output buffer.
 /// </summary>
 /// <seealso cref="FlaxEngine.RenderTask" />
@@ -243,6 +259,11 @@ public:
     /// The scale of the rendering resolution relative to the output dimensions. If lower than 1 the scene and postprocessing will be rendered at a lower resolution and upscaled to the output backbuffer.
     /// </summary>
     API_FIELD() float RenderingPercentage = 1.0f;
+
+    /// <summary>
+    /// The image resolution upscale location within rendering pipeline. Unused if RenderingPercentage is 1.
+    /// </summary>
+    API_FIELD() RenderingUpscaleLocation UpscaleLocation = RenderingUpscaleLocation::AfterAntiAliasingPass;
 
 public:
     /// <summary>

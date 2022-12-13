@@ -205,11 +205,6 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
         context->SetRenderTarget(lut->View());
         context->DrawFullscreenTriangle();
     }
-
-    // TODO: this could run in async during scene rendering or sth
-
-    const Viewport viewport = renderContext.Task->GetViewport();
-    context->SetViewportAndScissors(viewport);
     context->UnBindSR(0);
 
     return lut;

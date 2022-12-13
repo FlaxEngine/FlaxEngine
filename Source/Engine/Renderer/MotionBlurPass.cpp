@@ -265,8 +265,8 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GP
     ASSERT(motionVectors);
     auto context = GPUDevice::Instance->GetMainContext();
     MotionBlurSettings& settings = renderContext.List->Settings.MotionBlur;
-    const int32 screenWidth = renderContext.Buffers->GetWidth();
-    const int32 screenHeight = renderContext.Buffers->GetHeight();
+    const int32 screenWidth = input->Width();
+    const int32 screenHeight = input->Height();
     const int32 motionVectorsWidth = screenWidth / static_cast<int32>(settings.MotionVectorsResolution);
     const int32 motionVectorsHeight = screenHeight / static_cast<int32>(settings.MotionVectorsResolution);
     if ((renderContext.View.Flags & ViewFlags::MotionBlur) == 0 ||

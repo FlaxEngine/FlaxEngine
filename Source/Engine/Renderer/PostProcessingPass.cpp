@@ -482,8 +482,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     context->BindSR(7, colorGradingLutView);
 
     // Composite final frame during single pass (done in full resolution)
-    auto viewport = renderContext.Task->GetViewport();
-    context->SetViewportAndScissors(viewport);
+    context->SetViewportAndScissors((float)output->Width(), (float)output->Height());
     context->SetRenderTarget(*output);
     context->SetState(_psComposite.Get(compositePermutationIndex));
     context->DrawFullscreenTriangle();
