@@ -841,6 +841,7 @@ namespace FlaxEditor.Windows
             _root.AddChild(Editor.ContentDatabase.Game);
             foreach (var project in Editor.ContentDatabase.Projects)
             {
+                project.SortChildrenRecursive();
                 if (project == Editor.ContentDatabase.Game || project == Editor.ContentDatabase.Engine)
                     continue;
                 _root.AddChild(project);
