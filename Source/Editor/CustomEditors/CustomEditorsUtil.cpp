@@ -183,7 +183,11 @@ void OnAssemblyUnloading(MAssembly* assembly)
     // Remove entries with user classes
     for (auto i = Cache.Begin(); i.IsNotEnd(); ++i)
     {
+#if USE_NETCORE
+        MonoClass* monoClass = mono_type_get_class(i->Key);
+#else
         MonoClass* monoClass = (MonoClass*)(void*)i->Key;
+#endif
 
         if (assembly->GetClass(monoClass))
         {
