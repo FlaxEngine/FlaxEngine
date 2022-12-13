@@ -1554,7 +1554,7 @@ namespace FlaxEditor
         internal static partial bool Internal_CookMeshCollision(string path, CollisionDataType type, IntPtr model, int modelLodIndex, uint materialSlotsMask, ConvexMeshGenerationFlags convexFlags, int convexVertexLimit);
 
         [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_GetCollisionWires", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
-        internal static partial void Internal_GetCollisionWires(IntPtr collisionData, [MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), ConstantElementCount = 1)] out Float3[] triangles, [MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), ConstantElementCount = 1)] out int[] indices);
+        internal static partial void Internal_GetCollisionWires(IntPtr collisionData, [MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = "trianglesCount")] out Float3[] triangles, [MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = "indicesCount")] out int[] indices, out int trianglesCount, out int indicesCount);
 
         [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_GetEditorBoxWithChildren", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial void Internal_GetEditorBoxWithChildren(IntPtr obj, out BoundingBox resultAsRef);
@@ -1602,12 +1602,12 @@ namespace FlaxEditor
         internal static partial void Internal_RunVisualScriptBreakpointLoopTick(float deltaTime);
 
         [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_GetVisualScriptLocals", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
-        [return: MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), ConstantElementCount = 1)]
-        internal static partial VisualScriptLocal[] Internal_GetVisualScriptLocals();
+        [return: MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = "localsCount")]
+        internal static partial VisualScriptLocal[] Internal_GetVisualScriptLocals(out int localsCount);
 
         [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_GetVisualScriptStackFrames", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
-        [return: MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), ConstantElementCount = 1)]
-        internal static partial VisualScriptStackFrame[] Internal_GetVisualScriptStackFrames();
+        [return: MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = "stackFrameCount")]
+        internal static partial VisualScriptStackFrame[] Internal_GetVisualScriptStackFrames(out int stackFrameCount);
 
         [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_GetVisualScriptPreviousScopeFrame", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial VisualScriptStackFrame Internal_GetVisualScriptPreviousScopeFrame();
