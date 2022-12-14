@@ -38,12 +38,14 @@ public:
     {
         return Index != INVALID_INDEX && MaxFeatureLevel != static_cast<D3D_FEATURE_LEVEL>(0);
     }
-
+    void* GetNativePtr() const override
+    {
+        return (void*)(intptr)Index;
+    }
     uint32 GetVendorId() const override
     {
         return (uint32)Description.VendorId;
     }
-
     String GetDescription() const override
     {
         return Description.Description;

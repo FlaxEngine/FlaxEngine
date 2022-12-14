@@ -42,6 +42,11 @@ public:
     virtual bool IsValid() const = 0;
 
     /// <summary>
+    /// Gets the native pointer to the underlying graphics device adapter. It's a low-level platform-specific handle.
+    /// </summary>
+    API_PROPERTY() virtual void* GetNativePtr() const = 0;
+
+    /// <summary>
     /// Gets the GPU vendor identifier.
     /// </summary>
     API_PROPERTY() virtual uint32 GetVendorId() const = 0;
