@@ -16,14 +16,6 @@ private:
     GPUPipelineState* _psTAA;
 
 public:
-
-    /// <summary>
-    /// Determinates whenever this pass requires motion vectors rendering.
-    /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
-    /// <returns>True if need to render motion vectors, otherwise false.</returns>
-    static bool NeedMotionVectors(const RenderContext& renderContext);
-
     /// <summary>
     /// Performs AA pass rendering for the input task.
     /// </summary>

@@ -5,6 +5,7 @@
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/PostProcessEffect.h"
 #include "Engine/Engine/EngineService.h"
 #include "GBufferPass.h"
 #include "ForwardPass.h"
@@ -224,19 +225,6 @@ void Renderer::Render(SceneRenderTask* task)
         RenderList::ReturnToPool(e.List);
 }
 
-bool Renderer::NeedMotionVectors(const RenderContext& renderContext)
-{
-    const int32 screenWidth = renderContext.Buffers->GetWidth();
-    const int32 screenHeight = renderContext.Buffers->GetHeight();
-    if (screenWidth < 16 || screenHeight < 16 || renderContext.Task->IsCameraCut)
-        return false;
-    MotionBlurSettings& motionBlurSettings = renderContext.List->Settings.MotionBlur;
-    return ((renderContext.View.Flags & ViewFlags::MotionBlur) != 0 && motionBlurSettings.Enabled && motionBlurSettings.Scale > ZeroTolerance) ||
-            renderContext.View.Mode == ViewMode::MotionVectors ||
-            ScreenSpaceReflectionsPass::NeedMotionVectors(renderContext) ||
-            TAA::NeedMotionVectors(renderContext);
-}
-
 void Renderer::DrawSceneDepth(GPUContext* context, SceneRenderTask* task, GPUTexture* output, const Array<Actor*>& customActors)
 {
     CHECK(context && task && output && output->IsDepthStencil());
@@ -314,20 +302,45 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         aaMode = AntialiasingMode::None; // TODO: support TAA in ortho projection (see RenderView::Prepare to jitter projection matrix better)
     renderContext.List->Settings.AntiAliasing.Mode = aaMode;
 
+    // Initialize setup
+    RenderSetup& setup = renderContext.List->Setup;
+    {
+        PROFILE_CPU_NAMED("Setup");
+        if (renderContext.View.Origin != renderContext.View.PrevOrigin)
+            renderContext.Task->CameraCut(); // Cut any temporal effects on rendering origin change
+        const int32 screenWidth = renderContext.Buffers->GetWidth();
+        const int32 screenHeight = renderContext.Buffers->GetHeight();
+        setup.UpscaleLocation = renderContext.Task->UpscaleLocation;
+        if (screenWidth < 16 || screenHeight < 16 || renderContext.Task->IsCameraCut)
+            setup.UseMotionVectors = false;
+        else
+        {
+            const MotionBlurSettings& motionBlurSettings = renderContext.List->Settings.MotionBlur;
+            const ScreenSpaceReflectionsSettings ssrSettings = renderContext.List->Settings.ScreenSpaceReflections;
+            setup.UseMotionVectors = ((renderContext.View.Flags & ViewFlags::MotionBlur) != 0 && motionBlurSettings.Enabled && motionBlurSettings.Scale > ZeroTolerance) ||
+                renderContext.View.Mode == ViewMode::MotionVectors ||
+                (ssrSettings.TemporalEffect && renderContext.View.Flags & ViewFlags::SSR) ||
+                renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing;
+        }
+        setup.UseTemporalAAJitter = aaMode == AntialiasingMode::TemporalAntialiasing;
+
+        // Customize setup (by postfx or custom gameplay effects)
+        renderContext.Task->SetupRender(renderContext);
+        for (PostProcessEffect* e : renderContext.List->PostFx)
+            e->PreRender(context, renderContext);
+    }
+
     // Prepare
     renderContext.View.Prepare(renderContext);
-    if (renderContext.View.Origin != renderContext.View.PrevOrigin)
-        renderContext.Task->CameraCut(); // Cut any temporal effects on rendering origin change
     renderContext.Buffers->Prepare();
 
     // Build batch of render contexts (main view and shadow projections)
     const bool isGBufferDebug = GBufferPass::IsDebugView(renderContext.View.Mode);
-    const bool needMotionVectors = Renderer::NeedMotionVectors(renderContext);
     {
         PROFILE_CPU_NAMED("Collect Draw Calls");
 
         view.Pass = DrawPass::GBuffer | DrawPass::Forward | DrawPass::Distortion;
-        if (needMotionVectors)
+        if (setup.UseMotionVectors)
             view.Pass |= DrawPass::MotionVectors;
         renderContextBatch.GetMainContext() = renderContext; // Sync render context in batch with the current value
 
@@ -372,7 +385,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::GBufferNoDecals);
         renderContext.List->SortDrawCalls(renderContext, true, DrawCallsListType::Forward);
         renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::Distortion);
-        if (needMotionVectors)
+        if (setup.UseMotionVectors)
             renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::MotionVectors);
         for (int32 i = 1; i < renderContextBatch.Contexts.Count(); i++)
         {
@@ -555,7 +568,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     // Upscaling after scene rendering but before post processing
     bool useUpscaling = task->RenderingPercentage < 1.0f;
     const Viewport outputViewport = task->GetOutputViewport();
-    if (useUpscaling && task->UpscaleLocation == RenderingUpscaleLocation::BeforePostProcessingPass)
+    if (useUpscaling && setup.UpscaleLocation == RenderingUpscaleLocation::BeforePostProcessingPass)
     {
         useUpscaling = false;
         RenderTargetPool::Release(tempBuffer);

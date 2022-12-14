@@ -63,11 +63,6 @@ void TAA::Dispose()
     _shader = nullptr;
 }
 
-bool TAA::NeedMotionVectors(const RenderContext& renderContext)
-{
-    return renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing;
-}
-
 void TAA::Render(const RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)
 {
     auto context = GPUDevice::Instance->GetMainContext();

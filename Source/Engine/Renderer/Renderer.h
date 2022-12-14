@@ -33,13 +33,6 @@ public:
     /// <param name="task">The scene rendering task.</param>
     static void Render(SceneRenderTask* task);
 
-    /// <summary>
-    /// Determinates whenever any pass requires motion vectors rendering.
-    /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
-    /// <returns>True if need to render motion vectors, otherwise false.</returns>
-    static bool NeedMotionVectors(const RenderContext& renderContext);
-
 public:
 
     /// <summary>

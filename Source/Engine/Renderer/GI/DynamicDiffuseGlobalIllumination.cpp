@@ -480,7 +480,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
             auto& cascade = ddgiData.Cascades[cascadeIndex];
             data.ProbeScrollClears[cascadeIndex] = Int4(cascade.ProbeScrollClears, 0);
         }
-        if (renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing)
+        if (renderContext.List->Setup.UseTemporalAAJitter)
         {
             // Use temporal offset in the dithering factor (gets cleaned out by TAA)
             const float time = Time::Draw.UnscaledTime.GetTotalSeconds();

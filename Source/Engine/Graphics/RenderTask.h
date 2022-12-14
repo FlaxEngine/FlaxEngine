@@ -371,6 +371,11 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     virtual void OnPostRender(GPUContext* context, RenderContext& renderContext);
 
+    /// <summary>
+    /// The action called before any rendering to override/customize setup RenderSetup inside RenderList. Can be used to enable eg. Motion Vectors rendering.
+    /// </summary>
+    Delegate<RenderContext&> SetupRender;
+
 public:
     /// <summary>
     /// Gets the rendering render task viewport (before upsampling).

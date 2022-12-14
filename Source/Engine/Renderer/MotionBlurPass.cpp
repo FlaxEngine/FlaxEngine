@@ -162,7 +162,7 @@ void MotionBlurPass::RenderMotionVectors(RenderContext& renderContext)
     const int32 motionVectorsHeight = screenHeight / static_cast<int32>(settings.MotionVectorsResolution);
 
     // Ensure to have valid data
-    if (!Renderer::NeedMotionVectors(renderContext) || checkIfSkipPass())
+    if (!renderContext.List->Setup.UseMotionVectors || checkIfSkipPass())
     {
         // Skip pass (just clear motion vectors if texture is allocated)
         if (motionVectors->IsAllocated())

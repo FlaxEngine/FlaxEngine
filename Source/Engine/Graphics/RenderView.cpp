@@ -18,7 +18,7 @@ void RenderView::Prepare(RenderContext& renderContext)
     // Check if use TAA (need to modify the projection matrix)
     Float2 taaJitter;
     NonJitteredProjection = Projection;
-    if (renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing)
+    if (renderContext.List->Setup.UseTemporalAAJitter)
     {
         // Move to the next frame
         const int MaxSampleCount = 8;

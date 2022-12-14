@@ -55,12 +55,6 @@ PACK_STRUCT(struct Data
     GlobalSurfaceAtlasPass::ConstantsData GlobalSurfaceAtlas;
     });
 
-bool ScreenSpaceReflectionsPass::NeedMotionVectors(const RenderContext& renderContext)
-{
-    auto& settings = renderContext.List->Settings.ScreenSpaceReflections;
-    return settings.TemporalEffect && renderContext.View.Flags & ViewFlags::SSR;
-}
-
 String ScreenSpaceReflectionsPass::ToString() const
 {
     return TEXT("ScreenSpaceReflectionsPass");
