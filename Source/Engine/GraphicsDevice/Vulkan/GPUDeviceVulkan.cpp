@@ -1486,7 +1486,10 @@ GPUAdapter* GPUDeviceVulkan::GetAdapter() const
 
 void* GPUDeviceVulkan::GetNativePtr() const
 {
-    return static_cast<void*>(Device);
+    // Return both Instance and Device as pointer to void*[2]
+    _nativePtr[0] = (void*)Instance;
+    _nativePtr[1] = (void*)Device;
+    return _nativePtr;
 }
 
 static int32 GetMaxSampleCount(VkSampleCountFlags counts)

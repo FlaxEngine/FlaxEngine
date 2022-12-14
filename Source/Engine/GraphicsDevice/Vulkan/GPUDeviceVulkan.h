@@ -459,6 +459,7 @@ class GPUDeviceVulkan : public GPUDevice
 private:
 
     CriticalSection _fenceLock;
+    mutable void* _nativePtr[2];
 
     Dictionary<RenderTargetLayoutVulkan, RenderPassVulkan*> _renderPasses;
     Dictionary<FramebufferVulkan::Key, FramebufferVulkan*> _framebuffers;

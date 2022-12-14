@@ -783,7 +783,7 @@ void GPUContextVulkan::EventEnd()
 void* GPUContextVulkan::GetNativePtr() const
 {
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-    return (void*)cmdBuffer;
+    return (void*)cmdBuffer->GetHandle();
 }
 
 bool GPUContextVulkan::IsDepthBufferBinded()
