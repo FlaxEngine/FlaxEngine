@@ -596,4 +596,14 @@ public:
     /// Flushes the command buffer (calls GPU execution).
     /// </summary>
     API_FUNCTION() virtual void Flush() = 0;
+
+    /// <summary>
+    /// Sets the state of the resource (or subresource).
+    /// </summary>
+    virtual void SetResourceState(GPUResource* resource, uint64 state, int32 subresource = -1);
+
+    /// <summary>
+    /// Forces graphics backend to rebind descriptors after command list was used by external graphics library.
+    /// </summary>
+    virtual void ForceRebindDescriptors();
 };

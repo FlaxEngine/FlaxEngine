@@ -236,13 +236,7 @@ void GPUContextDX12::Reset()
     Platform::MemoryClear(&_samplers, sizeof(_samplers));
     _swapChainsUsed = 0;
 
-    // Bind Root Signature
-    _commandList->SetGraphicsRootSignature(_device->GetRootSignature());
-    _commandList->SetComputeRootSignature(_device->GetRootSignature());
-
-    // Bind heaps
-    ID3D12DescriptorHeap* ppHeaps[] = { _device->RingHeap_CBV_SRV_UAV.GetHeap(), _device->RingHeap_Sampler.GetHeap() };
-    _commandList->SetDescriptorHeaps(ARRAY_COUNT(ppHeaps), ppHeaps);
+    ForceRebindDescriptors();
 }
 
 uint64 GPUContextDX12::Execute(bool waitForCompletion)
@@ -1392,11 +1386,11 @@ void GPUContextDX12::CopySubresource(GPUResource* dstResource, uint32 dstSubreso
     auto srcBufferDX12 = dynamic_cast<GPUBufferDX12*>(srcResource);
     auto dstTextureDX12 = dynamic_cast<GPUTextureDX12*>(dstResource);
     auto srcTextureDX12 = dynamic_cast<GPUTextureDX12*>(srcResource);
-    
+
     SetResourceState(dstResourceDX12, D3D12_RESOURCE_STATE_COPY_DEST);
     SetResourceState(srcResourceDX12, D3D12_RESOURCE_STATE_COPY_SOURCE);
     flushRBs();
-    
+
     // Buffer -> Buffer
     if (srcBufferDX12 && dstBufferDX12)
     {
@@ -1428,6 +1422,23 @@ void GPUContextDX12::CopySubresource(GPUResource* dstResource, uint32 dstSubreso
     {
         Log::NotImplementedException(TEXT("Cannot copy data between buffer and texture."));
     }
+}
+
+void GPUContextDX12::SetResourceState(GPUResource* resource, uint64 state, int32 subresource)
+{
+    auto resourceDX12 = dynamic_cast<ResourceOwnerDX12*>(resource);
+    SetResourceState(resourceDX12, (D3D12_RESOURCE_STATES)state, subresource);
+}
+
+void GPUContextDX12::ForceRebindDescriptors()
+{
+    // Bind Root Signature
+    _commandList->SetGraphicsRootSignature(_device->GetRootSignature());
+    _commandList->SetComputeRootSignature(_device->GetRootSignature());
+
+    // Bind heaps
+    ID3D12DescriptorHeap* ppHeaps[] = {_device->RingHeap_CBV_SRV_UAV.GetHeap(), _device->RingHeap_Sampler.GetHeap()};
+    _commandList->SetDescriptorHeaps(ARRAY_COUNT(ppHeaps), ppHeaps);
 }
 
 #endif
