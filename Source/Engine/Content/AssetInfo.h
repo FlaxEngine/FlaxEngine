@@ -54,8 +54,5 @@ public:
     /// Gets the string.
     /// </summary>
     /// <returns>The string.</returns>
-    String ToString() const
-    {
-        return String::Format(TEXT("ID: {0}, TypeName: {1}, Path: \'{2}\'"), ID, TypeName, Path);
-    }
+    String ToString() const;
 };

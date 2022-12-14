@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "Engine/Core/Types/BaseTypes.h"
+
 /// <summary>
 /// Build game header flags.
 /// </summary>

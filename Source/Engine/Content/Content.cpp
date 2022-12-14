@@ -34,6 +34,11 @@ TimeSpan Content::AssetsUnloadInterval = TimeSpan::FromSeconds(10);
 Delegate<Asset*> Content::AssetDisposing;
 Delegate<Asset*> Content::AssetReloading;
 
+String AssetInfo::ToString() const
+{
+    return String::Format(TEXT("ID: {0}, TypeName: {1}, Path: \'{2}\'"), ID, TypeName, Path);
+}
+
 namespace
 {
     // Assets
