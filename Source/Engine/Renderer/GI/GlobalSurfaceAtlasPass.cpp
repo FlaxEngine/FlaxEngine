@@ -1056,7 +1056,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                     PROFILE_GPU_CPU_NAMED("DDGI");
                     data.DDGI = bindingDataDDGI.Constants;
                     data.Light.Radius = giSettings.BounceIntensity / bindingDataDDGI.Constants.IndirectLightingIntensity; // Reuse for smaller CB
-                    context->BindSR(5, bindingDataDDGI.ProbesState);
+                    context->BindSR(5, bindingDataDDGI.ProbesData);
                     context->BindSR(6, bindingDataDDGI.ProbesDistance);
                     context->BindSR(7, bindingDataDDGI.ProbesIrradiance);
                     context->UpdateCB(_cb0, &data);

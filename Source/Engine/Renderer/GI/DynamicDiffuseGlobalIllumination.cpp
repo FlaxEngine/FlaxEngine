@@ -87,7 +87,7 @@ public:
     int32 ProbesCountTotal = 0;
     Int3 ProbeCounts = Int3::Zero;
     GPUTexture* ProbesTrace = nullptr; // Probes ray tracing: (RGB: hit radiance, A: hit distance)
-    GPUTexture* ProbesState = nullptr; // Probes state: (RGB: world-space offset, A: state)
+    GPUTexture* ProbesData = nullptr; // Probes data: (RGB: world-space offset, A: state/data)
     GPUTexture* ProbesIrradiance = nullptr; // Probes irradiance (RGB: sRGB color)
     GPUTexture* ProbesDistance = nullptr; // Probes distance (R: mean distance, G: mean distance^2)
     GPUBuffer* ActiveProbes = nullptr; // List with indices of the active probes (built during probes classification to use indirect dispatches for probes updating), counter at 0
@@ -97,7 +97,7 @@ public:
     FORCE_INLINE void Release()
     {
         RenderTargetPool::Release(ProbesTrace);
-        RenderTargetPool::Release(ProbesState);
+        RenderTargetPool::Release(ProbesData);
         RenderTargetPool::Release(ProbesIrradiance);
         RenderTargetPool::Release(ProbesDistance);
         SAFE_DELETE_GPU_RESOURCE(ActiveProbes);
@@ -373,7 +373,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
 #define INIT_TEXTURE(texture, format, width, height) desc.Format = format; desc.Width = width; desc.Height = height; ddgiData.texture = RenderTargetPool::Get(desc); if (!ddgiData.texture) return true; memUsage += ddgiData.texture->GetMemoryUsage(); RENDER_TARGET_POOL_SET_NAME(ddgiData.texture, "DDGI." #texture)
         desc.Flags = GPUTextureFlags::ShaderResource | GPUTextureFlags::UnorderedAccess;
         INIT_TEXTURE(ProbesTrace, PixelFormat::R16G16B16A16_Float, probeRaysCount, Math::Min(probesCountCascade, DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT));
-        INIT_TEXTURE(ProbesState, PixelFormat::R8G8B8A8_SNorm, probesCountTotalX, probesCountTotalY);
+        INIT_TEXTURE(ProbesData, PixelFormat::R8G8B8A8_SNorm, probesCountTotalX, probesCountTotalY);
         INIT_TEXTURE(ProbesIrradiance, PixelFormat::R11G11B10_Float, probesCountTotalX * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2), probesCountTotalY * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2));
         INIT_TEXTURE(ProbesDistance, PixelFormat::R16G16_Float, probesCountTotalX * (DDGI_PROBE_RESOLUTION_DISTANCE + 2), probesCountTotalY * (DDGI_PROBE_RESOLUTION_DISTANCE + 2));
 #undef INIT_TEXTURE
@@ -393,7 +393,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
     {
         // Clear probes
         PROFILE_GPU("Clear");
-        context->ClearUA(ddgiData.ProbesState, Float4::Zero);
+        context->ClearUA(ddgiData.ProbesData, Float4::Zero);
         context->ClearUA(ddgiData.ProbesIrradiance, Float4::Zero);
         context->ClearUA(ddgiData.ProbesDistance, Float4::Zero);
     }
@@ -458,7 +458,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         ddgiData.Result.Constants.IrradianceGamma = 1.5f;
         ddgiData.Result.Constants.IndirectLightingIntensity = indirectLightingIntensity;
         ddgiData.Result.Constants.FallbackIrradiance = fallbackIrradiance.ToFloat3() * fallbackIrradiance.A;
-        ddgiData.Result.ProbesState = ddgiData.ProbesState->View();
+        ddgiData.Result.ProbesData = ddgiData.ProbesData->View();
         ddgiData.Result.ProbesDistance = ddgiData.ProbesDistance->View();
         ddgiData.Result.ProbesIrradiance = ddgiData.ProbesIrradiance->View();
 
@@ -516,7 +516,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
                 threadGroupsX = Math::DivideAndRoundUp(probesCountCascade, DDGI_PROBE_CLASSIFY_GROUP_SIZE);
                 context->BindSR(0, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
                 context->BindSR(1, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
-                context->BindUA(0, ddgiData.Result.ProbesState);
+                context->BindUA(0, ddgiData.Result.ProbesData);
                 context->BindUA(1, ddgiData.ActiveProbes->View());
                 Data1 data;
                 data.CascadeIndex = cascadeIndex;
@@ -558,7 +558,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
                     context->BindSR(4, bindingDataSurfaceAtlas.Objects ? bindingDataSurfaceAtlas.Objects->View() : nullptr);
                     context->BindSR(5, bindingDataSurfaceAtlas.AtlasDepth->View());
                     context->BindSR(6, bindingDataSurfaceAtlas.AtlasLighting->View());
-                    context->BindSR(7, ddgiData.Result.ProbesState);
+                    context->BindSR(7, ddgiData.Result.ProbesData);
                     context->BindSR(8, skybox);
                     context->BindSR(9, ddgiData.ActiveProbes->View());
                     context->BindUA(0, ddgiData.ProbesTrace->View());
@@ -570,7 +570,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
                 // Update probes irradiance and distance textures (one thread-group per probe)
                 {
                     PROFILE_GPU_CPU_NAMED("Update Probes");
-                    context->BindSR(0, ddgiData.Result.ProbesState);
+                    context->BindSR(0, ddgiData.Result.ProbesData);
                     context->BindSR(1, ddgiData.ProbesTrace->View());
                     context->BindSR(2, ddgiData.ActiveProbes->View());
                     context->BindUA(0, ddgiData.Result.ProbesIrradiance);
@@ -682,7 +682,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         context->BindSR(1, renderContext.Buffers->GBuffer1->View());
         context->BindSR(2, renderContext.Buffers->GBuffer2->View());
         context->BindSR(3, renderContext.Buffers->DepthBuffer->View());
-        context->BindSR(4, ddgiData.Result.ProbesState);
+        context->BindSR(4, ddgiData.Result.ProbesData);
         context->BindSR(5, ddgiData.Result.ProbesDistance);
         context->BindSR(6, ddgiData.Result.ProbesIrradiance);
         context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
@@ -724,7 +724,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
             context->SetRenderTarget(*renderContext.Buffers->DepthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
             {
                 // Pass DDGI data to the material
-                _debugMaterial->SetParameterValue(TEXT("ProbesState"), Variant(ddgiData.ProbesState));
+                _debugMaterial->SetParameterValue(TEXT("ProbesData"), Variant(ddgiData.ProbesData));
                 _debugMaterial->SetParameterValue(TEXT("ProbesIrradiance"), Variant(ddgiData.ProbesIrradiance));
                 _debugMaterial->SetParameterValue(TEXT("ProbesDistance"), Variant(ddgiData.ProbesDistance));
                 auto cb = _debugMaterial->GetShader()->GetCB(3);

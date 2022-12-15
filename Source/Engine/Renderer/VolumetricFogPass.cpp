@@ -671,7 +671,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         int32 csIndex;
         if (useDDGI)
         {
-            context->BindSR(5, bindingDataDDGI.ProbesState);
+            context->BindSR(5, bindingDataDDGI.ProbesData);
             context->BindSR(6, bindingDataDDGI.ProbesDistance);
             context->BindSR(7, bindingDataDDGI.ProbesIrradiance);
             csIndex = 1;

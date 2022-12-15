@@ -13,9 +13,9 @@
 #include "./Flax/Math.hlsl"
 #include "./Flax/Octahedral.hlsl"
 
-#define DDGI_PROBE_STATE_INACTIVE 0.0f
-#define DDGI_PROBE_STATE_ACTIVATED 0.2f
-#define DDGI_PROBE_STATE_ACTIVE 1.0f
+#define DDGI_PROBE_STATE_INACTIVE 0
+#define DDGI_PROBE_STATE_ACTIVATED 1
+#define DDGI_PROBE_STATE_ACTIVE 2
 #define DDGI_PROBE_RESOLUTION_IRRADIANCE 6 // Resolution (in texels) for probe irradiance data (excluding 1px padding on each side)
 #define DDGI_PROBE_RESOLUTION_DISTANCE 14 // Resolution (in texels) for probe distance data (excluding 1px padding on each side)
 #define DDGI_SRGB_BLENDING 1 // Enables blending in sRGB color space, otherwise irradiance blending is done in linear space
@@ -89,22 +89,32 @@ float3 GetDDGIProbeWorldPosition(DDGIData data, uint cascadeIndex, uint3 probeCo
     return probesOrigin + probePosition - probeGridOffset + (data.ProbesScrollOffsets[cascadeIndex].xyz * probesSpacing);
 }
 
-// Loads probe probe state
-float LoadDDGIProbeState(DDGIData data, Texture2D<snorm float4> probesState, uint cascadeIndex, uint probeIndex)
+// Loads probe probe data (encoded)
+float4 LoadDDGIProbeData(DDGIData data, Texture2D<snorm float4> probesData, uint cascadeIndex, uint probeIndex)
 {
     int2 probeDataCoords = GetDDGIProbeTexelCoords(data, cascadeIndex, probeIndex);
-    float4 probeState = probesState.Load(int3(probeDataCoords, 0));
-    return probeState.w;
+    return probesData.Load(int3(probeDataCoords, 0));
 }
 
-// Loads probe world-space position (XYZ) and probe state (W)
-float4 LoadDDGIProbePositionAndState(DDGIData data, Texture2D<snorm float4> probesState, uint cascadeIndex, uint probeIndex, uint3 probeCoords)
+// Encodes probe probe data
+float4 EncodeDDGIProbeData(float3 probeOffset, uint probeState)
 {
-    int2 probeDataCoords = GetDDGIProbeTexelCoords(data, cascadeIndex, probeIndex);
-    float4 probeState = probesState.Load(int3(probeDataCoords, 0));
-    probeState.xyz *= data.ProbesOriginAndSpacing[cascadeIndex].w; // Probe offset is [-1;1] within probes spacing
-    probeState.xyz += GetDDGIProbeWorldPosition(data, cascadeIndex, probeCoords); // Place probe on a grid
-    return probeState;
+    return float4(probeOffset, (float)probeState * (1.0f / 8.0f));
+}
+
+// Decodes probe state from the encoded state
+uint DecodeDDGIProbeState(float4 probeData)
+{
+    return (uint)(probeData.w * 8.0f);
+}
+
+// Decodes probe world-space position (XYZ) from the encoded state
+float3 DecodeDDGIProbePosition(DDGIData data, float4 probeData, uint cascadeIndex, uint probeIndex, uint3 probeCoords)
+{
+    float3 probePosition = probeData.xyz;
+    probePosition *= data.ProbesOriginAndSpacing[cascadeIndex].w; // Probe offset is [-1;1] within probes spacing
+    probePosition += GetDDGIProbeWorldPosition(data, cascadeIndex, probeCoords); // Place probe on a grid
+    return probePosition;
 }
 
 // Calculates texture UVs for sampling probes atlas texture (irradiance or distance)
@@ -122,11 +132,11 @@ float2 GetDDGIProbeUV(DDGIData data, uint cascadeIndex, uint probeIndex, float2 
 // Samples DDGI probes volume at the given world-space position and returns the irradiance.
 // bias - scales the bias vector to the initial sample point to reduce self-shading artifacts
 // dither - randomized per-pixel value in range 0-1, used to smooth dithering for cascades blending
-float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesState, Texture2D<float4> probesDistance, Texture2D<float4> probesIrradiance, float3 worldPosition, float3 worldNormal, float bias = 0.2f, float dither = 0.0f)
+float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, Texture2D<float4> probesDistance, Texture2D<float4> probesIrradiance, float3 worldPosition, float3 worldNormal, float bias = 0.2f, float dither = 0.0f)
 {
     // Select the highest cascade that contains the sample location
     uint cascadeIndex = 0;
-    float4 probeStates[8];
+    float4 probesDatas[8];
     for (; cascadeIndex < data.CascadesCount; cascadeIndex++)
     {
         float probesSpacing = data.ProbesOriginAndSpacing[cascadeIndex].w;
@@ -145,9 +155,10 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesState, 
                 uint3 probeCoordsOffset = uint3(i, i >> 1, i >> 2) & 1;
                 uint3 probeCoords = clamp(baseProbeCoords + probeCoordsOffset, uint3(0, 0, 0), data.ProbesCounts - uint3(1, 1, 1));
                 uint probeIndex = GetDDGIScrollingProbeIndex(data, cascadeIndex, probeCoords);
-                float4 probeState = probesState.Load(int3(GetDDGIProbeTexelCoords(data, cascadeIndex, probeIndex), 0));
-                probeStates[i] = probeState;
-                if (probeState.w != DDGI_PROBE_STATE_INACTIVE)
+                float4 probeData = LoadDDGIProbeData(data, probesData, cascadeIndex, probeIndex);
+                probesDatas[i] = probeData;
+                uint probeState = DecodeDDGIProbeState(probeData);
+                if (probeState != DDGI_PROBE_STATE_INACTIVE)
                     activeCount++;
             }
 
@@ -182,12 +193,12 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesState, 
         uint probeIndex = GetDDGIScrollingProbeIndex(data, cascadeIndex, probeCoords);
 
         // Load probe position and state
-        float4 probeState = probeStates[i];
-        if (probeState.w == DDGI_PROBE_STATE_INACTIVE)
+        float4 probeData = probesDatas[i];
+        uint probeState = DecodeDDGIProbeState(probeData);
+        if (probeState == DDGI_PROBE_STATE_INACTIVE)
             continue;
-        probeState.xyz *= probesSpacing; // Probe offset is [-1;1] within probes spacing
         float3 probeBasePosition = baseProbeWorldPosition + ((probeCoords - baseProbeCoords) * probesSpacing);
-        float3 probePosition = probeBasePosition + probeState.xyz;
+        float3 probePosition = probeBasePosition + probeData.xyz * probesSpacing; // Probe offset is [-1;1] within probes spacing
 
         // Calculate the distance and direction from the (biased and non-biased) shading point and the probe
         float3 worldPosToProbe = normalize(probePosition - worldPosition);
@@ -233,7 +244,7 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesState, 
 #endif
 
         // Debug probe offset visualization
-        //probeIrradiance = float3(max(frac(probeState.xyz) * 2, 0.1f));
+        //probeIrradiance = float3(max(frac(probeData.xyz) * 2, 0.1f));
 
         // Accumulate weighted irradiance
         irradiance += float4(probeIrradiance * weight, weight);

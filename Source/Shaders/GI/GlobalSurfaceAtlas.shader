@@ -87,7 +87,7 @@ float4 PS_ClearLighting(AtlasVertexOutput input) : SV_Target
 // GBuffer+Depth at 0-3 slots
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);
 #if INDIRECT_LIGHT
-Texture2D<snorm float4> ProbesState : register(t5);
+Texture2D<snorm float4> ProbesData : register(t5);
 Texture2D<float4> ProbesDistance : register(t6);
 Texture2D<float4> ProbesIrradiance : register(t7);
 #else
@@ -134,7 +134,7 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 
 #if INDIRECT_LIGHT
     // Sample irradiance
-    float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesState, ProbesDistance, ProbesIrradiance, gBuffer.WorldPos, gBuffer.Normal);
+    float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesData, ProbesDistance, ProbesIrradiance, gBuffer.WorldPos, gBuffer.Normal);
     irradiance *= Light.Radius; // Cached BounceIntensity / IndirectLightingIntensity
 
     // Calculate lighting

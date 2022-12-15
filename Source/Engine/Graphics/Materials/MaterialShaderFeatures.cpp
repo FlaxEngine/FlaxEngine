@@ -170,7 +170,7 @@ bool GlobalIlluminationFeature::Bind(MaterialShader::BindParameters& params, Spa
 
                 // Bind DDGI data
                 data.DDGI = bindingDataDDGI.Constants;
-                params.GPUContext->BindSR(srv + 0, bindingDataDDGI.ProbesState);
+                params.GPUContext->BindSR(srv + 0, bindingDataDDGI.ProbesData);
                 params.GPUContext->BindSR(srv + 1, bindingDataDDGI.ProbesDistance);
                 params.GPUContext->BindSR(srv + 2, bindingDataDDGI.ProbesIrradiance);
             }

@@ -34,7 +34,7 @@ public:
     struct BindingData
     {
         ConstantsData Constants;
-        GPUTextureView* ProbesState;
+        GPUTextureView* ProbesData;
         GPUTextureView* ProbesDistance;
         GPUTextureView* ProbesIrradiance;
     };

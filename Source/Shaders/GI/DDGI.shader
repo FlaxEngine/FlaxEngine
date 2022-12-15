@@ -58,17 +58,18 @@ float3 GetProbeRayDirection(DDGIData data, uint rayIndex)
     return normalize(QuaternionRotate(data.RaysRotation, direction));
 }
 
-// Checks if the probe states are equal
-bool GetProbeState(float a, float b)
+// Calculates amount of rays to allocate for a probe
+uint GetProbeRaysCount(DDGIData data, uint probeState)
 {
-    return abs(a - b) < 0.05f;
+    // TODO: implement variable ray count based on probe location relative to the view frustum (use probe state for storage)
+    return data.RaysCount;
 }
 
 #ifdef _CS_Classify
 
 #define DDGI_PROBE_RELOCATE_ITERATIVE 0 // If true, probes relocation algorithm tries to move them in additive way, otherwise all nearby locations are checked to find the best position
 
-RWTexture2D<snorm float4> RWProbesState : register(u0);
+RWTexture2D<snorm float4> RWProbesData : register(u0);
 RWByteAddressBuffer RWActiveProbes : register(u1);
 
 Texture3D<float> GlobalSDFTex : register(t0);
@@ -79,7 +80,7 @@ float3 Remap(float3 value, float3 fromMin, float3 fromMax, float3 toMin, float3 
     return (value - fromMin) / (fromMax - fromMin) * (toMax - toMin) + toMin;
 }
 
-// Compute shader for updating probes state between active and inactive.
+// Compute shader for updating probes state between active and inactive and performing probes relocation.
 META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(DDGI_PROBE_CLASSIFY_GROUP_SIZE, 1, 1)]
 void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
@@ -94,14 +95,15 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     float probesSpacing = DDGI.ProbesOriginAndSpacing[CascadeIndex].w;
 
     // Load probe state and position
-    float4 probeState = RWProbesState[probeDataCoords];
-    probeState.xyz *= probesSpacing; // Probe offset is [-1;1] within probes spacing
+    float4 probeData = RWProbesData[probeDataCoords];
+    uint probeState = DecodeDDGIProbeState(probeData);
+    float3 probeOffset = probeData.xyz * probesSpacing; // Probe offset is [-1;1] within probes spacing
+    float3 probeOffsetOld = probeOffset;
     float3 probeBasePosition = GetDDGIProbeWorldPosition(DDGI, CascadeIndex, probeCoords);
     float3 probePosition = probeBasePosition;
 #if DDGI_PROBE_RELOCATE_ITERATIVE
-    probePosition += probeState.xyz;
+    probePosition += probeOffset;
 #endif
-    float4 probeStateOld = probeState;
 
     // Use Global SDF to quickly get distance and direction to the scene geometry
 #if DDGI_PROBE_RELOCATE_ITERATIVE
@@ -117,7 +119,8 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     if (sdfDst > distanceLimit) // Probe is too far from geometry
     {
         // Disable it
-        probeState = float4(0, 0, 0, DDGI_PROBE_STATE_INACTIVE);
+        probeOffset = float3(0, 0, 0);
+        probeState = DDGI_PROBE_STATE_INACTIVE;
     }
     else
     {
@@ -127,22 +130,22 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
             if (sdfDst < relocateLimit)
             {
                 float3 offsetToAdd = sdfNormal * (sdf + threshold);
-                if (distance(probeState.xyz, offsetToAdd) < relocateLimit)
+                if (distance(probeOffset, offsetToAdd) < relocateLimit)
                 {
                     // Relocate it
-                    probeState.xyz += offsetToAdd;
+                    probeOffset += offsetToAdd;
                 }
             }
             else
             {
                 // Reset relocation
-                probeState.xyz = float3(0, 0, 0);
+                probeOffset = float3(0, 0, 0);
             }
         }
         else if (sdf > threshold * 4.0f) // Probe is far enough from any geometry
         {
             // Reset relocation
-            probeState.xyz = float3(0, 0, 0);
+            probeOffset = float3(0, 0, 0);
         }
 
         // Check if probe is relocated but the base location is fine
@@ -150,7 +153,7 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
         if (sdf > threshold)
         {
             // Reset relocation
-            probeState.xyz = float3(0, 0, 0);
+            probeOffset = float3(0, 0, 0);
         }
 #else
         // Sample Global SDF around the probe location
@@ -177,7 +180,7 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
         // Relocate the probe to the best found location (or zero if nothing good found)
         if (bestOffset.w <= threshold)
             bestOffset.xyz = float3(0, 0, 0);
-        probeState.xyz = bestOffset.xyz;
+        probeOffset = bestOffset.xyz;
 #endif
 
         // Check if probe was scrolled
@@ -189,23 +192,21 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
             int probeCount = (int)DDGI.ProbesCounts[planeIndex];
             int newCord = (int)probeCoords[planeIndex] + probeScrollClears[planeIndex];
             if (newCord < 0 || newCord >= probeCount)
-            {
                 wasScrolled = true;
-            }
         }
 
         // If probe was in different location or was inactive last frame then mark it as activated
-        bool wasInactive = probeStateOld.w == DDGI_PROBE_STATE_INACTIVE;
-        bool wasRelocated = distance(probeState.xyz, probeStateOld.xyz) > 2.0f;
-        probeState.w = wasInactive || wasScrolled || wasRelocated ? DDGI_PROBE_STATE_ACTIVATED : DDGI_PROBE_STATE_ACTIVE;
+        bool wasInactive = probeState == DDGI_PROBE_STATE_INACTIVE;
+        bool wasRelocated = distance(probeOffset, probeOffsetOld) > 2.0f;
+        probeState = wasInactive || wasScrolled || wasRelocated ? DDGI_PROBE_STATE_ACTIVATED : DDGI_PROBE_STATE_ACTIVE;
     }
 
     // Save probe state
-    probeState.xyz /= probesSpacing;
-    RWProbesState[probeDataCoords] = probeState;
+    probeOffset /= probesSpacing; // Move offset back to [-1;1] space
+    RWProbesData[probeDataCoords] = EncodeDDGIProbeData(probeOffset, probeState);
 
     // Collect active probes
-    if (probeState.w != DDGI_PROBE_STATE_INACTIVE)
+    if (probeState != DDGI_PROBE_STATE_INACTIVE)
     {
         uint activeProbeIndex;
         RWActiveProbes.InterlockedAdd(0, 1, activeProbeIndex); // Counter at 0
@@ -250,7 +251,7 @@ ByteAddressBuffer RWGlobalSurfaceAtlasCulledObjects : register(t3);
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);
 Texture2D GlobalSurfaceAtlasDepth : register(t5);
 Texture2D GlobalSurfaceAtlasTex : register(t6);
-Texture2D<snorm float4> ProbesState : register(t7);
+Texture2D<snorm float4> ProbesData : register(t7);
 TextureCube Skybox : register(t8);
 ByteAddressBuffer ActiveProbes : register(t9);
 
@@ -269,14 +270,17 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
     probeIndex = GetDDGIScrollingProbeIndex(DDGI, CascadeIndex, probeCoords);
 
     // Load current probe state and position
-    float4 probePositionAndState = LoadDDGIProbePositionAndState(DDGI, ProbesState, CascadeIndex, probeIndex, probeCoords);
-    if (probePositionAndState.w == DDGI_PROBE_STATE_INACTIVE)
-        return; // Skip disabled probes
+    float4 probeData = LoadDDGIProbeData(DDGI, ProbesData, CascadeIndex, probeIndex);
+    uint probeState = DecodeDDGIProbeState(probeData);
+    uint probeRaysCount = GetProbeRaysCount(DDGI, probeState);
+    if (probeState == DDGI_PROBE_STATE_INACTIVE || probeRaysCount < rayIndex)
+        return; // Skip disabled probes or if current thread's ray is unused
+    float3 probePosition = DecodeDDGIProbePosition(DDGI, probeData, CascadeIndex, probeIndex, probeCoords);
     float3 probeRayDirection = GetProbeRayDirection(DDGI, rayIndex);
 
     // Trace ray with Global SDF
     GlobalSDFTrace trace;
-    trace.Init(probePositionAndState.xyz, probeRayDirection, 0.0f, DDGI.RayMaxDistance);
+    trace.Init(probePosition, probeRayDirection, 0.0f, DDGI.RayMaxDistance);
     GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace);
 
     // Calculate radiance and distance
@@ -328,7 +332,7 @@ groupshared float CachedProbesTraceDistance[DDGI_TRACE_RAYS_LIMIT];
 groupshared float3 CachedProbesTraceDirection[DDGI_TRACE_RAYS_LIMIT];
 
 RWTexture2D<float4> RWOutput : register(u0);
-Texture2D<snorm float4> ProbesState : register(t0);
+Texture2D<snorm float4> ProbesData : register(t0);
 Texture2D<float4> ProbesTrace : register(t1);
 ByteAddressBuffer ActiveProbes : register(t2);
 
@@ -348,13 +352,15 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
 
     // Skip disabled probes
     bool skip = false;
-    float probeState = LoadDDGIProbeState(DDGI, ProbesState, CascadeIndex, probeIndex);
+    float4 probeData = LoadDDGIProbeData(DDGI, ProbesData, CascadeIndex, probeIndex);
+    uint probeState = DecodeDDGIProbeState(probeData);
+    uint probeRaysCount = GetProbeRaysCount(DDGI, probeState);
     if (probeState == DDGI_PROBE_STATE_INACTIVE)
         skip = true;
 
 #if DDGI_PROBE_UPDATE_MODE == 0
     uint backfacesCount = 0;
-    uint backfacesLimit = uint(DDGI.RaysCount * 0.1f);
+    uint backfacesLimit = uint(probeRaysCount * 0.1f);
 #else
     float probesSpacing = DDGI.ProbesOriginAndSpacing[CascadeIndex].w;
     float distanceLimit = length(probesSpacing) * 1.5f;
@@ -364,9 +370,9 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     if (!skip)
     {
         // Load trace rays results into shared memory to reuse across whole thread group (raysCount per thread)
-        uint raysCount = (uint)(ceil((float)DDGI.RaysCount / (float)(DDGI_PROBE_RESOLUTION * DDGI_PROBE_RESOLUTION)));
+        uint raysCount = (uint)(ceil((float)probeRaysCount / (float)(DDGI_PROBE_RESOLUTION * DDGI_PROBE_RESOLUTION)));
         uint raysStart = GroupIndex * raysCount;
-        raysCount = max(min(raysStart + raysCount, DDGI.RaysCount), raysStart) - raysStart;
+        raysCount = max(min(raysStart + raysCount, probeRaysCount), raysStart) - raysStart;
         for (uint i = 0; i < raysCount; i++)
         {
             uint rayIndex = raysStart + i;
@@ -392,7 +398,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     // Loop over rays
     float4 result = float4(0, 0, 0, 0);
     LOOP
-    for (uint rayIndex = 0; rayIndex < DDGI.RaysCount; rayIndex++)
+    for (uint rayIndex = 0; rayIndex < probeRaysCount; rayIndex++)
     {
         float3 rayDirection = CachedProbesTraceDirection[rayIndex];
         float rayWeight = max(dot(octahedralDirection, rayDirection), 0.0f);
@@ -426,12 +432,12 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     }
 
     // Normalize results
-    float epsilon = (float)DDGI.RaysCount * 1e-9f;
+    float epsilon = (float)probeRaysCount * 1e-9f;
     result.rgb *= 1.0f / (2.0f * max(result.a, epsilon));
 
     // Load current probe value
     float3 previous = RWOutput[outputCoords].rgb;
-    bool wasActivated = GetProbeState(probeState, DDGI_PROBE_STATE_ACTIVATED);
+    bool wasActivated = probeState == DDGI_PROBE_STATE_ACTIVATED;
     if (ResetBlend || wasActivated)
         previous = float3(0, 0, 0);
 
@@ -541,7 +547,7 @@ void CS_UpdateBorders(uint3 DispatchThreadId : SV_DispatchThreadID)
 #include "./Flax/Random.hlsl"
 #include "./Flax/LightingCommon.hlsl"
 
-Texture2D<snorm float4> ProbesState : register(t4);
+Texture2D<snorm float4> ProbesData : register(t4);
 Texture2D<float4> ProbesDistance : register(t5);
 Texture2D<float4> ProbesIrradiance : register(t6);
 
@@ -565,7 +571,7 @@ void PS_IndirectLighting(Quad_VS2PS input, out float4 output : SV_Target0)
     // Sample irradiance
     float bias = 0.2f;
     float dither = RandN2(input.TexCoord + TemporalTime).x;
-    float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesState, ProbesDistance, ProbesIrradiance, gBuffer.WorldPos, gBuffer.Normal, bias, dither);
+    float3 irradiance = SampleDDGIIrradiance(DDGI, ProbesData, ProbesDistance, ProbesIrradiance, gBuffer.WorldPos, gBuffer.Normal, bias, dither);
     
     // Calculate lighting
     float3 diffuseColor = GetDiffuseColor(gBuffer);
