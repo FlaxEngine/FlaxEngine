@@ -227,6 +227,10 @@ public:
         T* result = (T*)GetChild(T::GetStaticClass());
         if (!result)
         {
+            const MClass* type = T::GetStaticClass();
+            if (type->IsAbstract())
+                return nullptr;
+
             result = New<T>();
             result->SetParent(this, false, false);
         }
