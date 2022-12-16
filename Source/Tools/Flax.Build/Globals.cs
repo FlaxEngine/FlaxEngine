@@ -28,7 +28,6 @@ namespace Flax.Build
         public static readonly TargetPlatform[] AllPlatforms =
         {
             TargetPlatform.Windows,
-            TargetPlatform.UWP,
             TargetPlatform.XboxOne,
             TargetPlatform.Linux,
             TargetPlatform.PS4,
