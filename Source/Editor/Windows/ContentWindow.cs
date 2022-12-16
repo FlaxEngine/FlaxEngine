@@ -113,10 +113,9 @@ namespace FlaxEditor.Windows
                 IsScrollable = false,
                 Offsets = new Margin(0, 0, 0, 18 + 6),
             };
-            _foldersSearchBox = new TextBox
+            _foldersSearchBox = new SearchBox
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
-                WatermarkText = "Search...",
                 Parent = headerPanel,
                 Bounds = new Rectangle(4, 4, headerPanel.Width - 8, 18),
             };
@@ -149,7 +148,7 @@ namespace FlaxEditor.Windows
                 Parent = _split.Panel2,
             };
             const float viewDropdownWidth = 50.0f;
-            _itemsSearchBox = new TextBox
+            _itemsSearchBox = new SearchBox
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
                 WatermarkText = "Search...",
