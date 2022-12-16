@@ -3,35 +3,31 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>disable</Nullable>
+    <Nullable>annotations</Nullable>
     <Configurations>Debug;Release</Configurations>
     <BaseOutputPath>..\..\..\Binaries\Tools</BaseOutputPath>
     <OutDir>..\..\..\Binaries\Tools</OutDir>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
     <DefineConstants>USE_NETCORE</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
+    <ErrorReport>none</ErrorReport>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1701;1702;8981</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Properties"/>
+    <Folder Include="Properties" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="DotNetZip" Version="1.16"/>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3"/>
-    <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="3.2"/>
-    <PackageReference Include="Microsoft.Windows.Compatibility" Version="6.0"/>
-    <PackageReference Include="Mono.Cecil" Version="0.11.4"/>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0"/>
-    <PackageReference Include="System.CodeDom" Version="6.0"/>
+    <PackageReference Include="DotNetZip" Version="1.16" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3" />
+    <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="3.2" />
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="6.0" />
+    <PackageReference Include="Mono.Cecil" Version="0.11.4" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0" />
+    <PackageReference Include="System.CodeDom" Version="6.0" />
   </ItemGroup>
 
 </Project>
