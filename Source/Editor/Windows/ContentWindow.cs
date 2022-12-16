@@ -151,7 +151,6 @@ namespace FlaxEditor.Windows
             _itemsSearchBox = new SearchBox
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
-                WatermarkText = "Search...",
                 Parent = contentItemsSearchPanel,
                 Bounds = new Rectangle(viewDropdownWidth + 8, 4, contentItemsSearchPanel.Width - 12 - viewDropdownWidth, 18),
             };
