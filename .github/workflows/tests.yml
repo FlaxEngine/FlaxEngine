@@ -5,6 +5,7 @@ jobs:
 
   # Tests
   tests-linux:
+    if: ${{ false }}
     name: Tests (Linux)
     runs-on: "ubuntu-20.04"
     steps:

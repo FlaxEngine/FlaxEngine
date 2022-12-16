@@ -428,7 +428,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                                 }
                             }
                             // C# project
-                            else if (project.Type == TargetType.DotNet)
+                            else if (project.Type == TargetType.DotNet || project.Type == TargetType.DotNetCore)
                             {
                                 foreach (var configuration in project.Configurations)
                                 {

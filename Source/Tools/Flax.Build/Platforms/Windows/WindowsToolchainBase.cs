@@ -9,6 +9,7 @@ using System.Xml;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
 using Flax.Build.Projects.VisualStudio;
+using Task = Flax.Build.Graph.Task;
 
 // ReSharper disable InconsistentNaming
 

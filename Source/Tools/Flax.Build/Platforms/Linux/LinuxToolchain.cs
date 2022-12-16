@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
+using Task = Flax.Build.Graph.Task;
 
 namespace Flax.Build.Platforms
 {

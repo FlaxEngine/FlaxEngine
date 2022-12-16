@@ -4,13 +4,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 
 namespace FlaxEditor.CustomEditors
 {
-    internal static class CustomEditorsUtil
+    internal static partial class CustomEditorsUtil
     {
         internal static readonly Dictionary<Type, string> InBuildTypeNames = new Dictionary<Type, string>()
         {
@@ -129,7 +131,8 @@ namespace FlaxEditor.CustomEditors
             return new GenericEditor();
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Type Internal_GetCustomEditor(Type targetType);
+        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.CustomEditors.CustomEditorsUtil::Internal_GetCustomEditor", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [return: MarshalUsing(typeof(SystemTypeMarshaller))]
+        internal static partial Type Internal_GetCustomEditor([MarshalUsing(typeof(SystemTypeMarshaller))] Type targetType);
     }
 }

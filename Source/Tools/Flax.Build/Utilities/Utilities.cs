@@ -41,7 +41,11 @@ namespace Flax.Build
         /// <returns>The empty array object.</returns>
         public static T[] GetEmptyArray<T>()
         {
+#if USE_NETCORE
+            return Array.Empty<T>();
+#else
             return Enumerable.Empty<T>() as T[];
+#endif
         }
 
         /// <summary>

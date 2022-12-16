@@ -6,7 +6,9 @@ using System.IO;
 using System.Text;
 using FlaxEngine.GUI;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
+using System.Collections.Generic;
 
 namespace FlaxEngine
 {
@@ -340,10 +342,22 @@ namespace FlaxEngine
                 jsonWriter.StringEscapeHandling = jsonSerializer.StringEscapeHandling;
                 jsonWriter.Culture = jsonSerializer.Culture;
                 jsonWriter.DateFormatString = jsonSerializer.DateFormatString;
-
+#if !USE_NETCORE
                 JsonSerializerInternalWriter serializerWriter = new JsonSerializerInternalWriter(jsonSerializer);
 
                 serializerWriter.Serialize(jsonWriter, _control, type);
+#else
+                Type jsonSerializerInternalWriterType =
+                    typeof(Newtonsoft.Json.Serialization.IValueProvider).Assembly.GetType(
+                        "Newtonsoft.Json.Serialization.JsonSerializerInternalWriter");
+                System.Reflection.ConstructorInfo ctor = jsonSerializerInternalWriterType.GetConstructors
+                (System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)[0];
+                object serializerWriter = ctor.Invoke(new object[] { jsonSerializer });
+
+                System.Reflection.MethodInfo Serialize = jsonSerializerInternalWriterType.GetMethod("Serialize",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+                Serialize.Invoke(serializerWriter, new object[] { jsonWriter, _control, type });
+#endif
             }
 
             controlType = type.FullName;
@@ -380,10 +394,25 @@ namespace FlaxEngine
                 jsonWriter.StringEscapeHandling = jsonSerializer.StringEscapeHandling;
                 jsonWriter.Culture = jsonSerializer.Culture;
                 jsonWriter.DateFormatString = jsonSerializer.DateFormatString;
-
+#if !USE_NETCORE
                 JsonSerializerInternalWriter serializerWriter = new JsonSerializerInternalWriter(jsonSerializer);
 
                 serializerWriter.SerializeDiff(jsonWriter, _control, type, other._control);
+#else
+                JObject jObj = JObject.FromObject(_control, jsonSerializer);
+                JObject jOther = JObject.FromObject(other._control, jsonSerializer);
+                JObject diff = new JObject();
+                foreach (KeyValuePair<string, JToken> prop in jObj)
+                {
+                    JProperty otherProp = jOther.Property(prop.Key);
+                    if (JToken.DeepEquals(prop.Value, otherProp.Value))
+                        continue;
+
+                    diff.Add(prop.Key, prop.Value);
+                }
+
+                diff.WriteTo(jsonWriter);
+#endif
             }
 
             controlType = string.Empty;

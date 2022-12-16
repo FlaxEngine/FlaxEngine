@@ -391,9 +391,27 @@ namespace FlaxEditor.Modules.SourceCodeEditing
 
         private static bool HasAssemblyValidAnyTypes(Assembly assembly)
         {
+            var codeBase = Utils.GetAssemblyLocation(assembly);
+#if USE_NETCORE
+            if (assembly.ManifestModule.FullyQualifiedName == "<In Memory Module>")
+                return false;
+
+            if (string.IsNullOrEmpty(codeBase))
+                return true;
+
+            // Skip runtime related assemblies
+            string repositoryUrl = assembly.GetCustomAttributes<AssemblyMetadataAttribute>().FirstOrDefault(x => x.Key == "RepositoryUrl")?.Value ?? "";
+            if (repositoryUrl != "https://github.com/dotnet/runtime")
+                return true;
+#else
+            if (string.IsNullOrEmpty(codeBase))
+                return true;
+
             // Skip assemblies from in-build Mono directory
-            var codeBase = assembly.CodeBase;
-            return string.IsNullOrEmpty(codeBase) || !codeBase.Contains("/Mono/lib/mono/");
+            if (!codeBase.Contains("/Mono/lib/mono/"))
+                return true;
+#endif
+            return false;
         }
 
         private static bool HasAssemblyValidScriptingTypes(Assembly a)

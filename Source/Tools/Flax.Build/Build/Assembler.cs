@@ -1,10 +1,13 @@
 ﻿// Copyright (c) 2012-2020 Flax Engine. All rights reserved.
 
-using System;
-using System.CodeDom.Compiler;
-using System.Collections.Generic;
-using System.Linq;
+using Microsoft.CodeAnalysis;
+using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.Loader;
+using System.Text;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Flax.Build
 {
@@ -18,7 +21,7 @@ namespace Flax.Build
         /// </summary>
         public static readonly Assembly[] DefaultReferences =
         {
-            //typeof(IntPtr).Assembly, // mscorlib.dll
+            typeof(IntPtr).Assembly, // mscorlib.dll
             typeof(Enumerable).Assembly, // System.Linq.dll
             typeof(ISet<>).Assembly, // System.dll
             typeof(Builder).Assembly, // Flax.Build.exe
@@ -28,6 +31,13 @@ namespace Flax.Build
         /// The output assembly path. Use null to store assembly in the process memory.
         /// </summary>
         public string OutputPath = null;
+
+        /// <summary>
+        ///
+        /// </summary>
+        public string CachePath = null;
+
+        private string CacheAssemblyPath = null;
 
         /// <summary>
         /// The source files for compilation.
@@ -44,6 +54,13 @@ namespace Flax.Build
         /// </summary>
         public readonly List<string> References = new List<string>();
 
+        public Assembler(List<string> sourceFiles, string cachePath = null)
+        {
+            SourceFiles.AddRange(sourceFiles);
+            CachePath = cachePath;
+            CacheAssemblyPath = cachePath != null ? Path.Combine(Directory.GetParent(cachePath).FullName, "BuilderRulesCache.dll") : null;
+        }
+
         /// <summary>
         /// Builds the assembly.
         /// </summary>
@@ -51,9 +68,28 @@ namespace Flax.Build
         /// <returns>The created and loaded assembly.</returns>
         public Assembly Build()
         {
-            Dictionary<string, string> providerOptions = new Dictionary<string, string>();
-            providerOptions.Add("CompilerVersion", "v4.0");
-            CodeDomProvider provider = new Microsoft.CSharp.CSharpCodeProvider(providerOptions);
+            DateTime recentWriteTime = DateTime.MinValue;
+            if (CachePath != null)
+            {
+                foreach (var sourceFile in SourceFiles)
+                {
+                    // FIXME: compare and cache individual write times!
+                    DateTime lastWriteTime = File.GetLastWriteTime(sourceFile);
+                    if (lastWriteTime > recentWriteTime)
+                        recentWriteTime = lastWriteTime;
+                }
+
+                DateTime cacheTime = File.Exists(CachePath)
+                    ? DateTime.FromBinary(long.Parse(File.ReadAllText(CachePath)))
+                    : DateTime.MinValue;
+                if (recentWriteTime <= cacheTime && File.Exists(CacheAssemblyPath))
+                {
+                    Assembly cachedAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(CacheAssemblyPath);
+                    return cachedAssembly;
+                }
+            }
+
+            Stopwatch sw = Stopwatch.StartNew();
 
             // Collect references
             HashSet<string> references = new HashSet<string>();
@@ -66,49 +102,74 @@ namespace Flax.Build
                 if (!assembly.IsDynamic)
                     references.Add(assembly.Location);
             }
-
-            // Setup compilation options
-            CompilerParameters cp = new CompilerParameters();
-            cp.GenerateExecutable = false;
-            cp.WarningLevel = 4;
-            cp.TreatWarningsAsErrors = false;
-            cp.ReferencedAssemblies.AddRange(references.ToArray());
-            if (string.IsNullOrEmpty(OutputPath))
-            {
-                cp.GenerateInMemory = true;
-                cp.IncludeDebugInformation = false;
-            }
-            else
-            {
-                cp.GenerateInMemory = false;
-                cp.IncludeDebugInformation = true;
-                cp.OutputAssembly = OutputPath;
-            }
+            references.Add(Path.Combine(Directory.GetParent(DefaultReferences[0].Location).FullName, "System.dll"));
+            references.Add(Path.Combine(Directory.GetParent(DefaultReferences[0].Location).FullName, "System.Runtime.dll"));
+            references.Add(Path.Combine(Directory.GetParent(DefaultReferences[0].Location).FullName, "System.Collections.dll"));
+            references.Add(Path.Combine(Directory.GetParent(DefaultReferences[0].Location).FullName, "Microsoft.Win32.Registry.dll"));
 
             // HACK: C# will give compilation errors if a LIB variable contains non-existing directories
             Environment.SetEnvironmentVariable("LIB", null);
 
+            CSharpCompilationOptions defaultCompilationOptions =
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                    .WithUsings(new[] { "System", })
+                    .WithPlatform(Microsoft.CodeAnalysis.Platform.AnyCpu)
+                    .WithOptimizationLevel(OptimizationLevel.Debug);
+
+            List<MetadataReference> defaultReferences = new List<MetadataReference>();
+            foreach (var r in references)
+                defaultReferences.Add(MetadataReference.CreateFromFile(r));
+
             // Run the compilation
-            CompilerResults cr = provider.CompileAssemblyFromFile(cp, SourceFiles.ToArray());
+            using var memoryStream = new MemoryStream();
+
+            var syntaxTrees = new List<SyntaxTree>();
+            foreach (var sourceFile in SourceFiles)
+            {
+                var stringText = SourceText.From(File.ReadAllText(sourceFile), Encoding.UTF8);
+                var parsedSyntaxTree = SyntaxFactory.ParseSyntaxTree(stringText,
+                    CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp9), sourceFile);
+                syntaxTrees.Add(parsedSyntaxTree);
+            }
+
+            var compilation = CSharpCompilation.Create("BuilderRulesCache.dll", syntaxTrees.ToArray(), defaultReferences, defaultCompilationOptions);
+            EmitResult emitResult = compilation.Emit(memoryStream);
 
             // Process warnings and errors
-            bool hasError = false;
-            foreach (CompilerError ce in cr.Errors)
+            foreach (var diagnostic in emitResult.Diagnostics)
             {
-                if (ce.IsWarning)
-                {
-                    Log.Warning(string.Format("{0} at {1}: {2}", ce.FileName, ce.Line, ce.ErrorText));
-                }
-                else
-                {
-                    Log.Error(string.Format("{0} at line {1}: {2}", ce.FileName, ce.Line, ce.ErrorText));
-                    hasError = true;
-                }
+                var msg = diagnostic.ToString();
+                if (diagnostic.Severity == DiagnosticSeverity.Warning)
+                    Log.Warning(msg);
+                else if (diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error)
+                    Log.Error(msg);
             }
-            if (hasError)
+            if (!emitResult.Success)
                 throw new Exception("Failed to build assembly.");
 
-            return cr.CompiledAssembly;
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            Assembly compiledAssembly = AssemblyLoadContext.Default.LoadFromStream(memoryStream);
+
+            if (CachePath != null && CacheAssemblyPath != null)
+            {
+                memoryStream.Seek(0, SeekOrigin.Begin);
+
+                var cacheDirectory = Path.GetDirectoryName(CacheAssemblyPath);
+                if (!Directory.Exists(cacheDirectory))
+                    Directory.CreateDirectory(cacheDirectory);
+
+                using (FileStream fileStream = File.Open(CacheAssemblyPath, FileMode.Create, FileAccess.Write))
+                {
+                    memoryStream.CopyTo(fileStream);
+                    fileStream.Close();
+                }
+
+                File.WriteAllText(CachePath, recentWriteTime.ToBinary().ToString());
+            }
+
+            sw.Stop();
+            Log.Info("Assembler time: " + sw.Elapsed.TotalSeconds.ToString() + "s");
+            return compiledAssembly;
         }
     }
 }

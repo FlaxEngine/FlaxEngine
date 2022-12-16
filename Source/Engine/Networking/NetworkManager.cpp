@@ -303,6 +303,7 @@ bool NetworkManager::StartHost()
 
 void NetworkManager::Stop()
 {
+    SCRIPTING_EXPORT("FlaxEngine.Networking.NetworkManager::Internal_Stop");
     if (Mode == NetworkManagerMode::Offline && State == NetworkConnectionState::Offline)
         return;
     PROFILE_CPU();

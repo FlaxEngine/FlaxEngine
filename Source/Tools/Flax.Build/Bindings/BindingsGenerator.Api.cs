@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using BuildData = Flax.Build.Builder.BuildData;
 
 namespace Flax.Build.Bindings
@@ -171,7 +172,11 @@ namespace Flax.Build.Bindings
 
             // Skip for collections
             if ((typeInfo.Type == "Array" || typeInfo.Type == "Span" || typeInfo.Type == "DataContainer" || typeInfo.Type == "Dictionary" || typeInfo.Type == "HashSet") && typeInfo.GenericArgs != null)
+#if !USE_NETCORE
                 return false;
+#else
+                return true;
+#endif
 
             // Skip for special types
             if (typeInfo.GenericArgs == null)
@@ -218,6 +223,40 @@ namespace Flax.Build.Bindings
 
             return false;
         }
+
+#if USE_NETCORE
+        /// <summary>
+        /// Check if structure contains unblittable types that would require custom marshaller for the structure.
+        /// </summary>
+        public static bool UseCustomMarshalling(BuildData buildData, StructureInfo structureInfo, ApiTypeInfo caller)
+        {
+            if (structureInfo.Fields.Any(x => !x.IsStatic &&
+                                         (x.Type.IsObjectRef || x.Type.Type == "Dictionary" || x.Type.Type == "Version")
+                                         && x.Type.Type != "uint8" && x.Type.Type != "byte"))
+            {
+                return true;
+            }
+
+            foreach (var field in structureInfo.Fields)
+            {
+                if (field.Type.Type == structureInfo.FullNameNative)
+                    continue;
+                if (field.IsStatic)
+                    continue;
+
+                if (field.Type.Type == "String")
+                    return true;
+
+                var fieldApiType = FindApiTypeInfo(buildData, field.Type, caller);
+                if (fieldApiType is StructureInfo fieldStructureInfo && UseCustomMarshalling(buildData, fieldStructureInfo, caller))
+                    return true;
+                else if (fieldApiType is ClassInfo)
+                    return true;
+            }
+
+            return false;
+        }
+#endif
 
         /// <summary>
         /// Finds the API type information.

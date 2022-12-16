@@ -135,6 +135,7 @@ namespace Flax.Build.Projects
                 {
                 case TargetType.NativeCpp: return new VCProjectGenerator(vsVersion);
                 case TargetType.DotNet: return new CSProjectGenerator(vsVersion);
+                case TargetType.DotNetCore: return new CSSDKProjectGenerator(vsVersion);
                 default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
                 }
             }

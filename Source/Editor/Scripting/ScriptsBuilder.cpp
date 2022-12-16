@@ -176,6 +176,7 @@ bool ScriptsBuilder::IsReady()
 
 void ScriptsBuilder::MarkWorkspaceDirty()
 {
+    SCRIPTING_EXPORT("FlaxEditor.ScriptsBuilder::Internal_MarkWorkspaceDirty")
     ScopeLock scopeLock(_locker);
     _lastSourceCodeEdited = DateTime::Now();
     _wasProjectStructureChanged = true;
@@ -183,6 +184,7 @@ void ScriptsBuilder::MarkWorkspaceDirty()
 
 void ScriptsBuilder::CheckForCompile()
 {
+    SCRIPTING_EXPORT("FlaxEditor.ScriptsBuilder::Internal_CheckForCompile")
     ScopeLock scopeLock(_locker);
     if (IsSourceDirty())
         Compile();
@@ -205,6 +207,7 @@ void ScriptsBuilderImpl::onScriptsReloadEnd()
 
 void ScriptsBuilder::Compile()
 {
+    SCRIPTING_EXPORT("FlaxEditor.ScriptsBuilder::Internal_Compile")
     ScopeLock scopeLock(_locker);
 
     // Request compile job

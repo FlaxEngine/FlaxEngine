@@ -11,6 +11,8 @@ using Flax.Build.Projects.VisualStudio;
 using Flax.Build.Projects.VisualStudioCode;
 using Microsoft.Win32;
 
+#pragma warning disable CA1416
+
 namespace Flax.Build.Platforms
 {
     /// <summary>
@@ -523,3 +525,5 @@ namespace Flax.Build.Platforms
         }
     }
 }
+
+#pragma warning restore CA1416

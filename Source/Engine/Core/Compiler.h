@@ -32,6 +32,8 @@
 #pragma clang diagnostic ignored "-Wnull-dereference"
 #pragma clang diagnostic ignored "-Winvalid-noreturn"
 
+#define SCRIPTING_EXPORT(name)
+
 #elif defined(__GNUC__)
 
 #define DLLEXPORT __attribute__ ((__visibility__ ("default")))
@@ -85,6 +87,8 @@
 			__pragma (warning(pop))
 
 #pragma warning(disable: 4251)
+
+#define SCRIPTING_EXPORT(name)	__pragma(comment(linker, "/EXPORT:" #name "=" __FUNCDNAME__))
 
 #else
 

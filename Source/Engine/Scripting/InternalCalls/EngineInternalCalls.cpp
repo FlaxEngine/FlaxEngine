@@ -6,17 +6,20 @@
 #include "Engine/Scripting/MException.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 
-#if USE_MONO
-
 namespace UtilsInternal
 {
     MonoObject* ExtractArrayFromList(MonoObject* obj)
     {
+#if USE_MONO
         auto klass = mono_object_get_class(obj);
         auto field = mono_class_get_field_from_name(klass, "_items");
         MonoObject* o;
         mono_field_get_value(obj, field, &o);
         return o;
+#else
+        SCRIPTING_EXPORT("FlaxEngine.Utils::Internal_ExtractArrayFromList")
+        return nullptr;
+#endif
     }
 }
 
@@ -24,6 +27,7 @@ namespace DebugLogHandlerInternal
 {
     void LogWrite(LogType level, MonoString* msgObj)
     {
+        SCRIPTING_EXPORT("FlaxEngine.DebugLogHandler::Internal_LogWrite")
         StringView msg;
         MUtils::ToString(msgObj, msg);
         Log::Logger::Write(level, msg);
@@ -31,6 +35,8 @@ namespace DebugLogHandlerInternal
 
     void Log(LogType level, MonoString* msgObj, ScriptingObject* obj, MonoString* stackTrace)
     {
+        SCRIPTING_EXPORT("FlaxEngine.DebugLogHandler::Internal_Log")
+
         if (msgObj == nullptr)
             return;
 
@@ -45,8 +51,11 @@ namespace DebugLogHandlerInternal
         Log::Logger::Write(level, msg);
     }
 
+
     void LogException(MonoException* exception, ScriptingObject* obj)
     {
+        SCRIPTING_EXPORT("FlaxEngine.DebugLogHandler::Internal_LogException")
+#if USE_MONO
         if (exception == nullptr)
             return;
 
@@ -57,13 +66,16 @@ namespace DebugLogHandlerInternal
         // Print exception including inner exceptions
         // TODO: maybe option for build to threat warnings and errors as fatal errors?
         ex.Log(LogType::Warning, objName.GetText());
+#endif
     }
+
 }
 
 namespace FlaxLogWriterInternal
 {
     void WriteStringToLog(MonoString* msgObj)
     {
+        SCRIPTING_EXPORT("FlaxEngine.FlaxLogWriter::Internal_WriteStringToLog")
         if (msgObj == nullptr)
             return;
         StringView msg;
@@ -71,8 +83,6 @@ namespace FlaxLogWriterInternal
         LOG_STR(Info, msg);
     }
 }
-
-#endif
 
 void registerFlaxEngineInternalCalls()
 {

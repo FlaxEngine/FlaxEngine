@@ -5,6 +5,7 @@ jobs:
 
   # Editor
   editor-linux:
+    if: ${{ false }}
     name: Editor (Linux, Development x64)
     runs-on: "ubuntu-20.04"
     steps:
@@ -28,6 +29,7 @@ jobs:
 
   # Game
   game-linux:
+    if: ${{ false }}
     name: Game (Linux, Release x64)
     runs-on: "ubuntu-20.04"
     steps:

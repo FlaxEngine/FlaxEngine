@@ -4,11 +4,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+#if FLAX_EDITOR
 using FlaxEditor.Scripting;
+using FlaxEditor.Utilities;
+#endif
 using FlaxEngine;
 using Newtonsoft.Json;
 
-namespace FlaxEditor.Utilities
+namespace FlaxEngine.Utilities
 {
     /// <summary>
     /// Editor utilities and helper functions for Variant type.
@@ -76,6 +79,7 @@ namespace FlaxEditor.Utilities
 #endif
         }
 
+#if FLAX_EDITOR
         internal static VariantType ToVariantType(this Type type)
         {
             VariantType variantType;
@@ -107,7 +111,9 @@ namespace FlaxEditor.Utilities
                 variantType = VariantType.Pointer;
             else if (type == typeof(string))
                 variantType = VariantType.String;
-            else if (type == typeof(Type) || type == typeof(ScriptType))
+            else if (type == typeof(Type))
+                variantType = VariantType.Typename;
+            else if (type == typeof(ScriptType))
                 variantType = VariantType.Typename;
             else if (typeof(Asset).IsAssignableFrom(type))
                 variantType = VariantType.Asset;
@@ -1286,5 +1292,6 @@ namespace FlaxEditor.Utilities
 
             stream.WriteEndObject();
         }
+#endif
     }
 }

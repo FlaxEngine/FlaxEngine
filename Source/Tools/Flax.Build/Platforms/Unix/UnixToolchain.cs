@@ -7,6 +7,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
+using Task = Flax.Build.Graph.Task;
 
 namespace Flax.Build.Platforms
 {

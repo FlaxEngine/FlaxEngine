@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using FlaxEngine;
 
 namespace FlaxEditor.Content.Settings
@@ -562,8 +563,8 @@ namespace FlaxEditor.Content.Settings
         /// <summary>
         /// Loads the current game settings asset and applies it to the engine runtime configuration.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void Apply();
+        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Content.Settings.GameSettings::Apply")]
+        public static partial void Apply();
 #endif
     }
 }

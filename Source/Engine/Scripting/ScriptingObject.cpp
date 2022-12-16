@@ -68,9 +68,13 @@ ScriptingObject* ScriptingObject::NewObject(const ScriptingTypeHandle& typeHandl
 
 MObject* ScriptingObject::GetManagedInstance() const
 {
+#if USE_NETCORE
+    const gchandle handle = Platform::AtomicRead((int64*)&_gcHandle);
+#elif USE_MONO
+    const gchandle handle = Platform::AtomicRead((int32*)&_gcHandle);
+#endif
 #if USE_MONO
-    const int32 handle = Platform::AtomicRead((int32*)&_gcHandle);
-    return handle ? mono_gchandle_get_target(handle) : nullptr;
+    return handle ? MUtils::GetGCHandleTarget(handle) : nullptr;
 #else
     return nullptr;
 #endif
@@ -211,7 +215,7 @@ void ScriptingObject::OnManagedInstanceDeleted()
     if (_gcHandle)
     {
 #if USE_MONO
-        mono_gchandle_free(_gcHandle);
+        MUtils::FreeGCHandle(_gcHandle);
 #endif
         _gcHandle = 0;
     }
@@ -236,10 +240,16 @@ bool ScriptingObject::CreateManaged()
     if (!managedInstance)
         return true;
 
-    // Prevent form object GC destruction
-    auto handle = mono_gchandle_new(managedInstance, false);
+    // Prevent from object GC destruction
+#if USE_NETCORE
+    auto handle = (gchandle)managedInstance;
+    auto oldHandle = Platform::InterlockedCompareExchange((int64*)&_gcHandle, *(int64*)&handle, 0);
+    if (*(uint64*)&oldHandle != 0)
+#else
+    auto handle = MUtils::NewGCHandle(managedInstance, false);
     auto oldHandle = Platform::InterlockedCompareExchange((int32*)&_gcHandle, *(int32*)&handle, 0);
     if (*(uint32*)&oldHandle != 0)
+#endif
     {
         // Other thread already created the object before
         if (const auto monoClass = GetClass())
@@ -252,7 +262,7 @@ bool ScriptingObject::CreateManaged()
                 monoUnmanagedPtrField->SetValue(managedInstance, &param);
             }
         }
-        mono_gchandle_free(handle);
+        MUtils::FreeGCHandle(handle);
         return true;
     }
 #endif
@@ -337,7 +347,7 @@ void ScriptingObject::DestroyManaged()
     // Clear the handle
     if (_gcHandle)
     {
-        mono_gchandle_free(_gcHandle);
+        MUtils::FreeGCHandle(_gcHandle);
         _gcHandle = 0;
     }
 #else
@@ -448,9 +458,15 @@ bool ManagedScriptingObject::CreateManaged()
         return true;
 
     // Cache the GC handle to the object (used to track the target object because it can be moved in a memory)
-    auto handle = mono_gchandle_new_weakref(managedInstance, false);
+#if USE_NETCORE
+    auto handle = (gchandle)managedInstance;
+    auto oldHandle = Platform::InterlockedCompareExchange((int64*)&_gcHandle, *(int64*)&handle, 0);
+    if (*(uint64*)&oldHandle != 0)
+#else
+    auto handle = MUtils::NewGCHandleWeakref(managedInstance, false);
     auto oldHandle = Platform::InterlockedCompareExchange((int32*)&_gcHandle, *(int32*)&handle, 0);
     if (*(uint32*)&oldHandle != 0)
+#endif
     {
         // Other thread already created the object before
         if (const auto monoClass = GetClass())
@@ -463,7 +479,7 @@ bool ManagedScriptingObject::CreateManaged()
                 monoUnmanagedPtrField->SetValue(managedInstance, &param);
             }
         }
-        mono_gchandle_free(handle);
+        MUtils::FreeGCHandle(handle);
         return true;
     }
 #endif
@@ -487,6 +503,7 @@ public:
 
     static MonoObject* Create1(MonoReflectionType* type)
     {
+        SCRIPTING_EXPORT("FlaxEngine.Object::Internal_Create1")
         // Peek class for that type (handle generic class cases)
         if (!type)
             DebugLog::ThrowArgumentNull("type");
@@ -550,6 +567,7 @@ public:
 
     static MonoObject* Create2(MonoString* typeNameObj)
     {
+        SCRIPTING_EXPORT("FlaxEngine.Object::Internal_Create2")
         // Get typename
         if (typeNameObj == nullptr)
             DebugLog::ThrowArgumentNull("typeName");
@@ -587,6 +605,7 @@ public:
 
     static void ManagedInstanceCreated(MonoObject* managedInstance)
     {
+        SCRIPTING_EXPORT("FlaxEngine.Object::Internal_ManagedInstanceCreated")
         MonoClass* typeClass = mono_object_get_class(managedInstance);
 
         // Get the assembly with that class
@@ -625,12 +644,20 @@ public:
         if (auto* managedScriptingObject = dynamic_cast<ManagedScriptingObject*>(obj))
         {
             // Managed
-            managedScriptingObject->_gcHandle = mono_gchandle_new_weakref(managedInstance, false);
+#if USE_NETCORE
+            managedScriptingObject->_gcHandle = (gchandle)managedInstance;
+#else
+            managedScriptingObject->_gcHandle = MUtils::NewGCHandleWeakref(managedInstance, false);
+#endif
         }
         else
         {
             // Persistent
-            obj->_gcHandle = mono_gchandle_new(managedInstance, false);
+#if USE_NETCORE
+            obj->_gcHandle = (gchandle)managedInstance;
+#else
+            obj->_gcHandle = MUtils::NewGCHandle(managedInstance, false);
+#endif
         }
 
         MClass* monoClass = obj->GetClass();
@@ -657,6 +684,7 @@ public:
 
     static void Destroy(ScriptingObject* obj, float timeLeft)
     {
+        SCRIPTING_EXPORT("FlaxEngine.Object::Internal_Destroy")
         // Use scaled game time for removing actors/scripts by the user (maybe expose it to the api?)
         const bool useGameTime = timeLeft > ZeroTolerance;
 
@@ -666,12 +694,14 @@ public:
 
     static MonoString* GetTypeName(ScriptingObject* obj)
     {
+        SCRIPTING_EXPORT("FlaxEngine.Object::Internal_GetTypeName")
         INTERNAL_CALL_CHECK_RETURN(obj, nullptr);
         return MUtils::ToString(obj->GetType().Fullname);
     }
 
     static MonoObject* FindObject(Guid* id, MonoReflectionType* type)
     {
+        SCRIPTING_EXPORT("FlaxEngine.Object::Internal_FindObject")
         if (!id->IsValid())
             return nullptr;
         auto klass = MUtils::GetClass(type);
@@ -701,6 +731,7 @@ public:
 
     static MonoObject* TryFindObject(Guid* id, MonoReflectionType* type)
     {
+        SCRIPTING_EXPORT("FlaxEngine.Object::Internal_TryFindObject")
         ScriptingObject* obj = Scripting::TryFindObject(*id);
         if (obj && !obj->Is(MUtils::GetClass(type)))
             obj = nullptr;
@@ -709,12 +740,14 @@ public:
 
     static void ChangeID(ScriptingObject* obj, Guid* id)
     {
+        SCRIPTING_EXPORT("FlaxEngine.Object::Internal_ChangeID")
         INTERNAL_CALL_CHECK(obj);
         obj->ChangeID(*id);
     }
 
     static void* GetUnmanagedInterface(ScriptingObject* obj, MonoReflectionType* type)
     {
+        SCRIPTING_EXPORT("FlaxEngine.Object::Internal_GetUnmanagedInterface")
         if (obj && type)
         {
             auto typeClass = MUtils::GetClass(type);

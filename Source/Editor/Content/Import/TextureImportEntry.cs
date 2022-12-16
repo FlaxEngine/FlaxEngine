@@ -1,10 +1,12 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using FlaxEngine;
 
 // ReSharper disable InconsistentNaming
@@ -297,6 +299,7 @@ namespace FlaxEditor.Content.Import
         public List<SpriteInfo> Sprites = new List<SpriteInfo>();
 
         [StructLayout(LayoutKind.Sequential)]
+        [NativeMarshalling(typeof(InternalOptionsMarshaler))]
         internal struct InternalOptions
         {
             public TextureFormatType Type;
@@ -316,6 +319,85 @@ namespace FlaxEditor.Content.Import
             public Int2 Size;
             public Rectangle[] SpriteAreas;
             public string[] SpriteNames;
+        }
+
+        [CustomMarshaller(typeof(InternalOptions), MarshalMode.Default, typeof(InternalOptionsMarshaler))]
+        internal static class InternalOptionsMarshaler
+        {
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct InternalOptionsNative
+            {
+                public byte Type;
+                public byte IsAtlas;
+                public byte NeverStream;
+                public byte Compress;
+                public byte IndependentChannels;
+                public byte sRGB;
+                public byte GenerateMipMaps;
+                public byte FlipY;
+                public byte Resize;
+                public byte PreserveAlphaCoverage;
+                public float PreserveAlphaCoverageReference;
+                public float Scale;
+                public int MaxSize;
+                public int TextureGroup;
+                public Int2 Size;
+                public IntPtr SpriteAreas;
+                public IntPtr SpriteNames;
+            }
+
+            internal static InternalOptions ConvertToManaged(InternalOptionsNative unmanaged) => ToManaged(unmanaged);
+            internal static InternalOptionsNative ConvertToUnmanaged(InternalOptions managed) => ToNative(managed);
+
+            internal static InternalOptions ToManaged(InternalOptionsNative managed)
+            {
+                return new InternalOptions()
+                {
+                    Type = (TextureFormatType)managed.Type,
+                    IsAtlas = managed.IsAtlas,
+                    NeverStream = managed.NeverStream,
+                    Compress = managed.Compress,
+                    IndependentChannels = managed.IndependentChannels,
+                    sRGB = managed.sRGB,
+                    GenerateMipMaps = managed.GenerateMipMaps,
+                    FlipY = managed.FlipY,
+                    Resize = managed.Resize,
+                    PreserveAlphaCoverage = managed.PreserveAlphaCoverage,
+                    PreserveAlphaCoverageReference = managed.PreserveAlphaCoverageReference,
+                    Scale = managed.Scale,
+                    MaxSize = managed.MaxSize,
+                    TextureGroup = managed.TextureGroup,
+                    Size = managed.Size,
+                    SpriteAreas = managed.SpriteAreas != IntPtr.Zero ? NativeInterop.GCHandleArrayToManagedArray<Rectangle>((ManagedArray)GCHandle.FromIntPtr(managed.SpriteAreas).Target) : null,
+                    SpriteNames = managed.SpriteNames != IntPtr.Zero ? NativeInterop.GCHandleArrayToManagedArray<string>((ManagedArray)GCHandle.FromIntPtr(managed.SpriteNames).Target) : null,
+                };
+            }
+            internal static InternalOptionsNative ToNative(InternalOptions managed)
+            {
+                return new InternalOptionsNative()
+                {
+                    Type = (byte)managed.Type,
+                    IsAtlas = managed.IsAtlas,
+                    NeverStream = managed.NeverStream,
+                    Compress = managed.Compress,
+                    IndependentChannels = managed.IndependentChannels,
+                    sRGB = managed.sRGB,
+                    GenerateMipMaps = managed.GenerateMipMaps,
+                    FlipY = managed.FlipY,
+                    Resize = managed.Resize,
+                    PreserveAlphaCoverage = managed.PreserveAlphaCoverage,
+                    PreserveAlphaCoverageReference = managed.PreserveAlphaCoverageReference,
+                    Scale = managed.Scale,
+                    MaxSize = managed.MaxSize,
+                    TextureGroup = managed.TextureGroup,
+                    Size = managed.Size,
+                    SpriteAreas = managed.SpriteAreas?.Length > 0 ? GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.Get(NativeInterop.ManagedArrayToGCHandleArray(managed.SpriteAreas)))) : IntPtr.Zero,
+                    SpriteNames = managed.SpriteNames?.Length > 0 ? GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.Get(NativeInterop.ManagedArrayToGCHandleArray(managed.SpriteNames)))) : IntPtr.Zero,
+                };
+            }
+            internal static void Free(InternalOptionsNative unmanaged)
+            {
+            }
         }
 
         internal void ToInternal(out InternalOptions options)
@@ -406,7 +488,7 @@ namespace FlaxEditor.Content.Import
     /// Texture asset import entry.
     /// </summary>
     /// <seealso cref="AssetImportEntry" />
-    public class TextureImportEntry : AssetImportEntry
+    public partial class TextureImportEntry : AssetImportEntry
     {
         private TextureImportSettings _settings = new TextureImportSettings();
 
@@ -509,8 +591,9 @@ namespace FlaxEditor.Content.Import
 
         #region Internal Calls
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_GetTextureImportOptions(string path, out TextureImportSettings.InternalOptions result);
+        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Content.Import.TextureImportEntry::Internal_GetTextureImportOptions", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool Internal_GetTextureImportOptions(string path, out TextureImportSettings.InternalOptions result);
 
         #endregion
     }

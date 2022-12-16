@@ -64,8 +64,7 @@ namespace FlaxEngine
         /// <param name="rect">The rectangle to draw.</param>
         public static void DrawSprite(SpriteHandle spriteHandle, Rectangle rect)
         {
-            var color = Color.White;
-            Internal_DrawSprite(ref spriteHandle, ref rect, ref color);
+            DrawSprite(spriteHandle, rect, Color.White);
         }
 
         /// <summary>
@@ -86,8 +85,7 @@ namespace FlaxEngine
         /// <param name="rect">The rectangle to draw.</param>
         public static void DrawSpritePoint(SpriteHandle spriteHandle, Rectangle rect)
         {
-            var color = Color.White;
-            Internal_DrawSpritePoint(ref spriteHandle, ref rect, ref color);
+            DrawSpritePoint(spriteHandle, rect, Color.White);
         }
 
         /// <summary>

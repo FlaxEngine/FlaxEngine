@@ -24,7 +24,7 @@ namespace FlaxEditor
 
             var type = plugin.GetType();
             var assembly = type.Assembly;
-            var assemblyPath = assembly.Location;
+            var assemblyPath = Utils.GetAssemblyLocation(assembly);
             var assemblyName = assembly.GetName().Name;
             var dotEditorPos = assemblyName.LastIndexOf(".Editor", StringComparison.OrdinalIgnoreCase);
             if (dotEditorPos != -1)

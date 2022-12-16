@@ -24,6 +24,10 @@
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Content/Asset.h"
 
+#if USE_NETCORE
+#include "Engine/Scripting/DotNet/CoreCLR.h"
+#endif
+
 #if USE_MONO
 
 // Inlined mono private types to access MonoType internals
@@ -356,11 +360,17 @@ Variant MUtils::UnboxVariant(MonoObject* value)
         return Variant::Null;
     const auto& stdTypes = *StdTypesContainer::Instance();
     const auto klass = mono_object_get_class(value);
+
+    MonoType* monoType = mono_class_get_type(klass);
+    const MonoTypeEnum monoTypeId = (MonoTypeEnum)mono_type_get_type(monoType);
+#if USE_NETCORE
+    void* unboxed = mono_object_unbox(value);
+#else
     void* unboxed = (byte*)value + sizeof(MonoObject);
-    const MonoType* monoType = mono_class_get_type(klass);
+#endif
 
     // Fast type detection for in-built types
-    switch (monoType->type)
+    switch (monoTypeId)
     {
     case MONO_TYPE_VOID:
         return Variant(VariantType(VariantType::Void));
@@ -660,7 +670,11 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
     case VariantType::Guid:
         return mono_value_box(mono_domain_get(), stdTypes.GuidClass->GetNative(), (void*)&value.AsData);
     case VariantType::String:
+#if USE_NETCORE
         return (MonoObject*)MUtils::ToString((StringView)value);
+#else
+        return (MonoObject*)MUtils::ToString((StringView)value);
+#endif
     case VariantType::Quaternion:
         return mono_value_box(mono_domain_get(), stdTypes.QuaternionClass->GetNative(), (void*)&value.AsData);
     case VariantType::BoundingSphere:
@@ -844,7 +858,11 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
         return nullptr;
     }
     case VariantType::ManagedObject:
-        return value.AsUint ? mono_gchandle_get_target(value.AsUint) : nullptr;
+#if USE_NETCORE
+        return value.AsUint64 ? MUtils::GetGCHandleTarget(value.AsUint64) : nullptr;
+#else
+        return value.AsUint ? MUtils::GetGCHandleTarget(value.AsUint) : nullptr;
+#endif
     case VariantType::Typename:
     {
         const auto klass = Scripting::FindClassNative((StringAnsiView)value);
@@ -869,6 +887,9 @@ void MUtils::GetClassFullname(MonoObject* obj, MString& fullname)
 
 void MUtils::GetClassFullname(MonoClass* monoClass, MString& fullname)
 {
+#if USE_NETCORE
+    fullname = CoreCLR::GetClassFullname(monoClass);
+#else
     static MString plusStr("+");
     static MString dotStr(".");
 
@@ -906,6 +927,7 @@ void MUtils::GetClassFullname(MonoClass* monoClass, MString& fullname)
         }
         fullname += ']';
     }
+#endif
 }
 
 void MUtils::GetClassFullname(MonoReflectionType* type, MString& fullname)
@@ -1138,7 +1160,8 @@ BytesContainer MUtils::LinkArray(MonoArray* arrayObj)
 void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& failed)
 {
     // Convert Variant into matching managed type and return pointer to data for the method invocation
-    switch (type.GetNative()->type)
+    MonoTypeEnum monoType = (MonoTypeEnum)mono_type_get_type(type.GetNative());
+    switch (monoType)
     {
     case MONO_TYPE_BOOLEAN:
         if (value.Type.Type != VariantType::Bool)
@@ -1183,7 +1206,11 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
         return MUtils::ToString((StringView)value);
     case MONO_TYPE_VALUETYPE:
     {
+#if !USE_NETCORE
         MonoClass* klass = type.GetNative()->data.klass;
+#else
+        MonoClass* klass = mono_type_get_class(type.GetNative());
+#endif
         if (mono_class_is_enum(klass))
         {
             if (value.Type.Type != VariantType::Enum)
@@ -1305,15 +1332,52 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
 
 MonoObject* MUtils::ToManaged(const Version& value)
 {
+#if USE_NETCORE
+    auto scriptingClass = Scripting::GetStaticClass();
+    CHECK_RETURN(scriptingClass, nullptr);
+    auto versionToManaged = scriptingClass->GetMethod("VersionToManaged", 4);
+    CHECK_RETURN(versionToManaged, nullptr);
+
+    int major = value.Major();
+    int minor = value.Minor();
+    int build = value.Build();
+    int revision = value.Revision();
+
+    void* params[4];
+    params[0] = &major;
+    params[1] = &minor;
+    params[2] = &build;
+    params[3] = &revision;
+    auto obj = versionToManaged->Invoke(nullptr, params, nullptr);
+#else
     auto obj = mono_object_new(mono_domain_get(), Scripting::FindClassNative("System.Version"));
     Platform::MemoryCopy((byte*)obj + sizeof(MonoObject), &value, sizeof(Version));
+#endif
     return obj;
 }
 
 Version MUtils::ToNative(MonoObject* value)
 {
     if (value)
+#if USE_NETCORE
+    {
+        auto ver = Version();
+
+        auto scriptingClass = Scripting::GetStaticClass();
+        CHECK_RETURN(scriptingClass, ver);
+        auto versionToNative = scriptingClass->GetMethod("VersionToNative", 2);
+        CHECK_RETURN(versionToNative, ver);
+
+        void* params[2];
+        params[0] = value;
+        params[1] = &ver;
+        versionToNative->Invoke(nullptr, params, nullptr);
+        return ver;
+    }
+
+#else
         return *(Version*)((byte*)value + sizeof(MonoObject));
+#endif
     return Version();
 }
 

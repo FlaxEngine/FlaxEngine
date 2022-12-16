@@ -1,8 +1,10 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using FlaxEngine;
 
 namespace FlaxEditor.Content.Import
@@ -355,6 +357,7 @@ namespace FlaxEditor.Content.Import
         private bool ShowAnimation => Type == ModelType.Animation;
 
         [StructLayout(LayoutKind.Sequential)]
+        [NativeMarshalling(typeof(InternalOptionsMarshaler))]
         internal struct InternalOptions
         {
             public ModelType Type;
@@ -408,6 +411,162 @@ namespace FlaxEditor.Content.Import
             // Splitting
             public byte SplitObjects;
             public int ObjectIndex;
+        }
+
+        [CustomMarshaller(typeof(InternalOptions), MarshalMode.Default, typeof(InternalOptionsMarshaler))]
+        internal static class InternalOptionsMarshaler
+        {
+            [Unmanaged]
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct InternalOptionsNative
+            {
+                public int Type;
+
+                // Geometry
+                public byte CalculateNormals;
+                public float SmoothingNormalsAngle;
+                public byte FlipNormals;
+                public float SmoothingTangentsAngle;
+                public byte CalculateTangents;
+                public byte OptimizeMeshes;
+                public byte MergeMeshes;
+                public byte ImportLODs;
+                public byte ImportVertexColors;
+                public byte ImportBlendShapes;
+                public int LightmapUVsSource;
+                //[MarshalAs(UnmanagedType.LPWStr)]
+                public IntPtr CollisionMeshesPrefix;
+
+                // Transform
+                public float Scale;
+                public Quaternion Rotation;
+                public Float3 Translation;
+                public byte CenterGeometry;
+
+                // Animation
+                public int Duration;
+                public float FramesRangeStart;
+                public float FramesRangeEnd;
+                public float DefaultFrameRate;
+                public float SamplingRate;
+                public byte SkipEmptyCurves;
+                public byte OptimizeKeyframes;
+                public byte EnableRootMotion;
+                //[MarshalAs(UnmanagedType.LPWStr)]
+                public IntPtr RootNodeName;
+
+                // Level Of Detail
+                public byte GenerateLODs;
+                public int BaseLOD;
+                public int LODCount;
+                public float TriangleReduction;
+
+                // Misc
+                public byte ImportMaterials;
+                public byte ImportTextures;
+                public byte RestoreMaterialsOnReimport;
+
+                // SDF
+                public byte GenerateSDF;
+                public float SDFResolution;
+
+                // Splitting
+                public byte SplitObjects;
+                public int ObjectIndex;
+            }
+
+            internal static InternalOptions ConvertToManaged(InternalOptionsNative unmanaged) => ToManaged(unmanaged);
+            internal static InternalOptionsNative ConvertToUnmanaged(InternalOptions managed) => ToNative(managed);
+
+            internal static InternalOptions ToManaged(InternalOptionsNative managed)
+            {
+                return new InternalOptions()
+                {
+                    Type = (ModelType)managed.Type,
+                    CalculateNormals = managed.CalculateNormals,
+                    SmoothingNormalsAngle = managed.SmoothingNormalsAngle,
+                    FlipNormals = managed.FlipNormals,
+                    SmoothingTangentsAngle = managed.SmoothingTangentsAngle,
+                    CalculateTangents = managed.CalculateTangents,
+                    OptimizeMeshes = managed.OptimizeMeshes,
+                    MergeMeshes = managed.MergeMeshes,
+                    ImportLODs = managed.ImportLODs,
+                    ImportVertexColors = managed.ImportVertexColors,
+                    ImportBlendShapes = managed.ImportBlendShapes,
+                    LightmapUVsSource = (ModelLightmapUVsSource)managed.LightmapUVsSource,
+                    CollisionMeshesPrefix = ManagedString.ToManaged(managed.CollisionMeshesPrefix),
+                    Scale = managed.Scale,
+                    Rotation = managed.Rotation,
+                    Translation = managed.Translation,
+                    CenterGeometry = managed.CenterGeometry,
+                    Duration = (AnimationDuration)managed.Duration,
+                    FramesRangeStart = managed.FramesRangeStart,
+                    FramesRangeEnd = managed.FramesRangeEnd,
+                    DefaultFrameRate = managed.DefaultFrameRate,
+                    SamplingRate = managed.SamplingRate,
+                    SkipEmptyCurves = managed.SkipEmptyCurves,
+                    OptimizeKeyframes = managed.OptimizeKeyframes,
+                    EnableRootMotion = managed.EnableRootMotion,
+                    RootNodeName = ManagedString.ToManaged(managed.RootNodeName),
+                    GenerateLODs = managed.GenerateLODs,
+                    BaseLOD = managed.BaseLOD,
+                    LODCount = managed.LODCount,
+                    TriangleReduction = managed.TriangleReduction,
+                    ImportMaterials = managed.ImportMaterials,
+                    ImportTextures = managed.ImportTextures,
+                    RestoreMaterialsOnReimport = managed.RestoreMaterialsOnReimport,
+                    GenerateSDF = managed.GenerateSDF,
+                    SDFResolution = managed.SDFResolution,
+                    SplitObjects = managed.SplitObjects,
+                    ObjectIndex = managed.ObjectIndex,
+                };
+            }
+            internal static InternalOptionsNative ToNative(InternalOptions managed)
+            {
+                return new InternalOptionsNative()
+                {
+                    Type = (int)managed.Type,
+                    CalculateNormals = managed.CalculateNormals,
+                    SmoothingNormalsAngle = managed.SmoothingNormalsAngle,
+                    FlipNormals = managed.FlipNormals,
+                    SmoothingTangentsAngle = managed.SmoothingTangentsAngle,
+                    CalculateTangents = managed.CalculateTangents,
+                    OptimizeMeshes = managed.OptimizeMeshes,
+                    MergeMeshes = managed.MergeMeshes,
+                    ImportLODs = managed.ImportLODs,
+                    ImportVertexColors = managed.ImportVertexColors,
+                    ImportBlendShapes = managed.ImportBlendShapes,
+                    LightmapUVsSource = (int)managed.LightmapUVsSource,
+                    CollisionMeshesPrefix = ManagedString.ToNative(managed.CollisionMeshesPrefix),
+                    Scale = managed.Scale,
+                    Rotation = managed.Rotation,
+                    Translation = managed.Translation,
+                    CenterGeometry = managed.CenterGeometry,
+                    Duration = (int)managed.Duration,
+                    FramesRangeStart = managed.FramesRangeStart,
+                    FramesRangeEnd = managed.FramesRangeEnd,
+                    DefaultFrameRate = managed.DefaultFrameRate,
+                    SamplingRate = managed.SamplingRate,
+                    SkipEmptyCurves = managed.SkipEmptyCurves,
+                    OptimizeKeyframes = managed.OptimizeKeyframes,
+                    EnableRootMotion = managed.EnableRootMotion,
+                    RootNodeName = ManagedString.ToNative(managed.RootNodeName),
+                    GenerateLODs = managed.GenerateLODs,
+                    BaseLOD = managed.BaseLOD,
+                    LODCount = managed.LODCount,
+                    TriangleReduction = managed.TriangleReduction,
+                    ImportMaterials = managed.ImportMaterials,
+                    ImportTextures = managed.ImportTextures,
+                    RestoreMaterialsOnReimport = managed.RestoreMaterialsOnReimport,
+                    GenerateSDF = managed.GenerateSDF,
+                    SDFResolution = managed.SDFResolution,
+                    SplitObjects = managed.SplitObjects,
+                    ObjectIndex = managed.ObjectIndex,
+                };
+            }
+            internal static void Free(InternalOptionsNative unmanaged)
+            {
+            }
         }
 
         internal void ToInternal(out InternalOptions options)
@@ -511,7 +670,7 @@ namespace FlaxEditor.Content.Import
     /// Model asset import entry.
     /// </summary>
     /// <seealso cref="AssetImportEntry" />
-    public class ModelImportEntry : AssetImportEntry
+    public partial class ModelImportEntry : AssetImportEntry
     {
         private ModelImportSettings _settings = new ModelImportSettings();
 
@@ -548,8 +707,8 @@ namespace FlaxEditor.Content.Import
 
         #region Internal Calls
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_GetModelImportOptions(string path, out ModelImportSettings.InternalOptions result);
+        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Content.Import.ModelImportEntry::Internal_GetModelImportOptions", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial void Internal_GetModelImportOptions(string path, out ModelImportSettings.InternalOptions result);
 
         #endregion
     }

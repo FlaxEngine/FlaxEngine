@@ -12,6 +12,10 @@
 #include "Engine/Platform/Thread.h"
 #include "Engine/Scripting/MException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Platform/FileSystem.h"
+#if USE_NETCORE
+#include "Engine/Scripting/DotNet/CoreCLR.h"
+#endif
 #if USE_MONO
 #ifdef USE_MONO_AOT_MODULE
 #include "Engine/Core/Types/TimeSpan.h"
@@ -52,6 +56,9 @@ MDomain* MCore::GetActiveDomain()
 
 MDomain* MCore::CreateDomain(const MString& domainName)
 {
+#if USE_NETCORE
+    return nullptr;
+#else
 #if USE_MONO_AOT
     LOG(Fatal, "Scripts can run only in single domain mode with AOT mode enabled.");
     return nullptr;
@@ -74,10 +81,13 @@ MDomain* MCore::CreateDomain(const MString& domainName)
 #endif
     MDomains.Add(domain);
     return domain;
+#endif
 }
 
 void MCore::UnloadDomain(const MString& domainName)
 {
+#if USE_NETCORE
+#else
     int32 i = 0;
     for (; i < MDomains.Count(); i++)
     {
@@ -103,9 +113,48 @@ void MCore::UnloadDomain(const MString& domainName)
 #endif
     Delete(domain);
     MDomains.RemoveAtKeepOrder(i);
+#endif
 }
 
-#if USE_MONO
+#if USE_NETCORE
+bool MCore::LoadEngine()
+{
+    const String csharpLibraryPath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.dll");
+    const String csharpRuntimeConfigPath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.runtimeconfig.json");
+    if (!FileSystem::FileExists(csharpLibraryPath))
+        LOG(Fatal, "Failed to initialize managed runtime, FlaxEngine.CSharp.dll is missing.");
+    if (!FileSystem::FileExists(csharpRuntimeConfigPath))
+        LOG(Fatal, "Failed to initialize managed runtime, FlaxEngine.CSharp.runtimeconfig.json is missing.");
+
+    // Locate hostfxr and load it
+    if (!CoreCLR::LoadHostfxr(csharpLibraryPath))
+        return false;
+
+    // Initialize hosting component
+    if (!CoreCLR::InitHostfxr(csharpRuntimeConfigPath, csharpLibraryPath))
+        return false;
+
+    // Prepare managed side
+    const String hostExecutable = Platform::GetExecutableFilePath();
+    CoreCLR::CallStaticMethodInternal<void, const Char*>(TEXT("Init"), hostExecutable.Get());
+
+    MRootDomain = New<MDomain>("Root");
+    MDomains.Add(MRootDomain);
+
+    char* buildInfo = mono_get_runtime_build_info();
+    LOG(Info, ".NET runtime version: {0}", String(buildInfo));
+    mono_free(buildInfo);
+
+    return false;
+}
+
+void MCore::UnloadEngine()
+{
+    CoreCLR::CallStaticMethodInternal<void>(TEXT("Exit"));
+    MDomains.ClearDelete();
+    MRootDomain = nullptr;
+}
+#elif USE_MONO
 
 #if 0
 
@@ -518,7 +567,7 @@ bool MCore::LoadEngine()
     }
 #endif
 
-    // Init Mono
+    // Init managed runtime
 #if PLATFORM_ANDROID
     const char* monoVersion = "mobile";
 #else
@@ -530,6 +579,7 @@ bool MCore::LoadEngine()
     MRootDomain->_monoDomain = monoRootDomain;
     MDomains.Add(MRootDomain);
 
+#if !USE_NETCORE
     auto exePath = Platform::GetExecutableFilePath();
     auto configDir = StringUtils::GetDirectoryName(exePath).ToStringAnsi();
     auto configFilename = StringUtils::GetFileName(exePath).ToStringAnsi() + ".config";
@@ -542,10 +592,11 @@ bool MCore::LoadEngine()
 #endif
     mono_domain_set_config(monoRootDomain, configDir.Get(), configFilename.Get());
     mono_thread_set_main(mono_thread_current());
+#endif
 
     // Info
     char* buildInfo = mono_get_runtime_build_info();
-    LOG(Info, "Mono version: {0}", String(buildInfo));
+    LOG(Info, "Mono runtime version: {0}", String(buildInfo));
     mono_free(buildInfo);
 
     return false;
@@ -672,7 +723,7 @@ void MCore::GC::WaitForPendingFinalizers()
 #endif
 }
 
-#if USE_MONO && PLATFORM_WIN32 && !USE_MONO_DYNAMIC_LIB
+#if USE_MONO && PLATFORM_WIN32 && !USE_MONO_DYNAMIC_LIB && !USE_NETCORE
 
 // Export Mono functions
 #pragma comment(linker, "/export:mono_add_internal_call")

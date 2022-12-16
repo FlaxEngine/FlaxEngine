@@ -110,6 +110,7 @@ Float2 MacUtils::GetScreensOrigin()
 
 void MacClipboard::Clear()
 {
+    SCRIPTING_EXPORT("FlaxEngine.Clipboard::Internal_Clear");
     NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
     [pasteboard clearContents];
 }

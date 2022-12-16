@@ -6,12 +6,19 @@ jobs:
   # Editor
   editor-windows:
     name: Editor (Windows, Development x64)
-    runs-on: "windows-2019"
+    runs-on: "windows-2022"
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+    - name: Check .NET versions
+      run: |
+        dotnet --list-sdks
     - name: Checkout LFS
       run: |
         git lfs version
@@ -23,12 +30,16 @@ jobs:
   # Game
   game-windows:
     name: Game (Windows, Release x64)
-    runs-on: "windows-2019"
+    runs-on: "windows-2022"
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
     - name: Checkout LFS
       run: |
         git lfs version

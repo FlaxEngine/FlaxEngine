@@ -19,16 +19,16 @@ namespace FlaxEngine
             {
                 get
                 {
-                    fixed (char* name = &Name0)
+                    fixed (short* name = Name0)
                     {
-                        return new string(name);
+                        return new string((char*)name);
                     }
                 }
             }
 
             internal unsafe bool NameStartsWith(string prefix)
             {
-                fixed (char* name = &Name0)
+                fixed (short* name = Name0)
                 {
                     fixed (char* p = prefix)
                     {

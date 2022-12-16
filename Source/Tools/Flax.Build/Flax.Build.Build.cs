@@ -19,7 +19,7 @@ public class FlaxBuildTarget : Target
         base.Init();
 
         IsPreBuilt = false;
-        Type = TargetType.DotNet;
+        Type = TargetType.DotNetCore;
         OutputType = TargetOutputType.Library;
         Platforms = new[]
         {

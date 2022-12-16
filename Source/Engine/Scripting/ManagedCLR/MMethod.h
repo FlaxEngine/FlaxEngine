@@ -84,7 +84,7 @@ public:
     /// </summary>
     /// <remarks>
     /// This is the fastest way of calling managed code.
-    /// Get thunk from class if you want to call static method. You to call it from method of a instance wrapper to call a specific instance.
+    /// Get thunk from class if you want to call static method. You need to call it from method of a instance wrapper to call a specific instance.
     /// </remarks>
     /// <returns>The method thunk pointer.</returns>
     void* GetThunk();

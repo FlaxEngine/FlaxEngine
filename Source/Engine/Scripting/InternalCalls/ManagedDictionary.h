@@ -86,7 +86,11 @@ struct FLAXENGINE_API ManagedDictionary
         CHECK_RETURN(makeGenericMethod, nullptr);
 
         auto genericType = MUtils::GetType(StdTypesContainer::Instance()->DictionaryClass->GetNative());
+#if USE_NETCORE
+        auto genericArgs = mono_array_new(domain, mono_get_intptr_class(), 2);
+#else
         auto genericArgs = mono_array_new(domain, mono_get_object_class(), 2);
+#endif
         mono_array_set(genericArgs, MonoReflectionType*, 0, mono_type_get_object(domain, keyType));
         mono_array_set(genericArgs, MonoReflectionType*, 1, mono_type_get_object(domain, valueType));
 

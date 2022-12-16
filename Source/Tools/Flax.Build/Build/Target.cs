@@ -19,9 +19,14 @@ namespace Flax.Build
         NativeCpp,
 
         /// <summary>
-        /// The C# project.
+        /// The C# Mono project.
         /// </summary>
         DotNet,
+
+        /// <summary>
+        /// The C# .NET SDK project.
+        /// </summary>
+        DotNetCore,
     }
 
     /// <summary>
