@@ -346,6 +346,13 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
+        public override void OnMouseLeave()
+        {
+            Parent?.Focus();
+            base.OnMouseLeave();
+        }
+
+        /// <inheritdoc />
         public override void OnShowContextMenu(ContextMenu menu)
         {
             base.OnShowContextMenu(menu);
