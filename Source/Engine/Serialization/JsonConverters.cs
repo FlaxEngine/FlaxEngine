@@ -37,11 +37,7 @@ namespace FlaxEngine.Json
         {
             // Skip serialization as reference id for the root object serialization (eg. Script)
             var cache = JsonSerializer.Current.Value;
-#if !USE_NETCORE
             if (cache != null && cache.IsDuringSerialization && cache.SerializerWriter.SerializeStackSize == 0)
-#else
-            if (cache != null && cache.IsDuringSerialization)
-#endif
             {
                 return false;
             }
@@ -146,7 +142,6 @@ namespace FlaxEngine.Json
             writer.WriteEndObject();
         }
 
-#if !USE_NETCORE
         /// <inheritdoc />
         public override void WriteJsonDiff(JsonWriter writer, object value, object other, Newtonsoft.Json.JsonSerializer serializer)
         {
@@ -175,7 +170,6 @@ namespace FlaxEngine.Json
             }
             writer.WriteEndObject();
         }
-#endif
 
         /// <inheritdoc />
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
@@ -238,10 +232,8 @@ namespace FlaxEngine.Json
         /// <inheritdoc />
         public override bool CanWrite => true;
 
-#if !USE_NETCORE
         /// <inheritdoc />
         public override bool CanWriteDiff => true;
-#endif
     }
 
     /// <summary>

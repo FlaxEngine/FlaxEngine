@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -12,7 +11,7 @@ using FlaxEngine.Json.JsonCustomSerializers;
 using FlaxEngine.Utilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 
 namespace FlaxEngine.Json
 {
@@ -24,11 +23,7 @@ namespace FlaxEngine.Json
             public StringBuilder StringBuilder;
             public StringWriter StringWriter;
             public JsonTextWriter JsonWriter;
-#if !USE_NETCORE
             public JsonSerializerInternalWriter SerializerWriter;
-#else
-            public /*JsonSerializerInternalWriter*/ object SerializerWriter;
-#endif
             public UnmanagedMemoryStream MemoryStream;
             public StreamReader Reader;
             public bool IsDuringSerialization;
@@ -37,18 +32,9 @@ namespace FlaxEngine.Json
             {
                 JsonSerializer = Newtonsoft.Json.JsonSerializer.CreateDefault(settings);
                 JsonSerializer.Formatting = Formatting.Indented;
-#if USE_NETCORE
-                Type jsonSerializerInternalWriterType =
-                    typeof(Newtonsoft.Json.Serialization.IValueProvider).Assembly.GetType(
-                        "Newtonsoft.Json.Serialization.JsonSerializerInternalWriter");
-                System.Reflection.ConstructorInfo ctor = jsonSerializerInternalWriterType.GetConstructors
-                (System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)[0];
-                SerializerWriter = ctor.Invoke(new object[] { JsonSerializer });
-#else
-                SerializerWriter = new JsonSerializerInternalWriter(JsonSerializer);
-#endif
                 StringBuilder = new StringBuilder(256);
                 StringWriter = new StringWriter(StringBuilder, CultureInfo.InvariantCulture);
+                SerializerWriter = new JsonSerializerInternalWriter(JsonSerializer);
                 MemoryStream = new UnmanagedMemoryStream((byte*)0, 0);
                 Reader = new StreamReader(MemoryStream, Encoding.UTF8, false);
                 JsonWriter = new JsonTextWriter(StringWriter)
@@ -121,72 +107,7 @@ namespace FlaxEngine.Json
                 return sceneObjA.PrefabObjectID == sceneObjB.PrefabObjectID;
             }*/
 
-            // Based on Newtonsoft.Json MiscellaneousUtils-class ValueEquals-method
-            bool DefaultValueEquals(object objA_, object objB_)
-            {
-                bool IsInteger(object value)
-                {
-                    var type = value.GetType();
-                    return type == typeof(SByte) ||
-                           type == typeof(Byte) ||
-                           type == typeof(Int16) ||
-                           type == typeof(UInt16) ||
-                           type == typeof(Int32) ||
-                           type == typeof(UInt32) ||
-                           type == typeof(Int64) ||
-                           type == typeof(SByte) ||
-                           type == typeof(UInt64);
-                }
-
-                if (objA_ == objB_)
-                {
-                    return true;
-                }
-                if (objA_ == null || objB_ == null)
-                {
-                    return false;
-                }
-
-                // comparing an Int32 and Int64 both of the same value returns false
-                // make types the same then compare
-                if (objA_.GetType() != objB_.GetType())
-                {
-                    if (IsInteger(objA_) && IsInteger(objB_))
-                    {
-                        return Convert.ToDecimal(objA_, CultureInfo.CurrentCulture).Equals(Convert.ToDecimal(objB_, CultureInfo.CurrentCulture));
-                    }
-                    else if ((objA_ is double || objA_ is float || objA_ is decimal) && (objB_ is double || objB_ is float || objB_ is decimal))
-                    {
-                        return Mathd.NearEqual(Convert.ToDouble(objA_, CultureInfo.CurrentCulture), Convert.ToDouble(objB_, CultureInfo.CurrentCulture));
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-
-                // Diff on collections
-                if (objA_ is System.Collections.IList aList && objB_ is System.Collections.IList bList)
-                {
-                    if (aList.Count != bList.Count)
-                        return false;
-                }
-                if (objA_ is System.Collections.IEnumerable aEnumerable && objB_ is System.Collections.IEnumerable bEnumerable)
-                {
-                    var aEnumerator = aEnumerable.GetEnumerator();
-                    var bEnumerator = bEnumerable.GetEnumerator();
-                    while (aEnumerator.MoveNext())
-                    {
-                        if (!bEnumerator.MoveNext() || !ValueEquals(aEnumerator.Current, bEnumerator.Current))
-                            return false;
-                    }
-                    return !bEnumerator.MoveNext();
-                }
-
-                return objA_.Equals(objB_);
-            }
-
-            return /*Newtonsoft.Json.Utilities.MiscellaneousUtils.*/DefaultValueEquals(objA, objB);
+            return Newtonsoft.Json.Utilities.MiscellaneousUtils.DefaultValueEquals(objA, objB);
         }
 
         /// <summary>
@@ -203,17 +124,7 @@ namespace FlaxEngine.Json
 
             cache.StringBuilder.Clear();
             cache.IsDuringSerialization = true;
-#if !USE_NETCORE
             cache.SerializerWriter.Serialize(cache.JsonWriter, obj, type);
-#else
-            Type jsonSerializerInternalWriterType =
-                typeof(Newtonsoft.Json.Serialization.IValueProvider).Assembly.GetType(
-                    "Newtonsoft.Json.Serialization.JsonSerializerInternalWriter");
-
-            System.Reflection.MethodInfo Serialize = jsonSerializerInternalWriterType.GetMethod("Serialize",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
-            Serialize.Invoke(cache.SerializerWriter, new object[] { cache.JsonWriter, obj, type });
-#endif
 
             return cache.StringBuilder.ToString();
         }
@@ -232,17 +143,7 @@ namespace FlaxEngine.Json
 
             cache.StringBuilder.Clear();
             cache.IsDuringSerialization = true;
-#if !USE_NETCORE
             cache.SerializerWriter.Serialize(cache.JsonWriter, obj, type);
-#else
-            Type jsonSerializerInternalWriterType =
-                typeof(Newtonsoft.Json.Serialization.IValueProvider).Assembly.GetType(
-                    "Newtonsoft.Json.Serialization.JsonSerializerInternalWriter");
-
-            System.Reflection.MethodInfo Serialize = jsonSerializerInternalWriterType.GetMethod("Serialize",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
-            Serialize.Invoke(cache.SerializerWriter, new object[] { cache.JsonWriter, obj, type });
-#endif
 
             return cache.StringBuilder.ToString();
         }
@@ -256,25 +157,15 @@ namespace FlaxEngine.Json
         /// <returns>The output json string.</returns>
         public static string SerializeDiff(object obj, object other, bool isManagedOnly = false)
         {
+            Type type = obj.GetType();
             var cache = isManagedOnly ? CacheManagedOnly.Value : Cache.Value;
             Current.Value = cache;
 
             cache.StringBuilder.Clear();
             cache.IsDuringSerialization = true;
+            cache.SerializerWriter.SerializeDiff(cache.JsonWriter, obj, type, other);
 
-            JObject jObj = JObject.FromObject(obj, cache.JsonSerializer);
-            JObject jOther = JObject.FromObject(other, cache.JsonSerializer);
-            JObject diff = new JObject();
-            foreach (KeyValuePair<string, JToken> prop in jObj)
-            {
-                JProperty otherProp = jOther.Property(prop.Key);
-                if (JToken.DeepEquals(prop.Value, otherProp.Value))
-                    continue;
-
-                diff.Add(prop.Key, prop.Value);
-            }
-
-            return diff.ToString();
+            return cache.StringBuilder.ToString();
         }
 
         /// <summary>
