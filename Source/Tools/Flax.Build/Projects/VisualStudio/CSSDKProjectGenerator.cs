@@ -1,9 +1,5 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace Flax.Build.Projects.VisualStudio
@@ -87,6 +83,8 @@ namespace Flax.Build.Projects.VisualStudio
             csProjectFileContent.AppendLine("    <AssemblyName>$(MSBuildProjectName).CSharp</AssemblyName>");                       // For backwards compatibility, keep the filename same
             csProjectFileContent.AppendLine("    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>");                              // Prevents AssemblyInfo.cs generation (causes duplicate attributes)
             csProjectFileContent.AppendLine("    <EnableBaseIntermediateOutputPathMismatchWarning>false</EnableBaseIntermediateOutputPathMismatchWarning>");
+            csProjectFileContent.AppendLine("    <LangVersion>11.0</LangVersion>");
+            csProjectFileContent.AppendLine("    <FileAlignment>512</FileAlignment>");
             csProjectFileContent.AppendLine(string.Format("    <OutDir>{0}</OutDir>", baseOutputDir));                             // This needs to be set here to fix errors in VS
             csProjectFileContent.AppendLine(string.Format("    <IntermediateOutputPath>{0}</IntermediateOutputPath>", baseIntermediateOutputPath)); // This needs to be set here to fix errors in VS
 
@@ -162,17 +160,6 @@ namespace Flax.Build.Projects.VisualStudio
                 csProjectFileContent.AppendLine("    <UseVSHostingProcess>true</UseVSHostingProcess>");
                 csProjectFileContent.AppendLine("  </PropertyGroup>");
             }
-
-            // Nuget Package References
-            // TODO: Support custom Nuget package references
-            csProjectFileContent.AppendLine("  <ItemGroup>");
-            csProjectFileContent.AppendLine("    <PackageReference Include=\"DotNetZip\" Version=\"1.16\" />");
-            csProjectFileContent.AppendLine("    <PackageReference Include=\"Microsoft.CodeAnalysis.CSharp\" Version=\"4.3\" />");
-            csProjectFileContent.AppendLine("    <PackageReference Include=\"Microsoft.VisualStudio.Setup.Configuration.Interop\" Version=\"3.2\" />");
-            csProjectFileContent.AppendLine("    <PackageReference Include=\"Microsoft.Windows.Compatibility\" Version=\"6.0\" />");
-            csProjectFileContent.AppendLine("    <PackageReference Include=\"Newtonsoft.Json\" Version=\"13.0\" />");
-            csProjectFileContent.AppendLine("    <PackageReference Include=\"System.CodeDom\" Version=\"6.0\" />");
-            csProjectFileContent.AppendLine("  </ItemGroup>");
 
             // References
 

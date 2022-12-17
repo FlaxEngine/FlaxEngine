@@ -276,7 +276,7 @@ namespace Flax.Build
             args.Add("/fullpaths");
             args.Add("/filealign:512");
 #if USE_NETCORE
-            args.Add("/langversion:latest");
+            args.Add("/langversion:11.0");
             args.Add("-nowarn:8632"); // Nullable
 #else
             args.Add("/langversion:7.3");

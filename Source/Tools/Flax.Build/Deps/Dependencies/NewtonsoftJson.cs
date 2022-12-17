@@ -49,13 +49,13 @@ namespace Flax.Deps.Dependencies
                 "Newtonsoft.Json.pdb",
                 "Newtonsoft.Json.xml",
             };
-            var binFolder = Path.Combine(root, "Src", "Newtonsoft.Json", "bin", configuration, "net45");
+            var binFolder = Path.Combine(root, "Src", "Newtonsoft.Json", "bin", configuration, "net7.0");
 
             // Get the source
             CloneGitRepo(root, "https://github.com/FlaxEngine/Newtonsoft.Json.git");
 
             // Default build
-            GitCheckout(root, "master");
+            GitCheckout(root, "flax-net70");
             Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, buildPlatform);
             foreach (var platform in options.Platforms)
             {
@@ -74,8 +74,8 @@ namespace Flax.Deps.Dependencies
                 }
             }
 
-            // AOT build
-            GitCheckout(root, "aot");
+            // AOT build (disabled codegen)
+            Utilities.ReplaceInFile(Path.Combine(root, "Src", "Newtonsoft.Json", "Newtonsoft.Json.csproj"), "HAVE_RUNTIME_SERIALIZATION;", ";");
             Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, buildPlatform);
             foreach (var platform in options.Platforms)
             {

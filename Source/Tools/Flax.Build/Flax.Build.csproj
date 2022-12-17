@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net7.0</TargetFramework>
@@ -26,8 +26,11 @@
     <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="3.2" />
     <PackageReference Include="Microsoft.Windows.Compatibility" Version="6.0" />
     <PackageReference Include="Mono.Cecil" Version="0.11.4" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0" />
     <PackageReference Include="System.CodeDom" Version="6.0" />
+    <Reference Include="Newtonsoft.Json">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
