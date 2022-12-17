@@ -13,7 +13,7 @@ namespace Flax.Build.Projects.VisualStudio
     /// <summary>
     /// The Visual Studio instance utility.
     /// </summary>
-    public sealed class VisualStudioInstance
+    public sealed class VisualStudioInstance : IComparable<VisualStudioInstance>
     {
         private static List<VisualStudioInstance> _installDirs;
         private static int _hasFlaxVS;
@@ -174,9 +174,32 @@ namespace Flax.Build.Projects.VisualStudio
                 }
             }
 
+            // Sort from the latest to the oldest
+            _installDirs.Sort();
+
             foreach (var e in _installDirs)
                 Log.Verbose($"Found {e.Version} at {e.Path}");
             return _installDirs;
+        }
+
+        /// <inheritdoc />
+        public int CompareTo(VisualStudioInstance other)
+        {
+            if (Version == other.Version)
+                return Path.CompareTo(other.Path);
+            return (int)Version < (int)other.Version ? 1 : -1;
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return Path.GetHashCode();
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return $"{Version} at {Path}";
         }
     }
 }
