@@ -419,7 +419,7 @@ public:
             return 0;
 
         int32 count = 0;
-        const int32 maxCount = outArraySize;//(int32)mono_array_length(*outMessages);
+        const int32 maxCount = outArraySize;
 
         byte* ptr = CachedLogData.Get();
         byte* end = ptr + CachedLogData.Count();
@@ -798,7 +798,7 @@ public:
 #endif
     }
 
-    static void GetCollisionWires(CollisionData* collisionData, MonoArray** triangles, MonoArray** indices)
+    static void GetCollisionWires(CollisionData* collisionData, MonoArray** triangles, MonoArray** indices, int* trianglesCount, int* indicesCount)
     {
         SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetCollisionWires")
         if (!collisionData || collisionData->WaitForLoaded() || collisionData->GetOptions().Type == CollisionDataType::None)
@@ -822,6 +822,8 @@ public:
             mono_array_set(*indices, int32, iI++, i + 1);
             mono_array_set(*indices, int32, iI++, i);
         }
+        *trianglesCount = debugLines.Count();
+        *indicesCount = linesCount * 3;
     }
 
     static void GetEditorBoxWithChildren(Actor* obj, BoundingBox* result)
@@ -960,10 +962,11 @@ public:
         int32 BoxId;
     };
 
-    static MonoArray* GetVisualScriptLocals()
+    static MonoArray* GetVisualScriptLocals(int* localsCount)
     {
         SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetVisualScriptLocals")
         MonoArray* result = nullptr;
+        *localsCount = 0;
         const auto stack = VisualScripting::GetThreadStackTop();
         if (stack && stack->Scope)
         {
@@ -998,6 +1001,7 @@ public:
                 local.ValueTypeName = MUtils::ToString(v.Value.Type.GetTypeName());
                 mono_array_set(result, VisualScriptLocalManaged, stack->Scope->Parameters.Length() + i, local);
             }
+            *localsCount = count;
         }
         return result;
     }
@@ -1009,10 +1013,11 @@ public:
         int32 BoxId;
     };
 
-    static MonoArray* GetVisualScriptStackFrames()
+    static MonoArray* GetVisualScriptStackFrames(int* stackFramesCount)
     {
         SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetVisualScriptStackFrames")
         MonoArray* result = nullptr;
+        *stackFramesCount = 0;
         const auto stack = VisualScripting::GetThreadStackTop();
         if (stack)
         {
@@ -1038,6 +1043,7 @@ public:
                 s = s->PreviousFrame;
                 count++;
             }
+            *stackFramesCount = count;
         }
         return result;
     }

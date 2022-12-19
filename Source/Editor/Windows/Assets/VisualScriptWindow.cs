@@ -818,7 +818,7 @@ namespace FlaxEditor.Windows.Assets
             var state = (BreakpointHangState)Editor.Instance.Simulation.BreakpointHangTag;
             if (state.Locals == null)
             {
-                state.Locals = Editor.Internal_GetVisualScriptLocals();
+                state.Locals = Editor.Internal_GetVisualScriptLocals(out var _);
                 Editor.Instance.Simulation.BreakpointHangTag = state;
             }
             return state;
@@ -829,7 +829,7 @@ namespace FlaxEditor.Windows.Assets
             var state = (BreakpointHangState)Editor.Instance.Simulation.BreakpointHangTag;
             if (state.StackFrames == null)
             {
-                state.StackFrames = Editor.Internal_GetVisualScriptStackFrames();
+                state.StackFrames = Editor.Internal_GetVisualScriptStackFrames(out var _);
                 Editor.Instance.Simulation.BreakpointHangTag = state;
             }
             return state;
