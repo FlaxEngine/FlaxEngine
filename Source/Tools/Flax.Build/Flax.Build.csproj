@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net7.0</TargetFramework>
@@ -23,7 +23,7 @@
   <ItemGroup>
     <PackageReference Include="DotNetZip" Version="1.16" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3" />
-    <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="3.2" />
+    <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="3.2.2146" />
     <PackageReference Include="Microsoft.Windows.Compatibility" Version="6.0" />
     <PackageReference Include="Mono.Cecil" Version="0.11.4" />
     <PackageReference Include="System.CodeDom" Version="6.0" />
