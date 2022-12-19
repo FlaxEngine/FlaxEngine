@@ -4,6 +4,7 @@
 #include <ThirdParty/mono-2.0/mono/metadata/blob.h>
 
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/Types.h"
 
 #if defined(_WIN32)
@@ -46,4 +47,9 @@ public:
     static gchandle NewGCHandleWeakref(void* obj, bool track_resurrection);
     static void* GetGCHandleTarget(const gchandle& gchandle);
     static void FreeGCHandle(const gchandle& gchandle);
+    
+    static bool HasCustomAttribute(void* klass, void* attribClass);
+    static bool HasCustomAttribute(void* klass);
+    static void* GetCustomAttribute(void* klass, void* attribClass);
+    static Array<void*> GetCustomAttributes(void* klass);
 };

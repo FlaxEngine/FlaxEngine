@@ -14,6 +14,9 @@
 #include <ThirdParty/mono-2.0/mono/metadata/attrdefs.h>
 #define GET_CUSTOM_ATTR() (MonoCustomAttrInfo*)(_attrInfo ? _attrInfo : _attrInfo = mono_custom_attrs_from_class(_monoClass))
 #endif
+#if USE_NETCORE
+#include "Engine/Scripting/DotNet/CoreCLR.h"
+#endif
 
 #if USE_MONO
 MClass::MClass(const MAssembly* parentAssembly, MonoClass* monoClass, const MString& fullname)
@@ -375,7 +378,9 @@ MObject* MClass::CreateInstance(void** params, uint32 numParams)
 
 bool MClass::HasAttribute(const MClass* monoClass) const
 {
-#if USE_MONO
+#if USE_NETCORE
+    return CoreCLR::HasCustomAttribute(_monoClass, monoClass->GetNative());
+#elif USE_MONO
     MonoCustomAttrInfo* attrInfo = GET_CUSTOM_ATTR();
     return attrInfo != nullptr && mono_custom_attrs_has_attr(attrInfo, monoClass->GetNative()) != 0;
 #else
@@ -385,7 +390,9 @@ bool MClass::HasAttribute(const MClass* monoClass) const
 
 bool MClass::HasAttribute() const
 {
-#if USE_MONO
+#if USE_NETCORE
+    return CoreCLR::HasCustomAttribute(_monoClass);
+#elif USE_MONO
     MonoCustomAttrInfo* attrInfo = GET_CUSTOM_ATTR();
     return attrInfo && attrInfo->num_attrs > 0;
 #else
@@ -395,7 +402,9 @@ bool MClass::HasAttribute() const
 
 MObject* MClass::GetAttribute(const MClass* monoClass) const
 {
-#if USE_MONO
+#if USE_NETCORE
+    return (MObject*)CoreCLR::GetCustomAttribute(_monoClass, monoClass->GetNative());
+#elif USE_MONO
     MonoCustomAttrInfo* attrInfo = GET_CUSTOM_ATTR();
     return attrInfo ? mono_custom_attrs_get_attr(attrInfo, monoClass->GetNative()) : nullptr;
 #else
@@ -409,7 +418,9 @@ const Array<MObject*>& MClass::GetAttributes()
         return _attributes;
 
     _hasCachedAttributes = true;
-#if USE_MONO
+#if USE_NETCORE
+    _attributes = *(Array<MObject*>*)(&CoreCLR::GetCustomAttributes(_monoClass));
+#elif USE_MONO
     MonoCustomAttrInfo* attrInfo = GET_CUSTOM_ATTR();
     if (attrInfo == nullptr)
         return _attributes;
