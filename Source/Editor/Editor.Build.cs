@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Flax.Build;
@@ -75,7 +76,9 @@ public class Editor : EditorModule
         // Visual Studio integration
         if (options.Platform.Target == TargetPlatform.Windows && Flax.Build.Platform.BuildTargetPlatform == TargetPlatform.Windows)
         {
+#pragma warning disable CA1416
             var path = Registry.GetValue("HKEY_CLASSES_ROOT\\TypeLib\\{80CC9F66-E7D8-4DDD-85B6-D9E6CD0E93E2}\\8.0\\0\\win32", null, null) as string;
+#pragma warning restore CA1416
             if (path != null && File.Exists(path))
                 options.PrivateDefinitions.Add("USE_VISUAL_STUDIO_DTE");
         }

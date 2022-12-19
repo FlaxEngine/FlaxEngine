@@ -18,7 +18,7 @@ public class FlaxEngineTestsTarget : Target
     {
         base.Init();
 
-        Type = TargetType.DotNet;
+        Type = TargetType.DotNetCore;
         OutputType = TargetOutputType.Library;
         Platforms = new[]
         {

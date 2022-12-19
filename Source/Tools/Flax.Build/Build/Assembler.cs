@@ -1,10 +1,14 @@
-﻿// Copyright (c) 2012-2020 Flax Engine. All rights reserved.
+// Copyright (c) 2012-2020 Flax Engine. All rights reserved.
 
-using Microsoft.CodeAnalysis;
+using System;
+using System.IO;
+using System.Text;
+using System.Linq;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.Loader;
-using System.Text;
+using System.Collections.Generic;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;

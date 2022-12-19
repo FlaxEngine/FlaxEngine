@@ -468,7 +468,7 @@ namespace Flax.Build
                         ProjectName = rulesProjectName,
                         FilePath = null,
                         FolderPath = null,
-                        Type = TargetType.DotNet,
+                        Type = TargetType.DotNetCore,
                         OutputType = TargetOutputType.Library,
                         Platforms = new[] { Platform.BuildPlatform.Target },
                         Configurations = new[] { TargetConfiguration.Debug },

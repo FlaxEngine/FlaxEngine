@@ -1,6 +1,10 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Text;
+using System.Linq;
+using System.Collections.Generic;
+using System.IO;
 
 namespace Flax.Build.Projects.VisualStudio
 {
@@ -49,9 +53,6 @@ namespace Flax.Build.Projects.VisualStudio
             csProjectFileContent.AppendLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
             csProjectFileContent.AppendLine("");
 
-            //csProjectFileContent.AppendLine(string.Format("<Project DefaultTargets=\"Build\" ToolsVersion=\"{0}\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">", projectFileToolVersion));
-            //csProjectFileContent.AppendLine("  <Import Project=\"$(MSBuildExtensionsPath)\\$(MSBuildToolsVersion)\\Microsoft.Common.props\" Condition=\"Exists('$(MSBuildExtensionsPath)\\$(MSBuildToolsVersion)\\Microsoft.Common.props')\" />");
-
             // Properties
 
             csProjectFileContent.AppendLine("  <PropertyGroup>");
@@ -73,16 +74,17 @@ namespace Flax.Build.Projects.VisualStudio
             var baseConfigurations = project.Configurations.Select(x => x.Name.Split('|')[0]).Distinct().ToArray();
 
             csProjectFileContent.AppendLine("    <TargetFramework>net7.0</TargetFramework>");
-            csProjectFileContent.AppendLine("    <ImplicitUsings>enable</ImplicitUsings>");
-            csProjectFileContent.AppendLine("    <Nullable>disable</Nullable>");
+            csProjectFileContent.AppendLine("    <ImplicitUsings>disable</ImplicitUsings>");
+            csProjectFileContent.AppendLine("    <Nullable>annotations</Nullable>");
             csProjectFileContent.AppendLine(string.Format("    <Configurations>{0}</Configurations>", string.Join(";", baseConfigurations)));
-            csProjectFileContent.AppendLine("    <EnableDefaultItems>false</EnableDefaultItems>");                                  // ?
+            csProjectFileContent.AppendLine("    <EnableDefaultItems>false</EnableDefaultItems>");
             csProjectFileContent.AppendLine("    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>");     // Needed for Hostfxr
             csProjectFileContent.AppendLine("    <EnableDynamicLoading>true</EnableDynamicLoading>");                               // ?
-            csProjectFileContent.AppendLine("    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>");    // Prevents outputting the file under net7.0 subdirectory
-            csProjectFileContent.AppendLine("    <AssemblyName>$(MSBuildProjectName).CSharp</AssemblyName>");                       // For backwards compatibility, keep the filename same
-            csProjectFileContent.AppendLine("    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>");                              // Prevents AssemblyInfo.cs generation (causes duplicate attributes)
+            csProjectFileContent.AppendLine("    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>");
             csProjectFileContent.AppendLine("    <EnableBaseIntermediateOutputPathMismatchWarning>false</EnableBaseIntermediateOutputPathMismatchWarning>");
+            csProjectFileContent.AppendLine("    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>");
+            csProjectFileContent.AppendLine(string.Format("    <RootNamespace>{0}</RootNamespace>", project.BaseName));
+            csProjectFileContent.AppendLine(string.Format("    <AssemblyName>{0}.CSharp</AssemblyName>", project.BaseName));
             csProjectFileContent.AppendLine("    <LangVersion>11.0</LangVersion>");
             csProjectFileContent.AppendLine("    <FileAlignment>512</FileAlignment>");
             csProjectFileContent.AppendLine(string.Format("    <OutDir>{0}</OutDir>", baseOutputDir));                             // This needs to be set here to fix errors in VS
@@ -165,9 +167,10 @@ namespace Flax.Build.Projects.VisualStudio
 
             csProjectFileContent.AppendLine("  <ItemGroup>");
 
-            foreach (var reference in project.CSharp.SystemReferences)
+            // Unused when using explicitly NetCore7 ?
+            //foreach (var reference in project.CSharp.SystemReferences)
             {
-                csProjectFileContent.AppendLine(string.Format("    <Reference Include=\"{0}\" />", reference));
+                //csProjectFileContent.AppendLine(string.Format("    <Reference Include=\"{0}\" />", reference));
             }
 
             foreach (var reference in project.CSharp.FileReferences)
@@ -232,7 +235,6 @@ namespace Flax.Build.Projects.VisualStudio
 
             // End
 
-            //csProjectFileContent.AppendLine("  <Import Project=\"$(MSBuildToolsPath)\\Microsoft.CSharp.targets\" />");
             csProjectFileContent.AppendLine("</Project>");
 
             if (defaultTarget.CustomExternalProjectFilePath == null)

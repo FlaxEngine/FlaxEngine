@@ -1,8 +1,8 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
 

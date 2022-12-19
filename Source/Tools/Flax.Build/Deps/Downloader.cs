@@ -1,6 +1,10 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
+using System.IO;
 using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Flax.Build;
 
 namespace Flax.Deps

@@ -47,7 +47,7 @@ public:
     static gchandle NewGCHandleWeakref(void* obj, bool track_resurrection);
     static void* GetGCHandleTarget(const gchandle& gchandle);
     static void FreeGCHandle(const gchandle& gchandle);
-    
+
     static bool HasCustomAttribute(void* klass, void* attribClass);
     static bool HasCustomAttribute(void* klass);
     static void* GetCustomAttribute(void* klass, void* attribClass);
