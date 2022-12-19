@@ -243,7 +243,7 @@ namespace FlaxEditor.Viewport.Previews
         public override void OnDestroy()
         {
             Material = null;
-            Object.Destroy(ref _previewMaterial);
+            FlaxEngine.Object.Destroy(ref _previewMaterial);
 
             base.OnDestroy();
         }

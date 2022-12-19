@@ -231,10 +231,10 @@ namespace FlaxEditor.Windows.Assets
             if (_previewSource)
             {
                 _previewSource.Stop();
-                Object.Destroy(_previewSource);
+                FlaxEngine.Object.Destroy(_previewSource);
                 _previewSource = null;
             }
-            Object.Destroy(ref _previewScene);
+            FlaxEngine.Object.Destroy(ref _previewScene);
 
             base.OnDestroy();
         }
