@@ -246,6 +246,8 @@ bool ScriptsBuilder::RunBuildTool(const StringView& args, const StringView& work
 
     // Call build tool
     const int32 result = Platform::RunProcess(StringView(*cmdLine, cmdLine.Length()), workingDir);
+    if (result != 0)
+        LOG(Error, "Failed to run build tool, result: {0:x}", (uint32)result);
     return result != 0;
 }
 
