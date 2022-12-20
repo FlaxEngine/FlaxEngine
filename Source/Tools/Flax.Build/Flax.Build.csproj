@@ -5,12 +5,14 @@
     <LangVersion>11.0</LangVersion>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>annotations</Nullable>
+    <IsPackable>false</IsPackable>
     <Configurations>Debug;Release</Configurations>
     <BaseOutputPath>..\..\..\Binaries\Tools</BaseOutputPath>
     <OutDir>..\..\..\Binaries\Tools</OutDir>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <DefineConstants>USE_NETCORE</DefineConstants>
     <DebugType>portable</DebugType>

@@ -98,7 +98,7 @@ void VisualStudioCodeEditor::OpenFile(const String& path, int32 line)
     // Generate VS solution files for intellisense
     if (!FileSystem::FileExists(Globals::ProjectFolder / Editor::Project->Name + TEXT(".sln")))
     {
-        ScriptsBuilder::GenerateProject(TEXT("-vs2019"));
+        ScriptsBuilder::GenerateProject(TEXT("-vs2022"));
     }
 
     // Generate project files if missing
@@ -119,7 +119,7 @@ void VisualStudioCodeEditor::OpenSolution()
     // Generate VS solution files for intellisense
     if (!FileSystem::FileExists(Globals::ProjectFolder / Editor::Project->Name + TEXT(".sln")))
     {
-        ScriptsBuilder::GenerateProject(TEXT("-vs2019"));
+        ScriptsBuilder::GenerateProject(TEXT("-vs2022"));
     }
 
     // Generate project files if solution is missing

@@ -23,7 +23,7 @@ jobs:
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
     - name: Build
       run: |
-        ./GenerateProjectFiles.sh -vs2019
+        ./GenerateProjectFiles.sh -vs2022
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Debug -buildtargets=FlaxEditor -BuildBindingsOnly
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Debug -buildtargets="FlaxEngine.Tests"

@@ -236,7 +236,7 @@ void RiderCodeEditor::OpenFile(const String& path, int32 line)
     // Generate project files if solution is missing
     if (!FileSystem::FileExists(_solutionPath))
     {
-        ScriptsBuilder::GenerateProject(TEXT("-vs2019"));
+        ScriptsBuilder::GenerateProject(TEXT("-vs2022"));
     }
 
     // Open file
@@ -250,7 +250,7 @@ void RiderCodeEditor::OpenSolution()
     // Generate project files if solution is missing
     if (!FileSystem::FileExists(_solutionPath))
     {
-        ScriptsBuilder::GenerateProject(TEXT("-vs2019"));
+        ScriptsBuilder::GenerateProject(TEXT("-vs2022"));
     }
 
     // Open solution
