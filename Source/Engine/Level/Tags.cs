@@ -25,7 +25,7 @@ namespace FlaxEngine
         internal void OnDeserializing(System.Runtime.Serialization.StreamingContext context)
         {
             // Initialize structure with default values to replicate C++ deserialization behavior
-            this.Index = -1;
+            Index = -1;
         }
 
         /// <summary>

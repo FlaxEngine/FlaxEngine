@@ -20,9 +20,6 @@ class PhysicsScene;
 class SceneRendering;
 class SceneRenderTask;
 
-// Maximum tag index is used as an invalid value
-#define ACTOR_TAG_INVALID 255
-
 /// <summary>
 /// Base class for all actor objects on the scene.
 /// </summary>
@@ -116,13 +113,13 @@ public:
     API_FUNCTION() bool HasTag() const;
 
     /// <summary>
-    /// Determines whether this actor has given tag assigned.
+    /// Determines whether this actor has given tag assigned (exact match).
     /// </summary>
     /// <param name="tag">The tag to check.</param>
     API_FUNCTION() bool HasTag(const Tag& tag) const;
 
     /// <summary>
-    /// Determines whether this actor has given tag assigned.
+    /// Determines whether this actor has given tag assigned (exact match).
     /// </summary>
     /// <param name="tag">The tag to check.</param>
     API_FUNCTION() bool HasTag(const StringView& tag) const;
