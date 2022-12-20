@@ -1,5 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <Configurations>Editor.Windows.Debug;Editor.Linux.Debug</Configurations>
+    <Platforms>x64</Platforms>
+    <Configuration Condition=" '$(Configuration)' == '' ">Editor.Windows.Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
     <ProjectGuid>{4AAED6A2-38B1-4A31-AB04-9264A94A8ECA}</ProjectGuid>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <TestProjectType>UnitTest</TestProjectType>
@@ -7,20 +11,18 @@
     <LangVersion>11.0</LangVersion>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>annotations</Nullable>
+    <IsPackable>false</IsPackable>
+    <DebugType>pdbonly</DebugType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputPath>..\..\..\Binaries\Tools\</OutputPath>
+    <IntermediateOutputPath>..\..\..\Cache\Intermediate\FlaxEngine.Tests\Debug</IntermediateOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <DefineConstants>USE_NETCORE;FLAX_ASSERTIONS</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugType>full</DebugType>
-    <IntermediateOutputPath>..\..\..\Cache\Intermediate\FlaxEngine.Tests\Debug</IntermediateOutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <IntermediateOutputPath>..\..\..\Cache\Intermediate\FlaxEngine.Tests\Release</IntermediateOutputPath>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+    <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <Import Project="..\..\Platforms\DotNet\NUnit\build\NUnit.props" />

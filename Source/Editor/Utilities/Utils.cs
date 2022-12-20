@@ -1027,7 +1027,7 @@ namespace FlaxEditor.Utilities
         internal static string FormatFloat(string str, bool isNegative)
         {
             // Reference: https://stackoverflow.com/questions/1546113/double-to-string-conversion-without-scientific-notation
-            int x = str.IndexOf('E');
+            int x = str.IndexOf('E', StringComparison.OrdinalIgnoreCase);
             if (x < 0)
                 return str;
             int x1 = x + 1;

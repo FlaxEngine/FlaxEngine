@@ -9,11 +9,12 @@
     <BaseOutputPath>..\..\..\Binaries\Tools</BaseOutputPath>
     <OutDir>..\..\..\Binaries\Tools</OutDir>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <DefineConstants>USE_NETCORE</DefineConstants>
     <DebugType>portable</DebugType>
-    <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <ErrorReport>none</ErrorReport>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>1701;1702;8981</NoWarn>
@@ -31,7 +32,7 @@
     <PackageReference Include="Mono.Cecil" Version="0.11.4" />
     <PackageReference Include="System.CodeDom" Version="6.0" />
     <Reference Include="Newtonsoft.Json">
-      <SpecificVersion>False</SpecificVersion>
+      <SpecificVersion>false</SpecificVersion>
       <HintPath>..\..\..\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>

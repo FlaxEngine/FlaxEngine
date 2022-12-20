@@ -7,11 +7,16 @@
     <LangVersion>11.0</LangVersion>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>annotations</Nullable>
+    <IsPackable>false</IsPackable>
     <OutputPath>..\..\..\Binaries\Tools\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <DefineConstants>USE_NETCORE;FLAX_ASSERTIONS</DefineConstants>
     <DebugType>portable</DebugType>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+    <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

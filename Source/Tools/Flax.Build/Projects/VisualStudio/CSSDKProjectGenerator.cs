@@ -43,11 +43,15 @@ namespace Flax.Build.Projects.VisualStudio
                     break;
                 }
             }
-            var defaultConfiguration = TargetConfiguration.Debug;
-            var defaultArchitecture = TargetArchitecture.AnyCPU;
-            var projectTypes = ProjectTypeGuids.ToOption(ProjectTypeGuids.WindowsCSharp);
-            if (vsProject.CSharp.UseFlaxVS && VisualStudioInstance.HasFlaxVS)
-                projectTypes = ProjectTypeGuids.ToOption(ProjectTypeGuids.FlaxVS) + ';' + projectTypes;
+            var defaultConfiguration = project.Configurations.First();
+            foreach (var e in project.Configurations)
+            {
+                if (e.Configuration == defaultConfiguration.Configuration && e.Target == defaultTarget && e.Platform == Platform.BuildTargetPlatform)
+                {
+                    defaultConfiguration = e;
+                    break;
+                }
+            }
 
             // Header
             csProjectFileContent.AppendLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
@@ -56,6 +60,16 @@ namespace Flax.Build.Projects.VisualStudio
             // Properties
 
             csProjectFileContent.AppendLine("  <PropertyGroup>");
+
+            // List supported platforms and configurations
+            var allConfigurations = project.Configurations.Select(x => x.Text).Distinct().ToArray();
+            var allPlatforms = project.Configurations.Select(x => x.ArchitectureName).Distinct().ToArray();
+            csProjectFileContent.AppendLine(string.Format("    <Configurations>{0}</Configurations>", string.Join(";", allConfigurations)));
+            csProjectFileContent.AppendLine(string.Format("    <Platforms>{0}</Platforms>", string.Join(";", allPlatforms)));
+            
+            // Provide default platform and configuration
+            csProjectFileContent.AppendLine(string.Format("    <Configuration Condition=\" '$(Configuration)' == '' \">{0}</Configuration>", defaultConfiguration.Text));
+            csProjectFileContent.AppendLine(string.Format("    <Platform Condition=\" '$(Platform)' == '' \">{0}</Platform>", defaultConfiguration.ArchitectureName));
 
             switch (project.OutputType ?? defaultTarget.OutputType)
             {
@@ -71,39 +85,36 @@ namespace Flax.Build.Projects.VisualStudio
             var baseConfiguration = project.Configurations.First();
             var baseOutputDir = Utilities.MakePathRelativeTo(project.CSharp.OutputPath ?? baseConfiguration.TargetBuildOptions.OutputFolder, projectDirectory);
             var baseIntermediateOutputPath = Utilities.MakePathRelativeTo(project.CSharp.IntermediateOutputPath ?? Path.Combine(baseConfiguration.TargetBuildOptions.IntermediateFolder, "CSharp"), projectDirectory);
-            var baseConfigurations = project.Configurations.Select(x => x.Name.Split('|')[0]).Distinct().ToArray();
 
             csProjectFileContent.AppendLine("    <TargetFramework>net7.0</TargetFramework>");
             csProjectFileContent.AppendLine("    <ImplicitUsings>disable</ImplicitUsings>");
             csProjectFileContent.AppendLine("    <Nullable>annotations</Nullable>");
-            csProjectFileContent.AppendLine(string.Format("    <Configurations>{0}</Configurations>", string.Join(";", baseConfigurations)));
             csProjectFileContent.AppendLine("    <EnableDefaultItems>false</EnableDefaultItems>");
-            csProjectFileContent.AppendLine("    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>");     // Needed for Hostfxr
-            csProjectFileContent.AppendLine("    <EnableDynamicLoading>true</EnableDynamicLoading>");                               // ?
             csProjectFileContent.AppendLine("    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>");
+            csProjectFileContent.AppendLine("    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>");
             csProjectFileContent.AppendLine("    <EnableBaseIntermediateOutputPathMismatchWarning>false</EnableBaseIntermediateOutputPathMismatchWarning>");
             csProjectFileContent.AppendLine("    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>");
+            csProjectFileContent.AppendLine("    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>");
             csProjectFileContent.AppendLine(string.Format("    <RootNamespace>{0}</RootNamespace>", project.BaseName));
             csProjectFileContent.AppendLine(string.Format("    <AssemblyName>{0}.CSharp</AssemblyName>", project.BaseName));
             csProjectFileContent.AppendLine("    <LangVersion>11.0</LangVersion>");
             csProjectFileContent.AppendLine("    <FileAlignment>512</FileAlignment>");
-            csProjectFileContent.AppendLine(string.Format("    <OutDir>{0}</OutDir>", baseOutputDir));                             // This needs to be set here to fix errors in VS
-            csProjectFileContent.AppendLine(string.Format("    <IntermediateOutputPath>{0}</IntermediateOutputPath>", baseIntermediateOutputPath)); // This needs to be set here to fix errors in VS
+
+            // Needed for Hostfxr
+            csProjectFileContent.AppendLine("    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>");
+            csProjectFileContent.AppendLine("    <EnableDynamicLoading>true</EnableDynamicLoading>");
+            //csProjectFileContent.AppendLine("    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>"); // TODO: use it to reduce burden of framework libs
+
+            // This needs to be set here to fix errors in VS
+            csProjectFileContent.AppendLine(string.Format("    <OutDir>{0}</OutDir>", baseOutputDir));
+            csProjectFileContent.AppendLine(string.Format("    <IntermediateOutputPath>{0}</IntermediateOutputPath>", baseIntermediateOutputPath));
 
             csProjectFileContent.AppendLine("  </PropertyGroup>");
             csProjectFileContent.AppendLine("");
 
             // Default configuration
             {
-                var configuration = project.Configurations.First();
-                foreach (var e in project.Configurations)
-                {
-                    if (e.Configuration == defaultConfiguration && e.Target == defaultTarget && e.Platform == Platform.BuildTargetPlatform)
-                    {
-                        configuration = e;
-                        break;
-                    }
-                }
+                var configuration = defaultConfiguration;
                 var defines = string.Join(";", project.Defines);
                 if (configuration.TargetBuildOptions.ScriptingAPI.Defines.Count != 0)
                 {
@@ -114,10 +125,10 @@ namespace Flax.Build.Projects.VisualStudio
                 var outputPath = Utilities.MakePathRelativeTo(project.CSharp.OutputPath ?? configuration.TargetBuildOptions.OutputFolder, projectDirectory);
                 var intermediateOutputPath = Utilities.MakePathRelativeTo(project.CSharp.IntermediateOutputPath ?? Path.Combine(configuration.TargetBuildOptions.IntermediateFolder, "CSharp"), projectDirectory);
 
-                csProjectFileContent.AppendLine(string.Format("  <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == '{0}|{1}' \">", defaultConfiguration, defaultArchitecture));
+                csProjectFileContent.AppendLine(string.Format("  <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == '{0}' \">", configuration.Name));
                 csProjectFileContent.AppendLine("    <DebugSymbols>true</DebugSymbols>");
                 csProjectFileContent.AppendLine("    <DebugType>portable</DebugType>");
-                csProjectFileContent.AppendLine(string.Format("    <Optimize>{0}</Optimize>", defaultConfiguration == TargetConfiguration.Debug ? "false" : "true"));
+                csProjectFileContent.AppendLine(string.Format("    <Optimize>{0}</Optimize>", configuration.Configuration == TargetConfiguration.Debug ? "false" : "true"));
                 csProjectFileContent.AppendLine(string.Format("    <OutputPath>{0}\\</OutputPath>", outputPath));
                 csProjectFileContent.AppendLine(string.Format("    <BaseIntermediateOutputPath>{0}\\</BaseIntermediateOutputPath>", intermediateOutputPath));
                 csProjectFileContent.AppendLine(string.Format("    <IntermediateOutputPath>{0}\\</IntermediateOutputPath>", intermediateOutputPath));
@@ -127,9 +138,10 @@ namespace Flax.Build.Projects.VisualStudio
                 csProjectFileContent.AppendLine("    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>");
                 if (configuration.TargetBuildOptions.ScriptingAPI.IgnoreMissingDocumentationWarnings)
                     csProjectFileContent.AppendLine("    <NoWarn>1591</NoWarn>");
-                csProjectFileContent.AppendLine(string.Format("    <DocumentationFile>{0}\\{1}.CSharp.xml</DocumentationFile>", outputPath, project.Name));
+                csProjectFileContent.AppendLine(string.Format("    <DocumentationFile>{0}\\{1}.CSharp.xml</DocumentationFile>", outputPath, project.BaseName));
                 csProjectFileContent.AppendLine("    <UseVSHostingProcess>true</UseVSHostingProcess>");
                 csProjectFileContent.AppendLine("  </PropertyGroup>");
+                csProjectFileContent.AppendLine("");
             }
 
             // Configurations
@@ -145,7 +157,7 @@ namespace Flax.Build.Projects.VisualStudio
                 var outputPath = Utilities.MakePathRelativeTo(project.CSharp.OutputPath ?? configuration.TargetBuildOptions.OutputFolder, projectDirectory);
                 var intermediateOutputPath = Utilities.MakePathRelativeTo(project.CSharp.IntermediateOutputPath ?? Path.Combine(configuration.TargetBuildOptions.IntermediateFolder, "CSharp"), projectDirectory);
 
-                csProjectFileContent.AppendLine(string.Format("  <PropertyGroup Condition=\"'$(Configuration)|$(Platform)' == '{0}' or '$(Configuration)|$(Platform)' == '{1}'\">", configuration.Name, configuration.Name.Replace(configuration.ArchitectureName, "AnyCPU")));
+                csProjectFileContent.AppendLine(string.Format("  <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == '{0}' \">", configuration.Name));
                 csProjectFileContent.AppendLine("    <DebugSymbols>true</DebugSymbols>");
                 csProjectFileContent.AppendLine("    <DebugType>portable</DebugType>");
                 csProjectFileContent.AppendLine(string.Format("    <Optimize>{0}</Optimize>", configuration.Configuration == TargetConfiguration.Release ? "true" : "false"));
@@ -158,9 +170,10 @@ namespace Flax.Build.Projects.VisualStudio
                 csProjectFileContent.AppendLine("    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>");
                 if (configuration.TargetBuildOptions.ScriptingAPI.IgnoreMissingDocumentationWarnings)
                     csProjectFileContent.AppendLine("    <NoWarn>1591</NoWarn>");
-                csProjectFileContent.AppendLine(string.Format("    <DocumentationFile>{0}\\{1}.CSharp.xml</DocumentationFile>", outputPath, project.Name));
+                csProjectFileContent.AppendLine(string.Format("    <DocumentationFile>{0}\\{1}.CSharp.xml</DocumentationFile>", outputPath, project.BaseName));
                 csProjectFileContent.AppendLine("    <UseVSHostingProcess>true</UseVSHostingProcess>");
                 csProjectFileContent.AppendLine("  </PropertyGroup>");
+                csProjectFileContent.AppendLine("");
             }
 
             // References
@@ -184,11 +197,12 @@ namespace Flax.Build.Projects.VisualStudio
             {
                 csProjectFileContent.AppendLine(string.Format("    <ProjectReference Include=\"{0}\">", Utilities.MakePathRelativeTo(dependency.Path, projectDirectory)));
                 csProjectFileContent.AppendLine(string.Format("      <Project>{0}</Project>", ((VisualStudioProject)dependency).ProjectGuid.ToString("B").ToUpperInvariant()));
-                csProjectFileContent.AppendLine(string.Format("      <Name>{0}</Name>", dependency.Name));
+                csProjectFileContent.AppendLine(string.Format("      <Name>{0}</Name>", dependency.BaseName));
                 csProjectFileContent.AppendLine("    </ProjectReference>");
             }
 
             csProjectFileContent.AppendLine("  </ItemGroup>");
+            csProjectFileContent.AppendLine("");
 
             // Files and folders
 
