@@ -38,6 +38,71 @@ Tag Tags::Get(const StringView& tagName)
     return tag;
 }
 
+bool Tags::HasTag(const Array<Tag>& list, const Tag& tag)
+{
+    if (tag.Index == -1)
+        return false;
+    const String& tagName = tag.ToString();
+    for (const Tag& e : list)
+    {
+        const String& eName = e.ToString();
+        if (e == tag || (eName.Length() > tagName.Length() + 1 && eName.StartsWith(tagName) && eName[tagName.Length()] == '.'))
+            return true;
+    }
+    return false;
+}
+
+bool Tags::HasTagExact(const Array<Tag>& list, const Tag& tag)
+{
+    if (tag.Index == -1)
+        return false;
+    return list.Contains(tag);
+}
+
+bool Tags::HasAny(const Array<Tag>& list, const Array<Tag>& tags)
+{
+    for (const Tag& tag : tags)
+    {
+        if (HasTag(list, tag))
+            return true;
+    }
+    return false;
+}
+
+bool Tags::HasAnyExact(const Array<Tag>& list, const Array<Tag>& tags)
+{
+    for (const Tag& tag : tags)
+    {
+        if (HasTagExact(list, tag))
+            return true;
+    }
+    return false;
+}
+
+bool Tags::HasAll(const Array<Tag>& list, const Array<Tag>& tags)
+{
+    if (tags.IsEmpty())
+        return true;
+    for (const Tag& tag : tags)
+    {
+        if (!HasTag(list, tag))
+            return false;
+    }
+    return true;
+}
+
+bool Tags::HasAllExact(const Array<Tag>& list, const Array<Tag>& tags)
+{
+    if (tags.IsEmpty())
+        return true;
+    for (const Tag& tag : tags)
+    {
+        if (!HasTagExact(list, tag))
+            return false;
+    }
+    return true;
+}
+
 const String& Tags::GetTagName(int32 tag)
 {
     return Tag(tag).ToString();
