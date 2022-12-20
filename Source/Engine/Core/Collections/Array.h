@@ -872,8 +872,9 @@ public:
                 if (!(data[i] == otherData[i]))
                     return false;
             }
+            return true;
         }
-        return true;
+        return false;
     }
 
     template<typename OtherT = T, typename OtherAllocationType = AllocationType>
