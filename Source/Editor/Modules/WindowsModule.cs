@@ -193,6 +193,8 @@ namespace FlaxEditor.Modules
         /// <returns>Editor window or null if cannot find any window.</returns>
         public EditorWindow FindEditor(ContentItem item)
         {
+            if (item == null)
+                return null;
             for (int i = 0; i < Windows.Count; i++)
             {
                 var win = Windows[i];
