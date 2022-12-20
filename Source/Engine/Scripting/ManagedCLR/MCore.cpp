@@ -136,21 +136,21 @@ bool MCore::LoadEngine()
 
     // Prepare managed side
     const String hostExecutable = Platform::GetExecutableFilePath();
-    CoreCLR::CallStaticMethodInternal<void, const Char*>(TEXT("Init"), hostExecutable.Get());
+    CoreCLR::CallStaticMethodByName<void, const Char*>(TEXT("Init"), hostExecutable.Get());
 
     MRootDomain = New<MDomain>("Root");
     MDomains.Add(MRootDomain);
 
-    char* buildInfo = mono_get_runtime_build_info();
+    char* buildInfo = CoreCLR::CallStaticMethodByName<char*>(TEXT("GetRuntimeInformation"));
     LOG(Info, ".NET runtime version: {0}", String(buildInfo));
-    mono_free(buildInfo);
+    CoreCLR::Free(buildInfo);
 
     return false;
 }
 
 void MCore::UnloadEngine()
 {
-    CoreCLR::CallStaticMethodInternal<void>(TEXT("Exit"));
+    CoreCLR::CallStaticMethodByName<void>(TEXT("Exit"));
     MDomains.ClearDelete();
     MRootDomain = nullptr;
 }

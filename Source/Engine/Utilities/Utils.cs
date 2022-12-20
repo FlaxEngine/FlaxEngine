@@ -341,9 +341,12 @@ namespace FlaxEngine
             return result;
         }
 
+#if USE_NETCORE
+#else
         [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Utils::Internal_ExtractArrayFromList")]
         [return: MarshalUsing(typeof(FlaxEngine.SystemArrayMarshaller))]
         internal static partial Array Internal_ExtractArrayFromList([MarshalUsing(typeof(FlaxEngine.GCHandleMarshaller))] object list);
+#endif
 
         /// <summary>
         /// Reads the color from the binary stream.

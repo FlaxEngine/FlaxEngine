@@ -1195,7 +1195,8 @@ namespace Flax.Build.Bindings
 #if USE_NETCORE
             if (!string.IsNullOrEmpty(marshallerName))
             {
-                string marshallerDefinition = $$"""
+                contents.AppendLine();
+                contents.AppendLine(String.Join("\n" + indent, (indent + $$"""
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ManagedToUnmanagedIn, typeof({{marshallerName}}.ManagedToNative))]
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.UnmanagedToManagedOut, typeof({{marshallerName}}.ManagedToNative))]
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ElementIn, typeof({{marshallerName}}.ManagedToNative))]
@@ -1207,34 +1208,33 @@ namespace Flax.Build.Bindings
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ElementRef, typeof({{marshallerName}}))]
                 internal static class {{marshallerName}}
                 {
-                	public static class NativeToManaged
-                	{
-                		public static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => ({{classInfo.Name}})GCHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged);
-                		public static void Free(IntPtr unmanaged)  => GCHandleMarshaller.NativeToManaged.Free(unmanaged);
-                	}
-                	public static class ManagedToNative
-                	{
-                		public static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => GCHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);
-                		public static void Free(IntPtr unmanaged) => GCHandleMarshaller.ManagedToNative.Free(unmanaged);
-                	}
-                	public struct Bidirectional
-                	{
-                		GCHandleMarshaller.Bidirectional marsh;
-                		public void FromManaged({{classInfo.Name}} managed) => marsh.FromManaged(managed);
-                		public IntPtr ToUnmanaged() => marsh.ToUnmanaged();
-                		public void FromUnmanaged(IntPtr unmanaged) => marsh.FromUnmanaged(unmanaged);
-                		public {{classInfo.Name}} ToManaged() => ({{classInfo.Name}})marsh.ToManaged();
-                		public void Free() => marsh.Free();
-                	}
-                	internal static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => ({{classInfo.Name}})GCHandleMarshaller.ConvertToManaged(unmanaged);
-                	internal static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => GCHandleMarshaller.ConvertToUnmanaged(managed);
-                	internal static void Free(IntPtr unmanaged) => GCHandleMarshaller.Free(unmanaged);
+                    public static class NativeToManaged
+                    {
+                        public static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => ({{classInfo.Name}})GCHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged);
+                        public static void Free(IntPtr unmanaged) => GCHandleMarshaller.NativeToManaged.Free(unmanaged);
+                    }
+                    public static class ManagedToNative
+                    {
+                        public static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => GCHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);
+                        public static void Free(IntPtr unmanaged) => GCHandleMarshaller.ManagedToNative.Free(unmanaged);
+                    }
+                    public struct Bidirectional
+                    {
+                        GCHandleMarshaller.Bidirectional marsh;
+                        public void FromManaged({{classInfo.Name}} managed) => marsh.FromManaged(managed);
+                        public IntPtr ToUnmanaged() => marsh.ToUnmanaged();
+                        public void FromUnmanaged(IntPtr unmanaged) => marsh.FromUnmanaged(unmanaged);
+                        public {{classInfo.Name}} ToManaged() => ({{classInfo.Name}})marsh.ToManaged();
+                        public void Free() => marsh.Free();
+                    }
+                    internal static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => ({{classInfo.Name}})GCHandleMarshaller.ConvertToManaged(unmanaged);
+                    internal static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => GCHandleMarshaller.ConvertToUnmanaged(managed);
+                    internal static void Free(IntPtr unmanaged) => GCHandleMarshaller.Free(unmanaged);
 
-                	internal static {{classInfo.Name}} ToManaged(IntPtr managed) => ({{classInfo.Name}})GCHandleMarshaller.ToManaged(managed);
-                	internal static IntPtr ToNative({{classInfo.Name}} managed) => GCHandleMarshaller.ToNative(managed);
+                    internal static {{classInfo.Name}} ToManaged(IntPtr managed) => ({{classInfo.Name}})GCHandleMarshaller.ToManaged(managed);
+                    internal static IntPtr ToNative({{classInfo.Name}} managed) => GCHandleMarshaller.ToNative(managed);
                 }
-                """;
-                contents.AppendLine(marshallerDefinition);
+                """).Split(new char[] { '\n'})));
             }
 #endif
             // Namespace end
