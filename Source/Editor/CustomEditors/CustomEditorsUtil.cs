@@ -65,19 +65,21 @@ namespace FlaxEditor.CustomEditors
             {
                 if (targetType.Type.GetArrayRank() != 1)
                     return new GenericEditor(); // Not-supported multidimensional array
+
+                // Allow using custom editor for array of custom type
+                var customEditorType = Internal_GetCustomEditor(targetType.Type);
+                if (customEditorType != null)
+                    return (CustomEditor)Activator.CreateInstance(customEditorType);
+
                 return new ArrayEditor();
             }
             var targetTypeType = TypeUtils.GetType(targetType);
             if (canUseRefPicker)
             {
                 if (typeof(Asset).IsAssignableFrom(targetTypeType))
-                {
                     return new AssetRefEditor();
-                }
                 if (typeof(FlaxEngine.Object).IsAssignableFrom(targetTypeType))
-                {
                     return new FlaxObjectRefEditor();
-                }
             }
 
             // Use custom editor
@@ -85,11 +87,9 @@ namespace FlaxEditor.CustomEditors
                 var checkType = targetTypeType;
                 do
                 {
-                    var type = Internal_GetCustomEditor(checkType);
-                    if (type != null)
-                    {
-                        return (CustomEditor)Activator.CreateInstance(type);
-                    }
+                    var customEditorType = Internal_GetCustomEditor(checkType);
+                    if (customEditorType != null)
+                        return (CustomEditor)Activator.CreateInstance(customEditorType);
                     checkType = checkType.BaseType;
 
                     // Skip if cannot use ref editors
@@ -106,23 +106,17 @@ namespace FlaxEditor.CustomEditors
 
             // Select default editor (based on type)
             if (targetType.IsEnum)
-            {
                 return new EnumEditor();
-            }
-            if (targetType.IsGenericType)
+                if (targetType.IsGenericType)
             {
                 if (targetTypeType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
-                {
                     return new DictionaryEditor();
-                }
 
                 // Use custom editor
                 var genericTypeDefinition = targetType.GetGenericTypeDefinition();
-                var type = Internal_GetCustomEditor(genericTypeDefinition);
-                if (type != null)
-                {
-                    return (CustomEditor)Activator.CreateInstance(type);
-                }
+                var customEditorType = Internal_GetCustomEditor(genericTypeDefinition);
+                if (customEditorType != null)
+                    return (CustomEditor)Activator.CreateInstance(customEditorType);
             }
 
             // The most generic editor
