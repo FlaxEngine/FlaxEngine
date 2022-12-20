@@ -755,6 +755,59 @@ int32 Level::GetLayerIndex(const StringView& layer)
     return result;
 }
 
+Actor* FindActorRecursive(Actor* node, const Tag& tag)
+{
+    if (node->HasTag(tag))
+        return node;
+    Actor* result = nullptr;
+    for (Actor* child : node->Children)
+    {
+        result = FindActorRecursive(child, tag);
+        if (result)
+            break;
+    }
+    return result;
+}
+
+Actor* Level::FindActor(const Tag& tag, Actor* root)
+{
+    PROFILE_CPU();
+    if (root)
+        return FindActorRecursive(root, tag);
+    Actor* result = nullptr;
+    for (Scene* scene : Scenes)
+    {
+        result = FindActorRecursive(scene, tag);
+        if (result)
+            break;
+    }
+    return result;
+}
+
+void FindActorRecursive(Actor* node, const Tag& tag, Array<Actor*>& result)
+{
+    if (node->HasTag(tag))
+        result.Add(node);
+    for (Actor* child : node->Children)
+        FindActorRecursive(child, tag, result);
+}
+
+Array<Actor*> Level::FindActors(const Tag& tag, Actor* root)
+{
+    PROFILE_CPU();
+    Array<Actor*> result;
+    if (root)
+    {
+        FindActorRecursive(root, tag);
+    }
+    else
+    {
+        for (Scene* scene : Scenes)
+            FindActorRecursive(scene, tag);
+    }
+    return result;
+}
+
 void Level::callActorEvent(ActorEventType eventType, Actor* a, Actor* b)
 {
     PROFILE_CPU();

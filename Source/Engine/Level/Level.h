@@ -16,6 +16,7 @@ class Engine;
 struct RenderView;
 struct RenderContext;
 struct RenderContextBatch;
+struct Tag;
 
 /// <summary>
 /// The scene manager that contains the loaded scenes collection and spawns/deleted actors.
@@ -460,6 +461,23 @@ public:
     /// Gets the zero-based index of the layer.
     /// </summary>
     API_FUNCTION() static int32 GetLayerIndex(const StringView& layer);
+
+public:
+    /// <summary>
+    /// Tries to find the actor with the given tag (returns the first one found).
+    /// </summary>
+    /// <param name="tag">The tag of the actor to search for.</param>
+    /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
+    /// <returns>Found actor or null.</returns>
+    API_FUNCTION() static Actor* FindActor(const Tag& tag, Actor* root = nullptr);
+
+    /// <summary>
+    /// Tries to find the actors with the given tag (returns all found).
+    /// </summary>
+    /// <param name="tag">The tag of the actor to search for.</param>
+    /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
+    /// <returns>Found actors or empty if none.</returns>
+    API_FUNCTION() static Array<Actor*> FindActors(const Tag& tag, Actor* root = nullptr);
 
 private:
     // Actor API

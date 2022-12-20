@@ -166,7 +166,7 @@ namespace FlaxEngine
         {
             if (list == null)
                 return false;
-            foreach (Tag tag in list)
+            foreach (Tag tag in tags)
             {
                 if (HasTag(list, tag))
                     return true;
@@ -184,7 +184,7 @@ namespace FlaxEngine
         {
             if (list == null)
                 return false;
-            foreach (Tag tag in list)
+            foreach (Tag tag in tags)
             {
                 if (HasTagExact(list, tag))
                     return true;
@@ -204,7 +204,7 @@ namespace FlaxEngine
                 return true;
             if (list == null || list.Length == 0)
                 return false;
-            foreach (Tag tag in list)
+            foreach (Tag tag in tags)
             {
                 if (!HasTag(list, tag))
                     return false;
@@ -224,7 +224,7 @@ namespace FlaxEngine
                 return true;
             if (list == null || list.Length == 0)
                 return false;
-            foreach (Tag tag in list)
+            foreach (Tag tag in tags)
             {
                 if (!HasTagExact(list, tag))
                     return false;
