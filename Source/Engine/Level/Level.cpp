@@ -166,7 +166,6 @@ Action Level::ScriptsReload;
 Action Level::ScriptsReloaded;
 Action Level::ScriptsReloadEnd;
 #endif
-Array<String> Level::Tags;
 String Level::Layers[32];
 
 bool LevelImpl::spawnActor(Actor* actor, Actor* parent)
@@ -226,8 +225,7 @@ void LayersAndTagsSettings::Apply()
     // Tags/Layers are stored as index in actors so collection change would break the linkage
     for (auto& tag : Tags)
     {
-        if (!Level::Tags.Contains(tag))
-            Level::Tags.Add(tag);
+        Tags::Get(tag);
     }
     for (int32 i = 0; i < ARRAY_COUNT(Level::Layers); i++)
     {
@@ -733,17 +731,6 @@ void LevelImpl::CallSceneEvent(SceneEventType eventType, Scene* scene, Guid scen
         Level::SceneUnloaded(scene, sceneId);
         break;
     }
-}
-
-int32 Level::GetOrAddTag(const StringView& tag)
-{
-    int32 index = Tags.Find(tag);
-    if (index == INVALID_INDEX)
-    {
-        index = Tags.Count();
-        Tags.AddOne() = tag;
-    }
-    return index;
 }
 
 int32 Level::GetNonEmptyLayerNamesCount()

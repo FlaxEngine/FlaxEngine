@@ -379,7 +379,7 @@ namespace FlaxEditor.Modules
             actor.StaticFlags = old.StaticFlags;
             actor.HideFlags = old.HideFlags;
             actor.Layer = old.Layer;
-            actor.Tag = old.Tag;
+            actor.Tags = old.Tags;
             actor.Name = old.Name;
             actor.IsActive = old.IsActive;
 

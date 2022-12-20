@@ -217,7 +217,7 @@ namespace FlaxEditor.GUI.Tree
         /// <summary>
         /// Gets the arrow rectangle.
         /// </summary>
-        public Rectangle ArrowRect => new Rectangle(_xOffset + 2 + _margin.Left, 2, 12, 12);
+        public Rectangle ArrowRect => CustomArrowRect.HasValue ? CustomArrowRect.Value : new Rectangle(_xOffset + 2 + _margin.Left, 2, 12, 12);
 
         /// <summary>
         /// Gets the header rectangle.
@@ -249,6 +249,12 @@ namespace FlaxEditor.GUI.Tree
         }
 
         /// <summary>
+        /// Custom arrow rectangle within node.
+        /// </summary>
+        [HideInEditor, NoSerialize]
+        public Rectangle? CustomArrowRect;
+
+        /// <summary>
         /// Gets the drag over action type.
         /// </summary>
         public DragItemPositioning DragOverMode => _dragOverMode;
@@ -277,7 +283,7 @@ namespace FlaxEditor.GUI.Tree
         /// Initializes a new instance of the <see cref="TreeNode"/> class.
         /// </summary>
         public TreeNode()
-        : this(false)
+        : this(false, SpriteHandle.Invalid, SpriteHandle.Invalid)
         {
         }
 
@@ -486,11 +492,14 @@ namespace FlaxEditor.GUI.Tree
         /// <returns>True if event has been handled.</returns>
         protected virtual bool OnMouseDoubleClickHeader(ref Float2 location, MouseButton button)
         {
-            // Toggle open state
-            if (_opened)
-                Collapse();
-            else
-                Expand();
+            if (HasAnyVisibleChild)
+            {
+                // Toggle open state
+                if (_opened)
+                    Collapse();
+                else
+                    Expand();
+            }
 
             // Handled
             return true;
@@ -754,7 +763,7 @@ namespace FlaxEditor.GUI.Tree
                 }
 
                 // Check if mouse hits arrow
-                if (HasAnyVisibleChild && _mouseOverArrow)
+                if (_mouseOverArrow && HasAnyVisibleChild)
                 {
                     // Toggle open state
                     if (_opened)

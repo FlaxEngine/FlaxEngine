@@ -73,13 +73,12 @@ Actor::Actor(const SpawnParams& params)
     , _isPrefabRoot(false)
     , _isEnabled(false)
     , _layer(0)
-    , _tag(ACTOR_TAG_INVALID)
-    , _scene(nullptr)
     , _staticFlags(StaticFlags::FullyStatic)
     , _localTransform(Transform::Identity)
     , _transform(Transform::Identity)
     , _sphere(BoundingSphere::Empty)
     , _box(BoundingBox::Zero)
+    , _scene(nullptr)
     , _physicsScene(nullptr)
     , HideFlags(HideFlags::None)
 {
@@ -439,23 +438,24 @@ void Actor::DestroyChildren(float timeLeft)
     }
 }
 
-bool Actor::HasTag(const StringView& tag) const
-{
-    return HasTag() && tag == Level::Tags[_tag];
-}
-
 const String& Actor::GetLayerName() const
 {
     return Level::Layers[_layer];
 }
 
-const String& Actor::GetTag() const
+bool Actor::HasTag() const
 {
-    if (HasTag())
-    {
-        return Level::Tags[_tag];
-    }
-    return String::Empty;
+    return Tags.Count() != 0;
+}
+
+bool Actor::HasTag(const Tag& tag) const
+{
+    return Tags.Contains(tag);
+}
+
+bool Actor::HasTag(const StringView& tag) const
+{
+    return Tags.Contains(tag);
 }
 
 void Actor::SetLayer(int32 layerIndex)
@@ -463,49 +463,8 @@ void Actor::SetLayer(int32 layerIndex)
     layerIndex = Math::Clamp(layerIndex, 0, 31);
     if (layerIndex == _layer)
         return;
-
     _layer = layerIndex;
     OnLayerChanged();
-}
-
-void Actor::SetTagIndex(int32 tagIndex)
-{
-    if (tagIndex == ACTOR_TAG_INVALID)
-    {
-    }
-    else if (Level::Tags.IsEmpty())
-    {
-        tagIndex = ACTOR_TAG_INVALID;
-    }
-    else
-    {
-        tagIndex = tagIndex < 0 ? ACTOR_TAG_INVALID : Math::Min(tagIndex, Level::Tags.Count() - 1);
-    }
-    if (tagIndex == _tag)
-        return;
-
-    _tag = tagIndex;
-    OnTagChanged();
-}
-
-void Actor::SetTag(const StringView& tagName)
-{
-    int32 tagIndex;
-    if (tagName.IsEmpty())
-    {
-        tagIndex = ACTOR_TAG_INVALID;
-    }
-    else
-    {
-        tagIndex = Level::Tags.Find(tagName);
-        if (tagIndex == -1)
-        {
-            LOG(Error, "Cannot change actor tag. Given value is invalid.");
-            return;
-        }
-    }
-
-    SetTagIndex(tagIndex);
 }
 
 void Actor::SetName(const StringView& value)
@@ -897,10 +856,21 @@ void Actor::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(StaticFlags, _staticFlags);
     SERIALIZE(HideFlags);
     SERIALIZE_MEMBER(Layer, _layer);
-    if (!other || _tag != other->_tag)
+    if (!other || Tags != other->Tags)
     {
-        stream.JKEY("Tag");
-        stream.String(GetTag());
+        if (Tags.Count() == 1)
+        {
+            stream.JKEY("Tag");
+            stream.String(Tags.Get()->ToString());
+        }
+        else
+        {
+            stream.JKEY("Tags");
+            stream.StartArray();
+            for (auto& tag : Tags)
+                stream.String(tag.ToString());
+            stream.EndArray();
+        }
     }
 
     if (isPrefabDiff)
@@ -996,14 +966,27 @@ void Actor::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
         _staticFlags |= StaticFlags::Navigation;
     }
 
-    // Resolve tag (it may be missing in the current configuration
     const auto tag = stream.FindMember("Tag");
     if (tag != stream.MemberEnd())
     {
         if (tag->value.IsString() && tag->value.GetStringLength())
         {
-            const String tagName = tag->value.GetText();
-            _tag = Level::GetOrAddTag(tagName);
+            Tags.Clear();
+            Tags.Add(Tags::Get(tag->value.GetText()));
+        }
+    }
+    else
+    {
+        const auto tags = stream.FindMember("Tags");
+        if (tags != stream.MemberEnd() && tags->value.IsArray())
+        {
+            Tags.Clear();
+            for (rapidjson::SizeType i = 0; i < tags->value.Size(); i++)
+            {
+                auto& e = tags->value[i];
+                if (e.IsString() && e.GetStringLength())
+                    Tags.Add(Tags::Get(e.GetText()));
+            }
         }
     }
 
