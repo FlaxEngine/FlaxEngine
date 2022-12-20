@@ -1449,30 +1449,29 @@ namespace Flax.Build.Bindings
                         }
                         else if (fieldInfo.Type.Type == "Array")
                         {
+                            string originalElementType = originalType.Substring(0, originalType.Length - 2);
                             if (internalType)
                             {
                                 // Marshal blittable array elements back to original non-blittable elements
-                                string originalElementType = originalType.Substring(0, originalType.Length - 2);
                                 string originalElementTypeMarshaller = originalElementType + "Marshaller";
                                 string internalElementType = $"{originalElementTypeMarshaller}.{originalElementType}Internal";
-                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.NativeArrayToManagedArray<{originalElementType}, {internalElementType}>(((ManagedArray)GCHandle.FromIntPtr(managed.{fieldInfo.Name}).Target).array as {internalElementType}[], {originalElementTypeMarshaller}.ToManaged) : null");
+                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.NativeArrayToManagedArray<{originalElementType}, {internalElementType}>(((ManagedArray)GCHandle.FromIntPtr(managed.{fieldInfo.Name}).Target).GetSpan<{internalElementType}>(), {originalElementTypeMarshaller}.ToManaged) : null");
                                 toNativeContent.Append($"GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.Get(managed.{fieldInfo.Name}), GCHandleType.Weak))");
-                                freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle handle = GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); {internalElementType}[] values = ({internalElementType}[])(((ManagedArray)handle.Target).array); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} ((ManagedArray)handle.Target).Release(); handle.Free(); }}");
-                                freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle handle = GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); {internalElementType}[] values = ({internalElementType}[])(((ManagedArray)handle.Target).array); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} ((ManagedArray)handle.Target).Release(); handle.Free(); }}");
+                                freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle handle = GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = ((ManagedArray)handle.Target).GetSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} ((ManagedArray)handle.Target).Release(); handle.Free(); }}");
+                                freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle handle = GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = ((ManagedArray)handle.Target).GetSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} ((ManagedArray)handle.Target).Release(); handle.Free(); }}");
                             }
                             else if (fieldInfo.Type.GenericArgs[0].IsObjectRef)
                             {
                                 // Array elements passed as GCHandles
-                                string originalElementType = originalType.Substring(0, originalType.Length - 2);
                                 toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.GCHandleArrayToManagedArray<{originalElementType}>((ManagedArray)GCHandle.FromIntPtr(managed.{fieldInfo.Name}).Target) : null");
                                 toNativeContent.Append($"managed.{fieldInfo.Name}?.Length > 0 ? GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.Get(NativeInterop.ManagedArrayToGCHandleArray(managed.{fieldInfo.Name})), GCHandleType.Weak)) : IntPtr.Zero");
-                                freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle handle = GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); IntPtr[] ptrs = (IntPtr[])(((ManagedArray)handle.Target).array); foreach (var ptr in ptrs) {{ if (ptr != IntPtr.Zero) {{ GCHandle.FromIntPtr(ptr).Free(); }} }} ((ManagedArray)handle.Target).Release(); handle.Free(); }}");
-                                freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle handle = GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); IntPtr[] ptrs = (IntPtr[])(((ManagedArray)handle.Target).array); foreach (var ptr in ptrs) {{ if (ptr != IntPtr.Zero) {{ GCHandle.FromIntPtr(ptr).Free(); }} }} ((ManagedArray)handle.Target).Release(); handle.Free(); }}");
+                                freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle handle = GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<IntPtr> ptrs = ((ManagedArray)handle.Target).GetSpan<IntPtr>(); foreach (var ptr in ptrs) {{ if (ptr != IntPtr.Zero) {{ GCHandle.FromIntPtr(ptr).Free(); }} }} ((ManagedArray)handle.Target).Release(); handle.Free(); }}");
+                                freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle handle = GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<IntPtr> ptrs = ((ManagedArray)handle.Target).GetSpan<IntPtr>(); foreach (var ptr in ptrs) {{ if (ptr != IntPtr.Zero) {{ GCHandle.FromIntPtr(ptr).Free(); }} }} ((ManagedArray)handle.Target).Release(); handle.Free(); }}");
                             }
                             else
                             {
                                 // Blittable array elements
-                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? ({originalType})(((ManagedArray)GCHandle.FromIntPtr(managed.{fieldInfo.Name}).Target).array) : null");
+                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? ((ManagedArray)GCHandle.FromIntPtr(managed.{fieldInfo.Name}).Target).GetArray<{originalElementType}>() : null");
                                 toNativeContent.Append($"managed.{fieldInfo.Name}?.Length > 0 ? GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.Get(managed.{fieldInfo.Name}), GCHandleType.Weak)) : IntPtr.Zero");
                                 freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle handle = GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); ((ManagedArray)handle.Target).Release(); handle.Free(); }}");
                                 freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ GCHandle handle = GCHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); ((ManagedArray)handle.Target).Release(); handle.Free(); }}");
@@ -1545,13 +1544,13 @@ namespace Flax.Build.Bindings
                 // NOTE: GCHandles of FlaxEngine.Object must not be released unless they were allocated by this marshaller
                 contents.Append(indent).AppendLine($"public struct Bidirectional").Append(indent).AppendLine("{");
                 contents.Append(indent2).AppendLine($"{structureInfo.Name} managed;");
-                contents.Append(indent2).AppendLine($"{structureInfo.Name}Internal? unmanaged;");
-                contents.Append(indent2).AppendLine($"public void FromManaged({structureInfo.Name} managed) {{ this.managed = managed; }}");
-                contents.Append(indent2).AppendLine($"public {structureInfo.Name}Internal ToUnmanaged() {{ unmanaged = {marshallerName}.ToNative(managed); return unmanaged.Value; }}");
+                contents.Append(indent2).AppendLine($"{structureInfo.Name}Internal unmanaged;");
+                contents.Append(indent2).AppendLine($"public void FromManaged({structureInfo.Name} managed) => this.managed = managed;");
+                contents.Append(indent2).AppendLine($"public {structureInfo.Name}Internal ToUnmanaged() {{ unmanaged = {marshallerName}.ToNative(managed); return unmanaged; }}");
                 //contents.Append(indent2).AppendLine($"public void FromUnmanaged({structureInfo.Name}Internal unmanaged) {{ {marshallerName}.Free(this.unmanaged.Value); this.unmanaged = unmanaged; }}");
-                contents.Append(indent2).AppendLine($"public void FromUnmanaged({structureInfo.Name}Internal unmanaged) {{ this.unmanaged = unmanaged; }}");
-                contents.Append(indent2).AppendLine($"public {structureInfo.Name} ToManaged() {{ managed = {marshallerName}.ToManaged(unmanaged.Value); return managed; }}");
-                contents.Append(indent2).AppendLine($"public void Free() {{ if (unmanaged.HasValue) {{ NativeToManaged.Free(unmanaged.Value); unmanaged = null; }} }}");
+                contents.Append(indent2).AppendLine($"public void FromUnmanaged({structureInfo.Name}Internal unmanaged) => this.unmanaged = unmanaged;");
+                contents.Append(indent2).AppendLine($"public {structureInfo.Name} ToManaged() {{ managed = {marshallerName}.ToManaged(unmanaged); return managed; }}");
+                contents.Append(indent2).AppendLine($"public void Free() => NativeToManaged.Free(unmanaged);");
                 contents.Append(indent).AppendLine("}");
 
                 // Bidirectional stateless shape
