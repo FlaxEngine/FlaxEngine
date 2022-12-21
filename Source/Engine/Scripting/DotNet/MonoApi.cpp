@@ -82,14 +82,15 @@ private:
 public:
     CoreCLRAssembly(void* assemblyHandle, const char* name, const char* fullname)
     {
+        static void* GetManagedClassesPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetManagedClasses"));
+
         _assemblyHandle = assemblyHandle;
         _name = name;
         _fullname = fullname;
 
         ManagedClass* managedClasses;
         int classCount;
-
-        CoreCLR::CallStaticMethodInternal<void, void*, ManagedClass**, int*>(TEXT("GetManagedClasses"), _assemblyHandle, &managedClasses, &classCount);
+        CoreCLR::CallStaticMethod<void, void*, ManagedClass**, int*>(GetManagedClassesPtr, _assemblyHandle, &managedClasses, &classCount);
         for (int i = 0; i < classCount; i++)
         {
             CoreCLRClass* mci = New<CoreCLRClass>(managedClasses[i].typeHandle, StringAnsi(managedClasses[i].name), StringAnsi(managedClasses[i].fullname), StringAnsi(managedClasses[i].namespace_), managedClasses[i].typeAttributes, this);
@@ -113,22 +114,22 @@ public:
         assemblyHandles.Remove(_assemblyHandle);
     }
 
-    void* GetHandle()
+    void* GetHandle() const
     {
         return _assemblyHandle;
     }
 
-    const StringAnsi& GetName()
+    const StringAnsi& GetName() const
     {
         return _name;
     }
 
-    const StringAnsi& GetFullname()
+    const StringAnsi& GetFullname() const
     {
         return _fullname;
     }
 
-    Array<CoreCLRClass*> GetClasses()
+    const Array<CoreCLRClass*>& GetClasses() const
     {
         return _classes;
     }
@@ -170,11 +171,6 @@ public:
 
     ~CoreCLRClass()
     {
-        for (auto method : _methods)
-        {
-            //int rem = monoMethods.RemoveValue(method);
-            //ASSERT(rem > 0)
-        }
         _methods.ClearDelete();
         _fields.ClearDelete();
         _attributes.ClearDelete();
@@ -184,12 +180,12 @@ public:
         classHandles.Remove(_typeHandle);
     }
 
-    uint32 GetAttributes()
+    uint32 GetAttributes() const
     {
         return _typeAttributes;
     }
 
-    uint32 GetTypeToken()
+    uint32 GetTypeToken() const
     {
         return _typeToken;
     }
@@ -199,46 +195,47 @@ public:
         if (_size != 0)
             return _size;
 
-        uint32 dummy;
-        _size = mono_class_value_size((MonoClass*)this, &dummy);
+        uint32 align;
+        _size = mono_class_value_size((MonoClass*)this, &align);
 
         return _size;
     }
 
-    const StringAnsi& GetName()
+    const StringAnsi& GetName() const
     {
         return _name;
     }
 
-    const StringAnsi& GetFullname()
+    const StringAnsi& GetFullname() const
     {
-        return _fullname; // FIXME: this should probably return the decorated C# name for generic types (foo<T>) and not the IL-name (foo`1[[T)
+        return _fullname;
     }
 
-    const StringAnsi& GetNamespace()
+    const StringAnsi& GetNamespace() const
     {
         return _namespace;
     }
 
-    void* GetTypeHandle()
+    void* GetTypeHandle() const
     {
         return _typeHandle;
     }
 
-    CoreCLRAssembly* GetAssembly()
+    const CoreCLRAssembly* GetAssembly() const
     {
         return _image;
     }
 
-    Array<CoreCLRMethod*> GetMethods()
+    const Array<CoreCLRMethod*>& GetMethods()
     {
         if (_cachedMethods)
             return _methods;
+        
+        static void* GetClassMethodsPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetClassMethods"));
 
         ClassMethod* foundMethods;
         int numMethods;
-
-        CoreCLR::CallStaticMethodInternal<void, void*, ClassMethod**, int*>(TEXT("GetClassMethods"), _typeHandle, &foundMethods, &numMethods);
+        CoreCLR::CallStaticMethod<void, void*, ClassMethod**, int*>(GetClassMethodsPtr, _typeHandle, &foundMethods, &numMethods);
         for (int i = 0; i < numMethods; i++)
         {
             CoreCLRMethod* method = New<CoreCLRMethod>(StringAnsi(foundMethods[i].name), foundMethods[i].numParameters, foundMethods[i].handle, foundMethods[i].methodAttributes, this);
@@ -252,15 +249,16 @@ public:
         return _methods;
     }
 
-    Array<CoreCLRField*> GetFields()
+    const Array<CoreCLRField*>& GetFields()
     {
         if (_cachedFields)
             return _fields;
 
+        static void* GetClassFieldsPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetClassFields"));
+
         ClassField* foundFields;
         int numFields;
-
-        CoreCLR::CallStaticMethodInternal<void, void*, ClassField**, int*>(TEXT("GetClassFields"), _typeHandle, &foundFields, &numFields);
+        CoreCLR::CallStaticMethod<void, void*, ClassField**, int*>(GetClassFieldsPtr, _typeHandle, &foundFields, &numFields);
         for (int i = 0; i < numFields; i++)
         {
             CoreCLRField* field = New<CoreCLRField>(StringAnsi(foundFields[i].name), foundFields[i].fieldHandle, foundFields[i].fieldType, foundFields[i].fieldAttributes, this);
@@ -274,15 +272,16 @@ public:
         return _fields;
     }
 
-    Array<CoreCLRProperty*> GetProperties()
+    const Array<CoreCLRProperty*>& GetProperties()
     {
         if (_cachedProperties)
             return _properties;
 
+        static void* GetClassPropertiesPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetClassProperties"));
+
         ClassProperty* foundProperties;
         int numProperties;
-
-        CoreCLR::CallStaticMethodInternal<void, void*, ClassProperty**, int*>(TEXT("GetClassProperties"), _typeHandle, &foundProperties, &numProperties);
+        CoreCLR::CallStaticMethod<void, void*, ClassProperty**, int*>(GetClassPropertiesPtr, _typeHandle, &foundProperties, &numProperties);
         for (int i = 0; i < numProperties; i++)
         {
             CoreCLRProperty* prop = New<CoreCLRProperty>(StringAnsi(foundProperties[i].name), foundProperties[i].getterHandle, foundProperties[i].setterHandle, foundProperties[i].getterFlags, foundProperties[i].setterFlags, this);
@@ -296,15 +295,16 @@ public:
         return _properties;
     }
 
-    Array<CoreCLRCustomAttribute*> GetCustomAttributes()
+    const Array<CoreCLRCustomAttribute*>& GetCustomAttributes()
     {
         if (_cachedAttributes)
             return _attributes;
 
+        static void* GetClassAttributesPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetClassAttributes"));
+
         ClassAttribute* foundAttributes;
         int numAttributes;
-
-        CoreCLR::CallStaticMethodInternal<void, void*, ClassAttribute**, int*>(TEXT("GetClassAttributes"), _typeHandle, &foundAttributes, &numAttributes);
+        CoreCLR::CallStaticMethod<void, void*, ClassAttribute**, int*>(GetClassAttributesPtr, _typeHandle, &foundAttributes, &numAttributes);
         for (int i = 0; i < numAttributes; i++)
         {
             CoreCLRClass* attributeClass = GetClass(foundAttributes[i].attributeTypeHandle);
@@ -319,15 +319,16 @@ public:
         return _attributes;
     }
 
-    Array<CoreCLRClass*> GetInterfaces()
+    const Array<CoreCLRClass*>& GetInterfaces()
     {
         if (_cachedInterfaces)
             return _interfaces;
 
+        static void* GetClassInterfacesPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetClassInterfaces"));
+
         void** foundInterfaces;
         int numInterfaces;
-
-        CoreCLR::CallStaticMethodInternal<void, void*, void***, int*>(TEXT("GetClassInterfaces"), _typeHandle, &foundInterfaces, &numInterfaces);
+        CoreCLR::CallStaticMethod<void, void*, void***, int*>(GetClassInterfacesPtr, _typeHandle, &foundInterfaces, &numInterfaces);
         for (int i = 0; i < numInterfaces; i++)
         {
             CoreCLRClass* interfaceClass = classHandles[foundInterfaces[i]];
@@ -358,32 +359,32 @@ public:
     {
     }
 
-    const StringAnsi& GetName()
+    const StringAnsi& GetName() const
     {
         return _name;
     }
 
-    CoreCLRClass* GetClass()
+    const CoreCLRClass* GetClass() const
     {
         return _class;
     }
 
-    uint32 GetAttributes()
+    uint32 GetAttributes() const
     {
         return _methodAttributes;
     }
 
-    int GetNumParameters()
+    int GetNumParameters() const
     {
         return _numParams;
     }
 
-    void* GetMethodHandle()
+    void* GetMethodHandle() const
     {
         return _methodHandle;
     }
 
-    Array<void*> GetParameterTypes()
+    const Array<void*>& GetParameterTypes()
     {
         if (!_cachedParameters)
             CacheParameters();
@@ -397,19 +398,17 @@ public:
         return _returnType;
     }
 
+private:
     void CacheParameters()
     {
-        _returnType = CoreCLR::CallStaticMethodInternal<void*, void*>(TEXT("GetMethodReturnType"), _methodHandle);
+        static void* GetMethodReturnTypePtr = CoreCLR::GetStaticMethodPointer(TEXT("GetMethodReturnType"));
+        static void* GetMethodParameterTypesPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetMethodParameterTypes"));
+
+        _returnType = CoreCLR::CallStaticMethod<void*, void*>(GetMethodReturnTypePtr, _methodHandle);
 
         void** parameterTypeHandles;
-        CoreCLR::CallStaticMethodInternal<void, void*, void***>(TEXT("GetMethodParameterTypes"), _methodHandle, &parameterTypeHandles);
-
-        _parameterTypes.SetCapacity(_numParams, false);
-
-        for (int i = 0; i < _numParams; i++)
-        {
-            _parameterTypes.Add(parameterTypeHandles[i]);
-        }
+        CoreCLR::CallStaticMethod<void, void*, void***>(GetMethodParameterTypesPtr, _methodHandle, &parameterTypeHandles);
+        _parameterTypes.Set(parameterTypeHandles, _numParams);
         CoreCLR::Free(parameterTypeHandles);
 
         _cachedParameters = true;
@@ -431,27 +430,27 @@ public:
     {
     }
 
-    const StringAnsi& GetName()
+    const StringAnsi& GetName() const
     {
         return _name;
     }
 
-    void* GetType()
+    void* GetType() const
     {
         return _fieldType;
     }
 
-    CoreCLRClass* GetClass()
+    const CoreCLRClass* GetClass() const
     {
         return _class;
     }
 
-    uint32 GetAttributes()
+    uint32 GetAttributes() const
     {
         return _fieldAttributes;
     }
 
-    void* GetHandle()
+    void* GetHandle() const
     {
         return _fieldHandle;
     }
@@ -475,22 +474,22 @@ public:
             _setMethod = New<CoreCLRMethod>(StringAnsi(_name + "Set"), 1, setter, setterFlags, klass);
     }
 
-    const StringAnsi& GetName()
+    const StringAnsi& GetName() const
     {
         return _name;
     }
 
-    CoreCLRClass* GetClass()
+    const CoreCLRClass* GetClass() const
     {
         return _class;
     }
 
-    CoreCLRMethod* GetGetMethod()
+    const CoreCLRMethod* GetGetMethod() const
     {
         return _getMethod;
     }
 
-    CoreCLRMethod* GetSetMethod()
+    const CoreCLRMethod* GetSetMethod() const
     {
         return _setMethod;
     }
@@ -510,12 +509,12 @@ public:
     {
     }
 
-    void* GetHandle()
+    void* GetHandle() const
     {
         return _handle;
     }
 
-    CoreCLRClass* GetClass()
+    const CoreCLRClass* GetClass() const
     {
         return _attributeClass;
     }
@@ -542,16 +541,18 @@ CoreCLRClass* GetOrCreateClass(void* type)
     CoreCLRClass* klass;
     if (!classHandles.TryGet(type, klass))
     {
+        static void* GetManagedClassFromTypePtr = CoreCLR::GetStaticMethodPointer(TEXT("GetManagedClassFromType"));
+
         ManagedClass classInfo;
         void* assemblyHandle;
-        CoreCLR::CallStaticMethodInternal<void, void*, void*>(TEXT("GetManagedClassFromType"), type, &classInfo, &assemblyHandle);
+        CoreCLR::CallStaticMethod<void, void*, void*>(GetManagedClassFromTypePtr, type, &classInfo, &assemblyHandle);
         CoreCLRAssembly* image = GetAssembly(assemblyHandle);
         klass = New<CoreCLRClass>(classInfo.typeHandle, StringAnsi(classInfo.name), StringAnsi(classInfo.fullname), StringAnsi(classInfo.namespace_), classInfo.typeAttributes, image);
         if (image != nullptr)
             image->AddClass(klass);
 
         if (type != classInfo.typeHandle)
-            CoreCLR::CallStaticMethodInternal<void, void*, void*>(TEXT("GetManagedClassFromType"), type, &classInfo);
+            CoreCLR::CallStaticMethod<void, void*, void*>(GetManagedClassFromTypePtr, type, &classInfo);
         classHandles.Add(classInfo.typeHandle, klass);
 
         CoreCLR::Free((void*)classInfo.name);
@@ -564,12 +565,14 @@ CoreCLRClass* GetOrCreateClass(void* type)
 
 gchandle CoreCLR::NewGCHandle(void* obj, bool pinned)
 {
-    return (gchandle)CoreCLR::CallStaticMethodInternal<void*, void*, bool>(TEXT("NewGCHandle"), obj, pinned);
+    static void* NewGCHandlePtr = CoreCLR::GetStaticMethodPointer(TEXT("NewGCHandle"));
+    return (gchandle)CoreCLR::CallStaticMethod<void*, void*, bool>(NewGCHandlePtr, obj, pinned);
 }
 
 gchandle CoreCLR::NewGCHandleWeakref(void* obj, bool track_resurrection)
 {
-    return (gchandle)CoreCLR::CallStaticMethodInternal<void*, void*, bool>(TEXT("NewGCHandleWeakref"), obj, track_resurrection);
+    static void* NewGCHandleWeakrefPtr = CoreCLR::GetStaticMethodPointer(TEXT("NewGCHandleWeakref"));
+    return (gchandle)CoreCLR::CallStaticMethod<void*, void*, bool>(NewGCHandleWeakrefPtr, obj, track_resurrection);
 }
 
 void* CoreCLR::GetGCHandleTarget(const gchandle& gchandle)
@@ -579,7 +582,8 @@ void* CoreCLR::GetGCHandleTarget(const gchandle& gchandle)
 
 void CoreCLR::FreeGCHandle(const gchandle& gchandle)
 {
-    CoreCLR::CallStaticMethodInternal<void, void*>(TEXT("FreeGCHandle"), (void*)gchandle);
+    static void* FreeGCHandlePtr = CoreCLR::GetStaticMethodPointer(TEXT("FreeGCHandle"));
+    CoreCLR::CallStaticMethod<void, void*>(FreeGCHandlePtr, (void*)gchandle);
 }
 
 const char* CoreCLR::GetClassFullname(void* klass)
@@ -597,7 +601,8 @@ bool CoreCLR::HasCustomAttribute(void* klass)
 }
 void* CoreCLR::GetCustomAttribute(void* klass, void* attribClass)
 {
-    return CoreCLR::CallStaticMethodInternal<void*, void*, void*>(TEXT("GetCustomAttribute"), ((CoreCLRClass*)klass)->GetTypeHandle(), ((CoreCLRClass*)attribClass)->GetTypeHandle());
+    static void* GetCustomAttributePtr = CoreCLR::GetStaticMethodPointer(TEXT("GetCustomAttribute"));
+    return CoreCLR::CallStaticMethod<void*, void*, void*>(GetCustomAttributePtr, ((CoreCLRClass*)klass)->GetTypeHandle(), ((CoreCLRClass*)attribClass)->GetTypeHandle());
 }
 Array<void*> CoreCLR::GetCustomAttributes(void* klass)
 {
@@ -646,66 +651,78 @@ MONO_API MONO_RT_EXTERNAL_ONLY void mono_add_internal_call(const char* name, con
 
 MONO_API mono_unichar2* mono_string_chars(MonoString* s)
 {
-    _MonoString* str = (_MonoString*)CoreCLR::CallStaticMethodInternal<void*, void*>(TEXT("GetStringPointer"), s);
+    static void* GetStringPointerPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetStringPointer"));
+    _MonoString* str = (_MonoString*)CoreCLR::CallStaticMethod<void*, void*>(GetStringPointerPtr, s);
     return str->chars;
 }
 
 MONO_API int mono_string_length(MonoString* s)
 {
-    _MonoString* str = (_MonoString*)CoreCLR::CallStaticMethodInternal<void*, void*>(TEXT("GetStringPointer"), s);
+    static void* GetStringPointerPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetStringPointer"));
+    _MonoString* str = (_MonoString*)CoreCLR::CallStaticMethod<void*, void*>(GetStringPointerPtr, s);
     return str->length;
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoObject* mono_object_new(MonoDomain* domain, MonoClass* klass)
 {
-    return (MonoObject*)CoreCLR::CallStaticMethodInternal<void*, void*>(TEXT("NewObject"), ((CoreCLRClass*)klass)->GetTypeHandle());
+    static void* NewObjectPtr = CoreCLR::GetStaticMethodPointer(TEXT("NewObject"));
+    return (MonoObject*)CoreCLR::CallStaticMethod<void*, void*>(NewObjectPtr, ((CoreCLRClass*)klass)->GetTypeHandle());
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoArray* mono_array_new(MonoDomain* domain, MonoClass* eclass, uintptr_t n)
 {
-    return (MonoArray*)CoreCLR::CallStaticMethodInternal<void*, void*, long long>(TEXT("NewArray"), ((CoreCLRClass*)eclass)->GetTypeHandle(), n);
+    static void* NewArrayPtr = CoreCLR::GetStaticMethodPointer(TEXT("NewArray"));
+    return (MonoArray*)CoreCLR::CallStaticMethod<void*, void*, long long>(NewArrayPtr, ((CoreCLRClass*)eclass)->GetTypeHandle(), n);
 }
 
 MONO_API char* mono_array_addr_with_size(MonoArray* array, int size, uintptr_t idx)
 {
-    return (char*)CoreCLR::CallStaticMethodInternal<void*, void*, int, int>(TEXT("GetArrayPointerToElement"), array, size, (int)idx);
+    static void* GetArrayPointerToElementPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetArrayPointerToElement"));
+    return (char*)CoreCLR::CallStaticMethod<void*, void*, int, int>(GetArrayPointerToElementPtr, array, size, (int)idx);
 }
 
 MONO_API uintptr_t mono_array_length(MonoArray* array)
 {
-    return CoreCLR::CallStaticMethodInternal<int, void*>(TEXT("GetArrayLength"), array);
+    static void* GetArrayLengthPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetArrayLength"));
+    return CoreCLR::CallStaticMethod<int, void*>(GetArrayLengthPtr, array);
 }
 
 MONO_API MonoString* mono_string_empty(MonoDomain* domain)
 {
-    return (MonoString*)CoreCLR::CallStaticMethodInternal<void*>(TEXT("GetStringEmpty"));
+    static void* GetStringEmptyPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetStringEmpty"));
+    return (MonoString*)CoreCLR::CallStaticMethod<void*>(GetStringEmptyPtr);
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoString* mono_string_new_utf16(MonoDomain* domain, const mono_unichar2* text, int32_t len)
 {
-    return (MonoString*)CoreCLR::CallStaticMethodInternal<void*, const mono_unichar2*, int>(TEXT("NewStringUTF16"), text, len);
+    static void* NewStringUTF16Ptr = CoreCLR::GetStaticMethodPointer(TEXT("NewStringUTF16"));
+    return (MonoString*)CoreCLR::CallStaticMethod<void*, const mono_unichar2*, int>(NewStringUTF16Ptr, text, len);
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoString* mono_string_new(MonoDomain* domain, const char* text)
 {
-    return (MonoString*)CoreCLR::CallStaticMethodInternal<void*, const char*>(TEXT("NewString"), text);
+    static void* NewStringPtr = CoreCLR::GetStaticMethodPointer(TEXT("NewString"));
+    return (MonoString*)CoreCLR::CallStaticMethod<void*, const char*>(NewStringPtr, text);
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoString* mono_string_new_len(MonoDomain* domain, const char* text, unsigned int length)
 {
-    return (MonoString*)CoreCLR::CallStaticMethodInternal<void*, const char*, int>(TEXT("NewStringLength"), text, length);
+    static void* NewStringLengthPtr = CoreCLR::GetStaticMethodPointer(TEXT("NewStringLength"));
+    return (MonoString*)CoreCLR::CallStaticMethod<void*, const char*, int>(NewStringLengthPtr, text, length);
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY char* mono_string_to_utf8(MonoString* string_obj)
 {
-    Char* strw = string_obj != nullptr ? (Char*)mono_string_chars(string_obj) : nullptr;
-    auto len = string_obj != nullptr ? mono_string_length(string_obj) : 0;
-    ASSERT(len >= 0)
-    char* stra = (char*)CoreCLR::Allocate(sizeof(char) * (len + 1));
-    StringUtils::ConvertUTF162UTF8(strw, stra, len, len);
-    stra[len] = 0;
+    static void* GetStringPointerPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetStringPointer"));
+    _MonoString* monoString = (_MonoString*)CoreCLR::CallStaticMethod<void*, void*>(GetStringPointerPtr, string_obj);
 
-    return stra;
+    auto len = monoString->length;
+    ASSERT(len >= 0)
+    char* str = (char*)CoreCLR::Allocate(sizeof(char) * (len + 1));
+    StringUtils::ConvertUTF162UTF8((Char*)monoString->chars, str, len, len);
+    str[len] = 0;
+
+    return str;
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoString* mono_object_to_string(MonoObject* obj, MonoObject** exc)
@@ -720,7 +737,8 @@ MONO_API int mono_object_hash(MonoObject* obj)
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoObject* mono_value_box(MonoDomain* domain, MonoClass* klass, void* val)
 {
-    return (MonoObject*)CoreCLR::CallStaticMethodInternal<void*, void*, void*>(TEXT("BoxValue"), ((CoreCLRClass*)klass)->GetTypeHandle(), val);
+    static void* BoxValuePtr = CoreCLR::GetStaticMethodPointer(TEXT("BoxValue"));
+    return (MonoObject*)CoreCLR::CallStaticMethod<void*, void*, void*>(BoxValuePtr, ((CoreCLRClass*)klass)->GetTypeHandle(), val);
 }
 
 MONO_API void mono_value_copy(void* dest, /*const*/ void* src, MonoClass* klass)
@@ -731,7 +749,8 @@ MONO_API void mono_value_copy(void* dest, /*const*/ void* src, MonoClass* klass)
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoClass* mono_object_get_class(MonoObject* obj)
 {
-    void* classHandle = CoreCLR::CallStaticMethodInternal<void*, void*>(TEXT("GetObjectType"), obj);
+    static void* GetObjectTypePtr = CoreCLR::GetStaticMethodPointer(TEXT("GetObjectType"));
+    void* classHandle = CoreCLR::CallStaticMethod<void*, void*>(GetObjectTypePtr, obj);
 
     CoreCLRClass* mi = GetOrCreateClass((void*)classHandle);
 
@@ -741,17 +760,20 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoClass* mono_object_get_class(MonoObject* obj)
 
 MONO_API void* mono_object_unbox(MonoObject* obj)
 {
-    return CoreCLR::CallStaticMethodInternal<void*, void*>(TEXT("UnboxValue"), obj);
+    static void* UnboxValuePtr = CoreCLR::GetStaticMethodPointer(TEXT("UnboxValue"));
+    return CoreCLR::CallStaticMethod<void*, void*>(UnboxValuePtr, obj);
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY void mono_raise_exception(MonoException* ex)
 {
-    CoreCLR::CallStaticMethodInternal<void*, void*>(TEXT("RaiseException"), ex);
+    static void* RaiseExceptionPtr = CoreCLR::GetStaticMethodPointer(TEXT("RaiseException"));
+    CoreCLR::CallStaticMethod<void*, void*>(RaiseExceptionPtr, ex);
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY void mono_runtime_object_init(MonoObject* this_obj)
 {
-    CoreCLR::CallStaticMethodInternal<void, void*>(TEXT("ObjectInit"), this_obj);
+    static void* ObjectInitPtr = CoreCLR::GetStaticMethodPointer(TEXT("ObjectInit"));
+    CoreCLR::CallStaticMethod<void, void*>(ObjectInitPtr, this_obj);
 }
 
 MONO_API MonoMethod* mono_object_get_virtual_method(MonoObject* obj, MonoMethod* method)
@@ -763,29 +785,32 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoObject* mono_runtime_invoke(MonoMethod* metho
 {
     CoreCLRMethod* mi = (CoreCLRMethod*)method;
     void* methodPtr = mi->GetMethodHandle();
-    ASSERT(methodPtr != nullptr)
+    ASSERT(methodPtr != nullptr);
 
     static void* InvokeMethodPtr = CoreCLR::GetStaticMethodPointer(TEXT("InvokeMethod"));
-    return (MonoObject*)CoreCLR::CallStaticMethodInternalPointer<void*, void*, void*, void*, void*>(InvokeMethodPtr, obj, methodPtr, params, exc);
+    return (MonoObject*)CoreCLR::CallStaticMethod<void*, void*, void*, void*, void*>(InvokeMethodPtr, obj, methodPtr, params, exc);
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY void* mono_method_get_unmanaged_thunk(MonoMethod* method)
 {
     CoreCLRMethod* mi = (CoreCLRMethod*)method;
     void* methodPtr = mi->GetMethodHandle();
-    ASSERT(methodPtr != nullptr)
+    ASSERT(methodPtr != nullptr);
 
-    return CoreCLR::CallStaticMethodInternal<void*, void*>(TEXT("GetMethodUnmanagedFunctionPointer"), methodPtr);
+    static void* GetMethodUnmanagedFunctionPointerPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetMethodUnmanagedFunctionPointer"));
+    return CoreCLR::CallStaticMethod<void*, void*>(GetMethodUnmanagedFunctionPointerPtr, methodPtr);
 }
 
 MONO_API void mono_field_set_value(MonoObject* obj, MonoClassField* field, void* value)
 {
-    CoreCLR::CallStaticMethodInternal<void, void*, void*, void*>(TEXT("FieldSetValue"), obj, ((CoreCLRField*)field)->GetHandle(), value);
+    static void* FieldSetValuePtr = CoreCLR::GetStaticMethodPointer(TEXT("FieldSetValue"));
+    CoreCLR::CallStaticMethod<void, void*, void*, void*>(FieldSetValuePtr, obj, ((CoreCLRField*)field)->GetHandle(), value);
 }
 
 MONO_API void mono_field_get_value(MonoObject* obj, MonoClassField* field, void* value)
 {
-    CoreCLR::CallStaticMethodInternal<void, void*, void*, void*>(TEXT("FieldGetValue"), obj, ((CoreCLRField*)field)->GetHandle(), value);
+    static void* FieldGetValuePtr = CoreCLR::GetStaticMethodPointer(TEXT("FieldGetValue"));
+    CoreCLR::CallStaticMethod<void, void*, void*, void*>(FieldGetValuePtr, obj, ((CoreCLRField*)field)->GetHandle(), value);
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoObject* mono_field_get_value_object(MonoDomain* domain, MonoClassField* field, MonoObject* obj)
@@ -809,7 +834,8 @@ MONO_API void mono_gc_wbarrier_set_field(MonoObject* obj, void* field_ptr, MonoO
 }
 MONO_API void mono_gc_wbarrier_set_arrayref(MonoArray* arr, void* slot_ptr, MonoObject* value)
 {
-    CoreCLR::CallStaticMethodInternal<void, void*, void*, void*>(TEXT("SetArrayValueReference"), arr, slot_ptr, value);
+    static void* SetArrayValueReferencePtr = CoreCLR::GetStaticMethodPointer(TEXT("SetArrayValueReference"));
+    CoreCLR::CallStaticMethod<void, void*, void*, void*>(SetArrayValueReferencePtr, arr, slot_ptr, value);
 }
 MONO_API void mono_gc_wbarrier_generic_store(void* ptr, MonoObject* value)
 {
@@ -844,7 +870,8 @@ MONO_API MonoAssembly* mono_domain_assembly_open(MonoDomain* domain, const char*
 {
     const char* name;
     const char* fullname;
-    void* assemblyHandle = CoreCLR::CallStaticMethodInternal<void*, const char*, const char**, const char**>(TEXT("LoadAssemblyFromPath"), path, &name, &fullname);
+    static void* LoadAssemblyFromPathPtr = CoreCLR::GetStaticMethodPointer(TEXT("LoadAssemblyFromPath"));
+    void* assemblyHandle = CoreCLR::CallStaticMethod<void*, const char*, const char**, const char**>(LoadAssemblyFromPathPtr, path, &name, &fullname);
     CoreCLRAssembly* assembly = New<CoreCLRAssembly>(assemblyHandle, name, fullname);
 
     CoreCLR::Free((void*)name);
@@ -861,7 +888,8 @@ MONO_API MonoImage* mono_get_corlib(void)
     {
         const char* name;
         const char* fullname;
-        void* assemblyHandle = CoreCLR::CallStaticMethodInternal<void*, const char*, const char**, const char**>(TEXT("GetAssemblyByName"), "System.Private.CoreLib", &name, &fullname);
+        static void* GetAssemblyByNamePtr = CoreCLR::GetStaticMethodPointer(TEXT("GetAssemblyByName"));
+        void* assemblyHandle = CoreCLR::CallStaticMethod<void*, const char*, const char**, const char**>(GetAssemblyByNamePtr, "System.Private.CoreLib", &name, &fullname);
         corlibimage = New<CoreCLRAssembly>(assemblyHandle, name, fullname);
 
         CoreCLR::Free((void*)name);
@@ -984,15 +1012,6 @@ MONO_API MonoClass* mono_get_string_class(void)
 }
 
 /*
- * jit.h
-*/
-
-MONO_API char* mono_get_runtime_build_info(void)
-{
-    return CoreCLR::CallStaticMethodInternal<char*>(TEXT("GetRuntimeInformation"));
-}
-
-/*
  * assembly.h
 */
 
@@ -1005,7 +1024,8 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoAssembly* mono_assembly_load_from_full(MonoIm
 
 MONO_API void mono_assembly_close(MonoAssembly* assembly)
 {
-    CoreCLR::CallStaticMethodInternal<void, void*>(TEXT("CloseAssembly"), ((CoreCLRAssembly*)assembly)->GetHandle());
+    static void* CloseAssemblyPtr = CoreCLR::GetStaticMethodPointer(TEXT("CloseAssembly"));
+    CoreCLR::CallStaticMethod<void, const void*>(CloseAssemblyPtr, ((CoreCLRAssembly*)assembly)->GetHandle());
 
     Delete((CoreCLRAssembly*)assembly);
 }
@@ -1053,7 +1073,8 @@ MONO_API void mono_debug_open_image_from_memory(MonoImage* image, const mono_byt
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoReflectionAssembly* mono_assembly_get_object(MonoDomain* domain, MonoAssembly* assembly)
 {
-    return (MonoReflectionAssembly*)CoreCLR::CallStaticMethodInternal<void*, const char*>(TEXT("GetAssemblyObject"), ((CoreCLRAssembly*)assembly)->GetFullname().Get());
+    static void* GetAssemblyObjectPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetAssemblyObject"));
+    return (MonoReflectionAssembly*)CoreCLR::CallStaticMethod<void*, const char*>(GetAssemblyObjectPtr, ((CoreCLRAssembly*)assembly)->GetFullname().Get());
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoReflectionType* mono_type_get_object(MonoDomain* domain, MonoType* type)
@@ -1166,11 +1187,10 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoClass* mono_array_class_get(MonoClass* elemen
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoClassField* mono_class_get_field_from_name(MonoClass* klass, const char* name)
 {
-    StringAnsi name2(name);
     CoreCLRClass* mi = (CoreCLRClass*)klass;
     for (auto field : mi->GetFields())
     {
-        if (field->GetName() == name2)
+        if (field->GetName() == name)
             return (MonoClassField*)field;
     }
     return nullptr;
@@ -1178,11 +1198,10 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoClassField* mono_class_get_field_from_name(Mo
 
 MONO_API MonoProperty* mono_class_get_property_from_name(MonoClass* klass, const char* name)
 {
-    StringAnsi name2(name);
     CoreCLRClass* mi = (CoreCLRClass*)klass;
     for (auto prop : mi->GetProperties())
     {
-        if (prop->GetName() == name2)
+        if (prop->GetName() == name)
             return (MonoProperty*)prop;
     }
     return nullptr;
@@ -1195,7 +1214,8 @@ MONO_API int32_t mono_class_instance_size(MonoClass* klass)
 
 MONO_API int32_t mono_class_value_size(MonoClass* klass, uint32* align)
 {
-    return CoreCLR::CallStaticMethodInternal<int, void*, uint32*>(TEXT("NativeSizeOf"), ((CoreCLRClass*)klass)->GetTypeHandle(), align);
+    static void* NativeSizeOfPtr = CoreCLR::GetStaticMethodPointer(TEXT("NativeSizeOf"));
+    return CoreCLR::CallStaticMethod<int, void*, uint32*>(NativeSizeOfPtr, ((CoreCLRClass*)klass)->GetTypeHandle(), align);
 }
 
 MONO_API MonoClass* mono_class_from_mono_type(MonoType* type)
@@ -1206,7 +1226,8 @@ MONO_API MonoClass* mono_class_from_mono_type(MonoType* type)
 
 MONO_API mono_bool mono_class_is_subclass_of(MonoClass* klass, MonoClass* klassc, mono_bool check_interfaces)
 {
-    return CoreCLR::CallStaticMethodInternal<bool, void*, void*, bool>(TEXT("TypeIsSubclassOf"), ((CoreCLRClass*)klass)->GetTypeHandle(), ((CoreCLRClass*)klassc)->GetTypeHandle(), check_interfaces);
+    static void* TypeIsSubclassOfPtr = CoreCLR::GetStaticMethodPointer(TEXT("TypeIsSubclassOf"));
+    return CoreCLR::CallStaticMethod<bool, void*, void*, bool>(TypeIsSubclassOfPtr, ((CoreCLRClass*)klass)->GetTypeHandle(), ((CoreCLRClass*)klassc)->GetTypeHandle(), check_interfaces);
 }
 
 MONO_API char* mono_type_get_name(MonoType* type)
@@ -1227,17 +1248,20 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoClass* mono_class_get_element_class(MonoClass
 
 MONO_API MONO_RT_EXTERNAL_ONLY mono_bool mono_class_is_valuetype(MonoClass* klass)
 {
-    return (mono_bool)CoreCLR::CallStaticMethodInternal<bool, void*>(TEXT("TypeIsValueType"), ((CoreCLRClass*)klass)->GetTypeHandle());
+    static void* TypeIsValueTypePtr = CoreCLR::GetStaticMethodPointer(TEXT("TypeIsValueType"));
+    return (mono_bool)CoreCLR::CallStaticMethod<bool, void*>(TypeIsValueTypePtr, ((CoreCLRClass*)klass)->GetTypeHandle());
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY mono_bool mono_class_is_enum(MonoClass* klass)
 {
-    return (mono_bool)CoreCLR::CallStaticMethodInternal<bool, void*>(TEXT("TypeIsEnum"), ((CoreCLRClass*)klass)->GetTypeHandle());
+    static void* TypeIsEnumPtr = CoreCLR::GetStaticMethodPointer(TEXT("TypeIsEnum"));
+    return (mono_bool)CoreCLR::CallStaticMethod<bool, void*>(TypeIsEnumPtr, ((CoreCLRClass*)klass)->GetTypeHandle());
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoClass* mono_class_get_parent(MonoClass* klass)
 {
-    void* parentHandle = CoreCLR::CallStaticMethodInternal<void*, void*>(TEXT("GetClassParent"), ((CoreCLRClass*)klass)->GetTypeHandle());
+    static void* GetClassParentPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetClassParent"));
+    void* parentHandle = CoreCLR::CallStaticMethod<void*, void*>(GetClassParentPtr, ((CoreCLRClass*)klass)->GetTypeHandle());
     return (MonoClass*)classHandles[parentHandle];
 }
 
@@ -1426,7 +1450,8 @@ MONO_API mono_bool mono_type_is_byref(MonoType* type)
 
 MONO_API int mono_type_get_type(MonoType* type)
 {
-    return CoreCLR::CallStaticMethodInternal<int, void*>(TEXT("GetTypeMonoTypeEnum"), type);
+    static void* GetTypeMonoTypeEnumPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetTypeMonoTypeEnum"));
+    return CoreCLR::CallStaticMethod<int, void*>(GetTypeMonoTypeEnumPtr, type);
 }
 
 MONO_API MonoClass* mono_type_get_class(MonoType* type)
@@ -1482,7 +1507,8 @@ MONO_API uint32 mono_signature_get_param_count(MonoMethodSignature* sig)
 MONO_API mono_bool mono_signature_param_is_out(MonoMethodSignature* sig, int param_num)
 {
     CoreCLRMethod* mi = (CoreCLRMethod*)sig;
-    return CoreCLR::CallStaticMethodInternal<bool, void*, int>(TEXT("GetMethodParameterIsOut"), mi->GetMethodHandle(), param_num);
+    static void* GetMethodParameterIsOutPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetMethodParameterIsOut"));
+    return CoreCLR::CallStaticMethod<bool, void*, int>(GetMethodParameterIsOutPtr, mi->GetMethodHandle(), param_num);
 }
 
 MONO_API int mono_type_stack_size(MonoType* type, int* alignment)
@@ -1501,27 +1527,32 @@ MONO_API MonoException* mono_exception_from_name_msg(MonoImage* image, const cha
 
 MONO_API MonoException* mono_get_exception_null_reference(void)
 {
-    return (MonoException*)CoreCLR::CallStaticMethodInternal<void*>(TEXT("GetNullReferenceException"));
+    static void* GetNullReferenceExceptionPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetNullReferenceException"));
+    return (MonoException*)CoreCLR::CallStaticMethod<void*>(GetNullReferenceExceptionPtr);
 }
 
 MONO_API MonoException* mono_get_exception_not_supported(const char* msg)
 {
-    return (MonoException*)CoreCLR::CallStaticMethodInternal<void*>(TEXT("GetNotSupportedException"));
+    static void* GetNotSupportedExceptionPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetNotSupportedException"));
+    return (MonoException*)CoreCLR::CallStaticMethod<void*>(GetNotSupportedExceptionPtr);
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoException* mono_get_exception_argument_null(const char* arg)
 {
-    return (MonoException*)CoreCLR::CallStaticMethodInternal<void*>(TEXT("GetArgumentNullException"));
+    static void* GetArgumentNullExceptionPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetArgumentNullException"));
+    return (MonoException*)CoreCLR::CallStaticMethod<void*>(GetArgumentNullExceptionPtr);
 }
 
 MONO_API MonoException* mono_get_exception_argument(const char* arg, const char* msg)
 {
-    return (MonoException*)CoreCLR::CallStaticMethodInternal<void*>(TEXT("GetArgumentException"));
+    static void* GetArgumentExceptionPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetArgumentException"));
+    return (MonoException*)CoreCLR::CallStaticMethod<void*>(GetArgumentExceptionPtr);
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoException* mono_get_exception_argument_out_of_range(const char* arg)
 {
-    return (MonoException*)CoreCLR::CallStaticMethodInternal<void*>(TEXT("GetArgumentOutOfRangeException"));
+    static void* GetArgumentOutOfRangeExceptionPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetArgumentOutOfRangeException"));
+    return (MonoException*)CoreCLR::CallStaticMethod<void*>(GetArgumentOutOfRangeExceptionPtr);
 }
 
 /*
@@ -1532,7 +1563,8 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoImage* mono_image_open_from_data_with_name(ch
 {
     const char* name;
     const char* fullname;
-    void* assemblyHandle = CoreCLR::CallStaticMethodInternal<void*, char*, int, const char*, const char**, const char**>(TEXT("LoadAssemblyImage"), data, data_len, path, &name, &fullname);
+    static void* LoadAssemblyImagePtr = CoreCLR::GetStaticMethodPointer(TEXT("LoadAssemblyImage"));
+    void* assemblyHandle = CoreCLR::CallStaticMethod<void*, char*, int, const char*, const char**, const char**>(LoadAssemblyImagePtr, data, data_len, path, &name, &fullname);
     CoreCLRAssembly* assembly = New<CoreCLRAssembly>(assemblyHandle, name, fullname);
     
     CoreCLR::Free((void*)name);
