@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using Flax.Build.Platforms;
 using Microsoft.VisualStudio.Setup.Configuration;
-using Task = Flax.Build.Graph.Task;
 
 namespace Flax.Build.Projects.VisualStudio
 {

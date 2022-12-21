@@ -9,7 +9,6 @@ using Flax.Build.Graph;
 using Flax.Build.Bindings;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-using Task = Flax.Build.Graph.Task;
 
 namespace Flax.Build.Plugins
 {

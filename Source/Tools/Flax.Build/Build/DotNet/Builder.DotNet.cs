@@ -8,7 +8,6 @@ using Flax.Build.Graph;
 using Flax.Build.Platforms;
 using Flax.Deploy;
 using Microsoft.Win32;
-using Task = Flax.Build.Graph.Task;
 
 namespace Flax.Build
 {
