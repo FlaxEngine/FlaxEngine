@@ -122,7 +122,7 @@ namespace FlaxEngine
         /// <param name="list">The tags list to use.</param>
         /// <param name="tag">The tag to check.</param>
         /// <returns>True if given tag is contained by the list of tags. Returns false for empty list.</returns>
-        public static bool HasTag(Tag[] list, Tag tag)
+        public static bool HasTag(this Tag[] list, Tag tag)
         {
             if (tag.Index == -1)
                 return false;
@@ -142,7 +142,7 @@ namespace FlaxEngine
         /// <param name="list">The tags list to use.</param>
         /// <param name="tag">The tag to check.</param>
         /// <returns>True if given tag is contained by the list of tags. Returns false for empty list.</returns>
-        public static bool HasTagExact(Tag[] list, Tag tag)
+        public static bool HasTagExact(this Tag[] list, Tag tag)
         {
             if (tag.Index == -1)
                 return false;
@@ -162,7 +162,7 @@ namespace FlaxEngine
         /// <param name="list">The tags list to use.</param>
         /// <param name="tags">The tags to check.</param>
         /// <returns>True if any of of the given tags is contained by the list of tags.</returns>
-        public static bool HasAny(Tag[] list, Tag[] tags)
+        public static bool HasAny(this Tag[] list, Tag[] tags)
         {
             if (list == null)
                 return false;
@@ -180,7 +180,7 @@ namespace FlaxEngine
         /// <param name="list">The tags list to use.</param>
         /// <param name="tags">The tags to check.</param>
         /// <returns>True if any of the given tags is contained by the list of tags.</returns>
-        public static bool HasAnyExact(Tag[] list, Tag[] tags)
+        public static bool HasAnyExact(this Tag[] list, Tag[] tags)
         {
             if (list == null)
                 return false;
@@ -198,7 +198,7 @@ namespace FlaxEngine
         /// <param name="list">The tags list to use.</param>
         /// <param name="tags">The tags to check.</param>
         /// <returns>True if all of the given tags are contained by the list of tags. Returns true for empty list.</returns>
-        public static bool HasAll(Tag[] list, Tag[] tags)
+        public static bool HasAll(this Tag[] list, Tag[] tags)
         {
             if (tags == null || tags.Length == 0)
                 return true;
@@ -218,7 +218,7 @@ namespace FlaxEngine
         /// <param name="list">The tags list to use.</param>
         /// <param name="tags">The tags to check.</param>
         /// <returns>True if all of the given tags are contained by the list of tags. Returns true for empty list.</returns>
-        public static bool HasAllExact(Tag[] list, Tag[] tags)
+        public static bool HasAllExact(this Tag[] list, Tag[] tags)
         {
             if (tags == null || tags.Length == 0)
                 return true;
