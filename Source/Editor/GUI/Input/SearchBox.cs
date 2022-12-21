@@ -13,8 +13,6 @@ namespace FlaxEditor.GUI.Input
         /// </summary>
         public Button ClearSearchButton { get; }
 
-        private Color _defaultButtonTextColor;
-        
         /// <summary>
         /// Init search box
         /// </summary>
@@ -34,33 +32,25 @@ namespace FlaxEditor.GUI.Input
             ClearSearchButton = new Button
             {
                 Parent = this,
-                Width = 15.0f,
+                Width = 14.0f,
                 Height = 14.0f,
                 AnchorPreset = AnchorPresets.TopRight,
-                Text = "X",
+                Text = "",
                 TooltipText = "Cancel Search.",
-                BackgroundColor = Color.Transparent,
+                BackgroundColor = TextColor,
                 BorderColor = Color.Transparent,
-                BackgroundColorHighlighted = Color.Transparent,
+                BackgroundColorHighlighted = Style.Current.ForegroundGrey,
                 BorderColorHighlighted = Color.Transparent,
-                BackgroundColorSelected = Color.Transparent,
+                BackgroundColorSelected = Style.Current.ForegroundGrey,
                 BorderColorSelected = Color.Transparent,
+                BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Cross12),
                 Visible = false,
             };
             ClearSearchButton.LocalY += 2;
             ClearSearchButton.LocalX -= 2;
             ClearSearchButton.Clicked += Clear;
-            _defaultButtonTextColor = ClearSearchButton.TextColor;
 
             TextChanged += () => ClearSearchButton.Visible = !string.IsNullOrEmpty(Text);
-        }
-
-        /// <inheritdoc />
-        public override void Update(float deltaTime)
-        {
-            base.Update(deltaTime);
-
-            ClearSearchButton.TextColor = ClearSearchButton.IsMouseOver ? Style.Current.ForegroundGrey : _defaultButtonTextColor;
         }
     }
 }
