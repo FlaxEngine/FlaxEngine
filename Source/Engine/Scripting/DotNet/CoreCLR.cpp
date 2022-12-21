@@ -42,9 +42,6 @@ bool CoreCLR::LoadHostfxr(const String& library_path_)
 {
     const FLAX_CORECLR_STRING& library_path = FLAX_CORECLR_STRING(library_path_);
 
-    Platform::SetEnvironmentVariable(TEXT("DOTNET_TieredPGO"), TEXT("1"));
-    Platform::SetEnvironmentVariable(TEXT("DOTNET_TC_QuickJitForLoops"), TEXT("1"));
-    Platform::SetEnvironmentVariable(TEXT("DOTNET_ReadyToRun"), TEXT("0"));
 
     char_t hostfxrPath[1024];
     size_t hostfxrPathSize = sizeof(hostfxrPath) / sizeof(char_t);

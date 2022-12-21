@@ -22,22 +22,29 @@ public:
     static bool LoadHostfxr(const String& library_path);
     static bool InitHostfxr(const String& config_path, const String& library_path);
 
+    /// <summary>
+    /// Returns the function pointer to the managed static method in NativeInterop class.
+    /// </summary>
     static void* GetStaticMethodPointer(const String& methodName);
 
+    /// <summary>
+    /// Calls the managed static method in NativeInterop class with given parameters.
+    /// </summary>
     template<typename RetType, typename ...Args>
-    static RetType CallStaticMethodInternal(const String& methodName, Args... args)
+    static inline RetType CallStaticMethodByName(const String& methodName, Args... args)
     {
         typedef RetType(CORECLR_DELEGATE_CALLTYPE* fun)(Args...);
-        fun function = (fun)GetStaticMethodPointer(methodName);
-        return function(args...);
+        return ((fun)GetStaticMethodPointer(methodName))(args...);
     }
 
+    /// <summary>
+    /// Calls the managed static method with given parameters.
+    /// </summary>
     template<typename RetType, typename ...Args>
-    static RetType CallStaticMethodInternalPointer(void* funPtr, Args... args)
+    static inline RetType CallStaticMethod(void* methodPtr, Args... args)
     {
         typedef RetType(CORECLR_DELEGATE_CALLTYPE* fun)(Args...);
-        fun function = (fun)funPtr;
-        return function(args...);
+        return ((fun)methodPtr)(args...);
     }
 
     static const char* GetClassFullname(void* klass);

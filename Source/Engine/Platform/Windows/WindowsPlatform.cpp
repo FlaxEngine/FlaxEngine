@@ -308,7 +308,7 @@ LONG CALLBACK SehExceptionHandler(EXCEPTION_POINTERS* ep)
     // Pause if debugging
     if (Platform::IsDebuggerPresent())
     {
-        PLATFORM_DEBUG_BREAK;
+        return EXCEPTION_CONTINUE_SEARCH;
     }
 
     // Crash engine
