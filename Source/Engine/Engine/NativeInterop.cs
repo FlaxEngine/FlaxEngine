@@ -1964,13 +1964,14 @@ namespace FlaxEngine
         {
             MethodBlob methodBlob = Unsafe.As<MethodBlob>(GCHandle.FromIntPtr(methodHandle).Target);
 
-            object returnObject;
+            
             if (methodBlob.TryGetDelegate(out var methodDelegate, out var methodDelegateContext))
             {
                 // Fast path, invoke the method with minimal allocations
+                IntPtr returnValue;
                 try
                 {
-                    returnObject = methodDelegate(methodDelegateContext, instancePtr, paramPtr);
+                    returnValue = methodDelegate(methodDelegateContext, instancePtr, paramPtr);
                 }
                 catch (Exception exception)
                 {
@@ -1980,10 +1981,12 @@ namespace FlaxEngine
                     Marshal.WriteIntPtr(exceptionPtr, GCHandle.ToIntPtr(GCHandle.Alloc(exception, GCHandleType.Weak)));
                     return IntPtr.Zero;
                 }
+                return returnValue;
             }
             else
             {
                 // Slow path, method parameters needs to be stored in heap
+                object returnObject;
                 int numParams = methodBlob.parameterTypes.Length;
                 IntPtr* nativePtrs = stackalloc IntPtr[numParams];
                 object[] methodParameters = new object[numParams];
@@ -2022,24 +2025,24 @@ namespace FlaxEngine
                     if (parameterType.IsByRef)
                         MarshalToNative(methodParameters[i], nativePtrs[i], parameterType.GetElementType());
                 }
-            }
 
-            if (returnObject is not null)
-            {
-                if (methodBlob.method.ReturnType == typeof(string))
-                    return ManagedString.ToNative(Unsafe.As<string>(returnObject));
-                else if (methodBlob.method.ReturnType == typeof(IntPtr))
-                    return (IntPtr)returnObject;
-                else if (methodBlob.method.ReturnType == typeof(bool))
-                    return (bool)returnObject ? boolTruePtr : boolFalsePtr;
-                else if (methodBlob.method.ReturnType == typeof(Type))
-                    return GCHandle.ToIntPtr(GetOrAddTypeGCHandle(Unsafe.As<Type>(returnObject)));
-                else if (methodBlob.method.ReturnType == typeof(object[]))
-                    return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.Get(ManagedArrayToGCHandleArray(Unsafe.As<object[]>(returnObject))), GCHandleType.Weak));
-                else
-                    return GCHandle.ToIntPtr(GCHandle.Alloc(returnObject, GCHandleType.Weak));
+                if (returnObject is not null)
+                {
+                    if (methodBlob.method.ReturnType == typeof(string))
+                        return ManagedString.ToNative(Unsafe.As<string>(returnObject));
+                    else if (methodBlob.method.ReturnType == typeof(IntPtr))
+                        return (IntPtr)returnObject;
+                    else if (methodBlob.method.ReturnType == typeof(bool))
+                        return (bool)returnObject ? boolTruePtr : boolFalsePtr;
+                    else if (methodBlob.method.ReturnType == typeof(Type))
+                        return GCHandle.ToIntPtr(GetOrAddTypeGCHandle(Unsafe.As<Type>(returnObject)));
+                    else if (methodBlob.method.ReturnType == typeof(object[]))
+                        return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.Get(ManagedArrayToGCHandleArray(Unsafe.As<object[]>(returnObject))), GCHandleType.Weak));
+                    else
+                        return GCHandle.ToIntPtr(GCHandle.Alloc(returnObject, GCHandleType.Weak));
+                }
+                return IntPtr.Zero;
             }
-            return IntPtr.Zero;
         }
 
         [UnmanagedCallersOnly]
@@ -2589,13 +2592,13 @@ namespace FlaxEngine
             public IntPtr InvokeThunk(IntPtr instancePtr, IntPtr param1, IntPtr param2, IntPtr param3, IntPtr param4, IntPtr param5, IntPtr param6, IntPtr param7)
             {
                 IntPtr* nativePtrs = stackalloc IntPtr[] { param1, param2, param3, param4, param5, param6, param7 };
-                object returnObject;
 
                 if (methodDelegate != null)
                 {
+                    IntPtr returnValue;
                     try
                     {
-                        returnObject = methodDelegate(methodDelegateContext, instancePtr, nativePtrs);
+                        returnValue = methodDelegate(methodDelegateContext, instancePtr, nativePtrs);
                     }
                     catch (Exception exception)
                     {
@@ -2607,10 +2610,12 @@ namespace FlaxEngine
                         Marshal.WriteIntPtr(exceptionPtr, GCHandle.ToIntPtr(GCHandle.Alloc(exception, GCHandleType.Weak)));
                         return IntPtr.Zero;
                     }
+                    return returnValue;
                 }
                 else
                 {
                     // The parameters are wrapped in GCHandles
+                    object returnObject;
                     int numParams = parameterTypes.Length;
                     object[] methodParameters = new object[numParams];
                     for (int i = 0; i < numParams; i++)
@@ -2630,24 +2635,24 @@ namespace FlaxEngine
                         Marshal.WriteIntPtr(exceptionPtr, GCHandle.ToIntPtr(GCHandle.Alloc(exception, GCHandleType.Weak)));
                         return IntPtr.Zero;
                     }
-                }
 
-                if (returnObject is not null)
-                {
-                    if (method.ReturnType == typeof(string))
-                        return ManagedString.ToNative(Unsafe.As<string>(returnObject));
-                    else if (method.ReturnType == typeof(IntPtr))
-                        return (IntPtr)returnObject;
-                    else if (method.ReturnType == typeof(bool))
-                        return (bool)returnObject ? boolTruePtr : boolFalsePtr;
-                    else if (method.ReturnType == typeof(Type))
-                        return GCHandle.ToIntPtr(GetOrAddTypeGCHandle(Unsafe.As<Type>(returnObject)));
-                    else if (method.ReturnType == typeof(object[]))
-                        return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.Get(ManagedArrayToGCHandleArray(Unsafe.As<object[]>(returnObject))), GCHandleType.Weak));
-                    else
-                        return GCHandle.ToIntPtr(GCHandle.Alloc(returnObject, GCHandleType.Weak));
+                    if (returnObject is not null)
+                    {
+                        if (method.ReturnType == typeof(string))
+                            return ManagedString.ToNative(Unsafe.As<string>(returnObject));
+                        else if (method.ReturnType == typeof(IntPtr))
+                            return (IntPtr)returnObject;
+                        else if (method.ReturnType == typeof(bool))
+                            return (bool)returnObject ? boolTruePtr : boolFalsePtr;
+                        else if (method.ReturnType == typeof(Type))
+                            return GCHandle.ToIntPtr(GetOrAddTypeGCHandle(Unsafe.As<Type>(returnObject)));
+                        else if (method.ReturnType == typeof(object[]))
+                            return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.Get(ManagedArrayToGCHandleArray(Unsafe.As<object[]>(returnObject))), GCHandleType.Weak));
+                        else
+                            return GCHandle.ToIntPtr(GCHandle.Alloc(returnObject, GCHandleType.Weak));
+                    }
+                    return IntPtr.Zero;
                 }
-                return IntPtr.Zero;
             }
         }
     }
