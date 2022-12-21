@@ -1200,17 +1200,20 @@ namespace FlaxEngine
 
             /// <summary>
             /// Returns a reference to the value of the field.
-            /// </summary>
+            /// </summary>           
             private static ref TField GetFieldReference<TField>(FieldInfo field, ref T fieldOwner)
             {
-                Assert.IsTrue(!field.IsInitOnly);
-
                 // Get the address of the field, source: https://stackoverflow.com/a/56512720
-                byte* fieldPtr = (byte*)Unsafe.AsPointer(ref fieldOwner) + (Marshal.ReadInt32(field.FieldHandle.Value + 4 + IntPtr.Size) & 0xFFFFFF);
                 if (typeof(T).IsValueType)
+                {
+                    byte* fieldPtr = (byte*)Unsafe.AsPointer(ref fieldOwner) + (Marshal.ReadInt32(field.FieldHandle.Value + 4 + IntPtr.Size) & 0xFFFFFF);
                     return ref Unsafe.AsRef<TField>(fieldPtr);
+                }
                 else
-                    return ref Unsafe.AsRef<TField>(fieldPtr + IntPtr.Size);
+                {
+                    byte* fieldPtr = (byte*)Unsafe.As<T, IntPtr>(ref fieldOwner) + IntPtr.Size + (Marshal.ReadInt32(field.FieldHandle.Value + 4 + IntPtr.Size) & 0xFFFFFF);
+                    return ref Unsafe.AsRef<TField>(fieldPtr);
+                }
             }
 
             private static IntPtr EnsureAlignment(IntPtr ptr, int alignment)
@@ -1278,18 +1281,8 @@ namespace FlaxEngine
                         fieldOffset += (fieldPtr - startPtr).ToInt32();
                     }
 
-                    if (field.IsInitOnly)
-                    {
-                        //TypedReference ownerRef = __makeref(fieldOwner);
-                        //TField fieldValue = (TField)field.GetValueDirect(ownerRef);
-                        TField fieldValue = (TField)field.GetValue(fieldOwner);
-                        MarshalHelperValueType<TField>.ToNative(ref fieldValue, fieldPtr);
-                    }
-                    else
-                    {
-                        ref TField fieldValueRef = ref GetFieldReference<TField>(field, ref fieldOwner);
-                        MarshalHelperValueType<TField>.ToNative(ref fieldValueRef, fieldPtr);
-                    }
+                    ref TField fieldValueRef = ref GetFieldReference<TField>(field, ref fieldOwner);
+                    MarshalHelperValueType<TField>.ToNative(ref fieldValueRef, fieldPtr);
                 }
             }
 
@@ -1304,18 +1297,8 @@ namespace FlaxEngine
 
                 internal static void ToNativeField(FieldInfo field, ref T fieldOwner, IntPtr fieldPtr, out int fieldOffset)
                 {
-                    if (field.IsInitOnly)
-                    {
-                        //TypedReference ownerRef = __makeref(fieldOwner);
-                        //TField fieldValue = (TField)field.GetValueDirect(ownerRef);
-                        TField fieldValue = (TField)field.GetValue(fieldOwner);
-                        MarshalHelperReferenceType<TField>.ToNative(ref fieldValue, fieldPtr);
-                    }
-                    else
-                    {
-                        ref TField fieldValueRef = ref GetFieldReference<TField>(field, ref fieldOwner);
-                        MarshalHelperReferenceType<TField>.ToNative(ref fieldValueRef, fieldPtr);
-                    }
+                    ref TField fieldValueRef = ref GetFieldReference<TField>(field, ref fieldOwner);
+                    MarshalHelperReferenceType<TField>.ToNative(ref fieldValueRef, fieldPtr);
                     fieldOffset = IntPtr.Size;
                 }
             }
