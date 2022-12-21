@@ -83,6 +83,14 @@ namespace Flax.Build
                         recentWriteTime = lastWriteTime;
                 }
 
+                // Include build tool version (eg. skip using cached assembly after editing build tool)
+                {
+                    var executingAssembly = Assembly.GetExecutingAssembly();
+                    DateTime lastWriteTime = File.GetLastWriteTime(executingAssembly.Location);
+                    if (lastWriteTime > recentWriteTime)
+                        recentWriteTime = lastWriteTime;
+                }
+
                 DateTime cacheTime = File.Exists(CachePath)
                     ? DateTime.FromBinary(long.Parse(File.ReadAllText(CachePath)))
                     : DateTime.MinValue;
