@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
 using Flax.Build.NativeCpp;
+using System.Runtime.InteropServices;
 
 namespace Flax.Build
 {
@@ -63,6 +64,29 @@ namespace Flax.Build
                     }
                 }
                 return _buildPlatform.Target;
+            }
+        }
+
+        /// <summary>
+        /// Gets the current target architecture that build tool runs on.
+        /// </summary>
+        public static TargetArchitecture BuildTargetArchitecture
+        {
+            get
+            {
+                var architectureId = RuntimeInformation.ProcessArchitecture;
+                switch (architectureId)
+                {
+                case Architecture.X86:
+                    return TargetArchitecture.x86;
+                case Architecture.X64:
+                    return TargetArchitecture.x64;
+                case Architecture.Arm:
+                    return TargetArchitecture.ARM;
+                case Architecture.Arm64:
+                    return TargetArchitecture.ARM64;
+                default: throw new NotImplementedException(string.Format("Unsupported build platform {0}.", architectureId));
+                }
             }
         }
 
