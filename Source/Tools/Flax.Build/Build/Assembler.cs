@@ -20,6 +20,9 @@ namespace Flax.Build
     /// </summary>
     public class Assembler
     {
+        private string _cacheAssemblyPath = null;
+        private string _cachePath = null;
+
         /// <summary>
         /// The default assembly references added to the projects.
         /// </summary>
@@ -30,18 +33,6 @@ namespace Flax.Build
             typeof(ISet<>).Assembly, // System.dll
             typeof(Builder).Assembly, // Flax.Build.exe
         };
-
-        /// <summary>
-        /// The output assembly path. Use null to store assembly in the process memory.
-        /// </summary>
-        public string OutputPath = null;
-
-        /// <summary>
-        ///
-        /// </summary>
-        public string CachePath = null;
-
-        private string CacheAssemblyPath = null;
 
         /// <summary>
         /// The source files for compilation.
@@ -61,8 +52,8 @@ namespace Flax.Build
         public Assembler(List<string> sourceFiles, string cachePath = null)
         {
             SourceFiles.AddRange(sourceFiles);
-            CachePath = cachePath;
-            CacheAssemblyPath = cachePath != null ? Path.Combine(Directory.GetParent(cachePath).FullName, "BuilderRulesCache.dll") : null;
+            _cachePath = cachePath;
+            _cacheAssemblyPath = cachePath != null ? Path.Combine(Directory.GetParent(cachePath).FullName, "BuilderRulesCache.dll") : null;
         }
 
         /// <summary>
@@ -73,7 +64,7 @@ namespace Flax.Build
         public Assembly Build()
         {
             DateTime recentWriteTime = DateTime.MinValue;
-            if (CachePath != null)
+            if (_cachePath != null)
             {
                 foreach (var sourceFile in SourceFiles)
                 {
@@ -91,12 +82,12 @@ namespace Flax.Build
                         recentWriteTime = lastWriteTime;
                 }
 
-                DateTime cacheTime = File.Exists(CachePath)
-                    ? DateTime.FromBinary(long.Parse(File.ReadAllText(CachePath)))
+                DateTime cacheTime = File.Exists(_cachePath)
+                    ? DateTime.FromBinary(long.Parse(File.ReadAllText(_cachePath)))
                     : DateTime.MinValue;
-                if (recentWriteTime <= cacheTime && File.Exists(CacheAssemblyPath))
+                if (recentWriteTime <= cacheTime && File.Exists(_cacheAssemblyPath))
                 {
-                    Assembly cachedAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(CacheAssemblyPath);
+                    Assembly cachedAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(_cacheAssemblyPath);
                     return cachedAssembly;
                 }
             }
@@ -162,21 +153,21 @@ namespace Flax.Build
             memoryStream.Seek(0, SeekOrigin.Begin);
             Assembly compiledAssembly = AssemblyLoadContext.Default.LoadFromStream(memoryStream);
 
-            if (CachePath != null && CacheAssemblyPath != null)
+            if (_cachePath != null && _cacheAssemblyPath != null)
             {
                 memoryStream.Seek(0, SeekOrigin.Begin);
 
-                var cacheDirectory = Path.GetDirectoryName(CacheAssemblyPath);
+                var cacheDirectory = Path.GetDirectoryName(_cacheAssemblyPath);
                 if (!Directory.Exists(cacheDirectory))
                     Directory.CreateDirectory(cacheDirectory);
 
-                using (FileStream fileStream = File.Open(CacheAssemblyPath, FileMode.Create, FileAccess.Write))
+                using (FileStream fileStream = File.Open(_cacheAssemblyPath, FileMode.Create, FileAccess.Write))
                 {
                     memoryStream.CopyTo(fileStream);
                     fileStream.Close();
                 }
 
-                File.WriteAllText(CachePath, recentWriteTime.ToBinary().ToString());
+                File.WriteAllText(_cachePath, recentWriteTime.ToBinary().ToString());
             }
 
             sw.Stop();
