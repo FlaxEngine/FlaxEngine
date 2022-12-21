@@ -93,6 +93,7 @@ namespace FlaxEditor.Windows
                 "Stefan Brandmair",
                 "Lukáš Jech",
                 "Jean-Baptiste Perrier",
+                "Chandler Cox",
             });
             authors.Sort();
             var authorsLabel = new Label(4, topParentControl.Bottom + 20, Width - 8, 70)
