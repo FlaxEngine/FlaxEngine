@@ -44,44 +44,9 @@ public class nethost : ThirdPartyModule
 
         options.SourceFiles.Clear();
 
-        string arch = "x64"; //options.Architecture == TargetArchitecture.x64 ? "x64" : "x86";
-
-        string dotnetPath, dotnetVersion;
-        string appHostRuntimePath;
-        string os;
-        string[] dotnetVersions;
-
-        // Pick DotNet SDK
-        if (options.Platform.Target == TargetPlatform.Windows)
-        {
-            os = $"win-{arch}";
-#pragma warning disable CA1416
-            using RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
-            using RegistryKey hostKey = baseKey.OpenSubKey(@$"SOFTWARE\dotnet\Setup\InstalledVersions\{arch}\sharedhost");
-            dotnetPath = (string)hostKey.GetValue("Path");
-            using RegistryKey runtimeKey = baseKey.OpenSubKey(@$"SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{arch}\sharedfx\Microsoft.NETCore.App");
-            dotnetVersions = runtimeKey.GetValueNames();
-#pragma warning restore CA1416
-        }
-        else if (options.Platform.Target == TargetPlatform.Linux)
-        {
-            // TODO: Support /etc/dotnet/install_location
-            dotnetPath = "/usr/share/dotnet/";
-            os = $"linux-{arch}";
-            dotnetVersions = Directory.GetDirectories($"{dotnetPath}host/fxr/").Select(x => Path.GetFileName(x)).ToArray();
-        }
-        else
-            throw new InvalidPlatformException(options.Platform.Target);
-
-        // Pick SDK version
-        dotnetVersion = dotnetVersions.OrderByDescending(ParseVersion).FirstOrDefault();
-        if (string.IsNullOrEmpty(dotnetPath))
-            dotnetPath = Environment.GetEnvironmentVariable("DOTNET_ROOT");
-        if (string.IsNullOrEmpty(dotnetPath) || string.IsNullOrEmpty(dotnetVersion))
-            throw new Exception("Failed to find dotnet installation");
-        int majorVersion = int.Parse(dotnetVersion.Substring(0, dotnetVersion.IndexOf(".")));
-        if (majorVersion < 7)
-            throw new Exception($"Unsupported dotnet version found, minimum version required is .NET 7 (found {dotnetVersion})");
+        var dotnetSdk = DotNetSdk.Instance;
+        if (!dotnetSdk.IsValid)
+            throw new Exception($"Missing NET SDK {DotNetSdk.MinimumVersion}.");
 
         // Setup build configuration
         switch (options.Platform.Target)
@@ -90,9 +55,8 @@ public class nethost : ThirdPartyModule
         case TargetPlatform.XboxOne:
         case TargetPlatform.XboxScarlett:
         case TargetPlatform.UWP:
-            appHostRuntimePath = string.Format("{0}packs\\Microsoft.NETCore.App.Host.{1}\\{2}\\runtimes\\{1}\\native", dotnetPath, os, dotnetVersion);
-            options.OutputFiles.Add(Path.Combine(appHostRuntimePath, "nethost.lib"));
-            options.DependencyFiles.Add(Path.Combine(appHostRuntimePath, "nethost.dll"));
+            options.OutputFiles.Add(Path.Combine(dotnetSdk.HostRootPath, "nethost.lib"));
+            options.DependencyFiles.Add(Path.Combine(dotnetSdk.HostRootPath, "nethost.dll"));
             break;
         case TargetPlatform.Linux:
         case TargetPlatform.Android:
@@ -100,14 +64,13 @@ public class nethost : ThirdPartyModule
         case TargetPlatform.PS4:
         case TargetPlatform.PS5:
         case TargetPlatform.Mac:
-            appHostRuntimePath = string.Format("{0}packs/Microsoft.NETCore.App.Host.{1}/{2}/runtimes/{1}/native", dotnetPath, os, dotnetVersion);
-            options.OutputFiles.Add(Path.Combine(appHostRuntimePath, "libnethost.a"));
-            options.DependencyFiles.Add(Path.Combine(appHostRuntimePath, "libnethost.so"));
+            options.OutputFiles.Add(Path.Combine(dotnetSdk.HostRootPath, "libnethost.a"));
+            options.DependencyFiles.Add(Path.Combine(dotnetSdk.HostRootPath, "libnethost.so"));
             break;
         default:
             throw new InvalidPlatformException(options.Platform.Target);
         }
-        options.PublicIncludePaths.Add(appHostRuntimePath);
+        options.PublicIncludePaths.Add(dotnetSdk.HostRootPath);
         options.ScriptingAPI.Defines.Add("USE_NETCORE");
         options.DependencyFiles.Add(Path.Combine(FolderPath, "FlaxEngine.CSharp.runtimeconfig.json"));
     }
