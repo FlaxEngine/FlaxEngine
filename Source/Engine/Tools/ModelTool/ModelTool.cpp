@@ -134,6 +134,9 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
             SAFE_DELETE_GPU_RESOURCE(outputSDF->Texture);
             return true;
         }
+#if !BUILD_RELEASE
+        outputSDF->Texture->SetName(TEXT("ModelSDF"));
+#endif
     }
 
     // TODO: support GPU to generate model SDF on-the-fly (if called during rendering)
@@ -1275,17 +1278,17 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         // Trim the animation keyframes range if need to
         if (options.Duration == AnimationDuration::Custom)
         {
-            const float start = (float)(options.FramesRange.X / data.Animation.FramesPerSecond);
-            const float end = (float)(options.FramesRange.Y / data.Animation.FramesPerSecond);
+            // Custom animation import, frame index start and end
+            const float start = options.FramesRange.X;
+            const float end = options.FramesRange.Y;
             for (int32 i = 0; i < data.Animation.Channels.Count(); i++)
             {
                 auto& anim = data.Animation.Channels[i];
-
                 anim.Position.Trim(start, end);
                 anim.Rotation.Trim(start, end);
                 anim.Scale.Trim(start, end);
             }
-            data.Animation.Duration = (end - start) * data.Animation.FramesPerSecond;
+            data.Animation.Duration = end - start;
         }
 
         // Change the sampling rate if need to

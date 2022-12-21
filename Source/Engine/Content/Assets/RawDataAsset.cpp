@@ -64,6 +64,16 @@ bool RawDataAsset::Save(const StringView& path)
 
 #endif
 
+uint64 RawDataAsset::GetMemoryUsage() const
+{
+    Locker.Lock();
+    uint64 result = BinaryAsset::GetMemoryUsage();
+    result += sizeof(RawDataAsset) - sizeof(BinaryAsset);
+    result += Data.Count();
+    Locker.Unlock();
+    return result;
+}
+
 Asset::LoadResult RawDataAsset::load()
 {
     auto chunk0 = GetChunk(0);

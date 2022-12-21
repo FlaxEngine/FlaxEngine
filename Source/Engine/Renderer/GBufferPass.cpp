@@ -27,6 +27,11 @@ PACK_STRUCT(struct GBufferPassData{
     int32 ViewMode;
     });
 
+#if USE_EDITOR
+Dictionary<GPUBuffer*, const ModelLOD*> GBufferPass::IndexBufferToModelLOD;
+CriticalSection GBufferPass::Locker;
+#endif
+
 String GBufferPass::ToString() const
 {
     return TEXT("GBufferPass");
@@ -97,6 +102,7 @@ void GBufferPass::Dispose()
     SAFE_DELETE(_vertexColors);
     SAFE_DELETE(_lodPreview);
     SAFE_DELETE(_materialComplexity);
+    IndexBufferToModelLOD.SetCapacity(0);
 #endif
 }
 
@@ -106,6 +112,7 @@ void DebugOverrideDrawCallsMaterial(const RenderContext& renderContext, IMateria
 {
     if (!material->IsReady())
         return;
+    PROFILE_CPU();
     IMaterial::InstancingHandler handler;
     const bool canUseInstancing = material->CanUseInstancing(handler);
     const auto drawModes = material->GetDrawModes();
@@ -285,6 +292,7 @@ GPUTextureView* GBufferPass::RenderSkybox(RenderContext& renderContext, GPUConte
             skyboxData.Skybox = RenderTargetPool::Get(desc);
             if (!skyboxData.Skybox)
                 return nullptr;
+            RENDER_TARGET_POOL_SET_NAME(skyboxData.Skybox, "GBuffer.Skybox");
             dirty = true;
         }
 
@@ -317,6 +325,12 @@ GPUTextureView* GBufferPass::RenderSkybox(RenderContext& renderContext, GPUConte
 }
 
 #if USE_EDITOR
+
+void GBufferPass::PreOverrideDrawCalls(RenderContext& renderContext)
+{
+    // Clear cache before scene drawing
+    IndexBufferToModelLOD.Clear();
+}
 
 void GBufferPass::OverrideDrawCalls(RenderContext& renderContext)
 {
@@ -433,6 +447,7 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
     // Prepare
     DrawCall drawCall;
     MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
+    bindParams.BindViewData();
     drawCall.Material = nullptr;
     drawCall.WorldDeterminantSign = 1.0f;
 

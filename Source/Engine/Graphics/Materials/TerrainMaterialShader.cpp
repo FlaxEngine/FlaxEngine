@@ -16,15 +16,7 @@
 #include "Engine/Terrain/TerrainPatch.h"
 
 PACK_STRUCT(struct TerrainMaterialShaderData {
-    Matrix ViewProjectionMatrix;
     Matrix WorldMatrix;
-    Matrix ViewMatrix;
-    Float3 ViewPos;
-    float ViewFar;
-    Float3 ViewDir;
-    float TimeParam;
-    Float4 ViewInfo;
-    Float4 ScreenSize;
     Float3 WorldInvScale;
     float WorldDeterminantSign;
     float PerInstanceRandom;
@@ -74,15 +66,7 @@ void TerrainMaterialShader::Bind(BindParameters& params)
 
     // Setup material constants
     {
-        Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);
         Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
-        Matrix::Transpose(view.View, materialData->ViewMatrix);
-        materialData->ViewPos = view.Position;
-        materialData->ViewFar = view.Far;
-        materialData->ViewDir = view.Direction;
-        materialData->TimeParam = params.TimeParam;
-        materialData->ViewInfo = view.ViewInfo;
-        materialData->ScreenSize = view.ScreenSize;
         const float scaleX = Float3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13).Length();
         const float scaleY = Float3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23).Length();
         const float scaleZ = Float3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33).Length();

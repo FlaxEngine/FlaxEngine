@@ -569,6 +569,23 @@ void Animation::OnSkinnedModelUnloaded(Asset* obj)
     MappingCache.Remove(i);
 }
 
+uint64 Animation::GetMemoryUsage() const
+{
+    Locker.Lock();
+    uint64 result = BinaryAsset::GetMemoryUsage();
+    result += sizeof(Animation) - sizeof(BinaryAsset);
+    result += Data.GetMemoryUsage();
+    result += Events.Capacity() * sizeof(Pair<String, StepCurve<AnimEventData>>);
+    for (const auto& e : Events)
+        result += e.First.Length() * sizeof(Char) + e.Second.GetMemoryUsage();
+    result += NestedAnims.Capacity() * sizeof(Pair<String, NestedAnimData>);
+    result += MappingCache.Capacity() * sizeof(Pair<String, StepCurve<AnimEventData>>);
+    for (const auto& e : MappingCache)
+        result += e.Value.Capacity() * sizeof(int32);
+    Locker.Unlock();
+    return result;
+}
+
 void Animation::OnScriptingDispose()
 {
     // Dispose any events to prevent crashes (scripting is released before content)

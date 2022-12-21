@@ -61,6 +61,10 @@ public:
     {
         return Gpu != VK_NULL_HANDLE;
     }
+    void* GetNativePtr() const override
+    {
+        return (void*)Gpu;
+    }
     uint32 GetVendorId() const override
     {
         return GpuProps.vendorID;

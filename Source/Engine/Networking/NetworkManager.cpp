@@ -129,6 +129,7 @@ namespace
         OnNetworkMessageHandshake,
         OnNetworkMessageHandshakeReply,
         NetworkInternal::OnNetworkMessageObjectReplicate,
+        NetworkInternal::OnNetworkMessageObjectReplicatePart,
         NetworkInternal::OnNetworkMessageObjectSpawn,
         NetworkInternal::OnNetworkMessageObjectDespawn,
         NetworkInternal::OnNetworkMessageObjectRole,

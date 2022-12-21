@@ -3,9 +3,10 @@
 #pragma once
 
 #include "Engine/Platform/Platform.h"
+#include "Engine/Platform/CriticalSection.h"
+#include "Engine/Core/NonCopyable.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingObject.h"
-#include "Async/GPUTasksManager.h"
-#include "GPUResourcesCollection.h"
 #include "GPUAdapter.h"
 #include "GPULimits.h"
 #include "Enums.h"
@@ -13,6 +14,7 @@
 
 class ITextureOwner;
 class RenderTask;
+class GPUResource;
 class GPUContext;
 class GPUShader;
 class GPUTimerQuery;
@@ -20,7 +22,11 @@ class GPUTexture;
 class GPUBuffer;
 class GPUSampler;
 class GPUPipelineState;
+class GPUConstantBuffer;
+class GPUTasksContext;
+class GPUTasksExecutor;
 class GPUSwapChain;
+class GPUTasksManager;
 class Shader;
 class Model;
 class Material;
@@ -36,7 +42,15 @@ public:
     /// <summary>
     /// Graphics Device states that describe its lifetime.
     /// </summary>
-    DECLARE_ENUM_6(DeviceState, Missing, Created, Ready, Removed, Disposing, Disposed);
+    enum class DeviceState
+    {
+        Missing = 0,
+        Created,
+        Ready,
+        Removed,
+        Disposing,
+        Disposed
+    };
 
     /// <summary>
     /// Describes a video output display mode.
@@ -79,6 +93,8 @@ protected:
     // Private resources (hidden with declaration)
     struct PrivateData;
     PrivateData* _res;
+    Array<GPUResource*> _resources;
+    CriticalSection _resourcesLock;
 
 protected:
     /// <summary>
@@ -100,17 +116,6 @@ public:
     /// </summary>
     CriticalSection Locker;
 
-    /// <summary>
-    /// The GPU resources collection.
-    /// </summary>
-    GPUResourcesCollection Resources;
-
-    /// <summary>
-    /// GPU asynchronous work manager.
-    /// </summary>
-    GPUTasksManager TasksManager;
-
-public:
     /// <summary>
     /// The total amount of graphics memory in bytes.
     /// </summary>
@@ -221,6 +226,16 @@ public:
     API_PROPERTY() uint64 GetMemoryUsage() const;
 
     /// <summary>
+    /// Gets the list with all active GPU resources.
+    /// </summary>
+    API_PROPERTY() Array<GPUResource*> GetResources() const;
+
+    /// <summary>
+    /// Gets the GPU asynchronous work manager.
+    /// </summary>
+    GPUTasksManager* GetTasksManager() const;
+
+    /// <summary>
     /// Gets the default material.
     /// </summary>
     MaterialBase* GetDefaultMaterial() const;
@@ -294,6 +309,15 @@ public:
     /// </summary>
     virtual void WaitForGPU() = 0;
 
+public:
+    void AddResource(GPUResource* resource);
+    void RemoveResource(GPUResource* resource);
+
+    /// <summary>
+    /// Dumps all GPU resources information to the log.
+    /// </summary>
+    void DumpResourcesToLog() const;
+
 protected:
     virtual void preDispose();
 
@@ -363,6 +387,14 @@ public:
     /// <param name="window">The output window.</param>
     /// <returns>The native window swap chain.</returns>
     virtual GPUSwapChain* CreateSwapChain(Window* window) = 0;
+
+    /// <summary>
+    /// Creates the constant buffer.
+    /// </summary>
+    /// <param name="name">The resource name.</param>
+    /// <param name="size">The buffer size (in bytes).</param>
+    /// <returns>The constant buffer.</returns>
+    virtual GPUConstantBuffer* CreateConstantBuffer(uint32 size, const StringView& name = StringView::Empty) = 0;
 
     /// <summary>
     /// Creates the GPU tasks context.

@@ -88,22 +88,14 @@ public:
     }
 
 public:
-    // Compares two Guids for equality
-    // @param left The first Guid to compare
-    // @param right The second Guid to compare
-    // @returns True if the Guids are equal, otherwise false
-    friend bool operator==(const Guid& left, const Guid& right)
+    bool operator==(const Guid& other) const
     {
-        return ((left.A ^ right.A) | (left.B ^ right.B) | (left.C ^ right.C) | (left.D ^ right.D)) == 0;
+        return ((A ^ other.A) | (B ^ other.B) | (C ^ other.C) | (D ^ other.D)) == 0;
     }
 
-    // Compares two Guids for inequality
-    // @param left The first Guid to compare
-    // @param right The second Guid to compare
-    // @returns True if the GUIDs are not equal, otherwise false
-    friend bool operator!=(const Guid& left, const Guid& right)
+    bool operator!=(const Guid& other) const
     {
-        return ((left.A ^ right.A) | (left.B ^ right.B) | (left.C ^ right.C) | (left.D ^ right.D)) != 0;
+        return ((A ^ other.A) | (B ^ other.B) | (C ^ other.C) | (D ^ other.D)) != 0;
     }
 
     // Provides access to the GUIDs components

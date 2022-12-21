@@ -12,7 +12,8 @@
 /// <summary>
 /// Used to create fogging effects such as clouds but with a density that is related to the height of the fog.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Exponential Height Fog\")") class FLAXENGINE_API ExponentialHeightFog : public Actor, public IFogRenderer
+API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Exponential Height Fog\"), ActorToolbox(\"Visuals\")")
+class FLAXENGINE_API ExponentialHeightFog : public Actor, public IFogRenderer
 {
     DECLARE_SCENE_OBJECT(ExponentialHeightFog);
 private:

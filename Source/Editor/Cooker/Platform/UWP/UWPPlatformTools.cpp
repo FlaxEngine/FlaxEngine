@@ -497,6 +497,8 @@ bool UWPPlatformTools::OnPerformAOT(CookingData& data, AotConfig& config, const 
 
 bool UWPPlatformTools::OnPostProcess(CookingData& data)
 {
+    LOG(Error, "UWP (Windows Store) platform has been deprecated and soon will be removed!");
+
     // Special case for UWP
     // FlaxEngine.dll cannot be added to the solution as `Content` item (due to conflicts with C++ /CX FlaxEngine.dll)
     // Use special directory for it (generated UWP project handles this case and copies lib to the output)

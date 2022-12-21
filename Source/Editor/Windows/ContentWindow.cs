@@ -131,7 +131,7 @@ namespace FlaxEditor.Windows
                 ScrollBars = ScrollBars.Both,
                 Parent = _split.Panel1,
             };
-            
+
             // Content structure tree
             _tree = new Tree(false)
             {
@@ -179,7 +179,7 @@ namespace FlaxEditor.Windows
                 ScrollBars = ScrollBars.Vertical,
                 Parent = _split.Panel2,
             };
-            
+
             // Content View
             _view = new ContentView
             {
@@ -893,6 +893,18 @@ namespace FlaxEditor.Windows
                     _root.RemoveChild((ContentTreeNode)_root.GetChild(0));
                 }
             }
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseDown(Float2 location, MouseButton button)
+        {
+            // Navigate through directories using the side mouse buttons
+            if (button == MouseButton.Extended1)
+                NavigateBackward();
+            else if (button == MouseButton.Extended2)
+                NavigateForward();
+
+            return base.OnMouseDown(location, button);
         }
 
         /// <inheritdoc />

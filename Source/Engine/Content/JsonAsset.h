@@ -77,6 +77,7 @@ public:
 public:
     // [Asset]
     const String& GetPath() const override;
+    uint64 GetMemoryUsage() const override;
 #if USE_EDITOR
     void GetReferences(Array<Guid, HeapAllocation>& output) const override;
 #endif
@@ -121,6 +122,10 @@ public:
         const_cast<JsonAsset*>(this)->CreateInstance();
         return Instance && InstanceType.IsAssignableFrom(T::TypeInitializer) ? (T*)Instance : nullptr;
     }
+
+public:
+    // [JsonAssetBase]
+    uint64 GetMemoryUsage() const override;
 
 protected:
     // [JsonAssetBase]

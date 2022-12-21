@@ -148,6 +148,7 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
         lutDesc = GPUTextureDescription::New2D(LutSize * LutSize, LutSize, 1, _lutFormat);
     }
     const auto lut = RenderTargetPool::Get(lutDesc);
+    RENDER_TARGET_POOL_SET_NAME(lut, "ColorGrading.LUT");
 
     // Prepare the parameters
     Data data;
@@ -204,11 +205,6 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
         context->SetRenderTarget(lut->View());
         context->DrawFullscreenTriangle();
     }
-
-    // TODO: this could run in async during scene rendering or sth
-
-    const Viewport viewport = renderContext.Task->GetViewport();
-    context->SetViewportAndScissors(viewport);
     context->UnBindSR(0);
 
     return lut;

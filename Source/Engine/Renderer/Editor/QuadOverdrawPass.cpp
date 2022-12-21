@@ -8,6 +8,7 @@
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Level/Actors/Decal.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
@@ -30,6 +31,9 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
     auto lockTexture = RenderTargetPool::Get(tempDesc);
     auto overdrawTexture = RenderTargetPool::Get(tempDesc);
     auto liveCountTexture = RenderTargetPool::Get(tempDesc);
+    RENDER_TARGET_POOL_SET_NAME(lockTexture, "QuadOverdraw.Lock");
+    RENDER_TARGET_POOL_SET_NAME(overdrawTexture, "QuadOverdraw.Overdraw");
+    RENDER_TARGET_POOL_SET_NAME(liveCountTexture, "QuadOverdraw.LiveCount");
 
     // Clear buffers
     uint32 clearValueUINT[4] = { 0 };
@@ -48,6 +52,7 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
     Platform::MemoryClear(&drawCall, sizeof(DrawCall));
     drawCall.PerInstanceRandom = 1.0f;
     MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
+    bindParams.BindViewData();
     renderContext.View.Pass = DrawPass::QuadOverdraw;
     context->SetRenderTarget(*renderContext.Buffers->DepthBuffer, (GPUTextureView*)nullptr);
     renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::GBuffer);

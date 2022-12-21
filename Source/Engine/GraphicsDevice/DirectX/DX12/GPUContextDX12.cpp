@@ -236,13 +236,7 @@ void GPUContextDX12::Reset()
     Platform::MemoryClear(&_samplers, sizeof(_samplers));
     _swapChainsUsed = 0;
 
-    // Bind Root Signature
-    _commandList->SetGraphicsRootSignature(_device->GetRootSignature());
-    _commandList->SetComputeRootSignature(_device->GetRootSignature());
-
-    // Bind heaps
-    ID3D12DescriptorHeap* ppHeaps[] = { _device->RingHeap_CBV_SRV_UAV.GetHeap(), _device->RingHeap_Sampler.GetHeap() };
-    _commandList->SetDescriptorHeaps(ARRAY_COUNT(ppHeaps), ppHeaps);
+    ForceRebindDescriptors();
 }
 
 uint64 GPUContextDX12::Execute(bool waitForCompletion)
@@ -1299,25 +1293,23 @@ void GPUContextDX12::CopyResource(GPUResource* dstResource, GPUResource* srcReso
 
     auto dstResourceDX12 = dynamic_cast<ResourceOwnerDX12*>(dstResource);
     auto srcResourceDX12 = dynamic_cast<ResourceOwnerDX12*>(srcResource);
+    auto dstBufferDX12 = dynamic_cast<GPUBufferDX12*>(dstResource);
+    auto srcBufferDX12 = dynamic_cast<GPUBufferDX12*>(srcResource);
+    auto dstTextureDX12 = dynamic_cast<GPUTextureDX12*>(dstResource);
+    auto srcTextureDX12 = dynamic_cast<GPUTextureDX12*>(srcResource);
 
     SetResourceState(dstResourceDX12, D3D12_RESOURCE_STATE_COPY_DEST);
     SetResourceState(srcResourceDX12, D3D12_RESOURCE_STATE_COPY_SOURCE);
     flushRBs();
 
-    auto srcType = srcResource->GetObjectType();
-    auto dstType = dstResource->GetObjectType();
-
     // Buffer -> Buffer
-    if (srcType == GPUResource::ObjectType::Buffer && dstType == GPUResource::ObjectType::Buffer)
+    if (srcBufferDX12 && dstBufferDX12)
     {
         _commandList->CopyResource(dstResourceDX12->GetResource(), srcResourceDX12->GetResource());
     }
     // Texture -> Texture
-    else if (srcType == GPUResource::ObjectType::Texture && dstType == GPUResource::ObjectType::Texture)
+    else if (srcTextureDX12 && dstTextureDX12)
     {
-        auto dstTextureDX12 = static_cast<GPUTextureDX12*>(dstResource);
-        auto srcTextureDX12 = static_cast<GPUTextureDX12*>(srcResource);
-
         if (dstTextureDX12->IsStaging())
         {
             // Staging Texture -> Staging Texture
@@ -1388,32 +1380,26 @@ void GPUContextDX12::CopySubresource(GPUResource* dstResource, uint32 dstSubreso
 {
     ASSERT(dstResource && srcResource);
 
-    auto srcType = srcResource->GetObjectType();
-    auto dstType = dstResource->GetObjectType();
+    auto dstResourceDX12 = dynamic_cast<ResourceOwnerDX12*>(dstResource);
+    auto srcResourceDX12 = dynamic_cast<ResourceOwnerDX12*>(srcResource);
+    auto dstBufferDX12 = dynamic_cast<GPUBufferDX12*>(dstResource);
+    auto srcBufferDX12 = dynamic_cast<GPUBufferDX12*>(srcResource);
+    auto dstTextureDX12 = dynamic_cast<GPUTextureDX12*>(dstResource);
+    auto srcTextureDX12 = dynamic_cast<GPUTextureDX12*>(srcResource);
+
+    SetResourceState(dstResourceDX12, D3D12_RESOURCE_STATE_COPY_DEST);
+    SetResourceState(srcResourceDX12, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    flushRBs();
 
     // Buffer -> Buffer
-    if (srcType == GPUResource::ObjectType::Buffer && dstType == GPUResource::ObjectType::Buffer)
+    if (srcBufferDX12 && dstBufferDX12)
     {
-        auto dstBufferDX12 = dynamic_cast<ResourceOwnerDX12*>(dstResource);
-        auto srcBufferDX12 = dynamic_cast<ResourceOwnerDX12*>(srcResource);
-
-        SetResourceState(dstBufferDX12, D3D12_RESOURCE_STATE_COPY_DEST);
-        SetResourceState(srcBufferDX12, D3D12_RESOURCE_STATE_COPY_SOURCE);
-        flushRBs();
-
         uint64 bytesCount = srcResource->GetMemoryUsage();
         _commandList->CopyBufferRegion(dstBufferDX12->GetResource(), 0, srcBufferDX12->GetResource(), 0, bytesCount);
     }
     // Texture -> Texture
-    else if (srcType == GPUResource::ObjectType::Texture && dstType == GPUResource::ObjectType::Texture)
+    else if (srcTextureDX12 && dstTextureDX12)
     {
-        auto dstTextureDX12 = static_cast<GPUTextureDX12*>(dstResource);
-        auto srcTextureDX12 = static_cast<GPUTextureDX12*>(srcResource);
-
-        SetResourceState(dstTextureDX12, D3D12_RESOURCE_STATE_COPY_DEST);
-        SetResourceState(srcTextureDX12, D3D12_RESOURCE_STATE_COPY_SOURCE);
-        flushRBs();
-
         if (srcTextureDX12->IsStaging() || dstTextureDX12->IsStaging())
         {
             Log::NotImplementedException(TEXT("Copy region of staging resources is not supported yet."));
@@ -1436,6 +1422,23 @@ void GPUContextDX12::CopySubresource(GPUResource* dstResource, uint32 dstSubreso
     {
         Log::NotImplementedException(TEXT("Cannot copy data between buffer and texture."));
     }
+}
+
+void GPUContextDX12::SetResourceState(GPUResource* resource, uint64 state, int32 subresource)
+{
+    auto resourceDX12 = dynamic_cast<ResourceOwnerDX12*>(resource);
+    SetResourceState(resourceDX12, (D3D12_RESOURCE_STATES)state, subresource);
+}
+
+void GPUContextDX12::ForceRebindDescriptors()
+{
+    // Bind Root Signature
+    _commandList->SetGraphicsRootSignature(_device->GetRootSignature());
+    _commandList->SetComputeRootSignature(_device->GetRootSignature());
+
+    // Bind heaps
+    ID3D12DescriptorHeap* ppHeaps[] = {_device->RingHeap_CBV_SRV_UAV.GetHeap(), _device->RingHeap_Sampler.GetHeap()};
+    _commandList->SetDescriptorHeaps(ARRAY_COUNT(ppHeaps), ppHeaps);
 }
 
 #endif

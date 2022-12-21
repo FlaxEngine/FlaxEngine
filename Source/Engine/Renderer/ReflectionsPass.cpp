@@ -6,6 +6,7 @@
 #include "ScreenSpaceReflectionsPass.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -392,7 +393,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
 
     auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), PixelFormat::R11G11B10_Float);
     auto reflectionsBuffer = RenderTargetPool::Get(tempDesc);
-
+    RENDER_TARGET_POOL_SET_NAME(reflectionsBuffer, "Reflections");
     context->Clear(*reflectionsBuffer, Color::Black);
 
     // Reflection Probes pass

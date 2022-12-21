@@ -10,6 +10,7 @@
 #include "DrawCall.h"
 #include "RenderListBuffer.h"
 #include "RendererAllocation.h"
+#include "RenderSetup.h"
 
 enum class StaticFlags;
 class RenderBuffers;
@@ -362,6 +363,11 @@ public:
     /// Post effects to render.
     /// </summary>
     Array<PostProcessEffect*> PostFx;
+
+    /// <summary>
+    /// The renderer setup for the frame drawing.
+    /// </summary>
+    RenderSetup Setup;
 
     /// <summary>
     /// The post process settings.

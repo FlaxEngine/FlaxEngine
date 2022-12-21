@@ -45,6 +45,13 @@ public:
     }
 
     /// <summary>
+    /// Pre-rendering event called before scene rendering begin. Can be used to perform custom rendering or customize render view/setup.
+    /// </summary>
+    virtual void PreRender(GPUContext* context, RenderContext& renderContext)
+    {
+    }
+
+    /// <summary>
     /// Performs custom postFx rendering.
     /// </summary>
     /// <param name="context">The GPU commands context.</param>

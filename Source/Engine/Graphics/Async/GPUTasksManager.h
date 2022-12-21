@@ -22,30 +22,17 @@ class GPUTasksManager : public Object, public NonCopyable
     friend GPUTask;
 
 private:
-    GPUDevice* _device;
-    GPUTasksExecutor* _executor;
+    GPUTasksExecutor* _executor = nullptr;
     ConcurrentTaskQueue<GPUTask> _tasks;
     Array<GPUTask*> _buffers[2];
-    int32 _bufferIndex;
-
-private:
-    GPUTasksManager(GPUDevice* device);
-    ~GPUTasksManager();
+    int32 _bufferIndex = 0;
 
 public:
-    /// <summary>
-    /// Gets the parent Graphics Device.
-    /// </summary>
-    /// <returns>The device.</returns>
-    FORCE_INLINE GPUDevice* GetDevice() const
-    {
-        return _device;
-    }
+    GPUTasksManager();
 
     /// <summary>
     /// Gets the GPU tasks executor.
     /// </summary>
-    /// <returns>The tasks executor.</returns>
     FORCE_INLINE GPUTasksExecutor* GetExecutor() const
     {
         return _executor;
@@ -60,7 +47,6 @@ public:
     /// <summary>
     /// Gets the amount of enqueued tasks to perform.
     /// </summary>
-    /// <returns>The tasks count.</returns>
     FORCE_INLINE int32 GetTaskCount() const
     {
         return _tasks.Count();
@@ -94,8 +80,5 @@ public:
 
 public:
     // [Object]
-    String ToString() const override
-    {
-        return TEXT("GPU Tasks Manager");
-    }
+    String ToString() const override;
 };

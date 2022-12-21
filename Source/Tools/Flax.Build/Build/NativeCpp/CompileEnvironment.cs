@@ -150,7 +150,7 @@ namespace Flax.Build.NativeCpp
         /// <summary>
         /// The collection of defines with preprocessing symbol for a source files.
         /// </summary>
-        public readonly List<string> PreprocessorDefinitions = new List<string>();
+        public readonly HashSet<string> PreprocessorDefinitions = new HashSet<string>();
 
         /// <summary>
         /// The additional paths to add to the list of directories searched for include files.

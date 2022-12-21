@@ -1,11 +1,13 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "FontTextureAtlas.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Graphics/PixelFormat.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/Async/GPUTask.h"
 
 REGISTER_BINARY_ASSET(FontTextureAtlas, "FlaxEngine.FontTextureAtlas", true);
 

@@ -12,6 +12,8 @@
 #include "GPUBufferNull.h"
 #include "GPUSamplerNull.h"
 #include "GPUSwapChainNull.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Graphics/Async/GPUTasksManager.h"
 
 GPUDeviceNull::GPUDeviceNull()
     : GPUDevice(RendererType::Null, ShaderProfile::Unknown)
@@ -89,13 +91,13 @@ void GPUDeviceNull::Draw()
     auto context = GetMainContext();
 
     RenderBegin();
-    TasksManager.FrameBegin();
+    GetTasksManager()->FrameBegin();
     context->FrameBegin();
 
     // don't render anything
 
     context->FrameEnd();
-    TasksManager.FrameEnd();
+    GetTasksManager()->FrameEnd();
     RenderEnd();
 
     DrawEnd();
@@ -187,6 +189,11 @@ GPUSampler* GPUDeviceNull::CreateSampler()
 GPUSwapChain* GPUDeviceNull::CreateSwapChain(Window* window)
 {
     return New<GPUSwapChainNull>(window);
+}
+
+GPUConstantBuffer* GPUDeviceNull::CreateConstantBuffer(uint32 size, const StringView& name)
+{
+    return nullptr;
 }
 
 GPUDevice* CreateGPUDeviceNull()

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Config.h"
-#include "Engine/Core/Enums.h"
+#include "Engine/Core/Types/BaseTypes.h"
 
 // Level system types
 class SceneObject;

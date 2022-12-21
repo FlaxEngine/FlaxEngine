@@ -304,6 +304,9 @@ GPUSampler* Streaming::GetTextureGroupSampler(int32 index)
         if (!sampler)
         {
             sampler = GPUSampler::New();
+#if GPU_ENABLE_RESOURCE_NAMING
+            sampler->SetName(group.Name);
+#endif
             sampler->Init(desc);
             TextureGroupSamplers[index] = sampler;
         }
@@ -316,6 +319,9 @@ GPUSampler* Streaming::GetTextureGroupSampler(int32 index)
         if (!FallbackSampler)
         {
             FallbackSampler = GPUSampler::New();
+#if GPU_ENABLE_RESOURCE_NAMING
+            sampler->SetName(TEXT("FallbackSampler"));
+#endif
             FallbackSampler->Init(GPUSamplerDescription::New(GPUSamplerFilter::Trilinear));
         }
         sampler = FallbackSampler;

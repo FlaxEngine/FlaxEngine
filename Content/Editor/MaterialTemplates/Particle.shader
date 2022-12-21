@@ -2,6 +2,7 @@
 // Version: @0
 
 #define MATERIAL 1
+#define USE_PER_VIEW_CONSTANTS 1
 @3
 // Ribbons don't use sorted indices so overlap the segment distances buffer on the slot
 #define HAS_SORTED_INDICES (!defined(_VS_Ribbon))
@@ -19,15 +20,7 @@ struct SpriteInput
 
 // Primary constant buffer (with additional material parameters)
 META_CB_BEGIN(0, Data)
-float4x4 ViewProjectionMatrix;
 float4x4 WorldMatrix;
-float4x4 ViewMatrix;
-float3 ViewPos;
-float ViewFar;
-float3 ViewDir;
-float TimeParam;
-float4 ViewInfo;
-float4 ScreenSize;
 uint SortedIndicesOffset;
 float PerInstanceRandom;
 int ParticleStride;

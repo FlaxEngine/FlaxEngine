@@ -3,6 +3,7 @@
 #include "MultiScaler.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Graphics/GPUContext.h"
 
 PACK_STRUCT(struct Data {
     Float2 TexelSize;

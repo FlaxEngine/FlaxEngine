@@ -87,7 +87,7 @@ public:
 public:
 
     // [GPUResourceDX12]
-    ResourceType GetResourceType() const final override;
+    GPUResourceType GetResourceType() const final override;
 
 protected:
 
@@ -170,9 +170,9 @@ public:
 public:
 
     // [GPUResourceDX12]
-    ResourceType GetResourceType() const final override
+    GPUResourceType GetResourceType() const final override
     {
-        return ResourceType::Descriptor;
+        return GPUResourceType::Descriptor;
     }
 
 protected:

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace FlaxEngine
 {
@@ -13,11 +13,11 @@ namespace FlaxEngine
         /// The path to be used in the context menu
         /// </summary>
         public string Path;
-        
+
         /// <summary>
         /// Initializes a new instance of the  <see cref="ActorContextMenuAttribute"/> class.
         /// </summary>
-        /// <param name="path">The path to use to create the context menu</param>
+        /// <param name="path">The path to use to create the context menu.</param>
         public ActorContextMenuAttribute(string path)
         {
             Path = path;

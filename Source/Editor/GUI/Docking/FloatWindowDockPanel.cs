@@ -51,10 +51,6 @@ namespace FlaxEditor.GUI.Docking
             if (_window == null)
                 return;
 
-            // Check if window is maximized
-            if (_window.IsMaximized)
-                return;
-
             // Create docking hint window
             DockHintWindow.Create(this);
         }

@@ -111,7 +111,6 @@ public:
     /// <summary>
     /// Gets the Vulkan image handle.
     /// </summary>
-    /// <returns>The image handle.</returns>
     FORCE_INLINE VkImage GetHandle() const
     {
         return _image;

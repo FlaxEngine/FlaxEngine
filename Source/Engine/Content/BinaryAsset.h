@@ -41,7 +41,6 @@ public:
     FlaxStorage* Storage;
 
 #if USE_EDITOR
-
     /// <summary>
     /// The asset metadata information. Stored in a Json format.
     /// </summary>
@@ -51,14 +50,12 @@ public:
     /// Asset dependencies list used by the asset for tracking (eg. material functions used by material asset). The pair of asset ID and cached file edit time (for tracking modification).
     /// </summary>
     Array<Pair<Guid, DateTime>> Dependencies;
-
 #endif
 
 public:
     /// <summary>
     /// Gets the asset serialized version.
     /// </summary>
-    /// <returns>Version number.</returns>
     virtual uint32 GetSerializedVersion() const = 0;
 
     /// <summary>
@@ -84,14 +81,11 @@ public:
 
 public:
 #if USE_EDITOR
-
 #if COMPILE_WITH_ASSETS_IMPORTER
-
     /// <summary>
     /// Reimports asset from the source file.
     /// </summary>
     API_FUNCTION() void Reimport() const;
-
 #endif
 
     /// <summary>
@@ -130,7 +124,6 @@ protected:
     virtual void OnDependencyModified(BinaryAsset* asset)
     {
     }
-
 #endif
 
 protected:
@@ -255,7 +248,6 @@ public:
     bool LoadChunks(AssetChunksFlag chunks);
 
 #if USE_EDITOR
-
     /// <summary>
     /// Saves this asset to the storage container.
     /// </summary>
@@ -281,7 +273,6 @@ public:
     /// <param name="silentMode">In silent mode don't reload opened storage container that is using target file.</param>
     /// <returns>True if failed, otherwise false.</returns>
     static bool SaveToAsset(const StringView& path, AssetInitData& data, bool silentMode = false);
-
 #endif
 
 protected:
@@ -302,6 +293,7 @@ public:
     void OnDeleteObject() override;
 #endif
     const String& GetPath() const final override;
+    uint64 GetMemoryUsage() const override;
 
 protected:
     // [Asset]

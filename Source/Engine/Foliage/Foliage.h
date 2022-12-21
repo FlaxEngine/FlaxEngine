@@ -154,9 +154,9 @@ private:
         const Mesh* Geo;
         int32 Lightmap;
 
-        friend bool operator==(const DrawKey& lhs, const DrawKey& rhs)
+        bool operator==(const DrawKey& other) const
         {
-            return lhs.Mat == rhs.Mat && lhs.Geo == rhs.Geo && lhs.Lightmap == rhs.Lightmap;
+            return Mat == other.Mat && Geo == other.Geo && Lightmap == other.Lightmap;
         }
 
         friend uint32 GetHash(const DrawKey& key)

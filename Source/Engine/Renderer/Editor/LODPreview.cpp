@@ -10,6 +10,7 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Renderer/GBufferPass.h"
 
 LODPreviewMaterialShader::LODPreviewMaterialShader()
 {
@@ -47,26 +48,10 @@ void LODPreviewMaterialShader::Bind(BindParameters& params)
     // Find the LOD that produced this draw call
     int32 lodIndex = 0;
     auto& drawCall = *params.FirstDrawCall;
-    for (auto& e : Content::GetAssetsRaw())
+    const ModelLOD* drawCallModelLod;
+    if (GBufferPass::IndexBufferToModelLOD.TryGet(drawCall.Geometry.IndexBuffer, drawCallModelLod))
     {
-        auto model = ScriptingObject::Cast<Model>(e.Value);
-        if (!model)
-            continue;
-        bool found = false;
-        for (const auto& lod : model->LODs)
-        {
-            for (const auto& mesh : lod.Meshes)
-            {
-                if (mesh.GetIndexBuffer() == drawCall.Geometry.IndexBuffer)
-                {
-                    lodIndex = mesh.GetLODIndex();
-                    found = true;
-                    break;
-                }
-            }
-        }
-        if (found)
-            break;
+        lodIndex = drawCallModelLod->GetLODIndex();
     }
 
     // Bind

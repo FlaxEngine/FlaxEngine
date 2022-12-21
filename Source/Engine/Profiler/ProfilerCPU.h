@@ -22,7 +22,7 @@ public:
     /// <summary>
     /// Represents single CPU profiling event data.
     /// </summary>
-    API_STRUCT() struct Event
+    API_STRUCT(NoDefault) struct Event
     {
         DECLARE_SCRIPTING_TYPE_MINIMAL(Event);
 

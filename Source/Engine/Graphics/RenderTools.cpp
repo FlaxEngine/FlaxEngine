@@ -9,6 +9,7 @@
 #include "RenderTask.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Engine/Time.h"
 
 const Char* ToString(RendererType value)

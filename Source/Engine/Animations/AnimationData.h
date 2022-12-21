@@ -86,6 +86,11 @@ public:
     {
         return Position.GetKeyframes().Count() + Rotation.GetKeyframes().Count() + Scale.GetKeyframes().Count();
     }
+
+    uint64 GetMemoryUsage() const
+    {
+        return NodeName.Length() * sizeof(Char) + Position.GetMemoryUsage() + Rotation.GetMemoryUsage() + Scale.GetMemoryUsage();
+    }
 };
 
 /// <summary>
@@ -129,6 +134,14 @@ public:
         ASSERT(FramesPerSecond != 0);
 #endif
         return static_cast<float>(Duration / FramesPerSecond);
+    }
+
+    uint64 GetMemoryUsage() const
+    {
+        uint64 result = RootNodeName.Length() * sizeof(Char) + Channels.Capacity() * sizeof(NodeAnimationData);
+        for (const auto& e : Channels)
+            result += e.GetMemoryUsage();
+        return result;
     }
 
     /// <summary>

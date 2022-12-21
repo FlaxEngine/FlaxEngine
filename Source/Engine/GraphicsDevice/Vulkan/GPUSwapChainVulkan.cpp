@@ -8,6 +8,7 @@
 #include "GPUAdapterVulkan.h"
 #include "GPUContextVulkan.h"
 #include "CmdBufferVulkan.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Graphics/GPULimits.h"
 
 void BackBufferVulkan::Setup(GPUSwapChainVulkan* window, VkImage backbuffer, PixelFormat format, VkExtent3D extent)

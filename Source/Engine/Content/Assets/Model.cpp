@@ -722,6 +722,7 @@ bool Model::Init(const Span<int32>& meshesCountPerLod)
     {
         auto& lod = LODs[lodIndex];
         lod._model = this;
+        lod._lodIndex = lodIndex;
         lod.ScreenSize = 1.0f;
         const int32 meshesCount = meshesCountPerLod[lodIndex];
         if (meshesCount <= 0 || meshesCount > MODEL_MAX_MESHES)
@@ -922,6 +923,7 @@ Asset::LoadResult Model::load()
     {
         auto& lod = LODs[lodIndex];
         lod._model = this;
+        lod._lodIndex = lodIndex;
 
         // Screen Size
         stream->ReadFloat(&lod.ScreenSize);
@@ -977,7 +979,13 @@ Asset::LoadResult Model::load()
             ModelSDFHeader data;
             sdfStream.ReadBytes(&data, sizeof(data));
             if (!SDF.Texture)
-                SDF.Texture = GPUTexture::New();
+            {
+                String name;
+#if !BUILD_RELEASE
+                name = GetPath() + TEXT(".SDF");
+#endif
+                SDF.Texture = GPUDevice::Instance->CreateTexture(name);
+            }
             if (SDF.Texture->Init(GPUTextureDescription::New3D(data.Width, data.Height, data.Depth, data.Format, GPUTextureFlags::ShaderResource, data.MipLevels)))
                 return LoadResult::Failed;
             SDF.LocalToUVWMul = data.LocalToUVWMul;

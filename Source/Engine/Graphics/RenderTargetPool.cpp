@@ -2,6 +2,7 @@
 
 #include "RenderTargetPool.h"
 #include "GPUDevice.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Engine/Engine.h"
 
 struct Entry

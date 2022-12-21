@@ -63,3 +63,11 @@ void GPUContext::Draw(GPUTextureView* rt)
     SetState(_device->GetCopyLinearPS());
     DrawFullscreenTriangle();
 }
+
+void GPUContext::SetResourceState(GPUResource* resource, uint64 state, int32 subresource)
+{
+}
+
+void GPUContext::ForceRebindDescriptors()
+{
+}

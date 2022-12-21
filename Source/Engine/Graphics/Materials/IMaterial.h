@@ -8,6 +8,7 @@ struct MaterialParamsLink;
 class GPUShader;
 class GPUContext;
 class GPUTextureView;
+class GPUConstantBuffer;
 class RenderBuffers;
 class SceneRenderTask;
 struct RenderView;
@@ -157,6 +158,12 @@ public:
         BindParameters(::GPUContext* context, const ::RenderContext& renderContext);
         BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const DrawCall& drawCall);
         BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const DrawCall* firstDrawCall, int32 drawCallsCount);
+
+        // Per-view shared constant buffer (see ViewData in MaterialCommon.hlsl).
+        static GPUConstantBuffer* PerViewConstants;
+
+        // Binds the shared per-view constant buffer at slot 1 (see ViewData in MaterialCommon.hlsl)
+        void BindViewData();
     };
 
     /// <summary>

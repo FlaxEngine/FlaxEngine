@@ -621,7 +621,11 @@ DragDropEffect WindowsWindow::DoDragDrop(const StringView& data)
 
     // Fix hanging mouse state (Windows doesn't send WM_LBUTTONUP when we end the drag and drop)
     if (Input::GetMouseButton(MouseButton::Left))
-        Input::Mouse->OnMouseUp(Input::Mouse->GetPosition(), MouseButton::Left, this);
+    {
+        ::POINT point;
+        ::GetCursorPos(&point);
+        Input::Mouse->OnMouseUp(Float2((float)point.x, (float)point.y), MouseButton::Left, this);
+    }
 
     return SUCCEEDED(result) ? dropEffectFromOleEnum(dwEffect) : DragDropEffect::None;
 }

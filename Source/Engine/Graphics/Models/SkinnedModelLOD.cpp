@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "SkinnedModelLOD.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Serialization/MemoryReadStream.h"

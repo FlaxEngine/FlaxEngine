@@ -152,7 +152,6 @@ public:
     const NodeToChannel* GetMapping(SkinnedModel* obj);
 
 #if USE_EDITOR
-
     /// <summary>
     /// Gets the animation as serialized timeline data. Used to show it in Editor.
     /// </summary>
@@ -173,7 +172,6 @@ public:
     /// <remarks>The cannot be used by virtual assets.</remarks>
     /// <returns><c>true</c> failed to save data; otherwise, <c>false</c>.</returns>
     bool Save(const StringView& path = StringView::Empty);
-
 #endif
 
 private:
@@ -181,6 +179,7 @@ private:
 
 public:
     // [BinaryAsset]
+    uint64 GetMemoryUsage() const override;
     void OnScriptingDispose() override;
 
 protected:

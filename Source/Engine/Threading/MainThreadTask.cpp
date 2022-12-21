@@ -35,7 +35,7 @@ void MainThreadTask::RunAll(float dt)
 
 String MainThreadTask::ToString() const
 {
-    return String::Format(TEXT("Main Thread Task ({0})"), ::ToString(GetState()));
+    return String::Format(TEXT("Main Thread Task ({0})"), (int32)GetState());
 }
 
 void MainThreadTask::Enqueue()

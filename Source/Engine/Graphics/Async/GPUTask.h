@@ -4,7 +4,6 @@
 
 #include "Engine/Threading/Task.h"
 #include "Engine/Platform/Platform.h"
-#include "Engine/Core/Log.h"
 #include "GPUTasksContext.h"
 
 class GPUResource;
@@ -89,32 +88,7 @@ public:
     /// Executes this task.
     /// </summary>
     /// <param name="context">The context.</param>
-    void Execute(GPUTasksContext* context)
-    {
-        // Begin
-        ASSERT(IsQueued() && _context == nullptr);
-        _state = TaskState::Running;
-
-        // Perform an operation
-        const auto result = run(context);
-
-        // Process result
-        if (IsCancelRequested())
-        {
-            _state = TaskState::Canceled;
-        }
-        else if (result != Result::Ok)
-        {
-            LOG(Warning, "\'{0}\' failed with result: {1}", ToString(), ToString(result));
-            OnFail();
-        }
-        else
-        {
-            // Save task completion point (for synchronization)
-            _syncPoint = context->GetCurrentSyncPoint();
-            _context = context;
-        }
-    }
+    void Execute(GPUTasksContext* context);
 
     /// <summary>
     /// Action fired when asynchronous operation has been synchronized with a GPU
@@ -154,10 +128,7 @@ protected:
 
 public:
     // [Task]
-    String ToString() const override
-    {
-        return String::Format(TEXT("GPU Async Task {0} ({1})"), ToString(GetType()), ::ToString(GetState()));
-    }
+    String ToString() const override;
 
 protected:
     // [Task]

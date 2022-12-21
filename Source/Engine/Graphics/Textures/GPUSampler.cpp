@@ -2,6 +2,7 @@
 
 #include "GPUSampler.h"
 #include "GPUSamplerDescription.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Graphics/GPUDevice.h"
 
@@ -75,6 +76,7 @@ GPUSampler* GPUSampler::New()
 }
 
 GPUSampler::GPUSampler()
+    : GPUResource(SpawnParams(Guid::New(), TypeInitializer))
 {
 }
 
@@ -100,14 +102,9 @@ String GPUSampler::ToString() const
 #endif
 }
 
-GPUResource::ResourceType GPUSampler::GetResourceType() const
+GPUResourceType GPUSampler::GetResourceType() const
 {
-    return ResourceType::Sampler;
-}
-
-GPUResource::ObjectType GPUSampler::GetObjectType() const
-{
-    return ObjectType::Other;
+    return GPUResourceType::Sampler;
 }
 
 void GPUSampler::OnReleaseGPU()

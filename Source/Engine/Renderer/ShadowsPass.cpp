@@ -8,6 +8,7 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Graphics/GPUContext.h"
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #endif

@@ -701,4 +701,29 @@ GPUSwapChain* GPUDeviceDX11::CreateSwapChain(Window* window)
     return New<GPUSwapChainDX11>(this, window);
 }
 
+GPUConstantBuffer* GPUDeviceDX11::CreateConstantBuffer(uint32 size, const StringView& name)
+{
+    ID3D11Buffer* buffer = nullptr;
+    uint32 memorySize = 0;
+    if (size)
+    {
+        // Create buffer
+        D3D11_BUFFER_DESC cbDesc;
+        cbDesc.ByteWidth = Math::AlignUp<uint32>(size, 16);
+        cbDesc.Usage = D3D11_USAGE_DEFAULT;
+        cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+        cbDesc.CPUAccessFlags = 0;
+        cbDesc.MiscFlags = 0;
+        cbDesc.StructureByteStride = 0;
+        const HRESULT result = _device->CreateBuffer(&cbDesc, nullptr, &buffer);
+        if (FAILED(result))
+        {
+            LOG_DIRECTX_RESULT(result);
+            return nullptr;
+        }
+        memorySize = cbDesc.ByteWidth;
+    }
+    return New<GPUConstantBufferDX11>(this, size, memorySize, buffer, name);
+}
+
 #endif

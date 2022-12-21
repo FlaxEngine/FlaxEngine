@@ -115,6 +115,8 @@ bool DeployDataStep::Perform(CookingData& data)
     auto& buildSettings = *BuildSettings::Get();
     for (auto& e : buildSettings.AdditionalAssets)
         data.AddRootAsset(e.GetID());
+    for (auto& e : buildSettings.AdditionalScenes)
+        data.AddRootAsset(e.ID);
     Array<String> files;
     for (auto& e : buildSettings.AdditionalAssetFolders)
     {

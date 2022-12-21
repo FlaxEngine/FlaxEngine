@@ -74,9 +74,6 @@ protected:
     GPUShaderProgramsContainer _shaders;
     GPUConstantBuffer* _constantBuffers[MAX_CONSTANT_BUFFER_SLOTS];
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUShader"/> class.
-    /// </summary>
     GPUShader();
 
 public:
@@ -179,11 +176,10 @@ public:
 protected:
     GPUShaderProgram* GetShader(ShaderStage stage, const StringAnsiView& name, int32 permutationIndex) const;
     virtual GPUShaderProgram* CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize, MemoryReadStream& stream) = 0;
-    virtual GPUConstantBuffer* CreateCB(const String& name, uint32 size, MemoryReadStream& stream) = 0;
 
 public:
     // [GPUResource]
-    ResourceType GetResourceType() const final override;
+    GPUResourceType GetResourceType() const final override;
 
 protected:
     // [GPUResource]

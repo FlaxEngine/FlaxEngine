@@ -26,7 +26,7 @@ static_assert((int32)NetworkTransform::ReplicationComponents::All + 1 == 512, "I
 namespace
 {
     // Percentage of local error that is acceptable (eg. 4 frames error)
-    constexpr float Precision = 4.0f;
+    constexpr float Precision = 8.0f;
 
     template<typename T>
     FORCE_INLINE bool IsWithinPrecision(const Vector3Base<T>& currentDelta, const Vector3Base<T>& targetDelta)

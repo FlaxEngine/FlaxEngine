@@ -18,7 +18,7 @@ void RenderView::Prepare(RenderContext& renderContext)
     // Check if use TAA (need to modify the projection matrix)
     Float2 taaJitter;
     NonJitteredProjection = Projection;
-    if (renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing)
+    if (renderContext.List->Setup.UseTemporalAAJitter)
     {
         // Move to the next frame
         const int MaxSampleCount = 8;
@@ -26,9 +26,9 @@ void RenderView::Prepare(RenderContext& renderContext)
             TaaFrameIndex = 0;
 
         // Calculate jitter
-        const float jitterSpread = renderContext.List->Settings.AntiAliasing.TAA_JitterSpread;
-        const float jitterX = RendererUtils::TemporalHalton(TaaFrameIndex + 1, 2) * jitterSpread;
-        const float jitterY = RendererUtils::TemporalHalton(TaaFrameIndex + 1, 3) * jitterSpread;
+        const float jitterSpread = renderContext.List->Settings.AntiAliasing.TAA_JitterSpread / 0.75f;
+        const float jitterX = (RendererUtils::TemporalHalton(TaaFrameIndex + 1, 2) - 0.5f) * jitterSpread;
+        const float jitterY = (RendererUtils::TemporalHalton(TaaFrameIndex + 1, 3) - 0.5f) * jitterSpread;
         taaJitter = Float2(jitterX * 2.0f / width, jitterY * 2.0f / height);
 
         // Modify projection matrix

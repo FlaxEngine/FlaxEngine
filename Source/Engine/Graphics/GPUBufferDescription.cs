@@ -9,7 +9,7 @@ namespace FlaxEngine
         /// <summary>
         /// Gets the number elements in the buffer.
         /// </summary>
-        public uint GetElementsCount => Stride > 0 ? Size / Stride : 0;
+        public uint ElementsCount => Stride > 0 ? Size / Stride : 0;
 
         /// <summary>
         /// Gets a value indicating whether this instance is a shader resource.

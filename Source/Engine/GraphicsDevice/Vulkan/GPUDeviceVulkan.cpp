@@ -20,13 +20,14 @@
 #include "Config.h"
 #include "CmdBufferVulkan.h"
 #include "FlaxEngine.Gen.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Core/Utilities.h"
+#include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Collections/ArrayExtensions.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Graphics/Textures/GPUSamplerDescription.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
-#include "Engine/Core/Utilities.h"
-#include "Engine/Core/Math/Color32.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Engine/CommandLine.h"
@@ -1485,7 +1486,10 @@ GPUAdapter* GPUDeviceVulkan::GetAdapter() const
 
 void* GPUDeviceVulkan::GetNativePtr() const
 {
-    return static_cast<void*>(Device);
+    // Return both Instance and Device as pointer to void*[2]
+    _nativePtr[0] = (void*)Instance;
+    _nativePtr[1] = (void*)Device;
+    return _nativePtr;
 }
 
 static int32 GetMaxSampleCount(VkSampleCountFlags counts)
@@ -2043,6 +2047,11 @@ GPUSampler* GPUDeviceVulkan::CreateSampler()
 GPUSwapChain* GPUDeviceVulkan::CreateSwapChain(Window* window)
 {
     return New<GPUSwapChainVulkan>(this, window);
+}
+
+GPUConstantBuffer* GPUDeviceVulkan::CreateConstantBuffer(uint32 size, const StringView& name)
+{
+    return New<GPUConstantBufferVulkan>(this, size);
 }
 
 SemaphoreVulkan::SemaphoreVulkan(GPUDeviceVulkan* device)

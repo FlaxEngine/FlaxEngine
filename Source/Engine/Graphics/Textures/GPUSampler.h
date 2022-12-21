@@ -43,8 +43,7 @@ protected:
 public:
     // [GPUResource]
     String ToString() const override;
-    ResourceType GetResourceType() const final override;
-    ObjectType GetObjectType() const final override;
+    GPUResourceType GetResourceType() const final override;
 
 protected:
     // [GPUResource]

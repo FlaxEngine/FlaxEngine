@@ -198,6 +198,8 @@ public:
     void CopyCounter(GPUBuffer* dstBuffer, uint32 dstOffset, GPUBuffer* srcBuffer) override;
     void CopyResource(GPUResource* dstResource, GPUResource* srcResource) override;
     void CopySubresource(GPUResource* dstResource, uint32 dstSubresource, GPUResource* srcResource, uint32 srcSubresource) override;
+    void SetResourceState(GPUResource* resource, uint64 state, int32 subresource) override;
+    void ForceRebindDescriptors() override;
 };
 
 #endif

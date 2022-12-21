@@ -137,6 +137,7 @@ GPUBuffer* GPUBuffer::New()
 }
 
 GPUBuffer::GPUBuffer()
+    : GPUResource(SpawnParams(Guid::New(), TypeInitializer))
 {
     // Buffer with size 0 is considered to be invalid
     _desc.Size = 0;
@@ -395,14 +396,9 @@ String GPUBuffer::ToString() const
 #endif
 }
 
-GPUResource::ResourceType GPUBuffer::GetResourceType() const
+GPUResourceType GPUBuffer::GetResourceType() const
 {
-    return ResourceType::Buffer;
-}
-
-GPUResource::ObjectType GPUBuffer::GetObjectType() const
-{
-    return ObjectType::Buffer;
+    return GPUResourceType::Buffer;
 }
 
 void GPUBuffer::OnReleaseGPU()

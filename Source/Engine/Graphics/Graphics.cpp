@@ -3,6 +3,8 @@
 #include "Graphics.h"
 #include "GPUDevice.h"
 #include "PixelFormatExtensions.h"
+#include "Async/GPUTasksManager.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/EngineService.h"
@@ -194,7 +196,7 @@ void GraphicsService::BeforeExit()
     if (GPUDevice::Instance)
     {
         // Start disposing
-        GPUDevice::Instance->TasksManager.Dispose();
+        GPUDevice::Instance->GetTasksManager()->Dispose();
     }
 }
 

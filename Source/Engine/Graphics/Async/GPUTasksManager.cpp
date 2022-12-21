@@ -3,30 +3,51 @@
 #include "GPUTasksManager.h"
 #include "GPUTask.h"
 #include "GPUTasksExecutor.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Core/Types/String.h"
 #include "Engine/Graphics/GPUDevice.h"
+
+void GPUTask::Execute(GPUTasksContext* context)
+{
+    // Begin
+    ASSERT(IsQueued() && _context == nullptr);
+    _state = TaskState::Running;
+
+    // Perform an operation
+    const auto result = run(context);
+
+    // Process result
+    if (IsCancelRequested())
+    {
+        _state = TaskState::Canceled;
+    }
+    else if (result != Result::Ok)
+    {
+        LOG(Warning, "\'{0}\' failed with result: {1}", ToString(), ToString(result));
+        OnFail();
+    }
+    else
+    {
+        // Save task completion point (for synchronization)
+        _syncPoint = context->GetCurrentSyncPoint();
+        _context = context;
+    }
+}
+
+String GPUTask::ToString() const
+{
+    return String::Format(TEXT("GPU Async Task {0} ({1})"), ToString(GetType()), (int32)GetState());
+}
 
 void GPUTask::Enqueue()
 {
-    GPUDevice::Instance->TasksManager._tasks.Add(this);
+    GPUDevice::Instance->GetTasksManager()->_tasks.Add(this);
 }
 
-GPUTasksManager::GPUTasksManager(GPUDevice* device)
-    : _device(device)
-    , _executor(nullptr)
-    , _bufferIndex(0)
+GPUTasksManager::GPUTasksManager()
 {
     _buffers[0].EnsureCapacity(64);
     _buffers[1].EnsureCapacity(64);
-
-    // Setup executor
-    SetExecutor(device->CreateTasksExecutor());
-    ASSERT(_executor != nullptr);
-}
-
-GPUTasksManager::~GPUTasksManager()
-{
-    // Ensure that Dispose has been called
-    ASSERT(_executor == nullptr);
 }
 
 void GPUTasksManager::SetExecutor(GPUTasksExecutor* value)
@@ -113,4 +134,9 @@ int32 GPUTasksManager::RequestWork(GPUTask** buffer, int32 maxCount)
     _bufferIndex = b2Index;
 
     return count;
+}
+
+String GPUTasksManager::ToString() const
+{
+    return TEXT("GPU Tasks Manager");
 }

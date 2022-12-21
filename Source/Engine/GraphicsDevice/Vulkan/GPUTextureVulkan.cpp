@@ -6,6 +6,7 @@
 #include "GPUBufferVulkan.h"
 #include "GPUContextVulkan.h"
 #include "RenderToolsVulkan.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 

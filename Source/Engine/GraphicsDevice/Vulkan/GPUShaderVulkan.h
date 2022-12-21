@@ -67,9 +67,9 @@ public:
 public:
 
     // [GPUResourceVulkan]
-    ResourceType GetResourceType() const final override
+    GPUResourceType GetResourceType() const final override
     {
-        return ResourceType::Buffer;
+        return GPUResourceType::Buffer;
     }
 
     // [ResourceOwnerVulkan]
@@ -126,10 +126,6 @@ public:
 /// </summary>
 class GPUShaderVulkan : public GPUResourceVulkan<GPUShader>
 {
-private:
-
-    Array<GPUConstantBufferVulkan, FixedAllocation<MAX_CONSTANT_BUFFER_SLOTS>> _cbs;
-
 public:
 
     /// <summary>
@@ -146,8 +142,6 @@ protected:
 
     // [GPUShader]
     GPUShaderProgram* CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize, MemoryReadStream& stream) override;
-    GPUConstantBuffer* CreateCB(const String& name, uint32 size, MemoryReadStream& stream) override;
-    void OnReleaseGPU() override;
 };
 
 #endif

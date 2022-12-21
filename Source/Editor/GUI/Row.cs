@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -190,6 +191,94 @@ namespace FlaxEditor.GUI
                         break;
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// The table row that contains events for mouse interaction.
+    /// </summary>
+    [HideInEditor]
+    public class ClickableRow : Row
+    {
+        private bool _leftClick;
+        private bool _isRightDown;
+
+        /// <summary>
+        /// The double click event.
+        /// </summary>
+        public Action DoubleClick;
+
+        /// <summary>
+        /// The left mouse button click event.
+        /// </summary>
+        public Action LeftClick;
+
+        /// <summary>
+        /// The right mouse button click event.
+        /// </summary>
+        public Action RightClick;
+
+        /// <summary>
+        /// The double click event.
+        /// </summary>
+        public Action<ClickableRow> RowDoubleClick;
+
+        /// <summary>
+        /// The left mouse button click event.
+        /// </summary>
+        public Action<ClickableRow> RowLeftClick;
+
+        /// <summary>
+        /// The right mouse button click event.
+        /// </summary>
+        public Action<ClickableRow> RowRightClick;
+
+        /// <inheritdoc />
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
+        {
+            DoubleClick?.Invoke();
+            RowDoubleClick?.Invoke(this);
+            
+            return base.OnMouseDoubleClick(location, button);
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseDown(Float2 location, MouseButton button)
+        {
+            if (button == MouseButton.Left)
+                _leftClick = true;
+            else if (button == MouseButton.Right)
+                _isRightDown = true;
+
+            return base.OnMouseDown(location, button);
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            if (button == MouseButton.Left && _leftClick)
+            {
+                _leftClick = false;
+                LeftClick?.Invoke();
+                RowLeftClick?.Invoke(this);
+            }
+            else if (button == MouseButton.Right && _isRightDown)
+            {
+                _isRightDown = false;
+                RightClick?.Invoke();
+                RowRightClick?.Invoke(this);
+            }
+
+            return base.OnMouseUp(location, button);
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseLeave()
+        {
+            _leftClick = false;
+            _isRightDown = false;
+
+            base.OnMouseLeave();
         }
     }
 }

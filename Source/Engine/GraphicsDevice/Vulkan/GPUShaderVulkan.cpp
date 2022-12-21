@@ -8,8 +8,9 @@
 #include "RenderToolsVulkan.h"
 #include "CmdBufferVulkan.h"
 #include "Types.h"
-#include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"
+#include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 
 #if PLATFORM_DESKTOP
@@ -232,18 +233,6 @@ GPUShaderProgram* GPUShaderVulkan::CreateGPUShaderProgram(ShaderStage type, cons
     }
     }
     return shader;
-}
-
-GPUConstantBuffer* GPUShaderVulkan::CreateCB(const String& name, uint32 size, MemoryReadStream& stream)
-{
-    return new(_cbs) GPUConstantBufferVulkan(_device, size);
-}
-
-void GPUShaderVulkan::OnReleaseGPU()
-{
-    _cbs.Clear();
-
-    GPUShader::OnReleaseGPU();
 }
 
 #endif

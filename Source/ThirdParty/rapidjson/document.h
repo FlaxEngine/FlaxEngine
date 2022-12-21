@@ -2304,6 +2304,12 @@ public:
         return *allocator_;
     }
 
+    //! Get the allocator of this document.
+    const Allocator& GetAllocator() const {
+        RAPIDJSON_ASSERT(allocator_);
+        return *allocator_;
+    }
+
     //! Get the capacity of stack in bytes.
     size_t GetStackCapacity() const { return stack_.GetCapacity(); }
 

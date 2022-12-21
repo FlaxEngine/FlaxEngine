@@ -12,6 +12,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/ContentExporters/AssetExporters.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/Scene.h"
 

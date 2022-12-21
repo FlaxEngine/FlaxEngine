@@ -4,6 +4,7 @@
 #include "GPUDevice.h"
 #include "Textures/GPUTexture.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Threading/Task.h"
 
 class GPUSwapChainDownloadTask : public Task
 {
@@ -33,6 +34,13 @@ public:
     {
     }
 };
+
+GPUSwapChain::GPUSwapChain()
+{
+#if GPU_ENABLE_RESOURCE_NAMING
+    _name = TEXT("Swap Chain (backbuffers)");
+#endif
+}
 
 Task* GPUSwapChain::DownloadDataAsync(TextureData& result)
 {
@@ -94,7 +102,7 @@ String GPUSwapChain::ToString() const
 #endif
 }
 
-GPUResource::ResourceType GPUSwapChain::GetResourceType() const
+GPUResourceType GPUSwapChain::GetResourceType() const
 {
-    return ResourceType::Texture;
+    return GPUResourceType::Texture;
 }

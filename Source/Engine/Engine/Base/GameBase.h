@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Engine/Core/Enums.h"
+#include "Engine/Core/Types/BaseTypes.h"
 
 /// <summary>
 /// Build game header flags.

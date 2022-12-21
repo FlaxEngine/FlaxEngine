@@ -50,6 +50,7 @@ namespace Flax.Build.Plugins
 
         internal const string Network = "Network";
         internal const string NetworkReplicated = "NetworkReplicated";
+        internal const string NetworkReplicatedAttribute = "FlaxEngine.NetworkReplicatedAttribute";
         internal const string NetworkRpc = "NetworkRpc";
         private const string Thunk1 = "INetworkSerializable_Serialize";
         private const string Thunk2 = "INetworkSerializable_Deserialize";
@@ -556,7 +557,14 @@ namespace Flax.Build.Plugins
                     var isNetworkReplicated = false;
                     foreach (FieldDefinition f in type.Fields)
                     {
-                        if (!f.HasAttribute("FlaxEngine.NetworkReplicatedAttribute"))
+                        if (!f.HasAttribute(NetworkReplicatedAttribute))
+                            continue;
+                        isNetworkReplicated = true;
+                        break;
+                    }
+                    foreach (PropertyDefinition p in type.Properties)
+                    {
+                        if (!p.HasAttribute(NetworkReplicatedAttribute))
                             continue;
                         isNetworkReplicated = true;
                         break;
@@ -698,9 +706,17 @@ namespace Flax.Build.Plugins
             // Serialize all type fields marked with NetworkReplicated attribute
             foreach (FieldDefinition f in type.Fields)
             {
-                if (!f.HasAttribute("FlaxEngine.NetworkReplicatedAttribute"))
+                if (!f.HasAttribute(NetworkReplicatedAttribute))
                     continue;
-                GenerateSerializerType(type, serialize, ref failed, f, f.FieldType, il, networkStream);
+                GenerateSerializerType(type, serialize, ref failed, f, null, f.FieldType, il, networkStream);
+            }
+
+            // Serialize all type properties marked with NetworkReplicated attribute
+            foreach (PropertyDefinition p in type.Properties)
+            {
+                if (!p.HasAttribute(NetworkReplicatedAttribute))
+                    continue;
+                GenerateSerializerType(type, serialize, ref failed, null, p, p.PropertyType, il, networkStream);
             }
 
             if (serialize)
@@ -780,8 +796,31 @@ namespace Flax.Build.Plugins
             }
         }
 
-        private static void GenerateSerializerType(TypeDefinition type, bool serialize, ref bool failed, FieldReference field, TypeReference valueType, ILProcessor il, TypeDefinition networkStreamType)
+        private static void GenerateSerializerType(TypeDefinition type, bool serialize, ref bool failed, FieldReference field, PropertyDefinition property, TypeReference valueType, ILProcessor il, TypeDefinition networkStreamType)
         {
+            if (field == null && property == null)
+                throw new ArgumentException();
+            var propertyGetOpCode = OpCodes.Call;
+            var propertySetOpCode = OpCodes.Call;
+            if (property != null)
+            {
+                if (property.GetMethod == null)
+                {
+                    Log.Error($"Missing getter method for property '{property.Name}' of type {valueType.FullName} in {type.FullName} for automatic replication.");
+                    failed = true;
+                    return;
+                }
+                if (property.SetMethod == null)
+                {
+                    Log.Error($"Missing setter method for property '{property.Name}' of type {valueType.FullName} in {type.FullName} for automatic replication.");
+                    failed = true;
+                    return;
+                }
+                if (property.GetMethod.IsVirtual)
+                    propertyGetOpCode = OpCodes.Callvirt;
+                if (property.SetMethod.IsVirtual)
+                    propertySetOpCode = OpCodes.Callvirt;
+            }
             ModuleDefinition module = type.Module;
             TypeDefinition valueTypeDef = valueType.Resolve();
             if (_inBuildSerializers.TryGetValue(valueType.FullName, out var serializer))
@@ -792,7 +831,10 @@ namespace Flax.Build.Plugins
                 {
                     il.Emit(OpCodes.Ldarg_1);
                     il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldfld, field);
+                    if (field != null)
+                        il.Emit(OpCodes.Ldfld, field);
+                    else
+                        il.Emit(propertyGetOpCode, property.GetMethod);
                     m = networkStreamType.GetMethod(serializer.WriteMethod);
                 }
                 else
@@ -803,7 +845,12 @@ namespace Flax.Build.Plugins
                 }
                 il.Emit(OpCodes.Callvirt, module.ImportReference(m));
                 if (!serialize)
-                    il.Emit(OpCodes.Stfld, field);
+                {
+                    if (field != null)
+                        il.Emit(OpCodes.Stfld, field);
+                    else
+                        il.Emit(propertySetOpCode, property.SetMethod);
+                }
             }
             else if (valueType.IsScriptingObject())
             {
@@ -814,7 +861,10 @@ namespace Flax.Build.Plugins
                 {
                     il.Emit(OpCodes.Ldarg_1);
                     il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldfld, field);
+                    if (field != null)
+                        il.Emit(OpCodes.Ldfld, field);
+                    else
+                        il.Emit(propertyGetOpCode, property.GetMethod);
                     il.Emit(OpCodes.Dup);
                     Instruction jmp1 = il.Create(OpCodes.Nop);
                     il.Emit(OpCodes.Brtrue_S, jmp1);
@@ -850,7 +900,10 @@ namespace Flax.Build.Plugins
                     var tryFind = scriptingObjectType.Resolve().GetMethod("TryFind", 2);
                     il.Emit(OpCodes.Call, module.ImportReference(tryFind));
                     il.Emit(OpCodes.Castclass, valueType);
-                    il.Emit(OpCodes.Stfld, field);
+                    if (field != null)
+                        il.Emit(OpCodes.Stfld, field);
+                    else
+                        il.Emit(propertySetOpCode, property.SetMethod);
                 }
             }
             else if (valueTypeDef.IsEnum)
@@ -861,7 +914,10 @@ namespace Flax.Build.Plugins
                 {
                     il.Emit(OpCodes.Ldarg_1);
                     il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldfld, field);
+                    if (field != null)
+                        il.Emit(OpCodes.Ldfld, field);
+                    else
+                        il.Emit(propertyGetOpCode, property.GetMethod);
                     var m = networkStreamType.GetMethod("WriteUInt32");
                     il.Emit(OpCodes.Callvirt, module.ImportReference(m));
                 }
@@ -871,7 +927,10 @@ namespace Flax.Build.Plugins
                     il.Emit(OpCodes.Ldarg_1);
                     var m = networkStreamType.GetMethod("ReadUInt32");
                     il.Emit(OpCodes.Callvirt, module.ImportReference(m));
-                    il.Emit(OpCodes.Stfld, field);
+                    if (field != null)
+                        il.Emit(OpCodes.Stfld, field);
+                    else
+                        il.Emit(propertySetOpCode, property.SetMethod);
                 }
             }
             else if (valueType.IsValueType)
@@ -879,7 +938,10 @@ namespace Flax.Build.Plugins
                 // Invoke structure generated serializer
                 // TODO: check if this type has generated serialization code
                 il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Ldflda, field);
+                if (field != null)
+                    il.Emit(OpCodes.Ldflda, field);
+                else
+                    il.Emit(propertyGetOpCode, property.GetMethod);
                 il.Emit(OpCodes.Ldarg_1);
                 var m = valueTypeDef.GetMethod(serialize ? Thunk1 : Thunk2);
                 il.Emit(OpCodes.Call, module.ImportReference(m));
@@ -899,7 +961,10 @@ namespace Flax.Build.Plugins
                     // <elementType>[] array2 = Array1;
                     il.Emit(OpCodes.Nop);
                     il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldfld, field);
+                    if (field != null)
+                        il.Emit(OpCodes.Ldfld, field);
+                    else
+                        il.Emit(propertyGetOpCode, property.GetMethod);
 
 		            // int num2 = ((array2 != null) ? array2.Length : 0);
                     il.Emit(OpCodes.Dup);
@@ -924,7 +989,10 @@ namespace Flax.Build.Plugins
                     // fixed (<elementType>* bytes2 = Array1)
                     il.Emit(OpCodes.Nop);
                     il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldfld, field);
+                    if (field != null)
+                        il.Emit(OpCodes.Ldfld, field);
+                    else
+                        il.Emit(propertyGetOpCode, property.GetMethod);
                     il.Emit(OpCodes.Dup);
                     il.Emit(OpCodes.Stloc, varStart + 2);
                     Instruction jmp3 = il.Create(OpCodes.Nop);
@@ -962,6 +1030,9 @@ namespace Flax.Build.Plugins
                 }
                 else
                 {
+                    if (field == null)
+                        throw new NotImplementedException("TODO: add support for array property replication");
+
                     // int num = stream.ReadInt32();
                     il.Emit(OpCodes.Nop);
                     il.Emit(OpCodes.Ldarg_1);
@@ -1020,7 +1091,7 @@ namespace Flax.Build.Plugins
             else
             {
                 // Unknown type
-                Log.Error($"Not supported type '{valueType.FullName}' on {field.Name} in {type.FullName} for automatic replication.");
+                Log.Error($"Not supported type '{valueType.FullName}' on {(field?.Name ?? property.Name)} in {type.FullName} for automatic replication.");
                 failed = true;
             }
         }

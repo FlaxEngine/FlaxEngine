@@ -16,6 +16,16 @@ API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkDrive
     /// The mean round trip time (RTT), in milliseconds, between sending a reliable packet and receiving its acknowledgement. Also known as ping time.
     /// </summary>
     API_FIELD() float RTT = 0.0f;
+
+    /// <summary>
+    /// Total amount of data bytes sent by this client.
+    /// </summary>
+    API_FIELD() uint32 TotalDataSent = 0;
+
+    /// <summary>
+    /// Total amount of data bytes received by this client.
+    /// </summary>
+    API_FIELD() uint32 TotalDataReceived = 0;
 };
 
 template<>

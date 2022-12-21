@@ -162,7 +162,7 @@ void MotionBlurPass::RenderMotionVectors(RenderContext& renderContext)
     const int32 motionVectorsHeight = screenHeight / static_cast<int32>(settings.MotionVectorsResolution);
 
     // Ensure to have valid data
-    if (!Renderer::NeedMotionVectors(renderContext) || checkIfSkipPass())
+    if (!renderContext.List->Setup.UseMotionVectors || checkIfSkipPass())
     {
         // Skip pass (just clear motion vectors if texture is allocated)
         if (motionVectors->IsAllocated())
@@ -265,8 +265,8 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GP
     ASSERT(motionVectors);
     auto context = GPUDevice::Instance->GetMainContext();
     MotionBlurSettings& settings = renderContext.List->Settings.MotionBlur;
-    const int32 screenWidth = renderContext.Buffers->GetWidth();
-    const int32 screenHeight = renderContext.Buffers->GetHeight();
+    const int32 screenWidth = input->Width();
+    const int32 screenHeight = input->Height();
     const int32 motionVectorsWidth = screenWidth / static_cast<int32>(settings.MotionVectorsResolution);
     const int32 motionVectorsHeight = screenHeight / static_cast<int32>(settings.MotionVectorsResolution);
     if ((renderContext.View.Flags & ViewFlags::MotionBlur) == 0 ||
@@ -304,6 +304,7 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GP
     // Downscale motion vectors texture down to 1/2 (with max velocity calculation 2x2 kernel)
     auto rtDesc = GPUTextureDescription::New2D(motionVectorsWidth / 2, motionVectorsHeight / 2, _motionVectorsFormat);
     const auto vMaxBuffer2 = RenderTargetPool::Get(rtDesc);
+    RENDER_TARGET_POOL_SET_NAME(vMaxBuffer2, "MotionBlur.VMax2");
     context->SetRenderTarget(vMaxBuffer2->View());
     context->SetViewportAndScissors((float)rtDesc.Width, (float)rtDesc.Height);
     context->BindSR(0, motionVectors->View());
@@ -314,6 +315,7 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GP
     rtDesc.Width /= 2;
     rtDesc.Height /= 2;
     const auto vMaxBuffer4 = RenderTargetPool::Get(rtDesc);
+    RENDER_TARGET_POOL_SET_NAME(vMaxBuffer4, "MotionBlur.VMax4");
     context->ResetRenderTarget();
     context->SetRenderTarget(vMaxBuffer4->View());
     context->SetViewportAndScissors((float)rtDesc.Width, (float)rtDesc.Height);
@@ -328,6 +330,7 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GP
     rtDesc.Width /= 2;
     rtDesc.Height /= 2;
     const auto vMaxBuffer8 = RenderTargetPool::Get(rtDesc);
+    RENDER_TARGET_POOL_SET_NAME(vMaxBuffer8, "MotionBlur.VMax8");
     context->ResetRenderTarget();
     context->SetRenderTarget(vMaxBuffer8->View());
     context->SetViewportAndScissors((float)rtDesc.Width, (float)rtDesc.Height);
@@ -342,6 +345,7 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GP
     rtDesc.Width = Math::Max(motionVectorsWidth / tileSize, 1);
     rtDesc.Height = Math::Max(motionVectorsHeight / tileSize, 1);
     auto vMaxBuffer = RenderTargetPool::Get(rtDesc);
+    RENDER_TARGET_POOL_SET_NAME(vMaxBuffer, "MotionBlur.VMax");
     context->ResetRenderTarget();
     context->SetRenderTarget(vMaxBuffer->View());
     context->SetViewportAndScissors((float)rtDesc.Width, (float)rtDesc.Height);
@@ -355,6 +359,7 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GP
     // Extract maximum velocities for the tiles based on their neighbors
     context->ResetRenderTarget();
     auto vMaxNeighborBuffer = RenderTargetPool::Get(rtDesc);
+    RENDER_TARGET_POOL_SET_NAME(vMaxBuffer, "MotionBlur.VMaxNeighbor");
     context->SetRenderTarget(vMaxNeighborBuffer->View());
     context->BindSR(0, vMaxBuffer->View());
     context->SetState(_psNeighborMax);

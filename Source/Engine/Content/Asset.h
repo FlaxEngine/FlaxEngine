@@ -128,13 +128,16 @@ public:
     }
 
 #if USE_EDITOR
-
     /// <summary>
     /// Determines whether this asset was marked to be deleted on unload.
     /// </summary>
     API_PROPERTY() bool ShouldDeleteFileOnUnload() const;
-
 #endif
+
+    /// <summary>
+    /// Gets amount of CPU memory used by this resource (in bytes). It's a rough estimation. Memory may be fragmented, compressed or sub-allocated so the actual memory pressure from this resource may vary.
+    /// </summary>
+    API_PROPERTY() virtual uint64 GetMemoryUsage() const;
 
 public:
     /// <summary>
@@ -160,7 +163,6 @@ public:
     virtual void CancelStreaming();
 
 #if USE_EDITOR
-
     /// <summary>
     /// Gets the asset references. Supported only in Editor.
     /// </summary>
@@ -184,7 +186,6 @@ public:
     /// </remarks>
     /// <returns>The collection of the asset ids referenced by this asset.</returns>
     API_FUNCTION() Array<Guid, HeapAllocation> GetReferences() const;
-
 #endif
 
     /// <summary>

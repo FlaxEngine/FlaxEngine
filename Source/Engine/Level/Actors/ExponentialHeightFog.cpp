@@ -4,6 +4,7 @@
 #include "DirectionalLight.h"
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Graphics/RenderView.h"

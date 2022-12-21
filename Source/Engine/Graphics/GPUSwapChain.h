@@ -24,9 +24,7 @@ protected:
     Window* _window = nullptr;
     Task* _downloadTask = nullptr;
 
-    GPUSwapChain()
-    {
-    }
+    GPUSwapChain();
 
 public:
     /// <summary>
@@ -160,5 +158,5 @@ public:
 public:
     // [GPUResource]
     String ToString() const override;
-    ResourceType GetResourceType() const final override;
+    GPUResourceType GetResourceType() const final override;
 };

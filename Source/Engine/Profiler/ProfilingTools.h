@@ -19,7 +19,7 @@ public:
     /// <summary>
     /// The GPU memory stats.
     /// </summary>
-    API_STRUCT() struct MemoryStatsGPU
+    API_STRUCT(NoDefault) struct MemoryStatsGPU
     {
         DECLARE_SCRIPTING_TYPE_MINIMAL(MemoryStatsGPU);
 
@@ -37,7 +37,7 @@ public:
     /// <summary>
     /// Engine profiling data header. Contains main info and stats.
     /// </summary>
-    API_STRUCT() struct MainStats
+    API_STRUCT(NoDefault) struct MainStats
     {
         DECLARE_SCRIPTING_TYPE_MINIMAL(MainStats);
 
@@ -90,7 +90,7 @@ public:
     /// <summary>
     /// The CPU thread stats.
     /// </summary>
-    API_STRUCT() struct ThreadStats
+    API_STRUCT(NoDefault) struct ThreadStats
     {
         DECLARE_SCRIPTING_TYPE_MINIMAL(ThreadStats);
 

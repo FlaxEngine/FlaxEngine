@@ -79,9 +79,6 @@ protected:
     bool _sRGB, _isBlockCompressed;
     GPUTextureDescription _desc;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUTexture"/> class.
-    /// </summary>
     GPUTexture();
 
 public:
@@ -573,8 +570,7 @@ protected:
 public:
     // [GPUResource]
     String ToString() const override;
-    ResourceType GetResourceType() const final override;
-    ObjectType GetObjectType() const final override;
+    GPUResourceType GetResourceType() const final override;
 
 protected:
     // [GPUResource]

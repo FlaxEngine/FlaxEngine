@@ -17,27 +17,23 @@ class GPUPipelineState;
 class LightmapUVsDensityMaterialShader : public IMaterial
 {
 private:
-
     AssetReference<Shader> _shader;
     AssetReference<Texture> _gridTexture;
     GPUPipelineState* _ps = nullptr;
     MaterialInfo _info;
 
 public:
-
     LightmapUVsDensityMaterialShader();
     virtual ~LightmapUVsDensityMaterialShader()
     {
     }
 
 private:
-
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj);
 #endif
 
 public:
-
     // [IMaterial]
     const MaterialInfo& GetInfo() const override;
     GPUShader* GetShader() const override;

@@ -16,7 +16,6 @@ public:
     /// <summary>
     /// Gets the buffer size (in bytes).
     /// </summary>
-    /// <returns>The buffer size (in bytes).</returns>
     FORCE_INLINE uint32 GetSize() const
     {
         return _size;
@@ -24,8 +23,8 @@ public:
 
 public:
     // [GPUResource]
-    ResourceType GetResourceType() const override
+    GPUResourceType GetResourceType() const override
     {
-        return ResourceType::Buffer;
+        return GPUResourceType::Buffer;
     }
 };

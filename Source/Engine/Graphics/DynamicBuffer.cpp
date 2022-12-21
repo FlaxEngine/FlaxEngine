@@ -1,10 +1,12 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "DynamicBuffer.h"
+#include "GPUContext.h"
 #include "PixelFormatExtensions.h"
 #include "GPUDevice.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Utilities.h"
+#include "Engine/Core/Math/Math.h"
 #include "Engine/Threading/Threading.h"
 
 DynamicBuffer::DynamicBuffer(uint32 initialCapacity, uint32 stride, const String& name)

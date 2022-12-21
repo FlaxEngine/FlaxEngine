@@ -20,6 +20,7 @@
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Animations/AnimationUtils.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Half.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Engine/EngineService.h"
@@ -1073,6 +1074,8 @@ void DrawBatch(int32 startIndex, int32 count)
         auto desc = GPUTextureDescription::New2D(renderTargetWidth, renderTargetHeight, PS_Blur_Format);
         auto blurA = RenderTargetPool::Get(desc);
         auto blurB = RenderTargetPool::Get(desc);
+        RENDER_TARGET_POOL_SET_NAME(blurA, "Render2D.BlurA");
+        RENDER_TARGET_POOL_SET_NAME(blurB, "Render2D.BlurB");
 
         // Prepare blur data
         BlurData data;

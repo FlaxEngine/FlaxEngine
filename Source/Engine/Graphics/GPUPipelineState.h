@@ -109,6 +109,8 @@ public:
 protected:
     ShaderBindings _meta;
 
+    GPUPipelineState();
+
 public:
 #if BUILD_DEBUG
     /// <summary>
@@ -160,5 +162,5 @@ public:
 
 public:
     // [GPUResource]
-    ResourceType GetResourceType() const final override;
+    GPUResourceType GetResourceType() const final override;
 };

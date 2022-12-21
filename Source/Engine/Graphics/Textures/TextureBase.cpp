@@ -636,6 +636,21 @@ bool TextureBase::Init(void* ptr)
     return Init(initData);
 }
 
+uint64 TextureBase::GetMemoryUsage() const
+{
+    Locker.Lock();
+    uint64 result = BinaryAsset::GetMemoryUsage();
+    result += sizeof(TextureBase) - sizeof(BinaryAsset);
+    if (_customData)
+    {
+        result += sizeof(InitData);
+        for (auto& mip : _customData->Mips)
+            result += mip.Data.Length();
+    }
+    Locker.Unlock();
+    return result;
+}
+
 void TextureBase::CancelStreaming()
 {
     _texture.CancelStreamingTasks();

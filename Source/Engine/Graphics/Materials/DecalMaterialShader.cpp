@@ -2,7 +2,9 @@
 
 #include "DecalMaterialShader.h"
 #include "MaterialParams.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Math/OrientedBoundingBox.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/RenderBuffers.h"
@@ -12,17 +14,9 @@
 #include "Engine/Renderer/DrawCall.h"
 
 PACK_STRUCT(struct DecalMaterialShaderData {
-    Matrix ViewProjectionMatrix;
     Matrix WorldMatrix;
-    Matrix ViewMatrix;
     Matrix InvWorld;
     Matrix SVPositionToWorld;
-    Float3 ViewPos;
-    float ViewFar;
-    Float3 ViewDir;
-    float TimeParam;
-    Float4 ViewInfo;
-    Float4 ScreenSize;
     });
 
 DrawPass DecalMaterialShader::GetDrawModes() const
@@ -58,15 +52,7 @@ void DecalMaterialShader::Bind(BindParameters& params)
 
     // Setup material constants
     {
-        Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);
         Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
-        Matrix::Transpose(view.View, materialData->ViewMatrix);
-        materialData->ViewPos = view.Position;
-        materialData->ViewFar = view.Far;
-        materialData->ViewDir = view.Direction;
-        materialData->TimeParam = params.TimeParam;
-        materialData->ViewInfo = view.ViewInfo;
-        materialData->ScreenSize = view.ScreenSize;
 
         // Matrix for transformation from world space to decal object space
         Matrix invWorld;

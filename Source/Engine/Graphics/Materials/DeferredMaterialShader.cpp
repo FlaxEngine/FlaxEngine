@@ -17,23 +17,11 @@
 #include "Engine/Graphics/RenderTask.h"
 
 PACK_STRUCT(struct DeferredMaterialShaderData {
-    Matrix ViewProjectionMatrix;
     Matrix WorldMatrix;
-    Matrix ViewMatrix;
-    Matrix PrevViewProjectionMatrix;
     Matrix PrevWorldMatrix;
-    Matrix MainViewProjectionMatrix;
-    Float4 MainScreenSize;
-    Float3 ViewPos;
-    float ViewFar;
-    Float3 ViewDir;
-    float TimeParam;
-    Float4 ViewInfo;
-    Float4 ScreenSize;
     Float2 Dummy0;
     float LODDitherFactor;
     float PerInstanceRandom;
-    Float4 TemporalAAJitter;
     Float3 GeometrySize;
     float WorldDeterminantSign;
     });
@@ -56,6 +44,7 @@ bool DeferredMaterialShader::CanUseInstancing(InstancingHandler& handler) const
 
 void DeferredMaterialShader::Bind(BindParameters& params)
 {
+    //PROFILE_CPU();
     // Prepare
     auto context = params.GPUContext;
     auto& view = params.RenderContext.View;
@@ -81,23 +70,11 @@ void DeferredMaterialShader::Bind(BindParameters& params)
 
     // Setup material constants
     {
-        Matrix::Transpose(view.Frustum.GetMatrix(), materialData->ViewProjectionMatrix);
         Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
-        Matrix::Transpose(view.View, materialData->ViewMatrix);
         Matrix::Transpose(drawCall.Surface.PrevWorld, materialData->PrevWorldMatrix);
-        Matrix::Transpose(view.PrevViewProjection, materialData->PrevViewProjectionMatrix);
-        Matrix::Transpose(view.MainViewProjection, materialData->MainViewProjectionMatrix);
-        materialData->MainScreenSize = view.MainScreenSize;
-        materialData->ViewPos = view.Position;
-        materialData->ViewFar = view.Far;
-        materialData->ViewDir = view.Direction;
-        materialData->TimeParam = params.TimeParam;
-        materialData->ViewInfo = view.ViewInfo;
-        materialData->ScreenSize = view.ScreenSize;
         materialData->WorldDeterminantSign = drawCall.WorldDeterminantSign;
         materialData->LODDitherFactor = drawCall.Surface.LODDitherFactor;
         materialData->PerInstanceRandom = drawCall.PerInstanceRandom;
-        materialData->TemporalAAJitter = view.TemporalAAJitter;
         materialData->GeometrySize = drawCall.Surface.GeometrySize;
     }
 

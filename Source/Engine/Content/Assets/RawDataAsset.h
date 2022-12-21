@@ -28,6 +28,10 @@ public:
 
 #endif
 
+public:
+    // [BinaryAsset]
+    uint64 GetMemoryUsage() const override;
+
 protected:
     // [BinaryAsset]
     LoadResult load() override;

@@ -9,6 +9,10 @@
 #include "Graphics.h"
 #include "Shaders/GPUShader.h"
 #include "Async/DefaultGPUTasksExecutor.h"
+#include "Async/GPUTasksManager.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Core/Utilities.h"
+#include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Content.h"
@@ -19,7 +23,7 @@
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Renderer/RenderList.h"
-#include "Engine/Core/Utilities.h"
+#include "Engine/Scripting/Enums.h"
 
 GPUPipelineState* GPUPipelineState::Spawn(const SpawnParams& params)
 {
@@ -29,6 +33,11 @@ GPUPipelineState* GPUPipelineState::Spawn(const SpawnParams& params)
 GPUPipelineState* GPUPipelineState::New()
 {
     return GPUDevice::Instance->CreatePipelineState();
+}
+
+GPUPipelineState::GPUPipelineState()
+    : GPUResource(SpawnParams(Guid::New(), TypeInitializer))
+{
 }
 
 bool GPUPipelineState::Init(const Description& desc)
@@ -76,9 +85,9 @@ bool GPUPipelineState::Init(const Description& desc)
     return false;
 }
 
-GPUResource::ResourceType GPUPipelineState::GetResourceType() const
+GPUResourceType GPUPipelineState::GetResourceType() const
 {
-    return ResourceType::PipelineState;
+    return GPUResourceType::PipelineState;
 }
 
 GPUPipelineState::Description GPUPipelineState::Description::Default =
@@ -173,7 +182,7 @@ GPUPipelineState::Description GPUPipelineState::Description::DefaultFullscreenTr
 };
 
 GPUResource::GPUResource()
-    : ScriptingObject(SpawnParams(Guid::New(), GPUResource::TypeInitializer))
+    : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
 {
 }
 
@@ -190,15 +199,12 @@ GPUResource::~GPUResource()
 #endif
 }
 
-GPUResource::ObjectType GPUResource::GetObjectType() const
-{
-    return ObjectType::Other;
-}
-
 uint64 GPUResource::GetMemoryUsage() const
 {
     return _memoryUsage;
 }
+
+static_assert((GPU_ENABLE_RESOURCE_NAMING) == (!BUILD_RELEASE), "Update build condition on around GPUResource Name property getter/setter.");
 
 #if GPU_ENABLE_RESOURCE_NAMING
 
@@ -263,6 +269,7 @@ struct GPUDevice::PrivateData
     AssetReference<Texture> DefaultNormalMap;
     AssetReference<Texture> DefaultWhiteTexture;
     AssetReference<Texture> DefaultBlackTexture;
+    GPUTasksManager TasksManager;
 };
 
 GPUDevice* GPUDevice::Instance = nullptr;
@@ -277,7 +284,7 @@ GPUDevice::GPUDevice(RendererType type, ShaderProfile profile)
     , _shaderProfile(profile)
     , _featureLevel(RenderTools::GetFeatureLevel(profile))
     , _res(New<PrivateData>())
-    , TasksManager(this)
+    , _resources(1024)
     , TotalGraphicsMemory(0)
     , QuadShader(nullptr)
     , CurrentTask(nullptr)
@@ -296,6 +303,7 @@ GPUDevice::~GPUDevice()
 
 bool GPUDevice::Init()
 {
+    _res->TasksManager.SetExecutor(CreateTasksExecutor());
     LOG(Info, "Total graphics memory: {0}", Utilities::BytesToText(TotalGraphicsMemory));
     return false;
 }
@@ -364,8 +372,69 @@ bool GPUDevice::CanDraw()
     return true;
 }
 
+void GPUDevice::AddResource(GPUResource* resource)
+{
+    _resourcesLock.Lock();
+    ASSERT(resource && !_resources.Contains(resource));
+    _resources.Add(resource);
+    _resourcesLock.Unlock();
+}
+
+void GPUDevice::RemoveResource(GPUResource* resource)
+{
+    _resourcesLock.Lock();
+    ASSERT(resource && _resources.Contains(resource));
+    _resources.Remove(resource);
+    _resourcesLock.Unlock();
+}
+
+void GPUDevice::DumpResourcesToLog() const
+{
+    StringBuilder output;
+    _resourcesLock.Lock();
+
+    output.AppendFormat(TEXT("GPU Resources dump. Count: {0}, total GPU memory used: {1}"), _resources.Count(), Utilities::BytesToText(GetMemoryUsage()));
+    output.AppendLine();
+    output.AppendLine();
+
+    for (int32 typeIndex = 0; typeIndex < (int32)GPUResourceType::MAX; typeIndex++)
+    {
+        const auto type = static_cast<GPUResourceType>(typeIndex);
+
+        output.AppendFormat(TEXT("Group: {0}s"), ScriptingEnum::ToString(type));
+        output.AppendLine();
+
+        int32 count = 0;
+        uint64 memUsage = 0;
+        for (int32 i = 0; i < _resources.Count(); i++)
+        {
+            const GPUResource* resource = _resources[i];
+            if (resource->GetResourceType() == type)
+            {
+                count++;
+                memUsage += resource->GetMemoryUsage();
+                auto str = resource->ToString();
+                if (str.HasChars())
+                {
+                    output.Append(TEXT('\t'));
+                    output.Append(str);
+                    output.AppendLine();
+                }
+            }
+        }
+
+        output.AppendFormat(TEXT("Total count: {0}, memory usage: {1}"), count, Utilities::BytesToText(memUsage));
+        output.AppendLine();
+        output.AppendLine();
+    }
+
+    _resourcesLock.Unlock();
+    LOG_STR(Info, output.ToStringView());
+}
+
 void GPUDevice::preDispose()
 {
+    Locker.Lock();
     RenderTargetPool::Flush();
 
     // Release resources
@@ -380,7 +449,14 @@ void GPUDevice::preDispose()
 
     // Release GPU resources memory and unlink from device
     // Note: after that no GPU resources should be used/created, only deleted
-    Resources.OnDeviceDispose();
+    _resourcesLock.Lock();
+    for (int32 i = _resources.Count() - 1; i >= 0 && i < _resources.Count(); i--)
+    {
+        _resources[i]->OnDeviceDispose();
+    }
+    _resources.Clear();
+    _resourcesLock.Unlock();
+    Locker.Unlock();
 }
 
 void GPUDevice::DrawBegin()
@@ -492,7 +568,7 @@ void GPUDevice::Draw()
     // Begin frame
     context->FrameBegin();
     RenderBegin();
-    TasksManager.FrameBegin();
+    _res->TasksManager.FrameBegin();
     Render2D::BeginFrame();
 
     // Perform actual drawing
@@ -502,7 +578,7 @@ void GPUDevice::Draw()
 
     // End frame
     Render2D::EndFrame();
-    TasksManager.FrameEnd();
+    _res->TasksManager.FrameEnd();
     RenderEnd();
     context->FrameEnd();
 
@@ -517,7 +593,25 @@ void GPUDevice::Dispose()
 
 uint64 GPUDevice::GetMemoryUsage() const
 {
-    return Resources.GetMemoryUsage();
+    uint64 result = 0;
+    _resourcesLock.Lock();
+    for (int32 i = 0; i < _resources.Count(); i++)
+        result += _resources[i]->GetMemoryUsage();
+    _resourcesLock.Unlock();
+    return result;
+}
+
+Array<GPUResource*> GPUDevice::GetResources() const
+{
+    _resourcesLock.Lock();
+    Array<GPUResource*> result = _resources;
+    _resourcesLock.Unlock();
+    return result;
+}
+
+GPUTasksManager* GPUDevice::GetTasksManager() const
+{
+    return &_res->TasksManager;
 }
 
 MaterialBase* GPUDevice::GetDefaultMaterial() const

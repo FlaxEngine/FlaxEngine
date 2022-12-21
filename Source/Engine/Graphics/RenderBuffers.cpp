@@ -20,8 +20,6 @@ RenderBuffers::RenderBuffers(const SpawnParams& params)
     CREATE_TEXTURE(GBuffer1);
     CREATE_TEXTURE(GBuffer2);
     CREATE_TEXTURE(GBuffer3);
-    CREATE_TEXTURE(RT1_FloatRGB);
-    CREATE_TEXTURE(RT2_FloatRGB);
 #undef CREATE_TEXTURE
 }
 
@@ -95,6 +93,7 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
         auto tempDesc = GPUTextureDescription::New2D(halfDepthWidth, halfDepthHeight, halfDepthFormat);
         tempDesc.Flags = GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil;
         HalfResDepth = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(HalfResDepth, "HalfResDepth");
     }
     else if (HalfResDepth->Width() != halfDepthWidth || HalfResDepth->Height() != halfDepthHeight || HalfResDepth->Format() != halfDepthFormat)
     {
@@ -103,6 +102,7 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
         auto tempDesc = GPUTextureDescription::New2D(halfDepthWidth, halfDepthHeight, halfDepthFormat);
         tempDesc.Flags = GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil;
         HalfResDepth = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(HalfResDepth, "HalfResDepth");
     }
 
     // Generate depth
@@ -123,19 +123,7 @@ bool RenderBuffers::GetUseAlpha() const
 
 void RenderBuffers::SetUseAlpha(bool value)
 {
-    if (_useAlpha != value)
-    {
-        _useAlpha = value;
-
-        // Reallocate buffers
-        if (_width != 0)
-        {
-            auto desc = GPUTextureDescription::New2D(_width, _height, GetOutputFormat(), GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
-            desc.DefaultClearColor = Color::Transparent;
-            RT1_FloatRGB->Init(desc);
-            RT2_FloatRGB->Init(desc);
-        }
-    }
+    _useAlpha = value;
 }
 
 const RenderBuffers::CustomBuffer* RenderBuffers::FindCustomBuffer(const StringView& name) const
@@ -194,12 +182,6 @@ bool RenderBuffers::Init(int32 width, int32 height)
     desc.Format = GBUFFER3_FORMAT;
     desc.DefaultClearColor = Color::Transparent;
     result |= GBuffer3->Init(desc);
-
-    // Helper HDR buffers
-    desc.Format = GetOutputFormat();
-    desc.DefaultClearColor = Color::Transparent;
-    result |= RT1_FloatRGB->Init(desc);
-    result |= RT2_FloatRGB->Init(desc);
 
     // Cache data
     _width = width;

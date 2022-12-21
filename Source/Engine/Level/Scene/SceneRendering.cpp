@@ -42,9 +42,21 @@ FORCE_INLINE bool FrustumsListCull(const BoundingSphere& bounds, const Array<Bou
 void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory category)
 {
     ScopeLock lock(Locker);
+    if (category == PreRender)
+    {
+        // Register scene
+        for (const auto& renderContext : renderContextBatch.Contexts)
+            renderContext.List->Scenes.Add(this);
+
+        // Add additional lock during scene rendering (prevents any Actors cache modifications on content streaming threads - eg. when model residency changes)
+        Locker.Lock();
+    }
+    else if (category == PostRender)
+    {
+        // Release additional lock
+        Locker.Unlock();
+    }
     auto& view = renderContextBatch.GetMainContext().View;
-    for (auto& renderContext : renderContextBatch.Contexts)
-        renderContext.List->Scenes.Add(this);
     auto& list = Actors[(int32)category];
     _drawListData = list.Get();
     _drawListSize = list.Count();

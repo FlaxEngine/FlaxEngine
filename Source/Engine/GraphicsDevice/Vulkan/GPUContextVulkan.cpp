@@ -783,7 +783,7 @@ void GPUContextVulkan::EventEnd()
 void* GPUContextVulkan::GetNativePtr() const
 {
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-    return (void*)cmdBuffer;
+    return (void*)cmdBuffer->GetHandle();
 }
 
 bool GPUContextVulkan::IsDepthBufferBinded()
@@ -1493,17 +1493,13 @@ void GPUContextVulkan::CopyResource(GPUResource* dstResource, GPUResource* srcRe
     if (cmdBuffer->IsInsideRenderPass())
         EndRenderPass();
 
-    auto dstTextureVulkan = static_cast<GPUTextureVulkan*>(dstResource);
-    auto srcTextureVulkan = static_cast<GPUTextureVulkan*>(srcResource);
-
-    auto dstBufferVulkan = static_cast<GPUBufferVulkan*>(dstResource);
-    auto srcBufferVulkan = static_cast<GPUBufferVulkan*>(srcResource);
-
-    const auto srcType = srcResource->GetObjectType();
-    const auto dstType = dstResource->GetObjectType();
+    auto dstTextureVulkan = dynamic_cast<GPUTextureVulkan*>(dstResource);
+    auto srcTextureVulkan = dynamic_cast<GPUTextureVulkan*>(srcResource);
+    auto dstBufferVulkan = dynamic_cast<GPUBufferVulkan*>(dstResource);
+    auto srcBufferVulkan = dynamic_cast<GPUBufferVulkan*>(srcResource);
 
     // Buffer -> Buffer
-    if (srcType == GPUResource::ObjectType::Buffer && dstType == GPUResource::ObjectType::Buffer)
+    if (srcBufferVulkan && dstBufferVulkan)
     {
         // Transition resources
         AddBufferBarrier(dstBufferVulkan, VK_ACCESS_TRANSFER_WRITE_BIT);
@@ -1519,7 +1515,7 @@ void GPUContextVulkan::CopyResource(GPUResource* dstResource, GPUResource* srcRe
         vkCmdCopyBuffer(cmdBuffer->GetHandle(), srcBufferVulkan->GetHandle(), dstBufferVulkan->GetHandle(), 1, &bufferCopy);
     }
     // Texture -> Texture
-    else if (srcType == GPUResource::ObjectType::Texture && dstType == GPUResource::ObjectType::Texture)
+    else if (srcTextureVulkan && dstTextureVulkan)
     {
         if (dstTextureVulkan->IsStaging())
         {
@@ -1632,17 +1628,13 @@ void GPUContextVulkan::CopySubresource(GPUResource* dstResource, uint32 dstSubre
     if (cmdBuffer->IsInsideRenderPass())
         EndRenderPass();
 
-    auto dstTextureVulkan = static_cast<GPUTextureVulkan*>(dstResource);
-    auto srcTextureVulkan = static_cast<GPUTextureVulkan*>(srcResource);
-
-    auto dstBufferVulkan = static_cast<GPUBufferVulkan*>(dstResource);
-    auto srcBufferVulkan = static_cast<GPUBufferVulkan*>(srcResource);
-
-    auto srcType = srcResource->GetObjectType();
-    auto dstType = dstResource->GetObjectType();
+    auto dstTextureVulkan = dynamic_cast<GPUTextureVulkan*>(dstResource);
+    auto srcTextureVulkan = dynamic_cast<GPUTextureVulkan*>(srcResource);
+    auto dstBufferVulkan = dynamic_cast<GPUBufferVulkan*>(dstResource);
+    auto srcBufferVulkan = dynamic_cast<GPUBufferVulkan*>(srcResource);
 
     // Buffer -> Buffer
-    if (srcType == GPUResource::ObjectType::Buffer && dstType == GPUResource::ObjectType::Buffer)
+    if (srcBufferVulkan && dstBufferVulkan)
     {
         ASSERT(dstSubresource == 0 && srcSubresource == 0);
 
@@ -1660,7 +1652,7 @@ void GPUContextVulkan::CopySubresource(GPUResource* dstResource, uint32 dstSubre
         vkCmdCopyBuffer(cmdBuffer->GetHandle(), srcBufferVulkan->GetHandle(), dstBufferVulkan->GetHandle(), 1, &bufferCopy);
     }
     // Texture -> Texture
-    else if (srcType == GPUResource::ObjectType::Texture && dstType == GPUResource::ObjectType::Texture)
+    else if (srcTextureVulkan && dstTextureVulkan)
     {
         const int32 dstMipMaps = dstTextureVulkan->MipLevels();
         const int32 dstMipIndex = dstSubresource % dstMipMaps;

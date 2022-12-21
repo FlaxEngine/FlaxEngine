@@ -1906,7 +1906,7 @@ API_STRUCT() struct FLAXENGINE_API AntiAliasingSettings : ISerializable
     /// The blending coefficient for moving fragments. Controls the percentage of history sample blended into the final color for fragments with significant active motion.
     /// </summary>
     API_FIELD(Attributes="Limit(0, 0.99f, 0.001f), EditorOrder(4), PostProcessSetting((int)AntiAliasingSettingsOverride.TAA_MotionBlending), EditorDisplay(null, \"TAA Motion Blending\")")
-    float TAA_MotionBlending = 0.4f;
+    float TAA_MotionBlending = 0.7f;
 
 public:
     /// <summary>

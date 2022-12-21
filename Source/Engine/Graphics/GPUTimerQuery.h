@@ -48,14 +48,8 @@ public:
     {
         return TEXT("TimerQuery");
     }
-
-    ResourceType GetResourceType() const final override
+    GPUResourceType GetResourceType() const final override
     {
-        return ResourceType::Query;
-    }
-
-    ObjectType GetObjectType() const final override
-    {
-        return ObjectType::Other;
+        return GPUResourceType::Query;
     }
 };

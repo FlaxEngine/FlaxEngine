@@ -10,7 +10,8 @@
 /// <summary>
 /// Environment Probe can capture space around the objects to provide reflections.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Environment Probe\")") class FLAXENGINE_API EnvironmentProbe : public Actor
+API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Environment Probe\"), ActorToolbox(\"Visuals\")")
+class FLAXENGINE_API EnvironmentProbe : public Actor
 {
     DECLARE_SCENE_OBJECT(EnvironmentProbe);
 public:

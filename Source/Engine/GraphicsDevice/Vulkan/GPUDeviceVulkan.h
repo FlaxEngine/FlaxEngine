@@ -459,6 +459,7 @@ class GPUDeviceVulkan : public GPUDevice
 private:
 
     CriticalSection _fenceLock;
+    mutable void* _nativePtr[2];
 
     Dictionary<RenderTargetLayoutVulkan, RenderPassVulkan*> _renderPasses;
     Dictionary<FramebufferVulkan::Key, FramebufferVulkan*> _framebuffers;
@@ -708,6 +709,7 @@ public:
     GPUBuffer* CreateBuffer(const StringView& name) override;
     GPUSampler* CreateSampler() override;
     GPUSwapChain* CreateSwapChain(Window* window) override;
+    GPUConstantBuffer* CreateConstantBuffer(uint32 size, const StringView& name) override;
 };
 
 /// <summary>

@@ -11,10 +11,12 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Core/Config/GraphicsSettings.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Graphics/Async/GPUSyncPoint.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Level/Actors/StaticModel.h"
 #include "Engine/Level/Scene/SceneRendering.h"
@@ -396,7 +398,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         auto desc = GPUTextureDescription::New2D(resolution, resolution, PixelFormat::Unknown);
         uint64 memUsage = 0;
         // TODO: try using BC4/BC5/BC7 block compression for Surface Atlas (eg. for Tiles material properties)
-#define INIT_ATLAS_TEXTURE(texture, format) desc.Format = format; surfaceAtlasData.texture = RenderTargetPool::Get(desc); if (!surfaceAtlasData.texture) return true; memUsage += surfaceAtlasData.texture->GetMemoryUsage()
+#define INIT_ATLAS_TEXTURE(texture, format) desc.Format = format; surfaceAtlasData.texture = RenderTargetPool::Get(desc); if (!surfaceAtlasData.texture) return true; memUsage += surfaceAtlasData.texture->GetMemoryUsage(); RENDER_TARGET_POOL_SET_NAME(surfaceAtlasData.texture, "GlobalSurfaceAtlas." #texture);
         INIT_ATLAS_TEXTURE(AtlasEmissive, PixelFormat::R11G11B10_Float);
         INIT_ATLAS_TEXTURE(AtlasGBuffer0, GBUFFER0_FORMAT);
         INIT_ATLAS_TEXTURE(AtlasGBuffer1, GBUFFER1_FORMAT);
@@ -1054,7 +1056,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                     PROFILE_GPU_CPU_NAMED("DDGI");
                     data.DDGI = bindingDataDDGI.Constants;
                     data.Light.Radius = giSettings.BounceIntensity / bindingDataDDGI.Constants.IndirectLightingIntensity; // Reuse for smaller CB
-                    context->BindSR(5, bindingDataDDGI.ProbesState);
+                    context->BindSR(5, bindingDataDDGI.ProbesData);
                     context->BindSR(6, bindingDataDDGI.ProbesDistance);
                     context->BindSR(7, bindingDataDDGI.ProbesIrradiance);
                     context->UpdateCB(_cb0, &data);
@@ -1124,7 +1126,8 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         Float2 outputSizeThird = outputSize * 0.333f;
         Float2 outputSizeTwoThird = outputSize * 0.666f;
 
-        GPUTexture* tempBuffer = renderContext.Buffers->RT2_FloatRGB;
+        auto tempBuffer = RenderTargetPool::Get(output->GetDescription());
+        RENDER_TARGET_POOL_SET_NAME(tempBuffer, "GlobalSurfaceAtlas.TempBuffer");
         context->Clear(tempBuffer->View(), Color::Black);
         context->SetRenderTarget(tempBuffer->View());
 

@@ -118,6 +118,7 @@ void EyeAdaptationPass::Render(RenderContext& renderContext, GPUTexture* colorBu
         previousLuminanceMap = nullptr;
     }
     GPUTexture* currentLuminanceMap = RenderTargetPool::Get(GPUTextureDescription::New2D(1, 1, PixelFormat::R16_Float));
+    RENDER_TARGET_POOL_SET_NAME(currentLuminanceMap, "EyeAdaptation.LuminanceMap");
 
     switch (mode)
     {
@@ -139,7 +140,8 @@ void EyeAdaptationPass::Render(RenderContext& renderContext, GPUTexture* colorBu
     {
         const Int2 luminanceMapSize(colorBuffer->Width() / 2, colorBuffer->Height() / 2);
         GPUTexture* luminanceMap = RenderTargetPool::Get(GPUTextureDescription::New2D(luminanceMapSize.X, luminanceMapSize.Y, 0, PixelFormat::R16_Float, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews));
-
+        RENDER_TARGET_POOL_SET_NAME(luminanceMap, "EyeAdaptation.LuminanceMap");
+        
         // Calculate the luminance for the scene color
         context->BindSR(0, *colorBuffer);
         context->SetRenderTarget(luminanceMap->View(0, 0));

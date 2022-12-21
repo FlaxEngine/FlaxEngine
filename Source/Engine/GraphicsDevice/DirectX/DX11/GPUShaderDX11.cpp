@@ -159,32 +159,6 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
     return shader;
 }
 
-GPUConstantBuffer* GPUShaderDX11::CreateCB(const String& name, uint32 size, MemoryReadStream& stream)
-{
-    ID3D11Buffer* buffer = nullptr;
-    uint32 memorySize = 0;
-    if (size)
-    {
-        // Create buffer
-        D3D11_BUFFER_DESC cbDesc;
-        cbDesc.ByteWidth = Math::AlignUp<uint32>(size, 16);
-        cbDesc.Usage = D3D11_USAGE_DEFAULT;
-        cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        cbDesc.CPUAccessFlags = 0;
-        cbDesc.MiscFlags = 0;
-        cbDesc.StructureByteStride = 0;
-        const HRESULT result = _device->GetDevice()->CreateBuffer(&cbDesc, nullptr, &buffer);
-        if (FAILED(result))
-        {
-            LOG_DIRECTX_RESULT(result);
-            return nullptr;
-        }
-        memorySize = cbDesc.ByteWidth;
-    }
-
-    return new(_cbs) GPUConstantBufferDX11(_device, name, size, memorySize, buffer);
-}
-
 void GPUShaderDX11::OnReleaseGPU()
 {
     _cbs.Clear();

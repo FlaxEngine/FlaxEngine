@@ -4,6 +4,7 @@
 #include "ModelInstanceEntry.h"
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Assets/Model.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Transform.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
@@ -11,7 +12,11 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Threading/Task.h"
 #include "Engine/Threading/Threading.h"
+#if USE_EDITOR
+#include "Engine/Renderer/GBufferPass.h"
+#endif
 #if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 #endif
@@ -246,7 +251,7 @@ bool Mesh::Load(uint32 vertices, uint32 triangles, void* vb0, void* vb1, void* v
 
     // Create GPU buffers
 #if GPU_ENABLE_RESOURCE_NAMING
-#define MESH_BUFFER_NAME(postfix) GetModel()->ToString() + TEXT(postfix)
+#define MESH_BUFFER_NAME(postfix) GetModel()->GetPath() + TEXT(postfix)
 #else
 #define MESH_BUFFER_NAME(postfix) String::Empty
 #endif
@@ -434,6 +439,11 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     drawCall.Surface.LODDitherFactor = 0.0f;
     drawCall.WorldDeterminantSign = Math::FloatSelect(world.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = perInstanceRandom;
+#if USE_EDITOR
+    const ViewMode viewMode = renderContext.View.Mode;
+    if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
+        GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
+#endif
 
     // Push draw call to the render list
     renderContext.List->AddDrawCall(renderContext, drawModes, flags, drawCall, receiveDecals);
@@ -495,6 +505,11 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
     drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
+#if USE_EDITOR
+    const ViewMode viewMode = renderContext.View.Mode;
+    if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
+        GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
+#endif
 
     // Push draw call to the render list
     renderContext.List->AddDrawCall(renderContext, drawModes, info.Flags, drawCall, entry.ReceiveDecals);
@@ -550,11 +565,17 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
     drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
+#if USE_EDITOR
+    const ViewMode viewMode = renderContextBatch.GetMainContext().View.Mode;
+    if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
+        GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
+#endif
 
     // Push draw call to the render lists
     const auto shadowsMode = (ShadowsCastingMode)(entry.ShadowsMode & slot.ShadowsMode);
     const DrawPass drawModes = (DrawPass)(info.DrawModes & material->GetDrawModes());
-    renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, info.Flags, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals);
+    if (drawModes != DrawPass::None)
+        renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, info.Flags, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals);
 }
 
 bool Mesh::DownloadDataGPU(MeshBufferType type, BytesContainer& result) const

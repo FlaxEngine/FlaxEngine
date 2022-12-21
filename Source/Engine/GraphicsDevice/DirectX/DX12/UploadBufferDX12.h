@@ -56,9 +56,9 @@ public:
 public:
 
     // [GPUResourceDX12]
-    ResourceType GetResourceType() const final override
+    GPUResourceType GetResourceType() const final override
     {
-        return ResourceType::Buffer;
+        return GPUResourceType::Buffer;
     }
 
     // [ResourceOwnerDX12]

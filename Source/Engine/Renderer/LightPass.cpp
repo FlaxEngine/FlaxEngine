@@ -9,6 +9,7 @@
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Content/Assets/CubeTexture.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTask.h"
 
 PACK_STRUCT(struct PerLight{
@@ -233,6 +234,7 @@ void LightPass::RenderLight(RenderContextBatch& renderContextBatch, GPUTextureVi
     if (!shadowMask) { \
         auto rtDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), _shadowMaskFormat); \
         shadowMask = RenderTargetPool::Get(rtDesc); \
+        RENDER_TARGET_POOL_SET_NAME(shadowMask, "ShadowMask"); \
     } \
     auto shadowMaskView = shadowMask->View()
 

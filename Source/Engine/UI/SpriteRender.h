@@ -10,7 +10,8 @@
 /// <summary>
 /// Sprite rendering object.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/UI/Sprite Render\")") class FLAXENGINE_API SpriteRender : public Actor
+API_CLASS(Attributes="ActorContextMenu(\"New/UI/Sprite Render\"), ActorToolbox(\"GUI\")")
+class FLAXENGINE_API SpriteRender : public Actor
 {
     DECLARE_SCENE_OBJECT(SpriteRender);
 private:

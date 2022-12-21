@@ -4,12 +4,15 @@
 #include "ModelInstanceEntry.h"
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Threading/Task.h"
 #include "Engine/Threading/Threading.h"
 #if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
@@ -50,7 +53,7 @@ bool SkinnedMesh::Load(uint32 vertices, uint32 triangles, void* vb0, void* ib, b
 
     // Create vertex buffer
 #if GPU_ENABLE_RESOURCE_NAMING
-    vertexBuffer = GPUDevice::Instance->CreateBuffer(GetSkinnedModel()->ToString() + TEXT(".VB"));
+    vertexBuffer = GPUDevice::Instance->CreateBuffer(GetSkinnedModel()->GetPath() + TEXT(".VB"));
 #else
 	vertexBuffer = GPUDevice::Instance->CreateBuffer(String::Empty);
 #endif
@@ -59,7 +62,7 @@ bool SkinnedMesh::Load(uint32 vertices, uint32 triangles, void* vb0, void* ib, b
 
     // Create index buffer
 #if GPU_ENABLE_RESOURCE_NAMING
-    indexBuffer = GPUDevice::Instance->CreateBuffer(GetSkinnedModel()->ToString() + TEXT(".IB"));
+    indexBuffer = GPUDevice::Instance->CreateBuffer(GetSkinnedModel()->GetPath() + TEXT(".IB"));
 #else
 	indexBuffer = GPUDevice::Instance->CreateBuffer(String::Empty);
 #endif
@@ -275,7 +278,8 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
     // Push draw call to the render lists
     const auto shadowsMode = (ShadowsCastingMode)(entry.ShadowsMode & slot.ShadowsMode);
     const DrawPass drawModes = (DrawPass)(info.DrawModes & material->GetDrawModes());
-    renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, StaticFlags::None, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals);
+    if (drawModes != DrawPass::None)
+        renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, StaticFlags::None, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals);
 }
 
 bool SkinnedMesh::DownloadDataGPU(MeshBufferType type, BytesContainer& result) const

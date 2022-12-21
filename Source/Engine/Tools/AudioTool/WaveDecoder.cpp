@@ -23,11 +23,14 @@ bool WaveDecoder::ParseHeader(AudioDataInfo& info)
         uint32 subChunkSize = 0;
         mStream->ReadUint32(&subChunkSize);
 
+        uint32 totalRead = 0;
+
         // FMT chunk
         if (subChunkId[0] == 'f' && subChunkId[1] == 'm' && subChunkId[2] == 't' && subChunkId[3] == ' ')
         {
             uint16 format;
             mStream->ReadUint16(&format);
+            totalRead += 2;
 
             if (format != WAVE_FORMAT_PCM && format != WAVE_FORMAT_IEEE_FLOAT && format != WAVE_FORMAT_EXTENDED)
             {
@@ -37,18 +40,23 @@ bool WaveDecoder::ParseHeader(AudioDataInfo& info)
 
             uint16 numChannels = 0;
             mStream->ReadUint16(&numChannels);
+            totalRead += 2;
 
             uint32 sampleRate = 0;
             mStream->ReadUint32(&sampleRate);
+            totalRead += 4;
 
             uint32 byteRate = 0;
             mStream->ReadUint32(&byteRate);
+            totalRead += 4;
 
             uint16 blockAlign = 0;
             mStream->ReadUint16(&blockAlign);
+            totalRead += 2;
 
             uint16 bitDepth = 0;
             mStream->ReadUint16(&bitDepth);
+            totalRead += 2;
 
             if (bitDepth != 8 && bitDepth != 16 && bitDepth != 24 && bitDepth != 32)
             {
@@ -65,6 +73,7 @@ bool WaveDecoder::ParseHeader(AudioDataInfo& info)
             {
                 uint16 extensionSize = 0;
                 mStream->ReadUint16(&extensionSize);
+                totalRead += 2;
 
                 if (extensionSize != 22)
                 {
@@ -74,12 +83,15 @@ bool WaveDecoder::ParseHeader(AudioDataInfo& info)
 
                 uint16 validBitDepth = 0;
                 mStream->ReadUint16(&validBitDepth);
+                totalRead += 2;
 
                 uint32 channelMask = 0;
                 mStream->ReadUint32(&channelMask);
+                totalRead += 4;
 
                 uint8 subFormat[16];
                 mStream->ReadBytes(subFormat, sizeof(subFormat));
+                totalRead += 16;
 
                 Platform::MemoryCopy(&format, subFormat, sizeof(format));
                 if (format != WAVE_FORMAT_PCM)
@@ -89,10 +101,18 @@ bool WaveDecoder::ParseHeader(AudioDataInfo& info)
                 }
             }
 
+            // Support wav with "extra format bytes", just ignore not needed
+            while (totalRead < subChunkSize)
+            {
+                uint8 b;
+                mStream->ReadBytes(&b, sizeof(b));
+                totalRead++;
+            }
+
             mBytesPerSample = bitDepth / 8;
             mFormat = format;
         }
-            // DATA chunk
+        // DATA chunk
         else if (subChunkId[0] == 'd' && subChunkId[1] == 'a' && subChunkId[2] == 't' && subChunkId[3] == 'a')
         {
             info.NumSamples = subChunkSize / mBytesPerSample;
@@ -100,7 +120,7 @@ bool WaveDecoder::ParseHeader(AudioDataInfo& info)
 
             foundData = true;
         }
-            // Unsupported chunk type
+        // Unsupported chunk type
         else
         {
             if (mStream->GetPosition() + subChunkSize >= mStream->GetLength())
@@ -147,7 +167,7 @@ void WaveDecoder::Read(byte* samples, uint32 numSamples)
             samples[i] = *((uint8*)&val);
         }
     }
-        // IEEE float need to be converted into signed PCM data
+    // IEEE float need to be converted into signed PCM data
     else if (mFormat == WAVE_FORMAT_IEEE_FLOAT)
     {
         AudioTool::ConvertFromFloat((const float*)samples, (int32*)samples, numSamples);

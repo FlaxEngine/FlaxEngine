@@ -11,7 +11,8 @@
 /// <summary>
 /// Skybox actor renders sky using custom cube texture or material.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Sky Box\")") class FLAXENGINE_API Skybox : public Actor, public ISkyRenderer
+API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Sky Box\"), ActorToolbox(\"Visuals\")")
+class FLAXENGINE_API Skybox : public Actor, public ISkyRenderer
 {
     DECLARE_SCENE_OBJECT(Skybox);
 private:

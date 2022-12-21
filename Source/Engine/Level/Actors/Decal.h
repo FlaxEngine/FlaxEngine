@@ -11,7 +11,8 @@
 /// <summary>
 /// Actor that draws the can be used to draw a custom decals on top of the other objects.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Decal\")") class FLAXENGINE_API Decal : public Actor
+API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Decal\"), ActorToolbox(\"Visuals\")")
+class FLAXENGINE_API Decal : public Actor
 {
     DECLARE_SCENE_OBJECT(Decal);
 private:
@@ -50,7 +51,6 @@ public:
     /// <summary>
     /// Sets the decal bounds size (in local space).
     /// </summary>
-    /// <param name="value">The value.</param>
     API_PROPERTY() void SetSize(const Vector3& value);
 
 public:
