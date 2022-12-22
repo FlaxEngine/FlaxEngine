@@ -15,6 +15,8 @@ namespace Flax.Build.Bindings
     {
         private static readonly HashSet<string> CSharpUsedNamespaces = new HashSet<string>();
         private static readonly List<string> CSharpUsedNamespacesSorted = new List<string>();
+        private static readonly List<string> CSharpAdditionalCode = new List<string>();
+        private static readonly Dictionary<string, string> CSharpAdditionalCodeCache = new Dictionary<string, string>();
 
         public static event Action<BuildData, ApiTypeInfo, StringBuilder, string> GenerateCSharpTypeInternals;
 
@@ -310,6 +312,33 @@ namespace Flax.Build.Bindings
             {
                 if (typeInfo.GenericArgs.Count == 0)
                     throw new Exception("Missing function return type.");
+#if USE_NETCORE
+                // NetCore doesn't allow using Marshal.GetDelegateForFunctionPointer on generic delegate type (eg. Action<int>) thus generate explicit delegate type for function parameter
+                // https://github.com/dotnet/runtime/issues/36110
+                if (typeInfo.GenericArgs.Count == 1 && typeInfo.GenericArgs[0].Type == "void")
+                    return "Action";
+                // TODO: generate delegates globally in the module namespace to share more code (smaller binary size)
+                var key = string.Empty;
+                for (int i = 0; i < typeInfo.GenericArgs.Count; i++)
+                    key += GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[i], caller);        
+                if (!CSharpAdditionalCodeCache.TryGetValue(key, out var delegateName))
+                {
+                    delegateName = "Delegate" + CSharpAdditionalCodeCache.Count;
+                    var signature = $"public delegate {GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller)} {delegateName}(";
+                    for (int i = 1; i < typeInfo.GenericArgs.Count; i++)
+                    {
+                        if (i != 1)
+                            signature += ", ";
+                        signature += GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[i], caller);
+                        signature += $" arg{(i - 1)}";
+                    }
+                    signature += ");";
+                    CSharpAdditionalCode.Add("/// <summary>Function delegate.</summary>");
+                    CSharpAdditionalCode.Add(signature);
+                    CSharpAdditionalCodeCache.Add(key, delegateName);
+                }
+                return delegateName;
+#else
                 if (typeInfo.GenericArgs.Count > 1)
                 {
                     var args = string.Empty;
@@ -323,6 +352,7 @@ namespace Flax.Build.Bindings
                 if (typeInfo.GenericArgs[0].Type == "void")
                     return "Action";
                 return string.Format("Func<{0}>", GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller));
+#endif
             }
 
             // Find API type info
@@ -421,6 +451,19 @@ namespace Flax.Build.Bindings
                 // Default
                 return string.Empty;
             }
+        }
+        
+        private static void GenerateCSharpManagedTypeInternals(BuildData buildData, ApiTypeInfo apiTypeInfo, StringBuilder contents, string indent)
+        {
+            if (CSharpAdditionalCode.Count != 0)
+            {
+                contents.AppendLine();
+                foreach(var e in CSharpAdditionalCode)
+                    contents.Append(indent).AppendLine(e);
+                CSharpAdditionalCode.Clear();
+                CSharpAdditionalCodeCache.Clear();
+            }
+            GenerateCSharpTypeInternals?.Invoke(buildData, apiTypeInfo, contents, indent);
         }
 
         private static void GenerateCSharpWrapperFunction(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo caller, FunctionInfo functionInfo)
@@ -1180,7 +1223,7 @@ namespace Flax.Build.Bindings
                 }
             }
 
-            GenerateCSharpTypeInternals?.Invoke(buildData, classInfo, contents, indent);
+            GenerateCSharpManagedTypeInternals(buildData, classInfo, contents, indent);
 
             // Nested types
             foreach (var apiTypeInfo in classInfo.Children)
@@ -1723,7 +1766,7 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine("}");
             }
 
-            GenerateCSharpTypeInternals?.Invoke(buildData, structureInfo, contents, indent);
+            GenerateCSharpManagedTypeInternals(buildData, structureInfo, contents, indent);
 
             // Nested types
             foreach (var apiTypeInfo in structureInfo.Children)
@@ -1856,7 +1899,7 @@ namespace Flax.Build.Bindings
                 contents.Append(");").AppendLine();
             }
 
-            GenerateCSharpTypeInternals?.Invoke(buildData, interfaceInfo, contents, indent);
+            GenerateCSharpManagedTypeInternals(buildData, interfaceInfo, contents, indent);
 
             // End
             indent = indent.Substring(0, indent.Length - 4);
