@@ -200,40 +200,85 @@ namespace FlaxEngine
     /// </summary>
     internal unsafe class ManagedArray
     {
-        private Array array;
         private GCHandle pinnedArrayHandle;
         private IntPtr unmanagedData;
         private int elementSize;
         private int length;
 
-        internal ManagedArray(Array arr)
+        internal static ManagedArray WrapNewArray(Array arr) => new ManagedArray(arr);
+
+        /// <summary>
+        /// Returns an instance of ManagedArray from shared pool.
+        /// </summary>
+        /// <remarks>
+        /// The resources must be released by calling FreePooled() instead of Free()-method.
+        /// </remarks>
+        internal static ManagedArray WrapPooledArray(Array arr)
         {
-            array = arr;
-            unmanagedData = IntPtr.Zero;
+            ManagedArray managedArray = ManagedArrayPool.Get();
+            managedArray.WrapArray(arr);
+            return managedArray;
+        }
+
+        internal static ManagedArray AllocateNewArray<T>(T* ptr, int length) where T : unmanaged => new ManagedArray(ptr, length, Unsafe.SizeOf<T>());
+
+        internal static ManagedArray AllocateNewArray(IntPtr ptr, int length, int elementSize) => new ManagedArray(ptr.ToPointer(), length, elementSize);
+
+        /// <summary>
+        /// Returns an instance of ManagedArray from shared pool.
+        /// </summary>
+        /// <remarks>
+        /// The resources must be released by calling FreePooled() instead of Free()-method.
+        /// </remarks>
+        internal static ManagedArray AllocatePooledArray<T>(T* ptr, int length) where T : unmanaged
+        {
+            ManagedArray managedArray = ManagedArrayPool.Get();
+            managedArray.Allocate(ptr, length);
+            return managedArray;
+        }
+
+        internal ManagedArray(Array arr) => WrapArray(arr);
+
+        internal void WrapArray(Array arr)
+        {
+            pinnedArrayHandle = GCHandle.Alloc(arr, GCHandleType.Pinned);
+            unmanagedData = Marshal.UnsafeAddrOfPinnedArrayElement(arr, 0);
             length = arr.Length;
             elementSize = Marshal.SizeOf(arr.GetType().GetElementType());
         }
 
-        private ManagedArray(void* ptr, int length, int elementSize)
+        internal void Allocate<T>(T* ptr, int length) where T : unmanaged
         {
-            array = null;
-            this.unmanagedData = new IntPtr(ptr);
+            unmanagedData = new IntPtr(ptr);
+            this.length = length;
+            elementSize = Unsafe.SizeOf<T>();
+        }
+
+        internal void Allocate(IntPtr ptr, int length, int elementSize)
+        {
+            unmanagedData = ptr;
             this.length = length;
             this.elementSize = elementSize;
         }
 
+        private ManagedArray() { }
+
+        private ManagedArray(void* ptr, int length, int elementSize) => Allocate(new IntPtr(ptr), length, elementSize);
+
         ~ManagedArray()
         {
-            if (unmanagedData != IntPtr.Zero || array != null)
-                Release();
+            if (unmanagedData != IntPtr.Zero)
+                Free();
         }
 
-        internal void Release()
+        internal void Free()
         {
             GC.SuppressFinalize(this);
             if (pinnedArrayHandle.IsAllocated)
+            {
                 pinnedArrayHandle.Free();
-            array = null;
+                unmanagedData = IntPtr.Zero;
+            }
             if (unmanagedData != IntPtr.Zero)
             {
                 Marshal.FreeHGlobal(unmanagedData);
@@ -241,41 +286,63 @@ namespace FlaxEngine
             }
         }
 
-        internal IntPtr PointerToPinnedArray
+        internal void FreePooled()
         {
-            get
-            {
-                if (array != null)
-                {
-                    // Pin the array when it's accessed for the first time
-                    if (!pinnedArrayHandle.IsAllocated)
-                        pinnedArrayHandle = GCHandle.Alloc(array);
-                    return Marshal.UnsafeAddrOfPinnedArrayElement(array, 0);
-                }
-                else
-                    return unmanagedData;
-            }
+            Free();
+            ManagedArrayPool.Put(this);
         }
 
-        internal void SetValue(IntPtr value, int index)
-        {
-            if (array != null)
-                array.SetValue(value, index);
-            else
-                GetSpan<IntPtr>()[index] = value;
-        }
+        internal IntPtr GetPointer => unmanagedData;
 
         internal int Length => length;
 
         internal int ElementSize => elementSize;
 
-        internal Span<T> GetSpan<T>() where T : struct => array != null ? new Span<T>((T[]) array) : new Span<T>(unmanagedData.ToPointer(), length);
+        internal Span<T> GetSpan<T>() where T : struct => new Span<T>(unmanagedData.ToPointer(), length);
 
-        internal T[] GetArray<T>() where T : struct => array != null ? (T[])array : new Span<T>(unmanagedData.ToPointer(), length).ToArray();
+        internal T[] GetArray<T>() where T : struct => new Span<T>(unmanagedData.ToPointer(), length).ToArray();
 
-        internal static ManagedArray Get(Array arr) => new ManagedArray(arr);
+        /// <summary>
+        /// Provides a pool of pre-allocated ManagedArray that can be re-used.
+        /// </summary>
+        private static class ManagedArrayPool
+        {
+            private static List<ValueTuple<bool, ManagedArray>> pool = new List<ValueTuple<bool, ManagedArray>>();
 
-        internal static ManagedArray Get<T>(T* ptr, int length) where T : unmanaged => new ManagedArray(ptr, length, Unsafe.SizeOf<T>());
+            internal static ManagedArray Get()
+            {
+                for (int i = 0; i < pool.Count; i++)
+                {
+                    if (!pool[i].Item1)
+                    {
+                        var tuple = pool[i];
+                        tuple.Item1 = true;
+                        pool[i] = tuple;
+                        return tuple.Item2;
+                    }
+                }
+
+                var newTuple = (true, new ManagedArray());
+                pool.Add(newTuple);
+                return newTuple.Item2;
+            }
+
+            internal static void Put(ManagedArray obj)
+            {
+                for (int i = 0; i < pool.Count; i++)
+                {
+                    if (pool[i].Item2 == obj)
+                    {
+                        var tuple = pool[i];
+                        tuple.Item1 = false;
+                        pool[i] = tuple;
+                        return;
+                    }
+                }
+
+                throw new Exception("Tried to free non-pooled ManagedArray as pooled ManagedArray");
+            }
+        }
     }
 
     internal static class ManagedString
@@ -446,7 +513,7 @@ namespace FlaxEngine
             public void FromManaged(Array managed)
             {
                 if (managed != null)
-                    managedArray = ManagedArray.Get(managed);
+                    managedArray = ManagedArray.WrapPooledArray(managed);
             }
 
             public IntPtr ToUnmanaged()
@@ -462,8 +529,8 @@ namespace FlaxEngine
             {
                 if (managedArray != null)
                 {
+                    managedArray.FreePooled();
                     handle.Free();
-                    managedArray.Release();
                 }
             }
         }
@@ -567,7 +634,7 @@ namespace FlaxEngine
                     return;
 
                 GCHandle handle = GCHandle.FromIntPtr(new IntPtr(unmanaged));
-                (Unsafe.As<ManagedArray>(handle.Target)).Release();
+                (Unsafe.As<ManagedArray>(handle.Target)).Free();
                 handle.Free();
             }
 
@@ -593,7 +660,7 @@ namespace FlaxEngine
 
                 numElements = managed.Length;
 
-                ManagedArray managedArray = ManagedArray.Get((TUnmanagedElement*)Marshal.AllocHGlobal(sizeof(TUnmanagedElement) * managed.Length), managed.Length);
+                ManagedArray managedArray = ManagedArray.AllocatePooledArray((TUnmanagedElement*)Marshal.AllocHGlobal(sizeof(TUnmanagedElement) * managed.Length), managed.Length);
                 var ptr = GCHandle.ToIntPtr(GCHandle.Alloc(managedArray));
 
                 return (TUnmanagedElement*)ptr;
@@ -616,7 +683,7 @@ namespace FlaxEngine
                     return;
 
                 GCHandle handle = GCHandle.FromIntPtr(new IntPtr(unmanaged));
-                (Unsafe.As<ManagedArray>(handle.Target)).Release();
+                (Unsafe.As<ManagedArray>(handle.Target)).FreePooled();
                 handle.Free();
             }
         }
@@ -633,7 +700,8 @@ namespace FlaxEngine
                     return;
 
                 managedArray = managed;
-                unmanagedArray = ManagedArray.Get((TUnmanagedElement*)Marshal.AllocHGlobal(sizeof(TUnmanagedElement) * managed.Length), managed.Length);
+
+                unmanagedArray = ManagedArray.AllocatePooledArray((TUnmanagedElement*)Marshal.AllocHGlobal(sizeof(TUnmanagedElement) * managed.Length), managed.Length);
                 handle = GCHandle.Alloc(unmanagedArray);
             }
 
@@ -670,7 +738,7 @@ namespace FlaxEngine
 
             public void Free()
             {
-                unmanagedArray.Release();
+                unmanagedArray.FreePooled();
                 handle.Free();
             }
         }
@@ -685,7 +753,7 @@ namespace FlaxEngine
 
             numElements = managed.Length;
 
-            ManagedArray managedArray = ManagedArray.Get((TUnmanagedElement*)Marshal.AllocHGlobal(sizeof(TUnmanagedElement) * managed.Length), managed.Length);
+            ManagedArray managedArray = ManagedArray.AllocatePooledArray((TUnmanagedElement*)Marshal.AllocHGlobal(sizeof(TUnmanagedElement) * managed.Length), managed.Length);
             IntPtr handle = GCHandle.ToIntPtr(GCHandle.Alloc(managedArray));
 
             return (TUnmanagedElement*)handle;
@@ -721,7 +789,7 @@ namespace FlaxEngine
                 return;
 
             GCHandle handle = GCHandle.FromIntPtr(new IntPtr(unmanaged));
-            Unsafe.As<ManagedArray>(handle.Target).Release();
+            Unsafe.As<ManagedArray>(handle.Target).FreePooled();
             handle.Free();
         }
     }
@@ -1833,10 +1901,19 @@ namespace FlaxEngine
         internal static IntPtr NewArray(IntPtr typeHandle, long size)
         {
             Type type = Unsafe.As<Type>(GCHandle.FromIntPtr(typeHandle).Target);
-            
-            Array arr = ArrayFactory.CreateArray(type, size);
-            ManagedArray managedArray = ManagedArray.Get(arr);
-            return GCHandle.ToIntPtr(GCHandle.Alloc(managedArray/*, GCHandleType.Weak*/));
+
+            Type marshalledType = ArrayFactory.GetMarshalledType(type);
+            if (marshalledType.IsValueType)
+            {
+                ManagedArray managedArray = ManagedArray.AllocateNewArray(Marshal.AllocHGlobal(Marshal.SizeOf(marshalledType) * (int)size), (int)size, Marshal.SizeOf(marshalledType));
+                return GCHandle.ToIntPtr(GCHandle.Alloc(managedArray/*, GCHandleType.Weak*/));
+            }
+            else
+            {
+                Array arr = ArrayFactory.CreateArray(type, size);
+                ManagedArray managedArray = ManagedArray.WrapNewArray(arr);
+                return GCHandle.ToIntPtr(GCHandle.Alloc(managedArray/*, GCHandleType.Weak*/));
+            }
         }
 
         [UnmanagedCallersOnly]
@@ -1847,7 +1924,7 @@ namespace FlaxEngine
                 return IntPtr.Zero;
 
             Assert.IsTrue(index >= 0 && index < managedArray.Length);
-            return IntPtr.Add(managedArray.PointerToPinnedArray, size * index);
+            return IntPtr.Add(managedArray.GetPointer, size * index);
         }
 
         [UnmanagedCallersOnly]
@@ -2037,7 +2114,7 @@ namespace FlaxEngine
                     else if (methodBlob.method.ReturnType == typeof(Type))
                         return GCHandle.ToIntPtr(GetOrAddTypeGCHandle(Unsafe.As<Type>(returnObject)));
                     else if (methodBlob.method.ReturnType == typeof(object[]))
-                        return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.Get(ManagedArrayToGCHandleArray(Unsafe.As<object[]>(returnObject))), GCHandleType.Weak));
+                        return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<object[]>(returnObject))), GCHandleType.Weak));
                     else
                         return GCHandle.ToIntPtr(GCHandle.Alloc(returnObject, GCHandleType.Weak));
                 }
@@ -2087,8 +2164,8 @@ namespace FlaxEngine
         internal static void SetArrayValueReference(IntPtr arrayHandle, IntPtr elementPtr, IntPtr valueHandle)
         {
             ManagedArray managedArray = Unsafe.As<ManagedArray>(GCHandle.FromIntPtr(arrayHandle).Target);
-            int index = (int)(elementPtr.ToInt64() - managedArray.PointerToPinnedArray.ToInt64()) / managedArray.ElementSize;
-            managedArray.SetValue(valueHandle, index);
+            int index = (int)(elementPtr.ToInt64() - managedArray.GetPointer.ToInt64()) / managedArray.ElementSize;
+            managedArray.GetSpan<IntPtr>()[index] = valueHandle;
         }
 
         [UnmanagedCallersOnly]
@@ -2647,7 +2724,7 @@ namespace FlaxEngine
                         else if (method.ReturnType == typeof(Type))
                             return GCHandle.ToIntPtr(GetOrAddTypeGCHandle(Unsafe.As<Type>(returnObject)));
                         else if (method.ReturnType == typeof(object[]))
-                            return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.Get(ManagedArrayToGCHandleArray(Unsafe.As<object[]>(returnObject))), GCHandleType.Weak));
+                            return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<object[]>(returnObject))), GCHandleType.Weak));
                         else
                             return GCHandle.ToIntPtr(GCHandle.Alloc(returnObject, GCHandleType.Weak));
                     }
