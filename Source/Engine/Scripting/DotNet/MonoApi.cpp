@@ -161,6 +161,7 @@ private:
     Array<CoreCLRProperty*> _properties;
     bool _cachedInterfaces = false;
     Array<CoreCLRClass*> _interfaces;
+    int _monoType;
 
 public:
     CoreCLRClass(void* typeHandle, StringAnsi name, StringAnsi fullname, StringAnsi namespace_, uint32 typeAttributes, CoreCLRAssembly* image)
@@ -338,6 +339,16 @@ public:
 
         _cachedInterfaces = true;
         return _interfaces;
+    }
+
+    int GetMonoType()
+    {
+        if (_monoType == 0)
+        {
+            static void* GetTypeMonoTypeEnumPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetTypeMonoTypeEnum"));
+            _monoType = CoreCLR::CallStaticMethod<int, void*>(GetTypeMonoTypeEnumPtr, _typeHandle);
+        }
+        return _monoType;
     }
 };
 
@@ -1450,8 +1461,8 @@ MONO_API mono_bool mono_type_is_byref(MonoType* type)
 
 MONO_API int mono_type_get_type(MonoType* type)
 {
-    static void* GetTypeMonoTypeEnumPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetTypeMonoTypeEnum"));
-    return CoreCLR::CallStaticMethod<int, void*>(GetTypeMonoTypeEnumPtr, type);
+    CoreCLRClass* klass = GetOrCreateClass((void*)type);
+    return klass->GetMonoType();
 }
 
 MONO_API MonoClass* mono_type_get_class(MonoType* type)
