@@ -622,7 +622,7 @@ namespace MUtils
     }
 #endif
 
-    FORCE_INLINE gchandle NewGCHandle(MonoObject* obj, bool pinned)
+    FORCE_INLINE MGCHandle NewGCHandle(MonoObject* obj, bool pinned)
     {
 #if USE_NETCORE
         return CoreCLR::NewGCHandle(obj, pinned);
@@ -631,7 +631,7 @@ namespace MUtils
 #endif
     }
 
-    FORCE_INLINE gchandle NewGCHandleWeakref(MonoObject* obj, bool track_resurrection)
+    FORCE_INLINE MGCHandle NewGCHandleWeakref(MonoObject* obj, bool track_resurrection)
     {
 #if USE_NETCORE
         return CoreCLR::NewGCHandleWeakref(obj, track_resurrection);
@@ -640,7 +640,7 @@ namespace MUtils
 #endif
     }
 
-    FORCE_INLINE MonoObject* GetGCHandleTarget(const gchandle& handle)
+    FORCE_INLINE MonoObject* GetGCHandleTarget(const MGCHandle& handle)
     {
 #if USE_NETCORE
         return (MonoObject*)CoreCLR::GetGCHandleTarget(handle);
@@ -649,7 +649,7 @@ namespace MUtils
 #endif
     }
 
-    FORCE_INLINE void FreeGCHandle(const gchandle& handle)
+    FORCE_INLINE void FreeGCHandle(const MGCHandle& handle)
     {
 #if USE_NETCORE
         CoreCLR::FreeGCHandle(handle);

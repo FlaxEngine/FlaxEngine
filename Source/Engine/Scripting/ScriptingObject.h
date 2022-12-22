@@ -21,7 +21,7 @@ public:
 
 protected:
 
-    gchandle _gcHandle;
+    MGCHandle _gcHandle;
     ScriptingTypeHandle _type;
     Guid _id;
 

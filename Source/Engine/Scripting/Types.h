@@ -55,9 +55,9 @@ struct _MonoThread {};
 #endif
 
 #if USE_NETCORE
-typedef unsigned long long gchandle;
+typedef unsigned long long MGCHandle;
 #else
-typedef uint32 gchandle;
+typedef uint32 MGCHandle;
 #endif
 
 // Mono types declarations

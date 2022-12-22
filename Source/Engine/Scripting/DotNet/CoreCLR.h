@@ -50,10 +50,10 @@ public:
     static const char* GetClassFullname(void* klass);
     static void* Allocate(int size);
     static void Free(void* ptr);
-    static gchandle NewGCHandle(void* obj, bool pinned);
-    static gchandle NewGCHandleWeakref(void* obj, bool track_resurrection);
-    static void* GetGCHandleTarget(const gchandle& gchandle);
-    static void FreeGCHandle(const gchandle& gchandle);
+    static MGCHandle NewGCHandle(void* obj, bool pinned);
+    static MGCHandle NewGCHandleWeakref(void* obj, bool track_resurrection);
+    static void* GetGCHandleTarget(const MGCHandle& MGCHandle);
+    static void FreeGCHandle(const MGCHandle& MGCHandle);
 
     static bool HasCustomAttribute(void* klass, void* attribClass);
     static bool HasCustomAttribute(void* klass);

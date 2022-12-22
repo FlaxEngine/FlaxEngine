@@ -516,7 +516,7 @@ public:
         /// <summary>
         /// The GC handle to the managed instance of the node object.
         /// </summary>
-        gchandle Handle;
+        MGCHandle Handle;
     };
 
     struct CurveData

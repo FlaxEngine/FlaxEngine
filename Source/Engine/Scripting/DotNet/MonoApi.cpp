@@ -563,27 +563,27 @@ CoreCLRClass* GetOrCreateClass(void* type)
     return klass;
 }
 
-gchandle CoreCLR::NewGCHandle(void* obj, bool pinned)
+MGCHandle CoreCLR::NewGCHandle(void* obj, bool pinned)
 {
     static void* NewGCHandlePtr = CoreCLR::GetStaticMethodPointer(TEXT("NewGCHandle"));
-    return (gchandle)CoreCLR::CallStaticMethod<void*, void*, bool>(NewGCHandlePtr, obj, pinned);
+    return (MGCHandle)CoreCLR::CallStaticMethod<void*, void*, bool>(NewGCHandlePtr, obj, pinned);
 }
 
-gchandle CoreCLR::NewGCHandleWeakref(void* obj, bool track_resurrection)
+MGCHandle CoreCLR::NewGCHandleWeakref(void* obj, bool track_resurrection)
 {
     static void* NewGCHandleWeakrefPtr = CoreCLR::GetStaticMethodPointer(TEXT("NewGCHandleWeakref"));
-    return (gchandle)CoreCLR::CallStaticMethod<void*, void*, bool>(NewGCHandleWeakrefPtr, obj, track_resurrection);
+    return (MGCHandle)CoreCLR::CallStaticMethod<void*, void*, bool>(NewGCHandleWeakrefPtr, obj, track_resurrection);
 }
 
-void* CoreCLR::GetGCHandleTarget(const gchandle& gchandle)
+void* CoreCLR::GetGCHandleTarget(const MGCHandle& MGCHandle)
 {
-    return (void*)gchandle;
+    return (void*)MGCHandle;
 }
 
-void CoreCLR::FreeGCHandle(const gchandle& gchandle)
+void CoreCLR::FreeGCHandle(const MGCHandle& MGCHandle)
 {
     static void* FreeGCHandlePtr = CoreCLR::GetStaticMethodPointer(TEXT("FreeGCHandle"));
-    CoreCLR::CallStaticMethod<void, void*>(FreeGCHandlePtr, (void*)gchandle);
+    CoreCLR::CallStaticMethod<void, void*>(FreeGCHandlePtr, (void*)MGCHandle);
 }
 
 const char* CoreCLR::GetClassFullname(void* klass)
