@@ -3,6 +3,7 @@
 #include "Tags.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/StringView.h"
+#include "Engine/Serialization/SerializationFwd.h"
 
 Array<String> Tags::List;
 #if !BUILD_RELEASE
@@ -24,8 +25,23 @@ bool Tag::operator!=(const StringView& other) const
     return ToString() != other;
 }
 
+void FLAXENGINE_API Serialization::Serialize(ISerializable::SerializeStream& stream, const Tag& v, const void* otherObj)
+{
+    if (v.Index != -1)
+        stream.String(v.ToString());
+    else
+        stream.String("", 0);
+}
+
+void FLAXENGINE_API Serialization::Deserialize(ISerializable::DeserializeStream& stream, Tag& v, ISerializeModifier* modifier)
+{
+    v = Tags::Get(stream.GetText());
+}
+
 Tag Tags::Get(const StringView& tagName)
 {
+    if (tagName.IsEmpty())
+        return Tag();
     Tag tag = List.Find(tagName);
     if (tag.Index == -1 && tagName.HasChars())
     {

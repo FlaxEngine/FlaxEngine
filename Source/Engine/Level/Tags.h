@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/ISerializable.h"
 
 /// <summary>
 /// Gameplay tag that represents a hierarchical name of the form 'X.Y.Z' (namespaces separated with a dot). Tags are defined in project LayersAndTagsSettings asset but can be also created from code.
@@ -59,6 +60,18 @@ inline uint32 GetHash(const Tag& key)
 {
     return (uint32)key.Index;
 }
+
+// @formatter:off
+namespace Serialization
+{
+    inline bool ShouldSerialize(const Tag& v, const void* otherObj)
+    {
+        return !otherObj || v != *(Tag*)otherObj;
+    }
+    void FLAXENGINE_API Serialize(ISerializable::SerializeStream& stream, const Tag& v, const void* otherObj);
+    void FLAXENGINE_API Deserialize(ISerializable::DeserializeStream& stream, Tag& v, ISerializeModifier* modifier);
+}
+// @formatter:on
 
 /// <summary>
 /// Gameplay tags utilities.
