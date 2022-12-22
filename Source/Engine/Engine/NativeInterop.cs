@@ -1864,18 +1864,14 @@ namespace FlaxEngine
 
         internal static class ArrayFactory
         {
-            private static class Internal<T>
-            {
-                internal static Array CreateArrayDelegate(long size) => new T[size];
-            }
-
             private delegate Array CreateArrayDelegate(long size);
 
+            private static ConcurrentDictionary<Type, Type> marshalledTypes = new ConcurrentDictionary<Type, Type>(1, 3);
             private static ConcurrentDictionary<Type, CreateArrayDelegate> createArrayDelegates = new ConcurrentDictionary<Type, CreateArrayDelegate>(1, 3);
 
-            private static CreateArrayDelegate GetCreateArrayDelegate(Type type)
+            internal static Type GetMarshalledType(Type elementType)
             {
-                static CreateArrayDelegate Factory(Type type)
+                static Type Factory(Type type)
                 {
                     Type marshalType;
                     if (IsBlittable(type))
@@ -1883,18 +1879,33 @@ namespace FlaxEngine
                     else
                         marshalType = GetInternalType(type) ?? typeof(IntPtr);
 
-                    MethodInfo method = typeof(Internal<>).MakeGenericType(marshalType).GetMethod(nameof(Internal<ValueTypePlaceholder>.CreateArrayDelegate), BindingFlags.Static | BindingFlags.NonPublic);
+                    return marshalType;
+                }
+
+                if (marshalledTypes.TryGetValue(elementType, out var marshalledType))
+                    return marshalledType;
+                return marshalledTypes.GetOrAdd(elementType, Factory);
+            }
+
+            internal static Array CreateArray(Type type, long size)
+            {
+                static CreateArrayDelegate Factory(Type type)
+                {
+                    Type marshalledType = GetMarshalledType(type);
+                    MethodInfo method = typeof(Internal<>).MakeGenericType(marshalledType).GetMethod(nameof(Internal<ValueTypePlaceholder>.CreateArrayDelegate), BindingFlags.Static | BindingFlags.NonPublic);
                     return method.CreateDelegate<CreateArrayDelegate>();
                 }
 
                 if (createArrayDelegates.TryGetValue(type, out var deleg))
-                    return deleg;
-                return createArrayDelegates.GetOrAdd(type, Factory);
+                    return deleg(size);
+                return createArrayDelegates.GetOrAdd(type, Factory)(size);
             }
 
-            internal static Array CreateArray(Type type, long size) => GetCreateArrayDelegate(type)(size);
 
-            internal static Type GetMarshalledType(Type elementType) => GetCreateArrayDelegate(elementType).Method.DeclaringType.GenericTypeArguments[0];
+            private static class Internal<T>
+            {
+                internal static Array CreateArrayDelegate(long size) => new T[size];
+            }
         }
 
         [UnmanagedCallersOnly]
