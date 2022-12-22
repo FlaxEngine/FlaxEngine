@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using FlaxEngine;
 
 namespace FlaxEditor
@@ -20,7 +21,7 @@ namespace FlaxEditor
         private int[] _highlightIndicesSet;
         private Model _highlightTrianglesModel;
 
-        internal IntPtr[] ActorsPtrs => Utils.ExtractArrayFromList(_actors);
+        internal Span<IntPtr> ActorsPtrs => CollectionsMarshal.AsSpan(_actors);
 
         internal int ActorsCount => _actors.Count;
 

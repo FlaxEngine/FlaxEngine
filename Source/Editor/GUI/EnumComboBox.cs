@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.Scripting;
@@ -170,7 +171,7 @@ namespace FlaxEditor.GUI
                 BuildEntriesDefault(type, _entries, formatMode);
 
             var hasTooltips = false;
-            var entries = Utils.ExtractArrayFromList(_entries);
+            var entries = CollectionsMarshal.AsSpan(_entries);
             for (int i = 0; i < _entries.Count; i++)
             {
                 ref var e = ref entries[i];
