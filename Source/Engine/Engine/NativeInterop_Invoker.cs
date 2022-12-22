@@ -7,6 +7,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 namespace FlaxEngine
 {
@@ -80,6 +81,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -89,6 +91,7 @@ namespace FlaxEngine
                     return IntPtr.Zero;
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -114,6 +117,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -132,6 +136,7 @@ namespace FlaxEngine
                     return IntPtr.Zero;
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -159,6 +164,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -182,6 +188,7 @@ namespace FlaxEngine
                     return IntPtr.Zero;
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -210,6 +217,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -238,6 +246,7 @@ namespace FlaxEngine
                     return IntPtr.Zero;
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -267,6 +276,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -300,6 +310,7 @@ namespace FlaxEngine
                     return IntPtr.Zero;
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -330,6 +341,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -339,6 +351,7 @@ namespace FlaxEngine
                     return IntPtr.Zero;
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -364,6 +377,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -382,6 +396,7 @@ namespace FlaxEngine
                     return IntPtr.Zero;
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -409,6 +424,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -432,6 +448,7 @@ namespace FlaxEngine
                     return IntPtr.Zero;
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -460,6 +477,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -488,6 +506,7 @@ namespace FlaxEngine
                     return IntPtr.Zero;
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -517,6 +536,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -550,6 +570,7 @@ namespace FlaxEngine
                     return IntPtr.Zero;
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -580,6 +601,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -589,6 +611,7 @@ namespace FlaxEngine
                     return MarshalReturnValue(ref ret);
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -614,6 +637,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -632,6 +656,7 @@ namespace FlaxEngine
                     return MarshalReturnValue(ref ret);
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -659,6 +684,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -682,6 +708,7 @@ namespace FlaxEngine
                     return MarshalReturnValue(ref ret);
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -710,6 +737,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -738,6 +766,7 @@ namespace FlaxEngine
                     return MarshalReturnValue(ref ret);
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -767,6 +796,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -800,6 +830,7 @@ namespace FlaxEngine
                     return MarshalReturnValue(ref ret);
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -830,6 +861,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -839,6 +871,7 @@ namespace FlaxEngine
                     return MarshalReturnValue(ref ret);
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -864,6 +897,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -882,6 +916,7 @@ namespace FlaxEngine
                     return MarshalReturnValue(ref ret);
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -909,6 +944,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -932,6 +968,7 @@ namespace FlaxEngine
                     return MarshalReturnValue(ref ret);
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -960,6 +997,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -988,6 +1026,7 @@ namespace FlaxEngine
                     return MarshalReturnValue(ref ret);
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
@@ -1017,6 +1056,7 @@ namespace FlaxEngine
                     return Unsafe.As<ThunkInvokerDelegate>(CreateDelegateFromMethod(method, false));
                 }
 
+                [DebuggerStepThrough]
                 internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
@@ -1050,6 +1090,7 @@ namespace FlaxEngine
                     return MarshalReturnValue(ref ret);
                 }
 
+                [DebuggerStepThrough]
                 internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
