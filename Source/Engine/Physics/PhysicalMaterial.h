@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Types.h"
-#include "Engine/Serialization/ISerializable.h"
+#include "Engine/Core/ISerializable.h"
 
 /// <summary>
 /// Physical materials are used to define the response of a physical object when interacting dynamically with the world.

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Engine/Serialization/ISerializable.h"
+#include "Engine/Core/ISerializable.h"
 
 /// <summary>
 /// Base class for all global settings containers for the engine. Helps to apply, store and expose properties to engine/game.

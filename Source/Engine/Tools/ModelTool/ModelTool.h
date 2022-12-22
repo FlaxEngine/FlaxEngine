@@ -7,7 +7,7 @@
 #include "Engine/Core/Config.h"
 #include "Engine/Content/Assets/ModelBase.h"
 #if USE_EDITOR
-#include "Engine/Serialization/ISerializable.h"
+#include "Engine/Core/ISerializable.h"
 #include "Engine/Graphics/Models/ModelData.h"
 #include "Engine/Graphics/Models/SkeletonData.h"
 #include "Engine/Animations/AnimationData.h"

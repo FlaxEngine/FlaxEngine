@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Asset.h"
-#include "Engine/Serialization/ISerializable.h"
+#include "Engine/Core/ISerializable.h"
 #include "Engine/Serialization/Json.h"
 
 /// <summary>

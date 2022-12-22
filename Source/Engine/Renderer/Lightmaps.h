@@ -4,7 +4,7 @@
 
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Math/Rectangle.h"
-#include "Engine/Serialization/ISerializable.h"
+#include "Engine/Core/ISerializable.h"
 
 #if USE_EDITOR
 // Additional options used in editor for lightmaps baking

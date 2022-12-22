@@ -4,7 +4,7 @@
 
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Content/Assets/MaterialBase.h"
-#include "Engine/Serialization/ISerializable.h"
+#include "Engine/Core/ISerializable.h"
 #include "Types.h"
 
 /// <summary>

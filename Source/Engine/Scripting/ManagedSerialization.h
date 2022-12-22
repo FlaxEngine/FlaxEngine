@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Engine/Serialization/ISerializable.h"
+#include "Engine/Core/ISerializable.h"
 #include "ManagedCLR/MTypes.h"
 
 /// <summary>

@@ -5,7 +5,7 @@
 #include "Engine/Core/Math/BoundingBox.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/Transform.h"
-#include "Engine/Serialization/ISerializable.h"
+#include "Engine/Core/ISerializable.h"
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Level/Scene/Lightmap.h"
 

@@ -4,7 +4,7 @@
 
 #include "Types.h"
 #include "Engine/Tools/AudioTool/AudioDecoder.h"
-#include "Engine/Serialization/ISerializable.h"
+#include "Engine/Core/ISerializable.h"
 #include "Engine/Audio/Config.h"
 
 #if COMPILE_WITH_ASSETS_IMPORTER
