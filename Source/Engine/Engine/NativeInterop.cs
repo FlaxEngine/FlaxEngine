@@ -827,11 +827,6 @@ namespace FlaxEngine
     /// </summary>
     internal unsafe static partial class NativeInterop
     {
-        /// <summary>
-        /// Enables first-chance exception handling in invoked methods while debugger is attached.
-        /// </summary>
-        public static bool CatchExceptions = true;
-
         internal static Dictionary<string, string> AssemblyLocations = new Dictionary<string, string>();
 
         private static bool firstAssemblyLoaded = false;
@@ -2024,9 +2019,6 @@ namespace FlaxEngine
                 }
                 catch (Exception exception)
                 {
-                    if (Debugger.IsAttached && CatchExceptions)
-                        throw;
-
                     Marshal.WriteIntPtr(exceptionPtr, GCHandle.ToIntPtr(GCHandle.Alloc(exception, GCHandleType.Weak)));
                     return IntPtr.Zero;
                 }
@@ -2052,9 +2044,6 @@ namespace FlaxEngine
                 }
                 catch (Exception exception)
                 {
-                    if (Debugger.IsAttached && CatchExceptions)
-                        throw;
-
                     // The internal exception thrown in MethodInfo.Invoke is caught here
                     Exception realException = exception;
                     if (exception.InnerException != null && exception.TargetSite.ReflectedType.Name == "MethodInvoker")
@@ -2637,9 +2626,6 @@ namespace FlaxEngine
                     }
                     catch (Exception exception)
                     {
-                        if (Debugger.IsAttached && CatchExceptions)
-                            throw;
-
                         // Returned exception is the last parameter
                         IntPtr exceptionPtr = nativePtrs[parameterTypes.Length];
                         Marshal.WriteIntPtr(exceptionPtr, GCHandle.ToIntPtr(GCHandle.Alloc(exception, GCHandleType.Weak)));
@@ -2662,9 +2648,6 @@ namespace FlaxEngine
                     }
                     catch (Exception exception)
                     {
-                        if (Debugger.IsAttached && CatchExceptions)
-                            throw;
-
                         // Returned exception is the last parameter
                         IntPtr exceptionPtr = nativePtrs[numParams];
                         Marshal.WriteIntPtr(exceptionPtr, GCHandle.ToIntPtr(GCHandle.Alloc(exception, GCHandleType.Weak)));
