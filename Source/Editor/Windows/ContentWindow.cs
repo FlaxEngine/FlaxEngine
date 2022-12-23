@@ -205,6 +205,7 @@ namespace FlaxEditor.Windows
             showFileExtensionsButton.AutoCheck = true;
 
             var viewScale = menu.AddButton("View Scale");
+            viewScale.CloseMenuOnClick = false;
             var scaleValue = new FloatValueBox(1, 75, 2, 50.0f, 0.3f, 3.0f, 0.01f)
             {
                 Parent = viewScale
