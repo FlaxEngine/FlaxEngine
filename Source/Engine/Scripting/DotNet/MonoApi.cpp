@@ -26,7 +26,7 @@ struct CoreCLRProperty;
 struct CoreCLRClass;
 
 // Structures used to pass information from runtime, must match with the structures in managed side
-struct ManagedClass
+struct NativeClassDefinitions
 {
     void* typeHandle;
     const char* name;
@@ -35,7 +35,7 @@ struct ManagedClass
     uint32 typeAttributes;
 };
 
-struct ClassMethod
+struct NativeMethodDefinitions
 {
     const char* name;
     int numParameters;
@@ -43,7 +43,7 @@ struct ClassMethod
     uint32 methodAttributes;
 };
 
-struct ClassField
+struct NativeFieldDefinitions
 {
     const char* name;
     void* fieldHandle;
@@ -51,7 +51,7 @@ struct ClassField
     uint32 fieldAttributes;
 };
 
-struct ClassProperty
+struct NativePropertyDefinitions
 {
     const char* name;
     void* getterHandle;
@@ -88,9 +88,9 @@ public:
         _name = name;
         _fullname = fullname;
 
-        ManagedClass* managedClasses;
+        NativeClassDefinitions* managedClasses;
         int classCount;
-        CoreCLR::CallStaticMethod<void, void*, ManagedClass**, int*>(GetManagedClassesPtr, _assemblyHandle, &managedClasses, &classCount);
+        CoreCLR::CallStaticMethod<void, void*, NativeClassDefinitions**, int*>(GetManagedClassesPtr, _assemblyHandle, &managedClasses, &classCount);
         for (int i = 0; i < classCount; i++)
         {
             CoreCLRClass* mci = New<CoreCLRClass>(managedClasses[i].typeHandle, StringAnsi(managedClasses[i].name), StringAnsi(managedClasses[i].fullname), StringAnsi(managedClasses[i].namespace_), managedClasses[i].typeAttributes, this);
@@ -161,6 +161,7 @@ private:
     Array<CoreCLRProperty*> _properties;
     bool _cachedInterfaces = false;
     Array<CoreCLRClass*> _interfaces;
+    int _monoType;
 
 public:
     CoreCLRClass(void* typeHandle, StringAnsi name, StringAnsi fullname, StringAnsi namespace_, uint32 typeAttributes, CoreCLRAssembly* image)
@@ -233,9 +234,9 @@ public:
         
         static void* GetClassMethodsPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetClassMethods"));
 
-        ClassMethod* foundMethods;
+        NativeMethodDefinitions* foundMethods;
         int numMethods;
-        CoreCLR::CallStaticMethod<void, void*, ClassMethod**, int*>(GetClassMethodsPtr, _typeHandle, &foundMethods, &numMethods);
+        CoreCLR::CallStaticMethod<void, void*, NativeMethodDefinitions**, int*>(GetClassMethodsPtr, _typeHandle, &foundMethods, &numMethods);
         for (int i = 0; i < numMethods; i++)
         {
             CoreCLRMethod* method = New<CoreCLRMethod>(StringAnsi(foundMethods[i].name), foundMethods[i].numParameters, foundMethods[i].handle, foundMethods[i].methodAttributes, this);
@@ -256,9 +257,9 @@ public:
 
         static void* GetClassFieldsPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetClassFields"));
 
-        ClassField* foundFields;
+        NativeFieldDefinitions* foundFields;
         int numFields;
-        CoreCLR::CallStaticMethod<void, void*, ClassField**, int*>(GetClassFieldsPtr, _typeHandle, &foundFields, &numFields);
+        CoreCLR::CallStaticMethod<void, void*, NativeFieldDefinitions**, int*>(GetClassFieldsPtr, _typeHandle, &foundFields, &numFields);
         for (int i = 0; i < numFields; i++)
         {
             CoreCLRField* field = New<CoreCLRField>(StringAnsi(foundFields[i].name), foundFields[i].fieldHandle, foundFields[i].fieldType, foundFields[i].fieldAttributes, this);
@@ -279,9 +280,9 @@ public:
 
         static void* GetClassPropertiesPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetClassProperties"));
 
-        ClassProperty* foundProperties;
+        NativePropertyDefinitions* foundProperties;
         int numProperties;
-        CoreCLR::CallStaticMethod<void, void*, ClassProperty**, int*>(GetClassPropertiesPtr, _typeHandle, &foundProperties, &numProperties);
+        CoreCLR::CallStaticMethod<void, void*, NativePropertyDefinitions**, int*>(GetClassPropertiesPtr, _typeHandle, &foundProperties, &numProperties);
         for (int i = 0; i < numProperties; i++)
         {
             CoreCLRProperty* prop = New<CoreCLRProperty>(StringAnsi(foundProperties[i].name), foundProperties[i].getterHandle, foundProperties[i].setterHandle, foundProperties[i].getterFlags, foundProperties[i].setterFlags, this);
@@ -338,6 +339,16 @@ public:
 
         _cachedInterfaces = true;
         return _interfaces;
+    }
+
+    int GetMonoType()
+    {
+        if (_monoType == 0)
+        {
+            static void* GetTypeMonoTypeEnumPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetTypeMonoTypeEnum"));
+            _monoType = CoreCLR::CallStaticMethod<int, void*>(GetTypeMonoTypeEnumPtr, _typeHandle);
+        }
+        return _monoType;
     }
 };
 
@@ -543,7 +554,7 @@ CoreCLRClass* GetOrCreateClass(void* type)
     {
         static void* GetManagedClassFromTypePtr = CoreCLR::GetStaticMethodPointer(TEXT("GetManagedClassFromType"));
 
-        ManagedClass classInfo;
+        NativeClassDefinitions classInfo;
         void* assemblyHandle;
         CoreCLR::CallStaticMethod<void, void*, void*>(GetManagedClassFromTypePtr, type, &classInfo, &assemblyHandle);
         CoreCLRAssembly* image = GetAssembly(assemblyHandle);
@@ -1450,8 +1461,8 @@ MONO_API mono_bool mono_type_is_byref(MonoType* type)
 
 MONO_API int mono_type_get_type(MonoType* type)
 {
-    static void* GetTypeMonoTypeEnumPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetTypeMonoTypeEnum"));
-    return CoreCLR::CallStaticMethod<int, void*>(GetTypeMonoTypeEnumPtr, type);
+    CoreCLRClass* klass = GetOrCreateClass((void*)type);
+    return klass->GetMonoType();
 }
 
 MONO_API MonoClass* mono_type_get_class(MonoType* type)
