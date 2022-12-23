@@ -238,12 +238,51 @@ namespace FlaxEditor.Windows
             // Setup viewport
             _viewport = new RenderOutputControl(task)
             {
-                AnchorPreset = AnchorPresets.StretchAll,
+                AnchorPreset = AnchorPresets.TopLeft,
                 Offsets = Margin.Zero,
                 AutoFocus = false,
                 Parent = this
             };
             task.PostRender += OnPostRender;
+            
+            // TODO move external and let user define. Maybe also just let them define a ratio as well
+            Float2 viewPortSize = new Float2(1920, 1080);
+            bool useCustomAspect = true;
+            bool freeAspect = false;
+            Float2 customAspect = new Float2(9, 16);
+            
+            SizeChanged += control =>
+            {
+                float viewportAspectRatio = 1;
+                float windowAspectRatio = 1;
+                if (!freeAspect)
+                {
+                    if (!useCustomAspect)
+                        viewportAspectRatio = viewPortSize.X / viewPortSize.Y;
+                    else
+                        viewportAspectRatio = customAspect.X / customAspect.Y;
+                    
+                    windowAspectRatio = Size.X / Size.Y;
+                }
+                
+                var scaleWidth = viewportAspectRatio / windowAspectRatio;
+                var scaleHeight = windowAspectRatio / viewportAspectRatio;
+
+                if (scaleHeight < 1)
+                {
+                    _viewport.Width = Size.X;
+                    _viewport.Height = Size.Y * scaleHeight;
+                    _viewport.X = 0;
+                    _viewport.Y = Size.Y * (1-scaleHeight)/2;
+                }
+                else
+                {
+                    _viewport.Width = Size.X * scaleWidth;
+                    _viewport.Height = Size.Y;
+                    _viewport.X = Size.X * (1-scaleWidth)/2;
+                    _viewport.Y = 0;
+                }
+            };
 
             // Override the game GUI root
             _guiRoot = new GameRoot
