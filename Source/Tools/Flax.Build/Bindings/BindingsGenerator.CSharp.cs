@@ -506,7 +506,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine().Append(indent).Append("[MethodImpl(MethodImplOptions.InternalCall)]");
             contents.AppendLine().Append(indent).Append("internal static partial ");
 #else
-            contents.AppendLine().Append(indent).Append($"[LibraryImport(\"FlaxEngine\", EntryPoint = \"{caller.FullNameManaged}::Internal_{functionInfo.UniqueName}\", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]");
+            contents.AppendLine().Append(indent).Append($"[LibraryImport(\"{caller.ParentModule.Module.BinaryModuleName}\", EntryPoint = \"{caller.FullNameManaged}::Internal_{functionInfo.UniqueName}\", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]");
             if (!string.IsNullOrEmpty(returnMarshalType))
                 contents.AppendLine().Append(indent).Append($"[return: {returnMarshalType}]");
             contents.AppendLine().Append(indent).Append("internal static partial ");
@@ -997,7 +997,7 @@ namespace Flax.Build.Bindings
                     contents.Append("IntPtr obj, ");
                 contents.Append("bool bind);");
 #else
-                contents.Append(indent).Append($"[LibraryImport(\"FlaxEngine\", EntryPoint = \"{classInfo.FullNameManaged}::Internal_{eventInfo.Name}_Bind\", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]").AppendLine();
+                contents.Append(indent).Append($"[LibraryImport(\"{classInfo.ParentModule.Module.BinaryModuleName}\", EntryPoint = \"{classInfo.FullNameManaged}::Internal_{eventInfo.Name}_Bind\", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]").AppendLine();
                 contents.Append(indent).Append($"internal static partial void Internal_{eventInfo.Name}_Bind(");
                 if (!eventInfo.IsStatic)
                     contents.Append("IntPtr obj, ");
