@@ -17,6 +17,7 @@ namespace Flax.Build.Bindings
         private static readonly List<string> CSharpUsedNamespacesSorted = new List<string>();
         private static readonly List<string> CSharpAdditionalCode = new List<string>();
         private static readonly Dictionary<string, string> CSharpAdditionalCodeCache = new Dictionary<string, string>();
+        private static string CSharpLastAssembly;
 
         public static event Action<BuildData, ApiTypeInfo, StringBuilder, string> GenerateCSharpTypeInternals;
 
@@ -1986,10 +1987,16 @@ namespace Flax.Build.Bindings
             CSharpUsedNamespaces.Add("System.Globalization");
             CSharpUsedNamespaces.Add("System.Runtime.CompilerServices");
             CSharpUsedNamespaces.Add("System.Runtime.InteropServices");
+            CSharpUsedNamespaces.Add("FlaxEngine");
 #if USE_NETCORE
             CSharpUsedNamespaces.Add("System.Runtime.InteropServices.Marshalling");
+            if (CSharpLastAssembly != moduleInfo.Name)
+            {
+                // Add custom assembly attributes here, once per assembly
+                contents.AppendLine("[assembly: DisableRuntimeMarshalling]");
+                CSharpLastAssembly = moduleInfo.Name;
+            }
 #endif
-            CSharpUsedNamespaces.Add("FlaxEngine");
 
             // Process all API types from the file
             var useBindings = false;

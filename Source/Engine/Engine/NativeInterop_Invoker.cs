@@ -58,7 +58,7 @@ namespace FlaxEngine
                 else if (typeof(TRet) == typeof(bool))
                     return (bool)(object)returnValue ? boolTruePtr : boolFalsePtr;
                 else if (typeof(TRet) == typeof(Type))
-                    return returnValue != null ? GCHandle.ToIntPtr(GetOrAddTypeGCHandle(Unsafe.As<Type>(returnValue))) : IntPtr.Zero;
+                    return returnValue != null ? GCHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnValue))) : IntPtr.Zero;
                 else if (typeof(TRet) == typeof(object[]))
                     return returnValue != null ? GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<object[]>(returnValue))), GCHandleType.Weak)) : IntPtr.Zero;
                 else

@@ -18,7 +18,7 @@ using System.Collections;
 using System.Buffers;
 using System.Collections.Concurrent;
 
-[assembly: DisableRuntimeMarshalling]
+#pragma warning disable 1591
 
 namespace FlaxEngine
 {
@@ -361,7 +361,7 @@ namespace FlaxEngine
     [CustomMarshaller(typeof(object), MarshalMode.ManagedToUnmanagedRef, typeof(GCHandleMarshaller.Bidirectional))]
     [CustomMarshaller(typeof(object), MarshalMode.UnmanagedToManagedRef, typeof(GCHandleMarshaller.Bidirectional))]
     [CustomMarshaller(typeof(object), MarshalMode.ElementRef, typeof(GCHandleMarshaller))]
-    internal static class GCHandleMarshaller
+    public static class GCHandleMarshaller
     {
         public static class NativeToManaged
         {
@@ -398,11 +398,11 @@ namespace FlaxEngine
                 GCHandle.FromIntPtr(unmanaged).Free();*/
             }
         }
-        internal static object ConvertToManaged(IntPtr unmanaged) => ToManaged(unmanaged);
-        internal static IntPtr ConvertToUnmanaged(object managed) => ToNative(managed);
-        internal static object ToManaged(IntPtr managed) => managed != IntPtr.Zero ? GCHandle.FromIntPtr(managed).Target : null;
-        internal static IntPtr ToNative(object managed) => managed != null ? GCHandle.ToIntPtr(GCHandle.Alloc(managed)) : IntPtr.Zero;
-        internal static void Free(IntPtr unmanaged)
+        public static object ConvertToManaged(IntPtr unmanaged) => ToManaged(unmanaged);
+        public static IntPtr ConvertToUnmanaged(object managed) => ToNative(managed);
+        public static object ToManaged(IntPtr managed) => managed != IntPtr.Zero ? GCHandle.FromIntPtr(managed).Target : null;
+        public static IntPtr ToNative(object managed) => managed != null ? GCHandle.ToIntPtr(GCHandle.Alloc(managed)) : IntPtr.Zero;
+        public static void Free(IntPtr unmanaged)
         {
             if (unmanaged == IntPtr.Zero)
                 return;
@@ -411,7 +411,7 @@ namespace FlaxEngine
     }
 
     [CustomMarshaller(typeof(Type), MarshalMode.Default, typeof(SystemTypeMarshaller))]
-    internal static class SystemTypeMarshaller
+    public static class SystemTypeMarshaller
     {
         internal static Type ConvertToManaged(IntPtr unmanaged) => Unsafe.As<Type>(GCHandleMarshaller.ConvertToManaged(unmanaged));
 
@@ -420,7 +420,7 @@ namespace FlaxEngine
             if (managed == null)
                 return IntPtr.Zero;
 
-            GCHandle handle = NativeInterop.GetOrAddTypeGCHandle(managed);
+            GCHandle handle = NativeInterop.GetTypeGCHandle(managed);
             return GCHandle.ToIntPtr(handle);
         }
 
@@ -431,7 +431,7 @@ namespace FlaxEngine
     }
 
     [CustomMarshaller(typeof(Exception), MarshalMode.Default, typeof(ExceptionMarshaller))]
-    internal static class ExceptionMarshaller
+    public static class ExceptionMarshaller
     {
         internal static Exception ConvertToManaged(IntPtr unmanaged) => Unsafe.As<Exception>(GCHandleMarshaller.ConvertToManaged(unmanaged));
         internal static IntPtr ConvertToUnmanaged(Exception managed) => GCHandleMarshaller.ConvertToUnmanaged(managed);
@@ -444,7 +444,7 @@ namespace FlaxEngine
     [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.ManagedToUnmanagedOut, typeof(ObjectMarshaller.NativeToManaged))]
     [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.UnmanagedToManagedIn, typeof(ObjectMarshaller.NativeToManaged))]
     [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.ElementOut, typeof(ObjectMarshaller.NativeToManaged))]
-    internal static class ObjectMarshaller
+    public static class ObjectMarshaller
     {
         public static class NativeToManaged
         {
@@ -457,7 +457,7 @@ namespace FlaxEngine
     }
 
     [CustomMarshaller(typeof(CultureInfo), MarshalMode.Default, typeof(CultureInfoMarshaller))]
-    internal static class CultureInfoMarshaller
+    public static class CultureInfoMarshaller
     {
         internal static CultureInfo ConvertToManaged(IntPtr unmanaged) => Unsafe.As<CultureInfo>(GCHandleMarshaller.ConvertToManaged(unmanaged));
         internal static IntPtr ConvertToUnmanaged(CultureInfo managed) => GCHandleMarshaller.ConvertToUnmanaged(managed);
@@ -466,7 +466,7 @@ namespace FlaxEngine
 
     [CustomMarshaller(typeof(Array), MarshalMode.ManagedToUnmanagedIn, typeof(SystemArrayMarshaller.ManagedToNative))]
     [CustomMarshaller(typeof(Array), MarshalMode.UnmanagedToManagedOut, typeof(SystemArrayMarshaller.ManagedToNative))]
-    internal static class SystemArrayMarshaller
+    public static class SystemArrayMarshaller
     {
         public struct ManagedToNative
         {
@@ -508,7 +508,7 @@ namespace FlaxEngine
     [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ManagedToUnmanagedRef, typeof(DictionaryMarshaller<,>.Bidirectional))]
     [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.UnmanagedToManagedRef, typeof(DictionaryMarshaller<,>.Bidirectional))]
     [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ElementRef, typeof(DictionaryMarshaller<,>))]
-    internal static unsafe class DictionaryMarshaller<T, U>
+    public static unsafe class DictionaryMarshaller<T, U>
     {
         public static class NativeToManaged
         {
@@ -568,7 +568,7 @@ namespace FlaxEngine
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.UnmanagedToManagedRef, typeof(ArrayMarshaller<,>.Bidirectional))]
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ElementRef, typeof(ArrayMarshaller<,>))]
     [ContiguousCollectionMarshaller]
-    internal static unsafe class ArrayMarshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
+    public static unsafe class ArrayMarshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
     {
         public static class NativeToManaged
         {
@@ -706,7 +706,7 @@ namespace FlaxEngine
             }
         }
 
-        internal static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
+        public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
         {
             if (managed is null)
             {
@@ -722,9 +722,9 @@ namespace FlaxEngine
             return (TUnmanagedElement*)handle;
         }
 
-        internal static ReadOnlySpan<T> GetManagedValuesSource(T[]? managed) => managed;
+        public static ReadOnlySpan<T> GetManagedValuesSource(T[]? managed) => managed;
 
-        internal static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
+        public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
         {
             if (unmanaged == null)
                 return Span<TUnmanagedElement>.Empty;
@@ -733,11 +733,11 @@ namespace FlaxEngine
             return unmanagedArray.GetSpan<TUnmanagedElement>();
         }
 
-        internal static T[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements) => unmanaged is null ? null : new T[numElements];
+        public static T[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements) => unmanaged is null ? null : new T[numElements];
 
-        internal static Span<T> GetManagedValuesDestination(T[]? managed) => managed;
+        public static Span<T> GetManagedValuesDestination(T[]? managed) => managed;
 
-        internal static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged, int numElements)
+        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged, int numElements)
         {
             if (unmanaged == null)
                 return ReadOnlySpan<TUnmanagedElement>.Empty;
@@ -746,7 +746,7 @@ namespace FlaxEngine
             return array.GetSpan<TUnmanagedElement>();
         }
 
-        internal static void Free(TUnmanagedElement* unmanaged)
+        public static void Free(TUnmanagedElement* unmanaged)
         {
             if (unmanaged == null)
                 return;
@@ -766,7 +766,7 @@ namespace FlaxEngine
     [CustomMarshaller(typeof(string), MarshalMode.ManagedToUnmanagedRef, typeof(StringMarshaller.Bidirectional))]
     [CustomMarshaller(typeof(string), MarshalMode.UnmanagedToManagedRef, typeof(StringMarshaller.Bidirectional))]
     [CustomMarshaller(typeof(string), MarshalMode.ElementRef, typeof(StringMarshaller))]
-    internal static class StringMarshaller
+    public static class StringMarshaller
     {
         public static class NativeToManaged
         {
@@ -812,12 +812,12 @@ namespace FlaxEngine
             public void Free() => ManagedString.Free(unmanaged);
         }
 
-        internal static string ConvertToManaged(IntPtr unmanaged) => ManagedString.ToManaged(unmanaged);
-        internal static IntPtr ConvertToUnmanaged(string managed) => ManagedString.ToNative(managed);
-        internal static void Free(IntPtr unmanaged) => ManagedString.Free(unmanaged);
+        public static string ConvertToManaged(IntPtr unmanaged) => ManagedString.ToManaged(unmanaged);
+        public static IntPtr ConvertToUnmanaged(string managed) => ManagedString.ToNative(managed);
+        public static void Free(IntPtr unmanaged) => ManagedString.Free(unmanaged);
 
-        internal static string ToManaged(IntPtr unmanaged) => ManagedString.ToManaged(unmanaged);
-        internal static IntPtr ToNative(string managed) => ManagedString.ToNative(managed);
+        public static string ToManaged(IntPtr unmanaged) => ManagedString.ToManaged(unmanaged);
+        public static IntPtr ToNative(string managed) => ManagedString.ToNative(managed);
     }
 
     #endregion
@@ -1468,12 +1468,12 @@ namespace FlaxEngine
                     if (Pointer.Unbox(managedValue) == null)
                         managedPtr = IntPtr.Zero;
                     else if (managedValue is FlaxEngine.Object flaxObj)
-                        managedPtr = flaxObj.__unmanagedPtr;
+                        managedPtr = FlaxEngine.Object.GetUnmanagedPtr(flaxObj);
                     else
                         managedPtr = GCHandle.ToIntPtr(GCHandle.Alloc(managedValue, GCHandleType.Weak));
                 }
                 else if (type == typeof(Type))
-                    managedPtr = managedValue != null ? GCHandle.ToIntPtr(GetOrAddTypeGCHandle((Type)(object)managedValue)) : IntPtr.Zero;
+                    managedPtr = managedValue != null ? GCHandle.ToIntPtr(GetTypeGCHandle((Type)(object)managedValue)) : IntPtr.Zero;
                 else
                     managedPtr = managedValue != null ? GCHandle.ToIntPtr(GCHandle.Alloc(managedValue, GCHandleType.Weak)) : IntPtr.Zero;
 
@@ -1567,7 +1567,7 @@ namespace FlaxEngine
                 bool isInterface = type.IsInterface;
                 bool isAbstract = type.IsAbstract;
 
-                GCHandle typeHandle = GetOrAddTypeGCHandle(type);
+                GCHandle typeHandle = GetTypeGCHandle(type);
 
                 NativeClassDefinitions managedClass = new NativeClassDefinitions()
                 {
@@ -1588,7 +1588,7 @@ namespace FlaxEngine
         internal static unsafe void GetManagedClassFromType(IntPtr typeHandle, NativeClassDefinitions* managedClass, IntPtr* assemblyHandle)
         {
             Type type = Unsafe.As<Type>(GCHandle.FromIntPtr(typeHandle).Target);
-            GCHandle classTypeHandle = GetOrAddTypeGCHandle(type);
+            GCHandle classTypeHandle = GetTypeGCHandle(type);
 
             *managedClass = new NativeClassDefinitions()
             {
@@ -1666,7 +1666,7 @@ namespace FlaxEngine
                 {
                     name = Marshal.StringToCoTaskMemAnsi(fieldHolder.field.Name),
                     fieldHandle = GCHandle.ToIntPtr(fieldHandle),
-                    fieldTypeHandle = GCHandle.ToIntPtr(GetOrAddTypeGCHandle(fieldHolder.field.FieldType)),
+                    fieldTypeHandle = GCHandle.ToIntPtr(GetTypeGCHandle(fieldHolder.field.FieldType)),
                     fieldAttributes = (uint)fieldHolder.field.Attributes,
                 };
                 Unsafe.Write(ptr.ToPointer(), classField);
@@ -1726,7 +1726,7 @@ namespace FlaxEngine
                     attributeHandle = GCHandle.Alloc(attributeValues[i]);
                     classAttributesCacheCollectible.Add(attributeValues[i], attributeHandle);
                 }
-                GCHandle attributeTypeHandle = GetOrAddTypeGCHandle(attributeTypes[i]);
+                GCHandle attributeTypeHandle = GetTypeGCHandle(attributeTypes[i]);
 
                 NativeAttributeDefinitions classAttribute = new NativeAttributeDefinitions()
                 {
@@ -1792,7 +1792,7 @@ namespace FlaxEngine
             IntPtr arr = Marshal.AllocCoTaskMem(IntPtr.Size * methodHolder.parameterTypes.Length);
             for (int i = 0; i < methodHolder.parameterTypes.Length; i++)
             {
-                GCHandle typeHandle = GetOrAddTypeGCHandle(methodHolder.parameterTypes[i]);
+                GCHandle typeHandle = GetTypeGCHandle(methodHolder.parameterTypes[i]);
                 Marshal.WriteIntPtr(IntPtr.Add(new IntPtr(arr), IntPtr.Size * i), GCHandle.ToIntPtr(typeHandle));
             }
             *typeHandles = arr;
@@ -1948,7 +1948,7 @@ namespace FlaxEngine
         {
             var obj = GCHandle.FromIntPtr(handle).Target;
             Type classType = obj.GetType();
-            return GCHandle.ToIntPtr(GetOrAddTypeGCHandle(classType));
+            return GCHandle.ToIntPtr(GetTypeGCHandle(classType));
         }
 
         internal static class ValueTypeUnboxer
@@ -2014,8 +2014,6 @@ namespace FlaxEngine
         internal static IntPtr InvokeMethod(IntPtr instancePtr, IntPtr methodHandle, IntPtr paramPtr, IntPtr exceptionPtr)
         {
             MethodHolder methodHolder = Unsafe.As<MethodHolder>(GCHandle.FromIntPtr(methodHandle).Target);
-
-            
             if (methodHolder.TryGetDelegate(out var methodDelegate, out var methodDelegateContext))
             {
                 // Fast path, invoke the method with minimal allocations
@@ -2086,7 +2084,7 @@ namespace FlaxEngine
                     else if (methodHolder.method.ReturnType == typeof(bool))
                         return (bool)returnObject ? boolTruePtr : boolFalsePtr;
                     else if (methodHolder.method.ReturnType == typeof(Type))
-                        return GCHandle.ToIntPtr(GetOrAddTypeGCHandle(Unsafe.As<Type>(returnObject)));
+                        return GCHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnObject)));
                     else if (methodHolder.method.ReturnType == typeof(object[]))
                         return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<object[]>(returnObject))), GCHandleType.Weak));
                     else
@@ -2539,7 +2537,7 @@ namespace FlaxEngine
         /// <summary>
         /// Returns a static GCHandle for given Type, and caches it if needed.
         /// </summary>
-        internal static GCHandle GetOrAddTypeGCHandle(Type type)
+        internal static GCHandle GetTypeGCHandle(Type type)
         {
             if (typeHandleCache.TryGetValue(type, out GCHandle handle))
                 return handle;
@@ -2554,20 +2552,6 @@ namespace FlaxEngine
                 typeHandleCache.Add(type, handle);
 
             return handle;
-        }
-
-        /// <summary>
-        /// Returns a static GCHandle for given Type.
-        /// </summary>
-        internal static GCHandle GetTypeGCHandle(Type type)
-        {
-            if (typeHandleCache.TryGetValue(type, out GCHandle handle))
-                return handle;
-
-            if (typeHandleCacheCollectible.TryGetValue(type, out handle))
-                return handle;
-
-            throw new Exception($"GCHandle not found for type '{type.FullName}'");
         }
 
         private static class DelegateHelpers
@@ -2696,7 +2680,7 @@ namespace FlaxEngine
                         else if (method.ReturnType == typeof(bool))
                             return (bool)returnObject ? boolTruePtr : boolFalsePtr;
                         else if (method.ReturnType == typeof(Type))
-                            return GCHandle.ToIntPtr(GetOrAddTypeGCHandle(Unsafe.As<Type>(returnObject)));
+                            return GCHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnObject)));
                         else if (method.ReturnType == typeof(object[]))
                             return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<object[]>(returnObject))), GCHandleType.Weak));
                         else
