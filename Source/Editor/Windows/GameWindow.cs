@@ -247,7 +247,7 @@ namespace FlaxEditor.Windows
             
             // TODO move external and let user define. Maybe also just let them define a ratio as well
             Float2 viewPortSize = new Float2(1920, 1080);
-            bool useCustomAspect = true;
+            bool useCustomAspect = false;
             bool freeAspect = false;
             Float2 customAspect = new Float2(9, 16);
             
