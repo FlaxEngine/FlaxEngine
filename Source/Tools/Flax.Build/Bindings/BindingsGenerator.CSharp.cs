@@ -495,7 +495,7 @@ namespace Flax.Build.Bindings
                 returnMarshalType = $"MarshalUsing(typeof({returnValueType}Marshaller))";
             }
             else if (returnValueType == "byte[]")
-                returnMarshalType = $"MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = \"returnCount\")";
+                returnMarshalType = $"MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = \"__returnCount\")";
             else if (returnValueType == "bool[]")
             {
                 // Boolean arrays does not support custom marshalling for some unkown reason...
@@ -538,9 +538,9 @@ namespace Flax.Build.Bindings
                 else if (parameterInfo.Type.Type == "MonoArray")
                     parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.SystemArrayMarshaller))";
                 else if (parameterInfo.Type.Type == "Array" && parameterInfo.Type.GenericArgs.Count > 0 && parameterInfo.Type.GenericArgs[0].Type == "bool")
-                    parameterMarshalType = $"MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1, SizeParamIndex = {(!functionInfo.IsStatic ? 1 : 0) + functionInfo.Parameters.Count + (functionInfo.Glue.CustomParameters.FindIndex(x => x.Name == parameterInfo.Name + "Count"))})";
+                    parameterMarshalType = $"MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1, SizeParamIndex = {(!functionInfo.IsStatic ? 1 : 0) + functionInfo.Parameters.Count + (functionInfo.Glue.CustomParameters.FindIndex(x => x.Name == $"__{parameterInfo.Name}Count"))})";
                 else if (parameterInfo.Type.Type == "Array" || parameterInfo.Type.Type == "Span" || parameterInfo.Type.Type == "DataContainer" || parameterInfo.Type.Type == "BytesContainer" || nativeType == "Array")
-                    parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = \"{parameterInfo.Name}Count\")";
+                    parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = \"__{parameterInfo.Name}Count\")";
                 else if (parameterInfo.Type.Type == "Dictionary")
                     parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.DictionaryMarshaller<,>), ConstantElementCount = 0)";
                 else if (nativeType == "bool")
@@ -576,7 +576,7 @@ namespace Flax.Build.Bindings
                 var nativeType = GenerateCSharpManagedToNativeType(buildData, parameterInfo.Type, caller);
 #if USE_NETCORE
                 string parameterMarshalType = "";
-                if (parameterInfo.IsOut && parameterInfo.DefaultValue == "var resultAsRef")
+                if (parameterInfo.IsOut && parameterInfo.DefaultValue == "var __resultAsRef")
                 {
                     if (functionInfo.Glue.UseResultReferenceCount)
                         parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = \"{parameterInfo.Name}Count\")";
@@ -612,7 +612,7 @@ namespace Flax.Build.Bindings
                 if (parameterInfo.Type.IsArray || parameterInfo.Type.Type == "Array" || parameterInfo.Type.Type == "Span" || parameterInfo.Type.Type == "BytesContainer" || parameterInfo.Type.Type == "DataContainer" || parameterInfo.Type.Type == "BitArray")
                 {
                     if (!parameterInfo.IsOut)
-                        contents.Append($"var {parameterInfo.Name}Count = {(isSetter ? "value" : parameterInfo.Name)}?.Length ?? 0; ");
+                        contents.Append($"var __{parameterInfo.Name}Count = {(isSetter ? "value" : parameterInfo.Name)}?.Length ?? 0; ");
                 }
             }
 #endif
@@ -693,7 +693,7 @@ namespace Flax.Build.Bindings
             // Return result
             if (functionInfo.Glue.UseReferenceForResult)
             {
-                contents.Append(" return resultAsRef;");
+                contents.Append(" return __resultAsRef;");
             }
         }
 

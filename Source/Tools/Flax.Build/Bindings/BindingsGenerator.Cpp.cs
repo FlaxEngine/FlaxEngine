@@ -885,8 +885,8 @@ namespace Flax.Build.Bindings
                 returnValueType = "void";
                 functionInfo.Glue.CustomParameters.Add(new FunctionInfo.ParameterInfo
                 {
-                    Name = "resultAsRef",
-                    DefaultValue = "var resultAsRef",
+                    Name = "__resultAsRef",
+                    DefaultValue = "var __resultAsRef",
                     Type = new TypeInfo
                     {
                         Type = functionInfo.ReturnType.Type,
@@ -900,8 +900,8 @@ namespace Flax.Build.Bindings
                     functionInfo.Glue.UseResultReferenceCount = true;
                     functionInfo.Glue.CustomParameters.Add(new FunctionInfo.ParameterInfo
                     {
-                        Name = "resultAsRefCount",
-                        DefaultValue = "var resultAsRefCount",
+                        Name = "__resultAsRefCount",
+                        DefaultValue = "var __resultAsRefCount",
                         Type = new TypeInfo
                         {
                             Type = "int"
@@ -916,8 +916,8 @@ namespace Flax.Build.Bindings
             {
                 functionInfo.Glue.CustomParameters.Add(new FunctionInfo.ParameterInfo
                 {
-                    Name = "returnCount",
-                    DefaultValue = "var returnCount",
+                    Name = "__returnCount",
+                    DefaultValue = "var __returnCount",
                     Type = new TypeInfo
                     {
                         Type = "int"
@@ -994,10 +994,11 @@ namespace Flax.Build.Bindings
                 if (parameterInfo.Type.IsArray || parameterInfo.Type.Type == "Array" || parameterInfo.Type.Type == "Span" || parameterInfo.Type.Type == "BytesContainer" || parameterInfo.Type.Type == "DataContainer" || parameterInfo.Type.Type == "BitArray")
                 {
                     // We need additional output parameters for array sizes
+                    var name = $"__{parameterInfo.Name}Count";
                     functionInfo.Glue.CustomParameters.Add(new FunctionInfo.ParameterInfo
                     {
-                        Name = parameterInfo.Name + "Count",
-                        DefaultValue = parameterInfo.IsOut ? "int _" : parameterInfo.Name + "Count",
+                        Name = name,
+                        DefaultValue = parameterInfo.IsOut ? "int _" : name,
                         Type = new TypeInfo
                         {
                             Type = "int"
@@ -1036,7 +1037,7 @@ namespace Flax.Build.Bindings
             string callBegin = "        ";
             if (functionInfo.Glue.UseReferenceForResult)
             {
-                callBegin += "*resultAsRef = ";
+                callBegin += "*__resultAsRef = ";
             }
             else if (!functionInfo.ReturnType.IsVoid)
             {
@@ -1052,17 +1053,17 @@ namespace Flax.Build.Bindings
             {
                 callBegin2 = "        ";
                 if (functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "BytesContainer")
-                    callBegin2 += "*resultAsRefCount = {0}.Length();";
+                    callBegin2 += "*__resultAsRefCount = {0}.Length();";
                 else
-                    callBegin2 += "*resultAsRefCount = {0}.Count();";
+                    callBegin2 += "*__resultAsRefCount = {0}.Count();";
             }
             else if (functionInfo.ReturnType.Type == "BitArray" || functionInfo.ReturnType.Type == "BytesContainer")
             {
                 callBegin2 = "        ";
                 if (functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "BytesContainer")
-                    callBegin2 += "*returnCount = {0}.Length();";
+                    callBegin2 += "*__returnCount = {0}.Length();";
                 else
-                    callBegin2 += "*returnCount = {0}.Count();";
+                    callBegin2 += "*__returnCount = {0}.Count();";
             }
 #endif
             string call;
@@ -1204,7 +1205,7 @@ namespace Flax.Build.Bindings
 #if USE_NETCORE
                                     if (parameterInfo.Type.Type == "Array")
                                     {
-                                        contents.AppendFormat("        *{0}Count = {1}.Count();", parameterInfo.Name, parameterInfo.Name + "Temp").AppendLine();
+                                        contents.AppendFormat("        *__{0}Count = {1}.Count();", parameterInfo.Name, parameterInfo.Name + "Temp").AppendLine();
                                     }
 #endif
                                     continue;
@@ -1222,7 +1223,7 @@ namespace Flax.Build.Bindings
                                 if (parameterInfo.Type.Type == "BytesContainer" && parameterInfo.Type.GenericArgs == null)
                                 {
                                     contents.AppendFormat("        mono_gc_wbarrier_generic_store({0}, (MonoObject*){1});", parameterInfo.Name, value).AppendLine();
-                                    contents.AppendFormat("        *{0}Count = {1}.Length();", parameterInfo.Name, parameterInfo.Name + "Temp").AppendLine();
+                                    contents.AppendFormat("        *__{0}Count = {1}.Length();", parameterInfo.Name, parameterInfo.Name + "Temp").AppendLine();
                                     continue;
                                 }
                                 
