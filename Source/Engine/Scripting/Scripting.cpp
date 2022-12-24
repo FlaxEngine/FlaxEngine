@@ -34,6 +34,9 @@
 #include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
 #include <ThirdParty/mono-2.0/mono/metadata/object.h>
 #endif
+#if USE_NETCORE
+#include "DotNet/CoreCLR.h"
+#endif
 
 extern void registerFlaxEngineInternalCalls();
 
@@ -408,6 +411,13 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
                     LOG(Error, "Failed to load C# assembly '{0}' for binary module {1}.", managedPath, name);
                     return true;
                 }
+#if USE_NETCORE
+                // Provide new path of hot-reloaded native library path for managed DllImport
+                if (nativePath.HasChars())
+                {
+                    CoreCLR::RegisterNativeLibrary(nameAnsi.Get(), StringAnsi(nativePath).Get());
+                }
+#endif
             }
 #endif
 

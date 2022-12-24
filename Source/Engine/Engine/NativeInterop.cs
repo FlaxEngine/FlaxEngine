@@ -847,27 +847,27 @@ namespace FlaxEngine
         private static Dictionary<object, GCHandle> classAttributesCacheCollectible = new();
         private static Dictionary<Assembly, GCHandle> assemblyHandles = new Dictionary<Assembly, GCHandle>();
 
-        private static string hostExecutable;
-        private static IntPtr hostExecutableHandle = IntPtr.Zero;
+        private static Dictionary<string, IntPtr> loadedNativeLibraries = new Dictionary<string, IntPtr>();
+        private static Dictionary<string, string> nativeLibraryPaths = new Dictionary<string, string>();
+        private static Dictionary<Assembly, string> assemblyOwnedNativeLibraries = new Dictionary<Assembly, string>();
         private static AssemblyLoadContext scriptingAssemblyLoadContext;
 
         [System.Diagnostics.DebuggerStepThrough]
-        private static IntPtr InternalDllResolver(string libraryName, Assembly assembly, DllImportSearchPath? dllImportSearchPath)
+        private static IntPtr NativeLibraryImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? dllImportSearchPath)
         {
-            if (libraryName == "FlaxEngine")
+            if (!loadedNativeLibraries.TryGetValue(libraryName, out IntPtr nativeLibrary))
             {
-                if (hostExecutableHandle == IntPtr.Zero)
-                    hostExecutableHandle = NativeLibrary.Load(hostExecutable, assembly, dllImportSearchPath);
-                return hostExecutableHandle;
+                nativeLibrary = NativeLibrary.Load(nativeLibraryPaths[libraryName], assembly, dllImportSearchPath);
+                loadedNativeLibraries.Add(libraryName, nativeLibrary);
+                assemblyOwnedNativeLibraries.Add(assembly, libraryName);
             }
-            return IntPtr.Zero;
+            return nativeLibrary;
         }
 
         [UnmanagedCallersOnly]
-        internal static unsafe void Init(IntPtr hostExecutableName)
+        internal static unsafe void Init()
         {
-            hostExecutable = Marshal.PtrToStringUni(hostExecutableName);
-            NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), InternalDllResolver);
+            NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), NativeLibraryImportResolver);
 
             // Change default culture to match with Mono runtime default culture
             CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
@@ -884,6 +884,15 @@ namespace FlaxEngine
         [UnmanagedCallersOnly]
         internal static unsafe void Exit()
         {
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void RegisterNativeLibrary(IntPtr moduleName_, IntPtr modulePath_)
+        {
+            string moduleName = Marshal.PtrToStringAnsi(moduleName_);
+            string modulePath = Marshal.PtrToStringAnsi(modulePath_);
+
+            nativeLibraryPaths[moduleName] = modulePath;
         }
 
         internal static T[] GCHandleArrayToManagedArray<T>(ManagedArray ptrArray)
@@ -2145,6 +2154,7 @@ namespace FlaxEngine
             string assemblyPath = Marshal.PtrToStringAnsi(assemblyPath_);
 
             Assembly assembly = scriptingAssemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
+            NativeLibrary.SetDllImportResolver(assembly, NativeLibraryImportResolver);
 
             *assemblyName = Marshal.StringToCoTaskMemAnsi(assembly.GetName().Name);
             *assemblyFullName = Marshal.StringToCoTaskMemAnsi(assembly.FullName);
@@ -2172,6 +2182,7 @@ namespace FlaxEngine
 
             using MemoryStream stream = new MemoryStream(raw);
             Assembly assembly = scriptingAssemblyLoadContext.LoadFromStream(stream);
+            NativeLibrary.SetDllImportResolver(assembly, NativeLibraryImportResolver);
 
             // Assemblies loaded via streams have no Location: https://github.com/dotnet/runtime/issues/12822
             AssemblyLocations.Add(assembly.FullName, assemblyPath);
@@ -2230,6 +2241,16 @@ namespace FlaxEngine
             foreach (var pair in classAttributesCacheCollectible)
                 pair.Value.Free();
             classAttributesCacheCollectible.Clear();
+
+            // Unload native library handles associated for this assembly
+            string nativeLibraryName = assemblyOwnedNativeLibraries.GetValueOrDefault(assembly);
+            if (nativeLibraryName != null && loadedNativeLibraries.TryGetValue(nativeLibraryName, out IntPtr nativeLibrary))
+            {
+                NativeLibrary.Free(nativeLibrary);
+                loadedNativeLibraries.Remove(nativeLibraryName);
+            }
+            if (nativeLibraryName != null)
+                nativeLibraryPaths.Remove(nativeLibraryName);
 
             // Unload the ALC
             bool unloading = true;

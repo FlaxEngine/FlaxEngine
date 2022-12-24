@@ -135,8 +135,9 @@ bool MCore::LoadEngine()
         return false;
 
     // Prepare managed side
-    const String hostExecutable = Platform::GetExecutableFilePath();
-    CoreCLR::CallStaticMethodByName<void, const Char*>(TEXT("Init"), hostExecutable.Get());
+    const StringAnsi hostExecutable(Platform::GetExecutableFilePath());
+    CoreCLR::CallStaticMethodByName<void>(TEXT("Init"));
+    CoreCLR::RegisterNativeLibrary("FlaxEngine", hostExecutable.Get());
 
     MRootDomain = New<MDomain>("Root");
     MDomains.Add(MRootDomain);
