@@ -319,9 +319,7 @@ namespace FlaxEngine
                 return IntPtr.Zero;
             else if (str == string.Empty)
                 return GCHandle.ToIntPtr(EmptyStringHandle);
-
             Assert.IsTrue(str.Length > 0);
-
             return GCHandle.ToIntPtr(GCHandle.Alloc(str, GCHandleType.Weak));
         }
 
@@ -330,7 +328,6 @@ namespace FlaxEngine
         {
             if (ptr == IntPtr.Zero)
                 return null;
-
             return Unsafe.As<string>(GCHandle.FromIntPtr(ptr).Target);
         }
 
@@ -339,16 +336,14 @@ namespace FlaxEngine
         {
             if (ptr == IntPtr.Zero)
                 return;
-
             GCHandle handle = GCHandle.FromIntPtr(ptr);
             if (handle == EmptyStringHandle)
                 return;
-
             handle.Free();
         }
     }
 
-#endregion
+    #endregion
 
     #region Marshallers
 
@@ -483,7 +478,6 @@ namespace FlaxEngine
             {
                 if (managedArray == null)
                     return IntPtr.Zero;
-
                 handle = GCHandle.Alloc(managedArray);
                 return GCHandle.ToIntPtr(handle);
             }
@@ -576,7 +570,6 @@ namespace FlaxEngine
             {
                 if (unmanaged is null)
                     return null;
-
                 return new T[numElements];
             }
 
@@ -586,7 +579,6 @@ namespace FlaxEngine
             {
                 if (unmanaged == null)
                     return ReadOnlySpan<TUnmanagedElement>.Empty;
-
                 ManagedArray managedArray = Unsafe.As<ManagedArray>(GCHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
                 return managedArray.GetSpan<TUnmanagedElement>();
             }
@@ -595,7 +587,6 @@ namespace FlaxEngine
             {
                 if (unmanaged == null)
                     return;
-
                 GCHandle handle = GCHandle.FromIntPtr(new IntPtr(unmanaged));
                 (Unsafe.As<ManagedArray>(handle.Target)).Free();
                 handle.Free();
@@ -605,7 +596,6 @@ namespace FlaxEngine
             {
                 if (unmanaged == null)
                     return Span<TUnmanagedElement>.Empty;
-
                 ManagedArray managedArray = Unsafe.As<ManagedArray>(GCHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
                 return managedArray.GetSpan<TUnmanagedElement>();
             }
@@ -620,12 +610,9 @@ namespace FlaxEngine
                     numElements = 0;
                     return null;
                 }
-
                 numElements = managed.Length;
-
                 ManagedArray managedArray = ManagedArray.AllocatePooledArray((TUnmanagedElement*)Marshal.AllocHGlobal(sizeof(TUnmanagedElement) * managed.Length), managed.Length);
                 var ptr = GCHandle.ToIntPtr(GCHandle.Alloc(managedArray));
-
                 return (TUnmanagedElement*)ptr;
             }
 
@@ -635,7 +622,6 @@ namespace FlaxEngine
             {
                 if (unmanaged == null)
                     return Span<TUnmanagedElement>.Empty;
-
                 ManagedArray managedArray = Unsafe.As<ManagedArray>(GCHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
                 return managedArray.GetSpan<TUnmanagedElement>();
             }
@@ -644,7 +630,6 @@ namespace FlaxEngine
             {
                 if (unmanaged == null)
                     return;
-
                 GCHandle handle = GCHandle.FromIntPtr(new IntPtr(unmanaged));
                 (Unsafe.As<ManagedArray>(handle.Target)).FreePooled();
                 handle.Free();
@@ -661,9 +646,7 @@ namespace FlaxEngine
             {
                 if (managed == null)
                     return;
-
                 managedArray = managed;
-
                 unmanagedArray = ManagedArray.AllocatePooledArray((TUnmanagedElement*)Marshal.AllocHGlobal(sizeof(TUnmanagedElement) * managed.Length), managed.Length);
                 handle = GCHandle.Alloc(unmanagedArray);
             }
@@ -674,7 +657,6 @@ namespace FlaxEngine
             {
                 if (unmanagedArray == null)
                     return Span<TUnmanagedElement>.Empty;
-
                 return unmanagedArray.GetSpan<TUnmanagedElement>();
             }
 
@@ -691,7 +673,6 @@ namespace FlaxEngine
             {
                 if (unmanagedArray == null)
                     return ReadOnlySpan<TUnmanagedElement>.Empty;
-
                 return unmanagedArray.GetSpan<TUnmanagedElement>();
             }
 
@@ -713,12 +694,9 @@ namespace FlaxEngine
                 numElements = 0;
                 return null;
             }
-
             numElements = managed.Length;
-
             ManagedArray managedArray = ManagedArray.AllocatePooledArray((TUnmanagedElement*)Marshal.AllocHGlobal(sizeof(TUnmanagedElement) * managed.Length), managed.Length);
             IntPtr handle = GCHandle.ToIntPtr(GCHandle.Alloc(managedArray));
-
             return (TUnmanagedElement*)handle;
         }
 
@@ -728,7 +706,6 @@ namespace FlaxEngine
         {
             if (unmanaged == null)
                 return Span<TUnmanagedElement>.Empty;
-
             ManagedArray unmanagedArray = Unsafe.As<ManagedArray>(GCHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
             return unmanagedArray.GetSpan<TUnmanagedElement>();
         }
@@ -741,7 +718,6 @@ namespace FlaxEngine
         {
             if (unmanaged == null)
                 return ReadOnlySpan<TUnmanagedElement>.Empty;
-
             ManagedArray array = Unsafe.As<ManagedArray>(GCHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
             return array.GetSpan<TUnmanagedElement>();
         }
@@ -750,7 +726,6 @@ namespace FlaxEngine
         {
             if (unmanaged == null)
                 return;
-
             GCHandle handle = GCHandle.FromIntPtr(new IntPtr(unmanaged));
             Unsafe.As<ManagedArray>(handle.Target).FreePooled();
             handle.Free();
@@ -780,7 +755,6 @@ namespace FlaxEngine
             {
                 if (managed == null)
                     return IntPtr.Zero;
-
                 return GCHandle.ToIntPtr(GCHandle.Alloc(managed, GCHandleType.Weak));
             }
 
@@ -875,8 +849,12 @@ namespace FlaxEngine
             System.Threading.Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
             System.Threading.Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
 
-            // TODO: benchmark collectible setting performance, maybe enable it only in editor builds?
-            scriptingAssemblyLoadContext = new AssemblyLoadContext(null, true);
+#if FLAX_EDITOR
+            var isCollectible = true;
+#else
+            var isCollectible = false;
+#endif
+            scriptingAssemblyLoadContext = new AssemblyLoadContext("Flax", isCollectible);
 
             DelegateHelpers.Init();
         }
@@ -891,7 +869,6 @@ namespace FlaxEngine
         {
             string moduleName = Marshal.PtrToStringAnsi(moduleName_);
             string modulePath = Marshal.PtrToStringAnsi(modulePath_);
-
             nativeLibraryPaths[moduleName] = modulePath;
         }
 
@@ -921,7 +898,6 @@ namespace FlaxEngine
             T[] managedArray = new T[nativeSpan.Length];
             for (int i = 0; i < nativeSpan.Length; i++)
                 managedArray[i] = toManagedFunc(nativeSpan[i]);
-
             return managedArray;
         }
 
@@ -979,10 +955,8 @@ namespace FlaxEngine
                 return true;
             if (type.IsPointer && type.HasElementType && type.GetElementType().IsPrimitive)
                 return true;
-
             if (type.IsClass)
                 return false;
-
             if (type.IsValueType)
             {
                 var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -1073,6 +1047,7 @@ namespace FlaxEngine
                     method = typeof(MarshalHelperReferenceType<>).MakeGenericType(type).GetMethod(nameof(MarshalHelperReferenceType<ReferenceTypePlaceholder>.ToNativeFieldWrapper), BindingFlags.Static | BindingFlags.NonPublic);
                 return method.CreateDelegate<MarshalToNativeFieldDelegate>();
             }
+
             if (toNativeFieldMarshallers.TryGetValue(type, out var deleg))
                 return deleg;
             return toNativeFieldMarshallers.GetOrAdd(type, Factory);
@@ -1371,7 +1346,6 @@ namespace FlaxEngine
                         MarshalHelper<T>.toManagedFieldMarshallers[i](MarshalHelper<T>.marshallableFields[i], ref managedValue, fieldPtr, out int fieldOffset);
                         fieldPtr += fieldOffset;
                     }
-
                     Assert.IsTrue((fieldPtr - nativePtr) == Unsafe.SizeOf<T>());
                 }
                 else
@@ -1408,7 +1382,6 @@ namespace FlaxEngine
                         MarshalHelper<T>.toNativeFieldMarshallers[i](MarshalHelper<T>.marshallableFields[i], ref managedValue, nativePtr, out int fieldOffset);
                         nativePtr += fieldOffset;
                     }
-
                     Assert.IsTrue((nativePtr - fieldPtr) == Unsafe.SizeOf<T>());
                 }
                 else
@@ -1536,7 +1509,6 @@ namespace FlaxEngine
         internal static GCHandle GetMethodGCHandle(MethodInfo method)
         {
             MethodHolder methodHolder = new MethodHolder(method);
-
             GCHandle handle = GCHandle.Alloc(methodHolder);
             if (methodHolder.parameterTypes.Any(x => x.IsCollectible) || method.IsCollectible)
                 methodHandlesCollectible.Add(handle);
@@ -1593,7 +1565,6 @@ namespace FlaxEngine
         {
             Type type = Unsafe.As<Type>(GCHandle.FromIntPtr(typeHandle).Target);
             GCHandle classTypeHandle = GetTypeGCHandle(type);
-
             *managedClass = new NativeClassDefinitions()
             {
                 typeHandle = GCHandle.ToIntPtr(classTypeHandle),
@@ -1750,7 +1721,6 @@ namespace FlaxEngine
             Type type = Unsafe.As<Type>(GCHandle.FromIntPtr(typeHandle).Target);
             Type attribType = Unsafe.As<Type>(GCHandle.FromIntPtr(attribHandle).Target);
             object attrib = type.GetCustomAttributes(false).FirstOrDefault(x => x.GetType() == attribType);
-
             if (attrib != null)
                 return GCHandle.ToIntPtr(GCHandle.Alloc(attrib, GCHandleType.Weak));
             return IntPtr.Zero;
@@ -1792,7 +1762,6 @@ namespace FlaxEngine
         {
             MethodHolder methodHolder = Unsafe.As<MethodHolder>(GCHandle.FromIntPtr(methodHandle).Target);
             Type returnType = methodHolder.method.ReturnType;
-
             IntPtr arr = Marshal.AllocCoTaskMem(IntPtr.Size * methodHolder.parameterTypes.Length);
             for (int i = 0; i < methodHolder.parameterTypes.Length; i++)
             {
@@ -1824,7 +1793,6 @@ namespace FlaxEngine
                 // FIXME: Script is an abstract type which can not be instantiated
                 type = typeof(VisjectScript);
             }
-
             object value = RuntimeHelpers.GetUninitializedObject(type);
             return GCHandle.ToIntPtr(GCHandle.Alloc(value));
         }
@@ -1879,7 +1847,6 @@ namespace FlaxEngine
         internal static IntPtr NewArray(IntPtr typeHandle, long size)
         {
             Type type = Unsafe.As<Type>(GCHandle.FromIntPtr(typeHandle).Target);
-
             Type marshalledType = ArrayFactory.GetMarshalledType(type);
             if (marshalledType.IsValueType)
             {
@@ -1900,7 +1867,6 @@ namespace FlaxEngine
             ManagedArray managedArray = Unsafe.As<ManagedArray>(GCHandle.FromIntPtr(arrayHandle).Target);
             if (managedArray.Length == 0)
                 return IntPtr.Zero;
-
             Assert.IsTrue(index >= 0 && index < managedArray.Length);
             return IntPtr.Add(managedArray.GetPointer, size * index);
         }
@@ -1989,7 +1955,6 @@ namespace FlaxEngine
             GCHandle handle = GCHandle.FromIntPtr(handlePtr);
             object value = handle.Target;
             Type type = value.GetType();
-
             if (!type.IsValueType)
                 return handlePtr;
 
@@ -2196,7 +2161,6 @@ namespace FlaxEngine
         internal static IntPtr GetAssemblyByName(IntPtr name_, IntPtr* assemblyName, IntPtr* assemblyFullName)
         {
             string name = Marshal.PtrToStringAnsi(name_);
-
             Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(x => x.GetName().Name == name);
             if (assembly == null)
                 assembly = scriptingAssemblyLoadContext.Assemblies.FirstOrDefault(x => x.GetName().Name == name);
@@ -2281,7 +2245,6 @@ namespace FlaxEngine
         {
             Type type = Unsafe.As<Type>(GCHandle.FromIntPtr(typeHandle).Target);
             Type nativeType = GetInternalType(type) ?? type;
-
             if (nativeType == typeof(Version))
                 nativeType = typeof(VersionNative);
 
@@ -2523,8 +2486,7 @@ namespace FlaxEngine
         {
             var referencedAssemblies = assembly.GetReferencedAssemblies();
             var allAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-            List<string> referencedTypes = new List<string>();
+            var referencedTypes = new List<string>();
             foreach (var assemblyName in referencedAssemblies)
             {
                 var asm = allAssemblies.FirstOrDefault(x => x.GetName().Name == assemblyName.Name);
@@ -2540,7 +2502,6 @@ namespace FlaxEngine
             var types = referencedTypes.Any() ? assembly.DefinedTypes.Where(x => !referencedTypes.Contains(x.FullName)).ToArray() : assembly.DefinedTypes.ToArray();
 
             Assert.IsTrue(AppDomain.CurrentDomain.GetAssemblies().Where(x => x.GetName().Name == "FlaxEngine.CSharp").Count() == 1);
-
             return types;
         }
 
@@ -2551,7 +2512,6 @@ namespace FlaxEngine
         {
             if (typeHandleCache.TryGetValue(type, out GCHandle handle))
                 return handle;
-
             if (typeHandleCacheCollectible.TryGetValue(type, out handle))
                 return handle;
 

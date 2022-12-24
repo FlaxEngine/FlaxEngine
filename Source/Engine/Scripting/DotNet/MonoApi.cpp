@@ -1576,6 +1576,11 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoImage* mono_image_open_from_data_with_name(ch
     const char* fullname;
     static void* LoadAssemblyImagePtr = CoreCLR::GetStaticMethodPointer(TEXT("LoadAssemblyImage"));
     void* assemblyHandle = CoreCLR::CallStaticMethod<void*, char*, int, const char*, const char**, const char**>(LoadAssemblyImagePtr, data, data_len, path, &name, &fullname);
+    if (!assemblyHandle)
+    {
+        *status = MONO_IMAGE_IMAGE_INVALID;
+        return nullptr;
+    }
     CoreCLRAssembly* assembly = New<CoreCLRAssembly>(assemblyHandle, name, fullname);
     
     CoreCLR::Free((void*)name);
