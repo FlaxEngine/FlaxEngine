@@ -121,6 +121,12 @@ void* CoreCLR::GetStaticMethodPointer(const String& methodName)
     return fun;
 }
 
+void CoreCLR::RegisterNativeLibrary(const char* moduleName, const char* modulePath)
+{
+    static void* RegisterNativeLibraryPtr = CoreCLR::GetStaticMethodPointer(TEXT("RegisterNativeLibrary"));
+    CoreCLR::CallStaticMethod<void, const char*, const char*>(RegisterNativeLibraryPtr, moduleName, modulePath);
+}
+
 void* CoreCLR::Allocate(int size)
 {
 #if PLATFORM_WINDOWS

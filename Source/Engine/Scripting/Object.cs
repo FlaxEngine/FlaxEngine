@@ -22,7 +22,7 @@ namespace FlaxEngine
         /// The pointer to the unmanaged object (native C++ instance).
         /// </summary>
         [NonSerialized]
-        internal readonly IntPtr __unmanagedPtr;
+        protected readonly IntPtr __unmanagedPtr;
 
         /// <summary>
         /// The object unique identifier.
@@ -240,8 +240,8 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="ptr">The pointer to the unmanaged (native) object.</param>
         /// <returns>The object.</returns>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern Object FromUnmanagedPtr(IntPtr ptr);
+        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Object::FromUnmanagedPtr", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        public static partial Object FromUnmanagedPtr(IntPtr ptr);
 
         /// <inheritdoc />
         public override int GetHashCode()

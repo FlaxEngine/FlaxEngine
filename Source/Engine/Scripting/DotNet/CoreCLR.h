@@ -47,6 +47,8 @@ public:
         return ((fun)methodPtr)(args...);
     }
 
+    static void RegisterNativeLibrary(const char* moduleName, const char* modulePath);
+
     static const char* GetClassFullname(void* klass);
     static void* Allocate(int size);
     static void Free(void* ptr);

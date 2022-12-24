@@ -762,6 +762,7 @@ public:
 
     static MonoObject* FromUnmanagedPtr(ScriptingObject* obj)
     {
+        SCRIPTING_EXPORT("FlaxEngine.Object::FromUnmanagedPtr")
         MonoObject* result = nullptr;
         if (obj)
             result = obj->GetOrCreateManagedInstance();
