@@ -478,6 +478,7 @@ namespace Flax.Build.Bindings
             }
 
 #if USE_NETCORE
+            var returnNativeType = GenerateCSharpManagedToNativeType(buildData, functionInfo.ReturnType, caller);
             string returnMarshalType = "";
             if (returnValueType == "bool")
                 returnMarshalType = "MarshalAs(UnmanagedType.U1)";
@@ -492,6 +493,12 @@ namespace Flax.Build.Bindings
                 // Interfaces are not supported by NativeMarshallingAttribute, marshal the parameter
                 returnMarshalType = $"MarshalUsing(typeof({returnValueType}Marshaller))";
             }
+            else if (functionInfo.ReturnType.Type == "MonoArray")
+                returnMarshalType = "MarshalUsing(typeof(FlaxEngine.SystemArrayMarshaller))";
+            else if (functionInfo.ReturnType.Type == "Array" || functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "DataContainer" || functionInfo.ReturnType.Type == "BytesContainer" || returnNativeType == "Array")
+                returnMarshalType = $"MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = nameof(__returnCount))";
+            else if (functionInfo.ReturnType.Type == "Dictionary")
+                returnMarshalType = $"MarshalUsing(typeof(FlaxEngine.DictionaryMarshaller<,>), ConstantElementCount = 0)";
             else if (returnValueType == "byte[]")
                 returnMarshalType = $"MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = \"__returnCount\")";
             else if (returnValueType == "bool[]")
@@ -576,7 +583,7 @@ namespace Flax.Build.Bindings
                 string parameterMarshalType = "";
                 if (parameterInfo.IsOut && parameterInfo.DefaultValue == "var __resultAsRef")
                 {
-                    if (functionInfo.Glue.UseResultReferenceCount)
+                    if (parameterInfo.Type.Type == "Array" || parameterInfo.Type.Type == "Span" || parameterInfo.Type.Type == "DataContainer" || parameterInfo.Type.Type == "BytesContainer")
                         parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = \"{parameterInfo.Name}Count\")";
                     else if (parameterInfo.Type.Type == "Dictionary")
                         parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.DictionaryMarshaller<,>), ConstantElementCount = 0)";
@@ -819,7 +826,6 @@ namespace Flax.Build.Bindings
             {
                 marshallerName = classInfo.Name + "Marshaller";
                 contents.Append(indent).AppendLine($"[NativeMarshalling(typeof({marshallerName}))]");
-                //contents.Append(indent).AppendLine($"[NativeMarshalling(typeof(FlaxEngine.GCHandleMarshaller2<{classInfo.Name}>.GCHandleMarshaller3<{classInfo.Name}>))]");
             }
 #endif
             contents.Append(indent);

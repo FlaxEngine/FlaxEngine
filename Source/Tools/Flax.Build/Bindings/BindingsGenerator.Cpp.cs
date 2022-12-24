@@ -879,6 +879,7 @@ namespace Flax.Build.Bindings
                 CustomParameters = new List<FunctionInfo.ParameterInfo>(),
             };
 
+            bool returnTypeIsContainer = false;
             var returnValueConvert = GenerateCppWrapperNativeToManaged(buildData, functionInfo.ReturnType, caller, out var returnValueType, functionInfo);
             if (functionInfo.Glue.UseReferenceForResult)
             {
@@ -894,26 +895,11 @@ namespace Flax.Build.Bindings
                     },
                     IsOut = true,
                 });
-#if USE_NETCORE
-                if (functionInfo.ReturnType.Type == "Array" || functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "DataContainer")
-                {
-                    functionInfo.Glue.UseResultReferenceCount = true;
-                    functionInfo.Glue.CustomParameters.Add(new FunctionInfo.ParameterInfo
-                    {
-                        Name = "__resultAsRefCount",
-                        DefaultValue = "var __resultAsRefCount",
-                        Type = new TypeInfo
-                        {
-                            Type = "int"
-                        },
-                        IsOut = true,
-                    });
-                }
-#endif
             }
 #if USE_NETCORE
-            else if (functionInfo.ReturnType.Type == "BitArray" || functionInfo.ReturnType.Type == "BytesContainer")
+            else if (functionInfo.ReturnType.Type == "Array" || functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "DataContainer" || functionInfo.ReturnType.Type == "BitArray" || functionInfo.ReturnType.Type == "BytesContainer")
             {
+                returnTypeIsContainer = true;
                 functionInfo.Glue.CustomParameters.Add(new FunctionInfo.ParameterInfo
                 {
                     Name = "__returnCount",
@@ -1048,22 +1034,14 @@ namespace Flax.Build.Bindings
             }
 
 #if USE_NETCORE
-            string callBegin2 = "";
-            if (functionInfo.Glue.UseResultReferenceCount)
+            string callReturnCount = "";
+            if (returnTypeIsContainer)
             {
-                callBegin2 = "        ";
+                callReturnCount = "        ";
                 if (functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "BytesContainer")
-                    callBegin2 += "*__resultAsRefCount = {0}.Length();";
+                    callReturnCount += "*__returnCount = {0}.Length();";
                 else
-                    callBegin2 += "*__resultAsRefCount = {0}.Count();";
-            }
-            else if (functionInfo.ReturnType.Type == "BitArray" || functionInfo.ReturnType.Type == "BytesContainer")
-            {
-                callBegin2 = "        ";
-                if (functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "BytesContainer")
-                    callBegin2 += "*__returnCount = {0}.Length();";
-                else
-                    callBegin2 += "*__returnCount = {0}.Count();";
+                    callReturnCount += "*__returnCount = {0}.Count();";
             }
 #endif
             string call;
@@ -1102,16 +1080,6 @@ namespace Flax.Build.Bindings
                 }
                 else
                 {
-#if USE_NETCORE
-                    // FIXME
-                    if (parameterInfo.Type.Type == "Span" ||
-                        parameterInfo.Type.Type == "Array" ||
-                        parameterInfo.Type.Type == "DataContainer" ||
-                        parameterInfo.Type.Type == "Dictionary")
-                    {
-                        name = '*' + name;
-                    }
-#endif
                     // Convert value
                     param += string.Format(CppParamsWrappersCache[i], name);
                 }
@@ -1155,11 +1123,11 @@ namespace Flax.Build.Bindings
             }
 
 #if USE_NETCORE
-            if (!string.IsNullOrEmpty(callBegin2))
+            if (!string.IsNullOrEmpty(callReturnCount))
             {
                 contents.Append("        ").Append("const auto& callTemp = ").Append(string.Format(callFormat, call, callParams)).Append(";").AppendLine();
                 call = "callTemp";
-                contents.Append(string.Format(callBegin2, call));
+                contents.Append(string.Format(callReturnCount, call));
                 contents.AppendLine();
                 contents.Append(callBegin);
             }

@@ -172,11 +172,7 @@ namespace Flax.Build.Bindings
 
             // Skip for collections
             if ((typeInfo.Type == "Array" || typeInfo.Type == "Span" || typeInfo.Type == "DataContainer" || typeInfo.Type == "Dictionary" || typeInfo.Type == "HashSet") && typeInfo.GenericArgs != null)
-#if !USE_NETCORE
                 return false;
-#else
-                return true;
-#endif
 
             // Skip for special types
             if (typeInfo.GenericArgs == null)

@@ -20,7 +20,7 @@ namespace FlaxEngine
                 return;
             var temp = CollectionsMarshal.AsSpan(customActors).ToArray(); // FIXME
             var tempCount = temp.Length;
-            Internal_DrawSceneDepth(FlaxEngine.Object.GetUnmanagedPtr(context), FlaxEngine.Object.GetUnmanagedPtr(task), FlaxEngine.Object.GetUnmanagedPtr(output), ref temp, ref tempCount);
+            Internal_DrawSceneDepth(FlaxEngine.Object.GetUnmanagedPtr(context), FlaxEngine.Object.GetUnmanagedPtr(task), FlaxEngine.Object.GetUnmanagedPtr(output), temp, ref tempCount);
         }
     }
 }
