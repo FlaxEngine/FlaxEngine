@@ -616,7 +616,14 @@ namespace FlaxEditor.CustomEditors
             else
             {
                 // Default
-                obj = JsonConvert.DeserializeObject(text, TypeUtils.GetType(Values.Type), JsonSerializer.Settings);
+                try
+                {
+                    obj = JsonConvert.DeserializeObject(text, TypeUtils.GetType(Values.Type), JsonSerializer.Settings);
+                }
+                catch
+                {
+                    obj = null;
+                }
             }
 
             if (obj == null || Values.Type.IsInstanceOfType(obj))
