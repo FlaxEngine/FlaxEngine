@@ -669,7 +669,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         _writer.Write(*triplanarTexture);
         value = result;
     }
-    // Stochastic Texture Sample
+    // Procedural Texture Sample
     case 17:
     {
         auto textureBox = node->GetBox(0);

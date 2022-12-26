@@ -408,8 +408,8 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 17,
-                Title = "Stochastic Sample Texture",
-                Description = "Projects a texture using world-space coordinates instead of UVs.",
+                Title = "Procedural Sample Texture",
+                Description = "Samples a texture to create a more natural look with less obvious tiling.",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(240, 60),
                 DefaultValues = new object[]
