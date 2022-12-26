@@ -2045,8 +2045,10 @@ namespace FlaxEngine
                         return (bool)returnObject ? boolTruePtr : boolFalsePtr;
                     else if (methodHolder.method.ReturnType == typeof(Type))
                         return GCHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnObject)));
-                    else if (methodHolder.method.ReturnType == typeof(object[]))
-                        return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<object[]>(returnObject))), GCHandleType.Weak));
+                    else if (methodHolder.method.ReturnType.IsArray && ArrayFactory.GetMarshalledType(methodHolder.method.ReturnType.GetElementType()) == methodHolder.method.ReturnType.GetElementType())
+                        return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnObject)), GCHandleType.Weak));
+                    else if (methodHolder.method.ReturnType.IsArray)
+                        return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnObject))), GCHandleType.Weak));
                     else
                         return GCHandle.ToIntPtr(GCHandle.Alloc(returnObject, GCHandleType.Weak));
                 }
