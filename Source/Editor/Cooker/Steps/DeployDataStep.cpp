@@ -26,6 +26,9 @@ bool DeployDataStep::Perform(CookingData& data)
         Platform::Sleep(10);
     }
     FileSystem::CreateDirectory(contentDir);
+#if USE_NETCORE
+    // TODO: Optionally copy all files needed for self-contained deployment
+#else
     const auto srcMono = depsRoot / TEXT("Mono");
     const auto dstMono = data.DataOutputPath / TEXT("Mono");
     if (!FileSystem::DirectoryExists(dstMono))
@@ -42,6 +45,7 @@ bool DeployDataStep::Perform(CookingData& data)
             return true;
         }
     }
+#endif
 
     // Deploy engine data for the target platform
     if (data.Tools->OnDeployBinaries(data))
