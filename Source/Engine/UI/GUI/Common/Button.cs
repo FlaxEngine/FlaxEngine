@@ -75,7 +75,7 @@ namespace FlaxEngine.GUI
         /// Event fired when users mouse enters the control.
         /// </summary>
         public event Action HoverBegin;
-        
+
         /// <summary>
         /// Event fired when users mouse leaves the control.
         /// </summary>
@@ -246,6 +246,7 @@ namespace FlaxEngine.GUI
         public override void OnMouseEnter(Float2 location)
         {
             base.OnMouseEnter(location);
+
             HoverBegin?.Invoke();
         }
 
@@ -256,7 +257,7 @@ namespace FlaxEngine.GUI
             {
                 OnPressEnd();
             }
-            
+
             HoverEnd?.Invoke();
 
             base.OnMouseLeave();
