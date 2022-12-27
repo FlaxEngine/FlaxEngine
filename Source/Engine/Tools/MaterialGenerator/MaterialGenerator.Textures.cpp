@@ -672,6 +672,20 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
     // Procedural Texture Sample
     case 17:
     {
+        enum CommonSamplerType
+        {
+            LinearClamp = 0,
+            PointClamp = 1,
+            LinearWrap = 2,
+            PointWrap = 3,
+            TextureGroup = 4,
+        };
+        const Char* SamplerNames[]
+        {
+            TEXT("SamplerLinearClamp"),
+            TEXT("SamplerLinearWrap"),
+        };
+
         auto textureBox = node->GetBox(0);
         auto uvsBox = node->GetBox(1);
 
@@ -705,6 +719,23 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         const auto texture = eatBox(textureBox->GetParent<Node>(), textureBox->FirstConnection());
         const auto textureParam = findParam(texture.Value);
         const bool isNormalMap = textureParam->Type == MaterialParameterType::NormalMap;
+
+        const Char* samplerName;
+        const int32 samplerIndex = node->Values[1].AsInt;
+        if (samplerIndex == TextureGroup)
+        {
+            auto& textureGroupSampler = findOrAddTextureGroupSampler(node->Values[2].AsInt);
+            samplerName = *textureGroupSampler.ShaderName;
+        }
+        else if (samplerIndex >= 0 && samplerIndex < ARRAY_COUNT(SamplerNames))
+        {
+            samplerName = SamplerNames[samplerIndex];
+        }
+        else
+        {
+            OnError(node, box, TEXT("Invalid texture sampler."));
+            return;
+        }
 
         auto result = writeLocal(Value::InitForZero(ValueType::Float4), node);
         createGradients(node);
@@ -741,14 +772,15 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
             "   UV1 = {0} + frac( sin( mul( float2x2( 127.1, 311.7, 269.5, 183.3 ), vertex1 ) ) * 43758.5453 );\n"
             "   UV2 = {0} + frac( sin( mul( float2x2( 127.1, 311.7, 269.5, 183.3 ), vertex2 ) ) * 43758.5453 );\n"
             "   UV3 = {0} + frac( sin( mul( float2x2( 127.1, 311.7, 269.5, 183.3 ), vertex3 ) ) * 43758.5453 );\n"
-            "   float4 tex1 = {1}.SampleGrad(SamplerLinearWrap, UV1, {2}, {3});\n"
-            "   float4 tex2 = {1}.SampleGrad(SamplerLinearWrap, UV2, {2}, {3});\n"
-            "   float4 tex3 = {1}.SampleGrad(SamplerLinearWrap, UV3, {2}, {3});\n"
+            "   float4 tex1 = {1}.SampleGrad({4}, UV1, {2}, {3});\n"
+            "   float4 tex2 = {1}.SampleGrad({4}, UV2, {2}, {3});\n"
+            "   float4 tex3 = {1}.SampleGrad({4}, UV3, {2}, {3});\n"
         ),
             uvs.Value, // {0}
             texture.Value, // {1}
             _ddx.Value, // {2}
-            _ddy.Value // {3}
+            _ddy.Value, // {3}
+            samplerName // {4}
         );
 
         // Decode normal map vector
