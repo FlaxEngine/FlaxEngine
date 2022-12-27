@@ -799,6 +799,9 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoObject* mono_runtime_invoke(MonoMethod* metho
     ASSERT(methodPtr != nullptr);
 
     static void* InvokeMethodPtr = CoreCLR::GetStaticMethodPointer(TEXT("InvokeMethod"));
+    MonoObject* execTmp = nullptr;
+    if (!exc)
+        exc = &execTmp;
     return (MonoObject*)CoreCLR::CallStaticMethod<void*, void*, void*, void*, void*>(InvokeMethodPtr, obj, methodPtr, params, exc);
 }
 
