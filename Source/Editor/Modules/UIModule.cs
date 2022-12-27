@@ -738,7 +738,9 @@ namespace FlaxEditor.Modules
                 return;
 
             // Find layout to use
-            var searchFolder = Globals.ProjectCacheFolder;
+            var searchFolder = StringUtils.CombinePaths(Editor.LocalCachePath, "LayoutsCache") ;
+            if (!Directory.Exists(searchFolder))
+                Directory.CreateDirectory(searchFolder);
             var files = Directory.GetFiles(searchFolder, "Layout_*.xml", SearchOption.TopDirectoryOnly);
             var layouts = _menuWindowApplyWindowLayout.ContextMenu;
             layouts.DisposeAllItems();
@@ -746,8 +748,11 @@ namespace FlaxEditor.Modules
             {
                 var file = files[i];
                 var name = file.Substring(searchFolder.Length + 8, file.Length - searchFolder.Length - 12);
-                var button = layouts.AddButton(name, OnApplyLayoutButtonClicked);
-                button.Tag = file;
+                var nameCM = layouts.AddChildMenu(name);
+                var applyButton = nameCM.ContextMenu.AddButton("Apply", OnApplyLayoutButtonClicked);
+                applyButton.TooltipText = "Applies the selected layout.";
+                nameCM.ContextMenu.AddButton("Delete", () => File.Delete(file)).TooltipText = "Permanently deletes the selected layout.";
+                applyButton.Tag = file;
             }
             _menuWindowApplyWindowLayout.Enabled = files.Length > 0;
         }
