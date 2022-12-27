@@ -10,6 +10,7 @@ using FlaxEditor;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Docking;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface;
@@ -224,10 +225,9 @@ namespace FlaxEngine.Windows.Search
                 Parent = topPanel,
             };
             optionsButton.ButtonClicked += OnOptionsDropdownClicked;
-            _searchBox = new TextBox
+            _searchBox = new SearchBox
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
-                WatermarkText = "Search...",
                 Parent = topPanel,
                 Bounds = new Rectangle(optionsButton.Right + 2.0f, 2, topPanel.Width - 4.0f - optionsButton.Width, 18.0f),
             };

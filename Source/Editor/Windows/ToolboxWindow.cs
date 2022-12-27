@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.Scripting;
@@ -130,10 +131,9 @@ namespace FlaxEditor.Windows
             };
 
             _groupSearch = CreateGroupWithList(_actorGroups, "Search", 26);
-            _searchBox = new TextBox
+            _searchBox = new SearchBox
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                WatermarkText = "Search...",
                 Parent = _groupSearch.Parent.Parent,
                 Bounds = new Rectangle(4, 4, _actorGroups.Width - 8, 18),
             };

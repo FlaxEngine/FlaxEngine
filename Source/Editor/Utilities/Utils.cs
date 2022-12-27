@@ -14,6 +14,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
@@ -956,10 +957,9 @@ namespace FlaxEditor.Utilities
             {
                 Size = new Float2(320, 220),
             };
-            searchBox = new TextBox(false, 1, 1)
+            searchBox = new SearchBox(false, 1, 1)
             {
                 Width = menu.Width - 3,
-                WatermarkText = "Search...",
                 Parent = menu,
             };
             var panel1 = new Panel(ScrollBars.Vertical)
