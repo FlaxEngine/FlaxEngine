@@ -238,51 +238,12 @@ namespace FlaxEditor.Windows
             // Setup viewport
             _viewport = new RenderOutputControl(task)
             {
-                AnchorPreset = AnchorPresets.TopLeft,
+                AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
                 AutoFocus = false,
                 Parent = this
             };
             task.PostRender += OnPostRender;
-            
-            // TODO move external and let user define. Maybe also just let them define a ratio as well
-            Float2 viewPortSize = new Float2(1920, 1080);
-            bool useCustomAspect = false;
-            bool freeAspect = false;
-            Float2 customAspect = new Float2(9, 16);
-            
-            SizeChanged += control =>
-            {
-                float viewportAspectRatio = 1;
-                float windowAspectRatio = 1;
-                if (!freeAspect)
-                {
-                    if (!useCustomAspect)
-                        viewportAspectRatio = viewPortSize.X / viewPortSize.Y;
-                    else
-                        viewportAspectRatio = customAspect.X / customAspect.Y;
-                    
-                    windowAspectRatio = Size.X / Size.Y;
-                }
-                
-                var scaleWidth = viewportAspectRatio / windowAspectRatio;
-                var scaleHeight = windowAspectRatio / viewportAspectRatio;
-
-                if (scaleHeight < 1)
-                {
-                    _viewport.Width = Size.X;
-                    _viewport.Height = Size.Y * scaleHeight;
-                    _viewport.X = 0;
-                    _viewport.Y = Size.Y * (1-scaleHeight)/2;
-                }
-                else
-                {
-                    _viewport.Width = Size.X * scaleWidth;
-                    _viewport.Height = Size.Y;
-                    _viewport.X = Size.X * (1-scaleWidth)/2;
-                    _viewport.Y = 0;
-                }
-            };
 
             // Override the game GUI root
             _guiRoot = new GameRoot
@@ -294,6 +255,62 @@ namespace FlaxEditor.Windows
                 Parent = _viewport
             };
             RootControl.GameRoot = _guiRoot;
+
+            // TODO move external and let user define. Maybe also just let them define a ratio as well
+            Float2 viewPortSize = new Float2(2560, 1440);
+            //Float2 viewPortSize = new Float2(1280, 720);
+            //Float2 viewPortSize = new Float2(848, 480);
+            bool useCustomAspect = false;
+            bool freeAspect = false;
+            Float2 customAspect = new Float2(9, 16);
+
+            SizeChanged += control =>
+            {
+                float viewportAspectRatio = 1;
+                float windowAspectRatio = 1;
+                
+                if (!freeAspect)
+                {
+                    if (!useCustomAspect)
+                    {
+                        viewportAspectRatio = viewPortSize.X / viewPortSize.Y;
+                        _viewport.KeepAspectRatio = true;
+                        _viewport.CustomResolution = new Int2((int)viewPortSize.X, (int)viewPortSize.Y);
+                    }
+                    else
+                    {
+                        viewportAspectRatio = customAspect.X / customAspect.Y;
+                        _viewport.CustomResolution = new Int2?();
+                        _viewport.KeepAspectRatio = false;
+                    }
+                    
+                    windowAspectRatio = Width / Height;
+                }
+                else
+                {
+                    _viewport.CustomResolution = new Int2?();
+                    _viewport.KeepAspectRatio = false;
+                }
+                
+                var scaleWidth = viewportAspectRatio / windowAspectRatio;
+                var scaleHeight = windowAspectRatio / viewportAspectRatio;
+
+                if (scaleHeight < 1)
+                {
+                    _viewport.Width = Width;
+                    _viewport.Height = Height * scaleHeight;
+                    _viewport.X = 0;
+                    _viewport.Y = Height * (1 - scaleHeight) / 2;
+                }
+                else
+                {
+                    _viewport.Width = Width * scaleWidth;
+                    _viewport.Height = Height;
+                    _viewport.X = Width * (1 - scaleWidth) / 2;
+                    _viewport.Y = 0;
+                }
+            };
+            
             Editor.StateMachine.PlayingState.SceneDuplicating += PlayingStateOnSceneDuplicating;
             Editor.StateMachine.PlayingState.SceneRestored += PlayingStateOnSceneRestored;
 
