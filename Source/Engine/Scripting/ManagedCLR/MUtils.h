@@ -615,7 +615,6 @@ namespace MUtils
     FORCE_INLINE bool* ToBoolArray(const BitArray<>& data)
     {
         bool* arr = (bool*)CoreCLR::Allocate(data.Count() * sizeof(bool));
-        //memcpy(arr, data.Get(), data.Count() * sizeof(bool));
         for (int i = 0; i < data.Count(); i++)
             arr[i] = data[i];
         return arr;

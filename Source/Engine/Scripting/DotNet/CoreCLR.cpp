@@ -129,17 +129,10 @@ void CoreCLR::RegisterNativeLibrary(const char* moduleName, const char* modulePa
 
 void* CoreCLR::Allocate(int size)
 {
-    void* ptr = Platform::Allocate(size, 16);
-#if COMPILE_WITH_PROFILER
-    Platform::OnMemoryAlloc(ptr, size);
-#endif
-    return ptr;
+    return Platform::Allocate(size, 16);
 }
 
 void CoreCLR::Free(void* ptr)
 {
-#if COMPILE_WITH_PROFILER
-    Platform::OnMemoryFree(ptr);
-#endif
     Platform::Free(ptr);
 }
