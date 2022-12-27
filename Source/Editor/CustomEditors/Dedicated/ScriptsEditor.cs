@@ -72,7 +72,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
             cm.ItemClicked += item => AddScript((ScriptType)item.Tag);
             cm.SortItems();
-            cm.Show(this, button.BottomLeft);
+            cm.Show(this, button.BottomLeft - new Float2((cm.Width - button.Width) / 2, 0));
         }
 
         /// <inheritdoc />
