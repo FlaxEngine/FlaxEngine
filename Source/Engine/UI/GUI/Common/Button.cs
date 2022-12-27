@@ -72,6 +72,16 @@ namespace FlaxEngine.GUI
         public event Action<Button> ButtonClicked;
 
         /// <summary>
+        /// Event fired when users mouse enters the control.
+        /// </summary>
+        public event Action HoverBegin;
+        
+        /// <summary>
+        /// Event fired when users mouse leaves the control.
+        /// </summary>
+        public event Action HoverEnd;
+
+        /// <summary>
         /// Gets or sets the brush used for background drawing.
         /// </summary>
         [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The brush used for background drawing.")]
@@ -233,12 +243,21 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override void OnMouseEnter(Float2 location)
+        {
+            base.OnMouseEnter(location);
+            HoverBegin?.Invoke();
+        }
+
+        /// <inheritdoc />
         public override void OnMouseLeave()
         {
             if (_isPressed)
             {
                 OnPressEnd();
             }
+            
+            HoverEnd?.Invoke();
 
             base.OnMouseLeave();
         }
