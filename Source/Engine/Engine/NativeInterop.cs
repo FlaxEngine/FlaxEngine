@@ -13,8 +13,6 @@ using FlaxEngine.Assertions;
 using FlaxEngine.Utilities;
 using System.Runtime.InteropServices.Marshalling;
 using FlaxEngine.Visject;
-using System.Diagnostics;
-using System.Collections;
 using System.Buffers;
 using System.Collections.Concurrent;
 
@@ -71,7 +69,7 @@ namespace FlaxEngine
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    internal struct VariantNative
+    public struct VariantNative
     {
         [StructLayout(LayoutKind.Sequential)]
         internal struct VariantNativeType
@@ -408,18 +406,17 @@ namespace FlaxEngine
     [CustomMarshaller(typeof(Type), MarshalMode.Default, typeof(SystemTypeMarshaller))]
     public static class SystemTypeMarshaller
     {
-        internal static Type ConvertToManaged(IntPtr unmanaged) => Unsafe.As<Type>(GCHandleMarshaller.ConvertToManaged(unmanaged));
+        public static Type ConvertToManaged(IntPtr unmanaged) => Unsafe.As<Type>(GCHandleMarshaller.ConvertToManaged(unmanaged));
 
-        internal static IntPtr ConvertToUnmanaged(Type managed)
+        public static IntPtr ConvertToUnmanaged(Type managed)
         {
             if (managed == null)
                 return IntPtr.Zero;
-
             GCHandle handle = NativeInterop.GetTypeGCHandle(managed);
             return GCHandle.ToIntPtr(handle);
         }
 
-        internal static void Free(IntPtr unmanaged)
+        public static void Free(IntPtr unmanaged)
         {
             // Cached handle, do not release
         }
@@ -428,9 +425,9 @@ namespace FlaxEngine
     [CustomMarshaller(typeof(Exception), MarshalMode.Default, typeof(ExceptionMarshaller))]
     public static class ExceptionMarshaller
     {
-        internal static Exception ConvertToManaged(IntPtr unmanaged) => Unsafe.As<Exception>(GCHandleMarshaller.ConvertToManaged(unmanaged));
-        internal static IntPtr ConvertToUnmanaged(Exception managed) => GCHandleMarshaller.ConvertToUnmanaged(managed);
-        internal static void Free(IntPtr unmanaged) => GCHandleMarshaller.Free(unmanaged);
+        public static Exception ConvertToManaged(IntPtr unmanaged) => Unsafe.As<Exception>(GCHandleMarshaller.ConvertToManaged(unmanaged));
+        public static IntPtr ConvertToUnmanaged(Exception managed) => GCHandleMarshaller.ConvertToUnmanaged(managed);
+        public static void Free(IntPtr unmanaged) => GCHandleMarshaller.Free(unmanaged);
     }
 
     [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.ManagedToUnmanagedIn, typeof(ObjectMarshaller.ManagedToNative))]
@@ -454,9 +451,9 @@ namespace FlaxEngine
     [CustomMarshaller(typeof(CultureInfo), MarshalMode.Default, typeof(CultureInfoMarshaller))]
     public static class CultureInfoMarshaller
     {
-        internal static CultureInfo ConvertToManaged(IntPtr unmanaged) => Unsafe.As<CultureInfo>(GCHandleMarshaller.ConvertToManaged(unmanaged));
-        internal static IntPtr ConvertToUnmanaged(CultureInfo managed) => GCHandleMarshaller.ConvertToUnmanaged(managed);
-        internal static void Free(IntPtr unmanaged) => GCHandleMarshaller.Free(unmanaged);
+        public static CultureInfo ConvertToManaged(IntPtr unmanaged) => Unsafe.As<CultureInfo>(GCHandleMarshaller.ConvertToManaged(unmanaged));
+        public static IntPtr ConvertToUnmanaged(CultureInfo managed) => GCHandleMarshaller.ConvertToUnmanaged(managed);
+        public static void Free(IntPtr unmanaged) => GCHandleMarshaller.Free(unmanaged);
     }
 
     [CustomMarshaller(typeof(Array), MarshalMode.ManagedToUnmanagedIn, typeof(SystemArrayMarshaller.ManagedToNative))]
@@ -566,16 +563,16 @@ namespace FlaxEngine
     {
         public static class NativeToManaged
         {
-            internal static T[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
+            public static T[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
             {
                 if (unmanaged is null)
                     return null;
                 return new T[numElements];
             }
 
-            internal static Span<T> GetManagedValuesDestination(T[]? managed) => managed;
+            public static Span<T> GetManagedValuesDestination(T[]? managed) => managed;
 
-            internal static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged, int numElements)
+            public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged, int numElements)
             {
                 if (unmanaged == null)
                     return ReadOnlySpan<TUnmanagedElement>.Empty;
@@ -583,7 +580,7 @@ namespace FlaxEngine
                 return managedArray.GetSpan<TUnmanagedElement>();
             }
 
-            internal static void Free(TUnmanagedElement* unmanaged)
+            public static void Free(TUnmanagedElement* unmanaged)
             {
                 if (unmanaged == null)
                     return;
@@ -592,7 +589,7 @@ namespace FlaxEngine
                 handle.Free();
             }
 
-            internal static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
+            public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
             {
                 if (unmanaged == null)
                     return Span<TUnmanagedElement>.Empty;
@@ -603,7 +600,7 @@ namespace FlaxEngine
 
         public static class ManagedToNative
         {
-            internal static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
+            public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
             {
                 if (managed is null)
                 {
@@ -616,9 +613,9 @@ namespace FlaxEngine
                 return (TUnmanagedElement*)ptr;
             }
 
-            internal static ReadOnlySpan<T> GetManagedValuesSource(T[]? managed) => managed;
+            public static ReadOnlySpan<T> GetManagedValuesSource(T[]? managed) => managed;
 
-            internal static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
+            public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
             {
                 if (unmanaged == null)
                     return Span<TUnmanagedElement>.Empty;
@@ -626,7 +623,7 @@ namespace FlaxEngine
                 return managedArray.GetSpan<TUnmanagedElement>();
             }
 
-            internal static void Free(TUnmanagedElement* unmanaged)
+            public static void Free(TUnmanagedElement* unmanaged)
             {
                 if (unmanaged == null)
                     return;

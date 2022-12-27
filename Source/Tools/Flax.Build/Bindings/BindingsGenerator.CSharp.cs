@@ -276,9 +276,7 @@ namespace Flax.Build.Bindings
 
             // In-build default
             if (CSharpNativeToManagedDefault.TryGetValue(typeInfo.Type, out result))
-            {
                 return result;
-            }
 
             // Object reference property
             if (typeInfo.IsObjectRef)
@@ -598,9 +596,7 @@ namespace Flax.Build.Bindings
                 contents.Append(parameterInfo.Name);
             }
 
-            contents.Append(')');
-            contents.Append(';');
-            contents.AppendLine();
+            contents.Append(')').Append(';').AppendLine();
         }
 
         private static void GenerateCSharpWrapperFunctionCall(BuildData buildData, StringBuilder contents, ApiTypeInfo caller, FunctionInfo functionInfo, bool isSetter = false)
@@ -1240,7 +1236,10 @@ namespace Flax.Build.Bindings
             if (!string.IsNullOrEmpty(marshallerName))
             {
                 contents.AppendLine();
-                contents.AppendLine(String.Join("\n" + indent, (indent + $$"""
+                contents.AppendLine(string.Join("\n" + indent, (indent + $$"""
+                /// <summary>
+                /// Marshaller for type <see cref="{{classInfo.Name}}"/>.
+                /// </summary>");
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ManagedToUnmanagedIn, typeof({{marshallerName}}.ManagedToNative))]
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.UnmanagedToManagedOut, typeof({{marshallerName}}.ManagedToNative))]
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ElementIn, typeof({{marshallerName}}.ManagedToNative))]
@@ -1250,8 +1249,9 @@ namespace Flax.Build.Bindings
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ManagedToUnmanagedRef, typeof({{marshallerName}}.Bidirectional))]
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.UnmanagedToManagedRef, typeof({{marshallerName}}.Bidirectional))]
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ElementRef, typeof({{marshallerName}}))]
-                internal static class {{marshallerName}}
+                public static class {{marshallerName}}
                 {
+                #pragma warning disable 1591
                     public static class NativeToManaged
                     {
                         public static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => ({{classInfo.Name}})GCHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged);
@@ -1277,15 +1277,14 @@ namespace Flax.Build.Bindings
 
                     internal static {{classInfo.Name}} ToManaged(IntPtr managed) => ({{classInfo.Name}})GCHandleMarshaller.ToManaged(managed);
                     internal static IntPtr ToNative({{classInfo.Name}} managed) => GCHandleMarshaller.ToNative(managed);
+                #pragma warning restore 1591
                 }
                 """).Split(new char[] { '\n'})));
             }
 #endif
             // Namespace end
             if (!string.IsNullOrEmpty(classInfo.Namespace))
-            {
                 contents.AppendLine("}");
-            }
         }
 
         private static void GenerateCSharpStructure(BuildData buildData, StringBuilder contents, string indent, StructureInfo structureInfo)
@@ -1309,7 +1308,7 @@ namespace Flax.Build.Bindings
                 structNativeMarshaling = $"[NativeMarshalling(typeof({marshallerName}))]";
 
                 contents.Append(indent).AppendLine($"/// <summary>");
-                contents.Append(indent).AppendLine($"/// Marshaller for unblittable type <see cref=\"{structureInfo.Name}\"/>.");
+                contents.Append(indent).AppendLine($"/// Marshaller for type <see cref=\"{structureInfo.Name}\"/>.");
                 contents.Append(indent).AppendLine($"/// </summary>");
                 contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ManagedToUnmanagedIn, typeof({marshallerName}.ManagedToNative))]");
                 contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.UnmanagedToManagedOut, typeof({marshallerName}.ManagedToNative))]");
@@ -1320,8 +1319,9 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ManagedToUnmanagedRef, typeof({marshallerName}.Bidirectional))]");
                 contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.UnmanagedToManagedRef, typeof({marshallerName}.Bidirectional))]");
                 contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ElementRef, typeof({marshallerName}))]");
-                contents.Append(indent).AppendLine($"internal static unsafe class {marshallerName}");
+                contents.Append(indent).AppendLine($"public static unsafe class {marshallerName}");
                 contents.Append(indent).AppendLine("{");
+                contents.AppendLine("#pragma warning disable 1591");
 
                 indent += "    ";
 
@@ -1335,7 +1335,7 @@ namespace Flax.Build.Bindings
                     GenerateCSharpAttributes(buildData, contents, indent, structureInfo, true);
                     contents.Append(indent).AppendLine("[StructLayout(LayoutKind.Sequential)]");
                     contents.Append(indent);
-                    contents.Append("internal struct ").Append(structureInfo.Name).Append("Internal");
+                    contents.Append("public struct ").Append(structureInfo.Name).Append("Internal");
                     if (structureInfo.BaseType != null && structureInfo.IsPod)
                         contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo { Type = structureInfo.BaseType.Name }, structureInfo));
                     contents.AppendLine();
@@ -1608,9 +1608,10 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine("{").Append(indent2).AppendLine(toManagedContent.Replace("\n", "\n" + indent2).ToString().TrimEnd()).Append(indent).AppendLine("}");
                 contents.Append(indent).AppendLine($"internal static {structureInfo.Name}Internal ToNative({structureInfo.Name} managed)");
                 contents.Append(indent).AppendLine("{").Append(indent2).AppendLine(toNativeContent.Replace("\n", "\n" + indent2).ToString().TrimEnd()).Append(indent).AppendLine("}");
-
+                
+                contents.AppendLine("#pragma warning restore 1591");
                 indent = indent.Substring(0, indent.Length - 4);
-                contents.Append(indent).AppendLine("}");
+                contents.Append(indent).AppendLine("}").AppendLine();
             }
 #endif
             // Struct docs
@@ -1732,8 +1733,8 @@ namespace Flax.Build.Bindings
             if (!structureInfo.NoDefault && !hasDefaultMember)
             {
                 contents.AppendLine();
-                contents.Append(indent).AppendLine("private static bool _defaultValid;");
-                contents.Append(indent).AppendLine($"private static {structureInfo.Name} _default;");
+                contents.Append(indent).AppendLine("private static bool __defaultValid;");
+                contents.Append(indent).AppendLine($"private static {structureInfo.Name} __default;");
                 contents.AppendLine();
                 contents.Append(indent).AppendLine("/// <summary>");
                 contents.Append(indent).AppendLine($"/// The default <see cref=\"{structureInfo.Name}\"/>.");
@@ -1744,16 +1745,16 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine("get");
                 contents.Append(indent).AppendLine("{");
                 indent += "    ";
-                contents.Append(indent).AppendLine("if (!_defaultValid)");
+                contents.Append(indent).AppendLine("if (!__defaultValid)");
                 contents.Append(indent).AppendLine("{");
                 indent += "    ";
-                contents.Append(indent).AppendLine("_defaultValid = true;");
-                contents.Append(indent).AppendLine("object obj = _default;");
+                contents.Append(indent).AppendLine("__defaultValid = true;");
+                contents.Append(indent).AppendLine("object obj = __default;");
                 contents.Append(indent).AppendLine($"FlaxEngine.Utils.InitStructure(obj, typeof({structureInfo.Name}));");
-                contents.Append(indent).AppendLine($"_default = ({structureInfo.Name})obj;");
+                contents.Append(indent).AppendLine($"__default = ({structureInfo.Name})obj;");
                 indent = indent.Substring(0, indent.Length - 4);
                 contents.Append(indent).AppendLine("}");
-                contents.Append(indent).AppendLine("return _default;");
+                contents.Append(indent).AppendLine("return __default;");
                 indent = indent.Substring(0, indent.Length - 4);
                 contents.Append(indent).AppendLine("}");
                 indent = indent.Substring(0, indent.Length - 4);
@@ -1911,16 +1912,17 @@ namespace Flax.Build.Bindings
             {
                 string marshallerName = interfaceInfo.Name + "Marshaller";
                 contents.AppendLine();
-
-                contents.Append(indent).AppendLine("/// <summary>");
-                contents.Append(indent).AppendLine("/// ");
-                contents.Append(indent).AppendLine("/// </summary>");
+                contents.Append(indent).AppendLine($"/// <summary>");
+                contents.Append(indent).AppendLine($"/// Marshaller for type <see cref=\"{interfaceInfo.Name}\"/>.");
+                contents.Append(indent).AppendLine($"/// </summary>");
                 contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({interfaceInfo.Name}), MarshalMode.Default, typeof({marshallerName}))]");
-                contents.Append(indent).AppendLine($"internal static class {marshallerName}");
+                contents.Append(indent).AppendLine($"public static class {marshallerName}");
                 contents.Append(indent).AppendLine("{");
-                contents.Append(indent + "    ").AppendLine($"internal static {interfaceInfo.Name} ConvertToManaged(IntPtr unmanaged) => ({interfaceInfo.Name})GCHandleMarshaller.ConvertToManaged(unmanaged);");
-                contents.Append(indent + "    ").AppendLine($"internal static IntPtr ConvertToUnmanaged({interfaceInfo.Name} managed) => GCHandleMarshaller.ConvertToUnmanaged(managed);");
-                contents.Append(indent + "    ").AppendLine("internal static void Free(IntPtr unmanaged) => GCHandleMarshaller.Free(unmanaged);");
+                contents.AppendLine("#pragma warning disable 1591");
+                contents.Append(indent).Append("    ").AppendLine($"internal static {interfaceInfo.Name} ConvertToManaged(IntPtr unmanaged) => ({interfaceInfo.Name})GCHandleMarshaller.ConvertToManaged(unmanaged);");
+                contents.Append(indent).Append("    ").AppendLine($"internal static IntPtr ConvertToUnmanaged({interfaceInfo.Name} managed) => GCHandleMarshaller.ConvertToUnmanaged(managed);");
+                contents.Append(indent).Append("    ").AppendLine("internal static void Free(IntPtr unmanaged) => GCHandleMarshaller.Free(unmanaged);");
+                contents.AppendLine("#pragma warning restore 1591");
                 contents.Append(indent).AppendLine("}");
             }
 #endif
