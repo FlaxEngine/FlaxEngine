@@ -297,17 +297,11 @@ namespace FlaxEditor.Windows
 
                 if (scaleHeight < 1)
                 {
-                    _viewport.Width = Width;
-                    _viewport.Height = Height * scaleHeight;
-                    _viewport.X = 0;
-                    _viewport.Y = Height * (1 - scaleHeight) / 2;
+                    _viewport.Bounds = new Rectangle(0, Height * (1 - scaleHeight) / 2, Width, Height * scaleHeight);
                 }
                 else
                 {
-                    _viewport.Width = Width * scaleWidth;
-                    _viewport.Height = Height;
-                    _viewport.X = Width * (1 - scaleWidth) / 2;
-                    _viewport.Y = 0;
+                    _viewport.Bounds = new Rectangle(Width * (1 - scaleWidth) / 2, 0, Width * scaleWidth, Height);
                 }
             };
             
