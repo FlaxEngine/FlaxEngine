@@ -407,6 +407,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
     public class UIControlControlEditor : GenericEditor
     {
         private Type _cachedType;
+        private bool _anchorDropDownClosed = true;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
@@ -498,7 +499,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             ItemInfo maxItem = new ItemInfo(maxInfo);
 
             GroupElement ng = main.Group("Anchors", true);
-            ng.Panel.Close(false);
+            ng.Panel.IsClosed = _anchorDropDownClosed;
+            ng.Panel.IsClosedChanged += panel => _anchorDropDownClosed = panel.IsClosed;
             ng.Property("Min", minItem.GetValues(Values));
             ng.Property("Max", maxItem.GetValues(Values));
         }
