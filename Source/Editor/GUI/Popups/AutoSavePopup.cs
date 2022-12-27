@@ -25,13 +25,11 @@ namespace FlaxEditor.GUI
 
         private int _timeRemaining;
         private Panel _backgroundPanel;
-        private Label _autoSaveLabel;
-        private Label _timeRemainingLabel;
         private Label _timeLabel;
         private Button _saveNowButton;
         private Button _cancelSaveButton;
-        private Button _closeMenuButton;
         private Color _defaultTextColor;
+        private bool _isMoved = false;
         
         /// <summary>
         /// Initialize the AutoSavePopup.
@@ -45,69 +43,42 @@ namespace FlaxEditor.GUI
             {
                 Parent = this,
                 AnchorPreset = AnchorPresets.StretchAll,
+                BackgroundColor = Color.Transparent,
             };
-            
-            _autoSaveLabel = new Label(0, 0, 25, 10)
-            {
-                Parent = _backgroundPanel,
-                Text = "Auto Save",
-                AutoWidth = true,
-                AutoHeight = true,
-                AnchorPreset = AnchorPresets.TopLeft,
-            };
-            _autoSaveLabel.Font.Size = 16;
-            _autoSaveLabel.LocalX += 5;
-            _autoSaveLabel.LocalY += 5;
-
-            _timeRemainingLabel = new Label(0, 0, 25, 10)
-            {
-                Parent = _backgroundPanel,
-                Text = "Time Remaining: ",
-                AutoWidth = true,
-                AutoHeight = true,
-                AnchorPreset = AnchorPresets.MiddleLeft,
-            };
-            _timeRemainingLabel.Font.Size = 16;
-            _timeRemainingLabel.LocalX += 5;
-            _timeRemainingLabel.LocalY -= _timeRemainingLabel.Height / 2;
             
             _timeLabel = new Label(0, 0, 25, 10)
             {
                 Parent = _backgroundPanel,
                 Text = _timeRemaining.ToString(),
-                HorizontalAlignment = TextAlignment.Far,
-                VerticalAlignment = TextAlignment.Center,
-                Width = 25,
-                AutoHeight = true,
-                AnchorPreset = AnchorPresets.MiddleRight,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Near,
+                AutoWidth = true,
+                Height = 14,
+                AnchorPreset = AnchorPresets.MiddleLeft,
             };
-            _timeLabel.Font.Size = 16;
-            _timeLabel.LocalX -= 5;
-            _timeLabel.LocalY -= _timeLabel.Height / 2;
 
             _saveNowButton = new Button
             {
                 Parent = _backgroundPanel,
                 Height = 14,
                 Width = 60,
-                AnchorPreset = AnchorPresets.BottomLeft,
+                AnchorPreset = AnchorPresets.MiddleRight,
                 BackgroundColor = Color.Transparent,
                 BorderColor = Color.Transparent,
                 BackgroundColorHighlighted = Color.Transparent,
                 BackgroundColorSelected = Color.Transparent,
                 BorderColorHighlighted = Color.Transparent,
                 Text = "Save Now",
-                TooltipText = "Saves now and restarts auto save timer."
+                TooltipText = "Saves now and restarts the auto save timer."
             };
-            _saveNowButton.LocalY -= 5;
-            _saveNowButton.LocalX += 5;
+            _saveNowButton.LocalX -= 85;
             
             _cancelSaveButton = new Button
             {
                 Parent = _backgroundPanel,
                 Height = 14,
                 Width = 70,
-                AnchorPreset = AnchorPresets.BottomRight,
+                AnchorPreset = AnchorPresets.MiddleRight,
                 BackgroundColor = Color.Transparent,
                 BorderColor = Color.Transparent,
                 BackgroundColorHighlighted = Color.Transparent,
@@ -116,31 +87,7 @@ namespace FlaxEditor.GUI
                 Text = "Cancel Save",
                 TooltipText = "Cancels this auto save."
             };
-            _cancelSaveButton.LocalY -= 5;
             _cancelSaveButton.LocalX -= 5;
-
-            _closeMenuButton = new Button
-            {
-                Parent = _backgroundPanel,
-                Height = 14,
-                Width = 14,
-                AnchorPreset = AnchorPresets.TopRight,
-                BackgroundBrush = new SpriteBrush(Style.Current.Cross),
-                BorderColor = Color.Transparent,
-                BackgroundColorHighlighted = Style.Current.ForegroundGrey,
-                BackgroundColorSelected = Color.Transparent,
-                BorderColorHighlighted = Color.Transparent,
-                BorderColorSelected = Color.Transparent,
-                TooltipText = "Close Popup."
-            };
-            _closeMenuButton.LocalY += 5;
-            _closeMenuButton.LocalX -= 5;
-            _closeMenuButton.BackgroundColor = _closeMenuButton.TextColor;
-            _closeMenuButton.Clicked += () =>
-            {
-                UserClosed = true;
-                HidePopup();
-            };
 
             _defaultTextColor = _saveNowButton.TextColor;
         }
@@ -153,7 +100,19 @@ namespace FlaxEditor.GUI
         {
             _timeRemaining = Mathf.CeilToInt(time);
             if (_timeLabel != null)
-                _timeLabel.Text = _timeRemaining.ToString();
+                _timeLabel.Text = "Auto Save in: " + _timeRemaining;
+            
+            // Move on text update if the progress bar is visible - removes this call from update
+            if (Editor.Instance.UI.ProgressVisible && !_isMoved)
+            {
+                _isMoved = true;
+                LocalX -= 250;
+            }
+            else if (!Editor.Instance.UI.ProgressVisible && _isMoved)
+            {
+                LocalX += 250;
+                _isMoved = false;
+            }
         }
 
         /// <inheritdoc />
@@ -167,18 +126,6 @@ namespace FlaxEditor.GUI
             base.Update(deltaTime);
         }
 
-        /// <inheritdoc />
-        public override void Draw()
-        {
-            // Draw background
-            var style = Style.Current;
-            var bounds = new Rectangle(Float2.Zero, Size);
-            Render2D.FillRectangle(bounds, style.Background);
-            Render2D.DrawRectangle(bounds, Color.Lerp(style.BackgroundSelected, style.Background, 0.6f));
-
-            base.Draw();
-        }
-
         /// <summary>
         /// Creates and shows the AutoSavePopup
         /// </summary>
@@ -190,12 +137,10 @@ namespace FlaxEditor.GUI
             var popup = new AutoSavePopup(initialTime)
             {
                 Parent = parentControl,
-                Height = 75,
+                Height = Editor.Instance.UI.StatusBar.Height,
                 Width = 250,
                 AnchorPreset = AnchorPresets.BottomRight,
             };
-            popup.LocalX -= 10;
-            popup.LocalY -= 30;
             popup.ShowPopup();
             return popup;
         }
