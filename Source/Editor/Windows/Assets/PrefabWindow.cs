@@ -483,8 +483,8 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutSerialize(XmlWriter writer)
         {
-            writer.WriteAttributeString("Split1", _split1.SplitterValue.ToString());
-            writer.WriteAttributeString("Split2", _split2.SplitterValue.ToString());
+            LayoutSerializeSplitter(writer, "Split1", _split1);
+            LayoutSerializeSplitter(writer, "Split2", _split2);
             writer.WriteAttributeString("LiveReload", LiveReload.ToString());
             writer.WriteAttributeString("GizmoMode", Viewport.TransformGizmo.ActiveMode.ToString());
         }
@@ -492,15 +492,10 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            if (float.TryParse(node.GetAttribute("Split1"), out float value1))
-                _split1.SplitterValue = value1;
-
-            if (float.TryParse(node.GetAttribute("Split2"), out value1))
-                _split2.SplitterValue = value1;
-
+            LayoutDeserializeSplitter(node, "Split1", _split1);
+            LayoutDeserializeSplitter(node, "Split2", _split2);
             if (bool.TryParse(node.GetAttribute("LiveReload"), out bool value2))
                 LiveReload = value2;
-
             if (Enum.TryParse(node.GetAttribute("GizmoMode"), out TransformGizmoBase.Mode value3))
                 Viewport.TransformGizmo.ActiveMode = value3;
         }

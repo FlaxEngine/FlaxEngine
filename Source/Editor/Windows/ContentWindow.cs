@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Xml;
 using FlaxEditor.Content;
@@ -952,8 +953,8 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnLayoutSerialize(XmlWriter writer)
         {
-            writer.WriteAttributeString("Split", _split.SplitterValue.ToString());
-            writer.WriteAttributeString("Scale", _view.ViewScale.ToString());
+            LayoutSerializeSplitter(writer, "Split", _split);
+            writer.WriteAttributeString("Scale", _view.ViewScale.ToString(CultureInfo.InvariantCulture));
             writer.WriteAttributeString("ShowFileExtensions", _view.ShowFileExtensions.ToString());
             writer.WriteAttributeString("ViewType", _view.ViewType.ToString());
         }
@@ -961,15 +962,11 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            if (float.TryParse(node.GetAttribute("Split"), out float value1))
-                _split.SplitterValue = value1;
-
-            if (float.TryParse(node.GetAttribute("Scale"), out value1))
+            LayoutDeserializeSplitter(node, "Split", _split);
+            if (float.TryParse(node.GetAttribute("Scale"), CultureInfo.InvariantCulture, out var value1))
                 _view.ViewScale = value1;
-
             if (bool.TryParse(node.GetAttribute("ShowFileExtensions"), out bool value2))
                 _view.ShowFileExtensions = value2;
-
             if (Enum.TryParse(node.GetAttribute("ViewType"), out ContentViewType viewType))
                 _view.ViewType = viewType;
         }

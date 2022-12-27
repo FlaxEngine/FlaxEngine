@@ -989,7 +989,7 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutSerialize(XmlWriter writer)
         {
-            writer.WriteAttributeString("TimelineSplitter", _timeline.Splitter.SplitterValue.ToString());
+            LayoutSerializeSplitter(writer, "TimelineSplitter", _timeline.Splitter);
             writer.WriteAttributeString("TimeShowMode", _timeline.TimeShowMode.ToString());
             var id = _previewButton.Checked ? Guid.Empty : (_timeline.Player?.ID ?? _cachedPlayerId);
             writer.WriteAttributeString("SelectedPlayer", id.ToString());
@@ -1000,18 +1000,13 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            if (float.TryParse(node.GetAttribute("TimelineSplitter"), out float value1))
-                _timeline.Splitter.SplitterValue = value1;
-
+            LayoutDeserializeSplitter(node, "TimelineSplitter", _timeline.Splitter);
             if (Guid.TryParse(node.GetAttribute("SelectedPlayer"), out Guid value2))
                 _cachedPlayerId = value2;
-
             if (Enum.TryParse(node.GetAttribute("TimeShowMode"), out Timeline.TimeShowModes value3))
                 _timeline.TimeShowMode = value3;
-
             if (bool.TryParse(node.GetAttribute("ShowPreviewValues"), out bool value4))
                 _timeline.ShowPreviewValues = value4;
-
             if (bool.TryParse(node.GetAttribute("ShowSelected3dTrack"), out value4))
                 _timeline.ShowSelected3dTrack = value4;
         }

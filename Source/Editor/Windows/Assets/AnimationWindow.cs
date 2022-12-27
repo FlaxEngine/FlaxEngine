@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Globalization;
 using System.Reflection;
 using System.Xml;
 using FlaxEditor.Content;
@@ -374,12 +375,12 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutSerialize(XmlWriter writer)
         {
-            writer.WriteAttributeString("TimelineSplitter", _timeline.Splitter.SplitterValue.ToString());
+            LayoutSerializeSplitter(writer, "TimelineSplitter", _timeline.Splitter);
+            LayoutSerializeSplitter(writer, "Panel1Splitter", _panel1);
+            if (_panel2 != null)
+                LayoutSerializeSplitter(writer, "Panel2Splitter", _panel2);
             writer.WriteAttributeString("TimeShowMode", _timeline.TimeShowMode.ToString());
             writer.WriteAttributeString("ShowPreviewValues", _timeline.ShowPreviewValues.ToString());
-            writer.WriteAttributeString("Panel1Splitter", _panel1.SplitterValue.ToString());
-            if (_panel2 != null)
-                writer.WriteAttributeString("Panel2Splitter", _panel2.SplitterValue.ToString());
             if (_properties.PreviewModel)
                 writer.WriteAttributeString("PreviewModel", _properties.PreviewModel.ID.ToString());
         }
@@ -387,18 +388,16 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            if (Guid.TryParse(node.GetAttribute("PreviewModel"), out Guid value4))
-                _initialPreviewModel = FlaxEngine.Content.LoadAsync<SkinnedModel>(value4);
-            if (float.TryParse(node.GetAttribute("TimelineSplitter"), out float value1))
-                _timeline.Splitter.SplitterValue = value1;
-            if (float.TryParse(node.GetAttribute("Panel1Splitter"), out value1))
-                _panel1.SplitterValue = value1;
-            if (float.TryParse(node.GetAttribute("Panel2Splitter"), out value1))
+            LayoutDeserializeSplitter(node, "TimelineSplitter", _timeline.Splitter);
+            LayoutDeserializeSplitter(node, "Panel1Splitter", _panel1);
+            if (float.TryParse(node.GetAttribute("Panel2Splitter"), CultureInfo.InvariantCulture, out float value1) && value1 > 0.01f && value1 < 0.99f)
                 _initialPanel2Splitter = value1;
             if (Enum.TryParse(node.GetAttribute("TimeShowMode"), out Timeline.TimeShowModes value2))
                 _timeline.TimeShowMode = value2;
             if (bool.TryParse(node.GetAttribute("ShowPreviewValues"), out bool value3))
                 _timeline.ShowPreviewValues = value3;
+            if (Guid.TryParse(node.GetAttribute("PreviewModel"), out Guid value4))
+                _initialPreviewModel = FlaxEngine.Content.LoadAsync<SkinnedModel>(value4);
         }
 
         /// <inheritdoc />
