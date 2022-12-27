@@ -6,6 +6,7 @@ using FlaxEditor.Gizmo;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.GUI.Drag;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.GUI;
 using FlaxEditor.Scripting;
@@ -49,10 +50,9 @@ namespace FlaxEditor.Windows
                 IsScrollable = false,
                 Offsets = new Margin(0, 0, 0, 18 + 6),
             };
-            _searchBox = new TextBox
+            _searchBox = new SearchBox
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
-                WatermarkText = "Search...",
                 Parent = headerPanel,
                 Bounds = new Rectangle(4, 4, headerPanel.Width - 8, 18),
             };
