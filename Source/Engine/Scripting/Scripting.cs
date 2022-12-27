@@ -218,10 +218,20 @@ namespace FlaxEngine
         internal static void VersionToNative(IntPtr versionHandle, IntPtr nativePtr)
         {
             Version version = (Version)GCHandle.FromIntPtr(versionHandle).Target;
-            Marshal.WriteInt32(nativePtr, 0, version.Major);
-            Marshal.WriteInt32(nativePtr, 4, version.Minor);
-            Marshal.WriteInt32(nativePtr, 8, version.Build);
-            Marshal.WriteInt32(nativePtr, 12, version.Revision);
+            if (version != null)
+            {
+                Marshal.WriteInt32(nativePtr, 0, version.Major);
+                Marshal.WriteInt32(nativePtr, 4, version.Minor);
+                Marshal.WriteInt32(nativePtr, 8, version.Build);
+                Marshal.WriteInt32(nativePtr, 12, version.Revision);
+            }
+            else
+            {
+                Marshal.WriteInt32(nativePtr, 0, 0);
+                Marshal.WriteInt32(nativePtr, 4, 0);
+                Marshal.WriteInt32(nativePtr, 8, -1);
+                Marshal.WriteInt32(nativePtr, 12, -1);
+            }
         }
 
         private static void CreateGuiStyle()
