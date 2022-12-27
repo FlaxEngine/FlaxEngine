@@ -1047,7 +1047,7 @@ namespace FlaxEngine.GUI
 
             // Animate view offset
             _viewOffset = isDeltaSlow ? _targetViewOffset : Float2.Lerp(_viewOffset, _targetViewOffset, deltaTime * 20.0f);
-            
+
             // Clicking outside of the text box will end text editing. Left will keep the value, right will restore original value
             if (_isEditing && EndEditOnClick)
             {
