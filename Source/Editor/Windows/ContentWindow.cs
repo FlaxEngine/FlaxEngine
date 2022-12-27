@@ -837,13 +837,20 @@ namespace FlaxEditor.Windows
             };
             _root.Expand(true);
 
+            // Add game project on top, plugins in the middle and engine at bottom
+            _root.AddChild(Editor.ContentDatabase.Game);
             foreach (var project in Editor.ContentDatabase.Projects)
+            {
+                project.SortChildrenRecursive();
+                if (project == Editor.ContentDatabase.Game || project == Editor.ContentDatabase.Engine)
+                    continue;
                 _root.AddChild(project);
+            }
+            _root.AddChild(Editor.ContentDatabase.Engine);
 
             Editor.ContentDatabase.Game?.Expand(true);
             _tree.Margin = new Margin(0.0f, 0.0f, -16.0f, 2.0f); // Hide root node
             _tree.AddChild(_root);
-            _root.SortChildrenRecursive();
 
             // Setup navigation
             _navigationUnlocked = true;
