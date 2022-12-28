@@ -29,6 +29,7 @@ enum class IconTypes
     DirectionalLight,
     EnvironmentProbe,
     Skybox,
+    SkyLight,
     AudioListener,
     AudioSource,
     Decal,
@@ -155,6 +156,7 @@ bool ViewportIconsRendererService::Init()
     INIT(DirectionalLight, "Editor/Icons/DirectionalLight");
     INIT(EnvironmentProbe, "Editor/Icons/EnvironmentProbe");
     INIT(Skybox, "Editor/Icons/Skybox");
+    INIT(SkyLight, "Editor/Icons/SkyLight");
     INIT(AudioListener, "Editor/Icons/AudioListener");
     INIT(AudioSource, "Editor/Icons/AudioSource");
     INIT(Decal, "Editor/Icons/Decal");
@@ -173,7 +175,7 @@ bool ViewportIconsRendererService::Init()
     MAP_TYPE(SceneAnimationPlayer, SceneAnimationPlayer);
     MAP_TYPE(ExponentialHeightFog, Skybox);
     MAP_TYPE(Sky, Skybox);
-    MAP_TYPE(SkyLight, PointLight);
+    MAP_TYPE(SkyLight, SkyLight);
     MAP_TYPE(SpotLight, PointLight);
 #undef MAP_TYPE
 
