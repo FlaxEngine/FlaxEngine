@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 
 namespace Flax.Build.NativeCpp
@@ -33,11 +32,13 @@ namespace Flax.Build.NativeCpp
             using (var reader = new BinaryReader(stream))
             {
                 int version = reader.ReadInt32();
+                if (version != 1)
+                    return;
 
                 // DirectIncludesCache
                 {
                     int count = reader.ReadInt32();
-                    for (int i = 0; i < count; i++) 
+                    for (int i = 0; i < count; i++)
                     {
                         string key = reader.ReadString();
                         string[] values = new string[reader.ReadInt32()];
@@ -231,7 +232,7 @@ namespace Flax.Build.NativeCpp
         private static string[] GetDirectIncludes(string sourceFile)
         {
             DateTime? lastModified = null;
-            
+
             // Try hit the cache
             string[] result;
             if (DirectIncludesCache.TryGetValue(sourceFile, out result))
