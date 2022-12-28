@@ -320,7 +320,7 @@ GPUSampler* Streaming::GetTextureGroupSampler(int32 index)
         {
             FallbackSampler = GPUSampler::New();
 #if GPU_ENABLE_RESOURCE_NAMING
-            sampler->SetName(TEXT("FallbackSampler"));
+            FallbackSampler->SetName(TEXT("FallbackSampler"));
 #endif
             FallbackSampler->Init(GPUSamplerDescription::New(GPUSamplerFilter::Trilinear));
         }
