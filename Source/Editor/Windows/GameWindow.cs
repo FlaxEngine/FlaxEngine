@@ -8,6 +8,7 @@ using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Json;
 
 namespace FlaxEditor.Windows
 {
@@ -105,6 +106,43 @@ namespace FlaxEditor.Windows
         /// Gets or sets a value indicating whether auto-focus game window on play mode start.
         /// </summary>
         public bool FocusOnPlay { get; set; }
+
+        // TODO move by other privates
+        private List<ViewportScaling> _defaultViewportScaling = new List<ViewportScaling>();
+        private List<ViewportScaling> _customViewportScaling = new List<ViewportScaling>();
+        private float _viewportAspectRatio = 1;
+        private float _windowAspectRatio = 1;
+        bool _useAspect = false;
+        bool _freeAspect = true;
+
+        private enum ViewportScalingType
+        {
+            Resolution = 0,
+            Aspect = 1,
+        }
+        
+        private class ViewportScaling
+        {
+            /// <summary>
+            /// The name.
+            /// </summary>
+            public string Label;
+            
+            /// <summary>
+            /// The Type of scaling to do.
+            /// </summary>
+            public ViewportScalingType ScalingType;
+            
+            /// <summary>
+            /// The width and height to scale by.
+            /// </summary>
+            public Int2 Size;
+
+            /// <summary>
+            /// If the scaling is active.
+            /// </summary>
+            public bool Active;
+        }
 
         private class GameRoot : ContainerControl
         {
@@ -266,45 +304,9 @@ namespace FlaxEditor.Windows
 
             SizeChanged += control =>
             {
-                float viewportAspectRatio = 1;
-                float windowAspectRatio = 1;
-                
-                if (!freeAspect)
-                {
-                    if (!useCustomAspect)
-                    {
-                        viewportAspectRatio = viewPortSize.X / viewPortSize.Y;
-                        _viewport.KeepAspectRatio = true;
-                        _viewport.CustomResolution = new Int2((int)viewPortSize.X, (int)viewPortSize.Y);
-                    }
-                    else
-                    {
-                        viewportAspectRatio = customAspect.X / customAspect.Y;
-                        _viewport.CustomResolution = new Int2?();
-                        _viewport.KeepAspectRatio = false;
-                    }
-                    
-                    windowAspectRatio = Width / Height;
-                }
-                else
-                {
-                    _viewport.CustomResolution = new Int2?();
-                    _viewport.KeepAspectRatio = false;
-                }
-                
-                var scaleWidth = viewportAspectRatio / windowAspectRatio;
-                var scaleHeight = windowAspectRatio / viewportAspectRatio;
-
-                if (scaleHeight < 1)
-                {
-                    _viewport.Bounds = new Rectangle(0, Height * (1 - scaleHeight) / 2, Width, Height * scaleHeight);
-                }
-                else
-                {
-                    _viewport.Bounds = new Rectangle(Width * (1 - scaleWidth) / 2, 0, Width * scaleWidth, Height);
-                }
+                ResizeViewport();
             };
-            
+
             Editor.StateMachine.PlayingState.SceneDuplicating += PlayingStateOnSceneDuplicating;
             Editor.StateMachine.PlayingState.SceneRestored += PlayingStateOnSceneRestored;
 
@@ -315,6 +317,86 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.Play, Editor.Simulation.RequestPlayOrStopPlay);
             InputActions.Add(options => options.Pause, Editor.Simulation.RequestResumeOrPause);
             InputActions.Add(options => options.StepFrame, Editor.Simulation.RequestPlayOneFrame);
+        }
+
+        private void ChangeViewportRatio(ViewportScaling v)
+        {
+            if (v == null)
+                return;
+            
+            // TODO make it so user can not enter values of 0 or lower
+            if (v.Size.Y <= 0 || v.Size.X <= 0)
+            {
+                return;
+            }
+
+            if (string.Equals(v.Label, "Free Aspect") && v.Size == new Int2(1,1))
+            {
+                _freeAspect = true;
+                _useAspect = true;
+            }
+            else
+            {
+                switch (v.ScalingType)
+                {
+                    case ViewportScalingType.Aspect:
+                        _useAspect = true;
+                        _freeAspect = false;
+                        break;
+                    case ViewportScalingType.Resolution:
+                        _useAspect = false;
+                        _freeAspect = false;
+                        break;
+                }
+            }
+            
+            _viewportAspectRatio = (float)v.Size.X / v.Size.Y;
+            
+            if (!_freeAspect)
+            {
+                if (!_useAspect)
+                {
+                    _viewport.KeepAspectRatio = true;
+                    _viewport.CustomResolution = new Int2(v.Size.X, v.Size.Y);
+                }
+                else
+                {
+                    _viewport.CustomResolution = new Int2?();
+                    _viewport.KeepAspectRatio = true;
+                }
+            }
+            else
+            {
+                _viewport.CustomResolution = new Int2?();
+                _viewport.KeepAspectRatio = false;
+            }
+            
+            ResizeViewport();
+        }
+
+        private void ResizeViewport()
+        {
+            if (!_freeAspect)
+            {
+                _windowAspectRatio = Width / Height;
+            }
+            else
+            {
+                _windowAspectRatio = 1;
+            }
+
+            var scaleWidth = _viewportAspectRatio / _windowAspectRatio;
+            var scaleHeight = _windowAspectRatio / _viewportAspectRatio;
+
+            if (scaleHeight < 1)
+            {
+                _viewport.Bounds = new Rectangle(0, Height * (1 - scaleHeight) / 2, Width, Height * scaleHeight);
+            }
+            else
+            {
+                _viewport.Bounds = new Rectangle(Width * (1 - scaleWidth) / 2, 0, Width * scaleWidth, Height);
+            }
+            PerformLayout();
         }
 
         private void OnPostRender(GPUContext context, ref RenderContext renderContext)
@@ -420,6 +502,104 @@ namespace FlaxEditor.Windows
                     Parent = resolution
                 };
                 resolutionValue.ValueChanged += () => _viewport.ResolutionScale = resolutionValue.Value;
+            }
+
+            // Viewport aspect ratio
+            {
+                // Create default scaling options if they dont exist from deserialization.
+                if (_defaultViewportScaling.Count == 0)
+                {
+                    Debug.Log("Had to create scalings.");
+                    _defaultViewportScaling.Add(new ViewportScaling
+                    {
+                        Label = "Free Aspect",
+                        ScalingType = ViewportScalingType.Aspect,
+                        Size = new Int2(1,1),
+                        Active = true,
+                    });
+                    _defaultViewportScaling.Add(new ViewportScaling
+                    {
+                        Label = "16:9 Aspect",
+                        ScalingType = ViewportScalingType.Aspect,
+                        Size = new Int2(16,9),
+                        Active = false,
+                    });
+                    _defaultViewportScaling.Add(new ViewportScaling
+                    {
+                        Label = "16:10 Aspect",
+                        ScalingType = ViewportScalingType.Aspect,
+                        Size = new Int2(16,10),
+                        Active = false,
+                    });
+                    _defaultViewportScaling.Add(new ViewportScaling
+                    {
+                        Label = "1920x1080 Resolution",
+                        ScalingType = ViewportScalingType.Resolution,
+                        Size = new Int2(1920,1080),
+                        Active = false,
+                    });
+                    _defaultViewportScaling.Add(new ViewportScaling
+                    {
+                        Label = "2560x1440 Resolution",
+                        ScalingType = ViewportScalingType.Resolution,
+                        Size = new Int2(2560,1440),
+                        Active = false,
+                    });
+                }
+                
+                var aspectMenu = menu.AddChildMenu("Viewport Scaling").ContextMenu;
+                
+                for (int i = 0; i < _defaultViewportScaling.Count; i++)
+                {
+                    var button = aspectMenu.AddButton(_defaultViewportScaling[i].Label);
+                    button.CloseMenuOnClick = false;
+                    button.Icon = _defaultViewportScaling[i].Active ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                    button.Tag = _defaultViewportScaling[i];
+                    if (_defaultViewportScaling[i].Active)
+                        ChangeViewportRatio(_defaultViewportScaling[i]);
+                }
+                aspectMenu.AddSeparator();
+                for (int i = 0; i < _customViewportScaling.Count; i++)
+                {
+                    var button = aspectMenu.AddButton(_customViewportScaling[i].Label);
+                    button.CloseMenuOnClick = false;
+                    button.Icon = _customViewportScaling[i].Active ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                    button.Tag = _customViewportScaling[i];
+                    if (_customViewportScaling[i].Active)
+                        ChangeViewportRatio(_customViewportScaling[i]);
+                }
+                
+                aspectMenu.ButtonClicked += button =>
+                {
+                    if (button.Text == "Add...")
+                        return;
+                    if (button.Tag == null)
+                        return;
+
+                    // Reset selected icon on all buttons
+                    foreach (var child in aspectMenu.Items)
+                    {
+                        if (child is ContextMenuButton cmb)
+                        {
+                            var v = (ViewportScaling)cmb.Tag;
+                            if (cmb == button)
+                            {
+                                v.Active = true;
+                                button.Icon = Style.Current.CheckBoxTick;
+                                ChangeViewportRatio(v);
+                            }
+                            else if (v.Active)
+                            {
+                                cmb.Icon = SpriteHandle.Invalid;
+                                v.Active = false;
+                            }
+                        }
+                    }
+                };
+                aspectMenu.AddSeparator();
+                
+                // TODO add
+                var add = aspectMenu.AddButton("Add...");
             }
 
             // Take Screenshot
@@ -674,6 +854,8 @@ namespace FlaxEditor.Windows
         {
             writer.WriteAttributeString("ShowGUI", ShowGUI.ToString());
             writer.WriteAttributeString("ShowDebugDraw", ShowDebugDraw.ToString());
+            writer.WriteAttributeString("DefaultViewportScaling", JsonSerializer.Serialize(_defaultViewportScaling));
+            writer.WriteAttributeString("CustomViewportScaling", JsonSerializer.Serialize(_customViewportScaling));
         }
 
         /// <inheritdoc />
@@ -683,6 +865,24 @@ namespace FlaxEditor.Windows
                 ShowGUI = value1;
             if (bool.TryParse(node.GetAttribute("ShowDebugDraw"), out value1))
                 ShowDebugDraw = value1;
+            if (node.HasAttribute("CustomViewportScaling"))
+                _customViewportScaling = JsonSerializer.Deserialize<List<ViewportScaling>>(node.GetAttribute("CustomViewportScaling"));
+            
+            for (int i = 0; i < _customViewportScaling.Count; i++)
+            {
+                if (_customViewportScaling[i].Active)
+                    ChangeViewportRatio(_customViewportScaling[i]);
+            }
+            
+            if (node.HasAttribute("DefaultViewportScaling"))
+                _defaultViewportScaling = JsonSerializer.Deserialize<List<ViewportScaling>>(node.GetAttribute("DefaultViewportScaling"));
+            
+            for (int i = 0; i < _defaultViewportScaling.Count; i++)
+            {
+                if (_defaultViewportScaling[i].Active)
+                    ChangeViewportRatio(_defaultViewportScaling[i]);
+            }
+            
         }
 
         /// <inheritdoc />
