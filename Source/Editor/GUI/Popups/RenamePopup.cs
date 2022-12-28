@@ -58,6 +58,11 @@ namespace FlaxEditor.GUI
         }
 
         /// <summary>
+        /// Gets the text input field control.
+        /// </summary>
+        public TextBox InputField => _inputField;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="RenamePopup"/> class.
         /// </summary>
         /// <param name="value">The value.</param>

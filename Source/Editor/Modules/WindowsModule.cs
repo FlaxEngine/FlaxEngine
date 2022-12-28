@@ -193,6 +193,8 @@ namespace FlaxEditor.Modules
         /// <returns>Editor window or null if cannot find any window.</returns>
         public EditorWindow FindEditor(ContentItem item)
         {
+            if (item == null)
+                return null;
             for (int i = 0; i < Windows.Count; i++)
             {
                 var win = Windows[i];
@@ -556,7 +558,7 @@ namespace FlaxEditor.Modules
 
                 base.OnSubmit();
 
-                var path = StringUtils.CombinePaths(Globals.ProjectCacheFolder, "Layout_" + name + ".xml");
+                var path = StringUtils.CombinePaths(Editor.LocalCachePath, "LayoutsCache", "Layout_" + name + ".xml");
                 Editor.Instance.Windows.SaveLayout(path);
             }
         }

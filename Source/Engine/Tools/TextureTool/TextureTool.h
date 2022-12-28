@@ -7,7 +7,7 @@
 #include "Engine/Render2D/SpriteAtlas.h"
 #include "Engine/Graphics/Textures/Types.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
-#include "Engine/Serialization/ISerializable.h"
+#include "Engine/Core/ISerializable.h"
 
 class JsonWriter;
 

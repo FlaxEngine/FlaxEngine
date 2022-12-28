@@ -123,6 +123,9 @@ namespace FlaxEngine
         /// <returns>The child actor.</returns>
         public Actor AddChild(Type type)
         {
+            if (type.IsAbstract)
+                return null;
+            
             var result = (Actor)New(type);
             result.SetParent(this, false, false);
             return result;
@@ -135,6 +138,9 @@ namespace FlaxEngine
         /// <returns>The child actor.</returns>
         public T AddChild<T>() where T : Actor
         {
+            if (typeof(T).IsAbstract)
+                return null;
+
             var result = New<T>();
             result.SetParent(this, false, false);
             return result;
@@ -172,6 +178,9 @@ namespace FlaxEngine
             var result = GetChild<T>();
             if (result == null)
             {
+                if (typeof(T).IsAbstract)
+                    return null;
+                
                 result = New<T>();
                 result.SetParent(this, false, false);
             }
@@ -185,6 +194,9 @@ namespace FlaxEngine
         /// <returns>The created script instance, null otherwise.</returns>
         public Script AddScript(Type type)
         {
+            if (type.IsAbstract)
+                return null;
+            
             var script = (Script)New(type);
             script.Parent = this;
             return script;
@@ -197,6 +209,9 @@ namespace FlaxEngine
         /// <returns>The created script instance, null otherwise.</returns>
         public T AddScript<T>() where T : Script
         {
+            if (typeof(T).IsAbstract)
+                return null;
+            
             var script = New<T>();
             script.Parent = this;
             return script;

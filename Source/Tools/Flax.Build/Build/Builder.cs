@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Flax.Build.Graph;
+using Flax.Build.NativeCpp;
 
 namespace Flax.Build
 {
@@ -256,6 +257,11 @@ namespace Flax.Build
                 if (targets.Length == 0)
                     Log.Warning("No targets to build");
 
+                using (new ProfileEventScope("LoadIncludesCache"))
+                {
+                    IncludesCache.LoadCache();
+                }
+
                 // Create task graph for building all targets
                 var graph = new TaskGraph(project.ProjectFolderPath);
                 foreach (var target in targets)
@@ -393,6 +399,11 @@ namespace Flax.Build
                     {
                         graph.SaveCache();
                     }
+                }
+
+                using (new ProfileEventScope("SaveIncludesCache"))
+                {
+                    IncludesCache.SaveCache();
                 }
 
                 foreach (var target in targets)

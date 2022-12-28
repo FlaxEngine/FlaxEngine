@@ -14,6 +14,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
@@ -949,17 +950,17 @@ namespace FlaxEditor.Utilities
         /// </summary>
         /// <param name="searchBox">The search box.</param>
         /// <param name="tree">The tree control.</param>
+        /// <param name="headerHeight">Amount of additional space above the search box to put custom UI.</param>
         /// <returns>The created menu to setup and show.</returns>
-        public static ContextMenuBase CreateSearchPopup(out TextBox searchBox, out Tree tree)
+        public static ContextMenuBase CreateSearchPopup(out TextBox searchBox, out Tree tree, float headerHeight = 0)
         {
             var menu = new ContextMenuBase
             {
-                Size = new Float2(320, 220),
+                Size = new Float2(320, 220 + headerHeight),
             };
-            searchBox = new TextBox(false, 1, 1)
+            searchBox = new SearchBox(false, 1, headerHeight + 1)
             {
                 Width = menu.Width - 3,
-                WatermarkText = "Search...",
                 Parent = menu,
             };
             var panel1 = new Panel(ScrollBars.Vertical)
@@ -978,6 +979,33 @@ namespace FlaxEditor.Utilities
                 Parent = panel2,
             };
             return menu;
+        }
+
+        /// <summary>
+        /// Updates (recursivly) search popup tree structures based on the filter text.
+        /// </summary>
+        public static void UpdateSearchPopupFilter(TreeNode node, string filterText)
+        {
+            // Update children
+            bool isAnyChildVisible = false;
+            for (int i = 0; i < node.Children.Count; i++)
+            {
+                if (node.Children[i] is TreeNode child)
+                {
+                    UpdateSearchPopupFilter(child, filterText);
+                    isAnyChildVisible |= child.Visible;
+                }
+            }
+
+            // Update itself
+            bool noFilter = string.IsNullOrWhiteSpace(filterText);
+            bool isThisVisible = noFilter || QueryFilterHelper.Match(filterText, node.Text);
+            bool isExpanded = isAnyChildVisible;
+            if (isExpanded)
+                node.Expand(true);
+            else
+                node.Collapse(true);
+            node.Visible = isThisVisible | isAnyChildVisible;
         }
 
         /// <summary>

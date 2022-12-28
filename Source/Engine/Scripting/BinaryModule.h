@@ -8,7 +8,7 @@
 #include "Engine/Core/Types/Variant.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Collections/Array.h"
-#include "Engine/Serialization/ISerializable.h"
+#include "Engine/Core/ISerializable.h"
 #include "ManagedCLR/MAssemblyOptions.h"
 
 /// <summary>

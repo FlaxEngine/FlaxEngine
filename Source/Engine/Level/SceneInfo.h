@@ -5,7 +5,7 @@
 #include "Engine/Core/Object.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Collections/Array.h"
-#include "Engine/Serialization/ISerializable.h"
+#include "Engine/Core/ISerializable.h"
 #include "Engine/Renderer/Lightmaps.h"
 
 /// <summary>

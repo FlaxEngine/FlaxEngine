@@ -3,6 +3,7 @@
 #pragma once
 
 #include "SceneObject.h"
+#include "Tags.h"
 #include "Engine/Core/Types/Span.h"
 #include "Engine/Core/Math/Transform.h"
 #include "Engine/Core/Math/BoundingBox.h"
@@ -19,9 +20,6 @@ class PhysicsScene;
 class SceneRendering;
 class SceneRenderTask;
 
-// Maximum tag index is used as an invalid value
-#define ACTOR_TAG_INVALID 255
-
 /// <summary>
 /// Base class for all actor objects on the scene.
 /// </summary>
@@ -34,7 +32,6 @@ API_CLASS(Abstract) class FLAXENGINE_API Actor : public SceneObject
     friend SceneRendering;
     friend Prefab;
     friend PrefabInstanceData;
-
 protected:
     int16 _isActive : 1;
     int16 _isActiveInHierarchy : 1;
@@ -43,7 +40,6 @@ protected:
     int16 _drawNoCulling : 1;
     int16 _drawCategory : 4;
     byte _layer;
-    byte _tag;
     StaticFlags _staticFlags;
     Transform _localTransform;
     Transform _transform;
@@ -77,6 +73,11 @@ public:
     API_FIELD(Attributes="HideInEditor, NoSerialize")
     HideFlags HideFlags;
 
+    /// <summary>
+    /// Actor tags collection.
+    /// </summary>
+    API_FIELD(Attributes="NoAnimate, EditorDisplay(\"General\"), EditorOrder(-68)") Array<Tag> Tags;
+
 public:
     /// <summary>
     /// Gets the object layer (index). Can be used for selective rendering or ignoring raycasts.
@@ -96,26 +97,10 @@ public:
     }
 
     /// <summary>
-    /// Gets the actor tag (index). Can be used to identify the objects.
+    /// Sets the layer.
     /// </summary>
-    FORCE_INLINE int32 GetTagIndex() const
-    {
-        return _tag;
-    }
-
-    /// <summary>
-    /// Determines whether this actor has tag assigned.
-    /// </summary>
-    API_FUNCTION() FORCE_INLINE bool HasTag() const
-    {
-        return _tag != ACTOR_TAG_INVALID;
-    }
-
-    /// <summary>
-    /// Determines whether this actor has given tag assigned.
-    /// </summary>
-    /// <param name="tag">The tag to check.</param>
-    API_FUNCTION() bool HasTag(const StringView& tag) const;
+    /// <param name="layerIndex">The index of the layer.</param>
+    API_PROPERTY() void SetLayer(int32 layerIndex);
 
     /// <summary>
     /// Gets the name of the layer.
@@ -123,28 +108,21 @@ public:
     API_PROPERTY() const String& GetLayerName() const;
 
     /// <summary>
-    /// Gets the name of the tag.
+    /// Determines whether this actor has any tag assigned.
     /// </summary>
-    API_PROPERTY(Attributes="NoAnimate, EditorDisplay(\"General\"), EditorOrder(-68), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTagEditor\")")
-    const String& GetTag() const;
+    API_FUNCTION() bool HasTag() const;
 
     /// <summary>
-    /// Sets the layer.
+    /// Determines whether this actor has given tag assigned (exact match).
     /// </summary>
-    /// <param name="layerIndex">The index of the layer.</param>
-    API_PROPERTY() void SetLayer(int32 layerIndex);
+    /// <param name="tag">The tag to check.</param>
+    API_FUNCTION() bool HasTag(const Tag& tag) const;
 
     /// <summary>
-    /// Sets the tag.
+    /// Determines whether this actor has given tag assigned (exact match).
     /// </summary>
-    /// <param name="tagIndex">The index of the tag.</param>
-    void SetTagIndex(int32 tagIndex);
-
-    /// <summary>
-    /// Sets the tag.
-    /// </summary>
-    /// <param name="tagName">Name of the tag.</param>
-    API_PROPERTY() void SetTag(const StringView& tagName);
+    /// <param name="tag">The tag to check.</param>
+    API_FUNCTION() bool HasTag(const StringView& tag) const;
 
     /// <summary>
     /// Gets the actor name.
@@ -229,6 +207,9 @@ public:
         T* result = (T*)GetChild(T::GetStaticClass());
         if (!result)
         {
+            if (T::GetStaticClass()->IsAbstract())
+                return nullptr;
+
             result = New<T>();
             result->SetParent(this, false, false);
         }
@@ -952,13 +933,6 @@ public:
     /// Called when layer gets changed.
     /// </summary>
     virtual void OnLayerChanged()
-    {
-    }
-
-    /// <summary>
-    /// Called when tag gets changed.
-    /// </summary>
-    virtual void OnTagChanged()
     {
     }
 

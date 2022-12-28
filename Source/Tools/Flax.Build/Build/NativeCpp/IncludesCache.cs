@@ -13,9 +13,153 @@ namespace Flax.Build.NativeCpp
     /// </summary>
     public static class IncludesCache
     {
-        private static readonly Dictionary<string, string[]> DirectIncludesCache = new Dictionary<string, string[]>();
-        private static readonly Dictionary<string, string[]> AllIncludesCache = new Dictionary<string, string[]>();
+        private static Dictionary<string, string[]> DirectIncludesCache = new Dictionary<string, string[]>();
+        private static Dictionary<string, string[]> AllIncludesCache = new Dictionary<string, string[]>();
+        private static Dictionary<string, DateTime> DirectIncludesTimestampCache = new Dictionary<string, DateTime>();
+        private static Dictionary<string, DateTime> AllIncludesTimestampCache = new Dictionary<string, DateTime>();
+        private static Dictionary<string, bool> FileExistsCache = new Dictionary<string, bool>();
+        private static Dictionary<string, DateTime> FileTimestampCache = new Dictionary<string, DateTime>();
         private static readonly string IncludeToken = "include";
+        private static string CachePath;
+
+        public static void LoadCache()
+        {
+            CachePath = Path.Combine(Globals.Root, Configuration.IntermediateFolder, "IncludesCache.cache");
+            if (!File.Exists(CachePath))
+                return;
+
+            using (var stream = new FileStream(CachePath, FileMode.Open))
+            using (var reader = new BinaryReader(stream))
+            {
+                int version = reader.ReadInt32();
+                if (version != 1)
+                    return;
+
+                // DirectIncludesCache
+                {
+                    int count = reader.ReadInt32();
+                    for (int i = 0; i < count; i++)
+                    {
+                        string key = reader.ReadString();
+                        string[] values = new string[reader.ReadInt32()];
+                        for (int j = 0; j < values.Length; j++)
+                            values[j] = reader.ReadString();
+
+                        DirectIncludesCache.Add(key, values);
+                    }
+                }
+
+                // AllIncludesCache
+                {
+                    int count = reader.ReadInt32();
+                    for (int i = 0; i < count; i++)
+                    {
+                        string key = reader.ReadString();
+                        string[] values = new string[reader.ReadInt32()];
+                        for (int j = 0; j < values.Length; j++)
+                            values[j] = reader.ReadString();
+
+                        AllIncludesCache.Add(key, values);
+                    }
+                }
+
+                // DirectIncludesTimestampCache
+                {
+                    int count = reader.ReadInt32();
+                    for (int i = 0; i < count; i++)
+                    {
+                        string key = reader.ReadString();
+                        DateTime value = new DateTime(reader.ReadInt64());
+                        DirectIncludesTimestampCache.Add(key, value);
+                    }
+                }
+
+                // AllIncludesTimestampCache
+                {
+                    int count = reader.ReadInt32();
+                    for (int i = 0; i < count; i++)
+                    {
+                        string key = reader.ReadString();
+                        DateTime value = new DateTime(reader.ReadInt64());
+                        AllIncludesTimestampCache.Add(key, value);
+                    }
+                }
+            }
+        }
+
+        public static void SaveCache()
+        {
+            using (var stream = new FileStream(CachePath, FileMode.Create))
+            using (var writer = new BinaryWriter(stream))
+            {
+                // Version
+                writer.Write(1);
+
+                // DirectIncludesCache
+                {
+                    writer.Write(DirectIncludesCache.Count);
+                    foreach (KeyValuePair<string, string[]> kvp in DirectIncludesCache)
+                    {
+                        writer.Write(kvp.Key);
+                        writer.Write(kvp.Value.Length);
+                        foreach (var value in kvp.Value)
+                            writer.Write(value);
+                    }
+                }
+
+                // AllIncludesCache
+                {
+                    writer.Write(AllIncludesCache.Count);
+                    foreach (KeyValuePair<string, string[]> kvp in AllIncludesCache)
+                    {
+                        writer.Write(kvp.Key);
+                        writer.Write(kvp.Value.Length);
+                        foreach (var value in kvp.Value)
+                            writer.Write(value);
+                    }
+                }
+
+                // DirectIncludesTimestampCache
+                {
+                    writer.Write(DirectIncludesTimestampCache.Count);
+                    foreach (KeyValuePair<string, DateTime> kvp in DirectIncludesTimestampCache)
+                    {
+                        writer.Write(kvp.Key);
+                        writer.Write(kvp.Value.Ticks);
+                    }
+                }
+
+                // AllIncludesTimestampCache
+                {
+                    writer.Write(AllIncludesTimestampCache.Count);
+                    foreach (KeyValuePair<string, DateTime> kvp in AllIncludesTimestampCache)
+                    {
+                        writer.Write(kvp.Key);
+                        writer.Write(kvp.Value.Ticks);
+                    }
+                }
+            }
+        }
+
+        private static bool FileExists(string path)
+        {
+            if (FileExistsCache.TryGetValue(path, out bool result))
+                return result;
+
+            result = File.Exists(path);
+            FileExistsCache.Add(path, result);
+            return result;
+        }
+
+        private static DateTime FileLastWriteTime(string path)
+        {
+            if (FileTimestampCache.TryGetValue(path, out DateTime result))
+                return result;
+
+            result = File.GetLastWriteTime(path);
+            FileTimestampCache.Add(path, result);
+            return result;
+        }
 
         /// <summary>
         /// Finds all included files by the source file (including dependencies).
@@ -24,12 +168,24 @@ namespace Flax.Build.NativeCpp
         /// <returns>The list of included files by this file. Not null nut may be empty.</returns>
         public static string[] FindAllIncludedFiles(string sourceFile)
         {
+            DateTime? lastModified = null;
+
             // Try hit the cache
             string[] result;
             if (AllIncludesCache.TryGetValue(sourceFile, out result))
-                return result;
+            {
+                if (AllIncludesTimestampCache.TryGetValue(sourceFile, out var cachedTimestamp))
+                {
+                    lastModified = FileLastWriteTime(sourceFile);
+                    if (lastModified == cachedTimestamp)
+                        return result;
+                }
 
-            if (!File.Exists(sourceFile))
+                AllIncludesCache.Remove(sourceFile);
+                AllIncludesTimestampCache.Remove(sourceFile);
+            }
+
+            if (!FileExists(sourceFile))
                 throw new Exception(string.Format("Cannot scan file \"{0}\" for includes because it does not exist.", sourceFile));
 
             //using (new ProfileEventScope("FindAllIncludedFiles"))
@@ -43,6 +199,9 @@ namespace Flax.Build.NativeCpp
                 includedFiles.Remove(sourceFile);
                 result = includedFiles.ToArray();
                 AllIncludesCache.Add(sourceFile, result);
+
+                if (!AllIncludesTimestampCache.ContainsKey(sourceFile))
+                    AllIncludesTimestampCache.Add(sourceFile, lastModified ?? File.GetLastWriteTime(sourceFile));
 
                 /*Log.Info("File includes for " + sourceFile);
                 foreach (var e in result)
@@ -72,10 +231,22 @@ namespace Flax.Build.NativeCpp
 
         private static string[] GetDirectIncludes(string sourceFile)
         {
+            DateTime? lastModified = null;
+
             // Try hit the cache
             string[] result;
             if (DirectIncludesCache.TryGetValue(sourceFile, out result))
-                return result;
+            {
+                if (DirectIncludesTimestampCache.TryGetValue(sourceFile, out var cachedTimestamp))
+                {
+                    lastModified = FileLastWriteTime(sourceFile);
+                    if (lastModified == cachedTimestamp)
+                        return result;
+                }
+
+                DirectIncludesCache.Remove(sourceFile);
+                DirectIncludesTimestampCache.Remove(sourceFile);
+            }
 
             // Find all files included directly
             var includedFiles = new HashSet<string>();
@@ -152,11 +323,11 @@ namespace Flax.Build.NativeCpp
 
                 // Relative to the workspace root
                 var includedFilePath = Path.Combine(Globals.Root, "Source", includedFile);
-                if (!File.Exists(includedFilePath))
+                if (!FileExists(includedFilePath))
                 {
                     // Relative to the source file
                     includedFilePath = Path.Combine(sourceFileFolder, includedFile);
-                    if (!File.Exists(includedFilePath))
+                    if (!FileExists(includedFilePath))
                     {
                         // Relative to any of the included project workspaces
                         var project = Globals.Project;
@@ -164,7 +335,7 @@ namespace Flax.Build.NativeCpp
                         foreach (var reference in project.References)
                         {
                             includedFilePath = Path.Combine(reference.Project.ProjectFolderPath, "Source", includedFile);
-                            if (File.Exists(includedFilePath))
+                            if (FileExists(includedFilePath))
                             {
                                 isValid = true;
                                 break;
@@ -191,6 +362,8 @@ namespace Flax.Build.NativeCpp
             // Process result
             result = includedFiles.ToArray();
             DirectIncludesCache.Add(sourceFile, result);
+            if (!DirectIncludesTimestampCache.ContainsKey(sourceFile))
+                DirectIncludesTimestampCache.Add(sourceFile, lastModified ?? FileLastWriteTime(sourceFile));
             return result;
         }
     }

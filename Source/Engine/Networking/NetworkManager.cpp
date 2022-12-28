@@ -326,10 +326,14 @@ void NetworkManager::Stop()
         Delete(client);
         Clients.RemoveAt(i);
     }
+    if (Mode == NetworkManagerMode::Host && LocalClient)
+    {
+        ClientDisconnected(LocalClient);
+        LocalClient->State = NetworkConnectionState::Disconnected;
+    }
     StopPeer();
     if (LocalClient)
     {
-        LocalClient->State = NetworkConnectionState::Disconnected;
         Delete(LocalClient);
         LocalClient = nullptr;
     }

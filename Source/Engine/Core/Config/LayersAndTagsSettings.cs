@@ -23,15 +23,6 @@ namespace FlaxEditor.Content.Settings
         public string[] Layers = new string[32];
 
         /// <summary>
-        /// Gets the current tags collection.
-        /// </summary>
-        /// <returns>The tags collection.</returns>
-        internal static string[] GetCurrentTags()
-        {
-            return GetCurrentTags(out int _);
-        }
-
-        /// <summary>
         /// Gets the current layer names (max 32 items but trims last empty items).
         /// </summary>
         /// <returns>The layers.</returns>
@@ -39,10 +30,6 @@ namespace FlaxEditor.Content.Settings
         {
             return GetCurrentLayers(out int _);
         }
-
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Content.Settings.LayersAndTagsSettings::GetCurrentTags", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
-        [return: MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = "tagCount")]
-        internal static partial string[] GetCurrentTags(out int tagCount);
 
         [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Content.Settings.LayersAndTagsSettings::GetCurrentLayers", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = "layerCount")]

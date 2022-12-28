@@ -32,6 +32,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 Width = 16.0f,
                 Text = "...",
+                TooltipText = "Edit...",
                 Parent = _label,
             };
             button.SetAnchorPreset(AnchorPresets.MiddleRight, false, true);
@@ -81,30 +82,6 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
-        private static void UpdateFilter(TreeNode node, string filterText)
-        {
-            // Update children
-            bool isAnyChildVisible = false;
-            for (int i = 0; i < node.Children.Count; i++)
-            {
-                if (node.Children[i] is TreeNode child)
-                {
-                    UpdateFilter(child, filterText);
-                    isAnyChildVisible |= child.Visible;
-                }
-            }
-
-            // Update itself
-            bool noFilter = string.IsNullOrWhiteSpace(filterText);
-            bool isThisVisible = noFilter || QueryFilterHelper.Match(filterText, node.Text);
-            bool isExpanded = isAnyChildVisible;
-            if (isExpanded)
-                node.Expand(true);
-            else
-                node.Collapse(true);
-            node.Visible = isThisVisible | isAnyChildVisible;
-        }
-
         private void ShowPicker()
         {
             var menu = CreatePicker(Culture, value => { Culture = value; });
@@ -147,8 +124,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 if (tree.IsLayoutLocked)
                     return;
                 root.LockChildrenRecursive();
-                var query = searchBox.Text;
-                UpdateFilter(root, query);
+                Utilities.Utils.UpdateSearchPopupFilter(root, searchBox.Text);
                 root.UnlockChildrenRecursive();
                 menu.PerformLayout();
             };

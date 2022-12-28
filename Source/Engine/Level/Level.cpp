@@ -166,7 +166,6 @@ Action Level::ScriptsReload;
 Action Level::ScriptsReloaded;
 Action Level::ScriptsReloadEnd;
 #endif
-Array<String> Level::Tags;
 String Level::Layers[32];
 
 bool LevelImpl::spawnActor(Actor* actor, Actor* parent)
@@ -174,6 +173,12 @@ bool LevelImpl::spawnActor(Actor* actor, Actor* parent)
     if (actor == nullptr)
     {
         Log::ArgumentNullException(TEXT("Cannot spawn null actor."));
+        return true;
+    }
+
+    if (actor->GetType().ManagedClass->IsAbstract())
+    {
+        Log::Exception(TEXT("Cannot spawn abstract actor type."));
         return true;
     }
 
@@ -226,8 +231,7 @@ void LayersAndTagsSettings::Apply()
     // Tags/Layers are stored as index in actors so collection change would break the linkage
     for (auto& tag : Tags)
     {
-        if (!Level::Tags.Contains(tag))
-            Level::Tags.Add(tag);
+        Tags::Get(tag);
     }
     for (int32 i = 0; i < ARRAY_COUNT(Level::Layers); i++)
     {
@@ -735,17 +739,6 @@ void LevelImpl::CallSceneEvent(SceneEventType eventType, Scene* scene, Guid scen
     }
 }
 
-int32 Level::GetOrAddTag(const StringView& tag)
-{
-    int32 index = Tags.Find(tag);
-    if (index == INVALID_INDEX)
-    {
-        index = Tags.Count();
-        Tags.AddOne() = tag;
-    }
-    return index;
-}
-
 int32 Level::GetNonEmptyLayerNamesCount()
 {
     int32 result = 31;
@@ -764,6 +757,59 @@ int32 Level::GetLayerIndex(const StringView& layer)
             result = i;
             break;
         }
+    }
+    return result;
+}
+
+Actor* FindActorRecursive(Actor* node, const Tag& tag)
+{
+    if (node->HasTag(tag))
+        return node;
+    Actor* result = nullptr;
+    for (Actor* child : node->Children)
+    {
+        result = FindActorRecursive(child, tag);
+        if (result)
+            break;
+    }
+    return result;
+}
+
+Actor* Level::FindActor(const Tag& tag, Actor* root)
+{
+    PROFILE_CPU();
+    if (root)
+        return FindActorRecursive(root, tag);
+    Actor* result = nullptr;
+    for (Scene* scene : Scenes)
+    {
+        result = FindActorRecursive(scene, tag);
+        if (result)
+            break;
+    }
+    return result;
+}
+
+void FindActorRecursive(Actor* node, const Tag& tag, Array<Actor*>& result)
+{
+    if (node->HasTag(tag))
+        result.Add(node);
+    for (Actor* child : node->Children)
+        FindActorRecursive(child, tag, result);
+}
+
+Array<Actor*> Level::FindActors(const Tag& tag, Actor* root)
+{
+    PROFILE_CPU();
+    Array<Actor*> result;
+    if (root)
+    {
+        FindActorRecursive(root, tag);
+    }
+    else
+    {
+        for (Scene* scene : Scenes)
+            FindActorRecursive(scene, tag);
     }
     return result;
 }

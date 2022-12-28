@@ -343,8 +343,9 @@ public:
                 if (!(Get(i) == other.Get(i)))
                     return false;
             }
+            return true;
         }
-        return true;
+        return false;
     }
 
     template<typename OtherAllocationType = AllocationType>

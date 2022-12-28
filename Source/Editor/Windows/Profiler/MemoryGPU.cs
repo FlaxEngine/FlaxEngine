@@ -133,7 +133,9 @@ namespace FlaxEditor.Windows.Profiler
                 {
                     resource = new Resource
                     {
+#if !BUILD_RELEASE
                         Name = gpuResource.Name,
+#endif
                         Type = gpuResource.ResourceType,
                     };
 

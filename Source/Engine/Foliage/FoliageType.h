@@ -5,7 +5,7 @@
 #include "Config.h"
 #include "Engine/Core/Collections/ChunkedArray.h"
 #include "Engine/Content/Assets/Model.h"
-#include "Engine/Serialization/ISerializable.h"
+#include "Engine/Core/ISerializable.h"
 
 /// <summary>
 /// The foliage instances scaling modes.

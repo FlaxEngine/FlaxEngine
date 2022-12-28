@@ -196,6 +196,7 @@ namespace FlaxEditor.GUI.ContextMenu
             desc.HasSizingFrame = false;
             OnWindowCreating(ref desc);
             _window = Platform.CreateWindow(ref desc);
+            _window.GotFocus += OnWindowGotFocus;
             _window.LostFocus += OnWindowLostFocus;
 
             // Attach to the window
@@ -353,6 +354,15 @@ namespace FlaxEditor.GUI.ContextMenu
             }
         }
 
+        private void OnWindowGotFocus()
+        {
+            if (_childCM != null && _window && _window.IsForegroundWindow)
+            {
+                // Hide child if user clicked over parent (do it next frame to process other events before - eg. child windows focus loss)
+                FlaxEngine.Scripting.InvokeOnUpdate(HideChild);
+            }
+        }
+
         private void OnWindowLostFocus()
         {
             // Skip for parent menus (child should handle lost of focus)
@@ -426,6 +436,21 @@ namespace FlaxEditor.GUI.ContextMenu
         {
             base.OnMouseUp(location, button);
             return true;
+        }
+
+        /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            if (base.OnKeyDown(key))
+                return true;
+
+            switch (key)
+            {
+            case KeyboardKeys.Escape:
+                Hide();
+                return true;
+            }
+            return false;
         }
 
         /// <inheritdoc />

@@ -215,4 +215,10 @@
     </Expand>
   </Type>
 
+  <!-- Tag -->
+  <Type Name="Tag">
+    <DisplayString Condition="Index == -1">None</DisplayString>
+    <DisplayString Condition="Index != -1">Tag={TagsListDebug[Index]}</DisplayString>
+  </Type>
+
 </AutoVisualizer>
