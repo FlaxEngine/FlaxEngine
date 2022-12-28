@@ -113,10 +113,9 @@ namespace FlaxEditor.Windows
                 IsScrollable = false,
                 Offsets = new Margin(0, 0, 0, 18 + 6),
             };
-            _foldersSearchBox = new TextBox
+            _foldersSearchBox = new SearchBox
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
-                WatermarkText = "Search...",
                 Parent = headerPanel,
                 Bounds = new Rectangle(4, 4, headerPanel.Width - 8, 18),
             };
@@ -149,10 +148,9 @@ namespace FlaxEditor.Windows
                 Parent = _split.Panel2,
             };
             const float viewDropdownWidth = 50.0f;
-            _itemsSearchBox = new TextBox
+            _itemsSearchBox = new SearchBox
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
-                WatermarkText = "Search...",
                 Parent = contentItemsSearchPanel,
                 Bounds = new Rectangle(viewDropdownWidth + 8, 4, contentItemsSearchPanel.Width - 12 - viewDropdownWidth, 18),
             };
@@ -837,13 +835,20 @@ namespace FlaxEditor.Windows
             };
             _root.Expand(true);
 
+            // Add game project on top, plugins in the middle and engine at bottom
+            _root.AddChild(Editor.ContentDatabase.Game);
             foreach (var project in Editor.ContentDatabase.Projects)
+            {
+                project.SortChildrenRecursive();
+                if (project == Editor.ContentDatabase.Game || project == Editor.ContentDatabase.Engine)
+                    continue;
                 _root.AddChild(project);
+            }
+            _root.AddChild(Editor.ContentDatabase.Engine);
 
             Editor.ContentDatabase.Game?.Expand(true);
             _tree.Margin = new Margin(0.0f, 0.0f, -16.0f, 2.0f); // Hide root node
             _tree.AddChild(_root);
-            _root.SortChildrenRecursive();
 
             // Setup navigation
             _navigationUnlocked = true;

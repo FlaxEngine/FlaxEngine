@@ -207,6 +207,9 @@ public:
         T* result = (T*)GetChild(T::GetStaticClass());
         if (!result)
         {
+            if (T::GetStaticClass()->IsAbstract())
+                return nullptr;
+
             result = New<T>();
             result->SetParent(this, false, false);
         }

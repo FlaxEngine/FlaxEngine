@@ -55,8 +55,8 @@ struct AxisData
 
 namespace InputImpl
 {
-    Dictionary<StringView, ActionData> Actions;
-    Dictionary<StringView, AxisData> Axes;
+    Dictionary<String, ActionData> Actions;
+    Dictionary<String, AxisData> Axes;
     bool GamepadsChanged = true;
     Array<AxisEvaluation> AxesValues;
     InputDevice::EventQueue InputEvents;

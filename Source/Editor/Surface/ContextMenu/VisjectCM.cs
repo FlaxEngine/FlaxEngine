@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -128,10 +129,9 @@ namespace FlaxEditor.Surface.ContextMenu
             Size = new Float2(320, 220);
 
             // Search box
-            _searchBox = new TextBox(false, 1, 1)
+            _searchBox = new SearchBox(false, 1, 1)
             {
                 Width = Width - 3,
-                WatermarkText = "Search...",
                 Parent = this
             };
             _searchBox.TextChanged += OnSearchFilterChanged;

@@ -176,6 +176,12 @@ bool LevelImpl::spawnActor(Actor* actor, Actor* parent)
         return true;
     }
 
+    if (actor->GetType().ManagedClass->IsAbstract())
+    {
+        Log::Exception(TEXT("Cannot spawn abstract actor type."));
+        return true;
+    }
+
     if (actor->Is<Scene>())
     {
         // Spawn scene

@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -157,9 +158,8 @@ namespace FlaxEditor.Windows
                 Parent = this,
             };
             _viewDropdown.Clicked += OnViewButtonClicked;
-            _searchBox = new TextBox(false, _viewDropdown.Right + 2, 2, Width - _viewDropdown.Right - 2 - _scrollSize)
+            _searchBox = new SearchBox(false, _viewDropdown.Right + 2, 2, Width - _viewDropdown.Right - 2 - _scrollSize)
             {
-                WatermarkText = "Search...",
                 Parent = this,
             };
             _searchBox.TextChanged += Refresh;

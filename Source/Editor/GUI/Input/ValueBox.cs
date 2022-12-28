@@ -173,6 +173,7 @@ namespace FlaxEditor.GUI.Input
         private void EndSliding()
         {
             _isSliding = false;
+            EndEditOnClick = true;
             EndMouseCapture();
             if (_cursorChanged)
             {
@@ -245,6 +246,7 @@ namespace FlaxEditor.GUI.Input
                 _startSlideLocation = location;
                 _startSlideValue = _value;
                 StartMouseCapture(true);
+                EndEditOnClick = false;
 
                 // Hide cursor and cache location
                 Cursor = CursorType.Hidden;

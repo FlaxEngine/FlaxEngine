@@ -283,7 +283,7 @@ namespace FlaxEditor.SceneGraph.GUI
                 (window as PrefabWindow).ScrollingOnTreeView(false);
 
             // Start renaming the actor
-            var dialog = RenamePopup.Show(this, HeaderRect, _actorNode.Name, false);
+            var dialog = RenamePopup.Show(this, TextRect, _actorNode.Name, false);
             dialog.Renamed += OnRenamed;
             dialog.Closed += popup =>
             {
