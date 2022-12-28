@@ -236,6 +236,41 @@ namespace Flax.Build.Bindings
             return $"({typeInfo}){value}";
         }
 
+        public static void GenerateCppVirtualWrapperCallBaseMethod(BuildData buildData, StringBuilder contents, VirtualClassInfo classInfo, FunctionInfo functionInfo, string scriptVTableBase, string scriptVTableOffset)
+        {
+            contents.AppendLine("            // Prevent stack overflow by calling native base method");
+            if (buildData.Toolchain is Platforms.UnixToolchain)
+            {
+                // Clang compiler
+                // TODO: secure VTableFunctionInjector with mutex (even at cost of performance)
+                contents.AppendLine($"            {functionInfo.UniqueName}_Signature funcPtr = &{classInfo.NativeName}::{functionInfo.Name};");
+                contents.AppendLine($"            VTableFunctionInjector vtableInjector(object, *(void**)&funcPtr, {scriptVTableBase}[{scriptVTableOffset} + 2]); // TODO: this is not thread-safe");
+                if (classInfo is InterfaceInfo)
+                {
+                    contents.Append($"            return (({classInfo.NativeName}*)(void*)object)->{functionInfo.Name}(");
+                }
+                else
+                {
+                    contents.Append("            return (object->*funcPtr)(");
+                }
+            }
+            else
+            {
+                // MSVC or other compiler
+                contents.Append($"            return (this->**({functionInfo.UniqueName}_Internal_Signature*)&{scriptVTableBase}[{scriptVTableOffset} + 2])(");
+            }
+            bool separator = false;
+            for (var i = 0; i < functionInfo.Parameters.Count; i++)
+            {
+                var parameterInfo = functionInfo.Parameters[i];
+                if (separator)
+                    contents.Append(", ");
+                separator = true;
+                contents.Append(parameterInfo.Name);
+            }
+            contents.AppendLine(");");
+        }
+
         private static string GenerateCppGetNativeClass(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, FunctionInfo functionInfo)
         {
             // Optimal path for in-build types
@@ -1190,19 +1225,7 @@ namespace Flax.Build.Bindings
 
             contents.AppendLine("        if (WrapperCallInstance == object)");
             contents.AppendLine("        {");
-            contents.AppendLine("            // Prevent stack overflow by calling native base method");
-            contents.AppendLine("            const auto scriptVTableBase = managedTypePtr->Script.ScriptVTableBase;");
-            contents.Append($"            return (this->**({functionInfo.UniqueName}_Internal_Signature*)&scriptVTableBase[{scriptVTableOffset} + 2])(");
-            separator = false;
-            for (var i = 0; i < functionInfo.Parameters.Count; i++)
-            {
-                var parameterInfo = functionInfo.Parameters[i];
-                if (separator)
-                    contents.Append(", ");
-                separator = true;
-                contents.Append(parameterInfo.Name);
-            }
-            contents.AppendLine(");");
+            GenerateCppVirtualWrapperCallBaseMethod(buildData, contents, classInfo, functionInfo, "managedTypePtr->Script.ScriptVTableBase", scriptVTableOffset);
             contents.AppendLine("        }");
             contents.AppendLine("        auto scriptVTable = (MMethod**)managedTypePtr->Script.ScriptVTable;");
             contents.AppendLine($"        ASSERT(scriptVTable && scriptVTable[{scriptVTableOffset}]);");
@@ -1311,7 +1334,11 @@ namespace Flax.Build.Bindings
                 }
                 var t = functionInfo.IsConst ? " const" : string.Empty;
                 contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}::*{functionInfo.UniqueName}_Signature)({thunkParams}){t};");
-                contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}Internal::*{functionInfo.UniqueName}_Internal_Signature)({thunkParams}){t};");
+                if (!(buildData.Toolchain is Platforms.UnixToolchain))
+                {
+                    // MSVC or other compiler
+                    contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}Internal::*{functionInfo.UniqueName}_Internal_Signature)({thunkParams}){t};");
+                }
             }
             contents.AppendLine("");
 

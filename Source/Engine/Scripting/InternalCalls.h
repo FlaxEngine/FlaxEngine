@@ -7,6 +7,30 @@
 #include "ScriptingType.h"
 #include "Types.h"
 
+#if defined(__clang__)
+// Helper utility to override vtable entry with automatic restore
+// See BindingsGenerator.Cpp.cs that generates virtuall method wrappers for scripting to properly call overriden base method
+struct FLAXENGINE_API VTableFunctionInjector
+{
+    void** VTableAddr;
+    void* OriginalValue;
+
+    VTableFunctionInjector(void* object, void* originalFunc, void* func)
+    {
+        void** vtable = *(void***)object;
+        const int32 vtableIndex = GetVTableIndex(vtable, 200, originalFunc);
+        VTableAddr = vtable + vtableIndex;
+        OriginalValue = *VTableAddr;
+        *VTableAddr = func;
+    }
+
+    ~VTableFunctionInjector()
+    {
+        *VTableAddr = OriginalValue;
+    }
+};
+#endif
+
 #if USE_MONO
 
 extern "C" FLAXENGINE_API void mono_add_internal_call(const char* name, const void* method);
