@@ -129,26 +129,10 @@ void CoreCLR::RegisterNativeLibrary(const char* moduleName, const char* modulePa
 
 void* CoreCLR::Allocate(int size)
 {
-#if PLATFORM_WINDOWS
-    void* ptr = CoTaskMemAlloc(size);
-#else
-    void* ptr = malloc(size);
-#endif
-
-#if COMPILE_WITH_PROFILER
-    Platform::OnMemoryAlloc(ptr, size);
-#endif
-    return ptr;
+    return Platform::Allocate(size, 16);
 }
 
 void CoreCLR::Free(void* ptr)
 {
-#if COMPILE_WITH_PROFILER
-    Platform::OnMemoryFree(ptr);
-#endif
-#if PLATFORM_WINDOWS
-    CoTaskMemFree(ptr);
-#else
-    free(ptr);
-#endif
+    Platform::Free(ptr);
 }

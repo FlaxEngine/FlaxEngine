@@ -93,11 +93,11 @@ public:
         CoreCLR::CallStaticMethod<void, void*, NativeClassDefinitions**, int*>(GetManagedClassesPtr, _assemblyHandle, &managedClasses, &classCount);
         for (int i = 0; i < classCount; i++)
         {
-            CoreCLRClass* mci = New<CoreCLRClass>(managedClasses[i].typeHandle, StringAnsi(managedClasses[i].name), StringAnsi(managedClasses[i].fullname), StringAnsi(managedClasses[i].namespace_), managedClasses[i].typeAttributes, this);
-            _classes.Add(mci);
+            CoreCLRClass* klass = New<CoreCLRClass>(managedClasses[i].typeHandle, StringAnsi(managedClasses[i].name), StringAnsi(managedClasses[i].fullname), StringAnsi(managedClasses[i].namespace_), managedClasses[i].typeAttributes, this);
+            _classes.Add(klass);
 
             ASSERT(managedClasses[i].typeHandle != nullptr);
-            classHandles.Add(managedClasses[i].typeHandle, mci);
+            classHandles.Add(managedClasses[i].typeHandle, klass);
 
             CoreCLR::Free((void*)managedClasses[i].name);
             CoreCLR::Free((void*)managedClasses[i].fullname);
@@ -168,6 +168,8 @@ public:
         : _typeHandle(typeHandle), _name(name), _fullname(fullname), _namespace(namespace_), _typeAttributes(typeAttributes), _image(image)
     {
         _typeToken = TypeTokenPool++;
+        _monoType = 0;
+        _size = 0;
     }
 
     ~CoreCLRClass()
@@ -368,6 +370,7 @@ public:
     CoreCLRMethod(StringAnsi name, int numParams, void* methodHandle, uint32 flags, CoreCLRClass* klass)
         :_name(name), _numParams(numParams), _methodHandle(methodHandle), _methodAttributes(flags), _class(klass)
     {
+        _returnType = nullptr;
     }
 
     const StringAnsi& GetName() const
@@ -481,8 +484,12 @@ public:
     {
         if (getter != nullptr)
             _getMethod = New<CoreCLRMethod>(StringAnsi(_name + "Get"), 1, getter, getterFlags, klass);
+        else
+            _getMethod = nullptr;
         if (setter != nullptr)
             _setMethod = New<CoreCLRMethod>(StringAnsi(_name + "Set"), 1, setter, setterFlags, klass);
+        else
+            _setMethod = nullptr;
     }
 
     const StringAnsi& GetName() const
@@ -617,12 +624,12 @@ void* CoreCLR::GetCustomAttribute(void* klass, void* attribClass)
 }
 Array<void*> CoreCLR::GetCustomAttributes(void* klass)
 {
-    Array<CoreCLRCustomAttribute*> attrib = ((CoreCLRClass*)klass)->GetCustomAttributes();
+    Array<CoreCLRCustomAttribute*> attribs = ((CoreCLRClass*)klass)->GetCustomAttributes();
 
     Array<void*> attributes;
-    attributes.Resize(attrib.Count(), false);
-    for (int i = 0; i < attrib.Count(); i++)
-        attributes.Add(attrib[i]->GetHandle());
+    attributes.Resize(attribs.Count(), false);
+    for (int i = 0; i < attribs.Count(); i++)
+        attributes.Add(attribs[i]->GetHandle());
 
     return attributes;
 }
@@ -754,8 +761,7 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoObject* mono_value_box(MonoDomain* domain, Mo
 
 MONO_API void mono_value_copy(void* dest, /*const*/ void* src, MonoClass* klass)
 {
-    CoreCLRClass* mci = (CoreCLRClass*)klass;
-    Platform::MemoryCopy(dest, src, mci->GetSize());
+    Platform::MemoryCopy(dest, src, ((CoreCLRClass*)klass)->GetSize());
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoClass* mono_object_get_class(MonoObject* obj)
@@ -763,10 +769,9 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoClass* mono_object_get_class(MonoObject* obj)
     static void* GetObjectTypePtr = CoreCLR::GetStaticMethodPointer(TEXT("GetObjectType"));
     void* classHandle = CoreCLR::CallStaticMethod<void*, void*>(GetObjectTypePtr, obj);
 
-    CoreCLRClass* mi = GetOrCreateClass((void*)classHandle);
-
-    ASSERT(mi != nullptr)
-    return (MonoClass*)mi;
+    CoreCLRClass* klass = GetOrCreateClass((void*)classHandle);
+    ASSERT(klass != nullptr)
+    return (MonoClass*)klass;
 }
 
 MONO_API void* mono_object_unbox(MonoObject* obj)
@@ -794,25 +799,17 @@ MONO_API MonoMethod* mono_object_get_virtual_method(MonoObject* obj, MonoMethod*
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoObject* mono_runtime_invoke(MonoMethod* method, void* obj, void** params, MonoObject** exc)
 {
-    CoreCLRMethod* mi = (CoreCLRMethod*)method;
-    void* methodPtr = mi->GetMethodHandle();
-    ASSERT(methodPtr != nullptr);
-
     static void* InvokeMethodPtr = CoreCLR::GetStaticMethodPointer(TEXT("InvokeMethod"));
     MonoObject* execTmp = nullptr;
     if (!exc)
         exc = &execTmp;
-    return (MonoObject*)CoreCLR::CallStaticMethod<void*, void*, void*, void*, void*>(InvokeMethodPtr, obj, methodPtr, params, exc);
+    return (MonoObject*)CoreCLR::CallStaticMethod<void*, void*, void*, void*, void*>(InvokeMethodPtr, obj, ((CoreCLRMethod*)method)->GetMethodHandle(), params, exc);
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY void* mono_method_get_unmanaged_thunk(MonoMethod* method)
 {
-    CoreCLRMethod* mi = (CoreCLRMethod*)method;
-    void* methodPtr = mi->GetMethodHandle();
-    ASSERT(methodPtr != nullptr);
-
     static void* GetMethodUnmanagedFunctionPointerPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetMethodUnmanagedFunctionPointer"));
-    return CoreCLR::CallStaticMethod<void*, void*>(GetMethodUnmanagedFunctionPointerPtr, methodPtr);
+    return CoreCLR::CallStaticMethod<void*, void*>(GetMethodUnmanagedFunctionPointerPtr, ((CoreCLRMethod*)method)->GetMethodHandle());
 }
 
 MONO_API void mono_field_set_value(MonoObject* obj, MonoClassField* field, void* value)
@@ -1108,8 +1105,7 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoCustomAttrInfo* mono_custom_attrs_from_method
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoCustomAttrInfo* mono_custom_attrs_from_class(MonoClass* klass)
 {
-    CoreCLRClass* mi = (CoreCLRClass*)klass;
-    MonoCustomAttrInfo* info = (MonoCustomAttrInfo*)New<Array<CoreCLRCustomAttribute*>>(mi->GetCustomAttributes());
+    MonoCustomAttrInfo* info = (MonoCustomAttrInfo*)New<Array<CoreCLRCustomAttribute*>>(((CoreCLRClass*)klass)->GetCustomAttributes());
     return info;
 }
 
@@ -1154,8 +1150,8 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoObject* mono_custom_attrs_get_attr(MonoCustom
 
 MONO_API void mono_custom_attrs_free(MonoCustomAttrInfo* ainfo)
 {
-    Array<CoreCLRCustomAttribute*>* mcai = (Array<CoreCLRCustomAttribute*>*)ainfo;
-    Delete(mcai);
+    Array<CoreCLRCustomAttribute*>* attribs = (Array<CoreCLRCustomAttribute*>*)ainfo;
+    Delete(attribs);
 }
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoType* mono_reflection_type_get_type(MonoReflectionType* reftype)
@@ -1179,8 +1175,7 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoClass* mono_class_from_name(MonoImage* image,
     StringAnsi name_space(name_space_);
     StringAnsi name(name_);
 
-    CoreCLRAssembly* mi = (CoreCLRAssembly*)image;
-    for (auto klass : mi->GetClasses())
+    for (auto klass : ((CoreCLRAssembly*)image)->GetClasses())
     {
         if (klass->GetNamespace() == name_space && klass->GetName() == name)
             return (MonoClass*)klass;
@@ -1201,8 +1196,7 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoClass* mono_array_class_get(MonoClass* elemen
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoClassField* mono_class_get_field_from_name(MonoClass* klass, const char* name)
 {
-    CoreCLRClass* mi = (CoreCLRClass*)klass;
-    for (auto field : mi->GetFields())
+    for (auto field : ((CoreCLRClass*)klass)->GetFields())
     {
         if (field->GetName() == name)
             return (MonoClassField*)field;
@@ -1212,8 +1206,7 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoClassField* mono_class_get_field_from_name(Mo
 
 MONO_API MonoProperty* mono_class_get_property_from_name(MonoClass* klass, const char* name)
 {
-    CoreCLRClass* mi = (CoreCLRClass*)klass;
-    for (auto prop : mi->GetProperties())
+    for (auto prop : ((CoreCLRClass*)klass)->GetProperties())
     {
         if (prop->GetName() == name)
             return (MonoProperty*)prop;
@@ -1246,8 +1239,8 @@ MONO_API mono_bool mono_class_is_subclass_of(MonoClass* klass, MonoClass* klassc
 
 MONO_API char* mono_type_get_name(MonoType* type)
 {
-    CoreCLRClass* mci = (CoreCLRClass*)mono_type_get_class(type);
-    return StringAnsi(mci->GetFullname()).Get();
+    CoreCLRClass* klass = (CoreCLRClass*)mono_type_get_class(type);
+    return StringAnsi(klass->GetFullname()).Get();
 }
 
 MONO_API MonoImage* mono_class_get_image(MonoClass* klass)
@@ -1495,8 +1488,7 @@ MONO_API mono_bool mono_type_is_reference(MonoType* type)
 
 MONO_API MonoType* mono_signature_get_return_type(MonoMethodSignature* sig)
 {
-    CoreCLRMethod* mi = (CoreCLRMethod*)sig;
-    return (MonoType*)mi->GetReturnType();
+    return (MonoType*)((CoreCLRMethod*)sig)->GetReturnType();
 }
 
 MONO_API MonoType* mono_signature_get_params(MonoMethodSignature* sig, void** iter)
@@ -1514,15 +1506,13 @@ MONO_API MonoType* mono_signature_get_params(MonoMethodSignature* sig, void** it
 
 MONO_API uint32 mono_signature_get_param_count(MonoMethodSignature* sig)
 {
-    CoreCLRMethod* mi = (CoreCLRMethod*)sig;
-    return mi->GetNumParameters();
+    return ((CoreCLRMethod*)sig)->GetNumParameters();
 }
 
 MONO_API mono_bool mono_signature_param_is_out(MonoMethodSignature* sig, int param_num)
 {
-    CoreCLRMethod* mi = (CoreCLRMethod*)sig;
     static void* GetMethodParameterIsOutPtr = CoreCLR::GetStaticMethodPointer(TEXT("GetMethodParameterIsOut"));
-    return CoreCLR::CallStaticMethod<bool, void*, int>(GetMethodParameterIsOutPtr, mi->GetMethodHandle(), param_num);
+    return CoreCLR::CallStaticMethod<bool, void*, int>(GetMethodParameterIsOutPtr, ((CoreCLRMethod*)sig)->GetMethodHandle(), param_num);
 }
 
 MONO_API int mono_type_stack_size(MonoType* type, int* alignment)

@@ -60,7 +60,6 @@ namespace Flax.Build.Bindings
         public struct GlueInfo
         {
             public bool UseReferenceForResult;
-            public bool UseResultReferenceCount;
             public List<ParameterInfo> CustomParameters;
         }
 

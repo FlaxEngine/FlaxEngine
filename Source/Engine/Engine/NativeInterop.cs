@@ -15,6 +15,7 @@ using System.Runtime.InteropServices.Marshalling;
 using FlaxEngine.Visject;
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Text;
 
 #pragma warning disable 1591
 
@@ -181,9 +182,11 @@ namespace FlaxEngine
             return managedArray;
         }
 
-        internal static ManagedArray AllocateNewArray<T>(T* ptr, int length) where T : unmanaged => new ManagedArray(ptr, length, Unsafe.SizeOf<T>());
+        internal static ManagedArray AllocateNewArray(int length, int elementSize)
+            => new ManagedArray((IntPtr)NativeInterop.NativeAlloc(length, elementSize), length, elementSize);
 
-        internal static ManagedArray AllocateNewArray(IntPtr ptr, int length, int elementSize) => new ManagedArray(ptr.ToPointer(), length, elementSize);
+        internal static ManagedArray AllocateNewArray(IntPtr ptr, int length, int elementSize)
+            => new ManagedArray(ptr, length, elementSize);
 
         /// <summary>
         /// Returns an instance of ManagedArray from shared pool.
@@ -195,6 +198,19 @@ namespace FlaxEngine
         {
             ManagedArray managedArray = ManagedArrayPool.Get();
             managedArray.Allocate(ptr, length);
+            return managedArray;
+        }
+
+        /// <summary>
+        /// Returns an instance of ManagedArray from shared pool.
+        /// </summary>
+        /// <remarks>
+        /// The resources must be released by calling FreePooled() instead of Free()-method.
+        /// </remarks>
+        internal static ManagedArray AllocatePooledArray<T>(int length) where T : unmanaged
+        {
+            ManagedArray managedArray = ManagedArrayPool.Get();
+            managedArray.Allocate((IntPtr)NativeInterop.NativeAlloc(length, Unsafe.SizeOf<T>()), length, Unsafe.SizeOf<T>());
             return managedArray;
         }
 
@@ -224,7 +240,7 @@ namespace FlaxEngine
 
         private ManagedArray() { }
 
-        private ManagedArray(void* ptr, int length, int elementSize) => Allocate(new IntPtr(ptr), length, elementSize);
+        private ManagedArray(IntPtr ptr, int length, int elementSize) => Allocate(ptr, length, elementSize);
 
         ~ManagedArray()
         {
@@ -242,7 +258,7 @@ namespace FlaxEngine
             }
             if (unmanagedData != IntPtr.Zero)
             {
-                Marshal.FreeHGlobal(unmanagedData);
+                NativeInterop.NativeFree(unmanagedData.ToPointer());
                 unmanagedData = IntPtr.Zero;
             }
         }
@@ -608,7 +624,7 @@ namespace FlaxEngine
                     return null;
                 }
                 numElements = managed.Length;
-                ManagedArray managedArray = ManagedArray.AllocatePooledArray((TUnmanagedElement*)Marshal.AllocHGlobal(sizeof(TUnmanagedElement) * managed.Length), managed.Length);
+                ManagedArray managedArray = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
                 var ptr = GCHandle.ToIntPtr(GCHandle.Alloc(managedArray));
                 return (TUnmanagedElement*)ptr;
             }
@@ -644,7 +660,7 @@ namespace FlaxEngine
                 if (managed == null)
                     return;
                 managedArray = managed;
-                unmanagedArray = ManagedArray.AllocatePooledArray((TUnmanagedElement*)Marshal.AllocHGlobal(sizeof(TUnmanagedElement) * managed.Length), managed.Length);
+                unmanagedArray = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
                 handle = GCHandle.Alloc(unmanagedArray);
             }
 
@@ -692,7 +708,7 @@ namespace FlaxEngine
                 return null;
             }
             numElements = managed.Length;
-            ManagedArray managedArray = ManagedArray.AllocatePooledArray((TUnmanagedElement*)Marshal.AllocHGlobal(sizeof(TUnmanagedElement) * managed.Length), managed.Length);
+            ManagedArray managedArray = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
             IntPtr handle = GCHandle.ToIntPtr(GCHandle.Alloc(managedArray));
             return (TUnmanagedElement*)handle;
         }
@@ -867,6 +883,35 @@ namespace FlaxEngine
             string moduleName = Marshal.PtrToStringAnsi(moduleName_);
             string modulePath = Marshal.PtrToStringAnsi(modulePath_);
             nativeLibraryPaths[moduleName] = modulePath;
+        }
+
+        internal static void* NativeAlloc(int byteCount)
+        {
+            return NativeMemory.AlignedAlloc((UIntPtr)byteCount, 16);
+        }
+
+        internal static void* NativeAlloc(int elementCount, int elementSize)
+        {
+            return NativeMemory.AlignedAlloc((UIntPtr)(elementCount * elementSize), 16);
+        }
+
+        internal static IntPtr NativeAllocStringAnsi(string str)
+        {
+            if (str is null)
+                return IntPtr.Zero;
+
+            int length = str.Length + 1;
+            void* ptr = NativeMemory.AlignedAlloc((UIntPtr)length, 16);
+            Span<byte> byteSpan = new Span<byte>(ptr, length);
+            Encoding.ASCII.GetBytes(str, byteSpan);
+            byteSpan[length - 1] = 0;
+
+            return (IntPtr)ptr;
+        }
+
+        internal static void NativeFree(void* ptr)
+        {
+            NativeMemory.AlignedFree(ptr);
         }
 
         internal static T[] GCHandleArrayToManagedArray<T>(ManagedArray ptrArray)
@@ -1530,7 +1575,7 @@ namespace FlaxEngine
             Assembly assembly = Unsafe.As<Assembly>(GCHandle.FromIntPtr(assemblyHandle).Target);
             var assemblyTypes = GetAssemblyTypes(assembly);
 
-            NativeClassDefinitions* arr = (NativeClassDefinitions*)Marshal.AllocCoTaskMem(Unsafe.SizeOf<NativeClassDefinitions>() * assemblyTypes.Length).ToPointer();
+            NativeClassDefinitions* arr = (NativeClassDefinitions*)NativeAlloc(assemblyTypes.Length, Unsafe.SizeOf<NativeClassDefinitions>());
 
             for (int i = 0; i < assemblyTypes.Length; i++)
             {
@@ -1545,9 +1590,9 @@ namespace FlaxEngine
                 NativeClassDefinitions managedClass = new NativeClassDefinitions()
                 {
                     typeHandle = GCHandle.ToIntPtr(typeHandle),
-                    name = Marshal.StringToCoTaskMemAnsi(type.Name),
-                    fullname = Marshal.StringToCoTaskMemAnsi(type.FullName),
-                    @namespace = Marshal.StringToCoTaskMemAnsi(type.Namespace ?? ""),
+                    name = NativeAllocStringAnsi(type.Name),
+                    fullname = NativeAllocStringAnsi(type.FullName),
+                    @namespace = NativeAllocStringAnsi(type.Namespace ?? ""),
                     typeAttributes = (uint)type.Attributes,
                 };
                 Unsafe.Write(ptr.ToPointer(), managedClass);
@@ -1565,9 +1610,9 @@ namespace FlaxEngine
             *managedClass = new NativeClassDefinitions()
             {
                 typeHandle = GCHandle.ToIntPtr(classTypeHandle),
-                name = Marshal.StringToCoTaskMemAnsi(type.Name),
-                fullname = Marshal.StringToCoTaskMemAnsi(type.FullName),
-                @namespace = Marshal.StringToCoTaskMemAnsi(type.Namespace ?? ""),
+                name = NativeAllocStringAnsi(type.Name),
+                fullname = NativeAllocStringAnsi(type.FullName),
+                @namespace = NativeAllocStringAnsi(type.Namespace ?? ""),
                 typeAttributes = (uint)type.Attributes,
             };
             *assemblyHandle = GCHandle.ToIntPtr(GetAssemblyHandle(type.Assembly));
@@ -1586,13 +1631,13 @@ namespace FlaxEngine
             foreach (MethodInfo method in instanceMethods)
                 methods.Add(method);
 
-            NativeMethodDefinitions* arr = (NativeMethodDefinitions*)Marshal.AllocCoTaskMem(Unsafe.SizeOf<NativeMethodDefinitions>() * methods.Count).ToPointer();
+            NativeMethodDefinitions* arr = (NativeMethodDefinitions*)NativeAlloc(methods.Count, Unsafe.SizeOf<NativeMethodDefinitions>());
             for (int i = 0; i < methods.Count; i++)
             {
                 IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativeMethodDefinitions>() * i);
                 NativeMethodDefinitions classMethod = new NativeMethodDefinitions()
                 {
-                    name = Marshal.StringToCoTaskMemAnsi(methods[i].Name),
+                    name = NativeAllocStringAnsi(methods[i].Name),
                     numParameters = methods[i].GetParameters().Length,
                     methodAttributes = (uint)methods[i].Attributes,
                 };
@@ -1621,11 +1666,9 @@ namespace FlaxEngine
             Type type = Unsafe.As<Type>(GCHandle.FromIntPtr(typeHandle).Target);
             var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
-            NativeFieldDefinitions* arr = (NativeFieldDefinitions*)Marshal.AllocCoTaskMem(Unsafe.SizeOf<NativeFieldDefinitions>() * fields.Length).ToPointer();
+            NativeFieldDefinitions* arr = (NativeFieldDefinitions*)NativeAlloc(fields.Length, Unsafe.SizeOf<NativeFieldDefinitions>());
             for (int i = 0; i < fields.Length; i++)
             {
-                IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativeFieldDefinitions>() * i);
-
                 FieldHolder fieldHolder = new FieldHolder(fields[i], type);
 
                 GCHandle fieldHandle = GCHandle.Alloc(fieldHolder);
@@ -1636,12 +1679,12 @@ namespace FlaxEngine
 
                 NativeFieldDefinitions classField = new NativeFieldDefinitions()
                 {
-                    name = Marshal.StringToCoTaskMemAnsi(fieldHolder.field.Name),
+                    name = NativeAllocStringAnsi(fieldHolder.field.Name),
                     fieldHandle = GCHandle.ToIntPtr(fieldHandle),
                     fieldTypeHandle = GCHandle.ToIntPtr(GetTypeGCHandle(fieldHolder.field.FieldType)),
                     fieldAttributes = (uint)fieldHolder.field.Attributes,
                 };
-                Unsafe.Write(ptr.ToPointer(), classField);
+                Unsafe.Write(IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativeFieldDefinitions>() * i).ToPointer(), classField);
             }
             *classFields = arr;
             *classFieldsCount = fields.Length;
@@ -1653,7 +1696,7 @@ namespace FlaxEngine
             Type type = Unsafe.As<Type>(GCHandle.FromIntPtr(typeHandle).Target);
             var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
-            NativePropertyDefinitions* arr = (NativePropertyDefinitions*)Marshal.AllocCoTaskMem(Unsafe.SizeOf<NativePropertyDefinitions>() * properties.Length).ToPointer();
+            NativePropertyDefinitions* arr = (NativePropertyDefinitions*)NativeAlloc(properties.Length, Unsafe.SizeOf<NativePropertyDefinitions>());
             for (int i = 0; i < properties.Length; i++)
             {
                 IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativePropertyDefinitions>() * i);
@@ -1663,7 +1706,7 @@ namespace FlaxEngine
 
                 NativePropertyDefinitions classProperty = new NativePropertyDefinitions()
                 {
-                    name = Marshal.StringToCoTaskMemAnsi(properties[i].Name),
+                    name = NativeAllocStringAnsi(properties[i].Name),
                 };
                 if (getterMethod != null)
                 {
@@ -1688,7 +1731,7 @@ namespace FlaxEngine
             object[] attributeValues = type.GetCustomAttributes(false);
             Type[] attributeTypes = type.GetCustomAttributes(false).Select(x => x.GetType()).ToArray();
 
-            NativeAttributeDefinitions* arr = (NativeAttributeDefinitions*)Marshal.AllocCoTaskMem(Unsafe.SizeOf<NativeAttributeDefinitions>() * attributeTypes.Length).ToPointer();
+            NativeAttributeDefinitions* arr = (NativeAttributeDefinitions*)NativeAlloc(attributeTypes.Length, Unsafe.SizeOf<NativeAttributeDefinitions>());
             for (int i = 0; i < attributeTypes.Length; i++)
             {
                 IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativeAttributeDefinitions>() * i);
@@ -1702,7 +1745,7 @@ namespace FlaxEngine
 
                 NativeAttributeDefinitions classAttribute = new NativeAttributeDefinitions()
                 {
-                    name = Marshal.StringToCoTaskMemAnsi(attributeTypes[i].Name),
+                    name = NativeAllocStringAnsi(attributeTypes[i].Name),
                     attributeTypeHandle = GCHandle.ToIntPtr(attributeTypeHandle),
                     attributeHandle = GCHandle.ToIntPtr(attributeHandle),
                 };
@@ -1733,13 +1776,11 @@ namespace FlaxEngine
             //foreach (Type interfaceType in type.BaseType.GetInterfaces())
             //    interfaces.Remove(interfaceType.FullName);
 
-            IntPtr arr = Marshal.AllocCoTaskMem(IntPtr.Size * interfaces.Length);
+            IntPtr arr = (IntPtr)NativeAlloc(interfaces.Length, IntPtr.Size);
             for (int i = 0; i < interfaces.Length; i++)
             {
-                IntPtr ptr = IntPtr.Add(arr, IntPtr.Size * i);
-
                 GCHandle handle = GetTypeGCHandle(interfaces[i]);
-                Marshal.WriteIntPtr(ptr, GCHandle.ToIntPtr(handle));
+                Unsafe.Write<IntPtr>(IntPtr.Add(arr, IntPtr.Size * i).ToPointer(), GCHandle.ToIntPtr(handle));
             }
             *classInterfaces = arr;
             *classInterfacesCount = interfaces.Length;
@@ -1759,11 +1800,11 @@ namespace FlaxEngine
         {
             MethodHolder methodHolder = Unsafe.As<MethodHolder>(GCHandle.FromIntPtr(methodHandle).Target);
             Type returnType = methodHolder.method.ReturnType;
-            IntPtr arr = Marshal.AllocCoTaskMem(IntPtr.Size * methodHolder.parameterTypes.Length);
+            IntPtr arr = (IntPtr)NativeAlloc(methodHolder.parameterTypes.Length, IntPtr.Size);
             for (int i = 0; i < methodHolder.parameterTypes.Length; i++)
             {
                 GCHandle typeHandle = GetTypeGCHandle(methodHolder.parameterTypes[i]);
-                Marshal.WriteIntPtr(IntPtr.Add(new IntPtr(arr), IntPtr.Size * i), GCHandle.ToIntPtr(typeHandle));
+                Unsafe.Write<IntPtr>(IntPtr.Add(new IntPtr(arr), IntPtr.Size * i).ToPointer(), GCHandle.ToIntPtr(typeHandle));
             }
             *typeHandles = arr;
         }
@@ -1847,7 +1888,7 @@ namespace FlaxEngine
             Type marshalledType = ArrayFactory.GetMarshalledType(type);
             if (marshalledType.IsValueType)
             {
-                ManagedArray managedArray = ManagedArray.AllocateNewArray(Marshal.AllocHGlobal(Marshal.SizeOf(marshalledType) * (int)size), (int)size, Marshal.SizeOf(marshalledType));
+                ManagedArray managedArray = ManagedArray.AllocateNewArray((int)size, Marshal.SizeOf(marshalledType));
                 return GCHandle.ToIntPtr(GCHandle.Alloc(managedArray/*, GCHandleType.Weak*/));
             }
             else
@@ -2045,8 +2086,10 @@ namespace FlaxEngine
                         return (bool)returnObject ? boolTruePtr : boolFalsePtr;
                     else if (methodHolder.method.ReturnType == typeof(Type))
                         return GCHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnObject)));
-                    else if (methodHolder.method.ReturnType == typeof(object[]))
-                        return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<object[]>(returnObject))), GCHandleType.Weak));
+                    else if (methodHolder.method.ReturnType.IsArray && ArrayFactory.GetMarshalledType(methodHolder.method.ReturnType.GetElementType()) == methodHolder.method.ReturnType.GetElementType())
+                        return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnObject)), GCHandleType.Weak));
+                    else if (methodHolder.method.ReturnType.IsArray)
+                        return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnObject))), GCHandleType.Weak));
                     else
                         return GCHandle.ToIntPtr(GCHandle.Alloc(returnObject, GCHandleType.Weak));
                 }
@@ -2109,8 +2152,8 @@ namespace FlaxEngine
                 firstAssemblyLoaded = true;
 
                 Assembly flaxEngineAssembly = AppDomain.CurrentDomain.GetAssemblies().First(x => x.GetName().Name == "FlaxEngine.CSharp");
-                *assemblyName = Marshal.StringToCoTaskMemAnsi(flaxEngineAssembly.GetName().Name);
-                *assemblyFullName = Marshal.StringToCoTaskMemAnsi(flaxEngineAssembly.FullName);
+                *assemblyName = NativeAllocStringAnsi(flaxEngineAssembly.GetName().Name);
+                *assemblyFullName = NativeAllocStringAnsi(flaxEngineAssembly.FullName);
                 return GCHandle.ToIntPtr(GetAssemblyHandle(flaxEngineAssembly));
             }
             string assemblyPath = Marshal.PtrToStringAnsi(assemblyPath_);
@@ -2118,8 +2161,8 @@ namespace FlaxEngine
             Assembly assembly = scriptingAssemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
             NativeLibrary.SetDllImportResolver(assembly, NativeLibraryImportResolver);
 
-            *assemblyName = Marshal.StringToCoTaskMemAnsi(assembly.GetName().Name);
-            *assemblyFullName = Marshal.StringToCoTaskMemAnsi(assembly.FullName);
+            *assemblyName = NativeAllocStringAnsi(assembly.GetName().Name);
+            *assemblyFullName = NativeAllocStringAnsi(assembly.FullName);
             return GCHandle.ToIntPtr(GetAssemblyHandle(assembly));
         }
 
@@ -2132,8 +2175,8 @@ namespace FlaxEngine
                 firstAssemblyLoaded = true;
 
                 Assembly flaxEngineAssembly = AppDomain.CurrentDomain.GetAssemblies().First(x => x.GetName().Name == "FlaxEngine.CSharp");
-                *assemblyName = Marshal.StringToCoTaskMemAnsi(flaxEngineAssembly.GetName().Name);
-                *assemblyFullName = Marshal.StringToCoTaskMemAnsi(flaxEngineAssembly.FullName);
+                *assemblyName = NativeAllocStringAnsi(flaxEngineAssembly.GetName().Name);
+                *assemblyFullName = NativeAllocStringAnsi(flaxEngineAssembly.FullName);
                 return GCHandle.ToIntPtr(GetAssemblyHandle(flaxEngineAssembly));
             }
 
@@ -2149,8 +2192,8 @@ namespace FlaxEngine
             // Assemblies loaded via streams have no Location: https://github.com/dotnet/runtime/issues/12822
             AssemblyLocations.Add(assembly.FullName, assemblyPath);
 
-            *assemblyName = Marshal.StringToCoTaskMemAnsi(assembly.GetName().Name);
-            *assemblyFullName = Marshal.StringToCoTaskMemAnsi(assembly.FullName);
+            *assemblyName = NativeAllocStringAnsi(assembly.GetName().Name);
+            *assemblyFullName = NativeAllocStringAnsi(assembly.FullName);
             return GCHandle.ToIntPtr(GetAssemblyHandle(assembly));
         }
 
@@ -2162,15 +2205,15 @@ namespace FlaxEngine
             if (assembly == null)
                 assembly = scriptingAssemblyLoadContext.Assemblies.FirstOrDefault(x => x.GetName().Name == name);
 
-            *assemblyName = Marshal.StringToCoTaskMemAnsi(assembly.GetName().Name);
-            *assemblyFullName = Marshal.StringToCoTaskMemAnsi(assembly.FullName);
+            *assemblyName = NativeAllocStringAnsi(assembly.GetName().Name);
+            *assemblyFullName = NativeAllocStringAnsi(assembly.FullName);
             return GCHandle.ToIntPtr(GetAssemblyHandle(assembly));
         }
 
         [UnmanagedCallersOnly]
         internal static IntPtr GetRuntimeInformation()
         {
-            return Marshal.StringToCoTaskMemAnsi(System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription);
+            return NativeAllocStringAnsi(System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription);
         }
 
         [UnmanagedCallersOnly]
