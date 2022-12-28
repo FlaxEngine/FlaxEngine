@@ -353,6 +353,7 @@ namespace FlaxEditor.Windows
             // Viewport Brightness
             {
                 var brightness = menu.AddButton("Viewport Brightness");
+                brightness.CloseMenuOnClick = false;
                 var brightnessValue = new FloatValueBox(_viewport.Brightness, 140, 2, 50.0f, 0.001f, 10.0f, 0.001f)
                 {
                     Parent = brightness
@@ -363,6 +364,7 @@ namespace FlaxEditor.Windows
             // Viewport Resolution
             {
                 var resolution = menu.AddButton("Viewport Resolution");
+                resolution.CloseMenuOnClick = false;
                 var resolutionValue = new FloatValueBox(_viewport.ResolutionScale, 140, 2, 50.0f, 0.1f, 4.0f, 0.001f)
                 {
                     Parent = resolution
@@ -381,6 +383,7 @@ namespace FlaxEditor.Windows
             // Show GUI
             {
                 var button = menu.AddButton("Show GUI");
+                button.CloseMenuOnClick = false;
                 var checkbox = new CheckBox(140, 2, ShowGUI) { Parent = button };
                 checkbox.StateChanged += x => ShowGUI = x.Checked;
             }
@@ -388,6 +391,7 @@ namespace FlaxEditor.Windows
             // Show Debug Draw
             {
                 var button = menu.AddButton("Show Debug Draw");
+                button.CloseMenuOnClick = false;
                 var checkbox = new CheckBox(140, 2, ShowDebugDraw) { Parent = button };
                 checkbox.StateChanged += x => ShowDebugDraw = x.Checked;
             }
