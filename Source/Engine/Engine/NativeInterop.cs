@@ -1311,16 +1311,14 @@ namespace FlaxEngine
 
                 internal static void ToManagedFieldArray(FieldInfo field, ref T fieldOwner, IntPtr fieldPtr, out int fieldOffset)
                 {
-                    fieldOffset = Unsafe.SizeOf<TField>();
-                    if (fieldAlignment > 1)
-                    {
-                        IntPtr fieldStartPtr = fieldPtr;
-                        fieldPtr = EnsureAlignment(fieldPtr, fieldAlignment);
-                        fieldOffset += (fieldPtr - fieldStartPtr).ToInt32();
-                    }
+                    // Follows the same marshalling semantics with reference types
+                    fieldOffset = Unsafe.SizeOf<IntPtr>();
+                    IntPtr fieldStartPtr = fieldPtr;
+                    fieldPtr = EnsureAlignment(fieldPtr, IntPtr.Size);
+                    fieldOffset += (fieldPtr - fieldStartPtr).ToInt32();
 
                     ref TField[] fieldValueRef = ref GetFieldReference<TField[]>(field, ref fieldOwner);
-                    MarshalHelperValueType<TField>.ToManagedArray(ref fieldValueRef, fieldPtr, false);
+                    MarshalHelperValueType<TField>.ToManagedArray(ref fieldValueRef, Unsafe.Read<IntPtr>(fieldPtr.ToPointer()), false);
                 }
 
                 internal static void ToNativeField(FieldInfo field, ref T fieldOwner, IntPtr fieldPtr, out int fieldOffset)
@@ -1342,16 +1340,24 @@ namespace FlaxEngine
             {
                 internal static void ToManagedField(FieldInfo field, ref T fieldOwner, IntPtr fieldPtr, out int fieldOffset)
                 {
+                    fieldOffset = Unsafe.SizeOf<IntPtr>();
+                    IntPtr fieldStartPtr = fieldPtr;
+                    fieldPtr = EnsureAlignment(fieldPtr, IntPtr.Size);
+                    fieldOffset += (fieldPtr - fieldStartPtr).ToInt32();
+
                     ref TField fieldValueRef = ref GetFieldReference<TField>(field, ref fieldOwner);
-                    MarshalHelperReferenceType<TField>.ToManaged(ref fieldValueRef, Marshal.ReadIntPtr(fieldPtr), false);
-                    fieldOffset = IntPtr.Size;
+                    MarshalHelperReferenceType<TField>.ToManaged(ref fieldValueRef, Unsafe.Read<IntPtr>(fieldPtr.ToPointer()), false);
                 }
 
                 internal static void ToNativeField(FieldInfo field, ref T fieldOwner, IntPtr fieldPtr, out int fieldOffset)
                 {
+                    fieldOffset = Unsafe.SizeOf<IntPtr>();
+                    IntPtr fieldStartPtr = fieldPtr;
+                    fieldPtr = EnsureAlignment(fieldPtr, IntPtr.Size);
+                    fieldOffset += (fieldPtr - fieldStartPtr).ToInt32();
+
                     ref TField fieldValueRef = ref GetFieldReference<TField>(field, ref fieldOwner);
                     MarshalHelperReferenceType<TField>.ToNative(ref fieldValueRef, fieldPtr);
-                    fieldOffset = IntPtr.Size;
                 }
             }
         }
