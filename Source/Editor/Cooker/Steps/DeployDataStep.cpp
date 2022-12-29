@@ -28,6 +28,11 @@ bool DeployDataStep::Perform(CookingData& data)
     FileSystem::CreateDirectory(contentDir);
 #if USE_NETCORE
     // TODO: Optionally copy all files needed for self-contained deployment
+    {
+        // Remove old Mono files
+        FileSystem::DeleteDirectory(data.DataOutputPath / TEXT("Mono"));
+        FileSystem::DeleteFile(data.DataOutputPath / TEXT("MonoPosixHelper.dll"));
+    }
 #else
     const auto srcMono = depsRoot / TEXT("Mono");
     const auto dstMono = data.DataOutputPath / TEXT("Mono");
