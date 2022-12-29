@@ -30,8 +30,8 @@ namespace FlaxEditor.Windows
         private CursorLockMode _cursorLockMode = CursorLockMode.None;
         
         // Viewport scaling variables
-        private List<ViewportScaling> _defaultViewportScaling = new List<ViewportScaling>();
-        private List<ViewportScaling> _customViewportScaling = new List<ViewportScaling>();
+        private List<ViewportScaleOptions> _defaultViewportScaling = new List<ViewportScaleOptions>();
+        private List<ViewportScaleOptions> _customViewportScaling = new List<ViewportScaleOptions>();
         private float _viewportAspectRatio = 1;
         private float _windowAspectRatio = 1;
         private bool _useAspect = false;
@@ -115,13 +115,13 @@ namespace FlaxEditor.Windows
         /// </summary>
         public bool FocusOnPlay { get; set; }
 
-        private enum ViewportScalingType
+        private enum ViewportScaleType
         {
             Resolution = 0,
             Aspect = 1,
         }
         
-        private class ViewportScaling
+        private class ViewportScaleOptions
         {
             /// <summary>
             /// The name.
@@ -131,7 +131,7 @@ namespace FlaxEditor.Windows
             /// <summary>
             /// The Type of scaling to do.
             /// </summary>
-            public ViewportScalingType ScalingType;
+            public ViewportScaleType ScaleType;
             
             /// <summary>
             /// The width and height to scale by.
@@ -311,7 +311,7 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.StepFrame, Editor.Simulation.RequestPlayOneFrame);
         }
 
-        private void ChangeViewportRatio(ViewportScaling v)
+        private void ChangeViewportRatio(ViewportScaleOptions v)
         {
             if (v == null)
                 return;
@@ -328,13 +328,13 @@ namespace FlaxEditor.Windows
             }
             else
             {
-                switch (v.ScalingType)
+                switch (v.ScaleType)
                 {
-                    case ViewportScalingType.Aspect:
+                    case ViewportScaleType.Aspect:
                         _useAspect = true;
                         _freeAspect = false;
                         break;
-                    case ViewportScalingType.Resolution:
+                    case ViewportScaleType.Resolution:
                         _useAspect = false;
                         _freeAspect = false;
                         break;
@@ -500,38 +500,38 @@ namespace FlaxEditor.Windows
                 // Create default scaling options if they dont exist from deserialization.
                 if (_defaultViewportScaling.Count == 0)
                 {
-                    _defaultViewportScaling.Add(new ViewportScaling
+                    _defaultViewportScaling.Add(new ViewportScaleOptions
                     {
                         Label = "Free Aspect",
-                        ScalingType = ViewportScalingType.Aspect,
+                        ScaleType = ViewportScaleType.Aspect,
                         Size = new Int2(1,1),
                         Active = true,
                     });
-                    _defaultViewportScaling.Add(new ViewportScaling
+                    _defaultViewportScaling.Add(new ViewportScaleOptions
                     {
                         Label = "16:9 Aspect",
-                        ScalingType = ViewportScalingType.Aspect,
+                        ScaleType = ViewportScaleType.Aspect,
                         Size = new Int2(16,9),
                         Active = false,
                     });
-                    _defaultViewportScaling.Add(new ViewportScaling
+                    _defaultViewportScaling.Add(new ViewportScaleOptions
                     {
                         Label = "16:10 Aspect",
-                        ScalingType = ViewportScalingType.Aspect,
+                        ScaleType = ViewportScaleType.Aspect,
                         Size = new Int2(16,10),
                         Active = false,
                     });
-                    _defaultViewportScaling.Add(new ViewportScaling
+                    _defaultViewportScaling.Add(new ViewportScaleOptions
                     {
                         Label = "1920x1080 Resolution",
-                        ScalingType = ViewportScalingType.Resolution,
+                        ScaleType = ViewportScaleType.Resolution,
                         Size = new Int2(1920,1080),
                         Active = false,
                     });
-                    _defaultViewportScaling.Add(new ViewportScaling
+                    _defaultViewportScaling.Add(new ViewportScaleOptions
                     {
                         Label = "2560x1440 Resolution",
-                        ScalingType = ViewportScalingType.Resolution,
+                        ScaleType = ViewportScaleType.Resolution,
                         Size = new Int2(2560,1440),
                         Active = false,
                     });
@@ -592,7 +592,7 @@ namespace FlaxEditor.Windows
                     {
                         if (child is ContextMenuButton cmb)
                         {
-                            var v = (ViewportScaling)cmb.Tag;
+                            var v = (ViewportScaleOptions)cmb.Tag;
                             if (cmb == button)
                             {
                                 v.Active = true;
@@ -632,7 +632,7 @@ namespace FlaxEditor.Windows
                     {
                         if (child is ContextMenuButton cmb)
                         {
-                            var v = (ViewportScaling)child.Tag;
+                            var v = (ViewportScaleOptions)child.Tag;
                             if (child == childCM)
                             {
                                 v.Active = true;
@@ -655,7 +655,7 @@ namespace FlaxEditor.Windows
                     if (childCM.Tag == null)
                         return;
 
-                    var v = (ViewportScaling)childCM.Tag;
+                    var v = (ViewportScaleOptions)childCM.Tag;
                     if (v.Active)
                     {
                         v.Active = false;
@@ -766,14 +766,14 @@ namespace FlaxEditor.Windows
 
                 submitButton.Clicked += () =>
                 {
-                    Enum.TryParse(typeDropdown.SelectedItem, out ViewportScalingType type);
+                    Enum.TryParse(typeDropdown.SelectedItem, out ViewportScaleType type);
 
-                    var combineString = type == ViewportScalingType.Aspect ? ":" : "x";
+                    var combineString = type == ViewportScaleType.Aspect ? ":" : "x";
                     var name = nameTextBox.Text + " (" + wValue.Value + combineString + hValue.Value + ") " + typeDropdown.SelectedItem;
 
-                    var newViewportOption = new ViewportScaling
+                    var newViewportOption = new ViewportScaleOptions
                     {
-                        ScalingType = type,
+                        ScaleType = type,
                         Label = name,
                         Size = new Int2(wValue.Value, hValue.Value),
                     };
@@ -1041,7 +1041,7 @@ namespace FlaxEditor.Windows
             if (bool.TryParse(node.GetAttribute("ShowDebugDraw"), out value1))
                 ShowDebugDraw = value1;
             if (node.HasAttribute("CustomViewportScaling"))
-                _customViewportScaling = JsonSerializer.Deserialize<List<ViewportScaling>>(node.GetAttribute("CustomViewportScaling"));
+                _customViewportScaling = JsonSerializer.Deserialize<List<ViewportScaleOptions>>(node.GetAttribute("CustomViewportScaling"));
             
             for (int i = 0; i < _customViewportScaling.Count; i++)
             {
@@ -1050,7 +1050,7 @@ namespace FlaxEditor.Windows
             }
             
             if (node.HasAttribute("DefaultViewportScaling"))
-                _defaultViewportScaling = JsonSerializer.Deserialize<List<ViewportScaling>>(node.GetAttribute("DefaultViewportScaling"));
+                _defaultViewportScaling = JsonSerializer.Deserialize<List<ViewportScaleOptions>>(node.GetAttribute("DefaultViewportScaling"));
             
             for (int i = 0; i < _defaultViewportScaling.Count; i++)
             {
