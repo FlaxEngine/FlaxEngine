@@ -10,7 +10,6 @@
 class FLAXENGINE_API ObjectsRemovalService
 {
 public:
-
     /// <summary>
     /// Determines whether object has been registered in the pool for the removing.
     /// </summary>

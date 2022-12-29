@@ -22,11 +22,10 @@ namespace ObjectsRemovalServiceImpl
 
 using namespace ObjectsRemovalServiceImpl;
 
-class ObjectsRemovalServiceService : public EngineService
+class ObjectsRemoval : public EngineService
 {
 public:
-
-    ObjectsRemovalServiceService()
+    ObjectsRemoval()
         : EngineService(TEXT("Objects Removal Service"), -1000)
     {
     }
@@ -36,7 +35,7 @@ public:
     void Dispose() override;
 };
 
-ObjectsRemovalServiceService ObjectsRemovalServiceServiceInstance;
+ObjectsRemoval ObjectsRemovalInstance;
 
 bool ObjectsRemovalService::IsInPool(Object* obj)
 {
@@ -63,7 +62,6 @@ bool ObjectsRemovalService::HasNewItemsForFlush()
     NewItemsLocker.Lock();
     const bool result = NewItemsPool.HasItems();
     NewItemsLocker.Unlock();
-
     return result;
 }
 
@@ -95,6 +93,8 @@ void ObjectsRemovalService::Add(Object* obj, float timeToLive, bool useGameTime)
 
 void ObjectsRemovalService::Flush(float dt, float gameDelta)
 {
+    PROFILE_CPU();
+
     // Add new items
     {
         ScopeLock lock(NewItemsLocker);
@@ -173,14 +173,14 @@ void ObjectsRemovalService::Flush(float dt, float gameDelta)
     }
 }
 
-bool ObjectsRemovalServiceService::Init()
+bool ObjectsRemoval::Init()
 {
     LastUpdate = DateTime::NowUTC();
     LastUpdateGameTime = 0;
     return false;
 }
 
-void ObjectsRemovalServiceService::LateUpdate()
+void ObjectsRemoval::LateUpdate()
 {
     PROFILE_CPU();
 
@@ -194,7 +194,7 @@ void ObjectsRemovalServiceService::LateUpdate()
     LastUpdate = now;
 }
 
-void ObjectsRemovalServiceService::Dispose()
+void ObjectsRemoval::Dispose()
 {
     // Collect new objects
     ObjectsRemovalService::Flush();
