@@ -547,59 +547,9 @@ namespace FlaxEditor.Windows
                     });
                 }
                 
-                var aspectMenu = menu.AddChildMenu("Viewport Scaling").ContextMenu;
+                var vsMenu = menu.AddChildMenu("Viewport Size").ContextMenu;
                 
-                for (int i = 0; i < _defaultViewportScaling.Count; i++)
-                {
-                    var button = aspectMenu.AddButton(_defaultViewportScaling[i].Label);
-                    button.CloseMenuOnClick = false;
-                    button.Icon = _defaultViewportScaling[i].Active ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
-                    button.Tag = _defaultViewportScaling[i];
-                    if (_defaultViewportScaling[i].Active)
-                        ChangeViewportRatio(_defaultViewportScaling[i]);
-                }
-                aspectMenu.AddSeparator();
-                for (int i = 0; i < _customViewportScaling.Count; i++)
-                {
-                    var button = aspectMenu.AddButton(_customViewportScaling[i].Label);
-                    button.CloseMenuOnClick = false;
-                    button.Icon = _customViewportScaling[i].Active ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
-                    button.Tag = _customViewportScaling[i];
-                    if (_customViewportScaling[i].Active)
-                        ChangeViewportRatio(_customViewportScaling[i]);
-                }
-                
-                aspectMenu.ButtonClicked += button =>
-                {
-                    if (button.Text == "Add...")
-                        return;
-                    if (button.Tag == null)
-                        return;
-
-                    // Reset selected icon on all buttons
-                    foreach (var child in aspectMenu.Items)
-                    {
-                        if (child is ContextMenuButton cmb)
-                        {
-                            var v = (ViewportScaling)cmb.Tag;
-                            if (cmb == button)
-                            {
-                                v.Active = true;
-                                button.Icon = Style.Current.CheckBoxTick;
-                                ChangeViewportRatio(v);
-                            }
-                            else if (v.Active)
-                            {
-                                cmb.Icon = SpriteHandle.Invalid;
-                                v.Active = false;
-                            }
-                        }
-                    }
-                };
-                aspectMenu.AddSeparator();
-                
-                // TODO add
-                var add = aspectMenu.AddButton("Add...");
+                CreateViewportSizingContextMenu(vsMenu);
             }
 
             // Take Screenshot
@@ -628,6 +578,241 @@ namespace FlaxEditor.Windows
 
             menu.MinimumWidth = 200;
             menu.AddSeparator();
+        }
+
+        private void CreateViewportSizingContextMenu(ContextMenu vsMenu)
+        {
+            // add default viewport sizing options
+            for (int i = 0; i < _defaultViewportScaling.Count; i++)
+            {
+                var button = vsMenu.AddButton(_defaultViewportScaling[i].Label);
+                button.CloseMenuOnClick = false;
+                button.Icon = _defaultViewportScaling[i].Active ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                button.Tag = _defaultViewportScaling[i];
+                if (_defaultViewportScaling[i].Active)
+                    ChangeViewportRatio(_defaultViewportScaling[i]);
+
+                button.Clicked += () =>
+                {
+                    if (button.Tag == null)
+                        return;
+
+                    // Reset selected icon on all buttons
+                    foreach (var child in vsMenu.Items)
+                    {
+                        if (child is ContextMenuButton cmb)
+                        {
+                            var v = (ViewportScaling)cmb.Tag;
+                            if (cmb == button)
+                            {
+                                v.Active = true;
+                                button.Icon = Style.Current.CheckBoxTick;
+                                ChangeViewportRatio(v);
+                            }
+                            else if (v.Active)
+                            {
+                                cmb.Icon = SpriteHandle.Invalid;
+                                v.Active = false;
+                            }
+                        }
+                    }
+                };
+            }
+            vsMenu.AddSeparator();
+
+            // Add custom viewport options
+            for (int i = 0; i < _customViewportScaling.Count; i++)
+            {
+                var childCM = vsMenu.AddChildMenu(_customViewportScaling[i].Label);
+                childCM.CloseMenuOnClick = false;
+                childCM.Icon = _customViewportScaling[i].Active ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                childCM.Tag = _customViewportScaling[i];
+                if (_customViewportScaling[i].Active)
+                    ChangeViewportRatio(_customViewportScaling[i]);
+                var applyButton = childCM.ContextMenu.AddButton("Apply");
+                applyButton.Tag = childCM.Tag = _customViewportScaling[i];
+                applyButton.CloseMenuOnClick = false;
+                applyButton.Clicked += () =>
+                {
+                    if (childCM.Tag == null)
+                        return;
+
+                    // Reset selected icon on all buttons
+                    foreach (var child in vsMenu.Items)
+                    {
+                        if (child is ContextMenuButton cmb)
+                        {
+                            var v = (ViewportScaling)child.Tag;
+                            if (child == childCM)
+                            {
+                                v.Active = true;
+                                childCM.Icon = Style.Current.CheckBoxTick;
+                                ChangeViewportRatio(v);
+                            }
+                            else if (v.Active)
+                            {
+                                cmb.Icon = SpriteHandle.Invalid;
+                                v.Active = false;
+                            }
+                        }
+                    }
+                };
+
+                var deleteButton = childCM.ContextMenu.AddButton("Delete");
+                deleteButton.CloseMenuOnClick = false;
+                deleteButton.Clicked += () =>
+                {
+                    if (childCM.Tag == null)
+                        return;
+
+                    var v = (ViewportScaling)childCM.Tag;
+                    if (v.Active)
+                    {
+                        v.Active = false;
+                        _defaultViewportScaling[0].Active = true;
+                        ChangeViewportRatio(_defaultViewportScaling[0]);
+                    }
+                    _customViewportScaling.Remove(v);
+                    vsMenu.DisposeAllItems();
+                    CreateViewportSizingContextMenu(vsMenu);
+                    vsMenu.PerformLayout();
+                };
+            }
+
+            vsMenu.AddSeparator();
+
+            // Add button
+            var add = vsMenu.AddButton("Add...");
+            add.CloseMenuOnClick = false;
+            add.Clicked += () =>
+            {
+                var popup = new ContextMenuBase
+                {
+                    Size = new Float2(230, 125),
+                    ClipChildren = false,
+                    CullChildren = false,
+                };
+                popup.Show(add, new Float2(add.Width, 0));
+
+                var nameLabel = new Label
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Text = "Name",
+                    HorizontalAlignment = TextAlignment.Near,
+                };
+                nameLabel.LocalX += 10;
+                nameLabel.LocalY += 10;
+
+                var nameTextBox = new TextBox
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    IsMultiline = false,
+                };
+                nameTextBox.LocalX += 100;
+                nameTextBox.LocalY += 10;
+
+                var typeLabel = new Label
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Text = "Type",
+                    HorizontalAlignment = TextAlignment.Near,
+                };
+                typeLabel.LocalX += 10;
+                typeLabel.LocalY += 35;
+
+                var typeDropdown = new Dropdown
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Items = { "Aspect", "Resolution" },
+                    SelectedItem = "Aspect",
+                    Width = nameTextBox.Width
+                };
+                typeDropdown.LocalY += 35;
+                typeDropdown.LocalX += 100;
+
+                var whLabel = new Label
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Text = "Width & Height",
+                    HorizontalAlignment = TextAlignment.Near,
+                };
+                whLabel.LocalX += 10;
+                whLabel.LocalY += 60;
+
+                var wValue = new IntValueBox(16)
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    MinValue = 1,
+                    Width = 55,
+                };
+                wValue.LocalY += 60;
+                wValue.LocalX += 100;
+
+                var hValue = new IntValueBox(9)
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    MinValue = 1,
+                    Width = 55,
+                };
+                hValue.LocalY += 60;
+                hValue.LocalX += 165;
+
+                var submitButton = new Button
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Text = "Submit",
+                    Width = 70,
+                };
+                submitButton.LocalX += 40;
+                submitButton.LocalY += 90;
+
+                submitButton.Clicked += () =>
+                {
+                    Enum.TryParse(typeDropdown.SelectedItem, out ViewportScalingType type);
+
+                    var combineString = type == ViewportScalingType.Aspect ? ":" : "x";
+                    var name = nameTextBox.Text + " (" + wValue.Value + combineString + hValue.Value + ") " + typeDropdown.SelectedItem;
+
+                    var newViewportOption = new ViewportScaling
+                    {
+                        ScalingType = type,
+                        Label = name,
+                        Size = new Int2(wValue.Value, hValue.Value),
+                    };
+
+                    _customViewportScaling.Add(newViewportOption);
+                    vsMenu.DisposeAllItems();
+                    CreateViewportSizingContextMenu(vsMenu);
+                    vsMenu.PerformLayout();
+                };
+
+                var cancelButton = new Button
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Text = "Cancel",
+                    Width = 70,
+                };
+                cancelButton.LocalX += 120;
+                cancelButton.LocalY += 90;
+
+                cancelButton.Clicked += () =>
+                {
+                    nameTextBox.Clear();
+                    typeDropdown.SelectedItem = "Aspect";
+                    hValue.Value = 9;
+                    wValue.Value = 16;
+                    popup.Hide();
+                };
+            };
         }
 
         /// <inheritdoc />
