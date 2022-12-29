@@ -912,6 +912,12 @@ namespace FlaxEditor.Utilities
             {
                 var c = name[i];
 
+                if (i == 0)
+                {
+                    sb.Append(char.ToUpper(c));
+                    continue;
+                }
+
                 // Space before word starting with uppercase letter
                 if (char.IsUpper(c) && i > 0)
                 {
