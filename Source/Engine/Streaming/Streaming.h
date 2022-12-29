@@ -9,7 +9,7 @@
 class GPUSampler;
 
 // Streaming service statistics container.
-API_STRUCT() struct FLAXENGINE_API StreamingStats
+API_STRUCT(NoDefault) struct FLAXENGINE_API StreamingStats
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(StreamingStats);
     // Amount of active streamable resources.
