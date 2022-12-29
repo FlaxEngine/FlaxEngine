@@ -126,7 +126,7 @@ Asset::LoadResult Material::load()
     FlaxChunk* materialParamsChunk;
 
     // Wait for the GPU Device to be ready (eg. case when loading material before GPU init)
-#define IS_GPU_NOT_READY() (GPUDevice::Instance == nullptr || GPUDevice::Instance->GetState() != GPUDevice::DeviceState::Ready || GPUDevice::Instance->QuadShader == nullptr)
+#define IS_GPU_NOT_READY() (GPUDevice::Instance == nullptr || GPUDevice::Instance->GetState() != GPUDevice::DeviceState::Ready)
     if (!IsInMainThread() && IS_GPU_NOT_READY())
     {
         int32 timeout = 1000;
