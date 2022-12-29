@@ -2,6 +2,7 @@
 
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 [assembly: AssemblyTitle("FlaxEngine")]
 [assembly: AssemblyDescription("")]
@@ -15,3 +16,4 @@ using System.Runtime.InteropServices;
 [assembly: Guid("b8442186-4a70-7c85-704a-857cc7990797")]
 [assembly: AssemblyVersion("1.5.6335")]
 [assembly: AssemblyFileVersion("1.5.6335")]
+[assembly: DisableRuntimeMarshalling]

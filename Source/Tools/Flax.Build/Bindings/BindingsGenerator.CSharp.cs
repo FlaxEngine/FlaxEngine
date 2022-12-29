@@ -17,7 +17,6 @@ namespace Flax.Build.Bindings
         private static readonly List<string> CSharpUsedNamespacesSorted = new List<string>();
         private static readonly List<string> CSharpAdditionalCode = new List<string>();
         private static readonly Dictionary<string, string> CSharpAdditionalCodeCache = new Dictionary<string, string>();
-        private static string CSharpLastAssembly;
 
         public static event Action<BuildData, ApiTypeInfo, StringBuilder, string> GenerateCSharpTypeInternals;
 
@@ -457,7 +456,7 @@ namespace Flax.Build.Bindings
             if (CSharpAdditionalCode.Count != 0)
             {
                 contents.AppendLine();
-                foreach(var e in CSharpAdditionalCode)
+                foreach (var e in CSharpAdditionalCode)
                     contents.Append(indent).AppendLine(e);
                 CSharpAdditionalCode.Clear();
                 CSharpAdditionalCodeCache.Clear();
@@ -1285,7 +1284,7 @@ namespace Flax.Build.Bindings
                     internal static IntPtr ToNative({{classInfo.Name}} managed) => GCHandleMarshaller.ToNative(managed);
                 #pragma warning restore 1591
                 }
-                """).Split(new char[] { '\n'})));
+                """).Split(new char[] { '\n' })));
             }
 #endif
             // Namespace end
@@ -1995,16 +1994,10 @@ namespace Flax.Build.Bindings
             CSharpUsedNamespaces.Add("System.Globalization");
             CSharpUsedNamespaces.Add("System.Runtime.CompilerServices");
             CSharpUsedNamespaces.Add("System.Runtime.InteropServices");
-            CSharpUsedNamespaces.Add("FlaxEngine");
 #if USE_NETCORE
             CSharpUsedNamespaces.Add("System.Runtime.InteropServices.Marshalling");
-            if (CSharpLastAssembly != moduleInfo.Name)
-            {
-                // Add custom assembly attributes here, once per assembly
-                contents.AppendLine("[assembly: DisableRuntimeMarshalling]");
-                CSharpLastAssembly = moduleInfo.Name;
-            }
 #endif
+            CSharpUsedNamespaces.Add("FlaxEngine");
 
             // Process all API types from the file
             var useBindings = false;
@@ -2070,6 +2063,9 @@ namespace Flax.Build.Bindings
             contents.AppendLine();
             contents.AppendLine("using System.Reflection;");
             contents.AppendLine("using System.Runtime.InteropServices;");
+#if USE_NETCORE
+            contents.AppendLine("using System.Runtime.CompilerServices;");
+#endif
             contents.AppendLine();
             contents.AppendLine($"[assembly: AssemblyTitle(\"{binaryModuleName}\")]");
             contents.AppendLine("[assembly: AssemblyDescription(\"\")]");
@@ -2083,6 +2079,9 @@ namespace Flax.Build.Bindings
             contents.AppendLine($"[assembly: Guid(\"{id:d}\")]");
             contents.AppendLine($"[assembly: AssemblyVersion(\"{project.Version}\")]");
             contents.AppendLine($"[assembly: AssemblyFileVersion(\"{project.Version}\")]");
+#if USE_NETCORE
+            contents.AppendLine("[assembly: DisableRuntimeMarshalling]");
+#endif
             Utilities.WriteFileIfChanged(dstFilePath, contents.ToString());
         }
     }
