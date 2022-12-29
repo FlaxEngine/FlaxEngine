@@ -735,7 +735,20 @@ void NetworkReplicator::DespawnObject(ScriptingObject* obj)
     ScopeLock lock(ObjectsLock);
     const auto it = Objects.Find(obj->GetID());
     if (it == Objects.End())
+    {
+        // Special case if we're just spawning this object
+        for (int32 i = 0; i < SpawnQueue.Count(); i++)
+        {
+            auto& item = SpawnQueue[i];
+            if (item.Object == obj)
+            {
+                SpawnQueue.RemoveAt(i);
+                DeleteNetworkObject(obj);
+                break;
+            }
+        }
         return;
+    }
     auto& item = it->Item;
     if (item.Object != obj || !item.Spawned || item.OwnerClientId != NetworkManager::LocalClientId)
         return;

@@ -316,7 +316,6 @@ void NetworkManager::Stop()
         client->State = NetworkConnectionState::Disconnecting;
     StateChanged();
 
-    NetworkInternal::NetworkReplicatorClear();
     for (int32 i = Clients.Count() - 1; i >= 0; i--)
     {
         NetworkClient* client = Clients[i];
@@ -330,6 +329,7 @@ void NetworkManager::Stop()
         ClientDisconnected(LocalClient);
         LocalClient->State = NetworkConnectionState::Disconnected;
     }
+    NetworkInternal::NetworkReplicatorClear();
     StopPeer();
     if (LocalClient)
     {
