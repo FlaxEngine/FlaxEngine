@@ -51,6 +51,9 @@ namespace FlaxEditor.CustomEditors.GUI
         /// <param name="name">The name.</param>
         public PropertyNameLabel(string name)
         {
+            // Format name with capital first letter
+            name = name[0].ToString().ToUpper() + name.Substring(1);
+            
             Text = name;
             HorizontalAlignment = TextAlignment.Near;
             VerticalAlignment = TextAlignment.Center;
