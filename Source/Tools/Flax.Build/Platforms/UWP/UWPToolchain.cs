@@ -46,6 +46,14 @@ namespace Flax.Build.Platforms
         }
 
         /// <inheritdoc />
+        public override void LogInfo()
+        {
+            base.LogInfo();
+
+            Log.Error("UWP (Windows Store) platform has been deprecated and soon will be removed!");
+        }
+
+        /// <inheritdoc />
         protected override void SetupCompileCppFilesArgs(TaskGraph graph, BuildOptions options, List<string> args)
         {
             base.SetupCompileCppFilesArgs(graph, options, args);
