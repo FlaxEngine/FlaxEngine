@@ -136,6 +136,10 @@ namespace FlaxEditor.Windows.Assets
 
             [EditorOrder(470), DefaultValue(0.0f), EditorDisplay("Misc"), Tooltip("Static FOV, will not change even when camara FOV change. Use 0 to disable."), Limit(0.0f, 170.0f, 0.001f)]
             public float StaticFOV;
+
+            [EditorOrder(480), DefaultValue(0.0f), EditorDisplay("Misc"), Tooltip("Distance Bias. Allow you to control draw order."), Limit(-500000.0f, 500000.0f, 0.001f)]
+            public float DistanceBias;
+
             // Parameters
 
             [EditorOrder(1000), EditorDisplay("Parameters"), CustomEditor(typeof(ParametersEditor)), NoSerialize]
@@ -184,6 +188,7 @@ namespace FlaxEditor.Windows.Assets
                 MinDepth = info.MinDepth;
                 MaxDepth = info.MaxDepth;
                 StaticFOV = info.StaticFOV;
+                DistanceBias = info.DistanceBias;
 
                 // Link
                 Window = window;
@@ -232,6 +237,7 @@ namespace FlaxEditor.Windows.Assets
                 info.MinDepth = MinDepth;
                 info.MaxDepth = MaxDepth;
                 info.StaticFOV = StaticFOV;
+                info.DistanceBias = DistanceBias;
             }
 
             /// <summary>

@@ -146,6 +146,7 @@ MaterialInfo::MaterialInfo(const MaterialInfo10& other)
     MinDepth = 0.0f;
     MaxDepth = 1.0f;
     StaticFOV = 0.0f;
+    DistanceBias = 0.0f;
 }
 
 bool MaterialInfo::operator==(const MaterialInfo& other) const
@@ -165,7 +166,8 @@ bool MaterialInfo::operator==(const MaterialInfo& other) const
         && MaxTessellationFactor == other.MaxTessellationFactor
         && MinDepth == other.MinDepth
         && MaxDepth == other.MaxDepth
-        && StaticFOV == other.StaticFOV;
+        && StaticFOV == other.StaticFOV
+        && DistanceBias == other.DistanceBias;
 }
 
 const Char* ToString(MaterialParameterType value)

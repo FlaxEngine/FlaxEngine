@@ -69,9 +69,11 @@ private:
             newHeader.Material.Info.MinDepth = 0.0f;
             newHeader.Material.Info.MaxDepth = 1.0f;
             newHeader.Material.Info.StaticFOV = 0.0f;
-            for (int i = 0; i < 9; i++)
+            newHeader.Material.Info.DistanceBias = 0.0f;
+
+            for (int i = 0; i < 8; i++)
             {
-                newHeader.Material.Info.for_future_use[i] = -2.0f;
+                newHeader.Material.Info.for_future_use[i] = 0.0f;
             }
         }
         else if (context.Input.Header.TypeName == TEXT("FlaxEngine.Shader"))

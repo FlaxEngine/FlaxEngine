@@ -610,10 +610,15 @@ API_STRUCT() struct FLAXENGINE_API MaterialInfo
     API_FIELD() float StaticFOV;
 
     /// <summary>
-    /// Reserved for future use, just add a float before this line and count it down.
-    /// Will be initialised with -2.0 so can be used in most cases, also new initialising is possible if < -1.0.
+    /// Distance Bias used to control draw order.
     /// </summary>
-    float for_future_use[9];
+    API_FIELD() float DistanceBias;
+
+    /// <summary>
+    /// Reserved for future use, just add a float before this line and count it down.
+    /// Now initialised with 0.0 so can be used in most cases.
+    /// </summary>
+    float for_future_use[8];
 
     MaterialInfo()
     {

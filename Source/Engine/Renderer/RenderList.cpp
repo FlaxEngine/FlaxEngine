@@ -493,7 +493,8 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     for (int32 i = 0; i < listSize; i++)
     {
         auto& drawCall = DrawCalls[list.Indices[i]];
-        const float distance = Float3::Dot(planeNormal, drawCall.ObjectPosition) - planePoint;
+        auto materialInfo = drawCall.Material->GetInfo();
+        const float distance = (Float3::Dot(planeNormal, drawCall.ObjectPosition) - planePoint) + materialInfo.DistanceBias;
         const uint32 sortKey = RenderTools::ComputeDistanceSortKey(distance) ^ sortKeyXor;
         int32 batchKey = GetHash(drawCall.Geometry.IndexBuffer);
         batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
