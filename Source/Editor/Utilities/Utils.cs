@@ -906,13 +906,16 @@ namespace FlaxEditor.Utilities
             if (name.StartsWith("g_") || name.StartsWith("m_"))
                 startIndex = 2;
 
+            if (name.StartsWith("_"))
+                startIndex = 1;
+
             // Filter text
             var lastChar = '\0';
             for (int i = startIndex; i < length; i++)
             {
                 var c = name[i];
 
-                if (i == 0)
+                if (i == startIndex)
                 {
                     sb.Append(char.ToUpper(c));
                     continue;
