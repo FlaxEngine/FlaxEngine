@@ -52,21 +52,19 @@ namespace FlaxEngine.Networking
         [Unmanaged]
         public static void AddSerializer(Type type, SerializeFunc serialize, SerializeFunc deserialize)
         {
+            if (_managedSerializers == null)
+            {
+                _managedSerializers = new Dictionary<Type, KeyValuePair<SerializeFunc, SerializeFunc>>();
+#if FLAX_EDITOR
+                FlaxEditor.ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+#endif
+            }
+            _managedSerializers[type] = new KeyValuePair<SerializeFunc, SerializeFunc>(serialize, deserialize);
+
             // C#-only types (eg. custom C# structures) cannot use native serializers due to missing ScriptingType
             if (typeof(FlaxEngine.Object).IsAssignableFrom(type))
             {
                 Internal_AddSerializer(type, Marshal.GetFunctionPointerForDelegate(serialize), Marshal.GetFunctionPointerForDelegate(deserialize));
-            }
-            else
-            {
-                if (_managedSerializers == null)
-                {
-                    _managedSerializers = new Dictionary<Type, KeyValuePair<SerializeFunc, SerializeFunc>>();
-#if FLAX_EDITOR
-                    FlaxEditor.ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
-#endif
-                }
-                _managedSerializers[type] = new KeyValuePair<SerializeFunc, SerializeFunc>(serialize, deserialize);
             }
         }
 
