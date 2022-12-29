@@ -34,8 +34,8 @@ namespace FlaxEditor.Windows
         private List<ViewportScaling> _customViewportScaling = new List<ViewportScaling>();
         private float _viewportAspectRatio = 1;
         private float _windowAspectRatio = 1;
-        bool _useAspect = false;
-        bool _freeAspect = true;
+        private bool _useAspect = false;
+        private bool _freeAspect = true;
 
         /// <summary>
         /// Gets the viewport.
