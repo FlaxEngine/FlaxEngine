@@ -28,6 +28,14 @@ namespace FlaxEditor.Windows
         private GUI.Docking.DockState _maximizeRestoreDockState;
         private GUI.Docking.DockPanel _maximizeRestoreDockTo;
         private CursorLockMode _cursorLockMode = CursorLockMode.None;
+        
+        // Viewport scaling variables
+        private List<ViewportScaling> _defaultViewportScaling = new List<ViewportScaling>();
+        private List<ViewportScaling> _customViewportScaling = new List<ViewportScaling>();
+        private float _viewportAspectRatio = 1;
+        private float _windowAspectRatio = 1;
+        bool _useAspect = false;
+        bool _freeAspect = true;
 
         /// <summary>
         /// Gets the viewport.
@@ -106,14 +114,6 @@ namespace FlaxEditor.Windows
         /// Gets or sets a value indicating whether auto-focus game window on play mode start.
         /// </summary>
         public bool FocusOnPlay { get; set; }
-
-        // TODO move by other privates
-        private List<ViewportScaling> _defaultViewportScaling = new List<ViewportScaling>();
-        private List<ViewportScaling> _customViewportScaling = new List<ViewportScaling>();
-        private float _viewportAspectRatio = 1;
-        private float _windowAspectRatio = 1;
-        bool _useAspect = false;
-        bool _freeAspect = true;
 
         private enum ViewportScalingType
         {
@@ -294,14 +294,6 @@ namespace FlaxEditor.Windows
             };
             RootControl.GameRoot = _guiRoot;
 
-            // TODO move external and let user define. Maybe also just let them define a ratio as well
-            Float2 viewPortSize = new Float2(2560, 1440);
-            //Float2 viewPortSize = new Float2(1280, 720);
-            //Float2 viewPortSize = new Float2(848, 480);
-            bool useCustomAspect = false;
-            bool freeAspect = false;
-            Float2 customAspect = new Float2(9, 16);
-
             SizeChanged += control =>
             {
                 ResizeViewport();
@@ -324,7 +316,6 @@ namespace FlaxEditor.Windows
             if (v == null)
                 return;
             
-            // TODO make it so user can not enter values of 0 or lower
             if (v.Size.Y <= 0 || v.Size.X <= 0)
             {
                 return;
