@@ -500,7 +500,6 @@ namespace FlaxEditor.Windows
                 // Create default scaling options if they dont exist from deserialization.
                 if (_defaultViewportScaling.Count == 0)
                 {
-                    Debug.Log("Had to create scalings.");
                     _defaultViewportScaling.Add(new ViewportScaling
                     {
                         Label = "Free Aspect",
