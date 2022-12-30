@@ -45,6 +45,8 @@ public class FlaxTestsTarget : FlaxEditor
     {
         base.SetupTargetEnvironment(options);
 
+        options.ScriptingAPI.Defines.Add("FLAX_TESTS");
+
         // Produce console program
         options.LinkEnv.LinkAsConsoleProgram = true;
     }

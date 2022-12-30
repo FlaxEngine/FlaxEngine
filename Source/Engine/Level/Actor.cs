@@ -125,7 +125,7 @@ namespace FlaxEngine
         {
             if (type.IsAbstract)
                 return null;
-            
+
             var result = (Actor)New(type);
             result.SetParent(this, false, false);
             return result;
@@ -180,7 +180,7 @@ namespace FlaxEngine
             {
                 if (typeof(T).IsAbstract)
                     return null;
-                
+
                 result = New<T>();
                 result.SetParent(this, false, false);
             }
@@ -196,7 +196,7 @@ namespace FlaxEngine
         {
             if (type.IsAbstract)
                 return null;
-            
+
             var script = (Script)New(type);
             script.Parent = this;
             return script;
@@ -211,7 +211,7 @@ namespace FlaxEngine
         {
             if (typeof(T).IsAbstract)
                 return null;
-            
+
             var script = New<T>();
             script.Parent = this;
             return script;

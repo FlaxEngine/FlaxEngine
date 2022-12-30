@@ -1360,7 +1360,8 @@ namespace Flax.Build.Bindings
                 thunkCall += GenerateCppWrapperNativeToBox(buildData, parameterInfo.Type, classInfo, parameterInfo.Name);
             }
 
-            if (functionInfo.ReturnType.IsVoid)
+            var returnType = functionInfo.ReturnType;
+            if (returnType.IsVoid)
             {
                 contents.AppendLine($"        typedef void (*Thunk)(void* instance{thunkParams}, MonoObject** exception);");
                 contents.AppendLine("        const auto thunk = (Thunk)method->GetThunk();");
@@ -1378,18 +1379,30 @@ namespace Flax.Build.Bindings
             contents.AppendLine("        if (exception)");
             contents.AppendLine("            DebugLog::LogException(exception);");
 
-            if (!functionInfo.ReturnType.IsVoid)
+            if (!returnType.IsVoid)
             {
-                if (functionInfo.ReturnType.IsRef)
+                if (returnType.IsRef)
                     throw new NotSupportedException($"Passing return value by reference is not supported for virtual API methods. Used on method '{functionInfo}'.");
 
-                switch (functionInfo.ReturnType.Type)
+                switch (returnType.Type)
                 {
                 case "bool":
-                    contents.AppendLine($"        return __result != 0;");
+                    contents.AppendLine("        return __result != 0;");
+                    break;
+                case "int8":
+                case "int16":
+                case "int32":
+                case "int64":
+                    contents.AppendLine($"        return ({returnType.Type})(intptr)__result;");
+                    break;
+                case "uint8":
+                case "uint16":
+                case "uint32":
+                case "uint64":
+                    contents.AppendLine($"        return ({returnType.Type})(uintptr)__result;");
                     break;
                 default:
-                    contents.AppendLine($"        return MUtils::Unbox<{functionInfo.ReturnType}>(__result);");
+                    contents.AppendLine($"        return MUtils::Unbox<{returnType}>(__result);");
                     break;
                 }
             }

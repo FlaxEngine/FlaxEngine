@@ -198,6 +198,7 @@ namespace FlaxEditor.Viewport.Previews
                 // Preview LOD
                 {
                     var previewLOD = ViewWidgetButtonMenu.AddButton("Preview LOD");
+                    previewLOD.CloseMenuOnClick = false;
                     var previewLODValue = new IntValueBox(-1, 90, 2, 70.0f, -1, 10, 0.02f)
                     {
                         Parent = previewLOD
