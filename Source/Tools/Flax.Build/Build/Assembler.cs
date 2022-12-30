@@ -81,6 +81,13 @@ namespace Flax.Build
                     if (lastWriteTime > recentWriteTime)
                         recentWriteTime = lastWriteTime;
                 }
+                
+                // Skip when project references were changed
+                {
+                    DateTime lastWriteTime = File.GetLastWriteTime(Globals.Project.ProjectPath);
+                    if (lastWriteTime > recentWriteTime)
+                        recentWriteTime = lastWriteTime;
+                }
 
                 DateTime cacheTime = File.Exists(_cachePath)
                     ? DateTime.FromBinary(long.Parse(File.ReadAllText(_cachePath)))
