@@ -1499,6 +1499,19 @@ namespace FlaxEngine
                 }
                 else if (type == typeof(Type))
                     managedPtr = managedValue != null ? GCHandle.ToIntPtr(GetTypeGCHandle((Type)(object)managedValue)) : IntPtr.Zero;
+                else if (type.IsArray)
+                {
+                    if (managedValue == null)
+                        managedPtr = IntPtr.Zero;
+                    else
+                    {
+                        var elementType = type.GetElementType();
+                        if (ArrayFactory.GetMarshalledType(elementType) == elementType)
+                            managedPtr = GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.WrapNewArray(Unsafe.As<Array>(managedValue)), GCHandleType.Weak));
+                        else
+                            managedPtr = GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(managedValue))), GCHandleType.Weak));
+                    }
+                }
                 else
                     managedPtr = managedValue != null ? GCHandle.ToIntPtr(GCHandle.Alloc(managedValue, GCHandleType.Weak)) : IntPtr.Zero;
 
