@@ -209,15 +209,15 @@ namespace FlaxEngine
             return result;
         }
 
-        internal static IntPtr VersionToManaged(int major, int minor, int build, int revision)
+        internal static ManagedHandle VersionToManaged(int major, int minor, int build, int revision)
         {
             Version version = new Version(major, minor, Math.Max(build, 0), Math.Max(revision, 0));
-            return GCHandle.ToIntPtr(GCHandle.Alloc(version));
+            return ManagedHandle.Alloc(version);
         }
 
-        internal static void VersionToNative(IntPtr versionHandle, IntPtr nativePtr)
+        internal static void VersionToNative(ManagedHandle versionHandle, IntPtr nativePtr)
         {
-            Version version = (Version)GCHandle.FromIntPtr(versionHandle).Target;
+            Version version = Unsafe.As<Version>(versionHandle.Target);
             if (version != null)
             {
                 Marshal.WriteInt32(nativePtr, 0, version.Major);
