@@ -800,9 +800,6 @@ MONO_API MonoMethod* mono_object_get_virtual_method(MonoObject* obj, MonoMethod*
 MONO_API MONO_RT_EXTERNAL_ONLY MonoObject* mono_runtime_invoke(MonoMethod* method, void* obj, void** params, MonoObject** exc)
 {
     static void* InvokeMethodPtr = CoreCLR::GetStaticMethodPointer(TEXT("InvokeMethod"));
-    MonoObject* execTmp = nullptr;
-    if (!exc)
-        exc = &execTmp;
     return (MonoObject*)CoreCLR::CallStaticMethod<void*, void*, void*, void*, void*>(InvokeMethodPtr, obj, ((CoreCLRMethod*)method)->GetMethodHandle(), params, exc);
 }
 

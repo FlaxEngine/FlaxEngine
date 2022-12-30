@@ -1908,6 +1908,8 @@ namespace FlaxEngine
         [UnmanagedCallersOnly]
         internal static unsafe IntPtr GetArrayPointerToElement(IntPtr arrayHandle, int size, int index)
         {
+            if (arrayHandle == IntPtr.Zero)
+                return IntPtr.Zero;
             ManagedArray managedArray = Unsafe.As<ManagedArray>(GCHandle.FromIntPtr(arrayHandle).Target);
             if (managedArray.Length == 0)
                 return IntPtr.Zero;
@@ -1918,6 +1920,8 @@ namespace FlaxEngine
         [UnmanagedCallersOnly]
         internal static int GetArrayLength(IntPtr arrayHandle)
         {
+            if (arrayHandle == IntPtr.Zero)
+                return 0;
             ManagedArray managedArray = Unsafe.As<ManagedArray>(GCHandle.FromIntPtr(arrayHandle).Target);
             return managedArray.Length;
         }
@@ -1925,7 +1929,7 @@ namespace FlaxEngine
         [UnmanagedCallersOnly]
         internal static IntPtr GetStringEmpty()
         {
-            return ManagedString.ToNative(string.Empty);
+            return GCHandle.ToIntPtr(ManagedString.EmptyStringHandle);
         }
 
         [UnmanagedCallersOnly]
@@ -2037,7 +2041,8 @@ namespace FlaxEngine
                 }
                 catch (Exception exception)
                 {
-                    Marshal.WriteIntPtr(exceptionPtr, GCHandle.ToIntPtr(GCHandle.Alloc(exception, GCHandleType.Weak)));
+                    if (exceptionPtr != IntPtr.Zero)
+                        Marshal.WriteIntPtr(exceptionPtr, GCHandle.ToIntPtr(GCHandle.Alloc(exception, GCHandleType.Weak)));
                     return IntPtr.Zero;
                 }
                 return returnValue;
@@ -2655,7 +2660,8 @@ namespace FlaxEngine
                     {
                         // Returned exception is the last parameter
                         IntPtr exceptionPtr = nativePtrs[parameterTypes.Length];
-                        Marshal.WriteIntPtr(exceptionPtr, GCHandle.ToIntPtr(GCHandle.Alloc(exception, GCHandleType.Weak)));
+                        if (exceptionPtr != IntPtr.Zero)
+                            Marshal.WriteIntPtr(exceptionPtr, GCHandle.ToIntPtr(GCHandle.Alloc(exception, GCHandleType.Weak)));
                         return IntPtr.Zero;
                     }
                     return returnValue;
@@ -2677,7 +2683,8 @@ namespace FlaxEngine
                     {
                         // Returned exception is the last parameter
                         IntPtr exceptionPtr = nativePtrs[numParams];
-                        Marshal.WriteIntPtr(exceptionPtr, GCHandle.ToIntPtr(GCHandle.Alloc(exception, GCHandleType.Weak)));
+                        if (exceptionPtr != IntPtr.Zero)
+                            Marshal.WriteIntPtr(exceptionPtr, GCHandle.ToIntPtr(GCHandle.Alloc(exception, GCHandleType.Weak)));
                         return IntPtr.Zero;
                     }
 
