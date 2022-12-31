@@ -437,7 +437,7 @@ namespace FlaxEngine
             private static Dictionary<IntPtr, object> weakPool = weakPool1;
             private static Dictionary<IntPtr, object> weakPoolOther = weakPool2;
 
-            private static int nextCollection = GC.CollectionCount(0) + 2;
+            private static int nextCollection = GC.CollectionCount(0) + 1;
 
             /// <summary>
             /// Tries to free all references to old weak handles so GC can collect them.
@@ -449,15 +449,13 @@ namespace FlaxEngine
 
                 lock (poolLock)
                 {
-                    // During initialization we might want to skip
-                    // few generations between collections due to high GC pressure.
-                    nextCollection = GC.CollectionCount(0) + 2;
+                    nextCollection = GC.CollectionCount(0) + 1;
 
                     var swap = weakPoolOther;
                     weakPoolOther = weakPool;
                     weakPool = swap;
 
-                    weakPoolOther.Clear();
+                    weakPool.Clear();
                 }
             }
 
