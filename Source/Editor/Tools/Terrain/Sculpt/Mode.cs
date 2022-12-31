@@ -147,17 +147,8 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
                 Apply(ref p);
             }
 
-            var editorOptions = Editor.Instance.Options.Options;
-            bool isPlayMode = Editor.Instance.StateMachine.IsPlayMode;
-
             // Auto NavMesh rebuild
-            if (!isPlayMode && editorOptions.General.AutoRebuildNavMesh)
-            {
-                if (terrain.Scene && terrain.HasStaticFlag(StaticFlags.Navigation))
-                {
-                    Navigation.BuildNavMesh(terrain.Scene, brushBounds, editorOptions.General.AutoRebuildNavMeshTimeoutMs);
-                }
-            }
+            gizmo.CurrentEditUndoAction.AddDirtyBounds(ref brushBounds);
         }
 
         /// <summary>
