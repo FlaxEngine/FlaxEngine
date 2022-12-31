@@ -55,6 +55,8 @@ namespace FlaxEngine
                     return ManagedString.ToNative(Unsafe.As<string>(returnValue));
                 else if (typeof(TRet) == typeof(IntPtr))
                     return (IntPtr)(object)returnValue;
+                else if (typeof(TRet) == typeof(ManagedHandle))
+                    return ManagedHandle.ToIntPtr((ManagedHandle)(object)returnValue);
                 else if (typeof(TRet) == typeof(bool))
                     return (bool)(object)returnValue ? boolTruePtr : boolFalsePtr;
                 else if (typeof(TRet) == typeof(Type))

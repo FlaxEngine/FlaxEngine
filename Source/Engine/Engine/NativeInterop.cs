@@ -400,12 +400,16 @@ namespace FlaxEngine
 
         public bool IsAllocated => handle != IntPtr.Zero;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator ManagedHandle(IntPtr value) => FromIntPtr(value);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ManagedHandle FromIntPtr(IntPtr value) => new ManagedHandle(value);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator IntPtr(ManagedHandle value) => ToIntPtr(value);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IntPtr ToIntPtr(ManagedHandle value) => value.handle;
 
         public override int GetHashCode() => handle.GetHashCode();
@@ -1583,6 +1587,8 @@ namespace FlaxEngine
 
                 if (type == typeof(IntPtr))
                     managedValue = (T)(object)nativePtr;
+                else if (type == typeof(ManagedHandle))
+                    managedValue = (T)(object)ManagedHandle.FromIntPtr(nativePtr);
                 else if (MarshalHelper<T>.marshallableFields != null)
                 {
                     IntPtr fieldPtr = nativePtr;
@@ -2302,6 +2308,8 @@ namespace FlaxEngine
                         return ManagedString.ToNative(Unsafe.As<string>(returnObject));
                     else if (methodHolder.method.ReturnType == typeof(IntPtr))
                         return (IntPtr)returnObject;
+                    else if (methodHolder.method.ReturnType == typeof(ManagedHandle))
+                        return ManagedHandle.ToIntPtr((ManagedHandle)(object)returnObject);
                     else if (methodHolder.method.ReturnType == typeof(bool))
                         return (bool)returnObject ? boolTruePtr : boolFalsePtr;
                     else if (methodHolder.method.ReturnType == typeof(Type))
@@ -2902,6 +2910,8 @@ namespace FlaxEngine
                             return ManagedString.ToNative(Unsafe.As<string>(returnObject));
                         else if (method.ReturnType == typeof(IntPtr))
                             return (IntPtr)returnObject;
+                        else if (method.ReturnType == typeof(ManagedHandle))
+                            return ManagedHandle.ToIntPtr((ManagedHandle)returnObject);
                         else if (method.ReturnType == typeof(bool))
                             return (bool)returnObject ? boolTruePtr : boolFalsePtr;
                         else if (method.ReturnType == typeof(Type))
