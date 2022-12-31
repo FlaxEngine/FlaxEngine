@@ -65,4 +65,51 @@ TEST_CASE("Scripting")
         CHECK(arr2[1].Vector == testClass->SimpleStruct.Vector);
         CHECK(arr2[1].Object == testClass);
     }
+    SECTION("Test Interface")
+    {
+        // Test native interface implementation
+        ScriptingTypeHandle type = Scripting::FindScriptingType("FlaxEngine.TestClassNative");
+        CHECK(type);
+        ScriptingObject* object = Scripting::NewObject(type.GetType().ManagedClass);
+        CHECK(object);
+        TestClassNative* testClass = (TestClassNative*)object;
+        int32 methodResult = testClass->TestInterfaceMethod(TEXT("123"));
+        CHECK(methodResult == 3);
+        ITestInterface* interface = ScriptingObject::ToInterface<ITestInterface>(object);
+        CHECK(interface);
+        methodResult = interface->TestInterfaceMethod(TEXT("1234"));
+        CHECK(methodResult == 4);
+        ScriptingObject* interfaceObject = ScriptingObject::FromInterface<ITestInterface>(interface);
+        CHECK(interfaceObject);
+        CHECK(interfaceObject == object);
+
+        // Test managed interface override
+        type = Scripting::FindScriptingType("FlaxEngine.TestClassManaged");
+        CHECK(type);
+        object = Scripting::NewObject(type.GetType().ManagedClass);
+        CHECK(object);
+        testClass = (TestClassNative*)object;
+        methodResult = testClass->TestInterfaceMethod(TEXT("123"));
+        CHECK(methodResult == 6);
+        interface = ScriptingObject::ToInterface<ITestInterface>(object);
+        CHECK(interface);
+        methodResult = interface->TestInterfaceMethod(TEXT("1234"));
+        CHECK(methodResult == 8);
+        interfaceObject = ScriptingObject::FromInterface<ITestInterface>(interface);
+        CHECK(interfaceObject);
+        CHECK(interfaceObject == object);
+
+        // Test managed interface implementation
+        type = Scripting::FindScriptingType("FlaxEngine.TestInterfaceManaged");
+        CHECK(type);
+        object = Scripting::NewObject(type.GetType().ManagedClass);
+        CHECK(object);
+        interface = ScriptingObject::ToInterface<ITestInterface>(object);
+        CHECK(interface);
+        methodResult = interface->TestInterfaceMethod(TEXT("1234"));
+        CHECK(methodResult == 4);
+        interfaceObject = ScriptingObject::FromInterface<ITestInterface>(interface);
+        CHECK(interfaceObject);
+        CHECK(interfaceObject == object);
+    }
 }

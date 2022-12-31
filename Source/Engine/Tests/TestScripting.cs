@@ -69,14 +69,21 @@ namespace FlaxEngine
             return str.Length + base.TestMethod(str);
         }
 
+        /// <inheritdoc />
+        public override int TestInterfaceMethod(string str)
+        {
+            // Test C++ base method invocation
+            return str.Length + base.TestInterfaceMethod(str);
+        }
+
         private void OnSimpleEvent(int arg1, Float3 arg2, string arg3, ref string arg4, TestStruct[] arg5, ref TestStruct[] arg6)
         {
             // Verify that C++ passed proper data to C# via event bindings
-            if (arg1 == 1 && 
-                arg2 == Float3.One && 
-                arg3 == "1" && 
-                arg4 == "2" && 
-                arg5 != null && arg5.Length == 1 && arg5[0] == SimpleStruct && 
+            if (arg1 == 1 &&
+                arg2 == Float3.One &&
+                arg3 == "1" &&
+                arg4 == "2" &&
+                arg5 != null && arg5.Length == 1 && arg5[0] == SimpleStruct &&
                 arg6 != null && arg6.Length == 1 && arg6[0] == SimpleStruct)
             {
                 // Test passing data back from C# to C++
@@ -92,6 +99,18 @@ namespace FlaxEngine
                     SimpleStruct,
                 };
             }
+        }
+    }
+
+    /// <summary>
+    /// Test interface in C#.
+    /// </summary>
+    public class TestInterfaceManaged : Object, ITestInterface
+    {
+        /// <inheritdoc />
+        public int TestInterfaceMethod(string str)
+        {
+            return str.Length;
         }
     }
 }

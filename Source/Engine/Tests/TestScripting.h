@@ -19,8 +19,18 @@ API_STRUCT(NoDefault) struct TestStruct : public ISerializable
     API_FIELD() ScriptingObject* Object = nullptr;
 };
 
+// Test interface.
+API_INTERFACE() class ITestInterface
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(ITestInterface);
+    ~ITestInterface() = default;
+
+    // Test abstract method
+    API_FUNCTION() virtual int32 TestInterfaceMethod(const String& str) = 0;
+};
+
 // Test class.
-API_CLASS() class TestClassNative : public ScriptingObject, public ISerializable
+API_CLASS() class TestClassNative : public ScriptingObject, public ISerializable, public ITestInterface
 {
     API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE(TestClassNative);
@@ -37,6 +47,11 @@ public:
 
     // Test virtual method
     API_FUNCTION() virtual int32 TestMethod(const String& str)
+    {
+        return str.Length();
+    }
+
+    int32 TestInterfaceMethod(const String& str) override
     {
         return str.Length();
     }
