@@ -11,7 +11,10 @@ namespace FlaxEditor.Content
     /// <seealso cref="FlaxEditor.Content.AssetItem" />
     public class JsonAssetItem : AssetItem
     {
-        private readonly SpriteHandle _thumbnail;
+        /// <summary>
+        /// Asset icon.
+        /// </summary>
+        protected SpriteHandle _thumbnail;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonAssetItem"/> class.
