@@ -794,6 +794,9 @@ public:
     static void SetOptions(ManagedEditor::InternalOptions* options)
     {
         ManagedEditor::ManagedEditorOptions = *options;
+
+        // Apply options
+        AssetsImportingManager::UseImportPathRelative = ManagedEditor::ManagedEditorOptions.UseAssetImportPathRelative != 0;
     }
 
     static void DrawNavMesh()

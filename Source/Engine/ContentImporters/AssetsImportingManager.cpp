@@ -3,6 +3,7 @@
 #if COMPILE_WITH_ASSETS_IMPORTER
 
 #include "AssetsImportingManager.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Utilities.h"
 #include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Threading/MainThreadTask.h"
@@ -10,9 +11,9 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Cache/AssetsCache.h"
 #include "Engine/Engine/EngineService.h"
-#include "Engine/Core/Log.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/Platform.h"
+#include "Engine/Engine/Globals.h"
 #include "ImportTexture.h"
 #include "ImportModelFile.h"
 #include "ImportAudio.h"
@@ -71,6 +72,7 @@ AssetsImportingManagerService AssetsImportingManagerServiceInstance;
 
 Array<AssetImporter> AssetsImportingManager::Importers;
 Array<AssetCreator> AssetsImportingManager::Creators;
+bool AssetsImportingManager::UseImportPathRelative = false;
 
 CreateAssetContext::CreateAssetContext(const StringView& inputPath, const StringView& outputPath, const Guid& id, void* arg)
 {
@@ -161,7 +163,15 @@ bool CreateAssetContext::AllocateChunk(int32 index)
 void CreateAssetContext::AddMeta(JsonWriter& writer) const
 {
     writer.JKEY("ImportPath");
-    writer.String(InputPath);
+    if (AssetsImportingManager::UseImportPathRelative && !FileSystem::IsRelative(InputPath))
+    {
+        const String relativePath = FileSystem::ConvertAbsolutePathToRelative(Globals::ProjectFolder, InputPath);
+        writer.String(relativePath);
+    }
+    else
+    {
+        writer.String(InputPath);
+    }
     writer.JKEY("ImportUsername");
     writer.String(Platform::GetUserName());
 }

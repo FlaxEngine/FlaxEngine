@@ -4,15 +4,16 @@
 #include "Cache/AssetsCache.h"
 #include "Storage/ContentStorageManager.h"
 #include "Loading/Tasks/LoadAssetDataTask.h"
+#include "Factories/BinaryAssetFactory.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
-#include "Factories/BinaryAssetFactory.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 #if USE_EDITOR
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Engine/Globals.h"
 #endif
 
 REGISTER_BINARY_ASSET_ABSTRACT(BinaryAsset, "FlaxEngine.BinaryAsset");
@@ -123,6 +124,12 @@ void BinaryAsset::GetImportMetadata(String& path, String& username) const
     {
         path = JsonTools::GetString(document, "ImportPath");
         username = JsonTools::GetString(document, "ImportUsername");
+        if (path.HasChars() && FileSystem::IsRelative(path))
+        {
+            // Convert path back to thr absolute (eg. if stored in relative format)
+            path = Globals::ProjectFolder / path;
+            StringUtils::PathRemoveRelativeParts(path);
+        }
     }
     else
     {
