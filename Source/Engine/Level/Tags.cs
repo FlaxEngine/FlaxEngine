@@ -1,31 +1,27 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 using System;
+using System.ComponentModel;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 
 namespace FlaxEngine
 {
+    [TypeConverter(typeof(TypeConverters.TagConverter))]
     partial struct Tag : IEquatable<Tag>, IEquatable<string>, IComparable, IComparable<Tag>, IComparable<string>
     {
         /// <summary>
         /// The default <see cref="Tag"/>.
         /// </summary>
-        public static Tag Default => new Tag(-1);
+        public static Tag Default => new Tag(0);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Tag" /> struct.
         /// </summary>
         /// <param name="index">The tag index.</param>
-        public Tag(int index)
+        public Tag(uint index)
         {
             Index = index;
-        }
-
-        [System.Runtime.Serialization.OnDeserializing]
-        internal void OnDeserializing(System.Runtime.Serialization.StreamingContext context)
-        {
-            // Initialize structure with default values to replicate C++ deserialization behavior
-            Index = -1;
         }
 
         /// <summary>
@@ -51,6 +47,28 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Compares two tags.
+        /// </summary>
+        /// <param name="left">The lft tag.</param>
+        /// <param name="right">The right tag name.</param>
+        /// <returns>True if both values are equal, otherwise false.</returns>
+        public static bool operator ==(Tag left, string right)
+        {
+            return string.Equals(left.ToString(), right, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Compares two tags.
+        /// </summary>
+        /// <param name="left">The lft tag.</param>
+        /// <param name="right">The right tag name.</param>
+        /// <returns>True if both values are not equal, otherwise false.</returns>
+        public static bool operator !=(Tag left, string right)
+        {
+            return !string.Equals(left.ToString(), right, StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// Checks if tag is valid.
         /// </summary>
         /// <param name="tag">The tag to check.</param>
@@ -58,7 +76,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator bool(Tag tag)
         {
-            return tag.Index != -1;
+            return tag.Index != 0;
         }
 
         /// <inheritdoc />
@@ -104,7 +122,7 @@ namespace FlaxEngine
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            return Index;
+            return (int)Index;
         }
 
         /// <inheritdoc />
@@ -124,7 +142,7 @@ namespace FlaxEngine
         /// <returns>True if given tag is contained by the list of tags. Returns false for empty list.</returns>
         public static bool HasTag(this Tag[] list, Tag tag)
         {
-            if (tag.Index == -1)
+            if (tag.Index == 0)
                 return false;
             string tagName = tag.ToString();
             foreach (Tag e in list)
@@ -144,7 +162,7 @@ namespace FlaxEngine
         /// <returns>True if given tag is contained by the list of tags. Returns false for empty list.</returns>
         public static bool HasTagExact(this Tag[] list, Tag tag)
         {
-            if (tag.Index == -1)
+            if (tag.Index == 0)
                 return false;
             if (list == null)
                 return false;
@@ -230,6 +248,43 @@ namespace FlaxEngine
                     return false;
             }
             return true;
+        }
+    }
+}
+
+namespace FlaxEngine.TypeConverters
+{
+    internal class TagConverter : TypeConverter
+    {
+        /// <inheritdoc />
+        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        {
+            if (sourceType == typeof(string))
+                return true;
+            return base.CanConvertFrom(context, sourceType);
+        }
+
+        /// <inheritdoc />
+        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        {
+            if (value is string str)
+            {
+                if (str.Length == 0)
+                    return Tag.Default;
+                return Tags.Get(str);
+            }
+            return base.ConvertFrom(context, culture, value);
+        }
+
+        /// <inheritdoc />
+        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        {
+            if (destinationType == typeof(string))
+            {
+                var v = (Tag)value;
+                return v.ToString();
+            }
+            return base.ConvertTo(context, culture, value, destinationType);
         }
     }
 }

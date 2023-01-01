@@ -14,9 +14,9 @@ API_STRUCT(NoDefault) struct FLAXENGINE_API Tag
     DECLARE_SCRIPTING_TYPE_MINIMAL(Tag);
 
     /// <summary>
-    /// Index of the tag (in global Level.Tags list).
+    /// Index of the tag (in global Level.Tags list). Index 0 is invalid. 1 is the first index.
     /// </summary>
-    API_FIELD() int32 Index = -1;
+    API_FIELD() uint32 Index = 0;
 
     /// <summary>
     /// Gets the tag name.
@@ -26,14 +26,14 @@ API_STRUCT(NoDefault) struct FLAXENGINE_API Tag
 public:
     Tag() = default;
 
-    FORCE_INLINE Tag(int32 index)
+    FORCE_INLINE explicit Tag(uint32 index)
         : Index(index)
     {
     }
 
     FORCE_INLINE operator bool() const
     {
-        return Index != -1;
+        return Index != 0;
     }
 
     FORCE_INLINE bool operator==(const Tag& other) const
@@ -142,7 +142,7 @@ public:
     static bool HasAllExact(const Array<Tag>& list, const Array<Tag>& tags);
 
 private:
-    API_FUNCTION(NoProxy) static const String& GetTagName(int32 tag);
+    API_FUNCTION(NoProxy) static const String& GetTagName(uint32 tag);
 };
 
 #if !BUILD_RELEASE

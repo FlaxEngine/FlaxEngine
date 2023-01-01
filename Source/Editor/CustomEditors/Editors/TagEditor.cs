@@ -55,8 +55,8 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 if (Values[0] is Tag asTag)
                     return asTag;
-                if (Values[0] is int asInt)
-                    return new Tag(asInt);
+                if (Values[0] is uint asUInt)
+                    return new Tag(asUInt);
                 if (Values[0] is string asString)
                     return Tags.Get(asString);
                 return Tag.Default;
@@ -65,7 +65,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 if (Values[0] is Tag)
                     SetValue(value);
-                if (Values[0] is int)
+                if (Values[0] is uint)
                     SetValue(value.Index);
                 else if (Values[0] is string)
                     SetValue(value.ToString());
@@ -114,7 +114,7 @@ namespace FlaxEditor.CustomEditors.Editors
         private static void GetTags(TreeNode n, PickerData pickerData)
         {
             if (n is TreeNodeWithAddons a && a.Addons.Count != 0 && a.Addons[0] is CheckBox c && c.Checked)
-                pickerData.CachedTags.Add(new Tag((int)n.Tag));
+                pickerData.CachedTags.Add(new Tag((uint)n.Tag));
             foreach (var child in n.Children)
             {
                 if (child is TreeNode treeNode)
@@ -139,7 +139,7 @@ namespace FlaxEditor.CustomEditors.Editors
             if (pickerData.IsSingle)
             {
                 UncheckAll(node.ParentTree, node);
-                var value = new Tag(c.Checked ? (int)node.Tag : -1);
+                var value = new Tag(c.Checked ? (uint)node.Tag : 0);
                 pickerData.SetValue?.Invoke(value);
                 pickerData.SetValues?.Invoke(new[] { value });
             }
@@ -283,7 +283,8 @@ namespace FlaxEditor.CustomEditors.Editors
             for (var i = 0; i < tags.Length; i++)
             {
                 var tag = tags[i];
-                bool isSelected = pickerData.IsSingle ? value.Index == i : values.Contains(new Tag(i));
+                var tagValue = new Tag((uint)(i + 1));
+                bool isSelected = pickerData.IsSingle ? value == tagValue : values.Contains(tagValue);
 
                 // Count parent tags count
                 int indentation = 0;
@@ -296,7 +297,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 // Create node
                 var node = new TreeNodeWithAddons
                 {
-                    Tag = i,
+                    Tag = tagValue.Index,
                     Text = tag,
                     ChildrenIndent = nodeIndent,
                     CullChildren = false,
