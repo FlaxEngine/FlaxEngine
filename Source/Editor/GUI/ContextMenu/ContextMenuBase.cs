@@ -356,10 +356,15 @@ namespace FlaxEditor.GUI.ContextMenu
 
         private void OnWindowGotFocus()
         {
-            if (_childCM != null && _window && _window.IsForegroundWindow)
+            var child = _childCM;
+            if (child != null && _window && _window.IsForegroundWindow)
             {
                 // Hide child if user clicked over parent (do it next frame to process other events before - eg. child windows focus loss)
-                FlaxEngine.Scripting.InvokeOnUpdate(HideChild);
+                FlaxEngine.Scripting.InvokeOnUpdate(() =>
+                {
+                    if (child == _childCM)
+                        HideChild();
+                });
             }
         }
 
