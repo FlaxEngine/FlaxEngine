@@ -2,6 +2,8 @@
 
 #include "Content.h"
 #include "JsonAsset.h"
+#include "SceneReference.h"
+#include "Engine/Serialization/Serialization.h"
 #include "Cache/AssetsCache.h"
 #include "Storage/ContentStorageManager.h"
 #include "Storage/JsonStorageProxy.h"
@@ -37,6 +39,16 @@ Delegate<Asset*> Content::AssetReloading;
 String AssetInfo::ToString() const
 {
     return String::Format(TEXT("ID: {0}, TypeName: {1}, Path: \'{2}\'"), ID, TypeName, Path);
+}
+
+void FLAXENGINE_API Serialization::Serialize(ISerializable::SerializeStream& stream, const SceneReference& v, const void* otherObj)
+{
+    Serialize(stream, v.ID, otherObj);
+}
+
+void FLAXENGINE_API Serialization::Deserialize(ISerializable::DeserializeStream& stream, SceneReference& v, ISerializeModifier* modifier)
+{
+    Deserialize(stream, v.ID, modifier);
 }
 
 namespace
