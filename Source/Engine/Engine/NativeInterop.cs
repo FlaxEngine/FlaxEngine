@@ -1067,8 +1067,7 @@ namespace FlaxEngine
             var isCollectible = false;
 #endif
             scriptingAssemblyLoadContext = new AssemblyLoadContext("Flax", isCollectible);
-
-            DelegateHelpers.Init();
+            DelegateHelpers.InitMethods();
         }
 
         [UnmanagedCallersOnly]
@@ -2323,17 +2322,16 @@ namespace FlaxEngine
             }
         }
 
+        private delegate IntPtr InvokeThunkDelegate(ManagedHandle instanceHandle, IntPtr param1, IntPtr param2, IntPtr param3, IntPtr param4, IntPtr param5, IntPtr param6, IntPtr param7);
+
         [UnmanagedCallersOnly]
         internal static IntPtr GetMethodUnmanagedFunctionPointer(ManagedHandle methodHandle)
         {
             MethodHolder methodHolder = Unsafe.As<MethodHolder>(methodHandle.Target);
 
             // Wrap the method call, this is needed to get the object instance from ManagedHandle and to pass the exception back to native side
-            MethodInfo invokeThunk = typeof(ThunkContext).GetMethod(nameof(ThunkContext.InvokeThunk));
-            Type delegateType = DelegateHelpers.MakeNewCustomDelegate(invokeThunk.GetParameters().Select(x => x.ParameterType).Append(invokeThunk.ReturnType).ToArray());
-
             ThunkContext context = new ThunkContext(methodHolder.method);
-            Delegate methodDelegate = invokeThunk.CreateDelegate(delegateType, context);
+            Delegate methodDelegate = typeof(ThunkContext).GetMethod(nameof(ThunkContext.InvokeThunk)).CreateDelegate<InvokeThunkDelegate>(context);
             IntPtr functionPtr = Marshal.GetFunctionPointerForDelegate(methodDelegate);
 
             // Keep a reference to the delegate to prevent it from being garbage collected
@@ -2491,7 +2489,8 @@ namespace FlaxEngine
                 System.Threading.Thread.Sleep(1);
 
             // TODO: benchmark collectible setting performance, maybe enable it only in editor builds?
-            scriptingAssemblyLoadContext = new AssemblyLoadContext(null, true);
+            scriptingAssemblyLoadContext = new AssemblyLoadContext("Flax", true);
+            DelegateHelpers.InitMethods();
         }
 
         [UnmanagedCallersOnly]
@@ -2791,28 +2790,36 @@ namespace FlaxEngine
 
         private static class DelegateHelpers
         {
-            private static readonly Func<Type[], Type> MakeNewCustomDelegateFunc =
-                typeof(Expression).Assembly.GetType("System.Linq.Expressions.Compiler.DelegateHelpers")
-                .GetMethod("MakeNewCustomDelegate", BindingFlags.NonPublic | BindingFlags.Static)
-                .CreateDelegate<Func<Type[], Type>>();
+            private static Func<Type[], Type> MakeNewCustomDelegateFunc;
+            private static Func<Type[], Type> MakeNewCustomDelegateFuncCollectible;
 
-            internal static void Init()
+            internal static void InitMethods()
             {
-                // Ensures the MakeNewCustomDelegate is put in the collectible ALC?
-                using var ctx = scriptingAssemblyLoadContext.EnterContextualReflection();
+                MakeNewCustomDelegateFunc =
+                    typeof(Expression).Assembly.GetType("System.Linq.Expressions.Compiler.DelegateHelpers")
+                    .GetMethod("MakeNewCustomDelegate", BindingFlags.NonPublic | BindingFlags.Static).CreateDelegate<Func<Type[], Type>>();
 
+                // Load System.Linq.Expressions assembly to collectible ALC.
+                // The dynamic assembly where delegates are stored is cached in the DelegateHelpers class, so we should
+                // use the DelegateHelpers in collectible ALC to make sure the delegates are also stored in the same ALC.
+                Assembly assembly = scriptingAssemblyLoadContext.LoadFromAssemblyPath(typeof(Expression).Assembly.Location);
+                MakeNewCustomDelegateFuncCollectible =
+                    assembly.GetType("System.Linq.Expressions.Compiler.DelegateHelpers")
+                    .GetMethod("MakeNewCustomDelegate", BindingFlags.NonPublic | BindingFlags.Static).CreateDelegate<Func<Type[], Type>>();
+
+                // Create dummy delegates to force the dynamic Snippets assembly to be loaded in correcet ALCs
                 MakeNewCustomDelegateFunc(new[] { typeof(void) });
+                {
+                    // Ensure the new delegate is placed in the collectible ALC
+                    using var ctx = scriptingAssemblyLoadContext.EnterContextualReflection();
+                    MakeNewCustomDelegateFuncCollectible(new[] { typeof(void) });
+                }
             }
 
             internal static Type MakeNewCustomDelegate(Type[] parameters)
             {
-                if (parameters.Any(x => scriptingAssemblyLoadContext.Assemblies.Contains(x.Module.Assembly)))
-                {
-                    // Ensure the new delegate is placed in the collectible ALC
-                    //using var ctx = scriptingAssemblyLoadContext.EnterContextualReflection();
-                    return MakeNewCustomDelegateFunc(parameters);
-                }
-
+                if (parameters.Any(x => x.IsCollectible))
+                    return MakeNewCustomDelegateFuncCollectible(parameters);
                 return MakeNewCustomDelegateFunc(parameters);
             }
         }
