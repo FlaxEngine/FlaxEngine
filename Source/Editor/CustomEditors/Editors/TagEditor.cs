@@ -114,7 +114,7 @@ namespace FlaxEditor.CustomEditors.Editors
         private static void GetTags(TreeNode n, PickerData pickerData)
         {
             if (n is TreeNodeWithAddons a && a.Addons.Count != 0 && a.Addons[0] is CheckBox c && c.Checked)
-                pickerData.CachedTags.Add(new Tag((uint)n.Tag));
+                pickerData.CachedTags.Add((Tag)n.Tag);
             foreach (var child in n.Children)
             {
                 if (child is TreeNode treeNode)
@@ -139,7 +139,7 @@ namespace FlaxEditor.CustomEditors.Editors
             if (pickerData.IsSingle)
             {
                 UncheckAll(node.ParentTree, node);
-                var value = new Tag(c.Checked ? (uint)node.Tag : 0);
+                var value = c.Checked ? (Tag)node.Tag : Tag.Default;
                 pickerData.SetValue?.Invoke(value);
                 pickerData.SetValues?.Invoke(new[] { value });
             }
@@ -166,8 +166,8 @@ namespace FlaxEditor.CustomEditors.Editors
             if (parentNode.CustomArrowRect.HasValue)
             {
                 indentation = (int)((parentNode.CustomArrowRect.Value.Location.X - 18) / nodeIndent) + 1;
-                var parentIndex = (int)parentNode.Tag;
-                parentTag = Tags.List[parentIndex];
+                var parentTagValue = (Tag)parentNode.Tag;
+                parentTag = parentTagValue.ToString();
             }
             var node = new TreeNodeWithAddons
             {
@@ -244,7 +244,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 // Add tag
                 var tag = Tags.Get(tagName);
                 node.Text = name;
-                node.Tag = tag.Index;
+                node.Tag = tag;
                 var settingsAsset = GameSettings.LoadAsset<LayersAndTagsSettings>();
                 if (settingsAsset && !settingsAsset.WaitForLoaded())
                 {
@@ -297,7 +297,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 // Create node
                 var node = new TreeNodeWithAddons
                 {
-                    Tag = tagValue.Index,
+                    Tag = tagValue,
                     Text = tag,
                     ChildrenIndent = nodeIndent,
                     CullChildren = false,
