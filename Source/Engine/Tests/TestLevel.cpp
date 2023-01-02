@@ -33,11 +33,11 @@ TEST_CASE("Tags")
         auto b = Tags::Get(TEXT("B"));
         auto b1 = Tags::Get(TEXT("B.1"));
         auto c = Tags::Get(TEXT("C"));
-        CHECK(a.Index == 0);
-        CHECK(a1.Index == 1);
-        CHECK(b.Index == 2);
-        CHECK(b1.Index == 3);
-        CHECK(c.Index == 4);
+        CHECK(a.Index == 1);
+        CHECK(a1.Index == 2);
+        CHECK(b.Index == 3);
+        CHECK(b1.Index == 4);
+        CHECK(c.Index == 5);
 
         Tags::List = prevTags;
     }
