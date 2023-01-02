@@ -119,7 +119,8 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = IntegerValue.Get(box.ParentNode, box.Archetype, box.Value);
-            var control = new IntValueBox(value, bounds.X, bounds.Y, 40, int.MinValue, int.MaxValue, 0.01f)
+            var width = 40;
+            var control = new IntValueBox(value, bounds.X, bounds.Y, width + 12, int.MinValue, int.MaxValue, 0.01f)
             {
                 Height = bounds.Height,
                 Parent = box.Parent,
@@ -164,7 +165,8 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = UnsignedIntegerValue.Get(box.ParentNode, box.Archetype, box.Value);
-            var control = new UIntValueBox(value, bounds.X, bounds.Y, 40, uint.MinValue, uint.MaxValue, 0.01f)
+            var width = 40;
+            var control = new UIntValueBox(value, bounds.X, bounds.Y, width + 12, uint.MinValue, uint.MaxValue, 0.01f)
             {
                 Height = bounds.Height,
                 Parent = box.Parent,
@@ -209,7 +211,8 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = FloatValue.Get(box.ParentNode, box.Archetype, box.Value);
-            var control = new FloatValueBox(value, bounds.X, bounds.Y, 40, float.MinValue, float.MaxValue, 0.01f)
+            var width = 40;
+            var control = new FloatValueBox(value, bounds.X, bounds.Y, width + 12, float.MinValue, float.MaxValue, 0.01f)
             {
                 Height = bounds.Height,
                 Parent = box.Parent,
@@ -254,7 +257,7 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = box.Value as string;
-            var control = new TextBox(false, bounds.X, bounds.Y, 40)
+            var control = new TextBox(false, bounds.X, bounds.Y, 50)
             {
                 Text = value,
                 Height = bounds.Height,
@@ -299,20 +302,21 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var control = new ContainerControl(bounds.X, bounds.Y, 22 * 2 - 2, bounds.Height)
+            var width = 30;
+            var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 2 - 2, bounds.Height)
             {
                 ClipChildren = false,
                 AutoFocus = false,
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new RealValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new RealValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new RealValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new RealValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -372,26 +376,27 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var control = new ContainerControl(bounds.X, bounds.Y, 22 * 3 - 2, bounds.Height)
+            var width = 30;
+            var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 3 - 2, bounds.Height)
             {
                 ClipChildren = false,
                 AutoFocus = false,
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new RealValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new RealValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new RealValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new RealValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatY.BoxValueChanged += OnValueChanged;
-            var floatZ = new RealValueBox(value.Z, 44, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatZ = new RealValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -454,32 +459,33 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var control = new ContainerControl(bounds.X, bounds.Y, 22 * 4 - 2, bounds.Height)
+            var width = 20;
+            var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 4 - 2, bounds.Height)
             {
                 ClipChildren = false,
                 AutoFocus = false,
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new RealValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new RealValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new RealValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new RealValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatY.BoxValueChanged += OnValueChanged;
-            var floatZ = new RealValueBox(value.Z, 44, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatZ = new RealValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatZ.BoxValueChanged += OnValueChanged;
-            var floatW = new RealValueBox(value.W, 66, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatW = new RealValueBox(value.W, width * 3 + 6, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -546,20 +552,21 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var control = new ContainerControl(bounds.X, bounds.Y, 22 * 2 - 2, bounds.Height)
+            var width = 30;
+            var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 2 - 2, bounds.Height)
             {
                 ClipChildren = false,
                 AutoFocus = false,
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new FloatValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new FloatValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new FloatValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new FloatValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -619,26 +626,27 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var control = new ContainerControl(bounds.X, bounds.Y, 22 * 3 - 2, bounds.Height)
+            var width = 30;
+            var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 3 - 2, bounds.Height)
             {
                 ClipChildren = false,
                 AutoFocus = false,
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new FloatValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new FloatValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new FloatValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new FloatValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatY.BoxValueChanged += OnValueChanged;
-            var floatZ = new FloatValueBox(value.Z, 44, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatZ = new FloatValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -701,32 +709,33 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var control = new ContainerControl(bounds.X, bounds.Y, 22 * 4 - 2, bounds.Height)
+            var width = 20;
+            var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 4 - 2, bounds.Height)
             {
                 ClipChildren = false,
                 AutoFocus = false,
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new FloatValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new FloatValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new FloatValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new FloatValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatY.BoxValueChanged += OnValueChanged;
-            var floatZ = new FloatValueBox(value.Z, 44, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatZ = new FloatValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatZ.BoxValueChanged += OnValueChanged;
-            var floatW = new FloatValueBox(value.W, 66, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatW = new FloatValueBox(value.W, width * 3 + 6, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -793,20 +802,21 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var control = new ContainerControl(bounds.X, bounds.Y, 22 * 2 - 2, bounds.Height)
+            var width = 30;
+            var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 2 - 2, bounds.Height)
             {
                 ClipChildren = false,
                 AutoFocus = false,
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new DoubleValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new DoubleValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new DoubleValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new DoubleValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -866,26 +876,27 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var control = new ContainerControl(bounds.X, bounds.Y, 22 * 3 - 2, bounds.Height)
+            var width = 30;
+            var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 3 - 2, bounds.Height)
             {
                 ClipChildren = false,
                 AutoFocus = false,
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new DoubleValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new DoubleValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new DoubleValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new DoubleValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatY.BoxValueChanged += OnValueChanged;
-            var floatZ = new DoubleValueBox(value.Z, 44, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatZ = new DoubleValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -948,32 +959,33 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var control = new ContainerControl(bounds.X, bounds.Y, 22 * 4 - 2, bounds.Height)
+            var width = 20;
+            var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 4 - 2, bounds.Height)
             {
                 ClipChildren = false,
                 AutoFocus = false,
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new DoubleValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new DoubleValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new DoubleValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new DoubleValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatY.BoxValueChanged += OnValueChanged;
-            var floatZ = new DoubleValueBox(value.Z, 44, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatZ = new DoubleValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatZ.BoxValueChanged += OnValueChanged;
-            var floatW = new DoubleValueBox(value.W, 66, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatW = new DoubleValueBox(value.W, width * 3 + 6, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
@@ -1040,26 +1052,27 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box).EulerAngles;
-            var control = new ContainerControl(bounds.X, bounds.Y, 22 * 3 - 2, bounds.Height)
+            var width = 20;
+            var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 3 - 2, bounds.Height)
             {
                 ClipChildren = false,
                 AutoFocus = false,
                 Parent = box.Parent,
                 Tag = box,
             };
-            var floatX = new FloatValueBox(value.X, 0, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatX = new FloatValueBox(value.X, 0, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatX.BoxValueChanged += OnValueChanged;
-            var floatY = new FloatValueBox(value.Y, 22, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatY = new FloatValueBox(value.Y, width + 2, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,
             };
             floatY.BoxValueChanged += OnValueChanged;
-            var floatZ = new FloatValueBox(value.Z, 44, 0, 20, float.MinValue, float.MaxValue, 0.0f)
+            var floatZ = new FloatValueBox(value.Z, width * 2 + 4, 0, width, float.MinValue, float.MaxValue, 0.0f)
             {
                 Height = bounds.Height,
                 Parent = control,

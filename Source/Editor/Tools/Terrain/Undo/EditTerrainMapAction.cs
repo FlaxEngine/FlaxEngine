@@ -41,33 +41,24 @@ namespace FlaxEditor.Tools.Terrain.Undo
             public object Tag;
         }
 
-        /// <summary>
-        /// The terrain (actor Id).
-        /// </summary>
         [Serialize]
         protected readonly Guid _terrain;
 
-        /// <summary>
-        /// The heightmap length (vertex count).
-        /// </summary>
         [Serialize]
         protected readonly int _heightmapLength;
 
-        /// <summary>
-        /// The heightmap data size (in bytes).
-        /// </summary>
         [Serialize]
         protected readonly int _heightmapDataSize;
 
-        /// <summary>
-        /// The terrain patches
-        /// </summary>
         [Serialize]
         protected readonly List<PatchData> _patches;
 
-        /// <summary>
-        /// Gets a value indicating whether this action has any modification to the terrain (recorded patches changes).
-        /// </summary>
+        [Serialize]
+        protected readonly List<BoundingBox> _navmeshBoundsModifications;
+
+        [Serialize]
+        protected readonly float _dirtyNavMeshTimeoutMs;
+
         [NoSerialize]
         public bool HasAnyModification => _patches.Count > 0;
 
@@ -98,6 +89,27 @@ namespace FlaxEditor.Tools.Terrain.Undo
             var heightmapSize = chunkSize * FlaxEngine.Terrain.PatchEdgeChunksCount + 1;
             _heightmapLength = heightmapSize * heightmapSize;
             _heightmapDataSize = _heightmapLength * stride;
+
+            // Auto NavMesh rebuild
+            var editorOptions = Editor.Instance.Options.Options;
+            bool isPlayMode = Editor.Instance.StateMachine.IsPlayMode;
+            if (!isPlayMode && editorOptions.General.AutoRebuildNavMesh)
+            {
+                if (terrain.Scene && terrain.HasStaticFlag(StaticFlags.Navigation))
+                {
+                    _navmeshBoundsModifications = new List<BoundingBox>();
+                    _dirtyNavMeshTimeoutMs = editorOptions.General.AutoRebuildNavMeshTimeoutMs;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adds modified bounds to the undo actor modifications list.
+        /// </summary>
+        /// <param name="bounds">The world-space bounds.</param>
+        public void AddDirtyBounds(ref BoundingBox bounds)
+        {
+            _navmeshBoundsModifications?.Add(bounds);
         }
 
         /// <summary>
@@ -155,7 +167,15 @@ namespace FlaxEditor.Tools.Terrain.Undo
                 _patches[i] = patch;
             }
 
-            Editor.Instance.Scene.MarkSceneEdited(Terrain.Scene);
+            // Update navmesh
+            var scene = Terrain.Scene;
+            if (_navmeshBoundsModifications != null)
+            {
+                foreach (var bounds in _navmeshBoundsModifications)
+                    Navigation.BuildNavMesh(scene, bounds, _dirtyNavMeshTimeoutMs);
+            }
+
+            Editor.Instance.Scene.MarkSceneEdited(scene);
         }
 
         /// <inheritdoc />
@@ -183,15 +203,25 @@ namespace FlaxEditor.Tools.Terrain.Undo
                 Marshal.FreeHGlobal(_patches[i].After);
             }
             _patches.Clear();
+            _navmeshBoundsModifications?.Clear();
         }
 
         private void Set(Func<PatchData, IntPtr> dataGetter)
         {
+            // Update patches
             for (int i = 0; i < _patches.Count; i++)
             {
                 var patch = _patches[i];
                 var data = dataGetter(patch);
                 SetData(ref patch.PatchCoord, data, patch.Tag);
+            }
+
+            // Update navmesh
+            var scene = Terrain.Scene;
+            if (_navmeshBoundsModifications != null)
+            {
+                foreach (var bounds in _navmeshBoundsModifications)
+                    Navigation.BuildNavMesh(scene, bounds, _dirtyNavMeshTimeoutMs);
             }
 
             Editor.Instance.Scene.MarkSceneEdited(Terrain.Scene);

@@ -26,6 +26,7 @@ public:
     {
         byte AutoReloadScriptsOnMainWindowFocus = 1;
         byte ForceScriptCompilationOnStartup = 1;
+        byte UseAssetImportPathRelative = 1;
         byte AutoRebuildCSG = 1;
         float AutoRebuildCSGTimeoutMs = 50;
         byte AutoRebuildNavMesh = 1;

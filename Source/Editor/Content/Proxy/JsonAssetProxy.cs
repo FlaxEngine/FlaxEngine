@@ -127,7 +127,7 @@ namespace FlaxEditor.Content
     /// Generic Json assets proxy (supports all json assets that don't have dedicated proxy).
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.JsonAssetBaseProxy" />
-    public sealed class GenericJsonAssetProxy : JsonAssetProxy
+    public class GenericJsonAssetProxy : JsonAssetProxy
     {
         /// <inheritdoc />
         public override string TypeName => typeof(JsonAsset).FullName;
@@ -161,7 +161,7 @@ namespace FlaxEditor.Content
     /// Content proxy for a json assets of the given type that can be spawned in the editor.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.JsonAssetProxy" />
-    public sealed class SpawnableJsonAssetProxy<T> : JsonAssetProxy where T : new()
+    public class SpawnableJsonAssetProxy<T> : JsonAssetProxy where T : new()
     {
         /// <inheritdoc />
         public override string Name { get; } = Utilities.Utils.GetPropertyNameUI(typeof(T).Name);

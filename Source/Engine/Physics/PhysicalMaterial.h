@@ -4,6 +4,7 @@
 
 #include "Types.h"
 #include "Engine/Core/ISerializable.h"
+#include "Engine/Level/Tags.h"
 
 /// <summary>
 /// Physical materials are used to define the response of a physical object when interacting dynamically with the world.
@@ -68,6 +69,12 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(10), EditorDisplay(\"Physical Material\")")
     float Density = 1000.0f;
+
+    /// <summary>
+    /// Physical material tag used to identify it (eg. `Surface.Wood`). Can be used to play proper footstep sounds when walking over object with that material.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"Physical Material\")")
+    Tag Tag;
 
 public:
     /// <summary>

@@ -99,14 +99,15 @@ namespace Flax.Build.Bindings
             return sb.ToString();
         }
 
-        private static string GenerateCppWrapperNativeToManagedParam(BuildData buildData, StringBuilder contents, TypeInfo paramType, string paramName, ApiTypeInfo caller, bool isOut)
+        private static string GenerateCppWrapperNativeToManagedParam(BuildData buildData, StringBuilder contents, TypeInfo paramType, string paramName, ApiTypeInfo caller, bool isOut, out bool useLocalVar)
         {
+            useLocalVar = false;
             var nativeToManaged = GenerateCppWrapperNativeToManaged(buildData, paramType, caller, out var managedTypeAsNative, null);
             string result;
             if (!string.IsNullOrEmpty(nativeToManaged))
             {
                 result = string.Format(nativeToManaged, paramName);
-                if (managedTypeAsNative[managedTypeAsNative.Length - 1] == '*')
+                if (managedTypeAsNative[managedTypeAsNative.Length - 1] == '*' && !isOut)
                 {
                     // Pass pointer value
                 }
@@ -117,6 +118,7 @@ namespace Flax.Build.Bindings
                         result = string.Format(nativeToManaged, '*' + paramName);
                     contents.Append($"        auto __param_{paramName} = {result};").AppendLine();
                     result = $"&__param_{paramName}";
+                    useLocalVar = true;
                 }
             }
             else
@@ -588,12 +590,12 @@ namespace Flax.Build.Bindings
             }
         }
 
-        private static string GenerateCppWrapperManagedToNative(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, out string type, FunctionInfo functionInfo, out bool needLocalVariable)
+        private static string GenerateCppWrapperManagedToNative(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, out string type, out ApiTypeInfo apiType, FunctionInfo functionInfo, out bool needLocalVariable)
         {
             needLocalVariable = false;
 
             // Register any API types usage
-            var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
+            apiType = FindApiTypeInfo(buildData, typeInfo, caller);
             CppReferencesFiles.Add(apiType?.File);
             if (typeInfo.GenericArgs != null)
             {
@@ -608,7 +610,7 @@ namespace Flax.Build.Bindings
             if (typeInfo.IsArray)
             {
                 var arrayType = new TypeInfo { Type = "Array", GenericArgs = new List<TypeInfo> { new TypeInfo(typeInfo) { IsArray = false } } };
-                var result = GenerateCppWrapperManagedToNative(buildData, arrayType, caller, out type, functionInfo, out needLocalVariable);
+                var result = GenerateCppWrapperManagedToNative(buildData, arrayType, caller, out type, out _, functionInfo, out needLocalVariable);
                 return result + ".Get()";
             }
 
@@ -967,7 +969,7 @@ namespace Flax.Build.Bindings
                 separator = true;
 
                 CppParamsThatNeedConversion[i] = false;
-                CppParamsWrappersCache[i] = GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, caller, out var managedType, functionInfo, out CppParamsThatNeedLocalVariable[i]);
+                CppParamsWrappersCache[i] = GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, caller, out var managedType, out var apiType, functionInfo, out CppParamsThatNeedLocalVariable[i]);
 
                 // Out parameters that need additional converting will be converted at the native side (eg. object reference)
                 var isOutWithManagedConverter = parameterInfo.IsOut && !string.IsNullOrEmpty(GenerateCSharpManagedToNativeConverter(buildData, parameterInfo.Type, caller));
@@ -985,7 +987,6 @@ namespace Flax.Build.Bindings
                 if (parameterInfo.IsOut || isRefOut)
                 {
                     bool convertOutputParameter = false;
-                    var apiType = FindApiTypeInfo(buildData, parameterInfo.Type, caller);
                     if (apiType != null)
                     {
                         // Non-POD structure passed as value (eg. it contains string or array inside)
@@ -1038,7 +1039,7 @@ namespace Flax.Build.Bindings
                     contents.Append(", ");
                 separator = true;
 
-                GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, caller, out var managedType, functionInfo, out _);
+                GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, caller, out var managedType, out _, functionInfo, out _);
                 contents.Append(managedType);
                 if (parameterInfo.IsRef || parameterInfo.IsOut || UsePassByReference(buildData, parameterInfo.Type, caller))
                     contents.Append('*');
@@ -1336,7 +1337,7 @@ namespace Flax.Build.Bindings
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
             {
                 var parameterInfo = functionInfo.Parameters[i];
-                var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, parameterInfo.Type, parameterInfo.Name, classInfo, parameterInfo.IsOut);
+                var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, parameterInfo.Type, parameterInfo.Name, classInfo, parameterInfo.IsOut, out _);
                 contents.Append($"        params[{i}] = {paramValue};").AppendLine();
             }
 
@@ -1728,7 +1729,8 @@ namespace Flax.Build.Bindings
                     {
                         var paramType = eventInfo.Type.GenericArgs[i];
                         var paramName = "arg" + i;
-                        var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, paramType, paramName, classInfo, false);
+                        var paramIsOut = paramType.IsRef && !paramType.IsConst;
+                        var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, paramType, paramName, classInfo, paramIsOut, out CppParamsThatNeedConversion[i]);
                         contents.Append($"        params[{i}] = {paramValue};").AppendLine();
                     }
                     if (eventInfo.IsStatic)
@@ -1741,13 +1743,15 @@ namespace Flax.Build.Bindings
                     for (var i = 0; i < paramsCount; i++)
                     {
                         var paramType = eventInfo.Type.GenericArgs[i];
-                        if (paramType.IsRef && !paramType.IsConst)
+                        var paramIsOut = paramType.IsRef && !paramType.IsConst;
+                        if (paramIsOut)
                         {
                             // Convert value back from managed to native (could be modified there)
                             paramType.IsRef = false;
-                            var managedToNative = GenerateCppWrapperManagedToNative(buildData, paramType, classInfo, out var managedType, null, out _);
+                            var managedToNative = GenerateCppWrapperManagedToNative(buildData, paramType, classInfo, out var managedType, out var apiType, null, out _);
                             var passAsParamPtr = managedType.EndsWith("*");
-                            var paramValue = $"({managedType}{(passAsParamPtr ? "" : "*")})params[{i}]";
+                            var useLocalVarPointer = CppParamsThatNeedConversion[i] && !apiType.IsValueType;
+                            var paramValue = useLocalVarPointer ? $"*({managedType}{(passAsParamPtr ? "" : "*")}*)params[{i}]" : $"({managedType}{(passAsParamPtr ? "" : "*")})params[{i}]";
                             if (!string.IsNullOrEmpty(managedToNative))
                             {
                                 if (!passAsParamPtr)
@@ -2468,7 +2472,7 @@ namespace Flax.Build.Bindings
                     if (typeInfo.IsArray)
                     {
                         typeInfo.IsArray = false;
-                        header.Append($"{GenerateCppWrapperNativeToVariantMethodName(typeInfo)}Array(const {typeInfo}* v, const int32 length)").AppendLine();
+                        header.Append($"{GenerateCppWrapperNativeToVariantMethodName(typeInfo)}Array({(typeInfo.IsConst ? "const " : "")}{typeInfo}* v, const int32 length)").AppendLine();
                         header.Append('{').AppendLine();
                         header.Append("    Variant result;").AppendLine();
                         header.Append("    result.SetType(VariantType(VariantType::Array));").AppendLine();
@@ -2481,7 +2485,7 @@ namespace Flax.Build.Bindings
                     else if (typeInfo.Type == "Array" && typeInfo.GenericArgs != null)
                     {
                         var valueType = typeInfo.GenericArgs[0];
-                        header.Append($"{GenerateCppWrapperNativeToVariantMethodName(valueType)}Array(const {valueType}* v, const int32 length)").AppendLine();
+                        header.Append($"{GenerateCppWrapperNativeToVariantMethodName(valueType)}Array({(typeInfo.IsConst ? "const " : "")}{valueType}* v, const int32 length)").AppendLine();
                         header.Append('{').AppendLine();
                         header.Append("    Variant result;").AppendLine();
                         header.Append("    result.SetType(VariantType(VariantType::Array));").AppendLine();
@@ -2646,7 +2650,7 @@ namespace Flax.Build.Bindings
                                 continue;
 
                             CppNonPodTypesConvertingGeneration = true;
-                            var wrapper = GenerateCppWrapperManagedToNative(buildData, fieldInfo.Type, apiType, out _, null, out _);
+                            var wrapper = GenerateCppWrapperManagedToNative(buildData, fieldInfo.Type, apiType, out _, out _, null, out _);
                             CppNonPodTypesConvertingGeneration = false;
 
                             if (fieldInfo.Type.IsArray)
@@ -2730,7 +2734,7 @@ namespace Flax.Build.Bindings
                                 continue;
 
                             CppNonPodTypesConvertingGeneration = true;
-                            var wrapper = GenerateCppWrapperManagedToNative(buildData, fieldInfo.Type, apiType, out _, null, out _);
+                            var wrapper = GenerateCppWrapperManagedToNative(buildData, fieldInfo.Type, apiType, out _, out _, null, out _);
                             CppNonPodTypesConvertingGeneration = false;
 
                             if (fieldInfo.Type.IsArray)

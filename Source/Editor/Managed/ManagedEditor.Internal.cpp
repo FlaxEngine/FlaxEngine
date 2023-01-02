@@ -830,6 +830,9 @@ public:
     {
         SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_SetOptions")
         ManagedEditor::ManagedEditorOptions = *options;
+
+        // Apply options
+        AssetsImportingManager::UseImportPathRelative = ManagedEditor::ManagedEditorOptions.UseAssetImportPathRelative != 0;
     }
 
     static void DrawNavMesh()

@@ -149,6 +149,13 @@ namespace FlaxEditor.Options
         public bool AutoSaveVisualScriptOnPlayStart { get; set; } = true;
 
         /// <summary>
+        /// If checked, imported file path will be stored relative to the project folder within imported asset metadata. Otherwise will use absolute path.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Content"), EditorOrder(550)]
+        public bool UseAssetImportPathRelative { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets a value indicating whether perform automatic CSG rebuild on brush change.
         /// </summary>
         [DefaultValue(true)]

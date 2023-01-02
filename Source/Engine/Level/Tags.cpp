@@ -12,7 +12,8 @@ FLAXENGINE_API String* TagsListDebug = nullptr;
 
 const String& Tag::ToString() const
 {
-    return Index >= 0 && Index < Tags::List.Count() ? Tags::List.Get()[Index] : String::Empty;
+    const int32 index = (int32)Index - 1;
+    return index >= 0 && index < Tags::List.Count() ? Tags::List.Get()[index] : String::Empty;
 }
 
 bool Tag::operator==(const StringView& other) const
@@ -27,7 +28,7 @@ bool Tag::operator!=(const StringView& other) const
 
 void FLAXENGINE_API Serialization::Serialize(ISerializable::SerializeStream& stream, const Tag& v, const void* otherObj)
 {
-    if (v.Index != -1)
+    if (v.Index != 0)
         stream.String(v.ToString());
     else
         stream.String("", 0);
@@ -42,11 +43,11 @@ Tag Tags::Get(const StringView& tagName)
 {
     if (tagName.IsEmpty())
         return Tag();
-    Tag tag = List.Find(tagName);
-    if (tag.Index == -1 && tagName.HasChars())
+    Tag tag(List.Find(tagName) + 1);
+    if (tag.Index == 0 && tagName.HasChars())
     {
-        tag.Index = List.Count();
         List.AddOne() = tagName;
+        tag.Index = List.Count();
 #if !BUILD_RELEASE
         TagsListDebug = List.Get();
 #endif
@@ -56,7 +57,7 @@ Tag Tags::Get(const StringView& tagName)
 
 bool Tags::HasTag(const Array<Tag>& list, const Tag& tag)
 {
-    if (tag.Index == -1)
+    if (tag.Index == 0)
         return false;
     const String& tagName = tag.ToString();
     for (const Tag& e : list)
@@ -70,7 +71,7 @@ bool Tags::HasTag(const Array<Tag>& list, const Tag& tag)
 
 bool Tags::HasTagExact(const Array<Tag>& list, const Tag& tag)
 {
-    if (tag.Index == -1)
+    if (tag.Index == 0)
         return false;
     return list.Contains(tag);
 }
@@ -119,7 +120,7 @@ bool Tags::HasAllExact(const Array<Tag>& list, const Array<Tag>& tags)
     return true;
 }
 
-const String& Tags::GetTagName(int32 tag)
+const String& Tags::GetTagName(uint32 tag)
 {
     return Tag(tag).ToString();
 }

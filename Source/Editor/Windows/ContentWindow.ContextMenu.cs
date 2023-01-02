@@ -155,7 +155,7 @@ namespace FlaxEditor.Windows
             var scriptType = new ScriptType(typeof(Script));
             foreach (var type in Editor.CodeEditing.All.Get())
             {
-                if (type.IsAbstract)
+                if (type.IsAbstract || type.Type == null)
                     continue;
                 if (actorType.IsAssignableFrom(type) || scriptType.IsAssignableFrom(type))
                     continue;

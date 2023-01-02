@@ -22,6 +22,11 @@ public:
     /// </summary>
     static Array<AssetCreator> Creators;
 
+    /// <summary>
+    /// If true store asset import path relative to the current workspace, otherwise will store absolute path.
+    /// </summary>
+    static bool UseImportPathRelative;
+
 public:
     /// <summary>
     /// The create texture tag (using internal import pipeline to crate texture asset from custom image source).
