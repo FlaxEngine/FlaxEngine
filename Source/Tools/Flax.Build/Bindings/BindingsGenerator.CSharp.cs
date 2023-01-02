@@ -1271,6 +1271,7 @@ namespace Flax.Build.Bindings
                         public static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => GCHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);
                         public static void Free(IntPtr unmanaged) => GCHandleMarshaller.ManagedToNative.Free(unmanaged);
                     }
+                    [HideInEditor]
                     public struct Bidirectional
                     {
                         GCHandleMarshaller.Bidirectional marsh;
@@ -1342,9 +1343,9 @@ namespace Flax.Build.Bindings
                 {
                     // Native struct begin
                     GenerateCSharpAttributes(buildData, contents, indent, structureInfo, true);
+                    contents.Append(indent).AppendLine("[HideInEditor]");
                     contents.Append(indent).AppendLine("[StructLayout(LayoutKind.Sequential)]");
-                    contents.Append(indent);
-                    contents.Append("public struct ").Append(structureInfo.Name).Append("Internal");
+                    contents.Append(indent).Append("public struct ").Append(structureInfo.Name).Append("Internal");
                     if (structureInfo.BaseType != null && structureInfo.IsPod)
                         contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo { Type = structureInfo.BaseType.Name }, structureInfo));
                     contents.AppendLine();
@@ -1595,6 +1596,7 @@ namespace Flax.Build.Bindings
 
                 // Bidirectional stateful shape
                 // NOTE: GCHandles of FlaxEngine.Object must not be released unless they were allocated by this marshaller
+                contents.Append(indent).AppendLine("[HideInEditor]");
                 contents.Append(indent).AppendLine($"public struct Bidirectional").Append(indent).AppendLine("{");
                 contents.Append(indent2).AppendLine($"{structureInfo.Name} managed;");
                 contents.Append(indent2).AppendLine($"{structureInfo.Name}Internal unmanaged;");
