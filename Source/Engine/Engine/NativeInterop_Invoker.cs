@@ -1,3 +1,5 @@
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+
 #if USE_NETCORE
 
 using System;

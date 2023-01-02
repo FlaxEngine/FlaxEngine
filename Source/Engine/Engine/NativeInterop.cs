@@ -1,4 +1,7 @@
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+
 #if USE_NETCORE
+
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -813,29 +816,29 @@ namespace FlaxEngine
     /// </summary>
     internal unsafe static partial class NativeInterop
     {
-        internal static Dictionary<string, string> AssemblyLocations = new Dictionary<string, string>();
+        internal static Dictionary<string, string> AssemblyLocations = new();
 
         private static bool firstAssemblyLoaded = false;
 
-        private static Dictionary<string, Type> typeCache = new Dictionary<string, Type>();
+        private static Dictionary<string, Type> typeCache = new();
 
         private static IntPtr boolTruePtr = GCHandle.ToIntPtr(GCHandle.Alloc((int)1, GCHandleType.Pinned));
         private static IntPtr boolFalsePtr = GCHandle.ToIntPtr(GCHandle.Alloc((int)0, GCHandleType.Pinned));
 
         private static List<GCHandle> methodHandles = new();
         private static List<GCHandle> methodHandlesCollectible = new();
-        private static ConcurrentDictionary<IntPtr, Delegate> cachedDelegates = new ConcurrentDictionary<IntPtr, Delegate>();
-        private static ConcurrentDictionary<IntPtr, Delegate> cachedDelegatesCollectible = new ConcurrentDictionary<IntPtr, Delegate>();
-        private static Dictionary<Type, GCHandle> typeHandleCache = new Dictionary<Type, GCHandle>();
-        private static Dictionary<Type, GCHandle> typeHandleCacheCollectible = new Dictionary<Type, GCHandle>();
+        private static ConcurrentDictionary<IntPtr, Delegate> cachedDelegates = new();
+        private static ConcurrentDictionary<IntPtr, Delegate> cachedDelegatesCollectible = new();
+        private static Dictionary<Type, GCHandle> typeHandleCache = new();
+        private static Dictionary<Type, GCHandle> typeHandleCacheCollectible = new();
         private static List<GCHandle> fieldHandleCache = new();
         private static List<GCHandle> fieldHandleCacheCollectible = new();
         private static Dictionary<object, GCHandle> classAttributesCacheCollectible = new();
-        private static Dictionary<Assembly, GCHandle> assemblyHandles = new Dictionary<Assembly, GCHandle>();
+        private static Dictionary<Assembly, GCHandle> assemblyHandles = new();
 
-        private static Dictionary<string, IntPtr> loadedNativeLibraries = new Dictionary<string, IntPtr>();
-        private static Dictionary<string, string> nativeLibraryPaths = new Dictionary<string, string>();
-        private static Dictionary<Assembly, string> assemblyOwnedNativeLibraries = new Dictionary<Assembly, string>();
+        private static Dictionary<string, IntPtr> loadedNativeLibraries = new();
+        private static Dictionary<string, string> nativeLibraryPaths = new();
+        private static Dictionary<Assembly, string> assemblyOwnedNativeLibraries = new();
         private static AssemblyLoadContext scriptingAssemblyLoadContext;
 
         [System.Diagnostics.DebuggerStepThrough]
@@ -1871,7 +1874,6 @@ namespace FlaxEngine
                         marshalType = type;
                     else
                         marshalType = GetInternalType(type) ?? typeof(IntPtr);
-
                     return marshalType;
                 }
 
@@ -2723,4 +2725,5 @@ namespace FlaxEngine
         }
     }
 }
+
 #endif
