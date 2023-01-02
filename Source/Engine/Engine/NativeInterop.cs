@@ -12,7 +12,6 @@ using System.Runtime.CompilerServices;
 using FlaxEngine.Assertions;
 using FlaxEngine.Utilities;
 using System.Runtime.InteropServices.Marshalling;
-using FlaxEngine.Visject;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Text;
@@ -1845,10 +1844,12 @@ namespace FlaxEngine
         internal static IntPtr NewObject(IntPtr typeHandle)
         {
             Type type = Unsafe.As<Type>(GCHandle.FromIntPtr(typeHandle).Target);
-            if (type == typeof(Script))
+            if (type.IsAbstract)
             {
-                // FIXME: Script is an abstract type which can not be instantiated
-                type = typeof(VisjectScript);
+                // Dotnet doesn't allow to instantiate abstract type thus allow to use generated mock class usage (eg. for Script or GPUResource) for generated abstract types
+                var abstractWrapper = type.GetNestedType("AbstractWrapper", BindingFlags.NonPublic);
+                if (abstractWrapper != null)
+                    type = abstractWrapper;
             }
             object value = RuntimeHelpers.GetUninitializedObject(type);
             return GCHandle.ToIntPtr(GCHandle.Alloc(value));
