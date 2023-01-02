@@ -1,9 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #if USE_NETCORE
-
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -15,40 +13,64 @@ namespace FlaxEngine
 {
     internal unsafe static partial class NativeInterop
     {
+        /// <summary>
+        /// Helper class for invoking managed methods from delegates.
+        /// </summary>
         internal static class Invoker
         {
-            internal delegate IntPtr MarshalAndInvokeDelegate(object delegateContext, IntPtr instancePtr, IntPtr paramPtr);
-            internal delegate IntPtr InvokeThunkDelegate(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs);
+            internal delegate IntPtr MarshalAndInvokeDelegate(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr);
+            internal delegate IntPtr InvokeThunkDelegate(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs);
 
+            /// <summary>
+            /// Casts managed pointer to unmanaged pointer.
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal static T* ToPointer<T>(IntPtr ptr) where T : unmanaged
             {
                 return (T*)ptr.ToPointer();
             }
+            internal static MethodInfo ToPointerMethod = typeof(Invoker).GetMethod(nameof(Invoker.ToPointer), BindingFlags.Static | BindingFlags.NonPublic);
 
             /// <summary>
             /// Creates a delegate for invoker to pass parameters as references.
             /// </summary>
-            internal static Delegate CreateDelegateFromMethod(MethodInfo method, bool byRefParameters = true)
+            internal static Delegate CreateDelegateFromMethod(MethodInfo method, bool passParametersByRef = true)
             {
-                Type[] methodParameters = method.GetParameters().Select(x => x.ParameterType).ToArray();
-                Type[] delegateParameters = method.GetParameters().Select(x => x.ParameterType.IsPointer ? typeof(IntPtr) : x.ParameterType).ToArray();
-                if (byRefParameters)
-                    delegateParameters = delegateParameters.Select(x => x.IsByRef ? x : x.MakeByRefType()).ToArray();
+                Type[] methodParameters;
+                if (method.IsStatic)
+                    methodParameters = method.GetParameters().Select(x => x.ParameterType).ToArray();
+                else
+                    methodParameters = method.GetParameters().Select(x => x.ParameterType).Prepend(method.DeclaringType).ToArray();
 
-                List<ParameterExpression> parameterExpressions = new List<ParameterExpression>(delegateParameters.Select(x => Expression.Parameter(x)));
-                List<Expression> callExpressions = new List<Expression>(parameterExpressions);
-                for (int i = 0; i < callExpressions.Count; i++)
-                    if (methodParameters[i].IsPointer)
-                        callExpressions[i] = Expression.Call(null, typeof(Invoker).GetMethod(nameof(Invoker.ToPointer), BindingFlags.Static | BindingFlags.NonPublic).MakeGenericMethod(methodParameters[i].GetElementType()), parameterExpressions[i]);
+                // Pass delegate parameters by reference
+                Type[] delegateParameters = methodParameters.Select(x => x.IsPointer ? typeof(IntPtr) : x)
+                    .Select(x => passParametersByRef && !x.IsByRef ? x.MakeByRefType() : x).ToArray();
+                if (!method.IsStatic && passParametersByRef)
+                    delegateParameters[0] = method.DeclaringType;
 
-                var firstParamExp = Expression.Parameter(method.DeclaringType);
-                var callDelegExp = Expression.Call(!method.IsStatic ? firstParamExp : null, method, callExpressions.ToArray());
+                // Convert unmanaged pointer parameters to IntPtr
+                ParameterExpression[] parameterExpressions = delegateParameters.Select(x => Expression.Parameter(x)).ToArray();
+                Expression[] callExpressions = new Expression[methodParameters.Length];
+                for (int i = 0; i < methodParameters.Length; i++)
+                {
+                    Type parameterType = methodParameters[i];
+                    if (parameterType.IsPointer)
+                    {
+                        callExpressions[i] =
+                            Expression.Call(null, ToPointerMethod.MakeGenericMethod(parameterType.GetElementType()), parameterExpressions[i]);
+                    }
+                    else
+                        callExpressions[i] = parameterExpressions[i];
+                }
 
-                if (!method.IsStatic)
-                    parameterExpressions.Insert(0, firstParamExp);
-                var lambda = Expression.Lambda(callDelegExp, parameterExpressions.ToArray());
-
-                return lambda.Compile();
+                // Create and compile the delegate
+                MethodCallExpression callDelegExp;
+                if (method.IsStatic)
+                    callDelegExp = Expression.Call(null, method, callExpressions.ToArray());
+                else
+                    callDelegExp = Expression.Call(parameterExpressions[0], method, callExpressions.Skip(1).ToArray());
+                Type delegateType = DelegateHelpers.MakeNewCustomDelegate(delegateParameters.Append(method.ReturnType).ToArray());
+                return Expression.Lambda(delegateType, callDelegExp, parameterExpressions.ToArray()).Compile();
             }
 
             internal static IntPtr MarshalReturnValue<TRet>(ref TRet returnValue)
@@ -57,24 +79,25 @@ namespace FlaxEngine
                     return ManagedString.ToNative(Unsafe.As<string>(returnValue));
                 else if (typeof(TRet) == typeof(IntPtr))
                     return (IntPtr)(object)returnValue;
+                else if (typeof(TRet) == typeof(ManagedHandle))
+                    return ManagedHandle.ToIntPtr((ManagedHandle)(object)returnValue);
                 else if (typeof(TRet) == typeof(bool))
                     return (bool)(object)returnValue ? boolTruePtr : boolFalsePtr;
                 else if (typeof(TRet) == typeof(Type))
-                    return returnValue != null ? GCHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnValue))) : IntPtr.Zero;
+                    return returnValue != null ? ManagedHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnValue))) : IntPtr.Zero;
                 else if (typeof(TRet).IsArray)
                 {
                     if (returnValue == null)
                         return IntPtr.Zero;
                     var elementType = typeof(TRet).GetElementType();
                     if (ArrayFactory.GetMarshalledType(elementType) == elementType)
-                        return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnValue)), GCHandleType.Weak));
+                        return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnValue)), GCHandleType.Weak));
                     else
-                        return GCHandle.ToIntPtr(GCHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnValue))), GCHandleType.Weak));
+                        return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnValue))), GCHandleType.Weak));
                 }
                 else
-                    return returnValue != null ? GCHandle.ToIntPtr(GCHandle.Alloc(returnValue, GCHandleType.Weak)) : IntPtr.Zero;
+                    return returnValue != null ? ManagedHandle.ToIntPtr(ManagedHandle.Alloc(returnValue, GCHandleType.Weak)) : IntPtr.Zero;
             }
-
 
             internal static class InvokerNoRet0<TInstance>
             {
@@ -92,21 +115,21 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
-                    deleg(GCHandle.FromIntPtr(instancePtr).Target);
+                    deleg(instancePtr.Target);
 
                     return IntPtr.Zero;
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    deleg(GCHandle.FromIntPtr(instancePtr).Target);
+                    deleg(instancePtr.Target);
 
                     return IntPtr.Zero;
                 }
@@ -128,7 +151,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -137,7 +160,7 @@ namespace FlaxEngine
                     T1 param1 = default;
                     if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
 
-                    deleg(GCHandle.FromIntPtr(instancePtr).Target, ref param1);
+                    deleg(instancePtr.Target, ref param1);
 
                     // Marshal reference parameters back to original unmanaged references
                     if (types[0].IsByRef)
@@ -147,13 +170,13 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)GCHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
 
-                    deleg(GCHandle.FromIntPtr(instancePtr).Target, param1);
+                    deleg(instancePtr.Target, param1);
 
                     return IntPtr.Zero;
                 }
@@ -175,7 +198,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -187,7 +210,7 @@ namespace FlaxEngine
                     if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
                     if (param2Ptr != IntPtr.Zero) MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
 
-                    deleg(GCHandle.FromIntPtr(instancePtr).Target, ref param1, ref param2);
+                    deleg(instancePtr.Target, ref param1, ref param2);
 
                     // Marshal reference parameters back to original unmanaged references
                     if (types[0].IsByRef)
@@ -199,14 +222,14 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)GCHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)GCHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
+                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
 
-                    deleg(GCHandle.FromIntPtr(instancePtr).Target, param1, param2);
+                    deleg(instancePtr.Target, param1, param2);
 
                     return IntPtr.Zero;
                 }
@@ -228,7 +251,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -243,7 +266,7 @@ namespace FlaxEngine
                     if (param2Ptr != IntPtr.Zero) MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
                     if (param3Ptr != IntPtr.Zero) MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
 
-                    deleg(GCHandle.FromIntPtr(instancePtr).Target, ref param1, ref param2, ref param3);
+                    deleg(instancePtr.Target, ref param1, ref param2, ref param3);
 
                     // Marshal reference parameters back to original unmanaged references
                     if (types[0].IsByRef)
@@ -257,15 +280,15 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)GCHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)GCHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
-                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)GCHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
+                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
+                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)ManagedHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
 
-                    deleg(GCHandle.FromIntPtr(instancePtr).Target, param1, param2, param3);
+                    deleg(instancePtr.Target, param1, param2, param3);
 
                     return IntPtr.Zero;
                 }
@@ -287,7 +310,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -305,7 +328,7 @@ namespace FlaxEngine
                     if (param3Ptr != IntPtr.Zero) MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
                     if (param4Ptr != IntPtr.Zero) MarshalHelper<T4>.ToManaged(ref param4, param4Ptr, types[3].IsByRef);
 
-                    deleg(GCHandle.FromIntPtr(instancePtr).Target, ref param1, ref param2, ref param3, ref param4);
+                    deleg(instancePtr.Target, ref param1, ref param2, ref param3, ref param4);
 
                     // Marshal reference parameters back to original unmanaged references
                     if (types[0].IsByRef)
@@ -321,16 +344,16 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)GCHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)GCHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
-                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)GCHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
-                    T4 param4 = paramPtrs[3] != IntPtr.Zero ? (T4)GCHandle.FromIntPtr(paramPtrs[3]).Target : default(T4);
+                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
+                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)ManagedHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
+                    T4 param4 = paramPtrs[3] != IntPtr.Zero ? (T4)ManagedHandle.FromIntPtr(paramPtrs[3]).Target : default(T4);
 
-                    deleg(GCHandle.FromIntPtr(instancePtr).Target, param1, param2, param3, param4);
+                    deleg(instancePtr.Target, param1, param2, param3, param4);
 
                     return IntPtr.Zero;
                 }
@@ -352,7 +375,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -362,7 +385,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
@@ -388,7 +411,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -407,11 +430,11 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)GCHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
 
                     deleg(param1);
 
@@ -435,7 +458,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -459,12 +482,12 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)GCHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)GCHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
+                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
 
                     deleg(param1, param2);
 
@@ -488,7 +511,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -517,13 +540,13 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)GCHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)GCHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
-                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)GCHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
+                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
+                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)ManagedHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
 
                     deleg(param1, param2, param3);
 
@@ -547,7 +570,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -581,14 +604,14 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)GCHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)GCHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
-                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)GCHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
-                    T4 param4 = paramPtrs[3] != IntPtr.Zero ? (T4)GCHandle.FromIntPtr(paramPtrs[3]).Target : default(T4);
+                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
+                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)ManagedHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
+                    T4 param4 = paramPtrs[3] != IntPtr.Zero ? (T4)ManagedHandle.FromIntPtr(paramPtrs[3]).Target : default(T4);
 
                     deleg(param1, param2, param3, param4);
 
@@ -612,21 +635,21 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
-                    TRet ret = deleg(GCHandle.FromIntPtr(instancePtr).Target);
+                    TRet ret = deleg(instancePtr.Target);
 
                     return MarshalReturnValue(ref ret);
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    TRet ret = deleg(GCHandle.FromIntPtr(instancePtr).Target);
+                    TRet ret = deleg(instancePtr.Target);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -648,7 +671,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -657,7 +680,7 @@ namespace FlaxEngine
                     T1 param1 = default;
                     if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
 
-                    TRet ret = deleg(GCHandle.FromIntPtr(instancePtr).Target, ref param1);
+                    TRet ret = deleg(instancePtr.Target, ref param1);
 
                     // Marshal reference parameters back to original unmanaged references
                     if (types[0].IsByRef)
@@ -667,13 +690,13 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)GCHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
 
-                    TRet ret = deleg(GCHandle.FromIntPtr(instancePtr).Target, param1);
+                    TRet ret = deleg(instancePtr.Target, param1);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -695,7 +718,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -707,7 +730,7 @@ namespace FlaxEngine
                     if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
                     if (param2Ptr != IntPtr.Zero) MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
 
-                    TRet ret = deleg(GCHandle.FromIntPtr(instancePtr).Target, ref param1, ref param2);
+                    TRet ret = deleg(instancePtr.Target, ref param1, ref param2);
 
                     // Marshal reference parameters back to original unmanaged references
                     if (types[0].IsByRef)
@@ -719,14 +742,14 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)GCHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)GCHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
+                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
 
-                    TRet ret = deleg(GCHandle.FromIntPtr(instancePtr).Target, param1, param2);
+                    TRet ret = deleg(instancePtr.Target, param1, param2);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -748,7 +771,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -763,7 +786,7 @@ namespace FlaxEngine
                     if (param2Ptr != IntPtr.Zero) MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
                     if (param3Ptr != IntPtr.Zero) MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
 
-                    TRet ret = deleg(GCHandle.FromIntPtr(instancePtr).Target, ref param1, ref param2, ref param3);
+                    TRet ret = deleg(instancePtr.Target, ref param1, ref param2, ref param3);
 
                     // Marshal reference parameters back to original unmanaged references
                     if (types[0].IsByRef)
@@ -777,15 +800,15 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)GCHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)GCHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
-                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)GCHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
+                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
+                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)ManagedHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
 
-                    TRet ret = deleg(GCHandle.FromIntPtr(instancePtr).Target, param1, param2, param3);
+                    TRet ret = deleg(instancePtr.Target, param1, param2, param3);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -807,7 +830,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -825,7 +848,7 @@ namespace FlaxEngine
                     if (param3Ptr != IntPtr.Zero) MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
                     if (param4Ptr != IntPtr.Zero) MarshalHelper<T4>.ToManaged(ref param4, param4Ptr, types[3].IsByRef);
 
-                    TRet ret = deleg(GCHandle.FromIntPtr(instancePtr).Target, ref param1, ref param2, ref param3, ref param4);
+                    TRet ret = deleg(instancePtr.Target, ref param1, ref param2, ref param3, ref param4);
 
                     // Marshal reference parameters back to original unmanaged references
                     if (types[0].IsByRef)
@@ -841,16 +864,16 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)GCHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)GCHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
-                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)GCHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
-                    T4 param4 = paramPtrs[3] != IntPtr.Zero ? (T4)GCHandle.FromIntPtr(paramPtrs[3]).Target : default(T4);
+                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
+                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)ManagedHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
+                    T4 param4 = paramPtrs[3] != IntPtr.Zero ? (T4)ManagedHandle.FromIntPtr(paramPtrs[3]).Target : default(T4);
 
-                    TRet ret = deleg(GCHandle.FromIntPtr(instancePtr).Target, param1, param2, param3, param4);
+                    TRet ret = deleg(instancePtr.Target, param1, param2, param3, param4);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -872,7 +895,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -882,7 +905,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
@@ -908,7 +931,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -927,11 +950,11 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)GCHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
 
                     TRet ret = deleg(param1);
 
@@ -955,7 +978,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -979,12 +1002,12 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)GCHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)GCHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
+                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
 
                     TRet ret = deleg(param1, param2);
 
@@ -1008,7 +1031,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -1037,13 +1060,13 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)GCHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)GCHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
-                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)GCHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
+                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
+                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)ManagedHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
 
                     TRet ret = deleg(param1, param2, param3);
 
@@ -1067,7 +1090,7 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static IntPtr MarshalAndInvoke(object delegateContext, IntPtr instancePtr, IntPtr paramPtr)
+                internal static IntPtr MarshalAndInvoke(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr)
                 {
                     (Type[] types, InvokerDelegate deleg) = (Tuple<Type[], InvokerDelegate>)(delegateContext);
 
@@ -1101,14 +1124,14 @@ namespace FlaxEngine
                 }
 
                 [DebuggerStepThrough]
-                internal static unsafe IntPtr InvokeThunk(object delegateContext, IntPtr instancePtr, IntPtr* paramPtrs)
+                internal static unsafe IntPtr InvokeThunk(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs)
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)GCHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)GCHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
-                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)GCHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
-                    T4 param4 = paramPtrs[3] != IntPtr.Zero ? (T4)GCHandle.FromIntPtr(paramPtrs[3]).Target : default(T4);
+                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
+                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)ManagedHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
+                    T4 param4 = paramPtrs[3] != IntPtr.Zero ? (T4)ManagedHandle.FromIntPtr(paramPtrs[3]).Target : default(T4);
 
                     TRet ret = deleg(param1, param2, param3, param4);
 

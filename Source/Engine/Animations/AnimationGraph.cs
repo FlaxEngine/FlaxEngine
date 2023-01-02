@@ -265,7 +265,7 @@ namespace FlaxEngine
         internal static partial bool Internal_HasConnection(ref AnimationGraph.CustomNode.Context context, int boxId);
 
         [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.AnimationGraph::Internal_GetInputValue")]
-        [return: MarshalUsing(typeof(FlaxEngine.GCHandleMarshaller))]
+        [return: MarshalUsing(typeof(FlaxEngine.ManagedHandleMarshaller))]
         internal static partial object Internal_GetInputValue(ref AnimationGraph.CustomNode.Context context, int boxId);
 
         [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.AnimationGraph::Internal_GetOutputImpulseData")]
