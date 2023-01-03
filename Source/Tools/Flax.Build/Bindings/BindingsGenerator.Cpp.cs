@@ -25,7 +25,7 @@ namespace Flax.Build.Bindings
         public static readonly HashSet<string> CppIncludeFiles = new HashSet<string>();
         private static readonly List<string> CppIncludeFilesList = new List<string>();
         private static readonly HashSet<TypeInfo> CppVariantToTypes = new HashSet<TypeInfo>();
-        private static readonly HashSet<TypeInfo> CppVariantFromTypes = new HashSet<TypeInfo>();
+        private static readonly Dictionary<string, TypeInfo> CppVariantFromTypes = new Dictionary<string, TypeInfo>();
         private static bool CppNonPodTypesConvertingGeneration = false;
 
         public class ScriptingLangInfo
@@ -156,18 +156,21 @@ namespace Flax.Build.Bindings
                 return $"Variant({value}.Get())";
             if (typeInfo.IsArray)
             {
-                CppVariantFromTypes.Add(typeInfo);
+                var wrapperName = GenerateCppWrapperNativeToVariantMethodName(typeInfo);
+                CppVariantFromTypes[wrapperName] = typeInfo;
                 return $"VariantFrom{GenerateCppWrapperNativeToVariantMethodName(typeInfo)}Array({value}, {typeInfo.ArraySize})";
             }
             if (typeInfo.Type == "Array" && typeInfo.GenericArgs != null)
             {
-                CppVariantFromTypes.Add(typeInfo);
-                return $"VariantFrom{GenerateCppWrapperNativeToVariantMethodName(typeInfo.GenericArgs[0])}Array({value}.Get(), {value}.Count())";
+                var wrapperName = GenerateCppWrapperNativeToVariantMethodName(typeInfo.GenericArgs[0]);
+                CppVariantFromTypes[wrapperName] = typeInfo;
+                return $"VariantFrom{wrapperName}Array({value}.Get(), {value}.Count())";
             }
             if (typeInfo.Type == "Dictionary" && typeInfo.GenericArgs != null)
             {
-                CppVariantFromTypes.Add(typeInfo);
-                return $"VariantFrom{GenerateCppWrapperNativeToVariantMethodName(typeInfo.GenericArgs[0])}{GenerateCppWrapperNativeToVariantMethodName(typeInfo.GenericArgs[1])}Dictionary({value})";
+                var wrapperName = GenerateCppWrapperNativeToVariantMethodName(typeInfo.GenericArgs[0]) + GenerateCppWrapperNativeToVariantMethodName(typeInfo.GenericArgs[1]);
+                CppVariantFromTypes[wrapperName] = typeInfo;
+                return $"VariantFrom{wrapperName}Dictionary({value})";
             }
 
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
@@ -2464,15 +2467,17 @@ namespace Flax.Build.Bindings
                     header.Append('}').AppendLine();
                     header.AppendLine("}");
                 }
-                foreach (var typeInfo in CppVariantFromTypes)
+                foreach (var e in CppVariantFromTypes)
                 {
+                    var wrapperName = e.Key;
+                    var typeInfo = e.Value;
                     header.AppendLine();
                     header.AppendLine("namespace {");
                     header.Append("Variant VariantFrom");
                     if (typeInfo.IsArray)
                     {
                         typeInfo.IsArray = false;
-                        header.Append($"{GenerateCppWrapperNativeToVariantMethodName(typeInfo)}Array({(typeInfo.IsConst ? "const " : "")}{typeInfo}* v, const int32 length)").AppendLine();
+                        header.Append($"{wrapperName}Array(const {typeInfo}* v, const int32 length)").AppendLine();
                         header.Append('{').AppendLine();
                         header.Append("    Variant result;").AppendLine();
                         header.Append("    result.SetType(VariantType(VariantType::Array));").AppendLine();
@@ -2485,7 +2490,7 @@ namespace Flax.Build.Bindings
                     else if (typeInfo.Type == "Array" && typeInfo.GenericArgs != null)
                     {
                         var valueType = typeInfo.GenericArgs[0];
-                        header.Append($"{GenerateCppWrapperNativeToVariantMethodName(valueType)}Array({(typeInfo.IsConst ? "const " : "")}{valueType}* v, const int32 length)").AppendLine();
+                        header.Append($"{wrapperName}Array(const {valueType}* v, const int32 length)").AppendLine();
                         header.Append('{').AppendLine();
                         header.Append("    Variant result;").AppendLine();
                         header.Append("    result.SetType(VariantType(VariantType::Array));").AppendLine();
@@ -2498,7 +2503,7 @@ namespace Flax.Build.Bindings
                     {
                         var keyType = typeInfo.GenericArgs[0];
                         var valueType = typeInfo.GenericArgs[1];
-                        header.Append($"{GenerateCppWrapperNativeToVariantMethodName(keyType)}{GenerateCppWrapperNativeToVariantMethodName(valueType)}Dictionary(const Dictionary<{keyType}, {valueType}>& v)").AppendLine();
+                        header.Append($"{wrapperName}Dictionary(const Dictionary<{keyType}, {valueType}>& v)").AppendLine();
                         header.Append('{').AppendLine();
                         header.Append("    Variant result;").AppendLine();
                         header.Append("    result.SetType(VariantType(VariantType::Dictionary));").AppendLine();
