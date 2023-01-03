@@ -16,7 +16,7 @@ TEST_CASE("Scripting")
         // Test native class
         ScriptingTypeHandle type = Scripting::FindScriptingType("FlaxEngine.TestClassNative");
         CHECK(type == TestClassNative::TypeInitializer);
-        ScriptingObject* object = Scripting::NewObject(type.GetType().ManagedClass);
+        ScriptingObject* object = Scripting::NewObject(type);
         CHECK(object);
         CHECK(object->Is<TestClassNative>());
         TestClassNative* testClass = (TestClassNative*)object;
@@ -29,7 +29,7 @@ TEST_CASE("Scripting")
         // Test managed class
         type = Scripting::FindScriptingType("FlaxEngine.TestClassManaged");
         CHECK(type);
-        object = Scripting::NewObject(type.GetType().ManagedClass);
+        object = Scripting::NewObject(type);
         CHECK(object);
         CHECK(object->Is<TestClassNative>());
         testClass = (TestClassNative*)object;
@@ -46,7 +46,7 @@ TEST_CASE("Scripting")
     {
         ScriptingTypeHandle type = Scripting::FindScriptingType("FlaxEngine.TestClassManaged");
         CHECK(type);
-        ScriptingObject* object = Scripting::NewObject(type.GetType().ManagedClass);
+        ScriptingObject* object = Scripting::NewObject(type);
         CHECK(object);
         MObject* managed = object->GetOrCreateManagedInstance(); // Ensure to create C# object and run it's ctor
         CHECK(managed);
@@ -65,12 +65,13 @@ TEST_CASE("Scripting")
         CHECK(arr2[1].Vector == testClass->SimpleStruct.Vector);
         CHECK(arr2[1].Object == testClass);
     }
+
     SECTION("Test Interface")
     {
         // Test native interface implementation
         ScriptingTypeHandle type = Scripting::FindScriptingType("FlaxEngine.TestClassNative");
         CHECK(type);
-        ScriptingObject* object = Scripting::NewObject(type.GetType().ManagedClass);
+        ScriptingObject* object = Scripting::NewObject(type);
         CHECK(object);
         TestClassNative* testClass = (TestClassNative*)object;
         int32 methodResult = testClass->TestInterfaceMethod(TEXT("123"));
@@ -86,7 +87,7 @@ TEST_CASE("Scripting")
         // Test managed interface override
         type = Scripting::FindScriptingType("FlaxEngine.TestClassManaged");
         CHECK(type);
-        object = Scripting::NewObject(type.GetType().ManagedClass);
+        object = Scripting::NewObject(type);
         CHECK(object);
         testClass = (TestClassNative*)object;
         methodResult = testClass->TestInterfaceMethod(TEXT("123"));
@@ -102,7 +103,7 @@ TEST_CASE("Scripting")
         // Test managed interface implementation
         type = Scripting::FindScriptingType("FlaxEngine.TestInterfaceManaged");
         CHECK(type);
-        object = Scripting::NewObject(type.GetType().ManagedClass);
+        object = Scripting::NewObject(type);
         CHECK(object);
         interface = ScriptingObject::ToInterface<ITestInterface>(object);
         CHECK(interface);

@@ -732,6 +732,23 @@ ScriptingTypeHandle Scripting::FindScriptingType(const StringAnsiView& fullname)
     return ScriptingTypeHandle();
 }
 
+ScriptingObject* Scripting::NewObject(const ScriptingTypeHandle& type)
+{
+    if (!type)
+    {
+        LOG(Error, "Invalid type.");
+        return nullptr;
+    }
+    const ScriptingType& scriptingType = type.GetType();
+
+    // Create unmanaged object
+    const ScriptingObjectSpawnParams params(Guid::New(), type);
+    ScriptingObject* obj = scriptingType.Script.Spawn(params);
+    if (obj == nullptr)
+        LOG(Error, "Failed to spawn object of type \'{0}\'.", scriptingType.ToString());
+    return obj;
+}
+
 ScriptingObject* Scripting::NewObject(const MClass* type)
 {
     if (type == nullptr)
@@ -762,10 +779,7 @@ ScriptingObject* Scripting::NewObject(const MClass* type)
     const ScriptingObjectSpawnParams params(Guid::New(), ScriptingTypeHandle(module, typeIndex));
     ScriptingObject* obj = scriptingType.Script.Spawn(params);
     if (obj == nullptr)
-    {
-        LOG(Error, "Failed to spawn object of type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
-        return nullptr;
-    }
+        LOG(Error, "Failed to spawn object of type \'{0}\'.", scriptingType.ToString());
     return obj;
 #else
     LOG(Error, "Not supported object creation from Managed class.");

@@ -158,13 +158,13 @@ namespace Flax.Build.Bindings
             {
                 var wrapperName = GenerateCppWrapperNativeToVariantMethodName(typeInfo);
                 CppVariantFromTypes[wrapperName] = typeInfo;
-                return $"VariantFrom{GenerateCppWrapperNativeToVariantMethodName(typeInfo)}Array({value}, {typeInfo.ArraySize})";
+                return $"VariantFrom{GenerateCppWrapperNativeToVariantMethodName(typeInfo)}Array((const {typeInfo}*){value}, {typeInfo.ArraySize})";
             }
             if (typeInfo.Type == "Array" && typeInfo.GenericArgs != null)
             {
                 var wrapperName = GenerateCppWrapperNativeToVariantMethodName(typeInfo.GenericArgs[0]);
                 CppVariantFromTypes[wrapperName] = typeInfo;
-                return $"VariantFrom{wrapperName}Array({value}.Get(), {value}.Count())";
+                return $"VariantFrom{wrapperName}Array((const {typeInfo.GenericArgs[0]}*){value}.Get(), {value}.Count())";
             }
             if (typeInfo.Type == "Dictionary" && typeInfo.GenericArgs != null)
             {
