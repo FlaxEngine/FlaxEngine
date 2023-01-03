@@ -305,9 +305,12 @@ LONG CALLBACK SehExceptionHandler(EXCEPTION_POINTERS* ep)
         errorMsg += String::Format(TEXT("{:#x}"), (uint32)ep->ExceptionRecord->ExceptionCode);
     }
 
-    // Pause if debugging
+    // Log exception and return to the crash location when using debugger
     if (Platform::IsDebuggerPresent())
-    {
+    {  
+        LOG_STR(Error, errorMsg);
+        const String stackTrace = Platform::GetStackTrace(0, 60, ep);
+        LOG_STR(Error, stackTrace);
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
