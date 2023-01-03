@@ -1255,9 +1255,9 @@ namespace FlaxEngine
                 return method.CreateDelegate<MarshalToManagedDelegate>();
             }
 
-            if (toManagedMarshallers.TryGetValue(type, out var deleg))
-                return deleg(nativePtr, type.IsByRef);
-            return toManagedMarshallers.GetOrAdd(type, Factory)(nativePtr, type.IsByRef);
+            if (!toManagedMarshallers.TryGetValue(type, out var deleg))
+                deleg = toManagedMarshallers.GetOrAdd(type, Factory);
+            return deleg(nativePtr, type.IsByRef);
         }
 
         internal static void MarshalToNative(object managedObject, IntPtr nativePtr, Type type)
@@ -1272,10 +1272,9 @@ namespace FlaxEngine
                 return method.CreateDelegate<MarshalToNativeDelegate>();
             }
 
-            if (toNativeMarshallers.TryGetValue(type, out var deleg))
-                deleg(managedObject, nativePtr);
-            else
-                toNativeMarshallers.GetOrAdd(type, Factory)(managedObject, nativePtr);
+            if (!toNativeMarshallers.TryGetValue(type, out var deleg))
+                deleg = toNativeMarshallers.GetOrAdd(type, Factory);
+            deleg(managedObject, nativePtr);
         }
 
         internal static MarshalToNativeFieldDelegate GetToNativeFieldMarshallerDelegate(Type type)
@@ -1406,11 +1405,37 @@ namespace FlaxEngine
                 toManagedTypedMarshaller(ref managedValue, nativePtr, byRef);
             }
 
+            internal static T ToManagedUnbox(IntPtr nativePtr)
+            {
+                T managed = default;
+                if (nativePtr != IntPtr.Zero)
+                {
+                    Type type = typeof(T);
+                    if (type.IsArray)
+                        managed = (T)MarshalToManaged(nativePtr, type); // Array might be in internal format of custom structs so unbox if need to
+                    else
+                        managed = (T)ManagedHandle.FromIntPtr(nativePtr).Target;
+                }
+                return managed;
+            }
+
             internal static Array ToManagedArray(Span<IntPtr> ptrSpan)
             {
                 T[] arr = new T[ptrSpan.Length];
                 for (int i = 0; i < arr.Length; i++)
                     toManagedTypedMarshaller(ref arr[i], ptrSpan[i], false);
+                return arr;
+            }
+
+            internal static Array ToManagedArray(ManagedArray nativeArray)
+            {
+                T[] arr = new T[nativeArray.Length];
+                IntPtr nativePtr = nativeArray.GetPointer;
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    toManagedTypedMarshaller(ref arr[i], nativePtr, false);
+                    nativePtr += nativeArray.ElementSize;
+                }
                 return arr;
             }
 
@@ -1604,7 +1629,8 @@ namespace FlaxEngine
 
             internal static void ToManagedArray(ref T[] managedValue, IntPtr nativePtr, bool byRef)
             {
-                Assert.IsTrue(!byRef);
+                if (byRef)
+                    nativePtr = Marshal.ReadIntPtr(nativePtr);
 
                 Type elementType = typeof(T);
                 if (nativePtr != IntPtr.Zero)
@@ -1612,6 +1638,8 @@ namespace FlaxEngine
                     ManagedArray managedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(nativePtr).Target);
                     if (ArrayFactory.GetMarshalledType(elementType) == elementType)
                         managedValue = Unsafe.As<T[]>(managedArray.GetArray<T>());
+                    else if (elementType.IsValueType)
+                        managedValue = Unsafe.As<T[]>(MarshalHelper<T>.ToManagedArray(managedArray));
                     else
                         managedValue = Unsafe.As<T[]>(MarshalHelper<T>.ToManagedArray(managedArray.GetSpan<IntPtr>()));
                 }
@@ -1671,9 +1699,9 @@ namespace FlaxEngine
 
             internal static void ToManagedArray(ref T[] managedValue, IntPtr nativePtr, bool byRef)
             {
-                Assert.IsTrue(!byRef);
+                if (byRef)
+                    nativePtr = Marshal.ReadIntPtr(nativePtr);
 
-                Type elementType = typeof(T);
                 if (nativePtr != IntPtr.Zero)
                 {
                     ManagedArray managedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(nativePtr).Target);
@@ -1708,10 +1736,25 @@ namespace FlaxEngine
                     else
                     {
                         var elementType = type.GetElementType();
-                        if (ArrayFactory.GetMarshalledType(elementType) == elementType)
-                            managedPtr = ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(Unsafe.As<Array>(managedValue)), GCHandleType.Weak));
+                        var arr = Unsafe.As<Array>(managedValue);
+                        var marshalledType = ArrayFactory.GetMarshalledType(elementType);
+                        ManagedArray managedArray;
+                        if (marshalledType == elementType)
+                            managedArray = ManagedArray.WrapNewArray(arr);
+                        else if (elementType.IsValueType)
+                        {
+                            // Convert array of custom structures into internal native layout
+                            managedArray = ManagedArray.AllocateNewArray(arr.Length, Marshal.SizeOf(marshalledType));
+                            IntPtr managedArrayPtr = managedArray.GetPointer;
+                            for (int i = 0; i < arr.Length; i++)
+                            {
+                                MarshalToNative(arr.GetValue(i), managedArrayPtr, elementType);
+                                managedArrayPtr += managedArray.ElementSize;
+                            }
+                        }
                         else
-                            managedPtr = ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(managedValue))), GCHandleType.Weak));
+                            managedArray = ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(arr));
+                        managedPtr = ManagedHandle.ToIntPtr(ManagedHandle.Alloc(managedArray, GCHandleType.Weak));
                     }
                 }
                 else
@@ -1756,10 +1799,15 @@ namespace FlaxEngine
                             genericParamTypes.Add(type);
                     }
 
-                    string typeName = $"FlaxEngine.NativeInterop+Invoker+Invoker{(method.IsStatic ? "Static" : "")}{(method.ReturnType != typeof(void) ? "Ret" : "NoRet")}{parameterTypes.Length}{(genericParamTypes.Count > 0 ? "`" + genericParamTypes.Count : "")}";
-                    Type invokerType = genericParamTypes.Count == 0 ? Type.GetType(typeName) : Type.GetType(typeName).MakeGenericType(genericParamTypes.ToArray());
-                    invokeDelegate = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.MarshalAndInvoke), BindingFlags.Static | BindingFlags.NonPublic).CreateDelegate<Invoker.MarshalAndInvokeDelegate>();
-                    delegInvoke = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.CreateDelegate), BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { method });
+                    string invokerTypeName = $"FlaxEngine.NativeInterop+Invoker+Invoker{(method.IsStatic ? "Static" : "")}{(method.ReturnType != typeof(void) ? "Ret" : "NoRet")}{parameterTypes.Length}{(genericParamTypes.Count > 0 ? "`" + genericParamTypes.Count : "")}";
+                    Type invokerType = Type.GetType(invokerTypeName);
+                    if (invokerType != null)
+                    {
+                        if (genericParamTypes.Count != 0)
+                            invokerType = invokerType.MakeGenericType(genericParamTypes.ToArray());
+                        invokeDelegate = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.MarshalAndInvoke), BindingFlags.Static | BindingFlags.NonPublic).CreateDelegate<Invoker.MarshalAndInvokeDelegate>();
+                        delegInvoke = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.CreateDelegate), BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { method });
+                    }
                 }
 
                 outDeleg = invokeDelegate;
@@ -2267,13 +2315,12 @@ namespace FlaxEngine
                 // Slow path, method parameters needs to be stored in heap
                 object returnObject;
                 int numParams = methodHolder.parameterTypes.Length;
-                IntPtr* nativePtrs = stackalloc IntPtr[numParams];
                 object[] methodParameters = new object[numParams];
 
                 for (int i = 0; i < numParams; i++)
                 {
-                    nativePtrs[i] = Marshal.ReadIntPtr(IntPtr.Add(paramPtr, sizeof(IntPtr) * i));
-                    methodParameters[i] = MarshalToManaged(nativePtrs[i], methodHolder.parameterTypes[i]);
+                    IntPtr nativePtr = Marshal.ReadIntPtr(IntPtr.Add(paramPtr, sizeof(IntPtr) * i));
+                    methodParameters[i] = MarshalToManaged(nativePtr, methodHolder.parameterTypes[i]);
                 }
 
                 try
@@ -2299,7 +2346,10 @@ namespace FlaxEngine
                 {
                     Type parameterType = methodHolder.parameterTypes[i];
                     if (parameterType.IsByRef)
-                        MarshalToNative(methodParameters[i], nativePtrs[i], parameterType.GetElementType());
+                    {
+                        IntPtr nativePtr = Marshal.ReadIntPtr(IntPtr.Add(paramPtr, sizeof(IntPtr) * i));
+                        MarshalToNative(methodParameters[i], nativePtr, parameterType.GetElementType());
+                    }
                 }
 
                 if (returnObject is not null)

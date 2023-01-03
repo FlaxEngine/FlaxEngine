@@ -95,6 +95,19 @@ namespace FlaxEngine
                     else
                         return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnValue))), GCHandleType.Weak));
                 }
+                // Match Mono bindings and pass value as pointer to prevent boxing it
+                else if (typeof(TRet) == typeof(System.Int16))
+                    return new IntPtr((int)(System.Int16)(object)returnValue);
+                else if (typeof(TRet) == typeof(System.Int32))
+                    return new IntPtr((int)(System.Int32)(object)returnValue);
+                else if (typeof(TRet) == typeof(System.Int64))
+                    return new IntPtr((long)(System.Int64)(object)returnValue);
+                else if (typeof(TRet) == typeof(System.UInt16))
+                    return (IntPtr)new UIntPtr((ulong)(System.UInt16)(object)returnValue);
+                else if (typeof(TRet) == typeof(System.UInt32))
+                    return (IntPtr)new UIntPtr((ulong)(System.UInt32)(object)returnValue);
+                else if (typeof(TRet) == typeof(System.UInt64))
+                    return (IntPtr)new UIntPtr((ulong)(System.UInt64)(object)returnValue);
                 else
                     return returnValue != null ? ManagedHandle.ToIntPtr(ManagedHandle.Alloc(returnValue, GCHandleType.Weak)) : IntPtr.Zero;
             }
@@ -163,8 +176,7 @@ namespace FlaxEngine
                     deleg(instancePtr.Target, ref param1);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef)
-                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -174,7 +186,7 @@ namespace FlaxEngine
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T1 param1 = MarshalHelper<T1>.ToManagedUnbox(paramPtrs[0]);
 
                     deleg(instancePtr.Target, param1);
 
@@ -213,10 +225,8 @@ namespace FlaxEngine
                     deleg(instancePtr.Target, ref param1, ref param2);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef)
-                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef)
-                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -226,8 +236,8 @@ namespace FlaxEngine
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
+                    T1 param1 = MarshalHelper<T1>.ToManagedUnbox(paramPtrs[0]);
+                    T2 param2 = MarshalHelper<T2>.ToManagedUnbox(paramPtrs[1]);
 
                     deleg(instancePtr.Target, param1, param2);
 
@@ -269,12 +279,9 @@ namespace FlaxEngine
                     deleg(instancePtr.Target, ref param1, ref param2, ref param3);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef)
-                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef)
-                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (types[2].IsByRef)
-                        MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -284,9 +291,9 @@ namespace FlaxEngine
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
-                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)ManagedHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
+                    T1 param1 = MarshalHelper<T1>.ToManagedUnbox(paramPtrs[0]);
+                    T2 param2 = MarshalHelper<T2>.ToManagedUnbox(paramPtrs[1]);
+                    T3 param3 = MarshalHelper<T3>.ToManagedUnbox(paramPtrs[2]);
 
                     deleg(instancePtr.Target, param1, param2, param3);
 
@@ -331,14 +338,10 @@ namespace FlaxEngine
                     deleg(instancePtr.Target, ref param1, ref param2, ref param3, ref param4);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef)
-                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef)
-                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (types[2].IsByRef)
-                        MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
-                    if (types[3].IsByRef)
-                        MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
+                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (types[3].IsByRef) MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -348,10 +351,10 @@ namespace FlaxEngine
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
-                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)ManagedHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
-                    T4 param4 = paramPtrs[3] != IntPtr.Zero ? (T4)ManagedHandle.FromIntPtr(paramPtrs[3]).Target : default(T4);
+                    T1 param1 = MarshalHelper<T1>.ToManagedUnbox(paramPtrs[0]);
+                    T2 param2 = MarshalHelper<T2>.ToManagedUnbox(paramPtrs[1]);
+                    T3 param3 = MarshalHelper<T3>.ToManagedUnbox(paramPtrs[2]);
+                    T4 param4 = MarshalHelper<T4>.ToManagedUnbox(paramPtrs[3]);
 
                     deleg(instancePtr.Target, param1, param2, param3, param4);
 
@@ -423,8 +426,7 @@ namespace FlaxEngine
                     deleg(ref param1);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef)
-                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -434,7 +436,7 @@ namespace FlaxEngine
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T1 param1 = MarshalHelper<T1>.ToManagedUnbox(paramPtrs[0]);
 
                     deleg(param1);
 
@@ -473,10 +475,8 @@ namespace FlaxEngine
                     deleg(ref param1, ref param2);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef)
-                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef)
-                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -486,8 +486,8 @@ namespace FlaxEngine
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
+                    T1 param1 = MarshalHelper<T1>.ToManagedUnbox(paramPtrs[0]);
+                    T2 param2 = MarshalHelper<T2>.ToManagedUnbox(paramPtrs[1]);
 
                     deleg(param1, param2);
 
@@ -529,12 +529,9 @@ namespace FlaxEngine
                     deleg(ref param1, ref param2, ref param3);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef)
-                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef)
-                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (types[2].IsByRef)
-                        MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -544,9 +541,9 @@ namespace FlaxEngine
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
-                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)ManagedHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
+                    T1 param1 = MarshalHelper<T1>.ToManagedUnbox(paramPtrs[0]);
+                    T2 param2 = MarshalHelper<T2>.ToManagedUnbox(paramPtrs[1]);
+                    T3 param3 = MarshalHelper<T3>.ToManagedUnbox(paramPtrs[2]);
 
                     deleg(param1, param2, param3);
 
@@ -591,14 +588,10 @@ namespace FlaxEngine
                     deleg(ref param1, ref param2, ref param3, ref param4);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef)
-                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef)
-                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (types[2].IsByRef)
-                        MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
-                    if (types[3].IsByRef)
-                        MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
+                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (types[3].IsByRef) MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -608,10 +601,10 @@ namespace FlaxEngine
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
-                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)ManagedHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
-                    T4 param4 = paramPtrs[3] != IntPtr.Zero ? (T4)ManagedHandle.FromIntPtr(paramPtrs[3]).Target : default(T4);
+                    T1 param1 = MarshalHelper<T1>.ToManagedUnbox(paramPtrs[0]);
+                    T2 param2 = MarshalHelper<T2>.ToManagedUnbox(paramPtrs[1]);
+                    T3 param3 = MarshalHelper<T3>.ToManagedUnbox(paramPtrs[2]);
+                    T4 param4 = MarshalHelper<T4>.ToManagedUnbox(paramPtrs[3]);
 
                     deleg(param1, param2, param3, param4);
 
@@ -683,8 +676,7 @@ namespace FlaxEngine
                     TRet ret = deleg(instancePtr.Target, ref param1);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef)
-                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -694,7 +686,7 @@ namespace FlaxEngine
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T1 param1 = MarshalHelper<T1>.ToManagedUnbox(paramPtrs[0]);
 
                     TRet ret = deleg(instancePtr.Target, param1);
 
@@ -733,10 +725,8 @@ namespace FlaxEngine
                     TRet ret = deleg(instancePtr.Target, ref param1, ref param2);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef)
-                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef)
-                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -746,8 +736,8 @@ namespace FlaxEngine
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
+                    T1 param1 = MarshalHelper<T1>.ToManagedUnbox(paramPtrs[0]);
+                    T2 param2 = MarshalHelper<T2>.ToManagedUnbox(paramPtrs[1]);
 
                     TRet ret = deleg(instancePtr.Target, param1, param2);
 
@@ -789,12 +779,9 @@ namespace FlaxEngine
                     TRet ret = deleg(instancePtr.Target, ref param1, ref param2, ref param3);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef)
-                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef)
-                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (types[2].IsByRef)
-                        MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -804,9 +791,9 @@ namespace FlaxEngine
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
-                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)ManagedHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
+                    T1 param1 = MarshalHelper<T1>.ToManagedUnbox(paramPtrs[0]);
+                    T2 param2 = MarshalHelper<T2>.ToManagedUnbox(paramPtrs[1]);
+                    T3 param3 = MarshalHelper<T3>.ToManagedUnbox(paramPtrs[2]);
 
                     TRet ret = deleg(instancePtr.Target, param1, param2, param3);
 
@@ -851,14 +838,10 @@ namespace FlaxEngine
                     TRet ret = deleg(instancePtr.Target, ref param1, ref param2, ref param3, ref param4);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef)
-                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef)
-                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (types[2].IsByRef)
-                        MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
-                    if (types[3].IsByRef)
-                        MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
+                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (types[3].IsByRef) MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -868,10 +851,10 @@ namespace FlaxEngine
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
-                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)ManagedHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
-                    T4 param4 = paramPtrs[3] != IntPtr.Zero ? (T4)ManagedHandle.FromIntPtr(paramPtrs[3]).Target : default(T4);
+                    T1 param1 = MarshalHelper<T1>.ToManagedUnbox(paramPtrs[0]);
+                    T2 param2 = MarshalHelper<T2>.ToManagedUnbox(paramPtrs[1]);
+                    T3 param3 = MarshalHelper<T3>.ToManagedUnbox(paramPtrs[2]);
+                    T4 param4 = MarshalHelper<T4>.ToManagedUnbox(paramPtrs[3]);
 
                     TRet ret = deleg(instancePtr.Target, param1, param2, param3, param4);
 
@@ -943,8 +926,7 @@ namespace FlaxEngine
                     TRet ret = deleg(ref param1);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef)
-                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -954,7 +936,7 @@ namespace FlaxEngine
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
+                    T1 param1 = MarshalHelper<T1>.ToManagedUnbox(paramPtrs[0]);
 
                     TRet ret = deleg(param1);
 
@@ -993,10 +975,8 @@ namespace FlaxEngine
                     TRet ret = deleg(ref param1, ref param2);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef)
-                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef)
-                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -1006,8 +986,8 @@ namespace FlaxEngine
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
+                    T1 param1 = MarshalHelper<T1>.ToManagedUnbox(paramPtrs[0]);
+                    T2 param2 = MarshalHelper<T2>.ToManagedUnbox(paramPtrs[1]);
 
                     TRet ret = deleg(param1, param2);
 
@@ -1049,12 +1029,9 @@ namespace FlaxEngine
                     TRet ret = deleg(ref param1, ref param2, ref param3);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef)
-                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef)
-                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (types[2].IsByRef)
-                        MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -1064,9 +1041,9 @@ namespace FlaxEngine
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
-                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)ManagedHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
+                    T1 param1 = MarshalHelper<T1>.ToManagedUnbox(paramPtrs[0]);
+                    T2 param2 = MarshalHelper<T2>.ToManagedUnbox(paramPtrs[1]);
+                    T3 param3 = MarshalHelper<T3>.ToManagedUnbox(paramPtrs[2]);
 
                     TRet ret = deleg(param1, param2, param3);
 
@@ -1111,14 +1088,10 @@ namespace FlaxEngine
                     TRet ret = deleg(ref param1, ref param2, ref param3, ref param4);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef)
-                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef)
-                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (types[2].IsByRef)
-                        MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
-                    if (types[3].IsByRef)
-                        MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
+                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (types[3].IsByRef) MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -1128,10 +1101,10 @@ namespace FlaxEngine
                 {
                     ThunkInvokerDelegate deleg = Unsafe.As<ThunkInvokerDelegate>(delegateContext);
 
-                    T1 param1 = paramPtrs[0] != IntPtr.Zero ? (T1)ManagedHandle.FromIntPtr(paramPtrs[0]).Target : default(T1);
-                    T2 param2 = paramPtrs[1] != IntPtr.Zero ? (T2)ManagedHandle.FromIntPtr(paramPtrs[1]).Target : default(T2);
-                    T3 param3 = paramPtrs[2] != IntPtr.Zero ? (T3)ManagedHandle.FromIntPtr(paramPtrs[2]).Target : default(T3);
-                    T4 param4 = paramPtrs[3] != IntPtr.Zero ? (T4)ManagedHandle.FromIntPtr(paramPtrs[3]).Target : default(T4);
+                    T1 param1 = MarshalHelper<T1>.ToManagedUnbox(paramPtrs[0]);
+                    T2 param2 = MarshalHelper<T2>.ToManagedUnbox(paramPtrs[1]);
+                    T3 param3 = MarshalHelper<T3>.ToManagedUnbox(paramPtrs[2]);
+                    T4 param4 = MarshalHelper<T4>.ToManagedUnbox(paramPtrs[3]);
 
                     TRet ret = deleg(param1, param2, param3, param4);
 

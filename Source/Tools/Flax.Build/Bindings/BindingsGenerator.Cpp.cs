@@ -1051,7 +1051,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine();
             contents.AppendLine("    {");
 #if USE_NETCORE
-            contents.AppendLine(String.Format("        SCRIPTING_EXPORT(\"{0}\")", caller.FullNameManaged + "::Internal_" + functionInfo.UniqueName));
+            contents.AppendLine(string.Format("        SCRIPTING_EXPORT(\"{0}\")", caller.FullNameManaged + "::Internal_" + functionInfo.UniqueName));
 #endif
             if (!functionInfo.IsStatic)
                 contents.AppendLine("        if (obj == nullptr) DebugLog::ThrowNullReference();");
@@ -1161,8 +1161,8 @@ namespace Flax.Build.Bindings
 #if USE_NETCORE
             if (!string.IsNullOrEmpty(callReturnCount))
             {
-                contents.Append("        ").Append("const auto& callTemp = ").Append(string.Format(callFormat, call, callParams)).Append(";").AppendLine();
-                call = "callTemp";
+                contents.Append("        ").Append("const auto& __callTemp = ").Append(string.Format(callFormat, call, callParams)).Append(";").AppendLine();
+                call = "__callTemp";
                 contents.Append(string.Format(callReturnCount, call));
                 contents.AppendLine();
                 contents.Append(callBegin);
@@ -1217,7 +1217,7 @@ namespace Flax.Build.Bindings
                                 if (apiType.IsStruct && !apiType.IsPod)
                                 {
                                     CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
-                                    contents.AppendFormat("        {{ auto _temp = {1}; mono_gc_wbarrier_value_copy({0}, &_temp, 1, {2}::TypeInitializer.GetType().ManagedClass->GetNative()); }}", parameterInfo.Name, value, apiType.FullNameNative).AppendLine();
+                                    contents.AppendFormat("        {{ auto __temp = {1}; mono_gc_wbarrier_value_copy({0}, &__temp, 1, {2}::TypeInitializer.GetType().ManagedClass->GetNative()); }}", parameterInfo.Name, value, apiType.FullNameNative).AppendLine();
                                     continue;
                                 }
                             }
@@ -1774,7 +1774,7 @@ namespace Flax.Build.Bindings
                     contents.Append("bool bind)").AppendLine();
                     contents.Append("    {").AppendLine();
 #if USE_NETCORE
-                    contents.AppendLine(String.Format("        SCRIPTING_EXPORT(\"{0}\")", classTypeNameManagedInternalCall + "::Internal_" + eventInfo.Name + "_Bind"));
+                    contents.AppendLine(string.Format("        SCRIPTING_EXPORT(\"{0}\")", classTypeNameManagedInternalCall + "::Internal_" + eventInfo.Name + "_Bind"));
 #endif
                     contents.Append("        Function<void(");
                     for (var i = 0; i < paramsCount; i++)
