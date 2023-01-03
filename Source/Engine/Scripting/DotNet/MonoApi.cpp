@@ -1,11 +1,12 @@
-#include <ThirdParty/mono-2.0/mono/metadata/object.h>
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "CoreCLR.h"
 #include "Engine/Scripting/Types.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Core/Types/StringBuilder.h"
+#include <ThirdParty/mono-2.0/mono/metadata/object.h>
+#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 
 #pragma warning(disable : 4297)
 
@@ -1062,15 +1063,6 @@ MONO_API MonoThread* mono_thread_attach(MonoDomain* domain)
 }
 
 MONO_API void mono_thread_exit(void)
-{
-    // Ignored
-}
-
-/*
- * mono-debug.h
-*/
-
-MONO_API void mono_debug_open_image_from_memory(MonoImage* image, const mono_byte* raw_contents, int size)
 {
     // Ignored
 }

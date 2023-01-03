@@ -42,7 +42,7 @@ typedef void MObject;
 #define USE_MONO_PROFILER (COMPILE_WITH_PROFILER)
 
 // Enable/disable mono debugging
-#define MONO_DEBUG_ENABLE (!BUILD_RELEASE)
+#define MONO_DEBUG_ENABLE (!BUILD_RELEASE && !USE_MONO)
 
 #ifndef USE_MONO_AOT
 #define USE_MONO_AOT 0

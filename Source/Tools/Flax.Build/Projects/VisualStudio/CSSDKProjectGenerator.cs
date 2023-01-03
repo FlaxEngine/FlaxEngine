@@ -115,66 +115,13 @@ namespace Flax.Build.Projects.VisualStudio
 
             // Default configuration
             {
-                var configuration = defaultConfiguration;
-                var defines = string.Join(";", project.Defines);
-                if (configuration.TargetBuildOptions.ScriptingAPI.Defines.Count != 0)
-                {
-                    if (defines.Length != 0)
-                        defines += ";";
-                    defines += string.Join(";", configuration.TargetBuildOptions.ScriptingAPI.Defines);
-                }
-                var outputPath = Utilities.MakePathRelativeTo(project.CSharp.OutputPath ?? configuration.TargetBuildOptions.OutputFolder, projectDirectory);
-                var intermediateOutputPath = Utilities.MakePathRelativeTo(project.CSharp.IntermediateOutputPath ?? Path.Combine(configuration.TargetBuildOptions.IntermediateFolder, "CSharp"), projectDirectory);
-
-                csProjectFileContent.AppendLine(string.Format("  <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == '{0}' \">", configuration.Name));
-                csProjectFileContent.AppendLine("    <DebugSymbols>true</DebugSymbols>");
-                csProjectFileContent.AppendLine("    <DebugType>portable</DebugType>");
-                csProjectFileContent.AppendLine(string.Format("    <Optimize>{0}</Optimize>", configuration.Configuration == TargetConfiguration.Debug ? "false" : "true"));
-                csProjectFileContent.AppendLine(string.Format("    <OutputPath>{0}\\</OutputPath>", outputPath));
-                csProjectFileContent.AppendLine(string.Format("    <BaseIntermediateOutputPath>{0}\\</BaseIntermediateOutputPath>", intermediateOutputPath));
-                csProjectFileContent.AppendLine(string.Format("    <IntermediateOutputPath>{0}\\</IntermediateOutputPath>", intermediateOutputPath));
-                csProjectFileContent.AppendLine(string.Format("    <DefineConstants>{0}</DefineConstants>", defines));
-                csProjectFileContent.AppendLine("    <ErrorReport>prompt</ErrorReport>");
-                csProjectFileContent.AppendLine("    <WarningLevel>4</WarningLevel>");
-                csProjectFileContent.AppendLine("    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>");
-                if (configuration.TargetBuildOptions.ScriptingAPI.IgnoreMissingDocumentationWarnings)
-                    csProjectFileContent.AppendLine("    <NoWarn>1591</NoWarn>");
-                csProjectFileContent.AppendLine(string.Format("    <DocumentationFile>{0}\\{1}.CSharp.xml</DocumentationFile>", outputPath, project.BaseName));
-                csProjectFileContent.AppendLine("    <UseVSHostingProcess>true</UseVSHostingProcess>");
-                csProjectFileContent.AppendLine("  </PropertyGroup>");
-                csProjectFileContent.AppendLine("");
+                WriteConfiguration(project, csProjectFileContent, projectDirectory, defaultConfiguration);
             }
 
             // Configurations
             foreach (var configuration in project.Configurations)
             {
-                var defines = string.Join(";", project.Defines);
-                if (configuration.TargetBuildOptions.ScriptingAPI.Defines.Count != 0)
-                {
-                    if (defines.Length != 0)
-                        defines += ";";
-                    defines += string.Join(";", configuration.TargetBuildOptions.ScriptingAPI.Defines);
-                }
-                var outputPath = Utilities.MakePathRelativeTo(project.CSharp.OutputPath ?? configuration.TargetBuildOptions.OutputFolder, projectDirectory);
-                var intermediateOutputPath = Utilities.MakePathRelativeTo(project.CSharp.IntermediateOutputPath ?? Path.Combine(configuration.TargetBuildOptions.IntermediateFolder, "CSharp"), projectDirectory);
-
-                csProjectFileContent.AppendLine(string.Format("  <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == '{0}' \">", configuration.Name));
-                csProjectFileContent.AppendLine("    <DebugSymbols>true</DebugSymbols>");
-                csProjectFileContent.AppendLine("    <DebugType>portable</DebugType>");
-                csProjectFileContent.AppendLine(string.Format("    <Optimize>{0}</Optimize>", configuration.Configuration == TargetConfiguration.Release ? "true" : "false"));
-                csProjectFileContent.AppendLine(string.Format("    <OutputPath>{0}\\</OutputPath>", outputPath));
-                csProjectFileContent.AppendLine(string.Format("    <BaseIntermediateOutputPath>{0}\\</BaseIntermediateOutputPath>", intermediateOutputPath));
-                csProjectFileContent.AppendLine(string.Format("    <IntermediateOutputPath>{0}\\</IntermediateOutputPath>", intermediateOutputPath));
-                csProjectFileContent.AppendLine(string.Format("    <DefineConstants>{0}</DefineConstants>", defines));
-                csProjectFileContent.AppendLine("    <ErrorReport>prompt</ErrorReport>");
-                csProjectFileContent.AppendLine("    <WarningLevel>4</WarningLevel>");
-                csProjectFileContent.AppendLine("    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>");
-                if (configuration.TargetBuildOptions.ScriptingAPI.IgnoreMissingDocumentationWarnings)
-                    csProjectFileContent.AppendLine("    <NoWarn>1591</NoWarn>");
-                csProjectFileContent.AppendLine(string.Format("    <DocumentationFile>{0}\\{1}.CSharp.xml</DocumentationFile>", outputPath, project.BaseName));
-                csProjectFileContent.AppendLine("    <UseVSHostingProcess>true</UseVSHostingProcess>");
-                csProjectFileContent.AppendLine("  </PropertyGroup>");
-                csProjectFileContent.AppendLine("");
+                WriteConfiguration(project, csProjectFileContent, projectDirectory, configuration);
             }
 
             // References
@@ -257,6 +204,37 @@ namespace Flax.Build.Projects.VisualStudio
                 // Save the files
                 Utilities.WriteFileIfChanged(project.Path, csProjectFileContent.ToString());
             }
+        }
+
+        private void WriteConfiguration(Project project, StringBuilder csProjectFileContent, string projectDirectory, Project.ConfigurationData configuration)
+        {
+            var defines = string.Join(";", project.Defines);
+            if (configuration.TargetBuildOptions.ScriptingAPI.Defines.Count != 0)
+            {
+                if (defines.Length != 0)
+                    defines += ";";
+                defines += string.Join(";", configuration.TargetBuildOptions.ScriptingAPI.Defines);
+            }
+            var outputPath = Utilities.MakePathRelativeTo(project.CSharp.OutputPath ?? configuration.TargetBuildOptions.OutputFolder, projectDirectory);
+            var intermediateOutputPath = Utilities.MakePathRelativeTo(project.CSharp.IntermediateOutputPath ?? Path.Combine(configuration.TargetBuildOptions.IntermediateFolder, "CSharp"), projectDirectory);
+
+            csProjectFileContent.AppendLine(string.Format("  <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == '{0}' \">", configuration.Name));
+            csProjectFileContent.AppendLine("    <DebugSymbols>true</DebugSymbols>");
+            csProjectFileContent.AppendLine(string.Format("    <DebugType>{0}</DebugType>", configuration.Configuration == TargetConfiguration.Release ? "portable" : "embedded"));
+            csProjectFileContent.AppendLine(string.Format("    <Optimize>{0}</Optimize>", configuration.Configuration == TargetConfiguration.Release ? "true" : "false"));
+            csProjectFileContent.AppendLine(string.Format("    <OutputPath>{0}\\</OutputPath>", outputPath));
+            csProjectFileContent.AppendLine(string.Format("    <BaseIntermediateOutputPath>{0}\\</BaseIntermediateOutputPath>", intermediateOutputPath));
+            csProjectFileContent.AppendLine(string.Format("    <IntermediateOutputPath>{0}\\</IntermediateOutputPath>", intermediateOutputPath));
+            csProjectFileContent.AppendLine(string.Format("    <DefineConstants>{0}</DefineConstants>", defines));
+            csProjectFileContent.AppendLine("    <ErrorReport>prompt</ErrorReport>");
+            csProjectFileContent.AppendLine("    <WarningLevel>4</WarningLevel>");
+            csProjectFileContent.AppendLine("    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>");
+            if (configuration.TargetBuildOptions.ScriptingAPI.IgnoreMissingDocumentationWarnings)
+                csProjectFileContent.AppendLine("    <NoWarn>1591</NoWarn>");
+            csProjectFileContent.AppendLine(string.Format("    <DocumentationFile>{0}\\{1}.CSharp.xml</DocumentationFile>", outputPath, project.BaseName));
+            csProjectFileContent.AppendLine("    <UseVSHostingProcess>true</UseVSHostingProcess>");
+            csProjectFileContent.AppendLine("  </PropertyGroup>");
+            csProjectFileContent.AppendLine("");
         }
     }
 }

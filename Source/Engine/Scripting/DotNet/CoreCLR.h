@@ -1,7 +1,6 @@
-#pragma once
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
-// FIXME
-#include <ThirdParty/mono-2.0/mono/metadata/blob.h>
+#pragma once
 
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Collections/Array.h"

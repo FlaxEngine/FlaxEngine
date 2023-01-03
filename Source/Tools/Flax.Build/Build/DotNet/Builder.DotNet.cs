@@ -225,7 +225,6 @@ namespace Flax.Build
             args.Add("/target:library");
             args.Add("/platform:AnyCPU");
             args.Add("/debug+");
-            args.Add("/debug:portable");
             args.Add("/errorreport:prompt");
             args.Add("/preferreduilang:en-US");
             args.Add("/highentropyva+");
@@ -240,8 +239,13 @@ namespace Flax.Build
 #if USE_NETCORE
             args.Add("/langversion:11.0");
             args.Add("-nowarn:8632"); // Nullable
+            if (buildData.Configuration == TargetConfiguration.Release)
+                args.Add("/debug:portable");
+            else
+                args.Add("/debug:embedded"); // Embed pdb information into dll for proper stack trace information on C# exception in game code
 #else
             args.Add("/langversion:7.3");
+            args.Add("/debug:portable");
 #endif
             if (buildOptions.ScriptingAPI.IgnoreMissingDocumentationWarnings)
                 args.Add("-nowarn:1591");

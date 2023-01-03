@@ -1,27 +1,22 @@
-#include "CoreCLR.h"
+// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+#include "CoreCLR.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Debug/DebugLog.h"
 #include "Engine/Core/Collections/Dictionary.h"
-
 #include <nethost.h>
 #include <coreclr_delegates.h>
 #include <hostfxr.h>
-
 #if PLATFORM_WINDOWS
-#include <combaseapi.h> // CoTask*
+#include <combaseapi.h>
 #undef SetEnvironmentVariable
 #undef LoadLibrary
 #endif
 
-#if COMPILE_WITH_PROFILER
-#endif
-
 static Dictionary<String, void*> cachedFunctions;
-static String assemblyName = TEXT("FlaxEngine.CSharp");
 #if PLATFORM_WINDOWS
 static const char_t* typeName = TEXT("FlaxEngine.NativeInterop, FlaxEngine.CSharp");
 #else
@@ -41,7 +36,6 @@ hostfxr_run_app_fn hostfxr_run_app;
 bool CoreCLR::LoadHostfxr(const String& library_path_)
 {
     const FLAX_CORECLR_STRING& library_path = FLAX_CORECLR_STRING(library_path_);
-
 
     char_t hostfxrPath[1024];
     size_t hostfxrPathSize = sizeof(hostfxrPath) / sizeof(char_t);
