@@ -35,14 +35,14 @@ namespace FlaxEditor.Options
         /// <summary>
         /// Gets or sets the default near clipping plane distance for the viewport camera.
         /// </summary>
-        [DefaultValue(8.0f), Limit(0.001f, 1000.0f)]
+        [DefaultValue(10.0f), Limit(0.001f, 1000.0f)]
         [EditorDisplay("Defaults"), EditorOrder(120), Tooltip("The default near clipping plane distance for the viewport camera.")]
         public float DefaultNearPlane { get; set; } = 10.0f;
 
         /// <summary>
         /// Gets or sets the default far clipping plane distance for the viewport camera.
         /// </summary>
-        [DefaultValue(10000.0f), Limit(10.0f)]
+        [DefaultValue(40000.0f), Limit(10.0f)]
         [EditorDisplay("Defaults"), EditorOrder(130), Tooltip("The default far clipping plane distance for the viewport camera.")]
         public float DefaultFarPlane { get; set; } = 40000.0f;
 
