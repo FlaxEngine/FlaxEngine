@@ -21,6 +21,7 @@ void* GPUBufferDX11::Map(GPUResourceMapMode mode)
 {
     if (!IsInMainThread())
         _device->Locker.Lock();
+    ASSERT(!_mapped);
 
     D3D11_MAPPED_SUBRESOURCE map;
     map.pData = nullptr;
@@ -46,13 +47,18 @@ void* GPUBufferDX11::Map(GPUResourceMapMode mode)
     const HRESULT result = _device->GetIM()->Map(_resource, 0, mapType, mapFlags, &map);
     if (result != DXGI_ERROR_WAS_STILL_DRAWING)
         LOG_DIRECTX_RESULT(result);
+    _mapped = map.pData != nullptr;
     return map.pData;
 }
 
 void GPUBufferDX11::Unmap()
 {
-    _device->GetIM()->Unmap(_resource, 0);
-
+    if (_mapped)
+    {
+        _mapped = false;
+        _device->GetIM()->Unmap(_resource, 0);
+    }
+    
     if (!IsInMainThread())
         _device->Locker.Unlock();
 }

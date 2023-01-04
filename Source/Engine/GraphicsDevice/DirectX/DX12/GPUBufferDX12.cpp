@@ -77,9 +77,10 @@ void GPUBufferDX12::Unmap()
         writtenRangePtr = nullptr;
         break;
     default:
-    CRASH;
+        return;
     }
     _resource->Unmap(0, writtenRangePtr);
+    _lastMapMode = (GPUResourceMapMode)255;
 }
 
 GPUResource* GPUBufferDX12::AsGPUResource() const
