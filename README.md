@@ -32,10 +32,10 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 
 ## Windows
 
-* Install Visual Studio 2015 or newer
+* Install Visual Studio 2022 or newer
 * Install Windows 8.1 SDK or newer (via Visual Studio Installer)
 * Install Microsoft Visual C++ 2015 v140 toolset or newer (via Visual Studio Installer)
-* Install .Net Framework 4.5.2 SDK/Targeting Pack (via Visual Studio Installer)
+* Install .Net 7 SDK (via Visual Studio Installer or [from web](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
 * Clone repo (with LFS)
 * Run **GenerateProjectFiles.bat**
 * Open `Flax.sln` and set solution configuration to **Editor.Development** and solution platform to **Win64**
@@ -48,7 +48,7 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 ## Linux
 
 * Install Visual Studio Code
-* Install Mono ([https://www.mono-project.com/download/stable](https://www.mono-project.com/download/stable))
+* Install .Net 7 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
 * Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
 * Install Git with LFS
 * Install requried packages: `sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev nuget autoconf libogg-dev automake build-essential gettext cmake python libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev`
@@ -61,7 +61,7 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 ## Mac
 
 * Install XCode
-* Install Mono ([https://www.mono-project.com/download/stable](https://www.mono-project.com/download/stable))
+* Install .Net 7 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
 * Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
 * Clone repo (with LFS)
 * Run `GenerateProjectFiles.command`
@@ -81,7 +81,6 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 - **Content/** - assets and binary files used by the engine and editor
 - **Development/** - engine development files
   - **Scripts/** - utility scripts
-- **packages/** - NuGet packages cache location
 - **Source/** - source code location
   - **Editor/** - Flax Editor source code
   - **Engine/** - Flax Engine source code
