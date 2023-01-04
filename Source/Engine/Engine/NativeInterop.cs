@@ -2463,7 +2463,19 @@ namespace FlaxEngine
             Marshal.Copy(data, raw, 0, len);
 
             using MemoryStream stream = new MemoryStream(raw);
-            Assembly assembly = scriptingAssemblyLoadContext.LoadFromStream(stream);
+#if !BUILD_RELEASE
+            var pdbPath = Path.ChangeExtension(assemblyPath, "pdb");
+            Assembly assembly;
+            if (File.Exists(pdbPath))
+            {
+                using FileStream pdbStream = new FileStream(Path.ChangeExtension(assemblyPath, "pdb"), FileMode.Open);
+                assembly = scriptingAssemblyLoadContext.LoadFromStream(stream, pdbStream);
+            }
+            else
+#endif
+            {
+                assembly = scriptingAssemblyLoadContext.LoadFromStream(stream);
+            }
             NativeLibrary.SetDllImportResolver(assembly, NativeLibraryImportResolver);
 
             // Assemblies loaded via streams have no Location: https://github.com/dotnet/runtime/issues/12822

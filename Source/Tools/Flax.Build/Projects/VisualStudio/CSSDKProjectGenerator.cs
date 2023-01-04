@@ -220,7 +220,7 @@ namespace Flax.Build.Projects.VisualStudio
 
             csProjectFileContent.AppendLine(string.Format("  <PropertyGroup Condition=\" '$(Configuration)|$(Platform)' == '{0}' \">", configuration.Name));
             csProjectFileContent.AppendLine("    <DebugSymbols>true</DebugSymbols>");
-            csProjectFileContent.AppendLine(string.Format("    <DebugType>{0}</DebugType>", configuration.Configuration == TargetConfiguration.Release ? "portable" : "embedded"));
+            csProjectFileContent.AppendLine("    <DebugType>portable</DebugType>");
             csProjectFileContent.AppendLine(string.Format("    <Optimize>{0}</Optimize>", configuration.Configuration == TargetConfiguration.Release ? "true" : "false"));
             csProjectFileContent.AppendLine(string.Format("    <OutputPath>{0}\\</OutputPath>", outputPath));
             csProjectFileContent.AppendLine(string.Format("    <BaseIntermediateOutputPath>{0}\\</BaseIntermediateOutputPath>", intermediateOutputPath));
