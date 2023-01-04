@@ -463,6 +463,8 @@ void GPUDevice::preDispose()
     SAFE_DELETE_GPU_RESOURCE(_res->PS_Clear);
     SAFE_DELETE_GPU_RESOURCE(_res->FullscreenTriangleVB);
 
+    Locker.Unlock();
+
     // Release GPU resources memory and unlink from device
     // Note: after that no GPU resources should be used/created, only deleted
     _resourcesLock.Lock();
@@ -472,7 +474,6 @@ void GPUDevice::preDispose()
     }
     _resources.Clear();
     _resourcesLock.Unlock();
-    Locker.Unlock();
 }
 
 void GPUDevice::DrawBegin()

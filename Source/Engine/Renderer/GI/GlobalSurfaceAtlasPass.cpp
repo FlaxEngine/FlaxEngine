@@ -684,13 +684,13 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 if (data)
                 {
                     uint32 counter = data[surfaceAtlasData.CulledObjectsCounterIndex];
-                    _culledObjectsSizeBuffer->Unmap();
                     if (counter > 0)
                     {
                         objectsBufferCapacity = counter;
                         notReady = false;
                     }
                 }
+                _culledObjectsSizeBuffer->Unmap();
 
                 // Allow to be ready if the buffer was already used
                 if (notReady && surfaceAtlasData.CulledObjectsBuffer && surfaceAtlasData.CulledObjectsBuffer->IsAllocated())

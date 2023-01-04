@@ -101,6 +101,7 @@ private:
 
     ID3D11Buffer* _resource = nullptr;
     GPUBufferViewDX11 _view;
+    bool _mapped = false;
 
 public:
 

@@ -113,7 +113,7 @@ private:
 
     GPUBufferViewDX12 _view;
     GPUBufferDX12* _counter = nullptr;
-    GPUResourceMapMode _lastMapMode;
+    GPUResourceMapMode _lastMapMode = (GPUResourceMapMode)255;
 
 public:
 
