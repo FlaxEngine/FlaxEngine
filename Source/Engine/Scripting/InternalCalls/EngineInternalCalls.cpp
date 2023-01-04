@@ -6,6 +6,8 @@
 #include "Engine/Scripting/MException.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 
+#if !COMPILE_WITHOUT_CSHARP
+
 namespace UtilsInternal
 {
     MonoObject* ExtractArrayFromList(MonoObject* obj)
@@ -83,6 +85,8 @@ namespace FlaxLogWriterInternal
         LOG_STR(Info, msg);
     }
 }
+
+#endif
 
 void registerFlaxEngineInternalCalls()
 {

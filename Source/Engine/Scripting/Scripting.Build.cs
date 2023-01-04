@@ -15,7 +15,7 @@ public class Scripting : EngineModule
 
         if (EngineConfiguration.WithCSharp(options))
         {
-            if (EngineConfiguration.UseDotNet)
+            if (EngineConfiguration.WithDotNet(options))
                 options.PublicDependencies.Add("nethost");
             else
                 options.PublicDependencies.Add("mono");

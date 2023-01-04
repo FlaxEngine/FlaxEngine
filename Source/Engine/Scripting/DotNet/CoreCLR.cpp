@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "CoreCLR.h"
+#if USE_NETCORE
 #include "Engine/Core/Log.h"
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/FileSystem.h"
@@ -130,3 +131,5 @@ void CoreCLR::Free(void* ptr)
 {
     Platform::Free(ptr);
 }
+
+#endif

@@ -336,7 +336,6 @@ const Array<MProperty*>& MClass::GetProperties()
 {
     if (_hasCachedProperties)
         return _properties;
-
 #if USE_MONO
     void* iter = nullptr;
     MonoProperty* curClassProperty;
@@ -346,7 +345,6 @@ const Array<MProperty*>& MClass::GetProperties()
         GetProperty(propertyName);
     }
 #endif
-
     _hasCachedProperties = true;
     return _properties;
 }
@@ -416,10 +414,9 @@ const Array<MObject*>& MClass::GetAttributes()
 {
     if (_hasCachedAttributes)
         return _attributes;
-
     _hasCachedAttributes = true;
 #if USE_NETCORE
-    _attributes = *(Array<MObject*>*)(&CoreCLR::GetCustomAttributes(_monoClass));
+    _attributes = MoveTemp(CoreCLR::GetCustomAttributes(_monoClass));
 #elif USE_MONO
     MonoCustomAttrInfo* attrInfo = GET_CUSTOM_ATTR();
     if (attrInfo == nullptr)

@@ -6,6 +6,8 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/Types.h"
 
+#if USE_NETCORE
+
 #if defined(_WIN32)
 #define CORECLR_DELEGATE_CALLTYPE __stdcall
 #define FLAX_CORECLR_STRING String
@@ -59,5 +61,7 @@ public:
     static bool HasCustomAttribute(void* klass, void* attribClass);
     static bool HasCustomAttribute(void* klass);
     static void* GetCustomAttribute(void* klass, void* attribClass);
-    static Array<void*> GetCustomAttributes(void* klass);
+    static Array<MObject*> GetCustomAttributes(void* klass);
 };
+
+#endif

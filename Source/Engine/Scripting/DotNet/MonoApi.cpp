@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
 #include "CoreCLR.h"
+#if USE_NETCORE
 #include "Engine/Scripting/Types.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Graphics/RenderView.h"
@@ -614,24 +615,25 @@ bool CoreCLR::HasCustomAttribute(void* klass, void* attribClass)
 {
     return CoreCLR::GetCustomAttribute(klass, attribClass) != nullptr;
 }
+
 bool CoreCLR::HasCustomAttribute(void* klass)
 {
     return CoreCLR::GetCustomAttribute(klass, nullptr) != nullptr;
 }
+
 void* CoreCLR::GetCustomAttribute(void* klass, void* attribClass)
 {
     static void* GetCustomAttributePtr = CoreCLR::GetStaticMethodPointer(TEXT("GetCustomAttribute"));
     return CoreCLR::CallStaticMethod<void*, void*, void*>(GetCustomAttributePtr, ((CoreCLRClass*)klass)->GetTypeHandle(), ((CoreCLRClass*)attribClass)->GetTypeHandle());
 }
-Array<void*> CoreCLR::GetCustomAttributes(void* klass)
+
+Array<MObject*> CoreCLR::GetCustomAttributes(void* klass)
 {
-    Array<CoreCLRCustomAttribute*> attribs = ((CoreCLRClass*)klass)->GetCustomAttributes();
-
-    Array<void*> attributes;
+    const Array<CoreCLRCustomAttribute*>& attribs = ((CoreCLRClass*)klass)->GetCustomAttributes();
+    Array<MObject*> attributes;
     attributes.Resize(attribs.Count(), false);
-    for (int i = 0; i < attribs.Count(); i++)
-        attributes.Add(attribs[i]->GetHandle());
-
+    for (int32 i = 0; i < attribs.Count(); i++)
+        attributes.Add((MObject*)attribs[i]->GetHandle());
     return attributes;
 }
 
@@ -1616,3 +1618,5 @@ MONO_API void mono_gc_finalize_notify(void)
 }
 
 #pragma warning(default : 4297)
+
+#endif

@@ -16,10 +16,11 @@
 
 #if USE_NETCORE
 #include "Engine/Scripting/DotNet/CoreCLR.h"
-#include "Engine/Core/Collections/BitArray.h"
 #endif
 
 struct Version;
+template<typename AllocationType>
+class BitArray;
 
 namespace MUtils
 {
@@ -612,12 +613,24 @@ namespace MUtils
     /// </summary>
     /// <param name="data">The input data.</param>
     /// <returns>The output array.</returns>
-    FORCE_INLINE bool* ToBoolArray(const BitArray<>& data)
+    template<typename AllocationType = HeapAllocation>
+    FORCE_INLINE bool* ToBoolArray(const BitArray<AllocationType>& data)
     {
         bool* arr = (bool*)CoreCLR::Allocate(data.Count() * sizeof(bool));
         for (int i = 0; i < data.Count(); i++)
             arr[i] = data[i];
         return arr;
+    }
+#else
+    FORCE_INLINE bool* ToBoolArray(const Array<bool>& data)
+    {
+        return nullptr;
+    }
+
+    template<typename AllocationType = HeapAllocation>
+    FORCE_INLINE bool* ToBoolArray(const BitArray<AllocationType>& data)
+    {
+        return nullptr;
     }
 #endif
 
@@ -635,7 +648,7 @@ namespace MUtils
 #if USE_NETCORE
         return CoreCLR::NewGCHandleWeakref(obj, track_resurrection);
 #else
-        return mono_gchandle_new_weak_ref(obj, track_resurrection);
+        return mono_gchandle_new_weakref(obj, track_resurrection);
 #endif
     }
 

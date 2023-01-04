@@ -8,7 +8,7 @@ using Microsoft.Win32;
 using System.Linq;
 
 /// <summary>
-/// Module for nethost (.NET runtime host library)
+/// Module for nethost (.NET runtime host library).
 /// </summary>
 public class nethost : ThirdPartyModule
 {
@@ -22,19 +22,6 @@ public class nethost : ThirdPartyModule
 
         // Merge third-party modules into engine binary
         BinaryModuleName = "FlaxEngine";
-    }
-
-    private static Version ParseVersion(string version)
-    {
-        // Give precedence to final releases over release candidate / beta releases
-        int rev = 9999;
-        if (version.Contains("-")) // e.g. 7.0.0-rc.2.22472.3
-        {
-            version = version.Substring(0, version.IndexOf("-"));
-            rev = 0;
-        }
-        Version ver = new Version(version);
-        return new Version(ver.Major, ver.Minor, ver.Build, rev);
     }
 
     /// <inheritdoc />

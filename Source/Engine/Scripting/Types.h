@@ -27,11 +27,16 @@ class MType;
 #define USE_MONO 0
 #define USE_NETCORE 0
 typedef void MObject;
+typedef unsigned int MGCHandle;
 
 #else
 
 #define USE_MONO 1
+#if COMPILE_WITH_MONO
+#define USE_NETCORE 0
+#else
 #define USE_NETCORE 1
+#endif
 
 // Enables using single (root) app domain for the user scripts
 #define USE_SCRIPTING_SINGLE_DOMAIN 1
@@ -42,7 +47,7 @@ typedef void MObject;
 #define USE_MONO_PROFILER (COMPILE_WITH_PROFILER)
 
 // Enable/disable mono debugging
-#define MONO_DEBUG_ENABLE (!BUILD_RELEASE && !USE_MONO)
+#define MONO_DEBUG_ENABLE (!BUILD_RELEASE && !USE_NETCORE)
 
 #ifndef USE_MONO_AOT
 #define USE_MONO_AOT 0
@@ -57,7 +62,7 @@ struct _MonoThread {};
 #if USE_NETCORE
 typedef unsigned long long MGCHandle;
 #else
-typedef uint32 MGCHandle;
+typedef unsigned int MGCHandle;
 #endif
 
 // Mono types declarations

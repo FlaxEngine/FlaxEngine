@@ -12,6 +12,7 @@
 #include "Engine/Scripting/MException.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
 
+#if !COMPILE_WITHOUT_CSHARP
 #if USE_MONO
 #include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 #endif
@@ -85,6 +86,8 @@ namespace AnimGraphInternal
         return nodes;
     }
 }
+
+#endif
 
 void AnimGraphExecutor::initRuntime()
 {

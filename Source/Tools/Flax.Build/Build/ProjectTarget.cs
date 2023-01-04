@@ -71,6 +71,10 @@ namespace Flax.Build
             {
                 options.CompileEnv.PreprocessorDefinitions.Add("COMPILE_WITHOUT_CSHARP");
             }
+            else if (!EngineConfiguration.WithDotNet(options))
+            {
+                options.CompileEnv.PreprocessorDefinitions.Add("COMPILE_WITH_MONO");
+            }
             if (EngineConfiguration.WithLargeWorlds(options))
             {
                 options.CompileEnv.PreprocessorDefinitions.Add("USE_LARGE_WORLDS");
