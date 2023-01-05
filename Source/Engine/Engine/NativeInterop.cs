@@ -2476,6 +2476,8 @@ namespace FlaxEngine
             {
                 assembly = scriptingAssemblyLoadContext.LoadFromStream(stream);
             }
+            if (assembly == null)
+                return new ManagedHandle();
             NativeLibrary.SetDllImportResolver(assembly, NativeLibraryImportResolver);
 
             // Assemblies loaded via streams have no Location: https://github.com/dotnet/runtime/issues/12822
@@ -2492,7 +2494,11 @@ namespace FlaxEngine
             string name = Marshal.PtrToStringAnsi(name_);
             Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(x => x.GetName().Name == name);
             if (assembly == null)
+            {
                 assembly = scriptingAssemblyLoadContext.Assemblies.FirstOrDefault(x => x.GetName().Name == name);
+                if (assembly == null)
+                    return new ManagedHandle();
+            }
 
             *assemblyName = NativeAllocStringAnsi(assembly.GetName().Name);
             *assemblyFullName = NativeAllocStringAnsi(assembly.FullName);
@@ -2565,8 +2571,11 @@ namespace FlaxEngine
             Assembly assembly = null;
             assembly = scriptingAssemblyLoadContext.Assemblies.FirstOrDefault(x => x.FullName == assemblyName);
             if (assembly == null)
+            {
                 assembly = System.AppDomain.CurrentDomain.GetAssemblies().First(x => x.FullName == assemblyName);
-
+                if (assembly == null)
+                    return new ManagedHandle();
+            }
             return ManagedHandle.Alloc(assembly);
         }
 
