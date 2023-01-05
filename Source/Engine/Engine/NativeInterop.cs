@@ -2463,9 +2463,9 @@ namespace FlaxEngine
             Marshal.Copy(data, raw, 0, len);
 
             using MemoryStream stream = new MemoryStream(raw);
+            Assembly assembly;
 #if !BUILD_RELEASE
             var pdbPath = Path.ChangeExtension(assemblyPath, "pdb");
-            Assembly assembly;
             if (File.Exists(pdbPath))
             {
                 using FileStream pdbStream = new FileStream(Path.ChangeExtension(assemblyPath, "pdb"), FileMode.Open);
