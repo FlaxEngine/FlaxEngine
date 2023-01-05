@@ -79,13 +79,13 @@ void DistanceJoint::OnDebugDrawSelected()
     dir *= 1.0f / len;
     Vector3 start = source, end = target;
     float max = 0, min = 0;
-    if (_flags & DistanceJointFlag::MinDistance)
+    if (static_cast<int32>(_flags & DistanceJointFlag::MinDistance))
     {
         min = Math::Min(_minDistance, len);
         start += dir * min;
         DEBUG_DRAW_LINE(source, start, Color::Red * 0.6f, 0, false);
     }
-    if (_flags & DistanceJointFlag::MaxDistance)
+    if (static_cast<int32>(_flags & DistanceJointFlag::MaxDistance))
     {
         max = Math::Min(_maxDistance, len - min);
         end -= dir * max;

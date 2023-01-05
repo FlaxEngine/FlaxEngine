@@ -1186,7 +1186,7 @@ void SceneAnimationPlayer::Deserialize(DeserializeStream& stream, ISerializeModi
         // When loading from prefab automatically map objects from prefab instance into animation tracks with object references
         for (auto& track : Animation->Tracks)
         {
-            if (track.Disabled || !(track.Flag & SceneAnimation::Track::Flags::PrefabObject))
+            if (track.Disabled || !static_cast<int32>(track.Flag & SceneAnimation::Track::Flags::PrefabObject))
                 continue;
             switch (track.Type)
             {

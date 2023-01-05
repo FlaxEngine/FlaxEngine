@@ -124,7 +124,7 @@ void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
     float scaleInLightmap = 1.0f;
     if (params.RenderContext.Task)
     {
-        if (params.RenderContext.Task->ActorsSource & ActorsSources::CustomActors)
+        if (static_cast<int32>(params.RenderContext.Task->ActorsSource & ActorsSources::CustomActors))
         {
             for (auto actor : params.RenderContext.Task->CustomActors)
             {
@@ -133,7 +133,7 @@ void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
                     break;
             }
         }
-        if (!drawCallActor && params.RenderContext.Task->ActorsSource & ActorsSources::Scenes)
+        if (!drawCallActor && static_cast<int32>(params.RenderContext.Task->ActorsSource & ActorsSources::Scenes))
         {
             for (auto& scene : Level::Scenes)
             {

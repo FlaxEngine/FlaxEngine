@@ -258,11 +258,11 @@ void SceneRenderTask::CollectPostFxVolumes(RenderContext& renderContext)
     // Cache WorldPosition used for PostFx volumes blending (RenderView caches it later on)
     renderContext.View.WorldPosition = renderContext.View.Origin + renderContext.View.Position;
 
-    if ((ActorsSource & ActorsSources::Scenes) != 0)
+    if (static_cast<int32>(ActorsSource & ActorsSources::Scenes) != 0)
     {
         Level::CollectPostFxVolumes(renderContext);
     }
-    if ((ActorsSource & ActorsSources::CustomActors) != 0)
+    if (static_cast<int32>(ActorsSource & ActorsSources::CustomActors) != 0)
     {
         for (auto a : CustomActors)
         {
@@ -289,7 +289,7 @@ void AddActorToSceneRendering(SceneRendering* s, Actor* a)
 void SceneRenderTask::OnCollectDrawCalls(RenderContext& renderContext)
 {
     // Draw actors (collect draw calls)
-    if ((ActorsSource & ActorsSources::CustomActors) != 0)
+    if (static_cast<int32>(ActorsSource & ActorsSources::CustomActors) != 0)
     {
         if (_customActorsScene == nullptr)
             _customActorsScene = New<SceneRendering>();
@@ -299,7 +299,7 @@ void SceneRenderTask::OnCollectDrawCalls(RenderContext& renderContext)
             AddActorToSceneRendering(_customActorsScene, a);
         _customActorsScene->Draw(renderContext);
     }
-    if ((ActorsSource & ActorsSources::Scenes) != 0)
+    if (static_cast<int32>(ActorsSource & ActorsSources::Scenes) != 0)
     {
         Level::DrawActors(renderContext);
     }

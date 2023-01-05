@@ -259,7 +259,7 @@ bool ShaderCompiler::CompileShaders()
     for (int32 i = 0; i < meta->VS.Count(); i++)
     {
         auto& shader = meta->VS[i];
-        ASSERT(shader.GetStage() == ShaderStage::Vertex && (shader.Flags & ShaderFlags::Hidden) == 0);
+        ASSERT(shader.GetStage() == ShaderStage::Vertex && static_cast<int32>(shader.Flags & ShaderFlags::Hidden) == 0);
         PROFILE_COMPILE_SHADER(shader);
         if (CompileShader(shader, &WriteCustomDataVS))
         {
@@ -272,7 +272,7 @@ bool ShaderCompiler::CompileShaders()
     for (int32 i = 0; i < meta->HS.Count(); i++)
     {
         auto& shader = meta->HS[i];
-        ASSERT(shader.GetStage() == ShaderStage::Hull && (shader.Flags & ShaderFlags::Hidden) == 0);
+        ASSERT(shader.GetStage() == ShaderStage::Hull && static_cast<int32>(shader.Flags & ShaderFlags::Hidden) == 0);
         PROFILE_COMPILE_SHADER(shader);
         if (CompileShader(shader, &WriteCustomDataHS))
         {
@@ -285,7 +285,7 @@ bool ShaderCompiler::CompileShaders()
     for (int32 i = 0; i < meta->DS.Count(); i++)
     {
         auto& shader = meta->DS[i];
-        ASSERT(shader.GetStage() == ShaderStage::Domain && (shader.Flags & ShaderFlags::Hidden) == 0);
+        ASSERT(shader.GetStage() == ShaderStage::Domain && static_cast<int32>(shader.Flags & ShaderFlags::Hidden) == 0);
         PROFILE_COMPILE_SHADER(shader);
         if (CompileShader(shader))
         {
@@ -298,7 +298,7 @@ bool ShaderCompiler::CompileShaders()
     for (int32 i = 0; i < meta->GS.Count(); i++)
     {
         auto& shader = meta->GS[i];
-        ASSERT(shader.GetStage() == ShaderStage::Geometry && (shader.Flags & ShaderFlags::Hidden) == 0);
+        ASSERT(shader.GetStage() == ShaderStage::Geometry && static_cast<int32>(shader.Flags & ShaderFlags::Hidden) == 0);
         PROFILE_COMPILE_SHADER(shader);
         if (CompileShader(shader))
         {
@@ -311,7 +311,7 @@ bool ShaderCompiler::CompileShaders()
     for (int32 i = 0; i < meta->PS.Count(); i++)
     {
         auto& shader = meta->PS[i];
-        ASSERT(shader.GetStage() == ShaderStage::Pixel && (shader.Flags & ShaderFlags::Hidden) == 0);
+        ASSERT(shader.GetStage() == ShaderStage::Pixel && static_cast<int32>(shader.Flags & ShaderFlags::Hidden) == 0);
         PROFILE_COMPILE_SHADER(shader);
         if (CompileShader(shader))
         {
@@ -324,7 +324,7 @@ bool ShaderCompiler::CompileShaders()
     for (int32 i = 0; i < meta->CS.Count(); i++)
     {
         auto& shader = meta->CS[i];
-        ASSERT(shader.GetStage() == ShaderStage::Compute && (shader.Flags & ShaderFlags::Hidden) == 0);
+        ASSERT(shader.GetStage() == ShaderStage::Compute && static_cast<int32>(shader.Flags & ShaderFlags::Hidden) == 0);
         PROFILE_COMPILE_SHADER(shader);
         if (CompileShader(shader))
         {

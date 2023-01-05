@@ -24,7 +24,7 @@ bool canUseMaterialWithLightmap(MaterialBase* material, ShadowsOfMordor::Builder
 bool cacheStaticGeometryTree(Actor* actor, ShadowsOfMordor::Builder::SceneBuildCache* scene)
 {
     ShadowsOfMordor::Builder::GeometryEntry entry;
-    const bool useLightmap = actor->GetIsActive() && (actor->GetStaticFlags() & StaticFlags::Lightmap);
+    const bool useLightmap = actor->GetIsActive() && static_cast<int32>(actor->GetStaticFlags() & StaticFlags::Lightmap);
     auto& results = scene->Entries;
 
     // Switch actor type

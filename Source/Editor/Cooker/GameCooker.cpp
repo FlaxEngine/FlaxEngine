@@ -540,7 +540,7 @@ bool GameCookerImpl::Build()
     {
         LOG(Info, "Game building done!");
 
-        if (data.Options & BuildOptions::ShowOutput)
+        if (static_cast<int32>(data.Options & BuildOptions::ShowOutput))
         {
             FileSystem::ShowFileExplorer(data.OriginalOutputPath);
         }

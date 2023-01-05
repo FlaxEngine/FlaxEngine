@@ -201,7 +201,7 @@ public:
     /// </summary>
     FORCE_INLINE bool IsRegistered() const
     {
-        return (Flags & ObjectFlags::IsRegistered) != 0;
+        return static_cast<int32>(Flags & ObjectFlags::IsRegistered) != 0;
     }
 
     /// <summary>

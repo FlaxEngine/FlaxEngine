@@ -64,7 +64,7 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     int32 srv = 2;
 
     // Setup features
-    if (_info.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination)
+    if (static_cast<int32>(_info.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination))
         GlobalIlluminationFeature::Bind(params, cb, srv);
     ForwardShadingFeature::Bind(params, cb, srv);
 
@@ -133,7 +133,7 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     }
 
     // Select pipeline state based on current pass and render mode
-    bool wireframe = (_info.FeaturesFlags & MaterialFeaturesFlags::Wireframe) != 0 || view.Mode == ViewMode::Wireframe;
+    bool wireframe = static_cast<int32>(_info.FeaturesFlags & MaterialFeaturesFlags::Wireframe) != 0 || view.Mode == ViewMode::Wireframe;
     CullMode cullMode = view.Pass == DrawPass::Depth ? CullMode::TwoSided : _info.CullMode;
     PipelineStateCache* psCache = nullptr;
     switch (drawCall.Particle.Module->TypeID)
@@ -205,8 +205,8 @@ bool ParticleMaterialShader::Load()
 {
     _drawModes = DrawPass::Depth | DrawPass::Forward | DrawPass::QuadOverdraw;
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::Default;
-    psDesc.DepthTestEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthTest) == 0;
-    psDesc.DepthWriteEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthWrite) == 0;
+    psDesc.DepthTestEnable = static_cast<int32>(_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthTest) == 0;
+    psDesc.DepthWriteEnable = static_cast<int32>(_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthWrite) == 0;
 
     auto vsSprite = _shader->GetVS("VS_Sprite");
     auto vsMesh = _shader->GetVS("VS_Model");

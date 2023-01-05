@@ -275,7 +275,7 @@ bool Camera::HasContentLoaded() const
 
 void Camera::Draw(RenderContext& renderContext)
 {
-    if (renderContext.View.Flags & ViewFlags::EditorSprites
+    if (static_cast<int32>(renderContext.View.Flags & ViewFlags::EditorSprites)
         && _previewModel
         && _previewModel->IsLoaded())
     {

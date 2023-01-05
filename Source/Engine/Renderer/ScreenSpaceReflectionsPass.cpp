@@ -57,7 +57,7 @@ PACK_STRUCT(struct Data
 bool ScreenSpaceReflectionsPass::NeedMotionVectors(RenderContext& renderContext)
 {
     auto& settings = renderContext.List->Settings.ScreenSpaceReflections;
-    return settings.TemporalEffect && renderContext.View.Flags & ViewFlags::SSR;
+    return settings.TemporalEffect && static_cast<int32>(renderContext.View.Flags & ViewFlags::SSR);
 }
 
 String ScreenSpaceReflectionsPass::ToString() const
@@ -275,7 +275,7 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     GlobalSignDistanceFieldPass::BindingData bindingDataSDF;
     GlobalSurfaceAtlasPass::BindingData bindingDataSurfaceAtlas;
     if (settings.TraceMode == ReflectionsTraceMode::SoftwareTracing &&
-        renderContext.View.Flags & ViewFlags::GI &&
+        static_cast<int32>(renderContext.View.Flags & ViewFlags::GI) &&
         renderContext.List->Settings.GlobalIllumination.Mode == GlobalIlluminationMode::DDGI)
     {
         if (!GlobalSignDistanceFieldPass::Instance()->Render(renderContext, context, bindingDataSDF) &&

@@ -68,8 +68,8 @@ void Decal::OnLayerChanged()
 
 void Decal::Draw(RenderContext& renderContext)
 {
-    if ((renderContext.View.Flags & ViewFlags::Decals) != 0 &&
-        renderContext.View.Pass & DrawPass::GBuffer &&
+    if (static_cast<int32>(renderContext.View.Flags & ViewFlags::Decals) != 0 &&
+        static_cast<int32>(renderContext.View.Pass & DrawPass::GBuffer) &&
         Material &&
         Material->IsLoaded() &&
         Material->IsDecal())

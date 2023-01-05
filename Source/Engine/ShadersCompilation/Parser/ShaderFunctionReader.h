@@ -433,7 +433,7 @@ namespace ShaderProcessing
             }
 
             // Check if use this shader program
-            if ((current.Flags & ShaderFlags::Hidden) == false && current.MinFeatureLevel <= parser->GetFeatureLevel())
+            if (static_cast<int32>(current.Flags & ShaderFlags::Hidden) == false && current.MinFeatureLevel <= parser->GetFeatureLevel())
             {
                 // Cache read function
                 ShaderMetaReaderType::_cache.Add(current);

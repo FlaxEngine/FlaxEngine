@@ -88,7 +88,7 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
     }
     GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
     GPUTextureView* readOnlyDepthBuffer = depthBuffer->View();
-    if (depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView)
+    if (static_cast<int32>(depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView))
         readOnlyDepthBuffer = depthBuffer->ViewReadOnlyDepth();
     context->ResetSR();
     context->ResetRenderTarget();

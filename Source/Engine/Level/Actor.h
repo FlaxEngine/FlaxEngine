@@ -358,7 +358,7 @@ public:
     /// </summary>
     FORCE_INLINE bool IsTransformStatic() const
     {
-        return (_staticFlags & StaticFlags::Transform) != 0;
+        return static_cast<int32>(_staticFlags & StaticFlags::Transform) != 0;
     }
 
     /// <summary>
@@ -381,7 +381,7 @@ public:
     /// </summary>
     FORCE_INLINE bool HasStaticFlag(StaticFlags flag) const
     {
-        return (_staticFlags & flag) == (int)flag;
+        return static_cast<int32>(_staticFlags & flag) == (int)flag;
     }
 
     /// <summary>

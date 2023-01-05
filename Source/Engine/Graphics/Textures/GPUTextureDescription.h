@@ -148,7 +148,7 @@ public:
     /// </summary>
     FORCE_INLINE bool IsRenderTarget() const
     {
-        return (Flags & GPUTextureFlags::RenderTarget) != 0;
+        return static_cast<int32>(Flags & GPUTextureFlags::RenderTarget) != 0;
     }
 
     /// <summary>
@@ -156,7 +156,7 @@ public:
     /// </summary>
     FORCE_INLINE bool IsDepthStencil() const
     {
-        return (Flags & GPUTextureFlags::DepthStencil) != 0;
+        return static_cast<int32>(Flags & GPUTextureFlags::DepthStencil) != 0;
     }
 
     /// <summary>
@@ -164,7 +164,7 @@ public:
     /// </summary>
     FORCE_INLINE bool IsShaderResource() const
     {
-        return (Flags & GPUTextureFlags::ShaderResource) != 0;
+        return static_cast<int32>(Flags & GPUTextureFlags::ShaderResource) != 0;
     }
 
     /// <summary>
@@ -172,7 +172,7 @@ public:
     /// </summary>
     FORCE_INLINE bool IsUnorderedAccess() const
     {
-        return (Flags & GPUTextureFlags::UnorderedAccess) != 0;
+        return static_cast<int32>(Flags & GPUTextureFlags::UnorderedAccess) != 0;
     }
 
     /// <summary>
@@ -180,7 +180,7 @@ public:
     /// </summary>
     FORCE_INLINE bool HasPerMipViews() const
     {
-        return (Flags & GPUTextureFlags::PerMipViews) != 0;
+        return static_cast<int32>(Flags & GPUTextureFlags::PerMipViews) != 0;
     }
 
     /// <summary>
@@ -188,7 +188,7 @@ public:
     /// </summary>
     FORCE_INLINE bool HasPerSliceViews() const
     {
-        return (Flags & GPUTextureFlags::PerSliceViews) != 0;
+        return static_cast<int32>(Flags & GPUTextureFlags::PerSliceViews) != 0;
     }
 
     /// <summary>

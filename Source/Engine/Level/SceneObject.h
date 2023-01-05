@@ -99,7 +99,7 @@ public:
     /// </summary>
     API_PROPERTY() FORCE_INLINE bool IsDuringPlay() const
     {
-        return (Flags & ObjectFlags::IsDuringPlay) != 0;
+        return static_cast<int32>(Flags & ObjectFlags::IsDuringPlay) != 0;
     }
 
     /// <summary>

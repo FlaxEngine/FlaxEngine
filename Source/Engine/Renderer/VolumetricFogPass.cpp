@@ -119,7 +119,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
     }
 
     // Check if skip rendering
-    if (fog == nullptr || (view.Flags & ViewFlags::Fog) == 0 || !_isSupported || checkIfSkipPass())
+    if (fog == nullptr || static_cast<int32>(view.Flags & ViewFlags::Fog) == 0 || !_isSupported || checkIfSkipPass())
     {
         RenderTargetPool::Release(renderContext.Buffers->VolumetricFog);
         renderContext.Buffers->VolumetricFog = nullptr;
@@ -457,7 +457,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     // Init GI data
     bool useDDGI = false;
     DynamicDiffuseGlobalIlluminationPass::BindingData bindingDataDDGI;
-    if (renderContext.View.Flags & ViewFlags::GI)
+    if (static_cast<int32>(renderContext.View.Flags & ViewFlags::GI))
     {
         switch (renderContext.List->Settings.GlobalIllumination.Mode)
         {

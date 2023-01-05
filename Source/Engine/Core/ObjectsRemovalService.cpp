@@ -113,7 +113,7 @@ void ObjectsRemovalService::Flush(float dt, float gameDelta)
         for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
         {
             auto obj = i->Key;
-            const float ttl = i->Value - (obj->Flags & ObjectFlags::UseGameTimeForDelete ? gameDelta : dt);
+            const float ttl = i->Value - (static_cast<int32>(obj->Flags & ObjectFlags::UseGameTimeForDelete) ? gameDelta : dt);
             if (ttl <= ZeroTolerance)
             {
                 Pool.Remove(i);

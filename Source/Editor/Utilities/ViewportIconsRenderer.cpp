@@ -63,7 +63,7 @@ ViewportIconsRendererService ViewportIconsRendererServiceInstance;
 void ViewportIconsRenderer::DrawIcons(RenderContext& renderContext, Actor* actor)
 {
     auto& view = renderContext.View;
-    if (!actor || (view.Flags & ViewFlags::EditorSprites) == 0 || QuadModel == nullptr || !QuadModel->IsLoaded())
+    if (!actor || static_cast<int32>(view.Flags & ViewFlags::EditorSprites) == 0 || QuadModel == nullptr || !QuadModel->IsLoaded())
         return;
 
     Mesh::DrawInfo draw;

@@ -419,7 +419,7 @@ void GPUTextureVulkan::initHandles()
     }
 
     // Read-only depth-stencil
-    if (_desc.Flags & GPUTextureFlags::ReadOnlyDepthView)
+    if (static_cast<int32>(_desc.Flags & GPUTextureFlags::ReadOnlyDepthView))
     {
         _handleReadOnlyDepth.Init(_device, this, _image, mipLevels, format, msaa, extent, VK_IMAGE_VIEW_TYPE_2D, mipLevels, 0, 1, 0, true);
     }

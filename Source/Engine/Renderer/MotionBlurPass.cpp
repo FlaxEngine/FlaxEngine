@@ -270,7 +270,7 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GP
     const int32 screenHeight = renderContext.Buffers->GetHeight();
     const int32 motionVectorsWidth = screenWidth / static_cast<int32>(settings.MotionVectorsResolution);
     const int32 motionVectorsHeight = screenHeight / static_cast<int32>(settings.MotionVectorsResolution);
-    if ((renderContext.View.Flags & ViewFlags::MotionBlur) == 0 ||
+    if (static_cast<int32>(renderContext.View.Flags & ViewFlags::MotionBlur) == 0 ||
         !_hasValidResources ||
         isCameraCut ||
         screenWidth < 16 ||

@@ -494,7 +494,7 @@ void GPUTextureDX11::initHandles()
     }
 
     // Read-only depth-stencil
-    if (_desc.Flags & GPUTextureFlags::ReadOnlyDepthView)
+    if (static_cast<int32>(_desc.Flags & GPUTextureFlags::ReadOnlyDepthView))
     {
         CLEAR_VIEWS();
 

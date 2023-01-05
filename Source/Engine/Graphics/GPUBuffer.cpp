@@ -91,7 +91,7 @@ String GPUBufferDescription::ToString() const
     {
         // TODO: create tool to auto convert flag enums to string
 
-#define CONVERT_FLAGS_FLAGS_2_STR(value) if(Flags & GPUBufferFlags::value) { if (flags.HasChars()) flags += TEXT('|'); flags += TEXT(#value); }
+#define CONVERT_FLAGS_FLAGS_2_STR(value) if(static_cast<int32>(Flags & GPUBufferFlags::value)) { if (flags.HasChars()) flags += TEXT('|'); flags += TEXT(#value); }
         CONVERT_FLAGS_FLAGS_2_STR(ShaderResource);
         CONVERT_FLAGS_FLAGS_2_STR(VertexBuffer);
         CONVERT_FLAGS_FLAGS_2_STR(IndexBuffer);
@@ -148,7 +148,7 @@ bool GPUBuffer::Init(const GPUBufferDescription& desc)
         && Math::IsInRange<uint32>(desc.Stride, 0, 1024));
 
     // Validate description
-    if (desc.Flags & GPUBufferFlags::Structured)
+    if (static_cast<int32>(desc.Flags & GPUBufferFlags::Structured))
     {
         if (desc.Stride <= 0)
         {
@@ -156,7 +156,7 @@ bool GPUBuffer::Init(const GPUBufferDescription& desc)
             return true;
         }
     }
-    if (desc.Flags & GPUBufferFlags::RawBuffer)
+    if (static_cast<int32>(desc.Flags & GPUBufferFlags::RawBuffer))
     {
         if (desc.Format != PixelFormat::R32_Typeless)
         {

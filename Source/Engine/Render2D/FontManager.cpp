@@ -125,7 +125,7 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
 
     // Set load flags
     uint32 glyphFlags = FT_LOAD_NO_BITMAP;
-    if (options.Flags & FontFlags::AntiAliasing)
+    if (static_cast<int32>(options.Flags & FontFlags::AntiAliasing))
     {
         switch (options.Hinting)
         {
@@ -164,18 +164,18 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
     }
 
     // Handle special effects
-    if (options.Flags & FontFlags::Bold)
+    if (static_cast<int32>(options.Flags & FontFlags::Bold))
     {
         FT_GlyphSlot_Embolden(face->glyph);
     }
-    if (options.Flags & FontFlags::Italic)
+    if (static_cast<int32>(options.Flags & FontFlags::Italic))
     {
         FT_GlyphSlot_Oblique(face->glyph);
     }
 
     // Render glyph to the bitmap
     FT_GlyphSlot glyph = face->glyph;
-    FT_Render_Glyph(glyph, options.Flags & FontFlags::AntiAliasing ? FT_RENDER_MODE_NORMAL : FT_RENDER_MODE_MONO);
+    FT_Render_Glyph(glyph, static_cast<int32>(options.Flags & FontFlags::AntiAliasing) ? FT_RENDER_MODE_NORMAL : FT_RENDER_MODE_MONO);
 
     FT_Bitmap* bitmap = &glyph->bitmap;
     FT_Bitmap tmpBitmap;

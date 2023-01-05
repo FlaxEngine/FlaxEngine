@@ -179,7 +179,7 @@ public:
     }
     GPUTextureView* ViewReadOnlyDepth() const override
     {
-        ASSERT(_desc.Flags & GPUTextureFlags::ReadOnlyDepthView);
+        ASSERT(static_cast<int32>(_desc.Flags & GPUTextureFlags::ReadOnlyDepthView));
         return (GPUTextureView*)&_handleReadOnlyDepth;
     }
     void* GetNativePtr() const override
@@ -197,7 +197,7 @@ public:
     // [IShaderResourceDX12]
     bool IsDepthStencilResource() const override
     {
-        return (_desc.Flags & GPUTextureFlags::DepthStencil) != 0;
+        return static_cast<int32>(_desc.Flags & GPUTextureFlags::DepthStencil) != 0;
     }
     D3D12_CPU_DESCRIPTOR_HANDLE SRV() const override
     {

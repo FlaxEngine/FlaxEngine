@@ -154,8 +154,8 @@ void SpotLight::Draw(RenderContext& renderContext)
     const Float3 position = GetPosition() - renderContext.View.Origin;
     const float radius = GetScaledRadius();
     const float outerConeAngle = GetOuterConeAngle();
-    if ((renderContext.View.Flags & ViewFlags::SpotLights) != 0
-        && renderContext.View.Pass & DrawPass::GBuffer
+    if (static_cast<int32>(renderContext.View.Flags & ViewFlags::SpotLights) != 0
+        && static_cast<int32>(renderContext.View.Pass & DrawPass::GBuffer)
         && brightness > ZeroTolerance
         && radius > ZeroTolerance
         && outerConeAngle > ZeroTolerance

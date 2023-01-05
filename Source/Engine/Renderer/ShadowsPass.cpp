@@ -316,7 +316,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererPointLightD
     context->ResetRenderTarget();
     const Viewport viewport = renderContext.Task->GetViewport();
     GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
-    GPUTextureView* depthBufferSRV = depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+    GPUTextureView* depthBufferSRV = static_cast<int32>(depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView) ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
     context->SetViewportAndScissors(viewport);
     context->BindSR(0, renderContext.Buffers->GBuffer0);
     context->BindSR(1, renderContext.Buffers->GBuffer1);
@@ -337,7 +337,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererPointLightD
     sperLight.LightShadow.CascadeSplits = Float4::Zero;
     Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
     sperLight.ContactShadowsDistance = light.ShadowsDistance;
-    sperLight.ContactShadowsLength = view.Flags & ViewFlags::ContactShadows ? light.ContactShadowsLength : 0.0f;
+    sperLight.ContactShadowsLength = static_cast<int32>(view.Flags & ViewFlags::ContactShadows) ? light.ContactShadowsLength : 0.0f;
 
     // Calculate world view projection matrix for the light sphere
     Matrix world, wvp, matrix;
@@ -418,7 +418,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererSpotLightDa
     context->ResetRenderTarget();
     const Viewport viewport = renderContext.Task->GetViewport();
     GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
-    GPUTextureView* depthBufferSRV = depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+    GPUTextureView* depthBufferSRV = static_cast<int32>(depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView) ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
     context->SetViewportAndScissors(viewport);
     context->BindSR(0, renderContext.Buffers->GBuffer0);
     context->BindSR(1, renderContext.Buffers->GBuffer1);
@@ -439,7 +439,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererSpotLightDa
     sperLight.LightShadow.CascadeSplits = Float4::Zero;
     Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
     sperLight.ContactShadowsDistance = light.ShadowsDistance;
-    sperLight.ContactShadowsLength = view.Flags & ViewFlags::ContactShadows ? light.ContactShadowsLength : 0.0f;
+    sperLight.ContactShadowsLength = static_cast<int32>(view.Flags & ViewFlags::ContactShadows) ? light.ContactShadowsLength : 0.0f;
 
     // Calculate world view projection matrix for the light sphere
     Matrix world, wvp, matrix;
@@ -711,7 +711,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererDirectional
     context->ResetRenderTarget();
     const Viewport viewport = renderContext.Task->GetViewport();
     GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
-    GPUTextureView* depthBufferSRV = depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+    GPUTextureView* depthBufferSRV = static_cast<int32>(depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView) ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
     context->SetViewportAndScissors(viewport);
     context->BindSR(0, renderContext.Buffers->GBuffer0);
     context->BindSR(1, renderContext.Buffers->GBuffer1);
@@ -732,7 +732,7 @@ void ShadowsPass::RenderShadow(RenderContext& renderContext, RendererDirectional
     sperLight.LightShadow.CascadeSplits = view.Near + Float4(cascadeSplits) * cameraRange;
     Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
     sperLight.ContactShadowsDistance = light.ShadowsDistance;
-    sperLight.ContactShadowsLength = view.Flags & ViewFlags::ContactShadows ? light.ContactShadowsLength : 0.0f;
+    sperLight.ContactShadowsLength = static_cast<int32>(view.Flags & ViewFlags::ContactShadows) ? light.ContactShadowsLength : 0.0f;
 
     // Render shadow in screen space
     context->UpdateCB(shader->GetCB(0), &sperLight);

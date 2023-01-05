@@ -651,7 +651,7 @@ bool FlaxStorage::LoadAssetChunk(FlaxChunk* chunk)
 
         // Load data
         auto size = chunk->LocationInFile.Size;
-        if (chunk->Flags & FlaxChunkFlags::CompressedLZ4)
+        if (static_cast<int32>(chunk->Flags & FlaxChunkFlags::CompressedLZ4))
         {
             // Compressed
             size -= sizeof(int32); // Don't count original size int
@@ -861,7 +861,7 @@ bool FlaxStorage::Create(WriteStream* stream, const AssetInitData* data, int32 d
     for (int32 i = 0; i < chunksCount; i++)
     {
         const FlaxChunk* chunk = chunks[i];
-        if (chunk->Flags & FlaxChunkFlags::CompressedLZ4)
+        if (static_cast<int32>(chunk->Flags & FlaxChunkFlags::CompressedLZ4))
         {
             PROFILE_CPU_NAMED("CompressLZ4");
             const int32 srcSize = chunk->Data.Length();

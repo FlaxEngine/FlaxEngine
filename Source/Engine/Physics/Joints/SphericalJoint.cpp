@@ -40,7 +40,7 @@ void SphericalJoint::OnDebugDrawSelected()
     const float size = 15.0f;
     const Color color = Color::Green.AlphaMultiplied(0.6f);
     DEBUG_DRAW_WIRE_ARROW(source, GetOrientation(), size / 100.0f * 0.5f, Color::Red, 0, false);
-    if (_flags & SphericalJointFlag::Limit)
+    if (static_cast<int32>(_flags & SphericalJointFlag::Limit))
     {
         DEBUG_DRAW_CONE(source, GetOrientation(), size, _limit.YLimitAngle * DegreesToRadians, _limit.ZLimitAngle * DegreesToRadians, color, 0, false);
     }

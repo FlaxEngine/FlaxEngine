@@ -485,7 +485,7 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.Surface.GeometrySize = _box.GetSize();
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
-    drawCall.Surface.Lightmap = info.Flags & StaticFlags::Lightmap ? info.Lightmap : nullptr;
+    drawCall.Surface.Lightmap = static_cast<int32>(info.Flags & StaticFlags::Lightmap) ? info.Lightmap : nullptr;
     drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
     drawCall.Surface.Skinning = nullptr;
     drawCall.Surface.LODDitherFactor = lodDitherFactor;

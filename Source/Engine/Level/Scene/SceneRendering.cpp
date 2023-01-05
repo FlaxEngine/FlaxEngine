@@ -43,7 +43,7 @@ void SceneRendering::Draw(RenderContext& renderContext)
         {
             auto e = Actors[i];
             e.Bounds.Center -= origin;
-            if (view.RenderLayersMask.Mask & e.LayerMask && (e.NoCulling || frustum.Intersects(e.Bounds)) && e.Actor->GetStaticFlags() & view.StaticFlagsMask)
+            if (view.RenderLayersMask.Mask & e.LayerMask && (e.NoCulling || frustum.Intersects(e.Bounds)) && static_cast<int32>(e.Actor->GetStaticFlags() & view.StaticFlagsMask))
             {
 #if SCENE_RENDERING_USE_PROFILER
                 PROFILE_CPU_ACTOR(e.Actor);
@@ -68,10 +68,10 @@ void SceneRendering::Draw(RenderContext& renderContext)
         }
     }
 #if USE_EDITOR
-    if (view.Pass & DrawPass::GBuffer)
+    if (static_cast<int32>(view.Pass & DrawPass::GBuffer))
     {
         // Draw physics shapes
-        if (view.Flags & ViewFlags::PhysicsDebug || view.Mode == ViewMode::PhysicsColliders)
+        if (static_cast<int32>(view.Flags & ViewFlags::PhysicsDebug) || view.Mode == ViewMode::PhysicsColliders)
         {
             for (int32 i = 0; i < PhysicsDebug.Count(); i++)
             {

@@ -218,7 +218,7 @@ struct NavigationSceneRasterization
     static bool Walk(Actor* actor, NavigationSceneRasterization& e)
     {
         // Early out if object is not intersecting with the tile bounds or is not using navigation
-        if (!actor->GetIsActive() || !(actor->GetStaticFlags() & StaticFlags::Navigation))
+        if (!actor->GetIsActive() || !static_cast<int32>(actor->GetStaticFlags() & StaticFlags::Navigation))
             return true;
         BoundingBox actorBoxNavMesh;
         BoundingBox::Transform(actor->GetBox(), e.WorldToNavMesh, actorBoxNavMesh);

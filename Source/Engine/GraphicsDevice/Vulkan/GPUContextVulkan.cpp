@@ -1215,7 +1215,7 @@ void GPUContextVulkan::DrawIndexedInstanced(uint32 indicesCount, uint32 instance
 
 void GPUContextVulkan::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
-    ASSERT(bufferForArgs && bufferForArgs->GetFlags() & GPUBufferFlags::Argument);
+    ASSERT(bufferForArgs && static_cast<int32>(bufferForArgs->GetFlags() & GPUBufferFlags::Argument));
 
     auto bufferForArgsVK = (GPUBufferVulkan*)bufferForArgs;
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
@@ -1226,7 +1226,7 @@ void GPUContextVulkan::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 of
 
 void GPUContextVulkan::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
-    ASSERT(bufferForArgs && bufferForArgs->GetFlags() & GPUBufferFlags::Argument);
+    ASSERT(bufferForArgs && static_cast<int32>(bufferForArgs->GetFlags() & GPUBufferFlags::Argument));
 
     auto bufferForArgsVK = (GPUBufferVulkan*)bufferForArgs;
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();

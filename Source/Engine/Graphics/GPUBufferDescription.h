@@ -124,7 +124,7 @@ public:
     /// </summary>
     FORCE_INLINE bool IsShaderResource() const
     {
-        return (Flags & GPUBufferFlags::ShaderResource) != 0;
+        return static_cast<int32>(Flags & GPUBufferFlags::ShaderResource) != 0;
     }
 
     /// <summary>
@@ -132,7 +132,7 @@ public:
     /// </summary>
     FORCE_INLINE bool IsUnorderedAccess() const
     {
-        return (Flags & GPUBufferFlags::UnorderedAccess) != 0;
+        return static_cast<int32>(Flags & GPUBufferFlags::UnorderedAccess) != 0;
     }
 
 public:

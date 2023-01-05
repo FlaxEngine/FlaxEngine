@@ -411,8 +411,8 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
     const bool useDistortion =
             (info.Domain == MaterialDomain::Surface || info.Domain == MaterialDomain::Deformable || info.Domain == MaterialDomain::Particle) &&
             info.BlendMode != MaterialBlendMode::Opaque &&
-            (info.UsageFlags & MaterialUsageFlags::UseRefraction) != 0 &&
-            (info.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0;
+            static_cast<int32>(info.UsageFlags & MaterialUsageFlags::UseRefraction) != 0 &&
+            static_cast<int32>(info.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0;
 
     // @formatter:off
     static const char* Numbers[] =
@@ -425,22 +425,22 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
     options.Macros.Add({ "MATERIAL_DOMAIN", Numbers[(int32)info.Domain] });
     options.Macros.Add({ "MATERIAL_BLEND", Numbers[(int32)info.BlendMode] });
     options.Macros.Add({ "MATERIAL_SHADING_MODEL", Numbers[(int32)info.ShadingModel] });
-    options.Macros.Add({ "MATERIAL_MASKED", Numbers[info.UsageFlags & MaterialUsageFlags::UseMask ? 1 : 0] });
+    options.Macros.Add({ "MATERIAL_MASKED", Numbers[static_cast<int32>(info.UsageFlags & MaterialUsageFlags::UseMask) ? 1 : 0] });
     options.Macros.Add({ "DECAL_BLEND_MODE", Numbers[(int32)info.DecalBlendingMode] });
-    options.Macros.Add({ "USE_EMISSIVE", Numbers[info.UsageFlags & MaterialUsageFlags::UseEmissive ? 1 : 0] });
-    options.Macros.Add({ "USE_NORMAL", Numbers[info.UsageFlags & MaterialUsageFlags::UseNormal ? 1 : 0] });
-    options.Macros.Add({ "USE_POSITION_OFFSET", Numbers[info.UsageFlags & MaterialUsageFlags::UsePositionOffset ? 1 : 0] });
-    options.Macros.Add({ "USE_VERTEX_COLOR", Numbers[info.UsageFlags & MaterialUsageFlags::UseVertexColor ? 1 : 0] });
-    options.Macros.Add({ "USE_DISPLACEMENT", Numbers[info.UsageFlags & MaterialUsageFlags::UseDisplacement ? 1 : 0] });
-    options.Macros.Add({ "USE_DITHERED_LOD_TRANSITION", Numbers[info.FeaturesFlags & MaterialFeaturesFlags::DitheredLODTransition ? 1 : 0] });
+    options.Macros.Add({ "USE_EMISSIVE", Numbers[static_cast<int32>(info.UsageFlags & MaterialUsageFlags::UseEmissive) ? 1 : 0] });
+    options.Macros.Add({ "USE_NORMAL", Numbers[static_cast<int32>(info.UsageFlags & MaterialUsageFlags::UseNormal) ? 1 : 0] });
+    options.Macros.Add({ "USE_POSITION_OFFSET", Numbers[static_cast<int32>(info.UsageFlags & MaterialUsageFlags::UsePositionOffset) ? 1 : 0] });
+    options.Macros.Add({ "USE_VERTEX_COLOR", Numbers[static_cast<int32>(info.UsageFlags & MaterialUsageFlags::UseVertexColor) ? 1 : 0] });
+    options.Macros.Add({ "USE_DISPLACEMENT", Numbers[static_cast<int32>(info.UsageFlags & MaterialUsageFlags::UseDisplacement) ? 1 : 0] });
+    options.Macros.Add({ "USE_DITHERED_LOD_TRANSITION", Numbers[static_cast<int32>(info.FeaturesFlags & MaterialFeaturesFlags::DitheredLODTransition) ? 1 : 0] });
     options.Macros.Add({ "USE_GBUFFER_CUSTOM_DATA", Numbers[useCustomData ? 1 : 0] });
-    options.Macros.Add({ "USE_REFLECTIONS", Numbers[info.FeaturesFlags & MaterialFeaturesFlags::DisableReflections ? 0 : 1] });
-    if (!(info.FeaturesFlags & MaterialFeaturesFlags::DisableReflections) && info.FeaturesFlags & MaterialFeaturesFlags::ScreenSpaceReflections)
+    options.Macros.Add({ "USE_REFLECTIONS", Numbers[static_cast<int32>(info.FeaturesFlags & MaterialFeaturesFlags::DisableReflections) ? 0 : 1] });
+    if (!static_cast<int32>(info.FeaturesFlags & MaterialFeaturesFlags::DisableReflections) && static_cast<int32>(info.FeaturesFlags & MaterialFeaturesFlags::ScreenSpaceReflections))
         options.Macros.Add({ "MATERIAL_REFLECTIONS", Numbers[1] });
-    options.Macros.Add({ "USE_FOG", Numbers[info.FeaturesFlags & MaterialFeaturesFlags::DisableFog ? 0 : 1] });
+    options.Macros.Add({ "USE_FOG", Numbers[static_cast<int32>(info.FeaturesFlags & MaterialFeaturesFlags::DisableFog) ? 0 : 1] });
     if (useForward)
     {
-        options.Macros.Add({ "USE_PIXEL_NORMAL_OFFSET_REFRACTION", Numbers[info.FeaturesFlags & MaterialFeaturesFlags::PixelNormalOffsetRefraction ? 1 : 0] });
+        options.Macros.Add({ "USE_PIXEL_NORMAL_OFFSET_REFRACTION", Numbers[static_cast<int32>(info.FeaturesFlags & MaterialFeaturesFlags::PixelNormalOffsetRefraction) ? 1 : 0] });
         switch (info.TransparentLightingMode)
         {
         case MaterialTransparentLightingMode::Surface:

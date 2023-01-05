@@ -227,7 +227,7 @@ bool Renderer::NeedMotionVectors(RenderContext& renderContext)
     if (screenWidth < 16 || screenHeight < 16 || renderContext.Task->IsCameraCut)
         return false;
     MotionBlurSettings& motionBlurSettings = renderContext.List->Settings.MotionBlur;
-    return ((renderContext.View.Flags & ViewFlags::MotionBlur) != 0 && motionBlurSettings.Enabled && motionBlurSettings.Scale > ZeroTolerance) ||
+    return (static_cast<int32>(renderContext.View.Flags & ViewFlags::MotionBlur) != 0 && motionBlurSettings.Enabled && motionBlurSettings.Scale > ZeroTolerance) ||
             renderContext.View.Mode == ViewMode::MotionVectors ||
             ScreenSpaceReflectionsPass::NeedMotionVectors(renderContext) ||
             TAA::NeedMotionVectors(renderContext);
@@ -301,7 +301,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
     // Perform postFx volumes blending and query before rendering
     task->CollectPostFxVolumes(renderContext);
     renderContext.List->BlendSettings();
-    auto aaMode = (renderContext.View.Flags & ViewFlags::AntiAliasing) != 0 ? renderContext.List->Settings.AntiAliasing.Mode : AntialiasingMode::None;
+    auto aaMode = static_cast<int32>(renderContext.View.Flags & ViewFlags::AntiAliasing) != 0 ? renderContext.List->Settings.AntiAliasing.Mode : AntialiasingMode::None;
     if (aaMode == AntialiasingMode::TemporalAntialiasing && view.IsOrthographicProjection())
         aaMode = AntialiasingMode::None; // TODO: support TAA in ortho projection (see RenderView::Prepare to jitter projection matrix better)
     renderContext.List->Settings.AntiAliasing.Mode = aaMode;
@@ -348,7 +348,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
 #endif
 
     // Global SDF rendering (can be used by materials later on)
-    if (graphicsSettings->EnableGlobalSDF && view.Flags & ViewFlags::GlobalSDF)
+    if (graphicsSettings->EnableGlobalSDF && static_cast<int32>(view.Flags & ViewFlags::GlobalSDF))
     {
         GlobalSignDistanceFieldPass::BindingData bindingData;
         GlobalSignDistanceFieldPass::Instance()->Render(renderContext, context, bindingData);
@@ -402,7 +402,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext)
 
     // Render lighting
     LightPass::Instance()->RenderLight(renderContext, *lightBuffer);
-    if (renderContext.View.Flags & ViewFlags::GI)
+    if (static_cast<int32>(renderContext.View.Flags & ViewFlags::GI))
     {
         switch (renderContext.List->Settings.GlobalIllumination.Mode)
         {

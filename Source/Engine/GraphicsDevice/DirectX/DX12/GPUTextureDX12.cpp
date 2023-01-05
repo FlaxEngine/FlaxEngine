@@ -691,7 +691,7 @@ void GPUTextureDX12::initHandles()
     }
 
     // Read-only depth-stencil
-    if (_desc.Flags & GPUTextureFlags::ReadOnlyDepthView)
+    if (static_cast<int32>(_desc.Flags & GPUTextureFlags::ReadOnlyDepthView))
     {
         _handleReadOnlyDepth.Init(this, _device, this, format, msaa);
         _handleReadOnlyDepth.ReadOnlyDepthView = true;

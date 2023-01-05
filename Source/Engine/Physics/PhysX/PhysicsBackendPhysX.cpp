@@ -569,16 +569,16 @@ bool CollisionCooking::CookConvexMesh(CookingInput& input, BytesContainer& outpu
         desc.vertexLimit = CONVEX_VERTEX_MAX;
     else
         desc.vertexLimit = (PxU16)Math::Clamp(input.ConvexVertexLimit, CONVEX_VERTEX_MIN, CONVEX_VERTEX_MAX);
-    if (input.ConvexFlags & ConvexMeshGenerationFlags::SkipValidation)
+    if (static_cast<int32>(input.ConvexFlags & ConvexMeshGenerationFlags::SkipValidation))
         desc.flags |= PxConvexFlag::Enum::eDISABLE_MESH_VALIDATION;
-    if (input.ConvexFlags & ConvexMeshGenerationFlags::UsePlaneShifting)
+    if (static_cast<int32>(input.ConvexFlags & ConvexMeshGenerationFlags::UsePlaneShifting))
         desc.flags |= PxConvexFlag::Enum::ePLANE_SHIFTING;
-    if (input.ConvexFlags & ConvexMeshGenerationFlags::UseFastInteriaComputation)
+    if (static_cast<int32>(input.ConvexFlags & ConvexMeshGenerationFlags::UseFastInteriaComputation))
         desc.flags |= PxConvexFlag::Enum::eFAST_INERTIA_COMPUTATION;
-    if (input.ConvexFlags & ConvexMeshGenerationFlags::ShiftVertices)
+    if (static_cast<int32>(input.ConvexFlags & ConvexMeshGenerationFlags::ShiftVertices))
         desc.flags |= PxConvexFlag::Enum::eSHIFT_VERTICES;
     PxCookingParams cookingParams = cooking->getParams();
-    cookingParams.suppressTriangleMeshRemapTable = input.ConvexFlags & ConvexMeshGenerationFlags::SuppressFaceRemapTable;
+    cookingParams.suppressTriangleMeshRemapTable = static_cast<int32>(input.ConvexFlags & ConvexMeshGenerationFlags::SuppressFaceRemapTable);
     cooking->setParams(cookingParams);
 
     // Perform cooking
@@ -612,7 +612,7 @@ bool CollisionCooking::CookTriangleMesh(CookingInput& input, BytesContainer& out
     desc.triangles.data = input.IndexData;
     desc.flags = input.Is16bitIndexData ? PxMeshFlag::e16_BIT_INDICES : (PxMeshFlag::Enum)0;
     PxCookingParams cookingParams = cooking->getParams();
-    cookingParams.suppressTriangleMeshRemapTable = input.ConvexFlags & ConvexMeshGenerationFlags::SuppressFaceRemapTable;
+    cookingParams.suppressTriangleMeshRemapTable = static_cast<int32>(input.ConvexFlags & ConvexMeshGenerationFlags::SuppressFaceRemapTable);
     cooking->setParams(cookingParams);
 
     // Perform cooking
@@ -1628,9 +1628,9 @@ void PhysicsBackend::SetActorFlags(void* actor, ActorFlags value)
 #if WITH_PVD
     flags |= PxActorFlag::eVISUALIZATION;
 #endif
-    if (value & ActorFlags::NoGravity)
+    if (static_cast<int32>(value & ActorFlags::NoGravity))
         flags |= PxActorFlag::eDISABLE_GRAVITY;
-    if (value & ActorFlags::NoSimulation)
+    if (static_cast<int32>(value & ActorFlags::NoSimulation))
         flags |= PxActorFlag::eDISABLE_SIMULATION;
     actorPhysX->setActorFlags(flags);
 }
@@ -1697,9 +1697,9 @@ void PhysicsBackend::SetRigidDynamicActorFlags(void* actor, RigidDynamicFlags va
 {
     auto actorPhysX = (PxRigidDynamic*)actor;
     auto flags = (PxRigidBodyFlags)0;
-    if (value & RigidDynamicFlags::Kinematic)
+    if (static_cast<int32>(value & RigidDynamicFlags::Kinematic))
         flags |= PxRigidBodyFlag::eKINEMATIC;
-    if (value & RigidDynamicFlags::CCD)
+    if (static_cast<int32>(value & RigidDynamicFlags::CCD))
         flags |= PxRigidBodyFlag::eENABLE_CCD;
     actorPhysX->setRigidBodyFlags(flags);
 }
@@ -2089,7 +2089,7 @@ bool PhysicsBackend::RayCastShape(void* shape, const Vector3& position, const Qu
 void PhysicsBackend::SetJointFlags(void* joint, JointFlags value)
 {
     auto jointPhysX = (PxJoint*)joint;
-    jointPhysX->setConstraintFlag(PxConstraintFlag::eCOLLISION_ENABLED, value & JointFlags::Collision);
+    jointPhysX->setConstraintFlag(PxConstraintFlag::eCOLLISION_ENABLED, static_cast<int32>(value & JointFlags::Collision));
 }
 
 void PhysicsBackend::SetJointActors(void* joint, void* actors0, void* actor1)
@@ -2235,9 +2235,9 @@ void PhysicsBackend::SetHingeJointFlags(void* joint, HingeJointFlag value, bool 
 {
     auto jointPhysX = (PxRevoluteJoint*)joint;
     PxRevoluteJointFlags flags = (PxRevoluteJointFlags)0;
-    if (value & HingeJointFlag::Limit)
+    if (static_cast<int32>(value & HingeJointFlag::Limit))
         flags |= PxRevoluteJointFlag::eLIMIT_ENABLED;
-    if (value & HingeJointFlag::Drive)
+    if (static_cast<int32>(value & HingeJointFlag::Drive))
         flags |= PxRevoluteJointFlag::eDRIVE_ENABLED;
     if (driveFreeSpin)
         flags |= PxRevoluteJointFlag::eDRIVE_FREESPIN;
@@ -2279,7 +2279,7 @@ float PhysicsBackend::GetHingeJointVelocity(void* joint)
 void PhysicsBackend::SetSliderJointFlags(void* joint, SliderJointFlag value)
 {
     auto jointPhysX = (PxPrismaticJoint*)joint;
-    jointPhysX->setPrismaticJointFlag(PxPrismaticJointFlag::eLIMIT_ENABLED, (value & SliderJointFlag::Limit) != 0);
+    jointPhysX->setPrismaticJointFlag(PxPrismaticJointFlag::eLIMIT_ENABLED, static_cast<int32>(value & SliderJointFlag::Limit) != 0);
 }
 
 void PhysicsBackend::SetSliderJointLimit(void* joint, const LimitLinearRange& value)
@@ -2308,7 +2308,7 @@ float PhysicsBackend::GetSliderJointVelocity(void* joint)
 void PhysicsBackend::SetSphericalJointFlags(void* joint, SphericalJointFlag value)
 {
     auto jointPhysX = (PxSphericalJoint*)joint;
-    jointPhysX->setSphericalJointFlag(PxSphericalJointFlag::eLIMIT_ENABLED, (value & SphericalJointFlag::Limit) != 0);
+    jointPhysX->setSphericalJointFlag(PxSphericalJointFlag::eLIMIT_ENABLED, static_cast<int32>(value & SphericalJointFlag::Limit) != 0);
 }
 
 void PhysicsBackend::SetSphericalJointLimit(void* joint, const LimitConeRange& value)

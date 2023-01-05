@@ -36,42 +36,42 @@ MaterialInfo9::MaterialInfo9(const MaterialInfo8& other)
     BlendMode = other.BlendMode;
     ShadingModel = other.ShadingModel;
     UsageFlags = MaterialUsageFlags::None;
-    if (other.Flags & MaterialFlags_Deprecated::UseMask)
+    if (static_cast<int32>(other.Flags & MaterialFlags_Deprecated::UseMask))
         UsageFlags |= MaterialUsageFlags::UseMask;
-    if (other.Flags & MaterialFlags_Deprecated::UseEmissive)
+    if (static_cast<int32>(other.Flags & MaterialFlags_Deprecated::UseEmissive))
         UsageFlags |= MaterialUsageFlags::UseEmissive;
-    if (other.Flags & MaterialFlags_Deprecated::UsePositionOffset)
+    if (static_cast<int32>(other.Flags & MaterialFlags_Deprecated::UsePositionOffset))
         UsageFlags |= MaterialUsageFlags::UsePositionOffset;
-    if (other.Flags & MaterialFlags_Deprecated::UseVertexColor)
+    if (static_cast<int32>(other.Flags & MaterialFlags_Deprecated::UseVertexColor))
         UsageFlags |= MaterialUsageFlags::UseVertexColor;
-    if (other.Flags & MaterialFlags_Deprecated::UseNormal)
+    if (static_cast<int32>(other.Flags & MaterialFlags_Deprecated::UseNormal))
         UsageFlags |= MaterialUsageFlags::UseNormal;
-    if (other.Flags & MaterialFlags_Deprecated::UseDisplacement)
+    if (static_cast<int32>(other.Flags & MaterialFlags_Deprecated::UseDisplacement))
         UsageFlags |= MaterialUsageFlags::UseDisplacement;
-    if (other.Flags & MaterialFlags_Deprecated::UseRefraction)
+    if (static_cast<int32>(other.Flags & MaterialFlags_Deprecated::UseRefraction))
         UsageFlags |= MaterialUsageFlags::UseRefraction;
     FeaturesFlags = MaterialFeaturesFlags::None;
-    if (other.Flags & MaterialFlags_Deprecated::Wireframe)
+    if (static_cast<int32>(other.Flags & MaterialFlags_Deprecated::Wireframe))
         FeaturesFlags |= MaterialFeaturesFlags::Wireframe;
-    if (other.Flags & MaterialFlags_Deprecated::TransparentDisableDepthTest && BlendMode != MaterialBlendMode::Opaque)
+    if (static_cast<int32>(other.Flags & MaterialFlags_Deprecated::TransparentDisableDepthTest) && BlendMode != MaterialBlendMode::Opaque)
         FeaturesFlags |= MaterialFeaturesFlags::DisableDepthTest;
-    if (other.Flags & MaterialFlags_Deprecated::TransparentDisableFog && BlendMode != MaterialBlendMode::Opaque)
+    if (static_cast<int32>(other.Flags & MaterialFlags_Deprecated::TransparentDisableFog) && BlendMode != MaterialBlendMode::Opaque)
         FeaturesFlags |= MaterialFeaturesFlags::DisableFog;
-    if (other.Flags & MaterialFlags_Deprecated::TransparentDisableReflections && BlendMode != MaterialBlendMode::Opaque)
+    if (static_cast<int32>(other.Flags & MaterialFlags_Deprecated::TransparentDisableReflections) && BlendMode != MaterialBlendMode::Opaque)
         FeaturesFlags |= MaterialFeaturesFlags::DisableReflections;
-    if (other.Flags & MaterialFlags_Deprecated::DisableDepthWrite)
+    if (static_cast<int32>(other.Flags & MaterialFlags_Deprecated::DisableDepthWrite))
         FeaturesFlags |= MaterialFeaturesFlags::DisableDepthWrite;
-    if (other.Flags & MaterialFlags_Deprecated::TransparentDisableDistortion && BlendMode != MaterialBlendMode::Opaque)
+    if (static_cast<int32>(other.Flags & MaterialFlags_Deprecated::TransparentDisableDistortion) && BlendMode != MaterialBlendMode::Opaque)
         FeaturesFlags |= MaterialFeaturesFlags::DisableDistortion;
-    if (other.Flags & MaterialFlags_Deprecated::InputWorldSpaceNormal)
+    if (static_cast<int32>(other.Flags & MaterialFlags_Deprecated::InputWorldSpaceNormal))
         FeaturesFlags |= MaterialFeaturesFlags::InputWorldSpaceNormal;
-    if (other.Flags & MaterialFlags_Deprecated::UseDitheredLODTransition)
+    if (static_cast<int32>(other.Flags & MaterialFlags_Deprecated::UseDitheredLODTransition))
         FeaturesFlags |= MaterialFeaturesFlags::DitheredLODTransition;
     if (other.BlendMode != MaterialBlendMode::Opaque && other.TransparentLighting == MaterialTransparentLighting_Deprecated::None)
         ShadingModel = MaterialShadingModel::Unlit;
     DecalBlendingMode = other.DecalBlendingMode;
     PostFxLocation = other.PostFxLocation;
-    CullMode = other.Flags & MaterialFlags_Deprecated::TwoSided ? ::CullMode::TwoSided : ::CullMode::Normal;
+    CullMode = static_cast<int32>(other.Flags & MaterialFlags_Deprecated::TwoSided) ? ::CullMode::TwoSided : ::CullMode::Normal;
     MaskThreshold = other.MaskThreshold;
     OpacityThreshold = other.OpacityThreshold;
     TessellationMode = other.TessellationMode;
@@ -441,7 +441,7 @@ void MaterialParameter::Bind(BindMeta& meta) const
             case MaterialSceneTextures::SceneDepth:
             case MaterialSceneTextures::WorldPosition:
                 view = meta.CanSampleDepth
-                           ? meta.Buffers->DepthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView
+                           ? static_cast<int32>(meta.Buffers->DepthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView)
                                  ? meta.Buffers->DepthBuffer->ViewReadOnlyDepth()
                                  : meta.Buffers->DepthBuffer->View()
                            : GPUDevice::Instance->GetDefaultWhiteTexture()->View();

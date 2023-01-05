@@ -195,9 +195,9 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         ADD_FEATURE(LightmapFeature);
         if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
         ADD_FEATURE(DeferredShadingFeature);
-        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && static_cast<int32>(materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)
         ADD_FEATURE(DistortionFeature);
-        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination) != 0)
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && static_cast<int32>(materialInfo.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination) != 0)
         ADD_FEATURE(GlobalIlluminationFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque)
         ADD_FEATURE(ForwardShadingFeature);
@@ -209,9 +209,9 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         ADD_FEATURE(DeferredShadingFeature);
         break;
     case MaterialDomain::Particle:
-        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && static_cast<int32>(materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)
         ADD_FEATURE(DistortionFeature);
-        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination) != 0)
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && static_cast<int32>(materialInfo.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination) != 0)
         ADD_FEATURE(GlobalIlluminationFeature);
         ADD_FEATURE(ForwardShadingFeature);
         break;
@@ -330,7 +330,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
 
         // Normalize and transform to world space if need to
         _writer.Write(TEXT("\t{0}.TangentNormal = normalize({0}.TangentNormal);\n"), materialVarPS.Value);
-        if ((baseLayer->FeaturesFlags & MaterialFeaturesFlags::InputWorldSpaceNormal) == 0)
+        if (static_cast<int32>(baseLayer->FeaturesFlags & MaterialFeaturesFlags::InputWorldSpaceNormal) == 0)
         {
             _writer.Write(TEXT("\t{0}.WorldNormal = normalize(TransformTangentVectorToWorld(input, {0}.TangentNormal));\n"), materialVarPS.Value);
         }
@@ -421,7 +421,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         _writer.Write(TEXT("#define MATERIAL_MASK_THRESHOLD ({0})\n"), baseLayer->MaskThreshold);
         _writer.Write(TEXT("#define CUSTOM_VERTEX_INTERPOLATORS_COUNT ({0})\n"), _vsToPsInterpolants.Count());
         _writer.Write(TEXT("#define MATERIAL_OPACITY_THRESHOLD ({0})\n"), baseLayer->OpacityThreshold);
-        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && !(materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableReflections) && materialInfo.FeaturesFlags & MaterialFeaturesFlags::ScreenSpaceReflections)
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && !static_cast<int32>(materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableReflections) && static_cast<int32>(materialInfo.FeaturesFlags & MaterialFeaturesFlags::ScreenSpaceReflections))
         {
             // Inject depth and color buffers for Screen Space Reflections used by transparent material
             auto sceneDepthTexture = findOrAddSceneTexture(MaterialSceneTextures::SceneDepth);

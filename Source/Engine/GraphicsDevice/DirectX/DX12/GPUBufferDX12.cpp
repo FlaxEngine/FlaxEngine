@@ -171,7 +171,7 @@ bool GPUBufferDX12::OnInit()
     }
 
     // Check if need to use a counter
-    if (_desc.Flags & GPUBufferFlags::Counter || _desc.Flags & GPUBufferFlags::Append)
+    if (static_cast<int32>(_desc.Flags & GPUBufferFlags::Counter) || static_cast<int32>(_desc.Flags & GPUBufferFlags::Append))
     {
 #if GPU_ENABLE_RESOURCE_NAMING
         String name = GetName() + TEXT(".Counter");
@@ -191,7 +191,7 @@ bool GPUBufferDX12::OnInit()
     if (useSRV)
     {
         D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
-        if (_desc.Flags & GPUBufferFlags::RawBuffer)
+        if (static_cast<int32>(_desc.Flags & GPUBufferFlags::RawBuffer))
             srvDesc.Format = RenderToolsDX::ToDxgiFormat(_desc.Format);
         else
             srvDesc.Format = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindShaderResourceFormat(_desc.Format, false));
@@ -200,7 +200,7 @@ bool GPUBufferDX12::OnInit()
         srvDesc.Buffer.FirstElement = 0;
         srvDesc.Buffer.NumElements = numElements;
         srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-        if (_desc.Flags & GPUBufferFlags::Structured)
+        if (static_cast<int32>(_desc.Flags & GPUBufferFlags::Structured))
         {
             srvDesc.Buffer.StructureByteStride = _desc.Stride;
             srvDesc.Format = DXGI_FORMAT_UNKNOWN;
@@ -209,7 +209,7 @@ bool GPUBufferDX12::OnInit()
         {
             srvDesc.Buffer.StructureByteStride = 0;
         }
-        if (_desc.Flags & GPUBufferFlags::RawBuffer)
+        if (static_cast<int32>(_desc.Flags & GPUBufferFlags::RawBuffer))
             srvDesc.Buffer.Flags |= D3D12_BUFFER_SRV_FLAG_RAW;
         _view.SetSRV(srvDesc);
     }
@@ -222,11 +222,11 @@ bool GPUBufferDX12::OnInit()
         uavDesc.Buffer.CounterOffsetInBytes = 0;
         uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
         uavDesc.Buffer.NumElements = numElements;
-        if (_desc.Flags & GPUBufferFlags::Structured)
+        if (static_cast<int32>(_desc.Flags & GPUBufferFlags::Structured))
             uavDesc.Buffer.StructureByteStride = _desc.Stride;
-        if (_desc.Flags & GPUBufferFlags::RawBuffer)
+        if (static_cast<int32>(_desc.Flags & GPUBufferFlags::RawBuffer))
             uavDesc.Buffer.Flags |= D3D12_BUFFER_UAV_FLAG_RAW;
-        if (_desc.Flags & GPUBufferFlags::Structured)
+        if (static_cast<int32>(_desc.Flags & GPUBufferFlags::Structured))
             uavDesc.Format = DXGI_FORMAT_UNKNOWN;
         else
             uavDesc.Format = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindUnorderedAccessFormat(_desc.Format));

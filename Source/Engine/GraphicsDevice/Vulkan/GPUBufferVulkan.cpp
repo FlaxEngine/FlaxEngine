@@ -17,7 +17,7 @@ void GPUBufferViewVulkan::Init(GPUDeviceVulkan* device, GPUBufferVulkan* owner, 
     Buffer = buffer;
     Size = size;
 
-    if ((owner->IsShaderResource() && !(owner->GetDescription().Flags & GPUBufferFlags::Structured)) || (usage & VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT) == VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT)
+    if ((owner->IsShaderResource() && !static_cast<int32>(owner->GetDescription().Flags & GPUBufferFlags::Structured)) || (usage & VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT) == VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT)
     {
         VkBufferViewCreateInfo viewInfo;
         RenderToolsVulkan::ZeroStruct(viewInfo, VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO);
@@ -97,21 +97,21 @@ bool GPUBufferVulkan::OnInit()
     bufferInfo.size = _desc.Size;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    if (useSRV && !(_desc.Flags & GPUBufferFlags::Structured))
+    if (useSRV && !static_cast<int32>(_desc.Flags & GPUBufferFlags::Structured))
         bufferInfo.usage |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
-    if (useUAV || _desc.Flags & GPUBufferFlags::RawBuffer || _desc.Flags & GPUBufferFlags::Structured)
+    if (useUAV || static_cast<int32>(_desc.Flags & GPUBufferFlags::RawBuffer) || static_cast<int32>(_desc.Flags & GPUBufferFlags::Structured))
         bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     if (useUAV && useSRV)
         bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
-    if (_desc.Flags & GPUBufferFlags::Argument)
+    if (static_cast<int32>(_desc.Flags & GPUBufferFlags::Argument))
         bufferInfo.usage |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-    if (_desc.Flags & GPUBufferFlags::Argument && useUAV)
+    if (static_cast<int32>(_desc.Flags & GPUBufferFlags::Argument) && useUAV)
         bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT; // For some reason, glslang marks indirect uav buffers (UpdateProbesInitArgs, IndirectArgsBuffer) as Storage Texel Buffers
-    if (_desc.Flags & GPUBufferFlags::VertexBuffer)
+    if (static_cast<int32>(_desc.Flags & GPUBufferFlags::VertexBuffer))
         bufferInfo.usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    if (_desc.Flags & GPUBufferFlags::IndexBuffer)
+    if (static_cast<int32>(_desc.Flags & GPUBufferFlags::IndexBuffer))
         bufferInfo.usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    if (IsStaging() || _desc.Flags & GPUBufferFlags::UnorderedAccess)
+    if (IsStaging() || static_cast<int32>(_desc.Flags & GPUBufferFlags::UnorderedAccess))
         bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
     // Create buffer
@@ -161,7 +161,7 @@ bool GPUBufferVulkan::OnInit()
     }
 
     // Check if need to use a counter
-    if (_desc.Flags & GPUBufferFlags::Counter || _desc.Flags & GPUBufferFlags::Append)
+    if (static_cast<int32>(_desc.Flags & GPUBufferFlags::Counter) || static_cast<int32>(_desc.Flags & GPUBufferFlags::Append))
     {
 #if GPU_ENABLE_RESOURCE_NAMING
         String name = GetName() + TEXT(".Counter");

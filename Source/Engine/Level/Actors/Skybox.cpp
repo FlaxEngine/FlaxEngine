@@ -32,7 +32,7 @@ void Skybox::Draw(RenderContext& renderContext)
     bool isReady;
     if (CustomMaterial)
     {
-        isReady = CustomMaterial->IsLoaded() && CustomMaterial->IsSurface() && CustomMaterial->GetDrawModes() & DrawPass::GBuffer;
+        isReady = CustomMaterial->IsLoaded() && CustomMaterial->IsSurface() && static_cast<int32>(CustomMaterial->GetDrawModes() & DrawPass::GBuffer);
     }
     else
     {

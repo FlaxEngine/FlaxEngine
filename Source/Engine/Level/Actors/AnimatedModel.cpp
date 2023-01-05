@@ -707,7 +707,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
     renderContext.View.GetWorldMatrix(_transform, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
-    const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass & (int32)renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
+    const DrawPass drawModes = (DrawPass)(static_cast<int32>(DrawModes & renderContext.View.Pass) & (int32)renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
     if (SkinnedModel && SkinnedModel->IsLoaded() && drawModes != DrawPass::None)
     {
         _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.Position + renderContext.View.Origin));

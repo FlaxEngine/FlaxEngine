@@ -351,7 +351,7 @@ void TextRender::Draw(RenderContext& renderContext)
     renderContext.View.GetWorldMatrix(_transform, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
-    const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass & (int32)renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
+    const DrawPass drawModes = (DrawPass)(static_cast<int32>(DrawModes & renderContext.View.Pass) & (int32)renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
     if (_vb0.Data.Count() > 0 && drawModes != DrawPass::None)
     {
 #if USE_EDITOR

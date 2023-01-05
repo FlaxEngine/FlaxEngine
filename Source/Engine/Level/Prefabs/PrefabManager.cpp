@@ -298,7 +298,7 @@ bool PrefabManager::CreatePrefab(Actor* targetActor, const StringView& outputPat
         LOG(Error, "Cannot create prefab from scene actor.");
         return true;
     }
-    if ((targetActor->HideFlags & HideFlags::DontSave) != 0)
+    if (static_cast<int32>(targetActor->HideFlags & HideFlags::DontSave) != 0)
     {
         LOG(Error, "Cannot create prefab from actor marked with HideFlags.DontSave.");
         return true;

@@ -82,7 +82,7 @@ void GUIMaterialShader::Unload()
 bool GUIMaterialShader::Load()
 {
     GPUPipelineState::Description psDesc0 = GPUPipelineState::Description::DefaultFullscreenTriangle;
-    psDesc0.Wireframe = (_info.FeaturesFlags & MaterialFeaturesFlags::Wireframe) != 0;
+    psDesc0.Wireframe = static_cast<int32>(_info.FeaturesFlags & MaterialFeaturesFlags::Wireframe) != 0;
     psDesc0.VS = _shader->GetVS("VS_GUI");
     psDesc0.PS = _shader->GetPS("PS_GUI");
     psDesc0.BlendMode = BlendingMode::AlphaBlend;

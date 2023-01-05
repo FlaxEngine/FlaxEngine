@@ -209,7 +209,7 @@ GPUTexture* DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture* i
     const auto depthBuffer = renderContext.Buffers->DepthBuffer;
     const auto shader = _shader->GetShader();
     DepthOfFieldSettings& dofSettings = renderContext.List->Settings.DepthOfField;
-    const bool useDoF = _platformSupportsDoF && (renderContext.View.Flags & ViewFlags::DepthOfField) != 0 && dofSettings.Enabled;
+    const bool useDoF = _platformSupportsDoF && static_cast<int32>(renderContext.View.Flags & ViewFlags::DepthOfField) != 0 && dofSettings.Enabled;
     if (!useDoF)
         return nullptr;
     PROFILE_GPU_CPU("Depth Of Field");

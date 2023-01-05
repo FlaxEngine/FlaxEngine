@@ -927,7 +927,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
                 if (!material ||
                     !material->IsReady() ||
                     !material->IsParticle() ||
-                    (view.Pass & material->GetDrawModes() & moduleDrawModes) == 0
+                    (static_cast<int32>(view.Pass & material->GetDrawModes()) & moduleDrawModes) == 0
                 )
                     break;
                 renderModulesIndices.Add(moduleIndex);
@@ -946,7 +946,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
                 if (!material ||
                     !material->IsReady() ||
                     !material->IsParticle() ||
-                    (view.Pass & material->GetDrawModes() & moduleDrawModes) == 0
+                    (static_cast<int32>(view.Pass & material->GetDrawModes()) & moduleDrawModes) == 0
                 )
                     break;
                 renderModulesIndices.Add(moduleIndex);
@@ -960,7 +960,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
                 if (!material ||
                     !material->IsReady() ||
                     !material->IsParticle() ||
-                    (view.Pass & material->GetDrawModes() & moduleDrawModes) == 0
+                    (static_cast<int32>(view.Pass & material->GetDrawModes()) & moduleDrawModes) == 0
                 )
                     break;
                 renderModulesIndices.Add(moduleIndex);
@@ -973,7 +973,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
                 if (!material ||
                     !material->IsReady() ||
                     material->GetInfo().Domain != MaterialDomain::VolumeParticle ||
-                    (view.Flags & ViewFlags::Fog) == 0
+                    static_cast<int32>(view.Flags & ViewFlags::Fog) == 0
                 )
                     break;
                 renderModulesIndices.Add(moduleIndex);

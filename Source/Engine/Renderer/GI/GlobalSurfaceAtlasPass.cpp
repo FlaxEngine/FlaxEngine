@@ -798,7 +798,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         {
             GlobalSurfaceAtlasLight& lightData = surfaceAtlasData.Lights[light.ID];
             lightData.LastFrameUsed = currentFrame;
-            uint32 redrawFramesCount = (light.StaticFlags & StaticFlags::Lightmap) ? 120 : 4;
+            uint32 redrawFramesCount = static_cast<int32>(light.StaticFlags & StaticFlags::Lightmap) ? 120 : 4;
             if (surfaceAtlasData.CurrentFrame - lightData.LastFrameUpdated < (redrawFramesCount + (light.ID.D & redrawFramesCount)))
                 continue;
             lightData.LastFrameUpdated = currentFrame;
@@ -806,7 +806,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             // Mark all objects to shade
             allLightingDirty = true;
         }
-        if (renderContext.View.Flags & ViewFlags::GI && (renderContext.List->DirectionalLights.Count() != 1 || renderContext.List->DirectionalLights[0].StaticFlags & StaticFlags::Lightmap))
+        if (static_cast<int32>(renderContext.View.Flags & ViewFlags::GI) && (renderContext.List->DirectionalLights.Count() != 1 || static_cast<int32>(renderContext.List->DirectionalLights[0].StaticFlags & StaticFlags::Lightmap)))
         {
             switch (renderContext.List->Settings.GlobalIllumination.Mode)
             {
@@ -833,7 +833,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         {
             GlobalSurfaceAtlasLight& lightData = surfaceAtlasData.Lights[light.ID];
             lightData.LastFrameUsed = currentFrame;
-            uint32 redrawFramesCount = (light.StaticFlags & StaticFlags::Lightmap) ? 120 : 4;
+            uint32 redrawFramesCount = static_cast<int32>(light.StaticFlags & StaticFlags::Lightmap) ? 120 : 4;
             if (surfaceAtlasData.CurrentFrame - lightData.LastFrameUpdated < (redrawFramesCount + (light.ID.D & redrawFramesCount)))
                 continue;
             lightData.LastFrameUpdated = currentFrame;
@@ -855,7 +855,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         {
             GlobalSurfaceAtlasLight& lightData = surfaceAtlasData.Lights[light.ID];
             lightData.LastFrameUsed = currentFrame;
-            uint32 redrawFramesCount = (light.StaticFlags & StaticFlags::Lightmap) ? 120 : 4;
+            uint32 redrawFramesCount = static_cast<int32>(light.StaticFlags & StaticFlags::Lightmap) ? 120 : 4;
             if (surfaceAtlasData.CurrentFrame - lightData.LastFrameUpdated < (redrawFramesCount + (light.ID.D & redrawFramesCount)))
                 continue;
             lightData.LastFrameUpdated = currentFrame;
@@ -1006,7 +1006,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         }
 
         // Draw draw indirect light from Global Illumination
-        if (renderContext.View.Flags & ViewFlags::GI)
+        if (static_cast<int32>(renderContext.View.Flags & ViewFlags::GI))
         {
             switch (giSettings.Mode)
             {
@@ -1059,7 +1059,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
 void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output)
 {
     // Render all dependant effects before
-    if (renderContext.View.Flags & ViewFlags::GI)
+    if (static_cast<int32>(renderContext.View.Flags & ViewFlags::GI))
     {
         switch (renderContext.List->Settings.GlobalIllumination.Mode)
         {

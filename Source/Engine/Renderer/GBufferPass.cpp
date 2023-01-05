@@ -109,7 +109,7 @@ void DebugOverrideDrawCallsMaterial(RenderContext& renderContext, IMaterial* mat
     IMaterial::InstancingHandler handler;
     const bool canUseInstancing = material->CanUseInstancing(handler);
     const auto drawModes = material->GetDrawModes();
-    if (drawModes & DrawPass::GBuffer)
+    if (static_cast<int32>(drawModes & DrawPass::GBuffer))
     {
         auto& drawCallsList = renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBuffer];
         for (int32 i : drawCallsList.Indices)
@@ -122,7 +122,7 @@ void DebugOverrideDrawCallsMaterial(RenderContext& renderContext, IMaterial* mat
         }
         drawCallsList.CanUseInstancing &= canUseInstancing;
     }
-    if (drawModes & DrawPass::GBuffer)
+    if (static_cast<int32>(drawModes & DrawPass::GBuffer))
     {
         auto& drawCallsList = renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals];
         for (int32 i : drawCallsList.Indices)
@@ -440,18 +440,18 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
             int32 count = 2;
             targetBuffers[0] = buffers->GBuffer0->View();
             targetBuffers[1] = buffers->GBuffer2->View();
-            if (info.UsageFlags & MaterialUsageFlags::UseEmissive)
+            if (static_cast<int32>(info.UsageFlags & MaterialUsageFlags::UseEmissive))
             {
                 count++;
                 targetBuffers[2] = lightBuffer;
 
-                if (info.UsageFlags & MaterialUsageFlags::UseNormal)
+                if (static_cast<int32>(info.UsageFlags & MaterialUsageFlags::UseNormal))
                 {
                     count++;
                     targetBuffers[3] = buffers->GBuffer1->View();
                 }
             }
-            else if (info.UsageFlags & MaterialUsageFlags::UseNormal)
+            else if (static_cast<int32>(info.UsageFlags & MaterialUsageFlags::UseNormal))
             {
                 count++;
                 targetBuffers[2] = buffers->GBuffer1->View();

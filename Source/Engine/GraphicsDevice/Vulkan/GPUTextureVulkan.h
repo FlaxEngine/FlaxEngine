@@ -158,7 +158,7 @@ public:
 
     GPUTextureView* ViewReadOnlyDepth() const override
     {
-        ASSERT(_desc.Flags & GPUTextureFlags::ReadOnlyDepthView);
+        ASSERT(static_cast<int32>(_desc.Flags & GPUTextureFlags::ReadOnlyDepthView));
         return (GPUTextureView*)&_handleReadOnlyDepth;
     }
 

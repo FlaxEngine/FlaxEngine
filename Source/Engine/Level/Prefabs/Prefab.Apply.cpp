@@ -184,7 +184,7 @@ void PrefabInstanceData::CollectPrefabInstances(Array<PrefabInstanceData>& prefa
         for (int32 instanceIndex = 0; instanceIndex < instances.Count(); instanceIndex++)
         {
             const auto instance = instances[instanceIndex];
-            if ((instance->Flags & ObjectFlags::WasMarkedToDelete) != 0)
+            if (static_cast<int32>(instance->Flags & ObjectFlags::WasMarkedToDelete) != 0)
                 continue;
             if (instance != defaultInstance && targetActor != instance && !targetActor->HasActorInHierarchy(instance))
                 usedCount++;
@@ -195,7 +195,7 @@ void PrefabInstanceData::CollectPrefabInstances(Array<PrefabInstanceData>& prefa
         {
             // Skip default instance because it will be recreated, skip input actor because it needs just to be linked
             Actor* instance = instances[instanceIndex];
-            if ((instance->Flags & ObjectFlags::WasMarkedToDelete) != 0)
+            if (static_cast<int32>(instance->Flags & ObjectFlags::WasMarkedToDelete) != 0)
                 continue;
             if (instance != defaultInstance && targetActor != instance && !targetActor->HasActorInHierarchy(instance))
             {
@@ -268,7 +268,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(Array<PrefabInstanceData>& p
 
         // If prefab object root was changed during changes apply then update the TargetActor to point a valid object
         Actor* oldTargetActor = instance.TargetActor;
-        if (!oldTargetActor || (oldTargetActor->Flags & ObjectFlags::WasMarkedToDelete) != 0)
+        if (!oldTargetActor || static_cast<int32>(oldTargetActor->Flags & ObjectFlags::WasMarkedToDelete) != 0)
             continue;
         Actor* newTargetActor = FindActorWithPrefabObjectId(instance.TargetActor, defaultInstance->GetID());
         if (!newTargetActor)
@@ -670,7 +670,7 @@ bool Prefab::ApplyAll(Actor* targetActor)
         for (int32 i = 0; i < nestedPrefabIds.Count(); i++)
         {
             const auto nestedPrefab = Content::LoadAsync<Prefab>(nestedPrefabIds[i]);
-            if (nestedPrefab && nestedPrefab != this && (nestedPrefab->Flags & ObjectFlags::WasMarkedToDelete) == 0)
+            if (nestedPrefab && nestedPrefab != this && static_cast<int32>(nestedPrefab->Flags & ObjectFlags::WasMarkedToDelete) == 0)
             {
                 allPrefabs.Add(nestedPrefab);
             }

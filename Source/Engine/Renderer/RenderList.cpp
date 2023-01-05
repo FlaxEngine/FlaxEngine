@@ -218,7 +218,7 @@ void RenderList::RunPostFxPass(GPUContext* context, RenderContext& renderContext
             needTempTarget = true;
         }
     }
-    if (renderContext.View.Flags & ViewFlags::CustomPostProcess)
+    if (static_cast<int32>(renderContext.View.Flags & ViewFlags::CustomPostProcess))
     {
         for (int32 i = 0; i < renderContext.List->PostFx.Count(); i++)
         {
@@ -256,7 +256,7 @@ void RenderList::RunPostFxPass(GPUContext* context, RenderContext& renderContext
             Swap(output, input);
         }
     }
-    if (renderContext.View.Flags & ViewFlags::CustomPostProcess)
+    if (static_cast<int32>(renderContext.View.Flags & ViewFlags::CustomPostProcess))
     {
         for (int32 i = 0; i < renderContext.List->PostFx.Count(); i++)
         {
@@ -304,7 +304,7 @@ void RenderList::RunMaterialPostFxPass(GPUContext* context, RenderContext& rende
 
 void RenderList::RunCustomPostFxPass(GPUContext* context, RenderContext& renderContext, PostProcessEffectLocation location, GPUTexture*& input, GPUTexture*& output)
 {
-    if (!(renderContext.View.Flags & ViewFlags::CustomPostProcess))
+    if (!static_cast<int32>(renderContext.View.Flags & ViewFlags::CustomPostProcess))
         return;
 
     for (int32 i = 0; i < renderContext.List->PostFx.Count(); i++)
@@ -328,7 +328,7 @@ void RenderList::RunCustomPostFxPass(GPUContext* context, RenderContext& renderC
 
 bool RenderList::HasAnyPostFx(RenderContext& renderContext, PostProcessEffectLocation postProcess) const
 {
-    if (renderContext.View.Flags & ViewFlags::CustomPostProcess)
+    if (static_cast<int32>(renderContext.View.Flags & ViewFlags::CustomPostProcess))
     {
         for (int32 i = 0; i < renderContext.List->PostFx.Count(); i++)
         {
@@ -426,26 +426,26 @@ void RenderList::AddDrawCall(DrawPass drawModes, StaticFlags staticFlags, DrawCa
     DrawCalls.Add(drawCall);
 
     // Add draw call to proper draw lists
-    if (mask & DrawPass::Depth)
+    if (static_cast<int32>(mask & DrawPass::Depth))
     {
         DrawCallsLists[(int32)DrawCallsListType::Depth].Indices.Add(index);
     }
-    if (mask & (DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas))
+    if (static_cast<int32>(mask & (DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas)))
     {
         if (receivesDecals)
             DrawCallsLists[(int32)DrawCallsListType::GBuffer].Indices.Add(index);
         else
             DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals].Indices.Add(index);
     }
-    if (mask & DrawPass::Forward)
+    if (static_cast<int32>(mask & DrawPass::Forward))
     {
         DrawCallsLists[(int32)DrawCallsListType::Forward].Indices.Add(index);
     }
-    if (mask & DrawPass::Distortion)
+    if (static_cast<int32>(mask & DrawPass::Distortion))
     {
         DrawCallsLists[(int32)DrawCallsListType::Distortion].Indices.Add(index);
     }
-    if (mask & DrawPass::MotionVectors && (staticFlags & StaticFlags::Transform) == 0)
+    if (static_cast<int32>(mask & DrawPass::MotionVectors) && static_cast<int32>(staticFlags & StaticFlags::Transform) == 0)
     {
         DrawCallsLists[(int32)DrawCallsListType::MotionVectors].Indices.Add(index);
     }

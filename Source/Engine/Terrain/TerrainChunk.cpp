@@ -101,7 +101,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
     drawCall.Terrain.NeighborLOD.W = (float)Math::Clamp<int32>(_neighbors[3]->_cachedDrawLOD, lod, minLod);
     const auto scene = _patch->_terrain->GetScene();
     const auto flags = _patch->_terrain->_staticFlags;
-    if (flags & StaticFlags::Lightmap && scene)
+    if (static_cast<int32>(flags & StaticFlags::Lightmap) && scene)
     {
         drawCall.Terrain.Lightmap = scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
         drawCall.Terrain.LightmapUVsArea = Lightmap.UVsArea;
@@ -156,7 +156,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
     drawCall.Terrain.NeighborLOD.W = (float)lod;
     const auto scene = _patch->_terrain->GetScene();
     const auto flags = _patch->_terrain->_staticFlags;
-    if (flags & StaticFlags::Lightmap && scene)
+    if (static_cast<int32>(flags & StaticFlags::Lightmap) && scene)
     {
         drawCall.Terrain.Lightmap = scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
         drawCall.Terrain.LightmapUVsArea = Lightmap.UVsArea;

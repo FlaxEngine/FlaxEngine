@@ -169,8 +169,8 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
     auto& view = renderContext.View;
     auto mainCache = renderContext.List;
     const auto lightShader = _shader->GetShader();
-    const bool useShadows = ShadowsPass::Instance()->IsReady() && ((view.Flags & ViewFlags::Shadows) != 0);
-    const bool disableSpecular = (view.Flags & ViewFlags::SpecularLight) == 0;
+    const bool useShadows = ShadowsPass::Instance()->IsReady() && (static_cast<int32>(view.Flags & ViewFlags::Shadows) != 0);
+    const bool disableSpecular = static_cast<int32>(view.Flags & ViewFlags::SpecularLight) == 0;
 
     // Check if debug lights
     if (renderContext.View.Mode == ViewMode::LightBuffer)
@@ -208,7 +208,7 @@ void LightPass::RenderLight(RenderContext& renderContext, GPUTextureView* lightB
 
     // Bind output
     GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
-    const bool depthBufferReadOnly = (depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView) != 0;
+    const bool depthBufferReadOnly = static_cast<int32>(depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView) != 0;
     GPUTextureView* depthBufferRTV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr;
     GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
     context->SetRenderTarget(depthBufferRTV, lightBuffer);

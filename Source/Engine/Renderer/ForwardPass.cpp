@@ -84,7 +84,7 @@ void ForwardPass::Render(RenderContext& renderContext, GPUTexture* input, GPUTex
     // Try to use read-only depth if supported
     GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
     GPUTextureView* depthBufferHandle = depthBuffer->View();
-    if (depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView)
+    if (static_cast<int32>(depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView))
         depthBufferHandle = depthBuffer->ViewReadOnlyDepth();
 
     // Check if there is no objects to render or no resources ready

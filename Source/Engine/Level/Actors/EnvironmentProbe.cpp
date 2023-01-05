@@ -176,8 +176,8 @@ void EnvironmentProbe::UpdateBounds()
 void EnvironmentProbe::Draw(RenderContext& renderContext)
 {
     if (Brightness > ZeroTolerance &&
-        (renderContext.View.Flags & ViewFlags::Reflections) != 0 &&
-        renderContext.View.Pass & DrawPass::GBuffer)
+        static_cast<int32>(renderContext.View.Flags & ViewFlags::Reflections) != 0 &&
+        static_cast<int32>(renderContext.View.Pass & DrawPass::GBuffer))
     {
         if (UpdateMode == ProbeUpdateMode::Realtime)
             ProbesRenderer::Bake(this, 0.0f);

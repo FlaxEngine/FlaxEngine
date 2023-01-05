@@ -101,7 +101,7 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
         {
             e = &result[key];
             e->DrawCall.Material = key.Mat;
-            e->DrawCall.Surface.Lightmap = _staticFlags & StaticFlags::Lightmap ? _scene->LightmapsData.GetReadyLightmap(key.Lightmap) : nullptr;
+            e->DrawCall.Surface.Lightmap = static_cast<int32>(_staticFlags & StaticFlags::Lightmap) ? _scene->LightmapsData.GetReadyLightmap(key.Lightmap) : nullptr;
         }
 
         // Add instance to the draw batch
@@ -930,7 +930,7 @@ void Foliage::Draw(RenderContext& renderContext)
     // Cache data per foliage instance type
     for (auto& type : FoliageTypes)
     {
-        const auto drawModes = static_cast<DrawPass>(type.DrawModes & view.Pass & (int32)view.GetShadowsDrawPassMask(type.ShadowsMode));
+        const auto drawModes = static_cast<DrawPass>(static_cast<int32>(type.DrawModes & view.Pass) & (int32)view.GetShadowsDrawPassMask(type.ShadowsMode));
         type._canDraw = type.IsReady() && drawModes != DrawPass::None;
         type._drawModes = drawModes;
         if (type._canDraw)
@@ -1002,7 +1002,7 @@ void Foliage::Draw(RenderContext& renderContext)
 #endif
         return;
     }
-    if (renderContext.View.Pass & DrawPass::GlobalSurfaceAtlas)
+    if (static_cast<int32>(renderContext.View.Pass & DrawPass::GlobalSurfaceAtlas))
     {
         // Draw single foliage instance projection into Global Surface Atlas
         auto& instance = *(FoliageInstance*)GlobalSurfaceAtlasPass::Instance()->GetCurrentActorObject();
@@ -1028,7 +1028,7 @@ void Foliage::Draw(RenderContext& renderContext)
         draw.DrawState = &instance.DrawState;
         draw.Bounds = instance.Bounds;
         draw.PerInstanceRandom = instance.Random;
-        draw.DrawModes = static_cast<DrawPass>(type.DrawModes & view.Pass & (int32)view.GetShadowsDrawPassMask(type.ShadowsMode));
+        draw.DrawModes = static_cast<DrawPass>(static_cast<int32>(type.DrawModes & view.Pass) & (int32)view.GetShadowsDrawPassMask(type.ShadowsMode));
         type.Model->Draw(renderContext, draw);
         return;
     }
@@ -1085,7 +1085,7 @@ void Foliage::Draw(RenderContext& renderContext)
 
                     // Select draw modes
                     const auto shadowsMode = static_cast<ShadowsCastingMode>(entry.ShadowsMode & slot.ShadowsMode);
-                    const auto drawModes = static_cast<DrawPass>(type._drawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode)) & material->GetDrawModes();
+                    const auto drawModes = static_cast<int32>(static_cast<DrawPass>(type._drawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode)) & material->GetDrawModes());
                     if (drawModes == 0)
                         continue;
 
@@ -1131,26 +1131,26 @@ void Foliage::Draw(RenderContext& renderContext)
                 renderContext.List->BatchedDrawCalls.Add(MoveTemp(batch));
 
                 // Add draw call to proper draw lists
-                if (drawModes & DrawPass::Depth)
+                if (static_cast<int32>(drawModes & DrawPass::Depth))
                 {
                     renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Depth].PreBatchedDrawCalls.Add(batchIndex);
                 }
-                if (drawModes & DrawPass::GBuffer)
+                if (static_cast<int32>(drawModes & DrawPass::GBuffer))
                 {
                     if (entry.ReceiveDecals)
                         renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBuffer].PreBatchedDrawCalls.Add(batchIndex);
                     else
                         renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals].PreBatchedDrawCalls.Add(batchIndex);
                 }
-                if (drawModes & DrawPass::Distortion)
+                if (static_cast<int32>(drawModes & DrawPass::Distortion))
                 {
                     renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Distortion].PreBatchedDrawCalls.Add(batchIndex);
                 }
-                if (drawModes & DrawPass::MotionVectors && (_staticFlags & StaticFlags::Transform) == 0)
+                if (static_cast<int32>(drawModes & DrawPass::MotionVectors) && static_cast<int32>(_staticFlags & StaticFlags::Transform) == 0)
                 {
                     renderContext.List->DrawCallsLists[(int32)DrawCallsListType::MotionVectors].PreBatchedDrawCalls.Add(batchIndex);
                 }
-                if (drawModes & DrawPass::Forward)
+                if (static_cast<int32>(drawModes & DrawPass::Forward))
                 {
                     // Transparency requires sorting by depth so convert back the batched draw call into normal draw calls (RenderList impl will handle this)
                     batch = renderContext.List->BatchedDrawCalls[batchIndex];

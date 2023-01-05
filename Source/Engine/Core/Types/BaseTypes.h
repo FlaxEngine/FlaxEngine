@@ -143,7 +143,7 @@ struct Color32;
 #define DECLARE_ENUM_OPERATORS(T) \
     inline constexpr T operator~ (T a) { return (T)~(int)a; } \
     inline constexpr T operator| (T a, T b) { return (T)((int)a | (int)b); } \
-    inline constexpr int operator& (T a, T b) { return ((int)a & (int)b); } \
+    inline constexpr T operator& (T a, T b) { return (T)((int)a & (int)b); } \
     inline constexpr T operator^ (T a, T b) { return (T)((int)a ^ (int)b); } \
     inline T& operator|= (T& a, T b) { return (T&)((int&)a |= (int)b); } \
     inline T& operator&= (T& a, T b) { return (T&)((int&)a &= (int)b); } \

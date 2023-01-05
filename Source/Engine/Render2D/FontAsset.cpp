@@ -116,7 +116,7 @@ Font* FontAsset::CreateFont(int32 size)
 FontAsset* FontAsset::GetBold()
 {
     ScopeLock lock(Locker);
-    if (_options.Flags & FontFlags::Bold)
+    if (static_cast<int32>(_options.Flags & FontFlags::Bold))
         return this;
     if (!_virtualBold)
     {
@@ -132,7 +132,7 @@ FontAsset* FontAsset::GetBold()
 FontAsset* FontAsset::GetItalic()
 {
     ScopeLock lock(Locker);
-    if (_options.Flags & FontFlags::Italic)
+    if (static_cast<int32>(_options.Flags & FontFlags::Italic))
         return this;
     if (!_virtualItalic)
     {
