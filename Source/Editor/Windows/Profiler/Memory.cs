@@ -61,7 +61,7 @@ namespace FlaxEditor.Windows.Profiler
         {
             // Count memory allocated during last frame
             int nativeMemoryAllocation = 0;
-            int managedMemoryAllocation = 0;
+            int managedMemoryAllocation = sharedData.ManagedMemoryAllocation;
             var events = sharedData.GetEventsCPU();
             var length = events?.Length ?? 0;
             for (int i = 0; i < length; i++)
