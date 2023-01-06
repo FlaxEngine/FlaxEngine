@@ -105,6 +105,7 @@ namespace Flax.Build
                 Modules.Add("Main");
             }
 
+#if !USE_NETCORE
             // Mono on Linux is using dynamic linking and needs additional link files
             if (buildOptions.Platform.Target == TargetPlatform.Linux && Platform.BuildTargetPlatform == TargetPlatform.Linux && !IsPreBuilt)
             {
@@ -121,6 +122,7 @@ namespace Flax.Build
                 task.CommandPath = "ln";
                 task.CommandArguments = "-s -f libmonosgen-2.0.so libmonosgen-2.0.so.1.0.0";
             }
+#endif
         }
 
         private bool UseSeparateMainExecutable(BuildOptions buildOptions)

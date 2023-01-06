@@ -232,8 +232,8 @@ namespace Flax.Build.NativeCpp
             },
             SystemAnalyzers = new HashSet<string>
             {
-                @"Microsoft.Interop.LibraryImportGenerator",
-                @"Microsoft.Interop.SourceGeneration",
+                "Microsoft.Interop.LibraryImportGenerator",
+                "Microsoft.Interop.SourceGeneration",
             },
             FileReferences = new HashSet<string>(),
         };
