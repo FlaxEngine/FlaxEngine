@@ -175,7 +175,7 @@ bool GPUBufferDX12::OnInit()
     if (_desc.Flags & GPUBufferFlags::Counter || _desc.Flags & GPUBufferFlags::Append)
     {
 #if GPU_ENABLE_RESOURCE_NAMING
-        String name = GetName() + TEXT(".Counter");
+        String name = String(GetName()) + TEXT(".Counter");
         _counter = ::New<GPUBufferDX12>(_device, name);
 #else
         _counter = ::New<GPUBufferDX12>(_device, String::Empty);

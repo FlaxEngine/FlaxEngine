@@ -195,7 +195,11 @@ GPUResource::~GPUResource()
 {
 #if !BUILD_RELEASE && GPU_ENABLE_RESOURCE_NAMING
     if (_memoryUsage != 0)
-        LOG(Error, "{0} '{1}' has not been disposed before destruction", ScriptingObject::ToString(), _name);
+        LOG(Error, "{0} '{1}' has not been disposed before destruction", ScriptingObject::ToString(), GetName());
+#endif
+#if GPU_ENABLE_RESOURCE_NAMING
+    if (_namePtr)
+        Platform::Free(_namePtr);
 #endif
 }
 
@@ -208,14 +212,26 @@ static_assert((GPU_ENABLE_RESOURCE_NAMING) == (!BUILD_RELEASE), "Update build co
 
 #if GPU_ENABLE_RESOURCE_NAMING
 
-String GPUResource::GetName() const
+StringView GPUResource::GetName() const
 {
-    return _name;
+    return StringView(_namePtr, _nameSize);
 }
 
 void GPUResource::SetName(const StringView& name)
 {
-    _name = name;
+    if (_nameCapacity < name.Length() + 1)
+    {
+        if (_namePtr)
+            Platform::Free(_namePtr);
+        _nameCapacity = name.Length() + 1;
+        _namePtr = (Char*)Platform::Allocate(_nameCapacity * sizeof(Char), 16);
+    }
+    _nameSize = name.Length();
+    if (name.HasChars())
+    {
+        Platform::MemoryCopy(_namePtr, name.Get(), _nameSize * sizeof(Char));
+        _namePtr[_nameSize] = 0;
+    }
 }
 
 #endif
@@ -243,8 +259,8 @@ void GPUResource::OnReleaseGPU()
 String GPUResource::ToString() const
 {
 #if GPU_ENABLE_RESOURCE_NAMING
-    if (_name.HasChars())
-        return _name;
+    if (_namePtr)
+        return String(_namePtr, _nameSize);
 #endif
     return ScriptingObject::ToString();
 }
