@@ -43,6 +43,15 @@ public:
     {
         return GetEnabled();
     }
+    
+    /// <summary>
+    /// Gets a value indicating whether this effect can be rendered.
+    /// </summary>
+    /// <param name="renderContext">The target render context.</param>
+    API_FUNCTION() virtual bool CanRender(const RenderContext& renderContext) const
+    {
+        return CanRender();
+    }
 
     /// <summary>
     /// Pre-rendering event called before scene rendering begin. Can be used to perform custom rendering or customize render view/setup.
