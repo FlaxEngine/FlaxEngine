@@ -5,9 +5,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
+using System.Runtime.Loader;
 
 namespace FlaxEngine
 {
@@ -185,13 +184,26 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets all currently loaded assemblies in the runtime.
+        /// </summary>
+        /// <returns>List of assemblies</returns>
+        public static Assembly[] GetAssemblies()
+        {
+#if USE_NETCORE
+            return AssemblyLoadContext.Default.Assemblies.Concat(NativeInterop.scriptingAssemblyLoadContext.Assemblies).ToArray();
+#else
+            return AppDomain.CurrentDomain.GetAssemblies();
+#endif
+        }
+
+        /// <summary>
         /// Gets the assembly with the given name.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <returns>The assembly or null if not found.</returns>
         public static Assembly GetAssemblyByName(string name)
         {
-            return GetAssemblyByName(name, AppDomain.CurrentDomain.GetAssemblies());
+            return GetAssemblyByName(name, GetAssemblies());
         }
 
         /// <summary>

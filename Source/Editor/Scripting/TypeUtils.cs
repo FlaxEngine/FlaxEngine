@@ -191,7 +191,7 @@ namespace FlaxEditor.Scripting
         /// <param name="checkFunc">Additional callback used to check if the given type is valid. Returns true if add type, otherwise false.</param>
         public static void GetDerivedTypes(ScriptType baseType, List<ScriptType> result, Func<ScriptType, bool> checkFunc)
         {
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var assemblies = Utils.GetAssemblies();
             for (int i = 0; i < assemblies.Length; i++)
             {
                 GetDerivedTypes(assemblies[i], baseType, result, checkFunc);
@@ -208,7 +208,7 @@ namespace FlaxEditor.Scripting
         public static void GetDerivedTypes(ScriptType baseType, List<ScriptType> result, Func<ScriptType, bool> checkFunc, Func<Assembly, bool> checkAssembly)
         {
             // C#/C++ types
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var assemblies = Utils.GetAssemblies();
             for (int i = 0; i < assemblies.Length; i++)
             {
                 if (checkAssembly(assemblies[i]))
@@ -246,7 +246,7 @@ namespace FlaxEditor.Scripting
         public static void GetTypes(List<ScriptType> result, Func<ScriptType, bool> checkFunc, Func<Assembly, bool> checkAssembly)
         {
             // C#/C++ types
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var assemblies = Utils.GetAssemblies();
             for (int i = 0; i < assemblies.Length; i++)
             {
                 if (checkAssembly(assemblies[i]))
@@ -285,7 +285,7 @@ namespace FlaxEditor.Scripting
         /// <param name="checkAssembly">Additional callback used to check if the given assembly is valid. Returns true if search for types in the given assembly, otherwise false.</param>
         public static void GetTypesWithAttributeDefined(Type attributeType, List<ScriptType> result, Func<ScriptType, bool> checkFunc, Func<Assembly, bool> checkAssembly)
         {
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var assemblies = Utils.GetAssemblies();
             for (int i = 0; i < assemblies.Length; i++)
             {
                 if (checkAssembly(assemblies[i]))
@@ -302,7 +302,7 @@ namespace FlaxEditor.Scripting
         {
             if (string.IsNullOrEmpty(typeName))
                 return null;
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var assemblies = Utils.GetAssemblies();
             for (int i = 0; i < assemblies.Length; i++)
             {
                 var assembly = assemblies[i];
@@ -332,7 +332,7 @@ namespace FlaxEditor.Scripting
                 if (type != null)
                     return new ScriptType(type);
             }
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var assemblies = Utils.GetAssemblies();
             for (int i = 0; i < assemblies.Length; i++)
             {
                 var assembly = assemblies[i];

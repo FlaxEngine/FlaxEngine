@@ -1038,7 +1038,7 @@ namespace FlaxEngine
         private static Dictionary<string, IntPtr> loadedNativeLibraries = new();
         private static Dictionary<string, string> nativeLibraryPaths = new();
         private static Dictionary<Assembly, string> assemblyOwnedNativeLibraries = new();
-        private static AssemblyLoadContext scriptingAssemblyLoadContext;
+        internal static AssemblyLoadContext scriptingAssemblyLoadContext;
 
         [System.Diagnostics.DebuggerStepThrough]
         private static IntPtr NativeLibraryImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? dllImportSearchPath)
@@ -2428,7 +2428,7 @@ namespace FlaxEngine
                 // This assembly was already loaded when initializing the host context
                 firstAssemblyLoaded = true;
 
-                Assembly flaxEngineAssembly = AppDomain.CurrentDomain.GetAssemblies().First(x => x.GetName().Name == "FlaxEngine.CSharp");
+                Assembly flaxEngineAssembly = AssemblyLoadContext.Default.Assemblies.First(x => x.GetName().Name == "FlaxEngine.CSharp");
                 *assemblyName = NativeAllocStringAnsi(flaxEngineAssembly.GetName().Name);
                 *assemblyFullName = NativeAllocStringAnsi(flaxEngineAssembly.FullName);
                 return GetAssemblyHandle(flaxEngineAssembly);
@@ -2451,7 +2451,7 @@ namespace FlaxEngine
                 // This assembly was already loaded when initializing the host context
                 firstAssemblyLoaded = true;
 
-                Assembly flaxEngineAssembly = AppDomain.CurrentDomain.GetAssemblies().First(x => x.GetName().Name == "FlaxEngine.CSharp");
+                Assembly flaxEngineAssembly = AssemblyLoadContext.Default.Assemblies.First(x => x.GetName().Name == "FlaxEngine.CSharp");
                 *assemblyName = NativeAllocStringAnsi(flaxEngineAssembly.GetName().Name);
                 *assemblyFullName = NativeAllocStringAnsi(flaxEngineAssembly.FullName);
                 return GetAssemblyHandle(flaxEngineAssembly);
@@ -2492,13 +2492,9 @@ namespace FlaxEngine
         internal static ManagedHandle GetAssemblyByName(IntPtr name_, IntPtr* assemblyName, IntPtr* assemblyFullName)
         {
             string name = Marshal.PtrToStringAnsi(name_);
-            Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(x => x.GetName().Name == name);
+            Assembly assembly = Utils.GetAssemblies().FirstOrDefault(x => x.GetName().Name == name);
             if (assembly == null)
-            {
-                assembly = scriptingAssemblyLoadContext.Assemblies.FirstOrDefault(x => x.GetName().Name == name);
-                if (assembly == null)
-                    return new ManagedHandle();
-            }
+                return new ManagedHandle();
 
             *assemblyName = NativeAllocStringAnsi(assembly.GetName().Name);
             *assemblyFullName = NativeAllocStringAnsi(assembly.FullName);
@@ -2568,14 +2564,9 @@ namespace FlaxEngine
         internal static ManagedHandle GetAssemblyObject(IntPtr assemblyName_)
         {
             string assemblyName = Marshal.PtrToStringAnsi(assemblyName_);
-            Assembly assembly = null;
-            assembly = scriptingAssemblyLoadContext.Assemblies.FirstOrDefault(x => x.FullName == assemblyName);
+            Assembly assembly = Utils.GetAssemblies().FirstOrDefault(x => x.FullName == assemblyName);
             if (assembly == null)
-            {
-                assembly = System.AppDomain.CurrentDomain.GetAssemblies().First(x => x.FullName == assemblyName);
-                if (assembly == null)
-                    return new ManagedHandle();
-            }
+                return new ManagedHandle();
             return ManagedHandle.Alloc(assembly);
         }
 
@@ -2839,7 +2830,7 @@ namespace FlaxEngine
             // We need private types of this assembly too, DefinedTypes contains a lot of types from other assemblies...
             var types = referencedTypes.Any() ? assembly.DefinedTypes.Where(x => !referencedTypes.Contains(x.FullName)).ToArray() : assembly.DefinedTypes.ToArray();
 
-            Assert.IsTrue(AppDomain.CurrentDomain.GetAssemblies().Where(x => x.GetName().Name == "FlaxEngine.CSharp").Count() == 1);
+            Assert.IsTrue(Utils.GetAssemblies().Where(x => x.GetName().Name == "FlaxEngine.CSharp").Count() == 1);
             return types;
         }
 

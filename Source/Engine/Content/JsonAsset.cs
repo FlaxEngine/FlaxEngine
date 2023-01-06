@@ -35,11 +35,8 @@ namespace FlaxEngine
                 return null;
 
             var dataTypeName = DataTypeName;
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-            // Going through the assemblies in order will return collected assemblies first,
-            // use reverse order instead to find the type currently loaded assemblies instead.
-            for (int i = assemblies.Length-1; i >= 0; i--)
+            var assemblies = Utils.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
             {
                 var assembly = assemblies[i];
                 if (assembly != null)
