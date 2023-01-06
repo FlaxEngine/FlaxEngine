@@ -49,7 +49,8 @@ API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API GPUResource : public Scripting
 protected:
     uint64 _memoryUsage = 0;
 #if GPU_ENABLE_RESOURCE_NAMING
-    String _name;
+    Char* _namePtr = nullptr;
+    int32 _nameSize = 0, _nameCapacity = 0;
 #endif
 
 public:
@@ -95,7 +96,7 @@ public:
     /// <summary>
     /// Gets the resource name.
     /// </summary>
-    API_PROPERTY() String GetName() const;
+    API_PROPERTY() StringView GetName() const;
 
     /// <summary>
     /// Sets the resource name.
@@ -149,7 +150,7 @@ public:
     {
 #if GPU_ENABLE_RESOURCE_NAMING
         if (name.HasChars())
-            GPUResource::_name = name;
+            GPUResource::SetName(name);
 #endif
         device->AddResource(this);
     }

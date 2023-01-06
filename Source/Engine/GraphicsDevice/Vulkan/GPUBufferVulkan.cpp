@@ -165,7 +165,7 @@ bool GPUBufferVulkan::OnInit()
     if (_desc.Flags & GPUBufferFlags::Counter || _desc.Flags & GPUBufferFlags::Append)
     {
 #if GPU_ENABLE_RESOURCE_NAMING
-        String name = GetName() + TEXT(".Counter");
+        String name = String(GetName()) + TEXT(".Counter");
         Counter = ::New<GPUBufferVulkan>(_device, name);
 #else
 		Counter = ::New<GPUBufferVulkan>(_device, StringView::Empty);
