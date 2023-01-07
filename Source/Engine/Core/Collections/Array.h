@@ -144,11 +144,11 @@ public:
     /// <returns>The reference to this.</returns>
     Array& operator=(std::initializer_list<T> initList) noexcept
     {
-        Memory::DestructItems(_allocation.Get(), _count);
-        _count = _capacity = (int32)initList.size();
-        if (_capacity > 0)
+        Clear();
+        if (initList.size() > 0)
         {
-            _allocation.Allocate(_capacity);
+            EnsureCapacity((int32)initList.size());
+            _count = (int32)initList.size();
             Memory::ConstructItems(_allocation.Get(), initList.begin(), _count);
         }
         return *this;
