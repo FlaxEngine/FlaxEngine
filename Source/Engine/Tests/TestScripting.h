@@ -17,6 +17,26 @@ API_STRUCT(NoDefault) struct TestStruct : public ISerializable
     API_FIELD() Float3 Vector = Float3::One;
     // Ref
     API_FIELD() ScriptingObject* Object = nullptr;
+
+    friend bool operator==(const TestStruct& lhs, const TestStruct& rhs)
+    {
+        return lhs.Vector == rhs.Vector && lhs.Object == rhs.Object;
+    }
+};
+
+// Test structure.
+API_STRUCT(NoDefault) struct TestStructPOD
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(TestStructPOD);
+
+    // Var
+    API_FIELD() Float3 Vector = Float3::One;
+};
+
+template<>
+struct TIsPODType<TestStructPOD>
+{
+    enum { Value = true };
 };
 
 // Test interface.
@@ -46,7 +66,7 @@ public:
     API_EVENT() Delegate<int32, Float3, const String&, String&, const Array<TestStruct>&, Array<TestStruct>&> SimpleEvent;
 
     // Test virtual method
-    API_FUNCTION() virtual int32 TestMethod(const String& str)
+    API_FUNCTION() virtual int32 TestMethod(const String& str, API_PARAM(Ref) TestStructPOD& pod, const Array<TestStruct>& struct1, API_PARAM(Ref) Array<TestStruct>& struct2, API_PARAM(Out) Array<ScriptingObject*>& objects)
     {
         return str.Length();
     }

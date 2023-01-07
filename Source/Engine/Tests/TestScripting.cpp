@@ -23,8 +23,13 @@ TEST_CASE("Scripting")
         CHECK(testClass->SimpleField == 1);
         CHECK(testClass->SimpleStruct.Object == nullptr);
         CHECK(testClass->SimpleStruct.Vector == Float3::One);
-        int32 methodResult = testClass->TestMethod(TEXT("123"));
+        Array<TestStruct> struct1 = { testClass->SimpleStruct };
+        Array<TestStruct> struct2 = { testClass->SimpleStruct };
+        Array<ScriptingObject*> objects;
+        TestStructPOD pod;
+        int32 methodResult = testClass->TestMethod(TEXT("123"), pod, struct1, struct2, objects);
         CHECK(methodResult == 3);
+        CHECK(objects.Count() == 0);
 
         // Test managed class
         type = Scripting::FindScriptingType("FlaxEngine.TestClassManaged");
@@ -38,8 +43,17 @@ TEST_CASE("Scripting")
         CHECK(testClass->SimpleField == 2);
         CHECK(testClass->SimpleStruct.Object == testClass);
         CHECK(testClass->SimpleStruct.Vector == Float3::UnitX);
-        methodResult = testClass->TestMethod(TEXT("123"));
+        struct1 = { testClass->SimpleStruct };
+        struct2 = { testClass->SimpleStruct };
+        objects.Clear();
+        pod.Vector = Float3::One;
+        methodResult = testClass->TestMethod(TEXT("123"), pod, struct1, struct2, objects);
         CHECK(methodResult == 6);
+        CHECK(pod.Vector == Float3::Half);
+        CHECK(struct2.Count() == 2);
+        CHECK(struct2[0] == testClass->SimpleStruct);
+        CHECK(struct2[1] == testClass->SimpleStruct);
+        CHECK(objects.Count() == 3);
     }
 
     SECTION("Test Event")
