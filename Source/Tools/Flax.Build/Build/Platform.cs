@@ -107,6 +107,11 @@ namespace Flax.Build
         public virtual bool HasExecutableFileReferenceSupport => false;
 
         /// <summary>
+        /// Gets a value indicating whether that platform supports executing native code generated dynamically (JIT), otherwise requires ahead-of-time compilation (AOT).
+        /// </summary>
+        public virtual bool HasDynamicCodeExecutionSupport => true;
+
+        /// <summary>
         /// Gets the executable file extension (including leading dot).
         /// </summary>
         public abstract string ExecutableFileExtension { get; }

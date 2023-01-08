@@ -1257,112 +1257,60 @@ namespace Flax.Build.Bindings
             else
                 contents.AppendLine($"        void* params[{functionInfo.Parameters.Count}];");
 
-            contents.AppendLine("#if USE_MONO_AOT");
-
-            // Convert parameters into managed format as pointers to value
-            if (functionInfo.Parameters.Count != 0)
-            {
-                for (var i = 0; i < functionInfo.Parameters.Count; i++)
-                {
-                    var parameterInfo = functionInfo.Parameters[i];
-                    var paramIsRef = parameterInfo.IsRef || parameterInfo.IsOut;
-                    var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, parameterInfo.Type, parameterInfo.Name, classInfo, paramIsRef, out CppParamsThatNeedLocalVariable[i]);
-                    contents.Append($"        params[{i}] = {paramValue};").AppendLine();
-                }
-            }
-
-            // Invoke method
-            contents.AppendLine("        auto __result = mono_runtime_invoke(method->GetNative(), object->GetOrCreateManagedInstance(), params, &exception);");
-
-            contents.AppendLine("#else");
-
-            // Convert parameters into managed format as boxed values
-            var thunkParams = string.Empty;
-            var thunkCall = string.Empty;
-            if (functionInfo.Parameters.Count != 0)
-            {
-                separator = functionInfo.Parameters.Count != 0;
-                for (var i = 0; i < functionInfo.Parameters.Count; i++)
-                {
-                    var parameterInfo = functionInfo.Parameters[i];
-                    var paramIsRef = parameterInfo.IsRef || parameterInfo.IsOut;
-                    var paramValue = GenerateCppWrapperNativeToBox(buildData, parameterInfo.Type, classInfo, out var apiType, parameterInfo.Name);
-                    var useLocalVar = false;
-                    if (paramIsRef)
-                    {
-                        // Pass as pointer to value when using ref/out parameter
-                        contents.Append($"        auto __param_{parameterInfo.Name} = {paramValue};").AppendLine();
-                        var useLocalVarPointer = !apiType.IsValueType;
-                        paramValue = $"{(useLocalVarPointer ? "&" : "")}__param_{parameterInfo.Name}";
-                        CppParamsThatNeedConversion[i] = useLocalVarPointer;
-                        useLocalVar = true;
-                    }
-                    CppParamsThatNeedLocalVariable[i] = useLocalVar;
-
-                    if (separator)
-                        thunkParams += ", ";
-                    if (separator)
-                        thunkCall += ", ";
-                    separator = true;
-                    thunkParams += "void*";
-                    contents.Append($"        params[{i}] = {paramValue};").AppendLine();
-                    thunkCall += $"params[{i}]";
-                }
-            }
-
-            // Invoke method thunk
+            // If platform supports JITed code execution then use method thunk, otherwise fallback to generic mono_runtime_invoke
             var returnType = functionInfo.ReturnType;
-            if (returnType.IsVoid)
+            var useThunk = buildData.Platform.HasDynamicCodeExecutionSupport;
+            if (useThunk)
             {
-                contents.AppendLine($"        typedef void (*Thunk)(void* instance{thunkParams}, MonoObject** exception);");
-                contents.AppendLine("        const auto thunk = (Thunk)method->GetThunk();");
-                contents.AppendLine($"        thunk(object->GetOrCreateManagedInstance(){thunkCall}, &exception);");
-            }
-            else
-            {
-                contents.AppendLine($"        typedef MonoObject* (*Thunk)(void* instance{thunkParams}, MonoObject** exception);");
-                contents.AppendLine("        const auto thunk = (Thunk)method->GetThunk();");
-                contents.AppendLine($"        auto __result = thunk(object->GetOrCreateManagedInstance(){thunkCall}, &exception);");
-            }
-
-            contents.AppendLine("#endif");
-            contents.AppendLine("        WrapperCallInstance = prevWrapperCallInstance;");
-            contents.AppendLine("        if (exception)");
-            contents.AppendLine("            DebugLog::LogException(exception);");
-
-            // Convert parameter values back from managed to native (could be modified there)
-            bool anyRefOut = false;
-            for (var i = 0; i < functionInfo.Parameters.Count; i++)
-            {
-                var parameterInfo = functionInfo.Parameters[i];
-                var paramIsRef = parameterInfo.IsRef || parameterInfo.IsOut;
-                if (paramIsRef && !parameterInfo.Type.IsConst)
+                // Convert parameters into managed format as boxed values
+                var thunkParams = string.Empty;
+                var thunkCall = string.Empty;
+                if (functionInfo.Parameters.Count != 0)
                 {
-                    if (!anyRefOut)
+                    separator = functionInfo.Parameters.Count != 0;
+                    for (var i = 0; i < functionInfo.Parameters.Count; i++)
                     {
-                        anyRefOut = true;
-                        contents.AppendLine("#if USE_MONO_AOT");
-                    }
+                        var parameterInfo = functionInfo.Parameters[i];
+                        var paramIsRef = parameterInfo.IsRef || parameterInfo.IsOut;
+                        var paramValue = GenerateCppWrapperNativeToBox(buildData, parameterInfo.Type, classInfo, out var apiType, parameterInfo.Name);
+                        var useLocalVar = false;
+                        if (paramIsRef)
+                        {
+                            // Pass as pointer to value when using ref/out parameter
+                            contents.Append($"        auto __param_{parameterInfo.Name} = {paramValue};").AppendLine();
+                            var useLocalVarPointer = !apiType.IsValueType;
+                            paramValue = $"{(useLocalVarPointer ? "&" : "")}__param_{parameterInfo.Name}";
+                            CppParamsThatNeedConversion[i] = useLocalVarPointer;
+                            useLocalVar = true;
+                        }
+                        CppParamsThatNeedLocalVariable[i] = useLocalVar;
 
-                    // Direct value convert
-                    var managedToNative = GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, classInfo, out var managedType, out var apiType, null, out _);
-                    var passAsParamPtr = managedType.EndsWith("*");
-                    var useLocalVarPointer = CppParamsThatNeedConversion[i] && !apiType.IsValueType;
-                    var paramValue = useLocalVarPointer ? $"*({managedType}{(passAsParamPtr ? "" : "*")}*)params[{i}]" : $"({managedType}{(passAsParamPtr ? "" : "*")})params[{i}]";
-                    if (!string.IsNullOrEmpty(managedToNative))
-                    {
-                        if (!passAsParamPtr)
-                            paramValue = '*' + paramValue;
-                        paramValue = string.Format(managedToNative, paramValue);
+                        if (separator)
+                            thunkParams += ", ";
+                        if (separator)
+                            thunkCall += ", ";
+                        separator = true;
+                        thunkParams += "void*";
+                        contents.Append($"        params[{i}] = {paramValue};").AppendLine();
+                        thunkCall += $"params[{i}]";
                     }
-                    else if (!passAsParamPtr)
-                        paramValue = '*' + paramValue;
-                    contents.Append($"        {parameterInfo.Name} = {paramValue};").AppendLine();
                 }
-            }
-            if (anyRefOut)
-            {
-                contents.AppendLine("#else");
+
+                // Invoke method thunk
+                if (returnType.IsVoid)
+                {
+                    contents.AppendLine($"        typedef void (*Thunk)(void* instance{thunkParams}, MonoObject** exception);");
+                    contents.AppendLine("        const auto thunk = (Thunk)method->GetThunk();");
+                    contents.AppendLine($"        thunk(object->GetOrCreateManagedInstance(){thunkCall}, &exception);");
+                }
+                else
+                {
+                    contents.AppendLine($"        typedef MonoObject* (*Thunk)(void* instance{thunkParams}, MonoObject** exception);");
+                    contents.AppendLine("        const auto thunk = (Thunk)method->GetThunk();");
+                    contents.AppendLine($"        auto __result = thunk(object->GetOrCreateManagedInstance(){thunkCall}, &exception);");
+                }
+
+                // Convert parameter values back from managed to native (could be modified there)
                 for (var i = 0; i < functionInfo.Parameters.Count; i++)
                 {
                     var parameterInfo = functionInfo.Parameters[i];
@@ -1377,41 +1325,88 @@ namespace Flax.Build.Bindings
                         parameterInfo.Type.IsRef = true;
                     }
                 }
-                contents.AppendLine("#endif");
+            }
+            else
+            {
+                // Convert parameters into managed format as pointers to value
+                if (functionInfo.Parameters.Count != 0)
+                {
+                    for (var i = 0; i < functionInfo.Parameters.Count; i++)
+                    {
+                        var parameterInfo = functionInfo.Parameters[i];
+                        var paramIsRef = parameterInfo.IsRef || parameterInfo.IsOut;
+                        var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, parameterInfo.Type, parameterInfo.Name, classInfo, paramIsRef, out CppParamsThatNeedLocalVariable[i]);
+                        contents.Append($"        params[{i}] = {paramValue};").AppendLine();
+                    }
+                }
+
+                // Invoke method
+                contents.AppendLine("        auto __result = mono_runtime_invoke(method->GetNative(), object->GetOrCreateManagedInstance(), params, &exception);");
+
+                // Convert parameter values back from managed to native (could be modified there)
+                for (var i = 0; i < functionInfo.Parameters.Count; i++)
+                {
+                    var parameterInfo = functionInfo.Parameters[i];
+                    var paramIsRef = parameterInfo.IsRef || parameterInfo.IsOut;
+                    if (paramIsRef && !parameterInfo.Type.IsConst)
+                    {
+                        // Direct value convert
+                        var managedToNative = GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, classInfo, out var managedType, out var apiType, null, out _);
+                        var passAsParamPtr = managedType.EndsWith("*");
+                        var useLocalVarPointer = CppParamsThatNeedConversion[i] && !apiType.IsValueType;
+                        var paramValue = useLocalVarPointer ? $"*({managedType}{(passAsParamPtr ? "" : "*")}*)params[{i}]" : $"({managedType}{(passAsParamPtr ? "" : "*")})params[{i}]";
+                        if (!string.IsNullOrEmpty(managedToNative))
+                        {
+                            if (!passAsParamPtr)
+                                paramValue = '*' + paramValue;
+                            paramValue = string.Format(managedToNative, paramValue);
+                        }
+                        else if (!passAsParamPtr)
+                            paramValue = '*' + paramValue;
+                        contents.Append($"        {parameterInfo.Name} = {paramValue};").AppendLine();
+                    }
+                }
             }
 
-            // Unbox returned value
+            contents.AppendLine("        WrapperCallInstance = prevWrapperCallInstance;");
+            contents.AppendLine("        if (exception)");
+            contents.AppendLine("            DebugLog::LogException(exception);");
+
+            // Unpack returned value
             if (!returnType.IsVoid)
             {
                 if (returnType.IsRef)
                     throw new NotSupportedException($"Passing return value by reference is not supported for virtual API methods. Used on method '{functionInfo}'.");
-
-                // mono_runtime_invoke always returns boxed value as MonoObject*, but thunk might return value within pointer (eg. as int or boolean)
-                contents.AppendLine("#if USE_MONO_AOT");
-                contents.AppendLine($"        return MUtils::Unbox<{returnType}>(__result);");
-                contents.AppendLine("#else");
-                switch (returnType.Type)
+                if (useThunk)
                 {
-                case "bool":
-                    contents.AppendLine("        return __result != 0;");
-                    break;
-                case "int8":
-                case "int16":
-                case "int32":
-                case "int64":
-                    contents.AppendLine($"        return ({returnType.Type})(intptr)__result;");
-                    break;
-                case "uint8":
-                case "uint16":
-                case "uint32":
-                case "uint64":
-                    contents.AppendLine($"        return ({returnType.Type})(uintptr)__result;");
-                    break;
-                default:
-                    contents.AppendLine($"        return MUtils::Unbox<{returnType}>(__result);");
-                    break;
+                    // Thunk might return value within pointer (eg. as int or boolean)
+                    switch (returnType.Type)
+                    {
+                    case "bool":
+                        contents.AppendLine("        return __result != 0;");
+                        break;
+                    case "int8":
+                    case "int16":
+                    case "int32":
+                    case "int64":
+                        contents.AppendLine($"        return ({returnType.Type})(intptr)__result;");
+                        break;
+                    case "uint8":
+                    case "uint16":
+                    case "uint32":
+                    case "uint64":
+                        contents.AppendLine($"        return ({returnType.Type})(uintptr)__result;");
+                        break;
+                    default:
+                        contents.AppendLine($"        return MUtils::Unbox<{returnType}>(__result);");
+                        break;
+                    }
                 }
-                contents.AppendLine("#endif");
+                else
+                {
+                    // mono_runtime_invoke always returns boxed value as MonoObject*
+                    contents.AppendLine($"        return MUtils::Unbox<{returnType}>(__result);");
+                }
             }
 
             contents.AppendLine("    }");
