@@ -397,6 +397,13 @@ namespace FlaxEditor.Surface.ContextMenu
                 return;
 
             Profiler.BeginEvent("VisjectCM.OnSearchFilterChanged");
+            
+            if (string.IsNullOrEmpty(_searchBox.Text))
+            {
+                ResetView();
+                Profiler.EndEvent();
+                return;
+            }
 
             // Update groups
             LockChildrenRecursive();
