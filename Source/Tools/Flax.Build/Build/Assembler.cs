@@ -178,7 +178,7 @@ namespace Flax.Build
             }
 
             sw.Stop();
-            Log.Info("Assembler time: " + sw.Elapsed.TotalSeconds.ToString() + "s");
+            Log.Verbose("Assembler time: " + sw.Elapsed.TotalSeconds.ToString() + "s");
             return compiledAssembly;
         }
     }

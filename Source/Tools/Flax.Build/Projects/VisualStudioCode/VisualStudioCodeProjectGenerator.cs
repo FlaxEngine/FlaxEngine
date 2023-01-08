@@ -214,10 +214,9 @@ namespace Flax.Build.Projects.VisualStudioCode
                                     }
                                     case TargetPlatform.Linux:
                                     {
-                                        json.AddField("command", Path.Combine(Globals.EngineRoot, "Source/Platforms/Editor/Linux/Mono/bin/mono"));
+                                        json.AddField("command", Path.ChangeExtension(buildToolPath, null));
                                         json.BeginArray("args");
                                         {
-                                            json.AddUnnamedField(buildToolPath);
                                             json.AddUnnamedField("--build");
                                             json.AddUnnamedField("--log");
                                             json.AddUnnamedField("--mutex");
@@ -242,11 +241,9 @@ namespace Flax.Build.Projects.VisualStudioCode
                                     }
                                     case TargetPlatform.Mac:
                                     {
-                                        VisualStudioCodeInstance.GetInstance();
-                                        json.AddField("command", "mono"); // TODO: use bundled mono
+                                        json.AddField("command", buildToolPath);
                                         json.BeginArray("args");
                                         {
-                                            json.AddUnnamedField(buildToolPath);
                                             json.AddUnnamedField("--build");
                                             json.AddUnnamedField("--log");
                                             json.AddUnnamedField("--mutex");
