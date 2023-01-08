@@ -621,6 +621,22 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.EndRootObject();
                 json.Save(Path.Combine(vsCodeFolder, "extensions.json"));
             }
+
+            // Create OmniSharp configuration file
+            using (var json = new JsonWriter())
+            {
+                json.BeginRootObject();
+
+                json.BeginObject("msbuild");
+                {
+                    json.AddField("enabled", true);
+                    json.AddField("Configuration", "Editor.Debug");
+                }
+                json.EndObject();
+
+                json.EndRootObject();
+                json.Save(Path.Combine(solution.WorkspaceRootPath, "omnisharp.json"));
+            }
         }
     }
 }
