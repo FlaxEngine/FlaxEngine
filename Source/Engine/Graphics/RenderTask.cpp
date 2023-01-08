@@ -238,13 +238,13 @@ void SceneRenderTask::OnCollectDrawCalls(RenderContextBatch& renderContextBatch,
         {
             for (PostProcessEffect* fx : GlobalCustomPostFx)
             {
-                if (fx && fx->CanRender())
+                if (fx && fx->CanRender(renderContext))
                     postFx.Add(fx);
             }
         }
         for (PostProcessEffect* fx : CustomPostFx)
         {
-            if (fx && fx->CanRender())
+            if (fx && fx->CanRender(renderContext))
                 postFx.Add(fx);
         }
         if (const auto* camera = Camera.Get())
@@ -252,7 +252,7 @@ void SceneRenderTask::OnCollectDrawCalls(RenderContextBatch& renderContextBatch,
             for (Script* script : camera->Scripts)
             {
                 auto* fx = Cast<PostProcessEffect>(script);
-                if (fx && fx->CanRender())
+                if (fx && fx->CanRender(renderContext))
                     postFx.Add(fx);
             }
         }

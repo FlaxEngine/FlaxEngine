@@ -107,6 +107,9 @@ void PluginManagerService::InvokeInitialize(Plugin* plugin)
 {
     if (plugin->_initialized)
         return;
+    StringAnsiView typeName = plugin->GetType().GetName();
+    PROFILE_CPU();
+    ZoneName(typeName.Get(), typeName.Length());
 
     LOG(Info, "Loading plugin {}", plugin->ToString());
 
@@ -122,6 +125,9 @@ void PluginManagerService::InvokeDeinitialize(Plugin* plugin)
 {
     if (!plugin->_initialized)
         return;
+    StringAnsiView typeName = plugin->GetType().GetName();
+    PROFILE_CPU();
+    ZoneName(typeName.Get(), typeName.Length())
 
     LOG(Info, "Unloading plugin {}", plugin->ToString());
 

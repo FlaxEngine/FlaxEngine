@@ -63,10 +63,24 @@ namespace FlaxEngine
         }
 
         /// <inheritdoc />
-        public override int TestMethod(string str)
+        public override int TestMethod(string str, ref TestStructPOD pod, TestStruct[] struct1, ref TestStruct[] struct2, out Object[] objects)
         {
+            objects = new Object[3];
+            if (struct1 == null || struct1.Length != 1)
+                return -1;
+            if (struct2 == null || struct2.Length != 1)
+                return -2;
+            if (pod.Vector != Float3.One)
+                return -3;
+            struct2 = new TestStruct[2]
+            {
+                struct1[0],
+                SimpleStruct,
+            };
+            pod.Vector = Float3.Half;
+
             // Test C++ base method invocation
-            return str.Length + base.TestMethod(str);
+            return str.Length + base.TestMethod(str, ref pod, struct1, ref struct2, out _);
         }
 
         /// <inheritdoc />

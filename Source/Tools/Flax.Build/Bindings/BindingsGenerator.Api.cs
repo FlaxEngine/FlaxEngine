@@ -274,6 +274,16 @@ namespace Flax.Build.Bindings
             // Find across in-build types
             if (InBuildTypes.TryGetValue(typeInfo, out result))
                 return result;
+            if (typeInfo.IsRef)
+            {
+                typeInfo.IsRef = false;
+                if (InBuildTypes.TryGetValue(typeInfo, out result))
+                {
+                    typeInfo.IsRef = true;
+                    return result;
+                }
+                typeInfo.IsRef = true;
+            }
 
             // Find across all loaded modules for this build
             foreach (var e in buildData.ModulesInfo)

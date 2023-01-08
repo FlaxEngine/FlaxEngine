@@ -110,6 +110,13 @@ public:
     static ScriptingTypeHandle FindScriptingType(const StringAnsiView& fullname);
 
     /// <summary>
+    /// Creates a new instance of the given type object (native construction).
+    /// </summary>
+    /// <param name="type">The scripting object type class.</param>
+    /// <returns>The created object or null if failed.</returns>
+    static ScriptingObject* NewObject(const ScriptingTypeHandle& type);
+
+    /// <summary>
     /// Creates a new instance of the given class object (native construction).
     /// </summary>
     /// <param name="type">The Managed type class.</param>

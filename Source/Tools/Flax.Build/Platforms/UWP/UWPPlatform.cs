@@ -15,6 +15,9 @@ namespace Flax.Build.Platforms
         /// <inheritdoc />
         public override TargetPlatform Target => TargetPlatform.UWP;
 
+        /// <inheritdoc />
+        public override bool HasDynamicCodeExecutionSupport => false;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="UWPPlatform"/> class.
         /// </summary>

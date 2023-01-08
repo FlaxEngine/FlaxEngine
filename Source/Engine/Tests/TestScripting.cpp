@@ -16,20 +16,25 @@ TEST_CASE("Scripting")
         // Test native class
         ScriptingTypeHandle type = Scripting::FindScriptingType("FlaxEngine.TestClassNative");
         CHECK(type == TestClassNative::TypeInitializer);
-        ScriptingObject* object = Scripting::NewObject(type.GetType().ManagedClass);
+        ScriptingObject* object = Scripting::NewObject(type);
         CHECK(object);
         CHECK(object->Is<TestClassNative>());
         TestClassNative* testClass = (TestClassNative*)object;
         CHECK(testClass->SimpleField == 1);
         CHECK(testClass->SimpleStruct.Object == nullptr);
         CHECK(testClass->SimpleStruct.Vector == Float3::One);
-        int32 methodResult = testClass->TestMethod(TEXT("123"));
+        Array<TestStruct> struct1 = { testClass->SimpleStruct };
+        Array<TestStruct> struct2 = { testClass->SimpleStruct };
+        Array<ScriptingObject*> objects;
+        TestStructPOD pod;
+        int32 methodResult = testClass->TestMethod(TEXT("123"), pod, struct1, struct2, objects);
         CHECK(methodResult == 3);
+        CHECK(objects.Count() == 0);
 
         // Test managed class
         type = Scripting::FindScriptingType("FlaxEngine.TestClassManaged");
         CHECK(type);
-        object = Scripting::NewObject(type.GetType().ManagedClass);
+        object = Scripting::NewObject(type);
         CHECK(object);
         CHECK(object->Is<TestClassNative>());
         testClass = (TestClassNative*)object;
@@ -38,15 +43,24 @@ TEST_CASE("Scripting")
         CHECK(testClass->SimpleField == 2);
         CHECK(testClass->SimpleStruct.Object == testClass);
         CHECK(testClass->SimpleStruct.Vector == Float3::UnitX);
-        methodResult = testClass->TestMethod(TEXT("123"));
+        struct1 = { testClass->SimpleStruct };
+        struct2 = { testClass->SimpleStruct };
+        objects.Clear();
+        pod.Vector = Float3::One;
+        methodResult = testClass->TestMethod(TEXT("123"), pod, struct1, struct2, objects);
         CHECK(methodResult == 6);
+        CHECK(pod.Vector == Float3::Half);
+        CHECK(struct2.Count() == 2);
+        CHECK(struct2[0] == testClass->SimpleStruct);
+        CHECK(struct2[1] == testClass->SimpleStruct);
+        CHECK(objects.Count() == 3);
     }
 
     SECTION("Test Event")
     {
         ScriptingTypeHandle type = Scripting::FindScriptingType("FlaxEngine.TestClassManaged");
         CHECK(type);
-        ScriptingObject* object = Scripting::NewObject(type.GetType().ManagedClass);
+        ScriptingObject* object = Scripting::NewObject(type);
         CHECK(object);
         MObject* managed = object->GetOrCreateManagedInstance(); // Ensure to create C# object and run it's ctor
         CHECK(managed);
@@ -65,12 +79,13 @@ TEST_CASE("Scripting")
         CHECK(arr2[1].Vector == testClass->SimpleStruct.Vector);
         CHECK(arr2[1].Object == testClass);
     }
+
     SECTION("Test Interface")
     {
         // Test native interface implementation
         ScriptingTypeHandle type = Scripting::FindScriptingType("FlaxEngine.TestClassNative");
         CHECK(type);
-        ScriptingObject* object = Scripting::NewObject(type.GetType().ManagedClass);
+        ScriptingObject* object = Scripting::NewObject(type);
         CHECK(object);
         TestClassNative* testClass = (TestClassNative*)object;
         int32 methodResult = testClass->TestInterfaceMethod(TEXT("123"));
@@ -86,7 +101,7 @@ TEST_CASE("Scripting")
         // Test managed interface override
         type = Scripting::FindScriptingType("FlaxEngine.TestClassManaged");
         CHECK(type);
-        object = Scripting::NewObject(type.GetType().ManagedClass);
+        object = Scripting::NewObject(type);
         CHECK(object);
         testClass = (TestClassNative*)object;
         methodResult = testClass->TestInterfaceMethod(TEXT("123"));
@@ -102,7 +117,7 @@ TEST_CASE("Scripting")
         // Test managed interface implementation
         type = Scripting::FindScriptingType("FlaxEngine.TestInterfaceManaged");
         CHECK(type);
-        object = Scripting::NewObject(type.GetType().ManagedClass);
+        object = Scripting::NewObject(type);
         CHECK(object);
         interface = ScriptingObject::ToInterface<ITestInterface>(object);
         CHECK(interface);
