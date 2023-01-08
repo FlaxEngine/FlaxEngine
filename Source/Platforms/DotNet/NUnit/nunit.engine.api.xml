@@ -173,12 +173,11 @@
             </summary>
             <param name="reference">An AssemblyName referring to the possible test framework.</param>
         </member>
-        <member name="M:NUnit.Engine.Extensibility.IDriverFactory.GetDriver(System.AppDomain,System.Reflection.AssemblyName)">
+        <member name="M:NUnit.Engine.Extensibility.IDriverFactory.GetDriver(System.Reflection.AssemblyName)">
             <summary>
             Gets a driver for a given test assembly and a framework
             which the assembly is already known to reference.
             </summary>
-            <param name="domain">The domain in which the assembly will be loaded</param>
             <param name="reference">An AssemblyName referring to the test framework.</param>
             <returns></returns>
         </member>
@@ -1016,21 +1015,10 @@
             TestEngineActivator creates an instance of the test engine and returns an ITestEngine interface.
             </summary>
         </member>
-        <member name="M:NUnit.Engine.TestEngineActivator.CreateInstance(System.Boolean)">
+        <member name="M:NUnit.Engine.TestEngineActivator.CreateInstance">
             <summary>
             Create an instance of the test engine.
             </summary>
-            <param name="unused">This parameter is no longer used but has not been removed to ensure API compatibility.</param>
-            <exception cref="T:NUnit.Engine.NUnitEngineNotFoundException">Thrown when a test engine of the required minimum version is not found</exception>
-            <returns>An <see cref="T:NUnit.Engine.ITestEngine"/></returns>
-        </member>
-        <member name="M:NUnit.Engine.TestEngineActivator.CreateInstance(System.Version,System.Boolean)">
-            <summary>
-            Create an instance of the test engine with a minimum version.
-            </summary>
-            <param name="minVersion">The minimum version of the engine to return inclusive.</param>
-            <param name="unused">This parameter is no longer used but has not been removed to ensure API compatibility.</param>
-            <exception cref="T:NUnit.Engine.NUnitEngineNotFoundException">Thrown when a test engine of the required minimum version is not found</exception>
             <returns>An <see cref="T:NUnit.Engine.ITestEngine"/></returns>
         </member>
         <member name="T:NUnit.Engine.TestFilter">
