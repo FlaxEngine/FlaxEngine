@@ -546,7 +546,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.EndObject();
                 
                 // Extension settings
-                json.AddField("omnisharp.useModernNet", false);
+                json.AddField("omnisharp.useModernNet", true);
 
 
                 json.EndRootObject();
@@ -566,7 +566,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.AddField("jake.autoDetect", "off");
                 json.AddField("grunt.autoDetect", "off");
                 json.AddField("omnisharp.defaultLaunchSolution", solution.Name + ".sln");
-                json.AddField("omnisharp.useModernNet", false);
+                json.AddField("omnisharp.useModernNet", true);
                 json.EndObject();
 
                 // Folders

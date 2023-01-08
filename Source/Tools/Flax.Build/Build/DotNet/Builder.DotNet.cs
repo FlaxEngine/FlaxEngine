@@ -25,7 +25,13 @@ namespace Flax.Build
                 task.Cost = 100;
                 task.DisableCache = true;
                 task.CommandPath = VCEnvironment.MSBuildPath;
-                task.CommandArguments = string.Format("\"{0}\" /m /t:Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" {3} /nologo", target.CustomExternalProjectFilePath, configuration.ToString(), "AnyCPU", VCEnvironment.Verbosity);
+                task.CommandArguments = $"\"{target.CustomExternalProjectFilePath}\" /m /p:BuildProjectReferences=false /t:Restore,Build /p:Configuration=\"{configuration}\" /p:RestorePackagesConfig=True /p:Platform=AnyCPU /nologo {VCEnvironment.Verbosity}";
+                if (task.CommandPath.EndsWith(" msbuild"))
+                {
+                    // Special case when using dotnet CLI as msbuild
+                    task.CommandPath = task.CommandPath.Substring(0, task.CommandPath.Length - 8);
+                    task.CommandArguments = "msbuild " + task.CommandArguments;
+                }
                 return;
             }
 

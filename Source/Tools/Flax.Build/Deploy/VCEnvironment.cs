@@ -55,6 +55,13 @@ namespace Flax.Deploy
             case TargetPlatform.Linux:
             case TargetPlatform.Mac:
             {
+                // Use msbuild for .NET
+                toolPath = UnixPlatform.Which("dotnet");
+                if (toolPath != null)
+                {
+                    return toolPath + " msbuild";
+                }
+
                 // Use msbuild from Mono
                 toolPath = UnixPlatform.Which("msbuild");
                 if (toolPath != null)

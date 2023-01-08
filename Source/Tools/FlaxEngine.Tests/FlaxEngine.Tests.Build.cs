@@ -29,7 +29,6 @@ public class FlaxEngineTestsTarget : Target
         Configurations = new[]
         {
             TargetConfiguration.Debug,
-            TargetConfiguration.Release,
         };
         CustomExternalProjectFilePath = System.IO.Path.Combine(FolderPath, "FlaxEngine.Tests.csproj");
     }

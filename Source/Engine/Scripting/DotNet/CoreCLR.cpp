@@ -63,7 +63,7 @@ bool CoreCLR::LoadHostfxr(const String& library_path_)
     hostfxr_set_error_writer = (hostfxr_set_error_writer_fn)Platform::GetProcAddress(hostfxr, "hostfxr_set_error_writer");
     hostfxr_get_dotnet_environment_info_result = (hostfxr_get_dotnet_environment_info_result_fn)Platform::GetProcAddress(hostfxr, "hostfxr_get_dotnet_environment_info_result");
     hostfxr_run_app = (hostfxr_run_app_fn)Platform::GetProcAddress(hostfxr, "hostfxr_run_app");
-    
+
     return true;
 }
 
@@ -111,7 +111,7 @@ void* CoreCLR::GetStaticMethodPointer(const String& methodName)
     if (rc != 0)
         LOG(Fatal, "Failed to get unmanaged function pointer for method {0}: 0x{1:x}", methodName.Get(), (unsigned int)rc);
 
-    cachedFunctions.Add(String(methodName), fun);
+    cachedFunctions.Add(methodName, fun);
 
     return fun;
 }

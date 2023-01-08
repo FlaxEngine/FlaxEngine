@@ -22,9 +22,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <IntermediateOutputPath>..\..\..\Cache\Intermediate\Flax.Build.Tests\Debug</IntermediateOutputPath>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <IntermediateOutputPath>..\..\..\Cache\Intermediate\Flax.Build.Tests\Release</IntermediateOutputPath>
-  </PropertyGroup>
 
   <Import Project="..\..\Platforms\DotNet\NUnit\build\NUnit.props" />
   <ItemGroup>
