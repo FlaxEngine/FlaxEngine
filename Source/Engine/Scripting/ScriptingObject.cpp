@@ -108,21 +108,33 @@ ScriptingObject* ScriptingObject::FromInterface(void* interfaceObj, const Script
             if (type.Type != ScriptingTypes::Script)
                 continue;
             auto interfaceImpl = type.GetInterface(interfaceType);
-            if (interfaceImpl && interfaceImpl->IsNative)
+            if (!interfaceImpl || !interfaceImpl->IsNative)
+                continue;
+
+            // Get vtable for this type
+            void* vtable = type.Script.VTable;
+            if (!vtable && type.GetDefaultInstance())
             {
-                ScriptingObject* predictedObj = (ScriptingObject*)((byte*)interfaceObj - interfaceImpl->VTableOffset);
-                void* predictedVTable = *(void***)predictedObj;
-                void* vtable = type.Script.VTable;
-                if (!vtable && type.GetDefaultInstance())
-                {
-                    // Use vtable from default instance of this type
-                    vtable = *(void***)type.GetDefaultInstance();
-                }
-                if (vtable == predictedVTable)
-                {
-                    ASSERT(predictedObj->GetType().GetInterface(interfaceType));
-                    return predictedObj;
-                }
+                // Use vtable from default instance of this type
+                vtable = *(void***)type.GetDefaultInstance();
+            }
+
+            // Check if object interface vtable matches the type interface vtable value
+            ScriptingObject* predictedObj = (ScriptingObject*)((byte*)interfaceObj - interfaceImpl->VTableOffset);
+            void* predictedVTable = *(void***)predictedObj;
+            if (vtable == predictedVTable)
+            {
+                ASSERT(predictedObj->GetType().GetInterface(interfaceType));
+                return predictedObj;
+            }
+
+            // Check for case of passing object directly
+            predictedObj = (ScriptingObject*)interfaceObj;
+            predictedVTable = *(void***)predictedObj;
+            if (vtable == predictedVTable)
+            {
+                ASSERT(predictedObj->GetType().GetInterface(interfaceType));
+                return predictedObj;
             }
         }
     }
