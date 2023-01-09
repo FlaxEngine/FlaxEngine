@@ -397,7 +397,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 
     // Get the light accumulation buffer
     auto outputFormat = renderContext.Buffers->GetOutputFormat();
-    auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), outputFormat);
+    auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), outputFormat, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::UnorderedAccess);
     auto lightBuffer = RenderTargetPool::Get(tempDesc);
     RENDER_TARGET_POOL_SET_NAME(lightBuffer, "LightBuffer");
 
@@ -587,8 +587,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     }
 
     // Depth of Field
-    auto dofTemporary = DepthOfFieldPass::Instance()->Render(renderContext, frameBuffer);
-    frameBuffer = dofTemporary ? dofTemporary : frameBuffer;
+    DepthOfFieldPass::Instance()->Render(renderContext, frameBuffer, tempBuffer);
 
     // Motion Blur
     MotionBlurPass::Instance()->Render(renderContext, frameBuffer, tempBuffer);
@@ -600,7 +599,6 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     EyeAdaptationPass::Instance()->Render(renderContext, frameBuffer);
     PostProcessingPass::Instance()->Render(renderContext, frameBuffer, tempBuffer, colorGradingLUT);
     RenderTargetPool::Release(colorGradingLUT);
-    RenderTargetPool::Release(dofTemporary);
     Swap(frameBuffer, tempBuffer);
 
     // Cleanup

@@ -258,15 +258,15 @@ void MotionBlurPass::RenderDebug(RenderContext& renderContext, GPUTextureView* f
     context->ResetSR();
 }
 
-void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GPUTexture*& output)
+void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& frame, GPUTexture*& tmp)
 {
     const bool isCameraCut = renderContext.Task->IsCameraCut;
     const auto motionVectors = renderContext.Buffers->MotionVectors;
     ASSERT(motionVectors);
     auto context = GPUDevice::Instance->GetMainContext();
     MotionBlurSettings& settings = renderContext.List->Settings.MotionBlur;
-    const int32 screenWidth = input->Width();
-    const int32 screenHeight = input->Height();
+    const int32 screenWidth = frame->Width();
+    const int32 screenHeight = frame->Height();
     const int32 motionVectorsWidth = screenWidth / static_cast<int32>(settings.MotionVectorsResolution);
     const int32 motionVectorsHeight = screenHeight / static_cast<int32>(settings.MotionVectorsResolution);
     if ((renderContext.View.Flags & ViewFlags::MotionBlur) == 0 ||
@@ -368,13 +368,13 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GP
 
     // Render motion blur
     context->ResetRenderTarget();
-    context->SetRenderTarget(*output);
+    context->SetRenderTarget(*tmp);
     context->SetViewportAndScissors((float)screenWidth, (float)screenHeight);
-    context->BindSR(0, input->View());
+    context->BindSR(0, frame->View());
     context->BindSR(1, motionVectors->View());
     context->BindSR(2, vMaxNeighborBuffer->View());
     context->BindSR(3, renderContext.Buffers->DepthBuffer->View());
-    data.Input0SizeInv = Float2(1.0f / (float)input->Width(), 1.0f / (float)input->Height());
+    data.Input0SizeInv = Float2(1.0f / (float)screenWidth, 1.0f / (float)screenHeight);
     data.Input2SizeInv = Float2(1.0f / (float)renderContext.Buffers->DepthBuffer->Width(), 1.0f / (float)renderContext.Buffers->DepthBuffer->Height());
     context->UpdateCB(cb, &data);
     context->SetState(_psMotionBlur);
@@ -384,5 +384,5 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& input, GP
     RenderTargetPool::Release(vMaxNeighborBuffer);
     context->ResetSR();
     context->ResetRenderTarget();
-    Swap(output, input);
+    Swap(frame, tmp);
 }
