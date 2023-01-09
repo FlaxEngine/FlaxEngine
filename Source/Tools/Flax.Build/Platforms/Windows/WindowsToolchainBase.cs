@@ -345,6 +345,9 @@ namespace Flax.Build.Platforms
         public override string DllImport => "__declspec(dllimport)";
 
         /// <inheritdoc />
+        public override TargetCompiler Compiler => TargetCompiler.MSVC;
+
+        /// <inheritdoc />
         public override void LogInfo()
         {
             var sdkPath = WindowsPlatformBase.GetSDKs()[SDK];

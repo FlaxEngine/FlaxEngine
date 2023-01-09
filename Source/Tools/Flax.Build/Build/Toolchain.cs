@@ -7,6 +7,22 @@ using Flax.Build.NativeCpp;
 namespace Flax.Build
 {
     /// <summary>
+    /// The target platform compiler types.
+    /// </summary>
+    public enum TargetCompiler
+    {
+        /// <summary>
+        /// Microsoft C++ (MSVC) C and C++ compiler and linker.
+        /// </summary>
+        MSVC,
+
+        /// <summary>
+        /// LLVM-based open source compiler.
+        /// </summary>
+        Clang,
+    }
+
+    /// <summary>
     /// The base class for all build toolchains.
     /// </summary>
     public abstract class Toolchain
@@ -50,6 +66,11 @@ namespace Flax.Build
         /// Gets the compiler attribute for symbols imported from shared library (dll file).
         /// </summary>
         public abstract string DllImport { get; }
+
+        /// <summary>
+        /// Gets the compiler type.
+        /// </summary>
+        public abstract TargetCompiler Compiler { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Toolchain"/> class.

@@ -221,6 +221,9 @@ namespace Flax.Build.Platforms
         public override string DllImport => "";
 
         /// <inheritdoc />
+        public override TargetCompiler Compiler => TargetCompiler.Clang;
+
+        /// <inheritdoc />
         public override void LogInfo()
         {
             if (!string.IsNullOrEmpty(ToolsetRoot))

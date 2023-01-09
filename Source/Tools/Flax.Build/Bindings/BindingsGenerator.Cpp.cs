@@ -245,7 +245,7 @@ namespace Flax.Build.Bindings
         public static void GenerateCppVirtualWrapperCallBaseMethod(BuildData buildData, StringBuilder contents, VirtualClassInfo classInfo, FunctionInfo functionInfo, string scriptVTableBase, string scriptVTableOffset)
         {
             contents.AppendLine("            // Prevent stack overflow by calling native base method");
-            if (buildData.Toolchain is Platforms.UnixToolchain)
+            if (buildData.Toolchain.Compiler == TargetCompiler.Clang)
             {
                 // Clang compiler
                 // TODO: secure VTableFunctionInjector with mutex (even at cost of performance)
@@ -1448,7 +1448,7 @@ namespace Flax.Build.Bindings
                 }
                 var t = functionInfo.IsConst ? " const" : string.Empty;
                 contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}::*{functionInfo.UniqueName}_Signature)({thunkParams}){t};");
-                if (!(buildData.Toolchain is Platforms.UnixToolchain))
+                if (buildData.Toolchain.Compiler != TargetCompiler.Clang)
                 {
                     // MSVC or other compiler
                     contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}Internal::*{functionInfo.UniqueName}_Internal_Signature)({thunkParams}){t};");
