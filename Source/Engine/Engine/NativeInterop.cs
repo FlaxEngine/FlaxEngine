@@ -2990,7 +2990,6 @@ namespace FlaxEngine
             public IntPtr InvokeThunk(ManagedHandle instanceHandle, IntPtr param1, IntPtr param2, IntPtr param3, IntPtr param4, IntPtr param5, IntPtr param6, IntPtr param7)
             {
                 IntPtr* nativePtrs = stackalloc IntPtr[] { param1, param2, param3, param4, param5, param6, param7 };
-
                 if (methodDelegate != null)
                 {
                     IntPtr returnValue;
