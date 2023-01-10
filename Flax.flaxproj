@@ -2,11 +2,11 @@
   "Name": "Flax",
   "Version": {
     "Major": 1,
-    "Minor": 5,
-    "Build": 6335
+    "Minor": 6,
+    "Build": 6340
   },
   "Company": "Flax",
-  "Copyright": "Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.",
+  "Copyright": "Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.",
   "GameTarget": "FlaxGame",
   "EditorTarget": "FlaxEditor",
   "Configuration": {

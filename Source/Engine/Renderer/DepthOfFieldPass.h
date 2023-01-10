@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -42,9 +42,9 @@ public:
     /// Perform Depth Of Field rendering for the input task
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
-    /// <param name="input">Target with rendered HDR frame</param>
-    /// <returns>Allocated temporary render target, should be released by the called. Can be null if pass skipped.</returns>
-    GPUTexture* Render(RenderContext& renderContext, GPUTexture* input);
+    /// <param name="frame">Input and output frame (leave unchanged when not using this effect).</param>
+    /// <param name="tmp">Temporary frame (the same format as frame)</param>
+    void Render(RenderContext& renderContext, GPUTexture*& frame, GPUTexture*& tmp);
 
 private:
     GPUTexture* getDofBokehShape(DepthOfFieldSettings& dofSettings);

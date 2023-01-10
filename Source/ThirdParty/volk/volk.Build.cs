@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System.IO;
 using Flax.Build;
@@ -9,6 +9,8 @@ using Flax.Build.NativeCpp;
 /// </summary>
 public class volk : ThirdPartyModule
 {
+    private bool _missingSDKError;
+
     /// <inheritdoc />
     public override void Init()
     {
@@ -52,7 +54,7 @@ public class volk : ThirdPartyModule
         }
         else
         {
-            Log.Error("Missing VulkanSDK.");
+            Log.ErrorOnce("Missing VulkanSDK.", ref _missingSDKError);
         }
     }
 }

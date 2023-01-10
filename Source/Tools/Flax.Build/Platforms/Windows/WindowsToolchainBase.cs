@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -343,6 +343,9 @@ namespace Flax.Build.Platforms
 
         /// <inheritdoc />
         public override string DllImport => "__declspec(dllimport)";
+
+        /// <inheritdoc />
+        public override TargetCompiler Compiler => TargetCompiler.MSVC;
 
         /// <inheritdoc />
         public override void LogInfo()

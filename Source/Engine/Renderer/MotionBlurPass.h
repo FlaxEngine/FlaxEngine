@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -46,9 +46,9 @@ public:
     /// Renders the motion blur. Swaps the input with output if rendering is performed. Does nothing if rendering is not performed.
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
-    /// <param name="input">The input frame.</param>
-    /// <param name="output">The output frame.</param>
-    void Render(RenderContext& renderContext, GPUTexture*& input, GPUTexture*& output);
+    /// <param name="frame">Input and output frame (leave unchanged when not using this effect).</param>
+    /// <param name="tmp">Temporary frame (the same format as frame)</param>
+    void Render(RenderContext& renderContext, GPUTexture*& frame, GPUTexture*& tmp);
 
 private:
 

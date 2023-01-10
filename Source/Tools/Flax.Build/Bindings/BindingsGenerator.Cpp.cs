@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -245,7 +245,7 @@ namespace Flax.Build.Bindings
         public static void GenerateCppVirtualWrapperCallBaseMethod(BuildData buildData, StringBuilder contents, VirtualClassInfo classInfo, FunctionInfo functionInfo, string scriptVTableBase, string scriptVTableOffset)
         {
             contents.AppendLine("            // Prevent stack overflow by calling native base method");
-            if (buildData.Toolchain is Platforms.UnixToolchain)
+            if (buildData.Toolchain.Compiler == TargetCompiler.Clang)
             {
                 // Clang compiler
                 // TODO: secure VTableFunctionInjector with mutex (even at cost of performance)
@@ -1531,7 +1531,7 @@ namespace Flax.Build.Bindings
                 }
                 var t = functionInfo.IsConst ? " const" : string.Empty;
                 contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}::*{functionInfo.UniqueName}_Signature)({thunkParams}){t};");
-                if (!(buildData.Toolchain is Platforms.UnixToolchain))
+                if (buildData.Toolchain.Compiler != TargetCompiler.Clang)
                 {
                     // MSVC or other compiler
                     contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}Internal::*{functionInfo.UniqueName}_Internal_Signature)({thunkParams}){t};");
@@ -1583,7 +1583,10 @@ namespace Flax.Build.Bindings
                     var langInfo = ScriptingLangInfos[i];
                     if (!langInfo.Enabled)
                         continue;
-                    contents.AppendLine(count == 0 ? "                if (wrapperIndex == 0)" : $"                else if (wrapperIndex == {count})");
+                    if (count == 0)
+                        contents.AppendLine("                if (wrapperIndex == 0)");
+                    else
+                        contents.AppendLine($"                else if (wrapperIndex == {count})");
                     contents.AppendLine("                {");
                     contents.AppendLine($"                    auto thunkPtr = &{classInfo.NativeName}Internal::{functionInfo.UniqueName}{langInfo.VirtualWrapperMethodsPostfix};");
                     contents.AppendLine("                    vtable[vtableIndex] = *(void**)&thunkPtr;");
@@ -1599,6 +1602,50 @@ namespace Flax.Build.Bindings
 
                 scriptVTableIndex++;
             }
+
+            // Native interfaces override in managed code requires vtables hacking which requires additional inject on Clang-platforms
+            if (buildData.Toolchain.Compiler == TargetCompiler.Clang && classInfo.IsClass && classInfo.Interfaces != null)
+            {
+                // Override vtable entries of interface methods (for each virtual function in each interface)
+                foreach (var interfaceInfo in classInfo.Interfaces)
+                {
+                    if (interfaceInfo.Access == AccessLevel.Private)
+                        continue;
+                    foreach (var functionInfo in interfaceInfo.Functions)
+                    {
+                        if (!functionInfo.IsVirtual)
+                            continue;
+                        contents.AppendLine("        {");
+                        {
+                            var thunkParams = string.Empty;
+                            var separator = false;
+                            for (var i = 0; i < functionInfo.Parameters.Count; i++)
+                            {
+                                var parameterInfo = functionInfo.Parameters[i];
+                                if (separator)
+                                    thunkParams += ", ";
+                                separator = true;
+                                thunkParams += parameterInfo.Type;
+                            }
+                            var t = functionInfo.IsConst ? " const" : string.Empty;
+                            contents.AppendLine($"            typedef {functionInfo.ReturnType} ({classInfo.NativeName}::*{functionInfo.UniqueName}_Signature)({thunkParams}){t};");      
+                        }
+                        contents.AppendLine($"            {functionInfo.UniqueName}_Signature funcPtr = &{classInfo.NativeName}::{functionInfo.Name};");
+                        contents.AppendLine("            const int32 vtableIndex = GetVTableIndex(vtable, entriesCount, *(void**)&funcPtr);");
+                        contents.AppendLine("            if (vtableIndex >= 0 && vtableIndex < entriesCount)");
+                        contents.AppendLine("            {");
+                        contents.AppendLine($"                extern void {interfaceInfo.NativeName}Internal_{functionInfo.UniqueName}_VTableOverride(void*& vtableEntry, int32 wrapperIndex);");
+                        contents.AppendLine($"                {interfaceInfo.NativeName}Internal_{functionInfo.UniqueName}_VTableOverride(vtable[vtableIndex], wrapperIndex);");
+                        contents.AppendLine("            }");
+                        contents.AppendLine("            else");
+                        contents.AppendLine("            {");
+                        contents.AppendLine($"                LOG(Error, \"Failed to find the vtable entry for method {{0}} in class {{1}}\", TEXT(\"{functionInfo.Name}\"), TEXT(\"{classInfo.Name}\"));");
+                        contents.AppendLine("            }");
+                        contents.AppendLine("        }");
+                    }
+                }
+            }
+
             contents.AppendLine("    }");
             contents.AppendLine("");
 
@@ -2403,6 +2450,36 @@ namespace Flax.Build.Bindings
 
             contents.Append('}').Append(';').AppendLine();
             contents.AppendLine();
+
+            // Native interfaces override in managed code requires vtables hacking which requires additional inject on Clang-platforms
+            if (buildData.Toolchain.Compiler == TargetCompiler.Clang)
+            {
+                // Generate functions that inject script wrappers into vtable entry
+                foreach (var functionInfo in interfaceInfo.Functions)
+                {
+                    if (!functionInfo.IsVirtual)
+                        continue;
+                    contents.AppendLine($"void {interfaceInfo.NativeName}Internal_{functionInfo.UniqueName}_VTableOverride(void*& vtableEntry, int32 wrapperIndex)");
+                    contents.AppendLine("{");
+                    for (int i = 0, count = 0; i < ScriptingLangInfos.Count; i++)
+                    {
+                        var langInfo = ScriptingLangInfos[i];
+                        if (!langInfo.Enabled)
+                            continue;
+                        if (count == 0)
+                            contents.AppendLine("    if (wrapperIndex == 0)");
+                        else
+                            contents.AppendLine($"    else if (wrapperIndex == {count})");
+                        contents.AppendLine("    {");
+                        contents.AppendLine($"        auto thunkPtr = &{interfaceInfo.NativeName}Internal::{functionInfo.UniqueName}{langInfo.VirtualWrapperMethodsPostfix};");
+                        contents.AppendLine("        vtableEntry = *(void**)&thunkPtr;");
+                        contents.AppendLine("    }");
+                        count++;
+                    }
+                    contents.AppendLine("}");
+                    contents.AppendLine("");
+                }
+            }
 
             // Type initializer
             contents.Append($"ScriptingTypeInitializer {interfaceTypeNameNative}::TypeInitializer((BinaryModule*)GetBinaryModule{moduleInfo.Name}(), ");
