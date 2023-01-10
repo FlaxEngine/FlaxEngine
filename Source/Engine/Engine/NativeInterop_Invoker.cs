@@ -95,7 +95,33 @@ namespace FlaxEngine
                     else
                         return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnValue))), GCHandleType.Weak));
                 }
+                else
+                    return returnValue != null ? ManagedHandle.ToIntPtr(ManagedHandle.Alloc(returnValue, GCHandleType.Weak)) : IntPtr.Zero;
+            }
+
+            internal static IntPtr MarshalReturnValueThunk<TRet>(ref TRet returnValue)
+            {
+                if (typeof(TRet) == typeof(string))
+                    return ManagedString.ToNative(Unsafe.As<string>(returnValue));
+                else if (typeof(TRet) == typeof(IntPtr))
+                    return (IntPtr)(object)returnValue;
+                else if (typeof(TRet) == typeof(ManagedHandle))
+                    return ManagedHandle.ToIntPtr((ManagedHandle)(object)returnValue);
+                else if (typeof(TRet) == typeof(Type))
+                    return returnValue != null ? ManagedHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnValue))) : IntPtr.Zero;
+                else if (typeof(TRet).IsArray)
+                {
+                    if (returnValue == null)
+                        return IntPtr.Zero;
+                    var elementType = typeof(TRet).GetElementType();
+                    if (ArrayFactory.GetMarshalledType(elementType) == elementType)
+                        return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnValue)), GCHandleType.Weak));
+                    else
+                        return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnValue))), GCHandleType.Weak));
+                }
                 // Match Mono bindings and pass value as pointer to prevent boxing it
+                else if (typeof(TRet) == typeof(System.Boolean))
+                    return new IntPtr(((System.Boolean)(object)returnValue) ? 1 : 0);
                 else if (typeof(TRet) == typeof(System.Int16))
                     return new IntPtr((int)(System.Int16)(object)returnValue);
                 else if (typeof(TRet) == typeof(System.Int32))
@@ -644,7 +670,7 @@ namespace FlaxEngine
 
                     TRet ret = deleg(instancePtr.Target);
 
-                    return MarshalReturnValue(ref ret);
+                    return MarshalReturnValueThunk(ref ret);
                 }
             }
 
@@ -690,7 +716,7 @@ namespace FlaxEngine
 
                     TRet ret = deleg(instancePtr.Target, param1);
 
-                    return MarshalReturnValue(ref ret);
+                    return MarshalReturnValueThunk(ref ret);
                 }
             }
 
@@ -741,7 +767,7 @@ namespace FlaxEngine
 
                     TRet ret = deleg(instancePtr.Target, param1, param2);
 
-                    return MarshalReturnValue(ref ret);
+                    return MarshalReturnValueThunk(ref ret);
                 }
             }
 
@@ -797,7 +823,7 @@ namespace FlaxEngine
 
                     TRet ret = deleg(instancePtr.Target, param1, param2, param3);
 
-                    return MarshalReturnValue(ref ret);
+                    return MarshalReturnValueThunk(ref ret);
                 }
             }
 
@@ -858,7 +884,7 @@ namespace FlaxEngine
 
                     TRet ret = deleg(instancePtr.Target, param1, param2, param3, param4);
 
-                    return MarshalReturnValue(ref ret);
+                    return MarshalReturnValueThunk(ref ret);
                 }
             }
 
@@ -894,7 +920,7 @@ namespace FlaxEngine
 
                     TRet ret = deleg();
 
-                    return MarshalReturnValue(ref ret);
+                    return MarshalReturnValueThunk(ref ret);
                 }
             }
 
@@ -940,7 +966,7 @@ namespace FlaxEngine
 
                     TRet ret = deleg(param1);
 
-                    return MarshalReturnValue(ref ret);
+                    return MarshalReturnValueThunk(ref ret);
                 }
             }
 
@@ -991,7 +1017,7 @@ namespace FlaxEngine
 
                     TRet ret = deleg(param1, param2);
 
-                    return MarshalReturnValue(ref ret);
+                    return MarshalReturnValueThunk(ref ret);
                 }
             }
 
@@ -1047,7 +1073,7 @@ namespace FlaxEngine
 
                     TRet ret = deleg(param1, param2, param3);
 
-                    return MarshalReturnValue(ref ret);
+                    return MarshalReturnValueThunk(ref ret);
                 }
             }
 
@@ -1108,7 +1134,7 @@ namespace FlaxEngine
 
                     TRet ret = deleg(param1, param2, param3, param4);
 
-                    return MarshalReturnValue(ref ret);
+                    return MarshalReturnValueThunk(ref ret);
                 }
             }
         }
