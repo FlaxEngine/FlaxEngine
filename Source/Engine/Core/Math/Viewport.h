@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2022 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 // Copyright (c) 2010-2014 SharpDX - Alexandre Mutel
 
 #pragma once
