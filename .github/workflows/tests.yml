@@ -3,7 +3,7 @@ on: [push, pull_request]
 
 jobs:
 
-  # Tests
+  # Tests on Linux
   tests-linux:
     name: Tests (Linux)
     runs-on: "ubuntu-20.04"
@@ -36,3 +36,27 @@ jobs:
       run: |
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget -UseLargeWorlds=true
         Binaries/Editor/Linux/Development/FlaxTests
+
+  # Tests on Windows
+  tests-windows:
+    name: Tests (Windows)
+    runs-on: "windows-2019"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Build
+      run: |
+        .\GenerateProjectFiles.bat -vs2019
+        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxTestsTarget
+        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Debug -buildtargets=FlaxEditor -BuildBindingsOnly
+        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Debug -buildtargets="FlaxEngine.Tests"
+        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Debug -buildtargets="Flax.Build.Tests"
+    - name: Test
+      run: |
+        Binaries\Editor\Win64\Development\FlaxTests.exe
+        Source\Platforms\DotNet\NUnit\nunit3-console.exe Binaries\Tools\FlaxEngine.Tests.dll --framework=net-4.5.2
+        Source\Platforms\DotNet\NUnit\nunit3-console.exe Binaries\Tools\Flax.Build.Tests.dll --framework=net-4.5.2
