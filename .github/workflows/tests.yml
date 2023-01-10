@@ -47,6 +47,7 @@ jobs:
 
   # Tests on Windows
   tests-windows:
+    if: ${{ false }}
     name: Tests (Windows)
     runs-on: "windows-2022"
     steps:

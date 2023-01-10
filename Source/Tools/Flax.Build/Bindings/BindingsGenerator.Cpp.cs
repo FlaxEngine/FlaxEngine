@@ -1342,7 +1342,7 @@ namespace Flax.Build.Bindings
 
             // If platform supports JITed code execution then use method thunk, otherwise fallback to generic mono_runtime_invoke
             var returnType = functionInfo.ReturnType;
-            var useThunk = buildData.Platform.HasDynamicCodeExecutionSupport;
+            var useThunk = false; //buildData.Platform.HasDynamicCodeExecutionSupport; // TODO: fix marshaing some types when using thunks on dotnet7
             if (useThunk)
             {
                 // Convert parameters into managed format as boxed values
