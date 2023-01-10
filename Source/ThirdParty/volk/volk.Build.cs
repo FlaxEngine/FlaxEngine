@@ -9,6 +9,8 @@ using Flax.Build.NativeCpp;
 /// </summary>
 public class volk : ThirdPartyModule
 {
+    private bool _missingSDKError;
+
     /// <inheritdoc />
     public override void Init()
     {
@@ -52,7 +54,7 @@ public class volk : ThirdPartyModule
         }
         else
         {
-            Log.Error("Missing VulkanSDK.");
+            Log.ErrorOnce("Missing VulkanSDK.", ref _missingSDKError);
         }
     }
 }
