@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "ModelLOD.h"
 #include "Engine/Core/Log.h"

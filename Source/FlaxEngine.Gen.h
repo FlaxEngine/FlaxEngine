@@ -9,7 +9,7 @@
 #define FLAXENGINE_VERSION_MINOR 5
 #define FLAXENGINE_VERSION_BUILD 6335
 #define FLAXENGINE_COMPANY "Flax"
-#define FLAXENGINE_COPYRIGHT "Copyright (c) 2012-2022 Wojciech Figat. All rights reserved."
+#define FLAXENGINE_COPYRIGHT "Copyright (c) 2012-2023 Wojciech Figat. All rights reserved."
 
 class BinaryModule;
 extern "C" FLAXENGINE_API BinaryModule* GetBinaryModuleFlaxEngine();
