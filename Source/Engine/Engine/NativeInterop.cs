@@ -2041,9 +2041,51 @@ namespace FlaxEngine
             Type type = Unsafe.As<Type>(typeHandle.Target);
             Type[] interfaces = type.GetInterfaces();
 
-            // mono doesn't seem to return any interfaces, or returns only "immediate" interfaces? // FIXME?
-            //foreach (Type interfaceType in type.BaseType.GetInterfaces())
-            //    interfaces.Remove(interfaceType.FullName);
+            // Match mono_class_get_interfaces which doesn't return interfaces from base class
+            var baseTypeInterfaces = type.BaseType?.GetInterfaces();
+            if (baseTypeInterfaces != null)
+            {
+                if (baseTypeInterfaces.Length == interfaces.Length)
+                {
+                    // Both base and this type have the same amount of interfaces so assume that this one has none unique
+                    interfaces = Array.Empty<Type>();
+                }
+                else if (baseTypeInterfaces.Length != 0)
+                {
+                    // Count unique interface types
+                    int uniqueCount = interfaces.Length;
+                    for (int i = 0; i < interfaces.Length; i++)
+                    {
+                        for (int j = 0; j < baseTypeInterfaces.Length; j++)
+                        {
+                            if (interfaces[i] == baseTypeInterfaces[j])
+                            {
+                                uniqueCount--;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Get only unique interface types
+                    var unique = new Type[uniqueCount];
+                    uniqueCount = 0;
+                    for (int i = 0; i < interfaces.Length; i++)
+                    {
+                        bool isUnique = true;
+                        for (int j = 0; j < baseTypeInterfaces.Length; j++)
+                        {
+                            if (interfaces[i] == baseTypeInterfaces[j])
+                            {
+                                isUnique = false;
+                                break;
+                            }
+                        }
+                        if (isUnique)
+                            unique[uniqueCount++] = interfaces[i];
+                    }
+                    interfaces = unique;
+                }
+            }
 
             IntPtr arr = (IntPtr)NativeAlloc(interfaces.Length, IntPtr.Size);
             for (int i = 0; i < interfaces.Length; i++)
