@@ -1,5 +1,8 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
+using System;
+using System.Globalization;
+using System.Threading;
 using NUnit.Framework;
 
 namespace FlaxEngine.Tests
@@ -16,6 +19,8 @@ namespace FlaxEngine.Tests
         [Test]
         public void TestFormatFloat()
         {
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+
             Assert.AreEqual("0", FlaxEditor.Utilities.Utils.FormatFloat(0.0f));
             Assert.AreEqual("0", FlaxEditor.Utilities.Utils.FormatFloat(0.0d));
             Assert.AreEqual("0.1234", FlaxEditor.Utilities.Utils.FormatFloat(0.1234f));
@@ -37,8 +42,8 @@ namespace FlaxEngine.Tests
                 {
                     double value1 = sign * value;
                     string text = FlaxEditor.Utilities.Utils.FormatFloat(value1);
-                    Assert.IsFalse(text.Contains("e"));
-                    Assert.IsFalse(text.Contains("E"));
+                    Assert.IsFalse(text.IndexOf("e", StringComparison.Ordinal) != -1);
+                    Assert.IsFalse(text.IndexOf("E", StringComparison.Ordinal) != -1);
                     double value2 = double.Parse(text);
                     Assert.AreEqual(value2, value1);
                 }
@@ -49,8 +54,8 @@ namespace FlaxEngine.Tests
                 {
                     float value1 = (float)(sign * value);
                     string text = FlaxEditor.Utilities.Utils.FormatFloat(value1);
-                    Assert.IsFalse(text.Contains("e"));
-                    Assert.IsFalse(text.Contains("E"));
+                    Assert.IsFalse(text.IndexOf("e", StringComparison.Ordinal) != -1);
+                    Assert.IsFalse(text.IndexOf("E", StringComparison.Ordinal) != -1);
                     float value2 = float.Parse(text);
                     Assert.AreEqual(value2, value1);
                 }
