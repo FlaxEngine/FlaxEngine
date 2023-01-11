@@ -137,7 +137,7 @@ namespace Flax.Build.Projects.VisualStudio
             foreach (var reference in project.CSharp.FileReferences)
             {
                 csProjectFileContent.AppendLine(string.Format("    <Reference Include=\"{0}\">", Path.GetFileNameWithoutExtension(reference)));
-                csProjectFileContent.AppendLine(string.Format("      <HintPath>{0}</HintPath>", Utilities.MakePathRelativeTo(reference, projectDirectory)));
+                csProjectFileContent.AppendLine(string.Format("      <HintPath>{0}</HintPath>", Utilities.MakePathRelativeTo(reference, projectDirectory).Replace('/', '\\')));
                 csProjectFileContent.AppendLine("    </Reference>");
             }
 
@@ -233,8 +233,22 @@ namespace Flax.Build.Projects.VisualStudio
                 csProjectFileContent.AppendLine("    <NoWarn>1591</NoWarn>");
             csProjectFileContent.AppendLine(string.Format("    <DocumentationFile>{0}\\{1}.CSharp.xml</DocumentationFile>", outputPath, project.BaseName));
             csProjectFileContent.AppendLine("    <UseVSHostingProcess>true</UseVSHostingProcess>");
+
             csProjectFileContent.AppendLine("  </PropertyGroup>");
             csProjectFileContent.AppendLine("");
+
+            // Generate configuration-specific references
+            foreach (var reference in configuration.TargetBuildOptions.ScriptingAPI.FileReferences)
+            {
+                if (!project.CSharp.FileReferences.Contains(reference))
+                {
+                    csProjectFileContent.AppendLine(string.Format("  <ItemGroup Condition=\" '$(Configuration)|$(Platform)' == '{0}' \">", configuration.Name));
+                    csProjectFileContent.AppendLine(string.Format("    <Reference Include=\"{0}\">", Path.GetFileNameWithoutExtension(reference)));
+                    csProjectFileContent.AppendLine(string.Format("      <HintPath>{0}</HintPath>", Utilities.MakePathRelativeTo(reference, projectDirectory).Replace('/', '\\')));
+                    csProjectFileContent.AppendLine("    </Reference>");
+                    csProjectFileContent.AppendLine("  </ItemGroup >");
+                }
+            }
         }
     }
 }
