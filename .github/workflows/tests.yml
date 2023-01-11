@@ -68,6 +68,5 @@ jobs:
         dotnet msbuild Source\Tools\Flax.Build.Tests\Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
     - name: Test
       run: |
-#        .\Binaries\Editor\Win64\Development\FlaxTests.exe
         .\Source\Platforms\DotNet\NUnit\nunit3-console.exe Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll --framework=netcore-7.0
         .\Source\Platforms\DotNet\NUnit\nunit3-console.exe Binaries\Tests\Flax.Build.Tests.dll --framework=netcore-7.0
