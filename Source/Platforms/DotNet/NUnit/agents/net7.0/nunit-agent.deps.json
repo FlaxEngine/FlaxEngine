@@ -6,10 +6,10 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v7.0": {
-      "nunit-agent/3.16.0": {
+      "nunit-agent/3.16.1": {
         "dependencies": {
-          "nunit.engine.api": "1.0.0",
-          "nunit.engine.core": "1.0.0"
+          "nunit.engine.api": "3.16.1",
+          "nunit.engine.core": "3.16.1"
         },
         "runtime": {
           "nunit-agent.dll": {}
@@ -141,17 +141,17 @@
           }
         }
       },
-      "nunit.engine.api/1.0.0": {
+      "nunit.engine.api/3.16.1": {
         "runtime": {
           "nunit.engine.api.dll": {}
         }
       },
-      "nunit.engine.core/1.0.0": {
+      "nunit.engine.core/3.16.1": {
         "dependencies": {
           "Microsoft.Extensions.DependencyModel": "3.1.0",
           "Microsoft.Win32.Registry": "4.3.0",
           "TestCentric.Metadata": "1.7.1",
-          "nunit.engine.api": "1.0.0"
+          "nunit.engine.api": "3.16.1"
         },
         "runtime": {
           "nunit.engine.core.dll": {}
@@ -160,7 +160,7 @@
     }
   },
   "libraries": {
-    "nunit-agent/3.16.0": {
+    "nunit-agent/3.16.1": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -291,12 +291,12 @@
       "path": "testcentric.metadata/1.7.1",
       "hashPath": "testcentric.metadata.1.7.1.nupkg.sha512"
     },
-    "nunit.engine.api/1.0.0": {
+    "nunit.engine.api/3.16.1": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
-    "nunit.engine.core/1.0.0": {
+    "nunit.engine.core/3.16.1": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
