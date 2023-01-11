@@ -32,14 +32,12 @@ jobs:
       run: |
         ./GenerateProjectFiles.sh -vs2022
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget
-        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Debug -buildtargets=FlaxEditor -BuildBindingsOnly
-        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Debug -buildtargets="FlaxEngine.Tests"
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Debug -buildtargets="Flax.Build.Tests"
     - name: Test
       run: |
         Binaries/Editor/Linux/Development/FlaxTests
-        dotnet Source/Platforms/DotNet/NUnit/nunit3-console.exe Binaries/Tests/FlaxEngine.Tests.dll
-        dotnet Source/Platforms/DotNet/NUnit/nunit3-console.exe Binaries/Tests/Flax.Build.Tests.dll
+        dotnet Source/Platforms/DotNet/NUnit/nunit3-console.exe Binaries/Editor/Linux/Development/FlaxEngine.CSharp.dll --framework=netcore-7.0
+        dotnet Source/Platforms/DotNet/NUnit/nunit3-console.exe Binaries/Tests/Flax.Build.Tests.dll --framework=netcore-7.0
     - name: Test UseLargeWorlds
       run: |
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget -UseLargeWorlds=true
@@ -47,7 +45,6 @@ jobs:
 
   # Tests on Windows
   tests-windows:
-    if: ${{ false }}
     name: Tests (Windows)
     runs-on: "windows-2022"
     steps:
@@ -68,11 +65,9 @@ jobs:
       run: |
         .\GenerateProjectFiles.bat -vs2022
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxTestsTarget
-        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Debug -buildtargets=FlaxEditor -BuildBindingsOnly
-        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Debug -buildtargets="FlaxEngine.Tests"
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Debug -buildtargets="Flax.Build.Tests"
     - name: Test
       run: |
         .\Binaries\Editor\Win64\Development\FlaxTests.exe
-        .\Source\Platforms\DotNet\NUnit\nunit3-console.exe Binaries\Tests\FlaxEngine.Tests.dll
-        .\Source\Platforms\DotNet\NUnit\nunit3-console.exe Binaries\Tests\Flax.Build.Tests.dll
+        .\Source\Platforms\DotNet\NUnit\nunit3-console.exe Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll --framework=netcore-7.0
+        .\Source\Platforms\DotNet\NUnit\nunit3-console.exe Binaries\Tests\Flax.Build.Tests.dll --framework=netcore-7.0

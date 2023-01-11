@@ -1,34 +1,33 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <ProjectGuid>{3FB235A6-ADFF-415E-92B8-E810DA981A02}</ProjectGuid>
-    <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <TestProjectType>UnitTest</TestProjectType>
     <TargetFramework>net7.0</TargetFramework>
     <LangVersion>11.0</LangVersion>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>annotations</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>false</IsPackable>
-    <OutputPath>..\..\..\Binaries\Tools\</OutputPath>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <IsPublishable>false</IsPublishable>
+    <OutputType>Library</OutputType>
+    <OutputPath>..\..\..\Binaries\Tests\</OutputPath>
     <DefineConstants>USE_NETCORE;FLAX_ASSERTIONS</DefineConstants>
-    <DebugType>portable</DebugType>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
     <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
     <RunAnalyzers>false</RunAnalyzers>
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <IntermediateOutputPath>..\..\..\Cache\Intermediate\Flax.Build.Tests\Debug</IntermediateOutputPath>
-  </PropertyGroup>
-
-  <Import Project="..\..\Platforms\DotNet\NUnit\build\NUnit.props" />
   <ItemGroup>
-    <Reference Include="nunit.framework">
-      <HintPath>..\..\Platforms\DotNet\NUnit\build\nunit.framework.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
+    <PackageReference Include="NUnit.Analyzers" Version="3.3.0" />
+    <PackageReference Include="coverlet.collector" Version="3.1.2" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Flax.Build\Flax.Build.csproj" />
   </ItemGroup>
@@ -36,4 +35,5 @@
   <ItemGroup>
     <Compile Remove="Flax.Build.Tests.Build.cs" />
   </ItemGroup>
+
 </Project>
