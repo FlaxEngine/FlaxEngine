@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
-#if FLAX_TESTS
 namespace FlaxEngine
 {
     partial struct TestStruct : System.IEquatable<TestStruct>
@@ -128,4 +127,3 @@ namespace FlaxEngine
         }
     }
 }
-#endif
