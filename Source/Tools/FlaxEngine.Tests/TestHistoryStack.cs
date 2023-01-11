@@ -8,7 +8,7 @@ using Assert = FlaxEngine.Assertions.Assert;
 namespace FlaxEditor.Tests
 {
     [TestFixture]
-    public class HistoryStackTests
+    public class TestHistoryStack
     {
         public class HistoryTestObject : IHistoryAction
         {

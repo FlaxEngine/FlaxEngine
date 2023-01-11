@@ -7,7 +7,7 @@ using Assert = FlaxEngine.Assertions.Assert;
 namespace FlaxEditor.Tests
 {
     [TestFixture]
-    public class UndoTests
+    public class TestUndo
     {
         [Serializable]
         public class UndoObject

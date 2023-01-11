@@ -4,7 +4,7 @@
 #include "Engine/Core/Types/StringView.h"
 #include <ThirdParty/catch2/catch.hpp>
 
-TEST_CASE("String Replace works")
+TEST_CASE("String Replace")
 {
     SECTION("Char, case sensitive")
     {
@@ -79,7 +79,7 @@ TEST_CASE("String Replace works")
     }
 }
 
-TEST_CASE("String Starts/EndsWith works")
+TEST_CASE("String Starts/EndsWith")
 {
     SECTION("StartsWith, case sensitive")
     {
@@ -222,7 +222,7 @@ TEST_CASE("String Starts/EndsWith works")
     }
 }
 
-TEST_CASE("String Compare works")
+TEST_CASE("String Compare")
 {
     SECTION("String")
     {

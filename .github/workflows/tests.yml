@@ -38,8 +38,8 @@ jobs:
     - name: Test
       run: |
         Binaries/Editor/Linux/Development/FlaxTests
-        dotnet Source/Platforms/DotNet/NUnit/nunit3-netcore-console.dll Binaries/Tools/FlaxEngine.Tests.dll
-        dotnet Source/Platforms/DotNet/NUnit/nunit3-netcore-console.dll Binaries/Tools/Flax.Build.Tests.dll
+        dotnet Source/Platforms/DotNet/NUnit/nunit3-console.exe Binaries/Tests/FlaxEngine.Tests.dll
+        dotnet Source/Platforms/DotNet/NUnit/nunit3-console.exe Binaries/Tests/Flax.Build.Tests.dll
     - name: Test UseLargeWorlds
       run: |
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget -UseLargeWorlds=true
@@ -74,5 +74,5 @@ jobs:
     - name: Test
       run: |
         .\Binaries\Editor\Win64\Development\FlaxTests.exe
-        dotnet Source\Platforms\DotNet\NUnit\nunit3-netcore-console.dll Binaries\Tools\FlaxEngine.Tests.dll
-        dotnet Source\Platforms\DotNet\NUnit\nunit3-netcore-console.dll Binaries\Tools\Flax.Build.Tests.dll
+        .\Source\Platforms\DotNet\NUnit\nunit3-console.exe Binaries\Tests\FlaxEngine.Tests.dll
+        .\Source\Platforms\DotNet\NUnit\nunit3-console.exe Binaries\Tests\Flax.Build.Tests.dll

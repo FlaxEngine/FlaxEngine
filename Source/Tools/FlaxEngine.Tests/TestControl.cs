@@ -7,7 +7,7 @@ using Assert = FlaxEngine.Assertions.Assert;
 namespace FlaxEngine.Tests
 {
     [TestFixture]
-    public class TextControl
+    public class TestControl
     {
         public class SimpleControl : Control
         {

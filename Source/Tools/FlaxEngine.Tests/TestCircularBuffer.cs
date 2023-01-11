@@ -9,7 +9,7 @@ using Assert = FlaxEngine.Assertions.Assert;
 namespace FlaxEngine.Tests
 {
     [TestFixture]
-    public class CircularBufferTests
+    public class TestsCircularBuffer
     {
         [Test]
         public void CircularBufferTestFrontOverwrite()
