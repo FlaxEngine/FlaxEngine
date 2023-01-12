@@ -1229,7 +1229,7 @@ namespace Flax.Build.Bindings
 
             // Abstract wrapper (to ensure C# class can be created for Visual Scripts, see NativeInterop.NewObject)
             if (classInfo.IsAbstract)
-                contents.AppendLine().Append(indent).Append("[Unmanaged] private sealed class AbstractWrapper : ").Append(classInfo.Name).AppendLine(" { }");
+                contents.AppendLine().Append(indent).Append("[Unmanaged] [HideInEditor] private sealed class AbstractWrapper : ").Append(classInfo.Name).AppendLine(" { }");
 
             // Nested types
             foreach (var apiTypeInfo in classInfo.Children)

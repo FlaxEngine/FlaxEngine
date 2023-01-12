@@ -84,7 +84,7 @@ namespace FlaxEditor
             editorPlugin = null;
 
             // Cache data
-            var allAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var allAssemblies = Utils.GetAssemblies();
             var gameAssembly = Utils.GetAssemblyByName("Game", allAssemblies);
             var gameEditorAssembly = Utils.GetAssemblyByName("Game.Editor", allAssemblies);
             var gameAssemblyTypes = gameAssembly.GetTypes();
