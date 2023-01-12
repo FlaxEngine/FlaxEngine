@@ -1405,6 +1405,7 @@ namespace FlaxEngine
                 toManagedTypedMarshaller(ref managedValue, nativePtr, byRef);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal static T ToManagedUnbox(IntPtr nativePtr)
             {
                 T managed = default;
@@ -1774,7 +1775,7 @@ namespace FlaxEngine
             internal MethodHolder(MethodInfo method)
             {
                 this.method = method;
-                parameterTypes = method.GetParameters().Select(x => x.ParameterType).ToArray();
+                parameterTypes = method.GetParameterTypes();
             }
 
             internal bool TryGetDelegate(out Invoker.MarshalAndInvokeDelegate outDeleg, out object outDelegInvoke)
@@ -2394,26 +2395,8 @@ namespace FlaxEngine
                     }
                 }
 
-                if (returnObject is not null)
-                {
-                    if (methodHolder.method.ReturnType == typeof(string))
-                        return ManagedString.ToNative(Unsafe.As<string>(returnObject));
-                    else if (methodHolder.method.ReturnType == typeof(IntPtr))
-                        return (IntPtr)returnObject;
-                    else if (methodHolder.method.ReturnType == typeof(ManagedHandle))
-                        return ManagedHandle.ToIntPtr((ManagedHandle)(object)returnObject);
-                    else if (methodHolder.method.ReturnType == typeof(bool))
-                        return (bool)returnObject ? boolTruePtr : boolFalsePtr;
-                    else if (methodHolder.method.ReturnType == typeof(Type))
-                        return ManagedHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnObject)));
-                    else if (methodHolder.method.ReturnType.IsArray && ArrayFactory.GetMarshalledType(methodHolder.method.ReturnType.GetElementType()) == methodHolder.method.ReturnType.GetElementType())
-                        return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnObject)), GCHandleType.Weak));
-                    else if (methodHolder.method.ReturnType.IsArray)
-                        return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnObject))), GCHandleType.Weak));
-                    else
-                        return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(returnObject, GCHandleType.Weak));
-                }
-                return IntPtr.Zero;
+                // Return value
+                return Invoker.MarshalReturnValueGeneric(methodHolder.method.ReturnType, returnObject);
             }
         }
 
@@ -2953,7 +2936,14 @@ namespace FlaxEngine
             internal ThunkContext(MethodInfo method)
             {
                 this.method = method;
-                parameterTypes = method.GetParameters().Select(x => x.ParameterType).ToArray();
+                parameterTypes = method.GetParameterTypes();
+
+                // Thunk delegates don't support IsByRef parameters (use egenric invocation for now)
+                foreach (var type in parameterTypes)
+                {
+                    if (type.IsByRef)
+                        return;
+                }
 
                 List<Type> methodTypes = new List<Type>();
                 if (!method.IsStatic)
@@ -3014,7 +3004,25 @@ namespace FlaxEngine
                     int numParams = parameterTypes.Length;
                     object[] methodParameters = new object[numParams];
                     for (int i = 0; i < numParams; i++)
-                        methodParameters[i] = nativePtrs[i] == IntPtr.Zero ? null : ManagedHandle.FromIntPtr(nativePtrs[i]).Target;
+                    {
+                        IntPtr nativePtr = nativePtrs[i];
+                        object managed = null;
+                        if (nativePtr != IntPtr.Zero)
+                        {
+                            Type type = parameterTypes[i];
+                            Type elementType = type.GetElementType();
+                            if (type.IsByRef && !elementType.IsValueType)
+                            {
+                                nativePtr = Marshal.ReadIntPtr(nativePtr);
+                                type = elementType;
+                            }
+                            if (type.IsArray)
+                                managed = MarshalToManaged(nativePtr, type); // Array might be in internal format of custom structs so unbox if need to
+                            else
+                                managed = ManagedHandle.FromIntPtr(nativePtr).Target;
+                        }
+                        methodParameters[i] = managed;
+                    }
 
                     try
                     {
@@ -3029,24 +3037,26 @@ namespace FlaxEngine
                         return IntPtr.Zero;
                     }
 
-                    if (returnObject is not null)
+                    // Marshal reference parameters back to original unmanaged references
+                    for (int i = 0; i < numParams; i++)
                     {
-                        if (method.ReturnType == typeof(string))
-                            return ManagedString.ToNative(Unsafe.As<string>(returnObject));
-                        else if (method.ReturnType == typeof(IntPtr))
-                            return (IntPtr)returnObject;
-                        else if (method.ReturnType == typeof(ManagedHandle))
-                            return ManagedHandle.ToIntPtr((ManagedHandle)returnObject);
-                        else if (method.ReturnType == typeof(bool))
-                            return (bool)returnObject ? boolTruePtr : boolFalsePtr;
-                        else if (method.ReturnType == typeof(Type))
-                            return ManagedHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnObject)));
-                        else if (method.ReturnType == typeof(object[]))
-                            return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<object[]>(returnObject))), GCHandleType.Weak));
-                        else
-                            return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(returnObject, GCHandleType.Weak));
+                        IntPtr nativePtr = nativePtrs[i];
+                        Type type = parameterTypes[i];
+                        Type elementType = type.GetElementType();
+                        if (nativePtr != IntPtr.Zero && type.IsByRef)
+                        {
+                            if (elementType.IsValueType)
+                            {
+                                // Return directly to the original value
+                                var ęxistingValue = ManagedHandle.FromIntPtr(nativePtr).Target;
+                                nativePtr = ValueTypeUnboxer.GetPointer(ęxistingValue);
+                            }
+                            MarshalToNative(methodParameters[i], nativePtr, elementType);
+                        }
                     }
-                    return IntPtr.Zero;
+
+                    // Return value
+                    return Invoker.MarshalReturnValueThunkGeneric(method.ReturnType, returnObject);
                 }
             }
         }

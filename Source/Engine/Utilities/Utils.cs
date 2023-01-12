@@ -1006,5 +1006,25 @@ namespace FlaxEngine
                 }
             }
         }
+
+        /// <summary>
+        /// Gets the array of method parameter types.
+        /// </summary>
+        /// <param name="method">The method to get it's parameters.</param>
+        /// <returns>Method parameters array.</returns>
+        public static Type[] GetParameterTypes(this MethodInfo method)
+        {
+            Type[] parameterTypes;
+            var parameters = method.GetParameters();
+            if (parameters.Length != 0)
+            {
+                parameterTypes = new Type[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++)
+                    parameterTypes[i] = parameters[i].ParameterType;
+            }
+            else
+                parameterTypes = Array.Empty<Type>();
+            return parameterTypes;
+        }
     }
 }

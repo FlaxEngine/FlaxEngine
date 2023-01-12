@@ -38,7 +38,7 @@ namespace FlaxEngine
             {
                 Type[] methodParameters;
                 if (method.IsStatic)
-                    methodParameters = method.GetParameters().Select(x => x.ParameterType).ToArray();
+                    methodParameters = method.GetParameterTypes();
                 else
                     methodParameters = method.GetParameters().Select(x => x.ParameterType).Prepend(method.DeclaringType).ToArray();
 
@@ -75,67 +75,121 @@ namespace FlaxEngine
 
             internal static IntPtr MarshalReturnValue<TRet>(ref TRet returnValue)
             {
+                if (returnValue == null)
+                    return IntPtr.Zero;
                 if (typeof(TRet) == typeof(string))
                     return ManagedString.ToNative(Unsafe.As<string>(returnValue));
-                else if (typeof(TRet) == typeof(IntPtr))
+                if (typeof(TRet) == typeof(IntPtr))
                     return (IntPtr)(object)returnValue;
-                else if (typeof(TRet) == typeof(ManagedHandle))
+                if (typeof(TRet) == typeof(ManagedHandle))
                     return ManagedHandle.ToIntPtr((ManagedHandle)(object)returnValue);
-                else if (typeof(TRet) == typeof(bool))
+                if (typeof(TRet) == typeof(bool))
                     return (bool)(object)returnValue ? boolTruePtr : boolFalsePtr;
-                else if (typeof(TRet) == typeof(Type))
-                    return returnValue != null ? ManagedHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnValue))) : IntPtr.Zero;
-                else if (typeof(TRet).IsArray)
+                if (typeof(TRet) == typeof(Type))
+                    return ManagedHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnValue)));
+                if (typeof(TRet).IsArray)
                 {
-                    if (returnValue == null)
-                        return IntPtr.Zero;
                     var elementType = typeof(TRet).GetElementType();
                     if (ArrayFactory.GetMarshalledType(elementType) == elementType)
                         return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnValue)), GCHandleType.Weak));
-                    else
-                        return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnValue))), GCHandleType.Weak));
+                    return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnValue))), GCHandleType.Weak));
                 }
-                else
-                    return returnValue != null ? ManagedHandle.ToIntPtr(ManagedHandle.Alloc(returnValue, GCHandleType.Weak)) : IntPtr.Zero;
+                return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(returnValue, GCHandleType.Weak));
+            }
+
+            internal static IntPtr MarshalReturnValueGeneric(Type returnType, object returnObject)
+            {
+                if (returnObject == null)
+                    return IntPtr.Zero;
+                if (returnType == typeof(string))
+                    return ManagedString.ToNative(Unsafe.As<string>(returnObject));
+                if (returnType == typeof(IntPtr))
+                    return (IntPtr)returnObject;
+                if (returnType == typeof(ManagedHandle))
+                    return ManagedHandle.ToIntPtr((ManagedHandle)(object)returnObject);
+                if (returnType == typeof(bool))
+                    return (bool)returnObject ? boolTruePtr : boolFalsePtr;
+                if (returnType == typeof(Type))
+                    return ManagedHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnObject)));
+                if (returnType.IsArray && ArrayFactory.GetMarshalledType(returnType.GetElementType()) == returnType.GetElementType())
+                    return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnObject)), GCHandleType.Weak));
+                if (returnType.IsArray)
+                    return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnObject))), GCHandleType.Weak));
+                return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(returnObject, GCHandleType.Weak));
             }
 
             internal static IntPtr MarshalReturnValueThunk<TRet>(ref TRet returnValue)
             {
+                if (returnValue == null)
+                    return IntPtr.Zero;
                 if (typeof(TRet) == typeof(string))
                     return ManagedString.ToNative(Unsafe.As<string>(returnValue));
-                else if (typeof(TRet) == typeof(IntPtr))
+                if (typeof(TRet) == typeof(IntPtr))
                     return (IntPtr)(object)returnValue;
-                else if (typeof(TRet) == typeof(ManagedHandle))
+                if (typeof(TRet) == typeof(ManagedHandle))
                     return ManagedHandle.ToIntPtr((ManagedHandle)(object)returnValue);
-                else if (typeof(TRet) == typeof(Type))
-                    return returnValue != null ? ManagedHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnValue))) : IntPtr.Zero;
-                else if (typeof(TRet).IsArray)
+                if (typeof(TRet) == typeof(Type))
+                    return ManagedHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnValue)));
+                if (typeof(TRet).IsArray)
                 {
-                    if (returnValue == null)
-                        return IntPtr.Zero;
                     var elementType = typeof(TRet).GetElementType();
                     if (ArrayFactory.GetMarshalledType(elementType) == elementType)
                         return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnValue)), GCHandleType.Weak));
-                    else
-                        return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnValue))), GCHandleType.Weak));
+                    return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnValue))), GCHandleType.Weak));
                 }
                 // Match Mono bindings and pass value as pointer to prevent boxing it
-                else if (typeof(TRet) == typeof(System.Boolean))
+                if (typeof(TRet) == typeof(System.Boolean))
                     return new IntPtr(((System.Boolean)(object)returnValue) ? 1 : 0);
-                else if (typeof(TRet) == typeof(System.Int16))
+                if (typeof(TRet) == typeof(System.Int16))
                     return new IntPtr((int)(System.Int16)(object)returnValue);
-                else if (typeof(TRet) == typeof(System.Int32))
+                if (typeof(TRet) == typeof(System.Int32))
                     return new IntPtr((int)(System.Int32)(object)returnValue);
-                else if (typeof(TRet) == typeof(System.Int64))
+                if (typeof(TRet) == typeof(System.Int64))
                     return new IntPtr((long)(System.Int64)(object)returnValue);
-                else if (typeof(TRet) == typeof(System.UInt16))
+                if (typeof(TRet) == typeof(System.UInt16))
                     return (IntPtr)new UIntPtr((ulong)(System.UInt16)(object)returnValue);
-                else if (typeof(TRet) == typeof(System.UInt32))
+                if (typeof(TRet) == typeof(System.UInt32))
                     return (IntPtr)new UIntPtr((ulong)(System.UInt32)(object)returnValue);
-                else if (typeof(TRet) == typeof(System.UInt64))
+                if (typeof(TRet) == typeof(System.UInt64))
                     return (IntPtr)new UIntPtr((ulong)(System.UInt64)(object)returnValue);
-                else
-                    return returnValue != null ? ManagedHandle.ToIntPtr(ManagedHandle.Alloc(returnValue, GCHandleType.Weak)) : IntPtr.Zero;
+                return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(returnValue, GCHandleType.Weak));
+            }
+
+            internal static IntPtr MarshalReturnValueThunkGeneric(Type returnType, object returnObject)
+            {
+                if (returnObject == null)
+                    return IntPtr.Zero;
+                if (returnType == typeof(string))
+                    return ManagedString.ToNative(Unsafe.As<string>(returnObject));
+                if (returnType == typeof(IntPtr))
+                    return (IntPtr)(object)returnObject;
+                if (returnType == typeof(ManagedHandle))
+                    return ManagedHandle.ToIntPtr((ManagedHandle)(object)returnObject);
+                if (returnType == typeof(Type))
+                    return returnObject != null ? ManagedHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnObject))) : IntPtr.Zero;
+                if (returnType.IsArray)
+                {
+                    var elementType = returnType.GetElementType();
+                    if (ArrayFactory.GetMarshalledType(elementType) == elementType)
+                        return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnObject)), GCHandleType.Weak));
+                    return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnObject))), GCHandleType.Weak));
+                }
+                // Match Mono bindings and pass value as pointer to prevent boxing it
+                if (returnType == typeof(System.Boolean))
+                    return new IntPtr(((System.Boolean)(object)returnObject) ? 1 : 0);
+                if (returnType == typeof(System.Int16))
+                    return new IntPtr((int)(System.Int16)(object)returnObject);
+                if (returnType == typeof(System.Int32))
+                    return new IntPtr((int)(System.Int32)(object)returnObject);
+                if (returnType == typeof(System.Int64))
+                    return new IntPtr((long)(System.Int64)(object)returnObject);
+                if (returnType == typeof(System.UInt16))
+                    return (IntPtr)new UIntPtr((ulong)(System.UInt16)(object)returnObject);
+                if (returnType == typeof(System.UInt32))
+                    return (IntPtr)new UIntPtr((ulong)(System.UInt32)(object)returnObject);
+                if (returnType == typeof(System.UInt64))
+                    return (IntPtr)new UIntPtr((ulong)(System.UInt64)(object)returnObject);
+                return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(returnObject, GCHandleType.Weak));
             }
 
             internal static class InvokerNoRet0<TInstance>
@@ -145,7 +199,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -181,7 +235,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -227,7 +281,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -278,7 +332,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -334,7 +388,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -395,7 +449,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -431,7 +485,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -477,7 +531,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -528,7 +582,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -584,7 +638,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -645,7 +699,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -681,7 +735,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -727,7 +781,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -778,7 +832,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -834,7 +888,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -895,7 +949,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -931,7 +985,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -977,7 +1031,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -1028,7 +1082,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
@@ -1084,7 +1138,7 @@ namespace FlaxEngine
 
                 internal static object CreateDelegate(MethodInfo method)
                 {
-                    return new Tuple<Type[], InvokerDelegate>(method.GetParameters().Select(x => x.ParameterType).ToArray(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
+                    return new Tuple<Type[], InvokerDelegate>(method.GetParameterTypes(), Unsafe.As<InvokerDelegate>(CreateDelegateFromMethod(method)));
                 }
 
                 internal static object CreateInvokerDelegate(MethodInfo method)
