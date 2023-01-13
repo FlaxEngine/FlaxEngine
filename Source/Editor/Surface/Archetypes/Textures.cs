@@ -86,6 +86,71 @@ namespace FlaxEditor.Surface.Archetypes
             }
         }
 
+        // TODO merge the above and below function into one?
+        internal class ProceduralSampleNode : SurfaceNode
+        {
+            private ComboBox _textureGroupPicker;
+
+            public ProceduralSampleNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+            }
+
+            public override void OnValuesChanged()
+            {
+                base.OnValuesChanged();
+
+                UpdateUI();
+            }
+
+            public override void OnLoaded()
+            {
+                base.OnLoaded();
+
+                UpdateUI();
+            }
+
+            private void UpdateUI()
+            {
+                if ((int)Values[1] == (int)CommonSamplerType.TextureGroup)
+                {
+                    if (_textureGroupPicker == null)
+                    {
+                        _textureGroupPicker = new ComboBox
+                        {
+                            Location = new Float2(FlaxEditor.Surface.Constants.NodeMarginX + 50, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize + FlaxEditor.Surface.Constants.LayoutOffsetY * 3),
+                            Width = 100,
+                            Parent = this,
+                        };
+                        _textureGroupPicker.SelectedIndexChanged += OnSelectedTextureGroupChanged;
+                        var groups = GameSettings.Load<StreamingSettings>();
+                        if (groups?.TextureGroups != null)
+                        {
+                            for (int i = 0; i < groups.TextureGroups.Length; i++)
+                                _textureGroupPicker.AddItem(groups.TextureGroups[i].Name);
+                        }
+                    }
+                    else
+                    {
+                        _textureGroupPicker.Visible = true;
+                    }
+                    _textureGroupPicker.SelectedIndexChanged -= OnSelectedTextureGroupChanged;
+                    _textureGroupPicker.SelectedIndex = (int)Values[2];
+                    _textureGroupPicker.SelectedIndexChanged += OnSelectedTextureGroupChanged;
+                }
+                else if (_textureGroupPicker != null)
+                {
+                    _textureGroupPicker.Visible = false;
+                }
+                ResizeAuto();
+            }
+
+            private void OnSelectedTextureGroupChanged(ComboBox comboBox)
+            {
+                SetValue(2, _textureGroupPicker.SelectedIndex);
+            }
+        }
+
         /// <summary>
         /// The nodes for that group.
         /// </summary>
@@ -403,6 +468,29 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(1, "Scale", true, typeof(Float3), 1, 0),
                     NodeElementArchetype.Factory.Input(2, "Blend", true, typeof(float), 2, 1),
                     NodeElementArchetype.Factory.Output(0, "Color", typeof(Float3), 3)
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 17,
+                Create = (id, context, arch, groupArch) => new ProceduralSampleNode(id, context, arch, groupArch),
+                Title = "Procedural Sample Texture",
+                Description = "Samples a texture to create a more natural look with less obvious tiling.",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(240, 100),
+                DefaultValues = new object[]
+                {
+                    new Float2(1.0f, 1.0f),
+                    2,
+                    0,
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Texture", true, typeof(FlaxEngine.Object), 0),
+                    NodeElementArchetype.Factory.Input(1, "UV", true, typeof(Float2), 1, 0),
+                    NodeElementArchetype.Factory.Output(0, "Color", typeof(Float4), 2),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 2, "Sampler"),
+                    NodeElementArchetype.Factory.ComboBox(50, Surface.Constants.LayoutOffsetY * 2, 100, 1, typeof(CommonSamplerType))
                 }
             },
         };
