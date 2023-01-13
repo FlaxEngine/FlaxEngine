@@ -459,6 +459,8 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
     }
     // Sample Texture
     case 9:
+    // Procedural Texture Sample
+    case 17:
     {
         enum CommonSamplerType
         {
@@ -479,7 +481,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         // Get input boxes
         auto textureBox = node->GetBox(0);
         auto uvsBox = node->GetBox(1);
-        auto levelBox = node->GetBox(2);
+        auto levelBox = node->TryGetBox(2);
         auto offsetBox = node->GetBox(3);
         if (!textureBox->HasConnection())
         {
@@ -519,7 +521,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
 
         // Get other inputs
         const auto level = tryGetValue(levelBox, node->Values[1]);
-        const bool useLevel = levelBox->HasConnection() || (int32)node->Values[1] != -1;
+        const bool useLevel = (levelBox && levelBox->HasConnection()) || (int32)node->Values[1] != -1;
         const bool useOffset = offsetBox->HasConnection();
         const auto offset = useOffset ? eatBox(offsetBox->GetParent<Node>(), offsetBox->FirstConnection()) : Value::Zero;
         const Char* samplerName;
@@ -539,32 +541,78 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
             return;
         }
 
-        // Pick a property format string
-        const Char* format;
-        if (useLevel || !canUseSample)
+        // Create texture sampling code
+        if (node->TypeID == 9)
         {
-            if (useOffset)
-                format = TEXT("{0}.SampleLevel({1}, {2}, {3}, {4})");
+            // Sample Texture
+            const Char* format;
+            if (useLevel || !canUseSample)
+            {
+                if (useOffset)
+                    format = TEXT("{0}.SampleLevel({1}, {2}, {3}, {4})");
+                else
+                    format = TEXT("{0}.SampleLevel({1}, {2}, {3})");
+            }
             else
-                format = TEXT("{0}.SampleLevel({1}, {2}, {3})");
+            {
+                if (useOffset)
+                    format = TEXT("{0}.Sample({1}, {2}, {4})");
+                else
+                    format = TEXT("{0}.Sample({1}, {2})");
+            }
+            const String sampledValue = String::Format(format, texture.Value, samplerName, uvs.Value, level.Value, offset.Value);
+            textureBox->Cache = writeLocal(VariantType::Float4, sampledValue, node);
         }
         else
         {
-            if (useOffset)
-                format = TEXT("{0}.Sample({1}, {2}, {4})");
-            else
-                format = TEXT("{0}.Sample({1}, {2})");
-        }
+            // Procedural Texture Sample
+            textureBox->Cache = writeLocal(Value::InitForZero(ValueType::Float4), node);
+            createGradients(node);
+            auto proceduralSample = String::Format(TEXT(
+                "   {{\n"
+                "   float3 weights;\n"
+                "   float2 vertex1, vertex2, vertex3;\n"
+                "   float2 uv = {0} * 3.464; // 2 * sqrt (3);\n"
+                "   float2 uv1, uv2, uv3;\n"
+                "   const float2x2 gridToSkewedGrid = float2x2(1.0, 0.0, -0.57735027, 1.15470054);\n"
+                "   float2 skewedCoord = mul(gridToSkewedGrid, uv);\n"
+                "   int2 baseId = int2(floor(skewedCoord));\n"
+                "   float3 temp = float3(frac(skewedCoord), 0);\n"
+                "   temp.z = 1.0 - temp.x - temp.y;\n"
+                "   if (temp.z > 0.0)\n"
+                "   {{\n"
+                "   	weights = float3(temp.z, temp.y, temp.x);\n"
+                "   	vertex1 = baseId;\n"
+                "   	vertex2 = baseId + int2(0, 1);\n"
+                "   	vertex3 = baseId + int2(1, 0);\n"
+                "   }}\n"
+                "   else\n"
+                "   {{\n"
+                "   	weights = float3(-temp.z, 1.0 - temp.y, 1.0 - temp.x);\n"
+                "   	vertex1 = baseId + int2(1, 1);\n"
+                "   	vertex2 = baseId + int2(1, 0);\n"
+                "   	vertex3 = baseId + int2(0, 1);\n"
+                "   }}\n"
+                "   uv1 = {0} + frac(sin(mul(float2x2(127.1, 311.7, 269.5, 183.3), vertex1)) * 43758.5453);\n"
+                "   uv2 = {0} + frac(sin(mul(float2x2(127.1, 311.7, 269.5, 183.3), vertex2)) * 43758.5453);\n"
+                "   uv3 = {0} + frac(sin(mul(float2x2(127.1, 311.7, 269.5, 183.3), vertex3)) * 43758.5453);\n"
+                "   float4 tex1 = {1}.SampleGrad({4}, uv1, {2}, {3}, {6}) * weights.x;\n"
+                "   float4 tex2 = {1}.SampleGrad({4}, uv2, {2}, {3}, {6}) * weights.y;\n"
+                "   float4 tex3 = {1}.SampleGrad({4}, uv3, {2}, {3}, {6}) * weights.z;\n"
+                "   {5} = tex1 + tex2 + tex3;\n"
+                "   }}\n"
+            ),
+                                                   uvs.Value, // {0}
+                                                   texture.Value, // {1}
+                                                   _ddx.Value, // {2}
+                                                   _ddy.Value, // {3}
+                                                   samplerName, // {4}
+                                                   textureBox->Cache.Value, // {5}
+                                                   offset.Value // {6}
+            );
 
-        // Sample texture
-        const String sampledValue = String::Format(format,
-                                                   texture.Value, // {0}
-                                                   samplerName, // {1}
-                                                   uvs.Value, // {2}
-                                                   level.Value, // {3}
-                                                   offset.Value // {4}
-        );
-        textureBox->Cache = writeLocal(VariantType::Float4, sampledValue, node);
+            _writer.Write(*proceduralSample);
+        }
 
         // Decode normal map vector
         if (isNormalMap)
@@ -627,7 +675,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         auto textureBox = node->GetBox(0);
         auto scaleBox = node->GetBox(1);
         auto blendBox = node->GetBox(2);
-        
+
         if (!textureBox->HasConnection())
         {
             // No texture to sample
@@ -660,156 +708,14 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
             "   {3} += {0}.Sample(SamplerLinearWrap, worldPos.xy) * normal.z;\n"
             "	}}\n"
         ),
-                texture.Value,  //  {0}
-                scale.Value,    //  {1}
-                blend.Value,    //  {2}
-                result.Value    //  {3}
+                                                       texture.Value, //  {0}
+                                                       scale.Value, //  {1}
+                                                       blend.Value, //  {2}
+                                                       result.Value //  {3}
         );
 
         _writer.Write(*triplanarTexture);
         value = result;
-    }
-    // Procedural Texture Sample
-    case 17:
-    {
-        enum CommonSamplerType
-        {
-            LinearClamp = 0,
-            PointClamp = 1,
-            LinearWrap = 2,
-            PointWrap = 3,
-            TextureGroup = 4,
-        };
-        const Char* SamplerNames[]
-        {
-            TEXT("SamplerLinearClamp"),
-            TEXT("SamplerLinearWrap"),
-        };
-
-        auto textureBox = node->GetBox(0);
-        auto uvsBox = node->GetBox(1);
-
-        Value uvs;
-        const bool useCustomUVs = uvsBox->HasConnection();
-        if (useCustomUVs)
-        {
-            // Get custom UVs
-            uvs = eatBox(uvsBox->GetParent<Node>(), uvsBox->FirstConnection());
-        }
-        else
-        {
-            // Use default UVs
-            uvs = getUVs;
-        }
-
-        if (!textureBox->HasConnection())
-        {
-            // No texture to sample
-            value = Value::Zero;
-            break;
-        }
-
-        if (!CanUseSample(_treeType))
-        {
-            // Must sample texture in pixel shader
-            value = Value::Zero;
-            break;
-        }
-
-        const auto texture = eatBox(textureBox->GetParent<Node>(), textureBox->FirstConnection());
-        const auto textureParam = findParam(texture.Value);
-        const bool isNormalMap = textureParam->Type == MaterialParameterType::NormalMap;
-
-        const Char* samplerName;
-        const int32 samplerIndex = node->Values[1].AsInt;
-        if (samplerIndex == TextureGroup)
-        {
-            auto& textureGroupSampler = findOrAddTextureGroupSampler(node->Values[2].AsInt);
-            samplerName = *textureGroupSampler.ShaderName;
-        }
-        else if (samplerIndex >= 0 && samplerIndex < ARRAY_COUNT(SamplerNames))
-        {
-            samplerName = SamplerNames[samplerIndex];
-        }
-        else
-        {
-            OnError(node, box, TEXT("Invalid texture sampler."));
-            return;
-        }
-
-        auto result = writeLocal(Value::InitForZero(ValueType::Float4), node);
-        createGradients(node);
-
-        auto proceduralSample = String::Format(TEXT(
-            "   {{\n"
-            "   float W1, W2, W3;\n"
-            "   float2 vertex1, vertex2, vertex3;\n"
-            "   float2 uv = {0} * 3.464; // 2 * sqrt (3);\n"
-            "   float2 UV1, UV2, UV3;\n"
-            "   const float2x2 gridToSkewedGrid = float2x2( 1.0, 0.0, -0.57735027, 1.15470054 );\n"
-            "   float2 skewedCoord = mul( gridToSkewedGrid, uv );\n"
-            "   int2 baseId = int2( floor( skewedCoord ) );\n"
-            "   float3 temp = float3( frac( skewedCoord ), 0 );\n"
-            "   temp.z = 1.0 - temp.x - temp.y;\n"
-            "   if ( temp.z > 0.0 )\n"
-            "   {{\n"
-            "   	W1 = temp.z;\n"
-            "   	W2 = temp.y;\n"
-            "   	W3 = temp.x;\n"
-            "   	vertex1 = baseId;\n"
-            "   	vertex2 = baseId + int2( 0, 1 );\n"
-            "   	vertex3 = baseId + int2( 1, 0 );\n"
-            "   }}\n"
-            "   else\n"
-            "   {{\n"
-            "   	W1 = -temp.z;\n"
-            "   	W2 = 1.0 - temp.y;\n"
-            "   	W3 = 1.0 - temp.x;\n"
-            "   	vertex1 = baseId + int2( 1, 1 );\n"
-            "   	vertex2 = baseId + int2( 1, 0 );\n"
-            "   	vertex3 = baseId + int2( 0, 1 );\n"
-            "   }}\n"
-            "   UV1 = {0} + frac( sin( mul( float2x2( 127.1, 311.7, 269.5, 183.3 ), vertex1 ) ) * 43758.5453 );\n"
-            "   UV2 = {0} + frac( sin( mul( float2x2( 127.1, 311.7, 269.5, 183.3 ), vertex2 ) ) * 43758.5453 );\n"
-            "   UV3 = {0} + frac( sin( mul( float2x2( 127.1, 311.7, 269.5, 183.3 ), vertex3 ) ) * 43758.5453 );\n"
-            "   float4 tex1 = {1}.SampleGrad({4}, UV1, {2}, {3});\n"
-            "   float4 tex2 = {1}.SampleGrad({4}, UV2, {2}, {3});\n"
-            "   float4 tex3 = {1}.SampleGrad({4}, UV3, {2}, {3});\n"
-        ),
-            uvs.Value, // {0}
-            texture.Value, // {1}
-            _ddx.Value, // {2}
-            _ddy.Value, // {3}
-            samplerName // {4}
-        );
-
-        // Decode normal map vector
-        if (isNormalMap)
-        {
-            proceduralSample += String::Format(TEXT(
-            "   tex1.xy = tex1.xy * 2.0 - 1.0;\n"
-            "   tex1.z = sqrt(saturate(1.0 - dot(tex1.xy, tex1.xy))); \n"
-            "   tex2.xy = tex2.xy * 2.0 - 1.0;\n"
-            "   tex2.z = sqrt(saturate(1.0 - dot(tex2.xy, tex2.xy))); \n"
-            "   tex3.xy = tex3.xy * 2.0 - 1.0;\n"
-            "   tex3.z = sqrt(saturate(1.0 - dot(tex3.xy, tex3.xy))); \n"
-            ));
-        }
-
-        proceduralSample += String::Format(TEXT(
-            "   tex1 *= W1;\n"
-            "   tex2 *= W2;\n"
-            "   tex3 *= W3;\n"
-            "   {0} = tex1 + tex2 + tex3;\n"
-            "	}}\n"
-        ),
-            result.Value // {0}
-        );
-
-        _writer.Write(*proceduralSample);
-        value = result;
-
-        break;
     }
     default:
         break;
