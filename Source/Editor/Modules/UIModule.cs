@@ -640,10 +640,10 @@ namespace FlaxEditor.Modules
             _outputLogButton.Clicked += () =>
             {
                 Editor.Windows.OutputLogWin.FocusOrShow();
-                //_progressBar.BarColor = Style.Current.ProgressNormal;
-                //_progressBar.Value = 0;
-                //ProgressVisible = false;
-                //_outputLogButton.Visible = false;
+                _progressBar.BarColor = Style.Current.ProgressNormal;
+                _progressBar.Value = 0;
+                ProgressVisible = false;
+                _outputLogButton.Visible = false;
             };
             _progressLabel = new Label
             {
