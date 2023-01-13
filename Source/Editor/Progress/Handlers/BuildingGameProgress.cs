@@ -39,7 +39,7 @@ namespace FlaxEditor.Progress.Handlers
                 OnUpdate(0, "Starting building game..");
                 break;
             case GameCooker.EventType.BuildFailed:
-                OnEnd();
+                OnFail();
                 break;
             case GameCooker.EventType.BuildDone:
                 OnEnd();
