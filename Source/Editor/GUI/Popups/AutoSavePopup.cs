@@ -101,18 +101,6 @@ namespace FlaxEditor.GUI
             _timeRemaining = Mathf.CeilToInt(time);
             if (_timeLabel != null)
                 _timeLabel.Text = "Auto Save in: " + _timeRemaining;
-            
-            // Move on text update if the progress bar is visible - removes this call from update
-            if (Editor.Instance.UI.ProgressVisible && !_isMoved)
-            {
-                _isMoved = true;
-                LocalX -= 250;
-            }
-            else if (!Editor.Instance.UI.ProgressVisible && _isMoved)
-            {
-                LocalX += 250;
-                _isMoved = false;
-            }
         }
 
         /// <inheritdoc />
@@ -122,6 +110,18 @@ namespace FlaxEditor.GUI
             {
                 _saveNowButton.TextColor = _saveNowButton.IsMouseOver ? Style.Current.BackgroundHighlighted : _defaultTextColor;
                 _cancelSaveButton.TextColor = _cancelSaveButton.IsMouseOver ? Style.Current.BackgroundHighlighted : _defaultTextColor;
+            }
+            
+            // Move if the progress bar is visible
+            if (Editor.Instance.UI.ProgressVisible && !_isMoved)
+            {
+                _isMoved = true;
+                LocalX -= 280;
+            }
+            else if (!Editor.Instance.UI.ProgressVisible && _isMoved)
+            {
+                LocalX += 280;
+                _isMoved = false;
             }
             base.Update(deltaTime);
         }
