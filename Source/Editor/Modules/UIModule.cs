@@ -31,6 +31,7 @@ namespace FlaxEditor.Modules
     {
         private Label _progressLabel;
         private ProgressBar _progressBar;
+        private Button _outputLogButton;
         private List<KeyValuePair<string, DateTime>> _statusMessages;
         private ContentStats _contentStats;
 
@@ -303,7 +304,25 @@ namespace FlaxEditor.Modules
             if (_progressLabel != null)
                 _progressLabel.Text = text;
             if (_progressBar != null)
+            {
+                if (_outputLogButton.Visible)
+                {
+                    _progressBar.BarColor = Style.Current.ProgressNormal;
+                    var scale = _progressBar.SmoothingScale;
+                    _progressBar.SmoothingScale = 0;
+                    _progressBar.Value = 0;
+                    _progressBar.SmoothingScale = scale;
+                    _outputLogButton.Visible = false;
+                }
                 _progressBar.Value = progress * 100.0f;
+            }
+        }
+
+        internal void ProgressFailed()
+        {
+            _progressBar.BarColor = Color.Red;
+            _progressLabel.Text = "Failed";
+            _outputLogButton.Visible = true;
         }
 
         /// <inheritdoc />
@@ -599,6 +618,32 @@ namespace FlaxEditor.Modules
                 AnchorPreset = AnchorPresets.MiddleRight,
                 Parent = progressPanel,
                 Offsets = new Margin(-progressBarWidth - progressBarRightMargin, progressBarWidth, progressBarHeight * -0.5f, progressBarHeight),
+            };
+            _outputLogButton = new Button()
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Parent = _progressBar,
+                Visible = false,
+                Text = "Output Log",
+                TooltipText = "Opens or shows the output log window.",
+                BackgroundColor = Color.Transparent,
+                BorderColor = Color.Transparent,
+                BackgroundColorHighlighted = Color.Transparent,
+                BackgroundColorSelected = Color.Transparent,
+                BorderColorHighlighted = Color.Transparent,
+                BorderColorSelected = Color.Transparent,
+            };
+            _outputLogButton.LocalY -= 2;
+            var defaultTextColor = _outputLogButton.TextColor;
+            _outputLogButton.HoverBegin += () => _outputLogButton.TextColor = Style.Current.BackgroundSelected;
+            _outputLogButton.HoverEnd += () => _outputLogButton.TextColor = defaultTextColor;
+            _outputLogButton.Clicked += () =>
+            {
+                Editor.Windows.OutputLogWin.FocusOrShow();
+                //_progressBar.BarColor = Style.Current.ProgressNormal;
+                //_progressBar.Value = 0;
+                //ProgressVisible = false;
+                //_outputLogButton.Visible = false;
             };
             _progressLabel = new Label
             {

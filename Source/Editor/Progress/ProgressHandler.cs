@@ -52,6 +52,11 @@ namespace FlaxEditor.Progress
         public event ProgressDelegate ProgressEnd;
 
         /// <summary>
+        /// Occurs when the progress fails
+        /// </summary>
+        public event ProgressDelegate ProgressFailed;
+
+        /// <summary>
         /// Gets a value indicating whether this handler action can be cancelled.
         /// </summary>
         public virtual bool CanBeCanceled => false;
@@ -108,6 +113,20 @@ namespace FlaxEditor.Progress
             _infoText = string.Empty;
             ProgressChanged?.Invoke(this);
             ProgressEnd?.Invoke(this);
+        }
+
+        /// <summary>
+        /// Called when progress action fails
+        /// </summary>
+        protected virtual void OnFail()
+        {
+            if (!_isActive)
+                throw new InvalidOperationException("Already ended.");
+            
+            _isActive = false;
+            _progress = 0;
+            _infoText = string.Empty;
+            ProgressFailed?.Invoke(this);
         }
     }
 }

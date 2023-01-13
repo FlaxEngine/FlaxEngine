@@ -21,7 +21,7 @@ namespace FlaxEditor.Progress.Handlers
             // Link for events
             ScriptsBuilder.CompilationBegin += OnStart;
             ScriptsBuilder.CompilationSuccess += OnEnd;
-            ScriptsBuilder.CompilationFailed += OnEnd;
+            ScriptsBuilder.CompilationFailed += OnFail;
             ScriptsBuilder.CompilationStarted += () => OnUpdate(0.2f, "Compiling scripts...");
             ScriptsBuilder.ScriptsReloadCalled += () => OnUpdate(0.8f, "Reloading scripts...");
             ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
