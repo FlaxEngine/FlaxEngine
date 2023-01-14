@@ -368,8 +368,8 @@ namespace FlaxEditor.Content.Import
                     MaxSize = managed.MaxSize,
                     TextureGroup = managed.TextureGroup,
                     Size = managed.Size,
-                    SpriteAreas = managed.SpriteAreas != IntPtr.Zero ? NativeInterop.GCHandleArrayToManagedArray<Rectangle>((ManagedArray)GCHandle.FromIntPtr(managed.SpriteAreas).Target) : null,
-                    SpriteNames = managed.SpriteNames != IntPtr.Zero ? NativeInterop.GCHandleArrayToManagedArray<string>((ManagedArray)GCHandle.FromIntPtr(managed.SpriteNames).Target) : null,
+                    SpriteAreas = managed.SpriteAreas != IntPtr.Zero ? ((ManagedArray)ManagedHandle.FromIntPtr(managed.SpriteAreas).Target).GetArray<Rectangle>() : null,
+                    SpriteNames = managed.SpriteNames != IntPtr.Zero ? NativeInterop.GCHandleArrayToManagedArray<string>((ManagedArray)ManagedHandle.FromIntPtr(managed.SpriteNames).Target) : null,
                 };
             }
             internal static InternalOptionsNative ToNative(InternalOptions managed)

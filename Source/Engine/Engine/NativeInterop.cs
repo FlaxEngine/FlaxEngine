@@ -1114,7 +1114,7 @@ namespace FlaxEngine
             NativeMemory.AlignedFree(ptr);
         }
 
-        internal static T[] GCHandleArrayToManagedArray<T>(ManagedArray ptrArray)
+        internal static T[] GCHandleArrayToManagedArray<T>(ManagedArray ptrArray) where T : class
         {
             Span<IntPtr> span = ptrArray.GetSpan<IntPtr>();
             T[] managedArray = new T[ptrArray.Length];
