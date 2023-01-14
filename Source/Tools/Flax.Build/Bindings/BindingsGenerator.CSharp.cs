@@ -826,6 +826,7 @@ namespace Flax.Build.Bindings
                     contents.Append("static ");
                 contents.Append($"{eventSignature} Internal_{eventInfo.Name};");
                 contents.AppendLine();
+                contents.Append("#pragma warning restore 67").AppendLine();
 
                 contents.AppendLine();
                 contents.Append(indent).Append("internal ");
