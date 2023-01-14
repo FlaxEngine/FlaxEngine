@@ -153,9 +153,10 @@ namespace FlaxEditor.Modules
             }
         }
 
-        private void HandlerOnProgressFail(ProgressHandler handler)
+        private void HandlerOnProgressFail(ProgressHandler handler, string message)
         {
-            Editor.UI.ProgressFailed();
+            UpdateProgress();
+            Editor.UI.ProgressFailed(message);
         }
     }
 }

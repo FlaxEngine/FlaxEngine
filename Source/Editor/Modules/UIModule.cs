@@ -34,6 +34,7 @@ namespace FlaxEditor.Modules
         private Button _outputLogButton;
         private List<KeyValuePair<string, DateTime>> _statusMessages;
         private ContentStats _contentStats;
+        private bool _progressFailed;
 
         private ContextMenuButton _menuFileSaveScenes;
         private ContextMenuButton _menuFileCloseScenes;
@@ -253,6 +254,12 @@ namespace FlaxEditor.Modules
         {
             if (StatusBar == null)
                 return;
+
+            if (ScriptsBuilder.LastCompilationFailed)
+            {
+                ProgressFailed("Scripts Compilation Failed");
+                return;
+            }
             var contentStats = FlaxEngine.Content.Stats;
 
             Color color;
@@ -305,24 +312,27 @@ namespace FlaxEditor.Modules
                 _progressLabel.Text = text;
             if (_progressBar != null)
             {
-                if (_outputLogButton.Visible)
+                if (_progressFailed)
                 {
-                    _progressBar.BarColor = Style.Current.ProgressNormal;
-                    var scale = _progressBar.SmoothingScale;
-                    _progressBar.SmoothingScale = 0;
-                    _progressBar.Value = 0;
-                    _progressBar.SmoothingScale = scale;
-                    _outputLogButton.Visible = false;
+                    ResetProgressFailure();
                 }
                 _progressBar.Value = progress * 100.0f;
             }
         }
 
-        internal void ProgressFailed()
+        internal void ProgressFailed(string message)
         {
-            _progressBar.BarColor = Color.Red;
-            _progressLabel.Text = "Failed";
+            _progressFailed = true;
+            StatusBar.StatusColor = Color.Red;
+            StatusBar.Text = message;
             _outputLogButton.Visible = true;
+        }
+
+        internal void ResetProgressFailure()
+        {
+            _outputLogButton.Visible = false;
+            _progressFailed = false;
+            UpdateStatusBar();
         }
 
         /// <inheritdoc />
@@ -600,6 +610,30 @@ namespace FlaxEditor.Modules
                 Parent = mainWindow,
                 Offsets = new Margin(0, 0, -StatusBar.DefaultHeight, StatusBar.DefaultHeight),
             };
+            // Output log button
+            _outputLogButton = new Button()
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Parent = StatusBar,
+                Visible = false,
+                Text = "",
+                Width = 200,
+                TooltipText = "Opens or shows the output log window.",
+                BackgroundColor = Color.Transparent,
+                BorderColor = Color.Transparent,
+                BackgroundColorHighlighted = Color.Transparent,
+                BackgroundColorSelected = Color.Transparent,
+                BorderColorHighlighted = Color.Transparent,
+                BorderColorSelected = Color.Transparent,
+            };
+            _outputLogButton.LocalY -= 2;
+            var defaultTextColor = StatusBar.TextColor;
+            _outputLogButton.HoverBegin += () => StatusBar.TextColor = Style.Current.BackgroundSelected;
+            _outputLogButton.HoverEnd += () => StatusBar.TextColor = defaultTextColor;
+            _outputLogButton.Clicked += () =>
+            {
+                Editor.Windows.OutputLogWin.FocusOrShow();
+            };
 
             // Progress bar with label
             const float progressBarWidth = 120.0f;
@@ -618,32 +652,6 @@ namespace FlaxEditor.Modules
                 AnchorPreset = AnchorPresets.MiddleRight,
                 Parent = progressPanel,
                 Offsets = new Margin(-progressBarWidth - progressBarRightMargin, progressBarWidth, progressBarHeight * -0.5f, progressBarHeight),
-            };
-            _outputLogButton = new Button()
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Parent = _progressBar,
-                Visible = false,
-                Text = "Output Log",
-                TooltipText = "Opens or shows the output log window.",
-                BackgroundColor = Color.Transparent,
-                BorderColor = Color.Transparent,
-                BackgroundColorHighlighted = Color.Transparent,
-                BackgroundColorSelected = Color.Transparent,
-                BorderColorHighlighted = Color.Transparent,
-                BorderColorSelected = Color.Transparent,
-            };
-            _outputLogButton.LocalY -= 2;
-            var defaultTextColor = _outputLogButton.TextColor;
-            _outputLogButton.HoverBegin += () => _outputLogButton.TextColor = Style.Current.BackgroundSelected;
-            _outputLogButton.HoverEnd += () => _outputLogButton.TextColor = defaultTextColor;
-            _outputLogButton.Clicked += () =>
-            {
-                Editor.Windows.OutputLogWin.FocusOrShow();
-                _progressBar.BarColor = Style.Current.ProgressNormal;
-                _progressBar.Value = 0;
-                ProgressVisible = false;
-                _outputLogButton.Visible = false;
             };
             _progressLabel = new Label
             {
