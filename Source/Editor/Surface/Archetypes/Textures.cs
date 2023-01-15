@@ -405,6 +405,31 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, "Color", typeof(Float3), 3)
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 17,
+                Create = (id, context, arch, groupArch) => new SampleTextureNode(id, context, arch, groupArch),
+                Title = "Procedural Sample Texture",
+                Description = "Samples a texture to create a more natural look with less obvious tiling.",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(240, 110),
+                ConnectionsHints = ConnectionsHint.Vector,
+                DefaultValues = new object[]
+                {
+                    2,
+                    -1.0f,
+                    0,
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Texture", true, typeof(FlaxEngine.Object), 0),
+                    NodeElementArchetype.Factory.Input(1, "UVs", true, null, 1),
+                    NodeElementArchetype.Factory.Input(2, "Offset", true, typeof(Float2), 3),
+                    NodeElementArchetype.Factory.Output(0, "Color", typeof(Float4), 4),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 4, "Sampler"),
+                    NodeElementArchetype.Factory.ComboBox(50, Surface.Constants.LayoutOffsetY * 4, 100, 0, typeof(CommonSamplerType))
+                }
+            },
         };
     }
 }

@@ -11,10 +11,10 @@ namespace FlaxEditor.Tests
         [Test]
         public void TestFormatting()
         {
-            Assert.AreEqual("property", Utils.GetPropertyNameUI("property"));
-            Assert.AreEqual("property", Utils.GetPropertyNameUI("_property"));
-            Assert.AreEqual("property", Utils.GetPropertyNameUI("m_property"));
-            Assert.AreEqual("property", Utils.GetPropertyNameUI("g_property"));
+            Assert.AreEqual("Property", Utils.GetPropertyNameUI("property"));
+            Assert.AreEqual("Property", Utils.GetPropertyNameUI("_property"));
+            Assert.AreEqual("Property", Utils.GetPropertyNameUI("m_property"));
+            Assert.AreEqual("Property", Utils.GetPropertyNameUI("g_property"));
             Assert.AreEqual("Property", Utils.GetPropertyNameUI("Property"));
             Assert.AreEqual("Property 1", Utils.GetPropertyNameUI("Property1"));
             Assert.AreEqual("Property Name", Utils.GetPropertyNameUI("PropertyName"));

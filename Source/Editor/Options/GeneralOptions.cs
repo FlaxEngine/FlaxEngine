@@ -196,19 +196,26 @@ namespace FlaxEditor.Options
         [DefaultValue(5), Limit(1)]
         [EditorDisplay("Auto Save", "Auto Save Frequency"), EditorOrder(801), Tooltip("The interval between auto saves (in minutes)")]
         public int AutoSaveFrequency { get; set; } = 5;
+        
+        /// <summary>
+        /// Gets or sets a value indicating the time before the auto save that the popup shows (in seconds).
+        /// </summary>
+        [DefaultValue(10), Limit(-1)]
+        [EditorDisplay("Auto Save", "Auto Save Reminder Time"), EditorOrder(802), Tooltip("The time before the auto save that the reminder popup shows (in seconds). Set to -1 to not show the reminder popup.")]
+        public int AutoSaveReminderTime { get; set; } = 10;
 
         /// <summary>
         /// Gets or sets a value indicating whether enable auto saves for scenes.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Auto Save", "Auto Save Scenes"), EditorOrder(802), Tooltip("Enables or disables auto saving opened scenes")]
+        [EditorDisplay("Auto Save", "Auto Save Scenes"), EditorOrder(803), Tooltip("Enables or disables auto saving opened scenes")]
         public bool AutoSaveScenes { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether enable auto saves for content.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Auto Save", "Auto Save Content"), EditorOrder(803), Tooltip("Enables or disables auto saving content")]
+        [EditorDisplay("Auto Save", "Auto Save Content"), EditorOrder(804), Tooltip("Enables or disables auto saving content")]
         public bool AutoSaveContent { get; set; } = true;
 
         /// <summary>
