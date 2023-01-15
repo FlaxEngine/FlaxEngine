@@ -510,7 +510,7 @@ namespace FlaxEditor
                     }
                     else if (!_autoSavePopup.Visible && !_autoSavePopup.UserClosed)
                         _autoSavePopup.ShowPopup();
-                    
+
                     if (_autoSavePopup.Visible)
                         _autoSavePopup.UpdateTime(timeToNextSave);
                 }
@@ -523,7 +523,7 @@ namespace FlaxEditor
                         Scene.SaveScenes();
                     if (options.AutoSaveContent)
                         SaveContent();
-                    
+
                     // Hide auto save popup and reset user closed
                     _autoSavePopup.HidePopup();
                     _autoSavePopup.UserClosed = false;

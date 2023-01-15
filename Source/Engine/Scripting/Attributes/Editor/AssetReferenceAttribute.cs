@@ -12,7 +12,7 @@ namespace FlaxEngine
     public class AssetReferenceAttribute : Attribute
     {
         /// <summary>
-        /// The full name of the asset type to link. Use null or empty to skip it.
+        /// The full name of the asset type to link. Use null or empty to skip it. Can be used as file extension filter if starts with a dot and used over string property.
         /// </summary>
         public string TypeName;
 
@@ -45,7 +45,7 @@ namespace FlaxEngine
         /// <summary>
         /// Initializes a new instance of the <see cref="AssetReferenceAttribute"/> class.
         /// </summary>
-        /// <param name="typeName">The full name of the asset type to link. Use null or empty to skip it.</param>
+        /// <param name="typeName">The full name of the asset type to link. Use null or empty to skip it. Can be used as file extension filter if starts with a dot and used over string property.</param>
         /// <param name="useSmallPicker">True if use asset picker with a smaller height (single line), otherwise will use with full icon.</param>
         public AssetReferenceAttribute(string typeName = null, bool useSmallPicker = false)
         {

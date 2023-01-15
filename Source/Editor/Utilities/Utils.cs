@@ -1024,10 +1024,9 @@ namespace FlaxEditor.Utilities
         /// <returns>The processed name path.</returns>
         public static string GetAssetNamePath(string path)
         {
-            if (path.StartsWith(Globals.ProjectFolder))
-            {
-                path = path.Substring(Globals.ProjectFolder.Length + 1);
-            }
+            var projectFolder = Globals.ProjectFolder;
+            if (path.StartsWith(projectFolder))
+                path = path.Substring(projectFolder.Length + 1);
             return StringUtils.GetPathWithoutExtension(path);
         }
 
