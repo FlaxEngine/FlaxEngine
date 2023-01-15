@@ -96,6 +96,7 @@ namespace FlaxEditor.Modules
             handler.ProgressStart += HandlerOnProgressStart;
             handler.ProgressChanged += HandlerOnProgressChanged;
             handler.ProgressEnd += HandlerOnProgressEnd;
+            handler.ProgressFailed += HandlerOnProgressFail;
         }
 
         /// <summary>
@@ -113,6 +114,7 @@ namespace FlaxEditor.Modules
             handler.ProgressStart -= HandlerOnProgressStart;
             handler.ProgressChanged -= HandlerOnProgressChanged;
             handler.ProgressEnd -= HandlerOnProgressEnd;
+            handler.ProgressFailed -= HandlerOnProgressFail;
         }
 
         private void UpdateProgress()
@@ -149,6 +151,12 @@ namespace FlaxEditor.Modules
             {
                 Editor.Windows.FlashMainWindow();
             }
+        }
+
+        private void HandlerOnProgressFail(ProgressHandler handler, string message)
+        {
+            UpdateProgress();
+            Editor.UI.ProgressFailed(message);
         }
     }
 }

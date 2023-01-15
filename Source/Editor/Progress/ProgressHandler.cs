@@ -16,6 +16,11 @@ namespace FlaxEditor.Progress
         /// </summary>
         /// <param name="handler">The calling handler.</param>
         public delegate void ProgressDelegate(ProgressHandler handler);
+        
+        /// <summary>
+        /// Progress failed handler event delegate
+        /// </summary>
+        public delegate void ProgressFailedDelegate(ProgressHandler handler, string message);
 
         private float _progress;
         private bool _isActive;
@@ -50,6 +55,11 @@ namespace FlaxEditor.Progress
         /// Occurs when progress end (becomes inactive).
         /// </summary>
         public event ProgressDelegate ProgressEnd;
+
+        /// <summary>
+        /// Occurs when the progress fails
+        /// </summary>
+        public event ProgressFailedDelegate ProgressFailed;
 
         /// <summary>
         /// Gets a value indicating whether this handler action can be cancelled.
@@ -108,6 +118,20 @@ namespace FlaxEditor.Progress
             _infoText = string.Empty;
             ProgressChanged?.Invoke(this);
             ProgressEnd?.Invoke(this);
+        }
+
+        /// <summary>
+        /// Called when progress action fails
+        /// </summary>
+        protected virtual void OnFail(string message)
+        {
+            if (!_isActive)
+                throw new InvalidOperationException("Already ended.");
+            
+            _isActive = false;
+            _progress = 0;
+            _infoText = string.Empty;
+            ProgressFailed?.Invoke(this, message);
         }
     }
 }
