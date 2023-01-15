@@ -31,6 +31,11 @@ namespace FlaxEditor.GUI
         public string Text { get; set; }
 
         /// <summary>
+        /// Gets or sets the status text color
+        /// </summary>
+        public Color TextColor { get; set; } = Style.Current.Foreground;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="StatusBar"/> class.
         /// </summary>
         public StatusBar()
@@ -51,7 +56,7 @@ namespace FlaxEditor.GUI
                 Render2D.DrawSprite(style.StatusBarSizeGrip, new Rectangle(Width - 12, 10, 12, 12), style.Foreground);
 
             // Draw status text
-            Render2D.DrawText(style.FontSmall, Text, new Rectangle(4, 0, Width - 20, Height), style.Foreground, TextAlignment.Near, TextAlignment.Center);
+            Render2D.DrawText(style.FontSmall, Text, new Rectangle(4, 0, Width - 20, Height), TextColor, TextAlignment.Near, TextAlignment.Center);
         }
     }
 }
