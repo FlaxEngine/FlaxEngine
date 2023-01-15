@@ -206,7 +206,7 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
     if (renderContext.List == nullptr)
         return;
     auto& aoSettings = renderContext.List->Settings.AmbientOcclusion;
-    if (aoSettings.Enabled == false || (renderContext.View.Flags & ViewFlags::AO) == 0)
+    if (aoSettings.Enabled == false || (renderContext.View.Flags & ViewFlags::AO) == 0 || Math::Min(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight()) < 16)
         return;
 
     // TODO: add support for SSAO in ortho projection
