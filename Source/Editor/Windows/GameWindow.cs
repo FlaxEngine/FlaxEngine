@@ -8,6 +8,7 @@ using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Json;
 
 namespace FlaxEditor.Windows
 {
@@ -27,6 +28,14 @@ namespace FlaxEditor.Windows
         private GUI.Docking.DockState _maximizeRestoreDockState;
         private GUI.Docking.DockPanel _maximizeRestoreDockTo;
         private CursorLockMode _cursorLockMode = CursorLockMode.None;
+        
+        // Viewport scaling variables
+        private List<ViewportScaleOptions> _defaultViewportScaling = new List<ViewportScaleOptions>();
+        private List<ViewportScaleOptions> _customViewportScaling = new List<ViewportScaleOptions>();
+        private float _viewportAspectRatio = 1;
+        private float _windowAspectRatio = 1;
+        private bool _useAspect = false;
+        private bool _freeAspect = true;
 
         /// <summary>
         /// Gets the viewport.
@@ -105,6 +114,35 @@ namespace FlaxEditor.Windows
         /// Gets or sets a value indicating whether auto-focus game window on play mode start.
         /// </summary>
         public bool FocusOnPlay { get; set; }
+
+        private enum ViewportScaleType
+        {
+            Resolution = 0,
+            Aspect = 1,
+        }
+        
+        private class ViewportScaleOptions
+        {
+            /// <summary>
+            /// The name.
+            /// </summary>
+            public string Label;
+            
+            /// <summary>
+            /// The Type of scaling to do.
+            /// </summary>
+            public ViewportScaleType ScaleType;
+            
+            /// <summary>
+            /// The width and height to scale by.
+            /// </summary>
+            public Int2 Size;
+
+            /// <summary>
+            /// If the scaling is active.
+            /// </summary>
+            public bool Active;
+        }
 
         private class GameRoot : ContainerControl
         {
@@ -255,6 +293,12 @@ namespace FlaxEditor.Windows
                 Parent = _viewport
             };
             RootControl.GameRoot = _guiRoot;
+
+            SizeChanged += control =>
+            {
+                ResizeViewport();
+            };
+
             Editor.StateMachine.PlayingState.SceneDuplicating += PlayingStateOnSceneDuplicating;
             Editor.StateMachine.PlayingState.SceneRestored += PlayingStateOnSceneRestored;
 
@@ -265,6 +309,85 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.Play, Editor.Simulation.RequestPlayOrStopPlay);
             InputActions.Add(options => options.Pause, Editor.Simulation.RequestResumeOrPause);
             InputActions.Add(options => options.StepFrame, Editor.Simulation.RequestPlayOneFrame);
+        }
+
+        private void ChangeViewportRatio(ViewportScaleOptions v)
+        {
+            if (v == null)
+                return;
+            
+            if (v.Size.Y <= 0 || v.Size.X <= 0)
+            {
+                return;
+            }
+
+            if (string.Equals(v.Label, "Free Aspect") && v.Size == new Int2(1,1))
+            {
+                _freeAspect = true;
+                _useAspect = true;
+            }
+            else
+            {
+                switch (v.ScaleType)
+                {
+                    case ViewportScaleType.Aspect:
+                        _useAspect = true;
+                        _freeAspect = false;
+                        break;
+                    case ViewportScaleType.Resolution:
+                        _useAspect = false;
+                        _freeAspect = false;
+                        break;
+                }
+            }
+            
+            _viewportAspectRatio = (float)v.Size.X / v.Size.Y;
+            
+            if (!_freeAspect)
+            {
+                if (!_useAspect)
+                {
+                    _viewport.KeepAspectRatio = true;
+                    _viewport.CustomResolution = new Int2(v.Size.X, v.Size.Y);
+                }
+                else
+                {
+                    _viewport.CustomResolution = new Int2?();
+                    _viewport.KeepAspectRatio = true;
+                }
+            }
+            else
+            {
+                _viewport.CustomResolution = new Int2?();
+                _viewport.KeepAspectRatio = false;
+            }
+            
+            ResizeViewport();
+        }
+
+        private void ResizeViewport()
+        {
+            if (!_freeAspect)
+            {
+                _windowAspectRatio = Width / Height;
+            }
+            else
+            {
+                _windowAspectRatio = 1;
+            }
+
+            var scaleWidth = _viewportAspectRatio / _windowAspectRatio;
+            var scaleHeight = _windowAspectRatio / _viewportAspectRatio;
+
+            if (scaleHeight < 1)
+            {
+                _viewport.Bounds = new Rectangle(0, Height * (1 - scaleHeight) / 2, Width, Height * scaleHeight);
+            }
+            else
+            {
+                _viewport.Bounds = new Rectangle(Width * (1 - scaleWidth) / 2, 0, Width * scaleWidth, Height);
+            }
+            PerformLayout();
         }
 
         private void OnPostRender(GPUContext context, ref RenderContext renderContext)
@@ -372,6 +495,53 @@ namespace FlaxEditor.Windows
                 resolutionValue.ValueChanged += () => _viewport.ResolutionScale = resolutionValue.Value;
             }
 
+            // Viewport aspect ratio
+            {
+                // Create default scaling options if they dont exist from deserialization.
+                if (_defaultViewportScaling.Count == 0)
+                {
+                    _defaultViewportScaling.Add(new ViewportScaleOptions
+                    {
+                        Label = "Free Aspect",
+                        ScaleType = ViewportScaleType.Aspect,
+                        Size = new Int2(1,1),
+                        Active = true,
+                    });
+                    _defaultViewportScaling.Add(new ViewportScaleOptions
+                    {
+                        Label = "16:9 Aspect",
+                        ScaleType = ViewportScaleType.Aspect,
+                        Size = new Int2(16,9),
+                        Active = false,
+                    });
+                    _defaultViewportScaling.Add(new ViewportScaleOptions
+                    {
+                        Label = "16:10 Aspect",
+                        ScaleType = ViewportScaleType.Aspect,
+                        Size = new Int2(16,10),
+                        Active = false,
+                    });
+                    _defaultViewportScaling.Add(new ViewportScaleOptions
+                    {
+                        Label = "1920x1080 Resolution",
+                        ScaleType = ViewportScaleType.Resolution,
+                        Size = new Int2(1920,1080),
+                        Active = false,
+                    });
+                    _defaultViewportScaling.Add(new ViewportScaleOptions
+                    {
+                        Label = "2560x1440 Resolution",
+                        ScaleType = ViewportScaleType.Resolution,
+                        Size = new Int2(2560,1440),
+                        Active = false,
+                    });
+                }
+                
+                var vsMenu = menu.AddChildMenu("Viewport Size").ContextMenu;
+                
+                CreateViewportSizingContextMenu(vsMenu);
+            }
+
             // Take Screenshot
             {
                 var takeScreenshot = menu.AddButton("Take Screenshot");
@@ -398,6 +568,241 @@ namespace FlaxEditor.Windows
 
             menu.MinimumWidth = 200;
             menu.AddSeparator();
+        }
+
+        private void CreateViewportSizingContextMenu(ContextMenu vsMenu)
+        {
+            // add default viewport sizing options
+            for (int i = 0; i < _defaultViewportScaling.Count; i++)
+            {
+                var button = vsMenu.AddButton(_defaultViewportScaling[i].Label);
+                button.CloseMenuOnClick = false;
+                button.Icon = _defaultViewportScaling[i].Active ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                button.Tag = _defaultViewportScaling[i];
+                if (_defaultViewportScaling[i].Active)
+                    ChangeViewportRatio(_defaultViewportScaling[i]);
+
+                button.Clicked += () =>
+                {
+                    if (button.Tag == null)
+                        return;
+
+                    // Reset selected icon on all buttons
+                    foreach (var child in vsMenu.Items)
+                    {
+                        if (child is ContextMenuButton cmb)
+                        {
+                            var v = (ViewportScaleOptions)cmb.Tag;
+                            if (cmb == button)
+                            {
+                                v.Active = true;
+                                button.Icon = Style.Current.CheckBoxTick;
+                                ChangeViewportRatio(v);
+                            }
+                            else if (v.Active)
+                            {
+                                cmb.Icon = SpriteHandle.Invalid;
+                                v.Active = false;
+                            }
+                        }
+                    }
+                };
+            }
+            vsMenu.AddSeparator();
+
+            // Add custom viewport options
+            for (int i = 0; i < _customViewportScaling.Count; i++)
+            {
+                var childCM = vsMenu.AddChildMenu(_customViewportScaling[i].Label);
+                childCM.CloseMenuOnClick = false;
+                childCM.Icon = _customViewportScaling[i].Active ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                childCM.Tag = _customViewportScaling[i];
+                if (_customViewportScaling[i].Active)
+                    ChangeViewportRatio(_customViewportScaling[i]);
+                var applyButton = childCM.ContextMenu.AddButton("Apply");
+                applyButton.Tag = childCM.Tag = _customViewportScaling[i];
+                applyButton.CloseMenuOnClick = false;
+                applyButton.Clicked += () =>
+                {
+                    if (childCM.Tag == null)
+                        return;
+
+                    // Reset selected icon on all buttons
+                    foreach (var child in vsMenu.Items)
+                    {
+                        if (child is ContextMenuButton cmb)
+                        {
+                            var v = (ViewportScaleOptions)child.Tag;
+                            if (child == childCM)
+                            {
+                                v.Active = true;
+                                childCM.Icon = Style.Current.CheckBoxTick;
+                                ChangeViewportRatio(v);
+                            }
+                            else if (v.Active)
+                            {
+                                cmb.Icon = SpriteHandle.Invalid;
+                                v.Active = false;
+                            }
+                        }
+                    }
+                };
+
+                var deleteButton = childCM.ContextMenu.AddButton("Delete");
+                deleteButton.CloseMenuOnClick = false;
+                deleteButton.Clicked += () =>
+                {
+                    if (childCM.Tag == null)
+                        return;
+
+                    var v = (ViewportScaleOptions)childCM.Tag;
+                    if (v.Active)
+                    {
+                        v.Active = false;
+                        _defaultViewportScaling[0].Active = true;
+                        ChangeViewportRatio(_defaultViewportScaling[0]);
+                    }
+                    _customViewportScaling.Remove(v);
+                    vsMenu.DisposeAllItems();
+                    CreateViewportSizingContextMenu(vsMenu);
+                    vsMenu.PerformLayout();
+                };
+            }
+
+            vsMenu.AddSeparator();
+
+            // Add button
+            var add = vsMenu.AddButton("Add...");
+            add.CloseMenuOnClick = false;
+            add.Clicked += () =>
+            {
+                var popup = new ContextMenuBase
+                {
+                    Size = new Float2(230, 125),
+                    ClipChildren = false,
+                    CullChildren = false,
+                };
+                popup.Show(add, new Float2(add.Width, 0));
+
+                var nameLabel = new Label
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Text = "Name",
+                    HorizontalAlignment = TextAlignment.Near,
+                };
+                nameLabel.LocalX += 10;
+                nameLabel.LocalY += 10;
+
+                var nameTextBox = new TextBox
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    IsMultiline = false,
+                };
+                nameTextBox.LocalX += 100;
+                nameTextBox.LocalY += 10;
+
+                var typeLabel = new Label
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Text = "Type",
+                    HorizontalAlignment = TextAlignment.Near,
+                };
+                typeLabel.LocalX += 10;
+                typeLabel.LocalY += 35;
+
+                var typeDropdown = new Dropdown
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Items = { "Aspect", "Resolution" },
+                    SelectedItem = "Aspect",
+                    Width = nameTextBox.Width
+                };
+                typeDropdown.LocalY += 35;
+                typeDropdown.LocalX += 100;
+
+                var whLabel = new Label
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Text = "Width & Height",
+                    HorizontalAlignment = TextAlignment.Near,
+                };
+                whLabel.LocalX += 10;
+                whLabel.LocalY += 60;
+
+                var wValue = new IntValueBox(16)
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    MinValue = 1,
+                    Width = 55,
+                };
+                wValue.LocalY += 60;
+                wValue.LocalX += 100;
+
+                var hValue = new IntValueBox(9)
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    MinValue = 1,
+                    Width = 55,
+                };
+                hValue.LocalY += 60;
+                hValue.LocalX += 165;
+
+                var submitButton = new Button
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Text = "Submit",
+                    Width = 70,
+                };
+                submitButton.LocalX += 40;
+                submitButton.LocalY += 90;
+
+                submitButton.Clicked += () =>
+                {
+                    Enum.TryParse(typeDropdown.SelectedItem, out ViewportScaleType type);
+
+                    var combineString = type == ViewportScaleType.Aspect ? ":" : "x";
+                    var name = nameTextBox.Text + " (" + wValue.Value + combineString + hValue.Value + ") " + typeDropdown.SelectedItem;
+
+                    var newViewportOption = new ViewportScaleOptions
+                    {
+                        ScaleType = type,
+                        Label = name,
+                        Size = new Int2(wValue.Value, hValue.Value),
+                    };
+
+                    _customViewportScaling.Add(newViewportOption);
+                    vsMenu.DisposeAllItems();
+                    CreateViewportSizingContextMenu(vsMenu);
+                    vsMenu.PerformLayout();
+                };
+
+                var cancelButton = new Button
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Text = "Cancel",
+                    Width = 70,
+                };
+                cancelButton.LocalX += 120;
+                cancelButton.LocalY += 90;
+
+                cancelButton.Clicked += () =>
+                {
+                    nameTextBox.Clear();
+                    typeDropdown.SelectedItem = "Aspect";
+                    hValue.Value = 9;
+                    wValue.Value = 16;
+                    popup.Hide();
+                };
+            };
         }
 
         /// <inheritdoc />
@@ -624,6 +1029,8 @@ namespace FlaxEditor.Windows
         {
             writer.WriteAttributeString("ShowGUI", ShowGUI.ToString());
             writer.WriteAttributeString("ShowDebugDraw", ShowDebugDraw.ToString());
+            writer.WriteAttributeString("DefaultViewportScaling", JsonSerializer.Serialize(_defaultViewportScaling));
+            writer.WriteAttributeString("CustomViewportScaling", JsonSerializer.Serialize(_customViewportScaling));
         }
 
         /// <inheritdoc />
@@ -633,6 +1040,24 @@ namespace FlaxEditor.Windows
                 ShowGUI = value1;
             if (bool.TryParse(node.GetAttribute("ShowDebugDraw"), out value1))
                 ShowDebugDraw = value1;
+            if (node.HasAttribute("CustomViewportScaling"))
+                _customViewportScaling = JsonSerializer.Deserialize<List<ViewportScaleOptions>>(node.GetAttribute("CustomViewportScaling"));
+            
+            for (int i = 0; i < _customViewportScaling.Count; i++)
+            {
+                if (_customViewportScaling[i].Active)
+                    ChangeViewportRatio(_customViewportScaling[i]);
+            }
+            
+            if (node.HasAttribute("DefaultViewportScaling"))
+                _defaultViewportScaling = JsonSerializer.Deserialize<List<ViewportScaleOptions>>(node.GetAttribute("DefaultViewportScaling"));
+            
+            for (int i = 0; i < _defaultViewportScaling.Count; i++)
+            {
+                if (_defaultViewportScaling[i].Active)
+                    ChangeViewportRatio(_defaultViewportScaling[i]);
+            }
+            
         }
 
         /// <inheritdoc />
