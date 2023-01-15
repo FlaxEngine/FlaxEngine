@@ -8,8 +8,7 @@ namespace FlaxEngine
     /// <summary>
     /// Basic pseudo numbers generator utility.
     /// </summary>
-    [HideInEditor]
-    public class RandomUtil
+    public static class RandomUtil
     {
         private static readonly Random _random = new Random();
 

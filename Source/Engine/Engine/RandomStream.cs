@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2022 Wojciech Figat. All rights reserved.
 
-using System;
 using System.Runtime.CompilerServices;
 
 #pragma warning disable 675
@@ -16,12 +15,12 @@ namespace FlaxEngine
         /// <summary>
         /// Holds the initial seed.
         /// </summary>
-        private int _initialSeed = 0;
-        
+        private int _initialSeed;
+
         /// <summary>
         /// Holds the current seed.
         /// </summary>
-        private int _seed = 0;
+        private int _seed;
 
         /// <summary>
         /// Init
@@ -91,8 +90,8 @@ namespace FlaxEngine
         public unsafe bool GetBool()
         {
             MutateSeed();
-            fixed (int* seedPtr= &_seed)
-            return *seedPtr < (uint.MaxValue/ 2);
+            fixed (int* seedPtr = &_seed)
+                return *seedPtr < (uint.MaxValue / 2);
         }
 
         /// <summary>
@@ -102,7 +101,7 @@ namespace FlaxEngine
         {
             MutateSeed();
             fixed (int* seedPtr = &_seed)
-            return (uint)*seedPtr;
+                return (uint)*seedPtr;
         }
 
         /// <summary>
@@ -159,7 +158,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int RandHelper(int a)
         {
-            return a > 0 ? Mathf.FloorToInt(GetFraction() *((float)a - Mathf.Epsilon)) : 0;
+            return a > 0 ? Mathf.FloorToInt(GetFraction() * ((float)a - Mathf.Epsilon)) : 0;
         }
 
         /// <summary>
@@ -186,7 +185,7 @@ namespace FlaxEngine
         {
             return min + (max - min) * Rand();
         }
-    
+
         /// <summary>
         /// Mutates the current seed into the next seed.
         /// </summary>
