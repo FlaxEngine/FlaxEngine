@@ -265,7 +265,7 @@ void Script::Initialize()
 {
     ASSERT(!IsDuringPlay());
 
-    if (Flags & ObjectFlags::IsManagedType || Flags & ObjectFlags::IsCustomScriptingType)
+    if (EnumHasAnyFlags(Flags, ObjectFlags::IsManagedType | ObjectFlags::IsCustomScriptingType))
         SetupType();
 
     // Use lazy creation for the managed instance, just register the object

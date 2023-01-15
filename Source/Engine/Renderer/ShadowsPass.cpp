@@ -84,8 +84,8 @@ bool ShadowsPass::Init()
     const auto formatTexture = PixelFormatExtensions::FindShaderResourceFormat(SHADOW_MAPS_FORMAT, false);
     const auto formatFeaturesDepth = GPUDevice::Instance->GetFormatFeatures(SHADOW_MAPS_FORMAT);
     const auto formatFeaturesTexture = GPUDevice::Instance->GetFormatFeatures(formatTexture);
-    _supportsShadows = FORMAT_FEATURES_ARE_SUPPORTED(formatFeaturesDepth.Support, FormatSupport::DepthStencil | FormatSupport::Texture2D)
-            && FORMAT_FEATURES_ARE_SUPPORTED(formatFeaturesTexture.Support, FormatSupport::ShaderSample | FormatSupport::ShaderSampleComparison);
+    _supportsShadows = EnumHasAllFlags(formatFeaturesDepth.Support, FormatSupport::DepthStencil | FormatSupport::Texture2D)
+            && EnumHasAllFlags(formatFeaturesTexture.Support, FormatSupport::ShaderSample | FormatSupport::ShaderSampleComparison);
     if (!_supportsShadows)
     {
         LOG(Warning, "GPU doesn't support shadows rendering");
@@ -640,7 +640,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererP
     context->ResetRenderTarget();
     const Viewport viewport = renderContext.Task->GetViewport();
     GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
-    GPUTextureView* depthBufferSRV = depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+    GPUTextureView* depthBufferSRV = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView) ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
     context->SetViewportAndScissors(viewport);
     context->BindSR(0, renderContext.Buffers->GBuffer0);
     context->BindSR(1, renderContext.Buffers->GBuffer1);
@@ -655,7 +655,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererP
     sperLight.LightShadow = shadowData.Constants;
     Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
     sperLight.ContactShadowsDistance = light.ShadowsDistance;
-    sperLight.ContactShadowsLength = view.Flags & ViewFlags::ContactShadows ? light.ContactShadowsLength : 0.0f;
+    sperLight.ContactShadowsLength = EnumHasAnyFlags(view.Flags, ViewFlags::ContactShadows) ? light.ContactShadowsLength : 0.0f;
 
     // Calculate world view projection matrix for the light sphere
     Matrix world, wvp, matrix;
@@ -718,7 +718,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererS
     context->ResetRenderTarget();
     const Viewport viewport = renderContext.Task->GetViewport();
     GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
-    GPUTextureView* depthBufferSRV = depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+    GPUTextureView* depthBufferSRV = EnumHasAllFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView) ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
     context->SetViewportAndScissors(viewport);
     context->BindSR(0, renderContext.Buffers->GBuffer0);
     context->BindSR(1, renderContext.Buffers->GBuffer1);
@@ -733,7 +733,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererS
     sperLight.LightShadow = shadowData.Constants;
     Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
     sperLight.ContactShadowsDistance = light.ShadowsDistance;
-    sperLight.ContactShadowsLength = view.Flags & ViewFlags::ContactShadows ? light.ContactShadowsLength : 0.0f;
+    sperLight.ContactShadowsLength = EnumHasAnyFlags(view.Flags, ViewFlags::ContactShadows) ? light.ContactShadowsLength : 0.0f;
 
     // Calculate world view projection matrix for the light sphere
     Matrix world, wvp, matrix;
@@ -787,7 +787,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererD
     context->ResetSR();
     context->ResetRenderTarget();
     GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
-    GPUTextureView* depthBufferSRV = depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+    GPUTextureView* depthBufferSRV = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView) ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
     context->SetViewportAndScissors(renderContext.Task->GetViewport());
     context->BindSR(0, renderContext.Buffers->GBuffer0);
     context->BindSR(1, renderContext.Buffers->GBuffer1);
@@ -803,7 +803,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererD
     sperLight.LightShadow = shadowData.Constants;
     Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
     sperLight.ContactShadowsDistance = light.ShadowsDistance;
-    sperLight.ContactShadowsLength = view.Flags & ViewFlags::ContactShadows ? light.ContactShadowsLength : 0.0f;
+    sperLight.ContactShadowsLength = EnumHasAnyFlags(view.Flags, ViewFlags::ContactShadows) ? light.ContactShadowsLength : 0.0f;
 
     // Render shadow in screen space
     auto shader = _shader->GetShader();

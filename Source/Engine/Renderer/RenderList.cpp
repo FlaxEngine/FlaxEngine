@@ -218,7 +218,7 @@ void RenderList::RunPostFxPass(GPUContext* context, RenderContext& renderContext
             needTempTarget = true;
         }
     }
-    if (renderContext.View.Flags & ViewFlags::CustomPostProcess)
+    if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::CustomPostProcess))
     {
         for (const PostProcessEffect* fx : renderContext.List->PostFx)
         {
@@ -259,7 +259,7 @@ void RenderList::RunPostFxPass(GPUContext* context, RenderContext& renderContext
             Swap(output, input);
         }
     }
-    if (renderContext.View.Flags & ViewFlags::CustomPostProcess)
+    if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::CustomPostProcess))
     {
         for (PostProcessEffect* fx : renderContext.List->PostFx)
         {
@@ -328,7 +328,7 @@ void RenderList::RunCustomPostFxPass(GPUContext* context, RenderContext& renderC
 
 bool RenderList::HasAnyPostFx(const RenderContext& renderContext, PostProcessEffectLocation postProcess) const
 {
-    if (renderContext.View.Flags & ViewFlags::CustomPostProcess)
+    if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::CustomPostProcess))
     {
         for (const PostProcessEffect* fx : renderContext.List->PostFx)
         {
@@ -443,26 +443,26 @@ void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawMo
     const int32 index = DrawCalls.Add(drawCall);
 
     // Add draw call to proper draw lists
-    if (drawModes & DrawPass::Depth)
+    if ((drawModes & DrawPass::Depth) != DrawPass::None)
     {
         DrawCallsLists[(int32)DrawCallsListType::Depth].Indices.Add(index);
     }
-    if (drawModes & (DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas))
+    if ((drawModes & (DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas)) != DrawPass::None)
     {
         if (receivesDecals)
             DrawCallsLists[(int32)DrawCallsListType::GBuffer].Indices.Add(index);
         else
             DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals].Indices.Add(index);
     }
-    if (drawModes & DrawPass::Forward)
+    if ((drawModes & DrawPass::Forward) != DrawPass::None)
     {
         DrawCallsLists[(int32)DrawCallsListType::Forward].Indices.Add(index);
     }
-    if (drawModes & DrawPass::Distortion)
+    if ((drawModes & DrawPass::Distortion) != DrawPass::None)
     {
         DrawCallsLists[(int32)DrawCallsListType::Distortion].Indices.Add(index);
     }
-    if (drawModes & DrawPass::MotionVectors && (staticFlags & StaticFlags::Transform) == 0)
+    if ((drawModes & DrawPass::MotionVectors) != DrawPass::None && (staticFlags & StaticFlags::Transform) == StaticFlags::None)
     {
         DrawCallsLists[(int32)DrawCallsListType::MotionVectors].Indices.Add(index);
     }
@@ -482,30 +482,30 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
     const int32 index = DrawCalls.Add(drawCall);
 
     // Add draw call to proper draw lists
-    DrawPass modes = (DrawPass)(drawModes & mainRenderContext.View.GetShadowsDrawPassMask(shadowsMode));
-    drawModes = (DrawPass)(modes & mainRenderContext.View.Pass);
+    DrawPass modes = drawModes & mainRenderContext.View.GetShadowsDrawPassMask(shadowsMode);
+    drawModes = modes & mainRenderContext.View.Pass;
     if (drawModes != DrawPass::None && mainRenderContext.View.CullingFrustum.Intersects(bounds))
     {
-        if (drawModes & DrawPass::Depth)
+        if ((drawModes & DrawPass::Depth) != DrawPass::None)
         {
             DrawCallsLists[(int32)DrawCallsListType::Depth].Indices.Add(index);
         }
-        if (drawModes & (DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas))
+        if ((drawModes & (DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas)) != DrawPass::None)
         {
             if (receivesDecals)
                 DrawCallsLists[(int32)DrawCallsListType::GBuffer].Indices.Add(index);
             else
                 DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals].Indices.Add(index);
         }
-        if (drawModes & DrawPass::Forward)
+        if ((drawModes & DrawPass::Forward) != DrawPass::None)
         {
             DrawCallsLists[(int32)DrawCallsListType::Forward].Indices.Add(index);
         }
-        if (drawModes & DrawPass::Distortion)
+        if ((drawModes & DrawPass::Distortion) != DrawPass::None)
         {
             DrawCallsLists[(int32)DrawCallsListType::Distortion].Indices.Add(index);
         }
-        if (drawModes & DrawPass::MotionVectors && (staticFlags & StaticFlags::Transform) == 0)
+        if ((drawModes & DrawPass::MotionVectors) != DrawPass::None && (staticFlags & StaticFlags::Transform) == StaticFlags::None)
         {
             DrawCallsLists[(int32)DrawCallsListType::MotionVectors].Indices.Add(index);
         }

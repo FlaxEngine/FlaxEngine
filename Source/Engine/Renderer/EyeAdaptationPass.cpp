@@ -47,7 +47,7 @@ void EyeAdaptationPass::Render(RenderContext& renderContext, GPUTexture* colorBu
     renderContext.Buffers->LastEyeAdaptationTime = 0.0f;
 
     // Optionally skip the rendering
-    if (checkIfSkipPass() || (view.Flags & ViewFlags::EyeAdaptation) == 0 || settings.Mode == EyeAdaptationMode::None)
+    if (checkIfSkipPass() || (view.Flags & ViewFlags::EyeAdaptation) == ViewFlags::None || settings.Mode == EyeAdaptationMode::None)
     {
         return;
     }

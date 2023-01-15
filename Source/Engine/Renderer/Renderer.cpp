@@ -297,7 +297,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     // Perform postFx volumes blending and query before rendering
     task->CollectPostFxVolumes(renderContext);
     renderContext.List->BlendSettings();
-    auto aaMode = (renderContext.View.Flags & ViewFlags::AntiAliasing) != 0 ? renderContext.List->Settings.AntiAliasing.Mode : AntialiasingMode::None;
+    auto aaMode = EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::AntiAliasing) ? renderContext.List->Settings.AntiAliasing.Mode : AntialiasingMode::None;
     if (aaMode == AntialiasingMode::TemporalAntialiasing && view.IsOrthographicProjection())
         aaMode = AntialiasingMode::None; // TODO: support TAA in ortho projection (see RenderView::Prepare to jitter projection matrix better)
     renderContext.List->Settings.AntiAliasing.Mode = aaMode;
@@ -317,10 +317,11 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         {
             const MotionBlurSettings& motionBlurSettings = renderContext.List->Settings.MotionBlur;
             const ScreenSpaceReflectionsSettings ssrSettings = renderContext.List->Settings.ScreenSpaceReflections;
-            setup.UseMotionVectors = ((renderContext.View.Flags & ViewFlags::MotionBlur) != 0 && motionBlurSettings.Enabled && motionBlurSettings.Scale > ZeroTolerance) ||
-                renderContext.View.Mode == ViewMode::MotionVectors ||
-                (ssrSettings.TemporalEffect && renderContext.View.Flags & ViewFlags::SSR) ||
-                renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing;
+            setup.UseMotionVectors =
+                    (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::MotionBlur) && motionBlurSettings.Enabled && motionBlurSettings.Scale > ZeroTolerance) ||
+                    renderContext.View.Mode == ViewMode::MotionVectors ||
+                    (ssrSettings.TemporalEffect && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::SSR)) ||
+                    renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing;
         }
         setup.UseTemporalAAJitter = aaMode == AntialiasingMode::TemporalAntialiasing;
 
@@ -344,7 +345,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
             view.Pass |= DrawPass::MotionVectors;
         renderContextBatch.GetMainContext() = renderContext; // Sync render context in batch with the current value
 
-        bool drawShadows = !isGBufferDebug && ((view.Flags & ViewFlags::Shadows) != 0) && ShadowsPass::Instance()->IsReady();
+        bool drawShadows = !isGBufferDebug && EnumHasAnyFlags(view.Flags, ViewFlags::Shadows) && ShadowsPass::Instance()->IsReady();
         switch (renderContext.View.Mode)
         {
         case ViewMode::QuadOverdraw:
@@ -415,7 +416,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 #endif
 
     // Global SDF rendering (can be used by materials later on)
-    if (graphicsSettings->EnableGlobalSDF && view.Flags & ViewFlags::GlobalSDF)
+    if (graphicsSettings->EnableGlobalSDF && EnumHasAnyFlags(view.Flags, ViewFlags::GlobalSDF))
     {
         GlobalSignDistanceFieldPass::BindingData bindingData;
         GlobalSignDistanceFieldPass::Instance()->Render(renderContext, context, bindingData);
@@ -470,7 +471,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     // Render lighting
     renderContextBatch.GetMainContext() = renderContext; // Sync render context in batch with the current value
     LightPass::Instance()->RenderLight(renderContextBatch, *lightBuffer);
-    if (renderContext.View.Flags & ViewFlags::GI)
+    if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::GI))
     {
         switch (renderContext.List->Settings.GlobalIllumination.Mode)
         {

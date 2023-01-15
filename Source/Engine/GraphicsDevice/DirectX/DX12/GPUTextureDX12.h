@@ -197,7 +197,7 @@ public:
     // [IShaderResourceDX12]
     bool IsDepthStencilResource() const override
     {
-        return (_desc.Flags & GPUTextureFlags::DepthStencil) != 0;
+        return (_desc.Flags & GPUTextureFlags::DepthStencil) != GPUTextureFlags::None;
     }
     D3D12_CPU_DESCRIPTOR_HANDLE SRV() const override
     {

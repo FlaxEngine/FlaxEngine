@@ -172,8 +172,8 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
         return;
 
     // Check if skip rendering
-    const auto shadowsMode = (ShadowsCastingMode)(entry.ShadowsMode & slot.ShadowsMode);
-    const auto drawModes = (DrawPass)((uint32)info.DrawModes & (uint32)renderContext.View.Pass & (uint32)renderContext.View.GetShadowsDrawPassMask(shadowsMode) & (uint32)material->GetDrawModes());
+    const auto shadowsMode = entry.ShadowsMode & slot.ShadowsMode;
+    const auto drawModes = info.DrawModes & renderContext.View.Pass & renderContext.View.GetShadowsDrawPassMask(shadowsMode) & material->GetDrawModes();
     if (drawModes == DrawPass::None)
         return;
 
@@ -276,8 +276,8 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
 
     // Push draw call to the render lists
-    const auto shadowsMode = (ShadowsCastingMode)(entry.ShadowsMode & slot.ShadowsMode);
-    const DrawPass drawModes = (DrawPass)(info.DrawModes & material->GetDrawModes());
+    const auto shadowsMode = entry.ShadowsMode & slot.ShadowsMode;
+    const auto drawModes = info.DrawModes & material->GetDrawModes();
     if (drawModes != DrawPass::None)
         renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, StaticFlags::None, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals);
 }

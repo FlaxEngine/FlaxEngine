@@ -349,7 +349,7 @@ void TextRender::Draw(RenderContext& renderContext)
     renderContext.View.GetWorldMatrix(_transform, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
-    const DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass & (uint32)renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
+    const DrawPass drawModes = DrawModes & renderContext.View.Pass & renderContext.View.GetShadowsDrawPassMask(ShadowsMode);
     if (_vb0.Data.Count() > 0 && drawModes != DrawPass::None)
     {
         // Flush buffers
@@ -386,13 +386,13 @@ void TextRender::Draw(RenderContext& renderContext)
         // Submit draw calls
         for (const auto& e : _drawChunks)
         {
-            auto chunkDrawModes = drawModes & e.Material->GetDrawModes();
-            if (chunkDrawModes == 0)
+            const DrawPass chunkDrawModes = drawModes & e.Material->GetDrawModes();
+            if (chunkDrawModes == DrawPass::None)
                 continue;
             drawCall.Draw.IndicesCount = e.IndicesCount;
             drawCall.Draw.StartIndex = e.StartIndex;
             drawCall.Material = e.Material;
-            renderContext.List->AddDrawCall(renderContext, (DrawPass)chunkDrawModes, GetStaticFlags(), drawCall, true);
+            renderContext.List->AddDrawCall(renderContext, chunkDrawModes, GetStaticFlags(), drawCall, true);
         }
     }
 

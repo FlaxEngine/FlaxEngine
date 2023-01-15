@@ -482,7 +482,7 @@ bool ModelTool::ImportData(const String& path, ImportedModelData& data, Options&
     }
 
     // Flip normals of the imported geometry
-    if (options.FlipNormals && data.Types & ImportDataTypes::Geometry)
+    if (options.FlipNormals && EnumHasAnyFlags(data.Types, ImportDataTypes::Geometry))
     {
         for (auto& lod : data.LODs)
         {
@@ -795,7 +795,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         auto& texture = data.Textures[i];
 
         // Auto-import textures
-        if (autoImportOutput.IsEmpty() || (data.Types & ImportDataTypes::Textures) == 0 || texture.FilePath.IsEmpty())
+        if (autoImportOutput.IsEmpty() || (data.Types & ImportDataTypes::Textures) == ImportDataTypes::None || texture.FilePath.IsEmpty())
             continue;
         String filename = StringUtils::GetFileNameWithoutExtension(texture.FilePath);
         for (int32 j = filename.Length() - 1; j >= 0; j--)
@@ -842,7 +842,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             material.Name = TEXT("Material ") + StringUtils::ToString(i);
 
         // Auto-import materials
-        if (autoImportOutput.IsEmpty() || (data.Types & ImportDataTypes::Materials) == 0 || !material.UsesProperties())
+        if (autoImportOutput.IsEmpty() || (data.Types & ImportDataTypes::Materials) == ImportDataTypes::None || !material.UsesProperties())
             continue;
         auto filename = material.Name;
         for (int32 j = filename.Length() - 1; j >= 0; j--)

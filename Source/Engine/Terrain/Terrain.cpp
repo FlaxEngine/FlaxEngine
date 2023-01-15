@@ -505,13 +505,13 @@ void Terrain::RemovePatch(const Int2& patchCoord)
 
 void Terrain::Draw(RenderContext& renderContext)
 {
-    DrawPass drawModes = (DrawPass)(DrawModes & renderContext.View.Pass);
+    const DrawPass drawModes = DrawModes & renderContext.View.Pass;
     if (drawModes == DrawPass::None)
         return;
     PROFILE_CPU();
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
     {
-        if ((DrawModes & DrawPass::GlobalSDF) == 0)
+        if ((DrawModes & DrawPass::GlobalSDF) == DrawPass::None)
             return;
         const float chunkSize = TERRAIN_UNITS_PER_VERTEX * (float)_chunkSize;
         const float posToUV = 0.25f / chunkSize;
@@ -531,7 +531,7 @@ void Terrain::Draw(RenderContext& renderContext)
     }
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
     {
-        if ((DrawModes & DrawPass::GlobalSurfaceAtlas) == 0)
+        if ((DrawModes & DrawPass::GlobalSurfaceAtlas) == DrawPass::None)
             return;
         for (TerrainPatch* patch : _patches)
         {

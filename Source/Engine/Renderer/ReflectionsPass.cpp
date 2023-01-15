@@ -370,9 +370,9 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
 
     // Cache data
     auto& view = renderContext.View;
-    bool useReflections = ((view.Flags & ViewFlags::Reflections) != 0);
-    bool useSSR = ((view.Flags & ViewFlags::SSR) != 0) && (renderContext.List->Settings.ScreenSpaceReflections.Intensity > ZeroTolerance);
-    int32 probesCount = (int32)renderContext.List->EnvironmentProbes.Count();
+    bool useReflections = EnumHasAnyFlags(view.Flags, ViewFlags::Reflections);
+    bool useSSR = EnumHasAnyFlags(view.Flags, ViewFlags::SSR) && renderContext.List->Settings.ScreenSpaceReflections.Intensity > ZeroTolerance;
+    int32 probesCount = renderContext.List->EnvironmentProbes.Count();
     bool renderProbes = probesCount > 0;
     auto shader = _shader->GetShader();
     auto cb = shader->GetCB(0);
@@ -404,7 +404,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         context->SetRenderTarget(*reflectionsBuffer);
 
         // Sort probes by the radius
-        Sorting::QuickSort(renderContext.List->EnvironmentProbes.Get(), (int32)renderContext.List->EnvironmentProbes.Count(), &sortProbes);
+        Sorting::QuickSort(renderContext.List->EnvironmentProbes.Get(), renderContext.List->EnvironmentProbes.Count(), &sortProbes);
 
         // TODO: don't render too far probes, check area of the screen and apply culling!
 

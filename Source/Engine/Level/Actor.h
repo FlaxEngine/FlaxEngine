@@ -350,7 +350,7 @@ public:
     /// </summary>
     FORCE_INLINE bool IsTransformStatic() const
     {
-        return (_staticFlags & StaticFlags::Transform) != 0;
+        return (_staticFlags & StaticFlags::Transform) != StaticFlags::None;
     }
 
     /// <summary>
@@ -373,7 +373,7 @@ public:
     /// </summary>
     FORCE_INLINE bool HasStaticFlag(StaticFlags flag) const
     {
-        return (_staticFlags & flag) == (int)flag;
+        return EnumHasAllFlags(_staticFlags, flag);
     }
 
     /// <summary>
@@ -391,7 +391,7 @@ public:
     /// <param name="flags">The flags to remove.</param>
     FORCE_INLINE void RemoveStaticFlags(StaticFlags flags)
     {
-        SetStaticFlags(static_cast<StaticFlags>(_staticFlags & ~flags));
+        SetStaticFlags(_staticFlags & ~flags);
     }
 
     /// <summary>
@@ -401,7 +401,7 @@ public:
     /// <param name="value">The target value of the flag.</param>
     FORCE_INLINE void SetStaticFlag(StaticFlags flag, bool value)
     {
-        SetStaticFlags(static_cast<StaticFlags>(_staticFlags & ~flag) | (value ? flag : StaticFlags::None));
+        SetStaticFlags((_staticFlags & ~flag) | (value ? flag : StaticFlags::None));
     }
 
 public:

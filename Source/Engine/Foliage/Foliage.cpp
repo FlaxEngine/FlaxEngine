@@ -22,7 +22,7 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Utilities/Encryption.h"
 
-#define FOLIAGE_GET_DRAW_MODES(renderContext, type) static_cast<DrawPass>(type.DrawModes & renderContext.View.Pass & (int32)renderContext.View.GetShadowsDrawPassMask(type.ShadowsMode))
+#define FOLIAGE_GET_DRAW_MODES(renderContext, type) (type.DrawModes & renderContext.View.Pass & renderContext.View.GetShadowsDrawPassMask(type.ShadowsMode))
 #define FOLIAGE_CAN_DRAW(renderContext, type) (type.IsReady() && FOLIAGE_GET_DRAW_MODES(renderContext, type) != DrawPass::None && type.Model->CanBeRendered())
 
 Foliage::Foliage(const SpawnParams& params)
@@ -115,7 +115,7 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
             e = &result[key];
             ASSERT_LOW_LAYER(key.Mat);
             e->DrawCall.Material = key.Mat;
-            e->DrawCall.Surface.Lightmap = _staticFlags & StaticFlags::Lightmap ? _scene->LightmapsData.GetReadyLightmap(key.Lightmap) : nullptr;
+            e->DrawCall.Surface.Lightmap = EnumHasAnyFlags(_staticFlags, StaticFlags::Lightmap) ? _scene->LightmapsData.GetReadyLightmap(key.Lightmap) : nullptr;
         }
 
         // Add instance to the draw batch
@@ -450,9 +450,9 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
                 continue;
 
             // Select draw modes
-            const auto shadowsMode = static_cast<ShadowsCastingMode>(entry.ShadowsMode & slot.ShadowsMode);
-            const auto drawModes = static_cast<DrawPass>(typeDrawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode)) & material->GetDrawModes();
-            if (drawModes == 0)
+            const auto shadowsMode = entry.ShadowsMode & slot.ShadowsMode;
+            const auto drawModes = typeDrawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode) & material->GetDrawModes();
+            if (drawModes == DrawPass::None)
                 continue;
 
             drawCall.DrawCall.Material = material;
@@ -472,8 +472,8 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
         const auto& mesh = *e.Key.Geo;
         const auto& entry = type.Entries[mesh.GetMaterialSlotIndex()];
         const MaterialSlot& slot = type.Model->MaterialSlots[mesh.GetMaterialSlotIndex()];
-        const auto shadowsMode = static_cast<ShadowsCastingMode>(entry.ShadowsMode & slot.ShadowsMode);
-        const auto drawModes = (DrawPass)(static_cast<DrawPass>(typeDrawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode)) & batch.DrawCall.Material->GetDrawModes());
+        const auto shadowsMode = entry.ShadowsMode & slot.ShadowsMode;
+        const auto drawModes = typeDrawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode) & batch.DrawCall.Material->GetDrawModes();
 
         // Setup draw call
         mesh.GetDrawCallGeometry(batch.DrawCall);
@@ -493,7 +493,7 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
         batch.DrawCall.Surface.Skinning = nullptr;
         batch.DrawCall.WorldDeterminantSign = 1;
 
-        if (drawModes & DrawPass::Forward)
+        if (EnumHasAnyFlags(drawModes, DrawPass::Forward))
         {
             // Transparency requires sorting by depth so convert back the batched draw call into normal draw calls (RenderList impl will handle this)
             DrawCall drawCall = batch.DrawCall;
@@ -518,22 +518,22 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
         const int32 batchIndex = renderContext.List->BatchedDrawCalls.Add(MoveTemp(batch));
 
         // Add draw call to proper draw lists
-        if (drawModes & DrawPass::Depth)
+        if (EnumHasAnyFlags(drawModes, DrawPass::Depth))
         {
             renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Depth].PreBatchedDrawCalls.Add(batchIndex);
         }
-        if (drawModes & DrawPass::GBuffer)
+        if (EnumHasAnyFlags(drawModes, DrawPass::GBuffer))
         {
             if (entry.ReceiveDecals)
                 renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBuffer].PreBatchedDrawCalls.Add(batchIndex);
             else
                 renderContext.List->DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals].PreBatchedDrawCalls.Add(batchIndex);
         }
-        if (drawModes & DrawPass::Distortion)
+        if (EnumHasAnyFlags(drawModes, DrawPass::Distortion))
         {
             renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Distortion].PreBatchedDrawCalls.Add(batchIndex);
         }
-        if (drawModes & DrawPass::MotionVectors && (_staticFlags & StaticFlags::Transform) == 0)
+        if (EnumHasAnyFlags(drawModes, DrawPass::MotionVectors) && (_staticFlags & StaticFlags::Transform) == StaticFlags::None)
         {
             renderContext.List->DrawCallsLists[(int32)DrawCallsListType::MotionVectors].PreBatchedDrawCalls.Add(batchIndex);
         }
@@ -1053,7 +1053,7 @@ bool Foliage::Intersects(const Ray& ray, Real& distance, Vector3& normal, int32&
     Real tmpDistance;
     Vector3 tmpNormal;
     FoliageInstance* tmpInstance;
-    for (auto& type : FoliageTypes)
+    for (const auto& type : FoliageTypes)
     {
         if (type.Root && type.Root->Intersects(this, ray, tmpDistance, tmpNormal, tmpInstance) && tmpDistance < distance)
         {
@@ -1155,7 +1155,7 @@ void Foliage::Draw(RenderContext& renderContext)
 #endif
         return;
     }
-    if (renderContext.View.Pass & DrawPass::GlobalSurfaceAtlas)
+    if (EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GlobalSurfaceAtlas))
     {
         // Draw single foliage instance projection into Global Surface Atlas
         auto& instance = *(FoliageInstance*)GlobalSurfaceAtlasPass::Instance()->GetCurrentActorObject();
@@ -1181,7 +1181,7 @@ void Foliage::Draw(RenderContext& renderContext)
         draw.DrawState = &instance.DrawState;
         draw.Bounds = instance.Bounds;
         draw.PerInstanceRandom = instance.Random;
-        draw.DrawModes = static_cast<DrawPass>(type.DrawModes & view.Pass & (int32)view.GetShadowsDrawPassMask(type.ShadowsMode));
+        draw.DrawModes = type.DrawModes & view.Pass & view.GetShadowsDrawPassMask(type.ShadowsMode);
         type.Model->Draw(renderContext, draw);
         return;
     }
@@ -1216,7 +1216,7 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
     // Run async job for each foliage type
     const RenderView& view = renderContextBatch.GetMainContext().View;
-    if ((view.Pass & DrawPass::GBuffer) && !(view.Pass & (DrawPass::GlobalSDF | DrawPass::GlobalSurfaceAtlas)) && renderContextBatch.EnableAsync)
+    if (EnumHasAnyFlags(view.Pass, DrawPass::GBuffer) && !(view.Pass & (DrawPass::GlobalSDF | DrawPass::GlobalSurfaceAtlas)) && renderContextBatch.EnableAsync)
     {
         // Cache data per foliage instance type
         for (FoliageType& type : FoliageTypes)

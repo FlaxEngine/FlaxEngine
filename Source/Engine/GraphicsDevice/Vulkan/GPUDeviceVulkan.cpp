@@ -1322,19 +1322,19 @@ PixelFormat GPUDeviceVulkan::GetClosestSupportedPixelFormat(PixelFormat format, 
 {
     // Collect features to use
     VkFormatFeatureFlags wantedFeatureFlags = 0;
-    if (flags & GPUTextureFlags::ShaderResource)
+    if (EnumHasAnyFlags(flags, GPUTextureFlags::ShaderResource))
         wantedFeatureFlags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
-    if (flags & GPUTextureFlags::RenderTarget)
+    if (EnumHasAnyFlags(flags, GPUTextureFlags::RenderTarget))
         wantedFeatureFlags |= VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
-    if (flags & GPUTextureFlags::DepthStencil)
+    if (EnumHasAnyFlags(flags, GPUTextureFlags::DepthStencil))
         wantedFeatureFlags |= VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    if (flags & GPUTextureFlags::UnorderedAccess)
+    if (EnumHasAnyFlags(flags, GPUTextureFlags::UnorderedAccess))
         wantedFeatureFlags |= VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
 
     if (!IsVkFormatSupported(RenderToolsVulkan::ToVulkanFormat(format), wantedFeatureFlags, optimalTiling))
     {
         // Special case for depth-stencil formats
-        if (flags & GPUTextureFlags::DepthStencil)
+        if (EnumHasAnyFlags(flags, GPUTextureFlags::DepthStencil))
         {
             const bool hasStencil = PixelFormatExtensions::HasStencil(format);
 
@@ -1749,7 +1749,7 @@ bool GPUDeviceVulkan::Init()
                 //VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT
 
                 // Multi-sampling support
-                if (support & FormatSupport::Texture2D)
+                if (EnumHasAnyFlags(support, FormatSupport::Texture2D))
                     msaa = maxMsaa;
             }
 

@@ -206,7 +206,7 @@ public:
     /// </summary>
     FORCE_INLINE bool IsRegistered() const
     {
-        return (Flags & ObjectFlags::IsRegistered) != 0;
+        return (Flags & ObjectFlags::IsRegistered) != ObjectFlags::None;
     }
 
     /// <summary>

@@ -54,7 +54,7 @@ void SceneQuery::GetAllSceneObjects(Actor* root, Array<SceneObject*>& objects)
 
 bool GetAllSerializableSceneObjectsQuery(Actor* actor, Array<SceneObject*>& objects)
 {
-    if ((actor->HideFlags & HideFlags::DontSave) != 0)
+    if (EnumHasAnyFlags(actor->HideFlags, HideFlags::DontSave))
         return false;
 
     objects.Add(actor);

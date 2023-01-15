@@ -468,8 +468,8 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
         return;
 
     // Check if skip rendering
-    const auto shadowsMode = (ShadowsCastingMode)(entry.ShadowsMode & slot.ShadowsMode);
-    const auto drawModes = (DrawPass)((uint32)info.DrawModes & (uint32)renderContext.View.Pass & (uint32)renderContext.View.GetShadowsDrawPassMask(shadowsMode) & (uint32)material->GetDrawModes());
+    const auto shadowsMode = entry.ShadowsMode & slot.ShadowsMode;
+    const auto drawModes = info.DrawModes & renderContext.View.Pass & renderContext.View.GetShadowsDrawPassMask(shadowsMode) & material->GetDrawModes();
     if (drawModes == DrawPass::None)
         return;
 
@@ -499,7 +499,7 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.Surface.GeometrySize = _box.GetSize();
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
-    drawCall.Surface.Lightmap = info.Flags & StaticFlags::Lightmap ? info.Lightmap : nullptr;
+    drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
     drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
     drawCall.Surface.Skinning = nullptr;
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
@@ -559,7 +559,7 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.Surface.GeometrySize = _box.GetSize();
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
-    drawCall.Surface.Lightmap = info.Flags & StaticFlags::Lightmap ? info.Lightmap : nullptr;
+    drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
     drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
     drawCall.Surface.Skinning = nullptr;
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
@@ -572,8 +572,8 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
 #endif
 
     // Push draw call to the render lists
-    const auto shadowsMode = (ShadowsCastingMode)(entry.ShadowsMode & slot.ShadowsMode);
-    const DrawPass drawModes = (DrawPass)(info.DrawModes & material->GetDrawModes());
+    const auto shadowsMode = entry.ShadowsMode & slot.ShadowsMode;
+    const auto drawModes = info.DrawModes & material->GetDrawModes();
     if (drawModes != DrawPass::None)
         renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, info.Flags, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals);
 }

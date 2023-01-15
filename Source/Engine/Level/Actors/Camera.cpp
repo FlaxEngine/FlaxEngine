@@ -275,7 +275,7 @@ bool Camera::HasContentLoaded() const
 
 void Camera::Draw(RenderContext& renderContext)
 {
-    if (renderContext.View.Flags & ViewFlags::EditorSprites
+    if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::EditorSprites)
         && _previewModel
         && _previewModel->IsLoaded())
     {
@@ -291,7 +291,7 @@ void Camera::Draw(RenderContext& renderContext)
         draw.Lightmap = nullptr;
         draw.LightmapUVs = nullptr;
         draw.Flags = StaticFlags::Transform;
-        draw.DrawModes = (DrawPass)((DrawPass::Depth | DrawPass::GBuffer | DrawPass::Forward) & renderContext.View.Pass);
+        draw.DrawModes = (DrawPass::Depth | DrawPass::GBuffer | DrawPass::Forward) & renderContext.View.Pass;
         BoundingSphere::FromBox(_previewModelBox, draw.Bounds);
         draw.Bounds.Center -= renderContext.View.Origin;
         draw.PerInstanceRandom = GetPerInstanceRandom();

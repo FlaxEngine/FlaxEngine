@@ -69,8 +69,8 @@ void Decal::OnLayerChanged()
 
 void Decal::Draw(RenderContext& renderContext)
 {
-    if ((renderContext.View.Flags & ViewFlags::Decals) != 0 &&
-        renderContext.View.Pass & DrawPass::GBuffer &&
+    if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Decals) &&
+        EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer) &&
         Material &&
         Material->IsLoaded() &&
         Material->IsDecal())

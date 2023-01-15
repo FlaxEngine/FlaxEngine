@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 // Interpolation and prediction logic based on https://www.gabrielgambetta.com/client-server-game-architecture.html
 
@@ -162,51 +162,51 @@ void NetworkTransform::Serialize(NetworkStream* stream)
     data.HasSequenceIndex = Mode == ReplicationModes::Prediction;
     data.Components = Components;
     stream->Write(data);
-    if ((data.Components & ReplicationComponents::All) == (int)ReplicationComponents::All)
+    if (EnumHasAllFlags(data.Components, ReplicationComponents::All))
     {
         stream->Write(transform);
     }
     else
     {
-        if ((data.Components & ReplicationComponents::Position) == (int)ReplicationComponents::Position)
+        if (EnumHasAllFlags(data.Components, ReplicationComponents::Position))
         {
             stream->Write(transform.Translation);
         }
-        else if (data.Components & ReplicationComponents::Position)
+        else if (EnumHasAnyFlags(data.Components, ReplicationComponents::Position))
         {
-            if (data.Components & ReplicationComponents::PositionX)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::PositionX))
                 stream->Write(transform.Translation.X);
-            if (data.Components & ReplicationComponents::PositionY)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::PositionY))
                 stream->Write(transform.Translation.X);
-            if (data.Components & ReplicationComponents::PositionZ)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::PositionZ))
                 stream->Write(transform.Translation.X);
         }
-        if ((data.Components & ReplicationComponents::Scale) == (int)ReplicationComponents::Scale)
+        if (EnumHasAllFlags(data.Components, ReplicationComponents::Scale))
         {
             stream->Write(transform.Scale);
         }
-        else if (data.Components & ReplicationComponents::Scale)
+        else if (EnumHasAnyFlags(data.Components, ReplicationComponents::Scale))
         {
-            if (data.Components & ReplicationComponents::ScaleX)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::ScaleX))
                 stream->Write(transform.Scale.X);
-            if (data.Components & ReplicationComponents::ScaleY)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::ScaleY))
                 stream->Write(transform.Scale.X);
-            if (data.Components & ReplicationComponents::ScaleZ)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::ScaleZ))
                 stream->Write(transform.Scale.X);
         }
-        if ((data.Components & ReplicationComponents::Rotation) == (int)ReplicationComponents::Rotation)
+        if (EnumHasAllFlags(data.Components, ReplicationComponents::Rotation))
         {
             const Float3 rotation = transform.Orientation.GetEuler();
             stream->Write(rotation);
         }
-        else if (data.Components & ReplicationComponents::Rotation)
+        else if (EnumHasAnyFlags(data.Components, ReplicationComponents::Rotation))
         {
             const Float3 rotation = transform.Orientation.GetEuler();
-            if (data.Components & ReplicationComponents::RotationX)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::RotationX))
                 stream->Write(rotation.X);
-            if (data.Components & ReplicationComponents::RotationY)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::RotationY))
                 stream->Write(rotation.Y);
-            if (data.Components & ReplicationComponents::RotationZ)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::RotationZ))
                 stream->Write(rotation.Z);
         }
     }
@@ -227,52 +227,52 @@ void NetworkTransform::Deserialize(NetworkStream* stream)
     // Decode data
     Data data;
     stream->Read(data);
-    if ((data.Components & ReplicationComponents::All) == (int)ReplicationComponents::All)
+    if (EnumHasAllFlags(data.Components, ReplicationComponents::All))
     {
         stream->Read(transform);
     }
     else
     {
-        if ((data.Components & ReplicationComponents::Position) == (int)ReplicationComponents::Position)
+        if (EnumHasAllFlags(data.Components, ReplicationComponents::Position))
         {
             stream->Read(transform.Translation);
         }
-        else if (data.Components & ReplicationComponents::Position)
+        else if (EnumHasAnyFlags(data.Components, ReplicationComponents::Position))
         {
-            if (data.Components & ReplicationComponents::PositionX)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::PositionX))
                 stream->Read(transform.Translation.X);
-            if (data.Components & ReplicationComponents::PositionY)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::PositionY))
                 stream->Read(transform.Translation.X);
-            if (data.Components & ReplicationComponents::PositionZ)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::PositionZ))
                 stream->Read(transform.Translation.X);
         }
-        if ((data.Components & ReplicationComponents::Scale) == (int)ReplicationComponents::Scale)
+        if (EnumHasAllFlags(data.Components, ReplicationComponents::Scale))
         {
             stream->Read(transform.Scale);
         }
-        else if (data.Components & ReplicationComponents::Scale)
+        else if (EnumHasAnyFlags(data.Components, ReplicationComponents::Scale))
         {
-            if (data.Components & ReplicationComponents::ScaleX)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::ScaleX))
                 stream->Read(transform.Scale.X);
-            if (data.Components & ReplicationComponents::ScaleY)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::ScaleY))
                 stream->Read(transform.Scale.X);
-            if (data.Components & ReplicationComponents::ScaleZ)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::ScaleZ))
                 stream->Read(transform.Scale.X);
         }
-        if ((data.Components & ReplicationComponents::Rotation) == (int)ReplicationComponents::Rotation)
+        if (EnumHasAllFlags(data.Components, ReplicationComponents::Rotation))
         {
             Float3 rotation;
             stream->Read(rotation);
             transform.Orientation = Quaternion::Euler(rotation);
         }
-        else if (data.Components & ReplicationComponents::Rotation)
+        else if (EnumHasAnyFlags(data.Components, ReplicationComponents::Rotation))
         {
             Float3 rotation = transform.Orientation.GetEuler();
-            if (data.Components & ReplicationComponents::RotationX)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::RotationX))
                 stream->Read(rotation.X);
-            if (data.Components & ReplicationComponents::RotationY)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::RotationY))
                 stream->Read(rotation.Y);
-            if (data.Components & ReplicationComponents::RotationZ)
+            if (EnumHasAnyFlags(data.Components, ReplicationComponents::RotationZ))
                 stream->Read(rotation.Z);
             transform.Orientation = Quaternion::Euler(rotation);
         }

@@ -62,7 +62,7 @@ bool ColorGradingPass::Init()
         formatSupportFlags |= FormatSupport::Texture3D;
     else
         formatSupportFlags |= FormatSupport::Texture2D;
-    if (FORMAT_FEATURES_ARE_NOT_SUPPORTED(formatSupport, formatSupportFlags))
+    if (!EnumHasAllFlags(formatSupport, formatSupportFlags))
     {
         // Fallback to format that is supported on every washing machine
         _lutFormat = PixelFormat::R8G8B8A8_UNorm;

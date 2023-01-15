@@ -45,7 +45,7 @@ ScriptingObject::~ScriptingObject()
     ASSERT(_gcHandle == 0);
 
     // Handle custom scripting objects removing
-    if (Flags & ObjectFlags::IsCustomScriptingType)
+    if (EnumHasAnyFlags(Flags, ObjectFlags::IsCustomScriptingType))
     {
         _type.Module->OnObjectDeleted(this);
     }

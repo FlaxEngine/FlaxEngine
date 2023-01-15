@@ -76,21 +76,20 @@ bool GPUBufferDX11::OnInit()
     bufferDesc.CPUAccessFlags = RenderToolsDX::GetDX11CpuAccessFlagsFromUsage(_desc.Usage);
     bufferDesc.MiscFlags = 0;
     bufferDesc.StructureByteStride = 0;
-    //
-    if (_desc.Flags & GPUBufferFlags::VertexBuffer)
+    if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::VertexBuffer))
         bufferDesc.BindFlags |= D3D11_BIND_VERTEX_BUFFER;
-    if (_desc.Flags & GPUBufferFlags::IndexBuffer)
+    if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::IndexBuffer))
         bufferDesc.BindFlags |= D3D11_BIND_INDEX_BUFFER;
     if (useSRV)
         bufferDesc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
     if (useUAV)
         bufferDesc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
-    //
-    if (_desc.Flags & GPUBufferFlags::Argument)
+
+    if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::Argument))
         bufferDesc.MiscFlags |= D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS;
-    if (_desc.Flags & GPUBufferFlags::RawBuffer)
+    if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::RawBuffer))
         bufferDesc.MiscFlags |= D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
-    if (_desc.Flags & GPUBufferFlags::Structured)
+    if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::Structured))
     {
         bufferDesc.MiscFlags |= D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
         bufferDesc.StructureByteStride = _desc.Stride;
@@ -115,7 +114,7 @@ bool GPUBufferDX11::OnInit()
     if (useSRV)
     {
         D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
-        if (_desc.Flags & GPUBufferFlags::RawBuffer)
+        if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::RawBuffer))
         {
             srvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
             srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFEREX;
@@ -125,7 +124,7 @@ bool GPUBufferDX11::OnInit()
         }
         else
         {
-            if (_desc.Flags & GPUBufferFlags::Structured)
+            if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::Structured))
                 srvDesc.Format = DXGI_FORMAT_UNKNOWN;
             else
                 srvDesc.Format = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindShaderResourceFormat(_desc.Format, false));
@@ -144,13 +143,13 @@ bool GPUBufferDX11::OnInit()
         uavDesc.Buffer.FirstElement = 0;
         uavDesc.Buffer.NumElements = numElements;
         uavDesc.Buffer.Flags = 0;
-        if (_desc.Flags & GPUBufferFlags::RawBuffer)
+        if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::RawBuffer))
             uavDesc.Buffer.Flags |= D3D11_BUFFER_UAV_FLAG_RAW;
-        if (_desc.Flags & GPUBufferFlags::Append)
+        if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::Append))
             uavDesc.Buffer.Flags |= D3D11_BUFFER_UAV_FLAG_APPEND;
-        if (_desc.Flags & GPUBufferFlags::Counter)
+        if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::Counter))
             uavDesc.Buffer.Flags |= D3D11_BUFFER_UAV_FLAG_COUNTER;
-        if (_desc.Flags & GPUBufferFlags::Structured)
+        if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::Structured))
             uavDesc.Format = DXGI_FORMAT_UNKNOWN;
         else
             uavDesc.Format = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindUnorderedAccessFormat(_desc.Format));

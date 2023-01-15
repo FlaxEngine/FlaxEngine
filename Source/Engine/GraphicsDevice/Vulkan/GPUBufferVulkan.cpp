@@ -100,19 +100,19 @@ bool GPUBufferVulkan::OnInit()
     bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     if (useSRV && !(_desc.Flags & GPUBufferFlags::Structured))
         bufferInfo.usage |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
-    if (useUAV || _desc.Flags & GPUBufferFlags::RawBuffer || _desc.Flags & GPUBufferFlags::Structured)
+    if (useUAV || EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::RawBuffer | GPUBufferFlags::Structured))
         bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     if (useUAV && useSRV)
         bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
-    if (_desc.Flags & GPUBufferFlags::Argument)
+    if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::Argument))
         bufferInfo.usage |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-    if (_desc.Flags & GPUBufferFlags::Argument && useUAV)
+    if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::Argument) && useUAV)
         bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT; // For some reason, glslang marks indirect uav buffers (UpdateProbesInitArgs, IndirectArgsBuffer) as Storage Texel Buffers
-    if (_desc.Flags & GPUBufferFlags::VertexBuffer)
+    if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::VertexBuffer))
         bufferInfo.usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    if (_desc.Flags & GPUBufferFlags::IndexBuffer)
+    if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::IndexBuffer))
         bufferInfo.usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    if (IsStaging() || _desc.Flags & GPUBufferFlags::UnorderedAccess)
+    if (IsStaging() || EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::UnorderedAccess))
         bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
     // Create buffer
@@ -162,7 +162,7 @@ bool GPUBufferVulkan::OnInit()
     }
 
     // Check if need to use a counter
-    if (_desc.Flags & GPUBufferFlags::Counter || _desc.Flags & GPUBufferFlags::Append)
+    if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::Counter | GPUBufferFlags::Append))
     {
 #if GPU_ENABLE_RESOURCE_NAMING
         String name = String(GetName()) + TEXT(".Counter");

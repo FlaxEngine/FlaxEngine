@@ -1517,7 +1517,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 const uint16 idx = stateData.Transitions[transitionIndex];
                 ASSERT(idx < data.Graph->StateTransitions.Count());
                 auto& transition = data.Graph->StateTransitions[idx];
-                const bool useDefaultRule = (transition.Flags & AnimGraphStateTransition::FlagTypes::UseDefaultRule) != 0;
+                const bool useDefaultRule = EnumHasAnyFlags(transition.Flags, AnimGraphStateTransition::FlagTypes::UseDefaultRule);
                 if (transition.RuleGraph && !useDefaultRule)
                 {
                     // Execute transition rule
@@ -1569,7 +1569,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
 
                 // Skip after Solo transition
                 // TODO: don't load transitions after first enabled Solo transition and remove this check here
-                if ((transition.Flags & AnimGraphStateTransition::FlagTypes::Solo) != 0)
+                if (EnumHasAnyFlags(transition.Flags, AnimGraphStateTransition::FlagTypes::Solo))
                     break;
 
                 transitionIndex++;
