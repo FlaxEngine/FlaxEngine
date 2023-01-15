@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
-using FlaxEngine;
 using FlaxEditor.Utilities;
 
 namespace FlaxEditor.Progress.Handlers
@@ -21,7 +20,7 @@ namespace FlaxEditor.Progress.Handlers
             // Link for events
             ScriptsBuilder.CompilationBegin += OnStart;
             ScriptsBuilder.CompilationSuccess += OnEnd;
-            ScriptsBuilder.CompilationFailed += OnCompilationFail;
+            ScriptsBuilder.CompilationFailed += OnCompilationFailed;
             ScriptsBuilder.CompilationStarted += () => OnUpdate(0.2f, "Compiling scripts...");
             ScriptsBuilder.ScriptsReloadCalled += () => OnUpdate(0.8f, "Reloading scripts...");
             ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
@@ -45,6 +44,11 @@ namespace FlaxEditor.Progress.Handlers
             Newtonsoft.Json.JsonSerializer.ClearCache();
         }
 
+        private void OnCompilationFailed()
+        {
+            OnFail("Scripts compilation failed");
+        }
+
         private void OnScriptsReloadEnd()
         {
             _selectionCache.Restore();
@@ -56,14 +60,6 @@ namespace FlaxEditor.Progress.Handlers
             base.OnStart();
 
             OnUpdate(0, "Starting scripts compilation...");
-        }
-
-        /// <summary>
-        /// Called when scripts compilation fails
-        /// </summary>
-        private void OnCompilationFail()
-        {
-            OnFail("Scripts Compilation Failed");
         }
     }
 }
