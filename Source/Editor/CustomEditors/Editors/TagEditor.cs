@@ -257,6 +257,9 @@ namespace FlaxEditor.CustomEditors.Editors
                     var settingsObj = (LayersAndTagsSettings)settingsAsset.Instance;
                     settingsObj.Tags.Add(tagName);
                     settingsAsset.SetInstance(settingsObj);
+
+                    // Reload editor window to reflect new tag
+                    assetWindow?.RefreshAsset();
                 }
             };
             dialog.Closed += popup =>
