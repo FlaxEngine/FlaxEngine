@@ -750,6 +750,20 @@ namespace FlaxEngine.GUI
             }
         }
 
+        /// <inheritdoc />
+        public override void ClearState()
+        {
+            base.ClearState();
+
+            // Clear state for any nested controls
+            for (int i = 0; i < _children.Count; i++)
+            {
+                var child = _children[i];
+                //if (child.Enabled && child.Enabled)
+                    child.ClearState();
+            }
+        }
+
         /// <summary>
         /// Draw the control and the children.
         /// </summary>
