@@ -237,13 +237,13 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 // Get tag name
                 var tagName = popup.Text;
-                var name = tagName.Substring(popup.InitialValue.Length);
-                if (name.Length == 0)
+                var tagShortName = tagName.Substring(popup.InitialValue.Length);
+                if (tagShortName.Length == 0)
                     return;
 
                 // Add tag
                 var tag = Tags.Get(tagName);
-                node.Text = name;
+                node.Text = tagShortName;
                 node.Tag = tag;
                 var settingsAsset = GameSettings.LoadAsset<LayersAndTagsSettings>();
                 if (settingsAsset && !settingsAsset.WaitForLoaded())
@@ -285,23 +285,33 @@ namespace FlaxEditor.CustomEditors.Editors
             var root = tree.AddChild<TreeNode>();
             for (var i = 0; i < tags.Length; i++)
             {
-                var tag = tags[i];
+                var tagName = tags[i];
                 var tagValue = new Tag((uint)(i + 1));
                 bool isSelected = pickerData.IsSingle ? value == tagValue : values.Contains(tagValue);
 
                 // Count parent tags count
-                int indentation = 0;
-                for (int j = 0; j < tag.Length; j++)
+                int indentation = 0, lastDotIndex = -1;
+                for (int j = 0; j < tagName.Length; j++)
                 {
-                    if (tag[j] == '.')
+                    if (tagName[j] == '.')
+                    {
                         indentation++;
+                        lastDotIndex = j;
+                    }
                 }
-
+                var tagShortName = tagName;
+                var tagParentName = string.Empty;
+                if (lastDotIndex != -1)
+                {
+                    tagShortName = tagName.Substring(lastDotIndex + 1);
+                    tagParentName = tagName.Substring(0, lastDotIndex);
+                }
+                
                 // Create node
                 var node = new TreeNodeWithAddons
                 {
                     Tag = tagValue,
-                    Text = tag,
+                    Text = tagShortName,
                     ChildrenIndent = nodeIndent,
                     CullChildren = false,
                     ClipChildren = false,
@@ -333,13 +343,11 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 // Link to parent
                 {
-                    var lastDotIndex = tag.LastIndexOf('.');
-                    var parentTagName = lastDotIndex != -1 ? tag.Substring(0, lastDotIndex) : string.Empty;
-                    if (!nameToNode.TryGetValue(parentTagName, out ContainerControl parent))
+                    if (!nameToNode.TryGetValue(tagParentName, out ContainerControl parent))
                         parent = root;
                     node.Parent = parent;
                 }
-                nameToNode[tag] = node;
+                nameToNode[tagName] = node;
 
                 // Expand selected nodes to be visible in hierarchy
                 if (isSelected)
