@@ -843,11 +843,6 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
             item.Role = localRole;
             SendObjectRoleMessage(item);
         }
-        else
-        {
-            // Object is the owner
-            CHECK(localRole == NetworkObjectRole::OwnedAuthoritative);
-        }
     }
     else
     {
