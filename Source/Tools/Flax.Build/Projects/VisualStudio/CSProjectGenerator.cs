@@ -81,6 +81,8 @@ namespace Flax.Build.Projects.VisualStudio
             csProjectFileContent.AppendLine("    <LangVersion>7.3</LangVersion>");
             csProjectFileContent.AppendLine("    <FileAlignment>512</FileAlignment>");
             csProjectFileContent.AppendLine("    <TargetFrameworkProfile />");
+            if (Version >= VisualStudioVersion.VisualStudio2022)
+                csProjectFileContent.AppendLine("    <ResolveNuGetPackages>false</ResolveNuGetPackages>");
 
             csProjectFileContent.AppendLine("  </PropertyGroup>");
 
