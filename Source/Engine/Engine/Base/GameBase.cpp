@@ -109,7 +109,7 @@ bool GameBase::Init()
     PROFILE_CPU();
 
     // Preload splash screen texture
-    if (GameBaseImpl::HeaderFlags & GameHeaderFlags::ShowSplashScreen)
+    if (EnumHasAnyFlags(GameBaseImpl::HeaderFlags, GameHeaderFlags::ShowSplashScreen))
     {
         LOG(Info, "Loading splash screen");
         if (GameBaseImpl::SplashScreenId)
