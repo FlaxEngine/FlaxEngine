@@ -50,7 +50,7 @@ bool LightPass::Init()
 #endif
 
     auto format = PixelFormat::R8G8_UNorm;
-    if (FORMAT_FEATURES_ARE_NOT_SUPPORTED(GPUDevice::Instance->GetFormatFeatures(format).Support, (FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D)))
+    if (!EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(format).Support, (FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D)))
     {
         format = PixelFormat::B8G8R8A8_UNorm;
     }
@@ -171,8 +171,8 @@ void LightPass::RenderLight(RenderContextBatch& renderContextBatch, GPUTextureVi
     auto& view = renderContext.View;
     auto mainCache = renderContext.List;
     const auto lightShader = _shader->GetShader();
-    const bool useShadows = ShadowsPass::Instance()->IsReady() && ((view.Flags & ViewFlags::Shadows) != 0);
-    const bool disableSpecular = (view.Flags & ViewFlags::SpecularLight) == 0;
+    const bool useShadows = ShadowsPass::Instance()->IsReady() && EnumHasAnyFlags(view.Flags, ViewFlags::Shadows);
+    const bool disableSpecular = (view.Flags & ViewFlags::SpecularLight) == ViewFlags::None;
 
     // Check if debug lights
     if (renderContext.View.Mode == ViewMode::LightBuffer)
@@ -210,7 +210,7 @@ void LightPass::RenderLight(RenderContextBatch& renderContextBatch, GPUTextureVi
 
     // Bind output
     GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
-    const bool depthBufferReadOnly = (depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView) != 0;
+    const bool depthBufferReadOnly = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView);
     GPUTextureView* depthBufferRTV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr;
     GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
     context->SetRenderTarget(depthBufferRTV, lightBuffer);

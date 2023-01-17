@@ -141,13 +141,28 @@ struct Color32;
 
 // Declares full set of operators for the enum type (using binary operation on integer values)
 #define DECLARE_ENUM_OPERATORS(T) \
-    inline constexpr T operator~ (T a) { return (T)~(int)a; } \
-    inline constexpr T operator| (T a, T b) { return (T)((int)a | (int)b); } \
-    inline constexpr int operator& (T a, T b) { return ((int)a & (int)b); } \
-    inline constexpr T operator^ (T a, T b) { return (T)((int)a ^ (int)b); } \
-    inline T& operator|= (T& a, T b) { return (T&)((int&)a |= (int)b); } \
-    inline T& operator&= (T& a, T b) { return (T&)((int&)a &= (int)b); } \
-    inline T& operator^= (T& a, T b) { return (T&)((int&)a ^= (int)b); }
+    inline constexpr bool operator!(T a) { return !(__underlying_type(T))a; } \
+    inline constexpr T operator~(T a) { return (T)~(__underlying_type(T))a; } \
+    inline constexpr T operator|(T a, T b) { return (T)((__underlying_type(T))a | (__underlying_type(T))b); } \
+    inline constexpr T operator&(T a, T b) { return (T)((__underlying_type(T))a & (__underlying_type(T))b); } \
+    inline constexpr T operator^(T a, T b) { return (T)((__underlying_type(T))a ^ (__underlying_type(T))b); } \
+    inline T& operator|=(T& a, T b) { return a = (T)((__underlying_type(T))a | (__underlying_type(T))b); } \
+    inline T& operator&=(T& a, T b) { return a = (T)((__underlying_type(T))a & (__underlying_type(T))b); } \
+    inline T& operator^=(T& a, T b) { return a = (T)((__underlying_type(T))a ^ (__underlying_type(T))b); }
+
+// Returns true if given enum value has one or more enum flags set
+template<typename T>
+constexpr bool EnumHasAnyFlags(T value, T flags)
+{
+	return ((__underlying_type(T))value & (__underlying_type(T))flags) != 0;
+}
+
+// Returns true if given enum value has all of the enum flags set
+template<typename T>
+constexpr bool EnumHasAllFlags(T value, T flags)
+{
+	return ((__underlying_type(T))value & (__underlying_type(T))flags) == (__underlying_type(T))flags;
+}
 
 // Returns byte offset from the object pointer in vtable to the begin of the given inherited type implementation
 #define VTABLE_OFFSET(type, baseType) (((intptr)static_cast<baseType*>((type*)1))-1)

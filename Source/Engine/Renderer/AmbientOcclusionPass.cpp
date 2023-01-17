@@ -206,20 +206,12 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
     if (renderContext.List == nullptr)
         return;
     auto& aoSettings = renderContext.List->Settings.AmbientOcclusion;
-    if (aoSettings.Enabled == false || (renderContext.View.Flags & ViewFlags::AO) == 0)
+    if (aoSettings.Enabled == false ||
+        (renderContext.View.Flags & ViewFlags::AO) == ViewFlags::None ||
+        renderContext.View.IsOrthographicProjection() || // TODO: add support for SSAO in ortho projection
+        Math::Min(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight()) < 16 ||
+        checkIfSkipPass())
         return;
-
-    // TODO: add support for SSAO in ortho projection
-    if (renderContext.View.IsOrthographicProjection())
-        return;
-
-    // Ensure to have valid data
-    if (checkIfSkipPass())
-    {
-        // Resources are missing. Do not perform rendering.
-        return;
-    }
-
     PROFILE_GPU_CPU("Ambient Occlusion");
 
     settings.Radius = aoSettings.Radius * 0.006f;

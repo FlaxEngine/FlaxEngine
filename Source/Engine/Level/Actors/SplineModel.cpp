@@ -348,7 +348,7 @@ bool SplineModel::HasContentLoaded() const
 
 void SplineModel::Draw(RenderContext& renderContext)
 {
-    const DrawPass actorDrawModes = (DrawPass)(DrawModes & renderContext.View.Pass);
+    const DrawPass actorDrawModes = DrawModes & renderContext.View.Pass;
     if (!_spline || !Model || !Model->IsLoaded() || !Model->CanBeRendered() || actorDrawModes == DrawPass::None)
         return;
     auto model = Model.Get();
@@ -428,8 +428,8 @@ void SplineModel::Draw(RenderContext& renderContext)
                 continue;
 
             // Check if skip rendering
-            const auto shadowsMode = static_cast<ShadowsCastingMode>(entry.ShadowsMode & slot.ShadowsMode);
-            const auto drawModes = static_cast<DrawPass>(actorDrawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode) & (uint32)material->GetDrawModes());
+            const auto shadowsMode = entry.ShadowsMode & slot.ShadowsMode;
+            const auto drawModes = actorDrawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode) & material->GetDrawModes();
             if (drawModes == DrawPass::None)
                 continue;
 

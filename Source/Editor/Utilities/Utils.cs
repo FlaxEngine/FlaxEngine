@@ -906,11 +906,20 @@ namespace FlaxEditor.Utilities
             if (name.StartsWith("g_") || name.StartsWith("m_"))
                 startIndex = 2;
 
+            if (name.StartsWith("_"))
+                startIndex = 1;
+
             // Filter text
             var lastChar = '\0';
             for (int i = startIndex; i < length; i++)
             {
                 var c = name[i];
+
+                if (i == startIndex)
+                {
+                    sb.Append(char.ToUpper(c));
+                    continue;
+                }
 
                 // Space before word starting with uppercase letter
                 if (char.IsUpper(c) && i > 0)
@@ -1015,10 +1024,9 @@ namespace FlaxEditor.Utilities
         /// <returns>The processed name path.</returns>
         public static string GetAssetNamePath(string path)
         {
-            if (path.StartsWith(Globals.ProjectFolder))
-            {
-                path = path.Substring(Globals.ProjectFolder.Length + 1);
-            }
+            var projectFolder = Globals.ProjectFolder;
+            if (path.StartsWith(projectFolder))
+                path = path.Substring(projectFolder.Length + 1);
             return StringUtils.GetPathWithoutExtension(path);
         }
 

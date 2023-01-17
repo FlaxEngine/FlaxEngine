@@ -62,11 +62,11 @@ bool MotionBlurPass::Init()
 
     // Prepare formats for the buffers
     auto format = PixelFormat::R16G16_Float;
-    if (FORMAT_FEATURES_ARE_NOT_SUPPORTED(GPUDevice::Instance->GetFormatFeatures(format).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
+    if (!EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(format).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
     {
-        if (FORMAT_FEATURES_ARE_NOT_SUPPORTED(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32G32_Float).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
+        if (!EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32G32_Float).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
             format = PixelFormat::R32G32_Float;
-        else if (FORMAT_FEATURES_ARE_NOT_SUPPORTED(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R16G16B16A16_Float).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
+        else if (!EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R16G16B16A16_Float).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
             format = PixelFormat::R16G16B16A16_Float;
         else
             format = PixelFormat::R32G32B32A32_Float;
@@ -269,7 +269,7 @@ void MotionBlurPass::Render(RenderContext& renderContext, GPUTexture*& frame, GP
     const int32 screenHeight = frame->Height();
     const int32 motionVectorsWidth = screenWidth / static_cast<int32>(settings.MotionVectorsResolution);
     const int32 motionVectorsHeight = screenHeight / static_cast<int32>(settings.MotionVectorsResolution);
-    if ((renderContext.View.Flags & ViewFlags::MotionBlur) == 0 ||
+    if ((renderContext.View.Flags & ViewFlags::MotionBlur) == ViewFlags::None ||
         !_hasValidResources ||
         isCameraCut ||
         screenWidth < 16 ||

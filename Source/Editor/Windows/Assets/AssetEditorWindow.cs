@@ -309,6 +309,14 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <summary>
+        /// Drops any loaded asset data and refreshes the UI state.
+        /// </summary>
+        public void RefreshAsset()
+        {
+            _isWaitingForLoaded = true;
+        }
+
+        /// <summary>
         /// Reloads the asset (window will receive <see cref="OnAssetLoaded"/> or <see cref="OnAssetLoadFailed"/> events).
         /// </summary>
         public void ReloadAsset()

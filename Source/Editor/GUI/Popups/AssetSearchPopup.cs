@@ -8,40 +8,38 @@ using FlaxEngine.GUI;
 namespace FlaxEditor.GUI
 {
     /// <summary>
-    /// Popup that shows the list of assets to pick. Supports searching and basic items filtering.
+    /// Popup that shows the list of content items to pick. Supports searching and basic items filtering.
     /// </summary>
     /// <seealso cref="FlaxEditor.GUI.ItemsListContextMenu" />
-    public class AssetSearchPopup : ItemsListContextMenu
+    public class ContentSearchPopup : ItemsListContextMenu
     {
         /// <summary>
-        /// The asset item.
+        /// The content item.
         /// </summary>
         /// <seealso cref="FlaxEditor.GUI.ItemsListContextMenu.Item" />
-        public class AssetItemView : Item, IContentItemOwner
+        public class ContentItemView : Item, IContentItemOwner
         {
-            private AssetItem _asset;
-
             /// <summary>
             /// The icon size (in pixels).
             /// </summary>
             public const float IconSize = 28;
 
             /// <summary>
-            /// Gets the asset.
+            /// Gets the item.
             /// </summary>
-            public AssetItem Asset => _asset;
+            public ContentItem ContentItem;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="AssetItemView"/> class.
+            /// Initializes a new instance of the <see cref="ContentItemView"/> class.
             /// </summary>
-            /// <param name="asset">The asset.</param>
-            public AssetItemView(AssetItem asset)
+            /// <param name="item">The item.</param>
+            public ContentItemView(ContentItem item)
             {
-                _asset = asset;
-                _asset.AddReference(this);
+                ContentItem = item;
+                ContentItem.AddReference(this);
 
-                Name = asset.ShortName;
-                TooltipText = asset.Path;
+                Name = item.ShortName;
+                TooltipText = item.Path;
 
                 Height = IconSize + 4;
             }
@@ -60,16 +58,16 @@ namespace FlaxEditor.GUI
 
                 // Draw icon
                 var iconRect = new Rectangle(2, 2, IconSize, IconSize);
-                _asset.DrawThumbnail(ref iconRect);
+                ContentItem.DrawThumbnail(ref iconRect);
             }
 
             /// <inheritdoc />
             public override void OnDestroy()
             {
-                if (_asset != null)
+                if (ContentItem != null)
                 {
-                    _asset.RemoveReference(this);
-                    _asset = null;
+                    ContentItem.RemoveReference(this);
+                    ContentItem = null;
                 }
 
                 base.OnDestroy();
@@ -84,7 +82,7 @@ namespace FlaxEditor.GUI
             /// <inheritdoc />
             public void OnItemRenamed(ContentItem item)
             {
-                Name = _asset.ShortName;
+                Name = ContentItem.ShortName;
             }
 
             /// <inheritdoc />
@@ -100,11 +98,117 @@ namespace FlaxEditor.GUI
         }
 
         /// <summary>
+        /// Validates if the given content item can be used to pick it.
+        /// </summary>
+        /// <param name="item">The item.</param>
+        /// <returns>True if is valid.</returns>
+        public delegate bool IsValidDelegate(ContentItem item);
+
+        private IsValidDelegate _isValid;
+        private Action<ContentItem> _selected;
+
+        /// <inheritdoc />
+        protected ContentSearchPopup()
+        {
+        }
+
+        /// <inheritdoc />
+        protected ContentSearchPopup(IsValidDelegate isValid, Action<ContentItem> selected)
+        {
+            _isValid = isValid;
+            _selected = selected;
+
+            ItemClicked += OnItemClicked;
+
+            // TODO: use async thread to search workspace items
+            foreach (var project in Editor.Instance.ContentDatabase.Projects)
+            {
+                if (project.Content != null)
+                    FindItems(project.Content.Folder);
+            }
+            SortItems();
+        }
+
+        private void OnItemClicked(Item item)
+        {
+            _selected.Invoke(((ContentItemView)item).ContentItem);
+        }
+
+        private void FindItems(ContentFolder folder)
+        {
+            for (int i = 0; i < folder.Children.Count; i++)
+            {
+                if (folder.Children[i] is ContentItem item && _isValid(item))
+                {
+                    AddItem(new ContentItemView(item));
+                }
+            }
+
+            for (int i = 0; i < folder.Children.Count; i++)
+            {
+                if (folder.Children[i] is ContentFolder child)
+                {
+                    FindItems(child);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Shows the popup.
+        /// </summary>
+        /// <param name="showTarget">The show target.</param>
+        /// <param name="showTargetLocation">The show target location.</param>
+        /// <param name="isValid">Event called to check if a given content item is valid to be used.</param>
+        /// <param name="selected">Event called on content item pick.</param>
+        /// <returns>The dialog.</returns>
+        public static ContentSearchPopup Show(Control showTarget, Float2 showTargetLocation, IsValidDelegate isValid, Action<ContentItem> selected)
+        {
+            var popup = new ContentSearchPopup(isValid, selected);
+            popup.Show(showTarget, showTargetLocation);
+            return popup;
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            _isValid = null;
+            _selected = null;
+
+            base.OnDestroy();
+        }
+    }
+
+    /// <summary>
+    /// Popup that shows the list of assets to pick. Supports searching and basic items filtering.
+    /// </summary>
+    public class AssetSearchPopup : ContentSearchPopup
+    {
+        /// <summary>
+        /// The asset item.
+        /// </summary>
+        public class AssetItemView : ContentItemView
+        {
+            /// <summary>
+            /// Gets the asset.
+            /// </summary>
+            public AssetItem AssetItem => (AssetItem)ContentItem;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="AssetItemView"/> class.
+            /// </summary>
+            /// <param name="asset">The asset.</param>
+            public AssetItemView(AssetItem asset)
+            : base(asset)
+            {
+            }
+        }
+
+        /// <summary>
         /// Validates if the given asset item can be used to pick it.
         /// </summary>
         /// <param name="asset">The asset.</param>
         /// <returns>True if is valid.</returns>
-        public delegate bool IsValidDelegate(AssetItem asset);
+        public new delegate bool IsValidDelegate(AssetItem asset);
 
         private IsValidDelegate _isValid;
         private Action<AssetItem> _selected;
@@ -127,7 +231,7 @@ namespace FlaxEditor.GUI
 
         private void OnItemClicked(Item item)
         {
-            _selected(((AssetItemView)item).Asset);
+            _selected(((AssetItemView)item).AssetItem);
         }
 
         private void FindAssets(ContentFolder folder)

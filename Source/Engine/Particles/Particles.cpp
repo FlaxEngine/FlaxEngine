@@ -409,7 +409,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
         {
             const auto material = (MaterialBase*)module->Assets[0].Get();
             const auto moduleDrawModes = module->Values.Count() > 3 ? (DrawPass)module->Values[3].AsInt : DrawPass::Default;
-            auto dp = (DrawPass)(drawModes & moduleDrawModes & (uint32)material->GetDrawModes());
+            auto dp = drawModes & moduleDrawModes & material->GetDrawModes();
             if (dp == DrawPass::None)
                 break;
             drawCall.Material = material;
@@ -427,7 +427,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             const auto model = (Model*)module->Assets[0].Get();
             const auto material = (MaterialBase*)module->Assets[1].Get();
             const auto moduleDrawModes = module->Values.Count() > 4 ? (DrawPass)module->Values[4].AsInt : DrawPass::Default;
-            auto dp = (DrawPass)(drawModes & moduleDrawModes & (uint32)material->GetDrawModes());
+            auto dp = drawModes & moduleDrawModes & material->GetDrawModes();
             if (dp == DrawPass::None)
                 break;
             drawCall.Material = material;
@@ -457,7 +457,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                 break;
             const auto material = (MaterialBase*)module->Assets[0].Get();
             const auto moduleDrawModes = module->Values.Count() > 6 ? (DrawPass)module->Values[6].AsInt : DrawPass::Default;
-            auto dp = (DrawPass)(drawModes & moduleDrawModes & (uint32)material->GetDrawModes());
+            auto dp = drawModes & moduleDrawModes & material->GetDrawModes();
             if (dp == DrawPass::None)
                 break;
             drawCall.Material = material;
@@ -820,7 +820,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
         {
             const auto material = (MaterialBase*)module->Assets[0].Get();
             const auto moduleDrawModes = module->Values.Count() > 3 ? (DrawPass)module->Values[3].AsInt : DrawPass::Default;
-            auto dp = (DrawPass)(drawModes & moduleDrawModes & (uint32)material->GetDrawModes());
+            auto dp = drawModes & moduleDrawModes & material->GetDrawModes();
             drawCall.Material = material;
 
             // Submit draw call
@@ -840,7 +840,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             const auto model = (Model*)module->Assets[0].Get();
             const auto material = (MaterialBase*)module->Assets[1].Get();
             const auto moduleDrawModes = module->Values.Count() > 4 ? (DrawPass)module->Values[4].AsInt : DrawPass::Default;
-            auto dp = (DrawPass)(drawModes & moduleDrawModes & (uint32)material->GetDrawModes());
+            auto dp = drawModes & moduleDrawModes & material->GetDrawModes();
             drawCall.Material = material;
 
             // TODO: model LOD picking for particles?
@@ -887,7 +887,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
 {
     // Setup
     auto& view = renderContext.View;
-    const auto drawModes = static_cast<DrawPass>(view.Pass & effect->DrawModes);
+    const auto drawModes = view.Pass & effect->DrawModes;
     if (drawModes == DrawPass::None || SpriteRenderer.Init())
         return;
     Matrix worlds[2];
@@ -937,11 +937,11 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
             case 400:
             {
                 const auto material = (MaterialBase*)module->Assets[0].Get();
-                const auto moduleDrawModes = module->Values.Count() > 3 ? module->Values[3].AsInt : (int32)DrawPass::Default;
+                const auto moduleDrawModes = module->Values.Count() > 3 ? (DrawPass)module->Values[3].AsInt : DrawPass::Default;
                 if (!material ||
                     !material->IsReady() ||
                     !material->IsParticle() ||
-                    (view.Pass & material->GetDrawModes() & moduleDrawModes) == 0
+                    (view.Pass & material->GetDrawModes() & moduleDrawModes) == DrawPass::None
                 )
                     break;
                 renderModulesIndices.Add(moduleIndex);
@@ -951,7 +951,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
             case 403:
             {
                 const auto model = (Model*)module->Assets[0].Get();
-                const auto moduleDrawModes = module->Values.Count() > 4 ? module->Values[4].AsInt : (int32)DrawPass::Default;
+                const auto moduleDrawModes = module->Values.Count() > 4 ? (DrawPass)module->Values[4].AsInt : DrawPass::Default;
                 if (!model ||
                     !model->IsLoaded() ||
                     !model->CanBeRendered())
@@ -960,7 +960,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
                 if (!material ||
                     !material->IsReady() ||
                     !material->IsParticle() ||
-                    (view.Pass & material->GetDrawModes() & moduleDrawModes) == 0
+                    (view.Pass & material->GetDrawModes() & moduleDrawModes) == DrawPass::None
                 )
                     break;
                 renderModulesIndices.Add(moduleIndex);
@@ -970,11 +970,11 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
             case 404:
             {
                 const auto material = (MaterialBase*)module->Assets[0].Get();
-                const auto moduleDrawModes = module->Values.Count() > 6 ? module->Values[6].AsInt : (int32)DrawPass::Default;
+                const auto moduleDrawModes = module->Values.Count() > 6 ? (DrawPass)module->Values[6].AsInt : DrawPass::Default;
                 if (!material ||
                     !material->IsReady() ||
                     !material->IsParticle() ||
-                    (view.Pass & material->GetDrawModes() & moduleDrawModes) == 0
+                    (view.Pass & material->GetDrawModes() & moduleDrawModes) == DrawPass::None
                 )
                     break;
                 renderModulesIndices.Add(moduleIndex);
@@ -987,7 +987,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
                 if (!material ||
                     !material->IsReady() ||
                     material->GetInfo().Domain != MaterialDomain::VolumeParticle ||
-                    (view.Flags & ViewFlags::Fog) == 0
+                    (view.Flags & ViewFlags::Fog) == ViewFlags::None
                 )
                     break;
                 renderModulesIndices.Add(moduleIndex);

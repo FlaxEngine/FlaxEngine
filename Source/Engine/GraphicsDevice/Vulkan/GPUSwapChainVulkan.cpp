@@ -216,7 +216,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
         if (resultFormat != PixelFormat::Unknown)
         {
             bool found = false;
-            if (FORMAT_FEATURES_ARE_SUPPORTED(_device->FeaturesPerFormat[(int32)resultFormat].Support, FormatSupport::RenderTarget))
+            if (EnumHasAllFlags(_device->FeaturesPerFormat[(int32)resultFormat].Support, FormatSupport::RenderTarget))
             {
                 const VkFormat requested = RenderToolsVulkan::ToVulkanFormat(resultFormat);
                 for (int32 i = 0; i < surfaceFormats.Count(); i++)

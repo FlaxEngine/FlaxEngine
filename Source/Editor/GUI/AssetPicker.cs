@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.IO;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.Drag;
 using FlaxEditor.Scripting;
@@ -22,22 +23,25 @@ namespace FlaxEditor.GUI
         private const float ButtonsSize = 12;
 
         private Asset _selected;
-        private AssetItem _selectedItem;
+        private ContentItem _selectedItem;
         private ScriptType _type;
+        private string _fileExtension;
 
         private bool _isMouseDown;
         private Float2 _mouseDownPos;
         private Float2 _mousePos;
-        private DragAssets _dragOverElement;
+        private DragItems _dragOverElement;
 
         /// <summary>
         /// Gets or sets the selected item.
         /// </summary>
-        public AssetItem SelectedItem
+        public ContentItem SelectedItem
         {
             get => _selectedItem;
             set
             {
+                if (_selectedItem == value)
+                    return;
                 if (value == null)
                 {
                     if (_selected == null && _selectedItem is SceneItem)
@@ -46,13 +50,15 @@ namespace FlaxEditor.GUI
                         _selectedItem.RemoveReference(this);
                         _selectedItem = null;
                         _selected = null;
-                        TooltipText = string.Empty;
                         OnSelectedItemChanged();
                         return;
                     }
 
                     // Deselect
-                    SelectedAsset = null;
+                    _selectedItem?.RemoveReference(this);
+                    _selectedItem = null;
+                    _selected = null;
+                    OnSelectedItemChanged();
                 }
                 else if (value is SceneItem item)
                 {
@@ -66,15 +72,19 @@ namespace FlaxEditor.GUI
                     _selectedItem = item;
                     _selected = null;
                     _selectedItem?.AddReference(this);
-
-                    // Update tooltip
-                    TooltipText = _selectedItem?.NamePath;
-
                     OnSelectedItemChanged();
+                }
+                else if (value is AssetItem assetItem)
+                {
+                    SelectedAsset = FlaxEngine.Content.LoadAsync(assetItem.ID);
                 }
                 else
                 {
-                    SelectedAsset = FlaxEngine.Content.LoadAsync(value.ID);
+                    // Change value
+                    _selectedItem?.RemoveReference(this);
+                    _selectedItem = value;
+                    _selected = null;
+                    OnSelectedItemChanged();
                 }
             }
         }
@@ -88,11 +98,42 @@ namespace FlaxEditor.GUI
             {
                 if (_selected != null)
                     return _selected.ID;
-                if (_selectedItem != null)
-                    return _selectedItem.ID;
+                if (_selectedItem is AssetItem assetItem)
+                    return assetItem.ID;
                 return Guid.Empty;
             }
             set => SelectedItem = Editor.Instance.ContentDatabase.FindAsset(value);
+        }
+
+        /// <summary>
+        /// Gets or sets the selected content item path.
+        /// </summary>
+        public string SelectedPath
+        {
+            get
+            {
+                string path = _selectedItem?.Path ?? _selected?.Path;
+                if (path != null)
+                {
+                    // Convert into path relative to the project (cross-platform)
+                    var projectFolder = Globals.ProjectFolder;
+                    if (path.StartsWith(projectFolder))
+                        path = path.Substring(projectFolder.Length + 1);
+                }
+                return path;
+            }
+            set
+            {
+                if (string.IsNullOrEmpty(value))
+                {
+                    SelectedItem = null;
+                }
+                else
+                {
+                    var path = StringUtils.IsRelative(value) ? Path.Combine(Globals.ProjectFolder, value) : value;
+                    SelectedItem = Editor.Instance.ContentDatabase.Find(path);
+                }
+            }
         }
 
         /// <summary>
@@ -117,16 +158,12 @@ namespace FlaxEditor.GUI
                 _selectedItem = item;
                 _selected = value;
                 _selectedItem?.AddReference(this);
-
-                // Update tooltip
-                TooltipText = _selectedItem?.NamePath;
-
                 OnSelectedItemChanged();
             }
         }
 
         /// <summary>
-        /// Gets or sets the assets types that this picker accepts (it supports types derived from the given type).
+        /// Gets or sets the assets types that this picker accepts (it supports types derived from the given type). Use <see cref="ScriptType.Null"/> for generic file picker.
         /// </summary>
         public ScriptType AssetType
         {
@@ -145,6 +182,25 @@ namespace FlaxEditor.GUI
         }
 
         /// <summary>
+        /// Gets or sets the content items extensions filter. Null if unused.
+        /// </summary>
+        public string FileExtension
+        {
+            get => _fileExtension;
+            set
+            {
+                if (_fileExtension != value)
+                {
+                    _fileExtension = value;
+
+                    // Auto deselect if the current value is invalid
+                    if (_selectedItem != null && !IsValid(_selectedItem))
+                        SelectedItem = null;
+                }
+            }
+        }
+
+        /// <summary>
         /// Occurs when selected item gets changed.
         /// </summary>
         public event Action SelectedItemChanged;
@@ -154,24 +210,32 @@ namespace FlaxEditor.GUI
         /// </summary>
         public bool CanEdit = true;
 
-        private bool IsValid(AssetItem item)
+        private bool IsValid(ContentItem item)
         {
-            // Faster path for binary items (in-build)
-            if (item is BinaryAssetItem binaryItem)
-                return _type.IsAssignableFrom(new ScriptType(binaryItem.Type));
-
-            // Type filter
-            var type = TypeUtils.GetType(item.TypeName);
-            if (_type.IsAssignableFrom(type))
+            if (_fileExtension != null && !item.Path.EndsWith(_fileExtension))
+                return false;
+            if (_type == ScriptType.Null)
                 return true;
 
-            // Json assets can contain any type of the object defined by the C# type (data oriented design)
-            if (item is JsonAssetItem && (_type.Type == typeof(JsonAsset) || _type.Type == typeof(Asset)))
-                return true;
+            if (item is AssetItem assetItem)
+            {
+                // Faster path for binary items (in-built)
+                if (assetItem is BinaryAssetItem binaryItem)
+                    return _type.IsAssignableFrom(new ScriptType(binaryItem.Type));
 
-            // Special case for scene asset references
-            if (_type.Type == typeof(SceneReference) && item is SceneItem)
-                return true;
+                // Type filter
+                var type = TypeUtils.GetType(assetItem.TypeName);
+                if (_type.IsAssignableFrom(type))
+                    return true;
+
+                // Json assets can contain any type of the object defined by the C# type (data oriented design)
+                if (assetItem is JsonAssetItem && (_type.Type == typeof(JsonAsset) || _type.Type == typeof(Asset)))
+                    return true;
+
+                // Special case for scene asset references
+                if (_type.Type == typeof(SceneReference) && assetItem is SceneItem)
+                    return true;
+            }
 
             return false;
         }
@@ -201,15 +265,26 @@ namespace FlaxEditor.GUI
         /// </summary>
         protected virtual void OnSelectedItemChanged()
         {
+            // Update tooltip
+            string tooltip;
+            if (_selectedItem is AssetItem assetItem)
+                tooltip = assetItem.NamePath;
+            else
+                tooltip = SelectedPath;
+            TooltipText = tooltip;
+
             SelectedItemChanged?.Invoke();
         }
 
         private void DoDrag()
         {
             // Do the drag drop operation if has selected element
-            if (_selected != null && new Rectangle(Float2.Zero, Size).Contains(ref _mouseDownPos))
+            if (new Rectangle(Float2.Zero, Size).Contains(ref _mouseDownPos))
             {
-                DoDragDrop(DragAssets.GetDragData(_selected));
+                if (_selected != null)
+                    DoDragDrop(DragAssets.GetDragData(_selected));
+                else if (_selectedItem != null)
+                    DoDragDrop(DragItems.GetDragData(_selectedItem));
             }
         }
 
@@ -339,10 +414,7 @@ namespace FlaxEditor.GUI
             // Check if start drag drop
             if (_isMouseDown)
             {
-                // Clear flag
                 _isMouseDown = false;
-
-                // Do the drag
                 DoDrag();
             }
 
@@ -366,7 +438,6 @@ namespace FlaxEditor.GUI
             // Check if start drag drop
             if (_isMouseDown && Float2.Distance(location, _mouseDownPos) > 10.0f && IconRect.Contains(_mouseDownPos))
             {
-                // Do the drag
                 _isMouseDown = false;
                 DoDrag();
             }
@@ -392,14 +463,27 @@ namespace FlaxEditor.GUI
                 }
                 else if (Button1Rect.Contains(location))
                 {
-                    // Show asset picker popup
                     Focus();
-                    AssetSearchPopup.Show(this, Button1Rect.BottomLeft, IsValid, assetItem =>
+                    if (_type != ScriptType.Null)
                     {
-                        SelectedItem = assetItem;
-                        RootWindow.Focus();
-                        Focus();
-                    });
+                        // Show asset picker popup
+                        AssetSearchPopup.Show(this, Button1Rect.BottomLeft, IsValid, item =>
+                        {
+                            SelectedItem = item;
+                            RootWindow.Focus();
+                            Focus();
+                        });
+                    }
+                    else
+                    {
+                        // Show content item picker popup
+                        ContentSearchPopup.Show(this, Button1Rect.BottomLeft, IsValid, item =>
+                        {
+                            SelectedItem = item;
+                            RootWindow.Focus();
+                            Focus();
+                        });
+                    }
                 }
                 else if (_selected != null || _selectedItem != null)
                 {
@@ -437,10 +521,8 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
-            // Focus
             Focus();
 
-            // Check if has element selected
             if (_selectedItem != null && IconRect.Contains(location))
             {
                 // Open it
@@ -458,7 +540,7 @@ namespace FlaxEditor.GUI
 
             // Check if drop asset
             if (_dragOverElement == null)
-                _dragOverElement = new DragAssets(IsValid);
+                _dragOverElement = new DragItems(IsValid);
             if (CanEdit && _dragOverElement.OnDragEnter(data))
             {
             }

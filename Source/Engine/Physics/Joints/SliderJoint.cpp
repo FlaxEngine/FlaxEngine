@@ -49,7 +49,7 @@ void SliderJoint::OnDebugDrawSelected()
     const Vector3 source = GetPosition();
     const Vector3 normal = GetOrientation() * Vector3::Right;
     float min = -100.0f, max = 100.0f;
-    if (_flags & SliderJointFlag::Limit)
+    if (EnumHasAnyFlags(_flags, SliderJointFlag::Limit))
     {
         min = _limit.Lower;
         max = _limit.Upper;

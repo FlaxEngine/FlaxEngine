@@ -53,7 +53,7 @@ namespace FlaxEditor.Windows
                 else
                 {
                     picker.SelectedID = AssetId;
-                    var assetItem = picker.SelectedItem;
+                    var assetItem = picker.SelectedItem as AssetItem;
                     if (assetItem != null)
                     {
                         Title = assetItem.ShortName;

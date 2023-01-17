@@ -1100,7 +1100,7 @@ void GPUContextDX12::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCo
 
 void GPUContextDX12::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
-    ASSERT(bufferForArgs && bufferForArgs->GetFlags() & GPUBufferFlags::Argument);
+    ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
 
     auto bufferForArgsDX12 = (GPUBufferDX12*)bufferForArgs;
     auto signature = _device->DrawIndirectCommandSignature->GetSignature();
@@ -1113,7 +1113,7 @@ void GPUContextDX12::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offs
 
 void GPUContextDX12::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
-    ASSERT(bufferForArgs && bufferForArgs->GetFlags() & GPUBufferFlags::Argument);
+    ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
 
     auto bufferForArgsDX12 = (GPUBufferDX12*)bufferForArgs;
     auto signature = _device->DrawIndexedIndirectCommandSignature->GetSignature();

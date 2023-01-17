@@ -275,7 +275,7 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     GlobalSignDistanceFieldPass::BindingData bindingDataSDF;
     GlobalSurfaceAtlasPass::BindingData bindingDataSurfaceAtlas;
     if (settings.TraceMode == ReflectionsTraceMode::SoftwareTracing &&
-        view.Flags & ViewFlags::GI &&
+        EnumHasAnyFlags(view.Flags, ViewFlags::GI) &&
         renderContext.List->Settings.GlobalIllumination.Mode == GlobalIlluminationMode::DDGI)
     {
         if (!GlobalSignDistanceFieldPass::Instance()->Render(renderContext, context, bindingDataSDF) &&

@@ -101,7 +101,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
     drawCall.Terrain.NeighborLOD.W = (float)Math::Clamp<int32>(_neighbors[3]->_cachedDrawLOD, lod, minLod);
     const auto scene = _patch->_terrain->GetScene();
     const auto flags = _patch->_terrain->_staticFlags;
-    if (flags & StaticFlags::Lightmap && scene)
+    if ((flags & StaticFlags::Lightmap) != StaticFlags::None && scene)
     {
         drawCall.Terrain.Lightmap = scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
         drawCall.Terrain.LightmapUVsArea = Lightmap.UVsArea;
@@ -121,7 +121,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
     //drawCall.TerrainData.HeightmapUVScaleBias.W += halfTexelOffset;
 
     // Submit draw call
-    auto drawModes = (DrawPass)(_patch->_terrain->DrawModes & renderContext.View.Pass & (uint32)drawCall.Material->GetDrawModes());
+    const DrawPass drawModes = _patch->_terrain->DrawModes & renderContext.View.Pass & drawCall.Material->GetDrawModes();
     if (drawModes != DrawPass::None)
         renderContext.List->AddDrawCall(renderContext, drawModes, flags, drawCall, true);
 }
@@ -157,7 +157,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
     drawCall.Terrain.NeighborLOD.W = (float)lod;
     const auto scene = _patch->_terrain->GetScene();
     const auto flags = _patch->_terrain->_staticFlags;
-    if (flags & StaticFlags::Lightmap && scene)
+    if ((flags & StaticFlags::Lightmap) != StaticFlags::None && scene)
     {
         drawCall.Terrain.Lightmap = scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
         drawCall.Terrain.LightmapUVsArea = Lightmap.UVsArea;
@@ -177,7 +177,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
     //drawCall.TerrainData.HeightmapUVScaleBias.W += halfTexelOffset;
 
     // Submit draw call
-    auto drawModes = (DrawPass)(_patch->_terrain->DrawModes & renderContext.View.Pass & (uint32)drawCall.Material->GetDrawModes());
+    const DrawPass drawModes = _patch->_terrain->DrawModes & renderContext.View.Pass & drawCall.Material->GetDrawModes();
     if (drawModes != DrawPass::None)
         renderContext.List->AddDrawCall(renderContext, drawModes, flags, drawCall, true);
 }

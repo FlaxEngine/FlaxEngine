@@ -206,6 +206,15 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override void ClearState()
+        {
+            base.ClearState();
+            
+            if (_isPressed)
+                OnPressEnd();
+        }
+
+        /// <inheritdoc />
         public override void DrawSelf()
         {
             // Cache data

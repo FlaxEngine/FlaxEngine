@@ -77,11 +77,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     }
                     prop.Label(string.Format("Progress: {0}% ({1}/{2})", allKeys.Count > 0 ? (int)(((float)validCount / allKeys.Count * 100.0f)) : 0, validCount, allKeys.Count));
                     prop.Label("Tables:");
+                    var projectFolder = Globals.ProjectFolder;
                     foreach (var table in e)
                     {
                         var namePath = table.Path;
-                        if (namePath.StartsWith(Globals.ProjectFolder))
-                            namePath = namePath.Substring(Globals.ProjectFolder.Length + 1);
+                        if (namePath.StartsWith(projectFolder))
+                            namePath = namePath.Substring(projectFolder.Length + 1);
                         var tableLabel = prop.ClickableLabel(namePath).CustomControl;
                         tableLabel.TextColorHighlighted = Color.Wheat;
                         tableLabel.DoubleClick += delegate { Editor.Instance.Windows.ContentWin.Select(table); };

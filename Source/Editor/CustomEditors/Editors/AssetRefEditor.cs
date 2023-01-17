@@ -3,7 +3,6 @@
 using System;
 using System.Linq;
 using FlaxEditor.Content;
-using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
 using FlaxEditor.Scripting;
 using FlaxEngine;
@@ -33,7 +32,7 @@ namespace FlaxEditor.CustomEditors.Editors
     [CustomEditor(typeof(Asset)), DefaultEditor]
     public class AssetRefEditor : CustomEditor
     {
-        private CustomElement<AssetPicker> _element;
+        private AssetPicker _picker;
         private ScriptType _valueType;
 
         /// <inheritdoc />
@@ -42,46 +41,59 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
-            if (!HasDifferentTypes)
+            if (HasDifferentTypes)
+                return;
+            _picker = layout.Custom<AssetPicker>().CustomControl;
+
+            _valueType = Values.Type.Type != typeof(object) || Values[0] == null ? Values.Type : TypeUtils.GetObjectType(Values[0]);
+            var assetType = _valueType;
+            if (assetType == typeof(string))
+                assetType = new ScriptType(typeof(Asset));
+
+            float height = 48;
+            var attributes = Values.GetAttributes();
+            var assetReference = (AssetReferenceAttribute)attributes?.FirstOrDefault(x => x is AssetReferenceAttribute);
+            if (assetReference != null)
             {
-                _valueType = Values.Type.Type != typeof(object) || Values[0] == null ? Values.Type : TypeUtils.GetObjectType(Values[0]);
-                var assetType = _valueType;
+                if (assetReference.UseSmallPicker)
+                    height = 32;
 
-                float height = 48;
-                var attributes = Values.GetAttributes();
-                var assetReference = (AssetReferenceAttribute)attributes?.FirstOrDefault(x => x is AssetReferenceAttribute);
-                if (assetReference != null)
+                if (string.IsNullOrEmpty(assetReference.TypeName))
                 {
-                    if (assetReference.UseSmallPicker)
-                        height = 32;
-
-                    if (!string.IsNullOrEmpty(assetReference.TypeName))
-                    {
-                        var customType = TypeUtils.GetType(assetReference.TypeName);
-                        if (customType != ScriptType.Null)
-                            assetType = customType;
-                        else
-                            Debug.LogWarning(string.Format("Unknown asset type '{0}' to use for asset picker filter.", assetReference.TypeName));
-                    }
                 }
-
-                _element = layout.Custom<AssetPicker>();
-                _element.CustomControl.AssetType = assetType;
-                _element.CustomControl.Height = height;
-                _element.CustomControl.SelectedItemChanged += OnSelectedItemChanged;
+                else if (assetReference.TypeName.Length > 1 && assetReference.TypeName[0] == '.')
+                {
+                    // Generic file picker
+                    assetType = ScriptType.Null;
+                    _picker.FileExtension = assetReference.TypeName;
+                }
+                else
+                {
+                    var customType = TypeUtils.GetType(assetReference.TypeName);
+                    if (customType != ScriptType.Null)
+                        assetType = customType;
+                    else
+                        Debug.LogWarning(string.Format("Unknown asset type '{0}' to use for asset picker filter.", assetReference.TypeName));
+                }
             }
+
+            _picker.AssetType = assetType;
+            _picker.Height = height;
+            _picker.SelectedItemChanged += OnSelectedItemChanged;
         }
 
         private void OnSelectedItemChanged()
         {
             if (typeof(AssetItem).IsAssignableFrom(_valueType.Type))
-                SetValue(_element.CustomControl.SelectedItem);
+                SetValue(_picker.SelectedItem);
             else if (_valueType.Type == typeof(Guid))
-                SetValue(_element.CustomControl.SelectedID);
+                SetValue(_picker.SelectedID);
             else if (_valueType.Type == typeof(SceneReference))
-                SetValue(new SceneReference(_element.CustomControl.SelectedID));
+                SetValue(new SceneReference(_picker.SelectedID));
+            else if (_valueType.Type == typeof(string))
+                SetValue(_picker.SelectedPath);
             else
-                SetValue(_element.CustomControl.SelectedAsset);
+                SetValue(_picker.SelectedAsset);
         }
 
         /// <inheritdoc />
@@ -92,13 +104,15 @@ namespace FlaxEditor.CustomEditors.Editors
             if (!HasDifferentValues)
             {
                 if (Values[0] is AssetItem assetItem)
-                    _element.CustomControl.SelectedItem = assetItem;
+                    _picker.SelectedItem = assetItem;
                 else if (Values[0] is Guid guid)
-                    _element.CustomControl.SelectedID = guid;
+                    _picker.SelectedID = guid;
                 else if (Values[0] is SceneReference sceneAsset)
-                    _element.CustomControl.SelectedItem = Editor.Instance.ContentDatabase.FindAsset(sceneAsset.ID);
+                    _picker.SelectedItem = Editor.Instance.ContentDatabase.FindAsset(sceneAsset.ID);
+                else if (Values[0] is string path)
+                    _picker.SelectedPath = path;
                 else
-                    _element.CustomControl.SelectedAsset = Values[0] as Asset;
+                    _picker.SelectedAsset = Values[0] as Asset;
             }
         }
     }

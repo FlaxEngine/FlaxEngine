@@ -83,9 +83,9 @@ void PointLight::Draw(RenderContext& renderContext)
     AdjustBrightness(renderContext.View, brightness);
     const Float3 position = GetPosition() - renderContext.View.Origin;
     const float radius = GetScaledRadius();
-    if ((renderContext.View.Flags & ViewFlags::PointLights) != 0
+    if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::PointLights)
+        && EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer)
         && brightness > ZeroTolerance
-        && renderContext.View.Pass & DrawPass::GBuffer
         && radius > ZeroTolerance
         && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, position) < ViewDistance * ViewDistance))
     {

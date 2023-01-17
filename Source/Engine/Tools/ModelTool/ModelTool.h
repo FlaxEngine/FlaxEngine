@@ -19,6 +19,8 @@ class JsonWriter;
 /// </summary>
 enum class ImportDataTypes : int32
 {
+    None = 0,
+
     /// <summary>
     /// Imports materials and meshes.
     /// </summary>

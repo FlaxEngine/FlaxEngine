@@ -33,7 +33,7 @@ void Skybox::Draw(RenderContext& renderContext)
     bool isReady;
     if (CustomMaterial)
     {
-        isReady = CustomMaterial->IsLoaded() && CustomMaterial->IsSurface() && CustomMaterial->GetDrawModes() & DrawPass::GBuffer;
+        isReady = CustomMaterial->IsLoaded() && CustomMaterial->IsSurface() && EnumHasAnyFlags(CustomMaterial->GetDrawModes(), DrawPass::GBuffer);
     }
     else
     {

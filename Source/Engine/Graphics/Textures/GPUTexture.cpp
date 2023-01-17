@@ -168,7 +168,7 @@ String GPUTextureDescription::ToString() const
     {
         // TODO: create tool to auto convert flag enums to string
 
-#define CONVERT_FLAGS_FLAGS_2_STR(value) if(Flags & GPUTextureFlags::value) { if (flags.HasChars()) flags += TEXT('|'); flags += TEXT(#value); }
+#define CONVERT_FLAGS_FLAGS_2_STR(value) if (EnumHasAnyFlags(Flags, GPUTextureFlags::value)) { if (flags.HasChars()) flags += TEXT('|'); flags += TEXT(#value); }
         CONVERT_FLAGS_FLAGS_2_STR(ShaderResource);
         CONVERT_FLAGS_FLAGS_2_STR(RenderTarget);
         CONVERT_FLAGS_FLAGS_2_STR(UnorderedAccess);
@@ -385,7 +385,7 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
             LOG(Warning, "Cannot create texture. Depth Stencil texture cannot be used as a Render Target. Description: {0}", desc.ToString());
             return true;
         }
-        if (desc.Flags & GPUTextureFlags::ReadOnlyDepthView && !device->Limits.HasReadOnlyDepth)
+        if (EnumHasAnyFlags(desc.Flags, GPUTextureFlags::ReadOnlyDepthView) && !device->Limits.HasReadOnlyDepth)
         {
             LOG(Warning, "Cannot create texture. The current graphics platform does not support read-only Depth Stencil texture. Description: {0}", desc.ToString());
             return true;
@@ -393,7 +393,7 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
     }
     else
     {
-        if (desc.Flags & GPUTextureFlags::ReadOnlyDepthView)
+        if (EnumHasAnyFlags(desc.Flags, GPUTextureFlags::ReadOnlyDepthView))
         {
             LOG(Warning, "Cannot create texture. Cannot create read-only Depth Stencil texture that is not a Depth Stencil texture. Add DepthStencil flag. Description: {0}", desc.ToString());
             return true;

@@ -562,7 +562,7 @@ bool GameCookerImpl::Build()
     {
         if (GameCooker::IsCancelRequested())
             break;
-        if (data.Options & BuildOptions::NoCook)
+        if (EnumHasAnyFlags(data.Options, BuildOptions::NoCook))
             continue;
         auto step = Steps[stepIndex];
         data.NextStep();
@@ -587,12 +587,12 @@ bool GameCookerImpl::Build()
     {
         LOG(Info, "Game building done!");
 
-        if (data.Options & BuildOptions::ShowOutput)
+        if (EnumHasAnyFlags(data.Options, BuildOptions::ShowOutput))
         {
             FileSystem::ShowFileExplorer(data.OriginalOutputPath);
         }
 
-        if (data.Options & BuildOptions::AutoRun)
+        if (EnumHasAnyFlags(data.Options, BuildOptions::AutoRun))
         {
             String executableFile, commandLineFormat, workingDir;
             data.Tools->OnRun(data, executableFile, commandLineFormat, workingDir);

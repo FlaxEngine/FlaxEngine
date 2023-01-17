@@ -30,7 +30,7 @@
 #define GLOBAL_SDF_MIP_FLOODS 5 // Amount of flood fill passes for mip.
 #define GLOBAL_SDF_DEBUG_CHUNKS 0
 #define GLOBAL_SDF_DEBUG_FORCE_REDRAW 0 // Forces to redraw all SDF cascades every frame
-#define GLOBAL_SDF_ACTOR_IS_STATIC(actor) ((actor->GetStaticFlags() & (StaticFlags::Lightmap | StaticFlags::Transform)) == (int32)(StaticFlags::Lightmap | StaticFlags::Transform))
+#define GLOBAL_SDF_ACTOR_IS_STATIC(actor) EnumHasAllFlags(actor->GetStaticFlags(), StaticFlags::Lightmap | StaticFlags::Transform)
 
 static_assert(GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT % 4 == 0, "Must be multiple of 4 due to data packing for GPU constant buffer.");
 #if GLOBAL_SDF_DEBUG_CHUNKS
@@ -272,7 +272,7 @@ bool GlobalSignDistanceFieldPass::Init()
     // Check platform support
     const auto device = GPUDevice::Instance;
     _supported = device->GetFeatureLevel() >= FeatureLevel::SM5 && device->Limits.HasCompute && device->Limits.HasTypedUAVLoad
-            && FORMAT_FEATURES_ARE_SUPPORTED(device->GetFormatFeatures(GLOBAL_SDF_FORMAT).Support, FormatSupport::ShaderSample | FormatSupport::Texture3D);
+            && EnumHasAllFlags(device->GetFormatFeatures(GLOBAL_SDF_FORMAT).Support, FormatSupport::ShaderSample | FormatSupport::Texture3D);
     return false;
 }
 

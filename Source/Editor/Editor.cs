@@ -10,6 +10,7 @@ using FlaxEditor.Content;
 using FlaxEditor.Content.Import;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.Content.Thumbnails;
+using FlaxEditor.GUI;
 using FlaxEditor.Modules;
 using FlaxEditor.Modules.SourceCodeEditing;
 using FlaxEditor.Options;
@@ -49,6 +50,8 @@ namespace FlaxEditor
         private bool _isAfterInit, _areModulesInited, _areModulesAfterInitEnd, _isHeadlessMode;
         private string _projectToOpen;
         private float _lastAutoSaveTimer;
+        private AutoSavePopup _autoSavePopup;
+        private bool _autoSaveNow;
         private Guid _startupSceneCmdLine;
 
         private const string ProjectDataLastScene = "LastScene";
@@ -497,7 +500,28 @@ namespace FlaxEditor
                 var timeToNextSave = options.AutoSaveFrequency * 60.0f - timeSinceLastSave;
                 var countDownDuration = 4.0f;
 
-                if (timeToNextSave <= 0.0f)
+                // Show auto save popup
+                if (timeToNextSave <= options.AutoSaveReminderTime && timeToNextSave >= 0)
+                {
+                    if (_autoSavePopup == null)
+                    {
+                        _autoSavePopup = AutoSavePopup.Show(Instance.Windows.MainWindow.GUI, timeToNextSave);
+                        _autoSavePopup.SaveNowButton.Clicked += () => _autoSaveNow = true;
+                        _autoSavePopup.CancelSaveButton.Clicked += () =>
+                        {
+                            Log("Auto save canceled");
+                            _autoSavePopup.HidePopup();
+                            _lastAutoSaveTimer = Time.UnscaledGameTime; // Reset timer
+                        };
+                    }
+                    else if (!_autoSavePopup.Visible && !_autoSavePopup.UserClosed)
+                        _autoSavePopup.ShowPopup();
+
+                    if (_autoSavePopup.Visible)
+                        _autoSavePopup.UpdateTime(timeToNextSave);
+                }
+
+                if (timeToNextSave <= 0.0f || _autoSaveNow)
                 {
                     Log("Auto save");
                     _lastAutoSaveTimer = Time.UnscaledGameTime;
@@ -505,6 +529,11 @@ namespace FlaxEditor
                         Scene.SaveScenes();
                     if (options.AutoSaveContent)
                         SaveContent();
+
+                    // Hide auto save popup and reset user closed
+                    _autoSavePopup.HidePopup();
+                    _autoSavePopup.UserClosed = false;
+                    _autoSaveNow = false;
                 }
                 else if (timeToNextSave < countDownDuration)
                 {

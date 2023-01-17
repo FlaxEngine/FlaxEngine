@@ -36,6 +36,7 @@ namespace FlaxEditor.Content
     /// A <see cref="SceneAnimation"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
+    [ContentContextMenu("New/Animation/Scene Animation")]
     public class SceneAnimationProxy : BinaryAssetProxy
     {
         /// <inheritdoc />

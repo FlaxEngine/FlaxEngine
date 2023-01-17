@@ -184,7 +184,7 @@ void Sky::DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureV
     data.ViewOffset = renderContext.View.Origin + GetPosition();
     InitConfig(data.Fog);
     data.Fog.AtmosphericFogSunPower *= SunLight ? SunLight->Brightness : 1.0f;
-    bool useSpecularLight = (renderContext.View.Flags & ViewFlags::SpecularLight) != 0;
+    bool useSpecularLight = EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::SpecularLight);
     if (!useSpecularLight)
     {
         data.Fog.AtmosphericFogSunDiscScale = 0;
@@ -223,7 +223,7 @@ void Sky::ApplySky(GPUContext* context, RenderContext& renderContext, const Matr
     data.ViewOffset = renderContext.View.Origin + GetPosition();
     InitConfig(data.Fog);
     //data.Fog.AtmosphericFogSunPower *= SunLight ? SunLight->Brightness : 1.0f;
-    bool useSpecularLight = (renderContext.View.Flags & ViewFlags::SpecularLight) != 0;
+    bool useSpecularLight = EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::SpecularLight);
     if (!useSpecularLight)
     {
         // Hide sun disc if specular light is disabled

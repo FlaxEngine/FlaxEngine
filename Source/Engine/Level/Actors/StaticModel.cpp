@@ -262,13 +262,13 @@ void StaticModel::Draw(RenderContext& renderContext)
         return;
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
     {
-        if (DrawModes & DrawPass::GlobalSDF)
+        if (EnumHasAnyFlags(DrawModes, DrawPass::GlobalSDF))
             GlobalSignDistanceFieldPass::Instance()->RasterizeModelSDF(this, Model->SDF, _transform, _box);
         return;
     }
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
     {
-        if (DrawModes & DrawPass::GlobalSurfaceAtlas)
+        if (EnumHasAnyFlags(DrawModes, DrawPass::GlobalSurfaceAtlas))
             GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, this, _sphere, _transform, Model->LODs.Last().GetBox());
         return;
     }

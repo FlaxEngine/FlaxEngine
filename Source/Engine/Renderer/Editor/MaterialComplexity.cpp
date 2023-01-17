@@ -150,7 +150,7 @@ void MaterialComplexityMaterialShader::Draw(RenderContext& renderContext, GPUCon
     // Draw transparency into Light buffer to include it into complexity drawing
     GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
     GPUTextureView* readOnlyDepthBuffer = depthBuffer->View();
-    if (depthBuffer->GetDescription().Flags & GPUTextureFlags::ReadOnlyDepthView)
+    if (EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView))
         readOnlyDepthBuffer = depthBuffer->ViewReadOnlyDepth();
     context->SetRenderTarget(readOnlyDepthBuffer, lightBuffer);
     auto& distortionList = renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Distortion];
@@ -196,7 +196,7 @@ void MaterialComplexityMaterialShader::DebugOverrideDrawCallsMaterial(DrawCall& 
     switch (domain)
     {
     case MaterialDomain::Surface:
-        wrapperIndex = drawCall.Material->GetDrawModes() & DrawPass::Forward ? 1 : 0;
+        wrapperIndex = EnumHasAnyFlags(drawCall.Material->GetDrawModes(), DrawPass::Forward) ? 1 : 0;
         break;
     case MaterialDomain::Terrain:
         wrapperIndex = 2;

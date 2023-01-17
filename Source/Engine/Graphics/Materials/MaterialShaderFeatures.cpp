@@ -127,7 +127,7 @@ bool LightmapFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& c
     auto& drawCall = *params.FirstDrawCall;
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(Data));
 
-    const bool useLightmap = params.RenderContext.View.Flags & ViewFlags::GI
+    const bool useLightmap = EnumHasAnyFlags(params.RenderContext.View.Flags, ViewFlags::GI)
 #if USE_EDITOR
             && EnableLightmapsUsage
 #endif
@@ -157,7 +157,7 @@ bool GlobalIlluminationFeature::Bind(MaterialShader::BindParameters& params, Spa
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(Data));
 
     bool useGI = false;
-    if (params.RenderContext.View.Flags & ViewFlags::GI)
+    if (EnumHasAnyFlags(params.RenderContext.View.Flags, ViewFlags::GI))
     {
         switch (params.RenderContext.List->Settings.GlobalIllumination.Mode)
         {

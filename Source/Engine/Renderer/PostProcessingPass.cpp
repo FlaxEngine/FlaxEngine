@@ -200,10 +200,10 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
 
     // Cache data
     PostProcessSettings& settings = renderContext.List->Settings;
-    bool useBloom = (view.Flags & ViewFlags::Bloom) != 0 && settings.Bloom.Enabled && settings.Bloom.Intensity > 0.0f;
-    bool useToneMapping = (view.Flags & ViewFlags::ToneMapping) != 0;
-    bool useCameraArtifacts = (view.Flags & ViewFlags::CameraArtifacts) != 0;
-    bool useLensFlares = (view.Flags & ViewFlags::LensFlares) != 0 && settings.LensFlares.Intensity > 0.0f && useBloom;
+    bool useBloom = EnumHasAnyFlags(view.Flags, ViewFlags::Bloom) && settings.Bloom.Enabled && settings.Bloom.Intensity > 0.0f;
+    bool useToneMapping = EnumHasAnyFlags(view.Flags, ViewFlags::ToneMapping);
+    bool useCameraArtifacts = EnumHasAnyFlags(view.Flags, ViewFlags::CameraArtifacts);
+    bool useLensFlares = EnumHasAnyFlags(view.Flags, ViewFlags::LensFlares) && settings.LensFlares.Intensity > 0.0f && useBloom;
 
     // Ensure to have valid data and if at least one effect should be applied
     if (!(useBloom || useToneMapping || useCameraArtifacts))

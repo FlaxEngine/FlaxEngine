@@ -85,10 +85,10 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
     }
 
 #if USE_EDITOR
-    if (view.Pass & DrawPass::GBuffer && category == SceneDraw)
+    if (EnumHasAnyFlags(view.Pass, DrawPass::GBuffer) && category == SceneDraw)
     {
         // Draw physics shapes
-        if (view.Flags & ViewFlags::PhysicsDebug || view.Mode == ViewMode::PhysicsColliders)
+        if (EnumHasAnyFlags(view.Flags, ViewFlags::PhysicsDebug) || view.Mode == ViewMode::PhysicsColliders)
         {
             const PhysicsDebugCallback* physicsDebugData = PhysicsDebug.Get();
             for (int32 i = 0; i < PhysicsDebug.Count(); i++)
@@ -203,7 +203,7 @@ void SceneRendering::DrawActorsJob(int32)
         // Offline pass with additional static flags culling
         FOR_EACH_BATCH_ACTOR
             e.Bounds.Center -= view.Origin;
-            if (CHECK_ACTOR && e.Actor->GetStaticFlags() & view.StaticFlagsMask)
+            if (CHECK_ACTOR && (e.Actor->GetStaticFlags() & view.StaticFlagsMask) != StaticFlags::None)
             {
                 DRAW_ACTOR(*_drawBatch);
             }

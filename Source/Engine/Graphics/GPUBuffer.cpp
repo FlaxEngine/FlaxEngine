@@ -2,6 +2,7 @@
 
 #include "GPUBuffer.h"
 #include "GPUDevice.h"
+#include "GPUResourceProperty.h"
 #include "GPUBufferDescription.h"
 #include "PixelFormatExtensions.h"
 #include "Async/Tasks/GPUCopyResourceTask.h"
@@ -10,9 +11,8 @@
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
 #include "Engine/Debug/Exceptions/ArgumentNullException.h"
-#include "Engine/Threading/ThreadPoolTask.h"
-#include "Engine/Graphics/GPUResourceProperty.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
+#include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Threading/Threading.h"
 
 GPUBufferDescription GPUBufferDescription::Buffer(uint32 size, GPUBufferFlags flags, PixelFormat format, const void* initData, uint32 stride, GPUResourceUsage usage)
@@ -91,7 +91,7 @@ String GPUBufferDescription::ToString() const
     {
         // TODO: create tool to auto convert flag enums to string
 
-#define CONVERT_FLAGS_FLAGS_2_STR(value) if(Flags & GPUBufferFlags::value) { if (flags.HasChars()) flags += TEXT('|'); flags += TEXT(#value); }
+#define CONVERT_FLAGS_FLAGS_2_STR(value) if (EnumHasAnyFlags(Flags, GPUBufferFlags::value)) { if (flags.HasChars()) flags += TEXT('|'); flags += TEXT(#value); }
         CONVERT_FLAGS_FLAGS_2_STR(ShaderResource);
         CONVERT_FLAGS_FLAGS_2_STR(VertexBuffer);
         CONVERT_FLAGS_FLAGS_2_STR(IndexBuffer);
@@ -149,7 +149,7 @@ bool GPUBuffer::Init(const GPUBufferDescription& desc)
         && Math::IsInRange<uint32>(desc.Stride, 0, 1024));
 
     // Validate description
-    if (desc.Flags & GPUBufferFlags::Structured)
+    if (EnumHasAnyFlags(desc.Flags, GPUBufferFlags::Structured))
     {
         if (desc.Stride <= 0)
         {
@@ -157,7 +157,7 @@ bool GPUBuffer::Init(const GPUBufferDescription& desc)
             return true;
         }
     }
-    if (desc.Flags & GPUBufferFlags::RawBuffer)
+    if (EnumHasAnyFlags(desc.Flags, GPUBufferFlags::RawBuffer))
     {
         if (desc.Format != PixelFormat::R32_Typeless)
         {

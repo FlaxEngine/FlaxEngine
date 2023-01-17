@@ -195,9 +195,9 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         ADD_FEATURE(LightmapFeature);
         if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
         ADD_FEATURE(DeferredShadingFeature);
-        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == MaterialFeaturesFlags::None)
         ADD_FEATURE(DistortionFeature);
-        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination) != 0)
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && EnumHasAnyFlags(materialInfo.FeaturesFlags, MaterialFeaturesFlags::GlobalIllumination))
         ADD_FEATURE(GlobalIlluminationFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque)
         ADD_FEATURE(ForwardShadingFeature);
@@ -209,9 +209,9 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         ADD_FEATURE(DeferredShadingFeature);
         break;
     case MaterialDomain::Particle:
-        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == 0)
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == MaterialFeaturesFlags::None)
         ADD_FEATURE(DistortionFeature);
-        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination) != 0)
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && EnumHasAnyFlags(materialInfo.FeaturesFlags, MaterialFeaturesFlags::GlobalIllumination))
         ADD_FEATURE(GlobalIlluminationFeature);
         ADD_FEATURE(ForwardShadingFeature);
         break;
@@ -330,14 +330,14 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
 
         // Normalize and transform to world space if need to
         _writer.Write(TEXT("\t{0}.TangentNormal = normalize({0}.TangentNormal);\n"), materialVarPS.Value);
-        if ((baseLayer->FeaturesFlags & MaterialFeaturesFlags::InputWorldSpaceNormal) == 0)
-        {
-            _writer.Write(TEXT("\t{0}.WorldNormal = normalize(TransformTangentVectorToWorld(input, {0}.TangentNormal));\n"), materialVarPS.Value);
-        }
-        else
+        if (EnumHasAllFlags(baseLayer->FeaturesFlags, MaterialFeaturesFlags::InputWorldSpaceNormal))
         {
             _writer.Write(TEXT("\t{0}.WorldNormal = {0}.TangentNormal;\n"), materialVarPS.Value);
             _writer.Write(TEXT("\t{0}.TangentNormal = normalize(TransformWorldVectorToTangent(input, {0}.WorldNormal));\n"), materialVarPS.Value);
+        }
+        else
+        {
+            _writer.Write(TEXT("\t{0}.WorldNormal = normalize(TransformTangentVectorToWorld(input, {0}.TangentNormal));\n"), materialVarPS.Value);
         }
 
         // Clamp values
@@ -421,7 +421,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         _writer.Write(TEXT("#define MATERIAL_MASK_THRESHOLD ({0})\n"), baseLayer->MaskThreshold);
         _writer.Write(TEXT("#define CUSTOM_VERTEX_INTERPOLATORS_COUNT ({0})\n"), _vsToPsInterpolants.Count());
         _writer.Write(TEXT("#define MATERIAL_OPACITY_THRESHOLD ({0})\n"), baseLayer->OpacityThreshold);
-        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && !(materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableReflections) && materialInfo.FeaturesFlags & MaterialFeaturesFlags::ScreenSpaceReflections)
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && !(materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableReflections) && EnumHasAnyFlags(materialInfo.FeaturesFlags, MaterialFeaturesFlags::ScreenSpaceReflections))
         {
             // Inject depth and color buffers for Screen Space Reflections used by transparent material
             auto sceneDepthTexture = findOrAddSceneTexture(MaterialSceneTextures::SceneDepth);

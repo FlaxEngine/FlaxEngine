@@ -97,7 +97,7 @@ void AssetsCache::Init()
         stream->Read(tmp1);
 #endif
 
-        if (flags & AssetsCacheFlags::RelativePaths && e.Info.Path.HasChars())
+        if (EnumHasAnyFlags(flags, AssetsCacheFlags::RelativePaths) && e.Info.Path.HasChars())
         {
             // Convert to absolute path
             e.Info.Path = Globals::StartupFolder / e.Info.Path;
@@ -125,7 +125,7 @@ void AssetsCache::Init()
         String mappedPath;
         stream->ReadString(&mappedPath, i + 73);
 
-        if (flags & AssetsCacheFlags::RelativePaths && mappedPath.HasChars())
+        if (EnumHasAnyFlags(flags, AssetsCacheFlags::RelativePaths) && mappedPath.HasChars())
         {
             // Convert to absolute path
             mappedPath = Globals::StartupFolder / mappedPath;

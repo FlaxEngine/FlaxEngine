@@ -42,7 +42,6 @@ public:
     /// <summary>
     /// Gets the string representation of this object.
     /// </summary>
-    /// <returns>The string.</returns>
     virtual String ToString() const = 0;
 
     /// <summary>

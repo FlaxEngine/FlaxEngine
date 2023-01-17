@@ -730,7 +730,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
         draw.World = &world;
         draw.DrawState = &_drawState;
         PRAGMA_DISABLE_DEPRECATION_WARNINGS
-        draw.DrawModes = (DrawPass)(DrawModes & renderContext.View.GetShadowsDrawPassMask(ShadowsMode));
+        draw.DrawModes = DrawModes & renderContext.View.GetShadowsDrawPassMask(ShadowsMode);
         PRAGMA_ENABLE_DEPRECATION_WARNINGS
         draw.Bounds = _sphere;
         draw.Bounds.Center -= renderContext.View.Origin;
@@ -785,7 +785,7 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
             // TODO: maybe deserialize ShadowsMode into ModelInstanceBuffer entries options?
             for (auto& e : renderContextBatch.Contexts)
             {
-                draw.DrawModes = (DrawPass)(DrawModes & e.View.GetShadowsDrawPassMask(ShadowsMode));
+                draw.DrawModes = DrawModes & e.View.GetShadowsDrawPassMask(ShadowsMode);
                 SkinnedModel->Draw(e, draw);
             }
         }

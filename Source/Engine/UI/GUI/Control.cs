@@ -131,6 +131,7 @@ namespace FlaxEngine.GUI
                 else
                 {
                     oldParentSize = Float2.Zero;
+                    ClearState();
                 }
 
                 _parent = value;
@@ -214,20 +215,8 @@ namespace FlaxEngine.GUI
                 if (_isEnabled != value)
                 {
                     _isEnabled = value;
-
-                    // Check if control has been disabled
                     if (!_isEnabled)
-                    {
-                        Defocus();
-
-                        // Clear flags
-                        if (_isMouseOver)
-                            OnMouseLeave();
-                        if (_isDragOver)
-                            OnDragLeave();
-                        while (_touchOvers != null && _touchOvers.Count != 0)
-                            OnTouchLeave(_touchOvers[0]);
-                    }
+                        ClearState();
                 }
             }
         }
@@ -259,20 +248,8 @@ namespace FlaxEngine.GUI
                 if (_isVisible != value)
                 {
                     _isVisible = value;
-
-                    // Check on control hide event
                     if (!_isVisible)
-                    {
-                        Defocus();
-
-                        // Clear flags
-                        if (_isMouseOver)
-                            OnMouseLeave();
-                        if (_isDragOver)
-                            OnDragLeave();
-                        while (_touchOvers != null && _touchOvers.Count != 0)
-                            OnTouchLeave(_touchOvers[0]);
-                    }
+                        ClearState();
 
                     OnVisibleChanged();
                     _parent?.PerformLayout();
@@ -451,6 +428,20 @@ namespace FlaxEngine.GUI
         [NoAnimate]
         public virtual void PerformLayout(bool force = false)
         {
+        }
+
+        /// <summary>
+        /// Called to clear UI state. For example, removes mouse over state or drag and drop when control gets disabled or hidden (including hierarchy).
+        /// </summary>
+        public virtual void ClearState()
+        {
+            Defocus();
+            if (_isMouseOver)
+                OnMouseLeave();
+            if (_isDragOver)
+                OnDragLeave();
+            while (_touchOvers != null && _touchOvers.Count != 0)
+                OnTouchLeave(_touchOvers[0]);
         }
 
         #region Focus
@@ -1338,6 +1329,12 @@ namespace FlaxEngine.GUI
         /// </summary>
         protected virtual void OnVisibleChanged()
         {
+            // Clear state when control gets hidden
+            if (!_isVisible && _isMouseOver)
+            {
+                OnMouseLeave();
+            }
+
             VisibleChanged?.Invoke(this);
         }
 

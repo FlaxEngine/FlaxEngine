@@ -146,7 +146,7 @@ public:
     /// <param name="ownerClientId">The new owner. Set to NetworkManager::LocalClientId for local client to be owner (server might reject it).</param>
     /// <param name="localRole">The local role to assign for the object.</param>
     /// <param name="hierarchical">True if apply the ownership to all child objects of this object (eg. all child actors and scripts attached to the networked actor).</param>
-    API_FUNCTION() static void SetObjectOwnership(ScriptingObject* obj, uint32 ownerClientId, NetworkObjectRole localRole = NetworkObjectRole::Replicated, bool hierarchical = false);
+    API_FUNCTION() static void SetObjectOwnership(ScriptingObject* obj, uint32 ownerClientId, NetworkObjectRole localRole = NetworkObjectRole::Replicated, bool hierarchical = true);
 
     /// <summary>
     /// Marks the object dirty to perform immediate replication to the other clients.

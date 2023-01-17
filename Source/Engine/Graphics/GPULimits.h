@@ -173,12 +173,6 @@ API_ENUM(Attributes="Flags") enum class FormatSupport : int32
 
 DECLARE_ENUM_OPERATORS(FormatSupport);
 
-// Helper macro to check if given format does not support a given set of feature flags
-#define FORMAT_FEATURES_ARE_NOT_SUPPORTED(formatSupport, formatSupportFlags) ((formatSupport & (formatSupportFlags)) != static_cast<int>(formatSupportFlags))
-
-// Helper macro to check if given format does support a given set of feature flags
-#define FORMAT_FEATURES_ARE_SUPPORTED(formatSupport, formatSupportFlags) ((formatSupport & (formatSupportFlags)) == static_cast<int>(formatSupportFlags))
-
 /// <summary>
 /// The features exposed for a particular format.
 /// </summary>
