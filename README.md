@@ -51,7 +51,7 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 * Install .Net 7 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
 * Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
 * Install Git with LFS
-* Install requried packages: `sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev nuget autoconf libogg-dev automake build-essential gettext cmake python libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev`
+* Install requried packages: `sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev nuget autoconf libogg-dev automake build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev`
 * Install compiler `sudo apt-get install clang lldb lld` (Clang 6 or newer)
 * Clone repo (with LFS)
 * Run `./GenerateProjectFiles.sh`
