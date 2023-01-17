@@ -606,7 +606,6 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.BeginArray("recommendations");
                 {
                     json.AddUnnamedField("ms-dotnettools.csharp");
-                    json.AddUnnamedField("ms-vscode.mono-debug");
 
                     if (!Globals.Project.IsCSharpOnlyProject)
                     {
