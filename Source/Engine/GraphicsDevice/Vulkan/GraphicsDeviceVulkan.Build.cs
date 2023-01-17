@@ -40,19 +40,28 @@ public sealed class VulkanSdk : Sdk
             return;
 
         var vulkanSdk = Environment.GetEnvironmentVariable("VULKAN_SDK");
-        if (platform == TargetPlatform.Mac && (vulkanSdk == null || !Directory.Exists(vulkanSdk)))
+        if (vulkanSdk == null || !Directory.Exists(vulkanSdk))
         {
-            // Try to guess install location for the current user
-            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "VulkanSDK");
-            if (Directory.Exists(path))
+            if (platform == TargetPlatform.Mac)
             {
-                var subDirs = Directory.GetDirectories(path);
-                if (subDirs.Length != 0)
+                // Try to guess install location for the current user
+                var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "VulkanSDK");
+                if (Directory.Exists(path))
                 {
-                    path = Path.Combine(subDirs[0], "macOS");
-                    if (Directory.Exists(path))
-                        vulkanSdk = path;
+                    var subDirs = Directory.GetDirectories(path);
+                    if (subDirs.Length != 0)
+                    {
+                        path = Path.Combine(subDirs[0], "macOS");
+                        if (Directory.Exists(path))
+                            vulkanSdk = path;
+                    }
                 }
+            }
+            else if (platform == TargetPlatform.Linux)
+            {
+                // Try to use system-installed Vulkan SDK
+                if (File.Exists("/usr/include/vulkan/vulkan.h"))
+                    vulkanSdk = "/usr/include";
             }
         }
         if (vulkanSdk != null)
@@ -87,13 +96,20 @@ public sealed class VulkanSdk : Sdk
         {
             var vulkanSdk = RootPath;
 
+            // Use system-installed headers
+            if (vulkanSdk.EndsWith("/include") && Directory.Exists(vulkanSdk))
+            {
+                includesFolderPath = vulkanSdk;
+                return true;
+            }
+
+            // Check potential location with headers
             var includes = new[]
             {
                 Path.Combine(vulkanSdk, "include"),
                 Path.Combine(vulkanSdk, "Include"),
                 Path.Combine(vulkanSdk, "x86_64", "include"),
             };
-
             foreach (var include in includes)
             {
                 if (Directory.Exists(include))
