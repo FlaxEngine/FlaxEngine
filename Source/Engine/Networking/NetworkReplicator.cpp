@@ -987,6 +987,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
         CachedWriteStream = New<NetworkStream>();
     const bool isClient = NetworkManager::IsClient();
     const bool isServer = NetworkManager::IsServer();
+    const bool isHost = NetworkManager::IsHost();
     NetworkStream* stream = CachedWriteStream;
     NetworkPeer* peer = NetworkManager::Peer;
 
@@ -1286,7 +1287,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
             // Client -> Server
             peer->EndSendMessage(channel, msg);
         }
-        else if (e.Info.Client && isServer)
+        else if (e.Info.Client && (isServer || isHost))
         {
             // Server -> Client(s)
             BuildCachedTargets(item);
