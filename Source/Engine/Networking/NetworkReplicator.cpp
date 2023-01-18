@@ -897,6 +897,13 @@ void NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHa
     rpc.Info = *info;
     const Span<byte> argsData(argsStream->GetBuffer(), argsStream->GetPosition());
     rpc.ArgsData.Copy(argsData);
+#if USE_EDITOR || !BUILD_RELEASE
+    auto it = Objects.Find(obj->GetID());
+    if (it == Objects.End())
+    {
+        LOG(Error, "Cannot invoke RPC method '{0}.{1}' on object '{2}' that is not registered in networking (use 'NetworkReplicator.AddObject').", type.ToString(), String(name), obj->GetID());
+    }
+#endif
     ObjectsLock.Unlock();
 }
 
