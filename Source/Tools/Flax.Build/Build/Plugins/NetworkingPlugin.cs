@@ -1246,6 +1246,13 @@ namespace Flax.Build.Plugins
             methodRPC.Method = method;
             methodRPC.IsServer = (bool)attribute.GetFieldValue("Server", false);
             methodRPC.IsClient = (bool)attribute.GetFieldValue("Client", false);
+            methodRPC.Channel = (int)attribute.GetFieldValue("Channel", 4); // int as NetworkChannelType (default is ReliableOrdered=4)
+            if (attribute.HasConstructorArguments && attribute.ConstructorArguments.Count >= 3)
+            {
+                methodRPC.IsServer = (bool)attribute.ConstructorArguments[0].Value;
+                methodRPC.IsClient = (bool)attribute.ConstructorArguments[1].Value;
+                methodRPC.Channel = (int)attribute.ConstructorArguments[2].Value;
+            }
             if (methodRPC.IsServer && methodRPC.IsClient)
             {
                 MonoCecil.CompilationError($"Network RPC {method.Name} in {type.FullName} cannot be both Server and Client.", method);
@@ -1258,7 +1265,6 @@ namespace Flax.Build.Plugins
                 failed = true;
                 return;
             }
-            methodRPC.Channel = (int)attribute.GetFieldValue("Channel", 4); // int as NetworkChannelType (default is ReliableOrdered=4)
             module.GetType("System.IntPtr", out var intPtrType);
             module.GetType("FlaxEngine.Object", out var scriptingObjectType);
             var fromUnmanagedPtr = scriptingObjectType.Resolve().GetMethod("FromUnmanagedPtr");
