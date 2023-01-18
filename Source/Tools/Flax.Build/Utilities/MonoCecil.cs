@@ -11,6 +11,58 @@ namespace Flax.Build
     /// </summary>
     internal static class MonoCecil
     {
+        public static void CompilationError(string message)
+        {
+            Log.Error(message);
+        }
+
+        public static void CompilationError(string message, MethodDefinition method)
+        {
+            if (method != null && method.DebugInformation.HasSequencePoints)
+            {
+                var sp = method.DebugInformation.SequencePoints[0];
+                message = $"{sp.Document.Url}({sp.StartLine},{sp.StartColumn},{sp.EndLine},{sp.EndColumn}): error: {message}";
+            }
+            Log.Error(message);
+        }
+
+        public static void CompilationError(string message, PropertyDefinition property)
+        {
+            if (property != null)
+            {
+                if (property.GetMethod != null)
+                {
+                    CompilationError(message, property.GetMethod);
+                    return;
+                }
+                else if (property.SetMethod != null)
+                {
+                    CompilationError(message, property.SetMethod);
+                    return;
+                }
+            }
+            Log.Error(message);
+        }
+
+        public static void CompilationError(string message, FieldDefinition field)
+        {
+            if (field != null && field.DeclaringType != null)
+            {
+                // Just include potential filename
+                var methods = field.DeclaringType.Methods;
+                if (methods != null && methods.Count != 0)
+                {
+                    var method = methods[0];
+                    if (method != null && method.DebugInformation.HasSequencePoints)
+                    {
+                        var sp = method.DebugInformation.SequencePoints[0];
+                        message = $"{sp.Document.Url}({0},{0},{0},{0}): error: {message}";
+                    }
+                }
+            }
+            Log.Error(message);
+        }
+
         public static bool HasAttribute(this ICustomAttributeProvider type, string fullName)
         {
             return type.CustomAttributes.Any(x => x.AttributeType.FullName == fullName);
