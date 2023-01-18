@@ -323,17 +323,11 @@ namespace Flax.Build
                                     // Reference module output binary
                                     fileReferences.Add(Path.Combine(outputPath, dependencyModule.BinaryModuleName + ".CSharp.dll"));
                                 }
-                                foreach (var e in buildData.ReferenceBuilds)
+                                var referencedBuild = buildData.FinReferenceBuildModule(dependencyModule.BinaryModuleName);
+                                if (referencedBuild != null && !string.IsNullOrEmpty(referencedBuild.ManagedPath))
                                 {
-                                    foreach (var q in e.Value.BuildInfo.BinaryModules)
-                                    {
-                                        if (q.Name == dependencyModule.BinaryModuleName && !string.IsNullOrEmpty(q.ManagedPath))
-                                        {
-                                            // Reference binary module build build for referenced target
-                                            fileReferences.Add(q.ManagedPath);
-                                            break;
-                                        }
-                                    }
+                                    // Reference binary module build build for referenced target
+                                    fileReferences.Add(referencedBuild.ManagedPath);
                                 }
                             }
                         }
