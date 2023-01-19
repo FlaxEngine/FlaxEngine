@@ -172,6 +172,7 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         protected override void OnShow()
         {
+            _inputField.EndEditOnClick = false; // Ending edit is handled through popup
             _inputField.Focus();
             _inputField.SelectAll();
 
