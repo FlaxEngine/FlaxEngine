@@ -17,6 +17,8 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/JsonTools.h"
 
+#include "Engine/Debug/DebugLog.h"
+
 struct AxisEvaluation
 {
     float RawValue;
@@ -181,6 +183,15 @@ void Mouse::OnMouseDown(const Float2& position, const MouseButton button, Window
     e.Target = target;
     e.MouseData.Button = button;
     e.MouseData.Position = position;
+}
+
+bool Mouse::IsAnyKeyDown() const
+{
+    // TODO: optimize with SIMD
+    bool result = false;
+    for (auto e : Mouse::_state.MouseButtons)
+        result |= e;
+    return result;
 }
 
 void Mouse::OnMouseUp(const Float2& position, const MouseButton button, Window* target)

@@ -31,6 +31,15 @@ void Gamepad::ResetState()
     _mappedPrevState.Clear();
 }
 
+bool Gamepad::IsAnyKeyDown() const
+{
+    // TODO: optimize with SIMD
+    bool result = false;
+    for (auto e : _state.Buttons)
+        result |= e;
+    return result;
+}
+
 bool Gamepad::Update(EventQueue& queue)
 {
     // Copy state

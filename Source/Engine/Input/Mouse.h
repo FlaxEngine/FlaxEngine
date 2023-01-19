@@ -65,6 +65,11 @@ public:
     }
 
     /// <summary>
+    /// Checks if any mouse key is currently pressed.
+    /// </summary>
+    API_PROPERTY() bool IsAnyKeyDown() const;
+
+    /// <summary>
     /// Gets the delta position of the mouse in the screen-space coordinates.
     /// </summary>
     /// <returns>The mouse position delta</returns>
