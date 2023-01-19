@@ -1290,7 +1290,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
         else if (e.Info.Client && (isServer || isHost))
         {
             // Server -> Client(s)
-            BuildCachedTargets(item);
+            BuildCachedTargets(NetworkManager::Clients, item.TargetClientIds, NetworkManager::LocalClientId);
             peer->EndSendMessage(channel, msg, CachedTargets);
         }
     }
