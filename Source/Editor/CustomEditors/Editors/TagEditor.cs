@@ -260,6 +260,8 @@ namespace FlaxEditor.CustomEditors.Editors
 
                     // Reload editor window to reflect new tag
                     assetWindow?.RefreshAsset();
+                    assetWindow?.MarkAsEdited();
+                    assetWindow?.Save();
                 }
             };
             dialog.Closed += popup =>
