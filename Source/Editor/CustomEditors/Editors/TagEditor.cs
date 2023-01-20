@@ -175,8 +175,6 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 if (string.IsNullOrEmpty(subInputs[i]))
                 {
-                    lastTagString = tagString;
-                    tagString = string.Empty;
                     continue;
                 }
                 
@@ -194,8 +192,6 @@ namespace FlaxEditor.CustomEditors.Editors
                 
                 if (Tags.List.Contains(tagString))
                 {
-                    parentNode = tree.GetChild<TreeNode>(); // return to root
-                    parentCount = 0;
                     // Find next parent node
                     foreach (var child in parentNode.Children)
                     {
@@ -213,11 +209,27 @@ namespace FlaxEditor.CustomEditors.Editors
                     tagString = string.Empty;
                     continue;
                 }
+                else if (subInputs.Length > 1)
+                {
+                    // Find next parent node
+                    foreach (var child in parentNode.Children)
+                    {
+                        if (!(child is TreeNode childNode))
+                            continue;
+                        
+                        var tagValue = (Tag)childNode.Tag;
+                        if (!string.Equals(tagValue.ToString(), lastTagString))
+                            continue;
+ 
+                        parentNode = childNode;
+                        parentCount += 1;
+                    }
+                }
 
                 // Create new node
                 var nodeIndent = 16.0f;
                 var indentation = 0;
-                var parentTag = lastTagString;
+                var parentTag = string.Empty;
                 if (parentNode.CustomArrowRect.HasValue)
                 {
                     indentation = (int)((parentNode.CustomArrowRect.Value.Location.X - 18) / nodeIndent) + 1;
@@ -282,18 +294,17 @@ namespace FlaxEditor.CustomEditors.Editors
                     // Update asset
                     var settingsObj = (LayersAndTagsSettings)settingsAsset.Instance;
                     settingsObj.Tags.Add(tagName);
+                    settingsObj.Tags.Sort();
                     settingsAsset.SetInstance(settingsObj);
 
                     // Reload editor window to reflect new tag
                     assetWindow?.RefreshAsset();
-                    assetWindow?.MarkAsEdited();
-                    assetWindow?.Save();
                 }
 
-                textBox.Text = string.Empty;
                 lastTagString = tagString;
                 tagString = string.Empty;
             }
+            textBox.Text = string.Empty;
         }
 
         private static void OnAddSubTagButtonClicked(string parentTag, TextBox textBox, DropPanel dropPanel)
