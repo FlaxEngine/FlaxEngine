@@ -546,6 +546,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 if (panel.IsClosed)
                 {
+                    // Resize/ Move UI to fit space with drop down
                     foreach (var child in menu.Children)
                     {
                         if (child == panel)
@@ -563,6 +564,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 }
                 else
                 {
+                    // Resize/ Move UI to fit space with drop down
                     foreach (var child in menu.Children)
                     {
                         if (child == panel)
@@ -577,6 +579,9 @@ namespace FlaxEditor.CustomEditors.Editors
                         child.Y += dropPanelOpenHeight;
                         nameTextBox.Text = String.Empty;
                     }
+                    // Select tag name box on open
+                    nameTextBox.Focus();
+                    nameTextBox.SelectionRange = new TextRange(nameTextBox.Text.Length, nameTextBox.Text.Length);
                 }
             };
 
