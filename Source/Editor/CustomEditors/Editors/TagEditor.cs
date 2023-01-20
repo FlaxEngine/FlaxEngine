@@ -537,7 +537,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 Size = buttonsSize,
                 Parent = buttonsPanel,
-                Text = "Clear All",
+                Text = "Clear all",
             };
             buttonClearAll.Clicked += () =>
             {
