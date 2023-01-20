@@ -160,7 +160,7 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             if (string.IsNullOrEmpty(input))
                 return;
-            
+
             // Ensure that name is unique
             if (Tags.List.Contains(input))
                 return;
@@ -177,7 +177,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 {
                     continue;
                 }
-                
+
                 // Check all entered subtags and create any that dont exist
                 for (int j = 0; j <= i; j++)
                 {
@@ -189,7 +189,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     tagString = string.Empty;
                     continue;
                 }
-                
+
                 if (Tags.List.Contains(tagString))
                 {
                     // Find next parent node
@@ -197,11 +197,11 @@ namespace FlaxEditor.CustomEditors.Editors
                     {
                         if (!(child is TreeNode childNode))
                             continue;
-                        
+
                         var tagValue = (Tag)childNode.Tag;
                         if (!string.Equals(tagValue.ToString(), tagString))
                             continue;
- 
+
                         parentNode = childNode;
                         parentCount += 1;
                     }
@@ -216,11 +216,11 @@ namespace FlaxEditor.CustomEditors.Editors
                     {
                         if (!(child is TreeNode childNode))
                             continue;
-                        
+
                         var tagValue = (Tag)childNode.Tag;
                         if (!string.Equals(tagValue.ToString(), lastTagString))
                             continue;
- 
+
                         parentNode = childNode;
                         parentCount += 1;
                     }
@@ -266,13 +266,13 @@ namespace FlaxEditor.CustomEditors.Editors
                 };
                 node.Addons.Add(addButton);
                 addButton.ButtonClicked += button => OnAddSubTagButtonClicked(((Tag)node.Tag).ToString(), textBox, dropPanel);
-                
+
                 // Link
                 node.Parent = parentNode;
                 node.IndexInParent = 0;
                 parentNode.Expand(true);
                 ((Panel)tree.Parent.Parent).ScrollViewTo(node);
-                
+
                 // Get tag name
                 var tagName = tagString;
                 var tagShortName = tagName.Substring(parentCount == 0 ? lastTagString.Length : lastTagString.Length + 1);
@@ -355,7 +355,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 IsMultiline = false,
                 WatermarkText = "X.Y.Z",
-                Size = new Float2(addTagDropPanel.Width *  0.7f, 0),
+                Size = new Float2(addTagDropPanel.Width * 0.7f, 0),
                 Parent = tagNamePanel,
                 EndEditOnClick = false,
             };
@@ -395,7 +395,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     nameTextBox.BorderSelectedColor = FlaxEngine.GUI.Style.Current.BackgroundSelected;
                     return;
                 }
-                
+
                 OnAddTagButtonClicked(nameTextBox.Text, tree, nameTextBox, addTagDropPanel, pickerData);
             };
 
@@ -416,10 +416,10 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 if (!uniqueText)
                     return;
-                
+
                 OnAddTagButtonClicked(nameTextBox.Text, tree, nameTextBox, addTagDropPanel, pickerData);
             };
-            
+
             // Used for how far everything should drop when the drop down panel is opened
             var dropPanelOpenHeight = tagNamePanel.Height + addButtonPanel.Height + 4;
 
@@ -454,7 +454,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     tagShortName = tagName.Substring(lastDotIndex + 1);
                     tagParentName = tagName.Substring(0, lastDotIndex);
                 }
-                
+
                 // Create node
                 var node = new TreeNodeWithAddons
                 {
@@ -513,7 +513,7 @@ namespace FlaxEditor.CustomEditors.Editors
             };
             buttonsPanel.Y += addTagDropPanel.HeaderHeight + 4;
             buttonsPanel.X += 2;
-            
+
             var buttonsSize = new Float2((menu.Width - 2 - buttonsPanel.Margin.Width) / 3.0f - buttonsPanel.Spacing, 18.0f);
             var buttonExpandAll = new Button
             {
