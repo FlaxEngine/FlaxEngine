@@ -302,6 +302,19 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets the normalized vector. Returned vector has length equal 1.
+        /// </summary>
+        public Vector2 Normalized
+        {
+            get
+            {
+                Vector2 result = this;
+                result.Normalize();
+                return result;
+            }
+        }
+
+        /// <summary>
         /// Creates an array containing the elements of the vector.
         /// </summary>
         public Real[] ToArray()
