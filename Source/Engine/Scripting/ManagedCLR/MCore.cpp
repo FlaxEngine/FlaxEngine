@@ -135,9 +135,14 @@ bool MCore::LoadEngine()
         return false;
 
     // Prepare managed side
-    const StringAnsi hostExecutable(Platform::GetExecutableFilePath());
     CoreCLR::CallStaticMethodByName<void>(TEXT("Init"));
-    CoreCLR::RegisterNativeLibrary("FlaxEngine", hostExecutable.Get());
+#ifdef MCORE_MAIN_MODULE_NAME
+    // MCORE_MAIN_MODULE_NAME define is injected by Scripting.Build.cs on platforms that use separate shared library for engine symbols
+    const StringAnsi flaxLibraryPath(Platform::GetMainDirectory() / TEXT(MACRO_TO_STR(MCORE_MAIN_MODULE_NAME)));
+#else
+    const StringAnsi flaxLibraryPath(Platform::GetExecutableFilePath());
+#endif
+    CoreCLR::RegisterNativeLibrary("FlaxEngine", flaxLibraryPath.Get());
 
     MRootDomain = New<MDomain>("Root");
     MDomains.Add(MRootDomain);
