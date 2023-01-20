@@ -156,88 +156,126 @@ namespace FlaxEditor.CustomEditors.Editors
             pickerData.IsEditing = false;
         }
 
-
-        private static void OnAddButtonClicked(Tree tree, TreeNode parentNode, PickerData pickerData)
+        private static void OnAddTagButtonClicked(string input, Tree tree, TextBox textBox, DropPanel dropPanel, PickerData pickerData)
         {
-            // Create new node
-            var nodeIndent = 16.0f;
-            var indentation = 0;
-            var parentTag = string.Empty;
-            if (parentNode.CustomArrowRect.HasValue)
-            {
-                indentation = (int)((parentNode.CustomArrowRect.Value.Location.X - 18) / nodeIndent) + 1;
-                var parentTagValue = (Tag)parentNode.Tag;
-                parentTag = parentTagValue.ToString();
-            }
-            var node = new TreeNodeWithAddons
-            {
-                ChildrenIndent = nodeIndent,
-                CullChildren = false,
-                ClipChildren = false,
-                TextMargin = new Margin(22.0f, 2.0f, 2.0f, 2.0f),
-                CustomArrowRect = new Rectangle(18 + indentation * nodeIndent, 2, 12, 12),
-                BackgroundColorSelected = Color.Transparent,
-                BackgroundColorHighlighted = parentNode.BackgroundColorHighlighted,
-            };
-            var checkbox = new CheckBox(32.0f + indentation * nodeIndent, 0)
-            {
-                Height = 16.0f,
-                IsScrollable = false,
-                Parent = node,
-            };
-            node.Addons.Add(checkbox);
-            checkbox.StateChanged += c => OnCheckboxEdited(node, c, pickerData);
-            var addButton = new Button(tree.Width - 16, 0, 14, 14)
-            {
-                Text = "+",
-                TooltipText = "Add subtag within this tag namespace",
-                IsScrollable = false,
-                BorderColor = Color.Transparent,
-                BackgroundColor = Color.Transparent,
-                Parent = node,
-                AnchorPreset = AnchorPresets.TopRight,
-            };
-            node.Addons.Add(addButton);
-            addButton.ButtonClicked += button => OnAddButtonClicked(tree, node, pickerData);
+            if (string.IsNullOrEmpty(input))
+                return;
+            
+            // Ensure that name is unique
+            if (Tags.List.Contains(input))
+                return;
 
-            // Link
-            node.Parent = parentNode;
-            node.IndexInParent = 0;
-            parentNode.Expand(true);
-            ((Panel)tree.Parent.Parent).ScrollViewTo(node);
+            var subInputs = input.Split('.');
+            string tagString = string.Empty;
+            string lastTagString = string.Empty;
 
-            // Start renaming the tag
-            var prefix = parentTag.Length != 0 ? parentTag + '.' : string.Empty;
-            var renameArea = node.HeaderRect;
-            if (renameArea.Location.X < nodeIndent)
+            TreeNode parentNode = tree.GetChild<TreeNode>(); // Start at root
+            int parentCount = 0;
+            for (int i = 0; i < subInputs.Length; i++)
             {
-                // Fix root node's child renaming
-                renameArea.Location.X += nodeIndent;
-                renameArea.Size.X -= nodeIndent;
-            }
-            var dialog = RenamePopup.Show(node, renameArea, prefix, false);
-            var cursor = dialog.InputField.TextLength;
-            dialog.InputField.SelectionRange = new TextRange(cursor, cursor);
-            dialog.Validate = (popup, value) =>
-            {
-                // Ensure that name is unique
-                if (Tags.List.Contains(value))
-                    return false;
-
-                // Ensure user entered direct subtag of the parent node
-                if (value.StartsWith(popup.InitialValue))
+                if (string.IsNullOrEmpty(subInputs[i]))
                 {
-                    var name = value.Substring(popup.InitialValue.Length);
-                    if (name.Length > 0 && name.IndexOf('.') == -1)
-                        return true;
+                    continue;
                 }
-                return false;
-            };
-            dialog.Renamed += popup =>
-            {
+                
+                // Check all entered subtags and create any that dont exist
+                for (int j = 0; j <= i; j++)
+                {
+                    tagString += j == 0 ? subInputs[j] : "." + subInputs[j];
+                }
+
+                if (string.IsNullOrEmpty(tagString))
+                {
+                    tagString = string.Empty;
+                    continue;
+                }
+                
+                if (Tags.List.Contains(tagString))
+                {
+                    // Find next parent node
+                    foreach (var child in parentNode.Children)
+                    {
+                        if (!(child is TreeNode childNode))
+                            continue;
+                        
+                        var tagValue = (Tag)childNode.Tag;
+                        if (!string.Equals(tagValue.ToString(), tagString))
+                            continue;
+ 
+                        parentNode = childNode;
+                        parentCount += 1;
+                    }
+                    lastTagString = tagString;
+                    tagString = string.Empty;
+                    continue;
+                }
+                else if (subInputs.Length > 1)
+                {
+                    // Find next parent node
+                    foreach (var child in parentNode.Children)
+                    {
+                        if (!(child is TreeNode childNode))
+                            continue;
+                        
+                        var tagValue = (Tag)childNode.Tag;
+                        if (!string.Equals(tagValue.ToString(), lastTagString))
+                            continue;
+ 
+                        parentNode = childNode;
+                        parentCount += 1;
+                    }
+                }
+
+                // Create new node
+                var nodeIndent = 16.0f;
+                var indentation = 0;
+                var parentTag = string.Empty;
+                if (parentNode.CustomArrowRect.HasValue)
+                {
+                    indentation = (int)((parentNode.CustomArrowRect.Value.Location.X - 18) / nodeIndent) + 1;
+                    var parentTagValue = (Tag)parentNode.Tag;
+                    parentTag = parentTagValue.ToString();
+                }
+                var node = new TreeNodeWithAddons
+                {
+                    ChildrenIndent = nodeIndent,
+                    CullChildren = false,
+                    ClipChildren = false,
+                    TextMargin = new Margin(22.0f, 2.0f, 2.0f, 2.0f),
+                    CustomArrowRect = new Rectangle(18 + indentation * nodeIndent, 2, 12, 12),
+                    BackgroundColorSelected = Color.Transparent,
+                    BackgroundColorHighlighted = parentNode.BackgroundColorHighlighted,
+                };
+                var checkbox = new CheckBox(32.0f + indentation * nodeIndent, 0)
+                {
+                    Height = 16.0f,
+                    IsScrollable = false,
+                    Parent = node,
+                };
+                node.Addons.Add(checkbox);
+                checkbox.StateChanged += c => OnCheckboxEdited(node, c, pickerData);
+                var addButton = new Button(tree.Width - 16, 0, 14, 14)
+                {
+                    Text = "+",
+                    TooltipText = "Add subtag within this tag namespace",
+                    IsScrollable = false,
+                    BorderColor = Color.Transparent,
+                    BackgroundColor = Color.Transparent,
+                    Parent = node,
+                    AnchorPreset = AnchorPresets.TopRight,
+                };
+                node.Addons.Add(addButton);
+                addButton.ButtonClicked += button => OnAddSubTagButtonClicked(((Tag)node.Tag).ToString(), textBox, dropPanel);
+                
+                // Link
+                node.Parent = parentNode;
+                node.IndexInParent = 0;
+                parentNode.Expand(true);
+                ((Panel)tree.Parent.Parent).ScrollViewTo(node);
+                
                 // Get tag name
-                var tagName = popup.Text;
-                var tagShortName = tagName.Substring(popup.InitialValue.Length);
+                var tagName = tagString;
+                var tagShortName = tagName.Substring(parentCount == 0 ? lastTagString.Length : lastTagString.Length + 1);
                 if (tagShortName.Length == 0)
                     return;
 
@@ -256,24 +294,134 @@ namespace FlaxEditor.CustomEditors.Editors
                     // Update asset
                     var settingsObj = (LayersAndTagsSettings)settingsAsset.Instance;
                     settingsObj.Tags.Add(tagName);
+                    settingsObj.Tags.Sort();
                     settingsAsset.SetInstance(settingsObj);
 
                     // Reload editor window to reflect new tag
                     assetWindow?.RefreshAsset();
                 }
-            };
-            dialog.Closed += popup =>
+
+                lastTagString = tagString;
+                tagString = string.Empty;
+            }
+            textBox.Text = string.Empty;
+        }
+
+        private static void OnAddSubTagButtonClicked(string parentTag, TextBox textBox, DropPanel dropPanel)
+        {
+            if (textBox == null || dropPanel == null || string.IsNullOrEmpty(parentTag))
             {
-                // Remove temporary node if renaming was canceled
-                if (popup.InitialValue == popup.Text || popup.Text.Length == 0)
-                    node.Dispose();
-            };
+                return;
+            }
+            dropPanel.Open();
+            textBox.Text = parentTag + ".";
+            textBox.Focus();
+            textBox.SelectionRange = new TextRange(textBox.Text.Length, textBox.Text.Length);
         }
 
         internal static ContextMenuBase CreatePicker(Tag value, Tag[] values, PickerData pickerData)
         {
             // Initialize search popup
-            var menu = Utilities.Utils.CreateSearchPopup(out var searchBox, out var tree, 20.0f);
+            var menu = Utilities.Utils.CreateSearchPopup(out var searchBox, out var tree, 40.0f);
+
+            // Add tag drop panel
+            var addTagDropPanel = new DropPanel
+            {
+                HeaderText = "Add Tag",
+                EnableDropDownIcon = true,
+                ArrowImageOpened = new SpriteBrush(FlaxEngine.GUI.Style.Current.ArrowDown),
+                ArrowImageClosed = new SpriteBrush(FlaxEngine.GUI.Style.Current.ArrowRight),
+                Parent = menu,
+                HeaderTextMargin = new Margin(2.0f),
+                AnchorPreset = AnchorPresets.TopLeft,
+                Bounds = new Rectangle(2, 2, menu.Width - 4, 30),
+                IsClosed = true,
+                ItemsMargin = new Margin(2.0f),
+                CloseAnimationTime = 0,
+            };
+            var tagNamePanel = new HorizontalPanel
+            {
+                Parent = addTagDropPanel,
+                AutoSize = false,
+                Bounds = new Rectangle(0, 0, addTagDropPanel.Width, 20.0f),
+            };
+            var nameLabel = new Label
+            {
+                Size = new Float2(addTagDropPanel.Width / 4, 0),
+                Parent = tagNamePanel,
+                Text = "Tag Name:",
+            };
+            var nameTextBox = new TextBox
+            {
+                IsMultiline = false,
+                WatermarkText = "X.Y.Z",
+                Size = new Float2(addTagDropPanel.Width *  0.7f, 0),
+                Parent = tagNamePanel,
+                EndEditOnClick = false,
+            };
+
+            bool uniqueText = true;
+            nameTextBox.TextChanged += () =>
+            {
+                // Ensure that name is unique
+                if (Tags.List.Contains(nameTextBox.Text))
+                    uniqueText = false;
+                else
+                    uniqueText = true;
+
+                var currentStyle = FlaxEngine.GUI.Style.Current;
+                if (uniqueText)
+                {
+                    nameTextBox.BorderColor = Color.Transparent;
+                    nameTextBox.BorderSelectedColor = currentStyle.BackgroundSelected;
+                }
+                else
+                {
+                    var color = new Color(1.0f, 0.0f, 0.02745f, 1.0f);
+                    nameTextBox.BorderColor = Color.Lerp(color, currentStyle.TextBoxBackground, 0.6f);
+                    nameTextBox.BorderSelectedColor = color;
+                }
+            };
+
+            nameTextBox.EditEnd += () =>
+            {
+                if (!uniqueText)
+                    return;
+
+                if (addTagDropPanel.IsClosed)
+                {
+                    Debug.Log("Hit");
+                    nameTextBox.BorderColor = Color.Transparent;
+                    nameTextBox.BorderSelectedColor = FlaxEngine.GUI.Style.Current.BackgroundSelected;
+                    return;
+                }
+                
+                OnAddTagButtonClicked(nameTextBox.Text, tree, nameTextBox, addTagDropPanel, pickerData);
+            };
+
+            var addButtonPanel = new HorizontalPanel
+            {
+                Parent = addTagDropPanel,
+                AutoSize = false,
+                Bounds = new Rectangle(0, 0, addTagDropPanel.Width, 30.0f),
+            };
+            var buttonAddTag = new Button
+            {
+                Parent = addButtonPanel,
+                Size = new Float2(100, 20),
+                Text = "Add Tag",
+                AnchorPreset = AnchorPresets.MiddleCenter,
+            };
+            buttonAddTag.Clicked += () =>
+            {
+                if (!uniqueText)
+                    return;
+                
+                OnAddTagButtonClicked(nameTextBox.Text, tree, nameTextBox, addTagDropPanel, pickerData);
+            };
+            
+            // Used for how far everything should drop when the drop down panel is opened
+            var dropPanelOpenHeight = tagNamePanel.Height + addButtonPanel.Height + 4;
 
             // Create tree with tags hierarchy
             tree.Margin = new Margin(-16.0f, 0.0f, -16.0f, -0.0f); // Hide root node
@@ -339,7 +487,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     AnchorPreset = AnchorPresets.TopRight,
                 };
                 node.Addons.Add(addButton);
-                addButton.ButtonClicked += button => OnAddButtonClicked(tree, node, pickerData);
+                addButton.ButtonClicked += button => OnAddSubTagButtonClicked(((Tag)node.Tag).ToString(), nameTextBox, addTagDropPanel);
 
                 // Link to parent
                 {
@@ -360,10 +508,13 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 Margin = new Margin(1.0f),
                 AutoSize = false,
-                Bounds = new Rectangle(0, 0, menu.Width, 20.0f),
+                Bounds = new Rectangle(0, 0, menu.Width - 4, 20.0f),
                 Parent = menu,
             };
-            var buttonsSize = new Float2((menu.Width - buttonsPanel.Margin.Width) / 4.0f - buttonsPanel.Spacing, 18.0f);
+            buttonsPanel.Y += addTagDropPanel.HeaderHeight + 4;
+            buttonsPanel.X += 2;
+            
+            var buttonsSize = new Float2((menu.Width - 2 - buttonsPanel.Margin.Width) / 3.0f - buttonsPanel.Spacing, 18.0f);
             var buttonExpandAll = new Button
             {
                 Size = buttonsSize,
@@ -382,26 +533,61 @@ namespace FlaxEditor.CustomEditors.Editors
                 root.CollapseAll(true);
                 root.Expand(true);
             };
-            var buttonAddTag = new Button
+            var buttonClearAll = new Button
             {
                 Size = buttonsSize,
                 Parent = buttonsPanel,
-                Text = "Add Tag",
+                Text = "Clear all",
             };
-            buttonAddTag.Clicked += () => OnAddButtonClicked(tree, root, pickerData);
-            var buttonReset = new Button
-            {
-                Size = buttonsSize,
-                Parent = buttonsPanel,
-                Text = "Reset",
-            };
-            buttonReset.Clicked += () =>
+            buttonClearAll.Clicked += () =>
             {
                 pickerData.IsEditing = true;
                 UncheckAll(root);
                 pickerData.IsEditing = false;
                 pickerData.SetValue?.Invoke(Tag.Default);
                 pickerData.SetValues?.Invoke(null);
+            };
+
+            // Move menu children to location when drop panel is opened and closed
+            addTagDropPanel.IsClosedChanged += panel =>
+            {
+                if (panel.IsClosed)
+                {
+                    // Resize/ Move UI to fit space with drop down
+                    foreach (var child in menu.Children)
+                    {
+                        if (child == panel)
+                            continue;
+
+                        // Expand panels so scrollbars work
+                        if (child is Panel)
+                        {
+                            child.Bounds = new Rectangle(child.Bounds.X, child.Bounds.Y - dropPanelOpenHeight, child.Width, child.Height + dropPanelOpenHeight);
+                            continue;
+                        }
+                        child.Y -= dropPanelOpenHeight;
+                        nameTextBox.Text = string.Empty;
+                        nameTextBox.Defocus();
+                    }
+                }
+                else
+                {
+                    // Resize/ Move UI to fit space with drop down
+                    foreach (var child in menu.Children)
+                    {
+                        if (child == panel)
+                            continue;
+
+                        // Shrink panels so scrollbars work
+                        if (child is Panel)
+                        {
+                            child.Bounds = new Rectangle(child.Bounds.X, child.Bounds.Y + dropPanelOpenHeight, child.Width, child.Height - dropPanelOpenHeight);
+                            continue;
+                        }
+                        child.Y += dropPanelOpenHeight;
+                        nameTextBox.Text = string.Empty;
+                    }
+                }
             };
 
             // Setup search filter
