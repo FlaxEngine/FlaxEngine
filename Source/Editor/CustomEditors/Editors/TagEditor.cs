@@ -183,14 +183,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 // Check all entered subtags and create any that dont exist
                 for (int j = 0; j <= i; j++)
                 {
-                    if (j == 0)
-                    {
-                        tagString += subInputs[j];
-                    }
-                    else
-                    {
-                        tagString += "." + subInputs[j];
-                    }
+                    tagString += j == 0 ? subInputs[j] : "." + subInputs[j];
                 }
 
                 if (string.IsNullOrEmpty(tagString))
