@@ -194,6 +194,8 @@ namespace FlaxEditor.CustomEditors.Editors
                 
                 if (Tags.List.Contains(tagString))
                 {
+                    parentNode = tree.GetChild<TreeNode>(); // return to root
+                    parentCount = 0;
                     // Find next parent node
                     foreach (var child in parentNode.Children)
                     {
@@ -284,13 +286,13 @@ namespace FlaxEditor.CustomEditors.Editors
 
                     // Reload editor window to reflect new tag
                     assetWindow?.RefreshAsset();
+                    assetWindow?.MarkAsEdited();
+                    assetWindow?.Save();
                 }
 
                 textBox.Text = string.Empty;
                 lastTagString = tagString;
                 tagString = string.Empty;
-                parentNode = tree.GetChild<TreeNode>(); // return to root
-                parentCount = 0;
             }
         }
 
@@ -301,8 +303,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 return;
             }
             dropPanel.Open();
-            textBox.Text = string.Empty;
-            textBox.Text += parentTag + ".";
+            textBox.Text = parentTag + ".";
             textBox.Focus();
             textBox.SelectionRange = new TextRange(textBox.Text.Length, textBox.Text.Length);
         }
@@ -345,6 +346,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 WatermarkText = "X.Y.Z",
                 Size = new Float2(addTagDropPanel.Width *  0.7f, 0),
                 Parent = tagNamePanel,
+                EndEditOnClick = false,
             };
 
             bool uniqueText = true;
@@ -375,8 +377,9 @@ namespace FlaxEditor.CustomEditors.Editors
                 if (!uniqueText)
                     return;
 
-                if (!nameTextBox.IsFocused)
+                if (addTagDropPanel.IsClosed)
                 {
+                    Debug.Log("Hit");
                     nameTextBox.BorderColor = Color.Transparent;
                     nameTextBox.BorderSelectedColor = FlaxEngine.GUI.Style.Current.BackgroundSelected;
                     return;
@@ -552,7 +555,8 @@ namespace FlaxEditor.CustomEditors.Editors
                             continue;
                         }
                         child.Y -= dropPanelOpenHeight;
-                        nameTextBox.Text = String.Empty;
+                        nameTextBox.Text = string.Empty;
+                        nameTextBox.Defocus();
                     }
                 }
                 else
@@ -570,11 +574,8 @@ namespace FlaxEditor.CustomEditors.Editors
                             continue;
                         }
                         child.Y += dropPanelOpenHeight;
-                        nameTextBox.Text = String.Empty;
+                        nameTextBox.Text = string.Empty;
                     }
-                    // Select tag name box on open
-                    nameTextBox.Focus();
-                    nameTextBox.SelectionRange = new TextRange(nameTextBox.Text.Length, nameTextBox.Text.Length);
                 }
             };
 
