@@ -642,7 +642,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     Checked = script.Enabled,
                     Parent = group.Panel,
                     Size = new Float2(14, 14),
-                    Bounds = new Rectangle(2, 0, 14, 14),
+                    Bounds = new Rectangle(16, 0, 14, 14),
                     BoxSize = 12.0f,
                     Tag = script,
                 };
