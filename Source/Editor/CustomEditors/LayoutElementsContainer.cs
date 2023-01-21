@@ -96,6 +96,7 @@ namespace FlaxEditor.CustomEditors
             if (useTransparentHeader)
             {
                 element.Panel.EnableDropDownIcon = true;
+                element.Panel.EnableContainmentLines = false;
                 element.Panel.HeaderColor = element.Panel.HeaderColorMouseOver = Color.Transparent;
             }
             OnAddElement(element);
