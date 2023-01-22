@@ -1259,6 +1259,8 @@ namespace FlaxEditor
             }
             internal static void Free(VisualScriptLocalNative unmanaged)
             {
+                ManagedString.Free(unmanaged.Value);
+                ManagedString.Free(unmanaged.ValueTypeName);
             }
         }
 
