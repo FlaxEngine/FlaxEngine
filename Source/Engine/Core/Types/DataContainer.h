@@ -231,7 +231,7 @@ public:
     /// <param name="data">Data to copy.</param>
     void Copy(const DataContainer& data)
     {
-        if (data.IsValid())
+        if (data.Length() != 0)
             Copy(data.Get(), data.Length());
         else
             Release();
@@ -243,7 +243,7 @@ public:
     /// <param name="data">Data to copy.</param>
     void Copy(const Span<T>& data)
     {
-        if (data.IsValid())
+        if (data.Length() != 0)
             Copy(data.Get(), data.Length());
         else
             Release();

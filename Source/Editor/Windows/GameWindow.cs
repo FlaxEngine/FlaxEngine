@@ -816,15 +816,23 @@ namespace FlaxEditor.Windows
             }
 
             // Selected UI controls outline
+            bool drawAnySelectedControl = false;
             for (var i = 0; i < Editor.Instance.SceneEditing.Selection.Count; i++)
             {
                 if (Editor.Instance.SceneEditing.Selection[i].EditableObject is UIControl controlActor && controlActor && controlActor.Control != null)
                 {
+                    if (!drawAnySelectedControl)
+                    {
+                        drawAnySelectedControl = true;
+                        Render2D.PushTransform(ref _viewport._cachedTransform);
+                    }
                     var control = controlActor.Control;
                     var bounds = Rectangle.FromPoints(control.PointToParent(_viewport, Float2.Zero), control.PointToParent(_viewport, control.Size));
                     Render2D.DrawRectangle(bounds, Editor.Instance.Options.Options.Visual.SelectionOutlineColor0, Editor.Instance.Options.Options.Visual.UISelectionOutlineSize);
                 }
             }
+            if (drawAnySelectedControl)
+                Render2D.PopTransform();
 
             // Play mode hints and overlay
             if (Editor.StateMachine.IsPlayMode)

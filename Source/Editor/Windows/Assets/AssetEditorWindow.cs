@@ -313,7 +313,12 @@ namespace FlaxEditor.Windows.Assets
         /// </summary>
         public void RefreshAsset()
         {
-            _isWaitingForLoaded = true;
+            if (_asset == null || _asset.WaitForLoaded())
+                return;
+
+            OnAssetLoaded();
+            MarkAsEdited();
+            Save();
         }
 
         /// <summary>

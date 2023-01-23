@@ -897,6 +897,13 @@ void NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHa
     rpc.Info = *info;
     const Span<byte> argsData(argsStream->GetBuffer(), argsStream->GetPosition());
     rpc.ArgsData.Copy(argsData);
+#if USE_EDITOR || !BUILD_RELEASE
+    auto it = Objects.Find(obj->GetID());
+    if (it == Objects.End())
+    {
+        LOG(Error, "Cannot invoke RPC method '{0}.{1}' on object '{2}' that is not registered in networking (use 'NetworkReplicator.AddObject').", type.ToString(), String(name), obj->GetID());
+    }
+#endif
     ObjectsLock.Unlock();
 }
 
@@ -980,6 +987,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
         CachedWriteStream = New<NetworkStream>();
     const bool isClient = NetworkManager::IsClient();
     const bool isServer = NetworkManager::IsServer();
+    const bool isHost = NetworkManager::IsHost();
     NetworkStream* stream = CachedWriteStream;
     NetworkPeer* peer = NetworkManager::Peer;
 
@@ -1279,10 +1287,10 @@ void NetworkInternal::NetworkReplicatorUpdate()
             // Client -> Server
             peer->EndSendMessage(channel, msg);
         }
-        else if (e.Info.Client && isServer)
+        else if (e.Info.Client && (isServer || isHost))
         {
             // Server -> Client(s)
-            BuildCachedTargets(item);
+            BuildCachedTargets(NetworkManager::Clients, item.TargetClientIds, NetworkManager::LocalClientId);
             peer->EndSendMessage(channel, msg, CachedTargets);
         }
     }

@@ -805,13 +805,13 @@ namespace Flax.Build.Plugins
             {
                 if (property.GetMethod == null)
                 {
-                    Log.Error($"Missing getter method for property '{property.Name}' of type {valueType.FullName} in {type.FullName} for automatic replication.");
+                    MonoCecil.CompilationError($"Missing getter method for property '{property.Name}' of type {valueType.FullName} in {type.FullName} for automatic replication.", property);
                     failed = true;
                     return;
                 }
                 if (property.SetMethod == null)
                 {
-                    Log.Error($"Missing setter method for property '{property.Name}' of type {valueType.FullName} in {type.FullName} for automatic replication.");
+                    MonoCecil.CompilationError($"Missing setter method for property '{property.Name}' of type {valueType.FullName} in {type.FullName} for automatic replication.", property);
                     failed = true;
                     return;
                 }
@@ -1090,7 +1090,12 @@ namespace Flax.Build.Plugins
             else
             {
                 // Unknown type
-                Log.Error($"Not supported type '{valueType.FullName}' on {(field?.Name ?? property.Name)} in {type.FullName} for automatic replication.");
+                if (property != null)
+                    MonoCecil.CompilationError($"Not supported type '{valueType.FullName}' on {property.Name} in {type.FullName} for automatic replication.", property);
+                else if (field != null)
+                    MonoCecil.CompilationError($"Not supported type '{valueType.FullName}' on {field.Name} in {type.FullName} for automatic replication.", field.Resolve());
+                else
+                    MonoCecil.CompilationError($"Not supported type '{valueType.FullName}' for automatic replication.");
                 failed = true;
             }
         }
@@ -1212,13 +1217,13 @@ namespace Flax.Build.Plugins
             // Validate RPC usage
             if (method.IsAbstract)
             {
-                Log.Error($"Not supported abstract RPC method '{method.FullName}'.");
+                MonoCecil.CompilationError($"Not supported abstract RPC method '{method.FullName}'.", method);
                 failed = true;
                 return;
             }
             if (method.IsVirtual)
             {
-                Log.Error($"Not supported virtual RPC method '{method.FullName}'.");
+                MonoCecil.CompilationError($"Not supported virtual RPC method '{method.FullName}'.", method);
                 failed = true;
                 return;
             }
@@ -1226,13 +1231,13 @@ namespace Flax.Build.Plugins
             var voidType = module.TypeSystem.Void;
             if (method.ReturnType != voidType)
             {
-                Log.Error($"Not supported non-void RPC method '{method.FullName}'.");
+                MonoCecil.CompilationError($"Not supported non-void RPC method '{method.FullName}'.", method);
                 failed = true;
                 return;
             }
             if (method.IsStatic)
             {
-                Log.Error($"Not supported static RPC method '{method.FullName}'.");
+                MonoCecil.CompilationError($"Not supported static RPC method '{method.FullName}'.", method);
                 failed = true;
                 return;
             }
@@ -1241,19 +1246,25 @@ namespace Flax.Build.Plugins
             methodRPC.Method = method;
             methodRPC.IsServer = (bool)attribute.GetFieldValue("Server", false);
             methodRPC.IsClient = (bool)attribute.GetFieldValue("Client", false);
+            methodRPC.Channel = (int)attribute.GetFieldValue("Channel", 4); // int as NetworkChannelType (default is ReliableOrdered=4)
+            if (attribute.HasConstructorArguments && attribute.ConstructorArguments.Count >= 3)
+            {
+                methodRPC.IsServer = (bool)attribute.ConstructorArguments[0].Value;
+                methodRPC.IsClient = (bool)attribute.ConstructorArguments[1].Value;
+                methodRPC.Channel = (int)attribute.ConstructorArguments[2].Value;
+            }
             if (methodRPC.IsServer && methodRPC.IsClient)
             {
-                Log.Error($"Network RPC {method.Name} in {type.FullName} cannot be both Server and Client.");
+                MonoCecil.CompilationError($"Network RPC {method.Name} in {type.FullName} cannot be both Server and Client.", method);
                 failed = true;
                 return;
             }
             if (!methodRPC.IsServer && !methodRPC.IsClient)
             {
-                Log.Error($"Network RPC {method.Name} in {type.FullName} needs to have Server or Client specifier.");
+                MonoCecil.CompilationError($"Network RPC {method.Name} in {type.FullName} needs to have Server or Client specifier.", method);
                 failed = true;
                 return;
             }
-            methodRPC.Channel = (int)attribute.GetFieldValue("Channel", 4); // int as NetworkChannelType (default is ReliableOrdered=4)
             module.GetType("System.IntPtr", out var intPtrType);
             module.GetType("FlaxEngine.Object", out var scriptingObjectType);
             var fromUnmanagedPtr = scriptingObjectType.Resolve().GetMethod("FromUnmanagedPtr");
@@ -1289,7 +1300,7 @@ namespace Flax.Build.Plugins
                     var parameter = method.Parameters[i];
                     if (parameter.IsOut)
                     {
-                        Log.Error($"Network RPC {method.Name} in {type.FullName} parameter {parameter.Name} cannot be 'out'.");
+                        MonoCecil.CompilationError($"Network RPC {method.Name} in {type.FullName} parameter {parameter.Name} cannot be 'out'.", method);
                         failed = true;
                         return;
                     }
