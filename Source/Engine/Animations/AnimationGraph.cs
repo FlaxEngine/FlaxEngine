@@ -260,15 +260,15 @@ namespace FlaxEngine
 
         #region Internal Calls
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.AnimationGraph::Internal_HasConnection")]
+        [LibraryImport("FlaxEngine", EntryPoint = "AnimGraphInternal_HasConnection")]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_HasConnection(ref AnimationGraph.CustomNode.Context context, int boxId);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.AnimationGraph::Internal_GetInputValue")]
+        [LibraryImport("FlaxEngine", EntryPoint = "AnimGraphInternal_GetInputValue")]
         [return: MarshalUsing(typeof(FlaxEngine.ManagedHandleMarshaller))]
         internal static partial object Internal_GetInputValue(ref AnimationGraph.CustomNode.Context context, int boxId);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.AnimationGraph::Internal_GetOutputImpulseData")]
+        [LibraryImport("FlaxEngine", EntryPoint = "AnimGraphInternal_GetOutputImpulseData")]
         internal static partial IntPtr Internal_GetOutputImpulseData(ref AnimationGraph.CustomNode.Context context);
 
         #endregion

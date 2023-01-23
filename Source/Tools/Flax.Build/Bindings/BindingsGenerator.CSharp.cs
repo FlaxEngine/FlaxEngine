@@ -17,6 +17,9 @@ namespace Flax.Build.Bindings
         private static readonly List<string> CSharpUsedNamespacesSorted = new List<string>();
         private static readonly List<string> CSharpAdditionalCode = new List<string>();
         private static readonly Dictionary<string, string> CSharpAdditionalCodeCache = new Dictionary<string, string>();
+#if USE_NETCORE
+        private static readonly List<FunctionInfo.ParameterInfo> CSharpEventBindParams = new List<FunctionInfo.ParameterInfo>() { new FunctionInfo.ParameterInfo() { Name = "bind", Type = new TypeInfo("bool") } };
+#endif
 
         public static event Action<BuildData, ApiTypeInfo, StringBuilder, string> GenerateCSharpTypeInternals;
 
@@ -512,7 +515,9 @@ namespace Flax.Build.Bindings
             contents.AppendLine().Append(indent).Append("[MethodImpl(MethodImplOptions.InternalCall)]");
             contents.AppendLine().Append(indent).Append("internal static partial ");
 #else
-            contents.AppendLine().Append(indent).Append($"[LibraryImport(\"{caller.ParentModule.Module.BinaryModuleName}\", EntryPoint = \"{caller.FullNameManaged}::Internal_{functionInfo.UniqueName}\", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]");
+            if (string.IsNullOrEmpty(functionInfo.Glue.LibraryEntryPoint))
+                throw new Exception($"Function {caller.FullNameNative}::{functionInfo.Name} has missing entry point for library import.");
+            contents.AppendLine().Append(indent).Append($"[LibraryImport(\"{caller.ParentModule.Module.BinaryModuleName}\", EntryPoint = \"{functionInfo.Glue.LibraryEntryPoint}\", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]");
             if (!string.IsNullOrEmpty(returnMarshalType))
                 contents.AppendLine().Append(indent).Append($"[return: {returnMarshalType}]");
             contents.AppendLine().Append(indent).Append("internal static partial ");
@@ -1000,7 +1005,12 @@ namespace Flax.Build.Bindings
                     contents.Append("IntPtr obj, ");
                 contents.Append("bool bind);");
 #else
-                contents.Append(indent).Append($"[LibraryImport(\"{classInfo.ParentModule.Module.BinaryModuleName}\", EntryPoint = \"{classInfo.FullNameManaged}::Internal_{eventInfo.Name}_Bind\", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]").AppendLine();
+                string libraryEntryPoint;
+                if (buildData.Toolchain.Compiler == TargetCompiler.MSVC)
+                    libraryEntryPoint = $"{classInfo.FullNameManaged}::Internal_{eventInfo.Name}_Bind"; // MSVC allows to override exported symbol name
+                else
+                    libraryEntryPoint = CppNameMangling.MangleFunctionName(buildData, eventInfo.Name + "_ManagedBind", classInfo.FullNameNativeInternal + "Internal", CSharpEventBindParams);
+                contents.Append(indent).Append($"[LibraryImport(\"{classInfo.ParentModule.Module.BinaryModuleName}\", EntryPoint = \"{libraryEntryPoint}\", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]").AppendLine();
                 contents.Append(indent).Append($"internal static partial void Internal_{eventInfo.Name}_Bind(");
                 if (!eventInfo.IsStatic)
                     contents.Append("IntPtr obj, ");

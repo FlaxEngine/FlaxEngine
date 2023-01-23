@@ -700,7 +700,6 @@ void Render2D::Begin(GPUContext* context, GPUTextureView* output, GPUTextureView
 
 void Render2D::End()
 {
-    SCRIPTING_EXPORT("FlaxEngine.Render2D::Internal_End")
     RENDER2D_CHECK_RENDERING_STATE;
     ASSERT(Context != nullptr && Output != nullptr);
     ASSERT(GUIShader != nullptr);
@@ -816,7 +815,6 @@ void Render2D::PeekTransform(Matrix3x3& transform)
 
 void Render2D::PopTransform()
 {
-    SCRIPTING_EXPORT("FlaxEngine.Render2D::Internal_PopTransform")
     RENDER2D_CHECK_RENDERING_STATE;
 
     ASSERT(TransformLayersStack.HasItems());
@@ -858,7 +856,6 @@ void Render2D::PeekClip(Rectangle& clipRect)
 
 void Render2D::PopClip()
 {
-    SCRIPTING_EXPORT("FlaxEngine.Render2D::Internal_PopClip")
     RENDER2D_CHECK_RENDERING_STATE;
 
     ClipLayersStack.Pop();
@@ -880,7 +877,6 @@ void Render2D::PeekTint(Color& tint)
 
 void Render2D::PopTint()
 {
-    SCRIPTING_EXPORT("FlaxEngine.Render2D::Internal_PopTint")
     RENDER2D_CHECK_RENDERING_STATE;
 
     TintLayersStack.Pop();

@@ -62,7 +62,7 @@ namespace Flax.Build.Bindings
 
         private static List<StringBuilder> _strignBuilderCache;
 
-        private static StringBuilder GetStringBuilder()
+        public static StringBuilder GetStringBuilder()
         {
             if (_strignBuilderCache == null || _strignBuilderCache.Count == 0)
                 return new StringBuilder();
@@ -73,7 +73,7 @@ namespace Flax.Build.Bindings
             return result;
         }
 
-        private static void PutStringBuilder(StringBuilder value)
+        public static void PutStringBuilder(StringBuilder value)
         {
             if (_strignBuilderCache == null)
                 _strignBuilderCache = new List<StringBuilder>();

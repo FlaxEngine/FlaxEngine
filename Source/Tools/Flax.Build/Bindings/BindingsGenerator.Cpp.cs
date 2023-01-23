@@ -871,7 +871,6 @@ namespace Flax.Build.Bindings
                 return true;
             if (typeInfo.IsPtr || typeInfo.IsRef || typeInfo.IsArray || typeInfo.IsBitField || (typeInfo.GenericArgs != null && typeInfo.GenericArgs.Count != 0))
                 return false;
-#if !USE_NETCORE
             if (CSharpNativeToManagedBasicTypes.ContainsKey(typeInfo.Type) || CSharpNativeToManagedBasicTypes.ContainsValue(typeInfo.Type))
                 return true;
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
@@ -880,7 +879,6 @@ namespace Flax.Build.Bindings
                 if (apiType.IsEnum)
                     return true;
             }
-#endif
             return false;
         }
 
@@ -899,8 +897,9 @@ namespace Flax.Build.Bindings
             return true;
         }
 
-        private static void GenerateCppWrapperFunction(BuildData buildData, StringBuilder contents, ApiTypeInfo caller, FunctionInfo functionInfo, string callFormat = "{0}({1})")
+        private static void GenerateCppWrapperFunction(BuildData buildData, StringBuilder contents, ApiTypeInfo caller, string callerName, FunctionInfo functionInfo, string callFormat = "{0}({1})")
         {
+#if !USE_NETCORE
             // Optimize static function wrappers that match C# internal call ABI exactly
             // Use it for Engine-internally only because in games this makes it problematic to use the same function name but with different signature that is not visible to scripting
             if (CurrentModule.Module is EngineModule && callFormat == "{0}({1})" && GenerateCppWrapperFunctionImplicitBinding(buildData, functionInfo, caller))
@@ -913,6 +912,7 @@ namespace Flax.Build.Bindings
                     return;
                 }
             }
+#endif
 
             // Setup function binding glue to ensure that wrapper method signature matches for C++ and C#
             functionInfo.Glue = new FunctionInfo.GlueInfo
@@ -954,9 +954,22 @@ namespace Flax.Build.Bindings
                 });
             }
 #endif
-
+            
+            var prevIndent = "    ";
+            var indent = "        ";
+            contents.Append(prevIndent);
+#if USE_NETCORE
+            contents.AppendFormat("DLLEXPORT static {0} {1}(", returnValueType, functionInfo.UniqueName);
+            string libraryEntryPoint;
+            if (buildData.Toolchain.Compiler == TargetCompiler.MSVC)
+                libraryEntryPoint = $"{caller.FullNameManaged}::Internal_{functionInfo.UniqueName}"; // MSVC allows to override exported symbol name
+            else
+                libraryEntryPoint = CppNameMangling.MangleFunctionName(buildData, functionInfo.Name, callerName + "Internal", functionInfo.Parameters, functionInfo.Glue.CustomParameters);
+            functionInfo.Glue.LibraryEntryPoint = libraryEntryPoint;
+#else
+            contents.AppendFormat("static {0} {1}(", returnValueType, functionInfo.UniqueName);
+#endif
             CppInternalCalls.Add(new KeyValuePair<string, string>(functionInfo.UniqueName, functionInfo.UniqueName));
-            contents.AppendFormat("    static {0} {1}(", returnValueType, functionInfo.UniqueName);
 
             var separator = false;
             if (!functionInfo.IsStatic)
@@ -1054,14 +1067,15 @@ namespace Flax.Build.Bindings
 
             contents.Append(')');
             contents.AppendLine();
-            contents.AppendLine("    {");
+            contents.Append(prevIndent).AppendLine("{");
 #if USE_NETCORE
-            contents.AppendLine(string.Format("        SCRIPTING_EXPORT(\"{0}\")", caller.FullNameManaged + "::Internal_" + functionInfo.UniqueName));
+            if (buildData.Toolchain.Compiler == TargetCompiler.MSVC)
+                contents.Append(indent).AppendLine($"MSVC_FUNC_EXPORT(\"{libraryEntryPoint}\")"); // Export generated function binding under the C# name
 #endif
             if (!functionInfo.IsStatic)
-                contents.AppendLine("        if (obj == nullptr) DebugLog::ThrowNullReference();");
+                contents.Append(indent).AppendLine("if (obj == nullptr) DebugLog::ThrowNullReference();");
 
-            string callBegin = "        ";
+            string callBegin = indent;
             if (functionInfo.Glue.UseReferenceForResult)
             {
                 callBegin += "*__resultAsRef = ";
@@ -1078,7 +1092,7 @@ namespace Flax.Build.Bindings
             string callReturnCount = "";
             if (returnTypeIsContainer)
             {
-                callReturnCount = "        ";
+                callReturnCount = indent;
                 if (functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "BytesContainer")
                     callReturnCount += "*__returnCount = {0}.Length();";
                 else
@@ -1132,9 +1146,9 @@ namespace Flax.Build.Bindings
                     if (apiType != null)
                     {
                         if (parameterInfo.IsOut)
-                            contents.AppendFormat("        {1} {0}Temp;", parameterInfo.Name, new TypeInfo(parameterInfo.Type) { IsRef = false }.GetFullNameNative(buildData, caller)).AppendLine();
+                            contents.Append(indent).AppendFormat("{1} {0}Temp;", parameterInfo.Name, new TypeInfo(parameterInfo.Type) { IsRef = false }.GetFullNameNative(buildData, caller)).AppendLine();
                         else
-                            contents.AppendFormat("        auto {0}Temp = {1};", parameterInfo.Name, param).AppendLine();
+                            contents.Append(indent).AppendFormat("auto {0}Temp = {1};", parameterInfo.Name, param).AppendLine();
                         if (parameterInfo.Type.IsPtr && !parameterInfo.Type.IsRef)
                             callParams += "&";
                         callParams += parameterInfo.Name;
@@ -1143,7 +1157,7 @@ namespace Flax.Build.Bindings
                     // BytesContainer
                     else if (parameterInfo.Type.Type == "BytesContainer" && parameterInfo.Type.GenericArgs == null)
                     {
-                        contents.AppendFormat("        BytesContainer {0}Temp;", parameterInfo.Name).AppendLine();
+                        contents.Append(indent).AppendFormat("BytesContainer {0}Temp;", parameterInfo.Name).AppendLine();
                         callParams += parameterInfo.Name;
                         callParams += "Temp";
                     }
@@ -1151,7 +1165,7 @@ namespace Flax.Build.Bindings
                 // Special case for parameter that cannot be passed directly to the function from the wrapper method input parameter (eg. MonoArray* converted into BytesContainer uses as BytesContainer&)
                 else if (CppParamsThatNeedLocalVariable[i])
                 {
-                    contents.AppendFormat("        auto {0}Temp = {1};", parameterInfo.Name, param).AppendLine();
+                    contents.Append(indent).AppendFormat("auto {0}Temp = {1};", parameterInfo.Name, param).AppendLine();
                     if (parameterInfo.Type.IsPtr)
                         callParams += "&";
                     callParams += parameterInfo.Name;
@@ -1166,7 +1180,7 @@ namespace Flax.Build.Bindings
 #if USE_NETCORE
             if (!string.IsNullOrEmpty(callReturnCount))
             {
-                contents.Append("        ").Append("const auto& __callTemp = ").Append(string.Format(callFormat, call, callParams)).Append(";").AppendLine();
+                contents.Append(indent).Append("const auto& __callTemp = ").Append(string.Format(callFormat, call, callParams)).Append(";").AppendLine();
                 call = "__callTemp";
                 contents.Append(string.Format(callReturnCount, call));
                 contents.AppendLine();
@@ -1210,11 +1224,11 @@ namespace Flax.Build.Bindings
                             {
                                 if (apiType.IsClass)
                                 {
-                                    contents.AppendFormat("        mono_gc_wbarrier_generic_store({0}, (MonoObject*){1});", parameterInfo.Name, value).AppendLine();
+                                    contents.Append(indent).AppendFormat("mono_gc_wbarrier_generic_store({0}, (MonoObject*){1});", parameterInfo.Name, value).AppendLine();
 #if USE_NETCORE
                                     if (parameterInfo.Type.Type == "Array")
                                     {
-                                        contents.AppendFormat("        *__{0}Count = {1}.Count();", parameterInfo.Name, parameterInfo.Name + "Temp").AppendLine();
+                                        contents.Append(indent).AppendFormat("*__{0}Count = {1}.Count();", parameterInfo.Name, parameterInfo.Name + "Temp").AppendLine();
                                     }
 #endif
                                     continue;
@@ -1222,7 +1236,7 @@ namespace Flax.Build.Bindings
                                 if (apiType.IsStruct && !apiType.IsPod)
                                 {
                                     CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
-                                    contents.AppendFormat("        {{ auto __temp = {1}; mono_gc_wbarrier_value_copy({0}, &__temp, 1, {2}::TypeInitializer.GetType().ManagedClass->GetNative()); }}", parameterInfo.Name, value, apiType.FullNameNative).AppendLine();
+                                    contents.Append(indent).AppendFormat("{{ auto __temp = {1}; mono_gc_wbarrier_value_copy({0}, &__temp, 1, {2}::TypeInitializer.GetType().ManagedClass->GetNative()); }}", parameterInfo.Name, value, apiType.FullNameNative).AppendLine();
                                     continue;
                                 }
                             }
@@ -1231,25 +1245,25 @@ namespace Flax.Build.Bindings
                                 // BytesContainer
                                 if (parameterInfo.Type.Type == "BytesContainer" && parameterInfo.Type.GenericArgs == null)
                                 {
-                                    contents.AppendFormat("        mono_gc_wbarrier_generic_store({0}, (MonoObject*){1});", parameterInfo.Name, value).AppendLine();
-                                    contents.AppendFormat("        *__{0}Count = {1}.Length();", parameterInfo.Name, parameterInfo.Name + "Temp").AppendLine();
+                                    contents.Append(indent).AppendFormat("mono_gc_wbarrier_generic_store({0}, (MonoObject*){1});", parameterInfo.Name, value).AppendLine();
+                                    contents.Append(indent).AppendFormat("*__{0}Count = {1}.Length();", parameterInfo.Name, parameterInfo.Name + "Temp").AppendLine();
                                     continue;
                                 }
                                 
                                 throw new Exception($"Unsupported type of parameter '{parameterInfo}' in method '{functionInfo}' to be passed using 'out'");
                             }
                         }
-                        contents.AppendFormat("        *{0} = {1};", parameterInfo.Name, value).AppendLine();
+                        contents.Append(indent).AppendFormat("*{0} = {1};", parameterInfo.Name, value).AppendLine();
                     }
                 }
             }
 
             if (!useInlinedReturn && !functionInfo.Glue.UseReferenceForResult && !functionInfo.ReturnType.IsVoid)
             {
-                contents.Append("        return __result;").AppendLine();
+                contents.Append(indent).Append("return __result;").AppendLine();
             }
 
-            contents.AppendLine("    }");
+            contents.Append(prevIndent).AppendLine("}");
             contents.AppendLine();
         }
 
@@ -1901,14 +1915,13 @@ namespace Flax.Build.Bindings
 
                     // C# event wrapper binding method (binds/unbinds C# wrapper to C++ delegate)
                     CppInternalCalls.Add(new KeyValuePair<string, string>(eventInfo.Name + "_Bind", eventInfo.Name + "_ManagedBind"));
-                    contents.AppendFormat("    static void {0}_ManagedBind(", eventInfo.Name);
+                    contents.AppendFormat("    DLLEXPORT static void {0}_ManagedBind(", eventInfo.Name);
                     if (!eventInfo.IsStatic)
                         contents.AppendFormat("{0}* obj, ", classTypeNameNative);
                     contents.Append("bool bind)").AppendLine();
                     contents.Append("    {").AppendLine();
-#if USE_NETCORE
-                    contents.AppendLine(string.Format("        SCRIPTING_EXPORT(\"{0}\")", classTypeNameManagedInternalCall + "::Internal_" + eventInfo.Name + "_Bind"));
-#endif
+                    if (buildData.Toolchain.Compiler == TargetCompiler.MSVC)
+                        contents.AppendLine($"        MSVC_FUNC_EXPORT(\"{classTypeNameManaged}::Internal_{eventInfo.Name}_Bind\")"); // Export generated function binding under the C# name
                     contents.Append("        Function<void(");
                     for (var i = 0; i < paramsCount; i++)
                     {
@@ -1985,14 +1998,14 @@ namespace Flax.Build.Bindings
                 if (!useScripting || !useCSharp || fieldInfo.IsHidden || fieldInfo.IsConstexpr)
                     continue;
                 if (fieldInfo.Getter != null)
-                    GenerateCppWrapperFunction(buildData, contents, classInfo, fieldInfo.Getter, "{0}");
+                    GenerateCppWrapperFunction(buildData, contents, classInfo, classTypeNameInternal, fieldInfo.Getter, "{0}");
                 if (fieldInfo.Setter != null)
                 {
                     var callFormat = "{0} = {1}";
                     var type = fieldInfo.Setter.Parameters[0].Type;
                     if (type.IsArray)
                         callFormat = $"auto __tmp = {{1}}; for (int32 i = 0; i < {type.ArraySize}; i++) {{0}}[i] = __tmp[i]";
-                    GenerateCppWrapperFunction(buildData, contents, classInfo, fieldInfo.Setter, callFormat);
+                    GenerateCppWrapperFunction(buildData, contents, classInfo, classTypeNameInternal, fieldInfo.Setter, callFormat);
                 }
             }
 
@@ -2002,9 +2015,9 @@ namespace Flax.Build.Bindings
                 if (!useScripting || !useCSharp || propertyInfo.IsHidden)
                     continue;
                 if (propertyInfo.Getter != null)
-                    GenerateCppWrapperFunction(buildData, contents, classInfo, propertyInfo.Getter);
+                    GenerateCppWrapperFunction(buildData, contents, classInfo, classTypeNameInternal, propertyInfo.Getter);
                 if (propertyInfo.Setter != null)
-                    GenerateCppWrapperFunction(buildData, contents, classInfo, propertyInfo.Setter);
+                    GenerateCppWrapperFunction(buildData, contents, classInfo, classTypeNameInternal, propertyInfo.Setter);
             }
 
             // Functions
@@ -2014,7 +2027,7 @@ namespace Flax.Build.Bindings
                     continue;
                 if (!useScripting)
                     throw new Exception($"Not supported function {functionInfo.Name} inside non-static and non-scripting class type {classInfo.Name}.");
-                GenerateCppWrapperFunction(buildData, contents, classInfo, functionInfo);
+                GenerateCppWrapperFunction(buildData, contents, classInfo, classTypeNameInternal, functionInfo);
             }
 
             // Interface implementation
@@ -2028,7 +2041,7 @@ namespace Flax.Build.Bindings
                     {
                         if (!classInfo.IsScriptingObject)
                             throw new Exception($"Class {classInfo.Name} cannot implement interface {interfaceInfo.Name} because it requires ScriptingObject as a base class.");
-                        GenerateCppWrapperFunction(buildData, contents, classInfo, functionInfo);
+                        GenerateCppWrapperFunction(buildData, contents, classInfo, classTypeNameInternal, functionInfo);
                     }
                 }
             }
@@ -2184,9 +2197,9 @@ namespace Flax.Build.Bindings
                 }
 
                 if (fieldInfo.Getter != null)
-                    GenerateCppWrapperFunction(buildData, contents, structureInfo, fieldInfo.Getter, "{0}");
+                    GenerateCppWrapperFunction(buildData, contents, structureInfo, structureTypeNameInternal, fieldInfo.Getter, "{0}");
                 if (fieldInfo.Setter != null)
-                    GenerateCppWrapperFunction(buildData, contents, structureInfo, fieldInfo.Setter, "{0} = {1}");
+                    GenerateCppWrapperFunction(buildData, contents, structureInfo, structureTypeNameInternal, fieldInfo.Setter, "{0} = {1}");
             }
 
             // Functions
@@ -2194,7 +2207,7 @@ namespace Flax.Build.Bindings
             {
                 // TODO: add support for API functions in structures
                 throw new NotImplementedException($"TODO: add support for API functions in structures (function {functionInfo} in structure {structureInfo.Name})");
-                //GenerateCppWrapperFunction(buildData, contents, structureInfo, functionInfo);
+                //GenerateCppWrapperFunction(buildData, contents, structureInfo, structureTypeNameInternal, functionInfo);
             }
 
             GenerateCppTypeInternals?.Invoke(buildData, structureInfo, contents);
@@ -2677,8 +2690,6 @@ namespace Flax.Build.Bindings
                     header.Append("    return result;").AppendLine();
                     header.Append('}').AppendLine();
                     header.AppendLine("}");
-
-                    PutStringBuilder(header);
                 }
 
                 // Non-POD types
@@ -2968,6 +2979,8 @@ namespace Flax.Build.Bindings
                 foreach (var path in CppIncludeFilesList)
                     header.AppendFormat("#include \"{0}\"", path).AppendLine();
                 contents.Insert(headerPos, header.ToString());
+
+                PutStringBuilder(header);
             }
 
             contents.AppendLine("PRAGMA_ENABLE_DEPRECATION_WARNINGS");

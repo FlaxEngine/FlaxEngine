@@ -1323,7 +1323,6 @@ bool Level::SaveAllScenes()
 
 void Level::SaveAllScenesAsync()
 {
-    SCRIPTING_EXPORT("FlaxEngine.Level::Internal_SaveAllScenesAsync")
     ScopeLock lock(_sceneActionsLocker);
     for (int32 i = 0; i < Scenes.Count(); i++)
         _sceneActions.Enqueue(New<SaveSceneAction>(Scenes[i]));
@@ -1428,7 +1427,6 @@ bool Level::UnloadAllScenes()
 
 void Level::UnloadAllScenesAsync()
 {
-    SCRIPTING_EXPORT("FlaxEngine.Level::Internal_UnloadAllScenesAsync")
     ScopeLock lock(_sceneActionsLocker);
     _sceneActions.Enqueue(New<UnloadScenesAction>());
 }
