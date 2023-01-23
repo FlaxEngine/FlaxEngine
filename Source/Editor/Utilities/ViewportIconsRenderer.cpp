@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "ViewportIconsRenderer.h"
+#include "Engine/Core/Types/Variant.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Assets/MaterialInstance.h"
 #include "Engine/Content/Content.h"
@@ -36,17 +37,20 @@ enum class IconTypes
     ParticleEffect,
     SceneAnimationPlayer,
 
+    CustomTexture,
+
     MAX
 };
 
 AssetReference<Model> QuadModel;
+AssetReference<MaterialInstance> CustomTextureMaterial;
 ModelInstanceEntries InstanceBuffers[static_cast<int32>(IconTypes::MAX)];
 Dictionary<ScriptingTypeHandle, IconTypes> ActorTypeToIconType;
+Dictionary<ScriptingTypeHandle, AssetReference<Texture>> ActorTypeToTexture;
 
 class ViewportIconsRendererService : public EngineService
 {
 public:
-
     ViewportIconsRendererService()
         : EngineService(TEXT("Viewport Icons Renderer"))
     {
@@ -86,17 +90,63 @@ void ViewportIconsRenderer::DrawIcons(RenderContext& renderContext, Actor* actor
     }
 }
 
+void ViewportIconsRenderer::AddCustomIcon(const ScriptingTypeHandle& type, Texture* iconTexture)
+{
+    CHECK(type && iconTexture);
+    ActorTypeToTexture[type] = iconTexture;
+}
+
+void ViewportIconsRenderer::AddActor(Actor* actor)
+{
+    CHECK(actor && actor->GetScene());
+    actor->GetSceneRendering()->AddViewportIcon(actor);
+}
+
+void ViewportIconsRenderer::RemoveActor(Actor* actor)
+{
+    CHECK(actor && actor->GetScene());
+    actor->GetSceneRendering()->RemoveViewportIcon(actor);
+}
+
 void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Scene* scene, Mesh::DrawInfo& draw)
 {
     auto& view = renderContext.View;
     const BoundingFrustum frustum = view.Frustum;
-    auto& icons = scene->GetSceneRendering()->ViewportIcons;
+    const auto& icons = scene->GetSceneRendering()->ViewportIcons;
     Matrix m1, m2, world;
+    GeometryDrawStateData drawState;
+    draw.DrawState = &drawState;
+    draw.World = &world;
+    AssetReference<Texture> texture;
     for (Actor* icon : icons)
     {
         BoundingSphere sphere(icon->GetPosition() - renderContext.View.Origin, ICON_RADIUS);
+        if (!frustum.Intersects(sphere))
+            continue;
         IconTypes iconType;
-        if (frustum.Intersects(sphere) && ActorTypeToIconType.TryGet(icon->GetTypeHandle(), iconType))
+        ScriptingTypeHandle typeHandle = icon->GetTypeHandle();
+        draw.Buffer = nullptr;
+
+        if (ActorTypeToTexture.TryGet(typeHandle, texture))
+        {
+            // Use custom texture
+            draw.Buffer = &InstanceBuffers[static_cast<int32>(IconTypes::CustomTexture)];
+            if (draw.Buffer->Count() == 0)
+            {
+                // Lazy-init (use in-built icon material with custom texture)
+                draw.Buffer->Setup(1);
+                draw.Buffer->At(0).ReceiveDecals = false;
+                draw.Buffer->At(0).Material = InstanceBuffers[0][0].Material->CreateVirtualInstance();
+            }
+            draw.Buffer->At(0).Material->SetParameterValue(TEXT("Image"), Variant(texture));
+        }
+        else if (ActorTypeToIconType.TryGet(typeHandle, iconType))
+        {
+            // Use predefined material
+            draw.Buffer = &InstanceBuffers[static_cast<int32>(iconType)];
+        }
+
+        if (draw.Buffer)
         {
             // Create world matrix
             Matrix::Scaling(ICON_RADIUS * 2.0f, m2);
@@ -106,10 +156,6 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Scene
             Matrix::Multiply(m1, m2, world);
 
             // Draw icon
-            GeometryDrawStateData drawState;
-            draw.DrawState = &drawState;
-            draw.Buffer = &InstanceBuffers[static_cast<int32>(iconType)];
-            draw.World = &world;
             draw.Bounds = sphere;
             QuadModel->Draw(renderContext, draw);
         }
@@ -185,6 +231,7 @@ bool ViewportIconsRendererService::Init()
 void ViewportIconsRendererService::Dispose()
 {
     QuadModel = nullptr;
+    CustomTextureMaterial = nullptr;
     for (int32 i = 0; i < ARRAY_COUNT(InstanceBuffers); i++)
         InstanceBuffers[i].Release();
     ActorTypeToIconType.Clear();
