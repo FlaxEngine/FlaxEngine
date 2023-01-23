@@ -152,4 +152,4 @@ obj/
 .vscode/
 .idea/
 *.code-workspace
-
+omnisharp.json
