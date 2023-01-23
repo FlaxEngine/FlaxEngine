@@ -184,7 +184,7 @@ namespace FlaxEditor.Content.Import
 
         #region Internal Calls
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Content.Import.AudioImportEntry::Internal_GetAudioImportOptions", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "AudioImportEntryInternal_GetAudioImportOptions", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_GetAudioImportOptions(string path, out AudioImportSettings.InternalOptions result);
 

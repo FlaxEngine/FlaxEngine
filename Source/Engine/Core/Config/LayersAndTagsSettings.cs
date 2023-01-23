@@ -31,7 +31,7 @@ namespace FlaxEditor.Content.Settings
             return GetCurrentLayers(out int _);
         }
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Content.Settings.LayersAndTagsSettings::GetCurrentLayers", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "LayersAndTagsSettingsInternal_GetCurrentLayers", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = "layerCount")]
         internal static partial string[] GetCurrentLayers(out int layerCount);
     }

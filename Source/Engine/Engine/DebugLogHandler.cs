@@ -66,13 +66,13 @@ namespace FlaxEngine
             Debug.Logger.LogException(exception);
         }
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.DebugLogHandler::Internal_LogWrite", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "DebugLogHandlerInternal_LogWrite", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial void Internal_LogWrite(LogType level, string msg);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.DebugLogHandler::Internal_Log", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "DebugLogHandlerInternal_Log", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial void Internal_Log(LogType level, string msg, IntPtr obj, string stackTrace);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.DebugLogHandler::Internal_LogException", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "DebugLogHandlerInternal_LogException", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial void Internal_LogException([MarshalUsing(typeof(FlaxEngine.ExceptionMarshaller))] Exception exception, IntPtr obj);
 
         [SecuritySafeCritical]

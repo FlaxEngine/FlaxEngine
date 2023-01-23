@@ -563,7 +563,7 @@ namespace FlaxEditor.Content.Settings
         /// <summary>
         /// Loads the current game settings asset and applies it to the engine runtime configuration.
         /// </summary>
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Content.Settings.GameSettings::Apply")]
+        [LibraryImport("FlaxEngine", EntryPoint = "GameSettingsInternal_Apply")]
         public static partial void Apply();
 #endif
     }

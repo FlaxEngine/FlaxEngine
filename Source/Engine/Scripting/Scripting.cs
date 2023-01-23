@@ -310,7 +310,7 @@ namespace FlaxEngine
         /// Returns true if game scripts assembly has been loaded.
         /// </summary>
         /// <returns>True if game scripts assembly is loaded, otherwise false.</returns>
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Scripting::HasGameModulesLoaded", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "ScriptingInternal_HasGameModulesLoaded", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         public static partial bool HasGameModulesLoaded();
 
@@ -318,14 +318,14 @@ namespace FlaxEngine
         /// Returns true if given type is from one of the game scripts assemblies.
         /// </summary>
         /// <returns>True if the type is from game assembly, otherwise false.</returns>
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Scripting::IsTypeFromGameScripts", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "ScriptingInternal_IsTypeFromGameScripts", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         public static partial bool IsTypeFromGameScripts([MarshalUsing(typeof(SystemTypeMarshaller))] Type type);
 
         /// <summary>
         /// Flushes the removed objects (disposed objects using Object.Destroy).
         /// </summary>
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Scripting::FlushRemovedObjects", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "ScriptingInternal_FlushRemovedObjects", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         public static partial void FlushRemovedObjects();
     }
 
@@ -341,26 +341,26 @@ namespace FlaxEngine
         /// Begins profiling a piece of code with a custom label.
         /// </summary>
         /// <param name="name">The name of the event.</param>
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Profiler::BeginEvent", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "ProfilerInternal_BeginEvent", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         public static partial void BeginEvent(string name);
 
         /// <summary>
         /// Ends profiling an event.
         /// </summary>
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Profiler::EndEvent", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "ProfilerInternal_EndEvent", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         public static partial void EndEvent();
 
         /// <summary>
         /// Begins GPU profiling a piece of code with a custom label.
         /// </summary>
         /// <param name="name">The name of the event.</param>
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Profiler::BeginEventGPU", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "ProfilerInternal_BeginEventGPU", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         public static partial void BeginEventGPU(string name);
 
         /// <summary>
         /// Ends GPU profiling an event.
         /// </summary>
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Profiler::EndEventGPU", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "ProfilerInternal_EndEventGPU", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         public static partial void EndEventGPU();
     }
 }

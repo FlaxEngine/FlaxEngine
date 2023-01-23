@@ -707,7 +707,7 @@ namespace FlaxEditor.Content.Import
 
         #region Internal Calls
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Content.Import.ModelImportEntry::Internal_GetModelImportOptions", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "ModelImportEntryInternal_GetModelImportOptions", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         internal static partial void Internal_GetModelImportOptions(string path, out ModelImportSettings.InternalOptions result);
 
         #endregion

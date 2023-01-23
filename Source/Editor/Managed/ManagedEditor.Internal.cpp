@@ -319,35 +319,6 @@ struct InternalAudioOptions
 #pragma warning( pop )
 #endif
 
-namespace CustomEditorsUtilInternal
-{
-    MonoReflectionType* GetCustomEditor(MonoReflectionType* targetType)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.CustomEditors.CustomEditorsUtil::Internal_GetCustomEditor")
-        return CustomEditorsUtil::GetCustomEditor(targetType);
-    }
-}
-
-namespace LayersAndTagsSettingsInternal
-{
-    MonoArray* GetCurrentLayers(int* layersCount)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Content.Settings.LayersAndTagsSettings::GetCurrentLayers")
-        *layersCount = Math::Max(1, Level::GetNonEmptyLayerNamesCount());
-        return MUtils::ToArray(Span<String>(Level::Layers, *layersCount));
-    }
-}
-
-namespace GameSettingsInternal1
-{
-    void Apply()
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Content.Settings.GameSettings::Apply")
-        LOG(Info, "Apply game settings");
-        GameSettings::Load();
-    }
-}
-
 // Pack log messages into a single scratch buffer to reduce dynamic memory allocations
 CriticalSection CachedLogDataLocker;
 Array<byte> CachedLogData;
@@ -374,829 +345,795 @@ void OnLogMessage(LogType type, const StringView& msg)
     CachedLogData.Add((byte*)msg.Get(), msg.Length() * 2);
 }
 
-class ManagedEditorInternal
+DEFINE_INTERNAL_CALL(bool) EditorInternal_IsDevInstance()
 {
-public:
-    static bool IsDevInstance()
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::IsDevInstance")
 #if COMPILE_WITH_DEV_ENV
-        return true;
+    return true;
 #else
-		return false;
+	return false;
 #endif
-    }
+}
 
-    static bool IsOfficialBuild()
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::IsOfficialBuild")
+DEFINE_INTERNAL_CALL(bool) EditorInternal_IsOfficialBuild()
+{
 #if OFFICIAL_BUILD
+    return true;
+#else
+    return false;
+#endif
+}
+
+DEFINE_INTERNAL_CALL(bool) EditorInternal_IsPlayMode()
+{
+    return Editor::IsPlayMode;
+}
+
+DEFINE_INTERNAL_CALL(int32) EditorInternal_ReadOutputLogs(MonoArray** outMessages, MonoArray** outLogTypes, MonoArray** outLogTimes, int outArraySize)
+{
+    ScopeLock lock(CachedLogDataLocker);
+    if (CachedLogData.IsEmpty() || CachedLogData.Get() == nullptr)
+        return 0;
+
+    int32 count = 0;
+    const int32 maxCount = outArraySize;
+
+    byte* ptr = CachedLogData.Get();
+    byte* end = ptr + CachedLogData.Count();
+    while (count < maxCount && ptr != end)
+    {
+        auto type = (byte)*(int32*)ptr;
+        ptr += 4;
+
+        auto time = *(int64*)ptr;
+        ptr += 8;
+
+        auto length = *(int32*)ptr;
+        ptr += 4;
+
+        auto msg = (Char*)ptr;
+        ptr += length * 2;
+
+        auto msgObj = MUtils::ToString(StringView(msg, length));
+
+        mono_array_setref(*outMessages, count, msgObj);
+        mono_array_set(*outLogTypes, byte, count, type);
+        mono_array_set(*outLogTimes, int64, count, time);
+
+        count++;
+    }
+
+    const int32 dataLeft = (int32)(end - ptr);
+    Platform::MemoryCopy(CachedLogData.Get(), ptr, dataLeft);
+    CachedLogData.Resize(dataLeft);
+
+    return count;
+}
+
+DEFINE_INTERNAL_CALL(void) EditorInternal_SetPlayMode(bool value)
+{
+    Editor::IsPlayMode = value;
+}
+
+DEFINE_INTERNAL_CALL(MonoString*) EditorInternal_GetProjectPath()
+{
+    return MUtils::ToString(Editor::Project->ProjectPath);
+}
+
+DEFINE_INTERNAL_CALL(void) EditorInternal_CloseSplashScreen()
+{
+    Editor::CloseSplashScreen();
+}
+
+DEFINE_INTERNAL_CALL(bool) EditorInternal_CloneAssetFile(MonoString* dstPathObj, MonoString* srcPathObj, Guid* dstId)
+{
+    // Get normalized paths
+    String dstPath, srcPath;
+    MUtils::ToString(dstPathObj, dstPath);
+    MUtils::ToString(srcPathObj, srcPath);
+    FileSystem::NormalizePath(dstPath);
+    FileSystem::NormalizePath(srcPath);
+
+    // Call util function
+    return Content::CloneAssetFile(dstPath, srcPath, *dstId);
+}
+
+enum class NewAssetType
+{
+    Material = 0,
+    MaterialInstance = 1,
+    CollisionData = 2,
+    AnimationGraph = 3,
+    SkeletonMask = 4,
+    ParticleEmitter = 5,
+    ParticleSystem = 6,
+    SceneAnimation = 7,
+    MaterialFunction = 8,
+    ParticleEmitterFunction = 9,
+    AnimationGraphFunction = 10,
+    Animation = 11,
+};
+
+DEFINE_INTERNAL_CALL(bool) EditorInternal_CreateAsset(NewAssetType type, MonoString* outputPathObj)
+{
+    String tag;
+    switch (type)
+    {
+    case NewAssetType::Material:
+        tag = AssetsImportingManager::CreateMaterialTag;
+        break;
+    case NewAssetType::MaterialInstance:
+        tag = AssetsImportingManager::CreateMaterialInstanceTag;
+        break;
+    case NewAssetType::CollisionData:
+        tag = AssetsImportingManager::CreateCollisionDataTag;
+        break;
+    case NewAssetType::AnimationGraph:
+        tag = AssetsImportingManager::CreateAnimationGraphTag;
+        break;
+    case NewAssetType::SkeletonMask:
+        tag = AssetsImportingManager::CreateSkeletonMaskTag;
+        break;
+    case NewAssetType::ParticleEmitter:
+        tag = AssetsImportingManager::CreateParticleEmitterTag;
+        break;
+    case NewAssetType::ParticleSystem:
+        tag = AssetsImportingManager::CreateParticleSystemTag;
+        break;
+    case NewAssetType::SceneAnimation:
+        tag = AssetsImportingManager::CreateSceneAnimationTag;
+        break;
+    case NewAssetType::MaterialFunction:
+        tag = AssetsImportingManager::CreateMaterialFunctionTag;
+        break;
+    case NewAssetType::ParticleEmitterFunction:
+        tag = AssetsImportingManager::CreateParticleEmitterFunctionTag;
+        break;
+    case NewAssetType::AnimationGraphFunction:
+        tag = AssetsImportingManager::CreateAnimationGraphFunctionTag;
+        break;
+    case NewAssetType::Animation:
+        tag = AssetsImportingManager::CreateAnimationTag;
+        break;
+    default:
         return true;
-#else
-        return false;
-#endif
     }
 
-    static bool IsPlayMode()
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_IsPlayMode")
-        return Editor::IsPlayMode;
-    }
+    String outputPath;
+    MUtils::ToString(outputPathObj, outputPath);
+    FileSystem::NormalizePath(outputPath);
 
-    static int32 ReadOutputLogs(MonoArray** outMessages, MonoArray** outLogTypes, MonoArray** outLogTimes, int outArraySize)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_ReadOutputLogs")
-        ScopeLock lock(CachedLogDataLocker);
+    return AssetsImportingManager::Create(tag, outputPath);
+}
 
-        if (CachedLogData.IsEmpty() || CachedLogData.Get() == nullptr)
-            return 0;
+DEFINE_INTERNAL_CALL(bool) EditorInternal_CreateVisualScript(MonoString* outputPathObj, MonoString* baseTypenameObj)
+{
+    String outputPath;
+    MUtils::ToString(outputPathObj, outputPath);
+    FileSystem::NormalizePath(outputPath);
+    String baseTypename;
+    MUtils::ToString(baseTypenameObj, baseTypename);
+    return AssetsImportingManager::Create(AssetsImportingManager::CreateVisualScriptTag, outputPath, &baseTypename);
+}
 
-        int32 count = 0;
-        const int32 maxCount = outArraySize;
+DEFINE_INTERNAL_CALL(MonoString*) EditorInternal_CanImport(MonoString* extensionObj)
+{
+    String extension;
+    MUtils::ToString(extensionObj, extension);
+    if (extension.Length() > 0 && extension[0] == '.')
+        extension.Remove(0, 1);
+    const AssetImporter* importer = AssetsImportingManager::GetImporter(extension);
+    return importer ? MUtils::ToString(importer->ResultExtension) : nullptr;
+}
 
-        byte* ptr = CachedLogData.Get();
-        byte* end = ptr + CachedLogData.Count();
-        while (count < maxCount && ptr != end)
-        {
-            auto type = (byte)*(int32*)ptr;
-            ptr += 4;
+DEFINE_INTERNAL_CALL(bool) EditorInternal_Import(MonoString* inputPathObj, MonoString* outputPathObj, void* arg)
+{
+    String inputPath, outputPath;
+    MUtils::ToString(inputPathObj, inputPath);
+    MUtils::ToString(outputPathObj, outputPath);
+    FileSystem::NormalizePath(inputPath);
+    FileSystem::NormalizePath(outputPath);
+    return AssetsImportingManager::Import(inputPath, outputPath, arg);
+}
 
-            auto time = *(int64*)ptr;
-            ptr += 8;
+DEFINE_INTERNAL_CALL(bool) EditorInternal_ImportTexture(MonoString* inputPathObj, MonoString* outputPathObj, InternalTextureOptions* optionsObj)
+{
+    ImportTexture::Options options;
+    InternalTextureOptions::Convert(optionsObj, &options);
+    return EditorInternal_Import(inputPathObj, outputPathObj, &options);
+}
 
-            auto length = *(int32*)ptr;
-            ptr += 4;
+DEFINE_INTERNAL_CALL(bool) EditorInternal_ImportModel(MonoString* inputPathObj, MonoString* outputPathObj, InternalModelOptions* optionsObj)
+{
+    ImportModelFile::Options options;
+    InternalModelOptions::Convert(optionsObj, &options);
+    return EditorInternal_Import(inputPathObj, outputPathObj, &options);
+}
 
-            auto msg = (Char*)ptr;
-            ptr += length * 2;
+DEFINE_INTERNAL_CALL(bool) EditorInternal_ImportAudio(MonoString* inputPathObj, MonoString* outputPathObj, InternalAudioOptions* optionsObj)
+{
+    ImportAudio::Options options;
+    InternalAudioOptions::Convert(optionsObj, &options);
+    return EditorInternal_Import(inputPathObj, outputPathObj, &options);
+}
 
-            auto msgObj = MUtils::ToString(StringView(msg, length));
+DEFINE_INTERNAL_CALL(void) EditorInternal_GetAudioClipMetadata(AudioClip* clip, int32* originalSize, int32* importedSize)
+{
+    INTERNAL_CALL_CHECK(clip);
+    *originalSize = clip->AudioHeader.OriginalSize;
+    *importedSize = clip->AudioHeader.ImportedSize;
+}
 
-            mono_array_setref(*outMessages, count, msgObj);
-            mono_array_set(*outLogTypes, byte, count, type);
-            mono_array_set(*outLogTimes, int64, count, time);
+DEFINE_INTERNAL_CALL(bool) EditorInternal_SaveJsonAsset(MonoString* outputPathObj, MonoString* dataObj, MonoString* dataTypeNameObj)
+{
+    String outputPath;
+    MUtils::ToString(outputPathObj, outputPath);
+    FileSystem::NormalizePath(outputPath);
 
-            count++;
-        }
+    const auto dataObjPtr = mono_string_to_utf8(dataObj);
+    StringAnsiView data(dataObjPtr);
 
-        const int32 dataLeft = (int32)(end - ptr);
-        Platform::MemoryCopy(CachedLogData.Get(), ptr, dataLeft);
-        CachedLogData.Resize(dataLeft);
+    const auto dataTypeNameObjPtr = mono_string_to_utf8(dataTypeNameObj);
+    StringAnsiView dataTypeName(dataTypeNameObjPtr);
 
-        return count;
-    }
+    const bool result = CreateJson::Create(outputPath, data, dataTypeName);
 
-    static void SetPlayMode(bool value)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_SetPlayMode")
-        Editor::IsPlayMode = value;
-    }
+    mono_free(dataObjPtr);
+    mono_free(dataTypeNameObjPtr);
 
-    static MonoString* GetProjectPath()
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetProjectPath")
-        return MUtils::ToString(Editor::Project->ProjectPath);
-    }
+    return result;
+}
 
-    static void CloseSplashScreen()
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CloseSplashScreen")
-        Editor::CloseSplashScreen();
-    }
-
-    static bool CloneAssetFile(MonoString* dstPathObj, MonoString* srcPathObj, Guid* dstId)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CloneAssetFile")
-        // Get normalized paths
-        String dstPath, srcPath;
-        MUtils::ToString(dstPathObj, dstPath);
-        MUtils::ToString(srcPathObj, srcPath);
-        FileSystem::NormalizePath(dstPath);
-        FileSystem::NormalizePath(srcPath);
-
-        // Call util function
-        return Content::CloneAssetFile(dstPath, srcPath, *dstId);
-    }
-
-    enum class NewAssetType
-    {
-        Material = 0,
-        MaterialInstance = 1,
-        CollisionData = 2,
-        AnimationGraph = 3,
-        SkeletonMask = 4,
-        ParticleEmitter = 5,
-        ParticleSystem = 6,
-        SceneAnimation = 7,
-        MaterialFunction = 8,
-        ParticleEmitterFunction = 9,
-        AnimationGraphFunction = 10,
-        Animation = 11,
-    };
-
-    static bool CreateAsset(NewAssetType type, MonoString* outputPathObj)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CreateAsset")
-        String tag;
-        switch (type)
-        {
-        case NewAssetType::Material:
-            tag = AssetsImportingManager::CreateMaterialTag;
-            break;
-        case NewAssetType::MaterialInstance:
-            tag = AssetsImportingManager::CreateMaterialInstanceTag;
-            break;
-        case NewAssetType::CollisionData:
-            tag = AssetsImportingManager::CreateCollisionDataTag;
-            break;
-        case NewAssetType::AnimationGraph:
-            tag = AssetsImportingManager::CreateAnimationGraphTag;
-            break;
-        case NewAssetType::SkeletonMask:
-            tag = AssetsImportingManager::CreateSkeletonMaskTag;
-            break;
-        case NewAssetType::ParticleEmitter:
-            tag = AssetsImportingManager::CreateParticleEmitterTag;
-            break;
-        case NewAssetType::ParticleSystem:
-            tag = AssetsImportingManager::CreateParticleSystemTag;
-            break;
-        case NewAssetType::SceneAnimation:
-            tag = AssetsImportingManager::CreateSceneAnimationTag;
-            break;
-        case NewAssetType::MaterialFunction:
-            tag = AssetsImportingManager::CreateMaterialFunctionTag;
-            break;
-        case NewAssetType::ParticleEmitterFunction:
-            tag = AssetsImportingManager::CreateParticleEmitterFunctionTag;
-            break;
-        case NewAssetType::AnimationGraphFunction:
-            tag = AssetsImportingManager::CreateAnimationGraphFunctionTag;
-            break;
-        case NewAssetType::Animation:
-            tag = AssetsImportingManager::CreateAnimationTag;
-            break;
-        default:
-            return true;
-        }
-
-        String outputPath;
-        MUtils::ToString(outputPathObj, outputPath);
-        FileSystem::NormalizePath(outputPath);
-
-        return AssetsImportingManager::Create(tag, outputPath);
-    }
-
-    static bool CreateVisualScript(MonoString* outputPathObj, MonoString* baseTypenameObj)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CreateVisualScript")
-        String outputPath;
-        MUtils::ToString(outputPathObj, outputPath);
-        FileSystem::NormalizePath(outputPath);
-        String baseTypename;
-        MUtils::ToString(baseTypenameObj, baseTypename);
-        return AssetsImportingManager::Create(AssetsImportingManager::CreateVisualScriptTag, outputPath, &baseTypename);
-    }
-
-    static MonoString* CanImport(MonoString* extensionObj)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CanImport")
-        String extension;
-        MUtils::ToString(extensionObj, extension);
-        if (extension.Length() > 0 && extension[0] == '.')
-            extension.Remove(0, 1);
-        const AssetImporter* importer = AssetsImportingManager::GetImporter(extension);
-        return importer ? MUtils::ToString(importer->ResultExtension) : nullptr;
-    }
-
-    static bool Import(MonoString* inputPathObj, MonoString* outputPathObj, void* arg)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_Import")
-        String inputPath, outputPath;
-        MUtils::ToString(inputPathObj, inputPath);
-        MUtils::ToString(outputPathObj, outputPath);
-        FileSystem::NormalizePath(inputPath);
-        FileSystem::NormalizePath(outputPath);
-
-        return AssetsImportingManager::Import(inputPath, outputPath, arg);
-    }
-
-    static bool ImportTexture(MonoString* inputPathObj, MonoString* outputPathObj, InternalTextureOptions* optionsObj)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_ImportTexture")
-        ImportTexture::Options options;
-        InternalTextureOptions::Convert(optionsObj, &options);
-
-        return Import(inputPathObj, outputPathObj, &options);
-    }
-
-    static bool ImportModel(MonoString* inputPathObj, MonoString* outputPathObj, InternalModelOptions* optionsObj)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_ImportModel")
-        ImportModelFile::Options options;
-        InternalModelOptions::Convert(optionsObj, &options);
-
-        return Import(inputPathObj, outputPathObj, &options);
-    }
-
-    static bool ImportAudio(MonoString* inputPathObj, MonoString* outputPathObj, InternalAudioOptions* optionsObj)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_ImportAudio")
-        ImportAudio::Options options;
-        InternalAudioOptions::Convert(optionsObj, &options);
-
-        return Import(inputPathObj, outputPathObj, &options);
-    }
-
-    static void GetAudioClipMetadata(AudioClip* clip, int32* originalSize, int32* importedSize)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetAudioClipMetadata")
-        INTERNAL_CALL_CHECK(clip);
-        *originalSize = clip->AudioHeader.OriginalSize;
-        *importedSize = clip->AudioHeader.ImportedSize;
-    }
-
-    static bool SaveJsonAsset(MonoString* outputPathObj, MonoString* dataObj, MonoString* dataTypeNameObj)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_SaveJsonAsset")
-        String outputPath;
-        MUtils::ToString(outputPathObj, outputPath);
-        FileSystem::NormalizePath(outputPath);
-
-        const auto dataObjPtr = mono_string_to_utf8(dataObj);
-        StringAnsiView data(dataObjPtr);
-
-        const auto dataTypeNameObjPtr = mono_string_to_utf8(dataTypeNameObj);
-        StringAnsiView dataTypeName(dataTypeNameObjPtr);
-
-        const bool result = CreateJson::Create(outputPath, data, dataTypeName);
-
-        mono_free(dataObjPtr);
-        mono_free(dataTypeNameObjPtr);
-
-        return result;
-    }
-
-    static bool GetTextureImportOptions(MonoString* pathObj, InternalTextureOptions* result)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Content.Import.TextureImportEntry::Internal_GetTextureImportOptions")
-
-        String path;
-        MUtils::ToString(pathObj, path);
-        FileSystem::NormalizePath(path);
-
-        ImportTexture::Options options;
-        if (ImportTexture::TryGetImportOptions(path, options))
-        {
-            // Convert into managed storage
-            InternalTextureOptions::Convert(&options, result);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    static void GetModelImportOptions(MonoString* pathObj, InternalModelOptions* result)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Content.Import.ModelImportEntry::Internal_GetModelImportOptions")
-        // Initialize defaults   
-        ImportModelFile::Options options;
-        if (const auto* graphicsSettings = GraphicsSettings::Get())
-        {
-            options.GenerateSDF = graphicsSettings->GenerateSDFOnModelImport;
-        }
-
-        // Get options from model
-        String path;
-        MUtils::ToString(pathObj, path);
-        FileSystem::NormalizePath(path);
-        ImportModelFile::TryGetImportOptions(path, options);
-
-        // Convert into managed storage
-        InternalModelOptions::Convert(&options, result);
-    }
-
-    static bool GetAudioImportOptions(MonoString* pathObj, InternalAudioOptions* result)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Content.Import.AudioImportEntry::Internal_GetAudioImportOptions")
-        String path;
-        MUtils::ToString(pathObj, path);
-        FileSystem::NormalizePath(path);
-
-        ImportAudio::Options options;
-        if (ImportAudio::TryGetImportOptions(path, options))
-        {
-            // Convert into managed storage
-            InternalAudioOptions::Convert(&options, result);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    static bool CanExport(MonoString* pathObj)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CanExport")
+DEFINE_INTERNAL_CALL(bool) EditorInternal_CanExport(MonoString* pathObj)
+{
 #if COMPILE_WITH_ASSETS_EXPORTER
-        String path;
-        MUtils::ToString(pathObj, path);
-        FileSystem::NormalizePath(path);
+    String path;
+    MUtils::ToString(pathObj, path);
+    FileSystem::NormalizePath(path);
 
-        return AssetsExportingManager::CanExport(path);
+    return AssetsExportingManager::CanExport(path);
 #else
-		return false;
+	return false;
 #endif
-    }
+}
 
-    static bool Export(MonoString* inputPathObj, MonoString* outputFolderObj)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_Export")
+DEFINE_INTERNAL_CALL(bool) EditorInternal_Export(MonoString* inputPathObj, MonoString* outputFolderObj)
+{
 #if COMPILE_WITH_ASSETS_EXPORTER
-        String inputPath;
-        MUtils::ToString(inputPathObj, inputPath);
-        FileSystem::NormalizePath(inputPath);
+    String inputPath;
+    MUtils::ToString(inputPathObj, inputPath);
+    FileSystem::NormalizePath(inputPath);
 
-        String outputFolder;
-        MUtils::ToString(outputFolderObj, outputFolder);
-        FileSystem::NormalizePath(outputFolder);
+    String outputFolder;
+    MUtils::ToString(outputFolderObj, outputFolder);
+    FileSystem::NormalizePath(outputFolder);
 
-        return AssetsExportingManager::Export(inputPath, outputFolder);
+    return AssetsExportingManager::Export(inputPath, outputFolder);
 #else
-		return false;
+	return false;
 #endif
-    }
+}
 
-    static void CopyCache(Guid* dstId, Guid* srcId)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CopyCache")
-        ShaderCacheManager::CopyCache(*dstId, *srcId);
-    }
+DEFINE_INTERNAL_CALL(void) EditorInternal_CopyCache(Guid* dstId, Guid* srcId)
+{
+    ShaderCacheManager::CopyCache(*dstId, *srcId);
+}
 
-    static void BakeLightmaps(bool cancel)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_BakeLightmaps")
-        auto builder = ShadowsOfMordor::Builder::Instance();
-        if (cancel)
-            builder->CancelBuild();
-        else
-            builder->Build();
-    }
+DEFINE_INTERNAL_CALL(void) EditorInternal_BakeLightmaps(bool cancel)
+{
+    auto builder = ShadowsOfMordor::Builder::Instance();
+    if (cancel)
+        builder->CancelBuild();
+    else
+        builder->Build();
+}
 
-    static MonoString* GetShaderAssetSourceCode(BinaryAsset* obj)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetShaderAssetSourceCode")
-        INTERNAL_CALL_CHECK_RETURN(obj, nullptr);
-        if (obj->WaitForLoaded())
-            DebugLog::ThrowNullReference();
+DEFINE_INTERNAL_CALL(MonoString*) EditorInternal_GetShaderAssetSourceCode(BinaryAsset* obj)
+{
+    INTERNAL_CALL_CHECK_RETURN(obj, nullptr);
+    if (obj->WaitForLoaded())
+        DebugLog::ThrowNullReference();
 
-        auto lock = obj->Storage->Lock();
+    auto lock = obj->Storage->Lock();
 
-        if (obj->LoadChunk(SHADER_FILE_CHUNK_SOURCE))
-            return nullptr;
+    if (obj->LoadChunk(SHADER_FILE_CHUNK_SOURCE))
+        return nullptr;
 
-        BytesContainer data;
-        obj->GetChunkData(SHADER_FILE_CHUNK_SOURCE, data);
+    BytesContainer data;
+    obj->GetChunkData(SHADER_FILE_CHUNK_SOURCE, data);
 
-        Encryption::DecryptBytes((byte*)data.Get(), data.Length());
+    Encryption::DecryptBytes((byte*)data.Get(), data.Length());
 
-        const StringAnsiView srcData((const char*)data.Get(), data.Length());
-        const String source(srcData);
-        const auto str = MUtils::ToString(source);
+    const StringAnsiView srcData((const char*)data.Get(), data.Length());
+    const String source(srcData);
+    const auto str = MUtils::ToString(source);
 
-        Encryption::EncryptBytes((byte*)data.Get(), data.Length());
+    Encryption::EncryptBytes((byte*)data.Get(), data.Length());
 
-        return str;
-    }
+    return str;
+}
 
-    static bool CookMeshCollision(MonoString* pathObj, CollisionDataType type, ModelBase* modelObj, int32 modelLodIndex, uint32 materialSlotsMask, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CookMeshCollision")
+DEFINE_INTERNAL_CALL(bool) EditorInternal_CookMeshCollision(MonoString* pathObj, CollisionDataType type, ModelBase* modelObj, int32 modelLodIndex, uint32 materialSlotsMask, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
+{
 #if COMPILE_WITH_PHYSICS_COOKING
-        CollisionCooking::Argument arg;
-        String path;
-        MUtils::ToString(pathObj, path);
-        FileSystem::NormalizePath(path);
-        arg.Type = type;
-        arg.Model = modelObj;
-        arg.ModelLodIndex = modelLodIndex;
-        arg.MaterialSlotsMask = materialSlotsMask;
-        arg.ConvexFlags = convexFlags;
-        arg.ConvexVertexLimit = convexVertexLimit;
-        return CreateCollisionData::CookMeshCollision(path, arg);
+    CollisionCooking::Argument arg;
+    String path;
+    MUtils::ToString(pathObj, path);
+    FileSystem::NormalizePath(path);
+    arg.Type = type;
+    arg.Model = modelObj;
+    arg.ModelLodIndex = modelLodIndex;
+    arg.MaterialSlotsMask = materialSlotsMask;
+    arg.ConvexFlags = convexFlags;
+    arg.ConvexVertexLimit = convexVertexLimit;
+    return CreateCollisionData::CookMeshCollision(path, arg);
 #else
-		LOG(Warning, "Collision cooking is disabled.");
-		return true;
+	LOG(Warning, "Collision cooking is disabled.");
+	return true;
 #endif
-    }
+}
 
-    static void GetCollisionWires(CollisionData* collisionData, MonoArray** triangles, MonoArray** indices, int* trianglesCount, int* indicesCount)
+DEFINE_INTERNAL_CALL(void) EditorInternal_GetCollisionWires(CollisionData* collisionData, MonoArray** triangles, MonoArray** indices, int* trianglesCount, int* indicesCount)
+{
+    if (!collisionData || collisionData->WaitForLoaded() || collisionData->GetOptions().Type == CollisionDataType::None)
+        return;
+
+    const auto& debugLines = collisionData->GetDebugLines();
+
+    const int32 linesCount = debugLines.Count() / 2;
+    mono_gc_wbarrier_generic_store(triangles, (MonoObject*)mono_array_new(mono_domain_get(), Float3::TypeInitializer.GetMonoClass(), debugLines.Count()));
+    mono_gc_wbarrier_generic_store(indices, (MonoObject*)mono_array_new(mono_domain_get(), mono_get_int32_class(), linesCount * 3));
+
+    // Use one triangle per debug line
+    for (int32 i = 0; i < debugLines.Count(); i++)
     {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetCollisionWires")
-        if (!collisionData || collisionData->WaitForLoaded() || collisionData->GetOptions().Type == CollisionDataType::None)
-            return;
-
-        const auto& debugLines = collisionData->GetDebugLines();
-
-        const int32 linesCount = debugLines.Count() / 2;
-        mono_gc_wbarrier_generic_store(triangles, (MonoObject*)mono_array_new(mono_domain_get(), Float3::TypeInitializer.GetMonoClass(), debugLines.Count()));
-        mono_gc_wbarrier_generic_store(indices, (MonoObject*)mono_array_new(mono_domain_get(), mono_get_int32_class(), linesCount * 3));
-
-        // Use one triangle per debug line
-        for (int32 i = 0; i < debugLines.Count(); i++)
-        {
-            mono_array_set(*triangles, Float3, i, debugLines[i]);
-        }
-        int32 iI = 0;
-        for (int32 i = 0; i < debugLines.Count(); i += 2)
-        {
-            mono_array_set(*indices, int32, iI++, i);
-            mono_array_set(*indices, int32, iI++, i + 1);
-            mono_array_set(*indices, int32, iI++, i);
-        }
-        *trianglesCount = debugLines.Count();
-        *indicesCount = linesCount * 3;
+        mono_array_set(*triangles, Float3, i, debugLines[i]);
     }
-
-    static void GetEditorBoxWithChildren(Actor* obj, BoundingBox* result)
+    int32 iI = 0;
+    for (int32 i = 0; i < debugLines.Count(); i += 2)
     {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetEditorBoxWithChildren")
-        INTERNAL_CALL_CHECK(obj);
-        *result = obj->GetEditorBoxChildren();
+        mono_array_set(*indices, int32, iI++, i);
+        mono_array_set(*indices, int32, iI++, i + 1);
+        mono_array_set(*indices, int32, iI++, i);
     }
+    *trianglesCount = debugLines.Count();
+    *indicesCount = linesCount * 3;
+}
 
-    static void SetOptions(ManagedEditor::InternalOptions* options)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_SetOptions")
-        ManagedEditor::ManagedEditorOptions = *options;
+DEFINE_INTERNAL_CALL(void) EditorInternal_GetEditorBoxWithChildren(Actor* obj, BoundingBox* result)
+{
+    INTERNAL_CALL_CHECK(obj);
+    *result = obj->GetEditorBoxChildren();
+}
 
-        // Apply options
-        AssetsImportingManager::UseImportPathRelative = ManagedEditor::ManagedEditorOptions.UseAssetImportPathRelative != 0;
-    }
+DEFINE_INTERNAL_CALL(void) EditorInternal_SetOptions(ManagedEditor::InternalOptions* options)
+{
+    ManagedEditor::ManagedEditorOptions = *options;
 
-    static void DrawNavMesh()
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_DrawNavMesh")
-        Navigation::DrawNavMesh();
-    }
+    // Apply options
+    AssetsImportingManager::UseImportPathRelative = ManagedEditor::ManagedEditorOptions.UseAssetImportPathRelative != 0;
+}
 
-    static bool GetIsEveryAssemblyLoaded()
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetIsEveryAssemblyLoaded")
-        return Scripting::IsEveryAssemblyLoaded();
-    }
+DEFINE_INTERNAL_CALL(void) EditorInternal_DrawNavMesh()
+{
+    Navigation::DrawNavMesh();
+}
 
-    static int32 GetLastProjectOpenedEngineBuild()
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetLastProjectOpenedEngineBuild")
-        return Editor::LastProjectOpenedEngineBuild;
-    }
+DEFINE_INTERNAL_CALL(bool) EditorInternal_GetIsEveryAssemblyLoaded()
+{
+    return Scripting::IsEveryAssemblyLoaded();
+}
 
-    static bool GetIsCSGActive()
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetIsCSGActive")
+DEFINE_INTERNAL_CALL(int32) EditorInternal_GetLastProjectOpenedEngineBuild()
+{
+    return Editor::LastProjectOpenedEngineBuild;
+}
+
+DEFINE_INTERNAL_CALL(bool) EditorInternal_GetIsCSGActive()
+{
 #if COMPILE_WITH_CSG_BUILDER
-        return CSG::Builder::IsActive();
+    return CSG::Builder::IsActive();
 #else
-        return false;
+    return false;
 #endif
-    }
+}
 
-    static void RunVisualScriptBreakpointLoopTick(float deltaTime)
+DEFINE_INTERNAL_CALL(void) EditorInternal_RunVisualScriptBreakpointLoopTick(float deltaTime)
+{
+    // Update
+    Platform::Tick();
+    Engine::HasFocus = (Engine::MainWindow && Engine::MainWindow->IsFocused()) || Platform::GetHasFocus();
+    if (Engine::HasFocus)
     {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_RunVisualScriptBreakpointLoopTick")
-        // Update
-        Platform::Tick();
-        Engine::HasFocus = (Engine::MainWindow && Engine::MainWindow->IsFocused()) || Platform::GetHasFocus();
-        if (Engine::HasFocus)
+        InputDevice::EventQueue inputEvents;
+        if (Input::Mouse)
         {
-            InputDevice::EventQueue inputEvents;
-            if (Input::Mouse)
+            if (Input::Mouse->Update(inputEvents))
             {
-                if (Input::Mouse->Update(inputEvents))
-                {
-                    Input::Mouse->DeleteObject();
-                    Input::Mouse = nullptr;
-                }
+                Input::Mouse->DeleteObject();
+                Input::Mouse = nullptr;
             }
-            if (Input::Keyboard)
+        }
+        if (Input::Keyboard)
+        {
+            if (Input::Keyboard->Update(inputEvents))
             {
-                if (Input::Keyboard->Update(inputEvents))
-                {
-                    Input::Keyboard->DeleteObject();
-                    Input::Keyboard = nullptr;
-                }
+                Input::Keyboard->DeleteObject();
+                Input::Keyboard = nullptr;
             }
-            WindowsManager::WindowsLocker.Lock();
-            Window* defaultWindow = nullptr;
-            for (auto window : WindowsManager::Windows)
-            {
-                if (window->IsFocused() && window->GetSettings().AllowInput)
-                {
-                    defaultWindow = window;
-                    break;
-                }
-            }
-            for (const auto& e : inputEvents)
-            {
-                auto window = e.Target ? e.Target : defaultWindow;
-                if (!window)
-                    continue;
-                switch (e.Type)
-                {
-                // Keyboard events
-                case InputDevice::EventType::Char:
-                    window->OnCharInput(e.CharData.Char);
-                    break;
-                case InputDevice::EventType::KeyDown:
-                    window->OnKeyDown(e.KeyData.Key);
-                    break;
-                case InputDevice::EventType::KeyUp:
-                    window->OnKeyUp(e.KeyData.Key);
-                    break;
-                // Mouse events
-                case InputDevice::EventType::MouseDown:
-                    window->OnMouseDown(window->ScreenToClient(e.MouseData.Position), e.MouseData.Button);
-                    break;
-                case InputDevice::EventType::MouseUp:
-                    window->OnMouseUp(window->ScreenToClient(e.MouseData.Position), e.MouseData.Button);
-                    break;
-                case InputDevice::EventType::MouseDoubleClick:
-                    window->OnMouseDoubleClick(window->ScreenToClient(e.MouseData.Position), e.MouseData.Button);
-                    break;
-                case InputDevice::EventType::MouseWheel:
-                    window->OnMouseWheel(window->ScreenToClient(e.MouseWheelData.Position), e.MouseWheelData.WheelDelta);
-                    break;
-                case InputDevice::EventType::MouseMove:
-                    window->OnMouseMove(window->ScreenToClient(e.MouseData.Position));
-                    break;
-                case InputDevice::EventType::MouseLeave:
-                    window->OnMouseLeave();
-                    break;
-                }
-            }
-            WindowsManager::WindowsLocker.Unlock();
         }
         WindowsManager::WindowsLocker.Lock();
-        for (auto& win : WindowsManager::Windows)
+        Window* defaultWindow = nullptr;
+        for (auto window : WindowsManager::Windows)
         {
-            if (win->IsVisible())
-                win->OnUpdate(deltaTime);
+            if (window->IsFocused() && window->GetSettings().AllowInput)
+            {
+                defaultWindow = window;
+                break;
+            }
+        }
+        for (const auto& e : inputEvents)
+        {
+            auto window = e.Target ? e.Target : defaultWindow;
+            if (!window)
+                continue;
+            switch (e.Type)
+            {
+            // Keyboard events
+            case InputDevice::EventType::Char:
+                window->OnCharInput(e.CharData.Char);
+                break;
+            case InputDevice::EventType::KeyDown:
+                window->OnKeyDown(e.KeyData.Key);
+                break;
+            case InputDevice::EventType::KeyUp:
+                window->OnKeyUp(e.KeyData.Key);
+                break;
+            // Mouse events
+            case InputDevice::EventType::MouseDown:
+                window->OnMouseDown(window->ScreenToClient(e.MouseData.Position), e.MouseData.Button);
+                break;
+            case InputDevice::EventType::MouseUp:
+                window->OnMouseUp(window->ScreenToClient(e.MouseData.Position), e.MouseData.Button);
+                break;
+            case InputDevice::EventType::MouseDoubleClick:
+                window->OnMouseDoubleClick(window->ScreenToClient(e.MouseData.Position), e.MouseData.Button);
+                break;
+            case InputDevice::EventType::MouseWheel:
+                window->OnMouseWheel(window->ScreenToClient(e.MouseWheelData.Position), e.MouseWheelData.WheelDelta);
+                break;
+            case InputDevice::EventType::MouseMove:
+                window->OnMouseMove(window->ScreenToClient(e.MouseData.Position));
+                break;
+            case InputDevice::EventType::MouseLeave:
+                window->OnMouseLeave();
+                break;
+            }
         }
         WindowsManager::WindowsLocker.Unlock();
-
-        // Draw
-        Engine::OnDraw();
     }
-
-    struct VisualScriptLocalManaged
+    WindowsManager::WindowsLocker.Lock();
+    for (auto& win : WindowsManager::Windows)
     {
-        MonoString* Value;
-        MonoString* ValueTypeName;
-        uint32 NodeId;
-        int32 BoxId;
-    };
-
-    static MonoArray* GetVisualScriptLocals(int* localsCount)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetVisualScriptLocals")
-        MonoArray* result = nullptr;
-        *localsCount = 0;
-        const auto stack = VisualScripting::GetThreadStackTop();
-        if (stack && stack->Scope)
-        {
-            const int32 count = stack->Scope->Parameters.Length() + stack->Scope->ReturnedValues.Count();
-            const auto mclass = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEditor.Editor+VisualScriptLocal");
-            ASSERT(mclass);
-            result = mono_array_new(mono_domain_get(), mclass->GetNative(), count);
-            VisualScriptLocalManaged local;
-            local.NodeId = MAX_uint32;
-            if (stack->Scope->Parameters.Length() != 0)
-            {
-                auto s = stack;
-                while (s->PreviousFrame && s->PreviousFrame->Scope == stack->Scope)
-                    s = s->PreviousFrame;
-                if (s)
-                    local.NodeId = s->Node->ID;
-            }
-            for (int32 i = 0; i < stack->Scope->Parameters.Length(); i++)
-            {
-                auto& v = stack->Scope->Parameters[i];
-                local.BoxId = i + 1;
-                local.Value = MUtils::ToString(v.ToString());
-                local.ValueTypeName = MUtils::ToString(v.Type.GetTypeName());
-                mono_array_set(result, VisualScriptLocalManaged, i, local);
-            }
-            for (int32 i = 0; i < stack->Scope->ReturnedValues.Count(); i++)
-            {
-                auto& v = stack->Scope->ReturnedValues[i];
-                local.NodeId = v.NodeId;
-                local.BoxId = v.BoxId;
-                local.Value = MUtils::ToString(v.Value.ToString());
-                local.ValueTypeName = MUtils::ToString(v.Value.Type.GetTypeName());
-                mono_array_set(result, VisualScriptLocalManaged, stack->Scope->Parameters.Length() + i, local);
-            }
-            *localsCount = count;
-        }
-        return result;
+        if (win->IsVisible())
+            win->OnUpdate(deltaTime);
     }
+    WindowsManager::WindowsLocker.Unlock();
 
-    struct VisualScriptStackFrameManaged
-    {
-        MonoObject* Script;
-        uint32 NodeId;
-        int32 BoxId;
-    };
+    // Draw
+    Engine::OnDraw();
+}
 
-    static MonoArray* GetVisualScriptStackFrames(int* stackFramesCount)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetVisualScriptStackFrames")
-        MonoArray* result = nullptr;
-        *stackFramesCount = 0;
-        const auto stack = VisualScripting::GetThreadStackTop();
-        if (stack)
-        {
-            int32 count = 0;
-            auto s = stack;
-            while (s)
-            {
-                s = s->PreviousFrame;
-                count++;
-            }
-            const auto mclass = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEditor.Editor+VisualScriptStackFrame");
-            ASSERT(mclass);
-            result = mono_array_new(mono_domain_get(), mclass->GetNative(), count);
-            s = stack;
-            count = 0;
-            while (s)
-            {
-                VisualScriptStackFrameManaged frame;
-                frame.Script = s->Script->GetOrCreateManagedInstance();
-                frame.NodeId = s->Node->ID;
-                frame.BoxId = s->Box ? s->Box->ID : MAX_uint32;
-                mono_array_set(result, VisualScriptStackFrameManaged, count, frame);
-                s = s->PreviousFrame;
-                count++;
-            }
-            *stackFramesCount = count;
-        }
-        return result;
-    }
+struct VisualScriptLocalManaged
+{
+    MonoString* Value;
+    MonoString* ValueTypeName;
+    uint32 NodeId;
+    int32 BoxId;
+};
 
-    static VisualScriptStackFrameManaged GetVisualScriptPreviousScopeFrame()
+DEFINE_INTERNAL_CALL(MonoArray*) EditorInternal_GetVisualScriptLocals(int* localsCount)
+{
+    MonoArray* result = nullptr;
+    *localsCount = 0;
+    const auto stack = VisualScripting::GetThreadStackTop();
+    if (stack && stack->Scope)
     {
-        VisualScriptStackFrameManaged frame;
-        Platform::MemoryClear(&frame, sizeof(frame));
-        const auto stack = VisualScripting::GetThreadStackTop();
-        if (stack)
+        const int32 count = stack->Scope->Parameters.Length() + stack->Scope->ReturnedValues.Count();
+        const auto mclass = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEditor.Editor+VisualScriptLocal");
+        ASSERT(mclass);
+        result = mono_array_new(mono_domain_get(), mclass->GetNative(), count);
+        VisualScriptLocalManaged local;
+        local.NodeId = MAX_uint32;
+        if (stack->Scope->Parameters.Length() != 0)
         {
             auto s = stack;
             while (s->PreviousFrame && s->PreviousFrame->Scope == stack->Scope)
                 s = s->PreviousFrame;
-            if (s && s->PreviousFrame)
-            {
-                s = s->PreviousFrame;
-                frame.Script = s->Script->GetOrCreateManagedInstance();
-                frame.NodeId = s->Node->ID;
-                frame.BoxId = s->Box ? s->Box->ID : MAX_uint32;
-            }
+            if (s)
+                local.NodeId = s->Node->ID;
         }
-        return frame;
+        for (int32 i = 0; i < stack->Scope->Parameters.Length(); i++)
+        {
+            auto& v = stack->Scope->Parameters[i];
+            local.BoxId = i + 1;
+            local.Value = MUtils::ToString(v.ToString());
+            local.ValueTypeName = MUtils::ToString(v.Type.GetTypeName());
+            mono_array_set(result, VisualScriptLocalManaged, i, local);
+        }
+        for (int32 i = 0; i < stack->Scope->ReturnedValues.Count(); i++)
+        {
+            auto& v = stack->Scope->ReturnedValues[i];
+            local.NodeId = v.NodeId;
+            local.BoxId = v.BoxId;
+            local.Value = MUtils::ToString(v.Value.ToString());
+            local.ValueTypeName = MUtils::ToString(v.Value.Type.GetTypeName());
+            mono_array_set(result, VisualScriptLocalManaged, stack->Scope->Parameters.Length() + i, local);
+        }
+        *localsCount = count;
+    }
+    return result;
+}
+
+struct VisualScriptStackFrameManaged
+{
+    MonoObject* Script;
+    uint32 NodeId;
+    int32 BoxId;
+};
+
+DEFINE_INTERNAL_CALL(MonoArray*) EditorInternal_GetVisualScriptStackFrames(int* stackFramesCount)
+{
+    MonoArray* result = nullptr;
+    *stackFramesCount = 0;
+    const auto stack = VisualScripting::GetThreadStackTop();
+    if (stack)
+    {
+        int32 count = 0;
+        auto s = stack;
+        while (s)
+        {
+            s = s->PreviousFrame;
+            count++;
+        }
+        const auto mclass = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEditor.Editor+VisualScriptStackFrame");
+        ASSERT(mclass);
+        result = mono_array_new(mono_domain_get(), mclass->GetNative(), count);
+        s = stack;
+        count = 0;
+        while (s)
+        {
+            VisualScriptStackFrameManaged frame;
+            frame.Script = s->Script->GetOrCreateManagedInstance();
+            frame.NodeId = s->Node->ID;
+            frame.BoxId = s->Box ? s->Box->ID : MAX_uint32;
+            mono_array_set(result, VisualScriptStackFrameManaged, count, frame);
+            s = s->PreviousFrame;
+            count++;
+        }
+        *stackFramesCount = count;
+    }
+    return result;
+}
+
+DEFINE_INTERNAL_CALL(VisualScriptStackFrameManaged) EditorInternal_GetVisualScriptPreviousScopeFrame()
+{
+    VisualScriptStackFrameManaged frame;
+    Platform::MemoryClear(&frame, sizeof(frame));
+    const auto stack = VisualScripting::GetThreadStackTop();
+    if (stack)
+    {
+        auto s = stack;
+        while (s->PreviousFrame && s->PreviousFrame->Scope == stack->Scope)
+            s = s->PreviousFrame;
+        if (s && s->PreviousFrame)
+        {
+            s = s->PreviousFrame;
+            frame.Script = s->Script->GetOrCreateManagedInstance();
+            frame.NodeId = s->Node->ID;
+            frame.BoxId = s->Box ? s->Box->ID : MAX_uint32;
+        }
+    }
+    return frame;
+}
+
+DEFINE_INTERNAL_CALL(bool) EditorInternal_EvaluateVisualScriptLocal(VisualScript* script, VisualScriptLocalManaged* local)
+{
+    Variant v;
+    if (VisualScripting::Evaluate(script, VisualScripting::GetThreadStackTop()->Instance, local->NodeId, local->BoxId, v))
+    {
+        local->Value = MUtils::ToString(v.ToString());
+        local->ValueTypeName = MUtils::ToString(v.Type.GetTypeName());
+        return true;
+    }
+    return false;
+}
+
+DEFINE_INTERNAL_CALL(void) EditorInternal_DeserializeSceneObject(SceneObject* sceneObject, MonoString* jsonObj)
+{
+    PROFILE_CPU_NAMED("DeserializeSceneObject");
+
+    StringAnsi json;
+    MUtils::ToString(jsonObj, json);
+
+    rapidjson_flax::Document document;
+    {
+        PROFILE_CPU_NAMED("Json.Parse");
+        document.Parse(json.Get(), json.Length());
+    }
+    if (document.HasParseError())
+    {
+        Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
+        DebugLog::ThrowException("Failed to parse Json.");
     }
 
-    static bool EvaluateVisualScriptLocal(VisualScript* script, VisualScriptLocalManaged* local)
+    auto modifier = Cache::ISerializeModifier.Get();
+    modifier->EngineBuild = FLAXENGINE_VERSION_BUILD;
+    Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
+
     {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_EvaluateVisualScriptLocal")
-        Variant v;
-        if (VisualScripting::Evaluate(script, VisualScripting::GetThreadStackTop()->Instance, local->NodeId, local->BoxId, v))
-        {
-            local->Value = MUtils::ToString(v.ToString());
-            local->ValueTypeName = MUtils::ToString(v.Type.GetTypeName());
-            return true;
-        }
+        PROFILE_CPU_NAMED("Deserialize");
+        sceneObject->Deserialize(document, modifier.Value);
+    }
+}
+
+DEFINE_INTERNAL_CALL(void) EditorInternal_LoadAsset(Guid* id)
+{
+    Content::LoadAsync<Asset>(*id);
+}
+
+DEFINE_INTERNAL_CALL(bool) EditorInternal_CanSetToRoot(Prefab* prefab, Actor* targetActor)
+{
+    // Reference: Prefab::ApplyAll(Actor* targetActor)
+    if (targetActor->GetPrefabID() != prefab->GetID())
         return false;
-    }
-
-    static void DeserializeSceneObject(SceneObject* sceneObject, MonoString* jsonObj)
+    if (targetActor->GetPrefabObjectID() != prefab->GetRootObjectId())
     {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_DeserializeSceneObject")
-        PROFILE_CPU_NAMED("DeserializeSceneObject");
-
-        StringAnsi json;
-        MUtils::ToString(jsonObj, json);
-
-        rapidjson_flax::Document document;
-        {
-            PROFILE_CPU_NAMED("Json.Parse");
-            document.Parse(json.Get(), json.Length());
-        }
-        if (document.HasParseError())
-        {
-            Log::JsonParseException(document.GetParseError(), document.GetErrorOffset());
-            DebugLog::ThrowException("Failed to parse Json.");
-        }
-
-        auto modifier = Cache::ISerializeModifier.Get();
-        modifier->EngineBuild = FLAXENGINE_VERSION_BUILD;
-        Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
-
-        {
-            PROFILE_CPU_NAMED("Deserialize");
-            sceneObject->Deserialize(document, modifier.Value);
-        }
-    }
-
-    static void LoadAsset(Guid* id)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_LoadAsset")
-        Content::LoadAsync<Asset>(*id);
-    }
-
-    static bool CanSetToRoot(Prefab* prefab, Actor* targetActor)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_CanSetToRoot")
-        // Reference: Prefab::ApplyAll(Actor* targetActor)
-        if (targetActor->GetPrefabID() != prefab->GetID())
+        const ISerializable::DeserializeStream** newRootDataPtr = prefab->ObjectsDataCache.TryGet(targetActor->GetPrefabObjectID());
+        if (!newRootDataPtr || !*newRootDataPtr)
             return false;
-        if (targetActor->GetPrefabObjectID() != prefab->GetRootObjectId())
+        const ISerializable::DeserializeStream& newRootData = **newRootDataPtr;
+        Guid prefabId, prefabObjectID;
+        if (JsonTools::GetGuidIfValid(prefabId, newRootData, "PrefabID") && JsonTools::GetGuidIfValid(prefabObjectID, newRootData, "PrefabObjectID"))
         {
-            const ISerializable::DeserializeStream** newRootDataPtr = prefab->ObjectsDataCache.TryGet(targetActor->GetPrefabObjectID());
-            if (!newRootDataPtr || !*newRootDataPtr)
+            const auto nestedPrefab = Content::Load<Prefab>(prefabId);
+            if (nestedPrefab && nestedPrefab->GetRootObjectId() != prefabObjectID)
                 return false;
-            const ISerializable::DeserializeStream& newRootData = **newRootDataPtr;
-            Guid prefabId, prefabObjectID;
-            if (JsonTools::GetGuidIfValid(prefabId, newRootData, "PrefabID") && JsonTools::GetGuidIfValid(prefabObjectID, newRootData, "PrefabObjectID"))
-            {
-                const auto nestedPrefab = Content::Load<Prefab>(prefabId);
-                if (nestedPrefab && nestedPrefab->GetRootObjectId() != prefabObjectID)
-                    return false;
-            }
         }
+    }
+    return true;
+}
+
+DEFINE_INTERNAL_CALL(float) EditorInternal_GetAnimationTime(AnimatedModel* animatedModel)
+{
+    return animatedModel && animatedModel->GraphInstance.State.Count() == 1 ? animatedModel->GraphInstance.State[0].Animation.TimePosition : 0.0f;
+}
+
+DEFINE_INTERNAL_CALL(void) EditorInternal_SetAnimationTime(AnimatedModel* animatedModel, float time)
+{
+    if (animatedModel && animatedModel->GraphInstance.State.Count() == 1)
+        animatedModel->GraphInstance.State[0].Animation.TimePosition = time;
+}
+
+DEFINE_INTERNAL_CALL(MonoReflectionType*) CustomEditorsUtilInternal_GetCustomEditor(MonoReflectionType* targetType)
+{
+    return CustomEditorsUtil::GetCustomEditor(targetType);
+}
+
+DEFINE_INTERNAL_CALL(bool) TextureImportEntryInternal_GetTextureImportOptions(MonoString* pathObj, InternalTextureOptions* result)
+{
+    String path;
+    MUtils::ToString(pathObj, path);
+    FileSystem::NormalizePath(path);
+    ImportTexture::Options options;
+    if (ImportTexture::TryGetImportOptions(path, options))
+    {
+        // Convert into managed storage
+        InternalTextureOptions::Convert(&options, result);
+        return true;
+    }
+    return false;
+}
+
+DEFINE_INTERNAL_CALL(void) ModelImportEntryInternal_GetModelImportOptions(MonoString* pathObj, InternalModelOptions* result)
+{
+    // Initialize defaults   
+    ImportModelFile::Options options;
+    if (const auto* graphicsSettings = GraphicsSettings::Get())
+    {
+        options.GenerateSDF = graphicsSettings->GenerateSDFOnModelImport;
+    }
+
+    // Get options from model
+    String path;
+    MUtils::ToString(pathObj, path);
+    FileSystem::NormalizePath(path);
+    ImportModelFile::TryGetImportOptions(path, options);
+
+    // Convert into managed storage
+    InternalModelOptions::Convert(&options, result);
+}
+
+DEFINE_INTERNAL_CALL(bool) AudioImportEntryInternal_GetAudioImportOptions(MonoString* pathObj, InternalAudioOptions* result)
+{
+    String path;
+    MUtils::ToString(pathObj, path);
+    FileSystem::NormalizePath(path);
+
+    ImportAudio::Options options;
+    if (ImportAudio::TryGetImportOptions(path, options))
+    {
+        // Convert into managed storage
+        InternalAudioOptions::Convert(&options, result);
+
         return true;
     }
 
-    static float GetAnimationTime(AnimatedModel* animatedModel)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_GetAnimationTime")
-        return animatedModel && animatedModel->GraphInstance.State.Count() == 1 ? animatedModel->GraphInstance.State[0].Animation.TimePosition : 0.0f;
-    }
+    return false;
+}
 
-    static void SetAnimationTime(AnimatedModel* animatedModel, float time)
-    {
-        SCRIPTING_EXPORT("FlaxEditor.Editor::Internal_SetAnimationTime")
-        if (animatedModel && animatedModel->GraphInstance.State.Count() == 1)
-            animatedModel->GraphInstance.State[0].Animation.TimePosition = time;
-    }
+DEFINE_INTERNAL_CALL(MonoArray*) LayersAndTagsSettingsInternal_GetCurrentLayers(int* layersCount)
+{
+    *layersCount = Math::Max(1, Level::GetNonEmptyLayerNamesCount());
+    return MUtils::ToArray(Span<String>(Level::Layers, *layersCount));
+}
 
+DEFINE_INTERNAL_CALL(void) GameSettingsInternal_Apply()
+{
+    LOG(Info, "Apply game settings");
+    GameSettings::Load();
+}
+
+class ManagedEditorInternal
+{
+public:
     static void InitRuntime()
     {
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::IsDevInstance", &IsDevInstance);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::IsOfficialBuild", &IsOfficialBuild);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_IsPlayMode", &IsPlayMode);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_ReadOutputLogs", &ReadOutputLogs);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_SetPlayMode", &SetPlayMode);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetProjectPath", &GetProjectPath);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_Import", &Import);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_ImportTexture", &ImportTexture);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_ImportModel", &ImportModel);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_ImportAudio", &ImportAudio);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetAudioClipMetadata", &GetAudioClipMetadata);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_SaveJsonAsset", &SaveJsonAsset);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CopyCache", &CopyCache);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CloneAssetFile", &CloneAssetFile);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_BakeLightmaps", &BakeLightmaps);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetShaderAssetSourceCode", &GetShaderAssetSourceCode);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CookMeshCollision", &CookMeshCollision);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetCollisionWires", &GetCollisionWires);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetEditorBoxWithChildren", &GetEditorBoxWithChildren);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_SetOptions", &SetOptions);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_DrawNavMesh", &DrawNavMesh);
-        ADD_INTERNAL_CALL("FlaxEditor.CustomEditors.CustomEditorsUtil::Internal_GetCustomEditor", &CustomEditorsUtilInternal::GetCustomEditor);
-        ADD_INTERNAL_CALL("FlaxEditor.Content.Import.TextureImportEntry::Internal_GetTextureImportOptions", &GetTextureImportOptions);
-        ADD_INTERNAL_CALL("FlaxEditor.Content.Import.ModelImportEntry::Internal_GetModelImportOptions", &GetModelImportOptions);
-        ADD_INTERNAL_CALL("FlaxEditor.Content.Import.AudioImportEntry::Internal_GetAudioImportOptions", &GetAudioImportOptions);
-        ADD_INTERNAL_CALL("FlaxEditor.Content.Settings.LayersAndTagsSettings::GetCurrentLayers", &LayersAndTagsSettingsInternal::GetCurrentLayers);
-        ADD_INTERNAL_CALL("FlaxEditor.Content.Settings.GameSettings::Apply", &GameSettingsInternal1::Apply);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CloseSplashScreen", &CloseSplashScreen);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CreateAsset", &CreateAsset);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CreateVisualScript", &CreateVisualScript);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CanImport", &CanImport);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CanExport", &CanExport);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_Export", &Export);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetIsEveryAssemblyLoaded", &GetIsEveryAssemblyLoaded);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetLastProjectOpenedEngineBuild", &GetLastProjectOpenedEngineBuild);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetIsCSGActive", &GetIsCSGActive);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_RunVisualScriptBreakpointLoopTick", &RunVisualScriptBreakpointLoopTick);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetVisualScriptLocals", &GetVisualScriptLocals);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetVisualScriptStackFrames", &GetVisualScriptStackFrames);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetVisualScriptPreviousScopeFrame", &GetVisualScriptPreviousScopeFrame);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_EvaluateVisualScriptLocal", &EvaluateVisualScriptLocal);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_DeserializeSceneObject", &DeserializeSceneObject);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_LoadAsset", &LoadAsset);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CanSetToRoot", &CanSetToRoot);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetAnimationTime", &GetAnimationTime);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_SetAnimationTime", &SetAnimationTime);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::IsDevInstance", &EditorInternal_IsDevInstance);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::IsOfficialBuild", &EditorInternal_IsOfficialBuild);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_IsPlayMode", &EditorInternal_IsPlayMode);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_ReadOutputLogs", &EditorInternal_ReadOutputLogs);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_SetPlayMode", &EditorInternal_SetPlayMode);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetProjectPath", &EditorInternal_GetProjectPath);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_Import", &EditorInternal_Import);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_ImportTexture", &EditorInternal_ImportTexture);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_ImportModel", &EditorInternal_ImportModel);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_ImportAudio", &EditorInternal_ImportAudio);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetAudioClipMetadata", &EditorInternal_GetAudioClipMetadata);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_SaveJsonAsset", &EditorInternal_SaveJsonAsset);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CopyCache", &EditorInternal_CopyCache);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CloneAssetFile", &EditorInternal_CloneAssetFile);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_BakeLightmaps", &EditorInternal_BakeLightmaps);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetShaderAssetSourceCode", &EditorInternal_GetShaderAssetSourceCode);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CookMeshCollision", &EditorInternal_CookMeshCollision);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetCollisionWires", &EditorInternal_GetCollisionWires);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetEditorBoxWithChildren", &EditorInternal_GetEditorBoxWithChildren);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_SetOptions", &EditorInternal_SetOptions);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_DrawNavMesh", &EditorInternal_DrawNavMesh);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CloseSplashScreen", &EditorInternal_CloseSplashScreen);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CreateAsset", &EditorInternal_CreateAsset);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CreateVisualScript", &EditorInternal_CreateVisualScript);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CanImport", &EditorInternal_CanImport);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CanExport", &EditorInternal_CanExport);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_Export", &EditorInternal_Export);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetIsEveryAssemblyLoaded", &EditorInternal_GetIsEveryAssemblyLoaded);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetLastProjectOpenedEngineBuild", &EditorInternal_GetLastProjectOpenedEngineBuild);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetIsCSGActive", &EditorInternal_GetIsCSGActive);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_RunVisualScriptBreakpointLoopTick", &EditorInternal_RunVisualScriptBreakpointLoopTick);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetVisualScriptLocals", &EditorInternal_GetVisualScriptLocals);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetVisualScriptStackFrames", &EditorInternal_GetVisualScriptStackFrames);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetVisualScriptPreviousScopeFrame", &EditorInternal_GetVisualScriptPreviousScopeFrame);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_EvaluateVisualScriptLocal", &EditorInternal_EvaluateVisualScriptLocal);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_DeserializeSceneObject", &EditorInternal_DeserializeSceneObject);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_LoadAsset", &EditorInternal_LoadAsset);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CanSetToRoot", &EditorInternal_CanSetToRoot);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetAnimationTime", &EditorInternal_GetAnimationTime);
+        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_SetAnimationTime", &EditorInternal_SetAnimationTime);
+        ADD_INTERNAL_CALL("FlaxEditor.CustomEditors.CustomEditorsUtil::Internal_GetCustomEditor", &CustomEditorsUtilInternal_GetCustomEditor);
+        ADD_INTERNAL_CALL("FlaxEditor.Content.Import.TextureImportEntry::Internal_GetTextureImportOptions", &TextureImportEntryInternal_GetTextureImportOptions);
+        ADD_INTERNAL_CALL("FlaxEditor.Content.Import.ModelImportEntry::Internal_GetModelImportOptions", &ModelImportEntryInternal_GetModelImportOptions);
+        ADD_INTERNAL_CALL("FlaxEditor.Content.Import.AudioImportEntry::Internal_GetAudioImportOptions", &AudioImportEntryInternal_GetAudioImportOptions);
+        ADD_INTERNAL_CALL("FlaxEditor.Content.Settings.LayersAndTagsSettings::GetCurrentLayers", &LayersAndTagsSettingsInternal_GetCurrentLayers);
+        ADD_INTERNAL_CALL("FlaxEditor.Content.Settings.GameSettings::Apply", &GameSettingsInternal_Apply);
     }
 };
 

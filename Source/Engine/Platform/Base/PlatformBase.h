@@ -175,7 +175,6 @@ public:
     /// <param name="size">Size of the memory to copy in bytes</param>
     FORCE_INLINE static void MemoryCopy(void* dst, const void* src, uint64 size)
     {
-        SCRIPTING_EXPORT("FlaxEngine.Utils::MemoryCopy")
         memcpy(dst, src, static_cast<size_t>(size));
     }
 
@@ -197,7 +196,6 @@ public:
     /// <param name="size">Size of the memory to clear in bytes</param>
     FORCE_INLINE static void MemoryClear(void* dst, uint64 size)
     {
-        SCRIPTING_EXPORT("FlaxEngine.Utils::MemoryClear")
         memset(dst, 0, static_cast<size_t>(size));
     }
 
@@ -209,7 +207,6 @@ public:
     /// <param name="size">Size of the memory to compare in bytes.</param>
     FORCE_INLINE static int32 MemoryCompare(const void* buf1, const void* buf2, uint64 size)
     {
-        SCRIPTING_EXPORT("FlaxEngine.Utils::MemoryCompare")
         return memcmp(buf1, buf2, static_cast<size_t>(size));
     }
 

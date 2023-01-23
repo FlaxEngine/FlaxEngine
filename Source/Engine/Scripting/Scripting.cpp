@@ -201,35 +201,30 @@ bool ScriptingService::Init()
 void ScriptingService::Update()
 {
     PROFILE_CPU_NAMED("Scripting::Update");
-
     INVOKE_EVENT(Update);
 }
 
 void ScriptingService::LateUpdate()
 {
     PROFILE_CPU_NAMED("Scripting::LateUpdate");
-
     INVOKE_EVENT(LateUpdate);
 }
 
 void ScriptingService::FixedUpdate()
 {
     PROFILE_CPU_NAMED("Scripting::FixedUpdate");
-
     INVOKE_EVENT(FixedUpdate);
 }
 
 void ScriptingService::Draw()
 {
     PROFILE_CPU_NAMED("Scripting::Draw");
-
     INVOKE_EVENT(Draw);
 }
 
 void ScriptingService::BeforeExit()
 {
     PROFILE_CPU_NAMED("Scripting::BeforeExit");
-
     INVOKE_EVENT(Exit);
 }
 
@@ -927,7 +922,6 @@ ScriptingObject* Scripting::FindObject(const MObject* managedInstance)
 
 void Scripting::OnManagedInstanceDeleted(ScriptingObject* obj)
 {
-    SCRIPTING_EXPORT("FlaxEngine.Object::Internal_ManagedInstanceDeleted")
     PROFILE_CPU();
     ASSERT(obj);
 

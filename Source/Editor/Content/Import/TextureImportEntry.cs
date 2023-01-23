@@ -591,7 +591,7 @@ namespace FlaxEditor.Content.Import
 
         #region Internal Calls
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Content.Import.TextureImportEntry::Internal_GetTextureImportOptions", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "TextureImportEntryInternal_GetTextureImportOptions", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_GetTextureImportOptions(string path, out TextureImportSettings.InternalOptions result);
 

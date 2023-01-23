@@ -65,18 +65,18 @@ namespace FlaxEditor
         /// <summary>
         /// Gets a value indicating whether this Editor is running a dev instance of the engine.
         /// </summary>
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::IsDevInstance", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_IsDevInstance", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool IsDevInstance();
 
         /// <summary>
         /// Gets a value indicating whether this Editor is running as official build (distributed via Flax services).
         /// </summary>
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::IsOfficialBuild", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_IsOfficialBuild", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool IsOfficialBuild();
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_IsPlayMode", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_IsPlayMode", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_IsPlayMode();
 
@@ -1534,132 +1534,132 @@ namespace FlaxEditor
             Instance.StateMachine.StateChanged += RequestStartPlayOnEditMode;
         }
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_ReadOutputLogs", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_ReadOutputLogs", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial int Internal_ReadOutputLogs([MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = "outCapacity")] ref string[] outMessages, [MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = "outCapacity")] ref byte[] outLogTypes, [MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = "outCapacity")] ref long[] outLogTimes, int outCapacity);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_SetPlayMode", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_SetPlayMode", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial void Internal_SetPlayMode([MarshalAs(UnmanagedType.U1)] bool value);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_GetProjectPath", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetProjectPath", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial string Internal_GetProjectPath();
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_CloneAssetFile", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CloneAssetFile", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_CloneAssetFile(string dstPath, string srcPath, ref Guid dstId);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_Import", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_Import", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_Import(string inputPath, string outputPath, IntPtr arg);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_ImportTexture", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_ImportTexture", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_ImportTexture(string inputPath, string outputPath, ref TextureImportSettings.InternalOptions options);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_ImportModel", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_ImportModel", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_ImportModel(string inputPath, string outputPath, ref ModelImportSettings.InternalOptions options);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_ImportAudio", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_ImportAudio", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_ImportAudio(string inputPath, string outputPath, ref AudioImportSettings.InternalOptions options);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_GetAudioClipMetadata", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetAudioClipMetadata", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial void Internal_GetAudioClipMetadata(IntPtr obj, out int originalSize, out int importedSize);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_SaveJsonAsset", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_SaveJsonAsset", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_SaveJsonAsset(string outputPath, string data, string typename);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_CopyCache", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CopyCache", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial void Internal_CopyCache(ref Guid dstId, ref Guid srcId);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_BakeLightmaps", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_BakeLightmaps", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial void Internal_BakeLightmaps([MarshalAs(UnmanagedType.U1)] bool cancel);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_GetShaderAssetSourceCode", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetShaderAssetSourceCode", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial string Internal_GetShaderAssetSourceCode(IntPtr obj);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_CookMeshCollision", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CookMeshCollision", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_CookMeshCollision(string path, CollisionDataType type, IntPtr model, int modelLodIndex, uint materialSlotsMask, ConvexMeshGenerationFlags convexFlags, int convexVertexLimit);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_GetCollisionWires", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetCollisionWires", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial void Internal_GetCollisionWires(IntPtr collisionData, [MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = "trianglesCount")] out Float3[] triangles, [MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = "indicesCount")] out int[] indices, out int trianglesCount, out int indicesCount);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_GetEditorBoxWithChildren", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetEditorBoxWithChildren", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial void Internal_GetEditorBoxWithChildren(IntPtr obj, out BoundingBox resultAsRef);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_SetOptions", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_SetOptions", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial void Internal_SetOptions(ref InternalOptions options);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_DrawNavMesh", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_DrawNavMesh", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial void Internal_DrawNavMesh();
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_CloseSplashScreen", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CloseSplashScreen", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial void Internal_CloseSplashScreen();
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_CreateAsset", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CreateAsset", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_CreateAsset(NewAssetType type, string outputPath);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_CreateVisualScript", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CreateVisualScript", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_CreateVisualScript(string outputPath, string baseTypename);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_CanImport", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CanImport", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial string Internal_CanImport(string extension);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_CanExport", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CanExport", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_CanExport(string path);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_Export", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_Export", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_Export(string inputPath, string outputFolder);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_GetIsEveryAssemblyLoaded", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetIsEveryAssemblyLoaded", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_GetIsEveryAssemblyLoaded();
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_GetLastProjectOpenedEngineBuild", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetLastProjectOpenedEngineBuild", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial int Internal_GetLastProjectOpenedEngineBuild();
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_GetIsCSGActive", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetIsCSGActive", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_GetIsCSGActive();
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_RunVisualScriptBreakpointLoopTick", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_RunVisualScriptBreakpointLoopTick", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial void Internal_RunVisualScriptBreakpointLoopTick(float deltaTime);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_GetVisualScriptLocals", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetVisualScriptLocals", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = "localsCount")]
         internal static partial VisualScriptLocal[] Internal_GetVisualScriptLocals(out int localsCount);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_GetVisualScriptStackFrames", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetVisualScriptStackFrames", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = "stackFrameCount")]
         internal static partial VisualScriptStackFrame[] Internal_GetVisualScriptStackFrames(out int stackFrameCount);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_GetVisualScriptPreviousScopeFrame", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetVisualScriptPreviousScopeFrame", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial VisualScriptStackFrame Internal_GetVisualScriptPreviousScopeFrame();
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_EvaluateVisualScriptLocal", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_EvaluateVisualScriptLocal", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_EvaluateVisualScriptLocal(IntPtr script, ref VisualScriptLocal local);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_DeserializeSceneObject", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_DeserializeSceneObject", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial void Internal_DeserializeSceneObject(IntPtr sceneObject, string json);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_LoadAsset", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_LoadAsset", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial void Internal_LoadAsset(ref Guid id);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_CanSetToRoot", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CanSetToRoot", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_CanSetToRoot(IntPtr prefab, IntPtr newRoot);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_GetAnimationTime", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetAnimationTime", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial float Internal_GetAnimationTime(IntPtr animatedModel);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.Editor::Internal_SetAnimationTime", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_SetAnimationTime", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         internal static partial void Internal_SetAnimationTime(IntPtr animatedModel, float time);
 
         #endregion

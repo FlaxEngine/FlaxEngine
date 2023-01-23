@@ -49,42 +49,36 @@ struct InternalImpulse
 
 static_assert(sizeof(InternalImpulse) == sizeof(AnimGraphImpulse), "Please update managed impulse type for Anim Graph to match the C++ backend data layout.");
 
-namespace AnimGraphInternal
+DEFINE_INTERNAL_CALL(bool) AnimGraphInternal_HasConnection(InternalContext* context, int32 boxId)
 {
-    bool HasConnection(InternalContext* context, int32 boxId)
-    {
-        SCRIPTING_EXPORT("FlaxEngine.AnimationGraph::Internal_HasConnection")
-        const auto box = context->Node->TryGetBox(boxId);
-        if (box == nullptr)
-            DebugLog::ThrowArgumentOutOfRange("boxId");
-        return box->HasConnection();
-    }
+    const auto box = context->Node->TryGetBox(boxId);
+    if (box == nullptr)
+        DebugLog::ThrowArgumentOutOfRange("boxId");
+    return box->HasConnection();
+}
 
-    MonoObject* GetInputValue(InternalContext* context, int32 boxId)
-    {
-        SCRIPTING_EXPORT("FlaxEngine.AnimationGraph::Internal_GetInputValue")
-        const auto box = context->Node->TryGetBox(boxId);
-        if (box == nullptr)
-            DebugLog::ThrowArgumentOutOfRange("boxId");
-        if (!box->HasConnection())
-            DebugLog::ThrowArgument("boxId", "This box has no connection. Use HasConnection to check if can get input value.");
+DEFINE_INTERNAL_CALL(MonoObject*) AnimGraphInternal_GetInputValue(InternalContext* context, int32 boxId)
+{
+    const auto box = context->Node->TryGetBox(boxId);
+    if (box == nullptr)
+        DebugLog::ThrowArgumentOutOfRange("boxId");
+    if (!box->HasConnection())
+        DebugLog::ThrowArgument("boxId", "This box has no connection. Use HasConnection to check if can get input value.");
 
-        Variant value = Variant::Null;
-        context->GraphExecutor->GetInputValue(box, value);
+    Variant value = Variant::Null;
+    context->GraphExecutor->GetInputValue(box, value);
 
-        // Cast value to prevent implicit value conversion issues and handling this on C# side
-        if (!(box->Type.Type == VariantType::Void && value.Type.Type == VariantType::Pointer))
-            value = Variant::Cast(value, box->Type);
-        return MUtils::BoxVariant(value);
-    }
+    // Cast value to prevent implicit value conversion issues and handling this on C# side
+    if (!(box->Type.Type == VariantType::Void && value.Type.Type == VariantType::Pointer))
+        value = Variant::Cast(value, box->Type);
+    return MUtils::BoxVariant(value);
+}
 
-    AnimGraphImpulse* GetOutputImpulseData(InternalContext* context)
-    {
-        SCRIPTING_EXPORT("FlaxEngine.AnimationGraph::Internal_GetOutputImpulseData")
-        const auto nodes = context->Node->GetNodes(context->GraphExecutor);
-        context->GraphExecutor->InitNodes(nodes);
-        return nodes;
-    }
+DEFINE_INTERNAL_CALL(AnimGraphImpulse*) AnimGraphInternal_GetOutputImpulseData(InternalContext* context)
+{
+    const auto nodes = context->Node->GetNodes(context->GraphExecutor);
+    context->GraphExecutor->InitNodes(nodes);
+    return nodes;
 }
 
 #endif
@@ -92,9 +86,9 @@ namespace AnimGraphInternal
 void AnimGraphExecutor::initRuntime()
 {
 #if USE_MONO
-    ADD_INTERNAL_CALL("FlaxEngine.AnimationGraph::Internal_HasConnection", &AnimGraphInternal::HasConnection);
-    ADD_INTERNAL_CALL("FlaxEngine.AnimationGraph::Internal_GetInputValue", &AnimGraphInternal::GetInputValue);
-    ADD_INTERNAL_CALL("FlaxEngine.AnimationGraph::Internal_GetOutputImpulseData", &AnimGraphInternal::GetOutputImpulseData);
+    ADD_INTERNAL_CALL("FlaxEngine.AnimationGraph::Internal_HasConnection", &AnimGraphInternal_HasConnection);
+    ADD_INTERNAL_CALL("FlaxEngine.AnimationGraph::Internal_GetInputValue", &AnimGraphInternal_GetInputValue);
+    ADD_INTERNAL_CALL("FlaxEngine.AnimationGraph::Internal_GetOutputImpulseData", &AnimGraphInternal_GetOutputImpulseData);
 #endif
 }
 

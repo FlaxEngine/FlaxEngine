@@ -36,7 +36,7 @@ namespace FlaxEngine
         /// <param name="source">The source location.</param>
         /// <param name="destination">The destination location.</param>
         /// <param name="length">The length (amount of bytes to copy).</param>
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Utils::MemoryCopy")]
+        [LibraryImport("FlaxEngine", EntryPoint = "PlatformInternal_MemoryCopy")]
         public static partial void MemoryCopy(IntPtr destination, IntPtr source, ulong length);
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace FlaxEngine
         /// <remarks>Uses low-level platform impl.</remarks>
         /// <param name="dst">Destination memory address</param>
         /// <param name="size">Size of the memory to clear in bytes</param>
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Utils::MemoryClear")]
+        [LibraryImport("FlaxEngine", EntryPoint = "PlatformInternal_MemoryClear")]
         public static partial void MemoryClear(IntPtr dst, ulong size);
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace FlaxEngine
         /// <param name="buf1">The first buffer address.</param>
         /// <param name="buf2">The second buffer address.</param>
         /// <param name="size">Size of the memory to compare in bytes.</param>
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Utils::MemoryCompare")]
+        [LibraryImport("FlaxEngine", EntryPoint = "PlatformInternal_MemoryCompare")]
         public static partial int MemoryCompare(IntPtr buf1, IntPtr buf2, ulong size);
 
         /// <summary>
@@ -355,7 +355,7 @@ namespace FlaxEngine
 
 #if USE_NETCORE
 #else
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEngine.Utils::Internal_ExtractArrayFromList")]
+        [LibraryImport("FlaxEngine", EntryPoint = "UtilsInternal_ExtractArrayFromList")]
         [return: MarshalUsing(typeof(FlaxEngine.SystemArrayMarshaller))]
         internal static partial Array Internal_ExtractArrayFromList([MarshalUsing(typeof(FlaxEngine.GCHandleMarshaller))] object list);
 #endif

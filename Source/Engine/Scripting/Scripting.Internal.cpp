@@ -20,7 +20,7 @@
 
 #if USE_MONO
 
-namespace ProfilerInternal
+namespace
 {
 #if COMPILE_WITH_PROFILER
     Array<int32, InlinedAllocation<32>> ManagedEventsGPU;
@@ -37,74 +37,86 @@ namespace ProfilerInternal
     ChunkedArray<Location, 256> ManagedSourceLocations;
 #endif
 #endif
+}
 
-    void BeginEvent(MonoString* nameObj)
-    {
-        SCRIPTING_EXPORT("FlaxEngine.Profiler::BeginEvent")
+DEFINE_INTERNAL_CALL(void) ProfilerInternal_BeginEvent(MonoString* nameObj)
+{
 #if COMPILE_WITH_PROFILER
-        const StringView name((const Char*)mono_string_chars(nameObj), mono_string_length(nameObj));
-        ProfilerCPU::BeginEvent(*name);
+    const StringView name((const Char*)mono_string_chars(nameObj), mono_string_length(nameObj));
+    ProfilerCPU::BeginEvent(*name);
 #if TRACY_ENABLE
 #if PROFILE_CPU_USE_TRANSIENT_DATA
-        tracy::ScopedZone::Begin(__LINE__, __FILE__, strlen( __FILE__ ), __FUNCTION__, strlen( __FUNCTION__ ), name.Get(), name.Length() );
+    tracy::ScopedZone::Begin(__LINE__, __FILE__, strlen( __FILE__ ), __FUNCTION__, strlen( __FUNCTION__ ), name.Get(), name.Length() );
 #else
-        ScopeLock lock(ManagedSourceLocationsLocker);
-        tracy::SourceLocationData* srcLoc = nullptr;
-        for (auto e = ManagedSourceLocations.Begin(); e.IsNotEnd(); ++e)
-        {
-            if (name == e->Name)
-            {
-                srcLoc = &e->SrcLocation;
-                break;
-            }
-        }
-        if (!srcLoc)
-        {
-            auto& e = ManagedSourceLocations.AddOne();
-            e.Name = name;
-            e.NameAnsi = name.Get();
-            srcLoc = &e.SrcLocation;
-            srcLoc->name = e.NameAnsi.Get();
-            srcLoc->function = nullptr;
-            srcLoc->file = nullptr;
-            srcLoc->line = 0;
-            srcLoc->color = 0;
-        }
-        //static constexpr tracy::SourceLocationData tracySrcLoc{ nullptr, __FUNCTION__, __FILE__, (uint32_t)__LINE__, 0 };
-        tracy::ScopedZone::Begin(srcLoc);
-#endif
-#endif
-#endif
-    }
-
-    void EndEvent()
+    ScopeLock lock(ManagedSourceLocationsLocker);
+    tracy::SourceLocationData* srcLoc = nullptr;
+    for (auto e = ManagedSourceLocations.Begin(); e.IsNotEnd(); ++e)
     {
-        SCRIPTING_EXPORT("FlaxEngine.Profiler::EndEvent")
+        if (name == e->Name)
+        {
+            srcLoc = &e->SrcLocation;
+            break;
+        }
+    }
+    if (!srcLoc)
+    {
+        auto& e = ManagedSourceLocations.AddOne();
+        e.Name = name;
+        e.NameAnsi = name.Get();
+        srcLoc = &e.SrcLocation;
+        srcLoc->name = e.NameAnsi.Get();
+        srcLoc->function = nullptr;
+        srcLoc->file = nullptr;
+        srcLoc->line = 0;
+        srcLoc->color = 0;
+    }
+    //static constexpr tracy::SourceLocationData tracySrcLoc{ nullptr, __FUNCTION__, __FILE__, (uint32_t)__LINE__, 0 };
+    tracy::ScopedZone::Begin(srcLoc);
+#endif
+#endif
+#endif
+}
+
+DEFINE_INTERNAL_CALL(void) ProfilerInternal_EndEvent()
+{
 #if COMPILE_WITH_PROFILER
 #if TRACY_ENABLE
-        tracy::ScopedZone::End();
+    tracy::ScopedZone::End();
 #endif
-        ProfilerCPU::EndEvent();
+    ProfilerCPU::EndEvent();
 #endif
-    }
+}
 
-    void BeginEventGPU(MonoString* nameObj)
-    {
-        SCRIPTING_EXPORT("FlaxEngine.Profiler::BeginEventGPU")
+DEFINE_INTERNAL_CALL(void) ProfilerInternal_BeginEventGPU(MonoString* nameObj)
+{
 #if COMPILE_WITH_PROFILER
-        const auto index = ProfilerGPU::BeginEvent((const Char*)mono_string_chars(nameObj));
-        ManagedEventsGPU.Push(index);
+    const auto index = ProfilerGPU::BeginEvent((const Char*)mono_string_chars(nameObj));
+    ManagedEventsGPU.Push(index);
 #endif
-    }
+}
 
-    void EndEventGPU()
-    {
-        SCRIPTING_EXPORT("FlaxEngine.Profiler::EndEventGPU")
+DEFINE_INTERNAL_CALL(void) ProfilerInternal_EndEventGPU()
+{
 #if COMPILE_WITH_PROFILER
-        const auto index = ManagedEventsGPU.Pop();
-        ProfilerGPU::EndEvent(index);
+    const auto index = ManagedEventsGPU.Pop();
+    ProfilerGPU::EndEvent(index);
 #endif
-    }
+}
+
+DEFINE_INTERNAL_CALL(bool) ScriptingInternal_HasGameModulesLoaded()
+{
+    return Scripting::HasGameModulesLoaded();
+}
+
+DEFINE_INTERNAL_CALL(bool) ScriptingInternal_IsTypeFromGameScripts(MonoReflectionType* type)
+{
+    return Scripting::IsTypeFromGameScripts(Scripting::FindClass(MUtils::GetClass(type)));
+}
+
+DEFINE_INTERNAL_CALL(void) ScriptingInternal_FlushRemovedObjects()
+{
+    ASSERT(IsInMainThread());
+    ObjectsRemovalService::Flush();
 }
 
 #endif
@@ -112,41 +124,18 @@ namespace ProfilerInternal
 class ScriptingInternal
 {
 public:
-#if USE_MONO
-    static bool HasGameModulesLoaded()
-    {
-        SCRIPTING_EXPORT("FlaxEngine.Scripting::HasGameModulesLoaded")
-        return Scripting::HasGameModulesLoaded();
-    }
-
-    static bool IsTypeFromGameScripts(MonoReflectionType* type)
-    {
-        SCRIPTING_EXPORT("FlaxEngine.Scripting::IsTypeFromGameScripts")
-        return Scripting::IsTypeFromGameScripts(Scripting::FindClass(MUtils::GetClass(type)));
-    }
-
-    static void FlushRemovedObjects()
-    {
-        SCRIPTING_EXPORT("FlaxEngine.Scripting::FlushRemovedObjects")
-        ASSERT(IsInMainThread());
-        ObjectsRemovalService::Flush();
-    }
-#endif
-
     static void InitRuntime()
     {
-#if USE_MONO
         // Scripting API
-        ADD_INTERNAL_CALL("FlaxEngine.Scripting::HasGameModulesLoaded", &HasGameModulesLoaded);
-        ADD_INTERNAL_CALL("FlaxEngine.Scripting::IsTypeFromGameScripts", &IsTypeFromGameScripts);
-        ADD_INTERNAL_CALL("FlaxEngine.Scripting::FlushRemovedObjects", &FlushRemovedObjects);
+        ADD_INTERNAL_CALL("FlaxEngine.Scripting::HasGameModulesLoaded", &ScriptingInternal_HasGameModulesLoaded);
+        ADD_INTERNAL_CALL("FlaxEngine.Scripting::IsTypeFromGameScripts", &ScriptingInternal_IsTypeFromGameScripts);
+        ADD_INTERNAL_CALL("FlaxEngine.Scripting::FlushRemovedObjects", &ScriptingInternal_FlushRemovedObjects);
 
         // Profiler API
-        ADD_INTERNAL_CALL("FlaxEngine.Profiler::BeginEvent", &ProfilerInternal::BeginEvent);
-        ADD_INTERNAL_CALL("FlaxEngine.Profiler::EndEvent", &ProfilerInternal::EndEvent);
-        ADD_INTERNAL_CALL("FlaxEngine.Profiler::BeginEventGPU", &ProfilerInternal::BeginEventGPU);
-        ADD_INTERNAL_CALL("FlaxEngine.Profiler::EndEventGPU", &ProfilerInternal::EndEventGPU);
-#endif
+        ADD_INTERNAL_CALL("FlaxEngine.Profiler::BeginEvent", &ProfilerInternal_BeginEvent);
+        ADD_INTERNAL_CALL("FlaxEngine.Profiler::EndEvent", &ProfilerInternal_EndEvent);
+        ADD_INTERNAL_CALL("FlaxEngine.Profiler::BeginEventGPU", &ProfilerInternal_BeginEventGPU);
+        ADD_INTERNAL_CALL("FlaxEngine.Profiler::EndEventGPU", &ProfilerInternal_EndEventGPU);
     }
 };
 

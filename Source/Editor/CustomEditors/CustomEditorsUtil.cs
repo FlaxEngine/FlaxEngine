@@ -125,7 +125,7 @@ namespace FlaxEditor.CustomEditors
             return new GenericEditor();
         }
 
-        [LibraryImport("FlaxEngine", EntryPoint = "FlaxEditor.CustomEditors.CustomEditorsUtil::Internal_GetCustomEditor", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "CustomEditorsUtilInternal_GetCustomEditor", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
         [return: MarshalUsing(typeof(SystemTypeMarshaller))]
         internal static partial Type Internal_GetCustomEditor([MarshalUsing(typeof(SystemTypeMarshaller))] Type targetType);
     }

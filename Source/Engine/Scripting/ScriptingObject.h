@@ -14,19 +14,17 @@ API_CLASS(InBuild) class FLAXENGINE_API ScriptingObject : public Object
 {
     friend class Scripting;
     friend class BinaryModule;
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(ScriptingObject);
-public:
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(ScriptingObject);
 
+public:
     typedef ScriptingObjectSpawnParams SpawnParams;
 
 protected:
-
     MGCHandle _gcHandle;
     ScriptingTypeHandle _type;
     Guid _id;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ScriptingObject"/> class.
     /// </summary>
@@ -39,14 +37,15 @@ public:
     virtual ~ScriptingObject();
 
 public:
-
     // Spawns a new objects of the given type.
     static ScriptingObject* NewObject(const ScriptingTypeHandle& typeHandle);
+
     template<typename T>
     static T* NewObject()
     {
         return (T*)NewObject(T::TypeInitializer);
     }
+
     template<typename T>
     static T* NewObject(const ScriptingTypeHandle& typeHandle)
     {
@@ -60,14 +59,12 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Event fired when object gets deleted.
     /// </summary>
     Delegate<ScriptingObject*> Deleted;
 
 public:
-
     /// <summary>
     /// Gets the managed instance object.
     /// </summary>
@@ -116,15 +113,17 @@ public:
     MClass* GetClass() const;
 
 public:
-
     // Tries to cast native interface object to scripting object instance. Returns null if fails.
     static ScriptingObject* FromInterface(void* interfaceObj, const ScriptingTypeHandle& interfaceType);
+
     template<typename T>
     static ScriptingObject* FromInterface(T* interfaceObj)
     {
         return FromInterface(interfaceObj, T::TypeInitializer);
     }
+
     static void* ToInterface(ScriptingObject* obj, const ScriptingTypeHandle& interfaceType);
+
     template<typename T>
     static T* ToInterface(ScriptingObject* obj)
     {
@@ -184,7 +183,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Changes the object id (both managed and unmanaged). Warning! Use with caution as object ID is what it identifies it and change might cause issues.
     /// </summary>
@@ -192,7 +190,7 @@ public:
     virtual void ChangeID(const Guid& newId);
 
 public:
-
+    virtual void SetManagedInstance(MonoObject* instance);
     virtual void OnManagedInstanceDeleted();
     virtual void OnScriptingDispose();
 
@@ -200,7 +198,6 @@ public:
     virtual void DestroyManaged();
 
 public:
-
     /// <summary>
     /// Determines whether this object is registered or not (can be found by the queries and used in a game).
     /// </summary>
@@ -220,7 +217,6 @@ public:
     void UnregisterObject();
 
 protected:
-
 #if USE_MONO
     /// <summary>
     /// Create a new managed object.
@@ -229,7 +225,6 @@ protected:
 #endif
 
 public:
-
     // [Object]
     void OnDeleteObject() override;
     String ToString() const override;
@@ -243,7 +238,6 @@ public:
 API_CLASS(InBuild) class FLAXENGINE_API ManagedScriptingObject : public ScriptingObject
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ManagedScriptingObject"/> class.
     /// </summary>
@@ -251,8 +245,8 @@ public:
     explicit ManagedScriptingObject(const SpawnParams& params);
 
 public:
-
     // [ScriptingObject]
+    void SetManagedInstance(MonoObject* instance) override;
     void OnManagedInstanceDeleted() override;
     void OnScriptingDispose() override;
     bool CreateManaged() override;

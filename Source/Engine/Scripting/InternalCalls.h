@@ -29,12 +29,20 @@ struct FLAXENGINE_API VTableFunctionInjector
         *VTableAddr = OriginalValue;
     }
 };
+#elif defined(_MSC_VER)
+#define MSVC_FUNC_EXPORT(name) __pragma(comment(linker, "/EXPORT:" #name "=" __FUNCDNAME__))
 #endif
 
 #if USE_MONO
 
+#if USE_NETCORE
+#define ADD_INTERNAL_CALL(fullName, method)
+#define DEFINE_INTERNAL_CALL(returnType) extern "C" DLLEXPORT returnType
+#else
 extern "C" FLAXENGINE_API void mono_add_internal_call(const char* name, const void* method);
 #define ADD_INTERNAL_CALL(fullName, method) mono_add_internal_call(fullName, (const void*)method)
+#define DEFINE_INTERNAL_CALL(returnType) static returnType
+#endif
 
 #if BUILD_RELEASE && 0
 
@@ -76,9 +84,7 @@ extern "C" FLAXENGINE_API void mono_add_internal_call(const char* name, const vo
 
 #else
 
-extern void DotNetAddInternalCall(const wchar_t* fullName, void* function);
-
-#define ADD_INTERNAL_CALL(fullName, method) DotNetAddInternalCall(TEXT(fullName), (void*)(method))
+#define ADD_INTERNAL_CALL(fullName, method)
 #define INTERNAL_CALL_CHECK(obj)
 #define INTERNAL_CALL_CHECK_EXP(expression)
 #define INTERNAL_CALL_CHECK_RETURN(obj, defaultValue)
