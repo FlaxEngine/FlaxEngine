@@ -83,7 +83,7 @@ namespace Flax.Build.Bindings
 
         private static string GenerateCppWrapperNativeToVariantMethodName(TypeInfo typeInfo)
         {
-            var sb = new StringBuilder();
+            var sb = GetStringBuilder();
             sb.Append(typeInfo.Type.Replace("::", "_"));
             if (typeInfo.IsPtr)
                 sb.Append("Ptr");
@@ -96,7 +96,9 @@ namespace Flax.Build.Bindings
                         sb.Append("Ptr");
                 }
             }
-            return sb.ToString();
+            var result = sb.ToString();
+            PutStringBuilder(sb);
+            return result;
         }
 
         private static string GenerateCppWrapperNativeToManagedParam(BuildData buildData, StringBuilder contents, TypeInfo paramType, string paramName, ApiTypeInfo caller, bool isRef, out bool useLocalVar)
@@ -2548,7 +2550,7 @@ namespace Flax.Build.Bindings
 
         private static void GenerateCpp(BuildData buildData, ModuleInfo moduleInfo, ref BindingsResult bindings)
         {
-            var contents = new StringBuilder();
+            var contents = GetStringBuilder();
             CppUsedNonPodTypes.Clear();
             CppReferencesFiles.Clear();
             CppIncludeFiles.Clear();
@@ -2591,7 +2593,7 @@ namespace Flax.Build.Bindings
             GenerateCppModuleSource?.Invoke(buildData, moduleInfo, contents);
 
             {
-                var header = new StringBuilder();
+                var header = GetStringBuilder();
 
                 // Variant converting helper methods
                 foreach (var typeInfo in CppVariantToTypes)
@@ -2675,6 +2677,8 @@ namespace Flax.Build.Bindings
                     header.Append("    return result;").AppendLine();
                     header.Append('}').AppendLine();
                     header.AppendLine("}");
+
+                    PutStringBuilder(header);
                 }
 
                 // Non-POD types
@@ -2969,6 +2973,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine("PRAGMA_ENABLE_DEPRECATION_WARNINGS");
 
             Utilities.WriteFileIfChanged(bindings.GeneratedCppFilePath, contents.ToString());
+            PutStringBuilder(contents);
         }
 
         private static void GenerateCpp(BuildData buildData, IGrouping<string, Module> binaryModule)
@@ -2978,7 +2983,7 @@ namespace Flax.Build.Bindings
                 return;
             var useCSharp = binaryModule.Any(x => x.BuildCSharp);
 
-            var contents = new StringBuilder();
+            var contents = GetStringBuilder();
             var binaryModuleName = binaryModule.Key;
             var binaryModuleNameUpper = binaryModuleName.ToUpperInvariant();
             var project = Builder.GetModuleProject(binaryModule.First(), buildData);
@@ -3031,6 +3036,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine("}");
             GenerateCppBinaryModuleSource?.Invoke(buildData, binaryModule, contents);
             Utilities.WriteFileIfChanged(binaryModuleSourcePath, contents.ToString());
+            PutStringBuilder(contents);
         }
     }
 }

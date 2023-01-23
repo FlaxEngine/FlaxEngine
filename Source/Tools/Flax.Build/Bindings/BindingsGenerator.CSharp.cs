@@ -208,7 +208,7 @@ namespace Flax.Build.Bindings
                 }
                 else
                     throw new Exception("Cannot use array initializer as default value for type " + valueType);
-                var sb = new StringBuilder();
+                var sb = GetStringBuilder();
                 var items = new List<string>();
                 var braces = 0;
                 for (int i = 1; i < value.Length - 1; i++)
@@ -232,7 +232,9 @@ namespace Flax.Build.Bindings
                 for (int i = 0; i < items.Count; i++)
                     sb.Append(GenerateCSharpDefaultValueNativeToManaged(buildData, items[i], caller, itemType, attribute)).Append(',');
                 sb.Append('}');
-                return sb.ToString();
+                var result = sb.ToString();
+                PutStringBuilder(sb);
+                return result;
             }
 
             // Special case for value constructors
@@ -1979,7 +1981,7 @@ namespace Flax.Build.Bindings
 
         private static void GenerateCSharp(BuildData buildData, ModuleInfo moduleInfo, ref BindingsResult bindings)
         {
-            var contents = new StringBuilder();
+            var contents = GetStringBuilder();
             buildData.Modules.TryGetValue(moduleInfo.Module, out var moduleBuildInfo);
 
             // Header
@@ -2019,7 +2021,7 @@ namespace Flax.Build.Bindings
                 return;
 
             {
-                var header = new StringBuilder();
+                var header = GetStringBuilder();
 
                 // Using declarations
                 CSharpUsedNamespacesSorted.Clear();
@@ -2029,12 +2031,14 @@ namespace Flax.Build.Bindings
                     header.AppendLine($"using {CSharpUsedNamespacesSorted[i]};");
 
                 contents.Insert(headerPos, header.ToString());
+                PutStringBuilder(header);
             }
 
             // Save generated file
             contents.AppendLine();
             contents.AppendLine("#endif");
             Utilities.WriteFileIfChanged(bindings.GeneratedCSharpFilePath, contents.ToString());
+            PutStringBuilder(contents);
         }
 
         internal struct GuidInterop
@@ -2051,7 +2055,7 @@ namespace Flax.Build.Bindings
             if (binaryModule.All(x => !x.BuildCSharp))
                 return;
 
-            var contents = new StringBuilder();
+            var contents = GetStringBuilder();
             var binaryModuleName = binaryModule.Key;
             var project = Builder.GetModuleProject(binaryModule.First(), buildData);
 
@@ -2089,6 +2093,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine("[assembly: DisableRuntimeMarshalling]");
 #endif
             Utilities.WriteFileIfChanged(dstFilePath, contents.ToString());
+            PutStringBuilder(contents);
         }
     }
 }
