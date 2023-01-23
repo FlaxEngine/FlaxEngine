@@ -623,7 +623,6 @@ public:
     API_PROPERTY() BoundingBox GetBoxWithChildren() const;
 
 #if USE_EDITOR
-
     /// <summary>
     /// Gets actor bounding box (single actor, no children included) for editor tools.
     /// </summary>
@@ -633,7 +632,6 @@ public:
     /// Gets actor bounding box of the actor including all child actors for editor tools.
     /// </summary>
     API_PROPERTY() BoundingBox GetEditorBoxChildren() const;
-
 #endif
 
     /// <summary>
@@ -665,17 +663,15 @@ public:
     virtual void Draw(RenderContextBatch& renderContextBatch);
 
 #if USE_EDITOR
-
     /// <summary>
     /// Draws debug shapes for the actor and all child scripts.
     /// </summary>
-    virtual void OnDebugDraw();
+    API_FUNCTION() virtual void OnDebugDraw();
 
     /// <summary>
     /// Draws debug shapes for the selected actor and all child scripts.
     /// </summary>
-    virtual void OnDebugDrawSelected();
-
+    API_FUNCTION() virtual void OnDebugDrawSelected();
 #endif
 
 public:
@@ -812,9 +808,7 @@ public:
         if (action(this, args...))
         {
             for (int32 i = 0; i < Children.Count(); i++)
-            {
                 Children[i]->TreeExecute<Params...>(action, args...);
-            }
         }
     }
 
@@ -829,9 +823,7 @@ public:
     void TreeExecuteChildren(Function<bool(Actor*, Params ...)>& action, Params ... args)
     {
         for (int32 i = 0; i < Children.Count(); i++)
-        {
             Children[i]->TreeExecute<Params...>(action, args...);
-        }
     }
 
 public:
@@ -897,12 +889,12 @@ public:
     /// <summary>
     /// Called when actor gets added to game systems. Occurs on BeginPlay event or when actor gets activated in hierarchy. Use this event to register object to other game system (eg. audio).
     /// </summary>
-    virtual void OnEnable();
+    API_FUNCTION() virtual void OnEnable();
 
     /// <summary>
     /// Called when actor gets removed from game systems. Occurs on EndPlay event or when actor gets inactivated in hierarchy. Use this event to unregister object from other game system (eg. audio).
     /// </summary>
-    virtual void OnDisable();
+    API_FUNCTION() virtual void OnDisable();
 
     /// <summary>
     /// Called when actor parent gets changed.
