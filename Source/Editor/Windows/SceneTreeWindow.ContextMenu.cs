@@ -66,7 +66,7 @@ namespace FlaxEditor.Windows
                     if (actorType.IsAbstract)
                         continue;
                     ActorContextMenuAttribute attribute = null;
-                    foreach (var e in actorType.GetAttributes(true))
+                    foreach (var e in actorType.GetAttributes(false))
                     {
                         if (e is ActorContextMenuAttribute actorContextMenuAttribute)
                         {

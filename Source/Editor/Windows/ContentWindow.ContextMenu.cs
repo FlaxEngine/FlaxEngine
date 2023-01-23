@@ -162,7 +162,7 @@ namespace FlaxEditor.Windows
 
                 // Get attribute
                 ContentContextMenuAttribute attribute = null;
-                foreach (var typeAttribute in type.GetAttributes(true))
+                foreach (var typeAttribute in type.GetAttributes(false))
                 {
                     if (typeAttribute is ContentContextMenuAttribute contentContextMenuAttribute)
                     {
