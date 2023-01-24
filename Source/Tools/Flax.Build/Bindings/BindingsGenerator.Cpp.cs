@@ -957,8 +957,8 @@ namespace Flax.Build.Bindings
             var indent = "        ";
             contents.Append(prevIndent);
             bool useSeparateImpl = false; // True if separate function declaration from implementation
+            bool useLibraryExportInPlainC = false; // True if generate separate wrapper for library imports that uses plain-C style binding (without C++ name mangling)
 #if USE_NETCORE
-            contents.AppendFormat("DLLEXPORT static {0} {1}(", returnValueType, functionInfo.UniqueName);
             string libraryEntryPoint;
             if (buildData.Toolchain.Compiler == TargetCompiler.MSVC)
             {
@@ -966,9 +966,22 @@ namespace Flax.Build.Bindings
             }
             else
             {
-                libraryEntryPoint = CppNameMangling.MangleFunctionName(buildData, functionInfo.Name, callerName, functionInfo.ReturnType, functionInfo.IsStatic ? null : new TypeInfo(caller.Name) { IsPtr = true }, functionInfo.Parameters, functionInfo.Glue.CustomParameters);
-                useSeparateImpl = true; // DLLEXPORT doesn't properly export function thus separate implementation from declaration
+                // For simple functions we can bind it directly (CppNameMangling is incomplete for complex cases)
+                if (functionInfo.Parameters.Count + functionInfo.Parameters.Count == 0)
+                {
+                    useSeparateImpl = true; // DLLEXPORT doesn't properly export function thus separate implementation from declaration
+                    libraryEntryPoint = CppNameMangling.MangleFunctionName(buildData, functionInfo.Name, callerName, functionInfo.ReturnType, functionInfo.IsStatic ? null : new TypeInfo(caller.Name) { IsPtr = true }, functionInfo.Parameters, functionInfo.Glue.CustomParameters);
+                }
+                else
+                {
+                    useLibraryExportInPlainC = true;
+                    libraryEntryPoint = $"{callerName}_{functionInfo.UniqueName}";
+                }
             }
+            if (useLibraryExportInPlainC)
+                contents.AppendFormat("static {0} {1}(", returnValueType, functionInfo.UniqueName);
+            else
+                contents.AppendFormat("DLLEXPORT static {0} {1}(", returnValueType, functionInfo.UniqueName);
             functionInfo.Glue.LibraryEntryPoint = libraryEntryPoint;
 #else
             contents.AppendFormat("static {0} {1}(", returnValueType, functionInfo.UniqueName);
@@ -979,7 +992,7 @@ namespace Flax.Build.Bindings
             var signatureStart = contents.Length;
             if (!functionInfo.IsStatic)
             {
-                contents.Append(string.Format("{0}* obj", caller.Name));
+                contents.Append(caller.Name).Append("* obj");
                 separator = true;
             }
 
@@ -1071,12 +1084,12 @@ namespace Flax.Build.Bindings
             }
 
             contents.Append(')');
+            var signatureEnd = contents.Length;
             if (useSeparateImpl)
             {
                 // Write declarion only, function definition wil be put in the end of the file
                 CppContentsEnd.AppendFormat("{0} {2}::{1}(", returnValueType, functionInfo.UniqueName, callerName);
-                var sig = contents.ToString(signatureStart, contents.Length - signatureStart);
-                CppContentsEnd.Append(contents.ToString(signatureStart, contents.Length - signatureStart));
+                CppContentsEnd.Append(contents.ToString(signatureStart, signatureEnd - signatureStart));
                 contents.Append(';').AppendLine();
                 contents = CppContentsEnd;
                 prevIndent = null;
@@ -1085,7 +1098,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine();
             contents.Append(prevIndent).AppendLine("{");
 #if USE_NETCORE
-            if (buildData.Toolchain.Compiler == TargetCompiler.MSVC)
+            if (buildData.Toolchain.Compiler == TargetCompiler.MSVC && !useLibraryExportInPlainC)
                 contents.Append(indent).AppendLine($"MSVC_FUNC_EXPORT(\"{libraryEntryPoint}\")"); // Export generated function binding under the C# name
 #endif
             if (!functionInfo.IsStatic)
@@ -1281,6 +1294,40 @@ namespace Flax.Build.Bindings
 
             contents.Append(prevIndent).AppendLine("}");
             contents.AppendLine();
+
+            if (useLibraryExportInPlainC)
+            {
+                // Write simple wrapper to bind internal method
+                CppContentsEnd.AppendFormat("DEFINE_INTERNAL_CALL({0}) {1}(", returnValueType, libraryEntryPoint);
+                var sig = contents.ToString(signatureStart, signatureEnd - signatureStart);
+                CppContentsEnd.Append(sig).AppendLine();
+                CppContentsEnd.AppendLine("{");
+                CppContentsEnd.Append($"    return {callerName}::{functionInfo.UniqueName}(");
+                while (sig.Contains("Function<"))
+                {
+                    // Hack for template args
+                    int start = sig.IndexOf("Function<");
+                    int end = sig.IndexOf(">::Signature");
+                    sig = sig.Substring(0, start) + sig.Substring(end + 3);
+                }
+                var args = sig.Split(',', StringSplitOptions.TrimEntries);
+                for (int i = 0; i < args.Length; i++)
+                {
+                    var arg = args[i];
+                    if (i + 1 == args.Length)
+                        arg = arg.Substring(0, arg.Length - 1);
+                    if (arg.Length == 0)
+                        continue;
+                    var lastSpace = arg.LastIndexOf(' ');
+                    if (lastSpace != -1)
+                        arg = arg.Substring(lastSpace + 1);
+                    if (i != 0)
+                        CppContentsEnd.Append(", ");
+                    CppContentsEnd.Append(arg);
+                }
+                CppContentsEnd.AppendLine(");");
+                CppContentsEnd.AppendLine("}").AppendLine();
+            }
         }
 
         public static void GenerateCppReturn(BuildData buildData, StringBuilder contents, string indent, TypeInfo type)
