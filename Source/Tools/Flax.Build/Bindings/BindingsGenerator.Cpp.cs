@@ -1935,14 +1935,30 @@ namespace Flax.Build.Bindings
 
                     // C# event wrapper binding method (binds/unbinds C# wrapper to C++ delegate)
                     CppInternalCalls.Add(new KeyValuePair<string, string>(eventInfo.Name + "_Bind", eventInfo.Name + "_ManagedBind"));
+                    bool useSeparateImpl = false; // True if separate function declaration from implementation
                     contents.AppendFormat("    DLLEXPORT static void {0}_ManagedBind(", eventInfo.Name);
+                    var signatureStart = contents.Length;
+                    if (buildData.Toolchain.Compiler == TargetCompiler.Clang)
+                        useSeparateImpl = true; // DLLEXPORT doesn't properly export function thus separate implementation from declaration
                     if (!eventInfo.IsStatic)
                         contents.AppendFormat("{0}* obj, ", classTypeNameNative);
-                    contents.Append("bool bind)").AppendLine();
-                    contents.Append("    {").AppendLine();
+                    contents.Append("bool bind)");
+                    var contentsPrev = contents;
+                    var indent = "    ";
+                    if (useSeparateImpl)
+                    {
+                        // Write declarion only, function definition wil be put in the end of the file
+                        CppContentsEnd.AppendFormat("void {1}::{0}_ManagedBind(", eventInfo.Name, internalTypeName);
+                        var sig = contents.ToString(signatureStart, contents.Length - signatureStart);
+                        CppContentsEnd.Append(contents.ToString(signatureStart, contents.Length - signatureStart));
+                        contents.Append(';').AppendLine();
+                        contents = CppContentsEnd;
+                        indent = null;
+                    }
+                    contents.AppendLine().Append(indent).Append('{').AppendLine();
                     if (buildData.Toolchain.Compiler == TargetCompiler.MSVC)
-                        contents.AppendLine($"        MSVC_FUNC_EXPORT(\"{classTypeNameManaged}::Internal_{eventInfo.Name}_Bind\")"); // Export generated function binding under the C# name
-                    contents.Append("        Function<void(");
+                        contents.Append(indent).AppendLine($"    MSVC_FUNC_EXPORT(\"{classTypeNameManaged}::Internal_{eventInfo.Name}_Bind\")"); // Export generated function binding under the C# name
+                    contents.Append(indent).Append("    Function<void(");
                     for (var i = 0; i < paramsCount; i++)
                     {
                         if (i != 0)
@@ -1951,14 +1967,16 @@ namespace Flax.Build.Bindings
                     }
                     contents.Append(")> f;").AppendLine();
                     if (eventInfo.IsStatic)
-                        contents.AppendFormat("        f.Bind<{0}_ManagedWrapper>();", eventInfo.Name).AppendLine();
+                        contents.Append(indent).AppendFormat("    f.Bind<{0}_ManagedWrapper>();", eventInfo.Name).AppendLine();
                     else
-                        contents.AppendFormat("        f.Bind<{1}, &{1}::{0}_ManagedWrapper>(({1}*)obj);", eventInfo.Name, internalTypeName).AppendLine();
-                    contents.Append("        if (bind)").AppendLine();
-                    contents.AppendFormat("            {0}{1}.Bind(f);", bindPrefix, eventInfo.Name).AppendLine();
-                    contents.Append("        else").AppendLine();
-                    contents.AppendFormat("            {0}{1}.Unbind(f);", bindPrefix, eventInfo.Name).AppendLine();
-                    contents.Append("    }").AppendLine().AppendLine();
+                        contents.Append(indent).AppendFormat("    f.Bind<{1}, &{1}::{0}_ManagedWrapper>(({1}*)obj);", eventInfo.Name, internalTypeName).AppendLine();
+                    contents.Append(indent).Append("    if (bind)").AppendLine();
+                    contents.Append(indent).AppendFormat("        {0}{1}.Bind(f);", bindPrefix, eventInfo.Name).AppendLine();
+                    contents.Append(indent).Append("    else").AppendLine();
+                    contents.Append(indent).AppendFormat("        {0}{1}.Unbind(f);", bindPrefix, eventInfo.Name).AppendLine();
+                    contents.Append(indent).Append('}').AppendLine().AppendLine();
+                    if (useSeparateImpl)
+                        contents = contentsPrev;
                 }
 
                 // Generic scripting event invoking wrapper (calls scripting code from C++ delegate)
@@ -3005,7 +3023,10 @@ namespace Flax.Build.Bindings
                 PutStringBuilder(header);
             }
 
-            contents.Append(CppContentsEnd);
+            if (CppContentsEnd.Length != 0)
+            {
+                contents.AppendLine().Append(CppContentsEnd);
+            }
             PutStringBuilder(CppContentsEnd);
 
             contents.AppendLine("PRAGMA_ENABLE_DEPRECATION_WARNINGS");
