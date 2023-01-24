@@ -947,10 +947,7 @@ namespace Flax.Build.Bindings
                 {
                     Name = "__returnCount",
                     DefaultValue = "var __returnCount",
-                    Type = new TypeInfo
-                    {
-                        Type = "int"
-                    },
+                    Type = new TypeInfo("int"),
                     IsOut = true,
                 });
             }
@@ -969,7 +966,7 @@ namespace Flax.Build.Bindings
             }
             else
             {
-                libraryEntryPoint = CppNameMangling.MangleFunctionName(buildData, functionInfo.Name, callerName, functionInfo.Parameters, functionInfo.Glue.CustomParameters);
+                libraryEntryPoint = CppNameMangling.MangleFunctionName(buildData, functionInfo.Name, callerName, functionInfo.ReturnType, functionInfo.IsStatic ? null : new TypeInfo(caller.Name) { IsPtr = true }, functionInfo.Parameters, functionInfo.Glue.CustomParameters);
                 useSeparateImpl = true; // DLLEXPORT doesn't properly export function thus separate implementation from declaration
             }
             functionInfo.Glue.LibraryEntryPoint = libraryEntryPoint;
