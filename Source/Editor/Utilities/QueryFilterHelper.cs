@@ -15,7 +15,7 @@ namespace FlaxEditor.Utilities
         /// <summary>
         /// The minimum text match length.
         /// </summary>
-        public const int MinLength = 2;
+        public const int MinLength = 1;
 
         /// <summary>
         /// Matches the specified text with the filter.
