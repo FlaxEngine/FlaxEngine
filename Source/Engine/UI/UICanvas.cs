@@ -763,7 +763,7 @@ namespace FlaxEngine
 #endif
         }
 
-        internal void OnEnable()
+        internal void Enable()
         {
 #if FLAX_EDITOR
             if (_editorRoot != null)
@@ -792,7 +792,7 @@ namespace FlaxEngine
             }
         }
 
-        internal void OnDisable()
+        internal void Disable()
         {
             _guiRoot.Parent = null;
 
