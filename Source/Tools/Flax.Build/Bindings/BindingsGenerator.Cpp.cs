@@ -967,12 +967,13 @@ namespace Flax.Build.Bindings
             else
             {
                 // For simple functions we can bind it directly (CppNameMangling is incomplete for complex cases)
-                if (functionInfo.Parameters.Count + functionInfo.Parameters.Count == 0)
+                // TODO: improve this to use wrapper method directly from P/Invoke if possible
+                /*if (functionInfo.Parameters.Count + functionInfo.Parameters.Count == 0)
                 {
                     useSeparateImpl = true; // DLLEXPORT doesn't properly export function thus separate implementation from declaration
                     libraryEntryPoint = CppNameMangling.MangleFunctionName(buildData, functionInfo.Name, callerName, functionInfo.ReturnType, functionInfo.IsStatic ? null : new TypeInfo(caller.Name) { IsPtr = true }, functionInfo.Parameters, functionInfo.Glue.CustomParameters);
                 }
-                else
+                else*/
                 {
                     useLibraryExportInPlainC = true;
                     libraryEntryPoint = $"{callerName}_{functionInfo.UniqueName}";

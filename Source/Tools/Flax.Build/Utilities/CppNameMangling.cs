@@ -12,7 +12,7 @@ namespace Flax.Build
     /// </summary>
     internal static class CppNameMangling
     {
-        public static string MangleFunctionName(Builder.BuildData buildData, string name, string outerName, TypeInfo returnType, TypeInfo parameter0, List<FunctionInfo.ParameterInfo> parameters1, List<FunctionInfo.ParameterInfo> parameters2)
+        public static string MangleFunctionName(Builder.BuildData buildData, string name, string outerName, TypeInfo returnType, TypeInfo parameter0 = null, List<FunctionInfo.ParameterInfo> parameters1 = null, List<FunctionInfo.ParameterInfo> parameters2 = null)
         {
             List<FunctionInfo.ParameterInfo> parameters = null;
             if (parameter0 == null)
