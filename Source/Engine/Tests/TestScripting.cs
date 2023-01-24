@@ -33,7 +33,7 @@ namespace FlaxEngine.Tests
                     bool found = NativeLibrary.TryGetExport(library, libraryImport.EntryPoint, out var addr);
                     if (!found)
                     {
-                        Debug.LogError("Missing library import: " + libraryImport.EntryPoint);
+                        Debug.LogError("Missing library import: " + libraryImport.EntryPoint + " on " + type.FullName + "::" + method.Name);
                         result++;
                     }
                 }
