@@ -250,7 +250,7 @@ namespace FlaxEditor.Windows
             foreach (var actorType in Editor.CodeEditing.Actors.Get())
             {
                 ActorToolboxAttribute attribute = null;
-                foreach (var e in actorType.GetAttributes(true))
+                foreach (var e in actorType.GetAttributes(false))
                 {
                     if (e is ActorToolboxAttribute actorToolboxAttribute)
                     {
