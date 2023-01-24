@@ -13,7 +13,15 @@ namespace FlaxEditor.CustomEditors.Elements
         /// <summary>
         /// The drop panel.
         /// </summary>
-        public readonly DropPanel Panel = new DropPanel();
+        public readonly DropPanel Panel = new DropPanel
+        {
+            ArrowImageClosed = new SpriteBrush(Style.Current.ArrowRight),
+            ArrowImageOpened = new SpriteBrush(Style.Current.ArrowDown),
+            EnableDropDownIcon = true,
+            ItemsMargin = new Margin(7, 7, 3, 3),
+            HeaderHeight = 20,
+            EnableContainmentLines = true,
+        };
 
         /// <inheritdoc />
         public override ContainerControl ContainerControl => Panel;

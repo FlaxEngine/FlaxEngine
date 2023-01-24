@@ -641,16 +641,16 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     IsScrollable = false,
                     Checked = script.Enabled,
                     Parent = group.Panel,
-                    Size = new Float2(14, 14),
-                    Bounds = new Rectangle(2, 0, 14, 14),
-                    BoxSize = 12.0f,
+                    Size = new Float2(20, 20),
+                    Bounds = new Rectangle(20, 0, 20, 20),
+                    BoxSize = 16.0f,
                     Tag = script,
                 };
                 scriptToggle.StateChanged += OnScriptToggleCheckChanged;
                 _scriptToggles[i] = scriptToggle;
 
                 // Add drag button to the group
-                const float dragIconSize = 14;
+                const float dragIconSize = 20;
                 var scriptDrag = new ScriptDragIcon(this, script)
                 {
                     TooltipText = "Script reference",
@@ -665,7 +665,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 };
 
                 // Add settings button to the group
-                const float settingsButtonSize = 14;
+                const float settingsButtonSize = 20;
                 var settingsButton = new Image
                 {
                     TooltipText = "Settings",
@@ -681,7 +681,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 };
                 settingsButton.Clicked += OnSettingsButtonClicked;
 
-                group.Panel.HeaderTextMargin = new Margin(scriptDrag.Right, 15, 2, 2);
+                group.Panel.HeaderTextMargin = new Margin(scriptDrag.Right - 12, 15, 2, 2);
                 group.Object(values, editor);
 
                 // Scripts arrange bar

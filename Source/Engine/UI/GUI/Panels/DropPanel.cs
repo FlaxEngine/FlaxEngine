@@ -132,6 +132,12 @@ namespace FlaxEngine.GUI
         public bool EnableDropDownIcon { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether to enable containment line drawing,
+        /// </summary>
+        [EditorDisplay("Style"), EditorOrder(2000)]
+        public bool EnableContainmentLines { get; set; } = false;
+
+        /// <summary>
         /// Occurs when mouse right-clicks over the header.
         /// </summary>
         public event Action<DropPanel, Float2> MouseButtonRightClicked;
@@ -370,6 +376,16 @@ namespace FlaxEngine.GUI
 
             Render2D.DrawText(HeaderTextFont.GetFont(), HeaderTextMaterial, HeaderText, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
 
+            
+            if (!_isClosed && EnableContainmentLines)
+            {
+                Color lineColor = Style.Current.ForegroundGrey - new Color(0, 0, 0, 100);
+                float lineThickness = 0.05f;
+                Render2D.DrawLine(new Float2(1, HeaderHeight), new Float2(1, Height), lineColor, lineThickness);
+                Render2D.DrawLine(new Float2(1, Height), new Float2(Width, Height), lineColor, lineThickness);
+                Render2D.DrawLine(new Float2(Width, HeaderHeight), new Float2(Width, Height), lineColor, lineThickness);
+            }
+            
             // Children
             DrawChildren();
         }
