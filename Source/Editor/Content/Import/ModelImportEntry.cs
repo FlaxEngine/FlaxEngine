@@ -566,6 +566,8 @@ namespace FlaxEditor.Content.Import
             }
             internal static void Free(InternalOptionsNative unmanaged)
             {
+                ManagedString.Free(unmanaged.CollisionMeshesPrefix);
+                ManagedString.Free(unmanaged.RootNodeName);
             }
         }
 

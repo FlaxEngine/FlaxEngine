@@ -337,6 +337,17 @@ namespace FlaxEngine
             else if (str == string.Empty)
                 return ManagedHandle.ToIntPtr(EmptyStringHandle);
             Assert.IsTrue(str.Length > 0);
+            return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(str));
+        }
+
+        [System.Diagnostics.DebuggerStepThrough]
+        internal static unsafe IntPtr ToNativeWeak(string str)
+        {
+            if (str == null)
+                return IntPtr.Zero;
+            else if (str == string.Empty)
+                return ManagedHandle.ToIntPtr(EmptyStringHandle);
+            Assert.IsTrue(str.Length > 0);
             return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(str, GCHandleType.Weak));
         }
 
@@ -969,7 +980,7 @@ namespace FlaxEngine
             {
                 if (managed == null)
                     return IntPtr.Zero;
-                return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(managed, GCHandleType.Weak));
+                return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(managed));
             }
 
             public static void Free(IntPtr unmanaged) => ManagedString.Free(unmanaged);
@@ -1114,7 +1125,7 @@ namespace FlaxEngine
             NativeMemory.AlignedFree(ptr);
         }
 
-        internal static T[] GCHandleArrayToManagedArray<T>(ManagedArray ptrArray)
+        internal static T[] GCHandleArrayToManagedArray<T>(ManagedArray ptrArray) where T : class
         {
             Span<IntPtr> span = ptrArray.GetSpan<IntPtr>();
             T[] managedArray = new T[ptrArray.Length];
@@ -1718,7 +1729,7 @@ namespace FlaxEngine
 
                 IntPtr managedPtr;
                 if (type == typeof(string))
-                    managedPtr = ManagedString.ToNative(managedValue as string);
+                    managedPtr = ManagedString.ToNativeWeak(managedValue as string);
                 else if (type.IsPointer)
                 {
                     if (Pointer.Unbox(managedValue) == null)
@@ -2242,19 +2253,19 @@ namespace FlaxEngine
         [UnmanagedCallersOnly]
         internal static IntPtr NewStringUTF16(char* text, int length)
         {
-            return ManagedString.ToNative(new string(new ReadOnlySpan<char>(text, length)));
+            return ManagedString.ToNativeWeak(new string(new ReadOnlySpan<char>(text, length)));
         }
 
         [UnmanagedCallersOnly]
         internal static IntPtr NewString(sbyte* text)
         {
-            return ManagedString.ToNative(new string(text));
+            return ManagedString.ToNativeWeak(new string(text));
         }
 
         [UnmanagedCallersOnly]
         internal static IntPtr NewStringLength(sbyte* text, int length)
         {
-            return ManagedString.ToNative(new string(text, 0, length));
+            return ManagedString.ToNativeWeak(new string(text, 0, length));
         }
 
         /// <summary>
