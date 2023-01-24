@@ -1658,7 +1658,6 @@ DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
 
 void LinuxClipboard::Clear()
 {
-    SCRIPTING_EXPORT("FlaxEngine.Clipboard::Internal_Clear");
     SetText(StringView::Empty);
 }
 
