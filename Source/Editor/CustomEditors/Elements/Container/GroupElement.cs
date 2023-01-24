@@ -19,7 +19,7 @@ namespace FlaxEditor.CustomEditors.Elements
             ArrowImageOpened = new SpriteBrush(Style.Current.ArrowDown),
             EnableDropDownIcon = true,
             ItemsMargin = new Margin(7, 7, 3, 3),
-            HeaderHeight = 20,
+            HeaderHeight = 18.0f,
             EnableContainmentLines = true,
         };
 

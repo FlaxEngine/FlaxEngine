@@ -635,22 +635,22 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     group.Panel.HeaderTextColor = FlaxEngine.GUI.Style.Current.ProgressNormal;
 
                 // Add toggle button to the group
+                var headerHeight = group.Panel.HeaderHeight;
                 var scriptToggle = new CheckBox
                 {
                     TooltipText = "If checked, script will be enabled.",
                     IsScrollable = false,
                     Checked = script.Enabled,
                     Parent = group.Panel,
-                    Size = new Float2(20, 20),
-                    Bounds = new Rectangle(20, 0, 20, 20),
-                    BoxSize = 16.0f,
+                    Size = new Float2(headerHeight),
+                    Bounds = new Rectangle(headerHeight, 0, headerHeight, headerHeight),
+                    BoxSize = headerHeight - 4.0f,
                     Tag = script,
                 };
                 scriptToggle.StateChanged += OnScriptToggleCheckChanged;
                 _scriptToggles[i] = scriptToggle;
 
                 // Add drag button to the group
-                const float dragIconSize = 20;
                 var scriptDrag = new ScriptDragIcon(this, script)
                 {
                     TooltipText = "Script reference",
@@ -658,21 +658,20 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     IsScrollable = false,
                     Color = FlaxEngine.GUI.Style.Current.ForegroundGrey,
                     Parent = group.Panel,
-                    Bounds = new Rectangle(scriptToggle.Right, 0.5f, dragIconSize, dragIconSize),
+                    Bounds = new Rectangle(scriptToggle.Right, 0.5f, headerHeight, headerHeight),
                     Margin = new Margin(1),
                     Brush = new SpriteBrush(Editor.Instance.Icons.DragBar12),
                     Tag = script,
                 };
 
                 // Add settings button to the group
-                const float settingsButtonSize = 20;
                 var settingsButton = new Image
                 {
                     TooltipText = "Settings",
                     AutoFocus = true,
                     AnchorPreset = AnchorPresets.TopRight,
                     Parent = group.Panel,
-                    Bounds = new Rectangle(group.Panel.Width - settingsButtonSize, 0, settingsButtonSize, settingsButtonSize),
+                    Bounds = new Rectangle(group.Panel.Width - headerHeight, 0, headerHeight, headerHeight),
                     IsScrollable = false,
                     Color = FlaxEngine.GUI.Style.Current.ForegroundGrey,
                     Margin = new Margin(1),
