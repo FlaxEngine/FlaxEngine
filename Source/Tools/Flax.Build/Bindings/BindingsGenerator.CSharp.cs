@@ -1944,7 +1944,6 @@ namespace Flax.Build.Bindings
                 contents.AppendLine("#pragma warning disable 1591");
                 contents.Append(indent).Append("    ").AppendLine($"internal static {interfaceInfo.Name} ConvertToManaged(IntPtr unmanaged) => ({interfaceInfo.Name})ManagedHandleMarshaller.ConvertToManaged(unmanaged);");
                 contents.Append(indent).Append("    ").AppendLine($"internal static IntPtr ConvertToUnmanaged({interfaceInfo.Name} managed) => ManagedHandleMarshaller.ConvertToUnmanaged(managed);");
-                contents.Append(indent).Append("    ").AppendLine("internal static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.Free(unmanaged);");
                 contents.AppendLine("#pragma warning restore 1591");
                 contents.Append(indent).AppendLine("}");
             }

@@ -78,7 +78,7 @@ namespace FlaxEngine
                 if (returnValue == null)
                     return IntPtr.Zero;
                 if (typeof(TRet) == typeof(string))
-                    return ManagedString.ToNative(Unsafe.As<string>(returnValue));
+                    return ManagedString.ToNativeWeak(Unsafe.As<string>(returnValue));
                 if (typeof(TRet) == typeof(IntPtr))
                     return (IntPtr)(object)returnValue;
                 if (typeof(TRet) == typeof(ManagedHandle))
@@ -102,7 +102,7 @@ namespace FlaxEngine
                 if (returnObject == null)
                     return IntPtr.Zero;
                 if (returnType == typeof(string))
-                    return ManagedString.ToNative(Unsafe.As<string>(returnObject));
+                    return ManagedString.ToNativeWeak(Unsafe.As<string>(returnObject));
                 if (returnType == typeof(IntPtr))
                     return (IntPtr)returnObject;
                 if (returnType == typeof(ManagedHandle))
@@ -123,7 +123,7 @@ namespace FlaxEngine
                 if (returnValue == null)
                     return IntPtr.Zero;
                 if (typeof(TRet) == typeof(string))
-                    return ManagedString.ToNative(Unsafe.As<string>(returnValue));
+                    return ManagedString.ToNativeWeak(Unsafe.As<string>(returnValue));
                 if (typeof(TRet) == typeof(IntPtr))
                     return (IntPtr)(object)returnValue;
                 if (typeof(TRet) == typeof(ManagedHandle))
@@ -160,7 +160,7 @@ namespace FlaxEngine
                 if (returnObject == null)
                     return IntPtr.Zero;
                 if (returnType == typeof(string))
-                    return ManagedString.ToNative(Unsafe.As<string>(returnObject));
+                    return ManagedString.ToNativeWeak(Unsafe.As<string>(returnObject));
                 if (returnType == typeof(IntPtr))
                     return (IntPtr)(object)returnObject;
                 if (returnType == typeof(ManagedHandle))
