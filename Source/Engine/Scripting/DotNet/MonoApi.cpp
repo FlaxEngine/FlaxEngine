@@ -663,7 +663,7 @@ MONO_API uint32 mono_method_get_flags(MonoMethod* method, uint32* iflags)
 
 MONO_API MONO_RT_EXTERNAL_ONLY void mono_add_internal_call(const char* name, const void* method)
 {
-    // Ignored, prevents the linker from removing unused functions
+    // Unused, CoreCRL uses exported symbols linkage via LibraryImport atttribute from C#
 }
 
 /*
