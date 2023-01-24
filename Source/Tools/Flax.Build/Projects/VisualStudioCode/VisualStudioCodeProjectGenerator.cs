@@ -141,7 +141,7 @@ namespace Flax.Build.Projects.VisualStudioCode
 
             // Prepare
             var buildToolWorkspace = Environment.CurrentDirectory;
-            var buildToolPath = Utilities.MakePathRelativeTo(typeof(Builder).Assembly.Location, solution.WorkspaceRootPath);
+            var buildToolPath = Path.ChangeExtension(Utilities.MakePathRelativeTo(typeof(Builder).Assembly.Location, solution.WorkspaceRootPath), null);
             var rules = Builder.GenerateRulesAssembly();
 
             // Create tasks file
@@ -425,7 +425,64 @@ namespace Flax.Build.Projects.VisualStudioCode
                                 }
                             }
                             // C# project
-                            else if (project.Type == TargetType.DotNet || project.Type == TargetType.DotNetCore)
+                            else if (project.Type == TargetType.DotNetCore)
+                            {
+                                // TODO: Skip generating launch profiles for plugins and dependencies
+
+                                json.BeginObject();
+                                {
+                                    json.AddField("type", "coreclr");
+                                    json.AddField("name", project.Name + " (C# attach Editor)");
+                                    json.AddField("request", "attach");
+                                    json.AddField("processName", "FlaxEditor");
+                                }
+                                json.EndObject();
+
+                                foreach (var configuration in project.Configurations)
+                                {
+                                    var name = project.Name + '|' + configuration.Name + " (C#)";
+                                    var outputTargetFilePath = configuration.Target.GetOutputFilePath(configuration.TargetBuildOptions, TargetOutputType.Executable);
+
+                                    json.BeginObject();
+                                    {
+                                        json.AddField("type", "coreclr");
+                                        json.AddField("name", name);
+                                        json.AddField("request", "launch");
+                                        json.AddField("preLaunchTask", solution.Name + '|' + configuration.Name);
+                                        json.AddField("cwd", buildToolWorkspace);
+                                        if (configuration.Platform == Platform.BuildPlatform.Target)
+                                        {
+                                            var editorFolder = configuration.Platform == TargetPlatform.Windows ? (configuration.Architecture == TargetArchitecture.x64 ? "Win64" : "Win32") : configuration.Platform.ToString();
+                                            json.AddField("program", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", editorFolder, configuration.ConfigurationName, "FlaxEditor"));
+                                            json.BeginArray("args");
+                                            {
+                                                json.AddUnnamedField("-project");
+                                                json.AddUnnamedField(buildToolWorkspace);
+                                                json.AddUnnamedField("-skipCompile");
+                                            }
+                                            json.EndArray();
+                                        }
+                                        else
+                                        {
+                                            json.AddField("program", configuration.Target.GetOutputFilePath(configuration.TargetBuildOptions, TargetOutputType.Executable));
+                                        }
+
+                                        switch (configuration.Platform)
+                                        {
+                                        case TargetPlatform.Windows:
+                                            json.AddField("stopAtEntry", false);
+                                            json.AddField("externalConsole", true);
+                                            break;
+                                        case TargetPlatform.Linux:
+                                            break;
+                                        }
+                                        json.AddField("visualizerFile", Path.Combine(Globals.EngineRoot, "Source", "flax.natvis"));
+                                    }
+                                    json.EndObject();
+                                }
+                            }
+                            // Mono C# project
+                            else if (project.Type == TargetType.DotNet)
                             {
                                 foreach (var configuration in project.Configurations)
                                 {
