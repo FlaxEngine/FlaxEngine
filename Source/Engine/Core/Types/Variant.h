@@ -9,6 +9,8 @@ class ScriptingObject;
 struct ScriptingType;
 struct Transform;
 struct CommonValue;
+template<typename T>
+class AssetReference;
 
 /// <summary>
 /// Represents an object type that can be interpreted as more than one type.
@@ -242,6 +244,12 @@ public:
     explicit Variant(const Dictionary<Variant, Variant, HeapAllocation>& v);
     explicit Variant(const Span<byte>& v);
     explicit Variant(const CommonValue& v);
+
+    template<typename T>
+    Variant(const class AssetReference<T>& v)
+        : Variant(v.Get())
+    {
+    }
 
     ~Variant();
 
