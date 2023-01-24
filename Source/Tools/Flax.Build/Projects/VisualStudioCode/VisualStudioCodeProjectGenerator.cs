@@ -214,7 +214,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                                     }
                                     case TargetPlatform.Linux:
                                     {
-                                        json.AddField("command", Path.ChangeExtension(buildToolPath, null));
+                                        json.AddField("command", buildToolPath);
                                         json.BeginArray("args");
                                         {
                                             json.AddUnnamedField("--build");
@@ -604,7 +604,6 @@ namespace Flax.Build.Projects.VisualStudioCode
                 
                 // Extension settings
                 json.AddField("omnisharp.useModernNet", true);
-
 
                 json.EndRootObject();
                 json.Save(Path.Combine(vsCodeFolder, "settings.json"));
