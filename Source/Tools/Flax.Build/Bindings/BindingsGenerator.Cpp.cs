@@ -27,6 +27,7 @@ namespace Flax.Build.Bindings
         private static readonly HashSet<TypeInfo> CppVariantToTypes = new HashSet<TypeInfo>();
         private static readonly Dictionary<string, TypeInfo> CppVariantFromTypes = new Dictionary<string, TypeInfo>();
         private static bool CppNonPodTypesConvertingGeneration = false;
+        private static StringBuilder CppContentsEnd;
 
         public class ScriptingLangInfo
         {
@@ -958,13 +959,19 @@ namespace Flax.Build.Bindings
             var prevIndent = "    ";
             var indent = "        ";
             contents.Append(prevIndent);
+            bool useSeparateImpl = false; // True if separate function declaration from implementation
 #if USE_NETCORE
             contents.AppendFormat("DLLEXPORT static {0} {1}(", returnValueType, functionInfo.UniqueName);
             string libraryEntryPoint;
             if (buildData.Toolchain.Compiler == TargetCompiler.MSVC)
+            {
                 libraryEntryPoint = $"{caller.FullNameManaged}::Internal_{functionInfo.UniqueName}"; // MSVC allows to override exported symbol name
+            }
             else
-                libraryEntryPoint = CppNameMangling.MangleFunctionName(buildData, functionInfo.Name, callerName + "Internal", functionInfo.Parameters, functionInfo.Glue.CustomParameters);
+            {
+                libraryEntryPoint = CppNameMangling.MangleFunctionName(buildData, functionInfo.Name, callerName, functionInfo.Parameters, functionInfo.Glue.CustomParameters);
+                useSeparateImpl = true; // DLLEXPORT doesn't properly export function thus separate implementation from declaration
+            }
             functionInfo.Glue.LibraryEntryPoint = libraryEntryPoint;
 #else
             contents.AppendFormat("static {0} {1}(", returnValueType, functionInfo.UniqueName);
@@ -972,6 +979,7 @@ namespace Flax.Build.Bindings
             CppInternalCalls.Add(new KeyValuePair<string, string>(functionInfo.UniqueName, functionInfo.UniqueName));
 
             var separator = false;
+            var signatureStart = contents.Length;
             if (!functionInfo.IsStatic)
             {
                 contents.Append(string.Format("{0}* obj", caller.Name));
@@ -1066,6 +1074,17 @@ namespace Flax.Build.Bindings
             }
 
             contents.Append(')');
+            if (useSeparateImpl)
+            {
+                // Write declarion only, function definition wil be put in the end of the file
+                CppContentsEnd.AppendFormat("{0} {2}::{1}(", returnValueType, functionInfo.UniqueName, callerName);
+                var sig = contents.ToString(signatureStart, contents.Length - signatureStart);
+                CppContentsEnd.Append(contents.ToString(signatureStart, contents.Length - signatureStart));
+                contents.Append(';').AppendLine();
+                contents = CppContentsEnd;
+                prevIndent = null;
+                indent = "    ";
+            }
             contents.AppendLine();
             contents.Append(prevIndent).AppendLine("{");
 #if USE_NETCORE
@@ -1818,6 +1837,7 @@ namespace Flax.Build.Bindings
             var classTypeNameManaged = classInfo.FullNameManaged;
             var classTypeNameManagedInternalCall = classTypeNameManaged.Replace('+', '/');
             var classTypeNameInternal = classInfo.FullNameNativeInternal;
+            var internalTypeName = classTypeNameInternal + "Internal";
             var useScripting = classInfo.IsStatic || classInfo.IsScriptingObject;
             var useCSharp = EngineConfiguration.WithCSharp(buildData.TargetOptions);
             var hasInterface = classInfo.Interfaces != null && classInfo.Interfaces.Any(x => x.Access == AccessLevel.Public);
@@ -1828,7 +1848,7 @@ namespace Flax.Build.Bindings
             GenerateCppTypeInternalsStatics?.Invoke(buildData, classInfo, contents);
 
             contents.AppendLine();
-            contents.AppendFormat("class {0}Internal", classTypeNameInternal).AppendLine();
+            contents.Append("class ").Append(internalTypeName).AppendLine();
             contents.Append('{').AppendLine();
             contents.AppendLine("public:");
 
@@ -1933,7 +1953,7 @@ namespace Flax.Build.Bindings
                     if (eventInfo.IsStatic)
                         contents.AppendFormat("        f.Bind<{0}_ManagedWrapper>();", eventInfo.Name).AppendLine();
                     else
-                        contents.AppendFormat("        f.Bind<{1}Internal, &{1}Internal::{0}_ManagedWrapper>(({1}Internal*)obj);", eventInfo.Name, classTypeNameInternal).AppendLine();
+                        contents.AppendFormat("        f.Bind<{1}, &{1}::{0}_ManagedWrapper>(({1}*)obj);", eventInfo.Name, internalTypeName).AppendLine();
                     contents.Append("        if (bind)").AppendLine();
                     contents.AppendFormat("            {0}{1}.Bind(f);", bindPrefix, eventInfo.Name).AppendLine();
                     contents.Append("        else").AppendLine();
@@ -1984,7 +2004,7 @@ namespace Flax.Build.Bindings
                 if (eventInfo.IsStatic)
                     contents.AppendFormat("        f.Bind<{0}_Wrapper>();", eventInfo.Name).AppendLine();
                 else
-                    contents.AppendFormat("        f.Bind<{1}Internal, &{1}Internal::{0}_Wrapper>(({1}Internal*)instance);", eventInfo.Name, classTypeNameInternal).AppendLine();
+                    contents.AppendFormat("        f.Bind<{1}, &{1}::{0}_Wrapper>(({1}*)instance);", eventInfo.Name, internalTypeName).AppendLine();
                 contents.Append("        if (bind)").AppendLine();
                 contents.AppendFormat("            {0}{1}.Bind(f);", bindPrefix, eventInfo.Name).AppendLine();
                 contents.Append("        else").AppendLine();
@@ -1998,14 +2018,14 @@ namespace Flax.Build.Bindings
                 if (!useScripting || !useCSharp || fieldInfo.IsHidden || fieldInfo.IsConstexpr)
                     continue;
                 if (fieldInfo.Getter != null)
-                    GenerateCppWrapperFunction(buildData, contents, classInfo, classTypeNameInternal, fieldInfo.Getter, "{0}");
+                    GenerateCppWrapperFunction(buildData, contents, classInfo, internalTypeName, fieldInfo.Getter, "{0}");
                 if (fieldInfo.Setter != null)
                 {
                     var callFormat = "{0} = {1}";
                     var type = fieldInfo.Setter.Parameters[0].Type;
                     if (type.IsArray)
                         callFormat = $"auto __tmp = {{1}}; for (int32 i = 0; i < {type.ArraySize}; i++) {{0}}[i] = __tmp[i]";
-                    GenerateCppWrapperFunction(buildData, contents, classInfo, classTypeNameInternal, fieldInfo.Setter, callFormat);
+                    GenerateCppWrapperFunction(buildData, contents, classInfo, internalTypeName, fieldInfo.Setter, callFormat);
                 }
             }
 
@@ -2015,9 +2035,9 @@ namespace Flax.Build.Bindings
                 if (!useScripting || !useCSharp || propertyInfo.IsHidden)
                     continue;
                 if (propertyInfo.Getter != null)
-                    GenerateCppWrapperFunction(buildData, contents, classInfo, classTypeNameInternal, propertyInfo.Getter);
+                    GenerateCppWrapperFunction(buildData, contents, classInfo, internalTypeName, propertyInfo.Getter);
                 if (propertyInfo.Setter != null)
-                    GenerateCppWrapperFunction(buildData, contents, classInfo, classTypeNameInternal, propertyInfo.Setter);
+                    GenerateCppWrapperFunction(buildData, contents, classInfo, internalTypeName, propertyInfo.Setter);
             }
 
             // Functions
@@ -2027,7 +2047,7 @@ namespace Flax.Build.Bindings
                     continue;
                 if (!useScripting)
                     throw new Exception($"Not supported function {functionInfo.Name} inside non-static and non-scripting class type {classInfo.Name}.");
-                GenerateCppWrapperFunction(buildData, contents, classInfo, classTypeNameInternal, functionInfo);
+                GenerateCppWrapperFunction(buildData, contents, classInfo, internalTypeName, functionInfo);
             }
 
             // Interface implementation
@@ -2041,7 +2061,7 @@ namespace Flax.Build.Bindings
                     {
                         if (!classInfo.IsScriptingObject)
                             throw new Exception($"Class {classInfo.Name} cannot implement interface {interfaceInfo.Name} because it requires ScriptingObject as a base class.");
-                        GenerateCppWrapperFunction(buildData, contents, classInfo, classTypeNameInternal, functionInfo);
+                        GenerateCppWrapperFunction(buildData, contents, classInfo, internalTypeName, functionInfo);
                     }
                 }
             }
@@ -2141,6 +2161,7 @@ namespace Flax.Build.Bindings
             var structureTypeNameManaged = structureInfo.FullNameManaged;
             var structureTypeNameManagedInternalCall = structureTypeNameManaged.Replace('+', '/');
             var structureTypeNameInternal = structureInfo.FullNameNativeInternal;
+            var internalTypeName = structureTypeNameInternal + "Internal";
             var useCSharp = EngineConfiguration.WithCSharp(buildData.TargetOptions);
             CppInternalCalls.Clear();
 
@@ -2197,9 +2218,9 @@ namespace Flax.Build.Bindings
                 }
 
                 if (fieldInfo.Getter != null)
-                    GenerateCppWrapperFunction(buildData, contents, structureInfo, structureTypeNameInternal, fieldInfo.Getter, "{0}");
+                    GenerateCppWrapperFunction(buildData, contents, structureInfo, internalTypeName, fieldInfo.Getter, "{0}");
                 if (fieldInfo.Setter != null)
-                    GenerateCppWrapperFunction(buildData, contents, structureInfo, structureTypeNameInternal, fieldInfo.Setter, "{0} = {1}");
+                    GenerateCppWrapperFunction(buildData, contents, structureInfo, internalTypeName, fieldInfo.Setter, "{0} = {1}");
             }
 
             // Functions
@@ -2564,6 +2585,7 @@ namespace Flax.Build.Bindings
         private static void GenerateCpp(BuildData buildData, ModuleInfo moduleInfo, ref BindingsResult bindings)
         {
             var contents = GetStringBuilder();
+            CppContentsEnd = GetStringBuilder();
             CppUsedNonPodTypes.Clear();
             CppReferencesFiles.Clear();
             CppIncludeFiles.Clear();
@@ -2982,6 +3004,9 @@ namespace Flax.Build.Bindings
 
                 PutStringBuilder(header);
             }
+
+            contents.Append(CppContentsEnd);
+            PutStringBuilder(CppContentsEnd);
 
             contents.AppendLine("PRAGMA_ENABLE_DEPRECATION_WARNINGS");
 
