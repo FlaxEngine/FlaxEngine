@@ -1036,7 +1036,7 @@ namespace FlaxEngine
         private static Dictionary<Assembly, ManagedHandle> assemblyHandles = new();
 
         private static Dictionary<string, IntPtr> loadedNativeLibraries = new();
-        private static Dictionary<string, string> nativeLibraryPaths = new();
+        internal static Dictionary<string, string> nativeLibraryPaths = new();
         private static Dictionary<Assembly, string> assemblyOwnedNativeLibraries = new();
         internal static AssemblyLoadContext scriptingAssemblyLoadContext;
 

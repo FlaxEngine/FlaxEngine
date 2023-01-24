@@ -1,5 +1,49 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System;
+using System.Reflection;
+using System.Runtime.InteropServices;
+
+namespace FlaxEngine.Tests
+{
+    /// <summary>
+    /// Tests for scripting.
+    /// </summary>
+    public class TestScripting
+    {
+        /// <summary>
+        /// Tests all <see cref="LibraryImportAttribute"/> usages in the engine to verify all bindigns are correct to work with P/Invoke.
+        /// </summary>
+        public static int TestLibraryImports()
+        {
+            var result = 0;
+            var libraryName = "FlaxEngine";
+            var library = NativeLibrary.Load(NativeInterop.nativeLibraryPaths[libraryName]);
+            if (library == IntPtr.Zero)
+                return -1;
+            var types = typeof(FlaxEngine.Object).Assembly.GetTypes();
+            foreach (var type in types)
+            {
+                var methods = type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                foreach (var method in methods)
+                {
+                    var libraryImport = method.GetCustomAttribute<LibraryImportAttribute>();
+                    if (libraryImport == null || libraryImport.LibraryName != libraryName || libraryImport.EntryPoint == null)
+                        continue;
+                    bool found = NativeLibrary.TryGetExport(library, libraryImport.EntryPoint, out var addr);
+                    if (!found)
+                    {
+                        Debug.LogError("Missing library import: " + libraryImport.EntryPoint);
+                        result++;
+                    }
+                }
+            }
+            NativeLibrary.Free(library);
+            return result;
+        }
+    }
+}
+
 namespace FlaxEngine
 {
     partial struct TestStruct : System.IEquatable<TestStruct>

@@ -2,6 +2,9 @@
 
 #include "TestScripting.h"
 #include "Engine/Scripting/Scripting.h"
+#include "Engine/Scripting/ManagedCLR/MClass.h"
+#include "Engine/Scripting/ManagedCLR/MMethod.h"
+#include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include <ThirdParty/catch2/catch.hpp>
 
 TestClassNative::TestClassNative(const SpawnParams& params)
@@ -11,6 +14,18 @@ TestClassNative::TestClassNative(const SpawnParams& params)
 
 TEST_CASE("Scripting")
 {
+    SECTION("Test Library Imports")
+    {
+        MClass* klass = Scripting::FindClass("FlaxEngine.Tests.TestScripting");
+        CHECK(klass);
+        MMethod* method = klass->GetMethod("TestLibraryImports");
+        CHECK(method);
+        MObject* result = method->Invoke(nullptr, nullptr, nullptr);
+        CHECK(result);
+        int32 resultValue = MUtils::Unbox<int32>(result);
+        CHECK(resultValue == 0);
+    }
+
     SECTION("Test Class")
     {
         // Test native class

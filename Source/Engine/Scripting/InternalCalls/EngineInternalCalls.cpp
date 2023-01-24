@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+#include "Engine/Platform/Platform.h"
 #include "Engine/Animations/Graph/AnimGraph.h"
 #include "Engine/Scripting/InternalCalls.h"
 #include "Engine/Scripting/MException.h"
