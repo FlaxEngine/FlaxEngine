@@ -83,6 +83,7 @@ namespace Flax.Build
                 }
                 
                 // Skip when project references were changed
+                if (Globals.Project != null)
                 {
                     DateTime lastWriteTime = File.GetLastWriteTime(Globals.Project.ProjectPath);
                     if (lastWriteTime > recentWriteTime)
