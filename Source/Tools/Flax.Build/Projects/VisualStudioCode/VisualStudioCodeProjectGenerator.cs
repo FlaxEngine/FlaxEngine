@@ -356,7 +356,11 @@ namespace Flax.Build.Projects.VisualStudioCode
                                                     json.AddField("ignoreFailures", true);
                                                     json.EndObject();
 
-                                                    // Ignore signals used by Mono
+                                                    // Ignore signals used by C# runtime
+                                                    json.BeginObject();
+                                                    json.AddField("description", "ignore SIG34 signal");
+                                                    json.AddField("text", "handle SIG34 nostop noprint pass");
+                                                    json.EndObject();
                                                     json.BeginObject();
                                                     json.AddField("description", "ignore SIG35 signal");
                                                     json.AddField("text", "handle SIG35 nostop noprint pass");
