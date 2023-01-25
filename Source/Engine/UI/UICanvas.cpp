@@ -17,8 +17,8 @@ MMethod* UICanvas_Serialize = nullptr;
 MMethod* UICanvas_SerializeDiff = nullptr;
 MMethod* UICanvas_Deserialize = nullptr;
 MMethod* UICanvas_PostDeserialize = nullptr;
-MMethod* UICanvas_OnEnable = nullptr;
-MMethod* UICanvas_OnDisable = nullptr;
+MMethod* UICanvas_Enable = nullptr;
+MMethod* UICanvas_Disable = nullptr;
 #if USE_EDITOR
 MMethod* UICanvas_OnActiveInTreeChanged = nullptr;
 #endif
@@ -51,8 +51,8 @@ UICanvas::UICanvas(const SpawnParams& params)
         UICanvas_SerializeDiff = mclass->GetMethod("SerializeDiff", 1);
         UICanvas_Deserialize = mclass->GetMethod("Deserialize", 1);
         UICanvas_PostDeserialize = mclass->GetMethod("PostDeserialize");
-        UICanvas_OnEnable = mclass->GetMethod("OnEnable");
-        UICanvas_OnDisable = mclass->GetMethod("OnDisable");
+        UICanvas_Enable = mclass->GetMethod("Enable");
+        UICanvas_Disable = mclass->GetMethod("Disable");
 #if USE_EDITOR
         UICanvas_OnActiveInTreeChanged = mclass->GetMethod("OnActiveInTreeChanged");
 #endif
@@ -163,7 +163,7 @@ void UICanvas::OnParentChanged()
 
 void UICanvas::OnEnable()
 {
-    UICANVAS_INVOKE(OnEnable);
+    UICANVAS_INVOKE(Enable);
 
     // Base
     Actor::OnEnable();
@@ -174,7 +174,7 @@ void UICanvas::OnDisable()
     // Base
     Actor::OnDisable();
 
-    UICANVAS_INVOKE(OnDisable);
+    UICANVAS_INVOKE(Disable);
 }
 
 void UICanvas::OnTransformChanged()

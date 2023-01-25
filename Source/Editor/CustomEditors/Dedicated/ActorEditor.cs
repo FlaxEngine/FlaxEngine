@@ -94,7 +94,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     if (actor != null)
                         group.Panel.TooltipText = Surface.SurfaceUtils.GetVisualScriptTypeDescription(TypeUtils.GetObjectType(actor));
-                    const float settingsButtonSize = 14;
+                    float settingsButtonSize = group.Panel.HeaderHeight;
                     var settingsButton = new Image
                     {
                         TooltipText = "Settings",

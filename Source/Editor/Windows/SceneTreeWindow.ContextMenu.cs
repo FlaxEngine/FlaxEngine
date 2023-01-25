@@ -66,7 +66,7 @@ namespace FlaxEditor.Windows
                     if (actorType.IsAbstract)
                         continue;
                     ActorContextMenuAttribute attribute = null;
-                    foreach (var e in actorType.GetAttributes(true))
+                    foreach (var e in actorType.GetAttributes(false))
                     {
                         if (e is ActorContextMenuAttribute actorContextMenuAttribute)
                         {
@@ -152,11 +152,11 @@ namespace FlaxEditor.Windows
             // go through each actor and add it to the context menu if it has the ActorContextMenu attribute
             foreach (var actorType in Editor.CodeEditing.Actors.Get())
             {
-                if (actorType.IsAbstract || !actorType.HasAttribute(typeof(ActorContextMenuAttribute), true))
+                if (actorType.IsAbstract || !actorType.HasAttribute(typeof(ActorContextMenuAttribute), false))
                     continue;
 
                 ActorContextMenuAttribute attribute = null;
-                foreach (var actorAttribute in actorType.GetAttributes(true))
+                foreach (var actorAttribute in actorType.GetAttributes(false))
                 {
                     if (actorAttribute is ActorContextMenuAttribute actorContextMenuAttribute)
                     {
