@@ -91,6 +91,10 @@ namespace
 void AudioSettings::Apply()
 {
     ::MuteOnFocusLoss = MuteOnFocusLoss;
+    if (AudioBackend::Instance != nullptr)
+    {
+        Audio::SetDopplerFactor(DopplerFactor);
+    }
 }
 
 AudioDevice* Audio::GetActiveDevice()
