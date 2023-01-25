@@ -235,12 +235,11 @@ namespace FlaxEngine
         public static string GetAssemblyLocation(Assembly assembly)
         {
 #if USE_NETCORE
-            if (!string.IsNullOrEmpty(assembly.Location))
-                return assembly.Location;
-
-            if (NativeInterop.AssemblyLocations.TryGetValue(assembly.FullName, out string assemblyLocation))
-                return assemblyLocation;
-
+            var location = assembly.Location;
+            if (!string.IsNullOrEmpty(location))
+                return location;
+            if (NativeInterop.AssemblyLocations.TryGetValue(assembly.FullName, out location))
+                return location;
             return null;
 #else
             return assembly.Location;

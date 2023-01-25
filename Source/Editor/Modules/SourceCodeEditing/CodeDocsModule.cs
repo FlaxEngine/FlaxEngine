@@ -257,13 +257,18 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             {
                 Profiler.BeginEvent("GetXmlDocs");
 
-                var uri = new UriBuilder(Utils.GetAssemblyLocation(assembly));
-                var path = Uri.UnescapeDataString(uri.Path);
-                var name = assembly.GetName().Name;
-                var xmlFilePath = Path.Combine(Path.GetDirectoryName(path), name + ".xml");
+                var assemblyPath = Utils.GetAssemblyLocation(assembly);
+                var assemblyName = assembly.GetName().Name;
+                var xmlFilePath = Path.ChangeExtension(assemblyPath, ".xml");
+                if (!File.Exists(assemblyPath))
+                {
+                    var uri = new UriBuilder(assemblyPath);
+                    var path = Uri.UnescapeDataString(uri.Path);
+                    xmlFilePath = Path.Combine(Path.GetDirectoryName(path), assemblyName + ".xml");
+                }
                 if (File.Exists(xmlFilePath))
                 {
-                    Profiler.BeginEvent(name);
+                    Profiler.BeginEvent(assemblyName);
                     try
                     {
                         // Parse xml documentation
