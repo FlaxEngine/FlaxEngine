@@ -2714,8 +2714,10 @@ Rectangle LinuxPlatform::GetVirtualDesktopBounds()
 String LinuxPlatform::GetMainDirectory()
 {
     char buffer[UNIX_APP_BUFF_SIZE];
-    readlink("/proc/self/exe", buffer, UNIX_APP_BUFF_SIZE);
-    const String str(buffer);
+    const int32 len = readlink("/proc/self/exe", buffer, UNIX_APP_BUFF_SIZE);
+	if (len <= 0)
+		return String::Empty;
+    const String str(buffer, len);
     int32 pos = str.FindLast(TEXT('/'));
     if (pos != -1 && ++pos < str.Length())
         return str.Left(pos);
@@ -2725,8 +2727,10 @@ String LinuxPlatform::GetMainDirectory()
 String LinuxPlatform::GetExecutableFilePath()
 {
     char buffer[UNIX_APP_BUFF_SIZE];
-    readlink("/proc/self/exe", buffer, UNIX_APP_BUFF_SIZE);
-    return String(buffer);
+    const int32 len = readlink("/proc/self/exe", buffer, UNIX_APP_BUFF_SIZE);
+	if (len <= 0)
+		return String::Empty;
+    return String(buffer, len);
 }
 
 Guid LinuxPlatform::GetUniqueDeviceId()
