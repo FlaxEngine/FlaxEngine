@@ -268,6 +268,19 @@ namespace FlaxEngine
         public float LengthSquared => X * X + Y * Y;
 
         /// <summary>
+        /// Gets the normalized vector. Returned vector has length equal 1.
+        /// </summary>
+        public Float2 Normalized
+        {
+            get
+            {
+                Float2 result = this;
+                result.Normalize();
+                return result;
+            }
+        }
+
+        /// <summary>
         /// Converts the vector into a unit vector.
         /// </summary>
         public void Normalize()

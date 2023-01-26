@@ -167,7 +167,7 @@ public:
     /// <summary>
     /// Checks if any gamepad button is currently pressed.
     /// </summary>
-    API_PROPERTY() bool IsAnyKeyDown() const;
+    API_PROPERTY() bool IsAnyButtonDown() const;
 
     /// <summary>
     /// Gets the gamepad button up state (true if was released during the current frame).

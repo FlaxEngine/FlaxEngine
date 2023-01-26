@@ -31,7 +31,7 @@ void Gamepad::ResetState()
     _mappedPrevState.Clear();
 }
 
-bool Gamepad::IsAnyKeyDown() const
+bool Gamepad::IsAnyButtonDown() const
 {
     // TODO: optimize with SIMD
     bool result = false;

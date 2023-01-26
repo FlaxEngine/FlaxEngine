@@ -183,7 +183,7 @@ void Mouse::OnMouseDown(const Float2& position, const MouseButton button, Window
     e.MouseData.Position = position;
 }
 
-bool Mouse::IsAnyKeyDown() const
+bool Mouse::IsAnyButtonDown() const
 {
     // TODO: optimize with SIMD
     bool result = false;
