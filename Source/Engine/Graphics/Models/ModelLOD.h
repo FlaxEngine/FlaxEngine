@@ -124,9 +124,7 @@ public:
     FORCE_INLINE void Render(GPUContext* context)
     {
         for (int32 i = 0; i < Meshes.Count(); i++)
-        {
             Meshes.Get()[i].Render(context);
-        }
     }
 
     /// <summary>
@@ -139,12 +137,11 @@ public:
     /// <param name="receiveDecals">True if rendered geometry can receive decals, otherwise false.</param>
     /// <param name="drawModes">The draw passes to use for rendering this object.</param>
     /// <param name="perInstanceRandom">The random per-instance value (normalized to range 0-1).</param>
-    API_FUNCTION() void Draw(API_PARAM(Ref) const RenderContext& renderContext, MaterialBase* material, API_PARAM(Ref) const Matrix& world, StaticFlags flags = StaticFlags::None, bool receiveDecals = true, DrawPass drawModes = DrawPass::Default, float perInstanceRandom = 0.0f) const
+    /// <param name="sortOrder">Object sorting key.</param>
+    API_FUNCTION() void Draw(API_PARAM(Ref) const RenderContext& renderContext, MaterialBase* material, API_PARAM(Ref) const Matrix& world, StaticFlags flags = StaticFlags::None, bool receiveDecals = true, DrawPass drawModes = DrawPass::Default, float perInstanceRandom = 0.0f, int16 sortOrder = 0) const
     {
         for (int32 i = 0; i < Meshes.Count(); i++)
-        {
-            Meshes.Get()[i].Draw(renderContext, material, world, flags, receiveDecals, drawModes, perInstanceRandom);
-        }
+            Meshes.Get()[i].Draw(renderContext, material, world, flags, receiveDecals, drawModes, perInstanceRandom, sortOrder);
     }
 
     /// <summary>
@@ -156,9 +153,7 @@ public:
     FORCE_INLINE void Draw(const RenderContext& renderContext, const Mesh::DrawInfo& info, float lodDitherFactor) const
     {
         for (int32 i = 0; i < Meshes.Count(); i++)
-        {
             Meshes.Get()[i].Draw(renderContext, info, lodDitherFactor);
-        }
     }
 
     /// <summary>
@@ -170,8 +165,6 @@ public:
     FORCE_INLINE void Draw(const RenderContextBatch& renderContextBatch, const Mesh::DrawInfo& info, float lodDitherFactor) const
     {
         for (int32 i = 0; i < Meshes.Count(); i++)
-        {
             Meshes.Get()[i].Draw(renderContextBatch, info, lodDitherFactor);
-        }
     }
 };

@@ -412,12 +412,28 @@ void RenderList::Clear()
     _instanceBuffer.Clear();
 }
 
-FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall& drawCall)
+struct PackedSortKey
+{
+    union
+    {
+        uint64 Data;
+
+        struct
+        {
+            uint32 DistanceKey;
+            uint16 BatchKey;
+            uint16 SortKey;
+        };
+    };
+};
+
+FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall& drawCall, int16 sortOrder)
 {
     const Float3 planeNormal = renderContext.View.Direction;
     const float planePoint = -Float3::Dot(planeNormal, renderContext.View.Position);
     const float distance = Float3::Dot(planeNormal, drawCall.ObjectPosition) - planePoint;
-    const uint32 sortKey = RenderTools::ComputeDistanceSortKey(distance);
+    PackedSortKey key;
+    key.DistanceKey = RenderTools::ComputeDistanceSortKey(distance);
     uint32 batchKey = GetHash(drawCall.Geometry.IndexBuffer);
     batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
     batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
@@ -427,10 +443,12 @@ FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall&
     if (drawCall.Material->CanUseInstancing(handler))
         handler.GetHash(drawCall, batchKey);
     batchKey += (int32)(471 * drawCall.WorldDeterminantSign);
-    drawCall.SortKey = (uint64)batchKey << 32 | (uint64)sortKey;
+    key.SortKey = (uint16)(sortOrder - MIN_int16);
+    key.BatchKey = (uint16)batchKey;
+    drawCall.SortKey = key.Data;
 }
 
-void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals)
+void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals, int16 sortOrder)
 {
 #if ENABLE_ASSERTION_LOW_LAYERS
     // Ensure that draw modes are non-empty and in conjunction with material draw modes
@@ -439,7 +457,7 @@ void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawMo
 #endif
 
     // Append draw call data
-    CalculateSortKey(renderContext, drawCall);
+    CalculateSortKey(renderContext, drawCall, sortOrder);
     const int32 index = DrawCalls.Add(drawCall);
 
     // Add draw call to proper draw lists
@@ -468,7 +486,7 @@ void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawMo
     }
 }
 
-void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals)
+void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals, int16 sortOrder)
 {
 #if ENABLE_ASSERTION_LOW_LAYERS
     // Ensure that draw modes are non-empty and in conjunction with material draw modes
@@ -478,7 +496,7 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
     const RenderContext& mainRenderContext = renderContextBatch.Contexts.Get()[0];
 
     // Append draw call data
-    CalculateSortKey(mainRenderContext, drawCall);
+    CalculateSortKey(mainRenderContext, drawCall, sortOrder);
     const int32 index = DrawCalls.Add(drawCall);
 
     // Add draw call to proper draw lists
@@ -514,7 +532,7 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
     {
         const RenderContext& renderContext = renderContextBatch.Contexts.Get()[i];
         ASSERT_LOW_LAYER(renderContext.View.Pass == DrawPass::Depth);
-        drawModes = (DrawPass)(modes & renderContext.View.Pass);
+        drawModes = modes & renderContext.View.Pass;
         if (drawModes != DrawPass::None && renderContext.View.CullingFrustum.Intersects(bounds))
         {
             renderContext.List->ShadowDepthDrawCallsList.Indices.Add(index);
@@ -558,16 +576,17 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
 #undef PREPARE_CACHE
     uint64* sortedKeys = SortingKeys[0].Get();
 
-    // Generate sort keys (by depth) and batch keys (higher bits)
+    // Setup sort keys
     if (reverseDistance)
     {
-        const uint32 sortKeyXor = reverseDistance ? MAX_uint32 : 0;
         for (int32 i = 0; i < listSize; i++)
         {
             const DrawCall& drawCall = drawCallsData[listData[i]];
-            const uint32 sortKey = (uint32)drawCall.SortKey ^ sortKeyXor;
-            const uint32 batchKey = (uint32)(drawCall.SortKey >> 32);
-            sortedKeys[i] = (uint64)batchKey << 32 | (uint64)sortKey;
+            PackedSortKey key;
+            key.Data = drawCall.SortKey;
+            key.DistanceKey ^= MAX_uint32; // Reverse depth
+            key.SortKey ^= MAX_uint16; // Reverse sort order
+            sortedKeys[i] = key.Data;
         }
     }
     else
@@ -605,7 +624,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
         }
 
         DrawBatch batch;
-        batch.SortKey = sortedKeys[i] & MAX_uint32;
+        batch.SortKey = sortedKeys[i];
         batch.StartIndex = i;
         batch.BatchSize = batchSize;
         batch.InstanceCount = instanceCount;

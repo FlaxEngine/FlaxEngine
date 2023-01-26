@@ -25,6 +25,7 @@ StaticModel::StaticModel(const SpawnParams& params)
     , _forcedLod(-1)
     , _vertexColorsDirty(false)
     , _vertexColorsCount(0)
+    , _sortOrder(0)
 {
     _drawCategory = SceneRendering::SceneDrawAsync;
     Model.Changed.Bind<StaticModel, &StaticModel::OnModelChanged>(this);
@@ -37,9 +38,19 @@ StaticModel::~StaticModel()
         SAFE_DELETE_GPU_RESOURCE(_vertexColorsBuffer[lodIndex]);
 }
 
+float StaticModel::GetScaleInLightmap() const
+{
+    return _scaleInLightmap;
+}
+
 void StaticModel::SetScaleInLightmap(float value)
 {
     _scaleInLightmap = value;
+}
+
+float StaticModel::GetBoundsScale() const
+{
+    return _boundsScale;
 }
 
 void StaticModel::SetBoundsScale(float value)
@@ -49,6 +60,46 @@ void StaticModel::SetBoundsScale(float value)
 
     _boundsScale = value;
     UpdateBounds();
+}
+
+int32 StaticModel::GetLODBias() const
+{
+    return _lodBias;
+}
+
+void StaticModel::SetLODBias(int32 value)
+{
+    _lodBias = static_cast<char>(Math::Clamp(value, -100, 100));
+}
+
+int32 StaticModel::GetForcedLOD() const
+{
+    return _forcedLod;
+}
+
+void StaticModel::SetForcedLOD(int32 value)
+{
+    _forcedLod = static_cast<char>(Math::Clamp(value, -1, 100));
+}
+
+int32 StaticModel::GetSortOrder() const
+{
+    return _sortOrder;
+}
+
+void StaticModel::SetSortOrder(int32 value)
+{
+    _sortOrder = (int16)Math::Clamp<int32>(value, MIN_int16, MAX_int16);
+}
+
+bool StaticModel::HasLightmap() const
+{
+    return Lightmap.TextureIndex != INVALID_INDEX;
+}
+
+void StaticModel::RemoveLightmap()
+{
+    Lightmap.TextureIndex = INVALID_INDEX;
 }
 
 MaterialBase* StaticModel::GetMaterial(int32 meshIndex, int32 lodIndex) const
@@ -151,6 +202,11 @@ void StaticModel::SetVertexColor(int32 lodIndex, int32 meshIndex, int32 vertexIn
     }
 
     LOG(Warning, "Specified model mesh index was out of range. LOD{0} mesh {1}.", lodIndex, meshIndex);
+}
+
+bool StaticModel::HasVertexColors() const
+{
+    return _vertexColorsCount != 0;
 }
 
 void StaticModel::RemoveVertexColors()
@@ -292,6 +348,7 @@ void StaticModel::Draw(RenderContext& renderContext)
     draw.PerInstanceRandom = GetPerInstanceRandom();
     draw.LODBias = _lodBias;
     draw.ForcedLOD = _forcedLod;
+    draw.SortOrder = _sortOrder;
     draw.VertexColors = _vertexColorsCount ? _vertexColorsBuffer : nullptr;
 
     Model->Draw(renderContext, draw);
@@ -324,6 +381,7 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
     draw.PerInstanceRandom = GetPerInstanceRandom();
     draw.LODBias = _lodBias;
     draw.ForcedLOD = _forcedLod;
+    draw.SortOrder = _sortOrder;
     draw.VertexColors = _vertexColorsCount ? _vertexColorsBuffer : nullptr;
 
     Model->Draw(renderContextBatch, draw);
@@ -356,6 +414,7 @@ void StaticModel::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(Model);
     SERIALIZE_MEMBER(LODBias, _lodBias);
     SERIALIZE_MEMBER(ForcedLOD, _forcedLod);
+    SERIALIZE_MEMBER(SortOrder, _sortOrder);
     SERIALIZE(DrawModes);
 
     if (HasLightmap()
@@ -405,22 +464,9 @@ void StaticModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(ScaleInLightmap, _scaleInLightmap);
     DESERIALIZE_MEMBER(BoundsScale, _boundsScale);
     DESERIALIZE(Model);
-
-    {
-        const auto member = stream.FindMember("LODBias");
-        if (member != stream.MemberEnd() && member->value.IsInt())
-        {
-            SetLODBias(member->value.GetInt());
-        }
-    }
-    {
-        const auto member = stream.FindMember("ForcedLOD");
-        if (member != stream.MemberEnd() && member->value.IsInt())
-        {
-            SetForcedLOD(member->value.GetInt());
-        }
-    }
-
+    DESERIALIZE_MEMBER(LODBias, _lodBias);
+    DESERIALIZE_MEMBER(ForcedLOD, _forcedLod);
+    DESERIALIZE_MEMBER(SortOrder, _sortOrder);
     DESERIALIZE(DrawModes);
     DESERIALIZE_MEMBER(LightmapIndex, Lightmap.TextureIndex);
     DESERIALIZE_MEMBER(LightmapArea, Lightmap.UVsArea);

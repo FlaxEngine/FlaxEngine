@@ -392,7 +392,7 @@ void TextRender::Draw(RenderContext& renderContext)
             drawCall.Draw.IndicesCount = e.IndicesCount;
             drawCall.Draw.StartIndex = e.StartIndex;
             drawCall.Material = e.Material;
-            renderContext.List->AddDrawCall(renderContext, chunkDrawModes, GetStaticFlags(), drawCall, true);
+            renderContext.List->AddDrawCall(renderContext, chunkDrawModes, GetStaticFlags(), drawCall, true, SortOrder);
         }
     }
 
@@ -450,6 +450,7 @@ void TextRender::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(Font);
     SERIALIZE(ShadowsMode);
     SERIALIZE(DrawModes);
+    SERIALIZE(SortOrder);
     SERIALIZE_MEMBER(Bounds, _layoutOptions.Bounds);
     SERIALIZE_MEMBER(HAlignment, _layoutOptions.HorizontalAlignment);
     SERIALIZE_MEMBER(VAlignment, _layoutOptions.VerticalAlignment);
@@ -470,6 +471,7 @@ void TextRender::Deserialize(DeserializeStream& stream, ISerializeModifier* modi
     DESERIALIZE(Font);
     DESERIALIZE(ShadowsMode);
     DESERIALIZE(DrawModes);
+    DESERIALIZE(SortOrder);
     DESERIALIZE_MEMBER(Bounds, _layoutOptions.Bounds);
     DESERIALIZE_MEMBER(HAlignment, _layoutOptions.HorizontalAlignment);
     DESERIALIZE_MEMBER(VAlignment, _layoutOptions.VerticalAlignment);

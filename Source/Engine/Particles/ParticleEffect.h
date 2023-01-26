@@ -246,6 +246,12 @@ public:
     API_FIELD(Attributes="EditorDisplay(\"Particle Effect\"), EditorOrder(75), DefaultValue(DrawPass.Default)")
     DrawPass DrawModes = DrawPass::Default;
 
+    /// <summary>
+    /// The object sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be use to control transparency drawing.
+    /// </summary>
+    API_FIELD(Attributes="EditorDisplay(\"Particle Effect\"), EditorOrder(80), DefaultValue(0)")
+    int16 SortOrder = 0;
+
 public:
     /// <summary>
     /// Gets the effect parameters collection. Those parameters are instanced from the <see cref="ParticleSystem"/> that contains a linear list of emitters and every emitter has a list of own parameters.

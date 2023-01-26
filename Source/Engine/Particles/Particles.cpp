@@ -154,7 +154,7 @@ void Particles::OnEffectDestroy(ParticleEffect* effect)
 
 typedef Array<int32, FixedAllocation<PARTICLE_EMITTER_MAX_MODULES>> RenderModulesIndices;
 
-void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCall& drawCall, DrawPass drawModes, StaticFlags staticFlags, ParticleEmitterInstance& emitterData, const RenderModulesIndices& renderModulesIndices)
+void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCall& drawCall, DrawPass drawModes, StaticFlags staticFlags, ParticleEmitterInstance& emitterData, const RenderModulesIndices& renderModulesIndices, int16 sortOrder)
 {
     // Skip if CPU buffer is empty
     if (buffer->CPU.Count == 0)
@@ -417,7 +417,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             // Submit draw call
             SpriteRenderer.SetupDrawCall(drawCall);
             drawCall.InstanceCount = buffer->CPU.Count;
-            renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false);
+            renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false, sortOrder);
 
             break;
         }
@@ -445,7 +445,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                 // Submit draw call
                 mesh.GetDrawCallGeometry(drawCall);
                 drawCall.InstanceCount = buffer->CPU.Count;
-                renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false);
+                renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false, sortOrder);
             }
 
             break;
@@ -505,7 +505,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             drawCall.Draw.StartIndex = ribbonModulesDrawIndicesStart[ribbonModuleIndex];
             drawCall.Draw.IndicesCount = ribbonModulesDrawIndicesCount[ribbonModuleIndex];
             drawCall.InstanceCount = 1;
-            renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false);
+            renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false, sortOrder);
 
             ribbonModuleIndex++;
 
@@ -574,7 +574,7 @@ void CleanupGPUParticlesSorting()
     GPUParticlesSorting = nullptr;
 }
 
-void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCall& drawCall, DrawPass drawModes, StaticFlags staticFlags, ParticleEmitterInstance& emitterData, const RenderModulesIndices& renderModulesIndices)
+void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCall& drawCall, DrawPass drawModes, StaticFlags staticFlags, ParticleEmitterInstance& emitterData, const RenderModulesIndices& renderModulesIndices, int16 sortOrder)
 {
     const auto context = GPUDevice::Instance->GetMainContext();
     auto emitter = buffer->Emitter;
@@ -829,7 +829,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             drawCall.Draw.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
             drawCall.Draw.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
             if (dp != DrawPass::None)
-                renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false);
+                renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false, sortOrder);
             indirectDrawCallIndex++;
 
             break;
@@ -859,7 +859,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                 drawCall.Draw.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
                 drawCall.Draw.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
                 if (dp != DrawPass::None)
-                    renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false);
+                    renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false, sortOrder);
                 indirectDrawCallIndex++;
             }
 
@@ -887,13 +887,17 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
 {
     // Setup
     auto& view = renderContext.View;
-    const auto drawModes = view.Pass & effect->DrawModes;
+    const DrawPass drawModes = view.Pass & effect->DrawModes;
     if (drawModes == DrawPass::None || SpriteRenderer.Init())
         return;
     Matrix worlds[2];
     Matrix::Translation(-renderContext.View.Origin, worlds[0]); // World
     renderContext.View.GetWorldMatrix(effect->GetTransform(), worlds[1]); // Local
-    const auto staticFlags = effect->GetStaticFlags();
+    float worldDeterminantSigns[2];
+    worldDeterminantSigns[0] = Math::FloatSelect(worlds[0].RotDeterminant(), 1, -1);
+    worldDeterminantSigns[1] = Math::FloatSelect(worlds[1].RotDeterminant(), 1, -1);
+    const StaticFlags staticFlags = effect->GetStaticFlags();
+    const int16 sortOrder = effect->SortOrder;
 
     // Draw lights
     for (int32 emitterIndex = 0; emitterIndex < effect->Instance.Emitters.Count(); emitterIndex++)
@@ -922,7 +926,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
         auto emitter = buffer->Emitter;
 
         drawCall.World = worlds[(int32)emitter->SimulationSpace];
-        drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
+        drawCall.WorldDeterminantSign = worldDeterminantSigns[(int32)emitter->SimulationSpace];
         drawCall.Particle.Particles = buffer;
 
         // Check if need to render any module
@@ -1002,11 +1006,11 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
         switch (buffer->Mode)
         {
         case ParticlesSimulationMode::CPU:
-            DrawEmitterCPU(renderContext, buffer, drawCall, drawModes, staticFlags, emitterData, renderModulesIndices);
+            DrawEmitterCPU(renderContext, buffer, drawCall, drawModes, staticFlags, emitterData, renderModulesIndices, sortOrder);
             break;
 #if COMPILE_WITH_GPU_PARTICLES
         case ParticlesSimulationMode::GPU:
-            DrawEmitterGPU(renderContext, buffer, drawCall, drawModes, staticFlags, emitterData, renderModulesIndices);
+            DrawEmitterGPU(renderContext, buffer, drawCall, drawModes, staticFlags, emitterData, renderModulesIndices, sortOrder);
             break;
 #endif
         }

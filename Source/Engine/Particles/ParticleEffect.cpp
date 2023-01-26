@@ -576,6 +576,7 @@ void ParticleEffect::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(IsLooping);
     SERIALIZE(UpdateWhenOffscreen);
     SERIALIZE(DrawModes);
+    SERIALIZE(SortOrder);
 }
 
 void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -674,6 +675,7 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     DESERIALIZE(IsLooping);
     DESERIALIZE(UpdateWhenOffscreen);
     DESERIALIZE(DrawModes);
+    DESERIALIZE(SortOrder);
 
     if (_parameters.HasItems())
     {

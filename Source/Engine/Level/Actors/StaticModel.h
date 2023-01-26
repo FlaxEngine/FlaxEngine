@@ -21,6 +21,7 @@ private:
     char _forcedLod;
     bool _vertexColorsDirty;
     byte _vertexColorsCount;
+    int16 _sortOrder;
     Array<Color32> _vertexColorsData[MODEL_MAX_LODS];
     GPUBuffer* _vertexColorsBuffer[MODEL_MAX_LODS];
     Model* _residencyChangedModel = nullptr;
@@ -53,10 +54,7 @@ public:
     /// Gets the model scale in lightmap (applied to all the meshes).
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(10), DefaultValue(1.0f), EditorDisplay(\"Model\", \"Scale In Lightmap\"), Limit(0, 1000.0f, 0.1f)")
-    FORCE_INLINE float GetScaleInLightmap() const
-    {
-        return _scaleInLightmap;
-    }
+    float GetScaleInLightmap() const;
 
     /// <summary>
     /// Sets the model scale in lightmap (applied to all the meshes).
@@ -67,10 +65,7 @@ public:
     /// Gets the model bounds scale. It is useful when using Position Offset to animate the vertices of the object outside of its bounds. Increasing the bounds of an object will reduce performance.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(12), DefaultValue(1.0f), EditorDisplay(\"Model\"), Limit(0, 10.0f, 0.1f)")
-    FORCE_INLINE float GetBoundsScale() const
-    {
-        return _boundsScale;
-    }
+    float GetBoundsScale() const;
 
     /// <summary>
     /// Sets the model bounds scale. It is useful when using Position Offset to animate the vertices of the object outside of its bounds.
@@ -81,51 +76,44 @@ public:
     /// Gets the model Level Of Detail bias value. Allows to increase or decrease rendered model quality.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(40), DefaultValue(0), Limit(-100, 100, 0.1f), EditorDisplay(\"Model\", \"LOD Bias\")")
-    FORCE_INLINE int32 GetLODBias() const
-    {
-        return static_cast<int32>(_lodBias);
-    }
+    int32 GetLODBias() const;
 
     /// <summary>
     /// Sets the model Level Of Detail bias value. Allows to increase or decrease rendered model quality.
     /// </summary>
-    API_PROPERTY() void SetLODBias(int32 value)
-    {
-        _lodBias = static_cast<char>(Math::Clamp(value, -100, 100));
-    }
+    API_PROPERTY() void SetLODBias(int32 value);
 
     /// <summary>
     /// Gets the model forced Level Of Detail index. Allows to bind the given model LOD to show. Value -1 disables this feature.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(-1), Limit(-1, 100, 0.1f), EditorDisplay(\"Model\", \"Forced LOD\")")
-    FORCE_INLINE int32 GetForcedLOD() const
-    {
-        return static_cast<int32>(_forcedLod);
-    }
+    int32 GetForcedLOD() const;
 
     /// <summary>
     /// Sets the model forced Level Of Detail index. Allows to bind the given model LOD to show. Value -1 disables this feature.
     /// </summary>
-    API_PROPERTY() void SetForcedLOD(int32 value)
-    {
-        _forcedLod = static_cast<char>(Math::Clamp(value, -1, 100));
-    }
+    API_PROPERTY() void SetForcedLOD(int32 value);
+
+    /// <summary>
+    /// Gets the model sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be use to control transparency drawing.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(0), EditorDisplay(\"Model\")")
+    int32 GetSortOrder() const;
+
+    /// <summary>
+    /// Sets the model sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be use to control transparency drawing.
+    /// </summary>
+    API_PROPERTY() void SetSortOrder(int32 value);
 
     /// <summary>
     /// Determines whether this model has valid lightmap data.
     /// </summary>
-    API_PROPERTY() FORCE_INLINE bool HasLightmap() const
-    {
-        return Lightmap.TextureIndex != INVALID_INDEX;
-    }
+    API_PROPERTY() bool HasLightmap() const;
 
     /// <summary>
     /// Removes the lightmap data from the model.
     /// </summary>
-    API_FUNCTION() FORCE_INLINE void RemoveLightmap()
-    {
-        Lightmap.TextureIndex = INVALID_INDEX;
-    }
+    API_FUNCTION() void RemoveLightmap();
 
     /// <summary>
     /// Gets the material used to render mesh at given index (overriden by model instance buffer or model default).
@@ -156,10 +144,7 @@ public:
     /// <summary>
     /// Returns true if model instance is using custom painted vertex colors buffer, otherwise it will use vertex colors from the original asset.
     /// </summary>
-    API_PROPERTY() bool HasVertexColors() const
-    {
-        return _vertexColorsCount != 0;
-    }
+    API_PROPERTY() bool HasVertexColors() const;
 
     /// <summary>
     /// Removes the vertex colors buffer from this instance.

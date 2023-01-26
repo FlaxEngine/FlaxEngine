@@ -130,7 +130,7 @@ void SpriteRender::Draw(RenderContext& renderContext)
         view.GetWorldMatrix(_transform, m2);
         Matrix::Multiply(m1, m2, world);
     }
-    model->LODs[0].Draw(renderContext, _materialInstance, world, GetStaticFlags(), false, DrawModes, GetPerInstanceRandom());
+    model->LODs[0].Draw(renderContext, _materialInstance, world, GetStaticFlags(), false, DrawModes, GetPerInstanceRandom(), SortOrder);
 }
 
 void SpriteRender::Serialize(SerializeStream& stream, const void* otherObj)
@@ -147,6 +147,7 @@ void SpriteRender::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(Material);
     SERIALIZE(FaceCamera);
     SERIALIZE(DrawModes);
+    SERIALIZE(SortOrder);
 }
 
 void SpriteRender::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -161,6 +162,7 @@ void SpriteRender::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(Material);
     DESERIALIZE(FaceCamera);
     DESERIALIZE(DrawModes);
+    DESERIALIZE(SortOrder);
 
     SetImage();
     if (_paramColor)
