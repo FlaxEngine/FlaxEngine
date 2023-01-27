@@ -126,13 +126,9 @@ bool MCore::LoadEngine()
     if (!FileSystem::FileExists(csharpRuntimeConfigPath))
         LOG(Fatal, "Failed to initialize managed runtime, FlaxEngine.CSharp.runtimeconfig.json is missing.");
 
-    // Locate hostfxr and load it
-    if (!CoreCLR::LoadHostfxr(csharpLibraryPath))
-        return false;
-
-    // Initialize hosting component
-    if (!CoreCLR::InitHostfxr(csharpRuntimeConfigPath, csharpLibraryPath))
-        return false;
+    // Initialize hostfxr
+    if (CoreCLR::InitHostfxr(csharpRuntimeConfigPath, csharpLibraryPath))
+        return true;
 
     // Prepare managed side
     CoreCLR::CallStaticMethodByName<void>(TEXT("Init"));

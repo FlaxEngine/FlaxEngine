@@ -480,7 +480,6 @@ namespace Flax.Build.Projects.VisualStudioCode
                                         case TargetPlatform.Linux:
                                             break;
                                         }
-                                        json.AddField("visualizerFile", Path.Combine(Globals.EngineRoot, "Source", "flax.natvis"));
                                     }
                                     json.EndObject();
                                 }

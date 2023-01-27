@@ -34,28 +34,27 @@ hostfxr_set_error_writer_fn hostfxr_set_error_writer;
 hostfxr_get_dotnet_environment_info_result_fn hostfxr_get_dotnet_environment_info_result;
 hostfxr_run_app_fn hostfxr_run_app;
 
-bool CoreCLR::LoadHostfxr(const String& library_path_)
+bool CoreCLR::InitHostfxr(const String& configPath, const String& libraryPath)
 {
-    const FLAX_CORECLR_STRING& library_path = FLAX_CORECLR_STRING(library_path_);
+    const FLAX_CORECLR_STRING& library_path = FLAX_CORECLR_STRING(libraryPath);
 
+    // Get path to hostfxr library
+    get_hostfxr_parameters get_hostfxr_params;
+    get_hostfxr_params.size = sizeof(hostfxr_initialize_parameters);
+    get_hostfxr_params.assembly_path = library_path.Get();
+    get_hostfxr_params.dotnet_root = nullptr;//dotnetRoot.Get();
     char_t hostfxrPath[1024];
     size_t hostfxrPathSize = sizeof(hostfxrPath) / sizeof(char_t);
-
-    get_hostfxr_parameters params;
-    params.size = sizeof(hostfxr_initialize_parameters);
-    params.assembly_path = library_path.Get();
-    params.dotnet_root = nullptr;//dotnetRoot.Get();
-
-    int rc = get_hostfxr_path(hostfxrPath, &hostfxrPathSize, &params);
+    int rc = get_hostfxr_path(hostfxrPath, &hostfxrPathSize, &get_hostfxr_params);
     if (rc != 0)
     {
         LOG(Error, "Failed to find hostfxr: {0:x}", (unsigned int)rc);
-        return false;
+        return true;
     }
-    String path(hostfxrPath);
+    const String path(hostfxrPath);
     LOG(Info, "Found hostfxr in {0}", path);
 
-    void *hostfxr = Platform::LoadLibrary(path.Get());
+    void* hostfxr = Platform::LoadLibrary(path.Get());
     hostfxr_initialize_for_runtime_config = (hostfxr_initialize_for_runtime_config_fn)Platform::GetProcAddress(hostfxr, "hostfxr_initialize_for_runtime_config");
     hostfxr_initialize_for_dotnet_command_line = (hostfxr_initialize_for_dotnet_command_line_fn)Platform::GetProcAddress(hostfxr, "hostfxr_initialize_for_dotnet_command_line");
     hostfxr_get_runtime_delegate = (hostfxr_get_runtime_delegate_fn)Platform::GetProcAddress(hostfxr, "hostfxr_get_runtime_delegate");
@@ -63,42 +62,39 @@ bool CoreCLR::LoadHostfxr(const String& library_path_)
     hostfxr_set_error_writer = (hostfxr_set_error_writer_fn)Platform::GetProcAddress(hostfxr, "hostfxr_set_error_writer");
     hostfxr_get_dotnet_environment_info_result = (hostfxr_get_dotnet_environment_info_result_fn)Platform::GetProcAddress(hostfxr, "hostfxr_get_dotnet_environment_info_result");
     hostfxr_run_app = (hostfxr_run_app_fn)Platform::GetProcAddress(hostfxr, "hostfxr_run_app");
+    if (!hostfxr_get_runtime_delegate || !hostfxr_run_app)
+    {
+        LOG(Error, "Failed to setup hostfxr API");
+        return true;
+    }
 
-    return true;
-}
-
-bool CoreCLR::InitHostfxr(const String& config_path, const String& library_path_)
-{
-    const FLAX_CORECLR_STRING& library_path = FLAX_CORECLR_STRING(library_path_);
+    // Initialize hosting component
     const char_t* argv[1] = { library_path.Get() };
-
-    hostfxr_initialize_parameters params;
-    params.size = sizeof(hostfxr_initialize_parameters);
-    params.host_path = library_path.Get();
-    params.dotnet_root = nullptr;//dotnetRoot.Get(); // This probably must be set
-
+    hostfxr_initialize_parameters init_params;
+    init_params.size = sizeof(hostfxr_initialize_parameters);
+    init_params.host_path = library_path.Get();
+    init_params.dotnet_root = nullptr;//dotnetRoot.Get(); // This probably must be set
     hostfxr_handle handle = nullptr;
-
-    // Initialize hosting component, hostfxr_initialize_for_dotnet_command_line is used here
-    // to allow self-contained engine installation to be used when needed.
-
-    int rc = hostfxr_initialize_for_dotnet_command_line(1, argv, &params, &handle);
+    rc = hostfxr_initialize_for_dotnet_command_line(ARRAY_COUNT(argv), argv, &init_params, &handle);
     if (rc != 0 || handle == nullptr)
     {
         LOG(Error, "Failed to initialize hostfxr: {0:x}", (unsigned int)rc);
         hostfxr_close(handle);
-        return false;
+        return true;
     }
 
     void* pget_function_pointer = nullptr;
     rc = hostfxr_get_runtime_delegate(handle, hdt_get_function_pointer, &pget_function_pointer);
     if (rc != 0 || pget_function_pointer == nullptr)
-        LOG(Error, "Failed to get runtime delegate hdt_get_function_pointer: {0:x}", (unsigned int)rc);
+    {
+        LOG(Error, "Failed to get runtime delegate hdt_get_function_pointer: 0x{0:x}", (unsigned int)rc);
+        hostfxr_close(handle);
+        return true;
+    }
 
     hostfxr_close(handle);
     get_function_pointer = (get_function_pointer_fn)pget_function_pointer;
-
-    return true;
+    return false;
 }
 
 void* CoreCLR::GetStaticMethodPointer(const String& methodName)

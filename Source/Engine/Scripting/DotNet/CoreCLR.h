@@ -18,10 +18,8 @@
 
 class CoreCLR
 {
-private:
 public:
-    static bool LoadHostfxr(const String& library_path);
-    static bool InitHostfxr(const String& config_path, const String& library_path);
+    static bool InitHostfxr(const String& configPath, const String& libraryPath);
 
     /// <summary>
     /// Returns the function pointer to the managed static method in NativeInterop class.
