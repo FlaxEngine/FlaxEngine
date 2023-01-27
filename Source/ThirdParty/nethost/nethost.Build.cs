@@ -4,8 +4,6 @@ using System.IO;
 using System;
 using Flax.Build;
 using Flax.Build.NativeCpp;
-using Microsoft.Win32;
-using System.Linq;
 
 /// <summary>
 /// Module for nethost (.NET runtime host library).
