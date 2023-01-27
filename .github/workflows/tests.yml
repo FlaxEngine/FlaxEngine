@@ -74,7 +74,7 @@ jobs:
       run: |
         .\Binaries\Editor\Win64\Development\FlaxTests.exe
         dotnet test -f net7.0 Binaries\Tests\Flax.Build.Tests.dll
-        copy Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll Binaries\Tests /Y
-        copy Binaries\Editor\Win64\Development\FlaxEngine.CSharp.runtimeconfig.json Binaries\Tests /Y
-        copy Binaries\Editor\Win64\Development\Newtonsoft.Json.dll Binaries\Tests /Y
+        xcopy /y Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll Binaries\Tests
+        xcopy /y Binaries\Editor\Win64\Development\FlaxEngine.CSharp.runtimeconfig.json Binaries\Tests
+        xcopy /y Binaries\Editor\Win64\Development\Newtonsoft.Json.dll Binaries\Tests
         dotnet test -f net7.0 Binaries\Tests\FlaxEngine.CSharp.dll
