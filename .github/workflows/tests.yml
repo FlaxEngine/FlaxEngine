@@ -32,6 +32,7 @@ jobs:
         ./GenerateProjectFiles.sh -vs2022
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget -BuildBindingsOnly
         dotnet msbuild Source/Tools/Flax.Build.Tests/Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
+        dotnet msbuild Source/Tools/Flax.Build.Tests/Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
     - name: Test
       run: |
         dotnet test -f net7.0 Binaries/Tests/Flax.Build.Tests.dll
@@ -66,10 +67,11 @@ jobs:
         .\GenerateProjectFiles.bat -vs2022
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxTestsTarget -BuildBindingsOnly
         dotnet msbuild Source\Tools\Flax.Build.Tests\Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
+        dotnet msbuild Source\Tools\Flax.Build.Tests\Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
     - name: Test
       run: |
         dotnet test -f net7.0 Binaries\Tests\Flax.Build.Tests.dll
-        copy Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll Binaries\Tests
-        copy Binaries\Editor\Win64\Development\FlaxEngine.CSharp.runtimeconfig.json Binaries\Tests
+        copy Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll Binaries\Tests /Y
+        copy Binaries\Editor\Win64\Development\FlaxEngine.CSharp.runtimeconfig.json Binaries\Tests /Y
         copy Binaries\Editor\Win64\Development\Newtonsoft.Json.dll Binaries\Tests /Y
         dotnet test -f net7.0 Binaries\Tests\FlaxEngine.CSharp.dll

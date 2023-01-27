@@ -15,7 +15,6 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
-    <GenerateRuntimeConfigDevFile>true</GenerateRuntimeConfigDevFile>
     <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
     <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
     <RunAnalyzers>false</RunAnalyzers>
@@ -23,9 +22,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.0" />
     <PackageReference Include="NUnit" Version="3.13.3" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.3.1" />
   </ItemGroup>
 
   <ItemGroup>
