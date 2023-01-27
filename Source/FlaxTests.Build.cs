@@ -20,7 +20,7 @@ public class FlaxTestsTarget : FlaxEditor
         OutputName = "FlaxTests";
         ConfigurationName = "Tests";
         IsPreBuilt = false;
-        UseSymbolsExports = false;
+        UseSymbolsExports = true;
         Platforms = new[]
         {
             TargetPlatform.Windows,

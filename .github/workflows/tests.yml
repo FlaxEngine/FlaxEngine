@@ -32,16 +32,16 @@ jobs:
       run: |
         ./GenerateProjectFiles.sh -vs2022
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget
-        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Debug -buildtargets="Flax.Build.Tests"
+        dotnet msbuild Source/Tools/Flax.Build.Tests/Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
     - name: Test
       run: |
-        Binaries/Editor/Linux/Development/FlaxTests
-        dotnet Source/Platforms/DotNet/NUnit/nunit3-console.exe Binaries/Editor/Linux/Development/FlaxEngine.CSharp.dll --framework=netcore-7.0
-        dotnet Source/Platforms/DotNet/NUnit/nunit3-console.exe Binaries/Tests/Flax.Build.Tests.dll --framework=netcore-7.0
+        ${GITHUB_WORKSPACE}/Binaries/Editor/Linux/Development/FlaxTests
+        dotnet Source/Platforms/DotNet/NUnit/nunit3-netcore-console.dll Binaries/Editor/Linux/Development/FlaxEngine.CSharp.dll
+        dotnet Source/Platforms/DotNet/NUnit/nunit3-netcore-console.dll Binaries/Tests/Flax.Build.Tests.dll
     - name: Test UseLargeWorlds
       run: |
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget -UseLargeWorlds=true
-        Binaries/Editor/Linux/Development/FlaxTests
+        ${GITHUB_WORKSPACE}/Binaries/Editor/Linux/Development/FlaxTests
 
   # Tests on Windows
   tests-windows:
