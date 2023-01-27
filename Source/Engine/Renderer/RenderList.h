@@ -47,6 +47,7 @@ struct RendererDirectionalLightData
     float ShadowsDistance;
     int32 CascadeCount;
     float ContactShadowsLength;
+    bool DelayedShadows;
     ShadowsCastingMode ShadowsMode;
 
     Guid ID;

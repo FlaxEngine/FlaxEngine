@@ -4,6 +4,7 @@
 #include "GBufferPass.h"
 #include "VolumetricFogPass.h"
 #include "Engine/Graphics/Graphics.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
@@ -774,6 +775,66 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererD
     // Render shadow map for each projection
     for (int32 cascadeIndex = 0; cascadeIndex < shadowData.ContextCount; cascadeIndex++)
     {
+        static bool bTriggerUpdateAllCascades = false;
+        static uint64 lastFrameCount = -1;
+        static Matrix lastShadowVP[4];
+
+        if (light.DelayedShadows)
+        {
+            if (cascadeIndex == 0)
+            {
+                if (lastFrameCount != Engine::FrameCount)
+                {
+                    lastFrameCount = Engine::FrameCount;
+                }
+                else
+                {
+                    //PE: Delayed shadows can only work when there is one camera, edit or game,
+                    //PE: not when both are open, as the same depth buffers are used and we cant just ignore updating.
+                    bTriggerUpdateAllCascades = true;
+                }
+            }
+
+            //PE: Ignore delayed shadows when running custom actors , from preview windows.
+            static int32 ignore_delay_frames = 0;
+            if (bTriggerUpdateAllCascades)
+            {
+                ignore_delay_frames = 8;
+                bTriggerUpdateAllCascades = false;
+            }
+            if (ignore_delay_frames == 0)
+            {
+                //PE: Delayed shadows, use patterns to only render 2 shadows cascades every frame. 4 cascades at 60,30,15,15 fps.
+                //PE: TODO - Add other patterns like 2 cascades at 30 fps , 3 cascades at 20 fps, 4 cascades at 30fps, 
+                //const int32 update_shadows_pattern[10] = { 0,1 , 0,2 , 0,1 , 0,3 };
+                const int32 update_shadows_pattern[10] = { 0,1 , 2,3 , 0,1 , 2,3 };
+                static int32 pattern_count = 0;
+                if (cascadeIndex == 0)
+                {
+                    pattern_count += 2;
+                    if (pattern_count >= 8)
+                        pattern_count = 0;
+                }
+                if (!(cascadeIndex == update_shadows_pattern[pattern_count] || cascadeIndex == update_shadows_pattern[pattern_count + 1]))
+                {
+                    //PE: Use VP from last rendered shadow.
+                    //sperLight.LightShadow.ShadowVP[cascadeIndex] = lastShadowVP[cascadeIndex];
+                    shadowData.Constants.ShadowVP[cascadeIndex] = lastShadowVP[cascadeIndex];
+                    continue;
+                }
+            }
+            else
+            {
+                ignore_delay_frames--;
+            }
+            lastShadowVP[cascadeIndex] = shadowData.Constants.ShadowVP[cascadeIndex]; // sperLight.LightShadow.ShadowVP[cascadeIndex];
+        }
+        else
+        {
+            //PE: When we have a open preview window, make sure to update all lastShadowVP before switching to delayed shadows again.
+            bTriggerUpdateAllCascades = true;
+        }
+
         const auto rt = _shadowMapCSM->View(cascadeIndex);
         context->ResetSR();
         context->SetRenderTarget(rt, static_cast<GPUTextureView*>(nullptr));
