@@ -39,7 +39,7 @@ jobs:
         cp Binaries/Editor/Linux/Development/FlaxEngine.CSharp.dll Binaries/Tests
         cp Binaries/Editor/Linux/Development/FlaxEngine.CSharp.runtimeconfig.json Binaries/Tests
         cp Binaries/Editor/Linux/Development/Newtonsoft.Json.dll Binaries/Tests
-        dotnet test -f net7.0 Binaries/Editor/Linux/Development/FlaxEngine.CSharp.dll
+        dotnet test -f net7.0 Binaries/Tests/FlaxEngine.CSharp.dll
     - name: Test UseLargeWorlds
       run: |
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget -UseLargeWorlds=true

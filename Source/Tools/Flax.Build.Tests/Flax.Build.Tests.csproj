@@ -11,6 +11,7 @@
     <OutputType>Library</OutputType>
     <OutputPath>..\..\..\Binaries\Tests\</OutputPath>
     <DefineConstants>USE_NETCORE;FLAX_ASSERTIONS</DefineConstants>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
