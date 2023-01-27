@@ -5,7 +5,6 @@ jobs:
 
   # Tests on Linux
   tests-linux:
-    if: ${{ false }}
     name: Tests (Linux)
     runs-on: "ubuntu-20.04"
     steps:
@@ -36,8 +35,11 @@ jobs:
     - name: Test
       run: |
         ${GITHUB_WORKSPACE}/Binaries/Editor/Linux/Development/FlaxTests
-        dotnet Source/Platforms/DotNet/NUnit/nunit3-netcore-console.dll Binaries/Editor/Linux/Development/FlaxEngine.CSharp.dll
-        dotnet Source/Platforms/DotNet/NUnit/nunit3-netcore-console.dll Binaries/Tests/Flax.Build.Tests.dll
+        dotnet test -f net7.0 Binaries/Tests/Flax.Build.Tests.dll
+        cp Binaries/Editor/Linux/Development/FlaxEngine.CSharp.dll Binaries/Tests
+        cp Binaries/Editor/Linux/Development/FlaxEngine.CSharp.runtimeconfig.json Binaries/Tests
+        cp Binaries/Editor/Linux/Development/Newtonsoft.Json.dll Binaries/Tests
+        dotnet test -f net7.0 Binaries/Editor/Linux/Development/FlaxEngine.CSharp.dll
     - name: Test UseLargeWorlds
       run: |
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget -UseLargeWorlds=true
@@ -69,5 +71,8 @@ jobs:
     - name: Test
       run: |
         .\Binaries\Editor\Win64\Development\FlaxTests.exe
-        .\Source\Platforms\DotNet\NUnit\nunit3-console.exe Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll --framework=netcore-7.0
-        .\Source\Platforms\DotNet\NUnit\nunit3-console.exe Binaries\Tests\Flax.Build.Tests.dll --framework=netcore-7.0
+        dotnet test -f net7.0 Binaries\Tests\Flax.Build.Tests.dll
+        copy Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll Binaries\Tests
+        copy Binaries\Editor\Win64\Development\FlaxEngine.CSharp.runtimeconfig.json Binaries\Tests
+        copy Binaries\Editor\Win64\Development\Newtonsoft.Json.dll Binaries\Tests /Y
+        dotnet test -f net7.0 Binaries\Tests\FlaxEngine.CSharp.dll
