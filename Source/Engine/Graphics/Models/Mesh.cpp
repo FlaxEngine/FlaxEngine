@@ -575,7 +575,7 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     const auto shadowsMode = entry.ShadowsMode & slot.ShadowsMode;
     const auto drawModes = info.DrawModes & material->GetDrawModes();
     if (drawModes != DrawPass::None)
-        renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, info.Flags, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals);
+        renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, info.Flags, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals, info.SortOrder);
 }
 
 bool Mesh::DownloadDataGPU(MeshBufferType type, BytesContainer& result) const

@@ -637,7 +637,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     Sorting::QuickSort(list.Batches.Get(), list.Batches.Count());
 }
 
-bool CanUseInstancing(DrawPass pass)
+FORCE_INLINE bool CanUseInstancing(DrawPass pass)
 {
     return pass == DrawPass::GBuffer || pass == DrawPass::Depth;
 }
