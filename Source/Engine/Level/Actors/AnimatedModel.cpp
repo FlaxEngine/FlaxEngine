@@ -737,6 +737,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
         draw.PerInstanceRandom = GetPerInstanceRandom();
         draw.LODBias = LODBias;
         draw.ForcedLOD = ForcedLOD;
+        draw.SortOrder = SortOrder;
 
         SkinnedModel->Draw(renderContext, draw);
     }
@@ -777,6 +778,7 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
         draw.PerInstanceRandom = GetPerInstanceRandom();
         draw.LODBias = LODBias;
         draw.ForcedLOD = ForcedLOD;
+        draw.SortOrder = SortOrder;
 
         PRAGMA_DISABLE_DEPRECATION_WARNINGS
         if (ShadowsMode != ShadowsCastingMode::All)
@@ -851,6 +853,7 @@ void AnimatedModel::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(CustomBounds);
     SERIALIZE(LODBias);
     SERIALIZE(ForcedLOD);
+    SERIALIZE(SortOrder);
     SERIALIZE(DrawModes);
     PRAGMA_DISABLE_DEPRECATION_WARNINGS
     SERIALIZE(ShadowsMode);
@@ -877,6 +880,7 @@ void AnimatedModel::Deserialize(DeserializeStream& stream, ISerializeModifier* m
     DESERIALIZE(CustomBounds);
     DESERIALIZE(LODBias);
     DESERIALIZE(ForcedLOD);
+    DESERIALIZE(SortOrder);
     DESERIALIZE(DrawModes);
     PRAGMA_DISABLE_DEPRECATION_WARNINGS
     DESERIALIZE(ShadowsMode);

@@ -6,14 +6,11 @@
 #include "ModelInstanceEntry.h"
 #include "Config.h"
 #include "Types.h"
-#include "Engine/Level/Types.h"
 #if USE_PRECISE_MESH_INTERSECTS
 #include "CollisionProxy.h"
 #endif
 
-struct GeometryDrawStateData;
 class Lightmap;
-class GPUBuffer;
 
 /// <summary>
 /// Represents part of the model that is made of vertices and can be rendered using custom material and transformation.
@@ -274,77 +271,6 @@ public:
     /// </summary>
     /// <param name="drawCall">The draw call.</param>
     void GetDrawCallGeometry(DrawCall& drawCall) const;
-
-    /// <summary>
-    /// Model instance drawing packed data.
-    /// </summary>
-    struct DrawInfo
-    {
-        /// <summary>
-        /// The instance buffer to use during model rendering.
-        /// </summary>
-        ModelInstanceEntries* Buffer;
-
-        /// <summary>
-        /// The world transformation of the model.
-        /// </summary>
-        Matrix* World;
-
-        /// <summary>
-        /// The instance drawing state data container. Used for LOD transition handling and previous world transformation matrix updating. 
-        /// </summary>
-        GeometryDrawStateData* DrawState;
-
-        /// <summary>
-        /// The lightmap.
-        /// </summary>
-        const Lightmap* Lightmap;
-
-        /// <summary>
-        /// The lightmap UVs.
-        /// </summary>
-        const Rectangle* LightmapUVs;
-
-        /// <summary>
-        /// The model instance vertex colors buffers (per-lod all meshes packed in a single allocation, array length equal to model lods count).
-        /// </summary>
-        GPUBuffer** VertexColors;
-
-        /// <summary>
-        /// The object static flags.
-        /// </summary>
-        StaticFlags Flags;
-
-        /// <summary>
-        /// The object draw modes.
-        /// </summary>
-        DrawPass DrawModes;
-
-        /// <summary>
-        /// The bounds of the model (used to select a proper LOD during rendering).
-        /// </summary>
-        BoundingSphere Bounds;
-
-        /// <summary>
-        /// The per-instance random value.
-        /// </summary>
-        float PerInstanceRandom;
-
-        /// <summary>
-        /// The LOD bias value.
-        /// </summary>
-        char LODBias;
-
-        /// <summary>
-        /// The forced LOD to use. Value -1 disables this feature.
-        /// </summary>
-        char ForcedLOD;
-
-        /// <summary>
-        /// The object sorting key.
-        /// </summary>
-        int16 SortOrder;
-    };
 
     /// <summary>
     /// Draws the mesh. Binds vertex and index buffers and invokes the draw call.
