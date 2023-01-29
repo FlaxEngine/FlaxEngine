@@ -98,10 +98,7 @@ void ThreadPoolService::Dispose()
     // Delete threads
     for (int32 i = 0; i < ThreadPoolImpl::Threads.Count(); i++)
     {
-        if (ThreadPoolImpl::Threads[i]->IsRunning())
-        {
-            ThreadPoolImpl::Threads[i]->Kill(true);
-        }
+        ThreadPoolImpl::Threads[i]->Kill(true);
     }
     ThreadPoolImpl::Threads.ClearDelete();
 }
