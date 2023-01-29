@@ -236,24 +236,7 @@ void Renderer::DrawSceneDepth(GPUContext* context, SceneRenderTask* task, GPUTex
     renderContext.View.Prepare(renderContext);
 
     // Call drawing (will collect draw calls)
-    if (customActors.HasItems())
-    {
-        // Draw custom actors
-        for (auto actor : customActors)
-        {
-            if (actor && actor->GetIsActive())
-                actor->Draw(renderContext);
-        }
-    }
-    else
-    {
-        // Draw scene actors
-        RenderContextBatch renderContextBatch(renderContext);
-        Level::DrawActors(renderContextBatch);
-        for (const int64 label : renderContextBatch.WaitLabels)
-            JobSystem::Wait(label);
-        renderContextBatch.WaitLabels.Clear();
-    }
+    DrawActors(renderContext, customActors);
 
     // Sort draw calls
     renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::Depth);
@@ -285,6 +268,31 @@ void Renderer::DrawPostFxMaterial(GPUContext* context, const RenderContext& rend
 
     context->DrawFullscreenTriangle();
     context->ResetRenderTarget();
+}
+
+void Renderer::DrawActors(RenderContext& renderContext, const Array<Actor*>& customActors)
+{
+    if (customActors.HasItems())
+    {
+        // Draw custom actors
+        for (Actor* actor : customActors)
+        {
+            if (actor && actor->GetIsActive())
+                actor->Draw(renderContext);
+        }
+    }
+    else
+    {
+        // Draw scene actors
+        RenderContextBatch renderContextBatch(renderContext);
+        JobSystem::SetJobStartingOnDispatch(false);
+        Level::DrawActors(renderContextBatch, SceneRendering::DrawCategory::SceneDraw);
+        Level::DrawActors(renderContextBatch, SceneRendering::DrawCategory::SceneDrawAsync);
+        JobSystem::SetJobStartingOnDispatch(true);
+        for (const int64 label : renderContextBatch.WaitLabels)
+            JobSystem::Wait(label);
+        renderContextBatch.WaitLabels.Clear();
+    }
 }
 
 void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderContextBatch& renderContextBatch)
