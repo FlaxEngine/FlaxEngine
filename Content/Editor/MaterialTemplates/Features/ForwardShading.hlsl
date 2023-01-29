@@ -33,9 +33,15 @@ DECLARE_LIGHTSHADOWDATA_ACCESS(DirectionalLightShadow);
 
 // Pixel Shader function for Forward Pass
 META_PS(USE_FORWARD, FEATURE_LEVEL_ES2)
-float4 PS_Forward(PixelInput input) : SV_Target0
+void PS_Forward(
+		in PixelInput input
+		,out float4 output : SV_Target0
+#if USE_DEPTH_OFFSET
+		,out float Depth   : SV_Depth
+#endif
+	)
 {
-	float4 output = 0;
+	output = 0;
 
 #if USE_DITHERED_LOD_TRANSITION
 	// LOD masking
@@ -45,6 +51,11 @@ float4 PS_Forward(PixelInput input) : SV_Target0
 	// Get material parameters
 	MaterialInput materialInput = GetMaterialInput(input);
 	Material material = GetMaterialPS(materialInput);
+	
+	// Depth offset
+#if USE_DEPTH_OFFSET
+	Depth = (materialInput.SvPosition.z * materialInput.SvPosition.w) / (materialInput.SvPosition.w + material.DepthOffset);
+#endif
 
 	// Masking
 #if MATERIAL_MASKED
@@ -148,6 +159,4 @@ float4 PS_Forward(PixelInput input) : SV_Target0
 #endif
 	
 #endif
-
-	return output;
 }

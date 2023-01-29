@@ -6,7 +6,6 @@
 
 #include "Engine/Graphics/Materials/MaterialInfo.h"
 #include "Engine/Graphics/Materials/MaterialParams.h"
-#include "Engine/Content/AssetsContainer.h"
 #include "MaterialLayer.h"
 #include "Types.h"
 
@@ -89,6 +88,11 @@ enum class MaterialGraphBoxes
     /// The subsurface color input.
     /// </summary>
     SubsurfaceColor = 14,
+
+    /// <summary>
+    /// The custom depth offset applied per-pixel.
+    /// </summary>
+    DepthOffset = 15,
 
     /// <summary>
     /// The amount of input boxes.

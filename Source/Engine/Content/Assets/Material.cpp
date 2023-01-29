@@ -426,6 +426,9 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
             info.BlendMode != MaterialBlendMode::Opaque &&
             EnumHasAnyFlags(info.UsageFlags, MaterialUsageFlags::UseRefraction) &&
             (info.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == MaterialFeaturesFlags::None;
+    const bool useDepthOffset =
+            (info.Domain == MaterialDomain::Surface) &&
+            EnumHasAnyFlags(info.UsageFlags, MaterialUsageFlags::UseDepthOffset);
 
     // @formatter:off
     static const char* Numbers[] =
@@ -496,6 +499,7 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
     options.Macros.Add({ "USE_FORWARD", Numbers[useForward ? 1 : 0] });
     options.Macros.Add({ "USE_DEFERRED", Numbers[isSurfaceOrTerrainOrDeformable && info.BlendMode == MaterialBlendMode::Opaque ? 1 : 0] });
     options.Macros.Add({ "USE_DISTORTION", Numbers[useDistortion ? 1 : 0] });
+    options.Macros.Add({ "USE_DEPTH_OFFSET", Numbers[useDepthOffset ? 1 : 0] });
 #endif
 }
 

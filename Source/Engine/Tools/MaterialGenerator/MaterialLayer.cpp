@@ -129,6 +129,7 @@ void MaterialLayer::UpdateFeaturesFlags()
     CHECK_BOX_AS_FEATURE(PositionOffset, UsePositionOffset);
     CHECK_BOX_AS_FEATURE(WorldDisplacement, UseDisplacement);
     CHECK_BOX_AS_FEATURE(Refraction, UseRefraction);
+    CHECK_BOX_AS_FEATURE(DepthOffset, UseDepthOffset);
 #undef CHECK_BOX_AS_FEATURE
 }
 
@@ -179,7 +180,8 @@ MaterialLayer* MaterialLayer::Load(const Guid& id, ReadStream* graphData, const 
         ADD_BOX(TessellationMultiplier, Float);
         ADD_BOX(WorldDisplacement, Float3);
         ADD_BOX(SubsurfaceColor, Float3);
-        static_assert(static_cast<int32>(MaterialGraphBoxes::MAX) == 15, "Invalid amount of boxes added for root node. Please update the code above");
+        ADD_BOX(DepthOffset, Float);
+        static_assert(static_cast<int32>(MaterialGraphBoxes::MAX) == 16, "Invalid amount of boxes added for root node. Please update the code above");
         ASSERT(layer->Root->Boxes.Count() == static_cast<int32>(MaterialGraphBoxes::MAX));
 #if BUILD_DEBUG
         // Test for valid pointers after node upgrade
@@ -225,11 +227,12 @@ void MaterialLayer::createRootNode()
     INIT_BOX(Normal, Float3);
     INIT_BOX(Opacity, Float);
     INIT_BOX(Refraction, Float);
+    INIT_BOX(DepthOffset, Float);
     INIT_BOX(PositionOffset, Float3);
     INIT_BOX(TessellationMultiplier, Float);
     INIT_BOX(WorldDisplacement, Float3);
     INIT_BOX(SubsurfaceColor, Float3);
-    static_assert(static_cast<int32>(MaterialGraphBoxes::MAX) == 15, "Invalid amount of boxes created for root node. Please update the code above");
+    static_assert(static_cast<int32>(MaterialGraphBoxes::MAX) == 16, "Invalid amount of boxes created for root node. Please update the code above");
 #undef INIT_BOX
 
     // Mark as root

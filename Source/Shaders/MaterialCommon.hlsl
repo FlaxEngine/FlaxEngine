@@ -83,9 +83,10 @@ struct Material
     float Opacity;
     float3 SubsurfaceColor;
     float Refraction;
+    float3 WorldDisplacement;
     float Mask;
     float TessellationMultiplier;
-    float3 WorldDisplacement;
+    float DepthOffset;
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
 	float4 CustomVSToPS[CUSTOM_VERTEX_INTERPOLATORS_COUNT];
 #endif

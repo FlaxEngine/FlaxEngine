@@ -10,7 +10,7 @@
 /// <summary>
 /// Current materials shader version.
 /// </summary>
-#define MATERIAL_GRAPH_VERSION 159
+#define MATERIAL_GRAPH_VERSION 160
 
 class Material;
 class GPUShader;

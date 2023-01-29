@@ -27,10 +27,12 @@ MaterialGenerator::MaterialGraphBoxesMapping MaterialGenerator::MaterialGraphBox
     { 12, TEXT("TessellationMultiplier"), MaterialTreeType::VertexShader, MaterialValue(VariantType::Float, TEXT("4.0f")) },
     { 13, TEXT("WorldDisplacement"), MaterialTreeType::DomainShader, MaterialValue::InitForZero(VariantType::Float3) },
     { 14, TEXT("SubsurfaceColor"), MaterialTreeType::PixelShader, MaterialValue::InitForZero(VariantType::Float3) },
+    { 15, TEXT("DepthOffset"), MaterialTreeType::PixelShader, MaterialValue::InitForZero(VariantType::Float) },
 };
 
 const MaterialGenerator::MaterialGraphBoxesMapping& MaterialGenerator::GetMaterialRootNodeBox(MaterialGraphBoxes box)
 {
+    static_assert(ARRAY_COUNT(MaterialGenerator::MaterialGraphBoxesMappings) == 16, "Invalid amount of boxes added for root node. Please update the code above");
     return MaterialGraphBoxesMappings[static_cast<int32>(box)];
 }
 
