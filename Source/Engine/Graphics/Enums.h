@@ -635,7 +635,7 @@ API_ENUM() enum class PostProcessEffectLocation
     Default = 0,
 
     /// <summary>
-    ///The 'before' in-build PostFx pass (bloom, color grading, etc.). After Forward Pass (transparency) and fog effects.
+    /// The 'before' in-build PostFx pass (bloom, color grading, etc.). After Forward Pass (transparency) and fog effects.
     /// </summary>
     BeforePostProcessingPass = 1,
 
@@ -658,6 +658,11 @@ API_ENUM() enum class PostProcessEffectLocation
     /// The custom frame up-scaling that replaces default implementation. Rendering is done to the output backbuffer (use OutputView and OutputViewport as render destination).
     /// </summary>
     CustomUpscale = 5,
+
+    /// <summary>
+    /// The 'after' GBuffer rendering pass. Can be used to render custom geometry into GBuffer. Output is light buffer, single-target only (no output).
+    /// </summary>
+    AfterGBufferPass = 6,
 
     API_ENUM(Attributes="HideInEditor")
     MAX,

@@ -431,7 +431,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     }
 
     // Fill GBuffer
-    GBufferPass::Instance()->Fill(renderContext, lightBuffer->View());
+    GBufferPass::Instance()->Fill(renderContext, lightBuffer);
 
     // Debug drawing
     if (renderContext.View.Mode == ViewMode::GlobalSDF)

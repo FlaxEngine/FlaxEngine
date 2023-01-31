@@ -268,7 +268,7 @@ void RenderList::RunPostFxPass(GPUContext* context, RenderContext& renderContext
         {
             if (fx->Location == locationB)
             {
-                if (fx->UseSingleTarget)
+                if (fx->UseSingleTarget || output == nullptr)
                 {
                     fx->Render(context, renderContext, input, nullptr);
                 }
@@ -301,9 +301,9 @@ void RenderList::RunMaterialPostFxPass(GPUContext* context, RenderContext& rende
             bindParams.Input = *input;
             material->Bind(bindParams);
             context->DrawFullscreenTriangle();
-            context->ResetRenderTarget();
             Swap(output, input);
         }
+        context->ResetRenderTarget();
     }
 }
 
@@ -315,7 +315,7 @@ void RenderList::RunCustomPostFxPass(GPUContext* context, RenderContext& renderC
     {
         if (fx->Location == location)
         {
-            if (fx->UseSingleTarget)
+            if (fx->UseSingleTarget || output == nullptr)
             {
                 fx->Render(context, renderContext, input, nullptr);
             }
