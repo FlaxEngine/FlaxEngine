@@ -181,24 +181,13 @@ void PostProcessingPass::Dispose()
 
 void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output, GPUTexture* colorGradingLUT)
 {
+    PROFILE_GPU_CPU("Post Processing");
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
     auto& view = renderContext.View;
-
-    PROFILE_GPU_CPU("Post Processing");
-
+    
     context->ResetRenderTarget();
 
-    // Ensure to have valid data
-    if (checkIfSkipPass())
-    {
-        // Resources are missing. Do not perform rendering. Just copy raw frame
-        context->SetRenderTarget(*output);
-        context->Draw(input);
-        return;
-    }
-
-    // Cache data
     PostProcessSettings& settings = renderContext.List->Settings;
     bool useBloom = EnumHasAnyFlags(view.Flags, ViewFlags::Bloom) && settings.Bloom.Enabled && settings.Bloom.Intensity > 0.0f;
     bool useToneMapping = EnumHasAnyFlags(view.Flags, ViewFlags::ToneMapping);
@@ -206,9 +195,10 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     bool useLensFlares = EnumHasAnyFlags(view.Flags, ViewFlags::LensFlares) && settings.LensFlares.Intensity > 0.0f && useBloom;
 
     // Ensure to have valid data and if at least one effect should be applied
-    if (!(useBloom || useToneMapping || useCameraArtifacts))
+    if (checkIfSkipPass() || !(useBloom || useToneMapping || useCameraArtifacts))
     {
         // Resources are missing. Do not perform rendering. Just copy raw frame
+        context->SetViewportAndScissors(output->Width(), output->Height());
         context->SetRenderTarget(*output);
         context->Draw(input);
         return;

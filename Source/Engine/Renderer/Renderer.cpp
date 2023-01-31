@@ -312,6 +312,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 
     // Initialize setup
     RenderSetup& setup = renderContext.List->Setup;
+    const bool isGBufferDebug = GBufferPass::IsDebugView(renderContext.View.Mode);
     {
         PROFILE_CPU_NAMED("Setup");
         if (renderContext.View.Origin != renderContext.View.PrevOrigin)
@@ -319,7 +320,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         const int32 screenWidth = renderContext.Buffers->GetWidth();
         const int32 screenHeight = renderContext.Buffers->GetHeight();
         setup.UpscaleLocation = renderContext.Task->UpscaleLocation;
-        if (screenWidth < 16 || screenHeight < 16 || renderContext.Task->IsCameraCut)
+        if (screenWidth < 16 || screenHeight < 16 || renderContext.Task->IsCameraCut || isGBufferDebug || renderContext.View.Mode == ViewMode::NoPostFx)
             setup.UseMotionVectors = false;
         else
         {
@@ -344,7 +345,6 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     renderContext.Buffers->Prepare();
 
     // Build batch of render contexts (main view and shadow projections)
-    const bool isGBufferDebug = GBufferPass::IsDebugView(renderContext.View.Mode);
     {
         PROFILE_CPU_NAMED("Collect Draw Calls");
 
