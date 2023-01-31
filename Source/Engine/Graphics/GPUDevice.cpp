@@ -76,7 +76,7 @@ bool GPUPipelineState::Init(const Description& desc)
         Complexity += tessCost;
     if (desc.DepthWriteEnable)
         Complexity += 5;
-    if (desc.DepthTestEnable)
+    if (desc.DepthEnable)
         Complexity += 5;
     if (desc.BlendMode.BlendEnable)
         Complexity += 20;

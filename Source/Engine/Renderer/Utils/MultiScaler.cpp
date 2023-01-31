@@ -76,7 +76,7 @@ bool MultiScaler::setupResources()
     {
         psDesc.PS = shader->GetPS("PS_HalfDepth");
         psDesc.DepthWriteEnable = true;
-        psDesc.DepthTestEnable = true;
+        psDesc.DepthEnable = true;
         psDesc.DepthFunc = ComparisonFunc::Always;
         if (_psHalfDepth->Init(psDesc))
             return true;

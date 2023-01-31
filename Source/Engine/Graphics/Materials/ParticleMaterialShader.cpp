@@ -189,7 +189,7 @@ bool ParticleMaterialShader::Load()
 {
     _drawModes = DrawPass::Depth | DrawPass::Forward | DrawPass::QuadOverdraw;
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::Default;
-    psDesc.DepthTestEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthTest) == MaterialFeaturesFlags::None;
+    psDesc.DepthEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthTest) == MaterialFeaturesFlags::None;
     psDesc.DepthWriteEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthWrite) == MaterialFeaturesFlags::None;
 
     auto vsSprite = _shader->GetVS("VS_Sprite");

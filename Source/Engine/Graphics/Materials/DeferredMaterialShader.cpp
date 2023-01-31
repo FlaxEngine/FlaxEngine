@@ -137,8 +137,13 @@ void DeferredMaterialShader::Unload()
 bool DeferredMaterialShader::Load()
 {
     auto psDesc = GPUPipelineState::Description::Default;
-    psDesc.DepthTestEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthTest) == MaterialFeaturesFlags::None;
     psDesc.DepthWriteEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthWrite) == MaterialFeaturesFlags::None;
+    if (EnumHasAnyFlags(_info.FeaturesFlags, MaterialFeaturesFlags::DisableDepthTest))
+    {
+        psDesc.DepthFunc = ComparisonFunc::Always;
+        if (!psDesc.DepthWriteEnable)
+            psDesc.DepthEnable = false;
+    }
 
     // Check if use tessellation (both material and runtime supports it)
     const bool useTess = _info.TessellationMode != TessellationMethod::None && GPUDevice::Instance->Limits.HasTessellation;
@@ -183,7 +188,7 @@ bool DeferredMaterialShader::Load()
 
     // Motion Vectors pass
     psDesc.DepthWriteEnable = false;
-    psDesc.DepthTestEnable = true;
+    psDesc.DepthEnable = true;
     psDesc.DepthFunc = ComparisonFunc::LessEqual;
     psDesc.VS = _shader->GetVS("VS");
     psDesc.PS = _shader->GetPS("PS_MotionVectors");
@@ -201,7 +206,7 @@ bool DeferredMaterialShader::Load()
     psDesc.CullMode = CullMode::TwoSided;
     psDesc.DepthClipEnable = false;
     psDesc.DepthWriteEnable = true;
-    psDesc.DepthTestEnable = true;
+    psDesc.DepthEnable = true;
     psDesc.DepthFunc = ComparisonFunc::Less;
     psDesc.HS = nullptr;
     psDesc.DS = nullptr;

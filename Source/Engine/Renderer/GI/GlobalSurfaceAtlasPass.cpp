@@ -284,7 +284,7 @@ bool GlobalSurfaceAtlasPass::setupResources()
     if (!_psClear)
     {
         _psClear = device->CreatePipelineState();
-        psDesc.DepthTestEnable = true;
+        psDesc.DepthEnable = true;
         psDesc.DepthWriteEnable = true;
         psDesc.DepthFunc = ComparisonFunc::Always;
         psDesc.VS = shader->GetVS("VS_Atlas");
@@ -292,7 +292,7 @@ bool GlobalSurfaceAtlasPass::setupResources()
         if (_psClear->Init(psDesc))
             return true;
     }
-    psDesc.DepthTestEnable = false;
+    psDesc.DepthEnable = false;
     psDesc.DepthWriteEnable = false;
     psDesc.DepthFunc = ComparisonFunc::Never;
     if (!_psClearLighting)
