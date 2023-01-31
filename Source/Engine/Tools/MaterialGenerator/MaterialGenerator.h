@@ -90,11 +90,6 @@ enum class MaterialGraphBoxes
     SubsurfaceColor = 14,
 
     /// <summary>
-    /// The custom depth offset applied per-pixel.
-    /// </summary>
-    DepthOffset = 15,
-
-    /// <summary>
     /// The amount of input boxes.
     /// </summary>
     MAX

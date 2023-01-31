@@ -36,9 +36,6 @@ META_PS(USE_FORWARD, FEATURE_LEVEL_ES2)
 void PS_Forward(
 		in PixelInput input
 		,out float4 output : SV_Target0
-#if USE_DEPTH_OFFSET
-		,out float Depth   : SV_Depth
-#endif
 	)
 {
 	output = 0;
@@ -51,11 +48,6 @@ void PS_Forward(
 	// Get material parameters
 	MaterialInput materialInput = GetMaterialInput(input);
 	Material material = GetMaterialPS(materialInput);
-	
-	// Depth offset
-#if USE_DEPTH_OFFSET
-	Depth = (materialInput.SvPosition.z * materialInput.SvPosition.w) / (materialInput.SvPosition.w + material.DepthOffset);
-#endif
 
 	// Masking
 #if MATERIAL_MASKED

@@ -23,9 +23,6 @@ void PS_GBuffer(
 		,out float4 RT3   : SV_Target4
 #endif
 #endif
-#if USE_DEPTH_OFFSET
-		,out float Depth  : SV_Depth
-#endif
 	)
 {
 	Light = float4(0, 0, 0, 1);
@@ -38,11 +35,6 @@ void PS_GBuffer(
 	// Get material parameters
 	MaterialInput materialInput = GetMaterialInput(input);
 	Material material = GetMaterialPS(materialInput);
-
-	// Depth offset
-#if USE_DEPTH_OFFSET
-	Depth = (materialInput.SvPosition.z * materialInput.SvPosition.w) / (materialInput.SvPosition.w + material.DepthOffset);
-#endif
 
 	// Masking
 #if MATERIAL_MASKED

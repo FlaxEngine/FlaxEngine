@@ -103,7 +103,6 @@ void MaterialGenerator::ProcessGroupLayers(Box* box, Node* node, Value& value)
                     EAT_BOX(AmbientOcclusion);
                     EAT_BOX(Opacity);
                     EAT_BOX(Refraction);
-                    EAT_BOX(DepthOffset);
                     EAT_BOX(Mask);
                     EAT_BOX(Emissive);
                     EAT_BOX(SubsurfaceColor);
@@ -205,7 +204,6 @@ void MaterialGenerator::ProcessGroupLayers(Box* box, Node* node, Value& value)
             EAT_BOX(AmbientOcclusion);
             EAT_BOX(Opacity);
             EAT_BOX(Refraction);
-            EAT_BOX(DepthOffset);
             EAT_BOX(Mask);
             EAT_BOX(Emissive);
             EAT_BOX(SubsurfaceColor);
@@ -248,7 +246,6 @@ void MaterialGenerator::ProcessGroupLayers(Box* box, Node* node, Value& value)
             EAT_BOX(AmbientOcclusion);
             EAT_BOX(Opacity);
             EAT_BOX(Refraction);
-            EAT_BOX(DepthOffset);
             EAT_BOX(Mask);
             EAT_BOX(Emissive);
 
@@ -256,7 +253,6 @@ void MaterialGenerator::ProcessGroupLayers(Box* box, Node* node, Value& value)
             CHECK_MATERIAL_FEATURE(Normal, UseNormal);
             CHECK_MATERIAL_FEATURE(Mask, UseMask);
             CHECK_MATERIAL_FEATURE(Refraction, UseRefraction);
-            CHECK_MATERIAL_FEATURE(DepthOffset, UseDepthOffset);
 
             break;
         }
@@ -336,7 +332,6 @@ void MaterialGenerator::ProcessGroupLayers(Box* box, Node* node, Value& value)
             CHECK_MATERIAL_FEATURE(Normal, UseNormal);
             CHECK_MATERIAL_FEATURE(Mask, UseMask);
             CHECK_MATERIAL_FEATURE(Refraction, UseRefraction);
-            CHECK_MATERIAL_FEATURE(DepthOffset, UseDepthOffset);
 
             break;
         }

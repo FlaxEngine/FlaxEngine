@@ -40,7 +40,6 @@ namespace FlaxEditor.Surface.Archetypes
                 TessellationMultiplier = 12,
                 WorldDisplacement = 13,
                 SubsurfaceColor = 14,
-                DepthOffset = 15,
             };
 
             /// <inheritdoc />
@@ -86,7 +85,6 @@ namespace FlaxEditor.Surface.Archetypes
                     GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = false;
                     GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = false;
                     GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
-                    GetBox(MaterialNodeBoxes.DepthOffset).Enabled = false;
                     return;
                 }
 
@@ -118,7 +116,6 @@ namespace FlaxEditor.Surface.Archetypes
                     GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = withTess;
                     GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = withTess;
                     GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = info.ShadingModel == MaterialShadingModel.Subsurface || info.ShadingModel == MaterialShadingModel.Foliage;
-                    GetBox(MaterialNodeBoxes.DepthOffset).Enabled = true;
                     break;
                 }
                 case MaterialDomain.PostProcess:
@@ -137,7 +134,6 @@ namespace FlaxEditor.Surface.Archetypes
                     GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = false;
                     GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = false;
                     GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
-                    GetBox(MaterialNodeBoxes.DepthOffset).Enabled = false;
                     break;
                 }
                 case MaterialDomain.Decal:
@@ -158,7 +154,6 @@ namespace FlaxEditor.Surface.Archetypes
                     GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = false;
                     GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = false;
                     GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
-                    GetBox(MaterialNodeBoxes.DepthOffset).Enabled = false;
                     break;
                 }
                 case MaterialDomain.GUI:
@@ -177,7 +172,6 @@ namespace FlaxEditor.Surface.Archetypes
                     GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = false;
                     GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = false;
                     GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
-                    GetBox(MaterialNodeBoxes.DepthOffset).Enabled = false;
                     break;
                 }
                 case MaterialDomain.VolumeParticle:
@@ -196,7 +190,6 @@ namespace FlaxEditor.Surface.Archetypes
                     GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = false;
                     GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = false;
                     GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
-                    GetBox(MaterialNodeBoxes.DepthOffset).Enabled = false;
                     break;
                 }
                 default: throw new ArgumentOutOfRangeException();
@@ -288,7 +281,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Material",
                 Description = "Main material node",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.NoRemove | NodeFlags.NoSpawnViaGUI | NodeFlags.NoSpawnViaPaste | NodeFlags.NoCloseButton,
-                Size = new Float2(150, 320),
+                Size = new Float2(150, 300),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "", true, typeof(void), 0),
@@ -306,7 +299,6 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(12, "Tessellation Multiplier", true, typeof(float), 12),
                     NodeElementArchetype.Factory.Input(13, "World Displacement", true, typeof(Float3), 13),
                     NodeElementArchetype.Factory.Input(14, "Subsurface Color", true, typeof(Float3), 14),
-                    NodeElementArchetype.Factory.Input(15, "Depth Offset", true, typeof(float), 15),
                 }
             },
             new NodeArchetype

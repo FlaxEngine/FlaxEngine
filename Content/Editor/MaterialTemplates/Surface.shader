@@ -587,18 +587,14 @@ void ClipLODTransition(PixelInput input)
 
 // Pixel Shader function for Depth Pass
 META_PS(true, FEATURE_LEVEL_ES2)
-void PS_Depth(PixelInput input
-#if USE_DEPTH_OFFSET
-		,out float Depth  : SV_Depth
-#endif
-	)
+void PS_Depth(PixelInput input)
 {
 #if USE_DITHERED_LOD_TRANSITION
 	// LOD masking
 	ClipLODTransition(input);
 #endif
 
-#if MATERIAL_MASKED || MATERIAL_BLEND != MATERIAL_BLEND_OPAQUE || USE_DEPTH_OFFSET
+#if MATERIAL_MASKED || MATERIAL_BLEND != MATERIAL_BLEND_OPAQUE
 	// Get material parameters
 	MaterialInput materialInput = GetMaterialInput(input);
 	Material material = GetMaterialPS(materialInput);
@@ -609,11 +605,6 @@ void PS_Depth(PixelInput input
 #endif
 #if MATERIAL_BLEND != MATERIAL_BLEND_OPAQUE
 	clip(material.Opacity - MATERIAL_OPACITY_THRESHOLD);
-#endif
-
-	// Depth offset
-#if USE_DEPTH_OFFSET
-	Depth = (materialInput.SvPosition.z * materialInput.SvPosition.w) / (materialInput.SvPosition.w + material.DepthOffset);
 #endif
 #endif
 }

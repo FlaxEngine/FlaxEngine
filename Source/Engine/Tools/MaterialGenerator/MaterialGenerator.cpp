@@ -256,7 +256,6 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
             eatMaterialGraphBox(baseLayer, MaterialGraphBoxes::Roughness);
             eatMaterialGraphBox(baseLayer, MaterialGraphBoxes::Opacity);
             eatMaterialGraphBox(baseLayer, MaterialGraphBoxes::Refraction);
-            eatMaterialGraphBox(baseLayer, MaterialGraphBoxes::DepthOffset);
             eatMaterialGraphBox(baseLayer, MaterialGraphBoxes::SubsurfaceColor);
             eatMaterialGraphBox(baseLayer, MaterialGraphBoxes::Mask);
         }
