@@ -187,7 +187,7 @@ BoundingBox Model::GetBox(int32 lodIndex) const
     return LODs[lodIndex].GetBox();
 }
 
-void Model::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals) const
+void Model::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, int16 sortOrder) const
 {
     if (!CanBeRendered())
         return;
@@ -203,7 +203,7 @@ void Model::Draw(const RenderContext& renderContext, MaterialBase* material, con
     lodIndex = ClampLODIndex(lodIndex);
 
     // Draw
-    LODs[lodIndex].Draw(renderContext, material, world, flags, receiveDecals);
+    LODs[lodIndex].Draw(renderContext, material, world, flags, receiveDecals, DrawPass::Default, 0, sortOrder);
 }
 
 template<typename ContextType>
