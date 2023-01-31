@@ -45,10 +45,14 @@ public:
     {
         struct
         {
-            GPUTexture* GBuffer0;
-            GPUTexture* GBuffer1;
-            GPUTexture* GBuffer2;
-            GPUTexture* GBuffer3;
+            /// <summary>Gets the GBuffer texture 0. RGB: Color, A: AO</summary>
+            API_FIELD(ReadOnly) GPUTexture* GBuffer0;
+            /// <summary>Gets the GBuffer texture 1. RGB: Normal, A: ShadingModel</summary>
+            API_FIELD(ReadOnly) GPUTexture* GBuffer1;
+            /// <summary>Gets the GBuffer texture 2. R: Roughness, G: Metalness, B:Specular</summary>
+            API_FIELD(ReadOnly) GPUTexture* GBuffer2;
+            /// <summary>Gets the GBuffer texture 3. RGBA: Custom Data</summary>
+            API_FIELD(ReadOnly) GPUTexture* GBuffer3;
         };
 
         GPUTexture* GBuffer[4];
