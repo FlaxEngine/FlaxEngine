@@ -29,9 +29,8 @@ public:
     /// Performs rendering for the input task.
     /// </summary>
     /// <param name="task">The scene rendering task.</param>
-    static void Render(SceneRenderTask* task);
+    API_FUNCTION() static void Render(SceneRenderTask* task);
 
-public:
     /// <summary>
     /// Draws scene objects depth (to the output Z buffer). The output must be depth texture to write hardware depth to it.
     /// </summary>

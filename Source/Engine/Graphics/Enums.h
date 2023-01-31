@@ -514,7 +514,7 @@ public:
     API_FIELD(ReadOnly) static BlendingMode Additive;
 
     /// <summary>
-    /// Gets the alpha blending.
+    /// Gets the alpha blending. Source alpha controls the output color (0 - use destination color, 1 - use source color).
     /// </summary>
     API_FIELD(ReadOnly) static BlendingMode AlphaBlend;
 

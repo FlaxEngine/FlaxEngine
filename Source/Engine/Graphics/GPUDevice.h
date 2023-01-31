@@ -134,7 +134,7 @@ public:
     /// <summary>
     /// Quad rendering shader
     /// </summary>
-    GPUShader* QuadShader;
+    API_FIELD(ReadOnly) GPUShader* QuadShader;
 
     /// <summary>
     /// The current task being executed.
