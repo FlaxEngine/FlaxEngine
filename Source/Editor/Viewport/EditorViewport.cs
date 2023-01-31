@@ -1521,6 +1521,7 @@ namespace FlaxEditor.Viewport
             new ViewFlagOptions(ViewFlags.PointLights, "Point Lights"),
             new ViewFlagOptions(ViewFlags.SpotLights, "Spot Lights"),
             new ViewFlagOptions(ViewFlags.SkyLights, "Sky Lights"),
+            new ViewFlagOptions(ViewFlags.Sky, "Sky"),
             new ViewFlagOptions(ViewFlags.Fog, "Fog"),
             new ViewFlagOptions(ViewFlags.SpecularLight, "Specular Light"),
             new ViewFlagOptions(ViewFlags.Decals, "Decals"),

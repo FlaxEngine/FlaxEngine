@@ -268,6 +268,7 @@ bool ProbesRenderer::Init()
             ViewFlags::SkyLights |
             ViewFlags::Decals |
             ViewFlags::Shadows |
+            ViewFlags::Sky |
             ViewFlags::Fog;
     view.Mode = ViewMode::NoPostFx;
     view.IsOfflinePass = true;

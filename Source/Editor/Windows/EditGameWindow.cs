@@ -430,7 +430,7 @@ namespace FlaxEditor.Windows
             writer.WriteAttributeString("MovementSpeed", Viewport.MovementSpeed.ToString());
             writer.WriteAttributeString("OrthographicScale", Viewport.OrthographicScale.ToString());
             writer.WriteAttributeString("UseOrthographicProjection", Viewport.UseOrthographicProjection.ToString());
-            writer.WriteAttributeString("ViewFlags", ((long)Viewport.Task.View.Flags).ToString());
+            writer.WriteAttributeString("ViewFlags", ((ulong)Viewport.Task.View.Flags).ToString());
         }
 
         /// <inheritdoc />
@@ -463,7 +463,7 @@ namespace FlaxEditor.Windows
             if (bool.TryParse(node.GetAttribute("UseOrthographicProjection"), out value1))
                 Viewport.UseOrthographicProjection = value1;
 
-            if (long.TryParse(node.GetAttribute("ViewFlags"), out long value3))
+            if (ulong.TryParse(node.GetAttribute("ViewFlags"), out ulong value3))
                 Viewport.Task.ViewFlags = (ViewFlags)value3;
 
             // Reset view flags if opening with different engine version (ViewFlags enum could be modified)

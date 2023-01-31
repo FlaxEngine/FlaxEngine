@@ -218,7 +218,7 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
     renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::AfterGBufferPass, lightBuffer, nullTexture);
 
     // Draw sky
-    if (renderContext.List->Sky && _skyModel && _skyModel->CanBeRendered())
+    if (renderContext.List->Sky && _skyModel && _skyModel->CanBeRendered() && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Sky))
     {
         PROFILE_GPU_CPU_NAMED("Sky");
         context->SetRenderTarget(*renderContext.Buffers->DepthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
@@ -283,7 +283,7 @@ public:
 GPUTextureView* GBufferPass::RenderSkybox(RenderContext& renderContext, GPUContext* context)
 {
     GPUTextureView* result = nullptr;
-    if (renderContext.List->Sky && _skyModel && _skyModel->CanBeRendered())
+    if (renderContext.List->Sky && _skyModel && _skyModel->CanBeRendered() && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Sky))
     {
         // Initialize skybox texture
         auto& skyboxData = *renderContext.Buffers->GetCustomBuffer<SkyboxCustomBuffer>(TEXT("Skybox"));
@@ -430,7 +430,7 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
 {
     // Skip if no decals to render
     auto& decals = renderContext.List->Decals;
-    if (decals.IsEmpty() || _boxModel == nullptr || !_boxModel->CanBeRendered())
+    if (decals.IsEmpty() || _boxModel == nullptr || !_boxModel->CanBeRendered() || EnumHasNoneFlags(renderContext.View.Flags, ViewFlags::Decals))
         return;
 
     PROFILE_GPU_CPU("Decals");
