@@ -545,6 +545,10 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     RENDER_TARGET_POOL_SET_NAME(frameBuffer, "FrameBuffer");
     ForwardPass::Instance()->Render(renderContext, lightBuffer, frameBuffer);
 
+    // Material and Custom PostFx
+    renderContext.List->RunMaterialPostFxPass(context, renderContext, MaterialPostFxLocation::AfterForwardPass, frameBuffer, lightBuffer);
+    renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::AfterForwardPass, frameBuffer, lightBuffer);
+
     // Cleanup
     context->ResetRenderTarget();
     context->ResetSR();

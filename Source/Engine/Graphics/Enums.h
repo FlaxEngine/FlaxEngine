@@ -591,22 +591,22 @@ API_ENUM() enum class Quality : byte
 API_ENUM() enum class MaterialPostFxLocation : byte
 {
     /// <summary>
-    /// The after post processing pass using LDR input frame.
+    /// The 'after' post processing pass using LDR input frame.
     /// </summary>
     AfterPostProcessingPass = 0,
 
     /// <summary>
-    /// The before post processing pass using HDR input frame.
+    /// The 'before' post processing pass using HDR input frame.
     /// </summary>
     BeforePostProcessingPass = 1,
 
     /// <summary>
-    /// The before forward pass but after GBuffer with HDR input frame.
+    /// The 'before' forward pass but after GBuffer with HDR input frame.
     /// </summary>
     BeforeForwardPass = 2,
 
     /// <summary>
-    /// The after custom post effects.
+    /// The 'after' custom post effects.
     /// </summary>
     AfterCustomPostEffects = 3,
 
@@ -619,6 +619,11 @@ API_ENUM() enum class MaterialPostFxLocation : byte
     /// The 'after' AA filter pass. Rendering is done to the output backbuffer.
     /// </summary>
     AfterAntiAliasingPass = 5,
+
+    /// <summary>
+    /// The 'after' forward pass but before any post processing.
+    /// </summary>
+    AfterForwardPass = 6,
 
     API_ENUM(Attributes="HideInEditor")
     MAX,
@@ -663,6 +668,11 @@ API_ENUM() enum class PostProcessEffectLocation
     /// The 'after' GBuffer rendering pass. Can be used to render custom geometry into GBuffer. Output is light buffer, single-target only (no output).
     /// </summary>
     AfterGBufferPass = 6,
+
+    /// <summary>
+    /// The 'after' forward pass but before any post processing.
+    /// </summary>
+    AfterForwardPass = 7,
 
     API_ENUM(Attributes="HideInEditor")
     MAX,
