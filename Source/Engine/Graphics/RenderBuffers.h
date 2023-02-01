@@ -178,6 +178,8 @@ public:
     template<class T>
     T* GetCustomBuffer(const StringView& name)
     {
+        if (LinkedCustomBuffers)
+            return LinkedCustomBuffers->GetCustomBuffer<T>(name);
         CustomBuffer* result = (CustomBuffer*)FindCustomBuffer(name);
         if (!result)
         {
@@ -205,6 +207,11 @@ public:
     /// Texture ca be null or not initialized if motion blur is disabled or not yet rendered.
     /// </remarks>
     API_FIELD(ReadOnly) GPUTexture* MotionVectors;
+
+    /// <summary>
+    /// External Render Buffers used to redirect FindCustomBuffer/GetCustomBuffer calls. Can be linked to other rendering task (eg. main game viewport) to reuse graphics effect state from it (eg. use GI from main game view in in-game camera renderer).
+    /// </summary>
+    API_FIELD() RenderBuffers* LinkedCustomBuffers = nullptr;
 
 public:
     /// <summary>

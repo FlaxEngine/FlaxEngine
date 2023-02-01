@@ -2,9 +2,6 @@
 
 #include "RenderList.h"
 #include "Engine/Core/Collections/Sorting.h"
-#if !BUILD_RELEASE
-#include "Engine/Core/Utilities.h"
-#endif
 #include "Engine/Graphics/Materials/IMaterial.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/GPUContext.h"
@@ -649,9 +646,6 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
 {
     if (list.IsEmpty())
         return;
-#if !BUILD_RELEASE
-    CHECK(Utilities::CountBits((uint32)renderContext.View.Pass) == 1); // Ensure proper pass is set (single bit flag)
-#endif
     PROFILE_GPU_CPU("Drawing");
     const auto* drawCallsData = drawCalls.Get();
     const auto* listData = list.Indices.Get();
