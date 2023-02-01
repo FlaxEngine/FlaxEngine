@@ -1129,6 +1129,23 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override void OnMouseEnter(Float2 location)
+        {
+            Cursor = CursorType.IBeam;
+            base.OnMouseEnter(location);
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseLeave()
+        {
+            if (Cursor == CursorType.IBeam)
+            {
+                Cursor = CursorType.Default;
+            }
+            base.OnMouseLeave();
+        }
+
+        /// <inheritdoc />
         public override void OnMouseMove(Float2 location)
         {
             base.OnMouseMove(location);
@@ -1140,6 +1157,11 @@ namespace FlaxEngine.GUI
 
                 // Modify selection end
                 SetSelection(_selectionStart, currentIndex);
+            }
+            
+            if (Cursor == CursorType.Default)
+            {
+                Cursor = CursorType.IBeam;
             }
         }
 
@@ -1168,6 +1190,11 @@ namespace FlaxEngine.GUI
                 else
                 {
                     SetSelection(hitPos);
+                }
+                
+                if (Cursor == CursorType.Default)
+                {
+                    Cursor = CursorType.IBeam;
                 }
 
                 return true;
