@@ -334,7 +334,8 @@ public:
     /// <summary>
     /// Performs the full particles simulation update (postponed for the next particle manager update).
     /// </summary>
-    API_FUNCTION() void UpdateSimulation();
+    /// <param name="singleFrame">True if update animation by a single frame only (time time since last engine update), otherwise will update simulation with delta time since last update.</param>
+    API_FUNCTION() void UpdateSimulation(bool singleFrame = false);
 
     /// <summary>
     /// Updates the actor bounds.

@@ -2,8 +2,10 @@
 
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Viewport.Cameras;
+using FlaxEditor.Viewport.Widgets;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using System;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport.Previews
@@ -14,10 +16,12 @@ namespace FlaxEditor.Viewport.Previews
     /// <seealso cref="AssetPreview" />
     public class ParticleSystemPreview : AssetPreview
     {
+        private bool _playSimulation = false;
         private ParticleEffect _previewEffect;
         private ContextMenuButton _showBoundsButton;
         private ContextMenuButton _showOriginButton;
         private ContextMenuButton _showParticleCounterButton;
+        private ViewportWidgetButton _playPauseButton;
         private StaticModel _boundsModel;
         private StaticModel _originModel;
         private bool _showParticlesCounter;
@@ -39,7 +43,25 @@ namespace FlaxEditor.Viewport.Previews
         /// <summary>
         /// Gets or sets a value indicating whether to play the particles simulation in editor.
         /// </summary>
-        public bool PlaySimulation { get; set; } = false;
+        public bool PlaySimulation
+        {
+            get => _playSimulation;
+            set
+            {
+                if (_playSimulation == value)
+                    return;
+                _playSimulation = value;
+                PlaySimulationChanged?.Invoke();
+
+                if (_playPauseButton != null)
+                    _playPauseButton.Icon = value ? Editor.Instance.Icons.Pause64 : Editor.Instance.Icons.Play64;
+            }
+        }
+
+        /// <summary>
+        /// Occurs when particles simulation playback state gets changed.
+        /// </summary>
+        public event Action PlaySimulationChanged;
 
         /// <summary>
         /// Gets or sets a value indicating whether to show particle effect bounding box.
@@ -161,11 +183,22 @@ namespace FlaxEditor.Viewport.Previews
             // Link actors for rendering
             Task.AddCustomActor(_previewEffect);
 
-            if (useWidgets)
+            if (!useWidgets)
+                return;
+            _showBoundsButton = ViewWidgetShowMenu.AddButton("Bounds", () => ShowBounds = !ShowBounds);
+            _showOriginButton = ViewWidgetShowMenu.AddButton("Origin", () => ShowOrigin = !ShowOrigin);
+            _showParticleCounterButton = ViewWidgetShowMenu.AddButton("Particles Counter", () => ShowParticlesCounter = !ShowParticlesCounter);
+
+            // Play/Pause widget
             {
-                _showBoundsButton = ViewWidgetShowMenu.AddButton("Bounds", () => ShowBounds = !ShowBounds);
-                _showOriginButton = ViewWidgetShowMenu.AddButton("Origin", () => ShowOrigin = !ShowOrigin);
-                _showParticleCounterButton = ViewWidgetShowMenu.AddButton("Particles Counter", () => ShowParticlesCounter = !ShowParticlesCounter);
+                var playPauseWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
+                _playPauseButton = new ViewportWidgetButton(null, Editor.Instance.Icons.Pause64)
+                {
+                    TooltipText = "Simulation playback play (F5) or pause (F6)",
+                    Parent = playPauseWidget,
+                };
+                _playPauseButton.Clicked += button => PlaySimulation = !PlaySimulation;
+                playPauseWidget.Parent = this;
             }
         }
 
@@ -200,7 +233,7 @@ namespace FlaxEditor.Viewport.Previews
             // Manually update simulation
             if (PlaySimulation)
             {
-                _previewEffect.UpdateSimulation();
+                _previewEffect.UpdateSimulation(true);
             }
 
             // Keep bounds matching the model
@@ -229,6 +262,23 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            var inputOptions = Editor.Instance.Options.Options.Input;
+            if (inputOptions.Play.Process(this, key))
+            {
+                PlaySimulation = true;
+                return true;
+            }
+            if (inputOptions.Pause.Process(this, key))
+            {
+                PlaySimulation = false;
+                return true;
+            }
+            return base.OnKeyDown(key);
+        }
+
+        /// <inheritdoc />
         public override void OnDestroy()
         {
             // Cleanup objects
@@ -239,6 +289,7 @@ namespace FlaxEditor.Viewport.Previews
             _showBoundsButton = null;
             _showOriginButton = null;
             _showParticleCounterButton = null;
+            _playPauseButton = null;
 
             base.OnDestroy();
         }
