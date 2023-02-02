@@ -1131,7 +1131,9 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnMouseEnter(Float2 location)
         {
-            Cursor = CursorType.IBeam;
+            if (_isEditing)
+                Cursor = CursorType.IBeam;
+
             base.OnMouseEnter(location);
         }
 
@@ -1159,7 +1161,7 @@ namespace FlaxEngine.GUI
                 SetSelection(_selectionStart, currentIndex);
             }
             
-            if (Cursor == CursorType.Default)
+            if (Cursor == CursorType.Default && _isEditing)
             {
                 Cursor = CursorType.IBeam;
             }
