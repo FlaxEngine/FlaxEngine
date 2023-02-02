@@ -1141,9 +1141,8 @@ namespace FlaxEngine.GUI
         public override void OnMouseLeave()
         {
             if (Cursor == CursorType.IBeam)
-            {
                 Cursor = CursorType.Default;
-            }
+
             base.OnMouseLeave();
         }
 
@@ -1162,9 +1161,7 @@ namespace FlaxEngine.GUI
             }
             
             if (Cursor == CursorType.Default && _isEditing)
-            {
                 Cursor = CursorType.IBeam;
-            }
         }
 
         /// <inheritdoc />
@@ -1195,9 +1192,7 @@ namespace FlaxEngine.GUI
                 }
                 
                 if (Cursor == CursorType.Default)
-                {
                     Cursor = CursorType.IBeam;
-                }
 
                 return true;
             }
