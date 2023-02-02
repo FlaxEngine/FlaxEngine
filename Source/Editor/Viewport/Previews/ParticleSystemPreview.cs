@@ -264,6 +264,16 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
+            switch (key)
+            {
+            case KeyboardKeys.F:
+                ViewportCamera.SetArcBallView(_previewEffect.Box);
+                return true;
+            case KeyboardKeys.Spacebar:
+                PlaySimulation = !PlaySimulation;
+                return true;
+            }
+
             var inputOptions = Editor.Instance.Options.Options.Input;
             if (inputOptions.Play.Process(this, key))
             {
@@ -275,6 +285,7 @@ namespace FlaxEditor.Viewport.Previews
                 PlaySimulation = false;
                 return true;
             }
+
             return base.OnKeyDown(key);
         }
 
