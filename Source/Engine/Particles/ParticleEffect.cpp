@@ -253,6 +253,11 @@ int32 ParticleEffect::GetParticlesCount() const
     return Instance.GetParticlesCount();
 }
 
+bool ParticleEffect::GetIsPlaying() const
+{
+    return _isPlaying;
+}
+
 void ParticleEffect::ResetSimulation()
 {
     Instance.ClearState();
@@ -278,7 +283,7 @@ void ParticleEffect::UpdateSimulation(bool singleFrame)
 void ParticleEffect::Play(bool reset)
 {
     _play = true;
-    IsPlaying = true;
+    _isPlaying = true;
     
     if (reset)
         ResetSimulation();
@@ -289,13 +294,13 @@ void ParticleEffect::Play(bool reset)
 void ParticleEffect::Pause()
 {
     _play = false;
-    IsPlaying = false;
+    _isPlaying = false;
 }
 
 void ParticleEffect::Stop()
 {
     _play = false;
-    IsPlaying = false;
+    _isPlaying = false;
     ResetSimulation();
 }
 

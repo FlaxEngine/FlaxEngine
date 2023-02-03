@@ -185,6 +185,7 @@ private:
     Array<ParticleEffectParameter> _parameters; // Cached for scripting API
     Array<ParameterOverride> _parametersOverrides; // Cached parameter modifications to be applied to the parameters
     bool _play = false;
+    bool _isPlaying = false;
 
 public:
     /// <summary>
@@ -240,12 +241,6 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorDisplay(\"Particle Effect\"), DefaultValue(true), EditorOrder(60)")
     bool PlayOnStart = true;
-
-    /// <summary>
-    /// If true, the particle effect is playing.
-    /// </summary>
-    API_FIELD()
-    bool IsPlaying = false;
 
     /// <summary>
     /// If true, the particle simulation will be updated even when an actor cannot be seen by any camera. Otherwise, the simulation will stop running when the actor is off-screen.
@@ -338,6 +333,11 @@ public:
     /// Gets the particles count (total). GPU particles count is read with one frame delay (due to GPU execution).
     /// </summary>
     API_PROPERTY() int32 GetParticlesCount() const;
+
+    /// <summary>
+    /// Gets whether or not the particle effect is playing.
+    /// </summary>
+    API_PROPERTY(Attributes="NoSerialize, HideInEditor") bool GetIsPlaying() const;
 
     /// <summary>
     /// Resets the particles simulation state (clears the instance state data but preserves the instance parameters values).
