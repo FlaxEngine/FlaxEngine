@@ -154,9 +154,6 @@ void ParticleMaterialShader::Bind(BindParameters& params)
         materialData->RibbonUVOffset.Y = drawCall.Particle.Ribbon.UVOffsetY;
         materialData->RibbonSegmentCount = drawCall.Particle.Ribbon.SegmentCount;
 
-        if (drawCall.Particle.Ribbon.SegmentDistances)
-            context->BindSR(1, drawCall.Particle.Ribbon.SegmentDistances->View());
-
         break;
     }
     }
