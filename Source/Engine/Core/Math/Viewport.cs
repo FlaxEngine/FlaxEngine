@@ -162,6 +162,11 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets the aspect ratio used by the viewport.
+        /// </summary>
+        public float AspectRatio => !Mathf.IsZero(Height) ? Width / Height : 0f;
+
+        /// <summary>
         /// Determines whether the specified <see cref="Viewport"/> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Viewport"/> to compare with this instance.</param>
@@ -324,22 +329,6 @@ namespace FlaxEngine
             if (!Mathf.IsZero(w))
             {
                 vector /= w;
-            }
-        }
-
-        /// <summary>
-        /// Gets the aspect ratio used by the viewport.
-        /// </summary>
-        /// <value>The aspect ratio.</value>
-        public float AspectRatio
-        {
-            get
-            {
-                if (!Mathf.IsZero(Height))
-                {
-                    return Width / Height;
-                }
-                return 0f;
             }
         }
     }

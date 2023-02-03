@@ -286,7 +286,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
 
     // Depth Stencil
     RenderToolsVulkan::ZeroStruct(_descDepthStencil, VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);
-    _descDepthStencil.depthTestEnable = desc.DepthTestEnable;
+    _descDepthStencil.depthTestEnable = desc.DepthEnable;
     _descDepthStencil.depthWriteEnable = desc.DepthWriteEnable;
     _descDepthStencil.depthCompareOp = RenderToolsVulkan::ToVulkanCompareOp(desc.DepthFunc);
     _desc.pDepthStencilState = &_descDepthStencil;

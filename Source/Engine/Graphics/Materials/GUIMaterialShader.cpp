@@ -89,13 +89,13 @@ bool GUIMaterialShader::Load()
     psDesc0.PS = _shader->GetPS("PS_GUI");
     psDesc0.BlendMode = BlendingMode::AlphaBlend;
 
-    psDesc0.DepthTestEnable = psDesc0.DepthWriteEnable = true;
+    psDesc0.DepthEnable = psDesc0.DepthWriteEnable = true;
     _cache.Depth = GPUDevice::Instance->CreatePipelineState();
     _cache.NoDepth = GPUDevice::Instance->CreatePipelineState();
 
     bool failed = _cache.Depth->Init(psDesc0);
 
-    psDesc0.DepthTestEnable = psDesc0.DepthWriteEnable = false;
+    psDesc0.DepthEnable = psDesc0.DepthWriteEnable = false;
     failed |= _cache.NoDepth->Init(psDesc0);
 
     if (failed)

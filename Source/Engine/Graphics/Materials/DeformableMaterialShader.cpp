@@ -112,7 +112,7 @@ bool DeformableMaterialShader::Load()
 {
     _drawModes = DrawPass::Depth | DrawPass::QuadOverdraw;
     auto psDesc = GPUPipelineState::Description::Default;
-    psDesc.DepthTestEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthTest) == MaterialFeaturesFlags::None;
+    psDesc.DepthEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthTest) == MaterialFeaturesFlags::None;
     psDesc.DepthWriteEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthWrite) == MaterialFeaturesFlags::None;
 
     // Check if use tessellation (both material and runtime supports it)
@@ -170,7 +170,7 @@ bool DeformableMaterialShader::Load()
     psDesc.CullMode = CullMode::TwoSided;
     psDesc.DepthClipEnable = false;
     psDesc.DepthWriteEnable = true;
-    psDesc.DepthTestEnable = true;
+    psDesc.DepthEnable = true;
     psDesc.DepthFunc = ComparisonFunc::Less;
     psDesc.HS = nullptr;
     psDesc.DS = nullptr;

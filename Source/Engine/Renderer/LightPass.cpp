@@ -50,7 +50,7 @@ bool LightPass::Init()
 #endif
 
     auto format = PixelFormat::R8G8_UNorm;
-    if (!EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(format).Support, (FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D)))
+    if (EnumHasNoneFlags(GPUDevice::Instance->GetFormatFeatures(format).Support, (FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D)))
     {
         format = PixelFormat::B8G8R8A8_UNorm;
     }
@@ -98,7 +98,7 @@ bool LightPass::setupResources()
         if (_psLightPointInverted.Create(psDesc, shader, "PS_Point"))
             return true;
         psDesc.CullMode = CullMode::Normal;
-        psDesc.DepthTestEnable = true;
+        psDesc.DepthEnable = true;
         if (_psLightPointNormal.Create(psDesc, shader, "PS_Point"))
             return true;
     }
@@ -112,7 +112,7 @@ bool LightPass::setupResources()
         if (_psLightSpotInverted.Create(psDesc, shader, "PS_Spot"))
             return true;
         psDesc.CullMode = CullMode::Normal;
-        psDesc.DepthTestEnable = true;
+        psDesc.DepthEnable = true;
         if (_psLightSpotNormal.Create(psDesc, shader, "PS_Spot"))
             return true;
     }

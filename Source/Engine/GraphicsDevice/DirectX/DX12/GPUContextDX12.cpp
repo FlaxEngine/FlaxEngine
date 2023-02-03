@@ -845,6 +845,11 @@ void GPUContextDX12::SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPU
     }
 }
 
+void GPUContextDX12::SetBlendFactor(const Float4& value)
+{
+    _commandList->OMSetBlendFactor(value.Raw);
+}
+
 void GPUContextDX12::ResetSR()
 {
     for (int32 slot = 0; slot < GPU_MAX_SR_BINDED; slot++)

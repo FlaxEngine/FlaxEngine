@@ -428,8 +428,12 @@ namespace FlaxEditor.Viewport.Previews
             case KeyboardKeys.F:
                 // Pay respect..
                 ViewportCamera.SetArcBallView(_previewModel.Box);
-                break;
+                return true;
+            case KeyboardKeys.Spacebar:
+                PlayAnimation = !PlayAnimation;
+                return true;
             }
+
             return base.OnKeyDown(key);
         }
 

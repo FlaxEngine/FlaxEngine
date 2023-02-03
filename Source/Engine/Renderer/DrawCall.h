@@ -221,7 +221,6 @@ struct DrawCall
                 float UVOffsetX;
                 float UVOffsetY;
                 uint32 SegmentCount;
-                GPUBuffer* SegmentDistances;
             } Ribbon;
 
             struct

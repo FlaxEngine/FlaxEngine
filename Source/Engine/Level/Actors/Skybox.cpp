@@ -40,7 +40,7 @@ void Skybox::Draw(RenderContext& renderContext)
         setupProxy();
         isReady = _proxyMaterial && _proxyMaterial->IsReady();
     }
-    if (isReady)
+    if (isReady && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Sky))
     {
         renderContext.List->Sky = this;
     }

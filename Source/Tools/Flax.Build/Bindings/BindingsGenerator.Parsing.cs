@@ -337,6 +337,9 @@ namespace Flax.Build.Bindings
                         case "attributes":
                             currentParam.Attributes = tag.Value;
                             break;
+                        case "defaultvalue":
+                            currentParam.DefaultValue = tag.Value;
+                            break;
                         default:
                             bool valid = false;
                             ParseFunctionParameterTag?.Invoke(ref valid, tag, ref currentParam);

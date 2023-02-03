@@ -17,6 +17,7 @@ class ParticleEmitter;
 class Particles;
 class GPUBuffer;
 class DynamicIndexBuffer;
+class DynamicVertexBuffer;
 
 /// <summary>
 /// The particle attribute that defines a single particle layout component.
@@ -302,9 +303,9 @@ public:
         DynamicIndexBuffer* RibbonIndexBufferDynamic = nullptr;
 
         /// <summary>
-        /// The ribbon particles rendering segment distances buffer. Stored one per ribbon module.
+        /// The ribbon particles rendering vertex buffer (dynamic GPU access).
         /// </summary>
-        GPUBuffer* RibbonSegmentDistances[PARTICLE_EMITTER_MAX_RIBBONS] = {};
+        DynamicVertexBuffer* RibbonVertexBufferDynamic = nullptr;
 
         /// <summary>
         /// The flag used to indicate that GPU buffers data should be cleared before next simulation.

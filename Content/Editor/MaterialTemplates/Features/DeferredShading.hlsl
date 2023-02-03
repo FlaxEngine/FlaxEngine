@@ -40,7 +40,7 @@ void PS_GBuffer(
 #if MATERIAL_MASKED
 	clip(material.Mask - MATERIAL_MASK_THRESHOLD);
 #endif
-	
+
 #if USE_LIGHTMAP
 	float3 diffuseColor = GetDiffuseColor(material.Color, material.Metalness);
 	float3 specularColor = GetSpecularColor(material.Color, material.Specular, material.Metalness);

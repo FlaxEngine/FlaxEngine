@@ -6,7 +6,6 @@
 
 #include "Engine/Graphics/Materials/MaterialInfo.h"
 #include "Engine/Graphics/Materials/MaterialParams.h"
-#include "Engine/Content/AssetsContainer.h"
 #include "MaterialLayer.h"
 #include "Types.h"
 

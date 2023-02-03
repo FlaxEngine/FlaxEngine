@@ -117,6 +117,3 @@ PACK_STRUCT(struct ProbeData {
 
 // Default format for the shadow map textures
 #define SHADOW_MAPS_FORMAT PixelFormat::D16_UNorm
-
-// Material distortion offsets output pass (material uses PS_Distortion, ForwardPass resolves the offsets)
-#define Distortion_Pass_Output_Format PixelFormat::R8G8B8A8_UNorm

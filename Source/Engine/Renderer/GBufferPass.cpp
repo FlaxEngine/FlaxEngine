@@ -146,7 +146,7 @@ void DebugOverrideDrawCallsMaterial(const RenderContext& renderContext, IMateria
 
 #endif
 
-void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer)
+void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
 {
     PROFILE_GPU_CPU("GBuffer");
 
@@ -155,7 +155,7 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
     auto context = device->GetMainContext();
     GPUTextureView* targetBuffers[5] =
     {
-        lightBuffer,
+        lightBuffer->View(),
         renderContext.Buffers->GBuffer0->View(),
         renderContext.Buffers->GBuffer1->View(),
         renderContext.Buffers->GBuffer2->View(),
@@ -168,7 +168,7 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
         PROFILE_GPU_CPU_NAMED("Clear");
 
         context->ClearDepth(*renderContext.Buffers->DepthBuffer);
-        context->Clear(lightBuffer, Color::Transparent);
+        context->Clear(lightBuffer->View(), Color::Transparent);
         context->Clear(renderContext.Buffers->GBuffer0->View(), Color::Transparent);
         context->Clear(renderContext.Buffers->GBuffer1->View(), Color::Transparent);
         context->Clear(renderContext.Buffers->GBuffer2->View(), Color(1, 0, 0, 0));
@@ -192,7 +192,7 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
             renderContext.List->Sky->ApplySky(context, renderContext, Matrix::Identity);
             GPUPipelineState* materialPs = context->GetState();
             const float complexity = (float)Math::Min(materialPs->Complexity, MATERIAL_COMPLEXITY_LIMIT) / MATERIAL_COMPLEXITY_LIMIT;
-            context->Clear(lightBuffer, Color(complexity, complexity, complexity, 1.0f));
+            context->Clear(lightBuffer->View(), Color(complexity, complexity, complexity, 1.0f));
             renderContext.List->Sky = nullptr;
         }
     }
@@ -208,16 +208,20 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTextureView* lightBuffer
     renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::GBuffer);
 
     // Draw decals
-    DrawDecals(renderContext, lightBuffer);
+    DrawDecals(renderContext, lightBuffer->View());
 
     // Draw objects that cannot get decals
     context->SetRenderTarget(*renderContext.Buffers->DepthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
     renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::GBufferNoDecals);
 
+    GPUTexture* nullTexture = nullptr;
+    renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::AfterGBufferPass, lightBuffer, nullTexture);
+
     // Draw sky
-    if (renderContext.List->Sky && _skyModel && _skyModel->CanBeRendered())
+    if (renderContext.List->Sky && _skyModel && _skyModel->CanBeRendered() && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Sky))
     {
         PROFILE_GPU_CPU_NAMED("Sky");
+        context->SetRenderTarget(*renderContext.Buffers->DepthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
         DrawSky(renderContext, context);
     }
 
@@ -279,7 +283,7 @@ public:
 GPUTextureView* GBufferPass::RenderSkybox(RenderContext& renderContext, GPUContext* context)
 {
     GPUTextureView* result = nullptr;
-    if (renderContext.List->Sky && _skyModel && _skyModel->CanBeRendered())
+    if (renderContext.List->Sky && _skyModel && _skyModel->CanBeRendered() && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Sky))
     {
         // Initialize skybox texture
         auto& skyboxData = *renderContext.Buffers->GetCustomBuffer<SkyboxCustomBuffer>(TEXT("Skybox"));
@@ -426,7 +430,7 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
 {
     // Skip if no decals to render
     auto& decals = renderContext.List->Decals;
-    if (decals.IsEmpty() || _boxModel == nullptr || !_boxModel->CanBeRendered())
+    if (decals.IsEmpty() || _boxModel == nullptr || !_boxModel->CanBeRendered() || EnumHasNoneFlags(renderContext.View.Flags, ViewFlags::Decals))
         return;
 
     PROFILE_GPU_CPU("Decals");

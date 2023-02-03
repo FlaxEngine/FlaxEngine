@@ -128,6 +128,8 @@ void RenderBuffers::SetUseAlpha(bool value)
 
 const RenderBuffers::CustomBuffer* RenderBuffers::FindCustomBuffer(const StringView& name) const
 {
+    if (LinkedCustomBuffers)
+        return LinkedCustomBuffers->FindCustomBuffer(name);
     for (const CustomBuffer* e : CustomBuffers)
     {
         if (e->Name == name)
@@ -196,6 +198,7 @@ bool RenderBuffers::Init(int32 width, int32 height)
 void RenderBuffers::Release()
 {
     LastEyeAdaptationTime = 0;
+    LinkedCustomBuffers = nullptr;
 
     for (int32 i = 0; i < _resources.Count(); i++)
         _resources[i]->ReleaseGPU();

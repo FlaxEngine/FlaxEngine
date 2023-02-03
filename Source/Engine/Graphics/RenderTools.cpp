@@ -181,115 +181,74 @@ uint32 GetHash(const BlendingMode& key)
     return hash;
 }
 
+// @formatter:off
+
 BlendingMode BlendingMode::Opaque =
 {
-    false,
-    // AlphaToCoverageEnable
-    false,
-    // BlendEnable
-    Blend::One,
-    // SrcBlend
-    Blend::Zero,
-    // DestBlend
-    Operation::Add,
-    // BlendOp
-    Blend::One,
-    // SrcBlendAlpha
-    Blend::Zero,
-    // DestBlendAlpha
-    Operation::Add,
-    // BlendOpAlpha
-    ColorWrite::All,
-    // RenderTargetWriteMask
+    false, // AlphaToCoverageEnable
+    false, // BlendEnable
+    Blend::One, // SrcBlend
+    Blend::Zero, // DestBlend
+    Operation::Add, // BlendOp
+    Blend::One, // SrcBlendAlpha
+    Blend::Zero, // DestBlendAlpha
+    Operation::Add, // BlendOpAlpha
+    ColorWrite::All, // RenderTargetWriteMask
 };
 
 BlendingMode BlendingMode::Additive =
 {
-    false,
-    // AlphaToCoverageEnable
-    true,
-    // BlendEnable
-    Blend::SrcAlpha,
-    // SrcBlend
-    Blend::One,
-    // DestBlend
-    Operation::Add,
-    // BlendOp
-    Blend::SrcAlpha,
-    // SrcBlendAlpha
-    Blend::One,
-    // DestBlendAlpha
-    Operation::Add,
-    // BlendOpAlpha
-    ColorWrite::All,
-    // RenderTargetWriteMask
+    false, // AlphaToCoverageEnable
+    true, // BlendEnable
+    Blend::SrcAlpha, // SrcBlend
+    Blend::One, // DestBlend
+    Operation::Add, // BlendOp
+    Blend::SrcAlpha, // SrcBlendAlpha
+    Blend::One, // DestBlendAlpha
+    Operation::Add, // BlendOpAlpha
+    ColorWrite::All, // RenderTargetWriteMask
 };
 
 BlendingMode BlendingMode::AlphaBlend =
 {
-    false,
-    // AlphaToCoverageEnable
-    true,
-    // BlendEnable
-    Blend::SrcAlpha,
-    // SrcBlend
-    Blend::InvSrcAlpha,
-    // DestBlend
-    Operation::Add,
-    // BlendOp
-    Blend::One,
-    // SrcBlendAlpha
-    Blend::InvSrcAlpha,
-    // DestBlendAlpha
-    Operation::Add,
-    // BlendOpAlpha
-    ColorWrite::All,
-    // RenderTargetWriteMask
+    false, // AlphaToCoverageEnable
+    true, // BlendEnable
+    Blend::SrcAlpha, // SrcBlend
+    Blend::InvSrcAlpha, // DestBlend
+    Operation::Add, // BlendOp
+    Blend::One, // SrcBlendAlpha
+    Blend::InvSrcAlpha, // DestBlendAlpha
+    Operation::Add, // BlendOpAlpha
+    ColorWrite::All, // RenderTargetWriteMask
 };
 
 BlendingMode BlendingMode::Add =
 {
-    false,
-    // AlphaToCoverageEnable
-    true,
-    // BlendEnable
-    Blend::One,
-    // SrcBlend
-    Blend::One,
-    // DestBlend
-    Operation::Add,
-    // BlendOp
-    Blend::One,
-    // SrcBlendAlpha
-    Blend::One,
-    // DestBlendAlpha
-    Operation::Add,
-    // BlendOpAlpha
-    ColorWrite::All,
-    // RenderTargetWriteMask
+    false, // AlphaToCoverageEnable
+    true, // BlendEnable
+    Blend::One, // SrcBlend
+    Blend::One, // DestBlend
+    Operation::Add, // BlendOp
+    Blend::One, // SrcBlendAlpha
+    Blend::One, // DestBlendAlpha
+    Operation::Add, // BlendOpAlpha
+    ColorWrite::All, // RenderTargetWriteMask
 };
 
 BlendingMode BlendingMode::Multiply =
 {
-    false,
-    // AlphaToCoverageEnable
-    true,
-    // BlendEnable
-    Blend::Zero,
-    // SrcBlend
-    Blend::SrcColor,
-    // DestBlend
-    Operation::Add,
-    // BlendOp
-    Blend::Zero,
-    // SrcBlendAlpha
-    Blend::SrcAlpha,
-    // DestBlendAlpha
-    Operation::Add,
-    // BlendOpAlpha
-    ColorWrite::All,
-    // RenderTargetWriteMask
+    false, // AlphaToCoverageEnable
+    true, // BlendEnable
+    Blend::Zero, // SrcBlend
+    Blend::SrcColor, // DestBlend
+    Operation::Add, // BlendOp
+    Blend::Zero, // SrcBlendAlpha
+    Blend::SrcAlpha, // DestBlendAlpha
+    Operation::Add, // BlendOpAlpha
+    ColorWrite::All, // RenderTargetWriteMask
 };
+
+// @formatter:on
 
 FeatureLevel RenderTools::GetFeatureLevel(ShaderProfile profile)
 {

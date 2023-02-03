@@ -164,5 +164,12 @@ constexpr bool EnumHasAllFlags(T value, T flags)
 	return ((__underlying_type(T))value & (__underlying_type(T))flags) == (__underlying_type(T))flags;
 }
 
+// Returns true if given enum value has none of enum flags set
+template<typename T>
+constexpr bool EnumHasNoneFlags(T value, T flags)
+{
+	return ((__underlying_type(T))value & (__underlying_type(T))flags) == 0;
+}
+
 // Returns byte offset from the object pointer in vtable to the begin of the given inherited type implementation
 #define VTABLE_OFFSET(type, baseType) (((intptr)static_cast<baseType*>((type*)1))-1)

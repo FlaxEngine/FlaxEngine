@@ -4,8 +4,6 @@
 #define MATERIAL 1
 #define USE_PER_VIEW_CONSTANTS 1
 @3
-// Ribbons don't use sorted indices so overlap the segment distances buffer on the slot
-#define HAS_SORTED_INDICES (!defined(_VS_Ribbon))
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/MaterialCommon.hlsl"
@@ -16,6 +14,14 @@ struct SpriteInput
 {
 	float2 Position : POSITION;
 	float2 TexCoord : TEXCOORD;
+};
+
+struct RibbonInput
+{
+	uint Order : TEXCOORD0;
+	uint ParticleIndex : TEXCOORD1;
+	uint PrevParticleIndex : TEXCOORD2;
+	float Distance : TEXCOORD3;
 };
 
 // Primary constant buffer (with additional material parameters)
@@ -45,13 +51,8 @@ float4x4 WorldMatrixInverseTransposed;
 // Particles attributes buffer
 ByteAddressBuffer ParticlesData : register(t0);
 
-#if HAS_SORTED_INDICES
 // Sorted particles indices
 Buffer<uint> SortedIndices : register(t1);
-#else
-// Ribbon particles segments distances buffer
-Buffer<float> SegmentDistances : register(t1);
-#endif
 
 // Shader resources
 @2
@@ -320,13 +321,11 @@ VertexOutput VS_Sprite(SpriteInput input, uint particleIndex : SV_InstanceID)
 {
 	VertexOutput output;
 
-#if HAS_SORTED_INDICES
 	// Sorted particles mapping
 	if (SortedIndicesOffset != 0xFFFFFFFF)
 	{
 		particleIndex = SortedIndices[SortedIndicesOffset + particleIndex];
 	}
-#endif
 
 	// Read particle data	
 	float3 particlePosition = GetParticleVec3(particleIndex, PositionOffset);
@@ -457,13 +456,11 @@ VertexOutput VS_Model(ModelInput input, uint particleIndex : SV_InstanceID)
 {
 	VertexOutput output;
 
-#if HAS_SORTED_INDICES
 	// Sorted particles mapping
 	if (SortedIndicesOffset != 0xFFFFFFFF)
 	{
 		particleIndex = SortedIndices[SortedIndicesOffset + particleIndex];
 	}
-#endif
 
 	// Read particle data
 	float3 particlePosition = GetParticleVec3(particleIndex, PositionOffset);
@@ -566,12 +563,16 @@ VertexOutput VS_Model(ModelInput input, uint particleIndex : SV_InstanceID)
 
 // Vertex Shader function for Ribbon Rendering
 META_VS(true, FEATURE_LEVEL_ES2)
-VertexOutput VS_Ribbon(uint vertexIndex : SV_VertexID)
+META_VS_IN_ELEMENT(TEXCOORD, 0, R32_UINT,  0, 0,     PER_VERTEX, 0, true)
+META_VS_IN_ELEMENT(TEXCOORD, 1, R32_UINT,  0, ALIGN, PER_VERTEX, 0, true)
+META_VS_IN_ELEMENT(TEXCOORD, 2, R32_UINT,  0, ALIGN, PER_VERTEX, 0, true)
+META_VS_IN_ELEMENT(TEXCOORD, 3, R32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
+VertexOutput VS_Ribbon(RibbonInput input, uint vertexIndex : SV_VertexID)
 {
 	VertexOutput output;
 
 	// Get particle data
-	uint particleIndex = vertexIndex / 2;
+	uint particleIndex = input.ParticleIndex;
 	int vertexSign = (((int)vertexIndex & 0x1) * 2) - 1;
 	float3 position = GetParticlePosition(particleIndex);
 	float ribbonWidth = RibbonWidthOffset != -1 ? GetParticleFloat(particleIndex, RibbonWidthOffset) : 20.0f;
@@ -579,15 +580,13 @@ VertexOutput VS_Ribbon(uint vertexIndex : SV_VertexID)
 
 	// Calculate ribbon direction
 	float3 direction;
-	if (particleIndex == 0)
+	if (input.Order == 0)
 	{
-		float3 nextParticlePos = GetParticlePosition(particleIndex + 1);
-		direction = nextParticlePos - position;
+		direction = GetParticlePosition(input.PrevParticleIndex) - position;
 	}
 	else
 	{
-		float3 previousParticlePos = GetParticlePosition(particleIndex - 1);
-		direction = position - previousParticlePos;
+		direction = position - GetParticlePosition(input.PrevParticleIndex);
 	}
 
 	// Calculate particle orientation (tangent vectors)
@@ -604,19 +603,16 @@ VertexOutput VS_Ribbon(uint vertexIndex : SV_VertexID)
 	}
 
 	// Calculate texture coordinates
-	float texCoordU;
-#ifdef _VS_Ribbon
 	if (RibbonUVTilingDistance != 0.0f)
 	{
-		texCoordU = SegmentDistances[particleIndex] / RibbonUVTilingDistance;
+		output.TexCoord.x = input.Distance / RibbonUVTilingDistance;
 	}
 	else
-#endif
 	{
-		texCoordU = (float)particleIndex / RibbonSegmentCount;
+		output.TexCoord.x = (float)input.Order / (float)RibbonSegmentCount;
 	}
-	float texCoordV = (vertexIndex + 1) & 0x1;
-	output.TexCoord = float2(texCoordU, texCoordV) * RibbonUVScale + RibbonUVOffset;
+	output.TexCoord.y = (vertexIndex + 1) & 0x1;
+	output.TexCoord = output.TexCoord * RibbonUVScale + RibbonUVOffset;
 
 	// Compute world space vertex position
 	output.WorldPosition = position + tangentRight * vertexSign * (ribbonWidth.xxx * 0.5f);

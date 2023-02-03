@@ -32,7 +32,7 @@ public:
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="lightBuffer">Light buffer to output material emissive light and precomputed indirect lighting</param>
-    void Fill(RenderContext& renderContext, GPUTextureView* lightBuffer);
+    void Fill(RenderContext& renderContext, GPUTexture* lightBuffer);
 
     /// <summary>
     /// Render debug view

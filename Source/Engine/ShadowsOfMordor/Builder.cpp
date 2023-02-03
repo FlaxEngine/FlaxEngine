@@ -448,6 +448,7 @@ bool ShadowsOfMordor::Builder::initResources()
             ViewFlags::DirectionalLights |
             ViewFlags::PointLights |
             ViewFlags::SpotLights |
+            ViewFlags::Sky |
             ViewFlags::Shadows |
             ViewFlags::Decals |
             ViewFlags::SkyLights |

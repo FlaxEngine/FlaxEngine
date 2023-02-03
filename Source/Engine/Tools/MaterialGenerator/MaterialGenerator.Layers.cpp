@@ -252,6 +252,7 @@ void MaterialGenerator::ProcessGroupLayers(Box* box, Node* node, Value& value)
             CHECK_MATERIAL_FEATURE(Emissive, UseEmissive);
             CHECK_MATERIAL_FEATURE(Normal, UseNormal);
             CHECK_MATERIAL_FEATURE(Mask, UseMask);
+            CHECK_MATERIAL_FEATURE(Refraction, UseRefraction);
 
             break;
         }

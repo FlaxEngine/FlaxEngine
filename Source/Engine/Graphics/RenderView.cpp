@@ -84,6 +84,14 @@ void RenderView::PrepareCache(const RenderContext& renderContext, float width, f
     MainScreenSize = mainView->ScreenSize;
 }
 
+void RenderView::SetUp(const Matrix& viewProjection)
+{
+    // Copy data
+    Matrix::Invert(viewProjection, IVP);
+    Frustum.SetMatrix(viewProjection);
+    CullingFrustum = Frustum;
+}
+
 void RenderView::SetUp(const Matrix& view, const Matrix& projection)
 {
     // Copy data
