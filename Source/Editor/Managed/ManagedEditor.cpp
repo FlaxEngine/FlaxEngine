@@ -457,6 +457,24 @@ Float2 ManagedEditor::GetGameWindowSize()
     return Float2::Zero;
 }
 
+Float2 ManagedEditor::GetGameWindowViewportSize()
+{
+    if (HasManagedInstance())
+    {
+        if (Internal_GetGameWindowSize == nullptr)
+        {
+            Internal_GetGameWindowSize = GetClass()->GetMethod("Internal_GetGameWindowViewportSize", 1);
+            ASSERT(Internal_GetGameWindowSize);
+        }
+        Float2 size;
+        void* params[1];
+        params[0] = &size;
+        Internal_GetGameWindowSize->Invoke(GetManagedInstance(), params, nullptr);
+        return size;
+    }
+    return Float2::Zero;
+}
+
 bool ManagedEditor::OnAppExit()
 {
     if (!HasManagedInstance())

@@ -189,7 +189,7 @@ Viewport Camera::GetViewport() const
 #if USE_EDITOR
     // Editor
     if (Editor::Managed)
-        result.Size = Editor::Managed->GetGameWindowSize();
+        result.Size = Editor::Managed->GetGameWindowViewportSize();
 #else
 	// game
 	auto mainWin = Engine::MainWindow;
