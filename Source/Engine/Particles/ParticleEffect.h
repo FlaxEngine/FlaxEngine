@@ -418,7 +418,6 @@ public:
 
 protected:
     // [Actor]
-    void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
     void OnEnable() override;
     void OnDisable() override;

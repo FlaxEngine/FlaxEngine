@@ -721,12 +721,6 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     }
 }
 
-void ParticleEffect::BeginPlay(SceneBeginData* data)
-{
-    
-    Actor::BeginPlay(data);
-}
-
 void ParticleEffect::EndPlay()
 {
     CacheModifiedParameters();
