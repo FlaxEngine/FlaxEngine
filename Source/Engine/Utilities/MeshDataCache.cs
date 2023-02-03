@@ -101,13 +101,15 @@ namespace FlaxEngine.Utilities
 
         private void DownloadMeshData()
         {
+            var success = false;
+
             try
             {
                 if (!_model)
                 {
-                    _meshDatasInProgress = false;
                     return;
                 }
+
                 var lods = _model.LODs;
                 _meshDatas = new MeshData[lods.Length][];
 
@@ -127,8 +129,7 @@ namespace FlaxEngine.Utilities
                         };
                     }
                 }
-
-                Finished?.Invoke();
+                success = true;
             }
             catch (Exception ex)
             {
@@ -139,6 +140,11 @@ namespace FlaxEngine.Utilities
             finally
             {
                 _meshDatasInProgress = false;
+
+                if (success)
+                {
+                    Finished?.Invoke();
+                }
             }
         }
     }
