@@ -154,7 +154,7 @@ void SceneRenderTask::CameraCut()
 
 void SceneRenderTask::AddCustomActor(Actor* actor)
 {
-    CustomActors.Add(actor);
+    CustomActors.AddUnique(actor);
 }
 
 void SceneRenderTask::RemoveCustomActor(Actor* actor)
@@ -169,7 +169,7 @@ void SceneRenderTask::ClearCustomActors()
 
 void SceneRenderTask::AddCustomPostFx(PostProcessEffect* fx)
 {
-    CustomPostFx.Add(fx);
+    CustomPostFx.AddUnique(fx);
 }
 
 void SceneRenderTask::RemoveCustomPostFx(PostProcessEffect* fx)
@@ -179,7 +179,7 @@ void SceneRenderTask::RemoveCustomPostFx(PostProcessEffect* fx)
 
 void SceneRenderTask::AddGlobalCustomPostFx(PostProcessEffect* fx)
 {
-    GlobalCustomPostFx.Add(fx);
+    GlobalCustomPostFx.AddUnique(fx);
 }
 
 void SceneRenderTask::RemoveGlobalCustomPostFx(PostProcessEffect* fx)
