@@ -275,6 +275,30 @@ void ParticleEffect::UpdateSimulation(bool singleFrame)
     Particles::UpdateEffect(this);
 }
 
+void ParticleEffect::Play(bool reset)
+{
+    _play = true;
+    IsPlaying = true;
+    
+    if (reset)
+        ResetSimulation();
+    else
+        UpdateSimulation(true);
+}
+
+void ParticleEffect::Pause()
+{
+    _play = false;
+    IsPlaying = false;
+}
+
+void ParticleEffect::Stop()
+{
+    _play = false;
+    IsPlaying = false;
+    ResetSimulation();
+}
+
 void ParticleEffect::UpdateBounds()
 {
     BoundingBox bounds = BoundingBox::Empty;
@@ -395,6 +419,9 @@ void ParticleEffect::SetParametersOverrides(const Array<ParameterOverride>& valu
 
 void ParticleEffect::Update()
 {
+    if (!_play)
+        return;
+    
     // Skip if off-screen
     if (!UpdateWhenOffscreen && _lastMinDstSqr >= MAX_Real)
         return;
@@ -417,7 +444,14 @@ void ParticleEffect::Update()
 void ParticleEffect::UpdateExecuteInEditor()
 {
     if (!Editor::IsPlayMode)
+    {
+        // Always Play in editor while not playing.
+        // Could be useful to have a GUI to change this state
+        if (!_play)
+            _play = true; 
+        
         Update();
+    }
 }
 
 #endif
@@ -576,6 +610,7 @@ void ParticleEffect::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(SimulationSpeed);
     SERIALIZE(UseTimeScale);
     SERIALIZE(IsLooping);
+    SERIALIZE(PlayOnStart);
     SERIALIZE(UpdateWhenOffscreen);
     SERIALIZE(DrawModes);
     SERIALIZE(SortOrder);
@@ -675,6 +710,7 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     DESERIALIZE(SimulationSpeed);
     DESERIALIZE(UseTimeScale);
     DESERIALIZE(IsLooping);
+    DESERIALIZE(PlayOnStart);
     DESERIALIZE(UpdateWhenOffscreen);
     DESERIALIZE(DrawModes);
     DESERIALIZE(SortOrder);
@@ -683,6 +719,12 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     {
         ApplyModifiedParameters();
     }
+}
+
+void ParticleEffect::BeginPlay(SceneBeginData* data)
+{
+    
+    Actor::BeginPlay(data);
 }
 
 void ParticleEffect::EndPlay()
@@ -706,6 +748,9 @@ void ParticleEffect::OnEnable()
     GetScene()->Ticking.Update.AddTickExecuteInEditor<ParticleEffect, &ParticleEffect::UpdateExecuteInEditor>(this);
 #endif
 
+    if (PlayOnStart)
+        Play();
+    
     // Base
     Actor::OnEnable();
 }

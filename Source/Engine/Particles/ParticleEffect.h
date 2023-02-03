@@ -184,6 +184,7 @@ private:
     uint32 _parametersVersion = 0; // Version number for _parameters to be in sync with Instance.ParametersVersion
     Array<ParticleEffectParameter> _parameters; // Cached for scripting API
     Array<ParameterOverride> _parametersOverrides; // Cached parameter modifications to be applied to the parameters
+    bool _play = false;
 
 public:
     /// <summary>
@@ -235,9 +236,21 @@ public:
     bool IsLooping = true;
 
     /// <summary>
-    /// If true, the particle simulation will be updated even when an actor cannot be seen by any camera. Otherwise, the simulation will stop running when the actor is off-screen.
+    /// Determines whether the particle effect should play on start.
     /// </summary>
     API_FIELD(Attributes="EditorDisplay(\"Particle Effect\"), DefaultValue(true), EditorOrder(60)")
+    bool PlayOnStart = true;
+
+    /// <summary>
+    /// If true, the particle effect is playing.
+    /// </summary>
+    API_FIELD()
+    bool IsPlaying = false;
+
+    /// <summary>
+    /// If true, the particle simulation will be updated even when an actor cannot be seen by any camera. Otherwise, the simulation will stop running when the actor is off-screen.
+    /// </summary>
+    API_FIELD(Attributes="EditorDisplay(\"Particle Effect\"), DefaultValue(true), EditorOrder(70)")
     bool UpdateWhenOffscreen = true;
 
     /// <summary>
@@ -338,6 +351,22 @@ public:
     API_FUNCTION() void UpdateSimulation(bool singleFrame = false);
 
     /// <summary>
+    /// Plays the simulation.
+    /// </summary>
+    /// /// <param name="reset">If true, the simulation will be reset</param>
+    API_FUNCTION() void Play(bool reset = true);
+
+    /// <summary>
+    /// Pauses the simulation.
+    /// </summary>
+    API_FUNCTION() void Pause();
+
+    /// <summary>
+    /// Stops and resets the simulation.
+    /// </summary>
+    API_FUNCTION() void Stop();
+
+    /// <summary>
     /// Updates the actor bounds.
     /// </summary>
     void UpdateBounds();
@@ -389,6 +418,7 @@ public:
 
 protected:
     // [Actor]
+    void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
     void OnEnable() override;
     void OnDisable() override;
