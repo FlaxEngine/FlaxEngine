@@ -183,6 +183,15 @@ void Mouse::OnMouseDown(const Float2& position, const MouseButton button, Window
     e.MouseData.Position = position;
 }
 
+bool Mouse::IsAnyButtonDown() const
+{
+    // TODO: optimize with SIMD
+    bool result = false;
+    for (auto e : Mouse::_state.MouseButtons)
+        result |= e;
+    return result;
+}
+
 void Mouse::OnMouseUp(const Float2& position, const MouseButton button, Window* target)
 {
     Event& e = _queue.AddOne();

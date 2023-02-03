@@ -223,6 +223,15 @@ public:
         return Vector2Base(-X, -Y);
     }
 
+    /// <summary>
+    /// Calculates a normalized vector that has length equal to 1.
+    /// </summary>
+    Vector2Base GetNormalized() const
+    {
+        const T rcp = 1.0f / Length();
+        return Vector2Base(X * rcp, Y * rcp);
+    }
+
 public:
     /// <summary>
     /// Performs vector normalization (scales vector up to unit length).
