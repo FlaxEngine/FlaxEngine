@@ -453,7 +453,10 @@ void ParticleEffect::UpdateExecuteInEditor()
         // Always Play in editor while not playing.
         // Could be useful to have a GUI to change this state
         if (!_play)
-            _play = true; 
+        {
+            _play = true;
+            _isPlaying = true;
+        }
         
         Update();
     }
