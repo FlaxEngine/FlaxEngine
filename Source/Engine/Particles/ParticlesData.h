@@ -423,19 +423,16 @@ public:
         return Get(index);
     }
 
-    T Get(int32 index) const
+    FORCE_INLINE T Get(int32 index) const
     {
-        ASSERT(IsValid());
-        ASSERT(index >= 0 && index < _buffer->CPU.Count);
+        ASSERT(IsValid() && index >= 0 && index < _buffer->CPU.Count);
         return *(T*)(_buffer->CPU.Buffer.Get() + _offset + index * _buffer->Stride);
     }
 
     FORCE_INLINE T Get(int32 index, const T& defaultValue) const
     {
         if (IsValid())
-        {
             return Get(index);
-        }
         return defaultValue;
     }
 };
