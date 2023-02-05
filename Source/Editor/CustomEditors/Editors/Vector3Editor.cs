@@ -47,7 +47,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <summary>
         /// If true, when one value is changed, the other 2 will change as well.
         /// </summary>
-        protected bool ChangeValuesTogether = false;
+        public bool LinkValuesTogether = false;
 
         private enum ValueChanged
         {
@@ -95,7 +95,7 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             if (IsSetBlocked)
                 return;
-            if (ChangeValuesTogether)
+            if (LinkValuesTogether)
                 _valueChanged = ValueChanged.X;
 
             OnValueChanged();
@@ -105,7 +105,7 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             if (IsSetBlocked)
                 return;
-            if (ChangeValuesTogether)
+            if (LinkValuesTogether)
                 _valueChanged = ValueChanged.Y;
 
             OnValueChanged();
@@ -115,7 +115,7 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             if (IsSetBlocked)
                 return;
-            if (ChangeValuesTogether)
+            if (LinkValuesTogether)
                 _valueChanged = ValueChanged.Z;
  
             OnValueChanged();
@@ -130,25 +130,25 @@ namespace FlaxEditor.CustomEditors.Editors
             var yValue = YElement.ValueBox.Value;
             var zValue = ZElement.ValueBox.Value;
 
-            if (ChangeValuesTogether)
+            if (LinkValuesTogether)
             {
-                var adder = 0.0f;
+                var valueChange = 0.0f;
                 switch (_valueChanged)
                 {
                 case ValueChanged.X:
-                    adder = xValue - ((Float3)Values[0]).X;
-                    yValue += adder;
-                    zValue += adder;
+                    valueChange = xValue - ((Float3)Values[0]).X;
+                    yValue += valueChange;
+                    zValue += valueChange;
                     break;
                 case ValueChanged.Y:
-                    adder = yValue - ((Float3)Values[0]).Y;
-                    xValue += adder;
-                    zValue += adder;
+                    valueChange = yValue - ((Float3)Values[0]).Y;
+                    xValue += valueChange;
+                    zValue += valueChange;
                     break;
                 case ValueChanged.Z:
-                    adder = zValue - ((Float3)Values[0]).Z;
-                    xValue += adder;
-                    yValue += adder;
+                    valueChange = zValue - ((Float3)Values[0]).Z;
+                    xValue += valueChange;
+                    yValue += valueChange;
                     break;
                 default: 
                     break;

@@ -79,65 +79,53 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <seealso cref="FlaxEditor.CustomEditors.Editors.Float3Editor" />
         public class ScaleEditor : Float3Editor
         {
+
+            private Image _linkImage;
+
             /// <inheritdoc />
             public override void Initialize(LayoutElementsContainer layout)
             {
-                var scaleLocked = Editor.Instance.Windows.PropertiesWin.ScaleLocked;
-                if (scaleLocked)
-                {
-                    ChangeValuesTogether = scaleLocked;
-                }
-                
                 base.Initialize(layout);
+                
+                LinkValuesTogether = Editor.Instance.Windows.PropertiesWin.ScaleLocked;
+
+                _linkImage = new Image
+                {
+                    Parent = LinkedLabel,
+                    Width = 18,
+                    Height = 18,
+                    Brush = LinkValuesTogether ? new SpriteBrush(Editor.Instance.Icons.Link32) : new SpriteBrush(),
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    TooltipText = "Scale values are linked together.",
+                };
+                _linkImage.LocalX += 40;
+                _linkImage.LocalY += 1;
+
+                LinkedLabel.SetupContextMenu += (label, menu, editor) =>
+                {
+                    menu.AddSeparator();
+                    menu.AddButton(LinkValuesTogether ? "Unlink" : "Link", ToggleLink);
+                };
 
                 // Override colors
                 var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
                 var grayOutFactor = 0.6f;
                 XElement.ValueBox.BorderColor = Color.Lerp(AxisColorX, back, grayOutFactor);
                 XElement.ValueBox.BorderSelectedColor = AxisColorX;
-                
-                if (XElement.ValueBox.Parent.Parent is PropertiesList list)
-                {
-                    foreach (var child in list.Children)
-                    {
-                        if (!(child is PropertyNameLabel))
-                            continue;
-
-                        var nameLabel = child as PropertyNameLabel;
-                        if (!string.Equals(nameLabel.Text, "Scale"))
-                            continue;
-                        
-                        var lockButton = new Button
-                        {
-                            Parent = nameLabel,
-                            Width = 18,
-                            Height = 18,
-                            BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Link32), // TODO change on scale lock
-                            BackgroundColor = Color.White,
-                            BorderColor = Color.Transparent,
-                            BorderColorSelected = Color.Transparent,
-                            BorderColorHighlighted = Color.Transparent,
-                            AnchorPreset = AnchorPresets.TopLeft,
-                            TooltipText = "Locks/Unlocks setting the scale values.",
-                        };
-                        lockButton.LocalX += 40;
-                        lockButton.LocalY += 1;
-                        lockButton.Clicked += () =>
-                        {
-                            ChangeValuesTogether = !ChangeValuesTogether;
-                            Editor.Instance.Windows.PropertiesWin.ScaleLocked = ChangeValuesTogether;
-                            // TODO: change image
-                            Debug.Log(ChangeValuesTogether);
-                        };
-
-                        break;
-                    }
-                }
-                
                 YElement.ValueBox.BorderColor = Color.Lerp(AxisColorY, back, grayOutFactor);
                 YElement.ValueBox.BorderSelectedColor = AxisColorY;
                 ZElement.ValueBox.BorderColor = Color.Lerp(AxisColorZ, back, grayOutFactor);
                 ZElement.ValueBox.BorderSelectedColor = AxisColorZ;
+            }
+
+            /// <summary>
+            /// Toggles the linking functionality.
+            /// </summary>
+            public void ToggleLink()
+            {
+                LinkValuesTogether = !LinkValuesTogether;
+                Editor.Instance.Windows.PropertiesWin.ScaleLocked = LinkValuesTogether;
+                _linkImage.Brush = LinkValuesTogether ? new SpriteBrush(Editor.Instance.Icons.Link32) : new SpriteBrush();
             }
         }
     }

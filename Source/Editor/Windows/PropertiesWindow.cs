@@ -17,6 +17,9 @@ namespace FlaxEditor.Windows
     {
         private IEnumerable<object> undoRecordObjects;
 
+        /// <inheritdoc />
+        public override bool UseLayoutData => true;
+
         /// <summary>
         /// The editor.
         /// </summary>
