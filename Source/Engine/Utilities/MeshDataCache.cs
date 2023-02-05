@@ -106,9 +106,9 @@ namespace FlaxEngine.Utilities
             try
             {
                 if (!_model)
-                {
                     return;
-                }
+                if (_model.WaitForLoaded())
+                    throw new Exception("WaitForLoaded failed");
 
                 var lods = _model.LODs;
                 _meshDatas = new MeshData[lods.Length][];
