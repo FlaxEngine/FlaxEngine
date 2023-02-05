@@ -34,7 +34,7 @@ VS2PS VS(Render2DVertex input)
 
 	// Render2D::RenderingFeatures::VertexSnapping
 	if ((int)input.CustomDataAndClipOrigin.y & 1)
-		input.Position = (int2)input.Position;
+		input.Position = (float2)(int2)input.Position;
 
 	output.Position = mul(float4(input.Position, 0, 1), ViewProjection);
 	output.Color = input.Color;

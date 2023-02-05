@@ -54,7 +54,7 @@ float3 GetSphericalFibonacci(float sampleIndex, float samplesCount)
 // Calculates a random normalized ray direction (based on the ray index and the current probes rotation phrase)
 float3 GetProbeRayDirection(DDGIData data, uint rayIndex)
 {
-    float3 direction = GetSphericalFibonacci(rayIndex, data.RaysCount);
+    float3 direction = GetSphericalFibonacci((float)rayIndex, (float)data.RaysCount);
     return normalize(QuaternionRotate(data.RaysRotation, direction));
 }
 
@@ -307,7 +307,7 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
     else
     {
         // Ray hits sky
-        radiance.rgb = Skybox.SampleLevel(SamplerLinearClamp, probeRayDirection, 0);
+        radiance.rgb = Skybox.SampleLevel(SamplerLinearClamp, probeRayDirection, 0).rgb;
         radiance.a = 1e27f; // Sky is the limit
     }
 

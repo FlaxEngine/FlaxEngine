@@ -64,7 +64,7 @@ PACK_STRUCT(struct ModelsRasterizeData
     Int3 ChunkCoord;
     float MaxDistance;
     Float3 CascadeCoordToPosMul;
-    int32 ObjectsCount;
+    uint32 ObjectsCount;
     Float3 CascadeCoordToPosAdd;
     int32 CascadeResolution;
     int32 CascadeIndex;

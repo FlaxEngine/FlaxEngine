@@ -34,7 +34,7 @@ META_CB_BEGIN(1, ModelsRasterizeData)
 int3 ChunkCoord;
 float MaxDistance;
 float3 CascadeCoordToPosMul;
-int ObjectsCount;
+uint ObjectsCount;
 float3 CascadeCoordToPosAdd;
 int CascadeResolution;
 int CascadeIndex;
@@ -91,7 +91,11 @@ float DistanceToModelSDF(float minDistance, ObjectRasterizeData modelData, Textu
 	BRANCH if (minDistance <= distanceToVolume) return distanceToVolume;
 
 	// Sample SDF
+#if defined(PLATFORM_PS4) || defined(PLATFORM_PS5)
+    float volumeDistance = 0; // TODO: fix shader compilation error
+#else
 	float volumeDistance = modelSDFTex.SampleLevel(SamplerLinearClamp, volumeUV, modelData.MipOffset).x * modelData.DecodeMul + modelData.DecodeAdd;
+#endif
 	volumeDistance *= volumeScale; // Apply uniform instance scale (non-uniform is not supported)
 
 	// Combine distance to the volume with distance to the surface inside the model
@@ -153,7 +157,11 @@ void CS_RasterizeHeightfield(uint3 DispatchThreadId : SV_DispatchThreadID)
 		float2 heightfieldUV = float2(volumeUV.x, volumeUV.z);
 
 		// Sample the heightfield
+#if defined(PLATFORM_PS4) || defined(PLATFORM_PS5)
+        float4 heightmapValue = 0; // TODO: fix shader compilation error
+#else
 		float4 heightmapValue = ObjectsTextures[i].SampleLevel(SamplerLinearClamp, heightfieldUV, objectData.MipOffset);
+#endif
 		bool isHole = (heightmapValue.b + heightmapValue.a) >= 1.9f;
 		if (isHole || any(heightfieldUV < 0.0f) || any(heightfieldUV > 1.0f))
 			continue;
@@ -198,7 +206,7 @@ Texture3D<float> GlobalSDFTex : register(t0);
 float SampleSDF(uint3 voxelCoordMip, int3 offset)
 {
 	// Sample SDF
-	voxelCoordMip = (uint3)clamp((int3)voxelCoordMip * GenerateMipCoordScale + offset, 0, GenerateMipTexResolution - 1);
+	voxelCoordMip = (uint3)clamp((int3)(voxelCoordMip * GenerateMipCoordScale) + offset, int3(0, 0, 0), (int3)(GenerateMipTexResolution - 1));
 	voxelCoordMip.x += GenerateMipTexOffsetX;
 	float result = GlobalSDFTex[voxelCoordMip].r;
 

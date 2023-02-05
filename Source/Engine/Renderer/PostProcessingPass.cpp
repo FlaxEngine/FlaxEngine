@@ -198,7 +198,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     if (checkIfSkipPass() || !(useBloom || useToneMapping || useCameraArtifacts))
     {
         // Resources are missing. Do not perform rendering. Just copy raw frame
-        context->SetViewportAndScissors(output->Width(), output->Height());
+        context->SetViewportAndScissors((float)output->Width(), (float)output->Height());
         context->SetRenderTarget(*output);
         context->Draw(input);
         return;

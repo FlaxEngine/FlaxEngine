@@ -199,11 +199,11 @@ float4 PS_ResolvePass(Quad_VS2PS input) : SV_Target0
 	{
 		float2 offsetUV = Offsets[i] * SSRtexelSize;
 		offsetUV =  mul(offsetRotationMatrix, offsetUV);
-		float4 sample = Texture0.SampleLevel(SamplerLinearClamp, uv + offsetUV, 0);
+		float4 value = Texture0.SampleLevel(SamplerLinearClamp, uv + offsetUV, 0);
 #if SSR_REDUCE_HIGHLIGHTS
-		sample.rgb /= 1 + Luminance(sample.rgb);
+		value.rgb /= 1 + Luminance(value.rgb);
 #endif
-		result += sample;
+		result += value;
 	}
 
 	// Calculate final result value

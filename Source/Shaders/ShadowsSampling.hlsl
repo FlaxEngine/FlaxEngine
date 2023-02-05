@@ -145,7 +145,7 @@ float SampleShadowMapFixedSizePCF(Texture2DArray shadowMap, float2 shadowMapSize
 				s.x += (1.0f - fc.y) * (v1[0].w * (CSMFilterWeights[row + FS_2][col + FS_2]
 									 - CSMFilterWeights[row + FS_2][col + FS_2] * fc.x)
 									 + v1[0].z * (fc.x * (CSMFilterWeights[row + FS_2][col + FS_2]
-									 - CSMFilterWeights[row + FS_2][col + FS_2 + 1.0f])
+									 - CSMFilterWeights[row + FS_2][col + FS_2 + 1])
 									 + CSMFilterWeights[row + FS_2][col + FS_2 + 1]));
 				s.y += fc.y * (v1[0].x * (CSMFilterWeights[row + FS_2][col + FS_2]
 									 - CSMFilterWeights[row + FS_2][col + FS_2] * fc.x)

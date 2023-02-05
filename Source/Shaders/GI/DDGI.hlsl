@@ -232,7 +232,7 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
             weight *= Square(weight) * (1.0f / (minWeightThreshold * minWeightThreshold));
 
         // Calculate trilinear weights based on the distance to each probe to smoothly transition between grid of 8 probes
-        float3 trilinear = lerp(1.0f - biasAlpha, biasAlpha, probeCoordsOffset);
+        float3 trilinear = lerp(1.0f - biasAlpha, biasAlpha, (float3)probeCoordsOffset);
         weight *= max(trilinear.x * trilinear.y * trilinear.z, 0.001f);
 
         // Sample irradiance texture

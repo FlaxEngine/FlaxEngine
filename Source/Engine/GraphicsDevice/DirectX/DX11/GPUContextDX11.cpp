@@ -428,6 +428,7 @@ void GPUContextDX11::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCoun
 
 void GPUContextDX11::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
+    ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
     CurrentCS = (GPUShaderProgramCSDX11*)shader;
 
     auto bufferForArgsDX11 = (GPUBufferDX11*)bufferForArgs;

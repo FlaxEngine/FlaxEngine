@@ -320,7 +320,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             auto positionOffset = emitter->Graph.GetPositionAttributeOffset();
             if (positionOffset == -1 || buffer->CPU.Count < 2 || buffer->CPU.RibbonOrder.IsEmpty())
                 break;
-            int32 count = buffer->CPU.Count;
+            uint32 count = buffer->CPU.Count;
             ASSERT(buffer->CPU.RibbonOrder.Count() == emitter->Graph.RibbonRenderingModules.Count() * buffer->Capacity);
             int32* ribbonOrderData = buffer->CPU.RibbonOrder.Get() + module->RibbonOrderOffset;
             ParticleBufferCPUDataAccessor<Float3> positionData(buffer, emitter->Graph.Layout.GetAttributeOffset(module->Attributes[0]));

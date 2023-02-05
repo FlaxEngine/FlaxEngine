@@ -354,7 +354,7 @@ bool CookAssetsStep::Process(CookingData& data, CacheData& cache, Asset* asset)
     if (asset->WaitForLoaded())
     {
         LOG(Error, "Failed to load asset \'{0}\'", asset->ToString());
-        return false;
+        return true;
     }
 
     // Switch based on an asset type
@@ -1132,7 +1132,10 @@ bool CookAssetsStep::Perform(CookingData& data)
 
         // Cook asset
         if (Process(data, cache, assetRef.Get()))
+        {
+            cache.Save();
             return true;
+        }
         data.Stats.CookedAssets++;
 
         // Auto save build cache after every few cooked assets (reduces next build time if cooking fails later)
