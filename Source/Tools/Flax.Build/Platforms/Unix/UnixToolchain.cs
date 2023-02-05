@@ -107,8 +107,8 @@ namespace Flax.Build.Platforms
                 }
                 if (LdPath == null)
                 {
-                    LdPath = UnixPlatform.Which("ld");
-                    LdKind = null;
+                    LdPath = UnixPlatform.Which("ld"); // ld.bfd
+                    LdKind = "bfd";
                 }
             }
             else
