@@ -48,9 +48,15 @@ namespace FlaxEditor.CustomEditors.Editors
         /// If true, when one value is changed, the other 2 will change as well.
         /// </summary>
         protected bool ChangeValuesTogether = false;
-        private bool _xChanged;
-        private bool _yChanged;
-        private bool _zChanged;
+
+        private enum ValueChanged
+        {
+            X = 0,
+            Y = 1,
+            Z = 2
+        }
+
+        private ValueChanged _valueChanged;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
@@ -90,11 +96,8 @@ namespace FlaxEditor.CustomEditors.Editors
             if (IsSetBlocked)
                 return;
             if (ChangeValuesTogether)
-            {
-                _xChanged = true;
-                _yChanged = false;
-                _zChanged = false;
-            }
+                _valueChanged = ValueChanged.X;
+
             OnValueChanged();
         }
         
@@ -103,11 +106,8 @@ namespace FlaxEditor.CustomEditors.Editors
             if (IsSetBlocked)
                 return;
             if (ChangeValuesTogether)
-            {
-                _xChanged = false;
-                _yChanged = true;
-                _zChanged = false;
-            }
+                _valueChanged = ValueChanged.Y;
+
             OnValueChanged();
         }
         
@@ -116,11 +116,8 @@ namespace FlaxEditor.CustomEditors.Editors
             if (IsSetBlocked)
                 return;
             if (ChangeValuesTogether)
-            {
-                _xChanged = false;
-                _yChanged = false;
-                _zChanged = true;
-            }
+                _valueChanged = ValueChanged.Z;
+ 
             OnValueChanged();
         }
         
@@ -136,25 +133,25 @@ namespace FlaxEditor.CustomEditors.Editors
             if (ChangeValuesTogether)
             {
                 var adder = 0.0f;
-                if (_xChanged)
+                switch (_valueChanged)
                 {
+                case ValueChanged.X:
                     adder = xValue - ((Float3)Values[0]).X;
                     yValue += adder;
                     zValue += adder;
-                }
-
-                if (_yChanged)
-                {
+                    break;
+                case ValueChanged.Y:
                     adder = yValue - ((Float3)Values[0]).Y;
                     xValue += adder;
                     zValue += adder;
-                }
-                
-                if (_zChanged)
-                {
+                    break;
+                case ValueChanged.Z:
                     adder = zValue - ((Float3)Values[0]).Z;
                     xValue += adder;
                     yValue += adder;
+                    break;
+                default: 
+                    break;
                 }
             }
 
@@ -169,13 +166,6 @@ namespace FlaxEditor.CustomEditors.Editors
             else if (v is Double3)
                 v = (Double3)value;
             SetValue(v, token);
-            
-            if (ChangeValuesTogether)
-            {
-                _xChanged = false;
-                _yChanged = false;
-                _zChanged = false;
-            }
         }
 
         /// <inheritdoc />
