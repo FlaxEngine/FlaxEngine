@@ -515,7 +515,7 @@ namespace FlaxEditor
                 else if (timeToNextSave <= options.AutoSaveReminderTime)
                 {
                     msg = string.Format("Auto save in {0}s...", Mathf.CeilToInt(timeToNextSave));
-                    
+
                     // Create save now and cancel save buttons if needed
                     if (_saveNowButton == null)
                     {
@@ -566,7 +566,7 @@ namespace FlaxEditor
                         _cancelSaveButton.HoverBegin += () => _cancelSaveButton.TextColor = Style.Current.BackgroundHighlighted;
                         _cancelSaveButton.HoverEnd += () => _cancelSaveButton.TextColor = UI.StatusBar.TextColor;
                     }
-                    
+
                     // Show save now and cancel save buttons
                     if (!_saveNowButton.Visible || !_cancelSaveButton.Visible)
                     {
@@ -581,16 +581,12 @@ namespace FlaxEditor
                 UI.UpdateStatusBar();
             }
 
-            if (!UI.StatusBar.Text.Contains("Auto"))
+            if (UI?.StatusBar?.Text != null && !UI.StatusBar.Text.Contains("Auto") && 
+                _saveNowButton != null && _cancelSaveButton != null && 
+                (_saveNowButton.Visible || _cancelSaveButton.Visible))
             {
-                if (_saveNowButton != null && _cancelSaveButton != null)
-                {
-                    if (_saveNowButton.Visible || _cancelSaveButton.Visible)
-                    {
-                        _saveNowButton.Visible = false;
-                        _cancelSaveButton.Visible = false;
-                    }
-                }
+                _saveNowButton.Visible = false;
+                _cancelSaveButton.Visible = false;
             }
         }
 
