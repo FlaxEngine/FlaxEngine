@@ -44,6 +44,14 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.Inline;
 
+        /// <summary>
+        /// If true, when one value is changed, the other 2 will change as well.
+        /// </summary>
+        protected bool ChangeValuesTogether = false;
+        private bool _xChanged;
+        private bool _yChanged;
+        private bool _zChanged;
+
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
@@ -63,28 +71,96 @@ namespace FlaxEditor.CustomEditors.Editors
 
             XElement = grid.FloatValue();
             XElement.SetLimits(limit);
-            XElement.ValueBox.ValueChanged += OnValueChanged;
+            XElement.ValueBox.ValueChanged += OnXValueChanged;
             XElement.ValueBox.SlidingEnd += ClearToken;
 
             YElement = grid.FloatValue();
             YElement.SetLimits(limit);
-            YElement.ValueBox.ValueChanged += OnValueChanged;
+            YElement.ValueBox.ValueChanged += OnYValueChanged;
             YElement.ValueBox.SlidingEnd += ClearToken;
 
             ZElement = grid.FloatValue();
             ZElement.SetLimits(limit);
-            ZElement.ValueBox.ValueChanged += OnValueChanged;
+            ZElement.ValueBox.ValueChanged += OnZValueChanged;
             ZElement.ValueBox.SlidingEnd += ClearToken;
         }
 
+        private void OnXValueChanged()
+        {
+            if (IsSetBlocked)
+                return;
+            if (ChangeValuesTogether)
+            {
+                _xChanged = true;
+                _yChanged = false;
+                _zChanged = false;
+            }
+            OnValueChanged();
+        }
+        
+        private void OnYValueChanged()
+        {
+            if (IsSetBlocked)
+                return;
+            if (ChangeValuesTogether)
+            {
+                _xChanged = false;
+                _yChanged = true;
+                _zChanged = false;
+            }
+            OnValueChanged();
+        }
+        
+        private void OnZValueChanged()
+        {
+            if (IsSetBlocked)
+                return;
+            if (ChangeValuesTogether)
+            {
+                _xChanged = false;
+                _yChanged = false;
+                _zChanged = true;
+            }
+            OnValueChanged();
+        }
+        
         private void OnValueChanged()
         {
             if (IsSetBlocked)
                 return;
 
+            var xValue = XElement.ValueBox.Value;
+            var yValue = YElement.ValueBox.Value;
+            var zValue = ZElement.ValueBox.Value;
+
+            if (ChangeValuesTogether)
+            {
+                var adder = 0.0f;
+                if (_xChanged)
+                {
+                    adder = xValue - ((Float3)Values[0]).X;
+                    yValue += adder;
+                    zValue += adder;
+                }
+
+                if (_yChanged)
+                {
+                    adder = yValue - ((Float3)Values[0]).Y;
+                    xValue += adder;
+                    zValue += adder;
+                }
+                
+                if (_zChanged)
+                {
+                    adder = zValue - ((Float3)Values[0]).Z;
+                    xValue += adder;
+                    yValue += adder;
+                }
+            }
+
             var isSliding = XElement.IsSliding || YElement.IsSliding || ZElement.IsSliding;
             var token = isSliding ? this : null;
-            var value = new Float3(XElement.ValueBox.Value, YElement.ValueBox.Value, ZElement.ValueBox.Value);
+            var value = new Float3(xValue, yValue, zValue);
             object v = Values[0];
             if (v is Vector3)
                 v = (Vector3)value;
@@ -93,6 +169,13 @@ namespace FlaxEditor.CustomEditors.Editors
             else if (v is Double3)
                 v = (Double3)value;
             SetValue(v, token);
+            
+            if (ChangeValuesTogether)
+            {
+                _xChanged = false;
+                _yChanged = false;
+                _zChanged = false;
+            }
         }
 
         /// <inheritdoc />
