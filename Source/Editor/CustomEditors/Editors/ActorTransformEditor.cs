@@ -82,6 +82,12 @@ namespace FlaxEditor.CustomEditors.Editors
             /// <inheritdoc />
             public override void Initialize(LayoutElementsContainer layout)
             {
+                var scaleLocked = Editor.Instance.Windows.PropertiesWin.ScaleLocked;
+                if (scaleLocked)
+                {
+                    ChangeValuesTogether = scaleLocked;
+                }
+                
                 base.Initialize(layout);
 
                 // Override colors
@@ -106,7 +112,7 @@ namespace FlaxEditor.CustomEditors.Editors
                             Parent = nameLabel,
                             Width = 18,
                             Height = 18,
-                            BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Link32),
+                            BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Link32), // TODO change on scale lock
                             BackgroundColor = Color.White,
                             BorderColor = Color.Transparent,
                             BorderColorSelected = Color.Transparent,
@@ -119,6 +125,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         lockButton.Clicked += () =>
                         {
                             ChangeValuesTogether = !ChangeValuesTogether;
+                            Editor.Instance.Windows.PropertiesWin.ScaleLocked = ChangeValuesTogether;
                             // TODO: change image
                             Debug.Log(ChangeValuesTogether);
                         };
@@ -131,12 +138,6 @@ namespace FlaxEditor.CustomEditors.Editors
                 YElement.ValueBox.BorderSelectedColor = AxisColorY;
                 ZElement.ValueBox.BorderColor = Color.Lerp(AxisColorZ, back, grayOutFactor);
                 ZElement.ValueBox.BorderSelectedColor = AxisColorZ;
-                
-                Debug.Log(YElement.ValueBox.Parent);
-                Debug.Log(YElement.ValueBox.Parent.Parent);
-                Debug.Log(YElement.ValueBox.Parent.Parent.Parent);
-                Debug.Log(YElement.ValueBox.Parent.Parent.Parent.Parent);
-                Debug.Log(YElement.ValueBox.Parent.Parent.Parent.Parent.Parent);
             }
         }
     }

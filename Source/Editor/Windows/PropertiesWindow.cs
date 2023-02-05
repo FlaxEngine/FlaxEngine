@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml;
 using FlaxEditor.CustomEditors;
 using FlaxEngine.GUI;
 
@@ -20,6 +21,11 @@ namespace FlaxEditor.Windows
         /// The editor.
         /// </summary>
         public readonly CustomEditorPresenter Presenter;
+
+        /// <summary>
+        /// Indication of if the scale is locked.
+        /// </summary>
+        public bool ScaleLocked = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PropertiesWindow"/> class.
@@ -51,6 +57,19 @@ namespace FlaxEditor.Windows
             undoRecordObjects = Editor.SceneEditing.Selection.ConvertAll(x => x.UndoRecordObject).Distinct();
             var objects = Editor.SceneEditing.Selection.ConvertAll(x => x.EditableObject).Distinct();
             Presenter.Select(objects);
+        }
+
+        /// <inheritdoc />
+        public override void OnLayoutSerialize(XmlWriter writer)
+        {
+            writer.WriteAttributeString("ScaleLocked", ScaleLocked.ToString());
+        }
+        
+        /// <inheritdoc />
+        public override void OnLayoutDeserialize(XmlElement node)
+        {
+            if (bool.TryParse(node.GetAttribute("ScaleLocked"), out bool value1))
+                ScaleLocked = value1;
         }
     }
 }
