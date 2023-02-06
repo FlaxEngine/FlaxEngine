@@ -28,7 +28,7 @@ namespace FlaxEditor.Windows
         /// <summary>
         /// Indication of if the scale is locked.
         /// </summary>
-        public bool ScaleLocked = false;
+        public bool ScaleLinked = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PropertiesWindow"/> class.
@@ -65,14 +65,14 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnLayoutSerialize(XmlWriter writer)
         {
-            writer.WriteAttributeString("ScaleLocked", ScaleLocked.ToString());
+            writer.WriteAttributeString("ScaleLinked", ScaleLinked.ToString());
         }
         
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            if (bool.TryParse(node.GetAttribute("ScaleLocked"), out bool value1))
-                ScaleLocked = value1;
+            if (bool.TryParse(node.GetAttribute("ScaleLinked"), out bool value1))
+                ScaleLinked = value1;
         }
     }
 }

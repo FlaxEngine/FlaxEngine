@@ -47,7 +47,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <summary>
         /// If true, when one value is changed, the other 2 will change as well.
         /// </summary>
-        public bool LinkValuesTogether = false;
+        public bool LinkValues = false;
 
         private enum ValueChanged
         {
@@ -95,7 +95,7 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             if (IsSetBlocked)
                 return;
-            if (LinkValuesTogether)
+            if (LinkValues)
                 _valueChanged = ValueChanged.X;
 
             OnValueChanged();
@@ -105,7 +105,7 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             if (IsSetBlocked)
                 return;
-            if (LinkValuesTogether)
+            if (LinkValues)
                 _valueChanged = ValueChanged.Y;
 
             OnValueChanged();
@@ -115,7 +115,7 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             if (IsSetBlocked)
                 return;
-            if (LinkValuesTogether)
+            if (LinkValues)
                 _valueChanged = ValueChanged.Z;
  
             OnValueChanged();
@@ -130,7 +130,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var yValue = YElement.ValueBox.Value;
             var zValue = ZElement.ValueBox.Value;
 
-            if (LinkValuesTogether)
+            if (LinkValues)
             {
                 var valueChange = 0.0f;
                 switch (_valueChanged)

@@ -86,14 +86,14 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 base.Initialize(layout);
                 
-                LinkValuesTogether = Editor.Instance.Windows.PropertiesWin.ScaleLocked;
+                LinkValues = Editor.Instance.Windows.PropertiesWin.ScaleLinked;
 
                 _linkImage = new Image
                 {
                     Parent = LinkedLabel,
                     Width = 18,
                     Height = 18,
-                    Brush = LinkValuesTogether ? new SpriteBrush(Editor.Instance.Icons.Link32) : new SpriteBrush(),
+                    Brush = LinkValues ? new SpriteBrush(Editor.Instance.Icons.Link32) : new SpriteBrush(),
                     AnchorPreset = AnchorPresets.TopLeft,
                     TooltipText = "Scale values are linked together.",
                 };
@@ -103,7 +103,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 LinkedLabel.SetupContextMenu += (label, menu, editor) =>
                 {
                     menu.AddSeparator();
-                    menu.AddButton(LinkValuesTogether ? "Unlink" : "Link", ToggleLink);
+                    menu.AddButton(LinkValues ? "Unlink" : "Link", ToggleLink);
                 };
 
                 // Override colors
@@ -122,9 +122,9 @@ namespace FlaxEditor.CustomEditors.Editors
             /// </summary>
             public void ToggleLink()
             {
-                LinkValuesTogether = !LinkValuesTogether;
-                Editor.Instance.Windows.PropertiesWin.ScaleLocked = LinkValuesTogether;
-                _linkImage.Brush = LinkValuesTogether ? new SpriteBrush(Editor.Instance.Icons.Link32) : new SpriteBrush();
+                LinkValues = !LinkValues;
+                Editor.Instance.Windows.PropertiesWin.ScaleLinked = LinkValues;
+                _linkImage.Brush = LinkValues ? new SpriteBrush(Editor.Instance.Icons.Link32) : new SpriteBrush();
             }
         }
     }
