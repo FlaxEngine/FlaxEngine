@@ -198,7 +198,7 @@ namespace FlaxEditor.CustomEditors
                     {
                         for (int i = 0; i < Count; i++)
                         {
-                            if (!Equals(this[i], _referenceValue))
+                            if (!ValueEquals(this[i], _referenceValue))
                                 return true;
                         }
                     }
@@ -228,18 +228,21 @@ namespace FlaxEditor.CustomEditors
                 {
                     for (int i = 0; i < Count; i++)
                     {
-                        if (!Equals(this[i], _defaultValue))
-                        {
-                            // Special case for String (null string is kind of equal to empty string from the user perspective)
-                            if (this[i] == null && _defaultValue is string defaultValueStr && defaultValueStr.Length == 0)
-                                continue;
-
+                        if (!ValueEquals(this[i], _defaultValue))
                             return true;
-                        }
                     }
                 }
                 return false;
             }
+        }
+
+        private static bool ValueEquals(object objA, object objB)
+        {
+            // Special case for String (null string is kind of equal to empty string from the user perspective)
+            if (objA == null && objB is string objBStr && objBStr.Length == 0)
+                return true;
+
+            return Newtonsoft.Json.Utilities.MiscellaneousUtils.DefaultValueEquals(objA, objB);
         }
 
         /// <summary>
