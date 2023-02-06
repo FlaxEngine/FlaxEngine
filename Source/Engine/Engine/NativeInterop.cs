@@ -163,14 +163,14 @@ namespace FlaxEngine
     /// <summary>
     /// Wrapper for managed arrays which are passed to unmanaged code.
     /// </summary>
-    internal unsafe class ManagedArray
+    public unsafe class ManagedArray
     {
         private ManagedHandle pinnedArrayHandle;
         private IntPtr unmanagedData;
         private int elementSize;
         private int length;
 
-        internal static ManagedArray WrapNewArray(Array arr) => new ManagedArray(arr);
+        public static ManagedArray WrapNewArray(Array arr) => new ManagedArray(arr);
 
         /// <summary>
         /// Returns an instance of ManagedArray from shared pool.
@@ -178,7 +178,7 @@ namespace FlaxEngine
         /// <remarks>
         /// The resources must be released by calling FreePooled() instead of Free()-method.
         /// </remarks>
-        internal static ManagedArray WrapPooledArray(Array arr)
+        public static ManagedArray WrapPooledArray(Array arr)
         {
             ManagedArray managedArray = ManagedArrayPool.Get();
             managedArray.WrapArray(arr);
@@ -197,7 +197,7 @@ namespace FlaxEngine
         /// <remarks>
         /// The resources must be released by calling FreePooled() instead of Free()-method.
         /// </remarks>
-        internal static ManagedArray AllocatePooledArray<T>(T* ptr, int length) where T : unmanaged
+        public static ManagedArray AllocatePooledArray<T>(T* ptr, int length) where T : unmanaged
         {
             ManagedArray managedArray = ManagedArrayPool.Get();
             managedArray.Allocate(ptr, length);
@@ -210,14 +210,14 @@ namespace FlaxEngine
         /// <remarks>
         /// The resources must be released by calling FreePooled() instead of Free()-method.
         /// </remarks>
-        internal static ManagedArray AllocatePooledArray<T>(int length) where T : unmanaged
+        public static ManagedArray AllocatePooledArray<T>(int length) where T : unmanaged
         {
             ManagedArray managedArray = ManagedArrayPool.Get();
             managedArray.Allocate((IntPtr)NativeInterop.NativeAlloc(length, Unsafe.SizeOf<T>()), length, Unsafe.SizeOf<T>());
             return managedArray;
         }
 
-        internal ManagedArray(Array arr) => WrapArray(arr);
+        public ManagedArray(Array arr) => WrapArray(arr);
 
         internal void WrapArray(Array arr)
         {
@@ -251,7 +251,7 @@ namespace FlaxEngine
                 Free();
         }
 
-        internal void Free()
+        public void Free()
         {
             GC.SuppressFinalize(this);
             if (pinnedArrayHandle.IsAllocated)
@@ -266,7 +266,7 @@ namespace FlaxEngine
             }
         }
 
-        internal void FreePooled()
+        public void FreePooled()
         {
             Free();
             ManagedArrayPool.Put(this);
@@ -278,9 +278,9 @@ namespace FlaxEngine
 
         internal int ElementSize => elementSize;
 
-        internal Span<T> GetSpan<T>() where T : struct => new Span<T>(unmanagedData.ToPointer(), length);
+        public Span<T> GetSpan<T>() where T : struct => new Span<T>(unmanagedData.ToPointer(), length);
 
-        internal T[] GetArray<T>() where T : struct => new Span<T>(unmanagedData.ToPointer(), length).ToArray();
+        public T[] GetArray<T>() where T : struct => new Span<T>(unmanagedData.ToPointer(), length).ToArray();
 
         /// <summary>
         /// Provides a pool of pre-allocated ManagedArray that can be re-used.
