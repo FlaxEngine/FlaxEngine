@@ -127,7 +127,7 @@ public:
     /// <summary>
     /// Gets the character up vector.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(240), DefaultValue(true), EditorDisplay(\"Character Controller\")")
+    API_PROPERTY(Attributes="EditorOrder(240), DefaultValue(typeof(Vector3), \"0,1,0\"), EditorDisplay(\"Character Controller\")")
     Vector3 GetUpDirection() const;
 
     /// <summary>
