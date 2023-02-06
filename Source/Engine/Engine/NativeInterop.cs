@@ -60,8 +60,8 @@ namespace FlaxEngine
         internal IntPtr name;
         internal ManagedHandle getterHandle;
         internal ManagedHandle setterHandle;
-        internal uint getterFlags;
-        internal uint setterFlags;
+        internal uint getterAttributes;
+        internal uint setterAttributes;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -1904,7 +1904,7 @@ namespace FlaxEngine
         {
             Type type = Unsafe.As<Type>(typeHandle.Target);
 
-            List<MethodInfo> methods = new List<MethodInfo>();
+            var methods = new List<MethodInfo>();
             var staticMethods = type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
             var instanceMethods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
             foreach (MethodInfo method in staticMethods)
@@ -1912,11 +1912,11 @@ namespace FlaxEngine
             foreach (MethodInfo method in instanceMethods)
                 methods.Add(method);
 
-            NativeMethodDefinitions* arr = (NativeMethodDefinitions*)NativeAlloc(methods.Count, Unsafe.SizeOf<NativeMethodDefinitions>());
+            var arr = (NativeMethodDefinitions*)NativeAlloc(methods.Count, Unsafe.SizeOf<NativeMethodDefinitions>());
             for (int i = 0; i < methods.Count; i++)
             {
                 IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativeMethodDefinitions>() * i);
-                NativeMethodDefinitions classMethod = new NativeMethodDefinitions()
+                var classMethod = new NativeMethodDefinitions
                 {
                     name = NativeAllocStringAnsi(methods[i].Name),
                     numParameters = methods[i].GetParameters().Length,
@@ -1977,7 +1977,7 @@ namespace FlaxEngine
             Type type = Unsafe.As<Type>(typeHandle.Target);
             var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
-            NativePropertyDefinitions* arr = (NativePropertyDefinitions*)NativeAlloc(properties.Length, Unsafe.SizeOf<NativePropertyDefinitions>());
+            var arr = (NativePropertyDefinitions*)NativeAlloc(properties.Length, Unsafe.SizeOf<NativePropertyDefinitions>());
             for (int i = 0; i < properties.Length; i++)
             {
                 IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativePropertyDefinitions>() * i);
@@ -1985,19 +1985,19 @@ namespace FlaxEngine
                 var getterMethod = properties[i].GetGetMethod(true);
                 var setterMethod = properties[i].GetSetMethod(true);
 
-                NativePropertyDefinitions classProperty = new NativePropertyDefinitions()
+                var classProperty = new NativePropertyDefinitions
                 {
                     name = NativeAllocStringAnsi(properties[i].Name),
                 };
                 if (getterMethod != null)
                 {
-                    var getterHandle = GetMethodGCHandle(getterMethod);
-                    classProperty.getterHandle = getterHandle;
+                    classProperty.getterHandle = GetMethodGCHandle(getterMethod);
+                    classProperty.getterAttributes = (uint)getterMethod.Attributes;
                 }
                 if (setterMethod != null)
                 {
-                    var setterHandle = GetMethodGCHandle(setterMethod);
-                    classProperty.setterHandle = setterHandle;
+                    classProperty.setterHandle = GetMethodGCHandle(setterMethod);
+                    classProperty.setterAttributes = (uint)setterMethod.Attributes;
                 }
                 Unsafe.Write(ptr.ToPointer(), classProperty);
             }

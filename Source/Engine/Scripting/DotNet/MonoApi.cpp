@@ -58,8 +58,8 @@ struct NativePropertyDefinitions
     const char* name;
     void* getterHandle;
     void* setterHandle;
-    uint32 getterFlags;
-    uint32 setterFlags;
+    uint32 getterAttributes;
+    uint32 setterAttributes;
 };
 
 struct ClassAttribute
@@ -166,8 +166,13 @@ private:
     int _monoType;
 
 public:
-    CoreCLRClass(void* typeHandle, StringAnsi name, StringAnsi fullname, StringAnsi namespace_, uint32 typeAttributes, CoreCLRAssembly* image)
-        : _typeHandle(typeHandle), _name(name), _fullname(fullname), _namespace(namespace_), _typeAttributes(typeAttributes), _image(image)
+    CoreCLRClass(void* typeHandle, StringAnsi&& name, StringAnsi&& fullname, StringAnsi&& namespace_, uint32 typeAttributes, CoreCLRAssembly* image)
+        : _fullname(MoveTemp(fullname))
+        , _name(MoveTemp(name))
+        , _namespace(MoveTemp(namespace_))
+        , _typeAttributes(typeAttributes)
+        , _image(image)
+        , _typeHandle(typeHandle)
     {
         _typeToken = TypeTokenPool++;
         _monoType = 0;
@@ -199,10 +204,8 @@ public:
     {
         if (_size != 0)
             return _size;
-
         uint32 align;
         _size = mono_class_value_size((MonoClass*)this, &align);
-
         return _size;
     }
 
@@ -289,7 +292,8 @@ public:
         CoreCLR::CallStaticMethod<void, void*, NativePropertyDefinitions**, int*>(GetClassPropertiesPtr, _typeHandle, &foundProperties, &numProperties);
         for (int i = 0; i < numProperties; i++)
         {
-            CoreCLRProperty* prop = New<CoreCLRProperty>(StringAnsi(foundProperties[i].name), foundProperties[i].getterHandle, foundProperties[i].setterHandle, foundProperties[i].getterFlags, foundProperties[i].setterFlags, this);
+            const NativePropertyDefinitions& foundProp = foundProperties[i];
+            CoreCLRProperty* prop = New<CoreCLRProperty>(StringAnsi(foundProp.name), foundProp.getterHandle, foundProp.setterHandle, foundProp.getterAttributes, foundProp.setterAttributes, this);
             _properties.Add(prop);
 
             CoreCLR::Free((void*)foundProperties[i].name);
@@ -369,8 +373,12 @@ private:
     uint32 _methodAttributes;
 
 public:
-    CoreCLRMethod(StringAnsi name, int numParams, void* methodHandle, uint32 flags, CoreCLRClass* klass)
-        :_name(name), _numParams(numParams), _methodHandle(methodHandle), _methodAttributes(flags), _class(klass)
+    CoreCLRMethod(StringAnsi&& name, int numParams, void* methodHandle, uint32 flags, CoreCLRClass* klass)
+        : _name(MoveTemp(name))
+        , _numParams(numParams)
+        , _class(klass)
+        , _methodHandle(methodHandle)
+        , _methodAttributes(flags)
     {
         _returnType = nullptr;
     }
@@ -481,15 +489,16 @@ private:
     CoreCLRMethod* _setMethod;
 
 public:
-    CoreCLRProperty(StringAnsi name, void* getter, void* setter, uint32 getterFlags, uint32 setterFlags, CoreCLRClass* klass)
-        :_name(name), _class(klass)
+    CoreCLRProperty(StringAnsi&& name, void* getter, void* setter, uint32 getterAttributes, uint32 setterAttributes, CoreCLRClass* klass)
+        : _name(MoveTemp(name))
+        , _class(klass)
     {
         if (getter != nullptr)
-            _getMethod = New<CoreCLRMethod>(StringAnsi(_name + "Get"), 1, getter, getterFlags, klass);
+            _getMethod = New<CoreCLRMethod>(StringAnsi(_name + "Get"), 1, getter, getterAttributes, klass);
         else
             _getMethod = nullptr;
         if (setter != nullptr)
-            _setMethod = New<CoreCLRMethod>(StringAnsi(_name + "Set"), 1, setter, setterFlags, klass);
+            _setMethod = New<CoreCLRMethod>(StringAnsi(_name + "Set"), 1, setter, setterAttributes, klass);
         else
             _setMethod = nullptr;
     }
@@ -524,8 +533,11 @@ private:
     CoreCLRClass* _attributeClass;
 
 public:
-    CoreCLRCustomAttribute(StringAnsi name, void* handle, CoreCLRClass* owningClass, CoreCLRClass* attributeClass)
-        :_name(name), _handle(handle), _owningClass(owningClass), _attributeClass(attributeClass)
+    CoreCLRCustomAttribute(StringAnsi&& name, void* handle, CoreCLRClass* owningClass, CoreCLRClass* attributeClass)
+        : _name(MoveTemp(name))
+        , _handle(handle)
+        , _owningClass(owningClass)
+        , _attributeClass(attributeClass)
     {
     }
 
@@ -550,9 +562,8 @@ CoreCLRAssembly* GetAssembly(void* assemblyHandle)
 
 CoreCLRClass* GetClass(void* type)
 {
-    CoreCLRClass* klass;
-    if (classHandles.TryGet(type, klass))
-        return klass;
+    CoreCLRClass* klass = nullptr;
+    classHandles.TryGet(type, klass);
     return nullptr;
 }
 

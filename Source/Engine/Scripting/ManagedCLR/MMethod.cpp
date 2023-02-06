@@ -25,7 +25,6 @@ MMethod::MMethod(MonoMethod* monoMethod, const char* name, MClass* parentClass)
 #endif
 
     const uint32_t flags = mono_method_get_flags(monoMethod, nullptr);
-
     _isStatic = (flags & MONO_METHOD_ATTR_STATIC) != 0;
     switch (flags & MONO_METHOD_ATTR_ACCESS_MASK)
     {
