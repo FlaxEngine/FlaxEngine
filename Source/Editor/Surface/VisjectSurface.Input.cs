@@ -573,49 +573,49 @@ namespace FlaxEditor.Surface
                 var keyMoveRange = 50;
                 switch (key)
                 {
-                case KeyboardKeys.Backspace:
+                    case KeyboardKeys.Backspace:
                     if (InputText.Length > 0)
                         InputText = InputText.Substring(0, InputText.Length - 1);
                     return true;
-                case KeyboardKeys.Escape:
+                    case KeyboardKeys.Escape:
                     ClearSelection();
                     return true;
-                case KeyboardKeys.Return:
-                {
-                    Box selectedBox = GetSelectedBox(SelectedNodes, false);
-                    Box toSelect = selectedBox?.ParentNode.GetNextBox(selectedBox);
-                    if (toSelect != null)
+                    case KeyboardKeys.Return:
                     {
-                        Select(toSelect.ParentNode);
-                        toSelect.ParentNode.SelectBox(toSelect);
-                    }
-                    return true;
-                }
-                case KeyboardKeys.ArrowUp:
-                case KeyboardKeys.ArrowDown:
-                {
-                    // Selected box navigation
-                    Box selectedBox = GetSelectedBox(SelectedNodes);
-                    if (selectedBox != null)
-                    {
-                        Box toSelect = (key == KeyboardKeys.ArrowUp) ? selectedBox?.ParentNode.GetPreviousBox(selectedBox) : selectedBox?.ParentNode.GetNextBox(selectedBox);
-                        if (toSelect != null && toSelect.IsOutput == selectedBox.IsOutput)
+                        Box selectedBox = GetSelectedBox(SelectedNodes, false);
+                        Box toSelect = selectedBox?.ParentNode.GetNextBox(selectedBox);
+                        if (toSelect != null)
                         {
                             Select(toSelect.ParentNode);
                             toSelect.ParentNode.SelectBox(toSelect);
                         }
+                        return true;
                     }
-                    else if (!IsMovingSelection && CanEdit)
+                    case KeyboardKeys.ArrowUp:
+                    case KeyboardKeys.ArrowDown:
                     {
-                        // Move selected nodes
-                        var delta = new Float2(0, key == KeyboardKeys.ArrowUp ? -keyMoveRange : keyMoveRange);
-                        MoveSelectedNodes(delta);
+                        // Selected box navigation
+                        Box selectedBox = GetSelectedBox(SelectedNodes);
+                        if (selectedBox != null)
+                        {
+                            Box toSelect = (key == KeyboardKeys.ArrowUp) ? selectedBox?.ParentNode.GetPreviousBox(selectedBox) : selectedBox?.ParentNode.GetNextBox(selectedBox);
+                            if (toSelect != null && toSelect.IsOutput == selectedBox.IsOutput)
+                            {
+                                Select(toSelect.ParentNode);
+                                toSelect.ParentNode.SelectBox(toSelect);
+                            }
+                        }
+                        else if (!IsMovingSelection && CanEdit)
+                        {
+                            // Move selected nodes
+                            var delta = new Float2(0, key == KeyboardKeys.ArrowUp ? -keyMoveRange : keyMoveRange);
+                            MoveSelectedNodes(delta);
+                        }
+                        return true;
                     }
-                    return true;
-                }
-                case KeyboardKeys.ArrowRight:
-                case KeyboardKeys.ArrowLeft:
-                {
+                    case KeyboardKeys.ArrowRight:
+                    case KeyboardKeys.ArrowLeft:
+                    {
                     // Selected box navigation
                     Box selectedBox = GetSelectedBox(SelectedNodes);
                     if (selectedBox != null)
@@ -658,30 +658,48 @@ namespace FlaxEditor.Surface
                         MoveSelectedNodes(delta);
                     }
                     return true;
-                }
-                case KeyboardKeys.Tab:
-                {
-                    Box selectedBox = GetSelectedBox(SelectedNodes, false);
-                    if (selectedBox == null)
-                        return true;
-
-                    int connectionCount = selectedBox.Connections.Count;
-                    if (connectionCount == 0)
-                        return true;
-
-                    if (Root.GetKey(KeyboardKeys.Shift))
-                    {
-                        _selectedConnectionIndex = ((_selectedConnectionIndex - 1) % connectionCount + connectionCount) % connectionCount;
                     }
-                    else
+                    case KeyboardKeys.Tab:
                     {
-                        _selectedConnectionIndex = (_selectedConnectionIndex + 1) % connectionCount;
+                        Box selectedBox = GetSelectedBox(SelectedNodes, false);
+                        if (selectedBox == null)
+                            return true;
+
+                        int connectionCount = selectedBox.Connections.Count;
+                        if (connectionCount == 0)
+                            return true;
+
+                        if (Root.GetKey(KeyboardKeys.Shift))
+                        {
+                            _selectedConnectionIndex = ((_selectedConnectionIndex - 1) % connectionCount + connectionCount) % connectionCount;
+                        }
+                        else
+                        {
+                            _selectedConnectionIndex = (_selectedConnectionIndex + 1) % connectionCount;
+                        }
+                        return true;
                     }
-                    return true;
-                }
+                    case KeyboardKeys.Spacebar:
+                    {
+                        Box selectedBox = GetSelectedBox(SelectedNodes, true);
+                        if (selectedBox == null) selectedBox = GetUnconnectedElement(SelectedNodes[0]);
+                        // Add a new node
+                        ConnectingStart(selectedBox);
+                        Cursor = CursorType.Default; // Do I need this?
+                        EndMouseCapture();
+                        ShowPrimaryMenu(_rootControl.PointToParent(FindEmptySpace(selectedBox)), true);
+                        return true;
+                    }
                 }
             }
-
+            else
+            {
+                if (key == KeyboardKeys.Spacebar)
+                {
+                    ShowPrimaryMenu(_mousePos);
+                    return true;
+                }
+            }
             return false;
         }
 
@@ -704,17 +722,17 @@ namespace FlaxEditor.Surface
             var selection = SelectedNodes;
             if (selection.Count == 0)
             {
-                if (_inputBrackets.Count == 0)
-                {
-                    ResetInput();
-                    ShowPrimaryMenu(_mousePos, false, currentInputText);
-                }
-                else
-                {
-                    InputText = "";
-                    ShowPrimaryMenu(_rootControl.PointToParent(_inputBrackets.Peek().Area.Location), true, currentInputText);
-                }
-                return;
+                //if (_inputBrackets.Count == 0)
+                //{
+                //    ResetInput();
+                //    ShowPrimaryMenu(_mousePos, false, currentInputText);
+                //}
+                //else
+                //{
+                //    InputText = "";
+                //    ShowPrimaryMenu(_rootControl.PointToParent(_inputBrackets.Peek().Area.Location), true, currentInputText);
+                //}
+                //return;
             }
 
             // Multi-Node Editing
@@ -771,16 +789,16 @@ namespace FlaxEditor.Surface
                     }
                 }
             }
-            else
-            {
-                InputText = "";
+            //else
+            //{
+            //    InputText = "";
 
-                // Add a new node
-                ConnectingStart(selectedBox);
-                Cursor = CursorType.Default; // Do I need this?
-                EndMouseCapture();
-                ShowPrimaryMenu(_rootControl.PointToParent(FindEmptySpace(selectedBox)), true, currentInputText);
-            }
+            //    // Add a new node
+            //    ConnectingStart(selectedBox);
+            //    Cursor = CursorType.Default; // Do I need this?
+            //    EndMouseCapture();
+            //    ShowPrimaryMenu(_rootControl.PointToParent(FindEmptySpace(selectedBox)), true, currentInputText);
+            //}
         }
 
         private Box GetSelectedBox(List<SurfaceNode> selection, bool onlyIfSelected = true)
@@ -895,6 +913,29 @@ namespace FlaxEditor.Surface
             outputBox = null;
             inputBox = null;
             return false;
+        }
+
+        private Box GetUnconnectedElement(SurfaceNode node)
+        {
+            
+            for (int i = 0; i < node.Elements.Count; i++)
+            {
+                if (node.Elements[i] is InputBox ib)
+                {
+                    if (ib.Connections.Count == 0)
+                    {
+                        return ib as Box;
+                    }
+                }
+                else if(node.Elements[i] is OutputBox ob)
+                {
+                    if (ob.Connections.Count == 0)
+                    {
+                        return ob as Box;
+                    }
+                }
+            }
+            return null;
         }
     }
 }

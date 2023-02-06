@@ -108,5 +108,96 @@ namespace FlaxEditor.Surface
 
             base.HandleDragDropAssets(objects, args);
         }
+
+        private KeyboardKeys _cachedKey;
+
+        /// <inheritdoc/>
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            _cachedKey = key;
+            return base.OnKeyDown(key);
+        }
+
+        /// <inheritdoc/>
+        public override void OnKeyUp(KeyboardKeys key)
+        {
+            base.OnKeyUp(key);
+            _cachedKey = KeyboardKeys.None;
+        }
+
+        /// <inheritdoc/>
+        public override bool OnMouseDown(Float2 location, MouseButton button)
+        {
+            if (button != MouseButton.Left) return base.OnMouseDown(location, button);
+            ushort archetype = 0;
+            ushort node = 0;
+
+            switch (_cachedKey)
+            {
+                // Add node
+                case KeyboardKeys.A:
+                    archetype = 3;
+                    node = 1;
+                    break;
+                // Subtract
+                case KeyboardKeys.S:
+                    archetype = 3;
+                    node = 2;
+                    break;
+                // Multiply
+                case KeyboardKeys.M:
+                    archetype = 3;
+                    node = 3;
+                    break;
+                // Divide
+                case KeyboardKeys.D:
+                    archetype = 3;
+                    node = 5;
+                    break;
+                // Lerp
+                case KeyboardKeys.L:
+                    archetype = 3;
+                    node = 25;
+                    break;
+                // Power
+                case KeyboardKeys.E:
+                    archetype = 3;
+                    node = 23;
+                    break;
+
+                // Float
+                case KeyboardKeys.Alpha1:
+                    archetype = 2;
+                    node = 3;
+                    break;
+                // Float2
+                case KeyboardKeys.Alpha2:
+                    archetype = 2;
+                    node = 4;
+                    break;
+                // Float3
+                case KeyboardKeys.Alpha3:
+                    archetype = 2;
+                    node = 5;
+                    break;
+                // Float4
+                case KeyboardKeys.Alpha4:
+                    archetype = 2;
+                    node = 6;
+                    break;
+                // Color
+                case KeyboardKeys.Alpha5:
+                    archetype = 2;
+                    node = 7;
+                    break;
+
+                default:
+                    break;
+            }
+            if (archetype == 0 || node == 0) return base.OnMouseDown(location, button);
+
+            var spawnedNode = Context.SpawnNode(archetype, node, _rootControl.PointFromParent(location));
+            return base.OnMouseDown(location, button);
+        }
     }
 }
