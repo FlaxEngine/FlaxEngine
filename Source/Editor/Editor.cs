@@ -1402,23 +1402,6 @@ namespace FlaxEditor
                 if (dockedTo != null && dockedTo.SelectedTab != gameWin && dockedTo.SelectedTab != null)
                     result = dockedTo.SelectedTab.Size * root.DpiScale;
                 else
-                    result = gameWin.Size * root.DpiScale;
-
-                result = Float2.Round(result);
-            }
-        }
-
-        internal void Internal_GetGameWindowViewportSize(out Float2 result)
-        {
-            result = new Float2(1280, 720);
-            var gameWin = Windows.GameWin;
-            if (gameWin?.Root?.RootWindow is WindowRootControl root)
-            {
-                // Handle case when Game window is not selected in tab view
-                var dockedTo = gameWin.ParentDockPanel;
-                if (dockedTo != null && dockedTo.SelectedTab != gameWin && dockedTo.SelectedTab != null)
-                    result = dockedTo.SelectedTab.Size * root.DpiScale;
-                else
                     result = gameWin.Viewport.Size * root.DpiScale;
 
                 result = Float2.Round(result);

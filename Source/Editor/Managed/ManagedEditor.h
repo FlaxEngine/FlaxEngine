@@ -134,12 +134,6 @@ public:
     Float2 GetGameWindowSize();
 
     /// <summary>
-    /// Gets the size of the game window viewport output.
-    /// </summary>
-    /// <returns>The size.</returns>
-    Float2 GetGameWindowViewportSize();
-
-    /// <summary>
     /// Called when application code calls exit. Editor may end play mode or exit normally.
     /// </summary>
     /// <returns>True if exit engine, otherwise false.</returns>
