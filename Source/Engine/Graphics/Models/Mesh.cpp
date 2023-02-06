@@ -408,7 +408,7 @@ void Mesh::Render(GPUContext* context) const
     context->DrawIndexedInstanced(_triangles * 3, 1, 0, 0, 0);
 }
 
-void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom) const
+void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom, int16 sortOrder) const
 {
     if (!material || !material->IsSurface() || !IsInitialized())
         return;
@@ -446,7 +446,7 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
 #endif
 
     // Push draw call to the render list
-    renderContext.List->AddDrawCall(renderContext, drawModes, flags, drawCall, receiveDecals);
+    renderContext.List->AddDrawCall(renderContext, drawModes, flags, drawCall, receiveDecals, sortOrder);
 }
 
 void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float lodDitherFactor) const
@@ -512,7 +512,7 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
 #endif
 
     // Push draw call to the render list
-    renderContext.List->AddDrawCall(renderContext, drawModes, info.Flags, drawCall, entry.ReceiveDecals);
+    renderContext.List->AddDrawCall(renderContext, drawModes, info.Flags, drawCall, entry.ReceiveDecals, info.SortOrder);
 }
 
 void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& info, float lodDitherFactor) const
@@ -575,7 +575,7 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     const auto shadowsMode = entry.ShadowsMode & slot.ShadowsMode;
     const auto drawModes = info.DrawModes & material->GetDrawModes();
     if (drawModes != DrawPass::None)
-        renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, info.Flags, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals);
+        renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, info.Flags, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals, info.SortOrder);
 }
 
 bool Mesh::DownloadDataGPU(MeshBufferType type, BytesContainer& result) const

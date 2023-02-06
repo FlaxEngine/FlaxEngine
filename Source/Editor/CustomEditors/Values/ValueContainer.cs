@@ -275,12 +275,16 @@ namespace FlaxEditor.CustomEditors
                         // Workaround for DefaultValueAttribute that doesn't support certain value types storage
                         if (Type.Type == typeof(sbyte))
                             _defaultValue = Convert.ToSByte(_defaultValue);
+                        else if (Type.Type == typeof(short))
+                            _defaultValue = Convert.ToInt16(_defaultValue);
                         else if (Type.Type == typeof(ushort))
                             _defaultValue = Convert.ToUInt16(_defaultValue);
                         else if (Type.Type == typeof(uint))
                             _defaultValue = Convert.ToUInt32(_defaultValue);
                         else if (Type.Type == typeof(ulong))
                             _defaultValue = Convert.ToUInt64(_defaultValue);
+                        else if (Type.Type == typeof(long))
+                            _defaultValue = Convert.ToInt64(_defaultValue);
                     }
                 }
             }

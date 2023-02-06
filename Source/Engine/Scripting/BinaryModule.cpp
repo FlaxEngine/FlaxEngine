@@ -882,9 +882,7 @@ ScriptingTypeHandle ManagedBinaryModule::FindType(MonoClass* klass)
     {
         int32 typeIndex;
         if (typeModule->ClassToTypeIndex.TryGet(klass, typeIndex))
-        {
             return ScriptingTypeHandle(typeModule, typeIndex);
-        }
     }
     return ScriptingTypeHandle();
 }

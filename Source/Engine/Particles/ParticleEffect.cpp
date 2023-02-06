@@ -258,7 +258,7 @@ void ParticleEffect::ResetSimulation()
     Instance.ClearState();
 }
 
-void ParticleEffect::UpdateSimulation()
+void ParticleEffect::UpdateSimulation(bool singleFrame)
 {
     // Skip if need to
     if (!IsActiveInHierarchy()
@@ -270,6 +270,8 @@ void ParticleEffect::UpdateSimulation()
     // Request update
     _lastUpdateFrame = Engine::FrameCount;
     _lastMinDstSqr = MAX_Real;
+    if (singleFrame)
+        Instance.LastUpdateTime = (UseTimeScale ? Time::Update.Time : Time::Update.UnscaledTime).GetTotalSeconds();
     Particles::UpdateEffect(this);
 }
 
@@ -576,6 +578,7 @@ void ParticleEffect::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(IsLooping);
     SERIALIZE(UpdateWhenOffscreen);
     SERIALIZE(DrawModes);
+    SERIALIZE(SortOrder);
 }
 
 void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -674,6 +677,7 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     DESERIALIZE(IsLooping);
     DESERIALIZE(UpdateWhenOffscreen);
     DESERIALIZE(DrawModes);
+    DESERIALIZE(SortOrder);
 
     if (_parameters.HasItems())
     {

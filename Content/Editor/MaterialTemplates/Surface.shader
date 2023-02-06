@@ -594,7 +594,7 @@ void PS_Depth(PixelInput input)
 	ClipLODTransition(input);
 #endif
 
-#if MATERIAL_MASKED || MATERIAL_BLEND != MATERIAL_BLEND_OPAQUE 
+#if MATERIAL_MASKED || MATERIAL_BLEND != MATERIAL_BLEND_OPAQUE
 	// Get material parameters
 	MaterialInput materialInput = GetMaterialInput(input);
 	Material material = GetMaterialPS(materialInput);

@@ -103,6 +103,7 @@ void GPUContextDX11::FrameBegin()
     CurrentPS = nullptr;
     CurrentCS = nullptr;
     CurrentPrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    CurrentBlendFactor = Float4::One;
 
     // Bind static samplers
     ID3D11SamplerState* samplers[] =
@@ -267,6 +268,13 @@ void GPUContextDX11::SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPU
     }
 }
 
+void GPUContextDX11::SetBlendFactor(const Float4& value)
+{
+    CurrentBlendFactor = value;
+    if (CurrentBlendState)
+        _context->OMSetBlendState(CurrentBlendState, CurrentBlendFactor.Raw, D3D11_DEFAULT_SAMPLE_MASK);
+}
+
 void GPUContextDX11::ResetSR()
 {
     _srDirtyFlag = false;
@@ -420,6 +428,7 @@ void GPUContextDX11::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCoun
 
 void GPUContextDX11::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
+    ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
     CurrentCS = (GPUShaderProgramCSDX11*)shader;
 
     auto bufferForArgsDX11 = (GPUBufferDX11*)bufferForArgs;
@@ -560,8 +569,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
         if (CurrentBlendState != blendState)
         {
             CurrentBlendState = blendState;
-            FLOAT blendFactor[4] = { 1, 1, 1, 1 };
-            _context->OMSetBlendState(blendState, blendFactor, D3D11_DEFAULT_SAMPLE_MASK);
+            _context->OMSetBlendState(blendState, CurrentBlendFactor.Raw, D3D11_DEFAULT_SAMPLE_MASK);
         }
         if (CurrentVS != vs)
         {

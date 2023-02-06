@@ -140,13 +140,13 @@ struct PsData
 
     bool Create(GPUPipelineState::Description& desc)
     {
-        desc.DepthTestEnable = true;
+        desc.DepthEnable = true;
         desc.DepthWriteEnable = false;
 
         Depth = GPUDevice::Instance->CreatePipelineState();
         if (Depth->Init(desc))
             return true;
-        desc.DepthTestEnable = false;
+        desc.DepthEnable = false;
         NoDepthTest = GPUDevice::Instance->CreatePipelineState();
         if (NoDepthTest->Init(desc))
             return false;
@@ -156,7 +156,7 @@ struct PsData
         NoDepthTestDepthWrite = GPUDevice::Instance->CreatePipelineState();
         if (NoDepthTestDepthWrite->Init(desc))
             return false;
-        desc.DepthTestEnable = true;
+        desc.DepthEnable = true;
         DepthWrite = GPUDevice::Instance->CreatePipelineState();
         return DepthWrite->Init(desc);
     }

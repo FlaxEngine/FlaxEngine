@@ -297,6 +297,7 @@ void Camera::Draw(RenderContext& renderContext)
         draw.PerInstanceRandom = GetPerInstanceRandom();
         draw.LODBias = 0;
         draw.ForcedLOD = -1;
+        draw.SortOrder = 0;
         draw.VertexColors = nullptr;
         if (draw.DrawModes != DrawPass::None)
         {

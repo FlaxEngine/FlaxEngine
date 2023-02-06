@@ -172,7 +172,7 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
     }
 
     // Depth State
-    psDesc.DepthStencilState.DepthEnable = !!desc.DepthTestEnable;
+    psDesc.DepthStencilState.DepthEnable = !!desc.DepthEnable;
     psDesc.DepthStencilState.DepthWriteMask = desc.DepthWriteEnable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
     psDesc.DepthStencilState.DepthFunc = static_cast<D3D12_COMPARISON_FUNC>(desc.DepthFunc);
     psDesc.DepthStencilState.StencilEnable = FALSE;

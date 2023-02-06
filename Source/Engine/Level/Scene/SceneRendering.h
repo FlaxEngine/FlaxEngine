@@ -123,7 +123,7 @@ public:
 
 public:
     void AddActor(Actor* a, int32& key);
-    void UpdateActor(Actor* a, int32 key);
+    void UpdateActor(Actor* a, int32& key);
     void RemoveActor(Actor* a, int32& key);
 
     FORCE_INLINE void AddPostFxProvider(IPostFxSettingsProvider* obj)

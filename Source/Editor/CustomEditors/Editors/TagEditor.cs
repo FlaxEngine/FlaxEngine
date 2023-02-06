@@ -322,7 +322,7 @@ namespace FlaxEditor.CustomEditors.Editors
         internal static ContextMenuBase CreatePicker(Tag value, Tag[] values, PickerData pickerData)
         {
             // Initialize search popup
-            var menu = Utilities.Utils.CreateSearchPopup(out var searchBox, out var tree, 40.0f);
+            var menu = Utilities.Utils.CreateSearchPopup(out var searchBox, out var tree, 42.0f);
 
             // Add tag drop panel
             var addTagDropPanel = new DropPanel
@@ -333,6 +333,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 ArrowImageClosed = new SpriteBrush(FlaxEngine.GUI.Style.Current.ArrowRight),
                 Parent = menu,
                 HeaderTextMargin = new Margin(2.0f),
+                HeaderHeight = 18.0f,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Bounds = new Rectangle(2, 2, menu.Width - 4, 30),
                 IsClosed = true,
@@ -408,7 +409,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var buttonAddTag = new Button
             {
                 Parent = addButtonPanel,
-                Size = new Float2(100, 20),
+                Size = new Float2(100, 18),
                 Text = "Add Tag",
                 AnchorPreset = AnchorPresets.MiddleCenter,
             };

@@ -330,7 +330,7 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
     else
     {
         // Sample skybox
-        float3 skybox = Skybox.SampleLevel(SamplerLinearClamp, viewRay, 0);
+        float3 skybox = Skybox.SampleLevel(SamplerLinearClamp, viewRay, 0).rgb;
         float3 sky = float3(0.4f, 0.4f, 1.0f) * saturate(hit.StepsCount / 80.0f);
         color = lerp(sky, skybox, SkyboxIntensity);
     }

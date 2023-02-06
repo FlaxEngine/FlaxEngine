@@ -6,14 +6,11 @@
 #include "ModelInstanceEntry.h"
 #include "Config.h"
 #include "Types.h"
-#include "Engine/Level/Types.h"
 #if USE_PRECISE_MESH_INTERSECTS
 #include "CollisionProxy.h"
 #endif
 
-struct GeometryDrawStateData;
 class Lightmap;
-class GPUBuffer;
 
 /// <summary>
 /// Represents part of the model that is made of vertices and can be rendered using custom material and transformation.
@@ -276,72 +273,6 @@ public:
     void GetDrawCallGeometry(DrawCall& drawCall) const;
 
     /// <summary>
-    /// Model instance drawing packed data.
-    /// </summary>
-    struct DrawInfo
-    {
-        /// <summary>
-        /// The instance buffer to use during model rendering.
-        /// </summary>
-        ModelInstanceEntries* Buffer;
-
-        /// <summary>
-        /// The world transformation of the model.
-        /// </summary>
-        Matrix* World;
-
-        /// <summary>
-        /// The instance drawing state data container. Used for LOD transition handling and previous world transformation matrix updating. 
-        /// </summary>
-        GeometryDrawStateData* DrawState;
-
-        /// <summary>
-        /// The lightmap.
-        /// </summary>
-        const Lightmap* Lightmap;
-
-        /// <summary>
-        /// The lightmap UVs.
-        /// </summary>
-        const Rectangle* LightmapUVs;
-
-        /// <summary>
-        /// The model instance vertex colors buffers (per-lod all meshes packed in a single allocation, array length equal to model lods count).
-        /// </summary>
-        GPUBuffer** VertexColors;
-
-        /// <summary>
-        /// The object static flags.
-        /// </summary>
-        StaticFlags Flags;
-
-        /// <summary>
-        /// The object draw modes.
-        /// </summary>
-        DrawPass DrawModes;
-
-        /// <summary>
-        /// The bounds of the model (used to select a proper LOD during rendering).
-        /// </summary>
-        BoundingSphere Bounds;
-
-        /// <summary>
-        /// The per-instance random value.
-        /// </summary>
-        float PerInstanceRandom;
-
-        /// <summary>
-        /// The LOD bias value.
-        /// </summary>
-        char LODBias;
-
-        /// <summary>
-        /// The forced LOD to use. Value -1 disables this feature.
-        /// </summary>
-        char ForcedLOD;
-    };
-
-    /// <summary>
     /// Draws the mesh. Binds vertex and index buffers and invokes the draw call.
     /// </summary>
     /// <param name="context">The GPU context.</param>
@@ -357,7 +288,8 @@ public:
     /// <param name="receiveDecals">True if rendered geometry can receive decals, otherwise false.</param>
     /// <param name="drawModes">The draw passes to use for rendering this object.</param>
     /// <param name="perInstanceRandom">The random per-instance value (normalized to range 0-1).</param>
-    API_FUNCTION() void Draw(API_PARAM(Ref) const RenderContext& renderContext, MaterialBase* material, API_PARAM(Ref) const Matrix& world, StaticFlags flags = StaticFlags::None, bool receiveDecals = true, DrawPass drawModes = DrawPass::Default, float perInstanceRandom = 0.0f) const;
+    /// <param name="sortOrder">Object sorting key.</param>
+    API_FUNCTION() void Draw(API_PARAM(Ref) const RenderContext& renderContext, MaterialBase* material, API_PARAM(Ref) const Matrix& world, StaticFlags flags = StaticFlags::None, bool receiveDecals = true, DrawPass drawModes = DrawPass::Default, float perInstanceRandom = 0.0f, int16 sortOrder = 0) const;
 
     /// <summary>
     /// Draws the mesh.

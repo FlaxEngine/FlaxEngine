@@ -1173,6 +1173,7 @@ void Foliage::Draw(RenderContext& renderContext)
         draw.Flags = GetStaticFlags();
         draw.LODBias = 0;
         draw.ForcedLOD = -1;
+        draw.SortOrder = 0;
         draw.VertexColors = nullptr;
         draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(instance.Lightmap.TextureIndex);
         draw.LightmapUVs = &instance.Lightmap.UVsArea;

@@ -25,14 +25,14 @@ public:
         DECLARE_SCRIPTING_TYPE_NO_SPAWN(Description);
 
         /// <summary>
+        /// Enable/disable depth (DepthFunc and DepthWriteEnable)
+        /// </summary>
+        API_FIELD() bool DepthEnable;
+
+        /// <summary>
         /// Enable/disable depth write
         /// </summary>
         API_FIELD() bool DepthWriteEnable;
-
-        /// <summary>
-        /// Enable/disable depth test
-        /// </summary>
-        API_FIELD() bool DepthTestEnable;
 
         /// <summary>
         /// Enable/disable depth clipping

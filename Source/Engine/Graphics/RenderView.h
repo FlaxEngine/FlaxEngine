@@ -255,13 +255,7 @@ public:
 public:
     // Set up view with custom params
     // @param viewProjection View * Projection matrix
-    void SetUp(const Matrix& viewProjection)
-    {
-        // Copy data
-        Matrix::Invert(viewProjection, IVP);
-        Frustum.SetMatrix(viewProjection);
-        CullingFrustum = Frustum;
-    }
+    void SetUp(const Matrix& viewProjection);
 
     // Set up view with custom params
     // @param view View matrix

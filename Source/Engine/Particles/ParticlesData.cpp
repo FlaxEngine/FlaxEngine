@@ -18,8 +18,7 @@ ParticleBuffer::~ParticleBuffer()
     SAFE_DELETE_GPU_RESOURCE(GPU.SortingKeysBuffer);
     SAFE_DELETE_GPU_RESOURCE(GPU.SortedIndices);
     SAFE_DELETE(GPU.RibbonIndexBufferDynamic);
-    for (auto& e : GPU.RibbonSegmentDistances)
-        SAFE_DELETE_GPU_RESOURCE(e);
+    SAFE_DELETE(GPU.RibbonVertexBufferDynamic);
 }
 
 bool ParticleBuffer::Init(ParticleEmitter* emitter)

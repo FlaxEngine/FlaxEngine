@@ -514,7 +514,7 @@ public:
     API_FIELD(ReadOnly) static BlendingMode Additive;
 
     /// <summary>
-    /// Gets the alpha blending.
+    /// Gets the alpha blending. Source alpha controls the output color (0 - use destination color, 1 - use source color).
     /// </summary>
     API_FIELD(ReadOnly) static BlendingMode AlphaBlend;
 
@@ -591,22 +591,22 @@ API_ENUM() enum class Quality : byte
 API_ENUM() enum class MaterialPostFxLocation : byte
 {
     /// <summary>
-    /// The after post processing pass using LDR input frame.
+    /// The 'after' post processing pass using LDR input frame.
     /// </summary>
     AfterPostProcessingPass = 0,
 
     /// <summary>
-    /// The before post processing pass using HDR input frame.
+    /// The 'before' post processing pass using HDR input frame.
     /// </summary>
     BeforePostProcessingPass = 1,
 
     /// <summary>
-    /// The before forward pass but after GBuffer with HDR input frame.
+    /// The 'before' forward pass but after GBuffer with HDR input frame.
     /// </summary>
     BeforeForwardPass = 2,
 
     /// <summary>
-    /// The after custom post effects.
+    /// The 'after' custom post effects.
     /// </summary>
     AfterCustomPostEffects = 3,
 
@@ -619,6 +619,11 @@ API_ENUM() enum class MaterialPostFxLocation : byte
     /// The 'after' AA filter pass. Rendering is done to the output backbuffer.
     /// </summary>
     AfterAntiAliasingPass = 5,
+
+    /// <summary>
+    /// The 'after' forward pass but before any post processing.
+    /// </summary>
+    AfterForwardPass = 6,
 
     API_ENUM(Attributes="HideInEditor")
     MAX,
@@ -635,7 +640,7 @@ API_ENUM() enum class PostProcessEffectLocation
     Default = 0,
 
     /// <summary>
-    ///The 'before' in-build PostFx pass (bloom, color grading, etc.). After Forward Pass (transparency) and fog effects.
+    /// The 'before' in-build PostFx pass (bloom, color grading, etc.). After Forward Pass (transparency) and fog effects.
     /// </summary>
     BeforePostProcessingPass = 1,
 
@@ -658,6 +663,16 @@ API_ENUM() enum class PostProcessEffectLocation
     /// The custom frame up-scaling that replaces default implementation. Rendering is done to the output backbuffer (use OutputView and OutputViewport as render destination).
     /// </summary>
     CustomUpscale = 5,
+
+    /// <summary>
+    /// The 'after' GBuffer rendering pass. Can be used to render custom geometry into GBuffer. Output is light buffer, single-target only (no output).
+    /// </summary>
+    AfterGBufferPass = 6,
+
+    /// <summary>
+    /// The 'after' forward pass but before any post processing.
+    /// </summary>
+    AfterForwardPass = 7,
 
     API_ENUM(Attributes="HideInEditor")
     MAX,
@@ -874,7 +889,7 @@ API_ENUM() enum class ViewMode
 /// <summary>
 /// Frame rendering flags used to switch between graphics features.
 /// </summary>
-API_ENUM(Attributes="Flags") enum class ViewFlags : int64
+API_ENUM(Attributes="Flags") enum class ViewFlags : uint64
 {
     /// <summary>
     /// Nothing.
@@ -1012,19 +1027,24 @@ API_ENUM(Attributes="Flags") enum class ViewFlags : int64
     GlobalSDF = 1 << 25,
 
     /// <summary>
+    /// Shows/hides the Sky/Skybox rendering.
+    /// </summary>
+    Sky = 1 << 26,
+
+    /// <summary>
     /// Default flags for Game.
     /// </summary>
-    DefaultGame = Reflections | DepthOfField | Fog | Decals | MotionBlur | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows | GlobalSDF,
+    DefaultGame = Reflections | DepthOfField | Fog | Decals | MotionBlur | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows | GlobalSDF | Sky,
 
     /// <summary>
     /// Default flags for Editor.
     /// </summary>
-    DefaultEditor = Reflections | Fog | Decals | DebugDraw | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | EditorSprites | ContactShadows | GlobalSDF,
+    DefaultEditor = Reflections | Fog | Decals | DebugDraw | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | EditorSprites | ContactShadows | GlobalSDF | Sky,
 
     /// <summary>
     /// Default flags for materials/models previews generating.
     /// </summary>
-    DefaultAssetPreview = Reflections | Decals | DirectionalLights | PointLights | SpotLights | SkyLights | SpecularLight | AntiAliasing | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows,
+    DefaultAssetPreview = Reflections | Decals | DirectionalLights | PointLights | SpotLights | SkyLights | SpecularLight | AntiAliasing | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows | Sky,
 };
 
 DECLARE_ENUM_OPERATORS(ViewFlags);

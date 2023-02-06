@@ -556,7 +556,7 @@ public:
 
         // Compute particle data layout and initialize used nodes (for only used nodes, start depth searching rom the modules)
         Layout.AddAttribute(TEXT("Position"), ParticleAttribute::ValueTypes::Float3);
-#define PROCESS_MODULES(modules) for (int32 i = 0; i < modules.Count(); i++) { InitializeNode(modules[i]); }
+#define PROCESS_MODULES(modules) for (int32 i = 0; i < modules.Count(); i++) { modules[i]->Used = false; InitializeNode(modules[i]); }
         PROCESS_MODULES(SpawnModules);
         PROCESS_MODULES(InitModules);
         PROCESS_MODULES(UpdateModules);

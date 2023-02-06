@@ -119,28 +119,22 @@ bool SkinnedMesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0Skinne
 bool SkinnedMesh::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal) const
 {
     // Transform points
-    Vector3 min, max;
-    Vector3::Transform(_box.Minimum, world, min);
-    Vector3::Transform(_box.Maximum, world, max);
+    BoundingBox transformedBox;
+    Vector3::Transform(_box.Minimum, world, transformedBox.Minimum);
+    Vector3::Transform(_box.Maximum, world, transformedBox.Maximum);
 
-    // Get transformed box
-    BoundingBox transformedBox(min, max);
-
-    // Test ray on a box
+    // Test ray on a transformed box
     return transformedBox.Intersects(ray, distance, normal);
 }
 
 bool SkinnedMesh::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal) const
 {
     // Transform points
-    Vector3 min, max;
-    transform.LocalToWorld(_box.Minimum, min);
-    transform.LocalToWorld(_box.Maximum, max);
+    BoundingBox transformedBox;
+    transform.LocalToWorld(_box.Minimum, transformedBox.Minimum);
+    transform.LocalToWorld(_box.Maximum, transformedBox.Maximum);
 
-    // Get transformed box
-    BoundingBox transformedBox(min, max);
-
-    // Test ray on a box
+    // Test ray on a transformed box
     return transformedBox.Intersects(ray, distance, normal);
 }
 
@@ -216,7 +210,7 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
 
     // Push draw call to the render list
-    renderContext.List->AddDrawCall(renderContext, drawModes, StaticFlags::None, drawCall, entry.ReceiveDecals);
+    renderContext.List->AddDrawCall(renderContext, drawModes, StaticFlags::None, drawCall, entry.ReceiveDecals, info.SortOrder);
 }
 
 void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& info, float lodDitherFactor) const
@@ -279,7 +273,7 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
     const auto shadowsMode = entry.ShadowsMode & slot.ShadowsMode;
     const auto drawModes = info.DrawModes & material->GetDrawModes();
     if (drawModes != DrawPass::None)
-        renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, StaticFlags::None, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals);
+        renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, StaticFlags::None, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals, info.SortOrder);
 }
 
 bool SkinnedMesh::DownloadDataGPU(MeshBufferType type, BytesContainer& result) const

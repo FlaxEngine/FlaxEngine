@@ -8,7 +8,7 @@
 META_CB_BEGIN(0, Data)
 float2 Dummy0;
 int CubeFace;
-int SourceMipIndex;
+float SourceMipIndex;
 META_CB_END
 
 TextureCube Cube : register(t0);

@@ -62,11 +62,11 @@ bool MotionBlurPass::Init()
 
     // Prepare formats for the buffers
     auto format = PixelFormat::R16G16_Float;
-    if (!EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(format).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
+    if (EnumHasNoneFlags(GPUDevice::Instance->GetFormatFeatures(format).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
     {
-        if (!EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32G32_Float).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
+        if (EnumHasNoneFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R32G32_Float).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
             format = PixelFormat::R32G32_Float;
-        else if (!EnumHasAllFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R16G16B16A16_Float).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
+        else if (EnumHasNoneFlags(GPUDevice::Instance->GetFormatFeatures(PixelFormat::R16G16B16A16_Float).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
             format = PixelFormat::R16G16B16A16_Float;
         else
             format = PixelFormat::R32G32B32A32_Float;

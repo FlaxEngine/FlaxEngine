@@ -152,7 +152,7 @@ void SceneRendering::AddActor(Actor* a, int32& key)
         listener->OnSceneRenderingAddActor(a);
 }
 
-void SceneRendering::UpdateActor(Actor* a, int32 key)
+void SceneRendering::UpdateActor(Actor* a, int32& key)
 {
     const int32 category = a->_drawCategory;
     ScopeLock lock(Locker);

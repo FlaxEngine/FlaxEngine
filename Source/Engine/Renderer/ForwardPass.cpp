@@ -107,7 +107,7 @@ void ForwardPass::Render(RenderContext& renderContext, GPUTexture* input, GPUTex
         const int32 height = renderContext.Buffers->GetHeight();
         const int32 distortionWidth = width;
         const int32 distortionHeight = height;
-        const auto tempDesc = GPUTextureDescription::New2D(distortionWidth, distortionHeight, Distortion_Pass_Output_Format);
+        const auto tempDesc = GPUTextureDescription::New2D(distortionWidth, distortionHeight, PixelFormat::R8G8B8A8_UNorm);
         auto distortionRT = RenderTargetPool::Get(tempDesc);
         RENDER_TARGET_POOL_SET_NAME(distortionRT, "Forward.Distortion");
 
@@ -119,15 +119,13 @@ void ForwardPass::Render(RenderContext& renderContext, GPUTexture* input, GPUTex
         // Render distortion pass
         view.Pass = DrawPass::Distortion;
         mainCache->ExecuteDrawCalls(renderContext, distortionList);
+
+        // Copy combined frame with distortion from transparent materials
         context->SetViewportAndScissors((float)width, (float)height);
         context->ResetRenderTarget();
         context->ResetSR();
-
-        // Bind inputs
         context->BindSR(0, input);
         context->BindSR(1, distortionRT);
-
-        // Copy combined frame with distortion from transparent materials
         context->SetRenderTarget(output->View());
         context->SetState(_psApplyDistortion);
         context->DrawFullscreenTriangle();

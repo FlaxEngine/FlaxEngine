@@ -31,6 +31,7 @@ MaterialGenerator::MaterialGraphBoxesMapping MaterialGenerator::MaterialGraphBox
 
 const MaterialGenerator::MaterialGraphBoxesMapping& MaterialGenerator::GetMaterialRootNodeBox(MaterialGraphBoxes box)
 {
+    static_assert(ARRAY_COUNT(MaterialGenerator::MaterialGraphBoxesMappings) == 15, "Invalid amount of boxes added for root node. Please update the code above");
     return MaterialGraphBoxesMappings[static_cast<int32>(box)];
 }
 

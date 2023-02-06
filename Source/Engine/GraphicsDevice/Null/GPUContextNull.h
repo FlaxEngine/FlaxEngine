@@ -84,6 +84,10 @@ public:
     {
     }
 
+    void SetBlendFactor(const Float4& value) override
+    {
+    }
+
     void ResetSR() override
     {
     }

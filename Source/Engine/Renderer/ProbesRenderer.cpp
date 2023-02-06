@@ -73,7 +73,7 @@ PACK_STRUCT(struct Data
     {
     Float2 Dummy0;
     int32 CubeFace;
-    int32 SourceMipIndex;
+    float SourceMipIndex;
     });
 
 namespace ProbesRendererImpl
@@ -268,6 +268,7 @@ bool ProbesRenderer::Init()
             ViewFlags::SkyLights |
             ViewFlags::Decals |
             ViewFlags::Shadows |
+            ViewFlags::Sky |
             ViewFlags::Fog;
     view.Mode = ViewMode::NoPostFx;
     view.IsOfflinePass = true;
@@ -514,8 +515,8 @@ void ProbesRenderer::OnRender(RenderTask* task, GPUContext* context)
         auto cb = shader->GetCB(0);
         for (int32 mipIndex = 1; mipIndex < mipLevels; mipIndex++)
         {
-            int32 mipSize = 1 << (mipLevels - mipIndex - 1);
-            data.SourceMipIndex = mipIndex - 1;
+            const int32 mipSize = 1 << (mipLevels - mipIndex - 1);
+            data.SourceMipIndex = (float)mipIndex - 1.0f;
             context->SetViewportAndScissors((float)mipSize, (float)mipSize);
             for (int32 faceIndex = 0; faceIndex < 6; faceIndex++)
             {

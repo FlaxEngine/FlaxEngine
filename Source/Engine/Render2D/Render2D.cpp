@@ -481,7 +481,7 @@ bool CachedPSO::Init(GPUShader* shader, bool useDepth)
 
     // Create pipeline states
     GPUPipelineState::Description desc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-    desc.DepthTestEnable = desc.DepthWriteEnable = useDepth;
+    desc.DepthEnable = desc.DepthWriteEnable = useDepth;
     desc.DepthWriteEnable = false;
     desc.DepthClipEnable = false;
     desc.VS = shader->GetVS("VS");

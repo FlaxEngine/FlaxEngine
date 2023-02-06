@@ -81,7 +81,7 @@ void Sky::InitConfig(AtmosphericFogData& config) const
 
 void Sky::Draw(RenderContext& renderContext)
 {
-    if (HasContentLoaded())
+    if (HasContentLoaded() && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Sky))
     {
         // Ensure to have pipeline state cache created
         if (_psSky == nullptr || _psFog == nullptr)

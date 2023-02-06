@@ -170,11 +170,11 @@ MaterialLayer* MaterialLayer::Load(const Guid& id, ReadStream* graphData, const 
         LOG(Warning, "Missing root node in '{0}'.", caller);
         layer->createRootNode();
     }
-        // Ensure to have valid root node
-    else if (layer->Root->Boxes.Count() != static_cast<int32>(MaterialGraphBoxes::MAX))
+    // Ensure to have valid root node
+    else if (layer->Root->Boxes.Count() < static_cast<int32>(MaterialGraphBoxes::MAX))
     {
 #define ADD_BOX(type, valueType) \
-		if(layer->Root->Boxes.Count() <= static_cast<int32>(MaterialGraphBoxes::type)) \
+		if (layer->Root->Boxes.Count() <= static_cast<int32>(MaterialGraphBoxes::type)) \
 			layer->Root->Boxes.Add(MaterialGraphBox(layer->Root, static_cast<int32>(MaterialGraphBoxes::type), VariantType::valueType))
         ADD_BOX(TessellationMultiplier, Float);
         ADD_BOX(WorldDisplacement, Float3);

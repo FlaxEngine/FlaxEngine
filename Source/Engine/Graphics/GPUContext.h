@@ -315,6 +315,12 @@ public:
     /// <param name="rts">The array with render targets to bind.</param>
     API_FUNCTION() virtual void SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPUTextureView*>& rts) = 0;
 
+    /// <summary>
+    /// Sets the blend factor that modulate values for a pixel shader, render target, or both.
+    /// </summary>
+    /// <param name="value">Blend factors, one for each RGBA component.</param>
+    API_FUNCTION() virtual void SetBlendFactor(const Float4& value) = 0;
+
 public:
     /// <summary>
     /// Unbinds all shader resource slots and flushes the change with the driver (used to prevent driver detection of resource hazards, eg. when down-scaling the texture).

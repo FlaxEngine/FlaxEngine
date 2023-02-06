@@ -65,6 +65,11 @@ public:
     }
 
     /// <summary>
+    /// Checks if any mouse button is currently pressed.
+    /// </summary>
+    API_PROPERTY() bool IsAnyButtonDown() const;
+
+    /// <summary>
     /// Gets the delta position of the mouse in the screen-space coordinates.
     /// </summary>
     /// <returns>The mouse position delta</returns>

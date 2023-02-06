@@ -84,6 +84,12 @@ public:
     API_FIELD(Attributes="EditorOrder(50), DefaultValue(DrawPass.Default), EditorDisplay(\"Sprite\")")
     DrawPass DrawModes = DrawPass::Default;
 
+    /// <summary>
+    /// Gets the object sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be use to control transparency drawing.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(60), DefaultValue(0), EditorDisplay(\"Sprite\")")
+    int16 SortOrder = 0;
+
 private:
     void OnMaterialLoaded();
     void SetImage();

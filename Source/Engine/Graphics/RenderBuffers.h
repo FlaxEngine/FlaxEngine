@@ -45,10 +45,14 @@ public:
     {
         struct
         {
-            GPUTexture* GBuffer0;
-            GPUTexture* GBuffer1;
-            GPUTexture* GBuffer2;
-            GPUTexture* GBuffer3;
+            /// <summary>Gets the GBuffer texture 0. RGB: Color, A: AO</summary>
+            API_FIELD(ReadOnly) GPUTexture* GBuffer0;
+            /// <summary>Gets the GBuffer texture 1. RGB: Normal, A: ShadingModel</summary>
+            API_FIELD(ReadOnly) GPUTexture* GBuffer1;
+            /// <summary>Gets the GBuffer texture 2. R: Roughness, G: Metalness, B:Specular</summary>
+            API_FIELD(ReadOnly) GPUTexture* GBuffer2;
+            /// <summary>Gets the GBuffer texture 3. RGBA: Custom Data</summary>
+            API_FIELD(ReadOnly) GPUTexture* GBuffer3;
         };
 
         GPUTexture* GBuffer[4];
@@ -174,6 +178,8 @@ public:
     template<class T>
     T* GetCustomBuffer(const StringView& name)
     {
+        if (LinkedCustomBuffers)
+            return LinkedCustomBuffers->GetCustomBuffer<T>(name);
         CustomBuffer* result = (CustomBuffer*)FindCustomBuffer(name);
         if (!result)
         {
@@ -201,6 +207,11 @@ public:
     /// Texture ca be null or not initialized if motion blur is disabled or not yet rendered.
     /// </remarks>
     API_FIELD(ReadOnly) GPUTexture* MotionVectors;
+
+    /// <summary>
+    /// External Render Buffers used to redirect FindCustomBuffer/GetCustomBuffer calls. Can be linked to other rendering task (eg. main game viewport) to reuse graphics effect state from it (eg. use GI from main game view in in-game camera renderer).
+    /// </summary>
+    API_FIELD() RenderBuffers* LinkedCustomBuffers = nullptr;
 
 public:
     /// <summary>

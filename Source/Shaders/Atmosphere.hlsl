@@ -220,13 +220,9 @@ float3 TransmittanceWithDistance(float radius, float Mu, float D)
     float R1 = sqrt(radius * radius + D * D + 2.0 * radius * Mu * D);
     float Mu1 = (radius * Mu + D) / R1;
     if (Mu > 0.0)
-    {
         result = min(Transmittance(radius, Mu) / Transmittance(R1, Mu1), 1.0);
-    }
     else
-    {
         result = min(Transmittance(R1, -Mu1) / Transmittance(radius, -Mu), 1.0);
-    }
     return result;
 }
 
@@ -249,7 +245,7 @@ float OpticalDepthWithDistance(float H, float radius, float Mu, float D)
     float particleDensity = 6.2831; // REK 04, Table 2
     float a = sqrt(0.5 / H * radius);
     float2 A01 = a * float2(Mu, Mu + D / radius);
-    float2 A01Sign = sign(A01);
+    float2 A01Sign = (float2)sign(A01);
     float2 A01Squared = A01 * A01;
     float x = A01Sign.y > A01Sign.x ? exp(A01Squared.x) : 0.0;
     float2 y = A01Sign / (2.3193 * abs(A01) + sqrt(1.52 * A01Squared + 4.0)) * float2(1.0, exp(-D / H * (D / (2.0 * radius) + Mu)));

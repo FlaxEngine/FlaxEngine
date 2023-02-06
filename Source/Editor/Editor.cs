@@ -50,7 +50,8 @@ namespace FlaxEditor
         private bool _isAfterInit, _areModulesInited, _areModulesAfterInitEnd, _isHeadlessMode;
         private string _projectToOpen;
         private float _lastAutoSaveTimer;
-        private AutoSavePopup _autoSavePopup;
+        private Button _saveNowButton;
+        private Button _cancelSaveButton;
         private bool _autoSaveNow;
         private Guid _startupSceneCmdLine;
 
@@ -498,28 +499,6 @@ namespace FlaxEditor
             {
                 var timeSinceLastSave = Time.UnscaledGameTime - _lastAutoSaveTimer;
                 var timeToNextSave = options.AutoSaveFrequency * 60.0f - timeSinceLastSave;
-                var countDownDuration = 4.0f;
-
-                // Show auto save popup
-                if (timeToNextSave <= options.AutoSaveReminderTime && timeToNextSave >= 0)
-                {
-                    if (_autoSavePopup == null)
-                    {
-                        _autoSavePopup = AutoSavePopup.Show(Instance.Windows.MainWindow.GUI, timeToNextSave);
-                        _autoSavePopup.SaveNowButton.Clicked += () => _autoSaveNow = true;
-                        _autoSavePopup.CancelSaveButton.Clicked += () =>
-                        {
-                            Log("Auto save canceled");
-                            _autoSavePopup.HidePopup();
-                            _lastAutoSaveTimer = Time.UnscaledGameTime; // Reset timer
-                        };
-                    }
-                    else if (!_autoSavePopup.Visible && !_autoSavePopup.UserClosed)
-                        _autoSavePopup.ShowPopup();
-
-                    if (_autoSavePopup.Visible)
-                        _autoSavePopup.UpdateTime(timeToNextSave);
-                }
 
                 if (timeToNextSave <= 0.0f || _autoSaveNow)
                 {
@@ -530,20 +509,90 @@ namespace FlaxEditor
                     if (options.AutoSaveContent)
                         SaveContent();
 
-                    // Hide auto save popup and reset user closed
-                    _autoSavePopup.HidePopup();
-                    _autoSavePopup.UserClosed = false;
                     _autoSaveNow = false;
+
+                    // Hide save now and cancel save buttons
+                    if (_saveNowButton != null && _cancelSaveButton != null)
+                    {
+                        _saveNowButton.Visible = false;
+                        _cancelSaveButton.Visible = false;
+                    }
                 }
-                else if (timeToNextSave < countDownDuration)
+                else if (timeToNextSave <= options.AutoSaveReminderTime)
                 {
                     msg = string.Format("Auto save in {0}s...", Mathf.CeilToInt(timeToNextSave));
+
+                    // Create save now and cancel save buttons if needed
+                    if (_saveNowButton == null)
+                    {
+                        _saveNowButton = new Button
+                        {
+                            Parent = UI.StatusBar,
+                            Height = 14,
+                            Width = 60,
+                            AnchorPreset = AnchorPresets.MiddleLeft,
+                            BackgroundColor = Color.Transparent,
+                            BorderColor = Color.Transparent,
+                            BackgroundColorHighlighted = Color.Transparent,
+                            BackgroundColorSelected = Color.Transparent,
+                            BorderColorHighlighted = Color.Transparent,
+                            Text = "Save Now",
+                            TooltipText = "Saves now and restarts the auto save timer."
+                        };
+                        _saveNowButton.LocalX += 120;
+                        _saveNowButton.Clicked += () => _autoSaveNow = true;
+                        _saveNowButton.HoverBegin += () => _saveNowButton.TextColor = Style.Current.BackgroundHighlighted;
+                        _saveNowButton.HoverEnd += () => _saveNowButton.TextColor = UI.StatusBar.TextColor;
+                    }
+
+                    if (_cancelSaveButton == null)
+                    {
+                        _cancelSaveButton = new Button
+                        {
+                            Parent = UI.StatusBar,
+                            Height = 14,
+                            Width = 70,
+                            AnchorPreset = AnchorPresets.MiddleLeft,
+                            BackgroundColor = Color.Transparent,
+                            BorderColor = Color.Transparent,
+                            BackgroundColorHighlighted = Color.Transparent,
+                            BackgroundColorSelected = Color.Transparent,
+                            BorderColorHighlighted = Color.Transparent,
+                            Text = "Cancel",
+                            TooltipText = "Cancels this auto save."
+                        };
+                        _cancelSaveButton.LocalX += 180;
+                        _cancelSaveButton.Clicked += () =>
+                        {
+                            Log("Auto save canceled");
+                            _saveNowButton.Visible = false;
+                            _cancelSaveButton.Visible = false;
+                            _lastAutoSaveTimer = Time.UnscaledGameTime; // Reset timer
+                        };
+                        _cancelSaveButton.HoverBegin += () => _cancelSaveButton.TextColor = Style.Current.BackgroundHighlighted;
+                        _cancelSaveButton.HoverEnd += () => _cancelSaveButton.TextColor = UI.StatusBar.TextColor;
+                    }
+
+                    // Show save now and cancel save buttons
+                    if (!_saveNowButton.Visible || !_cancelSaveButton.Visible)
+                    {
+                        _saveNowButton.Visible = true;
+                        _cancelSaveButton.Visible = true;
+                    }
                 }
             }
             if (StateMachine.EditingSceneState.AutoSaveStatus != msg)
             {
                 StateMachine.EditingSceneState.AutoSaveStatus = msg;
                 UI.UpdateStatusBar();
+            }
+
+            if (UI?.StatusBar?.Text != null && !UI.StatusBar.Text.Contains("Auto") && 
+                _saveNowButton != null && _cancelSaveButton != null && 
+                (_saveNowButton.Visible || _cancelSaveButton.Visible))
+            {
+                _saveNowButton.Visible = false;
+                _cancelSaveButton.Visible = false;
             }
         }
 

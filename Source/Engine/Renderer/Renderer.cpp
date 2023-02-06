@@ -236,24 +236,7 @@ void Renderer::DrawSceneDepth(GPUContext* context, SceneRenderTask* task, GPUTex
     renderContext.View.Prepare(renderContext);
 
     // Call drawing (will collect draw calls)
-    if (customActors.HasItems())
-    {
-        // Draw custom actors
-        for (auto actor : customActors)
-        {
-            if (actor && actor->GetIsActive())
-                actor->Draw(renderContext);
-        }
-    }
-    else
-    {
-        // Draw scene actors
-        RenderContextBatch renderContextBatch(renderContext);
-        Level::DrawActors(renderContextBatch);
-        for (const int64 label : renderContextBatch.WaitLabels)
-            JobSystem::Wait(label);
-        renderContextBatch.WaitLabels.Clear();
-    }
+    DrawActors(renderContext, customActors);
 
     // Sort draw calls
     renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::Depth);
@@ -287,6 +270,31 @@ void Renderer::DrawPostFxMaterial(GPUContext* context, const RenderContext& rend
     context->ResetRenderTarget();
 }
 
+void Renderer::DrawActors(RenderContext& renderContext, const Array<Actor*>& customActors)
+{
+    if (customActors.HasItems())
+    {
+        // Draw custom actors
+        for (Actor* actor : customActors)
+        {
+            if (actor && actor->GetIsActive())
+                actor->Draw(renderContext);
+        }
+    }
+    else
+    {
+        // Draw scene actors
+        RenderContextBatch renderContextBatch(renderContext);
+        JobSystem::SetJobStartingOnDispatch(false);
+        Level::DrawActors(renderContextBatch, SceneRendering::DrawCategory::SceneDraw);
+        Level::DrawActors(renderContextBatch, SceneRendering::DrawCategory::SceneDrawAsync);
+        JobSystem::SetJobStartingOnDispatch(true);
+        for (const int64 label : renderContextBatch.WaitLabels)
+            JobSystem::Wait(label);
+        renderContextBatch.WaitLabels.Clear();
+    }
+}
+
 void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderContextBatch& renderContextBatch)
 {
     auto context = GPUDevice::Instance->GetMainContext();
@@ -304,6 +312,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 
     // Initialize setup
     RenderSetup& setup = renderContext.List->Setup;
+    const bool isGBufferDebug = GBufferPass::IsDebugView(renderContext.View.Mode);
     {
         PROFILE_CPU_NAMED("Setup");
         if (renderContext.View.Origin != renderContext.View.PrevOrigin)
@@ -311,7 +320,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         const int32 screenWidth = renderContext.Buffers->GetWidth();
         const int32 screenHeight = renderContext.Buffers->GetHeight();
         setup.UpscaleLocation = renderContext.Task->UpscaleLocation;
-        if (screenWidth < 16 || screenHeight < 16 || renderContext.Task->IsCameraCut)
+        if (screenWidth < 16 || screenHeight < 16 || renderContext.Task->IsCameraCut || isGBufferDebug || renderContext.View.Mode == ViewMode::NoPostFx)
             setup.UseMotionVectors = false;
         else
         {
@@ -336,7 +345,6 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     renderContext.Buffers->Prepare();
 
     // Build batch of render contexts (main view and shadow projections)
-    const bool isGBufferDebug = GBufferPass::IsDebugView(renderContext.View.Mode);
     {
         PROFILE_CPU_NAMED("Collect Draw Calls");
 
@@ -423,7 +431,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     }
 
     // Fill GBuffer
-    GBufferPass::Instance()->Fill(renderContext, lightBuffer->View());
+    GBufferPass::Instance()->Fill(renderContext, lightBuffer);
 
     // Debug drawing
     if (renderContext.View.Mode == ViewMode::GlobalSDF)
@@ -536,6 +544,10 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     auto frameBuffer = RenderTargetPool::Get(tempDesc);
     RENDER_TARGET_POOL_SET_NAME(frameBuffer, "FrameBuffer");
     ForwardPass::Instance()->Render(renderContext, lightBuffer, frameBuffer);
+
+    // Material and Custom PostFx
+    renderContext.List->RunMaterialPostFxPass(context, renderContext, MaterialPostFxLocation::AfterForwardPass, frameBuffer, lightBuffer);
+    renderContext.List->RunCustomPostFxPass(context, renderContext, PostProcessEffectLocation::AfterForwardPass, frameBuffer, lightBuffer);
 
     // Cleanup
     context->ResetRenderTarget();

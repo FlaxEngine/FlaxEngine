@@ -78,6 +78,7 @@ void ViewportIconsRenderer::DrawIcons(RenderContext& renderContext, Actor* actor
     draw.PerInstanceRandom = 0;
     draw.LODBias = 0;
     draw.ForcedLOD = -1;
+    draw.SortOrder = 0;
     draw.VertexColors = nullptr;
 
     if (const auto scene = SceneObject::Cast<Scene>(actor))

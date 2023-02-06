@@ -153,7 +153,7 @@ float4 SampleGlobalSurfaceAtlasTile(const GlobalSurfaceAtlasData data, GlobalSur
     bilinearWeights.w = (1 - bilinearWeightsUV.x) * (1 - bilinearWeightsUV.y);
 
     // Tile depth weight based on sample position occlusion
-    float4 tileZ = depth.Gather(SamplerLinearClamp, atlasUV, 0.0f);
+    float4 tileZ = depth.Gather(SamplerLinearClamp, atlasUV);
     float depthThreshold = 2.0f * surfaceThreshold / tile.ViewBoundsSize.z;
     float4 depthVisibility = 1.0f;
     UNROLL

@@ -966,6 +966,12 @@ void GPUContextVulkan::SetRenderTarget(GPUTextureView* depthBuffer, const Span<G
     }
 }
 
+void GPUContextVulkan::SetBlendFactor(const Float4& value)
+{
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+    vkCmdSetBlendConstants(cmdBuffer->GetHandle(), value.Raw);
+}
+
 void GPUContextVulkan::ResetSR()
 {
     Platform::MemoryClear(_srHandles, sizeof(_srHandles));
