@@ -150,7 +150,6 @@ CharacterController::CollisionFlags CharacterController::SimpleMove(const Vector
     Vector3 displacement = speed;
     displacement += GetPhysicsScene()->GetGravity() * deltaTime;
     displacement *= deltaTime;
-
     return Move(displacement);
 }
 
@@ -162,7 +161,8 @@ CharacterController::CollisionFlags CharacterController::Move(const Vector3& dis
         const float deltaTime = Time::GetCurrentSafe()->DeltaTime.GetTotalSeconds();
         result = (CollisionFlags)PhysicsBackend::MoveController(_controller, _shape, displacement, _minMoveDistance, deltaTime);
         _lastFlags = result;
-        SetPosition(PhysicsBackend::GetControllerPosition(_controller));
+        Vector3 position = PhysicsBackend::GetControllerPosition(_controller) - _center;
+        SetPosition(position);
     }
     return result;
 }
@@ -178,10 +178,11 @@ void CharacterController::DrawPhysicsDebug(RenderView& view)
     const float minSize = 0.001f;
     const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
     const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
+    const Vector3 position = _transform.LocalToWorld(_center);
     if (view.Mode == ViewMode::PhysicsColliders)
-        DEBUG_DRAW_TUBE(_transform.LocalToWorld(_center), Quaternion::Euler(90, 0, 0), radius, height, Color::LightYellow, 0, true);
+        DEBUG_DRAW_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, Color::LightYellow, 0, true);
     else
-        DEBUG_DRAW_WIRE_TUBE(_transform.LocalToWorld(_center), Quaternion::Euler(90, 0, 0), radius, height, Color::GreenYellow * 0.8f, 0, true);
+        DEBUG_DRAW_WIRE_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, Color::GreenYellow * 0.8f, 0, true);
 }
 
 void CharacterController::OnDebugDrawSelected()
@@ -190,7 +191,8 @@ void CharacterController::OnDebugDrawSelected()
     const float minSize = 0.001f;
     const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
     const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
-    DEBUG_DRAW_WIRE_TUBE(_transform.LocalToWorld(_center), Quaternion::Euler(90, 0, 0), radius, height, Color::GreenYellow, 0, false);
+    const Vector3 position = _transform.LocalToWorld(_center);
+    DEBUG_DRAW_WIRE_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, Color::GreenYellow, 0, false);
 
     // Base
     Collider::OnDebugDrawSelected();
@@ -204,7 +206,8 @@ void CharacterController::CreateController()
     ASSERT(_controller == nullptr && _shape == nullptr);
     _cachedScale = GetScale();
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
-    _controller = PhysicsBackend::CreateController(GetPhysicsScene()->GetPhysicsScene(), this, this, _contactOffset, _transform.Translation, _slopeLimit, (int32)_nonWalkableMode, Material.Get(), Math::Abs(_radius) * scaling, Math::Abs(_height) * scaling, _stepOffset, _shape);
+    const Vector3 position = _transform.LocalToWorld(_center);
+    _controller = PhysicsBackend::CreateController(GetPhysicsScene()->GetPhysicsScene(), this, this, _contactOffset, position, _slopeLimit, (int32)_nonWalkableMode, Material.Get(), Math::Abs(_radius) * scaling, Math::Abs(_height) * scaling, _stepOffset, _shape);
 
     // Setup
     PhysicsBackend::SetControllerUpDirection(_shape, _upDirection);
@@ -280,6 +283,7 @@ void CharacterController::OnActiveTransformChanged()
     _isUpdatingTransform = true;
     Transform transform;
     PhysicsBackend::GetRigidActorPose(PhysicsBackend::GetShapeActor(_shape), transform.Translation, transform.Orientation);
+    transform.Translation -= _center;
     transform.Orientation = _transform.Orientation;
     transform.Scale = _transform.Scale;
     SetTransform(transform);
@@ -360,9 +364,10 @@ void CharacterController::OnTransformChanged()
     Actor::OnTransformChanged();
 
     // Update physics
+    const Vector3 position = _transform.LocalToWorld(_center);
     if (!_isUpdatingTransform && _controller)
     {
-        PhysicsBackend::SetControllerPosition(_controller, _transform.Translation);
+        PhysicsBackend::SetControllerPosition(_controller, position);
         const Float3 scale = GetScale();
         if (!Float3::NearEqual(_cachedScale, scale))
             UpdateGeometry();
@@ -370,7 +375,7 @@ void CharacterController::OnTransformChanged()
     }
     else if (!_controller)
     {
-        _box = BoundingBox(_transform.Translation);
+        _box = BoundingBox(position);
         BoundingSphere::FromBox(_box, _sphere);
     }
 }
