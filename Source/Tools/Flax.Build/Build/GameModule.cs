@@ -23,6 +23,7 @@ namespace Flax.Build
 
             // Setup scripting API environment
             var engineVersion = EngineTarget.EngineVersion;
+            AddEngineVersionDefines(engineVersion, options.CompileEnv.PreprocessorDefinitions);
             options.ScriptingAPI.Defines.Add("FLAX");
             options.ScriptingAPI.Defines.Add(string.Format("FLAX_{0}", engineVersion.Major));
             options.ScriptingAPI.Defines.Add(string.Format("FLAX_{0}_{1}", engineVersion.Major, engineVersion.Minor));
