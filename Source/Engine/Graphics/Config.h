@@ -57,9 +57,9 @@
 #define GPU_USE_SHADERS_DEBUG_LAYER (BUILD_DEBUG)
 
 // Maximum size of the texture that is supported by the engine (specific platforms can have lower limit)
-#define GPU_MAX_TEXTURE_SIZE 8192
-#define GPU_MAX_TEXTURE_MIP_LEVELS 14
-#define GPU_MAX_TEXTURE_ARRAY_SIZE 512
+#define GPU_MAX_TEXTURE_SIZE 16384
+#define GPU_MAX_TEXTURE_MIP_LEVELS 15
+#define GPU_MAX_TEXTURE_ARRAY_SIZE 1024
 
 // Define default back buffer(s) format
 #if GPU_USE_BGRA_BACK_BUFFER
