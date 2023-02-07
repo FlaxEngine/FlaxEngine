@@ -235,6 +235,7 @@ public:
         float SamplingRate = 0.0f;
         bool SkipEmptyCurves = true;
         bool OptimizeKeyframes = true;
+        bool ImportScaleTracks = false;
         bool EnableRootMotion = false;
         String RootNodeName;
 
