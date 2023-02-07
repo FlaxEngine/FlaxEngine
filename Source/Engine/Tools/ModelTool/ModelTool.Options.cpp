@@ -51,6 +51,7 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(FramesRange);
     SERIALIZE(DefaultFrameRate);
     SERIALIZE(SamplingRate);
+    SERIALIZE(ImportScale);
     SERIALIZE(SkipEmptyCurves);
     SERIALIZE(OptimizeKeyframes);
     SERIALIZE(EnableRootMotion);
@@ -91,6 +92,7 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(FramesRange);
     DESERIALIZE(DefaultFrameRate);
     DESERIALIZE(SamplingRate);
+    DESERIALIZE(ImportScale);
     DESERIALIZE(SkipEmptyCurves);
     DESERIALIZE(OptimizeKeyframes);
     DESERIALIZE(EnableRootMotion);

@@ -1051,7 +1051,7 @@ bool ImportAnimation(int32 index, ImportedModelData& data, OpenFbxImporterData& 
 
         const ofbx::AnimationCurveNode* translationNode = layer->getCurveNode(*aNode.FbxObj, "Lcl Translation");
         const ofbx::AnimationCurveNode* rotationNode = layer->getCurveNode(*aNode.FbxObj, "Lcl Rotation");
-        const ofbx::AnimationCurveNode* scalingNode = nullptr; //layer->getCurveNode(*aNode.FbxObj, "Lcl Scaling");
+        const ofbx::AnimationCurveNode* scalingNode = importerData.Options.ImportScale ? layer->getCurveNode(*aNode.FbxObj, "Lcl Scaling") : nullptr;
 
         if (translationNode || rotationNode || scalingNode)
             animatedNodes.Add(nodeIndex);
@@ -1059,7 +1059,7 @@ bool ImportAnimation(int32 index, ImportedModelData& data, OpenFbxImporterData& 
     if (animatedNodes.IsEmpty())
         return true;
     data.Animation.Channels.Resize(animatedNodes.Count(), false);
-
+    //Log::Logger::Write(LogType::Warning, StringUtils::ToString(importerData.Options.IncludeScale));
     // Import curves
     for (int32 i = 0; i < animatedNodes.Count(); i++)
     {
@@ -1069,13 +1069,14 @@ bool ImportAnimation(int32 index, ImportedModelData& data, OpenFbxImporterData& 
 
         const ofbx::AnimationCurveNode* translationNode = layer->getCurveNode(*aNode.FbxObj, "Lcl Translation");
         const ofbx::AnimationCurveNode* rotationNode = layer->getCurveNode(*aNode.FbxObj, "Lcl Rotation");
-        //const ofbx::AnimationCurveNode* scalingNode = layer->getCurveNode(*aNode.FbxObj, "Lcl Scaling");
+        const ofbx::AnimationCurveNode* scalingNode = importerData.Options.ImportScale ? layer->getCurveNode(*aNode.FbxObj, "Lcl Scaling") : nullptr;
 
         anim.NodeName = aNode.Name;
 
         ImportCurve(translationNode, anim.Position, info, ExtractKeyframePosition);
         ImportCurve(rotationNode, anim.Rotation, info, ExtractKeyframeRotation);
-        //ImportCurve(scalingNode, anim.Scale, info, ExtractKeyframeScale);
+        if (importerData.Options.ImportScale && scalingNode)
+            ImportCurve(scalingNode, anim.Scale, info, ExtractKeyframeScale);
     }
 
     if (importerData.ConvertRH)
