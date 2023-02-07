@@ -96,6 +96,7 @@ namespace Flax.Build.Platforms
             args.Add("-pthread");
             args.Add("-ldl");
             args.Add("-lrt");
+            args.Add("-lz");
 
             // Link X11
             args.Add("-L/usr/X11R6/lib");
