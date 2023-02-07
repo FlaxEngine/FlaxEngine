@@ -568,6 +568,8 @@ namespace FlaxEditor.Surface
             if (InputActions.Process(Editor.Instance, this, key))
                 return true;
 
+            _heldKey = key;
+
             if (HasNodesSelection)
             {
                 var keyMoveRange = 50;
@@ -682,7 +684,8 @@ namespace FlaxEditor.Surface
                     case KeyboardKeys.Spacebar:
                     {
                         Box selectedBox = GetSelectedBox(SelectedNodes, true);
-                        if (selectedBox == null) selectedBox = GetUnconnectedElement(SelectedNodes[0]);
+                        // If we don't have a input/output selected, find one.
+                        if (selectedBox == null) selectedBox = GetFirstEmptyPort(SelectedNodes[0]);
                         // Add a new node
                         ConnectingStart(selectedBox);
                         Cursor = CursorType.Default; // Do I need this?
@@ -703,6 +706,13 @@ namespace FlaxEditor.Surface
             return false;
         }
 
+        /// <inheritdoc/>
+        public override void OnKeyUp(KeyboardKeys key)
+        {
+            base.OnKeyUp(key);
+            _heldKey = KeyboardKeys.None;
+        }
+
         private void ResetInput()
         {
             InputText = "";
@@ -720,20 +730,6 @@ namespace FlaxEditor.Surface
             }
 
             var selection = SelectedNodes;
-            if (selection.Count == 0)
-            {
-                //if (_inputBrackets.Count == 0)
-                //{
-                //    ResetInput();
-                //    ShowPrimaryMenu(_mousePos, false, currentInputText);
-                //}
-                //else
-                //{
-                //    InputText = "";
-                //    ShowPrimaryMenu(_rootControl.PointToParent(_inputBrackets.Peek().Area.Location), true, currentInputText);
-                //}
-                //return;
-            }
 
             // Multi-Node Editing
             const string Comment = "//";
@@ -789,16 +785,6 @@ namespace FlaxEditor.Surface
                     }
                 }
             }
-            //else
-            //{
-            //    InputText = "";
-
-            //    // Add a new node
-            //    ConnectingStart(selectedBox);
-            //    Cursor = CursorType.Default; // Do I need this?
-            //    EndMouseCapture();
-            //    ShowPrimaryMenu(_rootControl.PointToParent(FindEmptySpace(selectedBox)), true, currentInputText);
-            //}
         }
 
         private Box GetSelectedBox(List<SurfaceNode> selection, bool onlyIfSelected = true)
@@ -915,7 +901,7 @@ namespace FlaxEditor.Surface
             return false;
         }
 
-        private Box GetUnconnectedElement(SurfaceNode node)
+        private Box GetFirstEmptyPort(SurfaceNode node)
         {
             
             for (int i = 0; i < node.Elements.Count; i++)

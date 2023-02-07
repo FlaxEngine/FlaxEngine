@@ -75,6 +75,11 @@ namespace FlaxEditor.Surface
         protected Float2 _mousePos = Float2.Minimum;
 
         /// <summary>
+        /// The key currently being held down.
+        /// </summary>
+        protected KeyboardKeys _heldKey = KeyboardKeys.None;
+
+        /// <summary>
         /// The mouse movement amount.
         /// </summary>
         protected float _mouseMoveAmount;

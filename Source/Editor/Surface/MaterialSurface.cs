@@ -109,30 +109,24 @@ namespace FlaxEditor.Surface
             base.HandleDragDropAssets(objects, args);
         }
 
-        private KeyboardKeys _cachedKey;
-
-        /// <inheritdoc/>
-        public override bool OnKeyDown(KeyboardKeys key)
-        {
-            _cachedKey = key;
-            return base.OnKeyDown(key);
-        }
-
-        /// <inheritdoc/>
-        public override void OnKeyUp(KeyboardKeys key)
-        {
-            base.OnKeyUp(key);
-            _cachedKey = KeyboardKeys.None;
-        }
-
         /// <inheritdoc/>
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (button != MouseButton.Left) return base.OnMouseDown(location, button);
-            ushort archetype = 0;
-            ushort node = 0;
 
-            switch (_cachedKey)
+            GetNode(_heldKey, out var archetype, out var node);
+
+            if (archetype == 0 || node == 0) return base.OnMouseDown(location, button);
+
+            var spawnedNode = Context.SpawnNode(archetype, node, _rootControl.PointFromParent(location));
+            return base.OnMouseDown(location, button);
+        }
+
+        private void GetNode(KeyboardKeys key, out ushort archetype, out ushort node)
+        {
+            archetype = 0;
+            node = 0;
+            switch (key)
             {
                 // Add node
                 case KeyboardKeys.A:
@@ -164,6 +158,21 @@ namespace FlaxEditor.Surface
                     archetype = 3;
                     node = 23;
                     break;
+                // Texture Sample
+                case KeyboardKeys.T:
+                    archetype = 5;
+                    node = 1;
+                    break;
+                // Texture Coordinates
+                case KeyboardKeys.U:
+                    archetype = 5;
+                    node = 2;
+                    break;
+                // Get Parameter
+                case KeyboardKeys.G:
+                    archetype = 6;
+                    node = 1;
+                    break;
 
                 // Float
                 case KeyboardKeys.Alpha1:
@@ -191,13 +200,10 @@ namespace FlaxEditor.Surface
                     node = 7;
                     break;
 
+
                 default:
                     break;
             }
-            if (archetype == 0 || node == 0) return base.OnMouseDown(location, button);
-
-            var spawnedNode = Context.SpawnNode(archetype, node, _rootControl.PointFromParent(location));
-            return base.OnMouseDown(location, button);
         }
     }
 }
