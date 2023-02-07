@@ -1059,7 +1059,7 @@ bool ImportAnimation(int32 index, ImportedModelData& data, OpenFbxImporterData& 
     if (animatedNodes.IsEmpty())
         return true;
     data.Animation.Channels.Resize(animatedNodes.Count(), false);
-    //Log::Logger::Write(LogType::Warning, StringUtils::ToString(importerData.Options.IncludeScale));
+
     // Import curves
     for (int32 i = 0; i < animatedNodes.Count(); i++)
     {

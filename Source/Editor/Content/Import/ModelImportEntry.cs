@@ -245,7 +245,7 @@ namespace FlaxEditor.Content.Import
         [EditorDisplay("Animation"), VisibleIf(nameof(ShowAnimation))]
         [EditorOrder(1030), DefaultValue(0.0f), Limit(0, 1000, 0.01f)]
         public float SamplingRate { get; set; } = 0.0f;
-        
+
         /// <summary>
         /// The imported scale animation. If value is true then the scale animation will be imported.
         /// </summary>
