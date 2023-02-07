@@ -251,7 +251,7 @@ namespace FlaxEditor.Content.Import
         /// </summary>
         [EditorDisplay("Animation"), VisibleIf(nameof(ShowAnimation))]
         [EditorOrder(1035), DefaultValue(false)]
-        public bool ImportScale { get; set; } = false;
+        public bool ImportScaleTrack { get; set; } = false;
 
         /// <summary>
         /// The imported animation will have removed tracks with no keyframes or unspecified data.
@@ -392,7 +392,7 @@ namespace FlaxEditor.Content.Import
             public float FramesRangeEnd;
             public float DefaultFrameRate;
             public float SamplingRate;
-            public byte ImportScale;
+            public byte ImportScaleTrack;
             public byte SkipEmptyCurves;
             public byte OptimizeKeyframes;
             public byte EnableRootMotion;
@@ -444,7 +444,7 @@ namespace FlaxEditor.Content.Import
                 FramesRangeEnd = FramesRangeEnd,
                 DefaultFrameRate = DefaultFrameRate,
                 SamplingRate = SamplingRate,
-                ImportScale = (byte)(ImportScale ? 1 : 0),
+                ImportScaleTrack = (byte)(ImportScaleTrack ? 1 : 0),
                 SkipEmptyCurves = (byte)(SkipEmptyCurves ? 1 : 0),
                 OptimizeKeyframes = (byte)(OptimizeKeyframes ? 1 : 0),
                 EnableRootMotion = (byte)(EnableRootMotion ? 1 : 0),
@@ -486,7 +486,7 @@ namespace FlaxEditor.Content.Import
             FramesRangeEnd = options.FramesRangeEnd;
             DefaultFrameRate = options.DefaultFrameRate;
             SamplingRate = options.SamplingRate;
-            ImportScale = options.ImportScale != 0;
+            ImportScaleTrack = options.ImportScaleTrack != 0;
             SkipEmptyCurves = options.SkipEmptyCurves != 0;
             OptimizeKeyframes = options.OptimizeKeyframes != 0;
             EnableRootMotion = options.EnableRootMotion != 0;

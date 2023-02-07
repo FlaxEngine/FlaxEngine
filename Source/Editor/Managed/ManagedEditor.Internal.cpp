@@ -181,7 +181,7 @@ struct InternalModelOptions
     float FramesRangeEnd;
     float DefaultFrameRate;
     float SamplingRate;
-    byte ImportScale;
+    byte ImportScaleTrack;
     byte SkipEmptyCurves;
     byte OptimizeKeyframes;
     byte EnableRootMotion;
@@ -230,7 +230,7 @@ struct InternalModelOptions
         to->FramesRange.Y = from->FramesRangeEnd;
         to->DefaultFrameRate = from->DefaultFrameRate;
         to->SamplingRate = from->SamplingRate;
-        to->ImportScale = from->ImportScale;
+        to->ImportScaleTrack = from->ImportScaleTrack;
         to->SkipEmptyCurves = from->SkipEmptyCurves;
         to->OptimizeKeyframes = from->OptimizeKeyframes;
         to->EnableRootMotion = from->EnableRootMotion;
@@ -272,7 +272,7 @@ struct InternalModelOptions
         to->FramesRangeEnd = from->FramesRange.Y;
         to->DefaultFrameRate = from->DefaultFrameRate;
         to->SamplingRate = from->SamplingRate;
-        to->ImportScale = from->ImportScale;
+        to->ImportScaleTrack = from->ImportScaleTrack;
         to->SkipEmptyCurves = from->SkipEmptyCurves;
         to->OptimizeKeyframes = from->OptimizeKeyframes;
         to->EnableRootMotion = from->EnableRootMotion;

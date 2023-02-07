@@ -233,7 +233,7 @@ public:
         Float2 FramesRange = Float2::Zero;
         float DefaultFrameRate = 0.0f;
         float SamplingRate = 0.0f;
-        bool ImportScale = false;
+        bool ImportScaleTrack = false;
         bool SkipEmptyCurves = true;
         bool OptimizeKeyframes = true;
         bool EnableRootMotion = false;
