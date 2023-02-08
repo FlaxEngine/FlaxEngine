@@ -54,6 +54,7 @@ namespace Flax.Deploy
                     DeployFile(src, dst, "Flax.Build.xml");
                     DeployFile(src, dst, "Ionic.Zip.Reduced.dll");
                     DeployFile(src, dst, "Newtonsoft.Json.dll");
+                    DeployFile(src, dst, "Mono.Cecil.dll");
                 }
 
                 // Deploy content
