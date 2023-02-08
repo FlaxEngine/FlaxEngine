@@ -1259,6 +1259,13 @@ namespace FlaxEngine.GUI
             return PointFromParent(ref location);
         }
 
+#if FLAX_EDITOR
+        /// <summary>
+        /// Bounds rectangle for editor UI.
+        /// </summary>
+        public virtual Rectangle EditorBounds => new Rectangle(Float2.Zero, _bounds.Size);
+#endif
+
         #endregion
 
         #region Control Action

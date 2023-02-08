@@ -817,6 +817,7 @@ namespace FlaxEditor.Windows
 
             // Selected UI controls outline
             bool drawAnySelectedControl = false;
+            // TODO: optimize this (eg. cache list of selected UIControl's when selection gets changed)
             for (var i = 0; i < Editor.Instance.SceneEditing.Selection.Count; i++)
             {
                 if (Editor.Instance.SceneEditing.Selection[i].EditableObject is UIControl controlActor && controlActor && controlActor.Control != null)
@@ -827,7 +828,8 @@ namespace FlaxEditor.Windows
                         Render2D.PushTransform(ref _viewport._cachedTransform);
                     }
                     var control = controlActor.Control;
-                    var bounds = Rectangle.FromPoints(control.PointToParent(_viewport, Float2.Zero), control.PointToParent(_viewport, control.Size));
+                    var bounds = control.EditorBounds;
+                    bounds = Rectangle.FromPoints(control.PointToParent(_viewport, bounds.Location), control.PointToParent(_viewport, bounds.Size));
                     Render2D.DrawRectangle(bounds, Editor.Instance.Options.Options.Visual.SelectionOutlineColor0, Editor.Instance.Options.Options.Visual.UISelectionOutlineSize);
                 }
             }
