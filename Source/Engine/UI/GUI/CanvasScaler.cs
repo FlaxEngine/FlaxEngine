@@ -141,7 +141,9 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The UI Canvas physical unit to use for scaling via PhysicalUnitSize. Used only in ConstantPhysicalSize mode.
         /// </summary>
+#if FLAX_EDITOR
         [EditorOrder(100), EditorDisplay("Canvas Scaler"), DefaultValue(PhysicalUnitMode.Points), VisibleIf(nameof(IsConstantPhysicalSize))]
+#endif
         public PhysicalUnitMode PhysicalUnit
         {
             get => _physicalUnit;
@@ -164,7 +166,9 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The UI Canvas physical unit value. Used only in ConstantPhysicalSize mode.
         /// </summary>
+#if FLAX_EDITOR
         [EditorOrder(110), EditorDisplay("Canvas Scaler"), DefaultValue(1.0f), Limit(0.000001f, 1000000.0f, 0.0f), VisibleIf(nameof(IsConstantPhysicalSize))]
+#endif
         public float PhysicalUnitSize
         {
             get => _physicalUnitSize;
@@ -180,7 +184,9 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The UI Canvas resolution scaling mode. Controls min/max resolutions usage in relation to the current screen resolution to compute the UI scale. Used only in ScaleWithResolution mode.
         /// </summary>
+#if FLAX_EDITOR
         [EditorOrder(120), EditorDisplay("Canvas Scaler"), VisibleIf(nameof(IsScaleWithResolution))]
+#endif
         public ResolutionScalingMode ResolutionMode
         {
             get => _resolutionMode;
@@ -196,7 +202,9 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The UI Canvas minimum resolution. If the screen has lower size, then the interface will be scaled accordingly. Used only in ScaleWithResolution mode.
         /// </summary>
+#if FLAX_EDITOR
         [EditorOrder(120), EditorDisplay("Canvas Scaler"), VisibleIf(nameof(IsScaleWithResolution))]
+#endif
         public Float2 ResolutionMin
         {
             get => _resolutionMin;
@@ -213,7 +221,9 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The UI Canvas maximum resolution. If the screen has higher size, then the interface will be scaled accordingly. Used only in ScaleWithResolution mode.
         /// </summary>
+#if FLAX_EDITOR
         [EditorOrder(130), EditorDisplay("Canvas Scaler"), VisibleIf(nameof(IsScaleWithResolution))]
+#endif
         public Float2 ResolutionMax
         {
             get => _resolutionMax;
@@ -230,7 +240,9 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The UI Canvas scaling curve based on screen resolution - shortest/longest/vertical/horizontal (key is resolution, value is scale factor). Clear keyframes to skip using it and follow min/max rules only. Used only in ScaleWithResolution mode.
         /// </summary>
+#if FLAX_EDITOR
         [EditorOrder(140), EditorDisplay("Canvas Scaler"), VisibleIf(nameof(IsScaleWithResolution))]
+#endif
         public LinearCurve<float> ResolutionCurve = new LinearCurve<float>(new[]
         {
             new LinearCurve<float>.Keyframe(480, 0.444f), // 480p
@@ -242,7 +254,9 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The UI Canvas scaling curve based on screen DPI (key is DPI, value is scale factor). Used only in ScaleWithDpi mode.
         /// </summary>
+#if FLAX_EDITOR
         [EditorOrder(150), EditorDisplay("Canvas Scaler"), VisibleIf(nameof(IsScaleWithDpi))]
+#endif
         public LinearCurve<float> DpiCurve = new LinearCurve<float>(new[]
         {
             new LinearCurve<float>.Keyframe(1.0f, 1.0f),
