@@ -443,6 +443,19 @@ const String& Actor::GetLayerName() const
     return Level::Layers[_layer];
 }
 
+void Actor::SetLayerName(const StringView& value)
+{
+    for (int32 i = 0; i < 32; i++)
+    {
+        if (Level::Layers[i] == value)
+        {
+            SetLayer(i);
+            return;
+        }
+    }
+    LOG(Warning, "Unknown layer name '{0}'", value);
+}
+
 bool Actor::HasTag() const
 {
     return Tags.Count() != 0;
