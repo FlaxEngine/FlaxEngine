@@ -488,6 +488,16 @@ namespace FlaxEditor.Surface
                 else if (_connectionInstigator != null)
                 {
                 }
+                else if (_heldKey != KeyboardKeys.None)
+                {
+                    // Get shortcut based on key held down
+                    GetShortcutNode(_heldKey, out var archetype, out var node);
+
+                    if (archetype == 0 || node == 0) return true;
+
+                    // Spawn node based on the key that is held down
+                    Context.SpawnNode(archetype, node, _rootControl.PointFromParent(location));
+                }
                 // Selecting
                 else
                 {
@@ -922,6 +932,86 @@ namespace FlaxEditor.Surface
                 }
             }
             return null;
+        }
+
+        // TODO Move this to Utils.cs and make it static?
+        /// <summary>
+        /// Sets archetype and node based on the input key.
+        /// </summary>
+        /// <param name="key">The key being held down.</param>
+        /// <param name="archetype"></param>
+        /// <param name="node"></param>
+        protected virtual void GetShortcutNode(KeyboardKeys key, out ushort archetype, out ushort node)
+        {
+            archetype = 0;
+            node = 0;
+            switch (key)
+            {
+                // Add node
+                case KeyboardKeys.A:
+                    archetype = 3;
+                    node = 1;
+                    break;
+                // Subtract
+                case KeyboardKeys.S:
+                    archetype = 3;
+                    node = 2;
+                    break;
+                // Multiply
+                case KeyboardKeys.M:
+                    archetype = 3;
+                    node = 3;
+                    break;
+                // Divide
+                case KeyboardKeys.D:
+                    archetype = 3;
+                    node = 5;
+                    break;
+                // Lerp
+                case KeyboardKeys.L:
+                    archetype = 3;
+                    node = 25;
+                    break;
+                // Power
+                case KeyboardKeys.E:
+                    archetype = 3;
+                    node = 23;
+                    break;
+
+                // Get Parameter
+                case KeyboardKeys.G:
+                    archetype = 6;
+                    node = 1;
+                    break;
+
+                // Float
+                case KeyboardKeys.Alpha1:
+                    archetype = 2;
+                    node = 3;
+                    break;
+                // Float2
+                case KeyboardKeys.Alpha2:
+                    archetype = 2;
+                    node = 4;
+                    break;
+                // Float3
+                case KeyboardKeys.Alpha3:
+                    archetype = 2;
+                    node = 5;
+                    break;
+                // Float4
+                case KeyboardKeys.Alpha4:
+                    archetype = 2;
+                    node = 6;
+                    break;
+                // Color
+                case KeyboardKeys.Alpha5:
+                    archetype = 2;
+                    node = 7;
+                    break;
+                default:
+                    break;
+            }
         }
     }
 }

@@ -110,54 +110,11 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc/>
-        public override bool OnMouseDown(Float2 location, MouseButton button)
+        protected override void GetShortcutNode(KeyboardKeys key, out ushort archetype, out ushort node)
         {
-            if (button != MouseButton.Left) return base.OnMouseDown(location, button);
-
-            GetNode(_heldKey, out var archetype, out var node);
-
-            if (archetype == 0 || node == 0) return base.OnMouseDown(location, button);
-
-            var spawnedNode = Context.SpawnNode(archetype, node, _rootControl.PointFromParent(location));
-            return base.OnMouseDown(location, button);
-        }
-
-        private void GetNode(KeyboardKeys key, out ushort archetype, out ushort node)
-        {
-            archetype = 0;
-            node = 0;
+            base.GetShortcutNode(key, out archetype, out node);
             switch (key)
             {
-                // Add node
-                case KeyboardKeys.A:
-                    archetype = 3;
-                    node = 1;
-                    break;
-                // Subtract
-                case KeyboardKeys.S:
-                    archetype = 3;
-                    node = 2;
-                    break;
-                // Multiply
-                case KeyboardKeys.M:
-                    archetype = 3;
-                    node = 3;
-                    break;
-                // Divide
-                case KeyboardKeys.D:
-                    archetype = 3;
-                    node = 5;
-                    break;
-                // Lerp
-                case KeyboardKeys.L:
-                    archetype = 3;
-                    node = 25;
-                    break;
-                // Power
-                case KeyboardKeys.E:
-                    archetype = 3;
-                    node = 23;
-                    break;
                 // Texture Sample
                 case KeyboardKeys.T:
                     archetype = 5;
@@ -167,41 +124,6 @@ namespace FlaxEditor.Surface
                 case KeyboardKeys.U:
                     archetype = 5;
                     node = 2;
-                    break;
-                // Get Parameter
-                case KeyboardKeys.G:
-                    archetype = 6;
-                    node = 1;
-                    break;
-
-                // Float
-                case KeyboardKeys.Alpha1:
-                    archetype = 2;
-                    node = 3;
-                    break;
-                // Float2
-                case KeyboardKeys.Alpha2:
-                    archetype = 2;
-                    node = 4;
-                    break;
-                // Float3
-                case KeyboardKeys.Alpha3:
-                    archetype = 2;
-                    node = 5;
-                    break;
-                // Float4
-                case KeyboardKeys.Alpha4:
-                    archetype = 2;
-                    node = 6;
-                    break;
-                // Color
-                case KeyboardKeys.Alpha5:
-                    archetype = 2;
-                    node = 7;
-                    break;
-
-
-                default:
                     break;
             }
         }
