@@ -78,14 +78,13 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <seealso cref="FlaxEditor.CustomEditors.Editors.Float3Editor" />
         public class ScaleEditor : Float3Editor
         {
-
             private Image _linkImage;
 
             /// <inheritdoc />
             public override void Initialize(LayoutElementsContainer layout)
             {
                 base.Initialize(layout);
-                
+
                 LinkValues = Editor.Instance.Windows.PropertiesWin.ScaleLinked;
 
                 _linkImage = new Image
@@ -103,7 +102,10 @@ namespace FlaxEditor.CustomEditors.Editors
                 LinkedLabel.SetupContextMenu += (label, menu, editor) =>
                 {
                     menu.AddSeparator();
-                    menu.AddButton(LinkValues ? "Unlink" : "Link", ToggleLink);
+                    if (LinkValues)
+                        menu.AddButton("Unlink", ToggleLink).LinkTooltip("Unlinks scale components from uniform scaling");
+                    else
+                        menu.AddButton("Link", ToggleLink).LinkTooltip("Links scale components for uniform scaling");
                 };
 
                 // Override colors

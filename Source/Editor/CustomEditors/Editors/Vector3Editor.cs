@@ -97,30 +97,27 @@ namespace FlaxEditor.CustomEditors.Editors
                 return;
             if (LinkValues)
                 _valueChanged = ValueChanged.X;
-
             OnValueChanged();
         }
-        
+
         private void OnYValueChanged()
         {
             if (IsSetBlocked)
                 return;
             if (LinkValues)
                 _valueChanged = ValueChanged.Y;
-
             OnValueChanged();
         }
-        
+
         private void OnZValueChanged()
         {
             if (IsSetBlocked)
                 return;
             if (LinkValues)
                 _valueChanged = ValueChanged.Z;
- 
             OnValueChanged();
         }
-        
+
         private void OnValueChanged()
         {
             if (IsSetBlocked)
@@ -150,8 +147,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     xValue += valueChange;
                     yValue += valueChange;
                     break;
-                default: 
-                    break;
+                default: break;
                 }
             }
 
