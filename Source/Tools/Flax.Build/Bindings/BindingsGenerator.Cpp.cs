@@ -300,6 +300,11 @@ namespace Flax.Build.Bindings
             case "char": return "mono_get_char_class()";
             case "IntPtr": return "mono_get_intptr_class()";
             case "UIntPtr": return "mono_get_uintptr_class()";
+
+            // Vector2/3/4 have custom type in C# (due to lack of typename using in older C#)
+            case "Vector2": return "Scripting::FindClassNative(\"FlaxEngine.Vector2\")";
+            case "Vector3": return "Scripting::FindClassNative(\"FlaxEngine.Vector3\")";
+            case "Vector4": return "Scripting::FindClassNative(\"FlaxEngine.Vector4\")";
             }
 
             // Find API type
