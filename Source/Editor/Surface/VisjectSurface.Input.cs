@@ -585,49 +585,49 @@ namespace FlaxEditor.Surface
                 var keyMoveRange = 50;
                 switch (key)
                 {
-                    case KeyboardKeys.Backspace:
+                case KeyboardKeys.Backspace:
                     if (InputText.Length > 0)
                         InputText = InputText.Substring(0, InputText.Length - 1);
                     return true;
-                    case KeyboardKeys.Escape:
+                case KeyboardKeys.Escape:
                     ClearSelection();
                     return true;
-                    case KeyboardKeys.Return:
+                case KeyboardKeys.Return:
+                {
+                    Box selectedBox = GetSelectedBox(SelectedNodes, false);
+                    Box toSelect = selectedBox?.ParentNode.GetNextBox(selectedBox);
+                    if (toSelect != null)
                     {
-                        Box selectedBox = GetSelectedBox(SelectedNodes, false);
-                        Box toSelect = selectedBox?.ParentNode.GetNextBox(selectedBox);
-                        if (toSelect != null)
+                        Select(toSelect.ParentNode);
+                        toSelect.ParentNode.SelectBox(toSelect);
+                    }
+                    return true;
+                }
+                case KeyboardKeys.ArrowUp:
+                case KeyboardKeys.ArrowDown:
+                {
+                    // Selected box navigation
+                    Box selectedBox = GetSelectedBox(SelectedNodes);
+                    if (selectedBox != null)
+                    {
+                        Box toSelect = (key == KeyboardKeys.ArrowUp) ? selectedBox?.ParentNode.GetPreviousBox(selectedBox) : selectedBox?.ParentNode.GetNextBox(selectedBox);
+                        if (toSelect != null && toSelect.IsOutput == selectedBox.IsOutput)
                         {
                             Select(toSelect.ParentNode);
                             toSelect.ParentNode.SelectBox(toSelect);
                         }
-                        return true;
                     }
-                    case KeyboardKeys.ArrowUp:
-                    case KeyboardKeys.ArrowDown:
+                    else if (!IsMovingSelection && CanEdit)
                     {
-                        // Selected box navigation
-                        Box selectedBox = GetSelectedBox(SelectedNodes);
-                        if (selectedBox != null)
-                        {
-                            Box toSelect = (key == KeyboardKeys.ArrowUp) ? selectedBox?.ParentNode.GetPreviousBox(selectedBox) : selectedBox?.ParentNode.GetNextBox(selectedBox);
-                            if (toSelect != null && toSelect.IsOutput == selectedBox.IsOutput)
-                            {
-                                Select(toSelect.ParentNode);
-                                toSelect.ParentNode.SelectBox(toSelect);
-                            }
-                        }
-                        else if (!IsMovingSelection && CanEdit)
-                        {
-                            // Move selected nodes
-                            var delta = new Float2(0, key == KeyboardKeys.ArrowUp ? -keyMoveRange : keyMoveRange);
-                            MoveSelectedNodes(delta);
-                        }
-                        return true;
+                        // Move selected nodes
+                        var delta = new Float2(0, key == KeyboardKeys.ArrowUp ? -keyMoveRange : keyMoveRange);
+                        MoveSelectedNodes(delta);
                     }
-                    case KeyboardKeys.ArrowRight:
-                    case KeyboardKeys.ArrowLeft:
-                    {
+                    return true;
+                }
+                case KeyboardKeys.ArrowRight:
+                case KeyboardKeys.ArrowLeft:
+                {
                     // Selected box navigation
                     Box selectedBox = GetSelectedBox(SelectedNodes);
                     if (selectedBox != null)
@@ -670,39 +670,39 @@ namespace FlaxEditor.Surface
                         MoveSelectedNodes(delta);
                     }
                     return true;
-                    }
-                    case KeyboardKeys.Tab:
-                    {
-                        Box selectedBox = GetSelectedBox(SelectedNodes, false);
-                        if (selectedBox == null)
-                            return true;
-
-                        int connectionCount = selectedBox.Connections.Count;
-                        if (connectionCount == 0)
-                            return true;
-
-                        if (Root.GetKey(KeyboardKeys.Shift))
-                        {
-                            _selectedConnectionIndex = ((_selectedConnectionIndex - 1) % connectionCount + connectionCount) % connectionCount;
-                        }
-                        else
-                        {
-                            _selectedConnectionIndex = (_selectedConnectionIndex + 1) % connectionCount;
-                        }
+                }
+                case KeyboardKeys.Tab:
+                {
+                    Box selectedBox = GetSelectedBox(SelectedNodes, false);
+                    if (selectedBox == null)
                         return true;
-                    }
-                    case KeyboardKeys.Spacebar:
-                    {
-                        Box selectedBox = GetSelectedBox(SelectedNodes, true);
-                        // If we don't have a input/output selected, find one.
-                        if (selectedBox == null) selectedBox = GetFirstEmptyPort(SelectedNodes[0]);
-                        // Add a new node
-                        ConnectingStart(selectedBox);
-                        Cursor = CursorType.Default; // Do I need this?
-                        EndMouseCapture();
-                        ShowPrimaryMenu(_rootControl.PointToParent(FindEmptySpace(selectedBox)), true);
+
+                    int connectionCount = selectedBox.Connections.Count;
+                    if (connectionCount == 0)
                         return true;
+
+                    if (Root.GetKey(KeyboardKeys.Shift))
+                    {
+                        _selectedConnectionIndex = ((_selectedConnectionIndex - 1) % connectionCount + connectionCount) % connectionCount;
                     }
+                    else
+                    {
+                        _selectedConnectionIndex = (_selectedConnectionIndex + 1) % connectionCount;
+                    }
+                    return true;
+                }
+                case KeyboardKeys.Spacebar:
+                {
+                    Box selectedBox = GetSelectedBox(SelectedNodes, true);
+                    // If we don't have a input/output selected, find one.
+                    if (selectedBox == null) selectedBox = GetFirstEmptyPort(SelectedNodes[0]);
+                    // Add a new node
+                    ConnectingStart(selectedBox);
+                    Cursor = CursorType.Default; // Do I need this?
+                    EndMouseCapture();
+                    ShowPrimaryMenu(_rootControl.PointToParent(FindEmptySpace(selectedBox)), true);
+                    return true;
+                }
                 }
             }
             else
