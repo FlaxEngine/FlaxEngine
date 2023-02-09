@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml;
 using FlaxEditor.CustomEditors;
 using FlaxEngine.GUI;
 
@@ -16,10 +17,18 @@ namespace FlaxEditor.Windows
     {
         private IEnumerable<object> undoRecordObjects;
 
+        /// <inheritdoc />
+        public override bool UseLayoutData => true;
+
         /// <summary>
         /// The editor.
         /// </summary>
         public readonly CustomEditorPresenter Presenter;
+
+        /// <summary>
+        /// Indication of if the scale is locked.
+        /// </summary>
+        public bool ScaleLinked = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PropertiesWindow"/> class.
@@ -51,6 +60,19 @@ namespace FlaxEditor.Windows
             undoRecordObjects = Editor.SceneEditing.Selection.ConvertAll(x => x.UndoRecordObject).Distinct();
             var objects = Editor.SceneEditing.Selection.ConvertAll(x => x.EditableObject).Distinct();
             Presenter.Select(objects);
+        }
+
+        /// <inheritdoc />
+        public override void OnLayoutSerialize(XmlWriter writer)
+        {
+            writer.WriteAttributeString("ScaleLinked", ScaleLinked.ToString());
+        }
+        
+        /// <inheritdoc />
+        public override void OnLayoutDeserialize(XmlElement node)
+        {
+            if (bool.TryParse(node.GetAttribute("ScaleLinked"), out bool value1))
+                ScaleLinked = value1;
         }
     }
 }
