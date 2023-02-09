@@ -105,7 +105,8 @@ public:
     /// <summary>
     /// Gets the name of the layer.
     /// </summary>
-    API_PROPERTY() const String& GetLayerName() const;
+    API_PROPERTY(Attributes="HideInEditor, NoSerialize, NoAnimate")
+    const String& GetLayerName() const;
 
     /// <summary>
     /// Sets the name of the layer.
