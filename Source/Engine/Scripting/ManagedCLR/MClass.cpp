@@ -124,6 +124,15 @@ bool MClass::IsSubClassOf(const MonoClass* monoClass) const
 }
 #endif
 
+bool MClass::HasInterface(const MClass* klass) const
+{
+#if USE_MONO
+    return klass && mono_class_is_assignable_from(klass->GetNative(), _monoClass) != 0;
+#else
+    return false;
+#endif
+}
+
 bool MClass::IsInstanceOfType(MObject* object) const
 {
     if (object == nullptr)

@@ -498,10 +498,21 @@ Script* Actor::GetScript(int32 index) const
 Script* Actor::GetScript(const MClass* type) const
 {
     CHECK_RETURN(type, nullptr);
-    for (auto script : Scripts)
+    if (type->IsInterface())
     {
-        if (script->GetClass()->IsSubClassOf(type))
-            return script;
+        for (auto script : Scripts)
+        {
+            if (script->GetClass()->HasInterface(type))
+                return script;
+        }
+    }
+    else
+    {
+        for (auto script : Scripts)
+        {
+            if (script->GetClass()->IsSubClassOf(type))
+                return script;
+        }
     }
     return nullptr;
 }
@@ -509,9 +520,18 @@ Script* Actor::GetScript(const MClass* type) const
 Array<Script*> Actor::GetScripts(const MClass* type) const
 {
     Array<Script*> result;
-    for (auto script : Scripts)
-        if (script->GetClass()->IsSubClassOf(type))
-            result.Add(script);
+    if (type->IsInterface())
+    {
+        for (auto script : Scripts)
+            if (script->GetClass()->HasInterface(type))
+                result.Add(script);
+    }
+    else
+    {
+        for (auto script : Scripts)
+            if (script->GetClass()->IsSubClassOf(type))
+                result.Add(script);
+    }
     return result;
 }
 
