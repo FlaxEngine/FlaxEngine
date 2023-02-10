@@ -279,6 +279,7 @@ namespace FlaxEngine.GUI
             // Fill the canvas by default
             Offsets = Margin.Zero;
             AnchorPreset = AnchorPresets.StretchAll;
+            AutoFocus = false;
         }
 
         /// <summary>
