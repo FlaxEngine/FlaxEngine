@@ -191,6 +191,7 @@ bool StartPeer()
     if (!NetworkManager::Peer)
     {
         LOG(Error, "Failed to create Network Peer at {0}:{1}", networkConfig.Address, networkConfig.Port);
+        NetworkManager::State = NetworkConnectionState::Offline;
         return true;
     }
     NetworkManager::Frame = 0;
@@ -243,7 +244,10 @@ bool NetworkManager::StartServer()
     LOG(Info, "Starting network manager as server");
     Mode = NetworkManagerMode::Server;
     if (StartPeer())
+    {
+        Mode = NetworkManagerMode::Offline;
         return true;
+    }
     if (!Peer->Listen())
     {
         Stop();
@@ -265,7 +269,10 @@ bool NetworkManager::StartClient()
     LOG(Info, "Starting network manager as client");
     Mode = NetworkManagerMode::Client;
     if (StartPeer())
+    {
+        Mode = NetworkManagerMode::Offline;
         return true;
+    }
     if (!Peer->Connect())
     {
         Stop();
@@ -286,9 +293,15 @@ bool NetworkManager::StartHost()
     LOG(Info, "Starting network manager as host");
     Mode = NetworkManagerMode::Host;
     if (StartPeer())
+    {
+        Mode = NetworkManagerMode::Offline;
         return true;
+    }
     if (!Peer->Listen())
+    {
+        Mode = NetworkManagerMode::Offline;
         return true;
+    }
     LocalClientId = ServerClientId;
     NextClientId = ServerClientId + 1;
     LocalClient = New<NetworkClient>(LocalClientId, NetworkConnection{ 0 });

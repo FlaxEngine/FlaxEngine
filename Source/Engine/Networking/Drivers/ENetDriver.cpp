@@ -164,6 +164,7 @@ void ENetDriver::Disconnect(const NetworkConnection& connection)
 
 bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
 {
+    ASSERT(_host);
     ENetEvent event;
     const int result = enet_host_service(_host, &event, 0);
     if (result < 0)

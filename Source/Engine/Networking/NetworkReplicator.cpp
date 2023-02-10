@@ -1474,6 +1474,10 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
         if (!obj->IsRegistered())
             obj->RegisterObject();
         const NetworkReplicatedObject* parent = ResolveObject(msgDataItem.ParentId);
+        if (!parent && msgDataItem.ParentId.IsValid())
+        {
+            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to find object {} as parent to spawned object", msgDataItem.ParentId.ToString());
+        }
 
         // Add object to the list
         NetworkReplicatedObject item;
