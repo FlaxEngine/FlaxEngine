@@ -681,6 +681,16 @@ void* BinaryModule::FindMethod(const ScriptingTypeHandle& typeHandle, const Scri
 
 void BinaryModule::Destroy(bool isReloading)
 {
+    // Destroy any default script instances
+    for (const auto& type : Types)
+    {
+        if (type.Type == ScriptingTypes::Script && type.Script.DefaultInstance)
+        {
+            Delete(type.Script.DefaultInstance);
+            type.Script.DefaultInstance = nullptr;
+        }
+    }
+
     // Unregister
     GetModules().RemoveKeepOrder(this);
 }
@@ -1428,6 +1438,10 @@ NativeBinaryModule::NativeBinaryModule(MAssembly* assembly)
 void NativeBinaryModule::Destroy(bool isReloading)
 {
     ManagedBinaryModule::Destroy(isReloading);
+
+    // Skip native code unloading from core libs
+    if (this == GetBinaryModuleCorlib() || this == GetBinaryModuleFlaxEngine())
+        return;
 
     // Release native library
     const auto library = Library;
