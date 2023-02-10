@@ -98,6 +98,11 @@ public:
 
     typedef Pair<int32, Guid> EmitterParameterOverrideKey;
 
+private:
+#if !BUILD_RELEASE
+    String _debugName;
+#endif
+
 public:
     /// <summary>
     /// The asset data version number. Used to sync the  data with the instances state. Incremented each time asset gets loaded.
