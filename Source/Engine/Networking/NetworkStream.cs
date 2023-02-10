@@ -408,6 +408,23 @@ namespace FlaxEngine.Networking
         }
 
         /// <summary>
+        /// Writes data of type <see cref="Ray"/> into the message.
+        /// </summary>
+        public void WriteRay(Ray value)
+        {
+            WriteVector3(value.Position);
+            WriteVector3(value.Direction);
+        }
+
+        /// <summary>
+        /// Reads and returns data of type <see cref="Ray"/> from the message.
+        /// </summary>
+        public Ray ReadRay()
+        {
+            return new Ray(ReadVector3(), ReadVector3());
+        }
+
+        /// <summary>
         /// Writes data of type <see cref="Boolean"/> into the message.
         /// </summary>
         public void WriteBoolean(bool value)

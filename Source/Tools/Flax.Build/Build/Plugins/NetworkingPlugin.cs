@@ -75,6 +75,7 @@ namespace Flax.Build.Plugins
             { "FlaxEngine.Float3", new InBuildSerializer("WriteFloat3", "ReadFloat3") },
             { "FlaxEngine.Float4", new InBuildSerializer("WriteFloat4", "ReadFloat4") },
             { "FlaxEngine.Quaternion", new InBuildSerializer("WriteQuaternion", "ReadQuaternion") },
+            { "FlaxEngine.Ray", new InBuildSerializer("WriteRay", "ReadRay") },
         };
 
         /// <inheritdoc />
@@ -471,7 +472,7 @@ namespace Flax.Build.Plugins
             if (string.Equals(binaryModule.Key, "FlaxEngine", StringComparison.Ordinal))
                 return;
 
-            // Skip assemblies not using netowrking
+            // Skip assemblies not using networking
             if (!binaryModule.Any(module => module.Tags.ContainsKey(Network)))
                 return;
 
