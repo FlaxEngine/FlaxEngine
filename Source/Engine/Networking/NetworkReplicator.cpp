@@ -1023,15 +1023,6 @@ void NetworkInternal::NetworkReplicatorUpdate()
         NewClients.Clear();
     }
 
-    // Collect clients for replication (from server)
-    BuildCachedTargets(NetworkManager::Clients);
-    if (!isClient && CachedTargets.Count() == 0)
-    {
-        // Early exit if server has nobody to send data to
-        Scripting::ObjectsLookupIdMapping.Set(nullptr);
-        return;
-    }
-
     // Despawn
     if (DespawnQueue.Count() != 0)
     {
