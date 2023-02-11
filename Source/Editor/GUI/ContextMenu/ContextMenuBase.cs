@@ -196,7 +196,6 @@ namespace FlaxEditor.GUI.ContextMenu
             desc.HasSizingFrame = false;
             OnWindowCreating(ref desc);
             _window = Platform.CreateWindow(ref desc);
-            _window.GotFocus += OnWindowGotFocus;
             _window.LostFocus += OnWindowLostFocus;
 
             // Attach to the window
@@ -326,48 +325,6 @@ namespace FlaxEditor.GUI.ContextMenu
             // Nothing to do
         }
 
-        /// <summary>
-        /// Returns true if context menu is in foreground (eg. context window or any child window has user focus or user opened additional popup within this context).
-        /// </summary>
-        protected virtual bool IsForeground
-        {
-            get
-            {
-                // Any external popup is focused
-                foreach (var externalPopup in ExternalPopups)
-                {
-                    if (externalPopup && externalPopup.IsForegroundWindow)
-                        return true;
-                }
-
-                // Any context menu window is focused
-                var anyForeground = false;
-                var c = this;
-                while (!anyForeground && c != null)
-                {
-                    if (c._window != null && c._window.IsForegroundWindow)
-                        anyForeground = true;
-                    c = c._childCM;
-                }
-
-                return anyForeground;
-            }
-        }
-
-        private void OnWindowGotFocus()
-        {
-            var child = _childCM;
-            if (child != null && _window && _window.IsForegroundWindow)
-            {
-                // Hide child if user clicked over parent (do it next frame to process other events before - eg. child windows focus loss)
-                FlaxEngine.Scripting.InvokeOnUpdate(() =>
-                {
-                    if (child == _childCM)
-                        HideChild();
-                });
-            }
-        }
-
         private void OnWindowLostFocus()
         {
             // Skip for parent menus (child should handle lost of focus)
@@ -377,13 +334,33 @@ namespace FlaxEditor.GUI.ContextMenu
             // Check if user stopped using that popup menu
             if (_parentCM != null)
             {
-                // Focus parent if user clicked over the parent popup
-                var mouse = _parentCM.PointFromScreen(FlaxEngine.Input.MouseScreenPosition);
-                if (_parentCM.ContainsPoint(ref mouse))
+                if (IsMouseOver)
+                    return;
+
+                // Check if mouse is over any of the parents
+                ContextMenuBase focusCM = null;
+                var cm = _parentCM;
+                while (cm != null)
                 {
-                    _parentCM._window.Focus();
+                    if (cm.IsMouseOver)
+                        focusCM = cm;
+                    cm = cm._parentCM;
+                }
+
+                if (focusCM != null)
+                {
+                    // Focus on the clicked parent and hide any open sub-menus
+                    focusCM.HideChild();
+                    focusCM._window?.Focus();
+                }
+                else
+                {
+                    // User clicked outside the context menus, hide the whole context menu tree
+                    TopmostCM.Hide();
                 }
             }
+            else if (!IsMouseOver)
+                Hide();
         }
 
         /// <inheritdoc />
@@ -402,18 +379,6 @@ namespace FlaxEditor.GUI.ContextMenu
                     }
                 }
                 return result;
-            }
-        }
-
-        /// <inheritdoc />
-        public override void Update(float deltaTime)
-        {
-            base.Update(deltaTime);
-
-            // Let root context menu to check if none of the popup windows
-            if (_parentCM == null && !IsForeground)
-            {
-                Hide();
             }
         }
 
