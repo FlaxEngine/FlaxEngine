@@ -82,6 +82,16 @@ namespace FlaxEditor.States
             }
         }
 
+        /// <summary>
+        /// True if play mode is starting.
+        /// </summary>
+        public bool IsPlayModeStarting;
+
+        /// <summary>
+        /// True if play mode is ending.
+        /// </summary>
+        public bool IsPlayModeEnding;
+
         internal PlayingState(Editor editor)
         : base(editor)
         {
@@ -127,6 +137,7 @@ namespace FlaxEditor.States
         public override void OnEnter()
         {
             Profiler.BeginEvent("PlayingState.OnEnter");
+            IsPlayModeStarting = true;
             Editor.OnPlayBeginning();
 
             CacheSelection();
@@ -150,6 +161,7 @@ namespace FlaxEditor.States
             RestoreSelection();
 
             Editor.OnPlayBegin();
+            IsPlayModeStarting = false;
             Profiler.EndEvent();
         }
 
@@ -171,6 +183,7 @@ namespace FlaxEditor.States
         public override void OnExit(State nextState)
         {
             Profiler.BeginEvent("PlayingState.OnExit");
+            IsPlayModeEnding = true;
             Editor.OnPlayEnding();
             IsPaused = true;
 
@@ -194,6 +207,7 @@ namespace FlaxEditor.States
             RestoreSelection();
 
             Editor.OnPlayEnd();
+            IsPlayModeEnding = false;
             Profiler.EndEvent();
         }
     }
