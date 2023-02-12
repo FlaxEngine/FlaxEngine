@@ -179,6 +179,8 @@ namespace FlaxEngine.GUI
         /// <param name="target">The target.</param>
         public void OnMouseLeaveControl(Control target)
         {
+            if (Visible)
+                Hide();
             _lastTarget = null;
         }
 
