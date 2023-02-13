@@ -62,7 +62,7 @@ namespace Flax.Build
 
             // Find system-installed SDK
             string dotnetPath;
-            string os, arch;
+            string rid, ridFallback, arch;
             string[] dotnetSdkVersions, dotnetRuntimeVersions;
             switch (architecture)
             {
@@ -85,7 +85,8 @@ namespace Flax.Build
             {
             case TargetPlatform.Windows:
             {
-                os = $"win-{arch}";
+                rid = $"win-{arch}";
+                ridFallback = "";
 #pragma warning disable CA1416
                 using RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
                 using RegistryKey sdkVersionsKey = baseKey.OpenSubKey($@"SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{arch}\sdk");
@@ -100,7 +101,14 @@ namespace Flax.Build
             case TargetPlatform.Linux:
             {
                 // TODO: Support /etc/dotnet/install_location
-                os = $"linux-{arch}";
+
+                // Detect custom RID in some distros
+                string osId = File.ReadAllLines("/etc/os-release").FirstOrDefault(x => x.StartsWith("ID="), "ID=linux").Substring("ID=".Length);
+
+                rid = $"{osId}-{arch}";
+                ridFallback = $"linux-{arch}";
+                if (rid == ridFallback)
+                    ridFallback = "";
                 dotnetPath = "/usr/share/dotnet/";
                 dotnetSdkVersions = Directory.GetDirectories($"{dotnetPath}sdk/").Select(Path.GetFileName).ToArray();
                 dotnetRuntimeVersions = Directory.GetDirectories($"{dotnetPath}shared/Microsoft.NETCore.App/").Select(Path.GetFileName).ToArray();
@@ -126,7 +134,9 @@ namespace Flax.Build
                 Log.Warning($"Unsupported .NET SDK {dotnetSdkVersion} version found. Minimum version required is .NET {MinimumVersion}.");
                 return;
             }
-            HostRootPath = Path.Combine(dotnetPath, $"packs/Microsoft.NETCore.App.Host.{os}/{dotnetRuntimeVersion}/runtimes/{os}/native");
+            HostRootPath = Path.Combine(dotnetPath, $"packs/Microsoft.NETCore.App.Host.{rid}/{dotnetRuntimeVersion}/runtimes/{rid}/native");
+            if (!string.IsNullOrEmpty(ridFallback) && !Directory.Exists(HostRootPath))
+                HostRootPath = Path.Combine(dotnetPath, $"packs/Microsoft.NETCore.App.Host.{ridFallback}/{dotnetRuntimeVersion}/runtimes/{ridFallback}/native");
             if (!Directory.Exists(HostRootPath))
             {
                 Log.Warning($"Missing .NET SDK host runtime path in {HostRootPath}.");
