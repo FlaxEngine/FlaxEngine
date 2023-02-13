@@ -287,10 +287,12 @@ namespace FlaxEngine
         /// </summary>
         private static class ManagedArrayPool
         {
-            private static List<ValueTuple<bool, ManagedArray>> pool = new List<ValueTuple<bool, ManagedArray>>();
+            [ThreadStatic] private static List<ValueTuple<bool, ManagedArray>> pool;
 
             internal static ManagedArray Get()
             {
+                if (pool == null)
+                    pool = new List<ValueTuple<bool, ManagedArray>>();
                 for (int i = 0; i < pool.Count; i++)
                 {
                     if (!pool[i].Item1)
