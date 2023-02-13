@@ -251,7 +251,7 @@ namespace FlaxEditor.Windows
                 if (nodes.Count == 1)
                 {
                     nodes[0].ExpandAllParents(true);
-                    ScrollViewTo(nodes[0]);
+                    _sceneTreePanel.ScrollViewTo(nodes[0]);
                 }
             }
 
