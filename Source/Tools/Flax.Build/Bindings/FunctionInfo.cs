@@ -18,6 +18,7 @@ namespace Flax.Build.Bindings
             public string Attributes;
             public bool IsRef;
             public bool IsOut;
+            public bool IsThis;
 
             public bool HasDefaultValue => !string.IsNullOrEmpty(DefaultValue);
 
@@ -35,6 +36,7 @@ namespace Flax.Build.Bindings
                 // TODO: convert into flags
                 writer.Write(IsRef);
                 writer.Write(IsOut);
+                writer.Write(IsThis);
             }
 
             public void Read(BinaryReader reader)
@@ -46,6 +48,7 @@ namespace Flax.Build.Bindings
                 // TODO: convert into flags
                 IsRef = reader.ReadBoolean();
                 IsOut = reader.ReadBoolean();
+                IsThis = reader.ReadBoolean();
             }
 
             public override string ToString()

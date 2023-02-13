@@ -1005,6 +1005,8 @@ namespace Flax.Build.Bindings
                             contents.Append("out ");
                         else if (parameterInfo.IsRef)
                             contents.Append("ref ");
+                        else if (parameterInfo.IsThis)
+                            contents.Append("this ");
                         contents.Append(managedType);
                         contents.Append(' ');
                         contents.Append(parameterInfo.Name);
@@ -1064,6 +1066,8 @@ namespace Flax.Build.Bindings
                                 contents.Append("out ");
                             else if (parameterInfo.IsRef)
                                 contents.Append("ref ");
+                            else if (parameterInfo.IsThis)
+                                contents.Append("this ");
                             contents.Append(managedType);
                             contents.Append(' ');
                             contents.Append(parameterInfo.Name);
@@ -1374,6 +1378,8 @@ namespace Flax.Build.Bindings
                         contents.Append("out ");
                     else if (parameterInfo.IsRef)
                         contents.Append("ref ");
+                    else if (parameterInfo.IsThis)
+                        contents.Append("this ");
                     contents.Append(managedType);
                     contents.Append(' ');
                     contents.Append(parameterInfo.Name);
