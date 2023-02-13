@@ -18,12 +18,6 @@ public:
     static bool IsInPool(Object* obj);
 
     /// <summary>
-    /// Determines whether any object has been registered to be removed from pool (requests are flushed on Flush call).
-    /// </summary>
-    /// <returns>True if any object has been registered to be removed, otherwise false.</returns>
-    static bool HasNewItemsForFlush();
-
-    /// <summary>
     /// Removes the specified object from the dead pool (clears the reference to it).
     /// </summary>
     /// <param name="obj">The object.</param>

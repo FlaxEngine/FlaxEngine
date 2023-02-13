@@ -530,13 +530,6 @@ void Scripting::Release()
         for (int32 i = modules.Count() - 1; i >= 0; i--)
         {
             auto module = modules[i];
-            if (module == GetBinaryModuleCorlib() || module == GetBinaryModuleFlaxEngine())
-            {
-                // Just C# assembly unload for in-build modules
-                ((ManagedBinaryModule*)module)->Assembly->Unload();
-                continue;
-            }
-
             module->Destroy(false);
         }
         _nonNativeModules.ClearDelete();

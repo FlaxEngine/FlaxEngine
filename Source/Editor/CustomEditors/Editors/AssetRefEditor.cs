@@ -72,7 +72,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     var customType = TypeUtils.GetType(assetReference.TypeName);
                     if (customType != ScriptType.Null)
                         assetType = customType;
-                    else
+                    else if (!Content.Settings.GameSettings.OptionalPlatformSettings.Contains(assetReference.TypeName))
                         Debug.LogWarning(string.Format("Unknown asset type '{0}' to use for asset picker filter.", assetReference.TypeName));
                 }
             }

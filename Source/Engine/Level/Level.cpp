@@ -1443,20 +1443,15 @@ void Level::ReloadScriptsAsync()
 
 Actor* Level::FindActor(const Guid& id)
 {
-    return Scripting::FindObject<Actor>(id);
+    return Scripting::TryFindObject<Actor>(id);
 }
 
 Actor* Level::FindActor(const StringView& name)
 {
     Actor* result = nullptr;
-
     ScopeLock lock(ScenesLock);
-
     for (int32 i = 0; result == nullptr && i < Scenes.Count(); i++)
-    {
         result = Scenes[i]->FindActor(name);
-    }
-
     return result;
 }
 

@@ -181,6 +181,7 @@ namespace FlaxEditor.GUI.Input
                 _cursorChanged = false;
             }
             SlidingEnd?.Invoke();
+            Defocus();
         }
 
         /// <inheritdoc />

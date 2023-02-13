@@ -114,10 +114,8 @@ namespace FlaxEditor.Windows.Assets
             public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
             {
                 var result = base.OnDragMove(ref location, data);
-                if (result == DragDropEffect.None)
-                {
+                if (result == DragDropEffect.None && _dragHandlers != null)
                     result = _dragHandlers.Effect;
-                }
                 return result;
             }
 

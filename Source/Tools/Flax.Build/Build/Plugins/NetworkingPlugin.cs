@@ -75,6 +75,7 @@ namespace Flax.Build.Plugins
             { "FlaxEngine.Float3", new InBuildSerializer("WriteFloat3", "ReadFloat3") },
             { "FlaxEngine.Float4", new InBuildSerializer("WriteFloat4", "ReadFloat4") },
             { "FlaxEngine.Quaternion", new InBuildSerializer("WriteQuaternion", "ReadQuaternion") },
+            { "FlaxEngine.Ray", new InBuildSerializer("WriteRay", "ReadRay") },
         };
 
         /// <inheritdoc />
@@ -471,7 +472,7 @@ namespace Flax.Build.Plugins
             if (string.Equals(binaryModule.Key, "FlaxEngine", StringComparison.Ordinal))
                 return;
 
-            // Skip assemblies not using netowrking
+            // Skip assemblies not using networking
             if (!binaryModule.Any(module => module.Tags.ContainsKey(Network)))
                 return;
 
@@ -1244,15 +1245,16 @@ namespace Flax.Build.Plugins
             var methodRPC = new MethodRPC();
             methodRPC.Type = type;
             methodRPC.Method = method;
-            methodRPC.IsServer = (bool)attribute.GetFieldValue("Server", false);
-            methodRPC.IsClient = (bool)attribute.GetFieldValue("Client", false);
-            methodRPC.Channel = (int)attribute.GetFieldValue("Channel", 4); // int as NetworkChannelType (default is ReliableOrdered=4)
+            methodRPC.Channel = 4; // int as NetworkChannelType (default is ReliableOrdered=4)
             if (attribute.HasConstructorArguments && attribute.ConstructorArguments.Count >= 3)
             {
                 methodRPC.IsServer = (bool)attribute.ConstructorArguments[0].Value;
                 methodRPC.IsClient = (bool)attribute.ConstructorArguments[1].Value;
                 methodRPC.Channel = (int)attribute.ConstructorArguments[2].Value;
             }
+            methodRPC.IsServer = (bool)attribute.GetFieldValue("Server", methodRPC.IsServer);
+            methodRPC.IsClient = (bool)attribute.GetFieldValue("Client", methodRPC.IsClient);
+            methodRPC.Channel = (int)attribute.GetFieldValue("Channel", methodRPC.Channel);
             if (methodRPC.IsServer && methodRPC.IsClient)
             {
                 MonoCecil.CompilationError($"Network RPC {method.Name} in {type.FullName} cannot be both Server and Client.", method);
@@ -1358,7 +1360,9 @@ namespace Flax.Build.Plugins
                 var jumpIfBodyStart = il.Create(OpCodes.Nop); // if block body
                 var jumpIf2Start = il.Create(OpCodes.Nop); // 2nd part of the if
                 var jumpBodyStart = il.Create(OpCodes.Nop); // original method body start
-                var jumpBodyEnd = il.Body.Instructions.First(x => x.OpCode == OpCodes.Ret);
+                var jumpBodyEnd = il.Body.Instructions.Last(x => x.OpCode == OpCodes.Ret && x.Previous != null);
+                if (jumpBodyEnd == null)
+                    throw new Exception("Missing IL Return op code in method " + method.Name);
                 il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, varsStart + 0));
                 il.InsertBefore(ilStart, il.Create(OpCodes.Brfalse_S, jumpIf2Start));
                 il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, varsStart + 2));
@@ -1408,7 +1412,13 @@ namespace Flax.Build.Plugins
                     il.InsertBefore(ilStart, il.Create(OpCodes.Nop));
                     il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, varsStart + 2));
                     il.InsertBefore(ilStart, il.Create(OpCodes.Ldc_I4_2));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Beq_S, jumpBodyEnd));
+                    var tmp = il.Create(OpCodes.Nop);
+                    il.InsertBefore(ilStart, il.Create(OpCodes.Beq_S, tmp));
+                    il.InsertBefore(ilStart, il.Create(OpCodes.Br, jumpBodyStart));
+                    il.InsertBefore(ilStart, tmp);
+                    //il.InsertBefore(ilStart, il.Create(OpCodes.Ret));
+                    il.InsertBefore(ilStart, il.Create(OpCodes.Br, jumpBodyEnd));
+
                 }
 
                 // if (client && networkMode == NetworkManagerMode.Server) return;
@@ -1417,7 +1427,12 @@ namespace Flax.Build.Plugins
                     il.InsertBefore(ilStart, il.Create(OpCodes.Nop));
                     il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, varsStart + 2));
                     il.InsertBefore(ilStart, il.Create(OpCodes.Ldc_I4_1));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Beq_S, jumpBodyEnd));
+                    var tmp = il.Create(OpCodes.Nop);
+                    il.InsertBefore(ilStart, il.Create(OpCodes.Beq_S, tmp));
+                    il.InsertBefore(ilStart, il.Create(OpCodes.Br, jumpBodyStart));
+                    il.InsertBefore(ilStart, tmp);
+                    //il.InsertBefore(ilStart, il.Create(OpCodes.Ret));
+                    il.InsertBefore(ilStart, il.Create(OpCodes.Br, jumpBodyEnd));
                 }
 
                 // Continue to original method body

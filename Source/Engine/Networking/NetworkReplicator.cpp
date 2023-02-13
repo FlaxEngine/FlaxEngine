@@ -663,7 +663,7 @@ bool NetworkReplicator::InvokeSerializer(const ScriptingTypeHandle& typeHandle, 
 
 void NetworkReplicator::AddObject(ScriptingObject* obj, ScriptingObject* parent)
 {
-    if (!obj || NetworkManager::State == NetworkConnectionState::Offline)
+    if (!obj || NetworkManager::IsOffline())
         return;
     ScopeLock lock(ObjectsLock);
     if (Objects.Contains(obj))
@@ -695,7 +695,7 @@ void NetworkReplicator::AddObject(ScriptingObject* obj, ScriptingObject* parent)
 
 void NetworkReplicator::RemoveObject(ScriptingObject* obj)
 {
-    if (!obj || NetworkManager::State == NetworkConnectionState::Offline)
+    if (!obj || NetworkManager::IsOffline())
         return;
     ScopeLock lock(ObjectsLock);
     const auto it = Objects.Find(obj->GetID());
@@ -715,7 +715,7 @@ void NetworkReplicator::SpawnObject(ScriptingObject* obj)
 
 void NetworkReplicator::SpawnObject(ScriptingObject* obj, const DataContainer<uint32>& clientIds)
 {
-    if (!obj || NetworkManager::State == NetworkConnectionState::Offline)
+    if (!obj || NetworkManager::IsOffline())
         return;
     ScopeLock lock(ObjectsLock);
     const auto it = Objects.Find(obj->GetID());
@@ -730,7 +730,7 @@ void NetworkReplicator::SpawnObject(ScriptingObject* obj, const DataContainer<ui
 
 void NetworkReplicator::DespawnObject(ScriptingObject* obj)
 {
-    if (!obj || NetworkManager::State == NetworkConnectionState::Offline)
+    if (!obj || NetworkManager::IsOffline())
         return;
     ScopeLock lock(ObjectsLock);
     const auto it = Objects.Find(obj->GetID());
@@ -887,7 +887,7 @@ NetworkStream* NetworkReplicator::BeginInvokeRPC()
 void NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream)
 {
     const NetworkRpcInfo* info = NetworkRpcInfo::RPCsTable.TryGet(NetworkRpcName(type, name));
-    if (!info || !obj)
+    if (!info || !obj || NetworkManager::IsOffline())
         return;
     ObjectsLock.Lock();
     auto& rpc = RpcQueue.AddOne();
@@ -1021,15 +1021,6 @@ void NetworkInternal::NetworkReplicatorUpdate()
             SendObjectSpawnMessage(g, NewClients);
         }
         NewClients.Clear();
-    }
-
-    // Collect clients for replication (from server)
-    BuildCachedTargets(NetworkManager::Clients);
-    if (!isClient && CachedTargets.Count() == 0)
-    {
-        // Early exit if server has nobody to send data to
-        Scripting::ObjectsLookupIdMapping.Set(nullptr);
-        return;
     }
 
     // Despawn
@@ -1474,6 +1465,10 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
         if (!obj->IsRegistered())
             obj->RegisterObject();
         const NetworkReplicatedObject* parent = ResolveObject(msgDataItem.ParentId);
+        if (!parent && msgDataItem.ParentId.IsValid())
+        {
+            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to find object {} as parent to spawned object", msgDataItem.ParentId.ToString());
+        }
 
         // Add object to the list
         NetworkReplicatedObject item;

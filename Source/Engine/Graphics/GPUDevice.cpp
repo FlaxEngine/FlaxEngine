@@ -319,6 +319,15 @@ GPUDevice::~GPUDevice()
 
 bool GPUDevice::Init()
 {
+    // Clamp texture limits (eg. if driver reports higher value)
+    Limits.MaximumTexture1DSize = Math::Min(Limits.MaximumTexture1DSize, GPU_MAX_TEXTURE_SIZE);
+    Limits.MaximumTexture2DSize = Math::Min(Limits.MaximumTexture2DSize, GPU_MAX_TEXTURE_SIZE);
+    Limits.MaximumTexture3DSize = Math::Min(Limits.MaximumTexture3DSize, GPU_MAX_TEXTURE_SIZE);
+    Limits.MaximumTextureCubeSize = Math::Min(Limits.MaximumTextureCubeSize, GPU_MAX_TEXTURE_SIZE);
+    Limits.MaximumTexture1DArraySize = Math::Min(Limits.MaximumTexture1DArraySize, GPU_MAX_TEXTURE_ARRAY_SIZE);
+    Limits.MaximumTexture2DArraySize = Math::Min(Limits.MaximumTexture2DArraySize, GPU_MAX_TEXTURE_ARRAY_SIZE);
+    Limits.MaximumMipLevelsCount = Math::Min(Limits.MaximumMipLevelsCount, GPU_MAX_TEXTURE_MIP_LEVELS);
+
     _res->TasksManager.SetExecutor(CreateTasksExecutor());
     LOG(Info, "Total graphics memory: {0}", Utilities::BytesToText(TotalGraphicsMemory));
     return false;

@@ -819,7 +819,8 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
 
                 ImportCurve(aAnim->mPositionKeys, aAnim->mNumPositionKeys, anim.Position);
                 ImportCurve(aAnim->mRotationKeys, aAnim->mNumRotationKeys, anim.Rotation);
-                ImportCurve(aAnim->mScalingKeys, aAnim->mNumScalingKeys, anim.Scale);
+                if (options.ImportScaleTracks)
+                    ImportCurve(aAnim->mScalingKeys, aAnim->mNumScalingKeys, anim.Scale);
             }
         }
     }

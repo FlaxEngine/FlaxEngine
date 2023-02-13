@@ -263,6 +263,13 @@ namespace FlaxEditor.Content.Import
         public bool OptimizeKeyframes { get; set; } = true;
 
         /// <summary>
+        /// If checked, the importer will import scale animation tracks (otherwise scale animation will be ignored).
+        /// </summary>
+        [EditorDisplay("Animation"), VisibleIf(nameof(ShowAnimation))]
+        [EditorOrder(1055), DefaultValue(false)]
+        public bool ImportScaleTracks { get; set; } = false;
+
+        /// <summary>
         /// Enables root motion extraction support from this animation.
         /// </summary>
         [EditorDisplay("Animation"), VisibleIf(nameof(ShowAnimation))]
@@ -390,6 +397,7 @@ namespace FlaxEditor.Content.Import
             public float SamplingRate;
             public byte SkipEmptyCurves;
             public byte OptimizeKeyframes;
+            public byte ImportScaleTracks;
             public byte EnableRootMotion;
             public string RootNodeName;
 
@@ -599,6 +607,7 @@ namespace FlaxEditor.Content.Import
                 SamplingRate = SamplingRate,
                 SkipEmptyCurves = (byte)(SkipEmptyCurves ? 1 : 0),
                 OptimizeKeyframes = (byte)(OptimizeKeyframes ? 1 : 0),
+                ImportScaleTracks = (byte)(ImportScaleTracks ? 1 : 0),
                 EnableRootMotion = (byte)(EnableRootMotion ? 1 : 0),
                 RootNodeName = RootNodeName,
                 GenerateLODs = (byte)(GenerateLODs ? 1 : 0),
@@ -640,6 +649,7 @@ namespace FlaxEditor.Content.Import
             SamplingRate = options.SamplingRate;
             SkipEmptyCurves = options.SkipEmptyCurves != 0;
             OptimizeKeyframes = options.OptimizeKeyframes != 0;
+            ImportScaleTracks = options.ImportScaleTracks != 0;
             EnableRootMotion = options.EnableRootMotion != 0;
             RootNodeName = options.RootNodeName;
             GenerateLODs = options.GenerateLODs != 0;

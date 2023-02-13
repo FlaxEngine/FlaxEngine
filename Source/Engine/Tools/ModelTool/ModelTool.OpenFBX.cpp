@@ -1051,9 +1051,9 @@ bool ImportAnimation(int32 index, ImportedModelData& data, OpenFbxImporterData& 
 
         const ofbx::AnimationCurveNode* translationNode = layer->getCurveNode(*aNode.FbxObj, "Lcl Translation");
         const ofbx::AnimationCurveNode* rotationNode = layer->getCurveNode(*aNode.FbxObj, "Lcl Rotation");
-        const ofbx::AnimationCurveNode* scalingNode = nullptr; //layer->getCurveNode(*aNode.FbxObj, "Lcl Scaling");
+        const ofbx::AnimationCurveNode* scalingNode = layer->getCurveNode(*aNode.FbxObj, "Lcl Scaling");
 
-        if (translationNode || rotationNode || scalingNode)
+        if (translationNode || rotationNode || (scalingNode && importerData.Options.ImportScaleTracks))
             animatedNodes.Add(nodeIndex);
     }
     if (animatedNodes.IsEmpty())
@@ -1069,13 +1069,14 @@ bool ImportAnimation(int32 index, ImportedModelData& data, OpenFbxImporterData& 
 
         const ofbx::AnimationCurveNode* translationNode = layer->getCurveNode(*aNode.FbxObj, "Lcl Translation");
         const ofbx::AnimationCurveNode* rotationNode = layer->getCurveNode(*aNode.FbxObj, "Lcl Rotation");
-        //const ofbx::AnimationCurveNode* scalingNode = layer->getCurveNode(*aNode.FbxObj, "Lcl Scaling");
+        const ofbx::AnimationCurveNode* scalingNode = layer->getCurveNode(*aNode.FbxObj, "Lcl Scaling");
 
         anim.NodeName = aNode.Name;
 
         ImportCurve(translationNode, anim.Position, info, ExtractKeyframePosition);
         ImportCurve(rotationNode, anim.Rotation, info, ExtractKeyframeRotation);
-        //ImportCurve(scalingNode, anim.Scale, info, ExtractKeyframeScale);
+        if (importerData.Options.ImportScaleTracks)
+            ImportCurve(scalingNode, anim.Scale, info, ExtractKeyframeScale);
     }
 
     if (importerData.ConvertRH)

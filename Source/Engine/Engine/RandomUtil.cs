@@ -10,7 +10,10 @@ namespace FlaxEngine
     /// </summary>
     public static class RandomUtil
     {
-        private static readonly Random _random = new Random();
+        /// <summary>
+        /// Random numbers generator.
+        /// </summary>
+        public static readonly Random Random = new Random();
 
         /// <summary>
         /// Generates a pseudo-random number from normalized range [0;1].
@@ -19,7 +22,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Rand()
         {
-            return _random.Next(0, int.MaxValue) / (float)int.MaxValue;
+            return Random.Next(0, int.MaxValue) / (float)int.MaxValue;
         }
     }
 }

@@ -39,6 +39,9 @@ void ParticleSystem::Init(ParticleEmitter* emitter, float duration, float fps)
         track.AsEmitter.Index = 0;
         track.AsEmitter.StartFrame = 0;
         track.AsEmitter.DurationFrames = DurationFrames;
+#if !BUILD_RELEASE
+        _debugName = StringUtils::GetFileNameWithoutExtension(emitter->GetPath());
+#endif
     }
 }
 
@@ -155,6 +158,9 @@ ParticleEffect* ParticleSystem::Spawn(Actor* parent, const Transform& transform,
     auto effect = New<ParticleEffect>();
     effect->SetTransform(transform);
     effect->ParticleSystem = this;
+#if !BUILD_RELEASE
+    effect->SetName(_debugName); // Give usable name in development builds
+#endif
 
     Level::SpawnActor(effect, parent);
 
@@ -452,6 +458,9 @@ Asset::LoadResult ParticleSystem::load()
         return LoadResult::InvalidData;
     }
 
+#if !BUILD_RELEASE
+    _debugName = StringUtils::GetFileNameWithoutExtension(GetPath());
+#endif
     return LoadResult::Ok;
 }
 
@@ -463,6 +472,9 @@ void ParticleSystem::unload(bool isReloading)
     Emitters.Resize(0);
     EmittersParametersOverrides.SetCapacity(0);
     Tracks.Resize(0);
+#if !BUILD_RELEASE
+    _debugName.Clear();
+#endif
 }
 
 AssetChunksFlag ParticleSystem::getChunksToPreload() const

@@ -183,6 +183,7 @@ struct InternalModelOptions
     float SamplingRate;
     byte SkipEmptyCurves;
     byte OptimizeKeyframes;
+    byte ImportScaleTracks;
     byte EnableRootMotion;
     MonoString* RootNodeName;
 
@@ -231,6 +232,7 @@ struct InternalModelOptions
         to->SamplingRate = from->SamplingRate;
         to->SkipEmptyCurves = from->SkipEmptyCurves;
         to->OptimizeKeyframes = from->OptimizeKeyframes;
+        to->ImportScaleTracks = from->ImportScaleTracks;
         to->EnableRootMotion = from->EnableRootMotion;
         to->RootNodeName = MUtils::ToString(from->RootNodeName);
         to->GenerateLODs = from->GenerateLODs;
@@ -272,6 +274,7 @@ struct InternalModelOptions
         to->SamplingRate = from->SamplingRate;
         to->SkipEmptyCurves = from->SkipEmptyCurves;
         to->OptimizeKeyframes = from->OptimizeKeyframes;
+        to->ImportScaleTracks = from->ImportScaleTracks;
         to->EnableRootMotion = from->EnableRootMotion;
         to->RootNodeName = MUtils::ToString(from->RootNodeName);
         to->GenerateLODs = from->GenerateLODs;

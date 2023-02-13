@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using FlaxEngine;
@@ -365,7 +366,8 @@ namespace FlaxEditor.Scripting
                 }
             }
 
-            Editor.LogWarning($"Failed to find type '{typeName}'.");
+            if (!Content.Settings.GameSettings.OptionalPlatformSettings.Contains(typeName))
+                Editor.LogWarning($"Failed to find type '{typeName}'.");
             return ScriptType.Null;
         }
 

@@ -645,7 +645,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
             cm.ItemClicked += controlType => SetType((ScriptType)controlType.Tag);
             cm.SortItems();
-            cm.Show(button.Parent, button.BottomLeft);
+            cm.Show(button.Parent, button.BottomLeft - new Float2((cm.Width - button.Width) / 2, 0));
         }
 
         private void SetType(ref ScriptType controlType, UIControl uiControl)

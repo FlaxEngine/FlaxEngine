@@ -140,6 +140,12 @@ public:
         return State == NetworkConnectionState::Connected;
     }
 
+    // Returns true if network is online or disconnected.
+    API_PROPERTY() FORCE_INLINE static bool IsOffline()
+    {
+        return State == NetworkConnectionState::Offline || State == NetworkConnectionState::Disconnected;
+    }
+
     /// <summary>
     /// Gets the network client for a given connection. Returns null if failed to find it.
     /// </summary>

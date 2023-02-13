@@ -222,7 +222,7 @@ namespace FlaxEngine
         /// </summary>
         /// <typeparam name="T">Type of the script to search for. Includes any scripts derived from the type.</typeparam>
         /// <returns>The script or null if failed to find.</returns>
-        public T GetScript<T>() where T : Script
+        public T GetScript<T>() where T : class
         {
             return GetScript(typeof(T)) as T;
         }
@@ -233,7 +233,7 @@ namespace FlaxEngine
         /// <typeparam name="T">Type of the script to search for. Includes any scripts derived from the type.</typeparam>
         /// <param name="script">The returned script, valid only if method returns true.</param>
         /// <returns>True if found a script of that type or false if failed to find.</returns>
-        public bool TryGetScript<T>(out T script) where T : Script
+        public bool TryGetScript<T>(out T script) where T : class
         {
             script = GetScript(typeof(T)) as T;
             return script != null;
@@ -244,7 +244,7 @@ namespace FlaxEngine
         /// </summary>
         /// <typeparam name="T">Type of the object.</typeparam>
         /// <returns>Script instance if found, null otherwise.</returns>
-        public T FindScript<T>() where T : Script
+        public T FindScript<T>() where T : class
         {
             return FindScript(typeof(T)) as T;
         }
@@ -290,7 +290,7 @@ namespace FlaxEngine
         /// </summary>
         /// <typeparam name="T">Type of the scripts to search for. Includes any scripts derived from the type.</typeparam>
         /// <returns>All scripts matching the specified type.</returns>
-        public T[] GetScripts<T>() where T : Script
+        public T[] GetScripts<T>() where T : class
         {
             var count = ScriptsCount;
             var length = 0;

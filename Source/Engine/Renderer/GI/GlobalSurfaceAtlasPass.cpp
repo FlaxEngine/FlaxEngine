@@ -1143,6 +1143,7 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         EyeAdaptationPass::Instance()->Render(renderContext, tempBuffer);
         PostProcessingPass::Instance()->Render(renderContext, tempBuffer, output, colorGradingLUT);
         RenderTargetPool::Release(colorGradingLUT);
+        RenderTargetPool::Release(tempBuffer);
         context->ResetRenderTarget();
 
         // Rebind resources

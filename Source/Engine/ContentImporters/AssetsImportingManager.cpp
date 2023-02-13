@@ -163,7 +163,12 @@ bool CreateAssetContext::AllocateChunk(int32 index)
 void CreateAssetContext::AddMeta(JsonWriter& writer) const
 {
     writer.JKEY("ImportPath");
-    if (AssetsImportingManager::UseImportPathRelative && !FileSystem::IsRelative(InputPath))
+    if (AssetsImportingManager::UseImportPathRelative && !FileSystem::IsRelative(InputPath)
+#if PLATFORM_WINDOWS
+        // Import path from other drive should be stored as absolute on Windows to prevent issues
+        && InputPath.Length() > 2 && Globals::ProjectFolder.Length() > 2 && InputPath[0] == Globals::ProjectFolder[0]
+#endif
+    )
     {
         const String relativePath = FileSystem::ConvertAbsolutePathToRelative(Globals::ProjectFolder, InputPath);
         writer.String(relativePath);

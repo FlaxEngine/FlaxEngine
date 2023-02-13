@@ -40,6 +40,11 @@ namespace FlaxEditor.CustomEditors
     [HideInEditor]
     public abstract class CustomEditor
     {
+        /// <summary>
+        /// True if Editor is during value setting (eg. by user or from copy/paste).
+        /// </summary>
+        public static bool IsSettingValue = false;
+
         private LayoutElementsContainer _layout;
         private CustomEditorPresenter _presenter;
         private CustomEditor _parent;
@@ -266,23 +271,30 @@ namespace FlaxEditor.CustomEditors
             // Check if need to update value
             if (_hasValueDirty)
             {
-                // Cleanup (won't retry update in case of exception)
-                object val = _valueToSet;
-                _hasValueDirty = false;
-                _valueToSet = null;
-
-                // Assign value
-                SynchronizeValue(val);
-
-                // Propagate values up (eg. when member of structure gets modified, also structure should be updated as a part of the other object)
-                var obj = _parent;
-                while (obj._parent != null && !(obj._parent is SyncPointEditor))
+                IsSettingValue = true;
+                try
                 {
-                    obj.Values.Set(obj._parent.Values, obj.Values);
-                    obj = obj._parent;
-                }
+                    // Cleanup (won't retry update in case of exception)
+                    object val = _valueToSet;
+                    _hasValueDirty = false;
+                    _valueToSet = null;
 
-                OnUnDirty();
+                    // Assign value
+                    SynchronizeValue(val);
+
+                    // Propagate values up (eg. when member of structure gets modified, also structure should be updated as a part of the other object)
+                    var obj = _parent;
+                    while (obj._parent != null && !(obj._parent is SyncPointEditor))
+                    {
+                        obj.Values.Set(obj._parent.Values, obj.Values);
+                        obj = obj._parent;
+                    }
+                }
+                finally
+                {
+                    OnUnDirty();
+                    IsSettingValue = false;
+                }
             }
             else
             {

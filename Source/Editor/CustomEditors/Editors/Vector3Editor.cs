@@ -44,6 +44,20 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.Inline;
 
+        /// <summary>
+        /// If true, when one value is changed, the other 2 will change as well.
+        /// </summary>
+        public bool LinkValues = false;
+
+        private enum ValueChanged
+        {
+            X = 0,
+            Y = 1,
+            Z = 2
+        }
+
+        private ValueChanged _valueChanged;
+
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
@@ -63,18 +77,45 @@ namespace FlaxEditor.CustomEditors.Editors
 
             XElement = grid.FloatValue();
             XElement.SetLimits(limit);
-            XElement.ValueBox.ValueChanged += OnValueChanged;
+            XElement.ValueBox.ValueChanged += OnXValueChanged;
             XElement.ValueBox.SlidingEnd += ClearToken;
 
             YElement = grid.FloatValue();
             YElement.SetLimits(limit);
-            YElement.ValueBox.ValueChanged += OnValueChanged;
+            YElement.ValueBox.ValueChanged += OnYValueChanged;
             YElement.ValueBox.SlidingEnd += ClearToken;
 
             ZElement = grid.FloatValue();
             ZElement.SetLimits(limit);
-            ZElement.ValueBox.ValueChanged += OnValueChanged;
+            ZElement.ValueBox.ValueChanged += OnZValueChanged;
             ZElement.ValueBox.SlidingEnd += ClearToken;
+        }
+
+        private void OnXValueChanged()
+        {
+            if (IsSetBlocked)
+                return;
+            if (LinkValues)
+                _valueChanged = ValueChanged.X;
+            OnValueChanged();
+        }
+
+        private void OnYValueChanged()
+        {
+            if (IsSetBlocked)
+                return;
+            if (LinkValues)
+                _valueChanged = ValueChanged.Y;
+            OnValueChanged();
+        }
+
+        private void OnZValueChanged()
+        {
+            if (IsSetBlocked)
+                return;
+            if (LinkValues)
+                _valueChanged = ValueChanged.Z;
+            OnValueChanged();
         }
 
         private void OnValueChanged()
@@ -82,9 +123,37 @@ namespace FlaxEditor.CustomEditors.Editors
             if (IsSetBlocked)
                 return;
 
+            var xValue = XElement.ValueBox.Value;
+            var yValue = YElement.ValueBox.Value;
+            var zValue = ZElement.ValueBox.Value;
+
+            if (LinkValues)
+            {
+                var valueChange = 0.0f;
+                switch (_valueChanged)
+                {
+                case ValueChanged.X:
+                    valueChange = xValue - ((Float3)Values[0]).X;
+                    yValue += valueChange;
+                    zValue += valueChange;
+                    break;
+                case ValueChanged.Y:
+                    valueChange = yValue - ((Float3)Values[0]).Y;
+                    xValue += valueChange;
+                    zValue += valueChange;
+                    break;
+                case ValueChanged.Z:
+                    valueChange = zValue - ((Float3)Values[0]).Z;
+                    xValue += valueChange;
+                    yValue += valueChange;
+                    break;
+                default: break;
+                }
+            }
+
             var isSliding = XElement.IsSliding || YElement.IsSliding || ZElement.IsSliding;
             var token = isSliding ? this : null;
-            var value = new Float3(XElement.ValueBox.Value, YElement.ValueBox.Value, ZElement.ValueBox.Value);
+            var value = new Float3(xValue, yValue, zValue);
             object v = Values[0];
             if (v is Vector3)
                 v = (Vector3)value;

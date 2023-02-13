@@ -21,7 +21,7 @@ namespace
 
 void RenderTargetPool::Flush(bool force)
 {
-    const uint64 framesOffset = 10;
+    const uint64 framesOffset = 3 * 60;
     const uint64 maxReleaseFrame = Engine::FrameCount - framesOffset;
     force |= Engine::ShouldExit();
 

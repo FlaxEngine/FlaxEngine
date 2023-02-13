@@ -2,22 +2,18 @@
 
 #include "ObjectsRemovalService.h"
 #include "Collections/Dictionary.h"
+#include "Engine/Engine/Time.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Threading/Threading.h"
-#include "Engine/Engine/Time.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/ScriptingObject.h"
-#include "Log.h"
 
 namespace ObjectsRemovalServiceImpl
 {
-    bool IsReady = false;
     CriticalSection PoolLocker;
-    CriticalSection NewItemsLocker;
     DateTime LastUpdate;
     float LastUpdateGameTime;
     Dictionary<Object*, float> Pool(8192);
-    Dictionary<Object*, float> NewItemsPool(2048);
 }
 
 using namespace ObjectsRemovalServiceImpl;
@@ -39,41 +35,14 @@ ObjectsRemoval ObjectsRemovalInstance;
 
 bool ObjectsRemovalService::IsInPool(Object* obj)
 {
-    if (!IsReady)
-        return false;
-
-    {
-        ScopeLock lock(NewItemsLocker);
-        if (NewItemsPool.ContainsKey(obj))
-            return true;
-    }
-
-    {
-        ScopeLock lock(PoolLocker);
-        if (Pool.ContainsKey(obj))
-            return true;
-    }
-
-    return false;
-}
-
-bool ObjectsRemovalService::HasNewItemsForFlush()
-{
-    NewItemsLocker.Lock();
-    const bool result = NewItemsPool.HasItems();
-    NewItemsLocker.Unlock();
+    PoolLocker.Lock();
+    const bool result = Pool.ContainsKey(obj);
+    PoolLocker.Unlock();
     return result;
 }
 
 void ObjectsRemovalService::Dereference(Object* obj)
 {
-    if (!IsReady)
-        return;
-
-    NewItemsLocker.Lock();
-    NewItemsPool.Remove(obj);
-    NewItemsLocker.Unlock();
-
     PoolLocker.Lock();
     Pool.Remove(obj);
     PoolLocker.Unlock();
@@ -81,57 +50,37 @@ void ObjectsRemovalService::Dereference(Object* obj)
 
 void ObjectsRemovalService::Add(Object* obj, float timeToLive, bool useGameTime)
 {
-    ScopeLock lock(NewItemsLocker);
-
     obj->Flags |= ObjectFlags::WasMarkedToDelete;
     if (useGameTime)
         obj->Flags |= ObjectFlags::UseGameTimeForDelete;
     else
         obj->Flags &= ~ObjectFlags::UseGameTimeForDelete;
-    NewItemsPool[obj] = timeToLive;
+
+    PoolLocker.Lock();
+    Pool[obj] = timeToLive;
+    PoolLocker.Unlock();
 }
 
 void ObjectsRemovalService::Flush(float dt, float gameDelta)
 {
     PROFILE_CPU();
 
-    // Add new items
+    PoolLocker.Lock();
+
+    int32 itemsLeft;
+    do
     {
-        ScopeLock lock(NewItemsLocker);
-
-        for (auto i = NewItemsPool.Begin(); i.IsNotEnd(); ++i)
-        {
-            Pool[i->Key] = i->Value;
-        }
-        NewItemsPool.Clear();
-    }
-
-    // Update timeouts and delete objects that timed out
-    {
-        ScopeLock lock(PoolLocker);
-
+        // Update timeouts and delete objects that timed out
+        itemsLeft = Pool.Count();
         for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
         {
-            auto obj = i->Key;
+            Object* obj = i->Key;
             const float ttl = i->Value - ((obj->Flags & ObjectFlags::UseGameTimeForDelete) != ObjectFlags::None ? gameDelta : dt);
-            if (ttl <= ZeroTolerance)
+            if (ttl <= 0.0f)
             {
                 Pool.Remove(i);
-
-#if BUILD_DEBUG || BUILD_DEVELOPMENT
-                if (NewItemsPool.ContainsKey(obj))
-                {
-                    const auto asScriptingObj = dynamic_cast<ScriptingObject*>(obj);
-                    if (asScriptingObj)
-                    {
-                        LOG(Warning, "Object {0} was marked to delete after delete timeout", asScriptingObj->GetID());
-                    }
-                }
-#endif
-                NewItemsPool.Remove(obj);
-                //ASSERT(!NewItemsPool.ContainsKey(obj));
-
                 obj->OnDeleteObject();
+                itemsLeft--;
             }
             else
             {
@@ -139,38 +88,9 @@ void ObjectsRemovalService::Flush(float dt, float gameDelta)
             }
         }
     }
+    while (itemsLeft != Pool.Count()); // Continue removing if any new item was added during removing (eg. sub-object delete with 0 timeout)
 
-    // Perform removing in loop
-    // Note: objects during OnDeleteObject call can register new objects to remove with timeout=0, for example Actors do that to remove children and scripts
-    while (HasNewItemsForFlush())
-    {
-        // Add new items
-        {
-            ScopeLock lock(NewItemsLocker);
-
-            for (auto i = NewItemsPool.Begin(); i.IsNotEnd(); ++i)
-            {
-                Pool[i->Key] = i->Value;
-            }
-            NewItemsPool.Clear();
-        }
-
-        // Delete objects that timed out
-        {
-            ScopeLock lock(PoolLocker);
-
-            for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
-            {
-                if (i->Value <= ZeroTolerance)
-                {
-                    auto obj = i->Key;
-                    Pool.Remove(i);
-                    ASSERT(!NewItemsPool.ContainsKey(obj));
-                    obj->OnDeleteObject();
-                }
-            }
-        }
-    }
+    PoolLocker.Unlock();
 }
 
 bool ObjectsRemoval::Init()
@@ -204,14 +124,12 @@ void ObjectsRemoval::Dispose()
         ScopeLock lock(PoolLocker);
         for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
         {
-            auto obj = i->Key;
+            Object* obj = i->Key;
             Pool.Remove(i);
             obj->OnDeleteObject();
         }
         Pool.Clear();
     }
-
-    IsReady = false;
 }
 
 Object::~Object()

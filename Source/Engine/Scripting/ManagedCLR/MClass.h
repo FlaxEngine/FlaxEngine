@@ -155,6 +155,13 @@ public:
 #endif
 
     /// <summary>
+    /// Checks if this class implements the specified interface (including any base types).
+    /// </summary>
+    /// <param name="klass">The interface class.</param>
+    /// <returns>True if this class implements the specified interface.</returns>
+    bool HasInterface(const MClass* klass) const;
+
+    /// <summary>
     /// Checks is the provided object instance of this class' type.
     /// </summary>
     /// <param name="object">The object to check.</param>
