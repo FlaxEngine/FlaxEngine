@@ -242,7 +242,7 @@ namespace FlaxEditor.CustomEditors
             if (objA == null && objB is string objBStr && objBStr.Length == 0)
                 return true;
 
-            return Newtonsoft.Json.Utilities.MiscellaneousUtils.DefaultValueEquals(objA, objB);
+            return Newtonsoft.Json.Utilities.MiscellaneousUtils.ValueEquals(objA, objB);
         }
 
         /// <summary>

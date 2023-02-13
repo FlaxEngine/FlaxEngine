@@ -2622,13 +2622,13 @@ namespace FlaxEngine
         }
 
         [UnmanagedCallersOnly]
-        internal static byte TypeIsSubclassOf(ManagedHandle typeHandle, ManagedHandle othertypeHandle, byte checkInterfaces)
+        internal static byte TypeIsSubclassOf(ManagedHandle typeHandle, ManagedHandle otherTypeHandle, byte checkInterfaces)
         {
-            if (typeHandle == othertypeHandle)
+            if (typeHandle == otherTypeHandle)
                 return 1;
 
             Type type = Unsafe.As<Type>(typeHandle.Target);
-            Type otherType = Unsafe.As<Type>(othertypeHandle.Target);
+            Type otherType = Unsafe.As<Type>(otherTypeHandle.Target);
 
             if (type == otherType)
                 return 1;
@@ -2640,6 +2640,14 @@ namespace FlaxEngine
             }
 
             return type.IsSubclassOf(otherType) ? (byte)1 : (byte)0;
+        }
+
+        [UnmanagedCallersOnly]
+        internal static byte TypeIsAssignableFrom(ManagedHandle typeHandle, ManagedHandle otherTypeHandle)
+        {
+            Type type = Unsafe.As<Type>(typeHandle.Target);
+            Type otherType = Unsafe.As<Type>(otherTypeHandle.Target);
+            return (byte)(type.IsAssignableFrom(otherType) ? 1 : 0);
         }
 
         [UnmanagedCallersOnly]

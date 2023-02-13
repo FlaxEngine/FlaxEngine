@@ -1239,6 +1239,12 @@ MONO_API mono_bool mono_class_is_subclass_of(MonoClass* klass, MonoClass* klassc
     return CoreCLR::CallStaticMethod<bool, void*, void*, bool>(TypeIsSubclassOfPtr, ((CoreCLRClass*)klass)->GetTypeHandle(), ((CoreCLRClass*)klassc)->GetTypeHandle(), check_interfaces);
 }
 
+MONO_API mono_bool mono_class_is_assignable_from(MonoClass *klass, MonoClass *oklass)
+{
+    static void* TypeIsAssignableFrom = CoreCLR::GetStaticMethodPointer(TEXT("TypeIsAssignableFrom"));
+    return CoreCLR::CallStaticMethod<bool, void*, void*>(TypeIsAssignableFrom, ((CoreCLRClass*)klass)->GetTypeHandle(), ((CoreCLRClass*)oklass)->GetTypeHandle());
+}
+
 MONO_API char* mono_type_get_name(MonoType* type)
 {
     CoreCLRClass* klass = (CoreCLRClass*)mono_type_get_class(type);
