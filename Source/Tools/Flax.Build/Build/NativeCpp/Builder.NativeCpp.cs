@@ -799,7 +799,7 @@ namespace Flax.Build
                                         moduleOptions.CompileEnv.PreprocessorDefinitions.Add(dependencyModule.BinaryModuleName.ToUpperInvariant() + "_API=" + toolchain.DllImport);
 
                                         var dependencyModuleBuild = buildData.FinReferenceBuildModule(moduleName);
-                                        if (dependencyModuleBuild != null)
+                                        if (dependencyModuleBuild != null && !string.IsNullOrEmpty(dependencyModuleBuild.NativePath))
                                         {
                                             // Link against the referenced binary module
                                             if (toolchain.UseImportLibraryWhenLinking)
