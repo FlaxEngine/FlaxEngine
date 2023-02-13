@@ -2302,7 +2302,10 @@ namespace Flax.Build.Bindings
                     separator = true;
                     contents.Append(parameterInfo.Type).Append(' ').Append(parameterInfo.Name);
                 }
-                contents.Append(") override").AppendLine();
+                contents.Append(')');
+                if (functionInfo.IsConst)
+                    contents.Append(" const");
+                contents.Append(" override").AppendLine();
                 contents.AppendLine("    {");
                 // TODO: try to use ScriptVTable for interfaces implementation in scripting to call proper function instead of manually check at runtime
                 if (functionInfo.Parameters.Count != 0)
