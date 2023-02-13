@@ -67,6 +67,11 @@ namespace FlaxEditor
         public static event Action ScriptsReloadEnd;
 
         /// <summary>
+        /// Occurs when engine loads game scripts.
+        /// </summary>
+        public static event Action ScriptsLoaded;
+
+        /// <summary>
         /// Occurs when code editor starts asynchronous open a file or a solution.
         /// </summary>
         public static event Action CodeEditorAsyncOpenBegin;
@@ -86,6 +91,7 @@ namespace FlaxEditor
             ReloadBegin = 5,
             Reload = 6,
             ReloadEnd = 7,
+            ScriptsLoaded = 8,
         }
 
         internal static void Internal_OnEvent(EventType type)
@@ -117,6 +123,9 @@ namespace FlaxEditor
                 break;
             case EventType.ReloadEnd:
                 ScriptsReloadEnd?.Invoke();
+                break;
+            case EventType.ScriptsLoaded:
+                ScriptsLoaded?.Invoke();
                 break;
             }
         }

@@ -270,6 +270,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         {
             ScriptsBuilder.ScriptsReload += OnScriptsReload;
             ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
+            ScriptsBuilder.ScriptsLoaded += OnScriptsLoaded;
             Editor.Options.OptionsChanged += OnOptionsChanged;
 
             // Add default code editors (in-build)
@@ -340,6 +341,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
 
             ScriptsBuilder.ScriptsReload -= OnScriptsReload;
             ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
+            ScriptsBuilder.ScriptsLoaded -= OnScriptsLoaded;
         }
 
         /// <summary>
@@ -373,6 +375,12 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         private void OnScriptsReloadEnd()
         {
             OnTypesChanged();
+        }
+
+        private void OnScriptsLoaded()
+        {
+            // Clear any state with engine-only types
+            ClearTypes();
         }
 
         private static bool IsTypeValidScriptingType(ScriptType t)
