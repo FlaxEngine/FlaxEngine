@@ -96,7 +96,8 @@ namespace FlaxEditor.CustomEditors.Editors
                     AnchorPreset = AnchorPresets.TopLeft,
                     TooltipText = "Scale values are linked together.",
                 };
-                _linkImage.LocalX += 40;
+                var x = LinkedLabel.Text.Value.Length * 7 + 5;
+                _linkImage.LocalX += x;
                 _linkImage.LocalY += 1;
 
                 LinkedLabel.SetupContextMenu += (label, menu, editor) =>
