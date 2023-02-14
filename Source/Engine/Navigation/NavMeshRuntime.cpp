@@ -352,7 +352,7 @@ void NavMeshRuntime::EnsureCapacity(int32 tilesToAddCount)
     // Navmesh tiles capacity growing rule
     int32 newCapacity = capacity ? capacity : 32;
     while (newCapacity < newTilesCount)
-        newCapacity = Math::RoundUpToPowerOf2(newCapacity);
+        newCapacity = Math::RoundUpToPowerOf2(newCapacity + 1);
 
     LOG(Info, "Resizing navmesh {2} from {0} to {1} tiles capacity", capacity, newCapacity, Properties.Name);
 
