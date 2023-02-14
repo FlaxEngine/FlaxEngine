@@ -973,6 +973,19 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.TextBox(30, Surface.Constants.LayoutOffsetY, 140, TextBox.DefaultHeight, 0, false),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 33,
+                Title = "Animation Instance Data",
+                Description = "Caches custom data per-instance and allow sampling it. Can be used to randomize animation play offset to offer randomization for crowds reusing the same graph.",
+                Flags = NodeFlags.AnimGraph,
+                Size = new Float2(240, 20),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, "Get", typeof(Float4), 0),
+                    NodeElementArchetype.Factory.Input(0, "Init", true, typeof(Float4), 1),
+                }
+            },
         };
     }
 }

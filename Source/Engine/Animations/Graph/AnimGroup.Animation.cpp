@@ -2035,10 +2035,22 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         }
         break;
     }
+    // Animation Instance Data
+    case 33:
+    {
+        auto& bucket = context.Data->State[node->BucketIndex].InstanceData;
+        if (bucket.Init)
+        {
+            bucket.Init = false;
+            *(Float4*)bucket.Data = (Float4)tryGetValue(node->GetBox(1), Value::Zero);
+        }
+        value = *(Float4*)bucket.Data;
+        break;
+    }
     default:
         break;
     }
-    context.ValueCache.Add(boxBase, value);
+    context.ValueCache[boxBase] = value;
 }
 
 void AnimGraphExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value& value)
