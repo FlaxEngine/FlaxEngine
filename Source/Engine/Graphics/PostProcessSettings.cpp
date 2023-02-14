@@ -172,6 +172,7 @@ void ScreenSpaceReflectionsSettings::BlendWith(ScreenSpaceReflectionsSettings& o
     const bool isHalf = weight >= 0.5f;
 
     BLEND_FLOAT(Intensity);
+    BLEND_ENUM(TraceMode);
     BLEND_ENUM(DepthResolution);
     BLEND_ENUM(RayTracePassResolution);
     BLEND_FLOAT(BRDFBias);
