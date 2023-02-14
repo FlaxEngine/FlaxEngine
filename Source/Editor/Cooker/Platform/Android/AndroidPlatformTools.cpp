@@ -289,13 +289,14 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
         return true;
     }
     String androidSdk;
-    if (!envVars.TryGet(TEXT("ANDROID_SDK"), androidSdk) || !FileSystem::DirectoryExists(androidSdk))
+    if (!envVars.TryGet(TEXT("ANDROID_HOME"), androidSdk) || !FileSystem::DirectoryExists(androidSdk))
     {
-        LOG(Error, "Missing or invalid ANDROID_SDK env variable. {0}", androidSdk);
-        return true;
+        if (!envVars.TryGet(TEXT("ANDROID_SDK"), androidSdk) || !FileSystem::DirectoryExists(androidSdk))
+        {
+            LOG(Error, "Missing or invalid ANDROID_HOME env variable. {0}", androidSdk);
+            return true;
+        }
     }
-    if (!envVars.ContainsKey(TEXT("ANDROID_SDK_ROOT")))
-        envVars[TEXT("ANDROID_SDK_ROOT")] = androidSdk;
 
     // Build Gradle project into package
     LOG(Info, "Building Gradle project into package...");
