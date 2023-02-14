@@ -269,24 +269,16 @@ float CalcLOD(float2 xy, float4 morph)
 	if ((xy.x + xy.y) > 1)
 	{
 		if (xy.x < xy.y)
-		{
 			lod = lodCalculated.w;
-		}
 		else
-		{
 			lod = lodCalculated.z;
-		}
 	}
 	else
 	{
 		if (xy.x < xy.y)
-		{
 			lod = lodCalculated.y;
-		}
 		else
-		{
 			lod = lodCalculated.x;
-		}
 	}
 
 	return lod;
