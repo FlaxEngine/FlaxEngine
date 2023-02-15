@@ -2803,6 +2803,7 @@ int32 LinuxProcess(const StringView& cmdLine, const StringView& workingDir, cons
         {
 			close(fildes[0]); // close the reading end of the pipe
 			dup2(fildes[1], STDOUT_FILENO); // redirect stdout to pipe
+			close(fildes[1]);
 			dup2(STDOUT_FILENO, STDERR_FILENO); // redirect stderr to stdout
 		}
 
@@ -2811,6 +2812,8 @@ int32 LinuxProcess(const StringView& cmdLine, const StringView& workingDir, cons
         {
 			LOG(Warning, " failed, errno={}", errno);
 		}
+		fflush(stdout);
+		_exit(1);
 	}
     else
     {
@@ -2823,7 +2826,7 @@ int32 LinuxProcess(const StringView& cmdLine, const StringView& workingDir, cons
             {
 				char lineBuffer[1024];
 				close(fildes[1]); // close the writing end of the pipe
-				FILE *stdPipe = fdopen(fildes[0], "r");
+				FILE* stdPipe = fdopen(fildes[0], "r");
 				while (fgets(lineBuffer, sizeof(lineBuffer), stdPipe) != NULL)
                 {
 					char *p = lineBuffer + strlen(lineBuffer)-1;
@@ -2858,6 +2861,7 @@ int32 LinuxProcess(const StringView& cmdLine, const StringView& workingDir, cons
 					returnCode = EPIPE;
 				}
 			}
+			close(fildes[0]);
 		}
 	}
 
