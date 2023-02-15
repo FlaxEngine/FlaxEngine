@@ -43,7 +43,10 @@ void ThreadBase::SetPriority(ThreadPriority priority)
 void ThreadBase::Kill(bool waitForJoin)
 {
     if (!_isRunning)
+    {
+        ClearHandleInternal();
         return;
+    }
     ASSERT(GetID());
     const auto thread = static_cast<Thread*>(this);
 
@@ -105,7 +108,6 @@ int32 ThreadBase::Run()
         _callAfterWork = false;
         _runnable->AfterWork(false);
     }
-    ClearHandleInternal();
     _isRunning = false;
     ThreadExiting(thread, exitCode);
     ThreadRegistry::Remove(thread);

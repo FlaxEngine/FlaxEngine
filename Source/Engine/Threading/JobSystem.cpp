@@ -149,8 +149,7 @@ void JobSystemService::Dispose()
     {
         if (Threads[i])
         {
-            if (Threads[i]->IsRunning())
-                Threads[i]->Kill(true);
+            Threads[i]->Kill(true);
             Delete(Threads[i]);
             Threads[i] = nullptr;
         }

@@ -53,6 +53,7 @@ UnixThread* UnixThread::Setup(UnixThread* thread, uint32 stackSize)
 void UnixThread::Join()
 {
     pthread_join(_thread, nullptr);
+    ClearHandleInternal();
 }
 
 void UnixThread::ClearHandleInternal()
