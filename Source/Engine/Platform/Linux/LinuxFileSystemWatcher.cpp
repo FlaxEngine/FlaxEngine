@@ -140,7 +140,7 @@ namespace FileSystemWatchers
     
     void AddDirWatcher(const int rootFileDesc, const String& path)
     {
-        auto watcher = New<FileSystemWatcher>(path, false, rootFileDesc);
+        auto watcher = New<FileSystemWatcher>(path, true, rootFileDesc);
         Pair<String, LinuxFileSystemWatcher*> subDir = Pair<String, LinuxFileSystemWatcher*>(path, watcher);
     }
 
@@ -183,8 +183,16 @@ LinuxFileSystemWatcher::LinuxFileSystemWatcher(const String& directory, bool wit
         FileSystemWatchers::Watchers[WachedDirectory] = Pair<int, Pair<String, LinuxFileSystemWatcher*>>(rootWatcher, Pair<String, LinuxFileSystemWatcher*>(directory, this));
         if (withSubDirs)
         {
-            FileSystemWatchers::RootWatchers[WachedDirectory] = this;
-            FileSystemWatchers::AddSubDirWatcher(WachedDirectory, directory);
+            if (rootWatcher == -1)
+            {
+                FileSystemWatchers::RootWatchers[WachedDirectory] = this;
+                FileSystemWatchers::AddSubDirWatcher(WachedDirectory, directory);
+            }
+            else
+            {
+                FileSystemWatchers::RootWatchers[WachedDirectory] = FileSystemWatchers::RootWatchers[rootWatcher];
+                FileSystemWatchers::AddSubDirWatcher(rootWatcher, directory);
+            }
         }
     }
     FileSystemWatchers::Locker.Unlock();
