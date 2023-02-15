@@ -431,8 +431,11 @@ static int X11_MessageBoxCreateWindow(MessageBoxData* data)
 	}
 	else
 	{
-		x = (X11_DisplayWidth(display, data->screen) - data->dialog_width) / 2;
-		y = (X11_DisplayHeight(display, data->screen) - data->dialog_height) / 3;
+		int screenCount;
+		X11::XineramaScreenInfo* xsi = X11::XineramaQueryScreens(xDisplay, &screenCount);
+		ASSERT(data->screen < screenCount);
+		x = (float)xsi[data->screen].x_org + ((float)xsi[data->screen].width - data->dialog_width) / 2;
+		y = (float)xsi[data->screen].y_org + ((float)xsi[data->screen].height - data->dialog_height) / 2;
 	}
 	X11::XMoveWindow(display, data->window, x, y);
 
