@@ -12,6 +12,7 @@ class IRunnable;
 /// <summary>
 /// Base class for thread objects.
 /// </summary>
+/// <remarks>Ensure to call Kill or Join before deleting thread object.</remarks>
 class FLAXENGINE_API ThreadBase : public Object, public NonCopyable
 {
 public:
