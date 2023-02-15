@@ -24,21 +24,15 @@ namespace Flax.Build.Platforms
         {
             // Setup system paths
             var includePath = Path.Combine(ToolsetRoot, "usr", "include");
-            if (!Directory.Exists(includePath))
-            {
-                var error = $"Missing toolset header files location {includePath}";
-                Log.Error(error);
-            }
-            SystemIncludePaths.Add(includePath);
+            if (Directory.Exists(includePath))
+                SystemIncludePaths.Add(includePath);
+            else
+                Log.Error($"Missing toolset header files location {includePath}");
             var cppIncludePath = Path.Combine(includePath, "c++", ClangVersion.ToString());
-            if (!Directory.Exists(cppIncludePath))
-            {
-                var error = $"Missing Clang {ClangVersion} C++ header files location {cppIncludePath}";
-                cppIncludePath = Path.Combine(ToolsetRoot, "usr", "lib", "llvm-" + ClangVersion.Major.ToString(), "include", "c++", "v1");
-                if (!Directory.Exists(cppIncludePath))
-                    Log.Error(error);
-            }
-            SystemIncludePaths.Add(cppIncludePath);
+            if (Directory.Exists(cppIncludePath))
+                SystemIncludePaths.Add(cppIncludePath);
+            else
+                Log.Error($"Missing Clang {ClangVersion} C++ header files location {cppIncludePath}");
             var clangLibPath = Path.Combine(ToolsetRoot, "usr", "lib", "clang");
             var clangIncludePath = Path.Combine(clangLibPath, ClangVersion.Major.ToString(), "include");
             if (!Directory.Exists(clangIncludePath))
