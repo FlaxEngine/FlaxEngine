@@ -18,6 +18,11 @@ namespace FlaxEditor.GUI.ContextMenu
         public readonly ContextMenu ContextMenu = new ContextMenu();
 
         /// <summary>
+        /// The amount to adjust the arrow image by in x coordinates.
+        /// </summary>
+        public float AdjustArrowAmount = 0;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ContextMenuChildMenu"/> class.
         /// </summary>
         /// <param name="parent">The parent context menu.</param>
@@ -44,7 +49,7 @@ namespace FlaxEditor.GUI.ContextMenu
 
             // Draw arrow
             if (ContextMenu.HasChildren)
-                Render2D.DrawSprite(style.ArrowRight, new Rectangle(Width - 15, (Height - 12) / 2, 12, 12), Enabled ? isCMopened ? style.BackgroundSelected : style.Foreground : style.ForegroundDisabled);
+                Render2D.DrawSprite(style.ArrowRight, new Rectangle(Width - 15 + AdjustArrowAmount, (Height - 12) / 2, 12, 12), Enabled ? isCMopened ? style.BackgroundSelected : style.Foreground : style.ForegroundDisabled);
         }
 
         /// <inheritdoc />
