@@ -438,6 +438,13 @@ public:
     static String ToString(uint64 value);
     static String ToString(float value);
     static String ToString(double value);
+
+public:
+
+    // Returns the String to double null-terminated string
+    // @param str Double null-terminated string
+    // @return Double null-terminated String
+    static String GetZZString(const Char* str);
 };
 
 inline uint32 GetHash(const char* key)

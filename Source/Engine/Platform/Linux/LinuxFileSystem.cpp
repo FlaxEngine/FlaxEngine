@@ -4,7 +4,9 @@
 
 #include "LinuxFileSystem.h"
 #include "Engine/Platform/File.h"
+#include "Engine/Platform/StringUtils.h"
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Math/Math.h"
@@ -27,20 +29,38 @@ bool LinuxFileSystem::ShowOpenFileDialog(Window* parentWindow, const StringView&
 {
     const StringAsANSI<> initialDirectoryAnsi(*initialDirectory, initialDirectory.Length());
     const StringAsANSI<> titleAnsi(*title, title.Length());
+    const char* initDir = initialDirectory.HasChars() ? initialDirectoryAnsi.Get() : ".";
     char cmd[2048];
-    if (FileSystem::FileExists(TEXT("/usr/bin/zenity")))
+    String xdgCurrentDesktop;
+    StringBuilder fileFilter;
+    Array<String> fileFilterEntries;
+    Platform::GetEnvironmentVariable(TEXT("XDG_CURRENT_DESKTOP"), xdgCurrentDesktop);
+    StringUtils::GetZZString(filter.Get()).Split('\0', fileFilterEntries);
+
+    const bool zenitySupported = FileSystem::FileExists(TEXT("/usr/bin/zenity"));
+    const bool kdialogSupported = FileSystem::FileExists(TEXT("/usr/bin/kdialog"));
+    if (zenitySupported && (xdgCurrentDesktop != TEXT("KDE") || !kdialogSupported)) // Prefer kdialog when running on KDE
     {
-        // TODO: initialDirectory support
-        // TODO: multiSelect support
-        // TODO: filter support
-        sprintf(cmd, "/usr/bin/zenity --modal --file-selection --title=\"%s\" ", titleAnsi.Get());
+        for (int32 i = 1; i < fileFilterEntries.Count(); i += 2)
+        {
+            String extensions(fileFilterEntries[i]);
+            fileFilterEntries[i].Replace(TEXT(";"), TEXT(" "));
+            fileFilter.Append(String::Format(TEXT("{0}--file-filter=\"{1}|{2}\""), i > 1 ? TEXT(" ") : TEXT(""), fileFilterEntries[i-1].Get(), extensions.Get()));
+        }
+
+        sprintf(cmd, "/usr/bin/zenity --modal --file-selection %s--filename=\"%s\" --title=\"%s\" %s ", multiSelect ? "--multiple --separator=$'\n' " : " ", initDir, titleAnsi.Get(), fileFilter.ToStringView().ToStringAnsi().GetText());
     }
-    else if (FileSystem::FileExists(TEXT("/usr/bin/kdialog")))
+    else if (kdialogSupported)
     {
-        // TODO: multiSelect support
-        // TODO: filter support
-        const char* initDir = initialDirectory.HasChars() ? initialDirectoryAnsi.Get() : ".";
-        sprintf(cmd, "/usr/bin/kdialog --getopenfilename \"%s\" --title \"%s\" ", initDir, titleAnsi.Get());
+        for (int32 i = 1; i < fileFilterEntries.Count(); i += 2)
+        {
+            String extensions(fileFilterEntries[i]);
+            fileFilterEntries[i].Replace(TEXT(";"), TEXT(" "));
+            fileFilter.Append(String::Format(TEXT("{0}\"{1}({2})\""), i > 1 ? TEXT(" ") : TEXT(""), fileFilterEntries[i-1].Get(), extensions.Get()));
+        }
+        fileFilter.Append(String::Format(TEXT("{0}\"{1}({2})\""), TEXT(" "), TEXT("many things"), TEXT("*.png *.jpg")));
+
+        sprintf(cmd, "/usr/bin/kdialog --getopenfilename %s--title \"%s\" \"%s\" %s ", multiSelect ? "--multiple --separate-output " : " ", titleAnsi.Get(), initDir, fileFilter.ToStringView().ToStringAnsi().GetText());
     }
     else
     {

@@ -528,4 +528,17 @@ String StringUtils::ToString(double value)
     return String::Format(TEXT("{}"), value);
 }
 
+String StringUtils::GetZZString(const Char* str)
+{
+    const Char* end = str;
+    while (*end != '\0')
+    {
+        end++;
+        if (*end == '\0')
+            end++;
+    }
+    const int len = end - str;
+    return String(str, len);
+}
+
 #undef STRING_UTILS_ITOSTR_BUFFER_SIZE
