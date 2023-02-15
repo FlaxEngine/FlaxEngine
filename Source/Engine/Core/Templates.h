@@ -21,7 +21,11 @@ namespace THelpers
 	template <typename T>
 	struct TIsTriviallyDestructibleImpl<T, false>
 	{
-		enum { Value = __has_trivial_destructor(T) };
+#if defined(__clang__) && __clang_major__ >= 15
+        enum { Value = __is_trivially_destructible(T) };
+#else
+        enum { Value = __has_trivial_destructor(T) };
+#endif
 	};
 }
 
@@ -261,7 +265,11 @@ struct TIsCopyConstructible
 template<typename T>
 struct TIsTriviallyCopyConstructible
 {
-	enum { Value = TOrValue<__has_trivial_copy(T), TIsPODType<T>>::Value };
+#if defined(__clang__) && __clang_major__ >= 15
+    enum { Value = TOrValue<__is_trivially_copyable(T), TIsPODType<T>>::Value };
+#else
+    enum { Value = TOrValue<__has_trivial_copy(T), TIsPODType<T>>::Value };
+#endif
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -289,7 +297,11 @@ struct TIsTriviallyDestructible
 template<typename T>
 struct TIsTriviallyCopyAssignable
 {
-	enum { Value = TOrValue<__has_trivial_assign(T), TIsPODType<T>>::Value };
+#if defined(__clang__) && __clang_major__ >= 15
+    enum { Value = TOrValue<__is_trivially_assignable(T, const T), TIsPODType<T>>::Value };
+#else
+    enum { Value = TOrValue<__has_trivial_assign(T), TIsPODType<T>>::Value };
+#endif
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
