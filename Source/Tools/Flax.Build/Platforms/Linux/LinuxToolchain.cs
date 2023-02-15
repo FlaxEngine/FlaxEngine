@@ -85,7 +85,8 @@ namespace Flax.Build.Platforms
 
             args.Add("-Wl,-rpath,\"\\$ORIGIN\"");
             //args.Add("-Wl,--as-needed");
-            args.Add("-Wl,--copy-dt-needed-entries");
+            if (LdKind == "bfd")
+                args.Add("-Wl,--copy-dt-needed-entries");
             args.Add("-Wl,--hash-style=gnu");
             //args.Add("-Wl,--build-id");
 
@@ -105,6 +106,7 @@ namespace Flax.Build.Platforms
             args.Add("-pthread");
             args.Add("-ldl");
             args.Add("-lrt");
+            args.Add("-lz");
 
             // Link X11
             args.Add("-L/usr/X11R6/lib");
