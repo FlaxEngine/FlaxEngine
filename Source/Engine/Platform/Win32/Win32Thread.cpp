@@ -113,6 +113,7 @@ unsigned long Win32Thread::ThreadProc(void* pThis)
 void Win32Thread::Join()
 {
     WaitForSingleObject((HANDLE)_thread, INFINITE);
+    ClearHandleInternal();
 }
 
 void Win32Thread::ClearHandleInternal()
