@@ -101,7 +101,7 @@ namespace FileSystemWatchers
                             {
                             }
                             else
-                            {                                                                
+                            {
                                 GetRootWatcher(event->wd)->OnEvent(name, FileSystemAction::Modify);
                             }
                         }
