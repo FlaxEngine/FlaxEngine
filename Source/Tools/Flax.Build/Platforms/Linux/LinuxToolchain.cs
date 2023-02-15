@@ -32,7 +32,7 @@ namespace Flax.Build.Platforms
             if (Directory.Exists(cppIncludePath))
                 SystemIncludePaths.Add(cppIncludePath);
             else
-                Log.Error($"Missing Clang {ClangVersion} C++ header files location {cppIncludePath}");
+                Log.Verbose($"Missing Clang {ClangVersion} C++ header files location {cppIncludePath}");
             var clangLibPath = Path.Combine(ToolsetRoot, "usr", "lib", "clang");
             var clangIncludePath = Path.Combine(clangLibPath, ClangVersion.Major.ToString(), "include");
             if (!Directory.Exists(clangIncludePath))
