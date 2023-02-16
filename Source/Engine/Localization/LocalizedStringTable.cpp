@@ -2,11 +2,10 @@
 
 #include "LocalizedStringTable.h"
 #include "Engine/Serialization/JsonTools.h"
+#include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Serialization/SerializationFwd.h"
 #include "Engine/Content/Factories/JsonAssetFactory.h"
 #if USE_EDITOR
-#include "Engine/ContentImporters/CreateJson.h"
-#include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Core/Log.h"
 #endif
