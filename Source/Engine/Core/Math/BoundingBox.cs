@@ -420,6 +420,31 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Constructs a <see cref="BoundingBox" /> that is as large as the box and point.
+        /// </summary>
+        /// <param name="value1">The box to merge.</param>
+        /// <param name="value2">The point to merge.</param>
+        /// <param name="result">When the method completes, contains the newly constructed bounding box.</param>
+        public static void Merge(ref BoundingBox value1, ref Vector3 value2, out BoundingBox result)
+        {
+            Vector3.Min(ref value1.Minimum, ref value2, out result.Minimum);
+            Vector3.Max(ref value1.Maximum, ref value2, out result.Maximum);
+        }
+
+        /// <summary>
+        /// Constructs a <see cref="BoundingBox" /> that is as large as the box and point.
+        /// </summary>
+        /// <param name="value2">The point to merge.</param>
+        /// <returns>The newly constructed bounding box.</returns>
+        public BoundingBox Merge(Vector3 value2)
+        {
+            BoundingBox result;
+            Vector3.Min(ref Minimum, ref value2, out result.Minimum);
+            Vector3.Max(ref Maximum, ref value2, out result.Maximum);
+            return result;
+        }
+
+        /// <summary>
         /// Transforms bounding box using the given transformation matrix.
         /// </summary>
         /// <param name="box">The bounding box to transform.</param>
@@ -496,6 +521,19 @@ namespace FlaxEngine
             var min = Vector3.Min(xa, xb) + Vector3.Min(ya, yb) + Vector3.Min(za, zb) + transform.Translation;
             var max = Vector3.Max(xa, xb) + Vector3.Max(ya, yb) + Vector3.Max(za, zb) + transform.Translation;
             result = new BoundingBox(min, max);
+        }
+
+        /// <summary>
+        /// Creates the bounding box that is offseted by the given vector. Adds the offset value to minimum and maximum points.
+        /// </summary>
+        /// <param name="offset">The bounds offset.</param>
+        /// <returns>The offsetted bounds.</returns>
+        public BoundingBox MakeOffsetted(Vector3 offset)
+        {
+            BoundingBox result;
+            Vector3.Add(ref Minimum, ref offset, out result.Minimum);
+            Vector3.Add(ref Maximum, ref offset, out result.Maximum);
+            return result;
         }
 
         /// <summary>
