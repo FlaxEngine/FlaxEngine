@@ -184,7 +184,7 @@ bool JsonAssetBase::Save(const StringView& path)
     writer.EndObject();
 
     // Save json to file
-    if (File::WriteAllBytes(path.HasChars() ? path : GetPath(), (byte*)buffer.GetString(), (int32)buffer.GetSize()))
+    if (File::WriteAllBytes(path.HasChars() ? path : StringView(GetPath()), (byte*)buffer.GetString(), (int32)buffer.GetSize()))
     {
         LOG(Error, "Cannot save \'{0}\'", ToString());
         return true;
