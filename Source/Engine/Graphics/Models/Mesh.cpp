@@ -746,75 +746,11 @@ enum class InternalBufferType
     IB32 = 4,
 };
 
-void ConvertMeshData(Mesh* mesh, InternalBufferType type, MonoArray* resultObj, void* srcData)
+MonoArray* Mesh::DownloadBuffer(bool forceGpu, MonoReflectionType* resultType, int32 typeI)
 {
-    auto vertices = mesh->GetVertexCount();
-    auto triangles = mesh->GetTriangleCount();
-    auto indices = triangles * 3;
-    auto use16BitIndexBuffer = mesh->Use16BitIndexBuffer();
-
-    void* managedArrayPtr = mono_array_addr_with_size(resultObj, 0, 0);
-    switch (type)
-    {
-    case InternalBufferType::VB0:
-    {
-        Platform::MemoryCopy(managedArrayPtr, srcData, sizeof(VB0ElementType) * vertices);
-        break;
-    }
-    case InternalBufferType::VB1:
-    {
-        Platform::MemoryCopy(managedArrayPtr, srcData, sizeof(VB1ElementType) * vertices);
-        break;
-    }
-    case InternalBufferType::VB2:
-    {
-        Platform::MemoryCopy(managedArrayPtr, srcData, sizeof(VB2ElementType) * vertices);
-        break;
-    }
-    case InternalBufferType::IB16:
-    {
-        if (use16BitIndexBuffer)
-        {
-            Platform::MemoryCopy(managedArrayPtr, srcData, sizeof(uint16) * indices);
-        }
-        else
-        {
-            auto dst = (uint16*)managedArrayPtr;
-            auto src = (uint32*)srcData;
-            for (int32 i = 0; i < indices; i++)
-            {
-                dst[i] = src[i];
-            }
-        }
-        break;
-    }
-    case InternalBufferType::IB32:
-    {
-        if (use16BitIndexBuffer)
-        {
-            auto dst = (uint32*)managedArrayPtr;
-            auto src = (uint16*)srcData;
-            for (int32 i = 0; i < indices; i++)
-            {
-                dst[i] = src[i];
-            }
-        }
-        else
-        {
-            Platform::MemoryCopy(managedArrayPtr, srcData, sizeof(uint32) * indices);
-        }
-        break;
-    }
-    }
-}
-
-bool Mesh::DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 typeI)
-{
-    Mesh* mesh = this;
-    InternalBufferType type = (InternalBufferType)typeI;
+    auto mesh = this;
+    auto type = (InternalBufferType)typeI;
     auto model = mesh->GetModel();
-    ASSERT(model && resultObj);
-
     ScopeLock lock(model->Locker);
 
     // Virtual assets always fetch from GPU memory
@@ -823,23 +759,7 @@ bool Mesh::DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 typeI)
     if (!mesh->IsInitialized() && forceGpu)
     {
         LOG(Error, "Cannot load mesh data from GPU if it's not loaded.");
-        return true;
-    }
-    if (type == InternalBufferType::IB16 || type == InternalBufferType::IB32)
-    {
-        if (mono_array_length(resultObj) != mesh->GetTriangleCount() * 3)
-        {
-            LOG(Error, "Invalid buffer size.");
-            return true;
-        }
-    }
-    else
-    {
-        if (mono_array_length(resultObj) != mesh->GetVertexCount())
-        {
-            LOG(Error, "Invalid buffer size.");
-            return true;
-        }
+        return nullptr;
     }
 
     MeshBufferType bufferType;
@@ -859,35 +779,96 @@ bool Mesh::DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 typeI)
         bufferType = MeshBufferType::Index;
         break;
     default:
-        return true;
+        return nullptr;
     }
     BytesContainer data;
+    int32 dataCount;
     if (forceGpu)
     {
         // Get data from GPU
         // TODO: support reusing the input memory buffer to perform a single copy from staging buffer to the input CPU buffer
         auto task = mesh->DownloadDataGPUAsync(bufferType, data);
         if (task == nullptr)
-            return true;
+            return nullptr;
         task->Start();
         model->Locker.Unlock();
         if (task->Wait())
         {
             LOG(Error, "Task failed.");
-            return true;
+            return nullptr;
         }
         model->Locker.Lock();
+
+        // Extract elements count from result data
+        switch (bufferType)
+        {
+        case MeshBufferType::Index:
+            dataCount = data.Length() / (Use16BitIndexBuffer() ? sizeof(uint16) : sizeof(uint32));
+            break;
+        case MeshBufferType::Vertex0:
+            dataCount = data.Length() / sizeof(VB0ElementType);
+            break;
+        case MeshBufferType::Vertex1:
+            dataCount = data.Length() / sizeof(VB1ElementType);
+            break;
+        case MeshBufferType::Vertex2:
+            dataCount = data.Length() / sizeof(VB2ElementType);
+            break;
+        }
     }
     else
     {
         // Get data from CPU
-        int32 count;
-        if (DownloadDataCPU(bufferType, data, count))
-            return true;
+        if (DownloadDataCPU(bufferType, data, dataCount))
+            return nullptr;
     }
 
-    ConvertMeshData(mesh, type, resultObj, data.Get());
-    return false;
+    // Convert into managed array
+    MonoArray* result = mono_array_new(mono_domain_get(), mono_type_get_class(mono_reflection_type_get_type(resultType)), dataCount);
+    void* managedArrayPtr = mono_array_addr_with_size(result, 0, 0);
+    const int32 elementSize = data.Length() / dataCount;
+    switch (type)
+    {
+    case InternalBufferType::VB0:
+    case InternalBufferType::VB1:
+    case InternalBufferType::VB2:
+    {
+        Platform::MemoryCopy(managedArrayPtr, data.Get(), data.Length());
+        break;
+    }
+    case InternalBufferType::IB16:
+    {
+        if (elementSize == sizeof(uint16))
+        {
+            Platform::MemoryCopy(managedArrayPtr, data.Get(), data.Length());
+        }
+        else
+        {
+            auto dst = (uint16*)managedArrayPtr;
+            auto src = (uint32*)data.Get();
+            for (int32 i = 0; i < dataCount; i++)
+                dst[i] = src[i];
+        }
+        break;
+    }
+    case InternalBufferType::IB32:
+    {
+        if (elementSize == sizeof(uint16))
+        {
+            auto dst = (uint32*)managedArrayPtr;
+            auto src = (uint16*)data.Get();
+            for (int32 i = 0; i < dataCount; i++)
+                dst[i] = src[i];
+        }
+        else
+        {
+            Platform::MemoryCopy(managedArrayPtr, data.Get(), data.Length());
+        }
+        break;
+    }
+    }
+
+    return result;
 }
 
 #endif
