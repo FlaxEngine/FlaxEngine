@@ -537,8 +537,7 @@ String StringUtils::GetZZString(const Char* str)
         if (*end == '\0')
             end++;
     }
-    const int len = end - str;
-    return String(str, len);
+    return String(str, (int32)(end - str));
 }
 
 #undef STRING_UTILS_ITOSTR_BUFFER_SIZE
