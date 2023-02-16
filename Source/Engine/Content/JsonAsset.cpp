@@ -37,12 +37,8 @@ String JsonAssetBase::GetData() const
     if (Data == nullptr)
         return String::Empty;
     PROFILE_CPU_NAMED("JsonAsset.GetData");
-
-    // Get serialized data
     rapidjson_flax::StringBuffer buffer;
-    rapidjson_flax::Writer<rapidjson_flax::StringBuffer> writer(buffer);
-    Data->Accept(writer);
-
+    OnGetData(buffer);
     return String((const char*)buffer.GetString(), (int32)buffer.GetSize());
 }
 
@@ -81,6 +77,12 @@ bool JsonAssetBase::Init(const StringView& dataTypeName, const StringAnsiView& d
 
     // Load asset-specific data
     return loadAsset() != LoadResult::Ok;
+}
+
+void JsonAssetBase::OnGetData(rapidjson_flax::StringBuffer& buffer) const
+{
+    PrettyJsonWriter writerObj(buffer);
+    Data->Accept(writerObj.GetWriter());
 }
 
 const String& JsonAssetBase::GetPath() const
@@ -142,6 +144,53 @@ void JsonAssetBase::GetReferences(const StringAnsiView& json, Array<Guid>& outpu
     if (document.HasParseError())
         return;
     FindIds(document, output);
+}
+
+bool JsonAssetBase::Save(const StringView& path)
+{
+    // Validate state
+    if (WaitForLoaded())
+    {
+        LOG(Error, "Asset loading failed. Cannot save it.");
+        return true;
+    }
+    if (IsVirtual() && path.IsEmpty())
+    {
+        LOG(Error, "To save virtual asset asset you need to specify the target asset path location.");
+        return true;
+    }
+    ScopeLock lock(Locker);
+    
+    // Serialize to json file
+    rapidjson_flax::StringBuffer buffer;
+    PrettyJsonWriter writerObj(buffer);
+    JsonWriter& writer = writerObj;
+    writer.StartObject();
+    {
+        // Json resource header
+        writer.JKEY("ID");
+        writer.Guid(GetID());
+        writer.JKEY("TypeName");
+        writer.String(DataTypeName);
+        writer.JKEY("EngineBuild");
+        writer.Int(FLAXENGINE_VERSION_BUILD);
+
+        // Json resource data
+        rapidjson_flax::StringBuffer dataBuffer;
+        OnGetData(dataBuffer);
+        writer.JKEY("Data");
+        writer.RawValue(dataBuffer.GetString(), (int32)dataBuffer.GetSize());
+    }
+    writer.EndObject();
+
+    // Save json to file
+    if (File::WriteAllBytes(path.HasChars() ? path : GetPath(), (byte*)buffer.GetString(), (int32)buffer.GetSize()))
+    {
+        LOG(Error, "Cannot save \'{0}\'", ToString());
+        return true;
+    }
+
+    return false;
 }
 
 void JsonAssetBase::GetReferences(Array<Guid>& output) const
