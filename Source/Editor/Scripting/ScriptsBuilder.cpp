@@ -37,6 +37,7 @@ enum class EventType
     ReloadBegin = 5,
     Reload = 6,
     ReloadEnd = 7,
+    ScriptsLoaded = 8,
 };
 
 struct EventData
@@ -74,6 +75,7 @@ namespace ScriptsBuilderImpl
     void onScriptsReloadStart();
     void onScriptsReload();
     void onScriptsReloadEnd();
+    void onScriptsLoaded();
 
     void GetClassName(const MString& fullname, MString& className);
 
@@ -201,6 +203,11 @@ void ScriptsBuilderImpl::onScriptsReload()
 void ScriptsBuilderImpl::onScriptsReloadEnd()
 {
     CallEvent(EventType::ReloadEnd);
+}
+
+void ScriptsBuilderImpl::onScriptsLoaded()
+{
+    CallEvent(EventType::ScriptsLoaded);
 }
 
 void ScriptsBuilder::Compile()
@@ -556,6 +563,7 @@ bool ScriptsBuilderService::Init()
     Level::ScriptsReloadStart.Bind(onScriptsReloadStart);
     Level::ScriptsReload.Bind(onScriptsReload);
     Level::ScriptsReloadEnd.Bind(onScriptsReloadEnd);
+    Scripting::ScriptsLoaded.Bind(onScriptsLoaded);
 
     // Listen to code editors manager events
     CodeEditingManager::AsyncOpenBegin.Bind(onCodeEditorAsyncOpenBegin);

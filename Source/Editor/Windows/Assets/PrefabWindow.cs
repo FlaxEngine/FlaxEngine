@@ -235,14 +235,14 @@ namespace FlaxEditor.Windows.Assets
             if (IsLayoutLocked)
                 return;
 
-            var root = Graph.Root;
-            root.TreeNode.LockChildrenRecursive();
+            _tree.LockChildrenRecursive();
 
             // Update tree
             var query = _searchBox.Text;
+            var root = Graph.Root;
             root.TreeNode.UpdateFilter(query);
 
-            root.TreeNode.UnlockChildrenRecursive();
+            _tree.UnlockChildrenRecursive();
             PerformLayout();
             PerformLayout();
         }

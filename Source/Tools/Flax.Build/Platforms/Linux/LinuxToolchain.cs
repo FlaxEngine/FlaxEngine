@@ -24,14 +24,24 @@ namespace Flax.Build.Platforms
         {
             // Setup system paths
             var includePath = Path.Combine(ToolsetRoot, "usr", "include");
-            SystemIncludePaths.Add(includePath);
+            if (Directory.Exists(includePath))
+                SystemIncludePaths.Add(includePath);
+            else
+                Log.Error($"Missing toolset header files location {includePath}");
             var cppIncludePath = Path.Combine(includePath, "c++", ClangVersion.ToString());
             if (Directory.Exists(cppIncludePath))
                 SystemIncludePaths.Add(cppIncludePath);
+            else
+                Log.Verbose($"Missing Clang {ClangVersion} C++ header files location {cppIncludePath}");
             var clangLibPath = Path.Combine(ToolsetRoot, "usr", "lib", "clang");
             var clangIncludePath = Path.Combine(clangLibPath, ClangVersion.Major.ToString(), "include");
             if (!Directory.Exists(clangIncludePath))
+            {
+                var error = $"Missing Clang {ClangVersion} header files location {clangIncludePath}";
                 clangIncludePath = Path.Combine(clangLibPath, ClangVersion.ToString(), "include");
+                if (!Directory.Exists(clangIncludePath))
+                    Log.Error(error);
+            }
             SystemIncludePaths.Add(clangIncludePath);
         }
 
@@ -75,7 +85,8 @@ namespace Flax.Build.Platforms
 
             args.Add("-Wl,-rpath,\"\\$ORIGIN\"");
             //args.Add("-Wl,--as-needed");
-            args.Add("-Wl,--copy-dt-needed-entries");
+            if (LdKind == "bfd")
+                args.Add("-Wl,--copy-dt-needed-entries");
             args.Add("-Wl,--hash-style=gnu");
             //args.Add("-Wl,--build-id");
 

@@ -334,6 +334,9 @@ namespace Flax.Build.Bindings
                         case "out":
                             currentParam.IsOut = true;
                             break;
+                        case "this":
+                            currentParam.IsThis = true;
+                            break;
                         case "attributes":
                             currentParam.Attributes = tag.Value;
                             break;

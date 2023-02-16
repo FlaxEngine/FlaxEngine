@@ -36,6 +36,7 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 * Install Windows 8.1 SDK or newer (via Visual Studio Installer)
 * Install Microsoft Visual C++ 2015 v140 toolset or newer (via Visual Studio Installer)
 * Install .Net 7 SDK (via Visual Studio Installer or [from web](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
+* Install Git with LFS
 * Clone repo (with LFS)
 * Run **GenerateProjectFiles.bat**
 * Open `Flax.sln` and set solution configuration to **Editor.Development** and solution platform to **Win64**
@@ -49,11 +50,21 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 
 * Install Visual Studio Code
 * Install .Net 7 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
-* Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
+  * Ubuntu: `sudo snap install dotnet-sdk --classic channel=7.0/stable`
+* Install Vulkan SDK
+  * Ubuntu: see the instructions here: ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
+  * Arch: `sudo pacman -S spirv-tools vulkan-headers vulkan-tools vulkan-validation-layers`
 * Install Git with LFS
-* Install requried packages: `sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev nuget autoconf libogg-dev automake build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev`
-* Install compiler `sudo apt-get install clang lldb lld` (Clang 6 or newer)
-* Clone repo (with LFS)
+  * Ubuntu: `sudo apt-get install git git-lfs`
+  * Arch: `sudo pacman -S git git-lfs`
+  * `git-lfs install`
+* Install the required packages:
+  * Ubuntu: `sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev zlib1g-dev`
+  * Arch: `sudo pacman -S base-devel libx11 libxcursor libxinerama zlib`
+* Install Clang compiler (version 6 or later):
+  * Ubuntu: `sudo apt-get install clang lldb lld`
+  * Arch: `sudo pacman -S clang lldb lld`
+* Clone the repository (with LFS)
 * Run `./GenerateProjectFiles.sh`
 * Open workspace with Visual Code
 * Build and run (configuration and task named `Flax|Editor.Linux.Development|x64`)

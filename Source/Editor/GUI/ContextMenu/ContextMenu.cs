@@ -365,6 +365,7 @@ namespace FlaxEditor.GUI.ContextMenu
             float maxWidth = 0;
             float height = _itemsAreaMargin.Height;
             int itemsLeft = MaximumItemsInViewCount;
+            int overflowItemCount = 0;
             for (int i = 0; i < _panel.Children.Count; i++)
             {
                 if (_panel.Children[i] is ContextMenuItem item && item.Visible)
@@ -374,10 +375,26 @@ namespace FlaxEditor.GUI.ContextMenu
                         height += item.Height + _itemsMargin.Height;
                         itemsLeft--;
                     }
+                    else
+                    {
+                        overflowItemCount++;
+                    }
                     maxWidth = Mathf.Max(maxWidth, item.MinimumWidth);
                 }
             }
             maxWidth = Mathf.Max(maxWidth + 20, MinimumWidth);
+
+            // Move child arrows to accommodate scroll bar showing 
+            if (overflowItemCount > 0)
+            {
+                foreach (var child in _panel.Children)
+                {
+                    if (child is ContextMenuChildMenu item && item.Visible)
+                    {
+                        item.AdjustArrowAmount = -_panel.VScrollBar.Width;
+                    }
+                }
+            }
 
             // Resize container
             Size = new Float2(Mathf.Ceil(maxWidth), Mathf.Ceil(height));

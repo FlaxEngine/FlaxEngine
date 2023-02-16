@@ -123,14 +123,14 @@ namespace FlaxEditor.Windows
             if (IsLayoutLocked)
                 return;
 
-            var root = Editor.Scene.Root;
-            root.TreeNode.LockChildrenRecursive();
+            _tree.LockChildrenRecursive();
 
             // Update tree
             var query = _searchBox.Text;
+            var root = Editor.Scene.Root;
             root.TreeNode.UpdateFilter(query);
 
-            root.TreeNode.UnlockChildrenRecursive();
+            _tree.UnlockChildrenRecursive();
             PerformLayout();
             PerformLayout();
         }
@@ -251,7 +251,7 @@ namespace FlaxEditor.Windows
                 if (nodes.Count == 1)
                 {
                     nodes[0].ExpandAllParents(true);
-                    ScrollViewTo(nodes[0]);
+                    _sceneTreePanel.ScrollViewTo(nodes[0]);
                 }
             }
 

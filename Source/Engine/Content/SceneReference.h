@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/ISerializable.h"
+#include "Engine/Scripting/ScriptingType.h"
 
 /// <summary>
 /// Represents the reference to the scene asset. Stores the unique ID of the scene to reference. Can be used to load the selected scene.

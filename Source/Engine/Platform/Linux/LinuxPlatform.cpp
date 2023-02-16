@@ -431,8 +431,11 @@ static int X11_MessageBoxCreateWindow(MessageBoxData* data)
 	}
 	else
 	{
-		x = (X11_DisplayWidth(display, data->screen) - data->dialog_width) / 2;
-		y = (X11_DisplayHeight(display, data->screen) - data->dialog_height) / 3;
+		int screenCount;
+		X11::XineramaScreenInfo* xsi = X11::XineramaQueryScreens(xDisplay, &screenCount);
+		ASSERT(data->screen < screenCount);
+		x = (float)xsi[data->screen].x_org + ((float)xsi[data->screen].width - data->dialog_width) / 2;
+		y = (float)xsi[data->screen].y_org + ((float)xsi[data->screen].height - data->dialog_height) / 2;
 	}
 	X11::XMoveWindow(display, data->window, x, y);
 
@@ -840,17 +843,17 @@ int X11ErrorHandler(X11::Display* display, X11::XErrorEvent* event)
 
 int32 CalculateDpi()
 {
-	// in X11 a screen is not necessarily identical to a desktop
-	// so we need to stick to one type for pixel and physical size query
+	int dpi = 96;
+	char* resourceString = X11::XResourceManagerString(xDisplay);
+	if (resourceString == NULL)
+		return dpi;
 
-	int screenIdx = 0;
-	int widthMM = X11_DisplayWidthMM(xDisplay, screenIdx);
-	int heightMM = X11_DisplayHeightMM(xDisplay, screenIdx);
-	double xdpi = (widthMM ? X11_DisplayWidth(xDisplay, screenIdx) / (double)widthMM * 25.4 : 0);
-	double ydpi = (heightMM ? X11_DisplayHeight(xDisplay, screenIdx) / (double)heightMM * 25.4 : 0);
-	if (xdpi || ydpi)
-		return (int32)Math::Ceil((xdpi + ydpi) / (xdpi && ydpi ? 2 : 1));
-	return 96;
+	char* type = NULL;
+	X11::XrmValue value;
+	X11::XrmDatabase database = X11::XrmGetStringDatabase(resourceString);
+	if (X11::XrmGetResource(database, "Xft.dpi", "String", &type, &value) == 1 && value.addr != NULL)
+		dpi = (int)atof(value.addr);
+	return dpi;
 }
 
 // Maps Flax key codes to X11 names for physical key locations.
@@ -2101,6 +2104,7 @@ bool LinuxPlatform::Init()
 	xAtomWmName = X11::XInternAtom(xDisplay, "_NET_WM_NAME", 0);
 	xAtomClipboard = X11::XInternAtom(xDisplay, "CLIPBOARD", 0);
 
+	X11::XrmInitialize();
 	SystemDpi = CalculateDpi();
 
 	int cursorSize = X11::XcursorGetDefaultSize(xDisplay);
@@ -2806,6 +2810,7 @@ int32 LinuxProcess(const StringView& cmdLine, const StringView& workingDir, cons
         {
 			close(fildes[0]); // close the reading end of the pipe
 			dup2(fildes[1], STDOUT_FILENO); // redirect stdout to pipe
+			close(fildes[1]);
 			dup2(STDOUT_FILENO, STDERR_FILENO); // redirect stderr to stdout
 		}
 
@@ -2814,6 +2819,8 @@ int32 LinuxProcess(const StringView& cmdLine, const StringView& workingDir, cons
         {
 			LOG(Warning, " failed, errno={}", errno);
 		}
+		fflush(stdout);
+		_exit(1);
 	}
     else
     {
@@ -2826,7 +2833,7 @@ int32 LinuxProcess(const StringView& cmdLine, const StringView& workingDir, cons
             {
 				char lineBuffer[1024];
 				close(fildes[1]); // close the writing end of the pipe
-				FILE *stdPipe = fdopen(fildes[0], "r");
+				FILE* stdPipe = fdopen(fildes[0], "r");
 				while (fgets(lineBuffer, sizeof(lineBuffer), stdPipe) != NULL)
                 {
 					char *p = lineBuffer + strlen(lineBuffer)-1;
@@ -2861,6 +2868,7 @@ int32 LinuxProcess(const StringView& cmdLine, const StringView& workingDir, cons
 					returnCode = EPIPE;
 				}
 			}
+			close(fildes[0]);
 		}
 	}
 

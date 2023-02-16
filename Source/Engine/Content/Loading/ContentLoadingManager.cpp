@@ -55,8 +55,7 @@ LoadingThread::~LoadingThread()
     // Check if has thread attached
     if (_thread != nullptr)
     {
-        if (_thread->IsRunning())
-            _thread->Kill(true);
+        _thread->Kill(true);
         Delete(_thread);
     }
 }

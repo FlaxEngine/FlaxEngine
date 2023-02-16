@@ -115,6 +115,11 @@ void SlotBucketInit(AnimGraphInstanceData::Bucket& bucket)
     bucket.Slot.LoopsLeft = 0;
 }
 
+void InstanceDataBucketInit(AnimGraphInstanceData::Bucket& bucket)
+{
+    bucket.InstanceData.Init = true;
+}
+
 bool SortMultiBlend1D(const byte& a, const byte& b, AnimGraphNode* n)
 {
     // Sort items by X location from the lowest to the highest
@@ -432,10 +437,12 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
         }
         // Animation Slot
         case 32:
-        {
             ADD_BUCKET(SlotBucketInit);
             break;
-        }
+        // Animation Instance Data
+        case 33:
+            ADD_BUCKET(InstanceDataBucketInit);
+            break;
         }
         break;
     // Custom

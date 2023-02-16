@@ -47,6 +47,11 @@ static X11::Time MouseLastButtonPressTime = 0;
 LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	: WindowBase(settings)
 {
+	auto display = (X11::Display*)LinuxPlatform::GetXDisplay();
+    if (!display)
+        return;
+	auto screen = XDefaultScreen(display);
+
 	// Cache data
 	int32 width = Math::TruncToInt(settings.Size.X);
 	int32 height = Math::TruncToInt(settings.Size.Y);
@@ -64,9 +69,21 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
         break;
     case WindowStartPosition::CenterScreen:
         {
-            Float2 desktopSize = Platform::GetDesktopSize();
-            x = Math::TruncToInt((desktopSize.X - _clientSize.X) * 0.5f);
-            y = Math::TruncToInt((desktopSize.Y - _clientSize.Y) * 0.5f);
+			Rectangle desktopBounds;
+			int event, err;
+			const bool ok = X11::XineramaQueryExtension(display, &event, &err);
+			if (X11::XineramaQueryExtension(display, &event, &err))
+			{
+				int count;
+				X11::XineramaScreenInfo* xsi = X11::XineramaQueryScreens(display, &count);
+				ASSERT(screen < count);
+				desktopBounds = Rectangle(Float2((float)xsi[screen].x_org, (float)xsi[screen].y_org), Float2((float)xsi[screen].width, (float)xsi[screen].height));
+				X11::XFree(xsi);
+			}
+			else
+				desktopBounds = Rectangle(Float2::Zero, Platform::GetDesktopSize());
+            x = Math::TruncToInt(desktopBounds.Location.X + (desktopBounds.Size.X - _clientSize.X) * 0.5f);
+            y = Math::TruncToInt(desktopBounds.Location.Y + (desktopBounds.Size.Y - _clientSize.Y) * 0.5f);
         }
         break;
     case WindowStartPosition::Manual:
@@ -76,11 +93,6 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	}
 	_resizeDisabled = !settings.HasSizingFrame;
 
-	auto display = (X11::Display*)LinuxPlatform::GetXDisplay();
-    if (!display)
-        return;
-
-	auto screen = XDefaultScreen(display);
 	auto rootWindow = XRootWindow(display, screen);
 
 	long visualMask = VisualScreenMask;

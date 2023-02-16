@@ -315,6 +315,12 @@ public:
         int32 LoopsLeft;
     };
 
+    struct InstanceDataBucket
+    {
+        bool Init;
+        float Data[4];
+    };
+
     /// <summary>
     /// The single data storage bucket for the instanced animation graph node. Used to store the node state (playback position, state, transition data).
     /// </summary>
@@ -327,6 +333,7 @@ public:
             BlendPoseBucket BlendPose;
             StateMachineBucket StateMachine;
             SlotBucket Slot;
+            InstanceDataBucket InstanceData;
         };
     };
 

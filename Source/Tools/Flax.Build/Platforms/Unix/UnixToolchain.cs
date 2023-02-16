@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
@@ -62,6 +63,11 @@ namespace Flax.Build.Platforms
         protected string LdPath;
 
         /// <summary>
+        /// The type of the linker.
+        /// </summary>
+        protected string LdKind;
+
+        /// <summary>
         /// The clang tool version.
         /// </summary>
         protected Version ClangVersion;
@@ -91,7 +97,19 @@ namespace Flax.Build.Platforms
                 RanlibPath = UnixPlatform.Which("ranlib");
                 StripPath = UnixPlatform.Which("strip");
                 ObjcopyPath = UnixPlatform.Which("objcopy");
-                LdPath = UnixPlatform.Which("ld");
+
+                LdPath = UnixPlatform.Which("ld.lld");
+                LdKind = "lld";
+                if (LdPath == null)
+                {
+                    LdPath = UnixPlatform.Which("ld.gold");
+                    LdKind = "gold";
+                }
+                if (LdPath == null)
+                {
+                    LdPath = UnixPlatform.Which("ld"); // ld.bfd
+                    LdKind = "bfd";
+                }
             }
             else
             {
@@ -478,6 +496,9 @@ namespace Flax.Build.Platforms
                 // TODO: linkEnvironment.LinkTimeCodeGeneration
                 // TODO: linkEnvironment.Optimization
                 // TODO: linkEnvironment.UseIncrementalLinking
+
+                if (!string.IsNullOrEmpty(LdKind))
+                    args.Add(string.Format("-fuse-ld={0}", LdKind));
             }
             SetupLinkFilesArgs(graph, options, args, outputFilePath);
 
@@ -536,9 +557,10 @@ namespace Flax.Build.Platforms
                 }
             }
 
-            // Input files
+            // Input files (link static libraries last)
             task.PrerequisiteFiles.AddRange(linkEnvironment.InputFiles);
-            foreach (var file in linkEnvironment.InputFiles)
+            foreach (var file in linkEnvironment.InputFiles.Where(x => !x.EndsWith(".a"))
+                                                .Concat(linkEnvironment.InputFiles.Where(x => x.EndsWith(".a"))))
             {
                 args.Add(string.Format("\"{0}\"", file.Replace('\\', '/')));
             }

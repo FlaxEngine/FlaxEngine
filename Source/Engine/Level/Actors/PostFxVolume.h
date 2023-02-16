@@ -100,10 +100,8 @@ public:
 
 public:
     /// <summary>
-    /// Gets the order in which multiple volumes are blended together.
-    /// The volume with the highest priority takes precedence over all other overlapping volumes.
+    /// Gets the order in which multiple volumes are blended together. The volume with the highest priority takes precedence over all other overlapping volumes.
     /// </summary>
-    /// <returns>The result.</returns>
     API_PROPERTY(Attributes="EditorDisplay(\"PostFx Volume\"), EditorOrder(60)")
     FORCE_INLINE int32 GetPriority() const
     {
@@ -111,10 +109,8 @@ public:
     }
 
     /// <summary>
-    /// Sets the order in which multiple volumes are blended together.
-    /// The volume with the highest priority takes precedence over all other overlapping volumes.
+    /// Sets the order in which multiple volumes are blended together. The volume with the highest priority takes precedence over all other overlapping volumes.
     /// </summary>
-    /// <param name="value">The value.</param>
     API_PROPERTY() FORCE_INLINE void SetPriority(int32 value)
     {
         _priority = value;
@@ -123,7 +119,6 @@ public:
     /// <summary>
     /// Gets the distance inside the volume at which blending with the volume's settings occurs.
     /// </summary>
-    /// <returns>The result.</returns>
     API_PROPERTY(Attributes="EditorDisplay(\"PostFx Volume\"), EditorOrder(70)")
     FORCE_INLINE float GetBlendRadius() const
     {
@@ -133,7 +128,6 @@ public:
     /// <summary>
     /// Sets the distance inside the volume at which blending with the volume's settings occurs.
     /// </summary>
-    /// <param name="value">The value.</param>
     API_PROPERTY() void SetBlendRadius(float value)
     {
         _blendRadius = Math::Clamp(value, 0.0f, 1000.0f);
@@ -142,7 +136,6 @@ public:
     /// <summary>
     /// Gets the amount of influence the volume's properties have. 0 is no effect; 1 is full effect.
     /// </summary>
-    /// <returns>The result.</returns>
     API_PROPERTY(Attributes="EditorDisplay(\"PostFx Volume\"), EditorOrder(80)")
     FORCE_INLINE float GetBlendWeight() const
     {
@@ -152,18 +145,14 @@ public:
     /// <summary>
     /// Sets the amount of influence the volume's properties have. 0 is no effect; 1 is full effect.
     /// </summary>
-    /// <param name="value">The value.</param>
     API_PROPERTY() void SetBlendWeight(float value)
     {
         _blendWeight = Math::Saturate(value);
     }
 
     /// <summary>
-    /// Gets the value indicating whether the bounds of the volume are taken into account.
-    /// If false, the volume affects the entire world, regardless of its bounds.
-    /// If true, the volume only has an effect within its bounds.
+    /// Gets the value indicating whether the bounds of the volume are taken into account. If false, the volume affects the entire world, regardless of its bounds. If true, the volume only has an effect within its bounds.
     /// </summary>
-    /// <returns>The result.</returns>
     API_PROPERTY(Attributes="EditorDisplay(\"PostFx Volume\"), EditorOrder(90)")
     FORCE_INLINE bool GetIsBounded() const
     {
@@ -171,11 +160,8 @@ public:
     }
 
     /// <summary>
-    /// Sets the value indicating whether the bounds of the volume are taken into account.
-    /// If false, the volume affects the entire world, regardless of its bounds.
-    /// If true, the volume only has an effect within its bounds.
+    /// Sets the value indicating whether the bounds of the volume are taken into account. If false, the volume affects the entire world, regardless of its bounds. If true, the volume only has an effect within its bounds.
     /// </summary>
-    /// <param name="value">The value.</param>
     API_PROPERTY() FORCE_INLINE void SetIsBounded(bool value)
     {
         _isBounded = value;

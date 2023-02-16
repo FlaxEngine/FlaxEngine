@@ -134,9 +134,15 @@ bool RenderTask::Resize(int32 width, int32 height)
 SceneRenderTask::SceneRenderTask(const SpawnParams& params)
     : RenderTask(params)
 {
+    Buffers = New<RenderBuffers>();
+
+    // Initialize view
     View.Position = Float3::Zero;
     View.Direction = Float3::Forward;
-    Buffers = New<RenderBuffers>();
+    Matrix::PerspectiveFov(PI_OVER_2, 1.0f, View.Near, View.Far, View.Projection);
+    View.NonJitteredProjection = View.Projection;
+    Matrix::Invert(View.Projection, View.IP);
+    View.SetFace(4);
 }
 
 SceneRenderTask::~SceneRenderTask()
