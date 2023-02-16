@@ -36,7 +36,7 @@ namespace
         // Load product info
         Array<byte> productInfoData;
         const String productInfoPath = directory / TEXT("product-info.json");
-        if (File::ReadAllBytes(productInfoPath, productInfoData))
+        if (!FileSystem::FileExists(productInfoPath) || File::ReadAllBytes(productInfoPath, productInfoData))
             return;
         rapidjson_flax::Document document;
         document.Parse((char*)productInfoData.Get(), productInfoData.Count());
@@ -193,6 +193,7 @@ void RiderCodeEditor::FindEditors(Array<CodeEditor*>* output)
     // TODO: detect Snap installations
     // TODO: detect by reading the jetbrains-rider.desktop file from ~/.local/share/applications and /usr/share/applications?
 
+    SearchDirectory(&installations, TEXT("/usr/share/rider/"));
     FileSystem::GetChildDirectories(subDirectories, TEXT("/usr/share/rider"));
 
     // Default suggested location for standalone installations
