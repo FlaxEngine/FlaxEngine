@@ -560,12 +560,8 @@ bool FlaxStorage::Load()
 
 bool FlaxStorage::Reload()
 {
-    // Check if wasn't already loaded
     if (!IsLoaded())
-    {
-        LOG(Warning, "{0} isn't loaded.", ToString());
         return false;
-    }
 
     OnReloading(this);
 
