@@ -103,9 +103,7 @@ namespace Flax.Build
                 // TODO: Support /etc/dotnet/install_location
 
                 // Detect custom RID in some distros
-                string osId = File.ReadAllLines("/etc/os-release").FirstOrDefault(x => x.StartsWith("ID="), "ID=linux").Substring("ID=".Length);
-
-                rid = $"{osId}-{arch}";
+                rid = Utilities.ReadProcessOutput("dotnet", "--info").Split('\n').FirstOrDefault(x => x.StartsWith(" RID:"), "").Replace("RID:", "").Trim();
                 ridFallback = $"linux-{arch}";
                 if (rid == ridFallback)
                     ridFallback = "";
