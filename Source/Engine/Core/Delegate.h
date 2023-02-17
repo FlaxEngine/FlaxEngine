@@ -617,12 +617,11 @@ public:
         FunctionType* bindings = (FunctionType*)Platform::AtomicRead((intptr volatile*)&_ptr);
         for (intptr i = 0; i < size; i++)
         {
-            auto function = (StubSignature)Platform::AtomicRead((intptr volatile*)&bindings[i]._function);
-            if (function != nullptr)
-            {
-                auto callee = (void*)Platform::AtomicRead((intptr volatile*)&bindings[i]._callee);
+            auto function = (StubSignature)Platform::AtomicRead((intptr volatile*)&bindings->_function);
+            auto callee = (void*)Platform::AtomicRead((intptr volatile*)&bindings->_callee);
+            if (function != nullptr && function == (StubSignature)Platform::AtomicRead((intptr volatile*)&bindings->_function))
                 function(callee, Forward<Params>(params)...);
-            }
+            ++bindings;
         }
     }
 };
