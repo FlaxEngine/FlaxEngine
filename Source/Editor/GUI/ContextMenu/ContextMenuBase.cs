@@ -1,3 +1,7 @@
+#if PLATFORM_WINDOWS
+#define USE_IS_FOREGROUND
+#else
+#endif
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
@@ -196,6 +200,7 @@ namespace FlaxEditor.GUI.ContextMenu
             desc.HasSizingFrame = false;
             OnWindowCreating(ref desc);
             _window = Platform.CreateWindow(ref desc);
+            _window.GotFocus += OnWindowGotFocus;
             _window.LostFocus += OnWindowLostFocus;
 
             // Attach to the window
@@ -325,6 +330,49 @@ namespace FlaxEditor.GUI.ContextMenu
             // Nothing to do
         }
 
+#if USE_IS_FOREGROUND
+        /// <summary>
+        /// Returns true if context menu is in foreground (eg. context window or any child window has user focus or user opened additional popup within this context).
+        /// </summary>
+        protected virtual bool IsForeground
+        {
+            get
+            {
+                // Any external popup is focused
+                foreach (var externalPopup in ExternalPopups)
+                {
+                    if (externalPopup && externalPopup.IsForegroundWindow)
+                        return true;
+                }
+
+                // Any context menu window is focused
+                var anyForeground = false;
+                var c = this;
+                while (!anyForeground && c != null)
+                {
+                    if (c._window != null && c._window.IsForegroundWindow)
+                        anyForeground = true;
+                    c = c._childCM;
+                }
+
+                return anyForeground;
+            }
+        }
+
+        private void OnWindowGotFocus()
+        {
+            var child = _childCM;
+            if (child != null && _window && _window.IsForegroundWindow)
+            {
+                // Hide child if user clicked over parent (do it next frame to process other events before - eg. child windows focus loss)
+                FlaxEngine.Scripting.InvokeOnUpdate(() =>
+                {
+                    if (child == _childCM)
+                        HideChild();
+                });
+            }
+        }
+
         private void OnWindowLostFocus()
         {
             // Skip for parent menus (child should handle lost of focus)
@@ -334,8 +382,36 @@ namespace FlaxEditor.GUI.ContextMenu
             // Check if user stopped using that popup menu
             if (_parentCM != null)
             {
+                // Focus parent if user clicked over the parent popup
+                var mouse = _parentCM.PointFromScreen(FlaxEngine.Input.MouseScreenPosition);
+                if (_parentCM.ContainsPoint(ref mouse))
+                {
+                    _parentCM._window.Focus();
+                }
+            }
+        }
+#else
+        private void OnWindowGotFocus()
+        {
+        }
+
+        private void OnWindowLostFocus()
+        {
+            // Skip for parent menus (child should handle lost of focus)
+            if (_childCM != null)
+                return;
+
+            if (_parentCM != null)
+            {
                 if (IsMouseOver)
                     return;
+
+                // Check if any external popup is focused
+                foreach (var externalPopup in ExternalPopups)
+                {
+                    if (externalPopup && externalPopup.IsFocused)
+                        return;
+                }
 
                 // Check if mouse is over any of the parents
                 ContextMenuBase focusCM = null;
@@ -360,8 +436,11 @@ namespace FlaxEditor.GUI.ContextMenu
                 }
             }
             else if (!IsMouseOver)
+            {
                 Hide();
+            }
         }
+#endif
 
         /// <inheritdoc />
         public override bool IsMouseOver
@@ -381,6 +460,20 @@ namespace FlaxEditor.GUI.ContextMenu
                 return result;
             }
         }
+
+#if USE_IS_FOREGROUND
+        /// <inheritdoc />
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+
+            // Let root context menu to check if none of the popup windows
+            if (_parentCM == null && !IsForeground)
+            {
+                Hide();
+            }
+        }
+#endif
 
         /// <inheritdoc />
         public override void Draw()
