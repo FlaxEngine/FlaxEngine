@@ -17,23 +17,24 @@ struct RenderContext;
 /// </remarks>
 API_CLASS(Abstract) class FLAXENGINE_API PostProcessEffect : public Script
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE(PostProcessEffect);
 
 public:
     /// <summary>
     /// Effect rendering location within rendering pipeline.
     /// </summary>
-    API_FIELD() PostProcessEffectLocation Location = PostProcessEffectLocation::Default;
+    API_FIELD(Attributes="EditorDisplay(\"Post Process Effect\"), ExpandGroups") PostProcessEffectLocation Location = PostProcessEffectLocation::Default;
 
     /// <summary>
     /// True whether use a single render target as both input and output. Use this if your effect doesn't need to copy the input buffer to the output but can render directly to the single texture. Can be used to optimize game performance.
     /// </summary>
-    API_FIELD() bool UseSingleTarget = false;
+    API_FIELD(Attributes="EditorDisplay(\"Post Process Effect\")") bool UseSingleTarget = false;
 
     /// <summary>
     /// Effect rendering order. Post effects are sorted before rendering (from the lowest order to the highest order).
     /// </summary>
-    API_FIELD() int32 Order = 0;
+    API_FIELD(Attributes="EditorDisplay(\"Post Process Effect\")") int32 Order = 0;
 
 public:
     /// <summary>
