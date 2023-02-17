@@ -19,7 +19,8 @@ GPUBufferView* GPUBufferDX11::View() const
 
 void* GPUBufferDX11::Map(GPUResourceMapMode mode)
 {
-    if (!IsInMainThread())
+    const bool isMainThread = IsInMainThread();
+    if (!isMainThread)
         _device->Locker.Lock();
     ASSERT(!_mapped);
 
@@ -31,7 +32,7 @@ void* GPUBufferDX11::Map(GPUResourceMapMode mode)
     {
     case GPUResourceMapMode::Read:
         mapType = D3D11_MAP_READ;
-        if (_desc.Usage == GPUResourceUsage::StagingReadback)
+        if (_desc.Usage == GPUResourceUsage::StagingReadback && isMainThread)
             mapFlags = D3D11_MAP_FLAG_DO_NOT_WAIT;
         break;
     case GPUResourceMapMode::Write:
