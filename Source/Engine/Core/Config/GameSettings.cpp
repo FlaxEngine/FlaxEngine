@@ -100,7 +100,7 @@ GameSettings* GameSettings::Get()
             if (LogOnce)
             {
                 LogOnce = false;
-                LOG(Error, "Missing file game settings asset ({0}\)", assetPath);
+                LOG(Error, "Missing file game settings asset ({0})", assetPath);
             }
             return nullptr;
         }
