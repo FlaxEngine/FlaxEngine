@@ -342,6 +342,16 @@ namespace Flax.Build.NativeCpp
                             }
                         }
 
+                        // Relative to ThirdParty includes for library includes
+                        if (!isValid && isLibraryInclude)
+                        {
+                            includedFilePath = Path.Combine(Globals.Root, "Source", "ThirdParty", includedFile);
+                            if (FileExists(includedFilePath))
+                            {
+                                isValid = true;
+                            }
+                        }
+
                         if (!isValid)
                         {
                             // Invalid include
