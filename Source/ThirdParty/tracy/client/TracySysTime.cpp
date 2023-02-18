@@ -2,7 +2,7 @@
 
 #ifdef TRACY_HAS_SYSTIME
 
-#  if defined _WIN32 || defined __CYGWIN__
+#  if defined _WIN32
 #    include <windows.h>
 #  elif defined __linux__
 #    include <stdio.h>
@@ -18,7 +18,7 @@
 namespace tracy
 {
 
-#  if defined _WIN32 || defined __CYGWIN__
+#  if defined _WIN32
 
 static inline uint64_t ConvertTime( const FILETIME& t )
 {
@@ -62,7 +62,7 @@ void SysTime::ReadTimes()
 {
     host_cpu_load_info_data_t info;
     mach_msg_type_number_t cnt = HOST_CPU_LOAD_INFO_COUNT;
-    host_statistics( mach_host_self(), HOST_CPU_LOAD_INFO, reinterpret_cast<host_info_t>( &info ), &cnt ); 
+    host_statistics( mach_host_self(), HOST_CPU_LOAD_INFO, reinterpret_cast<host_info_t>( &info ), &cnt );
     used = info.cpu_ticks[CPU_STATE_USER] + info.cpu_ticks[CPU_STATE_NICE] + info.cpu_ticks[CPU_STATE_SYSTEM];
     idle = info.cpu_ticks[CPU_STATE_IDLE];
 }
@@ -95,7 +95,7 @@ float SysTime::Get()
     const auto diffIdle = idle - oldIdle;
     const auto diffUsed = used - oldUsed;
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     return diffUsed == 0 ? -1 : ( diffUsed - diffIdle ) * 100.f / diffUsed;
 #elif defined __linux__ || defined __APPLE__ || defined BSD
     const auto total = diffUsed + diffIdle;

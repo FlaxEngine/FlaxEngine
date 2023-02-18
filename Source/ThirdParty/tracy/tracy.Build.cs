@@ -34,11 +34,12 @@ public class tracy : ThirdPartyModule
 
         options.SourcePaths.Clear();
         options.SourceFiles.Clear();
-        options.SourceFiles.Add(Path.Combine(FolderPath, "Tracy.h"));
+        options.SourceFiles.Add(Path.Combine(FolderPath, "tracy", "Tracy.hpp"));
         options.SourceFiles.Add(Path.Combine(FolderPath, "TracyClient.cpp"));
 
         options.PublicDefinitions.Add("TRACY_ENABLE");
         options.PrivateDefinitions.Add("TRACY_NO_INVARIANT_CHECK");
+        options.PrivateDefinitions.Add("TRACY_NO_FRAME_IMAGE");
         if (options.Platform.Target == TargetPlatform.Windows)
         {
             options.PrivateDefinitions.Add("TRACY_DBGHELP_LOCK=DbgHelp");
@@ -54,7 +55,7 @@ public class tracy : ThirdPartyModule
     {
         base.GetFilesToDeploy(files);
 
-        files.Add(Path.Combine(FolderPath, "Tracy.h"));
+        files.Add(Path.Combine(FolderPath, "tracy", "Tracy.hpp"));
         files.Add(Path.Combine(FolderPath, "common", "TracySystem.hpp"));
         files.Add(Path.Combine(FolderPath, "client", "TracyCallstack.h"));
     }
