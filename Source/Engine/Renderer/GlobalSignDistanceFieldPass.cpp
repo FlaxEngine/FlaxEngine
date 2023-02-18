@@ -549,8 +549,8 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         _cascadeIndex = cascadeIndex;
         _sdfData = &sdfData;
         const float objectMargin = _voxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN;
-        _sdfDataOriginMax = sdfData.Origin - objectMargin;
-        _sdfDataOriginMax = sdfData.Origin + objectMargin;
+        _sdfDataOriginMin = -sdfData.Origin - objectMargin;
+        _sdfDataOriginMax = -sdfData.Origin + objectMargin;
         {
             PROFILE_CPU_NAMED("Draw");
             BoundingBox cascadeBoundsWorld = cascadeBounds.MakeOffsetted(sdfData.Origin);
@@ -958,9 +958,9 @@ void GlobalSignDistanceFieldPass::RasterizeModelSDF(Actor* actor, const ModelBas
     {
         // Setup object data
         BoundingBox objectBoundsCascade;
-        Vector3::Clamp(objectBounds.Minimum - _sdfDataOriginMin, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Minimum);
+        Vector3::Clamp(objectBounds.Minimum + _sdfDataOriginMin, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Minimum);
         Vector3::Subtract(objectBoundsCascade.Minimum, _cascadeBounds.Minimum, objectBoundsCascade.Minimum);
-        Vector3::Clamp(objectBounds.Maximum - _sdfDataOriginMax, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Maximum);
+        Vector3::Clamp(objectBounds.Maximum + _sdfDataOriginMax, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Maximum);
         Vector3::Subtract(objectBoundsCascade.Maximum, _cascadeBounds.Minimum, objectBoundsCascade.Maximum);
         const Int3 objectChunkMin(objectBoundsCascade.Minimum / _chunkSize);
         const Int3 objectChunkMax(objectBoundsCascade.Maximum / _chunkSize);
@@ -1019,9 +1019,9 @@ void GlobalSignDistanceFieldPass::RasterizeHeightfield(Actor* actor, GPUTexture*
     {
         // Setup object data
         BoundingBox objectBoundsCascade;
-        Vector3::Clamp(objectBounds.Minimum - _sdfDataOriginMin, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Minimum);
+        Vector3::Clamp(objectBounds.Minimum + _sdfDataOriginMin, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Minimum);
         Vector3::Subtract(objectBoundsCascade.Minimum, _cascadeBounds.Minimum, objectBoundsCascade.Minimum);
-        Vector3::Clamp(objectBounds.Maximum - _sdfDataOriginMax, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Maximum);
+        Vector3::Clamp(objectBounds.Maximum + _sdfDataOriginMax, _cascadeBounds.Minimum, _cascadeBounds.Maximum, objectBoundsCascade.Maximum);
         Vector3::Subtract(objectBoundsCascade.Maximum, _cascadeBounds.Minimum, objectBoundsCascade.Maximum);
         const Int3 objectChunkMin(objectBoundsCascade.Minimum / _chunkSize);
         const Int3 objectChunkMax(objectBoundsCascade.Maximum / _chunkSize);
