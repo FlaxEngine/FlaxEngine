@@ -147,6 +147,24 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Gets or sets the speed for the scroll on mouse wheel.
+        /// </summary>
+        public float ScrollSpeedWheel
+        {
+            get => _scrollChange;
+            set => _scrollChange = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the speed for the scroll on mouse click.
+        /// </summary>
+        public float ScrollSpeedClick
+        {
+            get => _clickChange;
+            set => _clickChange = value;
+        }
+
+        /// <summary>
         /// Gets the value slow down.
         /// </summary>
         public float ValueSlowDown => _targetValue - _value;
