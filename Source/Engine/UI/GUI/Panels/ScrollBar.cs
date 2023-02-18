@@ -23,7 +23,7 @@ namespace FlaxEngine.GUI
 
         // Scrolling
 
-        private float _clickChange = 20, _scrollChange = 30;
+        private float _clickChange = 20, _scrollChange = 75;
         private float _minimum, _maximum = 100;
         private float _value, _targetValue;
         private readonly Orientation _orientation;
@@ -144,6 +144,24 @@ namespace FlaxEngine.GUI
                     OnValueChanged();
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets or sets the speed for the scroll on mouse wheel.
+        /// </summary>
+        public float ScrollSpeedWheel
+        {
+            get => _scrollChange;
+            set => _scrollChange = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the speed for the scroll on mouse click.
+        /// </summary>
+        public float ScrollSpeedClick
+        {
+            get => _clickChange;
+            set => _clickChange = value;
         }
 
         /// <summary>
