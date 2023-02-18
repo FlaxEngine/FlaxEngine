@@ -23,7 +23,7 @@ namespace FlaxEngine.GUI
 
         // Scrolling
 
-        private float _clickChange = 20, _scrollChange = 30;
+        private float _clickChange = 20, _scrollChange = 75;
         private float _minimum, _maximum = 100;
         private float _value, _targetValue;
         private readonly Orientation _orientation;
