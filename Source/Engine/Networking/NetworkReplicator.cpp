@@ -1381,7 +1381,7 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
             // Reuse parent object as prefab instance
             prefabInstance = parentActor;
         }
-        else if (parentActor = Scripting::TryFindObject<Actor>(rootItem.ParentId))
+        else if ((parentActor = Scripting::TryFindObject<Actor>(rootItem.ParentId)))
         {
             // Try to find that spawned prefab (eg. prefab with networked script was spawned before so now we need to link it)
             for (Actor* child : parentActor->Children)

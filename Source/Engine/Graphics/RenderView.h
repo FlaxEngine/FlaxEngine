@@ -253,6 +253,14 @@ public:
     }
 
 public:
+    // Ignore deprecation warnings in defaults
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
+    RenderView();
+    RenderView(const RenderView& other) = default;
+    RenderView(RenderView&& other) = default;
+    RenderView& operator=(const RenderView& other) = default;
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
     // Set up view with custom params
     // @param viewProjection View * Projection matrix
     void SetUp(const Matrix& viewProjection);
