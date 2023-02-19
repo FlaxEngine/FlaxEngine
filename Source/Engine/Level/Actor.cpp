@@ -471,6 +471,11 @@ bool Actor::HasTag(const StringView& tag) const
     return Tags.Contains(tag);
 }
 
+void Actor::AddTag(const Tag& tag)
+{
+    Tags.AddUnique(tag);
+}
+
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 const String& Actor::GetTag() const

@@ -131,6 +131,12 @@ public:
     API_FUNCTION() bool HasTag(const StringView& tag) const;
 
     /// <summary>
+    /// Adds a tag to the actor
+    /// </summary>
+    /// <param name="tag">The tag to add.</param>
+    API_FUNCTION() void AddTag(const Tag& tag);
+
+    /// <summary>
     /// Gets the name of the tag.
     /// [Deprecated in v1.5]
     /// </summary>
