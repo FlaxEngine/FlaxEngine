@@ -3,6 +3,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
 using Microsoft.Win32;
 
 namespace Flax.Build
@@ -12,6 +13,8 @@ namespace Flax.Build
     /// </summary>
     public sealed class DotNetSdk : Sdk
     {
+        private Dictionary<KeyValuePair<TargetPlatform, TargetArchitecture>, string> _hostRuntimes = new();
+
         /// <summary>
         /// The singleton instance.
         /// </summary>
@@ -31,6 +34,7 @@ namespace Flax.Build
                 {
                     TargetPlatform.Windows,
                     TargetPlatform.Linux,
+                    TargetPlatform.Mac,
                 };
             }
         }
@@ -44,11 +48,6 @@ namespace Flax.Build
         /// Dotnet Shared FX library version (eg. 7.0).
         /// </summary>
         public readonly string RuntimeVersionName;
-
-        /// <summary>
-        /// Dotnet hosting library files path (eg. <RootPath>/packs/Microsoft.NETCore.App.Host.<os>/<VersionName>/runtimes/<os>-<arcg>/native).
-        /// </summary>
-        public readonly string HostRootPath;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DotNetSdk"/> class.
@@ -114,6 +113,15 @@ namespace Flax.Build
                 dotnetRuntimeVersions = Directory.GetDirectories($"{dotnetPath}shared/Microsoft.NETCore.App/").Select(Path.GetFileName).ToArray();
                 break;
             }
+            case TargetPlatform.Mac:
+            {
+                rid = $"osx-{arch}";
+                ridFallback = "";
+                dotnetPath = "/usr/local/share/dotnet/";
+                dotnetSdkVersions = Directory.GetDirectories($"{dotnetPath}sdk/").Select(Path.GetFileName).ToArray();
+                dotnetRuntimeVersions = Directory.GetDirectories($"{dotnetPath}shared/Microsoft.NETCore.App/").Select(Path.GetFileName).ToArray();
+                break;
+            }
             default:
                 throw new InvalidPlatformException(platform);
             }
@@ -134,22 +142,49 @@ namespace Flax.Build
                 Log.Warning($"Unsupported .NET SDK {dotnetSdkVersion} version found. Minimum version required is .NET {MinimumVersion}.");
                 return;
             }
-            HostRootPath = Path.Combine(dotnetPath, $"packs/Microsoft.NETCore.App.Host.{rid}/{dotnetRuntimeVersion}/runtimes/{rid}/native");
-            if (!string.IsNullOrEmpty(ridFallback) && !Directory.Exists(HostRootPath))
-                HostRootPath = Path.Combine(dotnetPath, $"packs/Microsoft.NETCore.App.Host.{ridFallback}/{dotnetRuntimeVersion}/runtimes/{ridFallback}/native");
-            if (!Directory.Exists(HostRootPath))
-            {
-                Log.Warning($"Missing .NET SDK host runtime path in {HostRootPath}.");
-                return;
-            }
-
-            // Found
             RootPath = dotnetPath;
-            IsValid = true;
             Version = ParseVersion(dotnetSdkVersion);
             VersionName = dotnetSdkVersion;
             RuntimeVersionName = dotnetRuntimeVersion;
+
+            // Pick SDK runtime
+            if (!TryAddHostRuntime(platform, architecture, rid) && !TryAddHostRuntime(platform, architecture, ridFallback))
+            {
+                var path = Path.Combine(RootPath, $"packs/Microsoft.NETCore.App.Host.{rid}/{RuntimeVersionName}/runtimes/{rid}/native");
+                Log.Warning($"Missing .NET SDK host runtime for {platform} {architecture} ({path}).");
+                return;
+            }
+            TryAddHostRuntime(TargetPlatform.Windows, TargetArchitecture.x86, "win-x86");
+            TryAddHostRuntime(TargetPlatform.Windows, TargetArchitecture.x64, "win-x64");
+            TryAddHostRuntime(TargetPlatform.Windows, TargetArchitecture.ARM64, "win-arm64");
+            TryAddHostRuntime(TargetPlatform.Mac, TargetArchitecture.x64, "osx-x64");
+            TryAddHostRuntime(TargetPlatform.Mac, TargetArchitecture.ARM64, "osx-arm64");
+            
+            // Found
+            IsValid = true;
             Log.Verbose($"Found .NET SDK {VersionName} (runtime {RuntimeVersionName}) at {RootPath}");
+            foreach (var e in _hostRuntimes)
+                Log.Verbose($"  - Host Runtime for {e.Key.Key} {e.Key.Value}");
+        }
+
+        /// <summary>
+        /// Gets the path to runtime host contents folder for a given target platform and architecure.
+        /// In format: <RootPath>/packs/Microsoft.NETCore.App.Host.<os>/<VersionName>/runtimes/<os>-<arch>/native
+        /// </summary>
+        public bool GetHostRuntime(TargetPlatform platform, TargetArchitecture arch, out string path)
+        {
+            return _hostRuntimes.TryGetValue(new KeyValuePair<TargetPlatform, TargetArchitecture>(platform, arch), out path);
+        }
+
+        private bool TryAddHostRuntime(TargetPlatform platform, TargetArchitecture arch, string rid)
+        {
+            if (string.IsNullOrEmpty(rid))
+                return false;
+            var path = Path.Combine(RootPath, $"packs/Microsoft.NETCore.App.Host.{rid}/{RuntimeVersionName}/runtimes/{rid}/native");
+            var exists = Directory.Exists(path);
+            if (exists)
+                _hostRuntimes[new KeyValuePair<TargetPlatform, TargetArchitecture>(platform, arch)] = path;
+            return exists;
         }
 
         private static Version ParseVersion(string version)

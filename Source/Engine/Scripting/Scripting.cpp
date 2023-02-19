@@ -140,7 +140,7 @@ bool ScriptingService::Init()
     // Initialize managed runtime
     if (MCore::LoadEngine())
     {
-        LOG(Fatal, "Mono initialization failed.");
+        LOG(Fatal, "C# runtime initialization failed.");
         return true;
     }
 

@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
-using System.IO;
 using System;
+using System.IO;
 using Flax.Build;
 using Flax.Build.NativeCpp;
 
@@ -29,9 +29,12 @@ public class nethost : ThirdPartyModule
 
         options.SourceFiles.Clear();
 
+        // Get .NET SDK runtime host
         var dotnetSdk = DotNetSdk.Instance;
         if (!dotnetSdk.IsValid)
             throw new Exception($"Missing NET SDK {DotNetSdk.MinimumVersion}.");
+        if (!dotnetSdk.GetHostRuntime(options.Platform.Target, options.Architecture, out var hostRuntimePath))
+            throw new Exception($"Missing NET SDK runtime for {options.Platform.Target} {options.Architecture}.");
 
         // Setup build configuration
         switch (options.Platform.Target)
@@ -40,22 +43,25 @@ public class nethost : ThirdPartyModule
         case TargetPlatform.XboxOne:
         case TargetPlatform.XboxScarlett:
         case TargetPlatform.UWP:
-            options.OutputFiles.Add(Path.Combine(dotnetSdk.HostRootPath, "nethost.lib"));
-            options.DependencyFiles.Add(Path.Combine(dotnetSdk.HostRootPath, "nethost.dll"));
+            options.OutputFiles.Add(Path.Combine(hostRuntimePath, "nethost.lib"));
+            options.DependencyFiles.Add(Path.Combine(hostRuntimePath, "nethost.dll"));
             break;
         case TargetPlatform.Linux:
         case TargetPlatform.Android:
         case TargetPlatform.Switch:
         case TargetPlatform.PS4:
         case TargetPlatform.PS5:
+            options.OutputFiles.Add(Path.Combine(hostRuntimePath, "libnethost.a"));
+            options.DependencyFiles.Add(Path.Combine(hostRuntimePath, "libnethost.so"));
+            break;
         case TargetPlatform.Mac:
-            options.OutputFiles.Add(Path.Combine(dotnetSdk.HostRootPath, "libnethost.a"));
-            options.DependencyFiles.Add(Path.Combine(dotnetSdk.HostRootPath, "libnethost.so"));
+            options.OutputFiles.Add(Path.Combine(hostRuntimePath, "libnethost.a"));
+            options.DependencyFiles.Add(Path.Combine(hostRuntimePath, "libnethost.dylib"));
             break;
         default:
             throw new InvalidPlatformException(options.Platform.Target);
         }
-        options.PublicIncludePaths.Add(dotnetSdk.HostRootPath);
+        options.PublicIncludePaths.Add(hostRuntimePath);
         options.ScriptingAPI.Defines.Add("USE_NETCORE");
         options.DependencyFiles.Add(Path.Combine(FolderPath, "FlaxEngine.CSharp.runtimeconfig.json"));
     }

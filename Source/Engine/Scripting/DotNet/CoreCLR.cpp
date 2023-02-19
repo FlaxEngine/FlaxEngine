@@ -59,7 +59,13 @@ bool CoreCLR::InitHostfxr(const String& configPath, const String& libraryPath)
     const String path(hostfxrPath);
     LOG(Info, "Found hostfxr in {0}", path);
 
+    // Get API from hostfxr library
     void* hostfxr = Platform::LoadLibrary(path.Get());
+    if (hostfxr == nullptr)
+    {
+        LOG(Error, "Failed to setup hostfxr API ({0})", path);
+        return true;
+    }
     hostfxr_initialize_for_runtime_config = (hostfxr_initialize_for_runtime_config_fn)Platform::GetProcAddress(hostfxr, "hostfxr_initialize_for_runtime_config");
     hostfxr_initialize_for_dotnet_command_line = (hostfxr_initialize_for_dotnet_command_line_fn)Platform::GetProcAddress(hostfxr, "hostfxr_initialize_for_dotnet_command_line");
     hostfxr_get_runtime_delegate = (hostfxr_get_runtime_delegate_fn)Platform::GetProcAddress(hostfxr, "hostfxr_get_runtime_delegate");
@@ -69,7 +75,7 @@ bool CoreCLR::InitHostfxr(const String& configPath, const String& libraryPath)
     hostfxr_run_app = (hostfxr_run_app_fn)Platform::GetProcAddress(hostfxr, "hostfxr_run_app");
     if (!hostfxr_get_runtime_delegate || !hostfxr_run_app)
     {
-        LOG(Error, "Failed to setup hostfxr API");
+        LOG(Error, "Failed to setup hostfxr API ({0})", path);
         return true;
     }
 

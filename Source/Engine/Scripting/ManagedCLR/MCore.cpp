@@ -119,6 +119,7 @@ void MCore::UnloadDomain(const MString& domainName)
 #if USE_NETCORE
 bool MCore::LoadEngine()
 {
+    PROFILE_CPU();
     const String csharpLibraryPath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.dll");
     const String csharpRuntimeConfigPath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.runtimeconfig.json");
     if (!FileSystem::FileExists(csharpLibraryPath))
@@ -152,6 +153,9 @@ bool MCore::LoadEngine()
 
 void MCore::UnloadEngine()
 {
+    if (!MRootDomain)
+        return;
+    PROFILE_CPU();
     CoreCLR::CallStaticMethodByName<void>(TEXT("Exit"));
     MDomains.ClearDelete();
     MRootDomain = nullptr;

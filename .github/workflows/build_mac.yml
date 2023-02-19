@@ -5,7 +5,6 @@ jobs:
 
   # Editor
   editor-mac:
-    if: ${{ false }}
     name: Editor (Mac, Development x64)
     runs-on: "macos-latest"
     steps:
@@ -30,7 +29,6 @@ jobs:
 
   # Game
   game-mac:
-    if: ${{ false }}
     name: Game (Mac, Release x64)
     runs-on: "macos-latest"
     steps:
