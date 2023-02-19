@@ -255,7 +255,7 @@ public:
 public:
     // Ignore deprecation warnings in defaults
     PRAGMA_DISABLE_DEPRECATION_WARNINGS
-    RenderView();
+    RenderView() = default;
     RenderView(const RenderView& other) = default;
     RenderView(RenderView&& other) = default;
     RenderView& operator=(const RenderView& other) = default;
