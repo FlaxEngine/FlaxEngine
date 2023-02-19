@@ -718,7 +718,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         }
 
         // Allocate buffer for culled objects (estimated size)
-        objectsBufferCapacity = Math::Min(Math::AlignUp<uint32>(objectsBufferCapacity * sizeof(uint32), 4096u), (uint32)MAX_int32);
+        objectsBufferCapacity = Math::Min(Math::AlignUp<uint32>(objectsBufferCapacity * sizeof(uint32) * 2, 4096u), (uint32)MAX_int32);
         if (!surfaceAtlasData.CulledObjectsBuffer)
             surfaceAtlasData.CulledObjectsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("GlobalSurfaceAtlas.CulledObjectsBuffer"));
         if (surfaceAtlasData.CulledObjectsBuffer->GetSize() < objectsBufferCapacity)
