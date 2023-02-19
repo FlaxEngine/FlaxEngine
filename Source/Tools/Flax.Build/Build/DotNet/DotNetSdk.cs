@@ -60,9 +60,9 @@ namespace Flax.Build
                 return;
 
             // Find system-installed SDK
-            string dotnetPath;
+            string dotnetPath = Environment.GetEnvironmentVariable("DOTNET_ROOT");
             string rid, ridFallback, arch;
-            string[] dotnetSdkVersions, dotnetRuntimeVersions;
+            string[] dotnetSdkVersions = null, dotnetRuntimeVersions = null;
             switch (architecture)
             {
             case TargetArchitecture.x86:
@@ -108,18 +108,16 @@ namespace Flax.Build
                 ridFallback = $"linux-{arch}";
                 if (rid == ridFallback)
                     ridFallback = "";
-                dotnetPath = "/usr/share/dotnet/";
-                dotnetSdkVersions = Directory.GetDirectories($"{dotnetPath}sdk/").Select(Path.GetFileName).ToArray();
-                dotnetRuntimeVersions = Directory.GetDirectories($"{dotnetPath}shared/Microsoft.NETCore.App/").Select(Path.GetFileName).ToArray();
+                if (string.IsNullOrEmpty(dotnetPath))
+                    dotnetPath = "/usr/share/dotnet/";
                 break;
             }
             case TargetPlatform.Mac:
             {
                 rid = $"osx-{arch}";
                 ridFallback = "";
-                dotnetPath = "/usr/local/share/dotnet/";
-                dotnetSdkVersions = Directory.GetDirectories($"{dotnetPath}sdk/").Select(Path.GetFileName).ToArray();
-                dotnetRuntimeVersions = Directory.GetDirectories($"{dotnetPath}shared/Microsoft.NETCore.App/").Select(Path.GetFileName).ToArray();
+                if (string.IsNullOrEmpty(dotnetPath))
+                    dotnetPath = "/usr/local/share/dotnet/";
                 break;
             }
             default:
@@ -127,11 +125,25 @@ namespace Flax.Build
             }
 
             // Pick SDK version
+            if (string.IsNullOrEmpty(dotnetPath))
+            {
+                Log.Warning("Missing .NET SDK");
+                return;
+            }
+            if (!Directory.Exists(dotnetPath))
+            {
+                Log.Warning($"Missing .NET SDK ({dotnetPath})");
+                return;
+            }
+            if (dotnetSdkVersions == null)
+                dotnetSdkVersions = Directory.GetDirectories($"{dotnetPath}sdk/").Select(Path.GetFileName).ToArray();
+            if (dotnetRuntimeVersions == null)
+                dotnetRuntimeVersions = Directory.GetDirectories($"{dotnetPath}shared/Microsoft.NETCore.App/").Select(Path.GetFileName).ToArray();
             string dotnetSdkVersion = dotnetSdkVersions.OrderByDescending(ParseVersion).FirstOrDefault();
             string dotnetRuntimeVersion = dotnetRuntimeVersions.OrderByDescending(ParseVersion).FirstOrDefault();
             if (string.IsNullOrEmpty(dotnetSdkVersion))
-                dotnetSdkVersion = Environment.GetEnvironmentVariable("DOTNET_ROOT");
-            if (string.IsNullOrEmpty(dotnetPath) || string.IsNullOrEmpty(dotnetSdkVersion) || string.IsNullOrEmpty(dotnetRuntimeVersion))
+                dotnetSdkVersion = dotnetPath;
+            if (string.IsNullOrEmpty(dotnetSdkVersion) || string.IsNullOrEmpty(dotnetRuntimeVersion))
             {
                 Log.Warning("Missing .NET SDK");
                 return;
