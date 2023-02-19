@@ -1440,7 +1440,6 @@ void Profiler::SpawnWorkerThreads()
 
 #ifndef TRACY_NO_CRASH_HANDLER
     m_crashHandlerInstalled = true;
-    sigaction( SIGABRT, &crashHandler, nullptr );
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK
