@@ -71,7 +71,7 @@ String MacUtils::ToString(CFStringRef str)
 
 CFStringRef MacUtils::ToString(const StringView& str)
 {
-    return CFStringCreateWithBytes(nullptr, (const UInt8*)str.GetNonTerminatedText(), str.Length() * sizeof(Char), kCFStringEncodingUTF16LE, false);
+    return CFStringCreateWithBytes(nullptr, (const UInt8*)str.GetText(), str.Length() * sizeof(Char), kCFStringEncodingUTF16LE, false);
 }
 
 Float2 MacUtils::PosToCoca(const Float2& pos)

@@ -204,7 +204,7 @@ namespace Flax.Build.Bindings
             if (typeInfo.Type == "String")
                 return $"(StringView){value}";
             if (typeInfo.IsPtr && typeInfo.IsConst && typeInfo.Type == "Char")
-                return $"((StringView){value}).GetNonTerminatedText()"; // (StringView)Variant, if not empty, is guaranteed to point to a null-terminated buffer.
+                return $"((StringView){value}).GetText()"; // (StringView)Variant, if not empty, is guaranteed to point to a null-terminated buffer.
             if (typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftAssetReference")
                 return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((Asset*){value})";
             if (typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "SoftObjectReference")
