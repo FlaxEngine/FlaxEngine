@@ -44,7 +44,10 @@ namespace Flax.Build
             foreach (var e in _sdks)
             {
                 var sdk = e.Value;
-                Log.Info(sdk.GetType().Name + ", " + sdk.Version + ", " + sdk.RootPath);
+                if (sdk.IsValid)
+                    Log.Info(sdk.GetType().Name + ", " + sdk.Version + ", " + sdk.RootPath);
+                else
+                    Log.Info(sdk.GetType().Name + ", missing");
             }
             foreach (var e in WindowsPlatformBase.GetSDKs())
             {
