@@ -42,7 +42,12 @@ bool CoreCLR::InitHostfxr(const String& configPath, const String& libraryPath)
     get_hostfxr_parameters get_hostfxr_params;
     get_hostfxr_params.size = sizeof(hostfxr_initialize_parameters);
     get_hostfxr_params.assembly_path = library_path.Get();
-    get_hostfxr_params.dotnet_root = nullptr;//dotnetRoot.Get();
+    // TODO: implement proper lookup for dotnet instalation folder and handle standalone build of FlaxGame
+#if PLATFORM_MAC
+    get_hostfxr_params.dotnet_root = "/usr/local/share/dotnet";
+#else
+    get_hostfxr_params.dotnet_root = nullptr;
+#endif
     char_t hostfxrPath[1024];
     size_t hostfxrPathSize = sizeof(hostfxrPath) / sizeof(char_t);
     int rc = get_hostfxr_path(hostfxrPath, &hostfxrPathSize, &get_hostfxr_params);

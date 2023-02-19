@@ -210,12 +210,27 @@ namespace Flax.Build
                 break;
             }
             case TargetPlatform.Mac:
-                monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Mac", "Mono");
-                monoPath = Path.Combine(monoRoot, "bin", "mono");
-                cscPath = Path.Combine(monoRoot, "lib", "mono", "4.5", "csc.exe");
-                referenceAssemblies = Path.Combine(monoRoot, "lib", "mono", "4.5-api");
-                referenceAnalyzers = "";
+            {
+#if USE_NETCORE
+                var dotnetSdk = DotNetSdk.Instance;
+                if (dotnetSdk.IsValid)
+                {
+                    // Use dotnet
+                    cscPath = @$"{dotnetSdk.RootPath}sdk/{dotnetSdk.VersionName}/Roslyn/bincore/csc.dll";
+                    referenceAssemblies = @$"{dotnetSdk.RootPath}shared/Microsoft.NETCore.App/{dotnetSdk.RuntimeVersionName}/";
+                    referenceAnalyzers = @$"{dotnetSdk.RootPath}packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/analyzers/dotnet/cs/";
+                }
+                else
+#endif
+                {
+                    monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Mac", "Mono");
+                    monoPath = Path.Combine(monoRoot, "bin", "mono");
+                    cscPath = Path.Combine(monoRoot, "lib", "mono", "4.5", "csc.exe");
+                    referenceAssemblies = Path.Combine(monoRoot, "lib", "mono", "4.5-api");
+                    referenceAnalyzers = "";
+                }
                 break;
+            }
             default: throw new InvalidPlatformException(buildPlatform);
             }
 
