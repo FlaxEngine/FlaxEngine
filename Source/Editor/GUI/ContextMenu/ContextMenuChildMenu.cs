@@ -55,8 +55,6 @@ namespace FlaxEditor.GUI.ContextMenu
         /// <inheritdoc />
         public override void OnMouseEnter(Float2 location)
         {
-            base.OnMouseEnter(location);
-
             // Skip if has no children
             if (ContextMenu.HasChildren == false)
                 return;
@@ -66,8 +64,28 @@ namespace FlaxEditor.GUI.ContextMenu
             if (parentContextMenu == ContextMenu)
                 return;
 
+            if (ContextMenu.IsOpened)
+                return;
+
+            base.OnMouseEnter(location);
+
             // Hide parent CM popups and set itself as child
             parentContextMenu.ShowChild(ContextMenu, PointToParent(ParentContextMenu, new Float2(Width, 0)));
+        }
+        
+        /// <inheritdoc />
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            // Skip if already shown
+            var parentContextMenu = ParentContextMenu;
+            if (parentContextMenu == ContextMenu)
+                return true;
+            if (ContextMenu.IsOpened)
+                return true;
+
+            // Hide parent CM popups and set itself as child
+            parentContextMenu.ShowChild(ContextMenu, PointToParent(ParentContextMenu, new Float2(Width, 0)));
+            return base.OnMouseUp(location, button);
         }
     }
 }

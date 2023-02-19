@@ -152,7 +152,7 @@ void ShadowsOfMordor::Builder::updateLightmaps()
         {
             auto texture = textures[textureIndex];
             GPUDevice::Instance->Locker.Unlock();
-            if (texture->WaitForLoaded())
+            if (texture == nullptr || texture->WaitForLoaded())
             {
                 LOG(Error, "Lightmap load failed.");
                 return;

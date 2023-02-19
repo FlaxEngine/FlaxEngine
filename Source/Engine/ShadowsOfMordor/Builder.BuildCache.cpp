@@ -103,7 +103,7 @@ void ShadowsOfMordor::Builder::SceneBuildCache::UpdateLightmaps()
         // Download buffer data
         if (lightmapEntry.LightmapData->DownloadData(ImportLightmapTextureData))
         {
-            LOG(Warning, "Cannot download LightmapData.");
+            LOG(Error, "Cannot download LightmapData.");
             return;
         }
 

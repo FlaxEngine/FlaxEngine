@@ -274,9 +274,8 @@ namespace FlaxEngine
         /// <returns>The gathered data.</returns>
         public Vertex0[] DownloadVertexBuffer0(bool forceGpu = false)
         {
-            var vertices = VertexCount;
-            var result = new Vertex0[vertices];
-            if (Internal_DownloadBuffer(__unmanagedPtr, forceGpu, result, (int)InternalBufferType.VB0))
+            var result = (Vertex0[])Internal_DownloadBuffer(__unmanagedPtr, forceGpu, typeof(Vertex0), (int)InternalBufferType.VB0);
+            if (result == null)
                 throw new Exception("Failed to download mesh data.");
             return result;
         }
@@ -292,7 +291,7 @@ namespace FlaxEngine
 
             var vb0 = DownloadVertexBuffer0(forceGpu);
 
-            var vertices = VertexCount;
+            var vertices = vb0.Length;
             var result = new Vertex[vertices];
             for (int i = 0; i < vertices; i++)
             {
@@ -319,9 +318,8 @@ namespace FlaxEngine
         /// <returns>The gathered data.</returns>
         public uint[] DownloadIndexBuffer(bool forceGpu = false)
         {
-            var triangles = TriangleCount;
-            var result = new uint[triangles * 3];
-            if (Internal_DownloadBuffer(__unmanagedPtr, forceGpu, result, (int)InternalBufferType.IB32))
+            var result = (uint[])Internal_DownloadBuffer(__unmanagedPtr, forceGpu, typeof(uint), (int)InternalBufferType.IB32);
+            if (result == null)
                 throw new Exception("Failed to download mesh data.");
             return result;
         }
@@ -334,9 +332,8 @@ namespace FlaxEngine
         /// <returns>The gathered data.</returns>
         public ushort[] DownloadIndexBufferUShort(bool forceGpu = false)
         {
-            var triangles = TriangleCount;
-            var result = new ushort[triangles * 3];
-            if (Internal_DownloadBuffer(__unmanagedPtr, forceGpu, result, (int)InternalBufferType.IB16))
+            var result = (ushort[])Internal_DownloadBuffer(__unmanagedPtr, forceGpu, typeof(ushort), (int)InternalBufferType.IB16);
+            if (result == null)
                 throw new Exception("Failed to download mesh data.");
             return result;
         }

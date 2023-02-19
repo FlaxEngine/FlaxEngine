@@ -104,15 +104,18 @@ int32 ParticleSystemInstance::GetParticlesCount() const
     if (GPUParticlesCountReadback && GPUParticlesCountReadback->IsAllocated())
     {
         auto data = static_cast<uint32*>(GPUParticlesCountReadback->Map(GPUResourceMapMode::Read));
-        for (const auto& emitter : Emitters)
+        if (data)
         {
-            if (emitter.Buffer && emitter.Buffer->Mode == ParticlesSimulationMode::GPU && emitter.Buffer->GPU.HasValidCount)
+            for (const auto& emitter : Emitters)
             {
-                result += *data;
+                if (emitter.Buffer && emitter.Buffer->Mode == ParticlesSimulationMode::GPU && emitter.Buffer->GPU.HasValidCount)
+                {
+                    result += *data;
+                }
+                ++data;
             }
-            ++data;
+            GPUParticlesCountReadback->Unmap();
         }
-        GPUParticlesCountReadback->Unmap();
     }
     else if (Emitters.HasItems())
     {

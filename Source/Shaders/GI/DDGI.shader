@@ -160,9 +160,9 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
         uint sdfCascade = GetGlobalSDFCascade(GlobalSDF, probePosition);
         float4 CachedProbeOffsets[64];
         // TODO: test performance diff when using shared memory and larger thread group (is it worth it?)
-        for(uint x = 0; x < 4; x++)
-        for(uint y = 0; y < 4; y++)
-        for(uint z = 0; z < 4; z++)
+        for (uint x = 0; x < 4; x++)
+        for (uint y = 0; y < 4; y++)
+        for (uint z = 0; z < 4; z++)
         {
             float3 offset = Remap(float3(x, y, z), 0, 3, -0.5f, 0.5f) * relocateLimit;
             float offsetSdf = SampleGlobalSDFCascade(GlobalSDF, GlobalSDFTex, probeBasePosition + offset, sdfCascade);
@@ -273,7 +273,7 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
     float4 probeData = LoadDDGIProbeData(DDGI, ProbesData, CascadeIndex, probeIndex);
     uint probeState = DecodeDDGIProbeState(probeData);
     uint probeRaysCount = GetProbeRaysCount(DDGI, probeState);
-    if (probeState == DDGI_PROBE_STATE_INACTIVE || probeRaysCount < rayIndex)
+    if (probeState == DDGI_PROBE_STATE_INACTIVE || rayIndex >= probeRaysCount)
         return; // Skip disabled probes or if current thread's ray is unused
     float3 probePosition = DecodeDDGIProbePosition(DDGI, probeData, CascadeIndex, probeIndex, probeCoords);
     float3 probeRayDirection = GetProbeRayDirection(DDGI, rayIndex);

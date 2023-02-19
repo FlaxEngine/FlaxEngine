@@ -72,7 +72,18 @@ public:
     /// <param name="json">The Json string.</param>
     /// <param name="output">The output list of object IDs references by the asset (appended, not cleared).</param>
     API_FUNCTION() static void GetReferences(const StringAnsiView& json, API_PARAM(Out) Array<Guid, HeapAllocation>& output);
+
+    /// <summary>
+    /// Saves this asset to the file. Supported only in Editor.
+    /// </summary>
+    /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
+    /// <returns>True if cannot save data, otherwise false.</returns>
+    API_FUNCTION() bool Save(const StringView& path = StringView::Empty);
 #endif
+
+protected:
+    // Gets the serialized Json data (from runtime state).
+    virtual void OnGetData(rapidjson_flax::StringBuffer& buffer) const;
 
 public:
     // [Asset]

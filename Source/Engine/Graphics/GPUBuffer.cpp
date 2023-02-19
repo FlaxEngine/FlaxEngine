@@ -377,12 +377,9 @@ void GPUBuffer::SetData(const void* data, uint32 size)
         Log::ArgumentOutOfRangeException(TEXT("Buffer.SetData"));
         return;
     }
-
     void* mapped = Map(GPUResourceMapMode::Write);
     if (!mapped)
-    {
         return;
-    }
     Platform::MemoryCopy(mapped, data, size);
     Unmap();
 }

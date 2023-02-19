@@ -48,7 +48,7 @@ public:
     /// Gets attached texture objects
     /// </summary>
     /// <param name="lightmaps">Lightmaps textures array</param>
-    void GetTextures(GPUTexture* lightmaps[]) const
+    void GetTextures(GPUTexture* lightmaps[3]) const
     {
         lightmaps[0] = _textures[0] ? _textures[0]->GetTexture() : nullptr;
         lightmaps[1] = _textures[1] ? _textures[1]->GetTexture() : nullptr;
@@ -59,7 +59,7 @@ public:
     /// Gets attached texture objects
     /// </summary>
     /// <param name="lightmaps">Lightmaps textures array</param>
-    void GetTextures(Texture* lightmaps[]) const
+    void GetTextures(Texture* lightmaps[3]) const
     {
         lightmaps[0] = _textures[0].Get();
         lightmaps[1] = _textures[1].Get();

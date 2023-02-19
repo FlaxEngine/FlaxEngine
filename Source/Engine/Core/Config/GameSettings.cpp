@@ -22,7 +22,7 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Streaming/StreamingSettings.h"
-#if FLAX_TESTS
+#if FLAX_TESTS || USE_EDITOR
 #include "Engine/Platform/FileSystem.h"
 #endif
 
@@ -91,6 +91,19 @@ GameSettings* GameSettings::Get()
         // Silence missing GameSettings during test run before Editor creates it (not important)
         if (!FileSystem::FileExists(assetPath))
             return nullptr;
+#endif
+#if USE_EDITOR
+        // Log once missing GameSettings in Editor
+        if (!FileSystem::FileExists(assetPath))
+        {
+            static bool LogOnce = true;
+            if (LogOnce)
+            {
+                LogOnce = false;
+                LOG(Error, "Missing file game settings asset ({0})", assetPath);
+            }
+            return nullptr;
+        }
 #endif
         GameSettingsAsset = Content::LoadAsync<JsonAsset>(assetPath);
         if (GameSettingsAsset == nullptr)
