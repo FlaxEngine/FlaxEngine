@@ -172,9 +172,9 @@ namespace Flax.Build
                 if (dotnetSdk.IsValid)
                 {
                     // Use dotnet
-                    cscPath = @$"{dotnetSdk.RootPath}sdk\{dotnetSdk.VersionName}\Roslyn\bincore\csc.dll";
-                    referenceAssemblies = @$"{dotnetSdk.RootPath}shared\Microsoft.NETCore.App\{dotnetSdk.RuntimeVersionName}\";
-                    referenceAnalyzers = @$"{dotnetSdk.RootPath}packs\Microsoft.NETCore.App.Ref\{dotnetSdk.RuntimeVersionName}\analyzers\dotnet\cs\";
+                    cscPath = Path.Combine(dotnetSdk.RootPath, @$"sdk\{dotnetSdk.VersionName}\Roslyn\bincore\csc.dll");
+                    referenceAssemblies = Path.Combine(dotnetSdk.RootPath, @$"shared\Microsoft.NETCore.App\{dotnetSdk.RuntimeVersionName}\");
+                    referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, @$"packs\Microsoft.NETCore.App.Ref\{dotnetSdk.RuntimeVersionName}\analyzers\dotnet\cs\");
                 }
                 else
 #endif
@@ -194,9 +194,9 @@ namespace Flax.Build
                 if (dotnetSdk.IsValid)
                 {
                     // Use dotnet
-                    cscPath = @$"{dotnetSdk.RootPath}sdk/{dotnetSdk.VersionName}/Roslyn/bincore/csc.dll";
-                    referenceAssemblies = @$"{dotnetSdk.RootPath}shared/Microsoft.NETCore.App/{dotnetSdk.RuntimeVersionName}/";
-                    referenceAnalyzers = @$"{dotnetSdk.RootPath}packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/analyzers/dotnet/cs/";
+                    cscPath = Path.Combine(dotnetSdk.RootPath, $"sdk/{dotnetSdk.VersionName}/Roslyn/bincore/csc.dll");
+                    referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"shared/Microsoft.NETCore.App/{dotnetSdk.RuntimeVersionName}/");
+                    referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/analyzers/dotnet/cs/");
                 }
                 else
 #endif
@@ -216,9 +216,9 @@ namespace Flax.Build
                 if (dotnetSdk.IsValid)
                 {
                     // Use dotnet
-                    cscPath = @$"{dotnetSdk.RootPath}sdk/{dotnetSdk.VersionName}/Roslyn/bincore/csc.dll";
-                    referenceAssemblies = @$"{dotnetSdk.RootPath}shared/Microsoft.NETCore.App/{dotnetSdk.RuntimeVersionName}/";
-                    referenceAnalyzers = @$"{dotnetSdk.RootPath}packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/analyzers/dotnet/cs/";
+                    cscPath = Path.Combine(dotnetSdk.RootPath, $"sdk/{dotnetSdk.VersionName}/Roslyn/bincore/csc.dll");
+                    referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"shared/Microsoft.NETCore.App/{dotnetSdk.RuntimeVersionName}/");
+                    referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/analyzers/dotnet/cs/");
                 }
                 else
 #endif
