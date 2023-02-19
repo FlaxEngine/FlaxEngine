@@ -136,9 +136,9 @@ namespace Flax.Build
                 return;
             }
             if (dotnetSdkVersions == null)
-                dotnetSdkVersions = Directory.GetDirectories($"{dotnetPath}sdk/").Select(Path.GetFileName).ToArray();
+                dotnetSdkVersions = Directory.GetDirectories(Path.Combine(dotnetPath, "sdk")).Select(Path.GetFileName).ToArray();
             if (dotnetRuntimeVersions == null)
-                dotnetRuntimeVersions = Directory.GetDirectories($"{dotnetPath}shared/Microsoft.NETCore.App/").Select(Path.GetFileName).ToArray();
+                dotnetRuntimeVersions = Directory.GetDirectories(Path.Combine(dotnetPath, "shared/Microsoft.NETCore.App/")).Select(Path.GetFileName).ToArray();
             string dotnetSdkVersion = dotnetSdkVersions.OrderByDescending(ParseVersion).FirstOrDefault();
             string dotnetRuntimeVersion = dotnetRuntimeVersions.OrderByDescending(ParseVersion).FirstOrDefault();
             if (string.IsNullOrEmpty(dotnetSdkVersion))
