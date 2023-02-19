@@ -131,6 +131,19 @@ public:
     API_FUNCTION() bool HasTag(const StringView& tag) const;
 
     /// <summary>
+    /// Gets the name of the tag.
+    /// [Deprecated in v1.5]
+    /// </summary>
+    API_PROPERTY(Attributes="HideInEditor, NoSerialize, NoAnimate")
+    DEPRECATED const String& GetTag() const;
+
+    /// <summary>
+    /// Sets the name of the tag.
+    /// [Deprecated in v1.5]
+    /// </summary>
+    API_PROPERTY() DEPRECATED void SetTag(const StringView& value);
+
+    /// <summary>
     /// Gets the actor name.
     /// </summary>
     API_PROPERTY(Attributes="NoAnimate, EditorDisplay(\"General\"), EditorOrder(-100)")
