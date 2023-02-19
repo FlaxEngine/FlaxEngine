@@ -34,7 +34,11 @@ public class nethost : ThirdPartyModule
         if (!dotnetSdk.IsValid)
             throw new Exception($"Missing NET SDK {DotNetSdk.MinimumVersion}.");
         if (!dotnetSdk.GetHostRuntime(options.Platform.Target, options.Architecture, out var hostRuntimePath))
+        {
+            if (options.Flags.HasFlag(BuildFlags.GenerateProject))
+                return; // Ignore missing Host Runtime at projects evaluation stage (not important)
             throw new Exception($"Missing NET SDK runtime for {options.Platform.Target} {options.Architecture}.");
+        }
 
         // Setup build configuration
         switch (options.Platform.Target)

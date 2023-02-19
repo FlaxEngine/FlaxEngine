@@ -171,6 +171,7 @@ namespace Flax.Build
                 OutputFolder = mainModuleOutputPath,
                 WorkingDirectory = exeBuildOptions.WorkingDirectory,
                 HotReloadPostfix = exeBuildOptions.HotReloadPostfix,
+                Flags = exeBuildOptions.Flags,
             };
             mainModuleOptions.SourcePaths.Add(mainModule.FolderPath);
             mainModule.Setup(mainModuleOptions);
