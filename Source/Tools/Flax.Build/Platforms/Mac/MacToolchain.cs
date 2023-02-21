@@ -131,9 +131,22 @@ namespace Flax.Build.Platforms
                 commonArgs.Add("-pipe");
                 commonArgs.Add("-x");
                 commonArgs.Add("objective-c++");
-                commonArgs.Add("-std=c++14");
                 commonArgs.Add("-stdlib=libc++");
                 AddArgsCommon(options, commonArgs);
+
+                switch (compileEnvironment.CppVersion)
+                {
+                case CppVersion.Cpp14:
+                    commonArgs.Add("-std=c++14");
+                    break;
+                case CppVersion.Cpp17:
+                case CppVersion.Latest:
+                    commonArgs.Add("-std=c++17");
+                    break;
+                case CppVersion.Cpp20:
+                    commonArgs.Add("-std=c++20");
+                    break;
+                }
 
                 switch (Architecture)
                 {

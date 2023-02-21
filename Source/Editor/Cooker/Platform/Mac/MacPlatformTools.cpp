@@ -201,7 +201,15 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
 
         dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("LSMinimumSystemVersionByArchitecture"));
         xml_node LSMinimumSystemVersionByArchitecture = dict.append_child(PUGIXML_TEXT("dict"));
-        LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("x86_64"));
+        switch (_arch)
+        {
+        case ArchitectureType::x64:
+            LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("x86_64"));
+            break;
+        case ArchitectureType::ARM64:
+            LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("arm64"));
+            break;
+        }
         LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("10.14"));
         
 #undef ADD_ENTRY

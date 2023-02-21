@@ -528,6 +528,7 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
 #endif
 #if PLATFORM_TOOLS_MAC
     case BuildPlatform::MacOSx64:
+    case BuildPlatform::MacOSARM64:
     {
         const char* platformDefineName = "PLATFORM_MAC";
         COMPILE_PROFILE(Vulkan_SM5, SHADER_FILE_CHUNK_INTERNAL_VULKAN_SM5_CACHE);

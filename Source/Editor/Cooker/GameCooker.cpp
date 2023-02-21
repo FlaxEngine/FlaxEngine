@@ -139,6 +139,8 @@ const Char* ToString(const BuildPlatform platform)
         return TEXT("PlayStation 5");
     case BuildPlatform::MacOSx64:
         return TEXT("Mac x64");
+    case BuildPlatform::MacOSARM64:
+        return TEXT("Mac ARM64");
     default:
         return TEXT("?");
     }
@@ -340,6 +342,9 @@ PlatformTools* GameCooker::GetTools(BuildPlatform platform)
         case BuildPlatform::MacOSx64:
             result = New<MacPlatformTools>(ArchitectureType::x64);
             break;
+        case BuildPlatform::MacOSARM64:
+            result = New<MacPlatformTools>(ArchitectureType::ARM64);
+            break;
 #endif
         }
         Tools.Add(platform, result);
@@ -470,7 +475,7 @@ void GameCooker::GetCurrentPlatform(PlatformType& platform, BuildPlatform& build
         buildPlatform = BuildPlatform::PS5;
         break;
     case PlatformType::Mac:
-        buildPlatform = BuildPlatform::MacOSx64;
+        buildPlatform = PLATFORM_ARCH_ARM ? BuildPlatform::AndroidARM64 : BuildPlatform::MacOSx64;
         break;
     default: ;
     }

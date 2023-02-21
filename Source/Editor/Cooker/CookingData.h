@@ -115,6 +115,12 @@ API_ENUM() enum class BuildPlatform
     /// </summary>
     API_ENUM(Attributes="EditorDisplay(null, \"Mac x64\")")
     MacOSx64 = 12,
+
+    /// <summary>
+    /// MacOS (ARM64 Apple Silicon)
+    /// </summary>
+    API_ENUM(Attributes="EditorDisplay(null, \"Mac ARM64\")")
+    MacOSARM64 = 13,
 };
 
 extern FLAXENGINE_API const Char* ToString(const BuildPlatform platform);
