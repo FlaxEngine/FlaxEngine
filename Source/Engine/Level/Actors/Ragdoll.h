@@ -8,7 +8,7 @@
 /// <summary>
 /// Actor that synchronizes Animated Model skeleton pose with physical bones bodies simulated with physics. Child rigidbodies are used for per-bone simulation - rigidbodies names must match skeleton bone name and should be ordered based on importance in the skeleton tree (parents first).
 /// </summary>
-API_CLASS() class FLAXENGINE_API Ragdoll : public Actor
+API_CLASS(Attributes="ActorToolbox(\"Physics\")") class FLAXENGINE_API Ragdoll : public Actor
 {
     DECLARE_SCENE_OBJECT(Ragdoll);
     API_AUTO_SERIALIZATION();
