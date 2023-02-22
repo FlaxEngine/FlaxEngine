@@ -187,7 +187,7 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
         ADD_ENTRY("CFBundlePackageType", "APPL");
         ADD_ENTRY("NSPrincipalClass", "NSApplication");
         ADD_ENTRY("LSApplicationCategoryType", "public.app-category.games");
-        ADD_ENTRY("LSMinimumSystemVersion", "10.14");
+        ADD_ENTRY("LSMinimumSystemVersion", "10.15");
         ADD_ENTRY("CFBundleIconFile", "icon.icns");
         ADD_ENTRY_STR("CFBundleExecutable", executableName);
         ADD_ENTRY_STR("CFBundleIdentifier", appIdentifier);
@@ -210,7 +210,7 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
             LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("arm64"));
             break;
         }
-        LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("10.14"));
+        LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("10.15"));
         
 #undef ADD_ENTRY
 
