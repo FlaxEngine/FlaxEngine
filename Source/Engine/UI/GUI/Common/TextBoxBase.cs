@@ -1196,7 +1196,7 @@ namespace FlaxEngine.GUI
                     SetSelection(hitPos);
                 }
                 
-                if (Cursor == CursorType.Default)
+                if (Cursor == CursorType.Default && _changeCursor)
                     Cursor = CursorType.IBeam;
 
                 return true;
