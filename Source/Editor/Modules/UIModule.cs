@@ -35,6 +35,7 @@ namespace FlaxEditor.Modules
         private List<KeyValuePair<string, DateTime>> _statusMessages;
         private ContentStats _contentStats;
         private bool _progressFailed;
+        private bool _mainMenuInitComplete = false;
 
         private ContextMenuButton _menuFileSaveScenes;
         private ContextMenuButton _menuFileCloseScenes;
@@ -464,11 +465,33 @@ namespace FlaxEditor.Modules
                 Parent = mainWindow
             };
 
+            RefreshMainMenu();
+            _mainMenuInitComplete = true;
+        }
+
+        /// <summary>
+        /// Remakes the base main menu. This may cause any additional menus
+        /// </summary>
+        public void RefreshMainMenu()
+        {
+            // Dispose existing buttons
+            for (int i = MainMenu.Children.Count - 1; i >= 0; i--)
+            {
+                var c = MainMenu.Children[i];
+                if (c is MainMenuButton b)
+                {
+                    MainMenu.Children.RemoveAt(i);
+                    b.Dispose();
+                }
+            }
+
+            var inputOptions = Editor.Options.Options.Input;
+
             // File
             MenuFile = MainMenu.AddButton("File");
             var cm = MenuFile.ContextMenu;
             cm.VisibleChanged += OnMenuFileShowHide;
-            cm.AddButton("Save All", "Ctrl+S", Editor.SaveAll);
+            cm.AddButton("Save All", inputOptions.Save.ToString(), Editor.SaveAll);
             _menuFileSaveScenes = cm.AddButton("Save scenes", Editor.Scene.SaveScenes);
             _menuFileCloseScenes = cm.AddButton("Close scenes", Editor.Scene.CloseAllScenes);
             cm.AddSeparator();
@@ -484,18 +507,18 @@ namespace FlaxEditor.Modules
             MenuEdit = MainMenu.AddButton("Edit");
             cm = MenuEdit.ContextMenu;
             cm.VisibleChanged += OnMenuEditShowHide;
-            _menuEditUndo = cm.AddButton(string.Empty, "Ctrl+Z", Editor.PerformUndo);
-            _menuEditRedo = cm.AddButton(string.Empty, "Ctrl+Y", Editor.PerformRedo);
+            _menuEditUndo = cm.AddButton(string.Empty, inputOptions.Undo.ToString(), Editor.PerformUndo);
+            _menuEditRedo = cm.AddButton(string.Empty, inputOptions.Redo.ToString(), Editor.PerformRedo);
             cm.AddSeparator();
-            _menuEditCut = cm.AddButton("Cut", "Ctrl+X", Editor.SceneEditing.Cut);
-            _menuEditCopy = cm.AddButton("Copy", "Ctrl+C", Editor.SceneEditing.Copy);
-            _menuEditPaste = cm.AddButton("Paste", "Ctrl+V", Editor.SceneEditing.Paste);
+            _menuEditCut = cm.AddButton("Cut", inputOptions.Cut.ToString(), Editor.SceneEditing.Cut);
+            _menuEditCopy = cm.AddButton("Copy", inputOptions.Copy.ToString(), Editor.SceneEditing.Copy);
+            _menuEditPaste = cm.AddButton("Paste", inputOptions.Paste.ToString(), Editor.SceneEditing.Paste);
             cm.AddSeparator();
-            _menuEditDelete = cm.AddButton("Delete", "Del", Editor.SceneEditing.Delete);
-            _menuEditDuplicate = cm.AddButton("Duplicate", "Ctrl+D", Editor.SceneEditing.Duplicate);
+            _menuEditDelete = cm.AddButton("Delete", inputOptions.Delete.ToString(), Editor.SceneEditing.Delete);
+            _menuEditDuplicate = cm.AddButton("Duplicate", inputOptions.Duplicate.ToString(), Editor.SceneEditing.Duplicate);
             cm.AddSeparator();
-            _menuEditSelectAll = cm.AddButton("Select all", "Ctrl+A", Editor.SceneEditing.SelectAllScenes);
-            cm.AddButton("Find", "Ctrl+F", Editor.Windows.SceneWin.Search);
+            _menuEditSelectAll = cm.AddButton("Select all", inputOptions.SelectAll.ToString(), Editor.SceneEditing.SelectAllScenes);
+            cm.AddButton("Find", inputOptions.Search.ToString(), Editor.Windows.SceneWin.Search);
 
             // Scene
             MenuScene = MainMenu.AddButton("Scene");
@@ -512,8 +535,8 @@ namespace FlaxEditor.Modules
             MenuGame = MainMenu.AddButton("Game");
             cm = MenuGame.ContextMenu;
             cm.VisibleChanged += OnMenuGameShowHide;
-            _menuGamePlay = cm.AddButton("Play", "F5", Editor.Simulation.RequestStartPlay);
-            _menuGamePause = cm.AddButton("Pause", "F6", Editor.Simulation.RequestPausePlay);
+            _menuGamePlay = cm.AddButton("Play", inputOptions.Play.ToString(), Editor.Simulation.RequestStartPlay);
+            _menuGamePause = cm.AddButton("Pause", inputOptions.Pause.ToString(), Editor.Simulation.RequestPausePlay);
             cm.AddSeparator();
             cm.AddButton("Cook&Run", Editor.Windows.GameCookerWin.BuildAndRun).LinkTooltip("Runs Game Cooker to build the game for this platform and runs the game after.");
             cm.AddButton("Run cooked game", Editor.Windows.GameCookerWin.RunCooked).LinkTooltip("Runs the game build from the last cooking output. Use Cook&Play or Game Cooker first.");
@@ -577,6 +600,16 @@ namespace FlaxEditor.Modules
             cm.AddButton("Twitter", () => Platform.OpenUrl(Constants.TwitterUrl));
             cm.AddSeparator();
             cm.AddButton("Information about Flax", () => new AboutDialog().Show());
+
+            // Let normal init for plugin on first editor init
+            if (_mainMenuInitComplete)
+            {
+                // Remake plugin UI
+                foreach (var plugin in PluginManager.EditorPlugins)
+                {
+                    plugin.Initialize();
+                }
+            }
         }
 
         private void InitToolstrip(RootControl mainWindow)

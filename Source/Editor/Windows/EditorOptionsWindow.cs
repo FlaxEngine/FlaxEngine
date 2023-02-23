@@ -144,6 +144,8 @@ namespace FlaxEditor.Windows
             }
 
             Editor.Options.Apply(_options);
+            
+            Editor.UI.RefreshMainMenu();
 
             ClearDirtyFlag();
         }
