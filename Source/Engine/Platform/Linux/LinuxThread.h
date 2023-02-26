@@ -10,7 +10,7 @@
 /// <summary>
 /// Thread object for Linux platform.
 /// </summary>
-class LinuxThread : public UnixThread
+class FLAXENGINE_API LinuxThread : public UnixThread
 {
 public:
 
