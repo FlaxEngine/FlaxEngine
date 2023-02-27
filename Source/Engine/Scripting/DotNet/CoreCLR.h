@@ -49,7 +49,7 @@ public:
     static void RegisterNativeLibrary(const char* moduleName, const char* modulePath);
 
     static const char* GetClassFullname(void* klass);
-    static void* Allocate(int size);
+    static void* Allocate(int32 size);
     static void Free(void* ptr);
     static MGCHandle NewGCHandle(void* obj, bool pinned);
     static MGCHandle NewGCHandleWeakref(void* obj, bool track_resurrection);

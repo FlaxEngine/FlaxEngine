@@ -1450,8 +1450,7 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoMethod* mono_class_get_method_from_name(MonoC
 
 MONO_API void mono_free(void* ptr)
 {
-    if (ptr != nullptr)
-        CoreCLR::Free(ptr);
+    CoreCLR::Free(ptr);
 }
 
 /*

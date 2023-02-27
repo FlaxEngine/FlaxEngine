@@ -1098,6 +1098,18 @@ namespace FlaxEngine
             nativeLibraryPaths[moduleName] = modulePath;
         }
 
+        [UnmanagedCallersOnly]
+        internal static void* AllocMemory(int size)
+        {
+            return NativeMemory.AlignedAlloc((UIntPtr)size, 16);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void FreeMemory(void* ptr)
+        {
+            NativeMemory.AlignedFree(ptr);
+        }
+
         internal static void* NativeAlloc(int byteCount)
         {
             return NativeMemory.AlignedAlloc((UIntPtr)byteCount, 16);

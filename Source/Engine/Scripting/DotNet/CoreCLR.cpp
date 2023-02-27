@@ -129,14 +129,18 @@ void CoreCLR::RegisterNativeLibrary(const char* moduleName, const char* modulePa
     CoreCLR::CallStaticMethod<void, const char*, const char*>(RegisterNativeLibraryPtr, moduleName, modulePath);
 }
 
-void* CoreCLR::Allocate(int size)
+void* CoreCLR::Allocate(int32 size)
 {
-    return Platform::Allocate(size, 16);
+    static void* AllocMemoryPtr = CoreCLR::GetStaticMethodPointer(TEXT("AllocMemory"));
+    return CoreCLR::CallStaticMethod<void*, int32>(AllocMemoryPtr, size);
 }
 
 void CoreCLR::Free(void* ptr)
 {
-    Platform::Free(ptr);
+    if (!ptr)
+        return;
+    static void* FreeMemoryPtr = CoreCLR::GetStaticMethodPointer(TEXT("FreeMemory"));
+    CoreCLR::CallStaticMethod<void, void*>(FreeMemoryPtr, ptr);
 }
 
 #endif
