@@ -13,7 +13,6 @@
 #define PLATFORM_ARCH_ARM64 1
 #define PLATFORM_ARCH ArchitectureType::ARM64
 #else
-sss;
 #define PLATFORM_64BITS 1
 #define PLATFORM_ARCH_X64 1
 #define PLATFORM_ARCH ArchitectureType::x64
