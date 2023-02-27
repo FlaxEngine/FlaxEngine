@@ -10,7 +10,7 @@
 /// <summary>
 /// Thread object for Mac platform.
 /// </summary>
-class MacThread : public UnixThread
+class FLAXENGINE_API MacThread : public UnixThread
 {
 public:
 

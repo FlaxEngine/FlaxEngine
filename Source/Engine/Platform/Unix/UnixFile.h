@@ -9,7 +9,7 @@
 /// <summary>
 /// Unix platform file object implementation.
 /// </summary>
-class UnixFile : public FileBase
+class FLAXENGINE_API UnixFile : public FileBase
 {
 protected:
 

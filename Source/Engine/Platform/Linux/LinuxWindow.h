@@ -10,7 +10,7 @@
 /// <summary>
 /// Implementation of the window class for Linux platform.
 /// </summary>
-class LinuxWindow : public WindowBase
+class FLAXENGINE_API LinuxWindow : public WindowBase
 {
 	friend LinuxPlatform;
 public:

@@ -14,7 +14,7 @@
 /// <summary>
 /// Implementation of the window class for Universal Windows Platform (UWP)
 /// </summary>
-class UWPWindow : public WindowBase
+class FLAXENGINE_API UWPWindow : public WindowBase
 {
     friend UWPPlatform;
 

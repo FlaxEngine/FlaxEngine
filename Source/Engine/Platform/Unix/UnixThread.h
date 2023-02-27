@@ -10,7 +10,7 @@
 /// <summary>
 /// Thread object for Unix platform.
 /// </summary>
-class UnixThread : public ThreadBase
+class FLAXENGINE_API UnixThread : public ThreadBase
 {
 protected:
 
