@@ -21,7 +21,7 @@ namespace Flax.Deps
         // Drive example: FileDownloader.DownloadFileFromURLToPath( "http://drive.google.com/file/d/FILEID/view?usp=sharing", @"C:\file.txt" );
         public static FileInfo DownloadFileFromUrlToPath(string url, string path)
         {
-            Log.Verbose(string.Format("Downloading {0} to {1}", url, path));
+            Log.Info(string.Format("Downloading {0} to {1}", url, path));
             if (File.Exists(path))
                 File.Delete(path);
             if (url.StartsWith(GoogleDriveDomain) || url.StartsWith(GoogleDriveDomain2))

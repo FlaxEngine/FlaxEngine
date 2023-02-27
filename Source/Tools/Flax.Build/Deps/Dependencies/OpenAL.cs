@@ -169,14 +169,17 @@ namespace Flax.Deps.Dependencies
                     // Use separate build directory
                     root = Path.Combine(root, "openal-soft-" + version);
                     var buildDir = Path.Combine(root, "build");
-                    SetupDirectory(buildDir, true);
 
                     // Build for Mac
-                    RunCmake(buildDir, platform, TargetArchitecture.x64, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=Release " + config);
-                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    foreach (var file in binariesToCopy)
-                        Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
+                    foreach (var architecture in new []{ TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    {
+                        SetupDirectory(buildDir, true);
+                        RunCmake(buildDir, platform, architecture, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=Release " + config);
+                        Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        foreach (var file in binariesToCopy)
+                            Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
+                    }
                     break;
                 }
                 }

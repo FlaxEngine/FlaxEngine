@@ -270,7 +270,8 @@ namespace Flax.Deps
             }
             case TargetPlatform.Mac:
             {
-                cmdLine = string.Format("CMakeLists.txt -DCMAKE_OSX_DEPLOYMENT_TARGET=\"{0}\"", Configuration.MacOSXMinVer);
+                var arch = GetAppleArchName(architecture);
+                cmdLine = string.Format("CMakeLists.txt -DCMAKE_OSX_DEPLOYMENT_TARGET=\"{0}\" -DCMAKE_OSX_ARCHITECTURES={1}", Configuration.MacOSXMinVer, arch);
                 break;
             }
             default: throw new InvalidPlatformException(platform);
@@ -280,6 +281,31 @@ namespace Flax.Deps
                 cmdLine += " " + customArgs;
 
             Utilities.Run("cmake", cmdLine, null, path, Utilities.RunOptions.None, envVars);
+        }
+
+        /// <summary>
+        /// Gets the Apple architecture name (for toolchain).
+        /// </summary>
+        public static string GetAppleArchName(TargetArchitecture architecture)
+        {
+            string arch;
+            switch (architecture)
+            {
+            case TargetArchitecture.x86:
+                arch = "i386";
+                break;
+            case TargetArchitecture.x64:
+                arch = "x86_64";
+                break;
+            case TargetArchitecture.ARM:
+                arch = "arm";
+                break;
+            case TargetArchitecture.ARM64:
+                arch = "arm64";
+                break;
+            default: throw new InvalidArchitectureException(architecture);
+            }
+            return arch;
         }
 
         /// <summary>

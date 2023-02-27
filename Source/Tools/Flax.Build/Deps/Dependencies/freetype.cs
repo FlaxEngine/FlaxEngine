@@ -72,9 +72,10 @@ namespace Flax.Deps.Dependencies
                 Downloader.DownloadFileFromUrlToPath("https://sourceforge.net/projects/freetype/files/freetype2/2.10.0/ft2100.zip/download", packagePath);
             using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
             {
-                if (!Directory.Exists(root))
+                var newRoot = Path.Combine(root, archive.Entries.First().FullName);
+                if (!Directory.Exists(newRoot))
                     archive.ExtractToDirectory(root);
-                root = Path.Combine(root, archive.Entries.First().FullName);
+                root = newRoot;
             }
 
             var configurationMsvc = "Release Static";
@@ -249,11 +250,14 @@ namespace Flax.Deps.Dependencies
                 {
                     // Build for Mac
                     var buildDir = Path.Combine(root, "build");
-                    SetupDirectory(buildDir, true);
-                    RunCmake(buildDir, platform, TargetArchitecture.x64, ".. -DCMAKE_BUILD_TYPE=Release");
-                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
+                    foreach (var architecture in new []{ TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    {
+                        SetupDirectory(buildDir, true);
+                        RunCmake(buildDir, platform, architecture, ".. -DCMAKE_BUILD_TYPE=Release");
+                        Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
+                    }
                     break;
                 }
                 }
