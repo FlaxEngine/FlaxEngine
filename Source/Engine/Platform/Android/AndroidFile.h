@@ -11,7 +11,7 @@ typedef struct AAsset AAsset;
 /// <summary>
 /// Android platform file object implementation.
 /// </summary>
-class AndroidFile : public UnixFile
+class FLAXENGINE_API AndroidFile : public UnixFile
 {
 public:
 

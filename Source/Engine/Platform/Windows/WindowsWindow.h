@@ -11,7 +11,7 @@
 /// <summary>
 /// Implementation of the window class for Windows platform
 /// </summary>
-class WindowsWindow : public WindowBase
+class FLAXENGINE_API WindowsWindow : public WindowBase
 #if USE_EDITOR
                       , public Windows::IDropTarget
 #endif

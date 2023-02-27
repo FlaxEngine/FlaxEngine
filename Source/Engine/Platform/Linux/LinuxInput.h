@@ -9,7 +9,7 @@
 #define LINUXINPUT_MAX_GAMEPAD_EVENTS_PER_FRAME 32
 #define TRIGGER_THRESHOLD 1000
 
-class LinuxGamepad : public Gamepad
+class FLAXENGINE_API LinuxGamepad : public Gamepad
 {
 public:
     int fd;
