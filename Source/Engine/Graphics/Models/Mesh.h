@@ -321,6 +321,6 @@ private:
     API_FUNCTION(NoProxy) bool UpdateMeshUShort(int32 vertexCount, int32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj);
     API_FUNCTION(NoProxy) bool UpdateTrianglesUInt(int32 triangleCount, MonoArray* trianglesObj);
     API_FUNCTION(NoProxy) bool UpdateTrianglesUShort(int32 triangleCount, MonoArray* trianglesObj);
-    API_FUNCTION(NoProxy) bool DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 typeI);
+    API_FUNCTION(NoProxy) MonoArray* DownloadBuffer(bool forceGpu, MonoReflectionType* resultType, int32 typeI);
 #endif
 };

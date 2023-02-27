@@ -637,8 +637,8 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
 
         // Write operations
         auto framesCount = writeLocal(VariantType::Float, String::Format(TEXT("{0}.x * {1}.y"), framesXY.Value, framesXY.Value), node);
-        frame = writeLocal(VariantType::Float, String::Format(TEXT("fmod(floor({0}), {1})"), frame.Value, framesCount.Value), node);
-        auto framesXYInv = writeOperation2(node, Value::One, framesXY, '/');
+        frame = writeLocal(VariantType::Float, String::Format(TEXT("fmod({0}, {1})"), frame.Value, framesCount.Value), node);
+        auto framesXYInv = writeOperation2(node, Value::One.AsFloat2(), framesXY, '/');
         auto frameY = writeLocal(VariantType::Float, String::Format(TEXT("abs({0} * {1}.y - (floor({2} * {3}.x) + {0} * 1))"), invertY.Value, framesXY.Value, frame.Value, framesXYInv.Value), node);
         auto frameX = writeLocal(VariantType::Float, String::Format(TEXT("abs({0} * {1}.x - (({2} - {1}.x * floor({2} * {3}.x)) + {0} * 1))"), invertX.Value, framesXY.Value, frame.Value, framesXYInv.Value), node);
         value = writeLocal(VariantType::Float2, String::Format(TEXT("({3} + float2({0}, {1})) * {2}"), frameX.Value, frameY.Value, framesXYInv.Value, uv.Value), node);

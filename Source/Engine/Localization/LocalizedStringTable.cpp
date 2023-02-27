@@ -2,11 +2,10 @@
 
 #include "LocalizedStringTable.h"
 #include "Engine/Serialization/JsonTools.h"
+#include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Serialization/SerializationFwd.h"
 #include "Engine/Content/Factories/JsonAssetFactory.h"
 #if USE_EDITOR
-#include "Engine/ContentImporters/CreateJson.h"
-#include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Core/Log.h"
 #endif
@@ -55,75 +54,6 @@ String LocalizedStringTable::GetPluralString(const String& id, int32 n) const
     return String::Format(result.GetText(), n);
 }
 
-#if USE_EDITOR
-
-bool LocalizedStringTable::Save(const StringView& path)
-{
-    // Validate state
-    if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
-        return true;
-    }
-    if (IsVirtual() && path.IsEmpty())
-    {
-        LOG(Error, "To save virtual asset asset you need to specify the target asset path location.");
-        return true;
-    }
-
-    ScopeLock lock(Locker);
-
-    // Serialize data
-    rapidjson_flax::StringBuffer outputData;
-    PrettyJsonWriter writerObj(outputData);
-    JsonWriter& writer = writerObj;
-    writer.StartObject();
-    {
-        writer.JKEY("Locale");
-        writer.String(Locale);
-
-        if (FallbackTable.GetID().IsValid())
-        {
-            writer.JKEY("FallbackTable");
-            writer.Guid(FallbackTable.GetID());
-        }
-
-        writer.JKEY("Entries");
-        writer.StartObject();
-        for (auto& e : Entries)
-        {
-            writer.Key(e.Key);
-            if (e.Value.Count() == 1)
-            {
-                writer.String(e.Value[0]);
-            }
-            else
-            {
-                writer.StartArray();
-                for (auto& q : e.Value)
-                    writer.String(q);
-                writer.EndArray();
-            }
-        }
-        writer.EndObject();
-    }
-    writer.EndObject();
-
-    // Save asset
-#if COMPILE_WITH_ASSETS_IMPORTER
-    const bool saveResult = CreateJson::Create(path.HasChars() ? path : StringView(GetPath()), outputData, TypeName);
-    if (saveResult)
-#endif
-    {
-        LOG(Error, "Cannot save \'{0}\'", ToString());
-        return true;
-    }
-
-    return false;
-}
-
-#endif
-
 Asset::LoadResult LocalizedStringTable::loadAsset()
 {
     // Base
@@ -170,3 +100,41 @@ void LocalizedStringTable::unload(bool isReloading)
     FallbackTable = nullptr;
     Entries.Clear();
 }
+
+void LocalizedStringTable::OnGetData(rapidjson_flax::StringBuffer& buffer) const
+{
+    PrettyJsonWriter writerObj(buffer);
+    JsonWriter& writer = writerObj;
+    writer.StartObject();
+    {
+        writer.JKEY("Locale");
+        writer.String(Locale);
+
+        if (FallbackTable.GetID().IsValid())
+        {
+            writer.JKEY("FallbackTable");
+            writer.Guid(FallbackTable.GetID());
+        }
+
+        writer.JKEY("Entries");
+        writer.StartObject();
+        for (auto& e : Entries)
+        {
+            writer.Key(e.Key);
+            if (e.Value.Count() == 1)
+            {
+                writer.String(e.Value[0]);
+            }
+            else
+            {
+                writer.StartArray();
+                for (auto& q : e.Value)
+                    writer.String(q);
+                writer.EndArray();
+            }
+        }
+        writer.EndObject();
+    }
+    writer.EndObject();
+}
+

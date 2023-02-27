@@ -700,6 +700,8 @@ namespace FlaxEditor.GUI.Tree
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
+            UpdateMouseOverFlags(location);
+
             // Check if mouse hits bar and node isn't a root
             if (_mouseOverHeader)
             {
@@ -728,6 +730,8 @@ namespace FlaxEditor.GUI.Tree
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
+            UpdateMouseOverFlags(location);
+
             // Clear flag for left button
             if (button == MouseButton.Left)
             {
@@ -815,21 +819,7 @@ namespace FlaxEditor.GUI.Tree
         /// <inheritdoc />
         public override void OnMouseMove(Float2 location)
         {
-            // Cache flags
-            _mouseOverArrow = HasAnyVisibleChild && ArrowRect.Contains(location);
-            _mouseOverHeader = new Rectangle(0, 0, Width, _headerHeight - 1).Contains(location);
-            if (_mouseOverHeader)
-            {
-                // Allow non-scrollable controls to stay on top of the header and override the mouse behaviour
-                for (int i = 0; i < Children.Count; i++)
-                {
-                    if (!Children[i].IsScrollable && IntersectsChildContent(Children[i], location, out _))
-                    {
-                        _mouseOverHeader = false;
-                        break;
-                    }
-                }
-            }
+            UpdateMouseOverFlags(location);
 
             // Check if start drag and drop
             if (_isMouseDown && Float2.Distance(_mouseDownPos, location) > 10.0f)
@@ -849,6 +839,25 @@ namespace FlaxEditor.GUI.Tree
                 // Base
                 if (_opened)
                     base.OnMouseMove(location);
+            }
+        }
+
+        private void UpdateMouseOverFlags(Vector2 location)
+        {
+            // Cache flags
+            _mouseOverArrow = HasAnyVisibleChild && ArrowRect.Contains(location);
+            _mouseOverHeader = new Rectangle(0, 0, Width, _headerHeight - 1).Contains(location);
+            if (_mouseOverHeader)
+            {
+                // Allow non-scrollable controls to stay on top of the header and override the mouse behaviour
+                for (int i = 0; i < Children.Count; i++)
+                {
+                    if (!Children[i].IsScrollable && IntersectsChildContent(Children[i], location, out _))
+                    {
+                        _mouseOverHeader = false;
+                        break;
+                    }
+                }
             }
         }
 

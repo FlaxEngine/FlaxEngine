@@ -102,9 +102,15 @@ namespace FlaxEditor.Gizmo
                     closestIntersection = intersection;
                 }
 
+                /*// Center
+                if (CenterBoxRaw.Intersects(ref localRay, out intersection) && intersection > closestIntersection)
+                {
+                    _activeAxis = Axis.Center;
+                    closestIntersection = intersection;
+                }*/
+
                 break;
             }
-
             case Mode.Rotate:
             {
                 // Circles
@@ -124,41 +130,53 @@ namespace FlaxEditor.Gizmo
                     closestIntersection = intersection;
                 }
 
-                // Center
-                /*if (CenterSphere.Intersects(ref ray, out intersection) && intersection < closestintersection)
-                {
-                    _activeAxis = Axis.Center;
-                    closestintersection = intersection;
-                }*/
-
                 break;
             }
-
             case Mode.Scale:
             {
-                // Spheres collision
-                if (ScaleXSphere.Intersects(ref ray, out intersection) && intersection < closestIntersection)
+                // Boxes collision
+                if (XAxisBox.Intersects(ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.X;
                     closestIntersection = intersection;
                 }
-                if (ScaleYSphere.Intersects(ref ray, out intersection) && intersection < closestIntersection)
+                if (YAxisBox.Intersects(ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.Y;
                     closestIntersection = intersection;
                 }
-                if (ScaleZSphere.Intersects(ref ray, out intersection) && intersection < closestIntersection)
+                if (ZAxisBox.Intersects(ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.Z;
                     closestIntersection = intersection;
                 }
 
-                // Center
-                if (CenterBox.Intersects(ref ray, out intersection) && intersection < closestIntersection)
+                // Quad planes collision
+                if (closestIntersection >= float.MaxValue)
+                    closestIntersection = float.MinValue;
+
+                if (XYBox.Intersects(ref localRay, out intersection) && intersection > closestIntersection)
+                {
+                    _activeAxis = Axis.XY;
+                    closestIntersection = intersection;
+                }
+                if (XZBox.Intersects(ref localRay, out intersection) && intersection > closestIntersection)
+                {
+                    _activeAxis = Axis.ZX;
+                    closestIntersection = intersection;
+                }
+                if (YZBox.Intersects(ref localRay, out intersection) && intersection > closestIntersection)
+                {
+                    _activeAxis = Axis.YZ;
+                    closestIntersection = intersection;
+                }
+
+                /*// Center
+                if (CenterBoxRaw.Intersects(ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.Center;
                     closestIntersection = intersection;
-                }
+                }*/
 
                 break;
             }

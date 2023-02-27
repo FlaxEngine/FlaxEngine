@@ -103,7 +103,7 @@ void Lightmap::EnsureSize(int32 size)
 #if COMPILE_WITH_ASSETS_IMPORTER
 
             Guid id = Guid::New();
-            LOG(Info, "Cannot load lightmap {0} ({1}:{2}). Creating new one.", id, _index, textureIndex);
+            LOG(Info, "Cannot load lightmap ({1}:{2}). Creating new one with ID={0}.", id, _index, textureIndex);
             String assetPath;
             _manager->GetCachedLightmapPath(&assetPath, _index, textureIndex);
 

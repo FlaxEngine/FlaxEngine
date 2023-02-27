@@ -471,6 +471,26 @@ bool Actor::HasTag(const StringView& tag) const
     return Tags.Contains(tag);
 }
 
+void Actor::AddTag(const Tag& tag)
+{
+    Tags.AddUnique(tag);
+}
+
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
+const String& Actor::GetTag() const
+{
+    return Tags.Count() != 0 ? Tags[0].ToString() : String::Empty;
+}
+
+void Actor::SetTag(const StringView& value)
+{
+    const Tag tag = Tags::Get(value);
+    Tags.Set(&tag, 1);
+}
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
 void Actor::SetLayer(int32 layerIndex)
 {
     layerIndex = Math::Clamp(layerIndex, 0, 31);

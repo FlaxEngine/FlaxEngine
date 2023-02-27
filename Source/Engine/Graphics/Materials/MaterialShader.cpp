@@ -231,6 +231,7 @@ bool MaterialShader::Load(MemoryReadStream& shaderCacheStream, const MaterialInf
             _cb = nullptr;
         }
         _cbData.Resize(cbSize, false);
+        Platform::MemoryClear(_cbData.Get(), cbSize);
     }
 
     // Initialize the material based on type (create pipeline states and setup)

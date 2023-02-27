@@ -7,6 +7,23 @@ using System.IO;
 namespace Flax.Build.NativeCpp
 {
     /// <summary>
+    /// The native C++ module build flag types.
+    /// </summary>
+    [Flags]
+    public enum BuildFlags
+    {
+        /// <summary>
+        /// Nothing.
+        /// </summary>
+        None = 0,
+
+        /// <summary>
+        /// Projects generation (not actual build, just build setup evaluation).
+        /// </summary>
+        GenerateProject = 1,
+    }
+
+    /// <summary>
     /// The native C++ module build settings container.
     /// </summary>
     public sealed class BuildOptions
@@ -132,6 +149,11 @@ namespace Flax.Build.NativeCpp
         public string HotReloadPostfix;
 
         /// <summary>
+        /// The build flags.
+        /// </summary>
+        public BuildFlags Flags;
+
+        /// <summary>
         /// The full path to the dependencies folder for the current build platform, configuration, and architecture.
         /// </summary>
         public string DepsFolder => Path.Combine(Globals.EngineRoot, "Source", "Platforms", Platform.Target.ToString(), "Binaries", "ThirdParty", Architecture.ToString());
@@ -213,7 +235,7 @@ namespace Flax.Build.NativeCpp
                 "System.Private.CoreLib",
                 "System.Private.Uri",
                 "System.Private.Xml",
-                
+
                 "System.Reflection",
                 "System.Runtime",
                 "System.Runtime.CompilerServices.Unsafe",

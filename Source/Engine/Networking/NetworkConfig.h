@@ -36,7 +36,7 @@ API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkConfi
     /// [Deprecated in v1.3]
     /// </summary>
     API_FIELD()
-    DEPRECATED NetworkDriverType NetworkDriverType = NetworkDriverType::ENet;
+    DEPRECATED NetworkDriverType NetworkDriverType;
 
     /// <summary>
     /// The network driver instance (implements INetworkDriver) that will be used to create and manage the peer, send and receive messages.
@@ -81,4 +81,12 @@ API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkConfi
     /// </remarks>
     API_FIELD()
     uint16 MessagePoolSize = 2048;
+
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
+    /// <summary>Ctor.</summary>
+    NetworkConfig()
+    {
+        NetworkDriverType = NetworkDriverType::ENet;
+    }
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };

@@ -543,19 +543,22 @@ bool EditorUtilities::GetTexture(const Guid& textureId, TextureData& textureData
         }
         else
         {
-            // TODO: disable streaming for a texture or set max quality override
-            int32 waits = 1000;
-            const auto targetResidency = texture->StreamingTexture()->GetMaxResidency();
-            ASSERT(targetResidency > 0);
-            while (targetResidency != texture->StreamingTexture()->GetCurrentResidency() && waits-- > 0)
+            const bool useGPU = texture->IsVirtual();
+            if (useGPU)
             {
-                Platform::Sleep(10);
+                int32 waits = 1000;
+                const auto targetResidency = texture->StreamingTexture()->GetMaxResidency();
+                ASSERT(targetResidency > 0);
+                while (targetResidency != texture->StreamingTexture()->GetCurrentResidency() && waits-- > 0)
+                {
+                    Platform::Sleep(10);
+                }
+
+                // Get texture data from GPU
+                if (!texture->GetTexture()->DownloadData(textureData))
+                    return false;
             }
 
-            // Get texture data from GPU
-            if (!texture->GetTexture()->DownloadData(textureData))
-                return false;
-            
             // Get texture data from asset
             if (!texture->GetTextureData(textureData))
                 return false;

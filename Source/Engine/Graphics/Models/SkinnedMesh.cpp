@@ -516,64 +516,12 @@ enum class InternalBufferType
     IB32 = 4,
 };
 
-void ConvertMeshData(SkinnedMesh* mesh, InternalBufferType type, MonoArray* resultObj, void* srcData)
-{
-    auto vertices = mesh->GetVertexCount();
-    auto triangles = mesh->GetTriangleCount();
-    auto indices = triangles * 3;
-    auto use16BitIndexBuffer = mesh->Use16BitIndexBuffer();
-
-    void* managedArrayPtr = mono_array_addr_with_size(resultObj, 0, 0);
-    switch (type)
-    {
-    case InternalBufferType::VB0:
-    {
-        Platform::MemoryCopy(managedArrayPtr, srcData, sizeof(VB0SkinnedElementType) * vertices);
-        break;
-    }
-    case InternalBufferType::IB16:
-    {
-        if (use16BitIndexBuffer)
-        {
-            Platform::MemoryCopy(managedArrayPtr, srcData, sizeof(uint16) * indices);
-        }
-        else
-        {
-            auto dst = (uint16*)managedArrayPtr;
-            auto src = (uint32*)srcData;
-            for (int32 i = 0; i < indices; i++)
-            {
-                dst[i] = src[i];
-            }
-        }
-        break;
-    }
-    case InternalBufferType::IB32:
-    {
-        if (use16BitIndexBuffer)
-        {
-            auto dst = (uint32*)managedArrayPtr;
-            auto src = (uint16*)srcData;
-            for (int32 i = 0; i < indices; i++)
-            {
-                dst[i] = src[i];
-            }
-        }
-        else
-        {
-            Platform::MemoryCopy(managedArrayPtr, srcData, sizeof(uint32) * indices);
-        }
-        break;
-    }
-    }
-}
-
-bool SkinnedMesh::DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 typeI)
+MonoArray* SkinnedMesh::DownloadBuffer(bool forceGpu, MonoReflectionType* resultType, int32 typeI)
 {
     SkinnedMesh* mesh = this;
     InternalBufferType type = (InternalBufferType)typeI;
     auto model = mesh->GetSkinnedModel();
-    ASSERT(model && resultObj);
+    ScopeLock lock(model->Locker);
 
     // Virtual assets always fetch from GPU memory
     forceGpu |= model->IsVirtual();
@@ -581,23 +529,7 @@ bool SkinnedMesh::DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 type
     if (!mesh->IsInitialized() && forceGpu)
     {
         LOG(Error, "Cannot load mesh data from GPU if it's not loaded.");
-        return true;
-    }
-    if (type == InternalBufferType::IB16 || type == InternalBufferType::IB32)
-    {
-        if (mono_array_length(resultObj) != mesh->GetTriangleCount() * 3)
-        {
-            LOG(Error, "Invalid buffer size.");
-            return true;
-        }
-    }
-    else
-    {
-        if (mono_array_length(resultObj) != mesh->GetVertexCount())
-        {
-            LOG(Error, "Invalid buffer size.");
-            return true;
-        }
+        return nullptr;
     }
 
     MeshBufferType bufferType;
@@ -610,37 +542,89 @@ bool SkinnedMesh::DownloadBuffer(bool forceGpu, MonoArray* resultObj, int32 type
     case InternalBufferType::IB32:
         bufferType = MeshBufferType::Index;
         break;
-    default: CRASH;
-        return true;
+    default:
+        return nullptr;
     }
     BytesContainer data;
+    int32 dataCount;
     if (forceGpu)
     {
         // Get data from GPU
         // TODO: support reusing the input memory buffer to perform a single copy from staging buffer to the input CPU buffer
         auto task = mesh->DownloadDataGPUAsync(bufferType, data);
         if (task == nullptr)
-            return true;
+            return nullptr;
         task->Start();
         model->Locker.Unlock();
         if (task->Wait())
         {
             LOG(Error, "Task failed.");
-            return true;
+            return nullptr;
         }
         model->Locker.Lock();
+
+        // Extract elements count from result data
+        switch (bufferType)
+        {
+        case MeshBufferType::Index:
+            dataCount = data.Length() / (Use16BitIndexBuffer() ? sizeof(uint16) : sizeof(uint32));
+            break;
+        case MeshBufferType::Vertex0:
+            dataCount = data.Length() / sizeof(VB0SkinnedElementType);
+            break;
+        }
     }
     else
     {
         // Get data from CPU
-        int32 count;
-        if (DownloadDataCPU(bufferType, data, count))
-            return true;
+        if (DownloadDataCPU(bufferType, data, dataCount))
+            return nullptr;
     }
 
-    // Convert into managed memory
-    ConvertMeshData(mesh, type, resultObj, data.Get());
-    return false;
+    // Convert into managed array
+    MonoArray* result = mono_array_new(mono_domain_get(), mono_type_get_class(mono_reflection_type_get_type(resultType)), dataCount);
+    void* managedArrayPtr = mono_array_addr_with_size(result, 0, 0);
+    const int32 elementSize = data.Length() / dataCount;
+    switch (type)
+    {
+    case InternalBufferType::VB0:
+    {
+        Platform::MemoryCopy(managedArrayPtr, data.Get(), data.Length());
+        break;
+    }
+    case InternalBufferType::IB16:
+    {
+        if (elementSize == sizeof(uint16))
+        {
+            Platform::MemoryCopy(managedArrayPtr, data.Get(), data.Length());
+        }
+        else
+        {
+            auto dst = (uint16*)managedArrayPtr;
+            auto src = (uint32*)data.Get();
+            for (int32 i = 0; i < dataCount; i++)
+                dst[i] = src[i];
+        }
+        break;
+    }
+    case InternalBufferType::IB32:
+    {
+        if (elementSize == sizeof(uint16))
+        {
+            auto dst = (uint32*)managedArrayPtr;
+            auto src = (uint16*)data.Get();
+            for (int32 i = 0; i < dataCount; i++)
+                dst[i] = src[i];
+        }
+        else
+        {
+            Platform::MemoryCopy(managedArrayPtr, data.Get(), data.Length());
+        }
+        break;
+    }
+    }
+
+    return result;
 }
 
 #endif

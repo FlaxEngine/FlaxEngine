@@ -174,9 +174,7 @@ namespace FlaxEditor.CustomEditors.Editors
             for (int i = 0; i < subInputs.Length; i++)
             {
                 if (string.IsNullOrEmpty(subInputs[i]))
-                {
                     continue;
-                }
 
                 // Check all entered subtags and create any that dont exist
                 for (int j = 0; j <= i; j++)
@@ -296,6 +294,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     settingsObj.Tags.Add(tagName);
                     settingsObj.Tags.Sort();
                     settingsAsset.SetInstance(settingsObj);
+                    settingsAsset.Save();
 
                     // Reload editor window to reflect new tag
                     assetWindow?.RefreshAsset();
@@ -417,7 +416,6 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 if (!uniqueText)
                     return;
-
                 OnAddTagButtonClicked(nameTextBox.Text, tree, nameTextBox, addTagDropPanel, pickerData);
             };
 

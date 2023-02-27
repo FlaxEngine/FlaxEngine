@@ -7,56 +7,53 @@ namespace FlaxEditor.Gizmo
 {
     public partial class TransformGizmoBase
     {
-        private const float GizmoScaleFactor = 18;
-        private const float LineLength = 3.0f;
-        private const float LineOffset = 1.0f;
-        private const float MultiAxisThickness = 0.05f;
-        private const float SingleAxisThickness = 0.3f;
-        private const float ScaleSpheresRadius = 0.7f;
-        private const float CenterBoxSize = 0.8f;
-        private const float CenterSphereRadius = 0.1f;
-        private const float HalfLineOffset = LineOffset / 2;
+        /// <summary>
+        /// Scale of the gizmo itself
+        /// </summary>
+        private const float GizmoScaleFactor = 24;
 
-        private readonly Vector3[] _translationLineVertices =
-        {
-            // -- X Axis -- // index 0 - 5
-            new Vector3(HalfLineOffset, 0, 0),
-            new Vector3(LineLength, 0, 0),
-            new Vector3(LineOffset, 0, 0),
-            new Vector3(LineOffset, LineOffset, 0),
-            new Vector3(LineOffset, 0, 0),
-            new Vector3(LineOffset, 0, LineOffset),
+        /// <summary>
+        /// The length of each axis (outwards)
+        /// </summary>
+        private const float AxisLength = 3.5f;
 
-            // -- Y Axis -- // index 6 - 11
-            new Vector3(0, HalfLineOffset, 0),
-            new Vector3(0, LineLength, 0),
-            new Vector3(0, LineOffset, 0),
-            new Vector3(LineOffset, LineOffset, 0),
-            new Vector3(0, LineOffset, 0),
-            new Vector3(0, LineOffset, LineOffset),
+        /// <summary>
+        /// Offset to move axis away from center
+        /// </summary>
+        private const float AxisOffset = 0.8f;
 
-            // -- Z Axis -- // index 12 - 17
-            new Vector3(0, 0, HalfLineOffset),
-            new Vector3(0, 0, LineLength),
-            new Vector3(0, 0, LineOffset),
-            new Vector3(LineOffset, 0, LineOffset),
-            new Vector3(0, 0, LineOffset),
-            new Vector3(0, LineOffset, LineOffset)
-        };
+        /// <summary>
+        /// How thick the axis should be
+        /// </summary>
+        private const float AxisThickness = 0.3f;
 
-        private BoundingBox XAxisBox = new BoundingBox(new Vector3(LineOffset, -SingleAxisThickness, -SingleAxisThickness), new Vector3(LineOffset + LineLength, SingleAxisThickness, SingleAxisThickness));
-        private BoundingBox YAxisBox = new BoundingBox(new Vector3(-SingleAxisThickness, LineOffset, -SingleAxisThickness), new Vector3(SingleAxisThickness, LineOffset + LineLength, SingleAxisThickness));
-        private BoundingBox ZAxisBox = new BoundingBox(new Vector3(-SingleAxisThickness, -SingleAxisThickness, LineOffset), new Vector3(SingleAxisThickness, SingleAxisThickness, LineOffset + LineLength));
-        private BoundingBox XZBox = new BoundingBox(Vector3.Zero, new Vector3(LineOffset, MultiAxisThickness, LineOffset));
-        private BoundingBox XYBox = new BoundingBox(Vector3.Zero, new Vector3(LineOffset, LineOffset, MultiAxisThickness));
-        private BoundingBox YZBox = new BoundingBox(Vector3.Zero, new Vector3(MultiAxisThickness, LineOffset, LineOffset));
-        private BoundingBox CenterBoxRaw = new BoundingBox(new Vector3(-0.5f * CenterBoxSize), new Vector3(0.5f * CenterBoxSize));
-        private float RotateRadiusRaw = 4.0f;
+        /// <summary>
+        /// Center box scale
+        /// </summary>
+        private const float CenterBoxScale = 0.8f;
 
-        private BoundingSphere ScaleXSphere => new BoundingSphere(Vector3.Transform(_translationLineVertices[1], _gizmoWorld), ScaleSpheresRadius * _screenScale);
-        private BoundingSphere ScaleYSphere => new BoundingSphere(Vector3.Transform(_translationLineVertices[7], _gizmoWorld), ScaleSpheresRadius * _screenScale);
-        private BoundingSphere ScaleZSphere => new BoundingSphere(Vector3.Transform(_translationLineVertices[13], _gizmoWorld), ScaleSpheresRadius * _screenScale);
+        /// <summary>
+        /// The inner minimum of the multiscale
+        /// </summary>
+        private const float InnerExtend = AxisOffset + 0.5f;
+
+        /// <summary>
+        /// The outer maximum of the multiscale
+        /// </summary>
+        private const float OuterExtend = AxisOffset * 3.5f;
+
+        // Cube with the size AxisThickness, then moves it along the axis (AxisThickness) and finally makes it really long (AxisLength)
+        private BoundingBox XAxisBox = new BoundingBox(new Vector3(-AxisThickness), new Vector3(AxisThickness)).MakeOffsetted(AxisOffset * Vector3.UnitX).Merge(AxisLength * Vector3.UnitX);
+        private BoundingBox YAxisBox = new BoundingBox(new Vector3(-AxisThickness), new Vector3(AxisThickness)).MakeOffsetted(AxisOffset * Vector3.UnitY).Merge(AxisLength * Vector3.UnitY);
+        private BoundingBox ZAxisBox = new BoundingBox(new Vector3(-AxisThickness), new Vector3(AxisThickness)).MakeOffsetted(AxisOffset * Vector3.UnitZ).Merge(AxisLength * Vector3.UnitZ);
+
+        private BoundingBox XZBox = new BoundingBox(new Vector3(InnerExtend, 0, InnerExtend), new Vector3(OuterExtend, 0, OuterExtend));
+        private BoundingBox XYBox = new BoundingBox(new Vector3(InnerExtend, InnerExtend, 0), new Vector3(OuterExtend, OuterExtend, 0));
+        private BoundingBox YZBox = new BoundingBox(new Vector3(0, InnerExtend, InnerExtend), new Vector3(0, OuterExtend, OuterExtend));
+
+        private BoundingBox CenterBoxRaw = new BoundingBox(new Vector3(-0.5f * CenterBoxScale), new Vector3(0.5f * CenterBoxScale));
         private OrientedBoundingBox CenterBox => new OrientedBoundingBox(CenterBoxRaw) * _gizmoWorld;
+        private const float RotateRadiusRaw = 4.0f;
 
         private Mode _activeMode = Mode.Translate;
         private Axis _activeAxis = Axis.None;

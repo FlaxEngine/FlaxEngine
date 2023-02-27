@@ -276,6 +276,7 @@ void ShadowsOfMordor::Builder::saveState()
             context->Flush();
             Platform::Sleep(10);
             void* mapped = lightmapDataStaging->Map(GPUResourceMapMode::Read);
+            ASSERT(mapped);
             stream->WriteInt32(lightmapDataSize);
             stream->WriteBytes(mapped, lightmapDataSize);
             lightmapDataStaging->Unmap();

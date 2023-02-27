@@ -1,3 +1,7 @@
+#if PLATFORM_WINDOWS
+#define USE_IS_FOREGROUND
+#else
+#endif
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
@@ -326,6 +330,7 @@ namespace FlaxEditor.GUI.ContextMenu
             // Nothing to do
         }
 
+#if USE_IS_FOREGROUND
         /// <summary>
         /// Returns true if context menu is in foreground (eg. context window or any child window has user focus or user opened additional popup within this context).
         /// </summary>
@@ -385,6 +390,57 @@ namespace FlaxEditor.GUI.ContextMenu
                 }
             }
         }
+#else
+        private void OnWindowGotFocus()
+        {
+        }
+
+        private void OnWindowLostFocus()
+        {
+            // Skip for parent menus (child should handle lost of focus)
+            if (_childCM != null)
+                return;
+
+            if (_parentCM != null)
+            {
+                if (IsMouseOver)
+                    return;
+
+                // Check if any external popup is focused
+                foreach (var externalPopup in ExternalPopups)
+                {
+                    if (externalPopup && externalPopup.IsFocused)
+                        return;
+                }
+
+                // Check if mouse is over any of the parents
+                ContextMenuBase focusCM = null;
+                var cm = _parentCM;
+                while (cm != null)
+                {
+                    if (cm.IsMouseOver)
+                        focusCM = cm;
+                    cm = cm._parentCM;
+                }
+
+                if (focusCM != null)
+                {
+                    // Focus on the clicked parent and hide any open sub-menus
+                    focusCM.HideChild();
+                    focusCM._window?.Focus();
+                }
+                else
+                {
+                    // User clicked outside the context menus, hide the whole context menu tree
+                    TopmostCM.Hide();
+                }
+            }
+            else if (!IsMouseOver)
+            {
+                Hide();
+            }
+        }
+#endif
 
         /// <inheritdoc />
         public override bool IsMouseOver
@@ -405,6 +461,7 @@ namespace FlaxEditor.GUI.ContextMenu
             }
         }
 
+#if USE_IS_FOREGROUND
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
@@ -416,6 +473,7 @@ namespace FlaxEditor.GUI.ContextMenu
                 Hide();
             }
         }
+#endif
 
         /// <inheritdoc />
         public override void Draw()

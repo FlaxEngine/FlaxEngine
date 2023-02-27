@@ -40,6 +40,7 @@ namespace Flax.Build
                         var configurationName = "Debug";
                         var configurationText = configurationName;
                         var targetBuildOptions = GetBuildOptions(target, platform, toolchain, architecture, configuration, project.WorkspaceRootPath);
+                        targetBuildOptions.Flags |= BuildFlags.GenerateProject;
                         var modules = CollectModules(rules, platform, target, targetBuildOptions, toolchain, architecture, configuration);
                         foreach (var module in modules)
                         {
@@ -65,6 +66,7 @@ namespace Flax.Build
                         configurationName = "Release";
                         configurationText = configurationName;
                         targetBuildOptions = GetBuildOptions(target, platform, toolchain, architecture, configuration, project.WorkspaceRootPath);
+                        targetBuildOptions.Flags |= BuildFlags.GenerateProject;
                         modules = CollectModules(rules, platform, target, targetBuildOptions, toolchain, architecture, configuration);
                         foreach (var module in modules)
                         {
@@ -115,6 +117,7 @@ namespace Flax.Build
 
                             var toolchain = platform.TryGetToolchain(architecture);
                             var targetBuildOptions = GetBuildOptions(target, platform, toolchain, architecture, configuration, project.WorkspaceRootPath);
+                            targetBuildOptions.Flags |= BuildFlags.GenerateProject;
                             var modules = CollectModules(rules, platform, target, targetBuildOptions, toolchain, architecture, configuration);
                             foreach (var module in modules)
                             {
@@ -275,6 +278,7 @@ namespace Flax.Build
                                         try
                                         {
                                             var referenceBuildOptions = GetBuildOptions(referenceTarget, configurationData.TargetBuildOptions.Platform, configurationData.TargetBuildOptions.Toolchain, configurationData.Architecture, configurationData.Configuration, reference.Project.ProjectFolderPath);
+                                            referenceBuildOptions.Flags |= BuildFlags.GenerateProject;
                                             var referenceModules = CollectModules(rules, referenceBuildOptions.Platform, referenceTarget, referenceBuildOptions, referenceBuildOptions.Toolchain, referenceBuildOptions.Architecture, referenceBuildOptions.Configuration);
                                             var referenceBinaryModules = GetBinaryModules(projectInfo, referenceTarget, referenceModules);
                                             foreach (var binaryModule in referenceBinaryModules)
@@ -504,6 +508,8 @@ namespace Flax.Build
                             var platform = Platform.BuildPlatform;
                             var architecture = TargetArchitecture.x64;
                             var configuration = TargetConfiguration.Debug;
+                            var buildOptions = GetBuildOptions(target, platform, null, architecture, configuration, project.WorkspaceRootPath);
+                            buildOptions.Flags |= BuildFlags.GenerateProject;
                             project.Configurations.Add(new Project.ConfigurationData
                             {
                                 Platform = platform.Target,
@@ -513,7 +519,7 @@ namespace Flax.Build
                                 Configuration = configuration,
                                 ConfigurationName = configuration.ToString(),
                                 Target = target,
-                                TargetBuildOptions = GetBuildOptions(target, platform, null, architecture, configuration, project.WorkspaceRootPath),
+                                TargetBuildOptions = buildOptions,
                                 Modules = new Dictionary<Module, BuildOptions>(),
                             });
                         }

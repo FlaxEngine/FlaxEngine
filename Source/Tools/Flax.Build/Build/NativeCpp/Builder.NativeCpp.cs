@@ -177,6 +177,7 @@ namespace Flax.Build
                     OutputFolder = outputPath,
                     WorkingDirectory = buildData.TargetOptions.WorkingDirectory,
                     HotReloadPostfix = buildData.TargetOptions.HotReloadPostfix,
+                    Flags = buildData.TargetOptions.Flags,
                 };
                 moduleOptions.SourcePaths.Add(module.FolderPath);
                 module.Setup(moduleOptions);

@@ -19,7 +19,8 @@ GPUBufferView* GPUBufferDX11::View() const
 
 void* GPUBufferDX11::Map(GPUResourceMapMode mode)
 {
-    if (!IsInMainThread())
+    const bool isMainThread = IsInMainThread();
+    if (!isMainThread)
         _device->Locker.Lock();
     ASSERT(!_mapped);
 
@@ -31,7 +32,7 @@ void* GPUBufferDX11::Map(GPUResourceMapMode mode)
     {
     case GPUResourceMapMode::Read:
         mapType = D3D11_MAP_READ;
-        if (_desc.Usage == GPUResourceUsage::StagingReadback)
+        if (_desc.Usage == GPUResourceUsage::StagingReadback && isMainThread)
             mapFlags = D3D11_MAP_FLAG_DO_NOT_WAIT;
         break;
     case GPUResourceMapMode::Write:
@@ -47,18 +48,19 @@ void* GPUBufferDX11::Map(GPUResourceMapMode mode)
     const HRESULT result = _device->GetIM()->Map(_resource, 0, mapType, mapFlags, &map);
     if (result != DXGI_ERROR_WAS_STILL_DRAWING)
         LOG_DIRECTX_RESULT(result);
+
     _mapped = map.pData != nullptr;
+    if (!_mapped && !isMainThread)
+        _device->Locker.Unlock();
+
     return map.pData;
 }
 
 void GPUBufferDX11::Unmap()
 {
-    if (_mapped)
-    {
-        _mapped = false;
-        _device->GetIM()->Unmap(_resource, 0);
-    }
-    
+    ASSERT(_mapped);
+    _mapped = false;
+    _device->GetIM()->Unmap(_resource, 0);
     if (!IsInMainThread())
         _device->Locker.Unlock();
 }
