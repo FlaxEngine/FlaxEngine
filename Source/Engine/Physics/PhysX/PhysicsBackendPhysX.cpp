@@ -2120,6 +2120,11 @@ void PhysicsBackend::GetJointForce(void* joint, Vector3& linear, Vector3& angula
         linear = P2C(linearPhysX);
         angular = P2C(angularPhysX);
     }
+    else
+    {
+        linear = Vector3::Zero;
+        angular = Vector3::Zero;
+    }
 }
 
 void* PhysicsBackend::CreateFixedJoint(const PhysicsJointDesc& desc)

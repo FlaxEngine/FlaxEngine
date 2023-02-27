@@ -10,6 +10,9 @@
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Debug/DebugDraw.h"
 #endif
+#if !WITH_VEHICLE
+#include "Engine/Core/Log.h"
+#endif
 
 WheeledVehicle::WheeledVehicle(const SpawnParams& params)
     : RigidBody(params)
