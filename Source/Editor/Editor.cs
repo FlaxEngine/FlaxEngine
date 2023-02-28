@@ -587,8 +587,8 @@ namespace FlaxEditor
                 UI.UpdateStatusBar();
             }
 
-            if (UI?.StatusBar?.Text != null && !UI.StatusBar.Text.Contains("Auto") && 
-                _saveNowButton != null && _cancelSaveButton != null && 
+            if (UI?.StatusBar?.Text != null && !UI.StatusBar.Text.Contains("Auto") &&
+                _saveNowButton != null && _cancelSaveButton != null &&
                 (_saveNowButton.Visible || _cancelSaveButton.Visible))
             {
                 _saveNowButton.Visible = false;
@@ -1325,6 +1325,7 @@ namespace FlaxEditor
                     BoxId = managed.BoxId,
                 };
             }
+
             internal static VisualScriptLocalNative ToNative(VisualScriptLocal managed)
             {
                 return new VisualScriptLocalNative()
@@ -1335,6 +1336,7 @@ namespace FlaxEditor
                     BoxId = managed.BoxId,
                 };
             }
+
             internal static void Free(VisualScriptLocalNative unmanaged)
             {
                 ManagedString.Free(unmanaged.Value);
@@ -1374,6 +1376,7 @@ namespace FlaxEditor
                     BoxId = managed.BoxId,
                 };
             }
+
             internal static VisualScriptStackFrameNative ToNative(VisualScriptStackFrame managed)
             {
                 return new VisualScriptStackFrameNative()
@@ -1383,6 +1386,7 @@ namespace FlaxEditor
                     BoxId = managed.BoxId,
                 };
             }
+
             internal static void Free(VisualScriptStackFrameNative unmanaged)
             {
             }
