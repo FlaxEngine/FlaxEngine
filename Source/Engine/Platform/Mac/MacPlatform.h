@@ -44,11 +44,11 @@ public:
     }
     FORCE_INLINE static int32 AtomicRead(int32 volatile* dst)
     {
-        return __atomic_load_n(dst, __ATOMIC_SEQ_CST);
+        return __atomic_load_n(dst, __ATOMIC_RELAXED);
     }
     FORCE_INLINE static int64 AtomicRead(int64 volatile* dst)
     {
-        return __atomic_load_n(dst, __ATOMIC_SEQ_CST);
+        return __atomic_load_n(dst, __ATOMIC_RELAXED);
     }
     FORCE_INLINE static void AtomicStore(int32 volatile* dst, int32 value)
     {

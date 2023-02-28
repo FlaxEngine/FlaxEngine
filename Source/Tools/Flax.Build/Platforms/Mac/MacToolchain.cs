@@ -165,7 +165,6 @@ namespace Flax.Build.Platforms
                 commonArgs.Add("-Wno-nullability-completeness");
                 commonArgs.Add("-Wno-undef-prefix");
                 commonArgs.Add("-Wno-expansion-to-defined");
-                commonArgs.Add("-Wno-non-virtual-dtor");
 
                 // Hide all symbols by default
                 commonArgs.Add("-fvisibility-inlines-hidden");
