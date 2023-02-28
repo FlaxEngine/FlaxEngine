@@ -66,10 +66,12 @@ public class Editor : EditorModule
         else if (options.Platform.Target == TargetPlatform.Linux)
         {
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Linux", "PLATFORM_TOOLS_LINUX");
+            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Android", "PLATFORM_TOOLS_ANDROID");
         }
         else if (options.Platform.Target == TargetPlatform.Mac)
         {
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Mac", "PLATFORM_TOOLS_MAC");
+            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Android", "PLATFORM_TOOLS_ANDROID");
         }
 
         // Visual Studio integration

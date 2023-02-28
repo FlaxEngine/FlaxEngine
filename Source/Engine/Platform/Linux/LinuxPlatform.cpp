@@ -2755,6 +2755,30 @@ Window* LinuxPlatform::CreateWindow(const CreateWindowSettings& settings)
     return New<LinuxWindow>(settings);
 }
 
+extern char **environ;
+
+void LinuxPlatform::GetEnvironmentVariables(Dictionary<String, String, HeapAllocation>& result)
+{
+	char **s = environ;
+	for (; *s; s++)
+	{
+		char* var = *s;
+		int32 split = -1;
+		for (int32 i = 0; var[i]; i++)
+		{
+			if (var[i] == '=')
+			{
+				split = i;
+				break;
+			}
+		}
+		if (split == -1)
+			result[String(var)] = String::Empty;
+		else
+			result[String(var, split)] = String(var + split + 1);
+	}
+}
+
 bool LinuxPlatform::GetEnvironmentVariable(const String& name, String& value)
 {
     char* env = getenv(StringAsANSI<>(*name).Get());

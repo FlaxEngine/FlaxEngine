@@ -119,6 +119,7 @@ namespace FlaxEditor.Windows
                     switch (BuildPlatform)
                     {
                     case BuildPlatform.LinuxX64:
+                    case BuildPlatform.AndroidARM64:
                         IsSupported = true;
                         break;
                     default:
@@ -129,6 +130,7 @@ namespace FlaxEditor.Windows
                     switch (BuildPlatform)
                     {
                     case BuildPlatform.MacOSx64:
+                    case BuildPlatform.AndroidARM64:
                         IsSupported = true;
                         break;
                     default:
