@@ -28,7 +28,7 @@ namespace Flax.Build.Platforms
                 SystemIncludePaths.Add(includePath);
             else
                 Log.Error($"Missing toolset header files location {includePath}");
-            var cppIncludePath = Path.Combine(includePath, "c++", ClangVersion.ToString());
+            var cppIncludePath = Path.Combine(includePath, "c++", LibStdCppVersion);
             if (Directory.Exists(cppIncludePath))
                 SystemIncludePaths.Add(cppIncludePath);
             else

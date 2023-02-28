@@ -73,6 +73,11 @@ namespace Flax.Build.Platforms
         protected Version ClangVersion;
 
         /// <summary>
+        /// The C++ standard library version.
+        /// </summary>
+        protected string LibStdCppVersion;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="UnixToolchain"/> class.
         /// </summary>
         /// <param name="platform">The platform.</param>
@@ -136,6 +141,7 @@ namespace Flax.Build.Platforms
 
             // Determinate compiler version
             ClangVersion = GetClangVersion(ClangPath);
+            LibStdCppVersion = GetLibStdCppVersion(ClangPath) ?? ClangVersion.ToString();
 
             // Check version
             if (ClangVersion.Major < 6)
@@ -154,6 +160,31 @@ namespace Flax.Build.Platforms
         {
             if (!File.Exists(path))
                 throw new Exception(string.Format("Missing Clang ({0})", path));
+
+            // Parse the version
+            string output = Utilities.ReadProcessOutput(path, "--version -dumpversion");
+            Regex versionPattern = new Regex("\\d+(\\.\\d+)+");
+            Match versionMatch = versionPattern.Match(output);
+            if (versionMatch.Success)
+            {
+                string[] parts = versionMatch.Value.Split('.');
+                int major = 0, minor = 0, patch = 0;
+                if (parts.Length >= 1)
+                    major = Convert.ToInt32(parts[0]);
+                if (parts.Length >= 2)
+                    minor = Convert.ToInt32(parts[1]);
+                if (parts.Length >= 3)
+                    patch = Convert.ToInt32(parts[2]);
+                return new Version(major, minor, patch);
+            }
+            throw new Exception(string.Format("Failed to get Clang version ({0})", path));
+        }
+
+        public static string GetLibStdCppVersion(string path)
+        {
+            if (!File.Exists(path))
+                return null;
+
             using (var process = new Process())
             {
                 process.StartInfo.UseShellExecute = false;
@@ -161,33 +192,18 @@ namespace Flax.Build.Platforms
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
                 process.StartInfo.FileName = path;
-                process.StartInfo.Arguments = "--version";
+                process.StartInfo.Arguments = "-v";
 
                 process.Start();
                 process.WaitForExit();
 
-                if (process.ExitCode == 0)
-                {
-                    // Parse the version
-                    string data = process.StandardOutput.ReadLine();
-                    Regex versionPattern = new Regex("version \\d+(\\.\\d+)+");
-                    Match versionMatch = versionPattern.Match(data);
-                    if (versionMatch.Value.StartsWith("version "))
-                    {
-                        var versionString = versionMatch.Value.Replace("version ", "");
-                        string[] parts = versionString.Split('.');
-                        int major = 0, minor = 0, patch = 0;
-                        if (parts.Length >= 1)
-                            major = Convert.ToInt32(parts[0]);
-                        if (parts.Length >= 2)
-                            minor = Convert.ToInt32(parts[1]);
-                        if (parts.Length >= 3)
-                            patch = Convert.ToInt32(parts[2]);
-                        return new Version(major, minor, patch);
-                    }
-                }
-                throw new Exception(string.Format("Failed to get Clang version ({0})", path));
+                Regex versionPattern = new Regex("Selected GCC installation: .*\\/(\\d+(\\.\\d+)*)");
+                Match versionMatch = versionPattern.Match(process.StandardError.ReadToEnd().Trim());
+                if (versionMatch.Success)
+                    return versionMatch.Groups[1].Value;
             }
+
+            return null;
         }
 
         /// <summary>
