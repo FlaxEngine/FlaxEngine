@@ -166,8 +166,8 @@ namespace FlaxEngine
     public unsafe class ManagedArray
     {
         private ManagedHandle pinnedArrayHandle;
-        private ManagedHandle elementTypeHandle;
         private IntPtr unmanagedData;
+        private Type elementType;
         private int elementSize;
         private int length;
 
@@ -186,9 +186,11 @@ namespace FlaxEngine
             return managedArray;
         }
 
-        internal static ManagedArray AllocateNewArray(int length, int elementSize, Type elementType) => new ManagedArray((IntPtr)NativeInterop.NativeAlloc(length, elementSize), length, elementSize, elementType);
+        internal static ManagedArray AllocateNewArray(int length, Type elementType)
+            => new ManagedArray((IntPtr)NativeInterop.NativeAlloc(length, Marshal.SizeOf(elementType)), length, elementType);
 
-        internal static ManagedArray AllocateNewArray(IntPtr ptr, int length, int elementSize, Type elementType)  => new ManagedArray(ptr, length, elementSize, elementType);
+        internal static ManagedArray AllocateNewArray(IntPtr ptr, int length, Type elementType)
+            => new ManagedArray(ptr, length, elementType);
 
         /// <summary>
         /// Returns an instance of ManagedArray from shared pool.
@@ -212,7 +214,7 @@ namespace FlaxEngine
         public static ManagedArray AllocatePooledArray<T>(int length) where T : unmanaged
         {
             ManagedArray managedArray = ManagedArrayPool.Get();
-            managedArray.Allocate((IntPtr)NativeInterop.NativeAlloc(length, Unsafe.SizeOf<T>()), length, Unsafe.SizeOf<T>(), typeof(T));
+            managedArray.Allocate((IntPtr)NativeInterop.NativeAlloc(length, Unsafe.SizeOf<T>()), length, typeof(T));
             return managedArray;
         }
 
@@ -220,33 +222,32 @@ namespace FlaxEngine
 
         internal void WrapArray(Array arr)
         {
-            var elementType = arr.GetType().GetElementType();
             pinnedArrayHandle = ManagedHandle.Alloc(arr, GCHandleType.Pinned);
-            elementTypeHandle = NativeInterop.GetTypeGCHandle(elementType);
             unmanagedData = Marshal.UnsafeAddrOfPinnedArrayElement(arr, 0);
             length = arr.Length;
+            elementType = arr.GetType().GetElementType();
             elementSize = Marshal.SizeOf(elementType);
         }
 
         internal void Allocate<T>(T* ptr, int length) where T : unmanaged
         {
             unmanagedData = new IntPtr(ptr);
-            elementTypeHandle = NativeInterop.GetTypeGCHandle(typeof(T));
             this.length = length;
+            elementType = typeof(T);
             elementSize = Unsafe.SizeOf<T>();
         }
 
-        internal void Allocate(IntPtr ptr, int length, int elementSize, Type elementType)
+        internal void Allocate(IntPtr ptr, int length, Type elementType)
         {
             unmanagedData = ptr;
-            elementTypeHandle = NativeInterop.GetTypeGCHandle(elementType);
             this.length = length;
-            this.elementSize = elementSize;
+            this.elementType = elementType;
+            elementSize = Marshal.SizeOf(elementType);
         }
 
         private ManagedArray() { }
 
-        private ManagedArray(IntPtr ptr, int length, int elementSize, Type elementType) => Allocate(ptr, length, elementSize, elementType);
+        private ManagedArray(IntPtr ptr, int length, Type elementType) => Allocate(ptr, length, elementType);
 
         ~ManagedArray()
         {
@@ -275,24 +276,45 @@ namespace FlaxEngine
             ManagedArrayPool.Put(this);
         }
 
-        internal IntPtr GetPointer => unmanagedData;
+        internal IntPtr Pointer => unmanagedData;
 
         internal int Length => length;
 
         internal int ElementSize => elementSize;
 
-        internal Type ElementType => Unsafe.As<Type>(elementTypeHandle.Target);
+        public Span<T> ToSpan<T>() where T : struct => new Span<T>(unmanagedData.ToPointer(), length);
 
-        public Span<T> GetSpan<T>() where T : struct => new Span<T>(unmanagedData.ToPointer(), length);
+        public T[] ToArray<T>() where T : struct => new Span<T>(unmanagedData.ToPointer(), length).ToArray();
 
-        public T[] GetArray<T>() where T : struct => new Span<T>(unmanagedData.ToPointer(), length).ToArray();
+        public Array ToArray() => ArrayCast.ToArray(new Span<byte>(unmanagedData.ToPointer(), length * elementSize), elementType);
 
-        public Array GeSystemArray()
+        /// <summary>
+        /// Creates an Array of the specified type from span of bytes.
+        /// </summary>
+        private static class ArrayCast
         {
-            Type elementType = Unsafe.As<Type>(elementTypeHandle.Target);
-            Type arrayType = elementType.MakeArrayType();
-            IntPtr thisPtr = ManagedHandle.ToIntPtr(ManagedHandle.Alloc(this));
-            return (Array)NativeInterop.MarshalToManaged(thisPtr, arrayType);
+            delegate Array GetDelegate(Span<byte> span);
+            [ThreadStatic] private static Dictionary<Type, GetDelegate> delegates;
+
+            internal static Array ToArray(Span<byte> span, Type type)
+            {
+                if (delegates == null)
+                    delegates = new();
+                if (!delegates.TryGetValue(type, out var deleg))
+                {
+                    deleg = typeof(ArrayCastInternal<>).MakeGenericType(type).GetMethod(nameof(ArrayCastInternal<int>.ToArray), BindingFlags.Static | BindingFlags.NonPublic).CreateDelegate<GetDelegate>();
+                    delegates.Add(type, deleg);
+                }
+                return deleg(span);
+            }
+
+            private static class ArrayCastInternal<T> where T : struct
+            {
+                internal static Array ToArray(Span<byte> span)
+                {
+                    return MemoryMarshal.Cast<byte, T>(span).ToArray();
+                }
+            }
         }
 
         /// <summary>
@@ -703,8 +725,7 @@ namespace FlaxEngine
     [CustomMarshaller(typeof(Array), MarshalMode.UnmanagedToManagedOut, typeof(SystemArrayMarshaller.ManagedToNative))]
     [CustomMarshaller(typeof(Array), MarshalMode.ManagedToUnmanagedOut, typeof(SystemArrayMarshaller.NativeToManaged))]
     [CustomMarshaller(typeof(Array), MarshalMode.UnmanagedToManagedIn, typeof(SystemArrayMarshaller.NativeToManaged))]
-    [CustomMarshaller(typeof(Array), MarshalMode.ElementOut, typeof(SystemArrayMarshaller.NativeToManaged))]
-    public static class SystemArrayMarshaller
+    public static unsafe class SystemArrayMarshaller
     {
         public struct ManagedToNative
         {
@@ -727,17 +748,42 @@ namespace FlaxEngine
 
             public void Free()
             {
-                if (managedArray != null)
-                {
-                    managedArray.FreePooled();
-                    handle.Free();
-                }
+                if (managedArray == null)
+                    return;
+                managedArray.FreePooled();
+                handle.Free();
             }
         }
-        public static class NativeToManaged
+
+        public struct NativeToManaged
         {
-            public static Array ConvertToManaged(IntPtr unmanaged) => unmanaged != IntPtr.Zero ? Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(unmanaged).Target).GeSystemArray() : null;
+            ManagedHandle handle;
+            ManagedArray managedArray;
+
+            public void FromUnmanaged(IntPtr unmanaged)
+            {
+                if (unmanaged == IntPtr.Zero)
+                    return;
+                handle = ManagedHandle.FromIntPtr(unmanaged);
+            }
+
+            public Array ToManaged()
+            {
+                if (!handle.IsAllocated)
+                    return null;
+                managedArray = Unsafe.As<ManagedArray>(handle.Target);
+                return managedArray.ToArray();
+            }
+
+            public void Free()
+            {
+                if (!handle.IsAllocated)
+                    return;
+                managedArray.Free();
+                handle.Free();
+            }
         }
+
     }
 
     [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ManagedToUnmanagedIn, typeof(DictionaryMarshaller<,>.ManagedToNative))]
@@ -827,7 +873,7 @@ namespace FlaxEngine
                 if (unmanaged == null)
                     return ReadOnlySpan<TUnmanagedElement>.Empty;
                 ManagedArray managedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
-                return managedArray.GetSpan<TUnmanagedElement>();
+                return managedArray.ToSpan<TUnmanagedElement>();
             }
 
             public static void Free(TUnmanagedElement* unmanaged)
@@ -844,7 +890,7 @@ namespace FlaxEngine
                 if (unmanaged == null)
                     return Span<TUnmanagedElement>.Empty;
                 ManagedArray managedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
-                return managedArray.GetSpan<TUnmanagedElement>();
+                return managedArray.ToSpan<TUnmanagedElement>();
             }
         }
 
@@ -870,7 +916,7 @@ namespace FlaxEngine
                 if (unmanaged == null)
                     return Span<TUnmanagedElement>.Empty;
                 ManagedArray managedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
-                return managedArray.GetSpan<TUnmanagedElement>();
+                return managedArray.ToSpan<TUnmanagedElement>();
             }
 
             public static void Free(TUnmanagedElement* unmanaged)
@@ -904,7 +950,7 @@ namespace FlaxEngine
             {
                 if (unmanagedArray == null)
                     return Span<TUnmanagedElement>.Empty;
-                return unmanagedArray.GetSpan<TUnmanagedElement>();
+                return unmanagedArray.ToSpan<TUnmanagedElement>();
             }
 
             public TUnmanagedElement* ToUnmanaged() => (TUnmanagedElement*)ManagedHandle.ToIntPtr(handle);
@@ -920,7 +966,7 @@ namespace FlaxEngine
             {
                 if (unmanagedArray == null)
                     return ReadOnlySpan<TUnmanagedElement>.Empty;
-                return unmanagedArray.GetSpan<TUnmanagedElement>();
+                return unmanagedArray.ToSpan<TUnmanagedElement>();
             }
 
             public Span<T> GetManagedValuesDestination(int numElements) => managedArray;
@@ -954,7 +1000,7 @@ namespace FlaxEngine
             if (unmanaged == null)
                 return Span<TUnmanagedElement>.Empty;
             ManagedArray unmanagedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
-            return unmanagedArray.GetSpan<TUnmanagedElement>();
+            return unmanagedArray.ToSpan<TUnmanagedElement>();
         }
 
         public static T[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements) => unmanaged is null ? null : new T[numElements];
@@ -966,7 +1012,7 @@ namespace FlaxEngine
             if (unmanaged == null)
                 return ReadOnlySpan<TUnmanagedElement>.Empty;
             ManagedArray array = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
-            return array.GetSpan<TUnmanagedElement>();
+            return array.ToSpan<TUnmanagedElement>();
         }
 
         public static void Free(TUnmanagedElement* unmanaged)
@@ -1161,7 +1207,7 @@ namespace FlaxEngine
 
         internal static T[] GCHandleArrayToManagedArray<T>(ManagedArray ptrArray) where T : class
         {
-            Span<IntPtr> span = ptrArray.GetSpan<IntPtr>();
+            Span<IntPtr> span = ptrArray.ToSpan<IntPtr>();
             T[] managedArray = new T[ptrArray.Length];
             for (int i = 0; i < managedArray.Length; i++)
                 managedArray[i] = span[i] != IntPtr.Zero ? (T)ManagedHandle.FromIntPtr(span[i]).Target : default;
@@ -1476,7 +1522,7 @@ namespace FlaxEngine
             internal static Array ToManagedArray(ManagedArray nativeArray)
             {
                 T[] arr = new T[nativeArray.Length];
-                IntPtr nativePtr = nativeArray.GetPointer;
+                IntPtr nativePtr = nativeArray.Pointer;
                 for (int i = 0; i < arr.Length; i++)
                 {
                     toManagedTypedMarshaller(ref arr[i], nativePtr, false);
@@ -1683,11 +1729,11 @@ namespace FlaxEngine
                 {
                     ManagedArray managedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(nativePtr).Target);
                     if (ArrayFactory.GetMarshalledType(elementType) == elementType)
-                        managedValue = Unsafe.As<T[]>(managedArray.GetArray<T>());
+                        managedValue = Unsafe.As<T[]>(managedArray.ToArray<T>());
                     else if (elementType.IsValueType)
                         managedValue = Unsafe.As<T[]>(MarshalHelper<T>.ToManagedArray(managedArray));
                     else
-                        managedValue = Unsafe.As<T[]>(MarshalHelper<T>.ToManagedArray(managedArray.GetSpan<IntPtr>()));
+                        managedValue = Unsafe.As<T[]>(MarshalHelper<T>.ToManagedArray(managedArray.ToSpan<IntPtr>()));
                 }
                 else
                     managedValue = null;
@@ -1751,7 +1797,7 @@ namespace FlaxEngine
                 if (nativePtr != IntPtr.Zero)
                 {
                     ManagedArray managedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(nativePtr).Target);
-                    managedValue = Unsafe.As<T[]>(MarshalHelper<T>.ToManagedArray(managedArray.GetSpan<IntPtr>()));
+                    managedValue = Unsafe.As<T[]>(MarshalHelper<T>.ToManagedArray(managedArray.ToSpan<IntPtr>()));
                 }
                 else
                     managedValue = null;
@@ -1790,8 +1836,8 @@ namespace FlaxEngine
                         else if (elementType.IsValueType)
                         {
                             // Convert array of custom structures into internal native layout
-                            managedArray = ManagedArray.AllocateNewArray(arr.Length, Marshal.SizeOf(marshalledType), marshalledType);
-                            IntPtr managedArrayPtr = managedArray.GetPointer;
+                            managedArray = ManagedArray.AllocateNewArray(arr.Length, marshalledType);
+                            IntPtr managedArrayPtr = managedArray.Pointer;
                             for (int i = 0; i < arr.Length; i++)
                             {
                                 MarshalToNative(arr.GetValue(i), managedArrayPtr, elementType);
@@ -2246,7 +2292,7 @@ namespace FlaxEngine
             Type marshalledType = ArrayFactory.GetMarshalledType(type);
             if (marshalledType.IsValueType)
             {
-                ManagedArray managedArray = ManagedArray.AllocateNewArray((int)size, Marshal.SizeOf(marshalledType), marshalledType);
+                ManagedArray managedArray = ManagedArray.AllocateNewArray((int)size, marshalledType);
                 return ManagedHandle.Alloc(managedArray/*, GCHandleType.Weak*/);
             }
             else
@@ -2266,7 +2312,7 @@ namespace FlaxEngine
             if (managedArray.Length == 0)
                 return IntPtr.Zero;
             Assert.IsTrue(index >= 0 && index < managedArray.Length);
-            return IntPtr.Add(managedArray.GetPointer, size * index);
+            return IntPtr.Add(managedArray.Pointer, size * index);
         }
 
         [UnmanagedCallersOnly]
@@ -2486,8 +2532,8 @@ namespace FlaxEngine
         internal static void SetArrayValueReference(ManagedHandle arrayHandle, IntPtr elementPtr, IntPtr valueHandle)
         {
             ManagedArray managedArray = Unsafe.As<ManagedArray>(arrayHandle.Target);
-            int index = (int)(elementPtr.ToInt64() - managedArray.GetPointer.ToInt64()) / managedArray.ElementSize;
-            managedArray.GetSpan<IntPtr>()[index] = valueHandle;
+            int index = (int)(elementPtr.ToInt64() - managedArray.Pointer.ToInt64()) / managedArray.ElementSize;
+            managedArray.ToSpan<IntPtr>()[index] = valueHandle;
         }
 
         [UnmanagedCallersOnly]
