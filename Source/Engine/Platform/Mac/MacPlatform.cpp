@@ -699,8 +699,32 @@ int32 MacProcess(const StringView& cmdLine, const StringView& workingDir, const 
 int32 MacPlatform::StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow, bool waitForEnd)
 {
 	// hiddenWindow has hardly any meaning on UNIX/Linux/OSX as the program that is called decides whether it has a GUI or not
-	String cmdLine(filename);
-	if (args.HasChars()) cmdLine = cmdLine + TEXT(" ") + args;
+
+    // Special case if filename points to the app package (use actual executable)
+    String exePath = filename;
+	{
+        NSString* processPath = (NSString*)MacUtils::ToString(filename);
+        if (![[NSFileManager defaultManager] fileExistsAtPath: processPath])
+        {
+            NSString* appName = [[processPath lastPathComponent] stringByDeletingPathExtension];
+            processPath = [[NSWorkspace sharedWorkspace] fullPathForApplication:appName];
+        }
+        if ([[NSFileManager defaultManager] fileExistsAtPath: processPath])
+        {
+            if([[NSWorkspace sharedWorkspace] isFilePackageAtPath: processPath])
+            {
+                NSBundle* bundle = [NSBundle bundleWithPath:processPath];
+                if (bundle != nil)
+                {
+                    processPath = [bundle executablePath];
+                    if (processPath != nil)
+                        exePath = MacUtils::ToString((CFStringRef)processPath);
+                }
+            }
+        }
+	}
+
+    String cmdLine = String::Format(TEXT("\"{0}\" {1}"), exePath, args);
 	return MacProcess(cmdLine, workingDir, Dictionary<String, String>(), waitForEnd, false);
 }
 

@@ -10,6 +10,9 @@
 #include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
 #if PLATFORM_LINUX
 #include <stdio.h>
+#elif PLATFORM_MAC
+#include "Engine/Platform/Mac/MacUtils.h"
+#include <AppKit/AppKit.h>
 #endif
 
 VisualStudioCodeEditor::VisualStudioCodeEditor(const String& execPath, const bool isInsiders)
@@ -78,6 +81,33 @@ void VisualStudioCodeEditor::FindEditors(Array<CodeEditor*>* output)
             const String runPath(TEXT("flatpak run com.visualstudio.code"));
             output->Add(New<VisualStudioCodeEditor>(runPath, false));
             return;
+        }
+    }
+#elif PLATFORM_MAC
+    // System installed app
+	NSURL* AppURL = [[NSWorkspace sharedWorkspace] URLForApplicationWithBundleIdentifier:@"com.microsoft.VSCode"];
+	if (AppURL != nullptr)
+	{
+        const String path = MacUtils::ToString((CFStringRef)[AppURL path]);
+        output->Add(New<VisualStudioCodeEditor>(path, false));
+        return;
+	}
+
+    // Predefined locations
+    String userFolder;
+    FileSystem::GetSpecialFolderPath(SpecialFolder::Documents, userFolder);
+    String paths[3] =
+    {
+        TEXT("/Applications/Visual Studio Code.app"),
+        userFolder + TEXT("/../Visual Studio Code.app"),
+        userFolder + TEXT("/../Downloads/Visual Studio Code.app"),
+    };
+    for (const String& path : paths)
+    {
+        if (FileSystem::DirectoryExists(path))
+        {
+            output->Add(New<VisualStudioCodeEditor>(path, false));
+            break;
         }
     }
 #endif
