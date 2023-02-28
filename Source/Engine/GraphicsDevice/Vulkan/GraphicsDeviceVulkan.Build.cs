@@ -88,10 +88,12 @@ public sealed class VulkanSdk : Sdk
     /// <summary>
     /// Tries the get includes folder path (header files). This handles uppercase and lowercase installations for all platforms.
     /// </summary>
+    /// <param name="platform">Target platform hint.</param>
     /// <param name="includesFolderPath">The includes folder path.</param>
     /// <returns>True if got valid folder, otherwise false.</returns>
-    public bool TryGetIncludePath(out string includesFolderPath)
+    public bool TryGetIncludePath(TargetPlatform platform, out string includesFolderPath)
     {
+        includesFolderPath = string.Empty;
         if (IsValid)
         {
             var vulkanSdk = RootPath;
@@ -99,6 +101,11 @@ public sealed class VulkanSdk : Sdk
             // Use system-installed headers
             if (vulkanSdk.EndsWith("/include") && Directory.Exists(vulkanSdk))
             {
+                if (platform != Flax.Build.Platform.BuildTargetPlatform)
+                {
+                    Log.Warning(string.Format("Cannot use system-installed VulkanSDK at {0} when building for platform {1}", vulkanSdk, platform));
+                    return false;
+                }
                 includesFolderPath = vulkanSdk;
                 return true;
             }
@@ -123,8 +130,6 @@ public sealed class VulkanSdk : Sdk
             foreach (var include in includes)
                 Log.Warning(string.Format("No Vulkan header files in {0}", include));
         }
-
-        includesFolderPath = string.Empty;
         return false;
     }
 }
