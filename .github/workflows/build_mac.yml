@@ -1,6 +1,10 @@
 name: Build macOS
 on: [push, pull_request]
 
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: false
+
 jobs:
 
   # Editor

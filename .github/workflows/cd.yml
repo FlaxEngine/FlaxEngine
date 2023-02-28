@@ -4,6 +4,10 @@ on:
     - cron: '15 4 * * *'
   workflow_dispatch:
 
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: false
+
 jobs:
 
   # Windows
