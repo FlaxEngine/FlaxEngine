@@ -30,7 +30,6 @@ bool LinuxFileSystem::ShowOpenFileDialog(Window* parentWindow, const StringView&
     const StringAsANSI<> initialDirectoryAnsi(*initialDirectory, initialDirectory.Length());
     const StringAsANSI<> titleAnsi(*title, title.Length());
     const char* initDir = initialDirectory.HasChars() ? initialDirectoryAnsi.Get() : ".";
-    char cmd[2048];
     String xdgCurrentDesktop;
     StringBuilder fileFilter;
     Array<String> fileFilterEntries;
@@ -39,6 +38,7 @@ bool LinuxFileSystem::ShowOpenFileDialog(Window* parentWindow, const StringView&
 
     const bool zenitySupported = FileSystem::FileExists(TEXT("/usr/bin/zenity"));
     const bool kdialogSupported = FileSystem::FileExists(TEXT("/usr/bin/kdialog"));
+    char cmd[2048];
     if (zenitySupported && (xdgCurrentDesktop != TEXT("KDE") || !kdialogSupported)) // Prefer kdialog when running on KDE
     {
         for (int32 i = 1; i < fileFilterEntries.Count(); i += 2)
@@ -82,6 +82,51 @@ bool LinuxFileSystem::ShowOpenFileDialog(Window* parentWindow, const StringView&
         while (*c != '\n')
             c++;
         filenames.Add(String(start, (int32)(c - start)));
+        c++;
+    }
+    return false;
+}
+
+bool LinuxFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title, String& path)
+{
+    const StringAsANSI<> titleAnsi(*title, title.Length());
+    String xdgCurrentDesktop;
+    Platform::GetEnvironmentVariable(TEXT("XDG_CURRENT_DESKTOP"), xdgCurrentDesktop);
+
+    // TODO: support initialDirectory
+
+    const bool zenitySupported = FileSystem::FileExists(TEXT("/usr/bin/zenity"));
+    const bool kdialogSupported = FileSystem::FileExists(TEXT("/usr/bin/kdialog"));
+    char cmd[2048];
+    if (zenitySupported && (xdgCurrentDesktop != TEXT("KDE") || !kdialogSupported)) // Prefer kdialog when running on KDE
+    {
+        sprintf(cmd, "/usr/bin/zenity --modal --file-selection --directory --title=\"%s\" ", titleAnsi.Get());
+    }
+    else if (kdialogSupported)
+    {
+        sprintf(cmd, "/usr/bin/kdialog --getexistingdirectory --title \"%s\" ", titleAnsi.Get());
+    }
+    else
+    {
+        LOG(Error, "Missing file picker (install zenity or kdialog).");
+        return true;    
+    }
+    FILE* f = popen(cmd, "r");
+    char buf[2048];
+    fgets(buf, ARRAY_COUNT(buf), f); 
+    int result = pclose(f);
+    if (result != 0)
+        return true;
+
+    const char* c = buf;
+    while (*c)
+    {
+        const char* start = c;
+        while (*c != '\n')
+            c++;
+        path = String(start, (int32)(c - start));
+        if (path.HasChars())
+            break;
         c++;
     }
     return false;
