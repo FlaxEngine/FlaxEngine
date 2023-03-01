@@ -149,6 +149,7 @@ public:
     GlobalSurfaceAtlasTile* AtlasTiles = nullptr; // TODO: optimize with a single allocation for atlas tiles
     Dictionary<void*, GlobalSurfaceAtlasObject> Objects;
     Dictionary<Guid, GlobalSurfaceAtlasLight> Lights;
+    SamplesBuffer<uint32, 30> CulledObjectsUsageHistory;
 
     // Cached data to be reused during RasterizeActor
     uint64 CurrentFrame;
@@ -167,6 +168,7 @@ public:
     FORCE_INLINE void ClearObjects()
     {
         CulledObjectsCounterIndex = -1;
+        CulledObjectsUsageHistory.Clear();
         LastFrameAtlasDefragmentation = Engine::FrameCount;
         SAFE_DELETE(AtlasTiles);
         Objects.Clear();
@@ -717,8 +719,15 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             }
         }
 
+        // Calculate optimal capacity for the objects buffer
+        objectsBufferCapacity *= sizeof(uint32) * 2; // Convert to bytes and add safe margin
+        objectsBufferCapacity = Math::Clamp(Math::AlignUp<uint32>(objectsBufferCapacity, 4096u), 32u * 1024u, 1024u * 1024u); // Align up to 4kB, clamp 32kB - 1MB
+        surfaceAtlasData.CulledObjectsUsageHistory.Add(objectsBufferCapacity); // Record history
+        objectsBufferCapacity = surfaceAtlasData.CulledObjectsUsageHistory.Maximum(); // Use biggest value from history
+        if (surfaceAtlasData.CulledObjectsUsageHistory.Count() == surfaceAtlasData.CulledObjectsUsageHistory.Capacity())
+            notReady = false; // Always ready when rendering for some time
+
         // Allocate buffer for culled objects (estimated size)
-        objectsBufferCapacity = Math::Min(Math::AlignUp<uint32>(objectsBufferCapacity * sizeof(uint32) * 2, 4096u), (uint32)MAX_int32);
         if (!surfaceAtlasData.CulledObjectsBuffer)
             surfaceAtlasData.CulledObjectsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("GlobalSurfaceAtlas.CulledObjectsBuffer"));
         if (surfaceAtlasData.CulledObjectsBuffer->GetSize() < objectsBufferCapacity)
@@ -739,7 +748,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         data.ViewWorldPos = renderContext.View.Position;
         data.ViewNearPlane = renderContext.View.Near;
         data.ViewFarPlane = renderContext.View.Far;
-        data.CulledObjectsCapacity = objectsBufferCapacity;
+        data.CulledObjectsCapacity = objectsBufferCapacity / sizeof(uint32); // Capacity in items, not bytes
         data.GlobalSurfaceAtlas = result.Constants;
         context->UpdateCB(_cb0, &data);
         context->BindCB(0, _cb0);
