@@ -10,7 +10,7 @@
 /// <summary>
 /// Thread object for Android platform.
 /// </summary>
-class AndroidThread : public UnixThread
+class FLAXENGINE_API AndroidThread : public UnixThread
 {
 public:
 

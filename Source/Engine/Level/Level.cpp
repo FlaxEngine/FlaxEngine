@@ -775,6 +775,14 @@ Actor* FindActorRecursive(Actor* node, const Tag& tag)
     return result;
 }
 
+void FindActorsRecursive(Actor* node, const Tag& tag, Array<Actor*>& result)
+{
+    if (node->HasTag(tag))
+        result.Add(node);
+    for (Actor* child : node->Children)
+        FindActorsRecursive(child, tag, result);
+}
+
 Actor* Level::FindActor(const Tag& tag, Actor* root)
 {
     PROFILE_CPU();
@@ -804,12 +812,12 @@ Array<Actor*> Level::FindActors(const Tag& tag, Actor* root)
     Array<Actor*> result;
     if (root)
     {
-        FindActorRecursive(root, tag);
+        FindActorsRecursive(root, tag, result);
     }
     else
     {
         for (Scene* scene : Scenes)
-            FindActorRecursive(scene, tag);
+            FindActorsRecursive(scene, tag, result);
     }
     return result;
 }

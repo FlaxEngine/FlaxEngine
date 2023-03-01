@@ -48,7 +48,7 @@ public class volk : ThirdPartyModule
         }
 
         string includesFolderPath;
-        if (VulkanSdk.Instance.TryGetIncludePath(out includesFolderPath))
+        if (VulkanSdk.Instance.TryGetIncludePath(options.Platform.Target, out includesFolderPath))
         {
             options.PublicIncludePaths.Add(includesFolderPath);
         }

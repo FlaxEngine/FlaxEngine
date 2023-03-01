@@ -217,8 +217,8 @@
 
   <!-- Tag -->
   <Type Name="Tag">
-    <DisplayString Condition="Index == -1">None</DisplayString>
-    <DisplayString Condition="Index != -1">Tag={TagsListDebug[Index]}</DisplayString>
+    <DisplayString Condition="Index == 0">None</DisplayString>
+    <DisplayString Condition="Index != 0">Tag={TagsListDebug[Index - 1]}</DisplayString>
   </Type>
 
 </AutoVisualizer>

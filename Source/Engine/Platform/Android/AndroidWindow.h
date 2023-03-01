@@ -10,7 +10,7 @@
 /// <summary>
 /// Implementation of the window class for Android platform.
 /// </summary>
-class AndroidWindow : public WindowBase
+class FLAXENGINE_API AndroidWindow : public WindowBase
 {
     friend AndroidPlatform;
 public:

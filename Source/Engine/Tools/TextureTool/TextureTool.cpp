@@ -461,6 +461,21 @@ TextureTool::PixelFormatSampler PixelFormatSamplers[] =
         },
     },
     {
+        PixelFormat::R8G8_UNorm,
+        sizeof(uint16),
+        [](const void* ptr)
+        {
+            const uint8* rg = (const uint8*)ptr;
+            return Color((float)rg[0] / MAX_uint8, (float)rg[1] / MAX_uint8, 0, 1);
+        },
+        [](const void* ptr, const Color& color)
+        {
+            uint8* rg = (uint8*)ptr;
+            rg[0] = (uint8)(color.R * MAX_uint8);
+            rg[1] = (uint8)(color.G * MAX_uint8);
+        },
+    },
+    {
         PixelFormat::R16G16_Float,
         sizeof(Half2),
         [](const void* ptr)

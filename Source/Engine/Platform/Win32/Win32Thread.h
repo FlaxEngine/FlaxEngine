@@ -9,7 +9,7 @@
 /// <summary>
 /// Thread object for Win32 platform.
 /// </summary>
-class Win32Thread : public ThreadBase
+class FLAXENGINE_API Win32Thread : public ThreadBase
 {
 private:
 
