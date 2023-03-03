@@ -288,6 +288,8 @@ namespace FlaxEditor.Surface.Archetypes
             private bool _isMouseDown;
             private Rectangle _textRect;
             private Rectangle _dragAreaRect;
+            private bool _cursorChanged = false;
+            private bool _textRectHovered = false;
 
             /// <summary>
             /// Gets or sets the first state node identifier for the state machine pointed by the entry node.
@@ -336,7 +338,8 @@ namespace FlaxEditor.Surface.Archetypes
                 var width = Mathf.Max(100, titleSize.X + 50);
                 Resize(width, 0);
                 titleSize.X += 8.0f;
-                _dragAreaRect = new Rectangle((Size - titleSize) * 0.5f, titleSize);
+                var padding = new Float2(8, 8);
+                _dragAreaRect = new Rectangle(padding, Size - padding * 2);
             }
 
             /// <inheritdoc />
@@ -345,10 +348,19 @@ namespace FlaxEditor.Surface.Archetypes
                 var style = Style.Current;
 
                 // Paint Background
-                BackgroundColor = _isSelected ? Color.OrangeRed : style.BackgroundNormal;
+                if (_isSelected)
+                    Render2D.DrawRectangle(_textRect, Color.Orange);
+
+                BackgroundColor = style.BackgroundNormal;
+                var dragAreaColor = BackgroundColor / 2.0f;
+
                 if (IsMouseOver)
                     BackgroundColor *= 1.2f;
+                if (_textRectHovered)
+                    BackgroundColor *= 1.2f;
+
                 Render2D.FillRectangle(_textRect, BackgroundColor);
+                Render2D.FillRectangle(_dragAreaRect, dragAreaColor);
 
                 // Push clipping mask
                 if (ClipChildren)
@@ -382,6 +394,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     _isMouseDown = true;
                     Cursor = CursorType.Hand;
+                    _cursorChanged = true;
                     Focus();
                     return true;
                 }
@@ -399,6 +412,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     _isMouseDown = false;
                     Cursor = CursorType.Default;
+                    _cursorChanged = false;
                     Surface.ConnectingEnd(this);
                 }
 
@@ -412,6 +426,25 @@ namespace FlaxEditor.Surface.Archetypes
             public override void OnMouseMove(Float2 location)
             {
                 Surface.ConnectingOver(this);
+                if (_dragAreaRect.Contains(location) && !_cursorChanged && !Input.GetMouseButton(MouseButton.Left))
+                {
+                    Cursor = CursorType.SizeAll;
+                    _cursorChanged = true;
+                }
+                else if (!_dragAreaRect.Contains(location) && _cursorChanged)
+                {
+                    Cursor = CursorType.Default;
+                    _cursorChanged = false;
+                }
+
+                if (_textRect.Contains(location) && !_dragAreaRect.Contains(location) && !_textRectHovered)
+                {
+                    _textRectHovered = true;
+                }
+                else if (_textRectHovered && (!_textRect.Contains(location) || _dragAreaRect.Contains(location)))
+                {
+                    _textRectHovered = false;
+                }
                 base.OnMouseMove(location);
             }
 
@@ -419,6 +452,15 @@ namespace FlaxEditor.Surface.Archetypes
             public override void OnMouseLeave()
             {
                 base.OnMouseLeave();
+
+                if (_cursorChanged)
+                {
+                    Cursor = CursorType.Default;
+                    _cursorChanged = false;
+                }
+
+                if (_textRectHovered)
+                    _textRectHovered = false;
 
                 if (_isMouseDown)
                 {
@@ -606,6 +648,8 @@ namespace FlaxEditor.Surface.Archetypes
             private Rectangle _textRect;
             private Rectangle _dragAreaRect;
             private Rectangle _renameButtonRect;
+            private bool _cursorChanged = false;
+            private bool _textRectHovered = false;
 
             /// <summary>
             /// The transitions list from this state to the others.
@@ -711,7 +755,8 @@ namespace FlaxEditor.Surface.Archetypes
                 var width = Mathf.Max(100, titleSize.X + 50);
                 Resize(width, 0);
                 titleSize.X += 8.0f;
-                _dragAreaRect = new Rectangle((Size - titleSize) * 0.5f, titleSize);
+                var padding = new Float2(8, 8);
+                _dragAreaRect = new Rectangle(padding, Size - padding * 2);
             }
 
             /// <inheritdoc />
@@ -1138,10 +1183,19 @@ namespace FlaxEditor.Surface.Archetypes
                 var style = Style.Current;
 
                 // Paint Background
-                BackgroundColor = _isSelected ? Color.OrangeRed : style.BackgroundNormal;
+                if (_isSelected)
+                    Render2D.DrawRectangle(_textRect, Color.Orange);
+
+                BackgroundColor = style.BackgroundNormal;
+                var dragAreaColor = BackgroundColor / 2.0f;
+
                 if (IsMouseOver)
                     BackgroundColor *= 1.2f;
+                if (_textRectHovered)
+                    BackgroundColor *= 1.2f;
+
                 Render2D.FillRectangle(_textRect, BackgroundColor);
+                Render2D.FillRectangle(_dragAreaRect, dragAreaColor);
 
                 // Push clipping mask
                 if (ClipChildren)
@@ -1194,6 +1248,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     _isMouseDown = true;
                     Cursor = CursorType.Hand;
+                    _cursorChanged = true;
                     Focus();
                     return true;
                 }
@@ -1211,6 +1266,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     _isMouseDown = false;
                     Cursor = CursorType.Default;
+                    _cursorChanged = false;
                     Surface.ConnectingEnd(this);
                 }
 
@@ -1231,6 +1287,26 @@ namespace FlaxEditor.Surface.Archetypes
             public override void OnMouseMove(Float2 location)
             {
                 Surface.ConnectingOver(this);
+                if (_dragAreaRect.Contains(location) && !_cursorChanged && !_renameButtonRect.Contains(location) && !_closeButtonRect.Contains(location) && !Input.GetMouseButton(MouseButton.Left))
+                {
+                    Cursor = CursorType.SizeAll;
+                    _cursorChanged = true;
+                }
+                else if ((!_dragAreaRect.Contains(location) || _renameButtonRect.Contains(location) || _closeButtonRect.Contains(location)) && _cursorChanged)
+                {
+                    Cursor = CursorType.Default;
+                    _cursorChanged = false;
+                }
+
+                if (_textRect.Contains(location) && !_dragAreaRect.Contains(location) && !_textRectHovered)
+                {
+                    _textRectHovered = true;
+                }
+                else if (_textRectHovered && (!_textRect.Contains(location) || _dragAreaRect.Contains(location)))
+                {
+                    _textRectHovered = false;
+                }
+                
                 base.OnMouseMove(location);
             }
 
@@ -1238,6 +1314,15 @@ namespace FlaxEditor.Surface.Archetypes
             public override void OnMouseLeave()
             {
                 base.OnMouseLeave();
+
+                if (_cursorChanged)
+                {
+                    Cursor = CursorType.Default;
+                    _cursorChanged = false;
+                }
+
+                if (_textRectHovered)
+                    _textRectHovered = false;
 
                 if (_isMouseDown)
                 {
