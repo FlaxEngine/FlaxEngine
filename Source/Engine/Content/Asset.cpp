@@ -400,6 +400,11 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
         return false;
     }
 
+    // Check if loading failed
+    Platform::MemoryBarrier();
+    if (LastLoadFailed())
+        return true;
+
     // Check if has missing loading task
     Platform::MemoryBarrier();
     const auto loadingTask = _loadingTask;
