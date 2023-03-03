@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 @0// Deferred Shading: Defines
 @1// Deferred Shading: Includes

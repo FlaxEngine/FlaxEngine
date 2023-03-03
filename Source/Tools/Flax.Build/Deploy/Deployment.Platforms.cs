@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Flax Engine. All rights reserved.
+// Copyright (c) 2012-2023 Flax Engine. All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
