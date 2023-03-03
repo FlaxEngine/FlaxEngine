@@ -55,7 +55,6 @@ public:
     };
 
 private:
-    BoundingBox _boxLocal;
     GeometryDrawStateData _drawState;
     SkinnedMeshDrawData _skinningData;
     AnimationUpdateMode _actualMode;
@@ -349,7 +348,6 @@ private:
     void SyncParameters();
 
     void Update();
-    void UpdateLocalBounds();
     void UpdateBounds();
     void UpdateSockets();
     void OnAnimationUpdated_Async();
