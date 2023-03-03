@@ -181,7 +181,7 @@ namespace FlaxEditor.SceneGraph.Actors
                     DebugDraw.DrawLine(pos, tangentIn, Color.Blue.AlphaMultiplied(0.6f), 0, false);
                     DebugDraw.DrawWireSphere(new BoundingSphere(tangentIn, 4.0f), Color.Blue, 0, false);
                 }
-                if (tangentIn != pos)
+                if (tangentOut != pos)
                 {
                     DebugDraw.DrawLine(pos, tangentOut, Color.Red.AlphaMultiplied(0.6f), 0, false);
                     DebugDraw.DrawWireSphere(new BoundingSphere(tangentOut, 4.0f), Color.Red, 0, false);
