@@ -6,7 +6,7 @@ using Flax.Build;
 using Flax.Build.NativeCpp;
 
 /// <summary>
-/// https://github.com/NVIDIAGameWorks/PhysX
+/// https://github.com/NVIDIA-Omniverse/PhysX
 /// </summary>
 public class PhysX : DepsModule
 {
@@ -27,7 +27,7 @@ public class PhysX : DepsModule
     {
         base.Setup(options);
 
-        // PhysX 4 configuration:
+        // PhysX configuration:
         // PX_BUILDSNIPPETS = False
         // PX_BUILDSAMPLES = False
         // PX_BUILDPUBLICSAMPLES = False
@@ -59,14 +59,18 @@ public class PhysX : DepsModule
         case TargetPlatform.XboxOne:
         case TargetPlatform.XboxScarlett:
         case TargetPlatform.Mac:
+        case TargetPlatform.Android:
             switch (options.Architecture)
             {
             case TargetArchitecture.x86:
+            case TargetArchitecture.ARM:
                 archPostFix = "_32";
                 break;
             case TargetArchitecture.x64:
+            case TargetArchitecture.ARM64:
                 archPostFix = "_64";
                 break;
+            default: throw new InvalidArchitectureException(options.Architecture);
             }
             break;
         }

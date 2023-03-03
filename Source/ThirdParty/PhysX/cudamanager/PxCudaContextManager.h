@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,11 +22,10 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 
-
-#ifndef PXCUDACONTEXTMANAGER_PXCUDACONTEXTMANAGER_H
-#define PXCUDACONTEXTMANAGER_PXCUDACONTEXTMANAGER_H
+#ifndef PX_CUDA_CONTEXT_MANAGER_H
+#define PX_CUDA_CONTEXT_MANAGER_H
 
 #include "foundation/PxPreprocessor.h"
 
@@ -36,17 +34,16 @@
 #include "foundation/PxSimpleTypes.h"
 #include "foundation/PxErrorCallback.h"
 #include "foundation/PxFlags.h"
-#include "task/PxTaskDefine.h"
-#include "cudamanager/PxCudaMemoryManager.h"
 
-/* Forward decl to avoid inclusion of cuda.h */
-typedef struct CUctx_st *CUcontext;
-typedef struct CUgraphicsResource_st *CUgraphicsResource;
-typedef int CUdevice;
+#include "PxCudaTypes.h"
 
+#if !PX_DOXYGEN
 namespace physx
-{ 
-	
+{
+#endif
+
+class PxCudaContext;
+
 /** \brief Possible graphic/CUDA interoperability modes for context */
 struct PxCudaInteropMode
 {
@@ -77,6 +74,31 @@ struct PxCudaInteropRegisterFlag
 };
 
 /**
+\brief An interface class that the user can implement in order for PhysX to use a user-defined device memory allocator.
+*/
+class PxDeviceAllocatorCallback
+{
+public:
+
+	/**
+	\brief Allocated device memory.
+	\param[in] ptr Pointer to store the allocated address
+	\param[in] size The amount of memory required
+	\return A boolean indicates the operation succeed or fail
+	*/
+	virtual bool memAlloc(void** ptr, size_t size) = 0;
+
+	/**
+	\brief Frees device memory.
+	\param[in] ptr The memory to free
+	\return A boolean indicates the operation succeed or fail
+	*/
+	virtual bool memFree(void* ptr) = 0;
+
+protected:
+	virtual ~PxDeviceAllocatorCallback() {}
+};
+/**
 \brief collection of set bits defined in NxCudaInteropRegisterFlag.
 
 @see NxCudaInteropRegisterFlag
@@ -104,12 +126,8 @@ public:
      * If the user provides a context for the PxCudaContextManager, the context
      * _must_ have either been created on the GPU ordinal returned by
      * PxGetSuggestedCudaDeviceOrdinal() or on your graphics device.
-     *
-     * It is perfectly acceptable to allocate device or host pinned memory from
-     * the context outside the scope of the PxCudaMemoryManager, so long as you
-     * manage its eventual cleanup.
      */
-	CUcontext            *ctx;
+	CUcontext*	ctx;
 
     /**
      * \brief D3D device pointer or OpenGl context handle
@@ -118,9 +136,8 @@ public:
      * created.  In that case, the created context will be bound to this
      * graphics device.
      */
-	void	             *graphicsDevice;
+	void*	graphicsDevice;
 
-#if PX_SUPPORT_GPU_PHYSX
 	/**
 	  * \brief Application-specific GUID
 	  *
@@ -128,9 +145,18 @@ public:
 	  * so that patches for new architectures can be released for your game.You can obtain a GUID for your 
 	  * application from Nvidia.
 	  */
-	const char*			 appGUID;
-#endif
-    /**
+	const char*	appGUID;
+
+	/**
+	  * \brief Application-specific device memory allocator
+	  *
+	  * the application can implement an device memory allocator, which inherites PxDeviceAllocatorCallback, and 
+	  * pass that to the PxCudaContextManagerDesc. The SDK will use that allocator to allocate device memory instead of
+	  * using the defaul CUDA device memory allocator.
+	  */
+	PxDeviceAllocatorCallback*	deviceAllocator;
+
+	/**
      * \brief The CUDA/Graphics interop mode of this context
      *
      * If ctx is NULL, this value describes the nature of the graphicsDevice
@@ -139,75 +165,189 @@ public:
      */
 	PxCudaInteropMode::Enum interopMode;
 
-
-    /**
-     * \brief Size of persistent memory
-     *
-     * This memory is allocated up front and stays allocated until the
-     * PxCudaContextManager is released.  Size is in bytes, has to be power of two
-     * and bigger than the page size.  Set to 0 to only use dynamic pages.
-     *
-     * Note: On Vista O/S and above, there is a per-memory allocation overhead
-     * to every CUDA work submission, so we recommend that you carefully tune
-     * this initial base memory size to closely approximate the amount of
-     * memory your application will consume.
-
-	 Note: This is currently not used by PxSceneFlag::eENABLE_GPU_DYNAMICS. Memory allocation properties are configured
-	 for GPU rigid bodies using PxSceneDesc::gpuDynamicsConfig.
-     */
-	uint32_t	memoryBaseSize[PxCudaBufferMemorySpace::COUNT];
-
-    /**
-     * \brief Size of memory pages
-     *
-     * The memory manager will dynamically grow and shrink in blocks multiple of
-     * this page size. Size has to be power of two and bigger than 0.
-
-	Note: This is currently not used by PxSceneFlag::eENABLE_GPU_DYNAMICS. Memory allocation properties are configured
-	for GPU rigid bodies using PxSceneDesc::gpuDynamicsConfig.
-     */
-	uint32_t	memoryPageSize[PxCudaBufferMemorySpace::COUNT];
-
-    /**
-     * \brief Maximum size of memory that the memory manager will allocate
-
-	 Note: This is currently not used by PxSceneFlag::eENABLE_GPU_DYNAMICS. Memory allocation properties are configured
-	 for GPU rigid bodies using PxSceneDesc::gpuDynamicsConfig.
-     */
-	uint32_t	maxMemorySize[PxCudaBufferMemorySpace::COUNT];
-
-	PX_INLINE PxCudaContextManagerDesc()
+	PX_INLINE PxCudaContextManagerDesc() :
+		ctx				(NULL),
+		graphicsDevice	(NULL),
+		appGUID			(NULL),
+		deviceAllocator	(NULL),
+		interopMode		(PxCudaInteropMode::NO_INTEROP)
 	{
-		ctx = NULL;
-		interopMode = PxCudaInteropMode::NO_INTEROP;
-		graphicsDevice = 0;
-#if PX_SUPPORT_GPU_PHYSX
-		appGUID  = NULL;
-#endif
-		for(uint32_t i = 0; i < PxCudaBufferMemorySpace::COUNT; i++)
-		{
-			memoryBaseSize[i] = 0;
-			memoryPageSize[i] = 2 * 1024*1024;
-			maxMemorySize[i] = UINT32_MAX;
-		}
 	}
 };
 
+/**
+\brief A cuda kernel index providing an index to the cuda module and the function name
+*/
+struct PxKernelIndex
+{
+    PxU32 moduleIndex;
+    const char* functionName;
+};
 
 /**
- * \brief Manages memory, thread locks, and task scheduling for a CUDA context
+ * \brief Manages thread locks, and task scheduling for a CUDA context
  *
  * A PxCudaContextManager manages access to a single CUDA context, allowing it to
- * be shared between multiple scenes.   Memory allocations are dynamic: starting
- * with an initial heap size and growing on demand by a configurable page size.
- * The context must be acquired from the manager before using any CUDA APIs.
+ * be shared between multiple scenes.
+ * The context must be acquired from the manager before using any CUDA APIs unless stated differently.
  *
- * The PxCudaContextManager is based on the CUDA driver API and explictly does not
+ * The PxCudaContextManager is based on the CUDA driver API and explicitly does not
  * support the CUDA runtime API (aka, CUDART).
  */
 class PxCudaContextManager
 {
 public:
+	/**
+	* \brief Schedules clear operation for a device memory buffer on the specified stream
+	*
+	* The cuda context will get acquired automatically
+	*/
+	template<typename T>
+	void clearDeviceBufferAsync(T* deviceBuffer, PxU32 numElements, CUstream stream, PxI32 value = 0)
+	{
+		clearDeviceBufferAsyncInternal(deviceBuffer, numElements * sizeof(T), stream, value);
+	}
+
+	/**
+	* \brief Copies a device buffer to the host
+	*
+	* The cuda context will get acquired automatically
+	*/
+	template<typename T>
+	void copyDToH(T* hostBuffer, const T* deviceBuffer, PxU32 numElements)
+	{
+		copyDToHInternal(hostBuffer, deviceBuffer, numElements * sizeof(T));
+	}
+
+	/**
+	* \brief Copies a host buffer to the device
+	*
+	* The cuda context will get acquired automatically
+	*/
+	template<typename T>
+	void copyHToD(T* deviceBuffer, const T* hostBuffer, PxU32 numElements)
+	{
+		copyHToDInternal(deviceBuffer, hostBuffer, numElements * sizeof(T));
+	}
+
+	/**
+	* \brief Schedules device to host copy operation on the specified stream
+	*
+	* The cuda context will get acquired automatically
+	*/
+	template<typename T>
+	void copyDToHAsync(T* hostBuffer, const T* deviceBuffer, PxU32 numElements, CUstream stream)
+	{
+		copyDToHAsyncInternal(hostBuffer, deviceBuffer, numElements * sizeof(T), stream);
+	}
+
+	/**
+	* \brief Schedules host to device copy operation on the specified stream
+	*
+	* The cuda context will get acquired automatically
+	*/
+	template<typename T>
+	void copyHToDAsync(T* deviceBuffer, const T* hostBuffer, PxU32 numElements, CUstream stream)
+	{
+		copyHToDAsyncInternal(deviceBuffer, hostBuffer, numElements * sizeof(T), stream);
+	}
+
+	/**
+	* \brief Schedules device to device copy operation on the specified stream
+	*
+	* The cuda context will get acquired automatically
+	*/
+	template<typename T>
+	void copyDToDAsync(T* dstDeviceBuffer, const T* srcDeviceBuffer, PxU32 numElements, CUstream stream)
+	{
+		copyDToDAsyncInternal(dstDeviceBuffer, srcDeviceBuffer, numElements * sizeof(T), stream);
+	}
+
+	/**
+	* \brief Allocates a device buffer
+	*
+	* The cuda context will get acquired automatically
+	*/
+	template<typename T>
+	void allocDeviceBuffer(T*& deviceBuffer, PxU32 numElements, const char* filename = __FILE__, PxI32 line = __LINE__)
+	{
+		void* ptr = allocDeviceBufferInternal(numElements * sizeof(T), filename, line);
+		deviceBuffer = reinterpret_cast<T*>(ptr);
+	}
+
+	/**
+	* \brief Allocates a device buffer and returns the pointer to the memory
+	*
+	* The cuda context will get acquired automatically
+	*/
+	template<typename T>
+	T* allocDeviceBuffer(PxU32 numElements, const char* filename = __FILE__, PxI32 line = __LINE__)
+	{
+		void* ptr = allocDeviceBufferInternal(numElements * sizeof(T), filename, line);
+		return reinterpret_cast<T*>(ptr);
+	}
+
+	/**
+	* \brief Frees a device buffer
+	*
+	* The cuda context will get acquired automatically
+	*/
+	template<typename T>
+	void freeDeviceBuffer(T*& deviceBuffer)
+	{
+		freeDeviceBufferInternal(deviceBuffer);
+		deviceBuffer = NULL;
+	}
+
+	/**
+	* \brief Allocates a pinned host buffer
+	*
+	* A pinned host buffer can be used on the gpu after getting a mapped device pointer from the pinned host buffer pointer, see getMappedDevicePtr
+	* The cuda context will get acquired automatically
+	* @see getMappedDevicePtr
+	*/
+	template<typename T>
+	void allocPinnedHostBuffer(T*& pinnedHostBuffer, PxU32 numElements, const char* filename = __FILE__, PxI32 line = __LINE__)
+	{
+		void* ptr = allocPinnedHostBufferInternal(numElements * sizeof(T), filename, line);
+		pinnedHostBuffer = reinterpret_cast<T*>(ptr);
+	}
+
+	/**
+	* \brief Allocates a pinned host buffer and returns the pointer to the memory
+	*
+	* A pinned host buffer can be used on the gpu after getting a mapped device pointer from the pinned host buffer pointer, see getMappedDevicePtr
+	* The cuda context will get acquired automatically
+	* @see getMappedDevicePtr
+	*/
+	template<typename T>
+	T* allocPinnedHostBuffer(PxU32 numElements, const char* filename = __FILE__, PxI32 line = __LINE__)
+	{
+		void* ptr = allocPinnedHostBufferInternal(numElements * sizeof(T), filename, line);
+		return reinterpret_cast<T*>(ptr);
+	}
+
+	/**
+	* \brief Frees a pinned host buffer
+	*
+	* The cuda context will get acquired automatically
+	*/
+	template<typename T>
+	void freePinnedHostBuffer(T*& pinnedHostBuffer)
+	{
+		freePinnedHostBufferInternal(pinnedHostBuffer);
+		pinnedHostBuffer = NULL;
+	}
+
+	/**
+	* \brief Gets a mapped pointer from a pinned host buffer that can be used in cuda kernels directly
+	*
+	* Data access performance with a mapped pinned host pointer will be slower than using a device pointer directly 
+	* but the changes done in the kernel will be available on the host immediately.
+	* The cuda context will get acquired automatically
+	*/
+	virtual CUdeviceptr getMappedDevicePtr(void* pinnedHostBuffer) = 0;
+
     /**
      * \brief Acquire the CUDA context for the current thread
      *
@@ -232,13 +372,10 @@ public:
 	*/
 	virtual CUcontext getContext() = 0;
 
-    /**
-     * \brief Return the PxCudaMemoryManager instance associated with this
-     * CUDA context
-	 * Note: This is currently not used by PxSceneFlag::eENABLE_GPU_DYNAMICS. Memory allocation properties are configured
-	 * for GPU rigid bodies using PxSceneDesc::gpuDynamicsConfig.
-     */
-	virtual PxCudaMemoryManager *getMemoryManager() = 0;
+	/**
+	* \brief Return the CudaContext
+	*/
+	virtual PxCudaContext* getCudaContext() = 0;
 
     /**
      * \brief Context manager has a valid CUDA context
@@ -298,7 +435,7 @@ public:
      * \param buffer [IN] GLuint buffer index to be mapped to cuda
      * \param flags [IN] cuda interop registration flags
      */
-    virtual bool registerResourceInCudaGL(CUgraphicsResource &resource, uint32_t buffer, PxCudaInteropRegisterFlags flags = PxCudaInteropRegisterFlags()) = 0;
+    virtual bool registerResourceInCudaGL(CUgraphicsResource& resource, uint32_t buffer, PxCudaInteropRegisterFlags flags = PxCudaInteropRegisterFlags()) = 0;
 
      /**
      * \brief Register a rendering resource with CUDA
@@ -320,7 +457,7 @@ public:
      * \param resourcePointer [IN] A pointer to either IDirect3DResource9, or ID3D10Device, or ID3D11Resource to be registered.
      * \param flags [IN] cuda interop registration flags
      */
-    virtual bool registerResourceInCudaD3D(CUgraphicsResource &resource, void *resourcePointer, PxCudaInteropRegisterFlags flags = PxCudaInteropRegisterFlags()) = 0;
+    virtual bool registerResourceInCudaD3D(CUgraphicsResource& resource, void* resourcePointer, PxCudaInteropRegisterFlags flags = PxCudaInteropRegisterFlags()) = 0;
 
     /**
      * \brief Unregister a rendering resource with CUDA
@@ -341,13 +478,16 @@ public:
 	virtual int	usingDedicatedGPU() const = 0;
 
     /**
+     * \brief Get the cuda modules that have been loaded into this context on construction
+     * \return Pointer to the cuda modules
+     */
+	virtual CUmodule* getCuModules() = 0;
+
+    /**
      * \brief Release the PxCudaContextManager
      *
-     * When the manager instance is released, it also releases its
-     * PxCudaMemoryManager.  Before the memory manager is released, it 
-	 * frees all allocated memory pages.  If the PxCudaContextManager 
-	 * created the CUDA context it was responsible for, it also frees 
-	 * that context.
+     * If the PxCudaContextManager created the CUDA context it was 
+	 * responsible for, it also frees that context.
      *
      * Do not release the PxCudaContextManager if there are any scenes
      * using it.  Those scenes must be released first.
@@ -361,7 +501,30 @@ protected:
      * \brief protected destructor, use release() method
      */
     virtual ~PxCudaContextManager() {}
+	
+	virtual void* allocDeviceBufferInternal(PxU32 numBytes, const char* filename = NULL, PxI32 line = -1) = 0;	
+	virtual void* allocPinnedHostBufferInternal(PxU32 numBytes, const char* filename = NULL, PxI32 line = -1) = 0;
+	
+	virtual void freeDeviceBufferInternal(void* deviceBuffer) = 0;	
+	virtual void freePinnedHostBufferInternal(void* pinnedHostBuffer) = 0;	 
+
+	virtual void clearDeviceBufferAsyncInternal(void* deviceBuffer, PxU32 numBytes, CUstream stream, PxI32 value) = 0;
+	 
+	virtual void copyDToHAsyncInternal(void* hostBuffer, const void* deviceBuffer, PxU32 numBytes, CUstream stream) = 0;
+	virtual void copyHToDAsyncInternal(void* deviceBuffer, const void* hostBuffer, PxU32 numBytes, CUstream stream) = 0;
+	virtual void copyDToDAsyncInternal(void* dstDeviceBuffer, const void* srcDeviceBuffer, PxU32 numBytes, CUstream stream) = 0;
+	 
+	virtual void copyDToHInternal(void* hostBuffer, const void* deviceBuffer, PxU32 numBytes) = 0;
+	virtual void copyHToDInternal(void* deviceBuffer, const void* hostBuffer, PxU32 numBytes) = 0;
 };
+
+#define PX_DEVICE_ALLOC(cudaContextManager, deviceBuffer, numElements) cudaContextManager->allocDeviceBuffer(deviceBuffer, numElements, __FILE__, __LINE__)
+#define PX_DEVICE_ALLOC_T(T, cudaContextManager, numElements) cudaContextManager->allocDeviceBuffer<T>(numElements, __FILE__, __LINE__)
+#define PX_DEVICE_FREE(cudaContextManager, deviceBuffer) cudaContextManager->freeDeviceBuffer(deviceBuffer);
+
+#define PX_PINNED_HOST_ALLOC(cudaContextManager, pinnedHostBuffer, numElements) cudaContextManager->allocPinnedHostBuffer(pinnedHostBuffer, numElements, __FILE__, __LINE__)
+#define PX_PINNED_HOST_ALLOC_T(T, cudaContextManager, numElements) cudaContextManager->allocPinnedHostBuffer<T>(numElements, __FILE__, __LINE__)
+#define PX_PINNED_HOST_FREE(cudaContextManager, pinnedHostBuffer) cudaContextManager->freePinnedHostBuffer(pinnedHostBuffer);
 
 /**
  * \brief Convenience class for holding CUDA lock within a scope
@@ -393,7 +556,9 @@ protected:
     PxCudaContextManager* mCtx;
 };
 
-} // end physx namespace
+#if !PX_DOXYGEN
+} // namespace physx
+#endif
 
 #endif // PX_SUPPORT_GPU_PHYSX
-#endif // PXCUDACONTEXTMANAGER_PXCUDACONTEXTMANAGER_H
+#endif

@@ -85,7 +85,7 @@ namespace Flax.Deps
                     continue;
                 }
 
-                var forceEmpty = Configuration.ReBuildDeps;
+                var forceEmpty = false; //Configuration.ReBuildDeps;
                 Dependency.SetupDirectory(options.IntermediateFolder, forceEmpty);
 
                 dependency.Build(options);

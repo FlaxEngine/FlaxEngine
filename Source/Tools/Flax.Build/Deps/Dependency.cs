@@ -163,7 +163,7 @@ namespace Flax.Deps
         /// <param name="args">The custom arguments to add to the clone command.</param>
         public static void CloneGitRepoSingleBranch(string path, string url, string branch, string commit = null, string args = null)
         {
-            if (!Directory.Exists(Path.Combine(path, Path.GetFileNameWithoutExtension(url), ".git")))
+            if (!Directory.Exists(Path.Combine(path, ".git")))
             {
                 string cmdLine = string.Format("clone --single-branch --branch {2} \"{0}\" \"{1}\"", url, path, branch);
                 if (commit == null)

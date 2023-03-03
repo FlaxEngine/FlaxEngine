@@ -56,7 +56,6 @@ void PhysicsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier*
     DESERIALIZE(FrictionCombineMode);
     DESERIALIZE(RestitutionCombineMode);
     DESERIALIZE(DisableCCD);
-    DESERIALIZE(EnableAdaptiveForce);
     DESERIALIZE(MaxDeltaTime);
     DESERIALIZE(EnableSubstepping);
     DESERIALIZE(SubstepDeltaTime);

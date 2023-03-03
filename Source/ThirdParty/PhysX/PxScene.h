@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,24 +22,28 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_PHYSICS_NX_SCENE
-#define PX_PHYSICS_NX_SCENE
+#ifndef PX_SCENE_H
+#define PX_SCENE_H
 /** \addtogroup physics
 @{
 */
 
-#include "PxVisualizationParameter.h"
+#include "PxSceneQuerySystem.h"
 #include "PxSceneDesc.h"
+#include "PxVisualizationParameter.h"
 #include "PxSimulationStatistics.h"
-#include "PxQueryReport.h"
-#include "PxQueryFiltering.h"
 #include "PxClient.h"
 #include "task/PxTask.h"
+#include "PxArticulationFlag.h"
+#include "PxSoftBodyFlag.h"
+#include "PxHairSystemFlag.h"
+#include "PxActorData.h"
+#include "PxParticleSystemFlag.h"
+#include "PxParticleSolverType.h"
 
 #include "pvd/PxPvdSceneClient.h"
 
@@ -49,28 +52,24 @@ namespace physx
 {
 #endif
 
-class PxRigidStatic;
-class PxRigidDynamic;
+class PxCollection;
 class PxConstraint;
-class PxMaterial;
 class PxSimulationEventCallback;
 class PxPhysics;
-class PxBatchQueryDesc;
-class PxBatchQuery;
 class PxAggregate;
 class PxRenderBuffer;
+class PxArticulationReducedCoordinate;
+class PxParticleSystem;
 
-class PxSphereGeometry;
-class PxBoxGeometry;
-class PxCapsuleGeometry;
-
-class PxPruningStructure;
-class PxBVHStructure;
 struct PxContactPairHeader;
 
 typedef PxU8 PxDominanceGroup;
 
 class PxPvdSceneClient;
+
+class PxSoftBody;
+class PxFEMCloth;
+class PxHairSystem;
 
 /**
 \brief Expresses the dominance relationship of a contact.
@@ -92,7 +91,7 @@ struct PxDominanceGroupPair
 /**
 \brief Identifies each type of actor for retrieving actors from a scene.
 
-\note #PxArticulationLink objects are not supported. Use the #PxArticulation object to retrieve all its links.
+\note #PxArticulationLink objects are not supported. Use the #PxArticulationReducedCoordinate object to retrieve all its links.
 
 @see PxScene::getActors(), PxScene::getNbActors()
 */
@@ -122,39 +121,48 @@ struct PxActorTypeFlag
 typedef PxFlags<PxActorTypeFlag::Enum,PxU16> PxActorTypeFlags;
 PX_FLAGS_OPERATORS(PxActorTypeFlag::Enum,PxU16)
 
+class PxActor;
+
 /**
-\brief single hit cache for scene queries.
+\brief Broad-phase callback to receive broad-phase related events.
 
-If a cache object is supplied to a scene query, the cached actor/shape pair is checked for intersection first.
-\note Filters are not executed for the cached shape.
-\note If intersection is found, the hit is treated as blocking.
-\note Typically actor and shape from the last PxHitCallback.block query result is used as a cached actor/shape pair.
-\note Using past touching hits as cache will produce incorrect behavior since the cached hit will always be treated as blocking.
-\note Cache is only used if no touch buffer was provided, for single nearest blocking hit queries and queries using eANY_HIT flag.
-\note if non-zero touch buffer was provided, cache will be ignored
+Each broadphase callback object is associated with a PxClientID. It is possible to register different
+callbacks for different clients. The callback functions are called this way:
+- for shapes/actors, the callback assigned to the actors' clients are used
+- for aggregates, the callbacks assigned to clients from aggregated actors  are used
 
-\note It is the user's responsibility to ensure that the shape and actor are valid, so care must be taken
-when deleting shapes to invalidate cached references.
+\note SDK state should not be modified from within the callbacks. In particular objects should not
+be created or destroyed. If state modification is needed then the changes should be stored to a buffer
+and performed after the simulation step.
 
-The faceIndex field is an additional hint for a mesh or height field which is not currently used.
+<b>Threading:</b> It is not necessary to make this class thread safe as it will only be called in the context of the
+user thread.
 
-@see PxScene.raycast
+@see PxSceneDesc PxScene.setBroadPhaseCallback() PxScene.getBroadPhaseCallback()
 */
-struct PxQueryCache
+class PxBroadPhaseCallback
 {
-	/**
-	\brief constructor sets to default 
-	*/
-	PX_INLINE PxQueryCache() : shape(NULL), actor(NULL), faceIndex(0xffffffff) {}
+	public:
+	virtual				~PxBroadPhaseCallback()	{}
 
 	/**
-	\brief constructor to set properties
-	*/
-	PX_INLINE PxQueryCache(PxShape* s, PxU32 findex) : shape(s), actor(NULL), faceIndex(findex) {}
+	\brief Out-of-bounds notification.
+		
+	This function is called when an object leaves the broad-phase.
 
-	PxShape*		shape;			//!< Shape to test for intersection first
-	PxRigidActor*	actor;			//!< Actor to which the shape belongs
-	PxU32			faceIndex;		//!< Triangle index to test first - NOT CURRENTLY SUPPORTED
+	\param[in] shape	Shape that left the broad-phase bounds
+	\param[in] actor	Owner actor
+	*/
+	virtual		void	onObjectOutOfBounds(PxShape& shape, PxActor& actor) = 0;
+
+	/**
+	\brief Out-of-bounds notification.
+		
+	This function is called when an aggregate leaves the broad-phase.
+
+	\param[in] aggregate	Aggregate that left the broad-phase bounds
+	*/
+	virtual		void	onObjectOutOfBounds(PxAggregate& aggregate) = 0;
 };
 
 /** 
@@ -166,7 +174,7 @@ struct PxQueryCache
 
  @see PxSceneDesc PxPhysics.createScene() release()
 */
-class PxScene
+class PxScene : public PxSceneSQSystem
 {
 	protected:
 	
@@ -176,8 +184,8 @@ class PxScene
 	*/
 	//@{
 	
-								PxScene(): userData(0)	{}
-	virtual						~PxScene()	{}
+								PxScene() : userData(NULL)	{}
+	virtual						~PxScene()					{}
 
 	public:
 
@@ -212,7 +220,6 @@ class PxScene
 	*/
 	virtual		PxSceneFlags	getFlags() const = 0;
 
-
 	/**
 	\brief Set new scene limits. 
 
@@ -232,7 +239,6 @@ class PxScene
 	*/
 	virtual PxSceneLimits		getLimits() const = 0;
 
-
 	/**
 	\brief Call this method to retrieve the Physics SDK.
 
@@ -249,43 +255,45 @@ class PxScene
 	*/
 	virtual	PxU32				getTimestamp()	const	= 0;
 
-	
 	//@}
 	/************************************************************************************************/
 
-	/** @name Add/Remove Contained Objects
+	/** @name Add/Remove Articulations
 	*/
 	//@{
 	/**
 	\brief Adds an articulation to this scene.
 
-	\note If the articulation is already assigned to a scene (see #PxArticulation::getScene), the call is ignored and an error is issued.
+	\note If the articulation is already assigned to a scene (see #PxArticulationReducedCoordinate::getScene), the call is ignored and an error is issued.
 
-	\param[in] articulation Articulation to add to scene. See #PxArticulation
+	\param[in] articulation The articulation to add to the scene.
+	\return True if success
 
-	@see PxArticulation
+	@see PxArticulationReducedCoordinate
 	*/
-	virtual	void				addArticulation(PxArticulationBase& articulation) = 0;
+	virtual	bool				addArticulation(PxArticulationReducedCoordinate& articulation) = 0;
 
 	/**
 	\brief Removes an articulation from this scene.
 
-	\note If the articulation is not part of this scene (see #PxArticulation::getScene), the call is ignored and an error is issued. 
+	\note If the articulation is not part of this scene (see #PxArticulationReducedCoordinate::getScene), the call is ignored and an error is issued. 
 	
 	\note If the articulation is in an aggregate it will be removed from the aggregate.
 
-	\param[in] articulation Articulation to remove from scene. See #PxArticulation
-	\param[in] wakeOnLostTouch Specifies whether touching objects from the previous frame should get woken up in the next frame. Only applies to PxArticulation and PxRigidActor types.
+	\param[in] articulation The articulation to remove from the scene.
+	\param[in] wakeOnLostTouch Specifies whether touching objects from the previous frame should get woken up in the next frame.
+	Only applies to PxArticulationReducedCoordinate and PxRigidActor types.
 
-	@see PxArticulation, PxAggregate
+	@see PxArticulationReducedCoordinate, PxAggregate
 	*/
-	virtual	void				removeArticulation(PxArticulationBase& articulation, bool wakeOnLostTouch = true) = 0;
-
+	virtual	void				removeArticulation(PxArticulationReducedCoordinate& articulation, bool wakeOnLostTouch = true) = 0;
 
 	//@}
 	/************************************************************************************************/
 
-
+	/** @name Add/Remove Actors
+	*/
+	//@{
 	/**
 	\brief Adds an actor to this scene.
 	
@@ -297,47 +305,52 @@ class PxScene
 	\note If the actor is a PxRigidActor then each assigned PxConstraint object will get added to the scene automatically if
 	it connects to another actor that is part of the scene already. 
 
-	\note When BVHStructure is provided the actor shapes are grouped together. 
+	\note When a BVH is provided the actor shapes are grouped together. 
 	The scene query pruning structure inside PhysX SDK will store/update one
 	bound per actor. The scene queries against such an actor will query actor
-	bounds and then make a local space query against the provided BVH structure, which is in
-	actor's local space.
+	bounds and then make a local space query against the provided BVH, which is in actor's local space.
 
-	\param[in] actor Actor to add to scene.
-	\param[in] bvhStructure BVHStructure for actor shapes.
+	\param[in] actor	Actor to add to scene.
+	\param[in] bvh		BVH for actor shapes.
+	\return True if success
 
-	@see PxActor, PxConstraint::isValid(), PxBVHStructure
+	@see PxActor, PxConstraint::isValid(), PxBVH
 	*/
-	virtual	void				addActor(PxActor& actor, const PxBVHStructure* bvhStructure = NULL) = 0;
+	virtual	bool				addActor(PxActor& actor, const PxBVH* bvh = NULL) = 0;
 
 	/**
-	\brief Adds actors to this scene.	
+	\brief Adds actors to this scene. Only supports actors of type PxRigidStatic and PxRigidDynamic.
+
+	\note This method only supports actors of type PxRigidStatic and PxRigidDynamic. For other actors, use addActor() instead.
+	For articulation links, use addArticulation().
 
 	\note If one of the actors is already assigned to a scene (see #PxActor::getScene), the call is ignored and an error is issued.
-
-	\note You can not add individual articulation links (see #PxArticulationLink) to the scene. Use #addArticulation() instead.
 
 	\note If an actor in the array contains an invalid constraint, in checked builds the call is ignored and an error is issued.
 	\note If an actor in the array is a PxRigidActor then each assigned PxConstraint object will get added to the scene automatically if
 	it connects to another actor that is part of the scene already.
 
-	\note this method is optimized for high performance, and does not support buffering. It may not be called during simulation.
+	\note this method is optimized for high performance. 
 
 	\param[in] actors Array of actors to add to scene.
 	\param[in] nbActors Number of actors in the array.
+	\return True if success
 
 	@see PxActor, PxConstraint::isValid()
 	*/
-	virtual	void				addActors(PxActor*const* actors, PxU32 nbActors) = 0;
+	virtual	bool				addActors(PxActor*const* actors, PxU32 nbActors) = 0;
 
 	/**
-	\brief Adds a pruning structure together with its actors to this scene.	
+	\brief Adds a pruning structure together with its actors to this scene. Only supports actors of type PxRigidStatic and PxRigidDynamic.
+
+	\note This method only supports actors of type PxRigidStatic and PxRigidDynamic. For other actors, use addActor() instead.
+	For articulation links, use addArticulation().
 
 	\note If an actor in the pruning structure contains an invalid constraint, in checked builds the call is ignored and an error is issued.
 	\note For all actors in the pruning structure each assigned PxConstraint object will get added to the scene automatically if
 	it connects to another actor that is part of the scene already.
 
-	\note This method is optimized for high performance, and does not support buffering. It may not be called during simulation.
+	\note This method is optimized for high performance.
 
 	\note Merging a PxPruningStructure into an active scene query optimization AABB tree might unbalance the tree. A typical use case for 
 	PxPruningStructure is a large world scenario where blocks of closely positioned actors get streamed in. The merge process finds the 
@@ -345,10 +358,11 @@ class PxScene
 	for actors scattered throughout the world will result in an unbalanced tree.
 
 	\param[in] pruningStructure Pruning structure for a set of actors.
+	\return True if success
 
 	@see PxPhysics::createPruningStructure, PxPruningStructure
 	*/
-	virtual	void				addActors(const PxPruningStructure& pruningStructure) = 0;
+	virtual	bool				addActors(const PxPruningStructure& pruningStructure) = 0;
 
 	/**
 	\brief Removes an actor from this scene.
@@ -362,14 +376,17 @@ class PxScene
 	\note If the actor is in an aggregate it will be removed from the aggregate.
 
 	\param[in] actor Actor to remove from scene.
-	\param[in] wakeOnLostTouch Specifies whether touching objects from the previous frame should get woken up in the next frame. Only applies to PxArticulation and PxRigidActor types.
+	\param[in] wakeOnLostTouch Specifies whether touching objects from the previous frame should get woken up in the next frame. Only applies to PxArticulationReducedCoordinate and PxRigidActor types.
 
 	@see PxActor, PxAggregate
 	*/
 	virtual	void				removeActor(PxActor& actor, bool wakeOnLostTouch = true) = 0;
 
 	/**
-	\brief Removes actors from this scene.
+	\brief Removes actors from this scene. Only supports actors of type PxRigidStatic and PxRigidDynamic.
+
+	\note This method only supports actors of type PxRigidStatic and PxRigidDynamic. For other actors, use removeActor() instead.
+	For articulation links, use removeArticulation().
 
 	\note If some actor is not part of this scene (see #PxActor::getScene), the actor remove is ignored and an error is issued.
 
@@ -379,7 +396,7 @@ class PxScene
 
 	\param[in] actors Array of actors to add to scene.
 	\param[in] nbActors Number of actors in the array.
-	\param[in] wakeOnLostTouch Specifies whether touching objects from the previous frame should get woken up in the next frame. Only applies to PxArticulation and PxRigidActor types.
+	\param[in] wakeOnLostTouch Specifies whether touching objects from the previous frame should get woken up in the next frame. Only applies to PxArticulationReducedCooridnate and PxRigidActor types.
 
 	@see PxActor
 	*/
@@ -394,10 +411,11 @@ class PxScene
 	\note If the aggregate already contains actors, those actors are added to the scene as well.
 
 	\param[in] aggregate Aggregate to add to scene.
+	\return True if success
 	
 	@see PxAggregate, PxConstraint::isValid()
 	*/
-    virtual	void				addAggregate(PxAggregate& aggregate)	= 0;
+    virtual	bool				addAggregate(PxAggregate& aggregate)	= 0;
 
 	/**
 	\brief Removes an aggregate from this scene.
@@ -407,7 +425,7 @@ class PxScene
 	\note If the aggregate contains actors, those actors are removed from the scene as well.
 
 	\param[in] aggregate Aggregate to remove from scene.
-	\param[in] wakeOnLostTouch Specifies whether touching objects from the previous frame should get woken up in the next frame. Only applies to PxArticulation and PxRigidActor types.
+	\param[in] wakeOnLostTouch Specifies whether touching objects from the previous frame should get woken up in the next frame. Only applies to PxArticulationReducedCoordinate and PxRigidActor types.
 
 	@see PxAggregate
 	*/
@@ -416,16 +434,17 @@ class PxScene
 	/**
 	\brief Adds objects in the collection to this scene.
 
-	This function adds the following types of objects to this scene: PxActor, PxAggregate, PxArticulation. 
+	This function adds the following types of objects to this scene: PxRigidActor (except PxArticulationLink), PxAggregate, PxArticulationReducedCoordinate. 
 	This method is typically used after deserializing the collection in order to populate the scene with deserialized objects.
 
 	\note If the collection contains an actor with an invalid constraint, in checked builds the call is ignored and an error is issued.
 
 	\param[in] collection Objects to add to this scene. See #PxCollection
+	\return True if success
 
 	@see PxCollection, PxConstraint::isValid()
 	*/
-	virtual	void				addCollection(const PxCollection& collection) = 0;
+	virtual	bool				addCollection(const PxCollection& collection) = 0;
 	//@}
 	/************************************************************************************************/
 
@@ -434,7 +453,7 @@ class PxScene
 	//@{
 
 	/**
-	\brief Retrieve the number of actors of certain types in the scene.
+	\brief Retrieve the number of actors of certain types in the scene. For supported types, see PxActorTypeFlags.
 
 	\param[in] types Combination of actor types.
 	\return the number of actors.
@@ -444,7 +463,7 @@ class PxScene
 	virtual	PxU32				getNbActors(PxActorTypeFlags types) const = 0;
 
 	/**
-	\brief Retrieve an array of all the actors of certain types in the scene.
+	\brief Retrieve an array of all the actors of certain types in the scene. For supported types, see PxActorTypeFlags.
 
 	\param[in] types Combination of actor types to retrieve.
 	\param[out] userBuffer The buffer to receive actor pointers.
@@ -458,7 +477,7 @@ class PxScene
 
 	/**
 	\brief Queries the PxScene for a list of the PxActors whose transforms have been 
-	updated during the previous simulation step
+	updated during the previous simulation step. Only includes actors of type PxRigidDynamic and PxArticulationLink.
 
 	\note PxSceneFlag::eENABLE_ACTIVE_ACTORS must be set.
 
@@ -471,6 +490,90 @@ class PxScene
 	@see PxActor
 	*/
 	virtual PxActor**		getActiveActors(PxU32& nbActorsOut) = 0;
+
+	/**
+	\brief Retrieve the number of soft bodies in the scene.
+
+	\return the number of soft bodies.
+
+	@see getActors()
+	*/
+	virtual	PxU32				getNbSoftBodies() const = 0;
+
+	/**
+	\brief Retrieve an array of all the soft bodies in the scene.
+
+	\param[out] userBuffer The buffer to receive actor pointers.
+	\param[in] bufferSize Size of provided user buffer.
+	\param[in] startIndex Index of first actor pointer to be retrieved
+	\return Number of actors written to the buffer.
+
+	@see getNbActors()
+	*/
+	virtual	PxU32				getSoftBodies(PxSoftBody** userBuffer, PxU32 bufferSize, PxU32 startIndex = 0) const = 0;
+
+	/**
+	\brief Retrieve the number of particle systems of the requested type in the scene.
+
+	\param[in] type The particle system type. See PxParticleSolverType. Only one type can be requested per function call.
+	\return the number particle systems.
+
+	See getParticleSystems(), PxParticleSolverType
+	*/
+	virtual PxU32				getNbParticleSystems(PxParticleSolverType::Enum type) const = 0;
+
+	/**
+	\brief Retrieve an array of all the particle systems of the requested type in the scene.
+
+	\param[in] type The particle system type. See PxParticleSolverType. Only one type can be requested per function call.
+	\param[out] userBuffer The buffer to receive particle system pointers.
+	\param[in] bufferSize Size of provided user buffer.
+	\param[in] startIndex Index of first particle system pointer to be retrieved
+	\return Number of particle systems written to the buffer.
+
+	See getNbParticleSystems(), PxParticleSolverType
+	*/
+	virtual	PxU32				getParticleSystems(PxParticleSolverType::Enum type, PxParticleSystem** userBuffer, PxU32 bufferSize, PxU32 startIndex = 0) const = 0;
+
+	/**
+	\brief Retrieve the number of FEM cloths in the scene.
+	\warning Feature under development, only for internal usage.
+
+	\return the number of FEM cloths.
+
+	See getFEMCloths()
+	*/
+	virtual PxU32				getNbFEMCloths() const = 0;
+
+	/**
+	\brief Retrieve an array of all the FEM cloths in the scene.
+	\warning Feature under development, only for internal usage.
+
+	\param[out] userBuffer The buffer to write the FEM cloth pointers to
+	\param[in] bufferSize Size of the provided user buffer
+	\param[in] startIndex Index of first FEM cloth pointer to be retrieved
+	\return Number of FEM cloths written to the buffer
+	*/
+	virtual PxU32				getFEMCloths(PxFEMCloth** userBuffer, PxU32 bufferSize, PxU32 startIndex = 0) const = 0;
+
+	/**
+	\brief Retrieve the number of hair systems in the scene.
+	\warning Feature under development, only for internal usage.
+	\return the number of hair systems
+	@see getActors()
+	*/
+	virtual	PxU32				getNbHairSystems() const = 0;
+
+	/**
+	\brief Retrieve an array of all the hair systems in the scene.
+	\warning Feature under development, only for internal usage.
+
+	\param[out] userBuffer The buffer to write the actor pointers to
+	\param[in] bufferSize Size of the provided user buffer
+	\param[in] startIndex Index of first actor pointer to be retrieved
+	\return Number of actors written to the buffer
+	*/
+	virtual	PxU32				getHairSystems(PxHairSystem** userBuffer, PxU32 bufferSize, PxU32 startIndex = 0) const = 0;
 
 	/**
 	\brief Returns the number of articulations in the scene.
@@ -491,7 +594,7 @@ class PxScene
 
 	@see getNbArticulations()
 	*/
-	virtual	PxU32				getArticulations(PxArticulationBase** userBuffer, PxU32 bufferSize, PxU32 startIndex=0) const = 0;
+	virtual	PxU32				getArticulations(PxArticulationReducedCoordinate** userBuffer, PxU32 bufferSize, PxU32 startIndex=0) const = 0;
 
 	/**
 	\brief Returns the number of constraint shaders in the scene.
@@ -513,7 +616,6 @@ class PxScene
 	@see getNbConstraints()
 	*/
 	virtual	PxU32				getConstraints(PxConstraint** userBuffer, PxU32 bufferSize, PxU32 startIndex=0) const = 0;
-
 
 	/**
 	\brief Returns the number of aggregates in the scene.
@@ -810,19 +912,24 @@ class PxScene
 
 	\note It is invalid to use this method if PxActorFlag::eDISABLE_SIMULATION is set.
 
+	\note Do not use this method while the simulation is running.
+
 	<b>Sleeping:</b> Does wake up the actor.
 
 	\param[in] actor The actor for which to re-evaluate interactions.
+	\return True if success
 
 	@see PxSimulationFilterShader PxSimulationFilterCallback
 	*/
-	virtual void				resetFiltering(PxActor& actor) = 0;
+	virtual bool				resetFiltering(PxActor& actor) = 0;
 
 	/**
 	\brief Marks the object to reset interactions and re-run collision filters for specified shapes in the next simulation step.
 	
 	This is a specialization of the resetFiltering(PxActor& actor) method and allows to reset interactions for specific shapes of
 	a PxRigidActor.
+
+	\note Do not use this method while the simulation is running.
 
 	<b>Sleeping:</b> Does wake up the actor.
 
@@ -832,7 +939,7 @@ class PxScene
 
 	@see PxSimulationFilterShader PxSimulationFilterCallback
 	*/
-	virtual void				resetFiltering(PxRigidActor& actor, PxShape*const* shapes, PxU32 shapeCount) = 0;
+	virtual bool				resetFiltering(PxRigidActor& actor, PxShape*const* shapes, PxU32 shapeCount) = 0;
 
 	/**
 	\brief Gets the pair filtering mode for kinematic-kinematic pairs.
@@ -886,12 +993,12 @@ class PxScene
 	\param[in] scratchMemBlockSize the size of the scratch memory block. Must be a multiple of 16K.
 	\param[in] controlSimulation if true, the scene controls its PxTaskManager simulation state. Leave
     true unless the application is calling the PxTaskManager start/stopSimulation() methods itself.
+	\return True if success
 
 	@see fetchResults() checkResults()
 	*/
-	virtual	void				simulate(PxReal elapsedTime, physx::PxBaseTask* completionTask = NULL,
+	virtual	bool				simulate(PxReal elapsedTime, physx::PxBaseTask* completionTask = NULL,
 									void* scratchMemBlock = 0, PxU32 scratchMemBlockSize = 0, bool controlSimulation = true) = 0;
-
 
 	/**
  	\brief Performs dynamics phase of the simulation pipeline.
@@ -901,9 +1008,9 @@ class PxScene
 	\param[in] completionTask if non-NULL, this task will have its refcount incremented in advance(), then
 	decremented when the scene is ready to have fetchResults called. So the task will not run until the
 	application also calls removeReference().
-
+	\return True if success
 	*/
-	virtual	void				advance(physx::PxBaseTask* completionTask = 0) = 0;
+	virtual	bool				advance(physx::PxBaseTask* completionTask = 0) = 0;
 
 	/**
 	\brief Performs collision detection for the scene over elapsedTime
@@ -920,9 +1027,9 @@ class PxScene
 	\param[in] scratchMemBlockSize the size of the scratch memory block. Must be a multiple of 16K.
 	\param[in] controlSimulation if true, the scene controls its PxTaskManager simulation state. Leave
     true unless the application is calling the PxTaskManager start/stopSimulation() methods itself.
-
+	\return True if success
 	*/
-	virtual	void				collide(PxReal elapsedTime, physx::PxBaseTask* completionTask = 0, void* scratchMemBlock = 0,
+	virtual	bool				collide(PxReal elapsedTime, physx::PxBaseTask* completionTask = 0, void* scratchMemBlock = 0,
 									PxU32 scratchMemBlockSize = 0, bool controlSimulation = true) = 0;  
 	
 	/**
@@ -944,7 +1051,6 @@ class PxScene
 
 	\param[in] block When set to true will block until the condition is met, which is collision must finish running.
 	*/
-
 	virtual	bool				fetchCollision(bool block = false)	= 0;			
 
 	/**
@@ -970,10 +1076,8 @@ class PxScene
 	*/
 	virtual	bool				fetchResults(bool block = false, PxU32* errorState = 0)	= 0;
 
-
 	/**
-	This call performs the first section of fetchResults (callbacks fired before swapBuffers), and returns a pointer to a 
-	to the contact streams output by the simulation. It can be used to process contact pairs in parallel, which is often a limiting factor
+	This call performs the first section of fetchResults, and returns a pointer to the contact streams output by the simulation. It can be used to process contact pairs in parallel, which is often a limiting factor
 	for fetchResults() performance. 
 
 	After calling this function and processing the contact streams, call fetchResultsFinish(). Note that writes to the simulation are not
@@ -988,7 +1092,6 @@ class PxScene
 	*/
 	virtual	bool				fetchResultsStart(const PxContactPairHeader*& contactPairs, PxU32& nbContactPairs, bool block = false) = 0;
 
-
 	/**
 	This call processes all event callbacks in parallel. It takes a continuation task, which will be executed once all callbacks have been processed.
 
@@ -999,9 +1102,8 @@ class PxScene
 	*/
 	virtual void				processCallbacks(physx::PxBaseTask* continuation) = 0;
 
-
 	/**
-	This call performs the second section of fetchResults: the buffer swap and subsequent callbacks.
+	This call performs the second section of fetchResults.
 
 	It must be called after fetchResultsStart() returns and contact reports have been processed.
 
@@ -1013,6 +1115,10 @@ class PxScene
 	*/
 	virtual	void				fetchResultsFinish(PxU32* errorState = 0) = 0;
 
+	/**
+	This call performs the synchronization of particle system data copies.
+	 */
+	virtual void				fetchResultsParticleSystem() = 0;
 
 	/**
 	\brief Clear internal buffers and free memory.
@@ -1028,6 +1134,8 @@ class PxScene
 	
 	/**
 	\brief Sets a constant gravity for the entire scene.
+
+	\note Do not use this method while the simulation is running.
 
 	<b>Sleeping:</b> Does <b>NOT</b> wake the actor up automatically.
 
@@ -1049,6 +1157,8 @@ class PxScene
 	/**
 	\brief Set the bounce threshold velocity.  Collision speeds below this threshold will not cause a bounce.
 
+	\note Do not use this method while the simulation is running.
+
 	@see PxSceneDesc::bounceThresholdVelocity, getBounceThresholdVelocity
 	*/
 	virtual void				setBounceThresholdVelocity(const PxReal t) = 0;
@@ -1060,14 +1170,14 @@ class PxScene
 	*/
 	virtual PxReal				getBounceThresholdVelocity() const = 0;
 
-
 	/**
 	\brief Sets the maximum number of CCD passes
+
+	\note Do not use this method while the simulation is running.
 
 	\param[in] ccdMaxPasses Maximum number of CCD passes
 
 	@see PxSceneDesc.ccdMaxPasses getCCDMaxPasses()
-
 	*/
 	virtual void				setCCDMaxPasses(PxU32 ccdMaxPasses) = 0;
 
@@ -1077,28 +1187,106 @@ class PxScene
 	\return The maximum number of CCD passes.
 
 	@see PxSceneDesc::ccdMaxPasses setCCDMaxPasses()
-
 	*/
 	virtual PxU32				getCCDMaxPasses() const = 0;	
 
 	/**
-	\brief Return the value of frictionOffsetThreshold that was set in PxSceneDesc when creating the scene with PxPhysics::createScene
+	\brief Set the maximum CCD separation.
 
-	@see PxSceneDesc::frictionOffsetThreshold,  PxPhysics::createScene
+	\note Do not use this method while the simulation is running.
+
+	@see PxSceneDesc::ccdMaxSeparation, getCCDMaxSeparation
+	*/
+	virtual void				setCCDMaxSeparation(const PxReal t) = 0;
+
+	/**
+	\brief Gets the maximum CCD separation.
+
+	\return The maximum CCD separation.
+
+	@see PxSceneDesc::ccdMaxSeparation setCCDMaxSeparation()
+	*/
+	virtual PxReal				getCCDMaxSeparation() const = 0;
+
+	/**
+	\brief Set the CCD threshold.
+
+	\note Do not use this method while the simulation is running.
+
+	@see PxSceneDesc::ccdThreshold, getCCDThreshold
+	*/
+	virtual void				setCCDThreshold(const PxReal t) = 0;
+
+	/**
+	\brief Gets the CCD threshold.
+
+	\return The CCD threshold.
+
+	@see PxSceneDesc::ccdThreshold setCCDThreshold()
+	*/
+	virtual PxReal				getCCDThreshold() const = 0;
+
+	/**
+	\brief Set the max bias coefficient.
+
+	\note Do not use this method while the simulation is running.
+
+	@see PxSceneDesc::maxBiasCoefficient, getMaxBiasCoefficient
+	*/
+	virtual void				setMaxBiasCoefficient(const PxReal t) = 0;
+
+	/**
+	\brief Gets the max bias coefficient.
+
+	\return The max bias coefficient.
+
+	@see PxSceneDesc::maxBiasCoefficient setMaxBiasCoefficient()
+	*/
+	virtual PxReal				getMaxBiasCoefficient() const = 0;
+
+	/**
+	\brief Set the friction offset threshold.
+
+	\note Do not use this method while the simulation is running.
+
+	@see PxSceneDesc::frictionOffsetThreshold, getFrictionOffsetThreshold
+	*/
+	virtual void				setFrictionOffsetThreshold(const PxReal t) = 0;
+
+	/**
+	\brief Gets the friction offset threshold.
+
+	@see PxSceneDesc::frictionOffsetThreshold,  setFrictionOffsetThreshold
 	*/
 	virtual PxReal				getFrictionOffsetThreshold() const = 0;
 
 	/**
-	\brief Set the friction model.
-	@see PxFrictionType, PxSceneDesc::frictionType
+	\brief Set the friction correlation distance.
+
+	\note Do not use this method while the simulation is running.
+
+	@see PxSceneDesc::frictionCorrelationDistance, getFrictionCorrelationDistance
 	*/
-	virtual void setFrictionType(PxFrictionType::Enum frictionType) = 0;
+	virtual void				setFrictionCorrelationDistance(const PxReal t) = 0;
+
+	/**
+	\brief Gets the friction correlation distance.
+
+	@see PxSceneDesc::frictionCorrelationDistance,  setFrictionCorrelationDistance
+	*/
+	virtual PxReal				getFrictionCorrelationDistance() const = 0;
 
 	/**
 	\brief Return the friction model.
 	@see PxFrictionType, PxSceneDesc::frictionType
 	*/
-	virtual PxFrictionType::Enum getFrictionType() const = 0;
+	virtual PxFrictionType::Enum	getFrictionType() const = 0;
+
+	/**
+	\brief Return the solver model.
+	@see PxSolverType, PxSceneDesc::solverType
+	*/
+	virtual PxSolverType::Enum	getSolverType()	const = 0;
 
 	//@}
 	/************************************************************************************************/
@@ -1110,6 +1298,8 @@ class PxScene
 	\brief Function that lets you set debug visualization parameters.
 
 	Returns false if the value passed is out of range for usage specified by the enum.
+
+	\note Do not use this method while the simulation is running.
 
 	\param[in] param	Parameter to set. See #PxVisualizationParameter
 	\param[in] value	The value to set, see #PxVisualizationParameter for allowable values. Setting to zero disables visualization for the specified property, setting to a positive value usually enables visualization and defines the scale factor.
@@ -1129,9 +1319,10 @@ class PxScene
 	*/
 	virtual PxReal				getVisualizationParameter(PxVisualizationParameter::Enum paramEnum) const = 0;
 
-
 	/**
 	\brief Defines a box in world space to which visualization geometry will be (conservatively) culled. Use a non-empty culling box to enable the feature, and an empty culling box to disable it.
+
+	\note Do not use this method while the simulation is running.
 	
 	\param[in] box the box to which the geometry will be culled. Empty box to disable the feature.
 	@see setVisualizationParameter getVisualizationCullingBox getRenderBuffer()
@@ -1151,7 +1342,7 @@ class PxScene
 	
 	This will contain the results of any active visualization for this scene.
 
-	\note Do not use this method while the simulation is running. Calls to this method while result in undefined behaviour.
+	\note Do not use this method while the simulation is running. Calls to this method while the simulation is running will result in undefined behaviour.
 
 	\return The render buffer.
 
@@ -1170,238 +1361,6 @@ class PxScene
 	*/
 	virtual	void				getSimulationStatistics(PxSimulationStatistics& stats) const = 0;
 	
-	
-	//@}
-	/************************************************************************************************/
-
-	/** @name Scene Query
-	*/
-	//@{
-
-	/**
-	\brief Return the value of PxSceneDesc::staticStructure that was set when creating the scene with PxPhysics::createScene
-
-	@see PxSceneDesc::staticStructure, PxPhysics::createScene
-	*/
-	virtual	PxPruningStructureType::Enum getStaticStructure() const = 0;
-
-	/**
-	\brief Return the value of PxSceneDesc::dynamicStructure that was set when creating the scene with PxPhysics::createScene
-
-	@see PxSceneDesc::dynamicStructure, PxPhysics::createScene
-	*/
-	virtual PxPruningStructureType::Enum getDynamicStructure() const = 0;
-
-	/**
-	\brief Flushes any changes to the scene query representation.
-
-	This method updates the state of the scene query representation to match changes in the scene state.
-
-	By default, these changes are buffered until the next query is submitted. Calling this function will not change
-	the results from scene queries, but can be used to ensure that a query will not perform update work in the course of 
-	its execution.
-	
-	A thread performing updates will hold a write lock on the query structure, and thus stall other querying threads. In multithread
-	scenarios it can be useful to explicitly schedule the period where this lock may be held for a significant period, so that
-	subsequent queries issued from multiple threads will not block.
-	
-	*/
-	virtual	void				flushQueryUpdates() = 0;
-
-	/**
-	\brief Creates a BatchQuery object. 
-
-	Scene queries like raycasts, overlap tests and sweeps are batched in this object and are then executed at once. See #PxBatchQuery.
-
-	\deprecated The batched query feature has been deprecated in PhysX version 3.4
-
-	\param[in] desc The descriptor of scene query. Scene Queries need to register a callback. See #PxBatchQueryDesc.
-
-	@see PxBatchQuery PxBatchQueryDesc
-	*/
-	PX_DEPRECATED virtual	PxBatchQuery*		createBatchQuery(const PxBatchQueryDesc& desc) = 0;
-
-	/**
-	\brief Sets the rebuild rate of the dynamic tree pruning structures.
-
-	\param[in] dynamicTreeRebuildRateHint Rebuild rate of the dynamic tree pruning structures.
-
-	@see PxSceneDesc.dynamicTreeRebuildRateHint getDynamicTreeRebuildRateHint() forceDynamicTreeRebuild()
-	*/
-	virtual	void				setDynamicTreeRebuildRateHint(PxU32 dynamicTreeRebuildRateHint) = 0;
-
-	/**
-	\brief Retrieves the rebuild rate of the dynamic tree pruning structures.
-
-	\return The rebuild rate of the dynamic tree pruning structures.
-
-	@see PxSceneDesc.dynamicTreeRebuildRateHint setDynamicTreeRebuildRateHint() forceDynamicTreeRebuild()
-	*/
-	virtual PxU32				getDynamicTreeRebuildRateHint() const = 0;
-
-	/**
-	\brief Forces dynamic trees to be immediately rebuilt.
-
-	\param[in] rebuildStaticStructure	True to rebuild the dynamic tree containing static objects
-	\param[in] rebuildDynamicStructure	True to rebuild the dynamic tree containing dynamic objects
-
-	@see PxSceneDesc.dynamicTreeRebuildRateHint setDynamicTreeRebuildRateHint() getDynamicTreeRebuildRateHint()
-	*/
-	virtual void				forceDynamicTreeRebuild(bool rebuildStaticStructure, bool rebuildDynamicStructure)	= 0;
-
-	/**
-	\brief Sets scene query update mode	
-
-	\param[in] updateMode	Scene query update mode.
-
-	@see PxSceneQueryUpdateMode::Enum
-	*/
-	virtual void				setSceneQueryUpdateMode(PxSceneQueryUpdateMode::Enum updateMode) = 0;
-
-	/**
-	\brief Gets scene query update mode	
-
-	\return Current scene query update mode.
-
-	@see PxSceneQueryUpdateMode::Enum
-	*/
-	virtual PxSceneQueryUpdateMode::Enum getSceneQueryUpdateMode() const = 0;
-
-	/**
-	\brief Executes scene queries update tasks.
-	This function will refit dirty shapes within the pruner and will execute a task to build a new AABB tree, which is
-	build on a different thread. The new AABB tree is built based on the dynamic tree rebuild hint rate. Once
-	the new tree is ready it will be commited in next fetchQueries call, which must be called after.
-
-	\note If PxSceneQueryUpdateMode::eBUILD_DISABLED_COMMIT_DISABLED is used, it is required to update the scene queries
-	using this function.
-
-	\param[in] completionTask if non-NULL, this task will have its refcount incremented in sceneQueryUpdate(), then
-	decremented when the scene is ready to have fetchQueries called. So the task will not run until the
-	application also calls removeReference().
-	\param[in] controlSimulation if true, the scene controls its PxTaskManager simulation state. Leave
-    true unless the application is calling the PxTaskManager start/stopSimulation() methods itself.
-
-	@see PxSceneQueryUpdateMode::eBUILD_DISABLED_COMMIT_DISABLED
-	*/
-	virtual void				sceneQueriesUpdate(physx::PxBaseTask* completionTask = NULL, bool controlSimulation = true)	= 0;
-
-	/**
-	\brief This checks to see if the scene queries update has completed.
-
-	This does not cause the data available for reading to be updated with the results of the scene queries update, it is simply a status check.
-	The bool will allow it to either return immediately or block waiting for the condition to be met so that it can return true
-	
-	\param[in] block When set to true will block until the condition is met.
-	\return True if the results are available.
-
-	@see sceneQueriesUpdate() fetchResults()
-	*/
-	virtual	bool				checkQueries(bool block = false) = 0;
-
-	/**
-	This method must be called after sceneQueriesUpdate. It will wait for the scene queries update to finish. If the user makes an illegal scene queries update call, 
-	the SDK will issue an error	message.
-
-	If a new AABB tree build finished, then during fetchQueries the current tree within the pruning structure is swapped with the new tree. 
-
-	\param[in] block When set to true will block until the condition is met, which is tree built task must finish running.
-	*/
-
-	virtual	bool				fetchQueries(bool block = false)	= 0;	
-
-	/**
-	\brief Performs a raycast against objects in the scene, returns results in a PxRaycastBuffer object
-	or via a custom user callback implementation inheriting from PxRaycastCallback.
-
-	\note	Touching hits are not ordered.
-	\note	Shooting a ray from within an object leads to different results depending on the shape type. Please check the details in user guide article SceneQuery. User can ignore such objects by employing one of the provided filter mechanisms.
-
-	\param[in] origin		Origin of the ray.
-	\param[in] unitDir		Normalized direction of the ray.
-	\param[in] distance		Length of the ray. Has to be in the [0, inf) range.
-	\param[out] hitCall		Raycast hit buffer or callback object used to report raycast hits.
-	\param[in] hitFlags		Specifies which properties per hit should be computed and returned via the hit callback.
-	\param[in] filterData	Filtering data passed to the filter shader. See #PxQueryFilterData #PxBatchQueryPreFilterShader, #PxBatchQueryPostFilterShader
-	\param[in] filterCall	Custom filtering logic (optional). Only used if the corresponding #PxQueryFlag flags are set. If NULL, all hits are assumed to be blocking.
-	\param[in] cache		Cached hit shape (optional). Ray is tested against cached shape first. If no hit is found the ray gets queried against the scene.
-							Note: Filtering is not executed for a cached shape if supplied; instead, if a hit is found, it is assumed to be a blocking hit.
-							Note: Using past touching hits as cache will produce incorrect behavior since the cached hit will always be treated as blocking.
-
-	\return True if any touching or blocking hits were found or any hit was found in case PxQueryFlag::eANY_HIT was specified.
-
-	@see PxRaycastCallback PxRaycastBuffer PxQueryFilterData PxQueryFilterCallback PxQueryCache PxRaycastHit PxQueryFlag PxQueryFlag::eANY_HIT
-	*/
-	virtual bool				raycast(
-									const PxVec3& origin, const PxVec3& unitDir, const PxReal distance,
-									PxRaycastCallback& hitCall, PxHitFlags hitFlags = PxHitFlags(PxHitFlag::eDEFAULT),
-									const PxQueryFilterData& filterData = PxQueryFilterData(), PxQueryFilterCallback* filterCall = NULL,
-									const PxQueryCache* cache = NULL) const = 0;
-
-	/**
-	\brief Performs a sweep test against objects in the scene, returns results in a PxSweepBuffer object
-	or via a custom user callback implementation inheriting from PxSweepCallback.
-	
-	\note	Touching hits are not ordered.
-	\note	If a shape from the scene is already overlapping with the query shape in its starting position,
-			the hit is returned unless eASSUME_NO_INITIAL_OVERLAP was specified.
-
-	\param[in] geometry		Geometry of object to sweep (supported types are: box, sphere, capsule, convex).
-	\param[in] pose			Pose of the sweep object.
-	\param[in] unitDir		Normalized direction of the sweep.
-	\param[in] distance		Sweep distance. Needs to be in [0, inf) range and >0 if eASSUME_NO_INITIAL_OVERLAP was specified. Will be clamped to PX_MAX_SWEEP_DISTANCE.
-	\param[out] hitCall		Sweep hit buffer or callback object used to report sweep hits.
-	\param[in] hitFlags		Specifies which properties per hit should be computed and returned via the hit callback.
-	\param[in] filterData	Filtering data and simple logic.
-	\param[in] filterCall	Custom filtering logic (optional). Only used if the corresponding #PxQueryFlag flags are set. If NULL, all hits are assumed to be blocking.
-	\param[in] cache		Cached hit shape (optional). Sweep is performed against cached shape first. If no hit is found the sweep gets queried against the scene.
-							Note: Filtering is not executed for a cached shape if supplied; instead, if a hit is found, it is assumed to be a blocking hit.
-							Note: Using past touching hits as cache will produce incorrect behavior since the cached hit will always be treated as blocking.
-	\param[in] inflation	This parameter creates a skin around the swept geometry which increases its extents for sweeping. The sweep will register a hit as soon as the skin touches a shape, and will return the corresponding distance and normal.
-							Note: ePRECISE_SWEEP doesn't support inflation. Therefore the sweep will be performed with zero inflation.	
-	
-	\return True if any touching or blocking hits were found or any hit was found in case PxQueryFlag::eANY_HIT was specified.
-							
-
-	@see PxSweepCallback PxSweepBuffer PxQueryFilterData PxQueryFilterCallback PxSweepHit PxQueryCache
-	*/
-	virtual bool				sweep(const PxGeometry& geometry, const PxTransform& pose, const PxVec3& unitDir, const PxReal distance,
-									PxSweepCallback& hitCall, PxHitFlags hitFlags = PxHitFlags(PxHitFlag::eDEFAULT),
-									const PxQueryFilterData& filterData = PxQueryFilterData(), PxQueryFilterCallback* filterCall = NULL,
-									const PxQueryCache* cache = NULL, const PxReal inflation = 0.f) const = 0;
-
-
-	/**
-	\brief Performs an overlap test of a given geometry against objects in the scene, returns results in a PxOverlapBuffer object
-	or via a custom user callback implementation inheriting from PxOverlapCallback.
-	
-	\note Filtering: returning eBLOCK from user filter for overlap queries will cause a warning (see #PxQueryHitType).
-
-	\param[in] geometry		Geometry of object to check for overlap (supported types are: box, sphere, capsule, convex).
-	\param[in] pose			Pose of the object.
-	\param[out] hitCall		Overlap hit buffer or callback object used to report overlap hits.
-	\param[in] filterData	Filtering data and simple logic. See #PxQueryFilterData #PxQueryFilterCallback
-	\param[in] filterCall	Custom filtering logic (optional). Only used if the corresponding #PxQueryFlag flags are set. If NULL, all hits are assumed to overlap.
-
-	\return True if any touching or blocking hits were found or any hit was found in case PxQueryFlag::eANY_HIT was specified.
-
-	\note eBLOCK should not be returned from user filters for overlap(). Doing so will result in undefined behavior, and a warning will be issued.
-	\note If the PxQueryFlag::eNO_BLOCK flag is set, the eBLOCK will instead be automatically converted to an eTOUCH and the warning suppressed.
-
-	@see PxOverlapCallback PxOverlapBuffer PxHitFlags PxQueryFilterData PxQueryFilterCallback
-	*/
-	virtual bool				overlap(const PxGeometry& geometry, const PxTransform& pose, PxOverlapCallback& hitCall,
-									const PxQueryFilterData& filterData = PxQueryFilterData(), PxQueryFilterCallback* filterCall = NULL
-									) const = 0;
-
-
-	/**
-	\brief Retrieves the scene's internal scene query timestamp, increased each time a change to the
-	static scene query structure is performed.
-
-	\return scene query static timestamp
-	*/
-	virtual	PxU32	getSceneQueryStaticTimestamp()	const	= 0;
 	//@}
 	
 	/************************************************************************************************/
@@ -1444,6 +1403,8 @@ class PxScene
 	/**
 	\brief Adds a new broad-phase region.
 
+	The bounds for the new region must be non-empty, otherwise an error occurs and the call is ignored.
+
 	Note that by default, objects already existing in the SDK that might touch this region will not be automatically
 	added to the region. In other words the newly created region will be empty, and will only be populated with new
 	objects when they are added to the simulation, or with already existing objects when they are updated.
@@ -1453,9 +1414,20 @@ class PxScene
 	when the game can not guarantee that all objects within the new region will be added to the simulation after the
 	region itself.
 
+	Objects automatically move from one region to another during their lifetime. The system keeps tracks of what
+	regions a given object is in. It is legal for an object to be in an arbitrary number of regions. However if an
+	object leaves all regions, or is created outside of all regions, several things happen:
+		- collisions get disabled for this object
+		- if a PxBroadPhaseCallback object is provided, an "out-of-bounds" event is generated via that callback
+		- if a PxBroadPhaseCallback object is not provided, a warning/error message is sent to the error stream
+
+	If an object goes out-of-bounds and user deletes it during the same frame, neither the out-of-bounds event nor the
+	error message is generated.
+
 	\param[in]	region			User-provided region data
 	\param[in]	populateRegion	Automatically populate new region with already existing objects overlapping it
 	\return Handle for newly created region, or 0xffffffff in case of failure.
+	\see	PxBroadPhaseRegion PxBroadPhaseCallback
 	*/
 	virtual	PxU32					addBroadPhaseRegion(const PxBroadPhaseRegion& region, bool populateRegion=false)		= 0;
 
@@ -1488,7 +1460,6 @@ class PxScene
 	\return the task manager associated with the scene
 	*/
 	virtual PxTaskManager*			getTaskManager() const = 0;
-
 
 	/**
 	\brief Lock the scene for reading from the calling thread.
@@ -1551,7 +1522,6 @@ class PxScene
 	*/
 	virtual void unlockWrite() = 0;
 	
-
 	/**
 	\brief set the cache blocks that can be used during simulate(). 
 	
@@ -1561,12 +1531,13 @@ class PxScene
 	This call will force allocation of cache blocks if the numBlocks parameter is greater than the currently allocated number
 	of blocks, and less than the max16KContactDataBlocks parameter specified at scene creation time.
 
+	\note Do not use this method while the simulation is running.
+
 	\param[in] numBlocks The number of blocks to allocate.	
 
 	@see PxSceneDesc.nbContactDataBlocks PxSceneDesc.maxNbContactDataBlocks flushSimulation() getNbContactDataBlocksUsed getMaxNbContactDataBlocksUsed
 	*/
 	virtual         void				setNbContactDataBlocks(PxU32 numBlocks) = 0;
-	
 
 	/**
 	\brief get the number of cache blocks currently used by the scene 
@@ -1590,17 +1561,17 @@ class PxScene
 	*/
 	virtual         PxU32				getMaxNbContactDataBlocksUsed() const = 0;
 
-
 	/**
 	\brief Return the value of PxSceneDesc::contactReportStreamBufferSize that was set when creating the scene with PxPhysics::createScene
 
 	@see PxSceneDesc::contactReportStreamBufferSize, PxPhysics::createScene
 	*/
-	virtual PxU32 getContactReportStreamBufferSize() const = 0;
+	virtual			PxU32				getContactReportStreamBufferSize() const = 0;
 
-	
 	/**
 	\brief Sets the number of actors required to spawn a separate rigid body solver thread.
+
+	\note Do not use this method while the simulation is running.
 
 	\param[in] solverBatchSize Number of actors required to spawn a separate rigid body solver thread.
 
@@ -1620,6 +1591,8 @@ class PxScene
 	/**
 	\brief Sets the number of articulations required to spawn a separate rigid body solver thread.
 
+	\note Do not use this method while the simulation is running.
+
 	\param[in] solverBatchSize Number of articulations required to spawn a separate rigid body solver thread.
 
 	@see PxSceneDesc.solverBatchSize getSolverArticulationBatchSize()
@@ -1635,7 +1608,6 @@ class PxScene
 	*/
 	virtual PxU32						getSolverArticulationBatchSize() const = 0;
 	
-
 	//@}
 
 	/**
@@ -1670,6 +1642,168 @@ class PxScene
 	\return the client, NULL if no PVD supported.
 	*/
 	virtual PxPvdSceneClient*		getScenePvdClient() = 0;
+
+	/**
+	\brief Copy GPU articulation data from the internal GPU buffer to a user-provided device buffer.
+	\param[in] data User-provided gpu data buffer which should be sized appropriately for the particular data that is requested. Further details provided in the user guide.
+	\param[in] index User-provided gpu index buffer. This buffer stores the articulation indices which the user wants to copy.
+	\param[in] dataType Enum specifying the type of data the user wants to read back from the articulations.
+	\param[in] nbCopyArticulations Number of articulations that data should be copied from.
+	\param[in] copyEvent User-provided event for the articulation stream to signal when the data copy to the user buffer has completed.
+	*/
+	virtual		void				copyArticulationData(void* data, void* index, PxArticulationGpuDataType::Enum dataType, const PxU32 nbCopyArticulations, void* copyEvent = NULL) = 0;
+	
+	/**
+	\brief Apply GPU articulation data from a user-provided device buffer to the internal GPU buffer.
+	\param[in] data User-provided gpu data buffer which should be sized appropriately for the particular data that is requested. Further details provided in the user guide.
+	\param[in] index User-provided gpu index buffer. This buffer stores the articulation indices which the user wants to write to.
+	\param[in] dataType Enum specifying the type of data the user wants to write to the articulations.
+	\param[in] nbUpdatedArticulations Number of articulations that data should be written to.
+	\param[in] waitEvent User-provided event for the articulation stream to wait for data.
+	\param[in] signalEvent User-provided event for the articulation stream to signal when the data read from the user buffer has completed.
+	*/
+	virtual		void				applyArticulationData(void* data, void* index, PxArticulationGpuDataType::Enum dataType, const PxU32 nbUpdatedArticulations, void* waitEvent = NULL, void* signalEvent = NULL) = 0;
+
+	/**
+	\brief Copy GPU softbody data from the internal GPU buffer to a user-provided device buffer.
+	\param[in] data User-provided gpu buffer containing a pointer to another gpu buffer for every softbody to process
+	\param[in] dataSizes The size of every buffer in bytes
+	\param[in] softBodyIndices User provided gpu index buffer. This buffer stores the softbody index which the user want to copy.
+	\param[in] maxSize The largest size stored in dataSizes. Used internally to decide how many threads to launch for the copy process.
+	\param[in] flag Flag defining which data the user wants to read back from the softbody system
+	\param[in] nbCopySoftBodies The number of softbodies to be copied.
+	\param[in] copyEvent User-provided event for the user to sync data
+	*/
+	virtual		void				copySoftBodyData(void** data, void* dataSizes, void* softBodyIndices, PxSoftBodyDataFlag::Enum flag, const PxU32 nbCopySoftBodies, const PxU32 maxSize, void* copyEvent = NULL) = 0;
+
+
+	/**
+	\brief Apply user-provided data to the internal softbody system.
+	\param[in] data User-provided gpu buffer containing a pointer to another gpu buffer for every softbody to process
+	\param[in] dataSizes The size of every buffer in bytes	
+	\param[in] softBodyIndices User provided gpu index buffer. This buffer stores the updated softbody index.
+	\param[in] flag Flag defining which data the user wants to write to the softbody system
+	\param[in] maxSize The largest size stored in dataSizes. Used internally to decide how many threads to launch for the copy process. 
+	\param[in] nbUpdatedSoftBodies The number of updated softbodies
+	\param[in] applyEvent User-provided event for the softbody stream to wait for data
+	*/
+	virtual		void				applySoftBodyData(void** data, void* dataSizes, void* softBodyIndices, PxSoftBodyDataFlag::Enum flag, const PxU32 nbUpdatedSoftBodies, const PxU32 maxSize, void* applyEvent = NULL) = 0;
+
+	/**
+	\brief Copy contact data from the internal GPU buffer to a user-provided device buffer.
+
+	\note The contact data contains pointers to internal state and is only valid until the next call to simulate().
+
+	\param[in] data User-provided gpu data buffer, which should be the size of PxGpuContactPair * numContactPairs
+	\param[in] maxContactPairs  The maximum number of pairs that the buffer can contain
+	\param[in] numContactPairs The actual number of contact pairs that were written
+	\param[in] copyEvent User-provided event for the user to sync data
+	*/
+	virtual		void				copyContactData(void* data, const PxU32 maxContactPairs, void* numContactPairs, void* copyEvent = NULL) = 0;
+
+	/**
+	\brief Copy GPU rigid body data from the internal GPU buffer to a user-provided device buffer.
+	\param[in] data User-provided gpu data buffer which should nbCopyActors * sizeof(PxGpuBodyData). The only data it can copy is PxGpuBodyData.
+	\param[in] index User provided node PxGpuActorPair buffer. This buffer stores pairs of indices: the PxNodeIndex corresponding to the rigid body and an index corresponding to the location in the user buffer that this value should be placed.
+	\param[in] nbCopyActors The number of rigid body to be copied.
+	\param[in] copyEvent User-provided event for the user to sync data.
+	*/
+	virtual		void				copyBodyData(PxGpuBodyData* data, PxGpuActorPair* index, const PxU32 nbCopyActors, void* copyEvent = NULL) = 0;
+
+	/**
+	\brief Apply user-provided data to rigid body.
+	\param[in] data User-provided gpu data buffer which should be sized appropriately for the particular data that is requested. Further details provided in the user guide.
+	\param[in] index User provided PxGpuActorPair buffer. This buffer stores pairs of indices: the PxNodeIndex corresponding to the rigid body and an index corresponding to the location in the user buffer that this value should be placed.
+	\param[in] flag Flag defining which data the user wants to write to the rigid body
+	\param[in] nbUpdatedActors The number of updated rigid body
+	\param[in] waitEvent User-provided event for the rigid body stream to wait for data
+	\param[in] signalEvent User-provided event for the rigid body stream to signal when the read from the user buffer has completed
+	*/
+	virtual		void				applyActorData(void* data, PxGpuActorPair* index, PxActorCacheFlag::Enum flag, const PxU32 nbUpdatedActors, void* waitEvent = NULL, void* signalEvent = NULL) = 0;
+
+	/**
+	\brief Compute dense Jacobian matrices for specified articulations on the GPU.
+
+	The size of Jacobians can vary by articulation, since it depends on the number of links, degrees-of-freedom, and whether the base is fixed.
+
+	The size is determined using these formulas:
+	nCols = (fixedBase ? 0 : 6) + dofCount
+	nRows = (fixedBase ? 0 : 6) + (linkCount - 1) * 6;
+
+	The user must ensure that adequate space is provided for each Jacobian matrix.
+
+	\param[in] indices User-provided gpu buffer of (index, data) pairs. The entries map a GPU articulation index to a GPU block of memory where the returned Jacobian will be stored.
+	\param[in] nbIndices The number of (index, data) pairs provided.
+	\param[in] computeEvent User-provided event for the user to sync data.
+	*/
+	virtual		void				computeDenseJacobians(const PxIndexDataPair* indices, PxU32 nbIndices, void* computeEvent) = 0;
+
+	/**
+	\brief Compute the joint-space inertia matrices that maps joint accelerations to joint forces: forces = M * accelerations on the GPU.
+
+	The size of matrices can vary by articulation, since it depends on the number of links and degrees-of-freedom.
+
+	The size is determined using this formula:
+	sizeof(float) * dofCount * dofCount
+
+	The user must ensure that adequate space is provided for each mass matrix.
+
+	\param[in] indices User-provided gpu buffer of (index, data) pairs. The entries map a GPU articulation index to a GPU block of memory where the returned matrix will be stored.
+	\param[in] nbIndices The number of (index, data) pairs provided.
+	\param[in] computeEvent User-provided event for the user to sync data.
+	*/
+	virtual		void				computeGeneralizedMassMatrices(const PxIndexDataPair* indices, PxU32 nbIndices, void* computeEvent) = 0;
+
+	/**
+	\brief Computes the joint DOF forces required to counteract gravitational forces for the given articulation pose.
+
+	The size of the result can vary by articulation, since it depends on the number of links and degrees-of-freedom.
+
+	The size is determined using this formula:
+	sizeof(float) * dofCount
+
+	The user must ensure that adequate space is provided for each articulation.
+
+	\param[in] indices User-provided gpu buffer of (index, data) pairs. The entries map a GPU articulation index to a GPU block of memory where the returned matrix will be stored.
+	\param[in] nbIndices The number of (index, data) pairs provided.
+	\param[in] computeEvent User-provided event for the user to sync data.
+	*/
+	virtual		void				computeGeneralizedGravityForces(const PxIndexDataPair* indices, PxU32 nbIndices, void* computeEvent) = 0;
+
+	/**
+	\brief Computes the joint DOF forces required to counteract coriolis and centrifugal forces for the given articulation pose.
+
+	The size of the result can vary by articulation, since it depends on the number of links and degrees-of-freedom.
+
+	The size is determined using this formula:
+	sizeof(float) * dofCount
+
+	The user must ensure that adequate space is provided for each articulation.
+
+	\param[in] indices User-provided gpu buffer of (index, data) pairs. The entries map a GPU articulation index to a GPU block of memory where the returned matrix will be stored.
+	\param[in] nbIndices The number of (index, data) pairs provided.
+	\param[in] computeEvent User-provided event for the user to sync data.
+	*/
+	virtual		void				computeCoriolisAndCentrifugalForces(const PxIndexDataPair* indices, PxU32 nbIndices, void* computeEvent) = 0;
+
+	virtual		PxgDynamicsMemoryConfig getGpuDynamicsConfig() const = 0;
+
+	/**
+	\brief Apply user-provided data to particle buffers.
+
+	This function should be used if the particle buffer flags are already on the device. Otherwise, use PxParticleBuffer::raiseFlags()
+	from the CPU.
+
+	This assumes the data has been changed directly in the PxParticleBuffer.
+
+	\param[in] indices User-provided index buffer that indexes into the BufferIndexPair and flags list.
+	\param[in] bufferIndexPair User-provided index pair buffer specifying the unique id and GPU particle system for each PxParticleBuffer. See PxGpuParticleBufferIndexPair.
+	\param[in] flags Flags to mark what data needs to be updated. See PxParticleBufferFlags. 
+	\param[in] nbUpdatedBuffers The number of particle buffers to update.
+	\param[in] waitEvent User-provided event for the particle stream to wait for data.
+	\param[in] signalEvent User-provided event for the particle stream to signal when the data read from the user buffer has completed.
+	*/
+	virtual		void				applyParticleBufferData(const PxU32* indices, const PxGpuParticleBufferIndexPair* bufferIndexPair, const PxParticleBufferFlags* flags, PxU32 nbUpdatedBuffers, void* waitEvent = NULL, void* signalEvent = NULL) = 0;
 
 	void*	userData;	//!< user can assign this to whatever, usually to create a 1:1 relationship with a user object.
 };

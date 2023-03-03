@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,13 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_PHYSICS_EXTENSIONS_RIGIDACTOR_H
-#define PX_PHYSICS_EXTENSIONS_RIGIDACTOR_H
+#ifndef PX_RIGID_ACTOR_EXT_H
+#define PX_RIGID_ACTOR_EXT_H
 /** \addtogroup extensions
   @{
 */
@@ -42,6 +40,9 @@
 namespace physx
 {
 #endif
+
+class PxBVH;
+class PxCooking;
 
 /**
 \brief utility functions for use with PxRigidActor and subclasses
@@ -82,7 +83,6 @@ public:
 
 	@see PxShape PxShape::release(), PxPhysics::createShape(), PxRigidActor::attachShape()
 	*/
-
 	static PxShape* createExclusiveShape(PxRigidActor& actor, const PxGeometry& geometry, PxMaterial*const* materials, PxU16 materialCount, 
 								         PxShapeFlags shapeFlags = PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSCENE_QUERY_SHAPE | PxShapeFlag::eSIMULATION_SHAPE)
 	{
@@ -125,14 +125,12 @@ public:
 
 	@see PxShape PxShape::release(), PxPhysics::createShape(), PxRigidActor::attachShape()
 	*/
-
 	static PX_FORCE_INLINE	PxShape*	createExclusiveShape(PxRigidActor& actor, const PxGeometry& geometry, const PxMaterial& material, 
 													         PxShapeFlags shapeFlags = PxShapeFlag::eVISUALIZATION | PxShapeFlag::eSCENE_QUERY_SHAPE | PxShapeFlag::eSIMULATION_SHAPE)
 	{
 		PxMaterial* materialPtr = const_cast<PxMaterial*>(&material);
 		return createExclusiveShape(actor, geometry, &materialPtr, 1, shapeFlags);
 	}
-
 
 	/**
 	\brief Gets a list of bounds based on shapes in rigid actor. This list can be used to cook/create
@@ -141,10 +139,24 @@ public:
 	\param[in] actor The actor from which the bounds list is retrieved.
 	\param[out] numBounds Number of bounds in returned list.
 
-	@see PxShape PxBVHStructure PxCooking::createBVHStructure PxCooking::cookBVHStructure
+	@see PxShape PxBVH PxCooking::createBVH PxCooking::cookBVH
 	*/
-	static PxBounds3*					getRigidActorShapeLocalBoundsList(const PxRigidActor& actor, PxU32& numBounds);
+	static PxBounds3*	getRigidActorShapeLocalBoundsList(const PxRigidActor& actor, PxU32& numBounds);
 
+	/**
+	\brief Convenience function to create a PxBVH object from a PxRigidActor.
+
+	The computed PxBVH can then be used in PxScene::addActor() or PxAggregate::addActor().
+	After adding the actor & BVH to the scene/aggregate, release the PxBVH object by calling PxBVH::release().
+
+	\param[in] physics	The physics object. The function will retrieve the insertion callback from it.
+	\param[in] actor	The actor to compute a PxBVH for.
+
+	\return	The PxBVH for this actor.
+
+	@see PxBVH PxScene::addActor PxAggregate::addActor
+	*/
+	static PxBVH* createBVHFromActor(PxPhysics& physics, const PxRigidActor& actor);
 };
 
 #if !PX_DOXYGEN

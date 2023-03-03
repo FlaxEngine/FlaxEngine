@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,13 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_PHYSICS_NX_MESHSCALE
-#define PX_PHYSICS_NX_MESHSCALE
+#ifndef PX_MESH_SCALE_H
+#define PX_MESH_SCALE_H
 /** \addtogroup geomutils
 @{
 */
@@ -54,7 +52,9 @@ namespace physx
 /**
 \brief A class expressing a nonuniform scaling transformation.
 
-The scaling is along arbitrary axes that are specified by PxMeshScale::rotation.
+The scaling is along arbitrary axes that are specified by PxMeshScale::rotation. Specifically, PxMeshScale::rotation
+describes the rotation from the scaling-axes frame to the mesh-local frame, i.e. PxMeshScale::rotation.rotate(v) transforms
+the coordinates of vertex v from the mesh-local frame to the scaling-axes frame.
 
 \note	Negative scale values are supported for PxTriangleMeshGeometry
 		with absolute values for each component within [PX_MIN_ABS_MESH_SCALE, PX_MAX_ABS_MESH_SCALE] range.
@@ -106,7 +106,6 @@ public:
 		scale = s;
 		rotation = r;
 	}
-
 
 	/**
 	\brief Returns true if the scaling is an identity transformation.
@@ -161,10 +160,8 @@ public:
 		return (scale.maxElement() <= PX_MESH_SCALE_MAX) && (scale.minElement() >= PX_MESH_SCALE_MIN);
 	}
 
-	PxVec3		scale;		//!< A nonuniform scaling
-	PxQuat		rotation;	//!< The orientation of the scaling axes
-
-
+	PxVec3	scale;		//!< A nonuniform scaling
+	PxQuat	rotation;	//!< The orientation of the scaling axes
 };
 
 #if !PX_DOXYGEN

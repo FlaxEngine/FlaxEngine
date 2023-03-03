@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,25 +22,29 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.
 
-#ifndef PXFOUNDATION_PXINTRINSICS_H
-#define PXFOUNDATION_PXINTRINSICS_H
+#ifndef PX_INTRINSICS_H
+#define PX_INTRINSICS_H
 
 #include "foundation/PxPreprocessor.h"
 
 #if PX_WINDOWS_FAMILY
-#include "foundation/windows/PxWindowsIntrinsics.h"
-#elif(PX_LINUX || PX_ANDROID || PX_APPLE_FAMILY || PX_PS4)
-#include "foundation/unix/PxUnixIntrinsics.h"
-#elif PX_XBOXONE
-#include "foundation/XboxOne/PxXboxOneIntrinsics.h"
+#include "windows/PxWindowsIntrinsics.h"
+#elif (PX_LINUX || PX_ANDROID || PX_APPLE_FAMILY || PX_PS4 || PX_PS5)
+#include "unix/PxUnixIntrinsics.h"
 #elif PX_SWITCH
-#include <Platforms/Switch/ThirdParty/PhysX/PxSwitchIntrinsics.h>
+#include "switch/PxSwitchIntrinsics.h"
 #else
 #error "Platform not supported!"
 #endif
 
-#endif // #ifndef PXFOUNDATION_PXINTRINSICS_H
+#if PX_WINDOWS_FAMILY
+#pragma intrinsic(memcmp)
+#pragma intrinsic(memcpy)
+#pragma intrinsic(memset)
+#endif
+
+#endif // #ifndef PX_INTRINSICS_H

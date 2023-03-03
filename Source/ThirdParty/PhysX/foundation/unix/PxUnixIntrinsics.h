@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,163 +22,106 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.
 
-#ifndef PXFOUNDATION_PXUNIXINTRINSICS_H
-#define PXFOUNDATION_PXUNIXINTRINSICS_H
+#ifndef PSFOUNDATION_PSUNIXINTRINSICS_H
+#define PSFOUNDATION_PSUNIXINTRINSICS_H
 
-#include "foundation/Px.h"
-#include "foundation/PxSharedAssert.h"
-
-#if !(PX_LINUX || PX_ANDROID || PX_PS4 || PX_APPLE_FAMILY)
-#error "This file should only be included by Unix builds!!"
-#endif
-
-#if (PX_LINUX || PX_ANDROID) && !defined(__CUDACC__) && !PX_EMSCRIPTEN
-    // Linux/android and CUDA compilation does not work with std::isfnite, as it is not marked as CUDA callable
-    #include <cmath>
-    #ifndef isfinite
-        using std::isfinite;
-    #endif
-#endif
-
+#include "foundation/PxAssert.h"
 #include <math.h>
-#include <float.h>
 
+#if PX_ANDROID
+#include <signal.h> // for PxDebugBreak() { raise(SIGTRAP); }
+#endif
+
+// this file is for internal intrinsics - that is, intrinsics that are used in
+// cross platform code but do not appear in the API
+
+#if !(PX_LINUX || PX_ANDROID || PX_PS4 || PX_PS5 || PX_APPLE_FAMILY)
+#error "This file should only be included by unix builds!!"
+#endif
+
+#if !PX_DOXYGEN
 namespace physx
 {
-namespace intrinsics
-{
-//! \brief platform-specific absolute value
-PX_CUDA_CALLABLE PX_FORCE_INLINE float abs(float a)
-{
-	return ::fabsf(a);
-}
+#endif
 
-//! \brief platform-specific select float
-PX_CUDA_CALLABLE PX_FORCE_INLINE float fsel(float a, float b, float c)
+PX_FORCE_INLINE void PxMemoryBarrier()
 {
-	return (a >= 0.0f) ? b : c;
-}
-
-//! \brief platform-specific sign
-PX_CUDA_CALLABLE PX_FORCE_INLINE float sign(float a)
-{
-	return (a >= 0.0f) ? 1.0f : -1.0f;
-}
-
-//! \brief platform-specific reciprocal
-PX_CUDA_CALLABLE PX_FORCE_INLINE float recip(float a)
-{
-	return 1.0f / a;
-}
-
-//! \brief platform-specific reciprocal estimate
-PX_CUDA_CALLABLE PX_FORCE_INLINE float recipFast(float a)
-{
-	return 1.0f / a;
-}
-
-//! \brief platform-specific square root
-PX_CUDA_CALLABLE PX_FORCE_INLINE float sqrt(float a)
-{
-	return ::sqrtf(a);
-}
-
-//! \brief platform-specific reciprocal square root
-PX_CUDA_CALLABLE PX_FORCE_INLINE float recipSqrt(float a)
-{
-	return 1.0f / ::sqrtf(a);
-}
-
-PX_CUDA_CALLABLE PX_FORCE_INLINE float recipSqrtFast(float a)
-{
-	return 1.0f / ::sqrtf(a);
-}
-
-//! \brief platform-specific sine
-PX_CUDA_CALLABLE PX_FORCE_INLINE float sin(float a)
-{
-	return ::sinf(a);
-}
-
-//! \brief platform-specific cosine
-PX_CUDA_CALLABLE PX_FORCE_INLINE float cos(float a)
-{
-	return ::cosf(a);
-}
-
-//! \brief platform-specific minimum
-PX_CUDA_CALLABLE PX_FORCE_INLINE float selectMin(float a, float b)
-{
-	return a < b ? a : b;
-}
-
-//! \brief platform-specific maximum
-PX_CUDA_CALLABLE PX_FORCE_INLINE float selectMax(float a, float b)
-{
-	return a > b ? a : b;
-}
-
-//! \brief platform-specific finiteness check (not INF or NAN)
-PX_CUDA_CALLABLE PX_FORCE_INLINE bool isFinite(float a)
-{
-	//std::isfinite not recommended as of Feb 2017, since it doesn't work with g++/clang's floating point optimization.
-    union localU { PxU32 i; float f; } floatUnion;
-    floatUnion.f = a;
-    return !((floatUnion.i & 0x7fffffff) >= 0x7f800000);
-}
-
-//! \brief platform-specific finiteness check (not INF or NAN)
-PX_CUDA_CALLABLE PX_FORCE_INLINE bool isFinite(double a)
-{
-	return !!isfinite(a);
+	__sync_synchronize();
 }
 
 /*!
-Sets \c count bytes starting at \c dst to zero.
+Return the index of the highest set bit. Undefined for zero arg.
 */
-PX_FORCE_INLINE void* memZero(void* dest, uint32_t count)
+PX_INLINE uint32_t PxHighestSetBitUnsafe(uint32_t v)
 {
-	return memset(dest, 0, count);
+
+	return uint32_t(31 - __builtin_clz(v));
 }
 
 /*!
-Sets \c count bytes starting at \c dst to \c c.
+Return the index of the highest set bit. Undefined for zero arg.
 */
-PX_FORCE_INLINE void* memSet(void* dest, int32_t c, uint32_t count)
+PX_INLINE uint32_t PxLowestSetBitUnsafe(uint32_t v)
 {
-	return memset(dest, c, count);
+	return uint32_t(__builtin_ctz(v));
 }
 
 /*!
-Copies \c count bytes from \c src to \c dst. User memMove if regions overlap.
+Returns the index of the highest set bit. Returns 32 for v=0.
 */
-PX_FORCE_INLINE void* memCopy(void* dest, const void* src, uint32_t count)
+PX_INLINE uint32_t PxCountLeadingZeros(uint32_t v)
 {
-	return memcpy(dest, src, count);
+	if(v)
+		return uint32_t(__builtin_clz(v));
+	else
+		return 32u;
 }
 
 /*!
-Copies \c count bytes from \c src to \c dst. Supports overlapping regions.
+Prefetch aligned 64B x86, 32b ARM around \c ptr+offset.
 */
-PX_FORCE_INLINE void* memMove(void* dest, const void* src, uint32_t count)
+PX_FORCE_INLINE void PxPrefetchLine(const void* ptr, uint32_t offset = 0)
 {
-	return memmove(dest, src, count);
+	__builtin_prefetch(reinterpret_cast<const char* PX_RESTRICT>(ptr) + offset, 0, 3);
 }
 
 /*!
-Set 128B to zero starting at \c dst+offset. Must be aligned.
+Prefetch \c count bytes starting at \c ptr.
 */
-PX_FORCE_INLINE void memZero128(void* dest, uint32_t offset = 0)
+#if PX_ANDROID || PX_IOS
+PX_FORCE_INLINE void PxPrefetch(const void* ptr, uint32_t count = 1)
 {
-	PX_SHARED_ASSERT(((size_t(dest) + offset) & 0x7f) == 0);
-	memSet(reinterpret_cast<char*>(dest) + offset, 0, 128);
+	const char* cp = static_cast<const char*>(ptr);
+	size_t p = reinterpret_cast<size_t>(ptr);
+	uint32_t startLine = uint32_t(p >> 5), endLine = uint32_t((p + count - 1) >> 5);
+	uint32_t lines = endLine - startLine + 1;
+	do
+	{
+		PxPrefetchLine(cp);
+		cp += 32;
+	} while(--lines);
 }
+#else
+PX_FORCE_INLINE void PxPrefetch(const void* ptr, uint32_t count = 1)
+{
+	const char* cp = reinterpret_cast<const char*>(ptr);
+	uint64_t p = size_t(ptr);
+	uint64_t startLine = p >> 6, endLine = (p + count - 1) >> 6;
+	uint64_t lines = endLine - startLine + 1;
+	do
+	{
+		PxPrefetchLine(cp);
+		cp += 64;
+	} while(--lines);
+}
+#endif
 
-} // namespace intrinsics
+#if !PX_DOXYGEN
 } // namespace physx
+#endif
 
-#endif // #ifndef PXFOUNDATION_PXUNIXINTRINSICS_H
+#endif // #ifndef PSFOUNDATION_PSUNIXINTRINSICS_H

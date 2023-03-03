@@ -268,18 +268,28 @@ CollisionData::LoadResult CollisionData::load(const SerializedOptions* options, 
         if (dataSize <= 0)
             return LoadResult::InvalidData;
 
-        // Create PhysX object
+        // Create physics object
         if (_options.Type == CollisionDataType::ConvexMesh)
         {
             _convexMesh = PhysicsBackend::CreateConvexMesh(dataPtr, dataSize, _options.Box);
+            if (!_convexMesh)
+            {
+                LOG(Error, "Failed to create convex mesh");
+                return LoadResult::Failed;
+            }
         }
         else if (_options.Type == CollisionDataType::TriangleMesh)
         {
             _triangleMesh = PhysicsBackend::CreateTriangleMesh(dataPtr, dataSize, _options.Box);
+            if (!_triangleMesh)
+            {
+                LOG(Error, "Failed to create triangle mesh");
+                return LoadResult::Failed;
+            }
         }
         else
         {
-            LOG(Warning, "Invalid collision data type.");
+            LOG(Error, "Invalid collision data type.");
             return LoadResult::InvalidData;
         }
     }

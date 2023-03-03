@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,13 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_PHYSICS_NX_ACTOR
-#define PX_PHYSICS_NX_ACTOR
+#ifndef PX_ACTOR_H
+#define PX_ACTOR_H
 
 /** \addtogroup physics
   @{
@@ -49,11 +47,12 @@ class PxRigidActor;
 class PxRigidBody;
 class PxRigidStatic;
 class PxRigidDynamic;
-class PxArticulation;
 class PxArticulationLink;
+class PxScene;
 
-
-/** Group index which allows to specify 1- or 2-way interaction */
+/**
+\brief Group index which allows to specify 1- or 2-way interaction
+*/
 typedef PxU8 PxDominanceGroup;		// Must be < 32, PxU8.
 
 /**
@@ -93,7 +92,7 @@ struct PxActorFlag
 		\note Setting this flag will remove all constraints attached to the actor from the scene.
 
 		\note If this flag is set, the following calls are forbidden:
-		\li PxRigidBody: setLinearVelocity(), setAngularVelocity(), addForce(), addTorque(), clearForce(), clearTorque()
+		\li PxRigidBody: setLinearVelocity(), setAngularVelocity(), addForce(), addTorque(), clearForce(), clearTorque(), setForceAndTorque()
 		\li PxRigidDynamic: setKinematicTarget(), setWakeCounter(), wakeUp(), putToSleep()
 
 		\par <b>Sleeping:</b>
@@ -138,9 +137,57 @@ struct PxActorType
 		*/
 		eARTICULATION_LINK,
 
-		//brief internal use only!
+		/**
+		\brief A FEM-based soft body
+		@see PxSoftBody
+		*/
+		eSOFTBODY,
+
+		/**
+		\brief A FEM-based cloth
+		\note In development
+		@see PxFEMCloth
+		*/
+		eFEMCLOTH,
+
+		/**
+		\brief A PBD ParticleSystem
+		@see PxPBDParticleSystem
+		*/
+		ePBD_PARTICLESYSTEM,
+
+		/**
+		\brief A FLIP ParticleSystem
+		\note In development
+		@see PxFLIPParticleSystem
+		*/
+		eFLIP_PARTICLESYSTEM,
+
+		/**
+		\brief A MPM ParticleSystem
+		\note In development
+		@see PxMPMParticleSystem
+		*/
+		eMPM_PARTICLESYSTEM,
+
+		/**
+		\brief A CUSTOM ParticleSystem
+		\note In development
+		@see PxCUSTOMParticleSystem
+		*/
+		eCUSTOM_PARTICLESYSTEM,
+
+		/**
+		\brief A HairSystem
+		\note In development
+		@see PxHairSystem
+		*/
+		eHAIRSYSTEM,
+
+		//! \brief internal use only!
 		eACTOR_COUNT,
 
+		//! \brief internal use only!
 		eACTOR_FORCE_DWORD = 0x7fffffff
 	};
 };
@@ -149,7 +196,6 @@ struct PxActorType
 \brief PxActor is the base class for the main simulation objects in the physics SDK.
 
 The actor is owned by and contained in a PxScene.
-
 */
 class PxActor : public PxBase
 {
@@ -211,6 +257,9 @@ public:
 	/**
 	\brief Retrieves the axis aligned bounding box enclosing the actor.
 
+	\note It is not allowed to use this method while the simulation is running (except during PxScene::collide(),
+	in PxContactModifyCallback or in contact report callbacks).
+
 	\param[in] inflation  Scale factor for computed world bounds. Box extents are multiplied by this value.
 
 	\return The actor's bounding box.
@@ -229,13 +278,12 @@ public:
 	\param[in] flag  The PxActor flag to raise(set) or clear. See #PxActorFlag.
 	\param[in] value The boolean value to assign to the flag.
 
-	<b>Default:</b> PxActorFlag::eVISUALIZATION
-
 	@see PxActorFlag getActorFlags() 
 	*/
 	virtual		void			setActorFlag(PxActorFlag::Enum flag, bool value) = 0;
+
 	/**
-	\brief sets the actor flags
+	\brief Sets the actor flags.
 	
 	See the list of flags #PxActorFlag
 	@see PxActorFlag setActorFlag() 
@@ -293,7 +341,7 @@ public:
 	virtual		void			setOwnerClient( PxClientID inClient ) = 0;
 
 	/**
-	\brief Returns the owner client that was specified with at creation time.
+	\brief Returns the owner client that was specified at creation time.
 
 	This value cannot be changed once the object is placed into the scene.
 

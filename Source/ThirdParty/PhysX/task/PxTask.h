@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,18 +22,19 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 
-#ifndef PXTASK_PXTASK_H
-#define PXTASK_PXTASK_H
+#ifndef PX_TASK_H
+#define PX_TASK_H
 
-#include "task/PxTaskDefine.h"
 #include "task/PxTaskManager.h"
 #include "task/PxCpuDispatcher.h"
 #include "foundation/PxAssert.h"
 
+#if !PX_DOXYGEN
 namespace physx
 {
+#endif
 
 /**
  * \brief Base class of all task types
@@ -114,58 +114,58 @@ public:
 	virtual ~PxTask() {}
 
     //! \brief Release method implementation
-    virtual void release()
+    virtual void release() PX_OVERRIDE
 	{
 		PX_ASSERT(mTm);
 
         // clear mTm before calling taskCompleted() for safety
 		PxTaskManager* save = mTm;
 		mTm = NULL;
-		save->taskCompleted( *this );
+		save->taskCompleted(*this);
 	}
 
     //! \brief Inform the PxTaskManager this task must finish before the given
     //         task is allowed to start.
-    PX_INLINE void finishBefore( PxTaskID taskID )
+    PX_INLINE void finishBefore(PxTaskID taskID)
 	{
 		PX_ASSERT(mTm);
-		mTm->finishBefore( *this, taskID);
+		mTm->finishBefore(*this, taskID);
 	}
 
     //! \brief Inform the PxTaskManager this task cannot start until the given
     //         task has completed.
-    PX_INLINE void startAfter( PxTaskID taskID )
+    PX_INLINE void startAfter(PxTaskID taskID)
 	{
 		PX_ASSERT(mTm);
-		mTm->startAfter( *this, taskID );
+		mTm->startAfter(*this, taskID);
 	}
 
     /**
-     * \brief Manually increment this task's reference count.  The task will
+     * \brief Manually increment this task's reference count. The task will
      * not be allowed to run until removeReference() is called.
      */
-    PX_INLINE void addReference()
+    virtual void addReference() PX_OVERRIDE
 	{
 		PX_ASSERT(mTm);
-		mTm->addReference( mTaskID );
+		mTm->addReference(mTaskID);
 	}
 
     /**
-     * \brief Manually decrement this task's reference count.  If the reference
+     * \brief Manually decrement this task's reference count. If the reference
      * count reaches zero, the task will be dispatched.
      */
-    PX_INLINE void removeReference()
+    virtual void removeReference() PX_OVERRIDE
 	{
 		PX_ASSERT(mTm);
-		mTm->decrReference( mTaskID );
+		mTm->decrReference(mTaskID);
 	}
 
 	/** 
 	 * \brief Return the ref-count for this task 
 	 */
-	PX_INLINE int32_t getReference() const
+	virtual int32_t getReference() const PX_OVERRIDE
 	{
-		return mTm->getReference( mTaskID );
+		return mTm->getReference(mTaskID);
 	}
 	
 	/**
@@ -229,14 +229,12 @@ public:
 	 */
 	PX_INLINE void setContinuation(PxTaskManager& tm, PxBaseTask* c)
 	{
-		PX_ASSERT( mRefCount == 0 );
+		PX_ASSERT(mRefCount == 0);
 		mRefCount = 1;
 		mCont = c;
 		mTm = &tm;
-		if( mCont )
-		{
+		if(mCont)
 			mCont->addReference();
-	    }
 	}
 
     /**
@@ -246,17 +244,17 @@ public:
      * task, which cannot be NULL.
 	 * \param[in] c The task to be executed after this task has finished running
 	 */
-	PX_INLINE void setContinuation( PxBaseTask* c )
+	PX_INLINE void setContinuation(PxBaseTask* c)
 	{
-		PX_ASSERT( c );
-		PX_ASSERT( mRefCount == 0 );
+		PX_ASSERT(c);
+		PX_ASSERT(mRefCount == 0);
 		mRefCount = 1;
 		mCont = c;
-		if( mCont )
+		if(mCont)
 		{
 			mCont->addReference();
 			mTm = mCont->getTaskManager();
-			PX_ASSERT( mTm );
+			PX_ASSERT(mTm);
 		}
 	}
 
@@ -269,25 +267,25 @@ public:
 	}
 
     /**
-     * \brief Manually decrement this task's reference count.  If the reference
+     * \brief Manually decrement this task's reference count. If the reference
      * count reaches zero, the task will be dispatched.
      */
-	PX_INLINE void removeReference()
+	virtual void removeReference() PX_OVERRIDE
 	{
 		mTm->decrReference(*this);
 	}
 
 	/** \brief Return the ref-count for this task */
-	PX_INLINE int32_t getReference() const
+	virtual int32_t getReference() const PX_OVERRIDE
 	{
 		return mRefCount;
 	}
 
     /**
-     * \brief Manually increment this task's reference count.  The task will
+     * \brief Manually increment this task's reference count. The task will
      * not be allowed to run until removeReference() is called.
      */
-	PX_INLINE void addReference()
+	virtual void addReference() PX_OVERRIDE
 	{
 		mTm->addReference(*this);
 	}
@@ -297,12 +295,10 @@ public:
      *
      * Decrements the continuation task's reference count, if specified.
      */
-	PX_INLINE void release()
+	virtual void release() PX_OVERRIDE
 	{
-		if( mCont )
-		{
+		if(mCont)
 			mCont->removeReference();
-	    }
 	}
 
 protected:
@@ -314,7 +310,10 @@ protected:
 };
 
 
-}// end physx namespace
+#if !PX_DOXYGEN
+} // namespace physx
+#endif
 
 
-#endif // PXTASK_PXTASK_H
+#endif
+

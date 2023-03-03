@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,10 +22,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.
-
 
 #ifndef PX_BVH_34_MIDPHASE_DESC_H
 #define PX_BVH_34_MIDPHASE_DESC_H
@@ -43,6 +41,22 @@ namespace physx
 #endif
 
 /**
+\brief Desired build strategy for PxMeshMidPhase::eBVH34
+*/
+struct PxBVH34BuildStrategy
+{
+	enum Enum
+	{
+		eFAST = 0,		//!< Fast build strategy. Fast build speed, good runtime performance in most cases. Recommended for runtime mesh cooking.
+		eDEFAULT = 1,	//!< Default build strategy. Medium build speed, good runtime performance in all cases.
+		eSAH = 2,		//!< SAH build strategy. Slower builds, slightly improved runtime performance in some cases.
+
+		eLAST
+	};
+};
+
+
+/**
 
 \brief Structure describing parameters affecting BVH34 midphase mesh structure.
 
@@ -57,9 +71,30 @@ struct PxBVH34MidphaseDesc
 	smaller mesh sizes, but with worse runtime performance.
 
 	<b>Default value:</b> 4
-	<b>Range:</b> <4, 15>
+	<b>Range:</b> <2, 15>
 	*/
 	PxU32			numPrimsPerLeaf;
+
+	/**
+	\brief Desired build strategy for the BVH
+
+	<b>Default value:</b> eDEFAULT
+	*/
+	PxBVH34BuildStrategy::Enum	buildStrategy;
+
+	/**
+	\brief Whether the tree should be quantized or not
+
+	Quantized trees use up less memory, but the runtime dequantization (to retrieve the node bounds) might have
+	a measurable performance cost. In most cases the cost is too small to matter, and using less memory is more
+	important. Hence, the default is true.
+
+	One important use case for non-quantized trees is deformable meshes. The refit function for the BVH is not
+	supported for quantized trees.
+
+	<b>Default value:</b> true
+	*/
+	bool			quantized;
 
 	/**
 	\brief Desc initialization to default value.
@@ -67,6 +102,8 @@ struct PxBVH34MidphaseDesc
     void setToDefault()
     {
 		numPrimsPerLeaf = 4;
+		buildStrategy = PxBVH34BuildStrategy::eDEFAULT;
+		quantized = true;
     }
 
 	/**
@@ -75,7 +112,7 @@ struct PxBVH34MidphaseDesc
 	*/
 	bool isValid() const
 	{
-		if(numPrimsPerLeaf < 4 || numPrimsPerLeaf > 15)
+		if(numPrimsPerLeaf < 2 || numPrimsPerLeaf > 15)
 			return false;
 		return true;
 	}
@@ -87,4 +124,5 @@ struct PxBVH34MidphaseDesc
 
 
   /** @} */
-#endif // PX_BVH_34_MIDPHASE_DESC_H
+#endif
+

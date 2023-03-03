@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,10 +22,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
-
 
 #ifndef PX_BINARY_CONVERTER_H
 #define PX_BINARY_CONVERTER_H
@@ -41,7 +39,7 @@ namespace physx
 {
 #endif
 
-struct PxConverterReportMode
+struct PX_DEPRECATED PxConverterReportMode
 {
 	enum Enum
 	{
@@ -55,6 +53,8 @@ struct PxConverterReportMode
 /**
 \brief Binary converter for serialized streams.
 
+\deprecated Binary conversion and binary meta data are deprecated.
+
 The binary converter class is targeted at converting binary streams from authoring platforms, 
 such as windows, osx or linux to any game runtime platform supported by PhysX. Particularly 
 it is currently not supported to run the converter on a platforms that has an endian mismatch 
@@ -65,7 +65,7 @@ of this class for each thread.
 
 @see PxSerialization.createBinaryConverter
 */
-class PxBinaryConverter
+class PX_DEPRECATED PxBinaryConverter
 {
 public:
 

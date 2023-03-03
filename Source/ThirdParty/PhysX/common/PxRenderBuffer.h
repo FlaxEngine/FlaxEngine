@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,13 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_FOUNDATION_PXRENDERBUFFER_H
-#define PX_FOUNDATION_PXRENDERBUFFER_H
+#ifndef PX_RENDER_BUFFER_H
+#define PX_RENDER_BUFFER_H
 
 /** \addtogroup common
 @{
@@ -61,11 +59,12 @@ struct PxDebugColor
 		eARGB_CYAN		= 0xff00ffff,
 		eARGB_WHITE		= 0xffffffff,
 		eARGB_GREY		= 0xff808080,
-		eARGB_DARKRED	= 0x88880000,
-		eARGB_DARKGREEN	= 0x88008800,
-		eARGB_DARKBLUE	= 0x88000088
+		eARGB_DARKRED	= 0xff880000,
+		eARGB_DARKGREEN	= 0xff008800,
+		eARGB_DARKBLUE	= 0xff000088
 	};
 };
+
 
 /**
 \brief Used to store a single point and colour for debug rendering.
@@ -114,16 +113,21 @@ struct PxDebugTriangle
 */
 struct PxDebugText
 {
-	PxDebugText() : string(0) {}
+	PxDebugText() : string(0)
+	{
+	}
 
-	PxDebugText(const PxVec3& p, const PxReal& s, const PxU32& c, const char* str)
-		: position(p), size(s), color(c), string(str) {}
+	PxDebugText(const PxVec3& pos, const PxReal& sz, const PxU32& clr, const char* str)
+		: position(pos), size(sz), color(clr), string(str)
+	{
+	}
 
-	PxVec3		position;
-	PxReal		size;
-	PxU32		color;
-	const char*	string;
+	PxVec3 position;
+	PxReal size;
+	PxU32 color;
+	const char* string;
 };
+
 
 /**
 \brief Interface for points, lines, triangles, and text buffer.
@@ -135,18 +139,24 @@ public:
 
 	virtual PxU32 getNbPoints() const = 0;
 	virtual const PxDebugPoint* getPoints() const = 0;
+	virtual void addPoint(const PxDebugPoint& point) = 0;
 
 	virtual PxU32 getNbLines() const = 0;
 	virtual const PxDebugLine* getLines() const = 0;
+	virtual void addLine(const PxDebugLine& line) = 0;
+	virtual PxDebugLine* reserveLines(const PxU32 nbLines) = 0;
+	virtual PxDebugPoint* reservePoints(const PxU32 nbLines) = 0;
 
 	virtual PxU32 getNbTriangles() const = 0;
 	virtual const PxDebugTriangle* getTriangles() const = 0;
-
-	virtual PxU32 getNbTexts() const = 0;
-	virtual const PxDebugText* getTexts() const = 0;
+	virtual void addTriangle(const PxDebugTriangle& triangle) = 0;
 
 	virtual void append(const PxRenderBuffer& other) = 0;
 	virtual void clear() = 0;
+
+	virtual void shift(const PxVec3& delta) = 0;
+
+	virtual bool empty() const = 0;
 };
 
 #if !PX_DOXYGEN

@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,20 +22,21 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_PHYSICS_GEOMUTILS_PX_MESH_QUERY
-#define PX_PHYSICS_GEOMUTILS_PX_MESH_QUERY
+#ifndef PX_MESH_QUERY_H
+#define PX_MESH_QUERY_H
 
 /** \addtogroup geomutils
   @{
 */
 
 #include "common/PxPhysXCommonConfig.h"
-#include "PxQueryReport.h"
+#include "geometry/PxGeometryHit.h"
+#include "geometry/PxGeometryQueryFlags.h"
+#include "geometry/PxReportCallback.h"
 
 #if !PX_DOXYGEN
 namespace physx
@@ -50,6 +50,17 @@ class PxHeightFieldGeometry;
 
 class PxTriangle;
 
+	struct PxMeshMeshQueryFlag
+	{
+		enum Enum
+		{
+			eDEFAULT			= 0,		//!< Report all overlaps
+			eDISCARD_COPLANAR	= (1<<0)	//!< Ignore coplanar triangle-triangle overlaps
+		};
+	};
+
+	PX_FLAGS_TYPEDEF(PxMeshMeshQueryFlag, PxU32)
+
 class PxMeshQuery
 {
 public:
@@ -59,12 +70,12 @@ public:
 
 	This function can be used together with #findOverlapTriangleMesh() to retrieve triangle properties.
 
-	\param[in] triGeom Geometry of the triangle mesh to extract the triangle from.
-	\param[in] transform Transform for the triangle mesh
-	\param[in] triangleIndex The index of the triangle to retrieve.
-	\param[out] triangle Triangle points in world space.
-	\param[out] vertexIndices Returned vertex indices for given triangle
-	\param[out] adjacencyIndices Returned 3 triangle adjacency internal face indices (0xFFFFFFFF if no adjacency). The mesh must be cooked with cooking param buildTriangleAdjacencies enabled.
+	\param[in] triGeom				Geometry of the triangle mesh to extract the triangle from.
+	\param[in] transform			Transform for the triangle mesh
+	\param[in] triangleIndex		The index of the triangle to retrieve.
+	\param[out] triangle			Triangle points in world space.
+	\param[out] vertexIndices		Returned vertex indices for given triangle
+	\param[out] adjacencyIndices	Returned 3 triangle adjacency internal face indices (0xFFFFFFFF if no adjacency). The mesh must be cooked with cooking param buildTriangleAdjacencies enabled.
 
 	\note This function will flip the triangle normal whenever triGeom.scale.hasNegativeDeterminant() is true.
 
@@ -78,12 +89,12 @@ public:
 
 	This function can be used together with #findOverlapHeightField() to retrieve triangle properties.
 
-	\param[in] hfGeom Geometry of the height field to extract the triangle from.
-	\param[in] transform Transform for the height field.
-	\param[in] triangleIndex The index of the triangle to retrieve.
-	\param[out] triangle Triangle points in world space.
-	\param[out] vertexIndices Returned vertex indices for given triangle
-	\param[out] adjacencyIndices Returned 3 triangle adjacency triangle indices (0xFFFFFFFF if no adjacency).
+	\param[in] hfGeom				Geometry of the height field to extract the triangle from.
+	\param[in] transform			Transform for the height field.
+	\param[in] triangleIndex		The index of the triangle to retrieve.
+	\param[out] triangle			Triangle points in world space.
+	\param[out] vertexIndices		Returned vertex indices for given triangle
+	\param[out] adjacencyIndices	Returned 3 triangle adjacency triangle indices (0xFFFFFFFF if no adjacency).
 
 	\note This function will flip the triangle normal whenever triGeom.scale.hasNegativeDeterminant() is true.
 	\note TriangleIndex is an index used in internal format, which does have an index out of the bounds in last row.
@@ -107,44 +118,78 @@ public:
 	/**
 	\brief Find the mesh triangles which touch the specified geometry object.
 
+	For mesh-vs-mesh overlap tests, please use the specialized function below.
+
 	Returned triangle indices can be used with #getTriangle() to retrieve the triangle properties.
 
-	\param[in] geom The geometry object to test for mesh triangle overlaps. Supported geometries are #PxSphereGeometry, #PxCapsuleGeometry and #PxBoxGeometry
-	\param[in] geomPose Pose of the geometry object
-	\param[in] meshGeom The triangle mesh geometry to check overlap against
-	\param[in] meshPose Pose of the triangle mesh
-	\param[out] results Indices of overlapping triangles
-	\param[in] maxResults Size of 'results' buffer
-	\param[in] startIndex Index of first result to be retrieved. Previous indices are skipped.
-	\param[out] overflow True if a buffer overflow occurred
+	\param[in] geom			The geometry object to test for mesh triangle overlaps. Supported geometries are #PxSphereGeometry, #PxCapsuleGeometry and #PxBoxGeometry
+	\param[in] geomPose		Pose of the geometry object
+	\param[in] meshGeom		The triangle mesh geometry to check overlap against
+	\param[in] meshPose		Pose of the triangle mesh
+	\param[out] results		Indices of overlapping triangles
+	\param[in] maxResults	Size of 'results' buffer
+	\param[in] startIndex	Index of first result to be retrieved. Previous indices are skipped.
+	\param[out] overflow	True if a buffer overflow occurred
+	\param[in] queryFlags	Optional flags controlling the query.
 	\return Number of overlaps found, i.e. number of elements written to the results buffer
 
-	@see PxTriangleMeshGeometry getTriangle()
+	@see PxTriangleMeshGeometry getTriangle() PxGeometryQueryFlags
 	*/
 	PX_PHYSX_COMMON_API static PxU32 findOverlapTriangleMesh(	const PxGeometry& geom, const PxTransform& geomPose,
 																const PxTriangleMeshGeometry& meshGeom, const PxTransform& meshPose,
-																PxU32* results, PxU32 maxResults, PxU32 startIndex, bool& overflow);
+																PxU32* results, PxU32 maxResults, PxU32 startIndex, bool& overflow,
+																PxGeometryQueryFlags queryFlags = PxGeometryQueryFlag::eDEFAULT);
+
+	/**
+	\brief Mesh-vs-mesh overlap test
+
+	A specialized findOverlapTriangleMesh function for mesh-vs-mesh. The other findOverlapTriangleMesh() function above cannot be used
+	directly since it only returns a single set of triangle indices that belongs to one of the meshes only. This function returns pairs
+	of triangle indices that belong to both the first & second input meshes.
+
+	Returned triangle indices can be used with #getTriangle() to retrieve the triangle properties.
+
+	\note	This is only implemented for the PxMeshMidPhase::eBVH34 data structure.
+
+	\param[in] callback			The callback object used to report results
+	\param[in] meshGeom0		First triangle mesh geometry
+	\param[in] meshPose0		Pose of first triangle mesh geometry
+	\param[in] meshGeom1		Second triangle mesh geometry
+	\param[in] meshPose1		Pose of second triangle mesh geometry
+	\param[in] queryFlags		Optional flags controlling the query.
+	\param[in] meshMeshFlags	Optional flags controlling the query.
+	\return true if an overlap has been detected, false if the meshes are disjoint
+
+	@see PxTriangleMeshGeometry getTriangle() PxReportCallback PxGeometryQueryFlags PxMeshMeshQueryFlags
+	*/
+	PX_PHYSX_COMMON_API static bool findOverlapTriangleMesh(PxReportCallback<PxGeomIndexPair>& callback,
+															const PxTriangleMeshGeometry& meshGeom0, const PxTransform& meshPose0,
+															const PxTriangleMeshGeometry& meshGeom1, const PxTransform& meshPose1,
+															PxGeometryQueryFlags queryFlags = PxGeometryQueryFlag::eDEFAULT,
+															PxMeshMeshQueryFlags meshMeshFlags = PxMeshMeshQueryFlag::eDEFAULT);
 
 	/**
 	\brief Find the height field triangles which touch the specified geometry object.
 
 	Returned triangle indices can be used with #getTriangle() to retrieve the triangle properties.
 
-	\param[in] geom The geometry object to test for height field overlaps. Supported geometries are #PxSphereGeometry, #PxCapsuleGeometry and #PxBoxGeometry. The sphere and capsule queries are currently conservative estimates.
-	\param[in] geomPose Pose of the geometry object
-	\param[in] hfGeom The height field geometry to check overlap against
-	\param[in] hfPose Pose of the height field
-	\param[out] results Indices of overlapping triangles
-	\param[in] maxResults Size of 'results' buffer
-	\param[in] startIndex Index of first result to be retrieved. Previous indices are skipped.
-	\param[out] overflow True if a buffer overflow occurred
+	\param[in] geom			The geometry object to test for height field overlaps. Supported geometries are #PxSphereGeometry, #PxCapsuleGeometry and #PxBoxGeometry. The sphere and capsule queries are currently conservative estimates.
+	\param[in] geomPose		Pose of the geometry object
+	\param[in] hfGeom		The height field geometry to check overlap against
+	\param[in] hfPose		Pose of the height field
+	\param[out] results		Indices of overlapping triangles
+	\param[in] maxResults	Size of 'results' buffer
+	\param[in] startIndex	Index of first result to be retrieved. Previous indices are skipped.
+	\param[out] overflow	True if a buffer overflow occurred
+	\param[in] queryFlags	Optional flags controlling the query.
 	\return Number of overlaps found, i.e. number of elements written to the results buffer
 
-	@see PxHeightFieldGeometry getTriangle()
+	@see PxHeightFieldGeometry getTriangle() PxGeometryQueryFlags
 	*/
 	PX_PHYSX_COMMON_API static PxU32 findOverlapHeightField(const PxGeometry& geom, const PxTransform& geomPose,
 															const PxHeightFieldGeometry& hfGeom, const PxTransform& hfPose,
-															PxU32* results, PxU32 maxResults, PxU32 startIndex, bool& overflow);
+															PxU32* results, PxU32 maxResults, PxU32 startIndex, bool& overflow,
+															PxGeometryQueryFlags queryFlags = PxGeometryQueryFlag::eDEFAULT);
 
 
 	/**
@@ -153,17 +198,18 @@ public:
 	This function simply sweeps input geometry against each input triangle, in the order they are given.
 	This is an O(N) operation with N = number of input triangles. It does not use any particular acceleration structure.
 
-	\param[in] unitDir Normalized direction of the sweep.
-	\param[in] distance Sweep distance. Needs to be larger than 0. Clamped to PX_MAX_SWEEP_DISTANCE.
-	\param[in] geom The geometry object to sweep. Supported geometries are #PxSphereGeometry, #PxCapsuleGeometry and #PxBoxGeometry
-	\param[in] pose Pose of the geometry object to sweep.
-	\param[in] triangleCount Number of specified triangles
-	\param[in] triangles Array of triangles to sweep against
-	\param[out] sweepHit The sweep hit information. See the notes below for limitations about returned results.
-	\param[in] hitFlags Specification of the kind of information to retrieve on hit. Combination of #PxHitFlag flags. See the notes below for limitations about supported flags.
-	\param[in] cachedIndex Cached triangle index for subsequent calls. Cached triangle is tested first. Optional parameter.
-	\param[in] inflation This parameter creates a skin around the swept geometry which increases its extents for sweeping. The sweep will register a hit as soon as the skin touches a shape, and will return the corresponding distance and normal.
-	\param[in] doubleSided Counterpart of PxMeshGeometryFlag::eDOUBLE_SIDED for input triangles.
+	\param[in] unitDir			Normalized direction of the sweep.
+	\param[in] distance			Sweep distance. Needs to be larger than 0. Clamped to PX_MAX_SWEEP_DISTANCE.
+	\param[in] geom				The geometry object to sweep. Supported geometries are #PxSphereGeometry, #PxCapsuleGeometry and #PxBoxGeometry
+	\param[in] pose				Pose of the geometry object to sweep.
+	\param[in] triangleCount	Number of specified triangles
+	\param[in] triangles		Array of triangles to sweep against
+	\param[out] sweepHit		The sweep hit information. See the notes below for limitations about returned results.
+	\param[in] hitFlags			Specification of the kind of information to retrieve on hit. Combination of #PxHitFlag flags. See the notes below for limitations about supported flags.
+	\param[in] cachedIndex		Cached triangle index for subsequent calls. Cached triangle is tested first. Optional parameter.
+	\param[in] inflation		This parameter creates a skin around the swept geometry which increases its extents for sweeping. The sweep will register a hit as soon as the skin touches a shape, and will return the corresponding distance and normal.
+	\param[in] doubleSided		Counterpart of PxMeshGeometryFlag::eDOUBLE_SIDED for input triangles.
+	\param[in] queryFlags		Optional flags controlling the query.
 	\return True if the swept geometry object hits the specified triangles
 
 	\note Only the following geometry types are currently supported: PxSphereGeometry, PxCapsuleGeometry, PxBoxGeometry
@@ -173,11 +219,10 @@ public:
 	\note ePOSITION is only defined when there is no initial overlap (sweepHit.hadInitialOverlap() == false)
 	\note The returned normal for initially overlapping sweeps is set to -unitDir.
 	\note Otherwise the returned normal is the front normal of the triangle even if PxHitFlag::eMESH_BOTH_SIDES is set.
-	\note The returned PxSweepHit::faceIndex parameter will hold the index of the hit triangle in input array, i.e. the range is [0; triangleCount). For initially overlapping sweeps, this is the index of overlapping triangle.
-	\note The returned PxSweepHit::actor and PxSweepHit::shape pointers are not filled.
+	\note The returned PxGeomSweepHit::faceIndex parameter will hold the index of the hit triangle in input array, i.e. the range is [0; triangleCount). For initially overlapping sweeps, this is the index of overlapping triangle.
 	\note The inflation parameter is not compatible with PxHitFlag::ePRECISE_SWEEP.
 
-	@see PxTriangle PxSweepHit PxGeometry PxTransform
+	@see PxTriangle PxSweepHit PxGeometry PxTransform PxGeometryQueryFlags
 	*/
 	PX_PHYSX_COMMON_API static bool sweep(const PxVec3& unitDir,
 							const PxReal distance,
@@ -185,11 +230,12 @@ public:
 							const PxTransform& pose,
 							PxU32 triangleCount,
 							const PxTriangle* triangles,
-							PxSweepHit& sweepHit,
+							PxGeomSweepHit& sweepHit,
 							PxHitFlags hitFlags = PxHitFlag::eDEFAULT,
 							const PxU32* cachedIndex = NULL,
 							const PxReal inflation = 0.0f,
-							bool doubleSided = false);
+							bool doubleSided = false,
+							PxGeometryQueryFlags queryFlags = PxGeometryQueryFlag::eDEFAULT);
 };
 
 
