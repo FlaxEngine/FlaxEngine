@@ -314,12 +314,14 @@ void AudioBackendOAL::Listener_TransformChanged(AudioListener* listener)
 
     const Vector3& position = listener->GetPosition();
     const Quaternion& orientation = listener->GetOrientation();
+    const Vector3& flipX = Vector3(-1, 1, 1);
+
     Vector3 alOrientation[2] =
     {
         // Forward
-        orientation * Vector3::Forward,
+        orientation * Vector3::Forward * flipX,
         // Up
-        orientation * Vector3::Up
+        orientation * Vector3::Up * flipX
     };
 
     alListenerfv(AL_ORIENTATION, (float*)alOrientation);
