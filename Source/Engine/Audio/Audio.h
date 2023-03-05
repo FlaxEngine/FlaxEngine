@@ -13,7 +13,7 @@
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API Audio
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Audio);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Audio);
     friend class AudioStreamingHandler;
     friend class AudioClip;
 
@@ -89,6 +89,17 @@ public:
     /// </summary>
     /// <param name="value">The value.</param>
     API_PROPERTY() static void SetDopplerFactor(float value);
+
+    /// <summary>
+    /// Gets the preference to use HRTF audio when available.  Default is true.
+    /// </summary>
+    API_PROPERTY() static bool GetUseHRTFWhenAvailable();
+
+    /// <summary>
+    /// Sets the preference to use HRTF audio when available.  Default is true.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    API_PROPERTY() static void SetUseHRTFWhenAvailable(bool value);
 
 public:
 

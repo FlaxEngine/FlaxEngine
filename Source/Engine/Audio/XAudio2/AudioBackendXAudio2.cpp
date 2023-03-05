@@ -331,6 +331,11 @@ void AudioBackendXAudio2::Listener_TransformChanged(AudioListener* listener)
     }
 }
 
+void AudioBackendXAudio2::Listener_ReinitializeAll()
+{
+    // TODO: Implement XAudio2 reinitialization; read HRTF audio value from Audio class
+}
+
 void AudioBackendXAudio2::Source_OnAdd(AudioSource* source)
 {
     // Skip if has no clip (needs audio data to create a source - needs data format information)

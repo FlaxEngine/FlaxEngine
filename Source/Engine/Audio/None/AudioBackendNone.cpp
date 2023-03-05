@@ -22,6 +22,10 @@ void AudioBackendNone::Listener_TransformChanged(AudioListener* listener)
 {
 }
 
+void AudioBackendNone::Listener_ReinitializeAll()
+{
+}
+
 void AudioBackendNone::Source_OnAdd(AudioSource* source)
 {
     source->Restore();
