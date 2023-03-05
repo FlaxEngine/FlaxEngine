@@ -1274,7 +1274,7 @@ namespace Flax.Build.Plugins
 
             // Generate static method to execute RPC locally
             {
-                var m = new MethodDefinition(method.Name + "_Execute", MethodAttributes.Static | MethodAttributes.Private | MethodAttributes.HideBySig, voidType);
+                var m = new MethodDefinition(method.Name + "_Execute", MethodAttributes.Static | MethodAttributes.Assembly | MethodAttributes.HideBySig, voidType);
                 m.Parameters.Add(new ParameterDefinition("instancePtr", ParameterAttributes.None, intPtrType));
                 m.Parameters.Add(new ParameterDefinition("streamPtr", ParameterAttributes.None, module.ImportReference(intPtrType)));
                 ILProcessor il = m.Body.GetILProcessor();
