@@ -104,6 +104,7 @@ public class PhysX : DepsModule
             if (useVehicle)
             {
                 AddLib(options, depsRoot, string.Format("PhysXVehicle_static{0}", archPostFix));
+                //AddLib(options, depsRoot, string.Format("PhysXVehicle2_static{0}", archPostFix));
             }
         }
     }

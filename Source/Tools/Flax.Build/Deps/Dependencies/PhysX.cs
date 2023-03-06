@@ -7,6 +7,7 @@ using System.Linq;
 using System.Xml;
 using Flax.Build;
 using Flax.Build.Platforms;
+using Flax.Build.Projects.VisualStudio;
 using Flax.Deploy;
 
 namespace Flax.Deps.Dependencies
@@ -134,7 +135,6 @@ namespace Flax.Deps.Dependencies
                 break;
             default: throw new InvalidArchitectureException(architecture);
             }
-
             switch (architecture)
             {
             case TargetArchitecture.x86:
@@ -144,7 +144,7 @@ namespace Flax.Deps.Dependencies
                 buildPlatform = architecture.ToString();
                 break;
             }
-
+            var msBuildProps = new Dictionary<string, string>();
             switch (targetPlatform)
             {
             case TargetPlatform.Windows:
@@ -185,6 +185,8 @@ namespace Flax.Deps.Dependencies
                 buildPlatform = "NX64";
                 suppressBitsPostfix = true;
                 binariesPrefix = "lib";
+                envVars.Add("NintendoSdkRoot", Sdk.Get("SwitchSdk").RootPath + '\\');
+                msBuildProps.Add("NintendoSdkRoot", envVars["NintendoSdkRoot"]);
                 break;
             case TargetPlatform.Mac:
                 switch (architecture)
@@ -205,11 +207,44 @@ namespace Flax.Deps.Dependencies
             }
 
             // Setup build environment variables for PhysX build system
+            string msBuild = null;
             switch (BuildPlatform)
             {
             case TargetPlatform.Windows:
             {
-                var msBuild = VCEnvironment.MSBuildPath;
+                msBuild = VCEnvironment.MSBuildPath;
+
+                // Some consoles don't support the latest Visual Studio 2022
+                var vsVersion = VisualStudioVersion.VisualStudio2022;
+                switch (targetPlatform)
+                {
+                case TargetPlatform.PS4:
+                    vsVersion = VisualStudioVersion.VisualStudio2017;
+                    break;
+                case TargetPlatform.PS5:
+                case TargetPlatform.Switch:
+                    vsVersion = VisualStudioVersion.VisualStudio2019;
+                    break;
+                }
+                if (vsVersion != VisualStudioVersion.VisualStudio2022)
+                {
+                    // TODO: override VS version in cmake_generate_projects.py too
+                    var visualStudioInstances = VisualStudioInstance.GetInstances();
+                    foreach (var visualStudioInstance in visualStudioInstances)
+                    {
+                        if (visualStudioInstance.Version <= vsVersion)
+                        {
+                            var toolPath = Path.Combine(visualStudioInstance.Path, "MSBuild\\Current\\Bin\\MSBuild.exe");
+                            if (!File.Exists(toolPath))
+                                toolPath = Path.Combine(visualStudioInstance.Path, "MSBuild\\15.0\\Bin\\MSBuild.exe");
+                            if (File.Exists(toolPath))
+                            {
+                                msBuild = toolPath;
+                                break;
+                            }
+                        }
+                    }
+                }
                 if (File.Exists(msBuild))
                 {
                     envVars.Add("PATH", Path.GetDirectoryName(msBuild));
@@ -233,13 +268,14 @@ namespace Flax.Deps.Dependencies
             Log.Info("Building PhysX version " + File.ReadAllText(Path.Combine(root, "physx", "version.txt")) + " to " + binariesSubDir);
 
             // Generate project files
-            Utilities.Run(projectGenPath, preset, null, projectGenDir, Utilities.RunOptions.Default, envVars);
+            Utilities.Run(projectGenPath, preset, null, projectGenDir, Utilities.RunOptions.ThrowExceptionOnError, envVars);
 
             switch (targetPlatform)
             {
             case TargetPlatform.PS4:
             case TargetPlatform.PS5:
-                // Hack: PS4 uses .o extension for compiler output files but CMake uses .obj even if CMAKE_CXX_OUTPUT_EXTENSION/CMAKE_C_OUTPUT_EXTENSION are specified
+            case TargetPlatform.Switch:
+                // Hack: Platform compiler uses .o extension for compiler output files but CMake uses .obj even if CMAKE_CXX_OUTPUT_EXTENSION/CMAKE_C_OUTPUT_EXTENSION are specified
                 Utilities.ReplaceInFiles(Path.Combine(root, "physx\\compiler\\" + binariesSubDir), "*.vcxproj", SearchOption.AllDirectories, ".obj", ".o");
                 break;
             case TargetPlatform.XboxOne:
@@ -260,6 +296,7 @@ namespace Flax.Deps.Dependencies
                 "PhysXFoundation",
                 "PhysXPvdSDK",
                 "PhysXVehicle",
+                "PhysXVehicle2",
             };
             var dstBinaries = GetThirdPartyFolder(options, targetPlatform, architecture);
             var srcBinaries = Path.Combine(root, "physx", "bin", binariesSubDir, configuration);
@@ -269,10 +306,10 @@ namespace Flax.Deps.Dependencies
                 switch (targetPlatform)
                 {
                 case TargetPlatform.Android:
-                    Utilities.Run("cmake", "--build .", null, Path.Combine(root, "physx\\compiler\\android-release"), Utilities.RunOptions.None, envVars);
+                    Utilities.Run("cmake", "--build .", null, Path.Combine(root, "physx\\compiler\\android-" + configuration), Utilities.RunOptions.None, envVars);
                     break;
                 default:
-                    VCEnvironment.BuildSolution(Path.Combine(solutionFilesRoot, preset, "PhysXSDK.sln"), configuration, buildPlatform);
+                    VCEnvironment.BuildSolution(Path.Combine(solutionFilesRoot, preset, "PhysXSDK.sln"), configuration, buildPlatform, msBuildProps, msBuild);
                     break;
                 }
                 break;

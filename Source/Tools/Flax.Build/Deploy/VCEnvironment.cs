@@ -230,9 +230,11 @@ namespace Flax.Deploy
         /// <param name="buildConfig">Configuration to build.</param>
         /// <param name="buildPlatform">Platform to build.</param>
         /// <param name="props">Custom build properties mapping (property=value).</param>
-        public static void BuildSolution(string solutionFile, string buildConfig, string buildPlatform, Dictionary<string, string> props = null)
+        /// <param name="msBuild">Custom MSBuild executable path.</param>
+        public static void BuildSolution(string solutionFile, string buildConfig, string buildPlatform, Dictionary<string, string> props = null, string msBuild = null)
         {
-            var msBuild = MSBuildPath;
+            if (msBuild == null)
+                msBuild = MSBuildPath;
             if (string.IsNullOrEmpty(msBuild))
             {
                 throw new Exception(string.Format("Unable to find msbuild.exe at: \"{0}\"", msBuild));

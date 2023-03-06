@@ -33,7 +33,7 @@
 
 #if PX_WINDOWS_FAMILY
 #include "foundation/windows/PxWindowsMathIntrinsics.h"
-#elif(PX_LINUX || PX_ANDROID || PX_APPLE_FAMILY)
+#elif (PX_LINUX || PX_ANDROID || PX_PS4 || PX_PS5 || PX_APPLE_FAMILY)
 #include "foundation/unix/PxUnixMathIntrinsics.h"
 #elif PX_SWITCH
 #include "foundation/switch/PxSwitchMathIntrinsics.h"
