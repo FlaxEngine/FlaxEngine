@@ -13,12 +13,12 @@ namespace Flax.Build.NativeCpp
     /// </summary>
     public static class IncludesCache
     {
-        private static Dictionary<string, string[]> DirectIncludesCache = new Dictionary<string, string[]>();
-        private static Dictionary<string, string[]> AllIncludesCache = new Dictionary<string, string[]>();
-        private static Dictionary<string, DateTime> DirectIncludesTimestampCache = new Dictionary<string, DateTime>();
-        private static Dictionary<string, DateTime> AllIncludesTimestampCache = new Dictionary<string, DateTime>();
-        private static Dictionary<string, bool> FileExistsCache = new Dictionary<string, bool>();
-        private static Dictionary<string, DateTime> FileTimestampCache = new Dictionary<string, DateTime>();
+        private static Dictionary<string, string[]> DirectIncludesCache = new();
+        private static Dictionary<string, string[]> AllIncludesCache = new();
+        private static Dictionary<string, DateTime> DirectIncludesTimestampCache = new();
+        private static Dictionary<string, DateTime> AllIncludesTimestampCache = new();
+        private static Dictionary<string, bool> FileExistsCache = new();
+        private static Dictionary<string, DateTime> FileTimestampCache = new();
         private static readonly string IncludeToken = "include";
         private static string CachePath;
 
@@ -231,6 +231,8 @@ namespace Flax.Build.NativeCpp
 
         private static string[] GetDirectIncludes(string sourceFile)
         {
+            if (!FileExists(sourceFile))
+                return Array.Empty<string>();
             DateTime? lastModified = null;
 
             // Try hit the cache

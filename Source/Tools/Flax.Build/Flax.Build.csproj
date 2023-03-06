@@ -12,6 +12,7 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
+    <EnableDefaultCompileItems>False</EnableDefaultCompileItems>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <DefineConstants>USE_NETCORE</DefineConstants>
@@ -24,6 +25,13 @@
 
   <ItemGroup>
     <Folder Include="Properties" />
+    <Compile Include="**\*.cs" />
+    <Compile Remove="obj\**" />
+    <Compile Include="..\..\Platforms\XboxOne\Flax.Build\*.cs" />
+    <Compile Include="..\..\Platforms\XboxScarlett\Flax.Build\*.cs" />
+    <Compile Include="..\..\Platforms\Switch\Flax.Build\*.cs" />
+    <Compile Include="..\..\Platforms\PS4\Flax.Build\*.cs" />
+    <Compile Include="..\..\Platforms\PS5\Flax.Build\*.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -140,7 +140,7 @@ namespace Flax.Build.Platforms
             }
 
             // Determinate compiler version
-            ClangVersion = GetClangVersion(ClangPath);
+            ClangVersion = GetClangVersion(platform.Target, ClangPath);
             LibStdCppVersion = GetLibStdCppVersion(ClangPath) ?? ClangVersion.ToString();
 
             // Check version
@@ -156,13 +156,16 @@ namespace Flax.Build.Platforms
             return libName;
         }
 
-        public static Version GetClangVersion(string path)
+        public static Version GetClangVersion(TargetPlatform platform, string path)
         {
             if (!File.Exists(path))
                 throw new Exception(string.Format("Missing Clang ({0})", path));
 
             // Parse the version
-            string output = Utilities.ReadProcessOutput(path, "--version -dumpversion");
+            string arg = "--version -dumpversion";
+            if (platform == TargetPlatform.PS4)
+                arg = "--version";
+            string output = Utilities.ReadProcessOutput(path, arg);
             Regex versionPattern = new Regex("\\d+(\\.\\d+)+");
             Match versionMatch = versionPattern.Match(output);
             if (versionMatch.Success)

@@ -56,7 +56,7 @@ namespace Flax.Build.Platforms
             ClangPath = Path.Combine(ToolchainPath, "usr/bin/clang++");
             LinkerPath = Path.Combine(ToolchainPath, "usr/bin/clang++");
             ArchiverPath = Path.Combine(ToolchainPath, "usr/bin/libtool");
-            ClangVersion = GetClangVersion(ClangPath);
+            ClangVersion = GetClangVersion(platform.Target, ClangPath);
             SdkPath = Path.Combine(SdkPath, "SDKs");
             var sdks = Directory.GetDirectories(SdkPath);
             var sdkPrefix = "MacOSX";
