@@ -578,7 +578,7 @@ namespace Flax.Build.Bindings
                     // Managed class
                     if (apiType.IsClass)
                     {
-                        // Use wrapper structure that represents the memory layout of the managed data
+                        // Use wrapper that box the data into managed object
                         if (!CppUsedNonPodTypes.Contains(apiType))
                         {
                             CppUsedNonPodTypes.Add(apiType);
@@ -784,7 +784,7 @@ namespace Flax.Build.Bindings
                     // Managed class
                     if (apiType.IsClass && !apiType.IsScriptingObject)
                     {
-                        // Use wrapper structure that represents the memory layout of the managed data
+                        // Use wrapper that unboxes the data into managed object
                         if (!CppUsedNonPodTypes.Contains(apiType))
                         {
                             CppUsedNonPodTypes.Add(apiType);
@@ -2152,10 +2152,12 @@ namespace Flax.Build.Bindings
             }
             if (useScripting && useCSharp)
             {
+#if !USE_NETCORE
                 foreach (var e in CppInternalCalls)
                 {
                     contents.AppendLine($"        ADD_INTERNAL_CALL(\"{classTypeNameManagedInternalCall}::Internal_{e.Key}\", &{e.Value});");
                 }
+#endif
             }
             GenerateCppTypeInitRuntime?.Invoke(buildData, classInfo, contents);
 
@@ -2306,10 +2308,12 @@ namespace Flax.Build.Bindings
 
             if (useCSharp)
             {
+#if !USE_NETCORE
                 foreach (var e in CppInternalCalls)
                 {
                     contents.AppendLine($"        ADD_INTERNAL_CALL(\"{structureTypeNameManagedInternalCall}::Internal_{e.Key}\", &{e.Value});");
                 }
+#endif
             }
             GenerateCppTypeInitRuntime?.Invoke(buildData, structureInfo, contents);
 
@@ -2809,35 +2813,35 @@ namespace Flax.Build.Bindings
                     // Get the full typename with nested parent prefix
                     var fullName = apiType.FullNameNative;
 
-                    // Generate managed type memory layout
-                    header.Append("struct ").Append(apiType.Name).Append("Managed").AppendLine();
-                    header.Append('{').AppendLine();
-                    if (classInfo != null)
-                        header.AppendLine("    MonoObject obj;");
-                    for (var i = 0; i < fields.Count; i++)
-                    {
-                        var fieldInfo = fields[i];
-                        if (fieldInfo.IsStatic)
-                            continue;
-                        string type;
-
-                        if (fieldInfo.NoArray && fieldInfo.Type.IsArray)
-                        {
-                            // Fixed-size array that needs to be inlined into structure instead of passing it as managed array
-                            fieldInfo.Type.IsArray = false;
-                            CppParamsWrappersCache[i] = GenerateCppWrapperNativeToManaged(buildData, fieldInfo.Type, apiType, out type, null);
-                            fieldInfo.Type.IsArray = true;
-                            header.AppendFormat("    {0} {1}[{2}];", type, fieldInfo.Name, fieldInfo.Type.ArraySize).AppendLine();
-                            continue;
-                        }
-
-                        CppParamsWrappersCache[i] = GenerateCppWrapperNativeToManaged(buildData, fieldInfo.Type, apiType, out type, null);
-                        header.AppendFormat("    {0} {1};", type, fieldInfo.Name).AppendLine();
-                    }
-                    header.Append('}').Append(';').AppendLine();
-
                     if (structureInfo != null)
                     {
+                        // Generate managed type memory layout
+                        header.Append("struct ").Append(apiType.Name).Append("Managed").AppendLine();
+                        header.Append('{').AppendLine();
+                        if (classInfo != null)
+                            header.AppendLine("    MonoObject obj;");
+                        for (var i = 0; i < fields.Count; i++)
+                        {
+                            var fieldInfo = fields[i];
+                            if (fieldInfo.IsStatic)
+                                continue;
+                            string type;
+
+                            if (fieldInfo.NoArray && fieldInfo.Type.IsArray)
+                            {
+                                // Fixed-size array that needs to be inlined into structure instead of passing it as managed array
+                                fieldInfo.Type.IsArray = false;
+                                CppParamsWrappersCache[i] = GenerateCppWrapperNativeToManaged(buildData, fieldInfo.Type, apiType, out type, null);
+                                fieldInfo.Type.IsArray = true;
+                                header.AppendFormat("    {0} {1}[{2}];", type, fieldInfo.Name, fieldInfo.Type.ArraySize).AppendLine();
+                                continue;
+                            }
+
+                            CppParamsWrappersCache[i] = GenerateCppWrapperNativeToManaged(buildData, fieldInfo.Type, apiType, out type, null);
+                            header.AppendFormat("    {0} {1};", type, fieldInfo.Name).AppendLine();
+                        }
+                        header.Append('}').Append(';').AppendLine();
+
                         // Generate forward declarations of structure converting functions
                         header.AppendLine();
                         header.AppendLine("namespace {");
@@ -2845,7 +2849,7 @@ namespace Flax.Build.Bindings
                         header.AppendFormat("{1} ToNative(const {0}Managed& value);", apiType.Name, fullName).AppendLine();
                         header.AppendLine("}");
 
-                        // Generate MConverter
+                        // Generate MConverter for a structure
                         header.Append("template<>").AppendLine();
                         header.AppendFormat("struct MConverter<{0}>", fullName).AppendLine();
                         header.Append('{').AppendLine();
@@ -2955,38 +2959,29 @@ namespace Flax.Build.Bindings
                     }
                     else if (classInfo != null)
                     {
-                        // Generate MConverter
+                        // Generate MConverter for a class
                         header.Append("template<>").AppendLine();
                         header.AppendFormat("struct MConverter<{0}>", fullName).AppendLine();
                         header.Append('{').AppendLine();
 
                         header.AppendFormat("    static MonoObject* Box(const {0}& data, MonoClass* klass)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
-                        header.AppendFormat("        auto obj = ({0}Managed*)mono_object_new(mono_domain_get(), klass);", fullName).AppendLine();
+                        header.Append("        MonoObject* obj = mono_object_new(mono_domain_get(), klass);").AppendLine();
                         for (var i = 0; i < fields.Count; i++)
                         {
                             var fieldInfo = fields[i];
                             if (fieldInfo.IsStatic || fieldInfo.IsConstexpr)
                                 continue;
 
-                            if (fieldInfo.NoArray && fieldInfo.Type.IsArray)
-                            {
-                                // Fixed-size array needs to unbox every item manually if not using managed array
-                                if (fieldInfo.Type.IsPod(buildData, apiType))
-                                    header.AppendFormat("    Platform::MemoryCopy(obj->{0}, data.{0}, sizeof({2}) * {1});", fieldInfo.Name, fieldInfo.Type.ArraySize, fieldInfo.Type).AppendLine();
-                                else
-                                    header.AppendFormat("    for (int32 i = 0; i < {0}; i++)", fieldInfo.Type.ArraySize).AppendLine().AppendFormat("        obj->{0}[i] = data.{0}[i];", fieldInfo.Name).AppendLine();
-                                continue;
-                            }
-
-                            var wrapper = CppParamsWrappersCache[i];
+                            var fieldType = FindApiTypeInfo(buildData, fieldInfo.Type, apiType);
+                            if (fieldInfo == null || fieldType.IsValueType) // TODO: support any value type (eg. by boxing)
+                                throw new Exception($"Not supported field {fieldInfo.Type} {fieldInfo.Name} in class {classInfo.Name}.");
+                            
+                            var wrapper = GenerateCppWrapperNativeToManaged(buildData, fieldInfo.Type, apiType, out var type, null);
                             var value = string.IsNullOrEmpty(wrapper) ? "data." + fieldInfo.Name : string.Format(wrapper, "data." + fieldInfo.Name);
-                            if (fieldInfo.Type.IsPod(buildData, apiType))
-                                header.AppendFormat("        obj->{0} = {1};", fieldInfo.Name, value).AppendLine();
-                            else
-                                header.AppendFormat("        MONO_OBJECT_SETREF(obj, {0}, {1});", fieldInfo.Name, value).AppendLine();
+                            header.AppendFormat("        mono_field_set_value(obj, mono_class_get_field_from_name(klass, \"{0}\"), {1});", fieldInfo.Name, value).AppendLine();
                         }
-                        header.Append("        return (MonoObject*)obj;").AppendLine();
+                        header.Append("        return obj;").AppendLine();
                         header.Append("    }").AppendLine();
 
                         header.AppendFormat("    static MonoObject* Box(const {0}& data)", fullName).AppendLine();
@@ -2995,9 +2990,10 @@ namespace Flax.Build.Bindings
                         header.Append("        return Box(data, klass);").AppendLine();
                         header.Append("    }").AppendLine();
 
-                        header.AppendFormat("    static void Unbox({0}& result, MonoObject* data)", fullName).AppendLine();
+                        header.AppendFormat("    static void Unbox({0}& result, MonoObject* obj)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
-                        header.AppendFormat("        auto obj = ({0}Managed*)data;", fullName).AppendLine();
+                        header.Append("        MonoClass* klass = mono_object_get_class(obj);").AppendLine();
+                        header.Append("        void* v = nullptr;").AppendLine();
                         for (var i = 0; i < fields.Count; i++)
                         {
                             var fieldInfo = fields[i];
@@ -3005,33 +3001,12 @@ namespace Flax.Build.Bindings
                                 continue;
 
                             CppNonPodTypesConvertingGeneration = true;
-                            var wrapper = GenerateCppWrapperManagedToNative(buildData, fieldInfo.Type, apiType, out _, out _, null, out _);
+                            var wrapper = GenerateCppWrapperManagedToNative(buildData, fieldInfo.Type, apiType, out var type, out _, null, out _);
                             CppNonPodTypesConvertingGeneration = false;
 
-                            if (fieldInfo.Type.IsArray)
-                            {
-                                // Fixed-size array needs to unbox every item manually
-                                if (fieldInfo.NoArray)
-                                {
-                                    if (fieldInfo.Type.IsPod(buildData, apiType))
-                                        header.AppendFormat("        Platform::MemoryCopy(result.{0}, obj->{0}, sizeof({2}) * {1});", fieldInfo.Name, fieldInfo.Type.ArraySize, fieldInfo.Type).AppendLine();
-                                    else
-                                        header.AppendFormat("        for (int32 i = 0; i < {0}; i++)", fieldInfo.Type.ArraySize).AppendLine().AppendFormat("            result.{0}[i] = obj->{0}[i];", fieldInfo.Name).AppendLine();
-                                }
-                                else
-                                {
-                                    wrapper = string.Format(wrapper.Remove(wrapper.Length - 6), string.Format("obj->{0}", fieldInfo.Name));
-                                    header.AppendFormat("        auto tmp{0} = {1};", fieldInfo.Name, wrapper).AppendLine();
-                                    header.AppendFormat("        for (int32 i = 0; i < {0} && i < tmp{1}.Count(); i++)", fieldInfo.Type.ArraySize, fieldInfo.Name).AppendLine();
-                                    header.AppendFormat("            result.{0}[i] = tmp{0}[i];", fieldInfo.Name).AppendLine();
-                                }
-                                continue;
-                            }
-
-                            if (string.IsNullOrEmpty(wrapper))
-                                header.AppendFormat("        result.{0} = obj->{0};", fieldInfo.Name).AppendLine();
-                            else
-                                header.AppendFormat("        result.{0} = {1};", fieldInfo.Name, string.Format(wrapper, string.Format("obj->{0}", fieldInfo.Name))).AppendLine();
+                            header.AppendFormat("        mono_field_get_value(obj, mono_class_get_field_from_name(klass, \"{0}\"), &v);", fieldInfo.Name).AppendLine();
+                            var value = $"({type})v";
+                            header.AppendFormat("        result.{0} = {1};", fieldInfo.Name, string.IsNullOrEmpty(wrapper) ? value : string.Format(wrapper, value)).AppendLine();
                         }
                         header.Append("    }").AppendLine();
 
@@ -3052,7 +3027,7 @@ namespace Flax.Build.Bindings
                         header.AppendFormat("    void ToNativeArray(Array<{0}, AllocationType>& result, MonoArray* data, int32 length)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.Append("        for (int32 i = 0; i < length; i++)").AppendLine();
-                        header.AppendFormat("            Unbox(result[i], (MonoObject*)mono_array_addr_with_size(data, sizeof({0}Managed), length));", fullName).AppendLine();
+                        header.AppendFormat("            Unbox(result[i], (MonoObject*)mono_array_addr_with_size(data, sizeof(MonoObject*), length));", fullName).AppendLine();
                         header.Append("    }").AppendLine();
 
                         header.Append('}').Append(';').AppendLine();

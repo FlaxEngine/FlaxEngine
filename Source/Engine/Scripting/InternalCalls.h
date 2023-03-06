@@ -85,6 +85,7 @@ extern "C" FLAXENGINE_API void mono_add_internal_call(const char* name, const vo
 #else
 
 #define ADD_INTERNAL_CALL(fullName, method)
+#define DEFINE_INTERNAL_CALL(returnType) static returnType
 #define INTERNAL_CALL_CHECK(obj)
 #define INTERNAL_CALL_CHECK_EXP(expression)
 #define INTERNAL_CALL_CHECK_RETURN(obj, defaultValue)

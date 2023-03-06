@@ -16,6 +16,9 @@
 #define FLAX_CORECLR_STRING StringAnsi
 #endif
 
+/// <summary>
+/// .NET Runtime hosting library that uses Hostfxr (https://github.com/dotnet/runtime).
+/// </summary>
 class CoreCLR
 {
 public:

@@ -783,7 +783,6 @@ namespace FlaxEngine
                 handle.Free();
             }
         }
-
     }
 
     [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ManagedToUnmanagedIn, typeof(DictionaryMarshaller<,>.ManagedToNative))]
@@ -2517,7 +2516,12 @@ namespace FlaxEngine
         {
             object fieldOwner = fieldOwnerHandle.Target;
             FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
-            field.field.SetValue(fieldOwner, Marshal.PtrToStructure(valuePtr, field.field.FieldType));
+            object value = null;
+            if (field.field.FieldType.IsValueType)
+                value = Marshal.PtrToStructure(valuePtr, field.field.FieldType);
+            else if (valuePtr != IntPtr.Zero)
+                value = ManagedHandle.FromIntPtr(valuePtr).Target;
+            field.field.SetValue(fieldOwner, value);
         }
 
         [UnmanagedCallersOnly]

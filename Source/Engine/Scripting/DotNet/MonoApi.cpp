@@ -852,18 +852,21 @@ MONO_API MONO_RT_EXTERNAL_ONLY MonoObject* mono_property_get_value(MonoProperty*
 
 MONO_API void mono_gc_wbarrier_set_field(MonoObject* obj, void* field_ptr, MonoObject* value)
 {
-    ASSERT(false);
+    CRASH; // Not supported on CoreCRL
 }
+
 MONO_API void mono_gc_wbarrier_set_arrayref(MonoArray* arr, void* slot_ptr, MonoObject* value)
 {
     static void* SetArrayValueReferencePtr = CoreCLR::GetStaticMethodPointer(TEXT("SetArrayValueReference"));
     CoreCLR::CallStaticMethod<void, void*, void*, void*>(SetArrayValueReferencePtr, arr, slot_ptr, value);
 }
+
 MONO_API void mono_gc_wbarrier_generic_store(void* ptr, MonoObject* value)
 {
     // Ignored
-    *((void**)ptr) = value;
+    *(void**)ptr = value;
 }
+
 MONO_API void mono_gc_wbarrier_value_copy(void* dest, /*const*/ void* src, int count, MonoClass* klass)
 {
     // Ignored

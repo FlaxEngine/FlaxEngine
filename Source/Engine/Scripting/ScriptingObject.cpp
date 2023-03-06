@@ -221,12 +221,12 @@ void ScriptingObject::ChangeID(const Guid& newId)
     _type.GetType().Module->OnObjectIdChanged(this, prevId);
 }
 
-void ScriptingObject::SetManagedInstance(MonoObject* instance)
+void ScriptingObject::SetManagedInstance(MObject* instance)
 {
     ASSERT(_gcHandle == 0);
 #if USE_NETCORE
     _gcHandle = (MGCHandle)instance;
-#else
+#elif !COMPILE_WITHOUT_CSHARP
     _gcHandle = MUtils::NewGCHandle(instance, false);
 #endif
 }
@@ -454,12 +454,12 @@ ManagedScriptingObject::ManagedScriptingObject(const SpawnParams& params)
 {
 }
 
-void ManagedScriptingObject::SetManagedInstance(MonoObject* instance)
+void ManagedScriptingObject::SetManagedInstance(MObject* instance)
 {
     ASSERT(_gcHandle == 0);
 #if USE_NETCORE
     _gcHandle = (MGCHandle)instance;
-#else
+#elif !COMPILE_WITHOUT_CSHARP
     _gcHandle = MUtils::NewGCHandleWeakref(instance, false);
 #endif
 }

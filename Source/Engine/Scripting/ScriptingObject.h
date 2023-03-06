@@ -190,7 +190,7 @@ public:
     virtual void ChangeID(const Guid& newId);
 
 public:
-    virtual void SetManagedInstance(MonoObject* instance);
+    virtual void SetManagedInstance(MObject* instance);
     virtual void OnManagedInstanceDeleted();
     virtual void OnScriptingDispose();
 
@@ -246,7 +246,7 @@ public:
 
 public:
     // [ScriptingObject]
-    void SetManagedInstance(MonoObject* instance) override;
+    void SetManagedInstance(MObject* instance) override;
     void OnManagedInstanceDeleted() override;
     void OnScriptingDispose() override;
     bool CreateManaged() override;
