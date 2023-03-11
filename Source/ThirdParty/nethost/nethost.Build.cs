@@ -52,15 +52,18 @@ public class nethost : ThirdPartyModule
             break;
         case TargetPlatform.Linux:
         case TargetPlatform.Android:
-        case TargetPlatform.Switch:
-        case TargetPlatform.PS4:
-        case TargetPlatform.PS5:
             options.OutputFiles.Add(Path.Combine(hostRuntimePath, "libnethost.a"));
             options.DependencyFiles.Add(Path.Combine(hostRuntimePath, "libnethost.so"));
             break;
         case TargetPlatform.Mac:
             options.OutputFiles.Add(Path.Combine(hostRuntimePath, "libnethost.a"));
             options.DependencyFiles.Add(Path.Combine(hostRuntimePath, "libnethost.dylib"));
+            break;
+        case TargetPlatform.Switch:
+        case TargetPlatform.PS4:
+        case TargetPlatform.PS5:
+            options.OutputFiles.Add(Path.Combine(hostRuntimePath, "libnethost.a"));
+            //options.OutputFiles.Add(Path.Combine(hostRuntimePath, "libhostfxr.a"));
             break;
         default:
             throw new InvalidPlatformException(options.Platform.Target);

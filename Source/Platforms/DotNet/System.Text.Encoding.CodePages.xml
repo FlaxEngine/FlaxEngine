@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<doc>
+  <assembly>
+    <name>System.Text.Encoding.CodePages</name>
+  </assembly>
+  <members>
+    <member name="T:System.Text.CodePagesEncodingProvider">
+      <summary>Provides access to an encoding provider for code pages that otherwise are available only in the desktop .NET Framework.</summary>
+    </member>
+    <member name="M:System.Text.CodePagesEncodingProvider.GetEncoding(System.Int32)">
+      <summary>Returns the encoding associated with the specified code page identifier.</summary>
+      <param name="codepage">The code page identifier of the preferred encoding which the encoding provider may support.</param>
+      <returns>The encoding associated with the specified code page identifier, or <see langword="null" /> if the provider does not support the requested codepage encoding.</returns>
+    </member>
+    <member name="M:System.Text.CodePagesEncodingProvider.GetEncoding(System.String)">
+      <summary>Returns the encoding associated with the specified code page name.</summary>
+      <param name="name">The code page name of the preferred encoding which the encoding provider may support.</param>
+      <returns>The encoding associated with the specified code page, or <see langword="null" /> if the provider does not support the requested encoding.</returns>
+    </member>
+    <member name="M:System.Text.CodePagesEncodingProvider.GetEncodings">
+      <summary>Returns an array that contains all the encodings that are supported by the <see cref="T:System.Text.CodePagesEncodingProvider" />.</summary>
+      <returns>An array that contains all the supported encodings.</returns>
+    </member>
+    <member name="P:System.Text.CodePagesEncodingProvider.Instance">
+      <summary>Gets an encoding provider for code pages supported in the desktop .NET Framework but not in the current .NET Framework platform.</summary>
+      <returns>An encoding provider that allows access to encodings not supported on the current .NET Framework platform.</returns>
+    </member>
+  </members>
+</doc>

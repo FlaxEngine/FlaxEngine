@@ -3,6 +3,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Flax.Build;
 
 namespace Flax.Deps
@@ -21,6 +22,9 @@ namespace Flax.Deps
 
         public static bool Run()
         {
+            // Fix error 'IBM437' is not a supported encoding name from Ionic.Zip.ZipFile
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
             // Setup
             var buildPlatform = Platform.BuildPlatform;
             var options = new Dependency.BuildOptions

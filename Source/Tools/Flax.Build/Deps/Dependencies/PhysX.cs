@@ -212,39 +212,8 @@ namespace Flax.Deps.Dependencies
             {
             case TargetPlatform.Windows:
             {
-                msBuild = VCEnvironment.MSBuildPath;
-
-                // Some consoles don't support the latest Visual Studio 2022
-                var vsVersion = VisualStudioVersion.VisualStudio2022;
-                switch (targetPlatform)
-                {
-                case TargetPlatform.PS4:
-                    vsVersion = VisualStudioVersion.VisualStudio2017;
-                    break;
-                case TargetPlatform.PS5:
-                case TargetPlatform.Switch:
-                    vsVersion = VisualStudioVersion.VisualStudio2019;
-                    break;
-                }
-                if (vsVersion != VisualStudioVersion.VisualStudio2022)
-                {
-                    // TODO: override VS version in cmake_generate_projects.py too
-                    var visualStudioInstances = VisualStudioInstance.GetInstances();
-                    foreach (var visualStudioInstance in visualStudioInstances)
-                    {
-                        if (visualStudioInstance.Version <= vsVersion)
-                        {
-                            var toolPath = Path.Combine(visualStudioInstance.Path, "MSBuild\\Current\\Bin\\MSBuild.exe");
-                            if (!File.Exists(toolPath))
-                                toolPath = Path.Combine(visualStudioInstance.Path, "MSBuild\\15.0\\Bin\\MSBuild.exe");
-                            if (File.Exists(toolPath))
-                            {
-                                msBuild = toolPath;
-                                break;
-                            }
-                        }
-                    }
-                }
+                GetMsBuildForPlatform(targetPlatform, out var vsVersion, out msBuild);
+                // TODO: override VS version in cmake_generate_projects.py too
                 if (File.Exists(msBuild))
                 {
                     envVars.Add("PATH", Path.GetDirectoryName(msBuild));

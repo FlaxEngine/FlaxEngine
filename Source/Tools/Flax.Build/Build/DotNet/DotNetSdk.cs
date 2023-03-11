@@ -77,8 +77,7 @@ namespace Flax.Build
             case TargetArchitecture.ARM64:
                 arch = "arm64";
                 break;
-            default:
-                throw new InvalidArchitectureException(architecture);
+            default: throw new InvalidArchitectureException(architecture);
             }
             switch (platform)
             {
@@ -120,8 +119,7 @@ namespace Flax.Build
                     dotnetPath = "/usr/local/share/dotnet/";
                 break;
             }
-            default:
-                throw new InvalidPlatformException(platform);
+            default: throw new InvalidPlatformException(platform);
             }
 
             // Pick SDK version
@@ -171,7 +169,7 @@ namespace Flax.Build
             TryAddHostRuntime(TargetPlatform.Windows, TargetArchitecture.ARM64, "win-arm64");
             TryAddHostRuntime(TargetPlatform.Mac, TargetArchitecture.x64, "osx-x64");
             TryAddHostRuntime(TargetPlatform.Mac, TargetArchitecture.ARM64, "osx-arm64");
-            
+
             // Found
             IsValid = true;
             Log.Verbose($"Found .NET SDK {VersionName} (runtime {RuntimeVersionName}) at {RootPath}");
@@ -180,12 +178,24 @@ namespace Flax.Build
         }
 
         /// <summary>
-        /// Gets the path to runtime host contents folder for a given target platform and architecure.
-        /// In format: <RootPath>/packs/Microsoft.NETCore.App.Host.<os>/<VersionName>/runtimes/<os>-<arch>/native
+        /// Gets the path to runtime host contents folder for a given target platform and architecture.
+        /// In format: &lt;RootPath&gt;/packs/Microsoft.NETCore.App.Host.&lt;os&gt;/&lt;VersionName&gt;/runtimes/&lt;os&gt;-&lt;arch&gt;/native
         /// </summary>
         public bool GetHostRuntime(TargetPlatform platform, TargetArchitecture arch, out string path)
         {
             return _hostRuntimes.TryGetValue(new KeyValuePair<TargetPlatform, TargetArchitecture>(platform, arch), out path);
+        }
+
+        /// <summary>
+        /// Adds an external hostfx location for a given platform.
+        /// </summary>
+        /// <param name="platform">Target platform.</param>
+        /// <param name="arch">Target architecture.</param>
+        /// <param name="path">Folder path with contents.</param>
+        public void AddHostRuntime(TargetPlatform platform, TargetArchitecture arch, string path)
+        {
+            if (Directory.Exists(path))
+                _hostRuntimes[new KeyValuePair<TargetPlatform, TargetArchitecture>(platform, arch)] = path;
         }
 
         private bool TryAddHostRuntime(TargetPlatform platform, TargetArchitecture arch, string rid)

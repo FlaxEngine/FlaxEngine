@@ -75,7 +75,7 @@ namespace Flax.Deps.Dependencies
             }
 
             // AOT build (disabled codegen)
-            Utilities.ReplaceInFile(Path.Combine(root, "Src", "Newtonsoft.Json", "Newtonsoft.Json.csproj"), "HAVE_RUNTIME_SERIALIZATION;", ";");
+            Utilities.ReplaceInFile(Path.Combine(root, "Src", "Newtonsoft.Json", "Newtonsoft.Json.csproj"), "HAVE_REFLECTION_EMIT;", ";");
             Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, buildPlatform);
             foreach (var platform in options.Platforms)
             {

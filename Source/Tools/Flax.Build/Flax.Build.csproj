@@ -38,6 +38,9 @@
     <Reference Include="Ionic.Zip.Reduced">
       <HintPath>..\..\..\Source\Platforms\DotNet\Ionic.Zip.Reduced.dll</HintPath>
     </Reference>
+    <Reference Include="System.Text.Encoding.CodePages">
+      <HintPath>..\..\..\Source\Platforms\DotNet\System.Text.Encoding.CodePages.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\..\..\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
     </Reference>

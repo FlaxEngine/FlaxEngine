@@ -215,7 +215,7 @@ namespace Flax.Deploy
                 throw new Exception(string.Format("Project {0} does not exist!", project));
             }
 
-            string cmdLine = string.Format("\"{0}\" /m /t:Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" {3} /nologo", project, buildConfig, buildPlatform, Verbosity);
+            string cmdLine = string.Format("\"{0}\" /m /t:Restore,Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" {3} /nologo", project, buildConfig, buildPlatform, Verbosity);
             int result = Utilities.Run(msBuild, cmdLine);
             if (result != 0)
             {
@@ -245,7 +245,7 @@ namespace Flax.Deploy
                 throw new Exception(string.Format("Unable to build solution {0}. Solution file not found.", solutionFile));
             }
 
-            string cmdLine = string.Format("\"{0}\" /m /t:Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" {3} /nologo", solutionFile, buildConfig, buildPlatform, Verbosity);
+            string cmdLine = string.Format("\"{0}\" /m /t:Restore,Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" {3} /nologo", solutionFile, buildConfig, buildPlatform, Verbosity);
             if (props != null)
             {
                 foreach (var e in props)
