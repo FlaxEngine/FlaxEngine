@@ -12,6 +12,9 @@
 class FLAXENGINE_API MacPlatform : public UnixPlatform
 {
 public:
+    static float ScreenScale;
+
+public:
 
     // [UnixPlatform]
     FORCE_INLINE static void MemoryBarrier()
@@ -82,6 +85,7 @@ public:
     static void Tick();
     static void BeforeExit();
     static void Exit();
+    static void SetHighDpiAwarenessEnabled(bool enable);
     static int32 GetDpi();
     static String GetUserLocaleName();
     static String GetComputerName();

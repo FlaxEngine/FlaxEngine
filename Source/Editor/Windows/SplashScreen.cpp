@@ -153,7 +153,7 @@ void SplashScreen::Show()
     LOG(Info, "Showing splash screen");
 
     // Create window
-    const float dpiScale = (float)Platform::GetDpi() / (float)DefaultDPI;
+    const float dpiScale = Platform::GetDpiScale();
     CreateWindowSettings settings;
     settings.Title = TEXT("Flax Editor");
     settings.Size.X = 500 * dpiScale;

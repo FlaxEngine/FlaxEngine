@@ -125,9 +125,12 @@ namespace FlaxEditor.Options
                             options.CustomSettings.Add(e.Key, JsonSerializer.Serialize(e.Value()));
                     }
 
+                    float prevInterfaceScale = Options.Interface.InterfaceScale;
                     Options = options;
                     OnOptionsChanged();
-                    Platform.CustomDpiScale = Options.Interface.InterfaceScale;
+
+                    // Scale interface relative to the current value (eg. when using system-provided Dpi Scale)
+                    Platform.CustomDpiScale *= Options.Interface.InterfaceScale / prevInterfaceScale;
                 }
                 else
                 {
