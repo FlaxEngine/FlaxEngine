@@ -167,14 +167,14 @@ Float2 GetWindowTitleSize(const MacWindow* window)
         NSRect frameStart = [(NSWindow*)window->GetNativePtr() frameRectForContentRect:NSMakeRect(0, 0, 0, 0)];
         size.Y = frameStart.size.height;
     }
-    return size;
+    return size * MacPlatform::ScreenScale;
 }
 
 Float2 GetMousePosition(MacWindow* window, NSEvent* event)
 {
     NSRect frame = [(NSWindow*)window->GetNativePtr() frame];
     NSPoint point = [event locationInWindow];
-    return Float2(point.x, frame.size.height - point.y) - GetWindowTitleSize(window);
+    return Float2(point.x, frame.size.height - point.y) * MacPlatform::ScreenScale - GetWindowTitleSize(window);
 }
 
 class MacDropData : public IGuiData
@@ -255,17 +255,45 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
 
 @implementation MacWindowImpl
 
+- (void)windowDidBecomeKey:(NSNotification*)notification
+{
+	// Handle resizing to be sure that content has valid size when window was resized
+	[self windowDidResize:notification];
+
+    Window->OnGotFocus();
+}
+
+- (void)windowDidResignKey:(NSNotification*)notification
+{
+    Window->OnLostFocus();
+}
+
 - (void)windowWillClose:(NSNotification*)notification
 {
     [self setDelegate: nil];
     Window->Close(ClosingReason::User);
 }
 
+static void ConvertNSRect(NSScreen *screen, NSRect *r)
+{
+    r->origin.y = CGDisplayPixelsHigh(kCGDirectMainDisplay) - r->origin.y - r->size.height;
+}
+
 - (void)windowDidResize:(NSNotification*)notification
 {
     NSView* view = [self contentView];
-    NSRect contextRect = [view frame];
-    Window->CheckForResize((float)contextRect.size.width, (float)contextRect.size.height);
+    const float screenScale = MacPlatform::ScreenScale;
+    NSWindow* nswindow = (NSWindow*)Window->GetNativePtr();
+    NSRect rect = [nswindow contentRectForFrameRect:[nswindow frame]];
+    ConvertNSRect([nswindow screen], &rect);
+
+    // Rescale contents
+	CALayer* layer = [view layer];
+	if (layer)
+		layer.contentsScale = screenScale;
+
+    // Resize window
+    Window->CheckForResize((float)rect.size.width * screenScale, (float)rect.size.height * screenScale);
 }
 
 - (void)setWindow:(MacWindow*)window
@@ -565,6 +593,12 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
         styleMask &= ~NSWindowStyleMaskFullSizeContentView;
     }
 
+    const float screenScale = MacPlatform::ScreenScale;
+    frame.origin.x /= screenScale;
+    frame.origin.y /= screenScale;
+    frame.size.width /= screenScale;
+    frame.size.height /= screenScale;
+
     MacWindowImpl* window = [[MacWindowImpl alloc] initWithContentRect:frame
         styleMask:(styleMask)
         backing:NSBackingStoreBuffered
@@ -586,6 +620,11 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     {
         [view registerForDraggedTypes:@[NSPasteboardTypeFileURL, NSPasteboardTypeString]];
     }
+
+    // Rescale contents
+	CALayer* layer = [view layer];
+	if (layer)
+		layer.contentsScale = screenScale;
 
     // TODO: impl Parent for MacWindow
     // TODO: impl StartPosition for MacWindow
@@ -618,17 +657,19 @@ void MacWindow::SetIsMouseOver(bool value)
     if (_isMouseOver == value)
         return;
     _isMouseOver = value;
+    CursorType cursor = _cursor;
     if (value)
     {
         // Refresh cursor typet
-        SetCursor(_cursor);
+        SetCursor(CursorType::Default);
+        SetCursor(cursor);
         
     }
     else
     {
 	    Input::Mouse->OnMouseLeave(this);
-        if (_cursor == CursorType::Hidden)
-            [NSCursor unhide];
+        SetCursor(CursorType::Default);
+        _cursor = cursor;
     }
 }
 
@@ -665,6 +706,8 @@ void MacWindow::Hide()
 {
     if (_visible)
     {
+        SetCursor(CursorType::Default);
+
         // Hide
         NSWindow* window = (NSWindow*)_window;
         [window orderOut:nil];
@@ -710,7 +753,7 @@ bool MacWindow::IsClosed() const
 
 bool MacWindow::IsForegroundWindow() const
 {
-    return Platform::GetHasFocus();
+    return Platform::GetHasFocus() && IsFocused();
 }
 
 void MacWindow::BringToFront(bool force)
@@ -749,7 +792,7 @@ void MacWindow::SetPosition(const Float2& position)
     NSWindow* window = (NSWindow*)_window;
     if (!window)
         return;
-    Float2 pos = MacUtils::PosToCoca(position);
+    Float2 pos = MacUtils::PosToCoca(position) / MacPlatform::ScreenScale;
     NSRect rect = [window frame];
     [window setFrameOrigin:NSMakePoint(pos.X, pos.Y - rect.size.height)];
 }
@@ -760,7 +803,7 @@ Float2 MacWindow::GetPosition() const
     if (!window)
         return Float2::Zero;
     NSRect rect = [window frame];
-    return MacUtils::CocaToPos(Float2(rect.origin.x, rect.origin.y + rect.size.height));
+    return MacUtils::CocaToPos(Float2(rect.origin.x, rect.origin.y + rect.size.height) * MacPlatform::ScreenScale);
 }
 
 Float2 MacWindow::GetSize() const
@@ -769,7 +812,7 @@ Float2 MacWindow::GetSize() const
     if (!window)
         return Float2::Zero;
     NSRect rect = [window frame];
-    return Float2(rect.size.width, rect.size.height);
+    return Float2(rect.size.width, rect.size.height) * MacPlatform::ScreenScale;
 }
 
 Float2 MacWindow::GetClientSize() const
@@ -836,6 +879,9 @@ DragDropEffect MacWindow::DoDragDrop(const StringView& data)
 
 void MacWindow::SetCursor(CursorType type)
 {
+    CursorType prev = _cursor;
+    if (prev == type)
+        return;
 	WindowBase::SetCursor(type);
     //if (!_isMouseOver)
     //    return;
@@ -874,8 +920,11 @@ void MacWindow::SetCursor(CursorType type)
     }
     if (cursor)
     {
+        if (prev == CursorType::Hidden)
+        {
+            [NSCursor unhide];
+        }
         [cursor set];
-        [NSCursor unhide];
     }
 }
 
