@@ -37,7 +37,7 @@ namespace Flax.Deploy
                         BuildPlatform(TargetPlatform.Linux, TargetArchitecture.x64);
                         BuildPlatform(TargetPlatform.Windows, TargetArchitecture.x64);
                         BuildPlatform(TargetPlatform.Android, TargetArchitecture.ARM64);
-                        BuildPlatform(TargetPlatform.Mac, TargetArchitecture.x64);
+                        BuildPlatform(TargetPlatform.Mac, TargetArchitecture.x64, TargetArchitecture.ARM64);
                     }
                     else
                     {
@@ -112,7 +112,8 @@ namespace Flax.Deploy
             var targetPlatform = Platform.BuildPlatform.Target;
             foreach (var configuration in Configurations)
             {
-                FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", targetPlatform, TargetArchitecture.x64, configuration);
+                var arch = targetPlatform == TargetPlatform.Mac ? TargetArchitecture.ARM64 : TargetArchitecture.x64;
+                FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", targetPlatform, arch, configuration);
             }
         }
 
