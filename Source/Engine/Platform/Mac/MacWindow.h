@@ -10,7 +10,7 @@
 /// <summary>
 /// Implementation of the window class for Mac platform.
 /// </summary>
-class MacWindow : public WindowBase
+class FLAXENGINE_API MacWindow : public WindowBase
 {
 private:
 

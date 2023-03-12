@@ -63,7 +63,21 @@ static TextureData const* stbDecompress(const TextureData& textureData, TextureD
 {
     if (!PixelFormatExtensions::IsCompressed(textureData.Format))
         return &textureData;
-    decompressed.Format = PixelFormatExtensions::IsSRGB(textureData.Format) ? PixelFormat::R8G8B8A8_UNorm_sRGB : PixelFormat::R8G8B8A8_UNorm;
+    const bool srgb = PixelFormatExtensions::IsSRGB(textureData.Format);
+    switch (textureData.Format)
+    {
+    case PixelFormat::BC4_UNorm:
+    case PixelFormat::BC4_SNorm:
+        decompressed.Format = PixelFormat::R8_UNorm;
+        break;
+    case PixelFormat::BC5_UNorm:
+    case PixelFormat::BC5_SNorm:
+        decompressed.Format = PixelFormat::R8G8_UNorm;
+        break;
+    default:
+        decompressed.Format = srgb ? PixelFormat::R8G8B8A8_UNorm_sRGB : PixelFormat::R8G8B8A8_UNorm;
+        break;
+    }
     decompressed.Width = textureData.Width;
     decompressed.Height = textureData.Height;
     decompressed.Depth = textureData.Depth;
@@ -71,7 +85,7 @@ static TextureData const* stbDecompress(const TextureData& textureData, TextureD
     decompressed.Items[0].Mips.Resize(1);
 
     TextureMipData* decompressedData = decompressed.GetData(0, 0);
-    decompressedData->RowPitch = textureData.Width * sizeof(Color32);
+    decompressedData->RowPitch = textureData.Width * PixelFormatExtensions::SizeInBytes(decompressed.Format);
     decompressedData->Lines = textureData.Height;
     decompressedData->DepthPitch = decompressedData->RowPitch * decompressedData->Lines;
     decompressedData->Data.Allocate(decompressedData->DepthPitch);
@@ -83,72 +97,74 @@ static TextureData const* stbDecompress(const TextureData& textureData, TextureD
     const TextureMipData* blocksData = textureData.GetData(0, 0);
     const byte* blocksBytes = blocksData->Data.Get();
 
+    typedef bool (*detexDecompressBlockFuncType)(const uint8_t* bitstring, uint32_t mode_mask, uint32_t flags, uint8_t* pixel_buffer);
+    detexDecompressBlockFuncType detexDecompressBlockFunc;
+    int32 pixelSize, blockSize;
     switch (textureData.Format)
     {
     case PixelFormat::BC1_UNorm:
     case PixelFormat::BC1_UNorm_sRGB:
-    {
-        for (int32 yBlock = 0; yBlock < blocksHeight; yBlock++)
-        {
-            for (int32 xBlock = 0; xBlock < blocksWidth; xBlock++)
-            {
-                const byte* block = blocksBytes + yBlock * blocksData->RowPitch + xBlock * 8;
-                detexDecompressBlockBC1(block, 0, 0, (byte*)&colors);
-                for (int32 y = 0; y < 4; y++)
-                {
-                    for (int32 x = 0; x < 4; x++)
-                    {
-                        *((Color32*)decompressedBytes + (yBlock * 4 + y) * textureData.Width + (xBlock * 4 + x)) = colors[y * 4 + x];
-                    }
-                }
-            }
-        }
+        detexDecompressBlockFunc = detexDecompressBlockBC1;
+        pixelSize = 4;
+        blockSize = 8;
         break;
-    }
     case PixelFormat::BC2_UNorm:
     case PixelFormat::BC2_UNorm_sRGB:
-    {
-        for (int32 yBlock = 0; yBlock < blocksHeight; yBlock++)
-        {
-            for (int32 xBlock = 0; xBlock < blocksWidth; xBlock++)
-            {
-                const byte* block = blocksBytes + yBlock * blocksData->RowPitch + xBlock * 16;
-                detexDecompressBlockBC2(block, 0, 0, (byte*)&colors);
-                for (int32 y = 0; y < 4; y++)
-                {
-                    for (int32 x = 0; x < 4; x++)
-                    {
-                        *((Color32*)decompressedBytes + (yBlock * 4 + y) * textureData.Width + (xBlock * 4 + x)) = colors[y * 4 + x];
-                    }
-                }
-            }
-        }
+        detexDecompressBlockFunc = detexDecompressBlockBC2;
+        pixelSize = 4;
+        blockSize = 16;
         break;
-    }
     case PixelFormat::BC3_UNorm:
     case PixelFormat::BC3_UNorm_sRGB:
-    {
-        for (int32 yBlock = 0; yBlock < blocksHeight; yBlock++)
-        {
-            for (int32 xBlock = 0; xBlock < blocksWidth; xBlock++)
-            {
-                const byte* block = blocksBytes + yBlock * blocksData->RowPitch + xBlock * 16;
-                detexDecompressBlockBC3(block, 0, 0, (byte*)&colors);
-                for (int32 y = 0; y < 4; y++)
-                {
-                    for (int32 x = 0; x < 4; x++)
-                    {
-                        *((Color32*)decompressedBytes + (yBlock * 4 + y) * textureData.Width + (xBlock * 4 + x)) = colors[y * 4 + x];
-                    }
-                }
-            }
-        }
+        detexDecompressBlockFunc = detexDecompressBlockBC3;
+        pixelSize = 4;
+        blockSize = 16;
         break;
-    }
+    case PixelFormat::BC4_UNorm:
+        detexDecompressBlockFunc = detexDecompressBlockRGTC1;
+        pixelSize = 1;
+        blockSize = 8;
+        break;
+    case PixelFormat::BC5_UNorm:
+        detexDecompressBlockFunc = detexDecompressBlockRGTC2;
+        pixelSize = 2;
+        blockSize = 16;
+        break;
+    case PixelFormat::BC7_UNorm:
+    case PixelFormat::BC7_UNorm_sRGB:
+        detexDecompressBlockFunc = detexDecompressBlockBPTC;
+        pixelSize = 4;
+        blockSize = 16;
+        break;
     default:
-        LOG(Warning, "Texture data format {0} is not supported by stb library.", (int32)textureData.Format);
+        LOG(Warning, "Texture data format {0} is not supported by detex library.", (int32)textureData.Format);
         return nullptr;
     }
+
+    uint8 blockBuffer[DETEX_MAX_BLOCK_SIZE];
+    for (int32 y = 0; y < blocksHeight; y++)
+    {
+        int32 rows;
+        if (y * 4 + 3 >= textureData.Height)
+            rows = textureData.Height - y * 4;
+        else
+            rows = 4;
+        for (int32 x = 0; x < blocksWidth; x++)
+        {
+            const byte* block = blocksBytes + y * blocksData->RowPitch + x * blockSize;
+            if (!detexDecompressBlockFunc(block, DETEX_MODE_MASK_ALL, 0, blockBuffer))
+                memset(blockBuffer, 0, DETEX_MAX_BLOCK_SIZE);
+            uint8* pixels = decompressedBytes + y * 4 * textureData.Width * pixelSize + x * 4 * pixelSize;
+            int32 columns;
+            if (x * 4 + 3  >= textureData.Width)
+                columns = textureData.Width - x * 4;
+            else
+                columns = 4;
+            for (int32 row = 0; row < rows; row++)
+                memcpy(pixels + row * textureData.Width * pixelSize, blockBuffer + row * 4 * pixelSize, columns * pixelSize);
+        }
+    }
+
     return &decompressed;
 }
 

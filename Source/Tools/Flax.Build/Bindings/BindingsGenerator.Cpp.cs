@@ -248,7 +248,7 @@ namespace Flax.Build.Bindings
         public static void GenerateCppVirtualWrapperCallBaseMethod(BuildData buildData, StringBuilder contents, VirtualClassInfo classInfo, FunctionInfo functionInfo, string scriptVTableBase, string scriptVTableOffset)
         {
             contents.AppendLine("            // Prevent stack overflow by calling native base method");
-            if (buildData.Toolchain.Compiler == TargetCompiler.Clang)
+            if (buildData.Toolchain?.Compiler == TargetCompiler.Clang)
             {
                 // Clang compiler
                 // TODO: secure VTableFunctionInjector with mutex (even at cost of performance)
@@ -1616,7 +1616,7 @@ namespace Flax.Build.Bindings
                 }
                 var t = functionInfo.IsConst ? " const" : string.Empty;
                 contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}::*{functionInfo.UniqueName}_Signature)({thunkParams}){t};");
-                if (buildData.Toolchain.Compiler != TargetCompiler.Clang)
+                if (buildData.Toolchain?.Compiler != TargetCompiler.Clang)
                 {
                     // MSVC or other compiler
                     contents.AppendLine($"    typedef {functionInfo.ReturnType} ({classInfo.NativeName}Internal::*{functionInfo.UniqueName}_Internal_Signature)({thunkParams}){t};");
@@ -1689,7 +1689,7 @@ namespace Flax.Build.Bindings
             }
 
             // Native interfaces override in managed code requires vtables hacking which requires additional inject on Clang-platforms
-            if (buildData.Toolchain.Compiler == TargetCompiler.Clang && classInfo.IsClass && classInfo.Interfaces != null)
+            if (buildData.Toolchain?.Compiler == TargetCompiler.Clang && classInfo.IsClass && classInfo.Interfaces != null)
             {
                 // Override vtable entries of interface methods (for each virtual function in each interface)
                 foreach (var interfaceInfo in classInfo.Interfaces)
@@ -2559,7 +2559,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine();
 
             // Native interfaces override in managed code requires vtables hacking which requires additional inject on Clang-platforms
-            if (buildData.Toolchain.Compiler == TargetCompiler.Clang)
+            if (buildData.Toolchain?.Compiler == TargetCompiler.Clang)
             {
                 // Generate functions that inject script wrappers into vtable entry
                 foreach (var functionInfo in interfaceInfo.Functions)

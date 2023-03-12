@@ -49,6 +49,12 @@ namespace FlaxEditor.GUI.Input
             ClearSearchButton.LocalY += 2;
             ClearSearchButton.LocalX -= 2;
             ClearSearchButton.Clicked += Clear;
+            ClearSearchButton.HoverBegin += () =>
+            {
+                _changeCursor = false;
+                Cursor = CursorType.Default;
+            };
+            ClearSearchButton.HoverEnd += () => _changeCursor = true;
 
             TextChanged += () => ClearSearchButton.Visible = !string.IsNullOrEmpty(Text);
         }

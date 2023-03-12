@@ -9,7 +9,7 @@
 /// <summary>
 /// Win32 platform file object implementation
 /// </summary>
-class Win32File : public FileBase
+class FLAXENGINE_API Win32File : public FileBase
 {
 private:
 

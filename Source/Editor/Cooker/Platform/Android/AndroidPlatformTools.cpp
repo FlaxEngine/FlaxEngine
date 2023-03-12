@@ -305,9 +305,12 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
 #else
     const Char* gradlew = TEXT("gradlew");
 #endif
+#if PLATFORM_LINUX
+    Platform::RunProcess(String::Format(TEXT("chmod +x \"{0}/gradlew\""), data.OriginalOutputPath), data.OriginalOutputPath, Dictionary<String, String>(), true);
+#endif
     const bool distributionPackage = buildSettings->ForDistribution;
     const String gradleCommand = String::Format(TEXT("\"{0}\" {1}"), data.OriginalOutputPath / gradlew, distributionPackage ? TEXT("assemble") : TEXT("assembleDebug"));
-    const int32 result = Platform::RunProcess(gradleCommand, data.OriginalOutputPath, envVars, true);
+    const int32 result = Platform::RunProcess(gradleCommand, data.OriginalOutputPath, Dictionary<String, String>(), true);
     if (result != 0)
     {
         data.Error(TEXT("Failed to build Gradle project into package (result code: {0}). See log for more info."), result);

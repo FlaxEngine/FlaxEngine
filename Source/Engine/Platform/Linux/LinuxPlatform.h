@@ -131,6 +131,7 @@ public:
     static String GetWorkingDirectory();
     static bool SetWorkingDirectory(const String& path);
     static Window* CreateWindow(const CreateWindowSettings& settings);
+    static void GetEnvironmentVariables(Dictionary<String, String, HeapAllocation>& result);
     static bool GetEnvironmentVariable(const String& name, String& value);
     static bool SetEnvironmentVariable(const String& name, const String& value);
     static int32 StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow = false, bool waitForEnd = false);

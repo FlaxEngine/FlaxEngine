@@ -115,6 +115,11 @@ namespace FlaxEngine.GUI
         protected float _animateTime;
 
         /// <summary>
+        /// If the cursor should change to an IBeam
+        /// </summary>
+        protected bool _changeCursor = true;
+
+        /// <summary>
         /// Event fired when text gets changed
         /// </summary>
         public event Action TextChanged;
@@ -1131,7 +1136,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnMouseEnter(Float2 location)
         {
-            if (_isEditing)
+            if (_isEditing && _changeCursor)
                 Cursor = CursorType.IBeam;
 
             base.OnMouseEnter(location);
@@ -1159,8 +1164,8 @@ namespace FlaxEngine.GUI
                 // Modify selection end
                 SetSelection(_selectionStart, currentIndex);
             }
-            
-            if (Cursor == CursorType.Default && _isEditing)
+
+            if (Cursor == CursorType.Default && _isEditing && _changeCursor)
                 Cursor = CursorType.IBeam;
         }
 
@@ -1191,7 +1196,7 @@ namespace FlaxEngine.GUI
                     SetSelection(hitPos);
                 }
                 
-                if (Cursor == CursorType.Default)
+                if (Cursor == CursorType.Default && _changeCursor)
                     Cursor = CursorType.IBeam;
 
                 return true;
@@ -1200,6 +1205,8 @@ namespace FlaxEngine.GUI
             if (button == MouseButton.Left && !IsFocused)
             {
                 Focus();
+                if (_changeCursor)
+                    Cursor = CursorType.IBeam;
                 return true;
             }
 
