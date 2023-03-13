@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "NetworkStream.h"
+#include "INetworkSerializable.h"
 
 NetworkStream::NetworkStream(const SpawnParams& params)
     : ScriptingObject(params)
@@ -45,6 +46,26 @@ void NetworkStream::Initialize(byte* buffer, uint32 length)
     _position = _buffer = buffer;
     _length = length;
     _allocated = false;
+}
+
+void NetworkStream::Read(INetworkSerializable& obj)
+{
+    obj.Deserialize(this);
+}
+
+void NetworkStream::Read(INetworkSerializable* obj)
+{
+    obj->Deserialize(this);
+}
+
+void NetworkStream::Write(INetworkSerializable& obj)
+{
+    obj.Serialize(this);
+}
+
+void NetworkStream::Write(INetworkSerializable* obj)
+{
+    obj->Serialize(this);
 }
 
 void NetworkStream::Flush()
