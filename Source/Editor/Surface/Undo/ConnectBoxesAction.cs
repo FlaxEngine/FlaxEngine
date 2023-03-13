@@ -33,6 +33,14 @@ namespace FlaxEditor.Surface.Undo
 
             CaptureConnections(iB, out _inputBefore);
             CaptureConnections(oB, out _outputBefore);
+
+#if BUILD_DEBUG
+            // Validate handles
+            if (_context.Get(_surface) != iB.ParentNode.Context)
+                throw new System.Exception("Invalid ContextHandle");
+            if (_input.Get(iB.ParentNode.Context) != iB || _output.Get(oB.ParentNode.Context) != oB)
+                throw new System.Exception("Invalid BoxHandle");
+#endif
         }
 
         public void End()

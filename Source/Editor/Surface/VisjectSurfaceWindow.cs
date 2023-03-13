@@ -900,6 +900,9 @@ namespace FlaxEditor.Surface
         public abstract byte[] SurfaceData { get; set; }
 
         /// <inheritdoc />
+        public VisjectSurfaceContext ParentContext => null;
+
+        /// <inheritdoc />
         public void OnContextCreated(VisjectSurfaceContext context)
         {
         }

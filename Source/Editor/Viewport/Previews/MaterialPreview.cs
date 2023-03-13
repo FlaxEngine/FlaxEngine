@@ -367,6 +367,9 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <inheritdoc />
+        public VisjectSurfaceContext ParentContext => null;
+
+        /// <inheritdoc />
         void ISurfaceContext.OnContextCreated(VisjectSurfaceContext context)
         {
         }

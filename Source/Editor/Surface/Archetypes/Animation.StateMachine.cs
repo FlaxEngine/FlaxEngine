@@ -251,6 +251,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
+            public VisjectSurfaceContext ParentContext => Context;
+
+            /// <inheritdoc />
             public void OnContextCreated(VisjectSurfaceContext context)
             {
                 context.Loaded += OnSurfaceLoaded;
@@ -1312,6 +1315,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
+            public VisjectSurfaceContext ParentContext => Context;
+
+            /// <inheritdoc />
             public void OnContextCreated(VisjectSurfaceContext context)
             {
                 context.Loaded += OnSurfaceLoaded;
@@ -1681,6 +1687,9 @@ namespace FlaxEditor.Surface.Archetypes
                 get => RuleGraph;
                 set => RuleGraph = value;
             }
+
+            /// <inheritdoc />
+            public VisjectSurfaceContext ParentContext => SourceState.Context;
 
             /// <inheritdoc />
             public void OnContextCreated(VisjectSurfaceContext context)

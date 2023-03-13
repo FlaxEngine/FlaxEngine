@@ -26,6 +26,11 @@ namespace FlaxEditor.Surface
         byte[] SurfaceData { get; set; }
 
         /// <summary>
+        /// Gets the context which owns this surface context (null for root).
+        /// </summary>
+        VisjectSurfaceContext ParentContext { get; }
+
+        /// <summary>
         /// Called when Visject Surface context gets created for this surface data source. Can be used to link for some events.
         /// </summary>
         /// <param name="context">The context.</param>

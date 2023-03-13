@@ -106,6 +106,9 @@ namespace FlaxEngine.Windows.Search
             public byte[] SurfaceData { get; set; }
 
             /// <inheritdoc />
+            public VisjectSurfaceContext ParentContext => null;
+
+            /// <inheritdoc />
             public void OnContextCreated(VisjectSurfaceContext context)
             {
             }
