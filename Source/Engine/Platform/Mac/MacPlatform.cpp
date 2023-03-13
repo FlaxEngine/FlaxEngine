@@ -54,6 +54,8 @@ String UserLocale, ComputerName;
 double SecondsPerCycle;
 NSAutoreleasePool* AutoreleasePool = nullptr;
 
+float MacPlatform::ScreenScale = 1.0f;
+
 String MacUtils::ToString(CFStringRef str)
 {
     if (!str)
@@ -77,7 +79,7 @@ CFStringRef MacUtils::ToString(const StringView& str)
 Float2 MacUtils::PosToCoca(const Float2& pos)
 {
     // MacOS uses y-coordinate starting at the bottom of the screen
-    Float2 result = pos;
+    Float2 result = pos;// / MacPlatform::ScreenScale;
     result.Y *= -1;
     result += GetScreensOrigin();
     return result;
@@ -86,10 +88,10 @@ Float2 MacUtils::PosToCoca(const Float2& pos)
 Float2 MacUtils::CocaToPos(const Float2& pos)
 {
     // MacOS uses y-coordinate starting at the bottom of the screen
-    Float2 result = pos;
+    Float2 result = pos;// * MacPlatform::ScreenScale;
     result -= GetScreensOrigin();
     result.Y *= -1;
-    return result;
+    return result;// * MacPlatform::ScreenScale;
 }
 
 Float2 MacUtils::GetScreensOrigin()
@@ -100,6 +102,7 @@ Float2 MacUtils::GetScreensOrigin()
     {
         NSRect rect = [[screenArray objectAtIndex:i] frame];
         Float2 pos(rect.origin.x, rect.origin.y + rect.size.height);
+        pos *= MacPlatform::ScreenScale;
         if (pos.X < result.X)
             result.X = pos.X;
         if (pos.Y > result.Y)
@@ -423,11 +426,25 @@ bool MacPlatform::Init()
         OnPlatformUserAdd(New<User>(username));
     }
 
+    // Find the maximum scale of the display to handle high-dpi displays scaling factor
+    {
+	    NSArray* screenArray = [NSScreen screens];
+        for (int32 i = 0; i < (int32)[screenArray count]; i++)
+        {
+            if ([[screenArray objectAtIndex:i] respondsToSelector:@selector(backingScaleFactor)])
+            {
+				ScreenScale = Math::Max(ScreenScale, (float)[[screenArray objectAtIndex:i] backingScaleFactor]);
+            }
+        }
+        CustomDpiScale *= ScreenScale;
+    }
+
     // Init application
     [NSApplication sharedApplication];
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
     NSMenu* mainMenu = [[[NSMenu alloc] initWithTitle:@""] autorelease];
     [NSApp setMainMenu:mainMenu];
+    // TODO: expose main menu for app (eg. to be used by Game or Editor on macOS-only)
     AutoreleasePool = [[NSAutoreleasePool alloc] init];
 
     Input::Mouse = New<MacMouse>();
@@ -477,6 +494,16 @@ void MacPlatform::BeforeExit()
 
 void MacPlatform::Exit()
 {
+}
+
+void MacPlatform::SetHighDpiAwarenessEnabled(bool enable)
+{
+    // Disable resolution scaling in low dpi mode
+    if (!enable)
+    {
+        CustomDpiScale /= ScreenScale;
+        ScreenScale = 1.0f;
+    }
 }
 
 int32 MacPlatform::GetDpi()
@@ -551,13 +578,14 @@ void MacPlatform::SetMousePosition(const Float2& pos)
 Float2 MacPlatform::GetDesktopSize()
 {
     CGDirectDisplayID mainDisplay = CGMainDisplayID();
-    return Float2((float)CGDisplayPixelsWide(mainDisplay), (float)CGDisplayPixelsHigh(mainDisplay));
+    return Float2((float)CGDisplayPixelsWide(mainDisplay) * ScreenScale, (float)CGDisplayPixelsHigh(mainDisplay) * ScreenScale);
 }
 
 Rectangle GetDisplayBounds(CGDirectDisplayID display)
 {
     CGRect rect = CGDisplayBounds(display);
-    return Rectangle(rect.origin.x, rect.origin.y, rect.size.width, rect.size.height);
+    float screnScale = MacPlatform::ScreenScale;
+    return Rectangle(rect.origin.x * screnScale, rect.origin.y * screnScale, rect.size.width * screnScale, rect.size.height * screnScale);
 }
 
 Rectangle MacPlatform::GetMonitorBounds(const Float2& screenPos)
