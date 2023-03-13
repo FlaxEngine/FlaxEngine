@@ -369,7 +369,7 @@ namespace Flax.Build
                                 var project = dotNetProjectGenerator.CreateProject();
                                 project.Type = TargetType.DotNet;
                                 project.Name = project.BaseName = binaryModuleName;
-                                if (mainSolutionProject != null && projectInfo == rootProject)
+                                if (projects.Any(p => p.Type != TargetType.DotNet && p.BaseName == binaryModuleName))
                                     project.Name += ".CSharp"; // Prevent overlapping name with native code project
                                 project.OutputType = TargetOutputType.Library;
                                 project.Targets = targets;
