@@ -997,7 +997,7 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
     // Get cached asset info (from registry)
     if (!GetAssetInfo(id, assetInfo))
     {
-        LOG(Warning, "Invalid asset ID ({0}).", id.ToString(Guid::FormatType::N));
+        LOG(Warning, "Invalid or missing asset ({0}, {1}).", id.ToString(Guid::FormatType::N), type.ToString());
         return nullptr;
     }
 
