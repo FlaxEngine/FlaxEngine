@@ -100,6 +100,13 @@ public:
     /// </summary>
     API_PROPERTY() void SetOrigin(const Vector3& value);
 
+#if COMPILE_WITH_PROFILER
+    /// <summary>
+    /// Gets the physics simulation statistics for the scene.
+    /// </summary>
+    API_PROPERTY() PhysicsStatistics GetStatistics() const;
+#endif
+
 public:
     /// <summary>
     /// Initializes the scene.

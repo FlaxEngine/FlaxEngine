@@ -10,6 +10,7 @@
 #include "Engine/Physics/CollisionData.h"
 #include "Engine/Physics/PhysicalMaterial.h"
 #include "Engine/Physics/PhysicsScene.h"
+#include "Engine/Physics/PhysicsStatistics.h"
 #include "Engine/Physics/CollisionCooking.h"
 #include "Engine/Physics/Actors/IPhysicsActor.h"
 #include "Engine/Physics/Joints/Limits.h"
@@ -1339,6 +1340,30 @@ void PhysicsBackend::AddSceneActorAction(void* scene, void* actor, ActionType ac
     a.Type = action;
     FlushLocker.Unlock();
 }
+
+#if COMPILE_WITH_PROFILER
+
+void PhysicsBackend::GetSceneStatistics(void* scene, PhysicsStatistics& result)
+{
+    PROFILE_CPU_NAMED("Physics.Statistics");
+    auto scenePhysX = (ScenePhysX*)scene;
+
+    PxSimulationStatistics px;
+    scenePhysX->Scene->getSimulationStatistics(px);
+
+    result.ActiveDynamicBodies = px.nbActiveDynamicBodies;
+    result.ActiveKinematicBodies = px.nbActiveKinematicBodies;
+    result.ActiveJoints = px.nbActiveConstraints;
+    result.StaticBodies = px.nbStaticBodies;
+    result.DynamicBodies = px.nbDynamicBodies;
+    result.KinematicBodies = px.nbKinematicBodies;
+    result.NewPairs = px.nbNewPairs;
+    result.LostPairs = px.nbLostPairs;
+    result.NewTouches = px.nbNewTouches;
+    result.LostTouches = px.nbLostTouches;
+}
+
+#endif
 
 bool PhysicsBackend::RayCast(void* scene, const Vector3& origin, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {

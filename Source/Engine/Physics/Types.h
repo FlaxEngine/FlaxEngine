@@ -7,6 +7,7 @@
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Scripting/ScriptingType.h"
 
+struct PhysicsStatistics;
 class PhysicsColliderActor;
 class PhysicsScene;
 class Joint;

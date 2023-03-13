@@ -123,6 +123,14 @@ void PhysicsBackend::AddSceneActorAction(void* scene, void* actor, ActionType ac
 {
 }
 
+#if COMPILE_WITH_PROFILER
+
+void PhysicsBackend::GetSceneStatistics(void* scene, PhysicsStatistics& result)
+{
+}
+
+#endif
+
 bool PhysicsBackend::RayCast(void* scene, const Vector3& origin, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
     return false;

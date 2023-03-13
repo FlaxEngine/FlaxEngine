@@ -5,6 +5,7 @@
 #include "PhysicsBackend.h"
 #include "PhysicalMaterial.h"
 #include "PhysicsSettings.h"
+#include "PhysicsStatistics.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -416,6 +417,17 @@ void PhysicsScene::SetOrigin(const Vector3& value)
         _origin = value;
     }
 }
+
+#if COMPILE_WITH_PROFILER
+
+PhysicsStatistics PhysicsScene::GetStatistics() const
+{
+    PhysicsStatistics result;
+    PhysicsBackend::GetSceneStatistics(_scene, result);
+    return result;
+}
+
+#endif
 
 bool PhysicsScene::Init(const StringView& name, const PhysicsSettings& settings)
 {

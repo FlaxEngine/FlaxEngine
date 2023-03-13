@@ -200,6 +200,7 @@ namespace FlaxEditor.Windows.Profiler
             AddMode(new Memory());
             AddMode(new Assets());
             AddMode(new Network());
+            AddMode(new Physics());
 
             // Init view
             _frameIndex = -1;
