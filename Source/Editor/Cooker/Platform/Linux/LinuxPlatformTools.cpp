@@ -34,6 +34,11 @@ ArchitectureType LinuxPlatformTools::GetArchitecture() const
     return ArchitectureType::x64;
 }
 
+bool LinuxPlatformTools::UseSystemDotnet() const
+{
+    return true;
+}
+
 bool LinuxPlatformTools::OnDeployBinaries(CookingData& data)
 {
     const auto gameSettings = GameSettings::Get();

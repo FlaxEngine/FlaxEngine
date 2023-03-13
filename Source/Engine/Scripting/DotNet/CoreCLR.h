@@ -11,9 +11,11 @@
 #if defined(_WIN32)
 #define CORECLR_DELEGATE_CALLTYPE __stdcall
 #define FLAX_CORECLR_STRING String
+#define FLAX_CORECLR_TEXT(x) TEXT(x)
 #else
 #define CORECLR_DELEGATE_CALLTYPE
 #define FLAX_CORECLR_STRING StringAnsi
+#define FLAX_CORECLR_TEXT(x) x
 #endif
 
 /// <summary>
@@ -56,8 +58,8 @@ public:
     static void Free(void* ptr);
     static MGCHandle NewGCHandle(void* obj, bool pinned);
     static MGCHandle NewGCHandleWeakref(void* obj, bool track_resurrection);
-    static void* GetGCHandleTarget(const MGCHandle& MGCHandle);
-    static void FreeGCHandle(const MGCHandle& MGCHandle);
+    static void* GetGCHandleTarget(const MGCHandle& handle);
+    static void FreeGCHandle(const MGCHandle& handle);
 
     static bool HasCustomAttribute(void* klass, void* attribClass);
     static bool HasCustomAttribute(void* klass);

@@ -59,6 +59,11 @@ ArchitectureType MacPlatformTools::GetArchitecture() const
     return _arch;
 }
 
+bool MacPlatformTools::UseSystemDotnet() const
+{
+    return true;
+}
+
 bool MacPlatformTools::IsNativeCodeFile(CookingData& data, const String& file)
 {
     String extension = FileSystem::GetExtension(file);

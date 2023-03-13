@@ -180,7 +180,7 @@ namespace Flax.Deps.Dependencies
             {
                 Utilities.FileCopy(Path.Combine(srcHostRuntime, file), Path.Combine(dstBinaries, file));
             }
-            var dstDotnet = Path.Combine(dstBinaries, "Dotnet");
+            var dstDotnet = Path.Combine(GetBinariesFolder(options, targetPlatform), "Dotnet");
             var dstClassLibrary = Path.Combine(dstDotnet, "shared", "Microsoft.NETCore.App", version);
             SetupDirectory(dstClassLibrary, true);
             foreach (var file in new[]

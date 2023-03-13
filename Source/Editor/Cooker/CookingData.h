@@ -194,7 +194,7 @@ public:
     API_FIELD(ReadOnly) String OriginalOutputPath;
 
     /// <summary>
-    /// The output path for data files (Content, Mono, etc.).
+    /// The output path for data files (Content, Dotnet, Mono, etc.).
     /// </summary>
     API_FIELD(ReadOnly) String DataOutputPath;
 
@@ -306,13 +306,11 @@ public:
     /// <summary>
     /// Gets the absolute path to the Platform Data folder that contains the binary files used by the current build configuration.
     /// </summary>
-    /// <returns>The platform data folder path.</returns>
     String GetGameBinariesPath() const;
 
     /// <summary>
     /// Gets the absolute path to the platform folder that contains the dependency files used by the current build configuration.
     /// </summary>
-    /// <returns>The platform deps folder path.</returns>
     String GetPlatformBinariesRoot() const;
 
 public:

@@ -606,15 +606,15 @@ MGCHandle CoreCLR::NewGCHandleWeakref(void* obj, bool track_resurrection)
     return (MGCHandle)CoreCLR::CallStaticMethod<void*, void*, bool>(NewGCHandleWeakrefPtr, obj, track_resurrection);
 }
 
-void* CoreCLR::GetGCHandleTarget(const MGCHandle& MGCHandle)
+void* CoreCLR::GetGCHandleTarget(const MGCHandle& handle)
 {
-    return (void*)MGCHandle;
+    return (void*)handle;
 }
 
-void CoreCLR::FreeGCHandle(const MGCHandle& MGCHandle)
+void CoreCLR::FreeGCHandle(const MGCHandle& handle)
 {
     static void* FreeGCHandlePtr = CoreCLR::GetStaticMethodPointer(TEXT("FreeGCHandle"));
-    CoreCLR::CallStaticMethod<void, void*>(FreeGCHandlePtr, (void*)MGCHandle);
+    CoreCLR::CallStaticMethod<void, void*>(FreeGCHandlePtr, (void*)handle);
 }
 
 const char* CoreCLR::GetClassFullname(void* klass)

@@ -33,6 +33,11 @@ ArchitectureType WindowsPlatformTools::GetArchitecture() const
     return _arch;
 }
 
+bool WindowsPlatformTools::UseSystemDotnet() const
+{
+    return true;
+}
+
 bool WindowsPlatformTools::OnDeployBinaries(CookingData& data)
 {
     const auto platformSettings = WindowsPlatformSettings::Get();

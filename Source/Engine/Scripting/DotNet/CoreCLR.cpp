@@ -1,13 +1,15 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "CoreCLR.h"
+
 #if USE_NETCORE
 #include "Engine/Core/Log.h"
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Core/Types/DateTime.h"
-#include "Engine/Debug/DebugLog.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Debug/DebugLog.h"
+#include "Engine/Engine/Globals.h"
 #include <nethost.h>
 #include <coreclr_delegates.h>
 #include <hostfxr.h>
@@ -17,12 +19,8 @@
 #undef LoadLibrary
 #endif
 
-static Dictionary<String, void*> cachedFunctions;
-#if PLATFORM_WINDOWS
-static const char_t* typeName = TEXT("FlaxEngine.NativeInterop, FlaxEngine.CSharp");
-#else
-static const char_t* typeName = "FlaxEngine.NativeInterop, FlaxEngine.CSharp";
-#endif
+static Dictionary<String, void*> CachedFunctions;
+static const char_t* NativeInteropTypeName = FLAX_CORECLR_TEXT("FlaxEngine.NativeInterop, FlaxEngine.CSharp");
 
 hostfxr_initialize_for_runtime_config_fn hostfxr_initialize_for_runtime_config;
 hostfxr_initialize_for_dotnet_command_line_fn hostfxr_initialize_for_dotnet_command_line;
@@ -42,21 +40,33 @@ bool CoreCLR::InitHostfxr(const String& configPath, const String& libraryPath)
     get_hostfxr_parameters get_hostfxr_params;
     get_hostfxr_params.size = sizeof(hostfxr_initialize_parameters);
     get_hostfxr_params.assembly_path = library_path.Get();
+    FLAX_CORECLR_STRING dotnetRoot;
     // TODO: implement proper lookup for dotnet instalation folder and handle standalone build of FlaxGame
 #if PLATFORM_MAC
     get_hostfxr_params.dotnet_root = "/usr/local/share/dotnet";
 #else
     get_hostfxr_params.dotnet_root = nullptr;
 #endif
+#if !USE_EDITOR
+    const String& bundledDotnetPath = Globals::ProjectFolder / TEXT("Dotnet");
+    if (FileSystem::DirectoryExists(bundledDotnetPath))
+    {
+        dotnetRoot = FLAX_CORECLR_STRING(bundledDotnetPath);
+#if PLATFORM_WINDOWS_FAMILY
+        dotnetRoot.Replace('/', '\\');
+#endif
+        get_hostfxr_params.dotnet_root = dotnetRoot.Get();
+    }
+#endif
     char_t hostfxrPath[1024];
     size_t hostfxrPathSize = sizeof(hostfxrPath) / sizeof(char_t);
     int rc = get_hostfxr_path(hostfxrPath, &hostfxrPathSize, &get_hostfxr_params);
     if (rc != 0)
     {
-        LOG(Error, "Failed to find hostfxr: {0:x}", (unsigned int)rc);
+        LOG(Error, "Failed to find hostfxr: {0:x} ({1})", (unsigned int)rc, String(get_hostfxr_params.dotnet_root));
         return true;
     }
-    const String path(hostfxrPath);
+    String path(hostfxrPath);
     LOG(Info, "Found hostfxr in {0}", path);
 
     // Get API from hostfxr library
@@ -84,12 +94,15 @@ bool CoreCLR::InitHostfxr(const String& configPath, const String& libraryPath)
     hostfxr_initialize_parameters init_params;
     init_params.size = sizeof(hostfxr_initialize_parameters);
     init_params.host_path = library_path.Get();
-    init_params.dotnet_root = nullptr;//dotnetRoot.Get(); // This probably must be set
+    path = String(StringUtils::GetDirectoryName(path)) / TEXT("/../../../");
+    StringUtils::PathRemoveRelativeParts(path);
+    dotnetRoot = FLAX_CORECLR_STRING(path);
+    init_params.dotnet_root = dotnetRoot.Get();
     hostfxr_handle handle = nullptr;
     rc = hostfxr_initialize_for_dotnet_command_line(ARRAY_COUNT(argv), argv, &init_params, &handle);
     if (rc != 0 || handle == nullptr)
     {
-        LOG(Error, "Failed to initialize hostfxr: {0:x}", (unsigned int)rc);
+        LOG(Error, "Failed to initialize hostfxr: {0:x} ({1})", (unsigned int)rc, String(init_params.dotnet_root));
         hostfxr_close(handle);
         return true;
     }
@@ -111,15 +124,14 @@ bool CoreCLR::InitHostfxr(const String& configPath, const String& libraryPath)
 void* CoreCLR::GetStaticMethodPointer(const String& methodName)
 {
     void* fun;
-    if (cachedFunctions.TryGet(methodName, fun))
+    if (CachedFunctions.TryGet(methodName, fun))
         return fun;
 
-    int rc = get_function_pointer(typeName, FLAX_CORECLR_STRING(methodName).Get(), UNMANAGEDCALLERSONLY_METHOD, nullptr, nullptr, &fun);
+    int rc = get_function_pointer(NativeInteropTypeName, FLAX_CORECLR_STRING(methodName).Get(), UNMANAGEDCALLERSONLY_METHOD, nullptr, nullptr, &fun);
     if (rc != 0)
         LOG(Fatal, "Failed to get unmanaged function pointer for method {0}: 0x{1:x}", methodName.Get(), (unsigned int)rc);
 
-    cachedFunctions.Add(methodName, fun);
-
+    CachedFunctions.Add(methodName, fun);
     return fun;
 }
 

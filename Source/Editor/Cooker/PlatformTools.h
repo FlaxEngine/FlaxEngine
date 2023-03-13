@@ -24,32 +24,35 @@ public:
     /// <summary>
     /// Gets the name of the platform for UI and logging.
     /// </summary>
-    /// <returns>The name.</returns>
     virtual const Char* GetDisplayName() const = 0;
 
     /// <summary>
     /// Gets the name of the platform for filesystem cache directories, deps folder.
     /// </summary>
-    /// <returns>The name.</returns>
     virtual const Char* GetName() const = 0;
 
     /// <summary>
     /// Gets the type of the platform.
     /// </summary>
-    /// <returns>The platform type.</returns>
     virtual PlatformType GetPlatform() const = 0;
 
     /// <summary>
     /// Gets the architecture of the platform.
     /// </summary>
-    /// <returns>The architecture type.</returns>
     virtual ArchitectureType GetArchitecture() const = 0;
 
     /// <summary>
-    /// Gets the value indicating whenever platform requires AOT.
+    /// Gets the value indicating whenever platform requires AOT (needs C# assemblies to be precompiled).
     /// </summary>
-    /// <returns>True if platform uses AOT and needs C# assemblies to be precompiled, otherwise false.</returns>
     virtual bool UseAOT() const
+    {
+        return false;
+    }
+
+    /// <summary>
+    /// Gets the value indicating whenever platform supports using system-installed .Net Runtime.
+    /// </summary>
+    virtual bool UseSystemDotnet() const
     {
         return false;
     }
