@@ -1202,6 +1202,11 @@ GPUDevice* GPUDeviceVulkan::Create()
     }
 
     // Select the adapter to use
+    if (adapters.Count() == 0)
+    {
+        LOG(Error, "Failed to find valid Vulkan adapter!");
+        return nullptr;
+    }
     int32 selectedAdapter = 0;
     uint32 vendorId = 0;
     if (CommandLine::Options.NVIDIA)
