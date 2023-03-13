@@ -531,9 +531,6 @@ namespace Flax.Build.Plugins
                 {
                     if (type.IsInterface || type.IsEnum)
                         continue;
-                    var isNative = type.HasAttribute("FlaxEngine.UnmanagedAttribute");
-                    if (isNative)
-                        continue;
 
                     // Generate RPCs
                     var methods = type.Methods;
@@ -545,8 +542,13 @@ namespace Flax.Build.Plugins
                         if (attribute != null)
                         {
                             GenerateDotNetRPCBody(type, method, attribute, ref failed, networkStreamType, methodRPCs);
+                            modified = true;
                         }
                     }
+
+                    var isNative = type.HasAttribute("FlaxEngine.UnmanagedAttribute");
+                    if (isNative)
+                        continue;
 
                     // Generate serializers
                     if (type.HasMethod(Thunk1) || type.HasMethod(Thunk2))
@@ -1402,10 +1404,10 @@ namespace Flax.Build.Plugins
                 // ||
                 il.InsertBefore(ilStart, jumpIf2Start);
                 il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, varsStart + 1));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Brfalse_S, jumpBodyStart));
+                il.InsertBefore(ilStart, il.Create(OpCodes.Brfalse, jumpBodyStart));
                 il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, varsStart + 2));
                 il.InsertBefore(ilStart, il.Create(OpCodes.Ldc_I4_2));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Beq_S, jumpBodyStart));
+                il.InsertBefore(ilStart, il.Create(OpCodes.Beq, jumpBodyStart));
                 // {
                 il.InsertBefore(ilStart, jumpIfBodyStart);
 
