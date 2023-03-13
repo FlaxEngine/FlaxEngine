@@ -146,7 +146,7 @@ void JsonAssetBase::GetReferences(const StringAnsiView& json, Array<Guid>& outpu
     FindIds(document, output);
 }
 
-bool JsonAssetBase::Save(const StringView& path)
+bool JsonAssetBase::Save(const StringView& path) const
 {
     // Validate state
     if (WaitForLoaded())
@@ -160,11 +160,32 @@ bool JsonAssetBase::Save(const StringView& path)
         return true;
     }
     ScopeLock lock(Locker);
-    
-    // Serialize to json file
+
+    // Serialize to json to the buffer
     rapidjson_flax::StringBuffer buffer;
     PrettyJsonWriter writerObj(buffer);
-    JsonWriter& writer = writerObj;
+    Save(writerObj);
+
+    // Save json to file
+    if (File::WriteAllBytes(path.HasChars() ? path : StringView(GetPath()), (byte*)buffer.GetString(), (int32)buffer.GetSize()))
+    {
+        LOG(Error, "Cannot save \'{0}\'", ToString());
+        return true;
+    }
+
+    return false;
+}
+
+bool JsonAssetBase::Save(JsonWriter& writer) const
+{
+    // Validate state
+    if (WaitForLoaded())
+    {
+        LOG(Error, "Asset loading failed. Cannot save it.");
+        return true;
+    }
+    ScopeLock lock(Locker);
+
     writer.StartObject();
     {
         // Json resource header
@@ -182,13 +203,6 @@ bool JsonAssetBase::Save(const StringView& path)
         writer.RawValue(dataBuffer.GetString(), (int32)dataBuffer.GetSize());
     }
     writer.EndObject();
-
-    // Save json to file
-    if (File::WriteAllBytes(path.HasChars() ? path : StringView(GetPath()), (byte*)buffer.GetString(), (int32)buffer.GetSize()))
-    {
-        LOG(Error, "Cannot save \'{0}\'", ToString());
-        return true;
-    }
 
     return false;
 }

@@ -32,7 +32,7 @@ public:
     ISerializable::SerializeDocument Document;
 
     /// <summary>
-    /// The data node (reference from Document).
+    /// The data node (reference from Document or Document itself).
     /// </summary>
     ISerializable::DeserializeStream* Data;
 
@@ -78,7 +78,14 @@ public:
     /// </summary>
     /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
     /// <returns>True if cannot save data, otherwise false.</returns>
-    API_FUNCTION() bool Save(const StringView& path = StringView::Empty);
+    API_FUNCTION() bool Save(const StringView& path = StringView::Empty) const;
+
+    /// <summary>
+    /// Saves this asset to the Json Writer buffer (both ID, Typename header and Data contents). Supported only in Editor.
+    /// </summary>
+    /// <param name="writer">The output Json Writer to write asset.</param>
+    /// <returns>True if cannot save data, otherwise false.</returns>
+    bool Save(JsonWriter& writer) const;
 #endif
 
 protected:

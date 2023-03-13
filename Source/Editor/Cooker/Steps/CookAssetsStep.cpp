@@ -327,8 +327,8 @@ bool CookAssetsStep::ProcessDefaultAsset(AssetCookData& options)
     {
         // Use compact json
         rapidjson_flax::StringBuffer buffer;
-        rapidjson_flax::Writer<rapidjson_flax::StringBuffer> writer(buffer);
-        asJsonAsset->Document.Accept(writer);
+        CompactJsonWriter writerObj(buffer);
+        asJsonAsset->Save(writerObj);
 
         // Store json data in the first chunk
         auto chunk = New<FlaxChunk>();
