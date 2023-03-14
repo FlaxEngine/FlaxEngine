@@ -70,7 +70,7 @@
     <Compile Include="TestEditorStates.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\FlaxEngine.CSharp.csproj">
+    <ProjectReference Include="..\..\FlaxEngine.csproj">
       <Project>{ed088b51-41ac-403b-9b3e-91a38c41523e}</Project>
       <Name>FlaxEngine</Name>
     </ProjectReference>
