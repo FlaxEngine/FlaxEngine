@@ -1148,6 +1148,9 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
+        public VisjectSurfaceContext ParentContext => null;
+
+        /// <inheritdoc />
         public void OnContextCreated(VisjectSurfaceContext context)
         {
         }

@@ -98,6 +98,12 @@ SceneObject* SceneObjectsFactory::Spawn(Context& context, ISerializable::Deseria
             const ScriptingTypeHandle type = Scripting::FindScriptingType(typeName);
             if (type)
             {
+                // TODO: cache per-type result in Context to boost loading of the large scenes
+                if (!SceneObject::TypeInitializer.IsAssignableFrom(type))
+                {
+                    LOG(Warning, "Invalid scene object type {0} (inherits from: {1}).", type.ToString(true), type.GetType().GetBaseType().ToString());
+                    return nullptr;
+                }
                 const ScriptingObjectSpawnParams params(id, type);
                 obj = (SceneObject*)type.GetType().Script.Spawn(params);
                 if (obj == nullptr)
@@ -160,6 +166,10 @@ SceneObject* SceneObjectsFactory::Spawn(Context& context, ISerializable::Deseria
 
 void SceneObjectsFactory::Deserialize(Context& context, SceneObject* obj, ISerializable::DeserializeStream& stream)
 {
+#if ENABLE_ASSERTION
+    CHECK(obj);
+#endif
+
     // Check for prefab instance
     Guid prefabObjectId;
     if (JsonTools::GetGuidIfValid(prefabObjectId, stream, "PrefabObjectID"))

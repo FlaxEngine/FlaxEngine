@@ -2,6 +2,8 @@
 
 using System;
 using System.Collections.Generic;
+using FlaxEditor.Surface.Undo;
+using FlaxEngine;
 
 namespace FlaxEditor.Surface
 {
@@ -9,7 +11,7 @@ namespace FlaxEditor.Surface
     {
         private VisjectSurfaceContext _root;
         private VisjectSurfaceContext _context;
-        private readonly Dictionary<ISurfaceContext, VisjectSurfaceContext> _contextCache = new Dictionary<ISurfaceContext, VisjectSurfaceContext>();
+        private readonly Dictionary<ContextHandle, VisjectSurfaceContext> _contextCache = new Dictionary<ContextHandle, VisjectSurfaceContext>();
 
         /// <summary>
         /// The surface context stack.
@@ -54,11 +56,12 @@ namespace FlaxEditor.Surface
                 return;
 
             // Get or create context
-            if (!_contextCache.TryGetValue(context, out VisjectSurfaceContext surfaceContext))
+            var contextHandle = new ContextHandle(context);
+            if (!_contextCache.TryGetValue(contextHandle, out VisjectSurfaceContext surfaceContext))
             {
                 surfaceContext = CreateContext(_context, context);
                 _context?.Children.Add(surfaceContext);
-                _contextCache.Add(context, surfaceContext);
+                _contextCache.Add(contextHandle, surfaceContext);
 
                 context.OnContextCreated(surfaceContext);
 
@@ -118,7 +121,8 @@ namespace FlaxEditor.Surface
             }
 
             // Check if has context in cache
-            if (_contextCache.TryGetValue(context, out VisjectSurfaceContext surfaceContext))
+            var contextHandle = new ContextHandle(context);
+            if (_contextCache.TryGetValue(contextHandle, out VisjectSurfaceContext surfaceContext))
             {
                 // Remove from navigation path
                 while (ContextStack.Contains(surfaceContext))
@@ -126,7 +130,7 @@ namespace FlaxEditor.Surface
 
                 // Dispose
                 surfaceContext.Clear();
-                _contextCache.Remove(context);
+                _contextCache.Remove(contextHandle);
             }
         }
 
@@ -147,7 +151,8 @@ namespace FlaxEditor.Surface
                 return;
 
             // Check if already in a path
-            if (_contextCache.TryGetValue(context, out VisjectSurfaceContext surfaceContext) && ContextStack.Contains(surfaceContext))
+            var contextHandle = new ContextHandle(context);
+            if (_contextCache.TryGetValue(contextHandle, out VisjectSurfaceContext surfaceContext) && ContextStack.Contains(surfaceContext))
             {
                 // Change stack
                 do

@@ -22,7 +22,6 @@ namespace FlaxEditor.Content
     /// Json assets proxy.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.JsonAssetBaseProxy" />
-    [ContentContextMenu("New/Json Asset")]
     public abstract class JsonAssetProxy : JsonAssetBaseProxy
     {
         /// <summary>
@@ -127,6 +126,7 @@ namespace FlaxEditor.Content
     /// Generic Json assets proxy (supports all json assets that don't have dedicated proxy).
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.JsonAssetBaseProxy" />
+    [ContentContextMenu("New/Json Asset")]
     public class GenericJsonAssetProxy : JsonAssetProxy
     {
         /// <inheritdoc />

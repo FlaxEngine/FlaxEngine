@@ -47,12 +47,25 @@ namespace Flax.Build.Plugins
             public MethodDefinition Execute;
         }
 
+        private struct DotnetContext
+        {
+            public bool Modified;
+            public bool Failed;
+            public AssemblyDefinition Assembly;
+            public List<TypeSerializer> AddSerializers;
+            public List<MethodRPC> MethodRPCs;
+            public HashSet<TypeDefinition> GeneratedSerializers;
+            public TypeReference VoidType;
+            public TypeReference NetworkStreamType;
+        }
+
         internal const string Network = "Network";
         internal const string NetworkReplicated = "NetworkReplicated";
         internal const string NetworkReplicatedAttribute = "FlaxEngine.NetworkReplicatedAttribute";
         internal const string NetworkRpc = "NetworkRpc";
         private const string Thunk1 = "INetworkSerializable_Serialize";
         private const string Thunk2 = "INetworkSerializable_Deserialize";
+
         private static readonly Dictionary<string, InBuildSerializer> _inBuildSerializers = new Dictionary<string, InBuildSerializer>()
         {
             { "System.Boolean", new InBuildSerializer("WriteBoolean", "ReadBoolean") },
@@ -127,6 +140,7 @@ namespace Flax.Build.Plugins
             {
                 fields = structInfo.Fields;
             }
+
             bool useReplication = false, useRpc = false;
             if (fields != null)
             {
@@ -139,6 +153,7 @@ namespace Flax.Build.Plugins
                     }
                 }
             }
+
             if (properties != null)
             {
                 foreach (var propertyInfo in properties)
@@ -150,6 +165,7 @@ namespace Flax.Build.Plugins
                     }
                 }
             }
+
             if (functions != null)
             {
                 foreach (var functionInfo in functions)
@@ -161,20 +177,22 @@ namespace Flax.Build.Plugins
                     }
                 }
             }
+
             if (useReplication)
             {
                 typeInfo.SetTag(NetworkReplicated, string.Empty);
-            
+
                 // Generate C++ wrapper functions to serialize/deserialize type
                 BindingsGenerator.CppIncludeFiles.Add("Engine/Networking/NetworkReplicator.h");
                 BindingsGenerator.CppIncludeFiles.Add("Engine/Networking/NetworkStream.h");
                 OnGenerateCppTypeSerialize(buildData, typeInfo, contents, fields, properties, true);
                 OnGenerateCppTypeSerialize(buildData, typeInfo, contents, fields, properties, false);
             }
+
             if (useRpc)
             {
                 typeInfo.SetTag(NetworkRpc, string.Empty);
-            
+
                 // Generate C++ wrapper functions to invoke/execute RPC
                 BindingsGenerator.CppIncludeFiles.Add("Engine/Networking/NetworkStream.h");
                 BindingsGenerator.CppIncludeFiles.Add("Engine/Networking/NetworkReplicator.h");
@@ -282,7 +300,7 @@ namespace Flax.Build.Plugins
                     // Replicate base type
                     OnGenerateCppWriteSerializer(contents, classStructInfo.BaseType.NativeName, "obj", serialize);
                 }
-                
+
                 // Replicate all marked fields and properties
                 if (fields != null)
                 {
@@ -293,6 +311,7 @@ namespace Flax.Build.Plugins
                         OnGenerateCppTypeSerializeData(buildData, typeInfo, contents, fieldInfo.Type, $"obj.{fieldInfo.Name}", serialize);
                     }
                 }
+
                 if (properties != null)
                 {
                     foreach (var propertyInfo in properties)
@@ -308,6 +327,7 @@ namespace Flax.Build.Plugins
                     }
                 }
             }
+
             contents.AppendLine("    }");
             contents.AppendLine();
         }
@@ -326,9 +346,10 @@ namespace Flax.Build.Plugins
                 if (apiType != null)
                     return IsRawPOD(buildData, apiType);
             }
+
             return false;
         }
-        
+
         private void OnGenerateCppTypeSerializeData(Builder.BuildData buildData, ApiTypeInfo caller, StringBuilder contents, TypeInfo type, string name, bool serialize)
         {
             var apiType = BindingsGenerator.FindApiTypeInfo(buildData, type, caller);
@@ -365,7 +386,7 @@ namespace Flax.Build.Plugins
                     throw new Exception($"Invalid pointer type '{type}' that cannot be serialized for replication of {caller.Name}.");
                 if (type.IsRef)
                     throw new Exception($"Invalid reference type '{type}' that cannot be serialized for replication of {caller.Name}.");
-                
+
                 // Structure serializer
                 OnGenerateCppWriteSerializer(contents, apiType.NativeName, name, serialize);
             }
@@ -375,13 +396,13 @@ namespace Flax.Build.Plugins
                 OnGenerateCppWriteRaw(contents, name, serialize);
             }
         }
-        
+
         private void OnGenerateCppWriteRaw(StringBuilder contents, string data, bool serialize)
         {
             var method = serialize ? "Write" : "Read";
             contents.AppendLine($"        stream->{method}({data});");
         }
-        
+
         private void OnGenerateCppWriteSerializer(StringBuilder contents, string type, string data, bool serialize)
         {
             if (type == "ScriptingObject" || type == "Script" || type == "Actor")
@@ -405,6 +426,7 @@ namespace Flax.Build.Plugins
                 // Register generated serializer functions
                 contents.AppendLine($"        NetworkReplicator::AddSerializer(ScriptingTypeHandle({typeNameNative}::TypeInitializer), {typeNameInternal}Internal::INetworkSerializable_Serialize, {typeNameInternal}Internal::INetworkSerializable_Deserialize);");
             }
+
             if (rpcTag != null)
             {
                 // Register generated RPCs
@@ -413,6 +435,7 @@ namespace Flax.Build.Plugins
                 {
                     functions = classInfo.Functions;
                 }
+
                 if (functions != null)
                 {
                     foreach (var functionInfo in functions)
@@ -430,16 +453,15 @@ namespace Flax.Build.Plugins
             // Skip types that don't use networking
             if (typeInfo.GetTag(NetworkReplicated) == null)
                 return;
-            
+
             if (typeInfo is ClassInfo)
                 return;
 
             // Generate C# wrapper functions to serialize/deserialize type directly from managed code
             OnGenerateCSharpTypeSerialize(buildData, typeInfo, contents, indent, true);
             OnGenerateCSharpTypeSerialize(buildData, typeInfo, contents, indent, false);
-
         }
-        
+
         private void OnGenerateCSharpTypeSerialize(Builder.BuildData buildData, ApiTypeInfo typeInfo, StringBuilder contents, string indent, bool serialize)
         {
             var mode = serialize ? "true" : "false";
@@ -463,6 +485,7 @@ namespace Flax.Build.Plugins
                     contents.Append(indent).AppendLine($"    throw new NotImplementedException(\"Not supported native structure with references used in managed code for replication.\");");
                 }
             }
+
             contents.Append(indent).AppendLine("}");
         }
 
@@ -493,7 +516,7 @@ namespace Flax.Build.Plugins
         private void OnPatchDotNetAssembly(Builder.BuildData buildData, NativeCpp.BuildOptions buildOptions, Task buildTask, string assemblyPath)
         {
             using (DefaultAssemblyResolver assemblyResolver = new DefaultAssemblyResolver())
-            using (AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly(assemblyPath, new ReaderParameters{ ReadWrite = true, ReadSymbols = true, AssemblyResolver = assemblyResolver }))
+            using (AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly(assemblyPath, new ReaderParameters { ReadWrite = true, ReadSymbols = true, AssemblyResolver = assemblyResolver }))
             {
                 // Setup module search locations
                 var searchDirectories = new HashSet<string>();
@@ -503,107 +526,36 @@ namespace Flax.Build.Plugins
                     if (file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
                         searchDirectories.Add(Path.GetDirectoryName(file));
                 }
+
                 foreach (var e in searchDirectories)
                     assemblyResolver.AddSearchDirectory(e);
 
                 ModuleDefinition module = assembly.MainModule;
-                TypeReference voidType = module.ImportReference(typeof(void));
-                module.GetType("FlaxEngine.Networking.NetworkStream", out var networkStreamType);
 
                 // Process all types within a module
-                bool modified = false;
-                bool failed = false;
-                var addSerializers = new List<TypeSerializer>();
-                var methodRPCs = new List<MethodRPC>();
+                var context = new DotnetContext
+                {
+                    Modified = false,
+                    Failed = false,
+                    Assembly = assembly,
+                    AddSerializers = new List<TypeSerializer>(),
+                    MethodRPCs = new List<MethodRPC>(),
+                    GeneratedSerializers = new HashSet<TypeDefinition>(),
+                    VoidType = module.ImportReference(typeof(void)),
+                };
+                module.GetType("FlaxEngine.Networking.NetworkStream", out context.NetworkStreamType);
                 foreach (TypeDefinition type in module.Types)
                 {
-                    if (type.IsInterface || type.IsEnum)
-                        continue;
-                    var isNative = type.HasAttribute("FlaxEngine.UnmanagedAttribute");
-                    if (isNative)
-                        continue;
-
-                    // Generate RPCs
-                    var methods = type.Methods;
-                    var methodsCount = methods.Count; // methods list can be modified during RPCs generation
-                    for (int i = 0; i < methodsCount; i++)
-                    {
-                        MethodDefinition method = methods[i];
-                        var attribute = method.CustomAttributes.FirstOrDefault(x => x.AttributeType.FullName == "FlaxEngine.NetworkRpcAttribute");
-                        if (attribute != null)
-                        {
-                            GenerateDotNetRPCBody(type, method, attribute, ref failed, networkStreamType, methodRPCs);
-                        }
-                    }
-
-                    // Generate serializers
-                    if (type.HasMethod(Thunk1) || type.HasMethod(Thunk2))
-                        continue;
-                    var isINetworkSerializable = type.HasInterface("FlaxEngine.Networking.INetworkSerializable");
-                    MethodDefinition serializeINetworkSerializable = null, deserializeINetworkSerializable = null;
-                    if (isINetworkSerializable)
-                    {
-                        foreach (MethodDefinition m in type.Methods)
-                        {
-                            if (m.HasBody && m.Parameters.Count == 1 && m.Parameters[0].ParameterType.FullName == "FlaxEngine.Networking.NetworkStream")
-                            {
-                                if (m.Name == "Serialize")
-                                    serializeINetworkSerializable = m;
-                                else if (m.Name == "Deserialize")
-                                    deserializeINetworkSerializable = m;
-                            }
-                        }
-                    }
-                    var isNetworkReplicated = false;
-                    foreach (FieldDefinition f in type.Fields)
-                    {
-                        if (!f.HasAttribute(NetworkReplicatedAttribute))
-                            continue;
-                        isNetworkReplicated = true;
-                        break;
-                    }
-                    foreach (PropertyDefinition p in type.Properties)
-                    {
-                        if (!p.HasAttribute(NetworkReplicatedAttribute))
-                            continue;
-                        isNetworkReplicated = true;
-                        break;
-                    }
-                    if (type.IsValueType)
-                    {
-                        if (isINetworkSerializable)
-                        {
-                            // Generate INetworkSerializable interface method calls
-                            GenerateCallINetworkSerializable(type, Thunk1, voidType, networkStreamType, serializeINetworkSerializable);
-                            GenerateCallINetworkSerializable(type, Thunk2, voidType, networkStreamType, deserializeINetworkSerializable);
-                            modified = true;
-                        }
-                        else if (isNetworkReplicated)
-                        {
-                            // Generate serialization methods
-                            GenerateSerializer(type, true, ref failed, Thunk1, voidType, networkStreamType);
-                            GenerateSerializer(type, false, ref failed, Thunk2, voidType, networkStreamType);
-                            modified = true;
-                        }
-                    }
-                    else if (!isINetworkSerializable && isNetworkReplicated)
-                    {
-                        // Generate serialization methods
-                        var addSerializer = new TypeSerializer();
-                        addSerializer.Type = type;
-                        addSerializer.Serialize = GenerateNativeSerializer(type, true, ref failed, Thunk1, voidType, networkStreamType);
-                        addSerializer.Deserialize = GenerateNativeSerializer(type, false, ref failed, Thunk2, voidType, networkStreamType);
-                        addSerializers.Add(addSerializer);
-                        modified = true;
-                    }
+                    GenerateTypeNetworking(ref context, type);
                 }
-                if (failed)
+
+                if (context.Failed)
                     throw new Exception($"Failed to generate network replication for assembly {assemblyPath}");
-                if (!modified)
+                if (!context.Modified)
                     return;
 
                 // Generate serializers initializer (invoked on module load)
-                if (addSerializers.Count != 0 || methodRPCs.Count != 0)
+                if (context.AddSerializers.Count != 0 || context.MethodRPCs.Count != 0)
                 {
                     // Create class
                     var name = "Initializer";
@@ -623,7 +575,7 @@ namespace Flax.Build.Plugins
                     c.CustomAttributes.Add(attribute);
 
                     // Add Init method
-                    var m = new MethodDefinition("Init", MethodAttributes.Private | MethodAttributes.Static | MethodAttributes.HideBySig, voidType);
+                    var m = new MethodDefinition("Init", MethodAttributes.Private | MethodAttributes.Static | MethodAttributes.HideBySig, context.VoidType);
                     ILProcessor il = m.Body.GetILProcessor();
                     il.Emit(OpCodes.Nop);
                     module.GetType("System.Type", out var typeType);
@@ -637,7 +589,7 @@ namespace Flax.Build.Plugins
                     module.ImportReference(addRPC);
                     var executeRPCFuncType = addRPC.Parameters[2].ParameterType;
                     var executeRPCFuncCtor = executeRPCFuncType.Resolve().GetMethod(".ctor");
-                    foreach (var e in addSerializers)
+                    foreach (var e in context.AddSerializers)
                     {
                         // NetworkReplicator.AddSerializer(typeof(<type>), <type>.INetworkSerializable_SerializeNative, <type>.INetworkSerializable_DeserializeNative);
                         il.Emit(OpCodes.Ldtoken, e.Type);
@@ -650,7 +602,8 @@ namespace Flax.Build.Plugins
                         il.Emit(OpCodes.Newobj, module.ImportReference(serializeFuncCtor));
                         il.Emit(OpCodes.Call, module.ImportReference(addSerializer));
                     }
-                    foreach (var e in methodRPCs)
+
+                    foreach (var e in context.MethodRPCs)
                     {
                         // NetworkReplicator.AddRPC(typeof(<type>), "<name>", <name>_Execute, <isServer>, <isClient>, <channel>);
                         il.Emit(OpCodes.Ldtoken, e.Type);
@@ -664,20 +617,135 @@ namespace Flax.Build.Plugins
                         il.Emit(OpCodes.Ldc_I4, e.Channel);
                         il.Emit(OpCodes.Call, module.ImportReference(addRPC));
                     }
+
                     il.Emit(OpCodes.Nop);
                     il.Emit(OpCodes.Ret);
                     c.Methods.Add(m);
                 }
 
                 // Serialize assembly back to the file
-                assembly.Write(new WriterParameters { WriteSymbols = true } );
+                assembly.Write(new WriterParameters { WriteSymbols = true });
             }
         }
 
-        private static void GenerateCallINetworkSerializable(TypeDefinition type, string name, TypeReference voidType, TypeReference networkStreamType, MethodDefinition method)
+        private static void GenerateTypeNetworking(ref DotnetContext context, TypeDefinition type)
         {
-            var m = new MethodDefinition(name, MethodAttributes.Public | MethodAttributes.HideBySig, voidType);
-            m.Parameters.Add(new ParameterDefinition("stream", ParameterAttributes.None, networkStreamType));
+            if (type.IsInterface || type.IsEnum)
+                return;
+
+            // Process nested types
+            foreach (var nestedType in type.NestedTypes)
+            {
+                GenerateTypeNetworking(ref context, nestedType);
+            }
+
+            if (type.IsClass)
+            {
+                // Generate RPCs
+                var methods = type.Methods;
+                var methodsCount = methods.Count; // methods list can be modified during RPCs generation
+                for (int i = 0; i < methodsCount; i++)
+                {
+                    MethodDefinition method = methods[i];
+                    var attribute = method.CustomAttributes.FirstOrDefault(x => x.AttributeType.FullName == "FlaxEngine.NetworkRpcAttribute");
+                    if (attribute != null)
+                    {
+                        GenerateDotNetRPCBody(ref context, type, method, attribute, context.NetworkStreamType);
+                        context.Modified = true;
+                    }
+                }
+            }
+
+            GenerateTypeSerialization(ref context, type);
+        }
+
+        private static void GenerateTypeSerialization(ref DotnetContext context, TypeDefinition type)
+        {
+            // Skip types outside from current assembly
+            if (context.Assembly.MainModule != type.Module)
+                return;
+
+            // Skip if already generated serialization for this type (eg. via referenced RPC in other type)
+            if (context.GeneratedSerializers.Contains(type))
+                return;
+            context.GeneratedSerializers.Add(type);
+
+            // Skip native types
+            var isNative = type.HasAttribute("FlaxEngine.UnmanagedAttribute");
+            if (isNative)
+                return;
+
+            // Skip if manually implemented serializers
+            if (type.HasMethod(Thunk1) || type.HasMethod(Thunk2))
+                return;
+
+            // Generate serializers
+            var isINetworkSerializable = type.HasInterface("FlaxEngine.Networking.INetworkSerializable");
+            MethodDefinition serializeINetworkSerializable = null, deserializeINetworkSerializable = null;
+            if (isINetworkSerializable)
+            {
+                foreach (MethodDefinition m in type.Methods)
+                {
+                    if (m.HasBody && m.Parameters.Count == 1 && m.Parameters[0].ParameterType.FullName == "FlaxEngine.Networking.NetworkStream")
+                    {
+                        if (m.Name == "Serialize")
+                            serializeINetworkSerializable = m;
+                        else if (m.Name == "Deserialize")
+                            deserializeINetworkSerializable = m;
+                    }
+                }
+            }
+
+            var isNetworkReplicated = false;
+            foreach (FieldDefinition f in type.Fields)
+            {
+                if (!f.HasAttribute(NetworkReplicatedAttribute))
+                    continue;
+                isNetworkReplicated = true;
+                break;
+            }
+
+            foreach (PropertyDefinition p in type.Properties)
+            {
+                if (!p.HasAttribute(NetworkReplicatedAttribute))
+                    continue;
+                isNetworkReplicated = true;
+                break;
+            }
+
+            if (type.IsValueType)
+            {
+                if (isINetworkSerializable)
+                {
+                    // Generate INetworkSerializable interface method calls
+                    GenerateCallINetworkSerializable(ref context, type, Thunk1, serializeINetworkSerializable);
+                    GenerateCallINetworkSerializable(ref context, type, Thunk2, deserializeINetworkSerializable);
+                    context.Modified = true;
+                }
+                else if (isNetworkReplicated)
+                {
+                    // Generate serialization methods
+                    GenerateSerializer(ref context, type, true, Thunk1);
+                    GenerateSerializer(ref context, type, false, Thunk2);
+                    context.Modified = true;
+                }
+            }
+            else if (!isINetworkSerializable && isNetworkReplicated)
+            {
+                // Generate serialization methods
+                var addSerializer = new TypeSerializer();
+                addSerializer.Type = type;
+                addSerializer.Serialize = GenerateNativeSerializer(ref context, type, true, Thunk1);
+                addSerializer.Deserialize = GenerateNativeSerializer(ref context, type, false, Thunk2);
+                context.AddSerializers.Add(addSerializer);
+                context.Modified = true;
+            }
+        }
+
+        private static void GenerateCallINetworkSerializable(ref DotnetContext context, TypeDefinition type, string name, MethodDefinition method)
+        {
+            var m = new MethodDefinition(name, MethodAttributes.Public | MethodAttributes.HideBySig, context.VoidType);
+            m.Parameters.Add(new ParameterDefinition("stream", ParameterAttributes.None, context.NetworkStreamType));
             ILProcessor il = m.Body.GetILProcessor();
             il.Emit(OpCodes.Nop);
             il.Emit(OpCodes.Ldarg_0);
@@ -688,15 +756,14 @@ namespace Flax.Build.Plugins
             type.Methods.Add(m);
         }
 
-        private static MethodDefinition GenerateSerializer(TypeDefinition type, bool serialize, ref bool failed, string name, TypeReference voidType, TypeReference networkStreamType)
+        private static MethodDefinition GenerateSerializer(ref DotnetContext context, TypeDefinition type, bool serialize, string name)
         {
             ModuleDefinition module = type.Module;
-            var m = new MethodDefinition(name, MethodAttributes.Public | MethodAttributes.HideBySig, voidType);
-            m.Parameters.Add(new ParameterDefinition("stream", ParameterAttributes.None, module.ImportReference(networkStreamType)));
-            TypeDefinition networkStream = networkStreamType.Resolve();
+            var m = new MethodDefinition(name, MethodAttributes.Public | MethodAttributes.HideBySig, context.VoidType);
+            m.Parameters.Add(new ParameterDefinition("stream", ParameterAttributes.None, module.ImportReference(context.NetworkStreamType)));
             ILProcessor il = m.Body.GetILProcessor();
             il.Emit(OpCodes.Nop);
-            
+
             // Serialize base type
             if (type.BaseType != null && type.BaseType.FullName != "System.ValueType" && type.BaseType.FullName != "FlaxEngine.Object" && type.BaseType.CanBeResolved())
             {
@@ -708,7 +775,7 @@ namespace Flax.Build.Plugins
             {
                 if (!f.HasAttribute(NetworkReplicatedAttribute))
                     continue;
-                GenerateSerializerType(type, serialize, ref failed, f, null, f.FieldType, il, networkStream);
+                GenerateSerializerType(ref context, type, serialize, f, null, f.FieldType, il);
             }
 
             // Serialize all type properties marked with NetworkReplicated attribute
@@ -716,7 +783,7 @@ namespace Flax.Build.Plugins
             {
                 if (!p.HasAttribute(NetworkReplicatedAttribute))
                     continue;
-                GenerateSerializerType(type, serialize, ref failed, null, p, p.PropertyType, il, networkStream);
+                GenerateSerializerType(ref context, type, serialize, null, p, p.PropertyType, il);
             }
 
             if (serialize)
@@ -726,17 +793,17 @@ namespace Flax.Build.Plugins
             return m;
         }
 
-        private static MethodDefinition GenerateNativeSerializer(TypeDefinition type, bool serialize, ref bool failed, string name, TypeReference voidType, TypeReference networkStreamType)
+        private static MethodDefinition GenerateNativeSerializer(ref DotnetContext context, TypeDefinition type, bool serialize, string name)
         {
             ModuleDefinition module = type.Module;
             module.GetType("System.IntPtr", out var intPtrType);
             module.GetType("FlaxEngine.Object", out var scriptingObjectType);
             var fromUnmanagedPtr = scriptingObjectType.Resolve().GetMethod("FromUnmanagedPtr");
 
-            var m = new MethodDefinition(name + "Native", MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig, voidType);
+            var m = new MethodDefinition(name + "Native", MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig, context.VoidType);
             m.Parameters.Add(new ParameterDefinition("instancePtr", ParameterAttributes.None, intPtrType));
             m.Parameters.Add(new ParameterDefinition("streamPtr", ParameterAttributes.None, intPtrType));
-            TypeReference networkStream = module.ImportReference(networkStreamType);
+            TypeReference networkStream = module.ImportReference(context.NetworkStreamType);
             ILProcessor il = m.Body.GetILProcessor();
             il.Emit(OpCodes.Nop);
             il.Body.InitLocals = true;
@@ -747,16 +814,16 @@ namespace Flax.Build.Plugins
             il.Emit(OpCodes.Call, module.ImportReference(fromUnmanagedPtr));
             il.Emit(OpCodes.Castclass, type);
             il.Emit(OpCodes.Stloc_0);
-            
+
             // NetworkStream stream = (NetworkStream)FlaxEngine.Object.FromUnmanagedPtr(streamPtr)
             il.Body.Variables.Add(new VariableDefinition(networkStream));
             il.Emit(OpCodes.Ldarg_1);
             il.Emit(OpCodes.Call, module.ImportReference(fromUnmanagedPtr));
             il.Emit(OpCodes.Castclass, module.ImportReference(networkStream));
             il.Emit(OpCodes.Stloc_1);
-            
+
             // Generate normal serializer
-            var serializer = GenerateSerializer(type, serialize, ref failed, name, voidType, networkStreamType);
+            var serializer = GenerateSerializer(ref context, type, serialize, name);
 
             // Call serializer
             il.Emit(OpCodes.Ldloc_0);
@@ -796,10 +863,11 @@ namespace Flax.Build.Plugins
             }
         }
 
-        private static void GenerateSerializerType(TypeDefinition type, bool serialize, ref bool failed, FieldReference field, PropertyDefinition property, TypeReference valueType, ILProcessor il, TypeDefinition networkStreamType)
+        private static void GenerateSerializerType(ref DotnetContext context, TypeDefinition type, bool serialize, FieldReference field, PropertyDefinition property, TypeReference valueType, ILProcessor il)
         {
             if (field == null && property == null)
                 throw new ArgumentException();
+            TypeDefinition networkStreamType = context.NetworkStreamType.Resolve();
             var propertyGetOpCode = OpCodes.Call;
             var propertySetOpCode = OpCodes.Call;
             if (property != null)
@@ -807,22 +875,29 @@ namespace Flax.Build.Plugins
                 if (property.GetMethod == null)
                 {
                     MonoCecil.CompilationError($"Missing getter method for property '{property.Name}' of type {valueType.FullName} in {type.FullName} for automatic replication.", property);
-                    failed = true;
+                    context.Failed = true;
                     return;
                 }
+
                 if (property.SetMethod == null)
                 {
                     MonoCecil.CompilationError($"Missing setter method for property '{property.Name}' of type {valueType.FullName} in {type.FullName} for automatic replication.", property);
-                    failed = true;
+                    context.Failed = true;
                     return;
                 }
+
                 if (property.GetMethod.IsVirtual)
                     propertyGetOpCode = OpCodes.Callvirt;
                 if (property.SetMethod.IsVirtual)
                     propertySetOpCode = OpCodes.Callvirt;
             }
+
             ModuleDefinition module = type.Module;
             TypeDefinition valueTypeDef = valueType.Resolve();
+
+            // Ensure to have valid serialization already generated for that value type (eg. when using custom structure field serialization)
+            GenerateTypeSerialization(ref context, valueTypeDef);
+
             if (_inBuildSerializers.TryGetValue(valueType.FullName, out var serializer))
             {
                 // Call NetworkStream method to write/read data
@@ -843,6 +918,7 @@ namespace Flax.Build.Plugins
                     il.Emit(OpCodes.Ldarg_1);
                     m = networkStreamType.GetMethod(serializer.ReadMethod);
                 }
+
                 il.Emit(OpCodes.Callvirt, module.ImportReference(m));
                 if (!serialize)
                 {
@@ -966,7 +1042,7 @@ namespace Flax.Build.Plugins
                     else
                         il.Emit(propertyGetOpCode, property.GetMethod);
 
-		            // int num2 = ((array2 != null) ? array2.Length : 0);
+                    // int num2 = ((array2 != null) ? array2.Length : 0);
                     il.Emit(OpCodes.Dup);
                     Instruction jmp1 = il.Create(OpCodes.Nop);
                     il.Emit(OpCodes.Brtrue_S, jmp1);
@@ -979,8 +1055,8 @@ namespace Flax.Build.Plugins
                     il.Emit(OpCodes.Conv_I4);
                     il.Append(jmp2);
                     il.Emit(OpCodes.Stloc, varStart + 0);
-                
-		            // stream.WriteInt32(num2);
+
+                    // stream.WriteInt32(num2);
                     il.Emit(OpCodes.Ldarg_1);
                     il.Emit(OpCodes.Ldloc, varStart + 0);
                     var m = networkStreamType.GetMethod("WriteInt32");
@@ -1039,16 +1115,16 @@ namespace Flax.Build.Plugins
                     var m = networkStreamType.GetMethod("ReadInt32");
                     il.Emit(OpCodes.Callvirt, module.ImportReference(m));
                     il.Emit(OpCodes.Stloc, varStart + 0);
-                    
-		            // System.Array.Resize(ref Array1, num);
+
+                    // System.Array.Resize(ref Array1, num);
                     il.Emit(OpCodes.Ldarg_0);
                     il.Emit(OpCodes.Ldflda, field);
                     il.Emit(OpCodes.Ldloc, varStart + 0);
                     module.TryGetTypeReference("System.Array", out var arrayType);
                     m = arrayType.Resolve().GetMethod("Resize", 2);
                     il.Emit(OpCodes.Call, module.ImportReference(m.InflateGeneric(elementType)));
-                    
-		            // fixed (int* buffer = Array1)
+
+                    // fixed (int* buffer = Array1)
                     il.Emit(OpCodes.Nop);
                     il.Emit(OpCodes.Ldarg_0);
                     il.Emit(OpCodes.Ldfld, field);
@@ -1067,8 +1143,8 @@ namespace Flax.Build.Plugins
                     il.Emit(OpCodes.Stloc, varStart + 1);
                     Instruction jmp3 = il.Create(OpCodes.Nop);
                     il.Emit(OpCodes.Br_S, jmp3);
-                    
-		            // stream.ReadBytes((byte*)buffer, num * sizeof(<elementType>));
+
+                    // stream.ReadBytes((byte*)buffer, num * sizeof(<elementType>));
                     il.Append(jmp2);
                     il.Emit(OpCodes.Ldloc, varStart + 2);
                     il.Emit(OpCodes.Ldc_I4_0);
@@ -1097,14 +1173,18 @@ namespace Flax.Build.Plugins
                     MonoCecil.CompilationError($"Not supported type '{valueType.FullName}' on {field.Name} in {type.FullName} for automatic replication.", field.Resolve());
                 else
                     MonoCecil.CompilationError($"Not supported type '{valueType.FullName}' for automatic replication.");
-                failed = true;
+                context.Failed = true;
             }
         }
 
-        private static void GenerateDotNetRPCSerializerType(TypeDefinition type, bool serialize, ref bool failed, int localIndex, TypeReference valueType, ILProcessor il, TypeDefinition networkStreamType, int streamLocalIndex, Instruction ilStart)
+        private static void GenerateDotNetRPCSerializerType(ref DotnetContext context, TypeDefinition type, bool serialize, int localIndex, TypeReference valueType, ILProcessor il, TypeDefinition networkStreamType, int streamLocalIndex, Instruction ilStart)
         {
             ModuleDefinition module = type.Module;
             TypeDefinition valueTypeDef = valueType.Resolve();
+
+            // Ensure to have valid serialization already generated for that value type
+            GenerateTypeSerialization(ref context, valueTypeDef);
+
             if (_inBuildSerializers.TryGetValue(valueType.FullName, out var serializer))
             {
                 // Call NetworkStream method to write/read data
@@ -1127,7 +1207,7 @@ namespace Flax.Build.Plugins
                 module.GetType("System.Guid", out var guidType);
                 module.GetType("FlaxEngine.Object", out var scriptingObjectType);
                 if (serialize)
-                {  
+                {
                     il.InsertBefore(ilStart, il.Create(OpCodes.Nop));
                     il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, streamLocalIndex));
                     il.InsertBefore(ilStart, il.Create(OpCodes.Ldarg, localIndex));
@@ -1209,39 +1289,43 @@ namespace Flax.Build.Plugins
             {
                 // Unknown type
                 Log.Error($"Not supported type '{valueType.FullName}' for RPC parameter in {type.FullName}.");
-                failed = true;
+                context.Failed = true;
             }
         }
 
-        private static void GenerateDotNetRPCBody(TypeDefinition type, MethodDefinition method, CustomAttribute attribute, ref bool failed, TypeReference networkStreamType, List<MethodRPC> methodRPCs)
+        private static void GenerateDotNetRPCBody(ref DotnetContext context, TypeDefinition type, MethodDefinition method, CustomAttribute attribute, TypeReference networkStreamType)
         {
             // Validate RPC usage
             if (method.IsAbstract)
             {
                 MonoCecil.CompilationError($"Not supported abstract RPC method '{method.FullName}'.", method);
-                failed = true;
+                context.Failed = true;
                 return;
             }
+
             if (method.IsVirtual)
             {
                 MonoCecil.CompilationError($"Not supported virtual RPC method '{method.FullName}'.", method);
-                failed = true;
+                context.Failed = true;
                 return;
             }
+
             ModuleDefinition module = type.Module;
             var voidType = module.TypeSystem.Void;
             if (method.ReturnType != voidType)
             {
                 MonoCecil.CompilationError($"Not supported non-void RPC method '{method.FullName}'.", method);
-                failed = true;
+                context.Failed = true;
                 return;
             }
+
             if (method.IsStatic)
             {
                 MonoCecil.CompilationError($"Not supported static RPC method '{method.FullName}'.", method);
-                failed = true;
+                context.Failed = true;
                 return;
             }
+
             var methodRPC = new MethodRPC();
             methodRPC.Type = type;
             methodRPC.Method = method;
@@ -1252,21 +1336,24 @@ namespace Flax.Build.Plugins
                 methodRPC.IsClient = (bool)attribute.ConstructorArguments[1].Value;
                 methodRPC.Channel = (int)attribute.ConstructorArguments[2].Value;
             }
+
             methodRPC.IsServer = (bool)attribute.GetFieldValue("Server", methodRPC.IsServer);
             methodRPC.IsClient = (bool)attribute.GetFieldValue("Client", methodRPC.IsClient);
             methodRPC.Channel = (int)attribute.GetFieldValue("Channel", methodRPC.Channel);
             if (methodRPC.IsServer && methodRPC.IsClient)
             {
                 MonoCecil.CompilationError($"Network RPC {method.Name} in {type.FullName} cannot be both Server and Client.", method);
-                failed = true;
+                context.Failed = true;
                 return;
             }
+
             if (!methodRPC.IsServer && !methodRPC.IsClient)
             {
                 MonoCecil.CompilationError($"Network RPC {method.Name} in {type.FullName} needs to have Server or Client specifier.", method);
-                failed = true;
+                context.Failed = true;
                 return;
             }
+
             module.GetType("System.IntPtr", out var intPtrType);
             module.GetType("FlaxEngine.Object", out var scriptingObjectType);
             var fromUnmanagedPtr = scriptingObjectType.Resolve().GetMethod("FromUnmanagedPtr");
@@ -1294,7 +1381,7 @@ namespace Flax.Build.Plugins
                 il.Emit(OpCodes.Call, module.ImportReference(fromUnmanagedPtr));
                 il.Emit(OpCodes.Castclass, networkStream);
                 il.Emit(OpCodes.Stloc_1);
-                
+
                 // Add locals for each RPC parameter
                 var argsStart = il.Body.Variables.Count;
                 for (int i = 0; i < method.Parameters.Count; i++)
@@ -1303,9 +1390,10 @@ namespace Flax.Build.Plugins
                     if (parameter.IsOut)
                     {
                         MonoCecil.CompilationError($"Network RPC {method.Name} in {type.FullName} parameter {parameter.Name} cannot be 'out'.", method);
-                        failed = true;
+                        context.Failed = true;
                         return;
                     }
+
                     var parameterType = parameter.ParameterType;
                     il.Body.Variables.Add(new VariableDefinition(parameterType));
                 }
@@ -1315,7 +1403,7 @@ namespace Flax.Build.Plugins
                 {
                     var parameter = method.Parameters[i];
                     var parameterType = parameter.ParameterType;
-                    GenerateDotNetRPCSerializerType(type, false, ref failed, argsStart + i, parameterType, il, networkStream.Resolve(), 1, null);
+                    GenerateDotNetRPCSerializerType(ref context, type, false, argsStart + i, parameterType, il, networkStream.Resolve(), 1, null);
                 }
 
                 // Call RPC method body
@@ -1324,8 +1412,9 @@ namespace Flax.Build.Plugins
                 {
                     il.Emit(OpCodes.Ldloc, argsStart + i);
                 }
+
                 il.Emit(OpCodes.Callvirt, method);
-                
+
                 il.Emit(OpCodes.Nop);
                 il.Emit(OpCodes.Ret);
                 type.Methods.Add(m);
@@ -1371,10 +1460,10 @@ namespace Flax.Build.Plugins
                 // ||
                 il.InsertBefore(ilStart, jumpIf2Start);
                 il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, varsStart + 1));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Brfalse_S, jumpBodyStart));
+                il.InsertBefore(ilStart, il.Create(OpCodes.Brfalse, jumpBodyStart));
                 il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, varsStart + 2));
                 il.InsertBefore(ilStart, il.Create(OpCodes.Ldc_I4_2));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Beq_S, jumpBodyStart));
+                il.InsertBefore(ilStart, il.Create(OpCodes.Beq, jumpBodyStart));
                 // {
                 il.InsertBefore(ilStart, jumpIfBodyStart);
 
@@ -1391,7 +1480,7 @@ namespace Flax.Build.Plugins
                 {
                     var parameter = method.Parameters[i];
                     var parameterType = parameter.ParameterType;
-                    GenerateDotNetRPCSerializerType(type, true, ref failed, i + 1, parameterType, il, networkStream.Resolve(), streamLocalIndex, ilStart);
+                    GenerateDotNetRPCSerializerType(ref context, type, true, i + 1, parameterType, il, networkStream.Resolve(), streamLocalIndex, ilStart);
                 }
 
                 // NetworkReplicator.EndInvokeRPC(this, typeof(<type>), "<name>", stream);
@@ -1418,7 +1507,6 @@ namespace Flax.Build.Plugins
                     il.InsertBefore(ilStart, tmp);
                     //il.InsertBefore(ilStart, il.Create(OpCodes.Ret));
                     il.InsertBefore(ilStart, il.Create(OpCodes.Br, jumpBodyEnd));
-
                 }
 
                 // if (client && networkMode == NetworkManagerMode.Server) return;
@@ -1439,7 +1527,7 @@ namespace Flax.Build.Plugins
                 il.InsertBefore(ilStart, jumpBodyStart);
             }
 
-            methodRPCs.Add(methodRPC);
+            context.MethodRPCs.Add(methodRPC);
         }
     }
 }

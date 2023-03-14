@@ -6,6 +6,8 @@
 #include "Engine/Serialization/ReadStream.h"
 #include "Engine/Serialization/WriteStream.h"
 
+class INetworkSerializable;
+
 /// <summary>
 /// Objects and values serialization stream for sending data over network. Uses memory buffer for both read and write operations.
 /// </summary>
@@ -61,6 +63,14 @@ public:
     {
         ReadBytes(data, bytes);
     }
+
+    using ReadStream::Read;
+    void Read(INetworkSerializable& obj);
+    void Read(INetworkSerializable* obj);
+
+    using WriteStream::Write;
+    void Write(INetworkSerializable& obj);
+    void Write(INetworkSerializable* obj);
 
 public:
     // [Stream]

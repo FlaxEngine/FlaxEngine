@@ -326,10 +326,10 @@ namespace FlaxEditor.Windows
             Select(item, true);
 
             // Disable scrolling in content view
-            if (_split.Panel2.VScrollBar != null)
-                _split.Panel2.VScrollBar.ThumbEnabled = false;
-            if (_split.Panel2.HScrollBar != null)
-                _split.Panel2.HScrollBar.ThumbEnabled = false;
+            if (_contentViewPanel.VScrollBar != null)
+                _contentViewPanel.VScrollBar.ThumbEnabled = false;
+            if (_contentViewPanel.HScrollBar != null)
+                _contentViewPanel.HScrollBar.ThumbEnabled = false;
             ScrollingOnContentView(false);
 
             // Show rename popup
@@ -340,10 +340,10 @@ namespace FlaxEditor.Windows
             popup.Closed += renamePopup =>
             {
                 // Restore scrolling in content view
-                if (_split.Panel2.VScrollBar != null)
-                    _split.Panel2.VScrollBar.ThumbEnabled = true;
-                if (_split.Panel2.HScrollBar != null)
-                    _split.Panel2.HScrollBar.ThumbEnabled = true;
+                if (_contentViewPanel.VScrollBar != null)
+                    _contentViewPanel.VScrollBar.ThumbEnabled = true;
+                if (_contentViewPanel.HScrollBar != null)
+                    _contentViewPanel.HScrollBar.ThumbEnabled = true;
                 ScrollingOnContentView(true);
 
                 // Check if was creating new element
@@ -761,7 +761,7 @@ namespace FlaxEditor.Windows
 
             // Select and scroll to cover in view
             _view.Select(item);
-            _split.Panel2.ScrollViewTo(item, fastScroll);
+            _contentViewPanel.ScrollViewTo(item, fastScroll);
 
             // Focus
             _view.Focus();

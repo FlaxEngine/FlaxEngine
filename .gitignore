@@ -5,6 +5,7 @@
 obj/
 Cache/
 Binaries/
+Output/
 Logs/
 Source/*.csproj
 /Package_*/

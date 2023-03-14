@@ -484,7 +484,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Blend with Mask",
                 Description = "Blend animation poses using skeleton mask",
                 Flags = NodeFlags.AnimGraph,
-                Size = new Float2(180, 100),
+                Size = new Float2(180, 140),
                 DefaultValues = new object[]
                 {
                     0.0f,
@@ -496,7 +496,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, "Pose A", true, typeof(void), 1),
                     NodeElementArchetype.Factory.Input(1, "Pose B", true, typeof(void), 2),
                     NodeElementArchetype.Factory.Input(2, "Alpha", true, typeof(float), 3, 0),
-                    NodeElementArchetype.Factory.Asset(100, 20, 1, typeof(SkeletonMask)),
+                    NodeElementArchetype.Factory.Asset(0, 70, 1, typeof(SkeletonMask)),
                 }
             },
             new NodeArchetype
