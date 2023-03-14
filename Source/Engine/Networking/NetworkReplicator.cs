@@ -9,14 +9,23 @@ namespace FlaxEngine.Networking
     partial class NetworkReplicator
     {
         private static Dictionary<Type, KeyValuePair<SerializeFunc, SerializeFunc>> _managedSerializers;
+        private static List<ExecuteRPCFunc> _managedExecuteRpcFuncs;
 
 #if FLAX_EDITOR
-        private static void OnScriptsReloadBegin()
+        private static void ClearManagedReferences()
         {
             // Clear refs to managed types that will be hot-reloaded
-            _managedSerializers.Clear();
-            _managedSerializers = null;
-            FlaxEditor.ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+            if (_managedSerializers != null)
+            {
+                _managedSerializers.Clear();
+                _managedSerializers = null;
+            }
+            if (_managedExecuteRpcFuncs != null)
+            {
+                _managedExecuteRpcFuncs.Clear();
+                _managedExecuteRpcFuncs = null;
+            }
+            FlaxEditor.ScriptsBuilder.ScriptsReloadBegin -= ClearManagedReferences;
         }
 #endif
 
@@ -55,8 +64,9 @@ namespace FlaxEngine.Networking
             if (_managedSerializers == null)
             {
                 _managedSerializers = new Dictionary<Type, KeyValuePair<SerializeFunc, SerializeFunc>>();
+                _managedExecuteRpcFuncs = new List<ExecuteRPCFunc>();
 #if FLAX_EDITOR
-                FlaxEditor.ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+                FlaxEditor.ScriptsBuilder.ScriptsReloadBegin += ClearManagedReferences;
 #endif
             }
             _managedSerializers[type] = new KeyValuePair<SerializeFunc, SerializeFunc>(serialize, deserialize);
@@ -125,10 +135,22 @@ namespace FlaxEngine.Networking
         /// <param name="isClient">Client RPC.</param>
         /// <param name="channel">Network channel to use for RPC transport.</param>
         [Unmanaged]
-        public static void AddRPC(Type type, string name, ExecuteRPCFunc execute, bool isServer = true, bool isClient = false, NetworkChannelType channel = NetworkChannelType.ReliableOrdered)
+        public static unsafe void AddRPC(Type type, string name, ExecuteRPCFunc execute, bool isServer = true, bool isClient = false, NetworkChannelType channel = NetworkChannelType.ReliableOrdered)
         {
             if (!typeof(FlaxEngine.Object).IsAssignableFrom(type))
                 throw new ArgumentException("Not supported type for RPC. Only FlaxEngine.Object types are valid.");
+
+            if (_managedExecuteRpcFuncs == null)
+            {
+                _managedSerializers = new Dictionary<Type, KeyValuePair<SerializeFunc, SerializeFunc>>();
+                _managedExecuteRpcFuncs = new List<ExecuteRPCFunc>();
+#if FLAX_EDITOR
+                FlaxEditor.ScriptsBuilder.ScriptsReloadBegin += ClearManagedReferences;
+#endif
+            }
+            // Store the reference to prevent garbage collection
+            _managedExecuteRpcFuncs.Add(execute);
+
             Internal_AddRPC(type, name, Marshal.GetFunctionPointerForDelegate(execute), isServer, isClient, channel);
         }
     }

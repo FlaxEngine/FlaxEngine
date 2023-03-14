@@ -983,7 +983,15 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
                 {
                     if (method->GetParametersCount() == 0)
                     {
-                        method->Invoke(nullptr, nullptr, nullptr);
+                        MObject* exception = nullptr;
+                        method->Invoke(nullptr, nullptr, &exception);
+                        if (exception)
+                        {
+                            MException ex(exception);
+                            String methodName = String(method->GetName());
+                            ex.Log(LogType::Error, methodName.Get());
+                            LOG(Error, "Failed to call module initializer for class {0} from assembly {1}.", String(mclass->GetFullName()), assembly->ToString());
+                        }
                     }
                 }
             }
