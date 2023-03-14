@@ -13,7 +13,7 @@ using Mono.Cecil.Cil;
 namespace Flax.Build.Plugins
 {
     /// <summary>
-    /// Flax.Build plugin for Networking extenrions support. Generates required bindings glue code for automatic types replication and RPCs invoking. 
+    /// Flax.Build plugin for Networking extensions support. Generates required bindings glue code for automatic types replication and RPCs invoking. 
     /// </summary>
     /// <seealso cref="Flax.Build.Plugin" />
     internal sealed class NetworkingPlugin : Plugin
@@ -476,14 +476,14 @@ namespace Flax.Build.Plugins
             if (!binaryModule.Any(module => module.Tags.ContainsKey(Network)))
                 return;
 
-            // Generate netoworking code inside assembly after it's being compiled
+            // Generate networking code inside assembly after it's being compiled
             var assemblyPath = buildTask.ProducedFiles[0];
             var task = graph.Add<Task>();
             task.ProducedFiles.Add(assemblyPath);
             task.WorkingDirectory = buildTask.WorkingDirectory;
             task.Command = () => OnPatchDotNetAssembly(buildData, buildOptions, buildTask, assemblyPath);
             task.CommandPath = null;
-            task.InfoMessage = $"Generating netowrking code for {Path.GetFileName(assemblyPath)}...";
+            task.InfoMessage = $"Generating networking code for {Path.GetFileName(assemblyPath)}...";
             task.Cost = 50;
             task.DisableCache = true;
             task.DependentTasks = new HashSet<Task>();
@@ -580,7 +580,7 @@ namespace Flax.Build.Plugins
                         }
                         else if (isNetworkReplicated)
                         {
-                            // Generate serializization methods
+                            // Generate serialization methods
                             GenerateSerializer(type, true, ref failed, Thunk1, voidType, networkStreamType);
                             GenerateSerializer(type, false, ref failed, Thunk2, voidType, networkStreamType);
                             modified = true;
@@ -588,7 +588,7 @@ namespace Flax.Build.Plugins
                     }
                     else if (!isINetworkSerializable && isNetworkReplicated)
                     {
-                        // Generate serializization methods
+                        // Generate serialization methods
                         var addSerializer = new TypeSerializer();
                         addSerializer.Type = type;
                         addSerializer.Serialize = GenerateNativeSerializer(type, true, ref failed, Thunk1, voidType, networkStreamType);
@@ -1274,7 +1274,7 @@ namespace Flax.Build.Plugins
 
             // Generate static method to execute RPC locally
             {
-                var m = new MethodDefinition(method.Name + "_Execute", MethodAttributes.Static | MethodAttributes.Private | MethodAttributes.HideBySig, voidType);
+                var m = new MethodDefinition(method.Name + "_Execute", MethodAttributes.Static | MethodAttributes.Assembly | MethodAttributes.HideBySig, voidType);
                 m.Parameters.Add(new ParameterDefinition("instancePtr", ParameterAttributes.None, intPtrType));
                 m.Parameters.Add(new ParameterDefinition("streamPtr", ParameterAttributes.None, module.ImportReference(intPtrType)));
                 ILProcessor il = m.Body.GetILProcessor();
