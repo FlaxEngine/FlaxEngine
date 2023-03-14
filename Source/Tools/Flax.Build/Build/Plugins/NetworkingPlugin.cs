@@ -508,7 +508,6 @@ namespace Flax.Build.Plugins
             task.CommandPath = null;
             task.InfoMessage = $"Generating networking code for {Path.GetFileName(assemblyPath)}...";
             task.Cost = 50;
-            task.DisableCache = true;
             task.DependentTasks = new HashSet<Task>();
             task.DependentTasks.Add(buildTask);
         }
