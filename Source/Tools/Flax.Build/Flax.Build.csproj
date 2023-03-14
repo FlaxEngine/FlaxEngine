@@ -41,9 +41,6 @@
     <Reference Include="System.Text.Encoding.CodePages">
       <HintPath>..\..\..\Source\Platforms\DotNet\System.Text.Encoding.CodePages.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\..\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
-    </Reference>
     <Reference Include="Mono.Cecil">
       <HintPath>..\..\..\Source\Platforms\DotNet\Mono.Cecil.dll</HintPath>
     </Reference>

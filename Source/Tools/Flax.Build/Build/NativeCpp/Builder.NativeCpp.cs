@@ -7,7 +7,8 @@ using System.Linq;
 using Flax.Build.Bindings;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace Flax.Build
 {
@@ -56,32 +57,50 @@ namespace Flax.Build
         {
             public string Name;
 
-            [NonSerialized]
+            [JsonIgnore]
             public string NativePath;
 
-            [JsonProperty("NativePath")]
+            [JsonPropertyName("NativePath")]
             public string NativePathProcessed;
 
-            [NonSerialized]
+            [JsonIgnore]
             public string ManagedPath;
 
-            [JsonProperty("ManagedPath")]
+            [JsonPropertyName("ManagedPath")]
             public string ManagedPathProcessed;
         }
 
         public class BuildTargetReferenceInfo
         {
-            [NonSerialized]
+            [JsonIgnore]
             public string ProjectPath;
 
-            [JsonProperty("ProjectPath")]
+            [JsonPropertyName("ProjectPath")]
             public string ProjectPathProcessed;
 
-            [NonSerialized]
+            [JsonIgnore]
             public string Path;
 
-            [JsonProperty("Path")]
+            [JsonPropertyName("Path")]
             public string PathProcessed;
+        }
+
+        [JsonSourceGenerationOptions(IncludeFields = true)]
+        [JsonSerializable(typeof(BuildTargetBinaryModuleInfo))]
+        internal partial class BuildTargetBinaryModuleInfoSourceGenerationContext : JsonSerializerContext
+        {
+        }
+
+        [JsonSourceGenerationOptions(IncludeFields = true)]
+        [JsonSerializable(typeof(BuildTargetReferenceInfo))]
+        internal partial class BuildTargetReferenceInfoSourceGenerationContext : JsonSerializerContext
+        {
+        }
+
+        [JsonSourceGenerationOptions(IncludeFields = true)]
+        [JsonSerializable(typeof(BuildTargetInfo))]
+        internal partial class BuildTargetInfoSourceGenerationContext : JsonSerializerContext
+        {
         }
 
         public class BuildTargetInfo
@@ -985,7 +1004,7 @@ namespace Flax.Build
                 buildData.BuildInfo.AddReferencedBuilds(ref i, project.ProjectFolderPath, buildData.ReferenceBuilds);
 
                 if (!buildData.Target.IsPreBuilt)
-                    Utilities.WriteFileIfChanged(Path.Combine(outputPath, target.Name + ".Build.json"), JsonConvert.SerializeObject(buildData.BuildInfo, Formatting.Indented));
+                    Utilities.WriteFileIfChanged(Path.Combine(outputPath, target.Name + ".Build.json"), JsonSerializer.Serialize<BuildTargetInfo>(buildData.BuildInfo, new JsonSerializerOptions() { WriteIndented = true, IncludeFields = true, TypeInfoResolver = BuildTargetInfoSourceGenerationContext.Default }));
             }
 
             // Deploy files
@@ -1184,7 +1203,7 @@ namespace Flax.Build
                 buildData.BuildInfo.AddReferencedBuilds(ref i, project.ProjectFolderPath, buildData.ReferenceBuilds);
 
                 if (!buildData.Target.IsPreBuilt)
-                    Utilities.WriteFileIfChanged(Path.Combine(outputPath, target.Name + ".Build.json"), JsonConvert.SerializeObject(buildData.BuildInfo, Formatting.Indented));
+                    Utilities.WriteFileIfChanged(Path.Combine(outputPath, target.Name + ".Build.json"), JsonSerializer.Serialize<BuildTargetInfo>(buildData.BuildInfo, new JsonSerializerOptions() { WriteIndented = true, IncludeFields = true, TypeInfoResolver = BuildTargetInfoSourceGenerationContext.Default }));
             }
 
             // Deploy files
