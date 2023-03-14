@@ -64,6 +64,16 @@ bool CoreCLR::InitHostfxr(const String& configPath, const String& libraryPath)
     if (rc != 0)
     {
         LOG(Error, "Failed to find hostfxr: {0:x} ({1})", (unsigned int)rc, String(get_hostfxr_params.dotnet_root));
+
+        // Warn user about missing .Net
+#if PLATFORM_DESKTOP
+        Platform::OpenUrl(TEXT("https://dotnet.microsoft.com/en-us/download/dotnet/7.0"));
+#endif
+#if USE_EDITOR
+        LOG(Fatal, "Missing .NET 7 SDK installation requried to run Flax Editor.");
+#else
+        LOG(Fatal, "Missing .NET 7 Runtime installation requried to run this application.");
+#endif
         return true;
     }
     String path(hostfxrPath);
@@ -73,7 +83,7 @@ bool CoreCLR::InitHostfxr(const String& configPath, const String& libraryPath)
     void* hostfxr = Platform::LoadLibrary(path.Get());
     if (hostfxr == nullptr)
     {
-        LOG(Error, "Failed to setup hostfxr API ({0})", path);
+        LOG(Fatal, "Failed to load hostfxr library ({0})", path);
         return true;
     }
     hostfxr_initialize_for_runtime_config = (hostfxr_initialize_for_runtime_config_fn)Platform::GetProcAddress(hostfxr, "hostfxr_initialize_for_runtime_config");
@@ -85,7 +95,7 @@ bool CoreCLR::InitHostfxr(const String& configPath, const String& libraryPath)
     hostfxr_run_app = (hostfxr_run_app_fn)Platform::GetProcAddress(hostfxr, "hostfxr_run_app");
     if (!hostfxr_get_runtime_delegate || !hostfxr_run_app)
     {
-        LOG(Error, "Failed to setup hostfxr API ({0})", path);
+        LOG(Fatal, "Failed to setup hostfxr API ({0})", path);
         return true;
     }
 
@@ -102,8 +112,8 @@ bool CoreCLR::InitHostfxr(const String& configPath, const String& libraryPath)
     rc = hostfxr_initialize_for_dotnet_command_line(ARRAY_COUNT(argv), argv, &init_params, &handle);
     if (rc != 0 || handle == nullptr)
     {
-        LOG(Error, "Failed to initialize hostfxr: {0:x} ({1})", (unsigned int)rc, String(init_params.dotnet_root));
         hostfxr_close(handle);
+        LOG(Fatal, "Failed to initialize hostfxr: {0:x} ({1})", (unsigned int)rc, String(init_params.dotnet_root));
         return true;
     }
 
@@ -111,8 +121,8 @@ bool CoreCLR::InitHostfxr(const String& configPath, const String& libraryPath)
     rc = hostfxr_get_runtime_delegate(handle, hdt_get_function_pointer, &pget_function_pointer);
     if (rc != 0 || pget_function_pointer == nullptr)
     {
-        LOG(Error, "Failed to get runtime delegate hdt_get_function_pointer: 0x{0:x}", (unsigned int)rc);
         hostfxr_close(handle);
+        LOG(Fatal, "Failed to get runtime delegate hdt_get_function_pointer: 0x{0:x}", (unsigned int)rc);
         return true;
     }
 
