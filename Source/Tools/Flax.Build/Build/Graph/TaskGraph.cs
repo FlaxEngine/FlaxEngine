@@ -297,9 +297,10 @@ namespace Flax.Build.Graph
                 var lastWrite = new DateTime(reader.ReadInt64());
 
                 var isValid = true;
-                if (File.Exists(file))
+                var cacheFile = true;
+                if (FileCache.Exists(file))
                 {
-                    if (File.GetLastWriteTime(file) > lastWrite)
+                    if (FileCache.GetLastWriteTime(file) > lastWrite)
                     {
                         isValid = false;
                     }
@@ -308,10 +309,15 @@ namespace Flax.Build.Graph
                 {
                     isValid = false;
                 }
+                else
+                    cacheFile = false;
 
                 filesDates[i] = lastWrite;
                 filesValid[i] = isValid;
                 _prevBuildCacheFiles.Add(file);
+
+                if (!isValid || !cacheFile)
+                    FileCache.FileRemoveFromCache(file);
             }
 
             int taskCount = reader.ReadInt32();
@@ -478,6 +484,12 @@ namespace Flax.Build.Graph
                     fileIndices.Add(fileIndex);
                 }
 
+                if (!task.HasValidCachedResults)
+                {
+                    foreach (var file in task.ProducedFiles)
+                        FileCache.FileRemoveFromCache(file);
+                }
+
                 _prevBuildCache.Add(new BuildResultCache
                 {
                     CmdLine = cmdLine,
@@ -501,8 +513,8 @@ namespace Flax.Build.Graph
 
                     // Last File Write
                     DateTime lastWrite;
-                    if (File.Exists(file))
-                        lastWrite = File.GetLastWriteTime(file);
+                    if (FileCache.Exists(file))
+                        lastWrite = FileCache.GetLastWriteTime(file);
                     else
                         lastWrite = DateTime.MinValue;
                     writer.Write(lastWrite.Ticks);
