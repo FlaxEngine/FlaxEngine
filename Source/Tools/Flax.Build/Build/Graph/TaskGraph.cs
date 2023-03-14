@@ -21,6 +21,7 @@ namespace Flax.Build.Graph
 
         private readonly List<BuildResultCache> _prevBuildCache = new List<BuildResultCache>();
         private readonly List<string> _prevBuildCacheFiles = new List<string>();
+        private readonly Dictionary<string, int> _prevBuildCacheFileIndices = new Dictionary<string, int>();
 
         /// <summary>
         /// The workspace folder of the task graph.
@@ -315,6 +316,7 @@ namespace Flax.Build.Graph
                 filesDates[i] = lastWrite;
                 filesValid[i] = isValid;
                 _prevBuildCacheFiles.Add(file);
+                _prevBuildCacheFileIndices.Add(file, i);
 
                 if (!isValid || !cacheFile)
                     FileCache.FileRemoveFromCache(file);
@@ -474,11 +476,11 @@ namespace Flax.Build.Graph
                 fileIndices.Clear();
                 foreach (var file in files)
                 {
-                    int fileIndex = _prevBuildCacheFiles.IndexOf(file);
-                    if (fileIndex == -1)
+                    if (!_prevBuildCacheFileIndices.TryGetValue(file, out int fileIndex))
                     {
                         fileIndex = _prevBuildCacheFiles.Count;
                         _prevBuildCacheFiles.Add(file);
+                        _prevBuildCacheFileIndices.Add(file, fileIndex);
                     }
 
                     fileIndices.Add(fileIndex);
