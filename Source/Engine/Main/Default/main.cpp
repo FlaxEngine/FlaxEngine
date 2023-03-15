@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX || PLATFORM_MAC || PLATFORM_IOS
 
 #include "Engine/Engine/Engine.h"
 #include "Engine/Core/Types/StringBuilder.h"

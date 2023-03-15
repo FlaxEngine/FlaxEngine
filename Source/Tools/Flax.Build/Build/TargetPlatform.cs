@@ -56,6 +56,11 @@ namespace Flax.Build
         /// Running on Mac.
         /// </summary>
         Mac = 10,
+
+        /// <summary>
+        /// Running on iPhone.
+        /// </summary>
+        iOS = 11,
     }
 
     /// <summary>

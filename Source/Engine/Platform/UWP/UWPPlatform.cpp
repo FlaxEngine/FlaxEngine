@@ -186,18 +186,6 @@ Float2 UWPPlatform::GetDesktopSize()
     return result;
 }
 
-Rectangle UWPPlatform::GetMonitorBounds(const Float2& screenPos)
-{
-    // TODO: do it in a proper way
-    return Rectangle(Float2::Zero, GetDesktopSize());
-}
-
-Rectangle UWPPlatform::GetVirtualDesktopBounds()
-{
-    // TODO: do it in a proper way
-    return Rectangle(Float2::Zero, GetDesktopSize());
-}
-
 Window* UWPPlatform::CreateWindow(const CreateWindowSettings& settings)
 {
     // Settings with provided UWPWindowImpl are only valid

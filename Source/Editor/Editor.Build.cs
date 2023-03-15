@@ -73,6 +73,7 @@ public class Editor : EditorModule
         {
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Mac", "PLATFORM_TOOLS_MAC");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Android", "PLATFORM_TOOLS_ANDROID");
+            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "iOS", "PLATFORM_TOOLS_IOS");
         }
 
         // Visual Studio integration

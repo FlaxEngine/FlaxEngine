@@ -55,6 +55,7 @@ public class Audio : EngineModule
             options.CompileEnv.PreprocessorDefinitions.Add("AUDIO_API_PS5");
             break;
         case TargetPlatform.Mac:
+        case TargetPlatform.iOS:
             useOpenAL = true;
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
@@ -86,6 +87,7 @@ public class Audio : EngineModule
                 options.Libraries.Add("OpenSLES");
                 break;
             case TargetPlatform.Mac:
+            case TargetPlatform.iOS:
                 options.OutputFiles.Add(Path.Combine(depsRoot, "libopenal.a"));
                 options.Libraries.Add("CoreAudio.framework");
                 options.Libraries.Add("AudioUnit.framework");

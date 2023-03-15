@@ -12,4 +12,6 @@
 #include "Platforms/Switch/Engine/GraphicsDevice/Vulkan/SwitchVulkanPlatform.h"
 #elif PLATFORM_MAC
 #include "Mac/MacVulkanPlatform.h"
+#elif PLATFORM_IOS
+#include "iOS/iOSVulkanPlatform.h"
 #endif

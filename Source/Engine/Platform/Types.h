@@ -243,10 +243,35 @@ class UnixFile;
 typedef UnixFile File;
 class MacPlatform;
 typedef MacPlatform Platform;
-class MacThread;
-typedef MacThread Thread;
+class AppleThread;
+typedef AppleThread Thread;
 class MacWindow;
 typedef MacWindow Window;
+class UnixNetwork;
+typedef UnixNetwork Network;
+class UserBase;
+typedef UserBase User;
+
+#elif PLATFORM_IOS
+
+class ClipboardBase;
+typedef ClipboardBase Clipboard;
+class UnixCriticalSection;
+typedef UnixCriticalSection CriticalSection;
+class UnixConditionVariable;
+typedef UnixConditionVariable ConditionVariable;
+class AppleFileSystem;
+typedef AppleFileSystem FileSystem;
+class FileSystemWatcherBase;
+typedef FileSystemWatcherBase FileSystemWatcher;
+class UnixFile;
+typedef UnixFile File;
+class iOSPlatform;
+typedef iOSPlatform Platform;
+class AppleThread;
+typedef AppleThread Thread;
+class iOSWindow;
+typedef iOSWindow Window;
 class UnixNetwork;
 typedef UnixNetwork Network;
 class UserBase;

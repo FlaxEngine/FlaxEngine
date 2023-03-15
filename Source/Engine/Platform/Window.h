@@ -22,6 +22,8 @@
 #include "Platforms/PS5/Engine/Platform/PS5Window.h"
 #elif PLATFORM_MAC
 #include "Mac/MacWindow.h"
+#elif PLATFORM_IOS
+#include "iOS/iOSWindow.h"
 #else
 #error Missing Window implementation!
 #endif

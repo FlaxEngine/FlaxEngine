@@ -248,6 +248,12 @@ namespace Flax.Build.Platforms
                 case TargetArchitecture.ARM64: return "aarch64-apple-macos" + Configuration.MacOSXMinVer;
                 default: throw new InvalidArchitectureException(architecture);
                 }
+            case TargetPlatform.iOS:
+                switch (architecture)
+                {
+                case TargetArchitecture.ARM64: return "aarch64-apple-ios" + Configuration.iOSMinVer;
+                default: throw new InvalidArchitectureException(architecture);
+                }
             default: throw new InvalidPlatformException(platform);
             }
         }

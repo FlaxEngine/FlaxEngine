@@ -35,3 +35,6 @@
 #if PLATFORM_MAC
 #include "Engine/Platform/Mac/MacPlatformSettings.h"
 #endif
+#if PLATFORM_IOS
+#include "Engine/Platform/iOS/iOSPlatformSettings.h"
+#endif

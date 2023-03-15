@@ -11,7 +11,7 @@
 #if PLATFORM_LINUX
 #include <stdio.h>
 #elif PLATFORM_MAC
-#include "Engine/Platform/Mac/MacUtils.h"
+#include "Engine/Platform/Apple/AppleUtils.h"
 #include <AppKit/AppKit.h>
 #endif
 
@@ -88,7 +88,7 @@ void VisualStudioCodeEditor::FindEditors(Array<CodeEditor*>* output)
 	NSURL* AppURL = [[NSWorkspace sharedWorkspace] URLForApplicationWithBundleIdentifier:@"com.microsoft.VSCode"];
 	if (AppURL != nullptr)
 	{
-        const String path = MacUtils::ToString((CFStringRef)[AppURL path]);
+        const String path = AppleUtils::ToString((CFStringRef)[AppURL path]);
         output->Add(New<VisualStudioCodeEditor>(path, false));
         return;
 	}

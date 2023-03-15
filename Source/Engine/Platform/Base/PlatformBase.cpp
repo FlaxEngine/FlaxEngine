@@ -520,6 +520,16 @@ void PlatformBase::CreateGuid(Guid& result)
     result = Guid(dateThingHigh, randomThing | (sequentialThing << 16), cyclesThing, dateThingLow);
 }
 
+Rectangle PlatformBase::GetMonitorBounds(const Float2& screenPos)
+{
+    return Rectangle(Float2::Zero, Platform::GetDesktopSize());
+}
+
+Rectangle PlatformBase::GetVirtualDesktopBounds()
+{
+    return Rectangle(Float2::Zero, Platform::GetDesktopSize());
+}
+
 Float2 PlatformBase::GetVirtualDesktopSize()
 {
     return Platform::GetVirtualDesktopBounds().Size;
@@ -616,6 +626,8 @@ const Char* ToString(PlatformType type)
         return TEXT("PlayStation 5");
     case PlatformType::Mac:
         return TEXT("Mac");
+    case PlatformType::iOS:
+        return TEXT("iOS");
     default:
         return TEXT("");
     }

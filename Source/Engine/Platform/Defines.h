@@ -58,6 +58,11 @@ API_ENUM() enum class PlatformType
     /// Running on Mac.
     /// </summary>
     Mac = 10,
+
+    /// <summary>
+    /// Running on iPhone.
+    /// </summary>
+    iOS = 11,
 };
 
 /// <summary>
@@ -152,6 +157,8 @@ API_ENUM() enum class ArchitectureType
 #include "Platforms/Switch/Engine/Platform/SwitchDefines.h"
 #elif PLATFORM_MAC
 #include "Mac/MacDefines.h"
+#elif PLATFORM_IOS
+#include "iOS/iOSDefines.h"
 #else
 #error Missing Defines implementation!
 #endif

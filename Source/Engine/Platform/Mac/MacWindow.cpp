@@ -3,7 +3,7 @@
 #if PLATFORM_MAC
 
 #include "../Window.h"
-#include "MacUtils.h"
+#include "Engine/Platform/Apple/AppleUtils.h"
 #include "Engine/Platform/IGuiData.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Input/Input.h"
@@ -208,7 +208,7 @@ void GetDragDropData(const MacWindow* window, id<NSDraggingInfo> sender, Float2&
     if ([[pasteboard types] containsObject:NSPasteboardTypeString])
     {
         dropData.CurrentType = IGuiData::Type::Text;
-        dropData.AsText = MacUtils::ToString((CFStringRef)[pasteboard stringForType:NSPasteboardTypeString]);
+        dropData.AsText = AppleUtils::ToString((CFStringRef)[pasteboard stringForType:NSPasteboardTypeString]);
     }
     else
     {
@@ -218,7 +218,7 @@ void GetDragDropData(const MacWindow* window, id<NSDraggingInfo> sender, Float2&
         {
             NSString* url = [[files objectAtIndex:i] path];
             NSString* file = [NSURL URLWithString:url].path;
-            dropData.AsFiles.Add(MacUtils::ToString((CFStringRef)file));
+            dropData.AsFiles.Add(AppleUtils::ToString((CFStringRef)file));
         }
     }
 }
@@ -572,7 +572,7 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     : WindowBase(settings)
 {
     _clientSize = Float2(settings.Size.X, settings.Size.Y);
-    Float2 pos = MacUtils::PosToCoca(settings.Position);
+    Float2 pos = AppleUtils::PosToCoca(settings.Position);
     NSRect frame = NSMakeRect(pos.X, pos.Y - settings.Size.Y, settings.Size.X, settings.Size.Y);
     NSUInteger styleMask = NSWindowStyleMaskClosable;
     if (settings.IsRegularWindow)
@@ -606,7 +606,7 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     MacViewImpl* view = [[MacViewImpl alloc] init];
     view.wantsLayer = YES;
     [view setWindow:this];
-    window.title = (__bridge NSString*)MacUtils::ToString(settings.Title);
+    window.title = (__bridge NSString*)AppleUtils::ToString(settings.Title);
     [window setWindow:this];
     [window setReleasedWhenClosed:NO];
     [window setMinSize:NSMakeSize(settings.MinimumSize.X, settings.MinimumSize.Y)];
@@ -779,7 +779,7 @@ void MacWindow::SetClientBounds(const Rectangle& clientArea)
     //newRect.origin.x = oldRect.origin.x;
     //newRect.origin.y = NSMaxY(oldRect) - newRect.size.height;
 
-    Float2 pos = MacUtils::PosToCoca(clientArea.Location);
+    Float2 pos = AppleUtils::PosToCoca(clientArea.Location);
     Float2 titleSize = GetWindowTitleSize(this);
     newRect.origin.x = pos.X + titleSize.X;
     newRect.origin.y = pos.Y - newRect.size.height + titleSize.Y;
@@ -792,7 +792,7 @@ void MacWindow::SetPosition(const Float2& position)
     NSWindow* window = (NSWindow*)_window;
     if (!window)
         return;
-    Float2 pos = MacUtils::PosToCoca(position) / MacPlatform::ScreenScale;
+    Float2 pos = AppleUtils::PosToCoca(position) / MacPlatform::ScreenScale;
     NSRect rect = [window frame];
     [window setFrameOrigin:NSMakePoint(pos.X, pos.Y - rect.size.height)];
 }
@@ -803,7 +803,7 @@ Float2 MacWindow::GetPosition() const
     if (!window)
         return Float2::Zero;
     NSRect rect = [window frame];
-    return MacUtils::CocaToPos(Float2(rect.origin.x, rect.origin.y + rect.size.height) * MacPlatform::ScreenScale);
+    return AppleUtils::CocaToPos(Float2(rect.origin.x, rect.origin.y + rect.size.height) * MacPlatform::ScreenScale);
 }
 
 Float2 MacWindow::GetSize() const
@@ -868,7 +868,7 @@ void MacWindow::SetTitle(const StringView& title)
     NSWindow* window = (NSWindow*)_window;
     if (!window)
         return;
-    [window setTitle:(__bridge NSString*)MacUtils::ToString(_title)];
+    [window setTitle:(__bridge NSString*)AppleUtils::ToString(_title)];
 }
 
 DragDropEffect MacWindow::DoDragDrop(const StringView& data)

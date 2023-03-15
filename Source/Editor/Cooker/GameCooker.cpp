@@ -63,6 +63,10 @@
 #include "Platform/Mac/MacPlatformTools.h"
 #include "Engine/Platform/Mac/MacPlatformSettings.h"
 #endif
+#if PLATFORM_TOOLS_MAC
+#include "Platform/iOS/iOSPlatformTools.h"
+#include "Engine/Platform/iOS/iOSPlatformSettings.h"
+#endif
 
 namespace GameCookerImpl
 {
@@ -141,6 +145,8 @@ const Char* ToString(const BuildPlatform platform)
         return TEXT("Mac x64");
     case BuildPlatform::MacOSARM64:
         return TEXT("Mac ARM64");
+    case BuildPlatform::iOSARM64:
+        return TEXT("iOS ARM64");
     default:
         return TEXT("?");
     }
@@ -346,6 +352,11 @@ PlatformTools* GameCooker::GetTools(BuildPlatform platform)
             result = New<MacPlatformTools>(ArchitectureType::ARM64);
             break;
 #endif
+#if PLATFORM_TOOLS_IOS
+        case BuildPlatform::iOSARM64:
+            result = New<iOSPlatformTools>();
+            break;
+#endif
         }
         Tools.Add(platform, result);
     }
@@ -475,7 +486,10 @@ void GameCooker::GetCurrentPlatform(PlatformType& platform, BuildPlatform& build
         buildPlatform = BuildPlatform::PS5;
         break;
     case PlatformType::Mac:
-        buildPlatform = PLATFORM_ARCH_ARM ? BuildPlatform::AndroidARM64 : BuildPlatform::MacOSx64;
+        buildPlatform = PLATFORM_ARCH_ARM ? BuildPlatform::MacOSARM64 : BuildPlatform::MacOSx64;
+        break;
+    case PlatformType::iOS:
+        buildPlatform = BuildPlatform::iOSARM64;
         break;
     default: ;
     }

@@ -983,6 +983,9 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
         case PlatformType::Mac:
             boxId = 11;
             break;
+        case PlatformType::iOS:
+            boxId = 12;
+            break;
         default: ;
         }
         value = tryGetValue(node->GetBox(node->GetBox(boxId)->HasConnection() ? boxId : 1), Value::Zero);

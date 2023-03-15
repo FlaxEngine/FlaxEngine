@@ -665,7 +665,7 @@ public:
     /// </summary>
     /// <param name="screenPos">The screen position (in pixels).</param>
     /// <returns>The monitor bounds.</returns>
-    API_FUNCTION() static Rectangle GetMonitorBounds(const Float2& screenPos) = delete;
+    API_FUNCTION() static Rectangle GetMonitorBounds(const Float2& screenPos);
 
     /// <summary>
     /// Gets size of the primary desktop.
@@ -677,7 +677,7 @@ public:
     /// Gets virtual bounds of the desktop made of all the monitors outputs attached.
     /// </summary>
     /// <returns>Whole desktop size.</returns>
-    API_PROPERTY() static Rectangle GetVirtualDesktopBounds() = delete;
+    API_PROPERTY() static Rectangle GetVirtualDesktopBounds();
 
     /// <summary>
     /// Gets virtual size of the desktop made of all the monitors outputs attached.

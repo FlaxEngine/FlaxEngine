@@ -2,25 +2,25 @@
 
 #pragma once
 
-#if PLATFORM_MAC
+#if PLATFORM_MAC || PLATFORM_IOS
 
 #include "../Unix/UnixThread.h"
 #include <signal.h>
 
 /// <summary>
-/// Thread object for Mac platform.
+/// Thread object for Apple platform.
 /// </summary>
-class FLAXENGINE_API MacThread : public UnixThread
+class FLAXENGINE_API AppleThread : public UnixThread
 {
 public:
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="MacThread"/> class.
+    /// Initializes a new instance of the <see cref="AppleThread"/> class.
     /// </summary>
     /// <param name="runnable">The runnable.</param>
     /// <param name="name">The thread name.</param>
     /// <param name="priority">The thread priority.</param>
-    MacThread(IRunnable* runnable, const String& name, ThreadPriority priority)
+    AppleThread(IRunnable* runnable, const String& name, ThreadPriority priority)
         : UnixThread(runnable, name, priority)
     {
     }
@@ -35,9 +35,9 @@ public:
     /// <param name="priority">Tells the thread whether it needs to adjust its priority or not. Defaults to normal priority</param>
     /// <param name="stackSize">The size of the stack to create. 0 means use the current thread's stack size</param>
     /// <returns>Pointer to the new thread or null if cannot create it</returns>
-    static MacThread* Create(IRunnable* runnable, const String& name, ThreadPriority priority = ThreadPriority::Normal, uint32 stackSize = 0)
+    static AppleThread* Create(IRunnable* runnable, const String& name, ThreadPriority priority = ThreadPriority::Normal, uint32 stackSize = 0)
     {
-        return (MacThread*)Setup(New<MacThread>(runnable, name, priority), stackSize);
+        return (AppleThread*)Setup(New<AppleThread>(runnable, name, priority), stackSize);
     }
 
 protected:

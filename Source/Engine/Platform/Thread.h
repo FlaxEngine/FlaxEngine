@@ -14,8 +14,8 @@
 #include "Android/AndroidThread.h"
 #elif PLATFORM_SWITCH
 #include "Platforms/Switch/Engine/Platform/SwitchThread.h"
-#elif PLATFORM_MAC
-#include "Mac/MacThread.h"
+#elif PLATFORM_MAC || PLATFORM_IOS
+#include "Apple/AppleThread.h"
 #else
 #error Missing Thread implementation!
 #endif

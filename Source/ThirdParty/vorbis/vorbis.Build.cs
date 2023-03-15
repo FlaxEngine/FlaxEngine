@@ -42,6 +42,7 @@ public class vorbis : DepsModule
         case TargetPlatform.Android:
         case TargetPlatform.Switch:
         case TargetPlatform.Mac:
+        case TargetPlatform.iOS:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libvorbis.a"));
             options.OutputFiles.Add(Path.Combine(depsRoot, "libvorbisenc.a"));
             options.OutputFiles.Add(Path.Combine(depsRoot, "libvorbisfile.a"));

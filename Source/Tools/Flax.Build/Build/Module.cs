@@ -103,6 +103,7 @@ namespace Flax.Build
             case TargetPlatform.Android: return "PLATFORM_ANDROID";
             case TargetPlatform.Switch: return "PLATFORM_SWITCH";
             case TargetPlatform.Mac: return "PLATFORM_MAC";
+            case TargetPlatform.iOS: return "PLATFORM_IOS";
             default: throw new InvalidPlatformException(platform);
             }
         }
