@@ -323,6 +323,18 @@ namespace Flax.Build.NativeCpp
                     //continue;
                 }
 
+                // Skip lines containing API_INJECT_CODE
+                if (includedFile.EndsWith('\\'))
+                {
+                    int j = includeStart;
+                    while (j-- > 1 && fileContents[j-1] != '\n')
+                    {
+                    }
+                    var injectCode = fileContents.Substring(j, "API_INJECT_CODE".Length);
+                    if (injectCode == "API_INJECT_CODE")
+                        continue;
+                }
+
                 // Relative to the workspace root
                 var includedFilePath = Path.Combine(Globals.Root, "Source", includedFile);
                 if (!FileExists(includedFilePath))
