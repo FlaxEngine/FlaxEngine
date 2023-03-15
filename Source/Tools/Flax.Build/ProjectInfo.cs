@@ -4,11 +4,12 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Flax.Build
 {
-    public class FlaxVersionConverter : JsonConverter
+    public class FlaxVersionConverter : JsonConverter<Version>
     {
         /// <summary>
         /// Writes the JSON representation of the object.
@@ -16,20 +17,9 @@ namespace Flax.Build
         /// <param name="writer">The <see cref="JsonWriter"/> to write to.</param>
         /// <param name="value">The value.</param>
         /// <param name="serializer">The calling serializer.</param>
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+        public override void Write(Utf8JsonWriter writer, Version value, JsonSerializerOptions options)
         {
-            if (value == null)
-            {
-                writer.WriteNull();
-            }
-            else if (value is Version)
-            {
-                writer.WriteValue(value.ToString());
-            }
-            else
-            {
-                throw new JsonSerializationException("Expected Version object value");
-            }
+            writer.WriteStringValue(value.ToString());
         }
 
         /// <summary>
@@ -40,27 +30,27 @@ namespace Flax.Build
         /// <param name="existingValue">The existing property value of the JSON that is being converted.</param>
         /// <param name="serializer">The calling serializer.</param>
         /// <returns>The object value.</returns>
-        public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+        public override Version? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType == JsonToken.Null)    
+            if (reader.TokenType == JsonTokenType.Null)
             {
                 return null;
             }
             else
             {
-                if (reader.TokenType == JsonToken.StartObject)
+                if (reader.TokenType == JsonTokenType.StartObject)
                 {
                     try
                     {
                         reader.Read();
                         Dictionary<string, int> values = new Dictionary<string, int>();
-                        while (reader.TokenType == JsonToken.PropertyName)
+                        while (reader.TokenType == JsonTokenType.PropertyName)
                         {
-                            var key = reader.Value as string;
+                            var key = reader.GetString();
                             reader.Read();
-                            var val = (long)reader.Value;
+                            var val = reader.GetInt32();
                             reader.Read();
-                            values.Add(key, (int)val);
+                            values.Add(key, val);
                         }
 
                         int major = 0, minor = 0, build = 0;
@@ -73,24 +63,24 @@ namespace Flax.Build
                     }
                     catch (Exception ex)
                     {
-                        throw new Exception(String.Format("Error parsing version string: {0}", reader.Value), ex);
+                        throw new Exception(String.Format("Error parsing version string: {0}", reader.GetString()), ex);
                     }
                 }
-                else if (reader.TokenType == JsonToken.String)
+                else if (reader.TokenType == JsonTokenType.String)
                 {
                     try
                     {
-                        Version v = new Version((string)reader.Value!);
+                        Version v = new Version((string)reader.GetString()!);
                         return v;
                     }
                     catch (Exception ex)
                     {
-                        throw new Exception(String.Format("Error parsing version string: {0}", reader.Value), ex);
+                        throw new Exception(String.Format("Error parsing version string: {0}", reader.GetString()), ex);
                     }
                 }
                 else
                 {
-                    throw new Exception(String.Format("Unexpected token or value when parsing version. Token: {0}, Value: {1}", reader.TokenType, reader.Value));
+                    throw new Exception(String.Format("Unexpected token or value when parsing version. Token: {0}, Value: {1}", reader.TokenType, reader.GetString()));
                 }
             }
         }
@@ -108,6 +98,51 @@ namespace Flax.Build
         }
     }
 
+    public class ConfigurationDictionaryConverter : System.Text.Json.Serialization.JsonConverter<Dictionary<string, string>>
+    {
+        public override Dictionary<string, string>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            var dictionary = new Dictionary<string, string>();
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonTokenType.EndObject)
+                    return dictionary;
+                if (reader.TokenType != JsonTokenType.PropertyName)
+                    throw new Exception();
+
+                string key = reader.GetString();
+                reader.Read();
+
+                string value;
+                if (reader.TokenType == JsonTokenType.True)
+                    value = "true";
+                else if (reader.TokenType == JsonTokenType.False)
+                    value = "false";
+                else
+                    value = reader.GetString();
+                dictionary.Add(key, value);
+            }
+            throw new Exception();
+        }
+
+        public override void Write(Utf8JsonWriter writer, Dictionary<string, string> dictionary, JsonSerializerOptions options)
+        {
+            writer.WriteStartObject();
+            foreach ((string key, string value) in dictionary)
+            {
+                var propertyName = key.ToString();
+                writer.WritePropertyName(options.PropertyNamingPolicy?.ConvertName(propertyName) ?? propertyName);
+                writer.WriteStringValue(value);
+            }
+            writer.WriteEndObject();
+        }
+    }
+
+    [JsonSourceGenerationOptions(IncludeFields = true)]
+    [JsonSerializable(typeof(ProjectInfo))]
+    internal partial class ProjectInfoSourceGenerationContext : JsonSerializerContext
+    {
+    }
 
     /// <summary>
     /// Contains information about Flax project.
@@ -129,7 +164,7 @@ namespace Flax.Build
             /// <summary>
             /// The referenced project.
             /// </summary>
-            [NonSerialized]
+            [JsonIgnore]
             public ProjectInfo Project;
 
             /// <inheritdoc />
@@ -147,13 +182,13 @@ namespace Flax.Build
         /// <summary>
         /// The project file path.
         /// </summary>
-        [NonSerialized]
+        [JsonIgnore]
         public string ProjectPath;
 
         /// <summary>
         /// The project root folder path.
         /// </summary>
-        [NonSerialized]
+        [JsonIgnore]
         public string ProjectFolderPath;
 
         /// <summary>
@@ -199,6 +234,7 @@ namespace Flax.Build
         /// <summary>
         /// The custom build configuration entries loaded from project file.
         /// </summary>
+        [System.Text.Json.Serialization.JsonConverter(typeof(ConfigurationDictionaryConverter))]
         public Dictionary<string, string> Configuration;
 
         /// <summary>
@@ -255,7 +291,7 @@ namespace Flax.Build
         /// </summary>
         public void Save()
         {
-            var contents = JsonConvert.SerializeObject(this, new JsonSerializerSettings() { Converters = new[] { new FlaxVersionConverter() } });
+            var contents = JsonSerializer.Serialize<ProjectInfo>(this, new JsonSerializerOptions() { Converters = { new FlaxVersionConverter() }, TypeInfoResolver = ProjectInfoSourceGenerationContext.Default });
             File.WriteAllText(ProjectPath, contents);
         }
 
@@ -281,7 +317,8 @@ namespace Flax.Build
                 // Load
                 Log.Verbose("Loading project file from \"" + path + "\"...");
                 var contents = File.ReadAllText(path);
-                var project = JsonConvert.DeserializeObject<ProjectInfo>(contents, new JsonSerializerSettings() { Converters = new[] { new FlaxVersionConverter() } });
+                var project = JsonSerializer.Deserialize<ProjectInfo>(contents.AsSpan(),
+                    new JsonSerializerOptions() { Converters = { new FlaxVersionConverter() }, IncludeFields = true, TypeInfoResolver = ProjectInfoSourceGenerationContext.Default });
                 project.ProjectPath = path;
                 project.ProjectFolderPath = Path.GetDirectoryName(path);
 

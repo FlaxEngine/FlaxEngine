@@ -253,7 +253,7 @@ namespace Flax.Build.Bindings
             {
                 // Version
                 writer.Write(CacheVersion);
-                writer.Write(File.GetLastWriteTime(Assembly.GetExecutingAssembly().Location).Ticks);
+                writer.Write(FileCache.GetLastWriteTime(Assembly.GetExecutingAssembly().Location).Ticks);
 
                 // Build options
                 writer.Write(moduleOptions.IntermediateFolder);
@@ -270,7 +270,7 @@ namespace Flax.Build.Bindings
                 {
                     var headerFile = headerFiles[i];
                     writer.Write(headerFile);
-                    writer.Write(File.GetLastWriteTime(headerFile).Ticks);
+                    writer.Write(FileCache.GetLastWriteTime(headerFile).Ticks);
                 }
 
                 // Info
@@ -281,7 +281,7 @@ namespace Flax.Build.Bindings
         private static bool LoadCache(ref ModuleInfo moduleInfo, BuildOptions moduleOptions, List<string> headerFiles)
         {
             var path = GetCachePath(moduleInfo.Module, moduleOptions);
-            if (!File.Exists(path))
+            if (!FileCache.Exists(path))
                 return false;
             try
             {
@@ -292,7 +292,7 @@ namespace Flax.Build.Bindings
                     var version = reader.ReadInt32();
                     if (version != CacheVersion)
                         return false;
-                    if (File.GetLastWriteTime(Assembly.GetExecutingAssembly().Location).Ticks != reader.ReadInt64())
+                    if (FileCache.GetLastWriteTime(Assembly.GetExecutingAssembly().Location).Ticks != reader.ReadInt64())
                         return false;
 
                     // Build options
@@ -320,7 +320,7 @@ namespace Flax.Build.Bindings
                         var headerFile = headerFiles[i];
                         if (headerFile != reader.ReadString())
                             return false;
-                        if (File.GetLastWriteTime(headerFile).Ticks > reader.ReadInt64())
+                        if (FileCache.GetLastWriteTime(headerFile).Ticks > reader.ReadInt64())
                             return false;
                     }
 
