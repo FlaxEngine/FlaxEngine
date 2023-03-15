@@ -17,8 +17,6 @@ namespace Flax.Build.NativeCpp
         private static Dictionary<string, string[]> AllIncludesCache = new();
         private static Dictionary<string, DateTime> DirectIncludesTimestampCache = new();
         private static Dictionary<string, DateTime> AllIncludesTimestampCache = new();
-        private static Dictionary<string, bool> FileExistsCache = new();
-        private static Dictionary<string, DateTime> FileTimestampCache = new();
         private static readonly string IncludeToken = "include";
         private static string CachePath;
 
@@ -141,26 +139,6 @@ namespace Flax.Build.NativeCpp
             }
         }
 
-        private static bool FileExists(string path)
-        {
-            if (FileExistsCache.TryGetValue(path, out bool result))
-                return result;
-
-            result = File.Exists(path);
-            FileExistsCache.Add(path, result);
-            return result;
-        }
-
-        private static DateTime FileLastWriteTime(string path)
-        {
-            if (FileTimestampCache.TryGetValue(path, out DateTime result))
-                return result;
-
-            result = File.GetLastWriteTime(path);
-            FileTimestampCache.Add(path, result);
-            return result;
-        }
-
         /// <summary>
         /// Finds all included files by the source file (including dependencies).
         /// </summary>
@@ -176,7 +154,7 @@ namespace Flax.Build.NativeCpp
             {
                 if (AllIncludesTimestampCache.TryGetValue(sourceFile, out var cachedTimestamp))
                 {
-                    lastModified = FileLastWriteTime(sourceFile);
+                    lastModified = FileCache.GetLastWriteTime(sourceFile);
                     if (lastModified == cachedTimestamp)
                         return result;
                 }
@@ -185,7 +163,7 @@ namespace Flax.Build.NativeCpp
                 AllIncludesTimestampCache.Remove(sourceFile);
             }
 
-            if (!FileExists(sourceFile))
+            if (!FileCache.Exists(sourceFile))
                 throw new Exception(string.Format("Cannot scan file \"{0}\" for includes because it does not exist.", sourceFile));
 
             //using (new ProfileEventScope("FindAllIncludedFiles"))
@@ -231,7 +209,7 @@ namespace Flax.Build.NativeCpp
 
         private static string[] GetDirectIncludes(string sourceFile)
         {
-            if (!FileExists(sourceFile))
+            if (!FileCache.Exists(sourceFile))
                 return Array.Empty<string>();
             DateTime? lastModified = null;
 
@@ -241,7 +219,7 @@ namespace Flax.Build.NativeCpp
             {
                 if (DirectIncludesTimestampCache.TryGetValue(sourceFile, out var cachedTimestamp))
                 {
-                    lastModified = FileLastWriteTime(sourceFile);
+                    lastModified = FileCache.GetLastWriteTime(sourceFile);
                     if (lastModified == cachedTimestamp)
                         return result;
                 }
@@ -337,11 +315,11 @@ namespace Flax.Build.NativeCpp
 
                 // Relative to the workspace root
                 var includedFilePath = Path.Combine(Globals.Root, "Source", includedFile);
-                if (!FileExists(includedFilePath))
+                if (!FileCache.Exists(includedFilePath))
                 {
                     // Relative to the source file
                     includedFilePath = Path.Combine(sourceFileFolder, includedFile);
-                    if (!FileExists(includedFilePath))
+                    if (!FileCache.Exists(includedFilePath))
                     {
                         // Relative to any of the included project workspaces
                         var project = Globals.Project;
@@ -349,7 +327,7 @@ namespace Flax.Build.NativeCpp
                         foreach (var reference in project.References)
                         {
                             includedFilePath = Path.Combine(reference.Project.ProjectFolderPath, "Source", includedFile);
-                            if (FileExists(includedFilePath))
+                            if (FileCache.Exists(includedFilePath))
                             {
                                 isValid = true;
                                 break;
@@ -360,7 +338,7 @@ namespace Flax.Build.NativeCpp
                         if (!isValid && isLibraryInclude)
                         {
                             includedFilePath = Path.Combine(Globals.Root, "Source", "ThirdParty", includedFile);
-                            if (FileExists(includedFilePath))
+                            if (FileCache.Exists(includedFilePath))
                             {
                                 isValid = true;
                             }
@@ -387,7 +365,7 @@ namespace Flax.Build.NativeCpp
             result = includedFiles.ToArray();
             DirectIncludesCache.Add(sourceFile, result);
             if (!DirectIncludesTimestampCache.ContainsKey(sourceFile))
-                DirectIncludesTimestampCache.Add(sourceFile, lastModified ?? FileLastWriteTime(sourceFile));
+                DirectIncludesTimestampCache.Add(sourceFile, lastModified ?? FileCache.GetLastWriteTime(sourceFile));
             return result;
         }
     }

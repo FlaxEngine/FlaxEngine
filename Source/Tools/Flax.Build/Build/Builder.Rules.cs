@@ -270,8 +270,9 @@ namespace Flax.Build
         private static void FindRules(string directory, List<string> result)
         {
             // Optional way:
-            //result.AddRange(Directory.GetFiles(directory, '*' + BuildFilesPostfix, SearchOption.AllDirectories));
+            result.AddRange(Directory.GetFiles(directory, '*' + BuildFilesPostfix, SearchOption.AllDirectories));
 
+            /*
             var files = Directory.GetFiles(directory);
             for (int i = 0; i < files.Length; i++)
             {
@@ -286,6 +287,7 @@ namespace Flax.Build
             {
                 FindRules(directories[i], result);
             }
+            */
         }
     }
 }
