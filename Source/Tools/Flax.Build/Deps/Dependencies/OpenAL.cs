@@ -38,6 +38,7 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Mac,
+                        TargetPlatform.iOS,
                     };
                 default: return new TargetPlatform[0];
                 }
@@ -48,7 +49,7 @@ namespace Flax.Deps.Dependencies
         public override void Build(BuildOptions options)
         {
             var root = options.IntermediateFolder;
-            var version = "1.19.1";
+            var version = "1.23.0";
             var dstIncludePath = Path.Combine(options.ThirdPartyFolder, "OpenAL");
 
             foreach (var platform in options.Platforms)
@@ -180,6 +181,35 @@ namespace Flax.Deps.Dependencies
                         foreach (var file in binariesToCopy)
                             Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
                     }
+                    break;
+                }
+                case TargetPlatform.iOS:
+                {
+                    var binariesToCopy = new[]
+                    {
+                        "libopenal.a",
+                    };
+                    var config = "-DALSOFT_REQUIRE_COREAUDIO=ON -DALSOFT_EMBED_HRTF_DATA=YES";
+
+                    // Get the source
+                    var packagePath = Path.Combine(root, "package.zip");
+                    if (!File.Exists(packagePath))
+                    {
+                        Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath);
+                        Utilities.Run("tar", "xjf " + packagePath.Replace('\\', '/'), null, root, Utilities.RunOptions.None);
+                    }
+
+                    // Use separate build directory
+                    root = Path.Combine(root, "openal-soft-" + version);
+                    var buildDir = Path.Combine(root, "build");
+
+                    // Build for iOS
+                    SetupDirectory(buildDir, true);
+                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_SYSTEM_NAME=iOS -DALSOFT_OSX_FRAMEWORK=ON -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=Release " + config);
+                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
+                    foreach (var file in binariesToCopy)
+                        Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
                     break;
                 }
                 }

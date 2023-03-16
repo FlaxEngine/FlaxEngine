@@ -43,12 +43,16 @@ namespace Flax.Build.Platforms
             // TODO: move this to the specific module configs (eg. Platform.Build.cs)
             options.LinkEnv.InputLibraries.Add("z");
             options.LinkEnv.InputLibraries.Add("bz2");
+            options.LinkEnv.InputLibraries.Add("Foundation.framework");
             options.LinkEnv.InputLibraries.Add("CoreFoundation.framework");
             options.LinkEnv.InputLibraries.Add("CoreGraphics.framework");
             options.LinkEnv.InputLibraries.Add("SystemConfiguration.framework");
             options.LinkEnv.InputLibraries.Add("IOKit.framework");
             options.LinkEnv.InputLibraries.Add("UIKit.framework");
             options.LinkEnv.InputLibraries.Add("QuartzCore.framework");
+            //options.LinkEnv.InputLibraries.Add("QuartzCore.framework");
+            //options.LinkEnv.InputLibraries.Add("AudioToolbox.framework");
+            //options.LinkEnv.InputLibraries.Add("AudioUnit.framework");
         }
 
         protected override void AddArgsCommon(BuildOptions options, List<string> args)

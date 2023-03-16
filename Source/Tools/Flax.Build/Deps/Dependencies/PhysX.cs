@@ -45,6 +45,7 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Mac,
+                        TargetPlatform.iOS,
                     };
                 default: return new TargetPlatform[0];
                 }
@@ -99,7 +100,10 @@ namespace Flax.Deps.Dependencies
             case TargetPlatform.Mac:
                 ConfigureCmakeSwitch(cmakeParams, "CMAKE_OSX_DEPLOYMENT_TARGET", Configuration.MacOSXMinVer);
                 break;
-            // TODO: support CMAKE_XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET switch for iOS
+            case TargetPlatform.iOS:
+                ConfigureCmakeSwitch(cmakeParams, "CMAKE_OSX_DEPLOYMENT_TARGET", Configuration.iOSMinVer);
+                ConfigureCmakeSwitch(cmakeParams, "CMAKE_XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET", Configuration.iOSMinVer);
+                break;
             }
 
             // Save preset
@@ -202,7 +206,11 @@ namespace Flax.Deps.Dependencies
                 binariesPrefix = "lib";
                 envVars.Add("MACOSX_DEPLOYMENT_TARGET", Configuration.MacOSXMinVer);
                 break;
-            // TODO: set IPHONEOS_DEPLOYMENT_TARGET env var for iOS
+            case TargetPlatform.iOS:
+                binariesSubDir = "ios.arm_64";
+                binariesPrefix = "lib";
+                envVars.Add("IPHONEOS_DEPLOYMENT_TARGET", Configuration.iOSMinVer);
+                break;
             default: throw new InvalidPlatformException(targetPlatform);
             }
 
@@ -408,6 +416,11 @@ namespace Flax.Deps.Dependencies
                 {
                     Build(options, "mac64", platform, TargetArchitecture.x64);
                     Build(options, "mac-arm64", platform, TargetArchitecture.ARM64);
+                    break;
+                }
+                case TargetPlatform.iOS:
+                {
+                    Build(options, "ios64", platform, TargetArchitecture.ARM64);
                     break;
                 }
                 }

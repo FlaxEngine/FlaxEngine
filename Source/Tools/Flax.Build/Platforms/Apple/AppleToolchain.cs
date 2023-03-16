@@ -251,6 +251,7 @@ namespace Flax.Build.Platforms
                         args.Add("-dynamiclib");
                 }
             }
+            SetupLinkFilesArgs(graph, options, args, outputFilePath);
 
             // Input libraries
             var libraryPaths = new HashSet<string>();

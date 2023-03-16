@@ -288,6 +288,12 @@ namespace Flax.Deps
                 cmdLine = string.Format("CMakeLists.txt -DCMAKE_OSX_DEPLOYMENT_TARGET=\"{0}\" -DCMAKE_OSX_ARCHITECTURES={1}", Configuration.MacOSXMinVer, arch);
                 break;
             }
+            case TargetPlatform.iOS:
+            {
+                var arch = GetAppleArchName(architecture);
+                cmdLine = string.Format("CMakeLists.txt -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=\"{0}\" -DCMAKE_OSX_ARCHITECTURES={1}", Configuration.iOSMinVer, arch);
+                break;
+            }
             default: throw new InvalidPlatformException(platform);
             }
 

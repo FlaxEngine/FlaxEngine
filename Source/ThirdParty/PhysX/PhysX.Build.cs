@@ -60,6 +60,7 @@ public class PhysX : DepsModule
         case TargetPlatform.XboxScarlett:
         case TargetPlatform.Mac:
         case TargetPlatform.Android:
+        case TargetPlatform.iOS:
             switch (options.Architecture)
             {
             case TargetArchitecture.x86:

@@ -43,6 +43,7 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Mac,
+                        TargetPlatform.iOS,
                     };
                 default: return new TargetPlatform[0];
                 }
@@ -387,6 +388,29 @@ namespace Flax.Deps.Dependencies
                         foreach (var file in binariesToCopyUnix)
                             Utilities.FileCopy(Path.Combine(buildDir, file.SrcFolder, file.Filename), Path.Combine(depsFolder, file.Filename));
                     }
+                    break;
+                }
+                case TargetPlatform.iOS:
+                {
+                    var oggRoot = Path.Combine(root, "ogg");
+                    var oggBuildDir = Path.Combine(oggRoot, "build");
+                    var buildDir = Path.Combine(root, "build");
+
+                    // Get the source
+                    CloneGitRepoFast(root, "https://github.com/xiph/vorbis.git");
+                    CloneGitRepo(oggRoot, "https://github.com/xiph/ogg.git");
+                    GitCheckout(oggRoot, "master", "4380566a44b8d5e85ad511c9c17eb04197863ec5");
+
+                    // Build for Mac
+                    SetupDirectory(oggBuildDir, true);
+                    RunCmake(oggBuildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=\"../install\"");
+                    Utilities.Run("cmake", "--build . --target install", null, oggBuildDir, Utilities.RunOptions.None);
+                    SetupDirectory(buildDir, true);
+                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, string.Format(".. -DCMAKE_BUILD_TYPE=Release  -DOGG_INCLUDE_DIR=\"{0}/install/include\" -DOGG_LIBRARY=\"{0}/install/lib\"", oggRoot));
+                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
+                    foreach (var file in binariesToCopyUnix)
+                        Utilities.FileCopy(Path.Combine(buildDir, file.SrcFolder, file.Filename), Path.Combine(depsFolder, file.Filename));
                     break;
                 }
                 }

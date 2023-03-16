@@ -55,8 +55,10 @@ public class Audio : EngineModule
             options.CompileEnv.PreprocessorDefinitions.Add("AUDIO_API_PS5");
             break;
         case TargetPlatform.Mac:
-        case TargetPlatform.iOS:
             useOpenAL = true;
+            break;
+        case TargetPlatform.iOS:
+            //useOpenAL = true; // TODO: fix linker error 'ld: framework not found AudioUnit' for OpenAL on iOS
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
