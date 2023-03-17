@@ -3,6 +3,7 @@
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Json;
 
 namespace FlaxEditor.CustomEditors.Editors
 {
@@ -54,6 +55,13 @@ namespace FlaxEditor.CustomEditors.Editors
             ZElement = grid.FloatValue();
             ZElement.ValueBox.ValueChanged += OnValueChanged;
             ZElement.ValueBox.SlidingEnd += ClearToken;
+
+            LinkedLabel.SetupContextMenu += (label, menu, editor) =>
+            {
+                menu.AddSeparator();
+                var value = ((Quaternion)Values[0]).EulerAngles;
+                menu.AddButton("Copy Euler", () => { Clipboard.Text = JsonSerializer.Serialize(value); }).TooltipText = "Copy the Euler Angles in Degrees";
+            };
         }
 
         private void OnValueChanged()
