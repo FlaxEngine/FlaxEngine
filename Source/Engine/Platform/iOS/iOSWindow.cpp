@@ -85,7 +85,6 @@ iOSWindow::iOSWindow(const CreateWindowSettings& settings)
 	[v setNeedsDisplay];
 	[v setHidden:NO];
 	[v setOpaque:YES];
-	[v setAutoResizeDrawable:YES];
 	v.backgroundColor = [UIColor clearColor];
 	v.window = this;
 	

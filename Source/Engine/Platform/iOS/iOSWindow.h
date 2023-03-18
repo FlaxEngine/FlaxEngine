@@ -26,6 +26,7 @@ public:
 	~iOSWindow();
 
     void CheckForResize(float width, float height);
+    void* GetViewController() const { return _viewController; }
 
 public:
 

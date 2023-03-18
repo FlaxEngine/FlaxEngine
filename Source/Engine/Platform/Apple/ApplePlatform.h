@@ -89,9 +89,7 @@ public:
     static void CreateGuid(Guid& result);
     static bool CanOpenUrl(const StringView& url);
     static void OpenUrl(const StringView& url);
-	static Rectangle GetMonitorBounds(const Float2& screenPos);
 	static Float2 GetDesktopSize();
-	static Rectangle GetVirtualDesktopBounds();
 	static String GetMainDirectory();
 	static String GetExecutableFilePath();
     static String GetWorkingDirectory();

@@ -6,8 +6,13 @@
 #include "iOSWindow.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Collections/Array.h"
+#include "Engine/Platform/Apple/AppleUtils.h"
 #include "Engine/Platform/StringUtils.h"
 #include "Engine/Platform/MessageBox.h"
+#include "Engine/Platform/Window.h"
+#include "Engine/Platform/WindowsManager.h"
+#include "Engine/Threading/Threading.h"
 #include <UIKit/UIKit.h>
 #include <sys/utsname.h>
 
@@ -16,7 +21,20 @@ Guid DeviceId;
 
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
 {
-    // TODO: implement message box popup on iOS
+	NSString* title = (NSString*)AppleUtils::ToString(caption);
+	NSString* message = (NSString*)AppleUtils::ToString(text);
+	UIAlertController* alert = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
+	UIAlertAction* button = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:^(id){ }];
+	[alert addAction:button];
+	ScopeLock lock(WindowsManager::WindowsLocker);
+	for (auto window : WindowsManager::Windows)
+    {
+        if (window->IsVisible())
+        {
+	        [(UIViewController*)window->GetViewController() presentViewController:alert animated:YES completion:nil];
+            break;
+        }        
+    }
     return DialogResult::OK;
 }
 
@@ -28,6 +46,13 @@ bool iOSPlatform::Init()
     ScreenScale = [[UIScreen mainScreen] scale];
     CustomDpiScale *= ScreenScale;
     Dpi = 72; // TODO: calculate screen dpi (probably hardcoded map for iPhone model)
+
+	// Get device identifier
+    NSString* uuid = [UIDevice currentDevice].identifierForVendor.UUIDString;
+    String uuidStr = AppleUtils::ToString((CFStringRef)uuid);
+    Guid::Parse(uuidStr, DeviceId);
+
+    // TODO: add Gamepad for vibrations usability
 
     return false;
 }
@@ -57,7 +82,7 @@ int32 iOSPlatform::GetDpi()
 
 Guid iOSPlatform::GetUniqueDeviceId()
 {
-    return Guid::Empty; // TODO: use MAC address of the iPhone to generate device id (at least within network connection state)
+    return DeviceId;
 }
 
 String iOSPlatform::GetComputerName()
