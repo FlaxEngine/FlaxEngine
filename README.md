@@ -51,8 +51,8 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 * Install Visual Studio Code
 * Install .Net 7 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
   * Ubuntu: `sudo apt install dotnet-sdk-7.0`
-* Install Vulkan SDK
-  * Ubuntu: see the instructions here: ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
+* Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
+  * Ubuntu: `sudo apt install vulkan-sdk`
   * Arch: `sudo pacman -S spirv-tools vulkan-headers vulkan-tools vulkan-validation-layers`
 * Install Git with LFS
   * Ubuntu: `sudo apt-get install git git-lfs`
