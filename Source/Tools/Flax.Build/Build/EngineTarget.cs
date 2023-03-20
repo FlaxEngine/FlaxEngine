@@ -104,25 +104,6 @@ namespace Flax.Build
                 // Restore state from PreBuild
                 Modules.Add("Main");
             }
-
-#if !USE_NETCORE
-            // Mono on Linux is using dynamic linking and needs additional link files
-            if (buildOptions.Platform.Target == TargetPlatform.Linux && Platform.BuildTargetPlatform == TargetPlatform.Linux && !IsPreBuilt)
-            {
-                var task = graph.Add<Task>();
-                task.PrerequisiteFiles.Add(Path.Combine(buildOptions.OutputFolder, "libmonosgen-2.0.so"));
-                task.ProducedFiles.Add(Path.Combine(buildOptions.OutputFolder, "libmonosgen-2.0.so.1"));
-                task.WorkingDirectory = buildOptions.OutputFolder;
-                task.CommandPath = "ln";
-                task.CommandArguments = "-s -f libmonosgen-2.0.so libmonosgen-2.0.so.1";
-                task = graph.Add<Task>();
-                task.PrerequisiteFiles.Add(Path.Combine(buildOptions.OutputFolder, "libmonosgen-2.0.so"));
-                task.ProducedFiles.Add(Path.Combine(buildOptions.OutputFolder, "libmonosgen-2.0.so.1.0.0"));
-                task.WorkingDirectory = buildOptions.OutputFolder;
-                task.CommandPath = "ln";
-                task.CommandArguments = "-s -f libmonosgen-2.0.so libmonosgen-2.0.so.1.0.0";
-            }
-#endif
         }
 
         /// <summary>

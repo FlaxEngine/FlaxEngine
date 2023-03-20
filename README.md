@@ -101,7 +101,6 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
     - ***PlatformName*/** - per-platform files
       - **Binaries/** - per-platform binaries
         - **Game/** - Flax Game binaries
-        - **Mono/** - Mono runtime files and data
         - **ThirdParty/** - prebuilt 3rd Party binaries
   - **Shaders/** - shaders source code
   - **ThirdParty/** - 3rd Party source code

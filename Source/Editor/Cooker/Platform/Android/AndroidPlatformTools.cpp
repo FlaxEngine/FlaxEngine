@@ -267,7 +267,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
         }
     }
 
-    // Generate Mono files hash id used to skip deploying Mono files if already extracted on device (Mono cannot access files packed into .apk via unix file access)
+    // Generate Dotnet files hash id used to skip deploying Dotnet files if already extracted on device (Dotnet cannot access files packed into .apk via unix file access)
     File::WriteAllText(assetsPath / TEXT("hash.txt"), Guid::New().ToString(), Encoding::ANSI);
 
     // TODO: expose event to inject custom gradle and manifest options or custom binaries into app

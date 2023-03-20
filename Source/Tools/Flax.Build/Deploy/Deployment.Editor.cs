@@ -248,9 +248,6 @@ namespace Flax.Deploy
                     // Optimize package size
                     Utilities.Run("strip", "FlaxEditor", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("strip", "libFlaxEditor.so", null, dst, Utilities.RunOptions.None);
-                    Utilities.Run("strip", "libmonosgen-2.0.so", null, dst, Utilities.RunOptions.None);
-                    Utilities.Run("ln", "-s libmonosgen-2.0.so libmonosgen-2.0.so.1", null, dst, Utilities.RunOptions.None);
-                    Utilities.Run("ln", "-s libmonosgen-2.0.so libmonosgen-2.0.so.1.0.0", null, dst, Utilities.RunOptions.None);
                 }
                 else if (Platform.BuildTargetPlatform == TargetPlatform.Mac)
                 {
@@ -267,7 +264,6 @@ namespace Flax.Deploy
                     // Optimize package size
                     Utilities.Run("strip", "FlaxEditor", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("strip", "FlaxEditor.dylib", null, dst, Utilities.RunOptions.None);
-                    Utilities.Run("strip", "libmonosgen-2.0.1.dylib", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("strip", "libMoltenVK.dylib", null, dst, Utilities.RunOptions.None);
                 }
             }

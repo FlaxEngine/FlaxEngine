@@ -68,7 +68,7 @@ bool DeployDataStep::Perform(CookingData& data)
         if (FileSystem::DirectoryExists(srcDotnet))
         {
             // Use prebuilt .Net installation for that platform
-            if (FileSystem::CopyDirectory(dstMono, srcDotnet, true))
+            if (FileSystem::CopyDirectory(dstDotnet, srcDotnet, true))
             {
                 data.Error(TEXT("Failed to copy .Net runtime data files."));
                 return true;
