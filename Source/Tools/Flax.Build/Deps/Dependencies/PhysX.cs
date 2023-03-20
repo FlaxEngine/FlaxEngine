@@ -319,7 +319,6 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.Mac:
                     switch (targetPlatform)
                     {
-                    case TargetPlatform.Linux:
                     case TargetPlatform.Mac:
                     case TargetPlatform.Android:
                         Utilities.Run("strip", "\"" + filename + "\"", null, dstBinaries, Utilities.RunOptions.None);
