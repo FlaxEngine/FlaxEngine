@@ -36,6 +36,7 @@ jobs:
         ./GenerateProjectFiles.sh -vs2022 -log -verbose
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget
         dotnet msbuild Source/Tools/Flax.Build.Tests/Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
+        dotnet msbuild Source/Tools/Flax.Build.Tests/Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
     - name: Test
       run: |
         ${GITHUB_WORKSPACE}/Binaries/Editor/Linux/Development/FlaxTests
