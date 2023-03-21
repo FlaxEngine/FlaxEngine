@@ -30,6 +30,7 @@ jobs:
     - name: Print .NET info
       run: |
         dotnet --info
+        dotnet workload --info
     - name: Build
       run: |
         .\PackageEditor.bat -arch=x64 -platform=Windows -deployOutput=Output
@@ -62,6 +63,7 @@ jobs:
     - name: Print .NET info
       run: |
         dotnet --info
+        dotnet workload --info
     - name: Build
       run: |
         .\PackagePlatforms.bat -arch=x64 -platform=Windows -deployOutput=Output
@@ -97,6 +99,7 @@ jobs:
     - name: Print .NET info
       run: |
         dotnet --info
+        dotnet workload --info
     - name: Build
       run: |
         ./PackageEditor.sh -arch=x64 -platform=Linux -deployOutput=Output
@@ -130,6 +133,7 @@ jobs:
     - name: Print .NET info
       run: |
         dotnet --info
+        dotnet workload --info
     - name: Build
       run: |
         ./PackagePlatforms.sh -arch=x64 -platform=Linux -deployOutput=Output
@@ -159,6 +163,7 @@ jobs:
     - name: Print .NET info
       run: |
         dotnet --info
+        dotnet workload --info
     - name: Build
       run: |
         ./PackageEditor.command -arch=x64 -platform=Mac -deployOutput=Output
@@ -186,6 +191,7 @@ jobs:
     - name: Print .NET info
       run: |
         dotnet --info
+        dotnet workload --info
     - name: Build
       run: |
         ./PackagePlatforms.command -arch=x64 -platform=Mac -deployOutput=Output

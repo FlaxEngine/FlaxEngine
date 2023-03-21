@@ -9,7 +9,6 @@ jobs:
 
   # Game
   game-windows:
-    if: ${{ false }}
     name: Game (Android, Release ARM64)
     runs-on: "windows-2022"
     steps:
@@ -21,9 +20,12 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 7.0.x
+      run: |
+        dotnet workload install android
     - name: Print .NET info
       run: |
         dotnet --info
+        dotnet workload --info
     - name: Checkout LFS
       run: |
         git lfs version

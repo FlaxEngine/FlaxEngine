@@ -29,6 +29,7 @@ jobs:
     - name: Print .NET info
       run: |
         dotnet --info
+        dotnet workload --info
     - name: Checkout LFS
       run: |
         git lfs version
@@ -56,6 +57,7 @@ jobs:
     - name: Print .NET info
       run: |
         dotnet --info
+        dotnet workload --info
     - name: Checkout LFS
       run: |
         git lfs version
