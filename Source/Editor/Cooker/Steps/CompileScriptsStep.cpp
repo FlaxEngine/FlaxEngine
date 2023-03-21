@@ -154,68 +154,7 @@ bool CompileScriptsStep::Perform(CookingData& data)
     String target = project->GameTarget;
     StringView workingDir;
     const Char *platform, *architecture, *configuration = ::ToString(data.Configuration);
-    switch (data.Platform)
-    {
-    case BuildPlatform::Windows32:
-        platform = TEXT("Windows");
-        architecture = TEXT("x86");
-        break;
-    case BuildPlatform::Windows64:
-        platform = TEXT("Windows");
-        architecture = TEXT("x64");
-        break;
-    case BuildPlatform::UWPx86:
-        platform = TEXT("UWP");
-        architecture = TEXT("x86");
-        break;
-    case BuildPlatform::UWPx64:
-        platform = TEXT("UWP");
-        architecture = TEXT("x64");
-        break;
-    case BuildPlatform::XboxOne:
-        platform = TEXT("XboxOne");
-        architecture = TEXT("x64");
-        break;
-    case BuildPlatform::LinuxX64:
-        platform = TEXT("Linux");
-        architecture = TEXT("x64");
-        break;
-    case BuildPlatform::PS4:
-        platform = TEXT("PS4");
-        architecture = TEXT("x64");
-        break;
-    case BuildPlatform::XboxScarlett:
-        platform = TEXT("XboxScarlett");
-        architecture = TEXT("x64");
-        break;
-    case BuildPlatform::AndroidARM64:
-        platform = TEXT("Android");
-        architecture = TEXT("ARM64");
-        break;
-    case BuildPlatform::Switch:
-        platform = TEXT("Switch");
-        architecture = TEXT("ARM64");
-        break;
-    case BuildPlatform::PS5:
-        platform = TEXT("PS5");
-        architecture = TEXT("x64");
-        break;
-    case BuildPlatform::MacOSx64:
-        platform = TEXT("Mac");
-        architecture = TEXT("x64");
-        break;
-    case BuildPlatform::MacOSARM64:
-        platform = TEXT("Mac");
-        architecture = TEXT("ARM64");
-        break;
-    case BuildPlatform::iOSARM64:
-        platform = TEXT("iOS");
-        architecture = TEXT("ARM64");
-        break;
-    default:
-        LOG(Error, "Unknown or unsupported build platform.");
-        return true;
-    }
+    data.GetBuildPlatformName(platform, architecture);
     String targetBuildInfo = project->ProjectFolderPath / TEXT("Binaries") / target / platform / architecture / configuration / target + TEXT(".Build.json");
     if (target.IsEmpty())
     {

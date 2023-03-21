@@ -64,12 +64,6 @@ namespace Flax.Build
         public static bool Rebuild = false;
 
         /// <summary>
-        /// Prints all SDKs found on system. Can be used to query Win10 SDK or any other platform-specific toolsets used by build tool.
-        /// </summary>
-        [CommandLine("printSDKs", "Prints all SDKs found on system. Can be used to query Win10 SDK or any other platform-specific toolsets used by build tool.")]
-        public static bool PrintSDKs = false;
-
-        /// <summary>
         /// Prints all build system plugins.
         /// </summary>
         [CommandLine("printPlugins", "Prints all build system plugins.")]
@@ -118,6 +112,12 @@ namespace Flax.Build
         public static bool ConsoleLog = false;
 
         /// <summary>
+        /// Enables logging only messages into console (general info logs will be ignored)."
+        /// </summary>
+        [CommandLine("logMessagesOnly", "Enables logging only messages into console (general info logs will be ignored).")]
+        public static bool LogMessagesOnly = false;
+
+        /// <summary>
         /// Enables verbose logging and detailed diagnostics.
         /// </summary>
         [CommandLine("verbose", "Enables verbose logging and detailed diagnostics.")]
@@ -138,8 +138,14 @@ namespace Flax.Build
         /// <summary>
         /// The log file path relative to the working directory.
         /// </summary>
-        [CommandLine("logfile", "<path>", "The log file path relative to the working directory. Set to empty to disable it/")]
+        [CommandLine("logfile", "<path>", "The log file path relative to the working directory. Set to empty to disable it.")]
         public static string LogFile = "Cache/Intermediate/Log.txt";
+
+        /// <summary>
+        /// Enables logging only console output to the log file (instead whole output).
+        /// </summary>
+        [CommandLine("logFileWithConsole", "Enables logging only console output to the log file (instead whole output).")]
+        public static bool LogFileWithConsole = false;
 
         /// <summary>
         /// The maximum allowed concurrency for a build system (maximum active worker threads count).

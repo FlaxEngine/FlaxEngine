@@ -17,7 +17,9 @@ public class Scripting : EngineModule
         {
             if (EngineConfiguration.WithDotNet(options))
             {
-                options.PublicDependencies.Add("nethost");
+                options.PrivateDependencies.Add("nethost");
+                options.ScriptingAPI.Defines.Add("USE_NETCORE");
+                options.PublicDefinitions.Add("USE_NETCORE");
 
                 if (options.Target is EngineTarget engineTarget && engineTarget.UseSeparateMainExecutable(options))
                 {

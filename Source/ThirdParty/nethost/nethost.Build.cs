@@ -41,6 +41,7 @@ public class nethost : ThirdPartyModule
         }
 
         // Setup build configuration
+        bool useMonoHost = false;
         switch (options.Platform.Target)
         {
         case TargetPlatform.Windows:
@@ -51,7 +52,6 @@ public class nethost : ThirdPartyModule
             options.DependencyFiles.Add(Path.Combine(hostRuntimePath, "nethost.dll"));
             break;
         case TargetPlatform.Linux:
-        case TargetPlatform.Android:
             options.OutputFiles.Add(Path.Combine(hostRuntimePath, "libnethost.a"));
             options.DependencyFiles.Add(Path.Combine(hostRuntimePath, "libnethost.so"));
             break;
@@ -65,11 +65,24 @@ public class nethost : ThirdPartyModule
             options.OutputFiles.Add(Path.Combine(hostRuntimePath, "libnethost.a"));
             //options.OutputFiles.Add(Path.Combine(hostRuntimePath, "libhostfxr.a"));
             break;
+        case TargetPlatform.Android:
+            useMonoHost = true;
+            break;
         default:
             throw new InvalidPlatformException(options.Platform.Target);
         }
-        options.PublicIncludePaths.Add(hostRuntimePath);
-        options.ScriptingAPI.Defines.Add("USE_NETCORE");
         options.DependencyFiles.Add(Path.Combine(FolderPath, "FlaxEngine.CSharp.runtimeconfig.json"));
+        if (useMonoHost)
+        {
+            // Use Mono for runtime hosting
+            options.PublicDefinitions.Add("DOTNET_HOST_MONO");
+            options.PublicIncludePaths.Add(Path.Combine(hostRuntimePath, "include", "mono-2.0"));
+        }
+        else
+        {
+            // Use CoreCRL for runtime hosting
+            options.PublicDefinitions.Add("DOTNET_HOST_CORECRL");
+            options.PublicIncludePaths.Add(hostRuntimePath);
+        }
     }
 }

@@ -8,6 +8,19 @@ using Microsoft.Win32;
 
 namespace Flax.Build
 {
+    partial class Configuration
+    {
+        /// <summary>
+        /// Prints all .NET Runtimes found on system (use plaform/arch switches to filter results).
+        /// </summary>
+        [CommandLine("printDotNetRuntime", "Prints all .NET Runtimes found on system (use plaform/arch switches to filter results).")]
+        public static void PrintDotNetRuntime()
+        {
+            Log.Info("Printing .NET Runtimes...");
+            DotNetSdk.Instance.PrintRuntimes();
+        }
+    }
+
     /// <summary>
     /// The DotNet SDK.
     /// </summary>
@@ -169,12 +182,32 @@ namespace Flax.Build
             TryAddHostRuntime(TargetPlatform.Windows, TargetArchitecture.ARM64, "win-arm64");
             TryAddHostRuntime(TargetPlatform.Mac, TargetArchitecture.x64, "osx-x64");
             TryAddHostRuntime(TargetPlatform.Mac, TargetArchitecture.ARM64, "osx-arm64");
+            TryAddHostRuntime(TargetPlatform.Android, TargetArchitecture.ARM64, "android-arm64", "Runtime.Mono");
 
             // Found
             IsValid = true;
             Log.Verbose($"Found .NET SDK {VersionName} (runtime {RuntimeVersionName}) at {RootPath}");
             foreach (var e in _hostRuntimes)
                 Log.Verbose($"  - Host Runtime for {e.Key.Key} {e.Key.Value}");
+        }
+
+        /// <summary>
+        /// Prints the .NET runtimes hosts.
+        /// </summary>
+        public void PrintRuntimes()
+        {
+            foreach (var e in _hostRuntimes)
+            {
+                // Filter with input commandline
+                TargetPlatform[] platforms = Configuration.BuildPlatforms;
+                if (platforms != null && !platforms.Contains(e.Key.Key))
+                    continue;
+                TargetArchitecture[] architectures = Configuration.BuildArchitectures;
+                if (architectures != null && !architectures.Contains(e.Key.Value))
+                    continue;
+
+                Log.Message($"{e.Key.Key}, {e.Key.Value}, {e.Value}");
+            }
         }
 
         /// <summary>
@@ -198,12 +231,17 @@ namespace Flax.Build
                 _hostRuntimes[new KeyValuePair<TargetPlatform, TargetArchitecture>(platform, arch)] = path;
         }
 
-        private bool TryAddHostRuntime(TargetPlatform platform, TargetArchitecture arch, string rid)
+        private bool TryAddHostRuntime(TargetPlatform platform, TargetArchitecture arch, string rid, string runtimeName = null)
         {
             if (string.IsNullOrEmpty(rid))
                 return false;
             var path = Path.Combine(RootPath, $"packs/Microsoft.NETCore.App.Host.{rid}/{RuntimeVersionName}/runtimes/{rid}/native");
             var exists = Directory.Exists(path);
+            if (!exists && runtimeName != null)
+            {
+                path = Path.Combine(RootPath, $"packs/Microsoft.NETCore.App.{runtimeName}.{rid}/{RuntimeVersionName}/runtimes/{rid}/native");
+                exists = Directory.Exists(path);
+            }
             if (exists)
                 _hostRuntimes[new KeyValuePair<TargetPlatform, TargetArchitecture>(platform, arch)] = path;
             return exists;

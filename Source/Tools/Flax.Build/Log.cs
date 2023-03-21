@@ -74,6 +74,8 @@ namespace Flax.Build
                         System.Diagnostics.Debug.WriteLine(Indent + message);
                 }
             }
+            else if (Configuration.LogFileWithConsole)
+                return;
 
             if (_logFile != null)
             {
@@ -82,7 +84,10 @@ namespace Flax.Build
 
                 lock (_logFile)
                 {
-                    _logFileWriter.WriteLine(prefix + Indent + message);
+                    if (Configuration.LogFileWithConsole)
+                        _logFileWriter.WriteLine(message);
+                    else
+                        _logFileWriter.WriteLine(prefix + Indent + message);
                 }
             }
         }
@@ -101,6 +106,15 @@ namespace Flax.Build
         /// </summary>
         /// <param name="message">The message.</param>
         public static void Info(string message)
+        {
+            Write(message, _defaultColor, Configuration.ConsoleLog && !Configuration.LogMessagesOnly);
+        }
+
+        /// <summary>
+        /// Logs the information.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        public static void Message(string message)
         {
             Write(message, _defaultColor, Configuration.ConsoleLog);
         }

@@ -219,6 +219,71 @@ String CookingData::GetPlatformBinariesRoot() const
     return Globals::StartupFolder / TEXT("Source/Platforms") / Tools->GetName() / TEXT("Binaries");
 }
 
+void CookingData::GetBuildPlatformName(const Char*& platform, const Char*& architecture) const
+{
+    switch (Platform)
+    {
+    case BuildPlatform::Windows32:
+        platform = TEXT("Windows");
+        architecture = TEXT("x86");
+        break;
+    case BuildPlatform::Windows64:
+        platform = TEXT("Windows");
+        architecture = TEXT("x64");
+        break;
+    case BuildPlatform::UWPx86:
+        platform = TEXT("UWP");
+        architecture = TEXT("x86");
+        break;
+    case BuildPlatform::UWPx64:
+        platform = TEXT("UWP");
+        architecture = TEXT("x64");
+        break;
+    case BuildPlatform::XboxOne:
+        platform = TEXT("XboxOne");
+        architecture = TEXT("x64");
+        break;
+    case BuildPlatform::LinuxX64:
+        platform = TEXT("Linux");
+        architecture = TEXT("x64");
+        break;
+    case BuildPlatform::PS4:
+        platform = TEXT("PS4");
+        architecture = TEXT("x64");
+        break;
+    case BuildPlatform::XboxScarlett:
+        platform = TEXT("XboxScarlett");
+        architecture = TEXT("x64");
+        break;
+    case BuildPlatform::AndroidARM64:
+        platform = TEXT("Android");
+        architecture = TEXT("ARM64");
+        break;
+    case BuildPlatform::Switch:
+        platform = TEXT("Switch");
+        architecture = TEXT("ARM64");
+        break;
+    case BuildPlatform::PS5:
+        platform = TEXT("PS5");
+        architecture = TEXT("x64");
+        break;
+    case BuildPlatform::MacOSx64:
+        platform = TEXT("Mac");
+        architecture = TEXT("x64");
+        break;
+    case BuildPlatform::MacOSARM64:
+        platform = TEXT("Mac");
+        architecture = TEXT("ARM64");
+        break;
+    case BuildPlatform::iOSARM64:
+        platform = TEXT("iOS");
+        architecture = TEXT("ARM64");
+        break;
+    default:
+        LOG(Fatal, "Unknown or unsupported build platform.");
+    }
+}
+
 void CookingData::StepProgress(const String& info, const float stepProgress) const
 {
     const float singleStepProgress = 1.0f / (StepsCount + 1);

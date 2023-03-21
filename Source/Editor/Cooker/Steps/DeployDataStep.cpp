@@ -68,6 +68,7 @@ bool DeployDataStep::Perform(CookingData& data)
         if (FileSystem::DirectoryExists(srcDotnet))
         {
             // Use prebuilt .Net installation for that platform
+            LOG(Info, "Using .Net Runtime {} at {}", data.Tools->GetName(), srcDotnet);
             if (FileSystem::CopyDirectory(dstDotnet, srcDotnet, true))
             {
                 data.Error(TEXT("Failed to copy .Net runtime data files."));
@@ -91,61 +92,95 @@ bool DeployDataStep::Perform(CookingData& data)
                 canUseSystemDotnet = PLATFORM_TYPE == PlatformType::Mac;
                 break;
             }
-            if (!canUseSystemDotnet)
+            if (canUseSystemDotnet)
             {
-                data.Error(TEXT("Missing .Net files for a target platform."));
-                return true;
-            }
+                // Ask Flax.Build to provide .Net SDK location for the current platform
+                String sdks;
+                bool failed = ScriptsBuilder::RunBuildTool(TEXT("-log -logMessagesOnly -logFileWithConsole -logfile=SDKs.txt -printSDKs"), data.CacheDirectory);
+                failed |= File::ReadAllText(data.CacheDirectory / TEXT("SDKs.txt"), sdks);
+                int32 idx = sdks.Find(TEXT("] DotNetSdk, "), StringSearchCase::CaseSensitive);
+                if (idx != -1)
+                {
+                    idx = sdks.Find(TEXT(", "), StringSearchCase::CaseSensitive, idx + 14);
+                    idx += 2;
+                    int32 end = sdks.Find(TEXT("\n"), StringSearchCase::CaseSensitive, idx);
+                    if (sdks[end] == '\r')
+                        end--;
+                    srcDotnet = String(sdks.Get() + idx, end - idx).TrimTrailing();
+                }
+                if (failed || !FileSystem::DirectoryExists(srcDotnet))
+                {
+                    data.Error(TEXT("Failed to get .Net SDK location for a current platform."));
+                    return true;
+                }
 
-            // Ask Flax.Build to provide .Net SDK location for current platform (assuming there are no prebuilt dotnet files)
-            String sdks;
-            bool failed = ScriptsBuilder::RunBuildTool(TEXT("-log -printSDKs -logfile=SDKs.txt"), data.CacheDirectory);
-            failed |= File::ReadAllText(data.CacheDirectory / TEXT("SDKs.txt"), sdks);
-            int32 idx = sdks.Find(TEXT("] DotNetSdk, "), StringSearchCase::CaseSensitive);
-            if (idx != -1)
-            {
-                idx = sdks.Find(TEXT(", "), StringSearchCase::CaseSensitive, idx + 14);
-                idx += 2;
-                int32 end = sdks.Find(TEXT("\n"), StringSearchCase::CaseSensitive, idx);
-                if (sdks[end] == '\r')
-                    end--;
-                srcDotnet = String(sdks.Get() + idx, end - idx).TrimTrailing();
-            }
-            if (failed || !FileSystem::DirectoryExists(srcDotnet))
-            {
-                data.Error(TEXT("Failed to get .Net SDK location for a current platform."));
-                return true;
-            }
+                // Select version to use
+                Array<String> versions;
+                FileSystem::GetChildDirectories(versions, srcDotnet / TEXT("host/fxr"));
+                if (versions.Count() == 0)
+                {
+                    data.Error(TEXT("Failed to get .Net SDK location for a current platform."));
+                    return true;
+                }
+                for (String& version : versions)
+                {
+                    version = StringUtils::GetFileName(version);
+                    if (!version.StartsWith(TEXT("7.")))
+                        version.Clear();
+                }
+                Sorting::QuickSort(versions.Get(), versions.Count());
+                const String version = versions.Last();
+                LOG(Info, "Using .Net Runtime {} at {}", version, srcDotnet);
 
-            // Select version to use
-            Array<String> versions;
-            FileSystem::GetChildDirectories(versions, srcDotnet / TEXT("host/fxr"));
-            if (versions.Count() == 0)
-            {
-                data.Error(TEXT("Failed to get .Net SDK location for a current platform."));
-                return true;
+                // Deploy runtime files
+                FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), srcDotnet / TEXT("LICENSE.txt"));
+                FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), srcDotnet / TEXT("LICENSE.TXT"));
+                FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), srcDotnet / TEXT("ThirdPartyNotices.txt"));
+                FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), srcDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"));
+                failed |= FileSystem::CopyDirectory(dstDotnet / TEXT("host/fxr") / version, srcDotnet / TEXT("host/fxr") / version, true);
+                failed |= FileSystem::CopyDirectory(dstDotnet / TEXT("shared/Microsoft.NETCore.App") / version, srcDotnet / TEXT("shared/Microsoft.NETCore.App") / version, true);
+                if (failed)
+                {
+                    data.Error(TEXT("Failed to copy .Net runtime data files."));
+                    return true;
+                }
             }
-            for (String& version : versions)
+            else
             {
-                version = StringUtils::GetFileName(version);
-                if (!version.StartsWith(TEXT("7.")))
-                    version.Clear();
-            }
-            Sorting::QuickSort(versions.Get(), versions.Count());
-            const String version = versions.Last();
-            LOG(Info, "Using .Net Runtime {} at {}", version, srcDotnet);
+                // Ask Flax.Build to provide .Net Host Runtime location for the target platform
+                String sdks;
+                const Char* platformName, *archName;
+                data.GetBuildPlatformName(platformName, archName);
+                String args = String::Format(TEXT("-log -logMessagesOnly -logFileWithConsole -logfile=SDKs.txt -printDotNetRuntime -platform={} -arch={}"), platformName, archName);
+                bool failed = ScriptsBuilder::RunBuildTool(args, data.CacheDirectory);
+                failed |= File::ReadAllText(data.CacheDirectory / TEXT("SDKs.txt"), sdks);
+                Array<String> parts;
+                sdks.Split(',', parts);
+                failed |= parts.Count() != 3;
+                if (!failed)
+                {
+                    srcDotnet = parts[2].TrimTrailing();
+                }
+                if (failed || !FileSystem::DirectoryExists(srcDotnet))
+                {
+                    data.Error(TEXT("Failed to get .Net SDK location for a current platform."));
+                    return true;
+                }
+                LOG(Info, "Using .Net Runtime {} at {}", TEXT("Host"), srcDotnet);
 
-            // Deploy runtime files
-            FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), srcDotnet / TEXT("LICENSE.txt"));
-            FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), srcDotnet / TEXT("LICENSE.TXT"));
-            FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), srcDotnet / TEXT("ThirdPartyNotices.txt"));
-            FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), srcDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"));
-            failed |= FileSystem::CopyDirectory(dstDotnet / TEXT("host/fxr") / version, srcDotnet / TEXT("host/fxr") / version, true);
-            failed |= FileSystem::CopyDirectory(dstDotnet / TEXT("shared/Microsoft.NETCore.App") / version, srcDotnet / TEXT("shared/Microsoft.NETCore.App") / version, true);
-            if (failed)
-            {
-                data.Error(TEXT("Failed to copy .Net runtime data files."));
-                return true;
+                // Deploy runtime files
+                const String packFolder = srcDotnet / TEXT("../../../");
+                FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), packFolder / TEXT("LICENSE.txt"));
+                FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), packFolder / TEXT("LICENSE.TXT"));
+                FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), packFolder / TEXT("ThirdPartyNotices.txt"));
+                FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), packFolder / TEXT("THIRD-PARTY-NOTICES.TXT"));
+                failed |= FileSystem::CopyDirectory(dstDotnet / TEXT("shared/Microsoft.NETCore.App"), srcDotnet / TEXT("../lib/net7.0"), true);
+                failed |= FileSystem::CopyFile(dstDotnet / TEXT("shared/Microsoft.NETCore.App") / TEXT("System.Private.CoreLib.dll"), srcDotnet / TEXT("System.Private.CoreLib.dll"));
+                if (failed)
+                {
+                    data.Error(TEXT("Failed to copy .Net runtime data files."));
+                    return true;
+                }
             }
         }
     }

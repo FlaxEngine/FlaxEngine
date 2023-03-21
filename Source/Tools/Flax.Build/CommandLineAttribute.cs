@@ -7,7 +7,7 @@ namespace Flax.Build
     /// <summary>
     /// The attribute to indicate the name of a command line argument and additional help description info.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Method)]
     public class CommandLineAttribute : Attribute
     {
         /// <summary>

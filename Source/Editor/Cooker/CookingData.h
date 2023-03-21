@@ -319,6 +319,11 @@ public:
     /// </summary>
     String GetPlatformBinariesRoot() const;
 
+    /// <summary>
+    /// Gets the name of the platform and architecture for the current BuildPlatform.
+    /// </summary>
+    void GetBuildPlatformName(const Char*& platform, const Char*& architecture) const;
+
 public:
 
     /// <summary>

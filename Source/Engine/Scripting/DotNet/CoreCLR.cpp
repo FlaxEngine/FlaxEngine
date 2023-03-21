@@ -10,9 +10,16 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Debug/DebugLog.h"
 #include "Engine/Engine/Globals.h"
+#if DOTNET_HOST_CORECRL
 #include <nethost.h>
 #include <coreclr_delegates.h>
 #include <hostfxr.h>
+#elif DOTNET_HOST_MONO
+#include <mono/jit/jit.h>
+typedef char char_t;
+#else
+#error "Unknown .NET runtime host."
+#endif
 #if PLATFORM_WINDOWS
 #include <combaseapi.h>
 #undef SetEnvironmentVariable
@@ -22,6 +29,7 @@
 static Dictionary<String, void*> CachedFunctions;
 static const char_t* NativeInteropTypeName = FLAX_CORECLR_TEXT("FlaxEngine.NativeInterop, FlaxEngine.CSharp");
 
+#if DOTNET_HOST_CORECRL
 hostfxr_initialize_for_runtime_config_fn hostfxr_initialize_for_runtime_config;
 hostfxr_initialize_for_dotnet_command_line_fn hostfxr_initialize_for_dotnet_command_line;
 hostfxr_get_runtime_delegate_fn hostfxr_get_runtime_delegate;
@@ -31,9 +39,11 @@ get_function_pointer_fn get_function_pointer;
 hostfxr_set_error_writer_fn hostfxr_set_error_writer;
 hostfxr_get_dotnet_environment_info_result_fn hostfxr_get_dotnet_environment_info_result;
 hostfxr_run_app_fn hostfxr_run_app;
+#endif
 
 bool CoreCLR::InitHostfxr(const String& configPath, const String& libraryPath)
 {
+#if DOTNET_HOST_CORECRL
     const FLAX_CORECLR_STRING& library_path = FLAX_CORECLR_STRING(libraryPath);
 
     // Get path to hostfxr library
@@ -128,6 +138,10 @@ bool CoreCLR::InitHostfxr(const String& configPath, const String& libraryPath)
 
     hostfxr_close(handle);
     get_function_pointer = (get_function_pointer_fn)pget_function_pointer;
+#elif DOTNET_HOST_MONO
+    LOG(Fatal, "TODO: init mono hosting runtime");
+#endif
+
     return false;
 }
 
@@ -137,8 +151,12 @@ void* CoreCLR::GetStaticMethodPointer(const String& methodName)
     if (CachedFunctions.TryGet(methodName, fun))
         return fun;
 
+#if DOTNET_HOST_CORECRL
     int rc = get_function_pointer(NativeInteropTypeName, FLAX_CORECLR_STRING(methodName).Get(), UNMANAGEDCALLERSONLY_METHOD, nullptr, nullptr, &fun);
     if (rc != 0)
+#else
+    int rc = -1;
+#endif
         LOG(Fatal, "Failed to get unmanaged function pointer for method {0}: 0x{1:x}", methodName.Get(), (unsigned int)rc);
 
     CachedFunctions.Add(methodName, fun);

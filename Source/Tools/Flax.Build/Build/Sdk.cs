@@ -8,6 +8,19 @@ using Flax.Build.Platforms;
 
 namespace Flax.Build
 {
+    partial class Configuration
+    {
+        /// <summary>
+        /// Prints all SDKs found on system. Can be used to query Win10 SDK or any other platform-specific toolsets used by build tool.
+        /// </summary>
+        [CommandLine("printSDKs", "Prints all SDKs found on system. Can be used to query Win10 SDK or any other platform-specific toolsets used by build tool.")]
+        public static void PrintSDKs()
+        {
+            Log.Info("Printing SDKs...");
+            Sdk.Print();
+        }
+    }
+
     /// <summary>
     /// The base class for all SDKs.
     /// </summary>
@@ -45,17 +58,17 @@ namespace Flax.Build
             {
                 var sdk = e.Value;
                 if (sdk.IsValid)
-                    Log.Info(sdk.GetType().Name + ", " + sdk.Version + ", " + sdk.RootPath);
+                    Log.Message(sdk.GetType().Name + ", " + sdk.Version + ", " + sdk.RootPath);
                 else
-                    Log.Info(sdk.GetType().Name + ", missing");
+                    Log.Message(sdk.GetType().Name + ", missing");
             }
             foreach (var e in WindowsPlatformBase.GetSDKs())
             {
-                Log.Info("Windows SDK " + e.Key + ", " + WindowsPlatformBase.GetSDKVersion(e.Key) + ", " + e.Value);
+                Log.Message("Windows SDK " + e.Key + ", " + WindowsPlatformBase.GetSDKVersion(e.Key) + ", " + e.Value);
             }
             foreach (var e in WindowsPlatformBase.GetToolsets())
             {
-                Log.Info("Windows Toolset " + e.Key + ", " + e.Value);
+                Log.Message("Windows Toolset " + e.Key + ", " + e.Value);
             }
         }
 

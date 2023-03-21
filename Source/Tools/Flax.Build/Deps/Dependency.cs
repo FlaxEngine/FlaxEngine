@@ -132,6 +132,8 @@ namespace Flax.Deps
                     cmdLine += " --recurse-submodules";
 
                 Utilities.Run("git", cmdLine, null, null, Utilities.RunOptions.None);
+                if (submodules)
+                    Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.None);
             }
 
             if (commit != null)
@@ -158,6 +160,8 @@ namespace Flax.Deps
                     cmdLine += " --recurse-submodules";
 
                 Utilities.Run("git", cmdLine, null, null, Utilities.RunOptions.None);
+                if (submodules)
+                    Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.None);
             }
         }
 
@@ -183,6 +187,8 @@ namespace Flax.Deps
                     cmdLine += " --recurse-submodules";
 
                 Utilities.Run("git", cmdLine, null, null, Utilities.RunOptions.None);
+                if (submodules)
+                    Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.None);
             }
 
             if (commit != null)
@@ -208,6 +214,8 @@ namespace Flax.Deps
                 cmdLine += " --recurse-submodules";
 
             Utilities.Run("git", cmdLine, null, path, Utilities.RunOptions.None);
+            if (submodules)
+                Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.None);
 
             if (commit != null)
             {

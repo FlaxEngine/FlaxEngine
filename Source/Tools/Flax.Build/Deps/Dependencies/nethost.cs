@@ -5,8 +5,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 using Flax.Build;
+using Flax.Build.Platforms;
 using Flax.Deploy;
-using Ionic.Zip;
+using System.IO.Compression;
+
+#pragma warning disable 0219
 
 namespace Flax.Deps.Dependencies
 {
@@ -27,6 +30,11 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.PS4,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetPlatform.Android,
                     };
                 default: return new TargetPlatform[0];
                 }
@@ -143,6 +151,20 @@ namespace Flax.Deps.Dependencies
             }
             default: throw new InvalidPlatformException(BuildPlatform);
             }
+            if (AndroidNdk.Instance.IsValid)
+            {
+                var path = AndroidNdk.Instance.RootPath;
+                envVars.Add("ANDROID_NDK", path);
+                envVars.Add("ANDROID_NDK_HOME", path);
+                envVars.Add("ANDROID_NDK_ROOT", path);
+            }
+            if (AndroidSdk.Instance.IsValid)
+            {
+                var path = AndroidSdk.Instance.RootPath;
+                envVars.Add("ANDROID_SDK", path);
+                envVars.Add("ANDROID_SDK_HOME", path);
+                envVars.Add("ANDROID_SDK_ROOT", path);
+            }
 
             // Print the runtime version
             string version;
@@ -155,9 +177,10 @@ namespace Flax.Deps.Dependencies
 
             // Build
             buildArgsBase = $"-os {os} -a {arch} -f {framework} -c {configuration} -lc {configuration} -rc {configuration} -rf {runtimeFlavor}{buildArgsBase}";
-            foreach (var buildStep in new[] { subset, "host.pkg", "packs.product" })
+            //foreach (var buildStep in new[] { subset, "host.pkg", "packs.product" })
+            /*var buildStep = "host.pkg";
             {
-                var buildArgs = $"{buildArgsBase} {buildStep}";
+                var buildArgs = $"{buildArgsBase} -s {buildStep}";
                 if (BuildPlatform == TargetPlatform.Windows)
                 {
                     // For some reason running from Visual Studio fails the build so use command shell
@@ -169,9 +192,10 @@ namespace Flax.Deps.Dependencies
                 }
                 else
                 {
-                    Utilities.Run(Path.Combine(root, buildScript), buildArgs, null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
+                    //Utilities.Run(Path.Combine(root, buildScript), buildArgs, null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
                 }
-            }
+            }*/
+            Utilities.Run(Path.Combine(root, buildScript), buildArgsBase, null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
 
             // Deploy build products
             var dstBinaries = GetThirdPartyFolder(options, targetPlatform, architecture);
@@ -194,18 +218,26 @@ namespace Flax.Deps.Dependencies
             var srcDotnetLibsPkg = Path.Combine(artifacts, "packages", "Release", "Shipping", $"Microsoft.NETCore.App.Runtime.Mono.{hostRuntimeName}.{version}.nupkg");
             if (!File.Exists(srcDotnetLibsPkg))
                 throw new Exception($"Missing .NET Core App class library package at '{srcDotnetLibsPkg}'");
-            var srcDotnetLibsPkgTemp = srcDotnetLibsPkg + "Temp";
-            using (var zip = new ZipFile(srcDotnetLibsPkg))
+            var unpackTemp = Path.Combine(Path.GetDirectoryName(srcDotnetLibsPkg), "UnpackTemp");
+            SetupDirectory(unpackTemp, true);
+            using (var zip = ZipFile.Open(srcDotnetLibsPkg, ZipArchiveMode.Read))
             {
-                zip.ExtractAll(srcDotnetLibsPkgTemp, ExtractExistingFileAction.OverwriteSilently);
+                zip.ExtractToDirectory(unpackTemp);
             }
             var privateCorelib = "System.Private.CoreLib.dll";
-            Utilities.FileCopy(Path.Combine(srcDotnetLibsPkgTemp, "runtimes", hostRuntimeName, "native", privateCorelib), Path.Combine(dstClassLibrary, privateCorelib));
-            Utilities.DirectoryCopy(Path.Combine(srcDotnetLibsPkgTemp, "runtimes", hostRuntimeName, "lib", "net7.0"), dstClassLibrary, false, true);
-            Utilities.DirectoriesDelete(srcDotnetLibsPkgTemp);
+            Utilities.FileCopy(Path.Combine(unpackTemp, "runtimes", hostRuntimeName, "native", privateCorelib), Path.Combine(dstClassLibrary, privateCorelib));
+            Utilities.DirectoryCopy(Path.Combine(unpackTemp, "runtimes", hostRuntimeName, "lib", "net7.0"), dstClassLibrary, false, true);
             // TODO: host/fxr/<version>/hostfxr.dll
             // TODO: shared/Microsoft.NETCore.App/<version>/hostpolicy.dl
             // TODO: shared/Microsoft.NETCore.App/<version>/System.IO.Compression.Native.dll
+            if (runtimeFlavor == "Mono")
+            {
+                Utilities.DirectoryCopy(Path.Combine(unpackTemp, "runtimes", hostRuntimeName, "native"), Path.Combine(dstDotnet, "native"), true, true);
+                Utilities.FileDelete(Path.Combine(dstDotnet, "native", privateCorelib));
+            }
+            else
+                throw new InvalidPlatformException(targetPlatform);
+            Utilities.DirectoriesDelete(unpackTemp);
         }
 
         /// <inheritdoc />
@@ -231,6 +263,11 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.PS4:
                 {
                     Build(options, platform, TargetArchitecture.x64);
+                    break;
+                }
+                case TargetPlatform.Android:
+                {
+                    Build(options, platform, TargetArchitecture.ARM64);
                     break;
                 }
                 }
