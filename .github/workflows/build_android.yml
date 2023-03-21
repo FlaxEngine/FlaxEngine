@@ -20,9 +20,11 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 7.0.x
-    - name: Print .NET info
+    - name: Setup .NET Workload
       run: |
         dotnet workload install android
+    - name: Print .NET info
+      run: |
         dotnet --info
         dotnet workload --info
     - name: Checkout LFS
