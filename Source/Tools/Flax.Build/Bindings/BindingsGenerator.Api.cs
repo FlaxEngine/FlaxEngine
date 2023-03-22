@@ -91,15 +91,15 @@ namespace Flax.Build.Bindings
             },
             {
                 new TypeInfo("Char"),
-                new LangType("char")
+                new LangType("char", "Char")
             },
             {
                 new TypeInfo("char"),
-                new LangType("sbyte")
+                new LangType("sbyte", "char")
             },
             {
                 new TypeInfo("void*"),
-                new LangType("IntPtr")
+                new LangType("IntPtr", "void*")
             },
         };
 
