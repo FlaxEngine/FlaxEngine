@@ -5,6 +5,7 @@
 #include "UWPPlatformTools.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/File.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Platform/UWP/UWPPlatformSettings.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Core/Types/StringBuilder.h"
@@ -460,9 +461,11 @@ bool UWPPlatformTools::OnPerformAOT(CookingData& data, AotConfig& config, const 
         FileSystem::DeleteFile(resultPathPdb);
 
     // Call tool
-    String workingDir = StringUtils::GetDirectoryName(config.AotCompilerPath);
-    String command = String::Format(TEXT("\"{0}\" {1} \"{2}\""), config.AotCompilerPath, config.AotCompilerArgs, assemblyPath);
-    const int32 result = Platform::RunProcess(command, workingDir, config.EnvVars);
+    CreateProcessSettings procSettings;
+    procSettings.FileName = String::Format(TEXT("\"{0}\" {1} \"{2}\""), config.AotCompilerPath, config.AotCompilerArgs, assemblyPath);
+    procSettings.WorkingDirectory = StringUtils::GetDirectoryName(config.AotCompilerPath);
+    procSettings.Environment = config.EnvVars;
+    const int32 result = Platform::CreateProcess(procSettings);
     if (result != 0)
     {
         data.Error(TEXT("AOT tool execution failed with result code {1} for assembly \"{0}\". See log for more info."), assemblyPath, result);

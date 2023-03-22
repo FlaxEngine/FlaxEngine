@@ -2,14 +2,16 @@
 
 #include "VisualStudioCodeEditor.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Core/Log.h"
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
 #include "Editor/Scripting/ScriptsBuilder.h"
 #include "Engine/Engine/Globals.h"
-#include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
 #if PLATFORM_LINUX
 #include <stdio.h>
+#elif PLATFORM_WINDOWS
+#include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
 #elif PLATFORM_MAC
 #include "Engine/Platform/Apple/AppleUtils.h"
 #include <AppKit/AppKit.h>
@@ -140,8 +142,14 @@ void VisualStudioCodeEditor::OpenFile(const String& path, int32 line)
 
     // Open file
     line = line > 0 ? line : 1;
-    const String args = String::Format(TEXT("\"{0}\" -g \"{1}\":{2}"), _workspacePath, path, line);
-    Platform::StartProcess(_execPath, args, StringView::Empty);
+    CreateProcessSettings procSettings;
+    procSettings.FileName = _execPath;
+    procSettings.Arguments = String::Format(TEXT("\"{0}\" -g \"{1}\":{2}"), _workspacePath, path, line);
+    procSettings.HiddenWindow = false;
+    procSettings.WaitForEnd = false;
+    procSettings.LogOutput = false;
+    procSettings.ShellExecute = true;
+    Platform::CreateProcess(procSettings);
 }
 
 void VisualStudioCodeEditor::OpenSolution()
@@ -160,8 +168,14 @@ void VisualStudioCodeEditor::OpenSolution()
     }
 
     // Open solution
-    const String args = String::Format(TEXT("\"{0}\""), _workspacePath);
-    Platform::StartProcess(_execPath, args, StringView::Empty);
+    CreateProcessSettings procSettings;
+    procSettings.FileName = _execPath;
+    procSettings.Arguments = String::Format(TEXT("\"{0}\""), _workspacePath);
+    procSettings.HiddenWindow = false;
+    procSettings.WaitForEnd = false;
+    procSettings.LogOutput = false;
+    procSettings.ShellExecute = true;
+    Platform::CreateProcess(procSettings);
 }
 
 bool VisualStudioCodeEditor::UseAsyncForOpen() const

@@ -23,6 +23,7 @@
 #include "Steps/CookAssetsStep.h"
 #include "Steps/PostProcessStep.h"
 #include "Engine/Platform/ConditionVariable.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Scripting/ManagedCLR/MDomain.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
@@ -686,7 +687,15 @@ bool GameCookerImpl::Build()
                 const String commandLine = commandLineFormat.HasChars() ? String::Format(*commandLineFormat, gameArgs) : gameArgs;
                 if (workingDir.IsEmpty())
                     workingDir = data.NativeCodeOutputPath;
-                Platform::StartProcess(executableFile, commandLine, workingDir);
+                CreateProcessSettings procSettings;
+                procSettings.FileName = executableFile;
+                procSettings.Arguments = commandLine;
+                procSettings.WorkingDirectory = workingDir;
+                procSettings.HiddenWindow = false;
+                procSettings.WaitForEnd = false;
+                procSettings.LogOutput = false;
+                procSettings.ShellExecute = true;
+                Platform::CreateProcess(procSettings);
             }
             else
             {

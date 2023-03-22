@@ -569,7 +569,13 @@ namespace FlaxEditor.Windows
             {
                 var tmpBat = StringUtils.CombinePaths(Globals.TemporaryFolder, Guid.NewGuid().ToString("N") + ".bat");
                 File.WriteAllText(tmpBat, command);
-                Platform.StartProcess(tmpBat, null, null, true, true);
+                var procSettings = new CreateProcessSettings
+                {
+                    FileName = tmpBat,
+                    HiddenWindow = true,
+                    WaitForEnd = true,
+                };
+                Platform.CreateProcess(ref procSettings);
                 File.Delete(tmpBat);
             }
             catch (Exception ex)

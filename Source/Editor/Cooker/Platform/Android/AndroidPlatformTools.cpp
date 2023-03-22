@@ -9,6 +9,7 @@
 #include "Editor/Utilities/EditorUtilities.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Platform/Android/AndroidPlatformSettings.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/Textures/TextureData.h"
@@ -309,8 +310,10 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
     Platform::RunProcess(String::Format(TEXT("chmod +x \"{0}/gradlew\""), data.OriginalOutputPath), data.OriginalOutputPath, Dictionary<String, String>(), true);
 #endif
     const bool distributionPackage = buildSettings->ForDistribution;
-    const String gradleCommand = String::Format(TEXT("\"{0}\" {1}"), data.OriginalOutputPath / gradlew, distributionPackage ? TEXT("assemble") : TEXT("assembleDebug"));
-    const int32 result = Platform::RunProcess(gradleCommand, data.OriginalOutputPath, Dictionary<String, String>(), true);
+    CreateProcessSettings procSettings;
+    procSettings.FileName = String::Format(TEXT("\"{0}\" {1}"), data.OriginalOutputPath / gradlew, distributionPackage ? TEXT("assemble") : TEXT("assembleDebug"));
+    procSettings.WorkingDirectory = data.OriginalOutputPath;
+    const int32 result = Platform::CreateProcess(procSettings);
     if (result != 0)
     {
         data.Error(TEXT("Failed to build Gradle project into package (result code: {0}). See log for more info."), result);

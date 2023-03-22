@@ -697,9 +697,16 @@ namespace FlaxEditor
             // Invoke new instance if need to open a project
             if (!string.IsNullOrEmpty(_projectToOpen))
             {
-                string args = string.Format("-project \"{0}\"", _projectToOpen);
+                var procSettings = new CreateProcessSettings
+                {
+                    FileName = Platform.ExecutableFilePath,
+                    Arguments = string.Format("-project \"{0}\"", _projectToOpen),
+                    ShellExecute = true,
+                    WaitForEnd = false,
+                    HiddenWindow = false,
+                };
                 _projectToOpen = null;
-                Platform.StartProcess(Platform.ExecutableFilePath, args, null);
+                Platform.CreateProcess(ref procSettings);
             }
         }
 

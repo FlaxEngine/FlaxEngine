@@ -5,6 +5,7 @@
 #include "GDKPlatformTools.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Platform/GDK/GDKPlatformSettings.h"
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Core/Collections/Sorting.h"
@@ -126,9 +127,11 @@ bool GDKPlatformTools::OnPerformAOT(CookingData& data, AotConfig& config, const 
         FileSystem::DeleteFile(resultPathPdb);
 
     // Call tool
-    const String workingDir = StringUtils::GetDirectoryName(config.AotCompilerPath);
-    const String command = String::Format(TEXT("\"{0}\" {1} \"{2}\""), config.AotCompilerPath, config.AotCompilerArgs, assemblyPath);
-    const int32 result = Platform::RunProcess(command, workingDir, config.EnvVars);
+    CreateProcessSettings procSettings;
+    procSettings.FileName = String::Format(TEXT("\"{0}\" {1} \"{2}\""), config.AotCompilerPath, config.AotCompilerArgs, assemblyPath);
+    procSettings.WorkingDirectory = StringUtils::GetDirectoryName(config.AotCompilerPath);
+    procSettings.Environment = config.EnvVars;
+    const int32 result = Platform::CreateProcess(procSettings);
     if (result != 0)
     {
         data.Error(TEXT("AOT tool execution failed with result code {1} for assembly \"{0}\". See log for more info."), assemblyPath, result);
@@ -275,8 +278,10 @@ bool GDKPlatformTools::OnPostProcess(CookingData& data, GDKPlatformSettings* pla
     data.StepProgress(TEXT("Generating package layout"), 0.3f);
     const String gdkBinPath = _gdkPath / TEXT("../bin");
     const String makePkgPath = gdkBinPath / TEXT("MakePkg.exe");
-    const String command = String::Format(TEXT("\"{0}\" genmap /f layout.xml /d \"{1}\""), makePkgPath, data.DataOutputPath);
-    const int32 result = Platform::RunProcess(command, data.DataOutputPath);
+    CreateProcessSettings procSettings;
+    procSettings.FileName = String::Format(TEXT("\"{0}\" genmap /f layout.xml /d \"{1}\""), makePkgPath, data.DataOutputPath);
+    procSettings.WorkingDirectory = data.DataOutputPath;
+    const int32 result = Platform::CreateProcess(procSettings);
     if (result != 0)
     {
         data.Error(TEXT("Failed to generate package layout."));

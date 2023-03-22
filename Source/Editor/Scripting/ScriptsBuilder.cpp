@@ -10,9 +10,10 @@
 #include "Engine/Debug/Exceptions/FileNotFoundException.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/Globals.h"
+#include "Engine/Engine/EngineService.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/FileSystemWatcher.h"
-#include "Engine/Threading/ThreadPool.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Scripting/MainThreadManagedInvokeAction.h"
 #include "Engine/Scripting/ScriptingType.h"
@@ -21,7 +22,6 @@
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/Script.h"
-#include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Level/Level.h"
 #include "FlaxEngine.Gen.h"
@@ -253,7 +253,10 @@ bool ScriptsBuilder::RunBuildTool(const StringView& args, const StringView& work
     // TODO: Set env var for the mono MONO_GC_PARAMS=nursery-size64m to boost build performance -> profile it
 
     // Call build tool
-    const int32 result = Platform::RunProcess(StringView(*cmdLine, cmdLine.Length()), workingDir);
+    CreateProcessSettings procSettings;
+    procSettings.FileName = StringView(*cmdLine, cmdLine.Length());
+    procSettings.WorkingDirectory = workingDir;
+    const int32 result = Platform::CreateProcess(procSettings);
     if (result != 0)
         LOG(Error, "Failed to run build tool, result: {0:x}", (uint32)result);
     return result != 0;

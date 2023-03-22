@@ -4,6 +4,7 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
@@ -726,8 +727,9 @@ bool EditorUtilities::GenerateCertificate(const String& name, const String& outp
 
     // MakeCert
     auto path = wdkPath / TEXT("makecert.exe");
-    auto args = String::Format(TEXT("\"{0}\" /r /h 0 /eku \"1.3.6.1.5.5.7.3.3,1.3.6.1.4.1.311.10.3.13\" /m 12 /len 2048 /n \"CN={1}\" -sv \"{2}\" \"{3}\""), path, name, outputPvkFilePath, outputCerFilePath);
-    int32 result = Platform::RunProcess(args, String::Empty);
+    CreateProcessSettings procSettings;
+    procSettings.FileName = String::Format(TEXT("\"{0}\" /r /h 0 /eku \"1.3.6.1.5.5.7.3.3,1.3.6.1.4.1.311.10.3.13\" /m 12 /len 2048 /n \"CN={1}\" -sv \"{2}\" \"{3}\""), path, name, outputPvkFilePath, outputCerFilePath);
+    int32 result = Platform::CreateProcess(procSettings);
     if (result != 0)
     {
         LOG(Warning, "MakeCert failed with result {0}.", result);
@@ -736,8 +738,8 @@ bool EditorUtilities::GenerateCertificate(const String& name, const String& outp
 
     // Pvk2Pfx
     path = wdkPath / TEXT("pvk2pfx.exe");
-    args = String::Format(TEXT("\"{0}\" -pvk \"{1}\" -spc \"{2}\" -pfx \"{3}\""), path, outputPvkFilePath, outputCerFilePath, outputPfxFilePath);
-    result = Platform::RunProcess(args, String::Empty);
+    procSettings.FileName = String::Format(TEXT("\"{0}\" -pvk \"{1}\" -spc \"{2}\" -pfx \"{3}\""), path, outputPvkFilePath, outputCerFilePath, outputPfxFilePath);
+    result = Platform::CreateProcess(procSettings);
     if (result != 0)
     {
         LOG(Warning, "MakeCert failed with result {0}.", result);
