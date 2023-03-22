@@ -75,7 +75,7 @@ namespace Flax.Build
             // Find system-installed SDK
             string dotnetPath = Environment.GetEnvironmentVariable("DOTNET_ROOT");
             string rid, ridFallback, arch;
-            string[] dotnetSdkVersions = null, dotnetRuntimeVersions = null;
+            IEnumerable<string> dotnetSdkVersions = null, dotnetRuntimeVersions = null;
             switch (architecture)
             {
             case TargetArchitecture.x86:
@@ -147,9 +147,9 @@ namespace Flax.Build
                 return;
             }
             if (dotnetSdkVersions == null)
-                dotnetSdkVersions = Directory.GetDirectories(Path.Combine(dotnetPath, "sdk")).Select(Path.GetFileName).ToArray();
+                dotnetSdkVersions = GetVersions(Path.Combine(dotnetPath, "sdk"));
             if (dotnetRuntimeVersions == null)
-                dotnetRuntimeVersions = Directory.GetDirectories(Path.Combine(dotnetPath, "shared/Microsoft.NETCore.App/")).Select(Path.GetFileName).ToArray();
+                dotnetRuntimeVersions = GetVersions(Path.Combine(dotnetPath, "shared/Microsoft.NETCore.App"));
             string dotnetSdkVersion = dotnetSdkVersions.OrderByDescending(ParseVersion).FirstOrDefault();
             string dotnetRuntimeVersion = dotnetRuntimeVersions.OrderByDescending(ParseVersion).FirstOrDefault();
             if (string.IsNullOrEmpty(dotnetSdkVersion))
@@ -235,13 +235,24 @@ namespace Flax.Build
         {
             if (string.IsNullOrEmpty(rid))
                 return false;
-            var path = Path.Combine(RootPath, $"packs/Microsoft.NETCore.App.Host.{rid}/{RuntimeVersionName}/runtimes/{rid}/native");
-            var exists = Directory.Exists(path);
+
+            // Pick pack folder
+            var packFolder = Path.Combine(RootPath, $"packs/Microsoft.NETCore.App.Host.{rid}");
+            var exists = Directory.Exists(packFolder);
             if (!exists && runtimeName != null)
             {
-                path = Path.Combine(RootPath, $"packs/Microsoft.NETCore.App.{runtimeName}.{rid}/{RuntimeVersionName}/runtimes/{rid}/native");
-                exists = Directory.Exists(path);
+                packFolder = Path.Combine(RootPath, $"packs/Microsoft.NETCore.App.{runtimeName}.{rid}");
+                exists = Directory.Exists(packFolder);
             }
+            if (!exists)
+                return false;
+
+            // Pick version folder
+            var versions = GetVersions(packFolder);
+            var version = GetVersion(versions);
+            var path = Path.Combine(packFolder, $"{version}/runtimes/{rid}/native");
+            exists = Directory.Exists(path);
+
             if (exists)
                 _hostRuntimes[new KeyValuePair<TargetPlatform, TargetArchitecture>(platform, arch)] = path;
             return exists;
@@ -258,6 +269,17 @@ namespace Flax.Build
             }
             Version ver = new Version(version);
             return new Version(ver.Major, ver.Minor, ver.Build, rev);
+        }
+
+        private static IEnumerable<string> GetVersions(string folder)
+        {
+            return Directory.GetDirectories(folder).Select(Path.GetFileName);
+        }
+
+        private static string GetVersion(IEnumerable<string> versions)
+        {
+            // TODO: reject 'future' versions like .Net 8?
+            return versions.OrderByDescending(ParseVersion).FirstOrDefault();
         }
     }
 }
