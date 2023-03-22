@@ -552,22 +552,49 @@ bool PlatformBase::SetEnvironmentVariable(const String& name, const String& valu
     return true;
 }
 
-int32 PlatformBase::StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow, bool waitForEnd)
+int32 PlatformBase::CreateProcess(CreateProcessSettings& settings)
 {
     // Not supported
     return -1;
+}
+
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
+#include "Engine/Platform/CreateProcessSettings.h"
+
+int32 PlatformBase::StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow, bool waitForEnd)
+{
+    CreateProcessSettings procSettings;
+    procSettings.FileName = filename;
+    procSettings.Arguments = args;
+    procSettings.WorkingDirectory = workingDir;
+    procSettings.HiddenWindow = hiddenWindow;
+    procSettings.WaitForEnd = waitForEnd;
+    procSettings.LogOutput = waitForEnd;
+    procSettings.ShellExecute = true;
+    return CreateProcess(procSettings);
 }
 
 int32 PlatformBase::RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow)
 {
-    return Platform::RunProcess(cmdLine, workingDir, Dictionary<String, String>(), hiddenWindow);
+    CreateProcessSettings procSettings;
+    procSettings.FileName = cmdLine;
+    procSettings.WorkingDirectory = workingDir;
+    procSettings.HiddenWindow = hiddenWindow;
+    return CreateProcess(procSettings);
 }
 
 int32 PlatformBase::RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool hiddenWindow)
 {
-    // Not supported
-    return -1;
+    CreateProcessSettings procSettings;
+    procSettings.FileName = cmdLine;
+    procSettings.WorkingDirectory = workingDir;
+    procSettings.Environment = environment;
+    procSettings.HiddenWindow = hiddenWindow;
+    return CreateProcess(procSettings);
 }
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 Array<PlatformBase::StackFrame> PlatformBase::GetStackFrames(int32 skipCount, int32 maxDepth, void* context)
 {

@@ -10,6 +10,7 @@ struct Guid;
 struct CPUInfo;
 struct MemoryStats;
 struct ProcessMemoryStats;
+struct CreateProcessSettings;
 struct CreateWindowSettings;
 struct BatteryInfo;
 
@@ -742,9 +743,9 @@ public:
     static bool SetEnvironmentVariable(const String& name, const String& value);
 
 public:
-
     /// <summary>
     /// Starts a new process (runs app).
+    /// [Deprecated in v1.6]
     /// </summary>
     /// <param name="filename">The path to the executable file.</param>
     /// <param name="args">Custom arguments for command line</param>
@@ -752,26 +753,35 @@ public:
     /// <param name="hiddenWindow">True if start process with hidden window</param>
     /// <param name="waitForEnd">True if wait for process competition</param>
     /// <returns>Retrieves the termination status of the specified process. Valid only if processed ended.</returns>
-    API_FUNCTION() static int32 StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow = false, bool waitForEnd = false);
+    API_FUNCTION() DEPRECATED static int32 StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow = false, bool waitForEnd = false);
 
     /// <summary>
     /// Starts a new process (runs commandline). Waits for it's end and captures its output.
+    /// [Deprecated in v1.6]
     /// </summary>
     /// <param name="cmdLine">Command line to execute</param>
     /// <param name="workingDir">The custom path of the working directory.</param>
     /// <param name="hiddenWindow">True if start process with hidden window.</param>
     /// <returns>Retrieves the termination status of the specified process. Valid only if processed ended.</returns>
-    API_FUNCTION() static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow = true);
+    API_FUNCTION() DEPRECATED static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow = true);
 
     /// <summary>
     /// Starts a new process (runs commandline). Waits for it's end and captures its output.
+    /// [Deprecated in v1.6]
     /// </summary>
     /// <param name="cmdLine">Command line to execute</param>
     /// <param name="workingDir">The custom path of the working directory.</param>
     /// <param name="environment">The process environment variables. If null the current process environment is used.</param>
     /// <param name="hiddenWindow">True if start process with hidden window.</param>
     /// <returns>Retrieves the termination status of the specified process. Valid only if processed ended.</returns>
-    API_FUNCTION() static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String, HeapAllocation>& environment, bool hiddenWindow = true);
+    API_FUNCTION() DEPRECATED static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String, HeapAllocation>& environment, bool hiddenWindow = true);
+
+    /// <summary>
+    /// Creates a new process.
+    /// </summary>
+    /// <param name="settings">The process settings.</param>
+    /// <returns>Retrieves the termination status of the specified process. Valid only if processed ended.</returns>
+    API_FUNCTION() static int32 CreateProcess(API_PARAM(Ref) CreateProcessSettings& settings);
 
     /// <summary>
     /// Creates the window.

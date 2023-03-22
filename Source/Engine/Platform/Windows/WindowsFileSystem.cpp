@@ -6,6 +6,7 @@
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/Window.h"
 #include "Engine/Platform/Windows/ComPtr.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Core/Types/StringView.h"
 #include "../Win32/IncludeWindowsHeaders.h"
 
@@ -16,6 +17,7 @@
 #include <ShlObj.h>
 #include <ShellAPI.h>
 #include <KnownFolders.h>
+#undef ShellExecute
 
 namespace Windows
 {
@@ -335,7 +337,14 @@ bool WindowsFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const Strin
 
 bool WindowsFileSystem::ShowFileExplorer(const StringView& path)
 {
-    return Platform::StartProcess(path, StringView::Empty, StringView::Empty) != 0;
+    CreateProcessSettings procSettings;
+    procSettings.FileName = path;
+    procSettings.FileName = path;
+    procSettings.HiddenWindow = false;
+    procSettings.WaitForEnd = false;
+    procSettings.LogOutput = false;
+    procSettings.ShellExecute = true;
+    return Platform::CreateProcess(procSettings) != 0;
 }
 
 #endif

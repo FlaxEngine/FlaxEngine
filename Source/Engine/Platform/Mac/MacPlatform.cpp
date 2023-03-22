@@ -23,6 +23,7 @@
 #include "Engine/Platform/Clipboard.h"
 #include "Engine/Platform/IGuiData.h"
 #include "Engine/Platform/Base/PlatformUtils.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Engine/Engine.h"
@@ -369,65 +370,22 @@ Window* MacPlatform::CreateWindow(const CreateWindowSettings& settings)
     return New<MacWindow>(settings);
 }
 
-int32 MacProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool waitForEnd, bool logOutput)
+int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
 {
-    LOG(Info, "Command: {0}", cmdLine);
+    LOG(Info, "Command: {0} {1}", settings.FileName, settings.Arguments);
     String cwd;
-    if (workingDir.Length() != 0)
+    if (settings.WorkingDirectory.HasChars())
     {
-        LOG(Info, "Working directory: {0}", workingDir);
+        LOG(Info, "Working directory: {0}", settings.WorkingDirectory);
         cwd = Platform::GetWorkingDirectory();
-        Platform::SetWorkingDirectory(workingDir);
+        Platform::SetWorkingDirectory(settings.WorkingDirectory);
     }
-
-    StringAsANSI<> cmdLineAnsi(*cmdLine, cmdLine.Length());
-    FILE* pipe = popen(cmdLineAnsi.Get(), "r");
-    if (cwd.Length() != 0)
-    {
-        Platform::SetWorkingDirectory(cwd);
-    }
-    if (!pipe)
-    {
-		LOG(Warning, "Failed to start process, errno={}", errno);
-        return -1;
-    }
-
-    // TODO: environment
-
-	int32 returnCode = 0;
-    if (waitForEnd)
-    {
-        int stat_loc;
-        if (logOutput)
-        {
-            char lineBuffer[1024];
-            while (fgets(lineBuffer, sizeof(lineBuffer), pipe) != NULL)
-            {
-                char *p = lineBuffer + strlen(lineBuffer) - 1;
-                if (*p == '\n') *p=0;
-                Log::Logger::Write(LogType::Info, String(lineBuffer));
-            }
-        }
-        else
-        {
-            while (!feof(pipe))
-            {
-                sleep(1);
-            }
-        }
-    }
-
-	return returnCode;
-}
-
-int32 MacPlatform::StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow, bool waitForEnd)
-{
-	// hiddenWindow has hardly any meaning on UNIX/Linux/OSX as the program that is called decides whether it has a GUI or not
-
+    const bool captureStdOut = settings.LogOutput || settings.SaveOutput;
+    
     // Special case if filename points to the app package (use actual executable)
-    String exePath = filename;
+    String exePath = settings.FileName;
 	{
-        NSString* processPath = (NSString*)AppleUtils::ToString(filename);
+        NSString* processPath = (NSString*)AppleUtils::ToString(exePath);
         if (![[NSFileManager defaultManager] fileExistsAtPath: processPath])
         {
             NSString* appName = [[processPath lastPathComponent] stringByDeletingPathExtension];
@@ -448,18 +406,48 @@ int32 MacPlatform::StartProcess(const StringView& filename, const StringView& ar
         }
 	}
 
-    String cmdLine = String::Format(TEXT("\"{0}\" {1}"), exePath, args);
-	return MacProcess(cmdLine, workingDir, Dictionary<String, String>(), waitForEnd, false);
-}
+    const String cmdLine = exePath + TEXT(" ") + settings.Arguments;
+    const StringAsANSI<> cmdLineAnsi(*cmdLine, cmdLine.Length());
+    FILE* pipe = popen(cmdLineAnsi.Get(), "r");
+    if (cwd.Length() != 0)
+    {
+        Platform::SetWorkingDirectory(cwd);
+    }
+    if (!pipe)
+    {
+		LOG(Warning, "Failed to start process, errno={}", errno);
+        return -1;
+    }
 
-int32 MacPlatform::RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow)
-{
-    return MacProcess(cmdLine, workingDir, Dictionary<String, String>(), true, true);
-}
+    // TODO: environment
 
-int32 MacPlatform::RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool hiddenWindow)
-{
-	return MacProcess(cmdLine, workingDir, environment, true, true);
+    int32 returnCode = 0;
+    if (settings.WaitForEnd)
+    {
+        if (captureStdOut)
+        {
+            char lineBuffer[1024];
+            while (fgets(lineBuffer, sizeof(lineBuffer), pipe) != NULL)
+            {
+                char* p = lineBuffer + strlen(lineBuffer) - 1;
+                if (*p == '\n') *p = 0;
+                String line(lineBuffer);
+                if (settings.SaveOutput)
+                    settings.Output.Add(line.Get(), line.Length());
+                if (settings.LogOutput)
+                    Log::Logger::Write(LogType::Info, line);
+            }
+        }
+        else
+        {
+            while (!feof(pipe))
+            {
+                sleep(1);
+            }
+        }
+    }
+
+	return returnCode;
 }
 
 #endif

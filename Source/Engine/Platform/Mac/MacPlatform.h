@@ -28,9 +28,7 @@ public:
     static Rectangle GetVirtualDesktopBounds();
 	static String GetMainDirectory();
     static Window* CreateWindow(const CreateWindowSettings& settings);
-    static int32 StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow = false, bool waitForEnd = false);
-    static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow = true);
-    static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String, HeapAllocation>& environment, bool hiddenWindow = true);
+    static int32 CreateProcess(CreateProcessSettings& settings);
 };
 
 #endif
