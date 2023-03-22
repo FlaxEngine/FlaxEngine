@@ -13,7 +13,7 @@
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "FlaxEngine.Gen.h"
-#include <ThirdParty/mono-2.0/mono/metadata/reflection.h>
+#include <mono/metadata/reflection.h>
 
 #define TRACK_ASSEMBLY(assembly) \
 	if (assembly->IsLoaded()) \

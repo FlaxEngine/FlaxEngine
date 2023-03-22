@@ -10,8 +10,8 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Core/Log.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
-#include <ThirdParty/mono-2.0/mono/metadata/attrdefs.h>
+#include <mono/metadata/mono-debug.h>
+#include <mono/metadata/attrdefs.h>
 #define GET_CUSTOM_ATTR() (MonoCustomAttrInfo*)(_attrInfo ? _attrInfo : _attrInfo = mono_custom_attrs_from_class(_monoClass))
 #endif
 #if USE_NETCORE

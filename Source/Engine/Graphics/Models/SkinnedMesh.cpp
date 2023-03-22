@@ -15,7 +15,7 @@
 #include "Engine/Threading/Task.h"
 #include "Engine/Threading/Threading.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#include <mono/metadata/appdomain.h>
 #endif
 
 void SkinnedMesh::Init(SkinnedModel* model, int32 lodIndex, int32 index, int32 materialSlotIndex, const BoundingBox& box, const BoundingSphere& sphere)

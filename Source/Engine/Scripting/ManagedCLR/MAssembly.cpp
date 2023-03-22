@@ -17,9 +17,9 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/Threading.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
-#include <ThirdParty/mono-2.0/mono/metadata/assembly.h>
-#include <ThirdParty/mono-2.0/mono/metadata/tokentype.h>
+#include <mono/metadata/mono-debug.h>
+#include <mono/metadata/assembly.h>
+#include <mono/metadata/tokentype.h>
 #endif
 
 MAssembly::MAssembly(MDomain* domain, const StringAnsiView& name, const MAssemblyOptions& options)

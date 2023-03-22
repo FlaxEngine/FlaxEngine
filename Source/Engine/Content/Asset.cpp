@@ -14,7 +14,7 @@
 #include "Engine/Threading/ConcurrentTaskQueue.h"
 #if USE_MONO
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
-#include <ThirdParty/mono-2.0/mono/metadata/mono-gc.h>
+#include <mono/metadata/mono-gc.h>
 #endif
 
 AssetReferenceBase::~AssetReferenceBase()

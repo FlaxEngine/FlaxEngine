@@ -24,7 +24,7 @@
 #include "Engine/Content/Asset.h"
 #include "Engine/Utilities/Encryption.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/object.h>
+#include <mono/metadata/object.h>
 #endif
 
 void ISerializable::DeserializeIfExists(DeserializeStream& stream, const char* memberName, ISerializeModifier* modifier)

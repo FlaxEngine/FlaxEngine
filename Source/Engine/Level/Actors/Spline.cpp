@@ -5,7 +5,7 @@
 #include "Engine/Animations/CurveSerialization.h"
 #include "Engine/Core/Math/Matrix.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/object.h>
+#include <mono/metadata/object.h>
 #endif
 
 Spline::Spline(const SpawnParams& params)

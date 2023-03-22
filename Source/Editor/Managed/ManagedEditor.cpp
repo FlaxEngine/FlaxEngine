@@ -16,7 +16,7 @@
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Renderer/ProbesRenderer.h"
 #include "Engine/Animations/Graph/AnimGraph.h"
-#include <ThirdParty/mono-2.0/mono/metadata/threads.h>
+#include <mono/metadata/threads.h>
 
 ManagedEditor::InternalOptions ManagedEditor::ManagedEditorOptions;
 

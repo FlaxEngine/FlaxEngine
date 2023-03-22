@@ -9,9 +9,9 @@
 #include "Engine/Scripting/ManagedCLR/MField.h"
 #include "Engine/Scripting/BinaryModule.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/debug-helpers.h>
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
-#include <ThirdParty/mono-2.0/mono/metadata/object.h>
+#include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/object.h>
 
 struct ManagedBitArray
 {

@@ -4,8 +4,8 @@
 #include "MType.h"
 #include "MClass.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
-#include <ThirdParty/mono-2.0/mono/metadata/attrdefs.h>
+#include <mono/metadata/mono-debug.h>
+#include <mono/metadata/attrdefs.h>
 
 MField::MField(MonoClassField* monoField, const char* name, MClass* parentClass)
     : _monoField(monoField)

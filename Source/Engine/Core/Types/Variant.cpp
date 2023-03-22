@@ -27,7 +27,7 @@
 #include "Engine/Utilities/Crc.h"
 #include "Engine/Utilities/StringConverter.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/object.h>
+#include <mono/metadata/object.h>
 #endif
 
 namespace

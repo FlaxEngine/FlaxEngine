@@ -7,7 +7,7 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Serialization/Serialization.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#include <mono/metadata/appdomain.h>
 #endif
 
 #if COMPILE_WITHOUT_CSHARP

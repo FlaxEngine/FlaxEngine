@@ -176,6 +176,7 @@ bool DeployDataStep::Perform(CookingData& data)
                 FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), packFolder / TEXT("THIRD-PARTY-NOTICES.TXT"));
                 failed |= FileSystem::CopyDirectory(dstDotnet / TEXT("shared/Microsoft.NETCore.App"), srcDotnet / TEXT("../lib/net7.0"), true);
                 failed |= FileSystem::CopyFile(dstDotnet / TEXT("shared/Microsoft.NETCore.App") / TEXT("System.Private.CoreLib.dll"), srcDotnet / TEXT("System.Private.CoreLib.dll"));
+                // TODO: copy .so/.dll files to native data files (eg. libSystem.IO.Compression.Native.so, libSystem.Native.so, libSystem.Security.Cryptography.Native.Android.so)
                 if (failed)
                 {
                     data.Error(TEXT("Failed to copy .Net runtime data files."));

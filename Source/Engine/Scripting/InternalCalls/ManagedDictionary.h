@@ -12,7 +12,7 @@
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Scripting/MException.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#include <mono/metadata/appdomain.h>
 
 /// <summary>
 /// Utility interop between C++ and C# for Dictionary collection.

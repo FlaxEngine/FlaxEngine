@@ -5,8 +5,8 @@
 #include "MClass.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
-#include <ThirdParty/mono-2.0/mono/metadata/attrdefs.h>
+#include <mono/metadata/mono-debug.h>
+#include <mono/metadata/attrdefs.h>
 
 MMethod::MMethod(MonoMethod* monoMethod, MClass* parentClass)
     : MMethod(monoMethod, mono_method_get_name(monoMethod), parentClass)

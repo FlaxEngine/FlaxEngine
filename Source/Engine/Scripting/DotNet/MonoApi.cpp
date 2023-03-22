@@ -6,8 +6,8 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Core/Types/StringBuilder.h"
-#include <ThirdParty/mono-2.0/mono/metadata/object.h>
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#include <mono/metadata/object.h>
+#include <mono/metadata/appdomain.h>
 
 #pragma warning(disable : 4297)
 

@@ -14,7 +14,7 @@
 
 #if !COMPILE_WITHOUT_CSHARP
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#include <mono/metadata/appdomain.h>
 #endif
 
 struct InternalInitData

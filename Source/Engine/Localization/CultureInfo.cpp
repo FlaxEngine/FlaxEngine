@@ -5,9 +5,9 @@
 #include "Engine/Scripting/ManagedCLR/MType.h"
 #include "Engine/Utilities/StringConverter.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
-#include <ThirdParty/mono-2.0/mono/metadata/culture-info.h>
-#include <ThirdParty/mono-2.0/mono/metadata/culture-info-tables.h>
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/culture-info.h>
+#include <mono/metadata/culture-info-tables.h>
 
 typedef struct
 {

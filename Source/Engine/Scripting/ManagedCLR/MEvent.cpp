@@ -4,7 +4,7 @@
 #include "MType.h"
 #include "MClass.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
+#include <mono/metadata/mono-debug.h>
 
 MEvent::MEvent(MonoEvent* monoEvent, const char* name, MClass* parentClass)
     : _monoEvent(monoEvent)
@@ -137,7 +137,7 @@ const Array<MObject*>& MEvent::GetAttributes()
     const auto length = (uint32)mono_array_length(monoAttributesArray);
     _attributes.Resize(length);
     for (uint32 i = 0; i < length; i++)
-        _attributes[i] = mono_array_get(monoAttributesArray, MonoObject *, i);
+        _attributes[i] = mono_array_get(monoAttributesArray, MonoObject*, i);
     mono_custom_attrs_free(attrInfo);
 #endif
     return _attributes;

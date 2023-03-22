@@ -20,19 +20,19 @@
 #ifdef USE_MONO_AOT_MODULE
 #include "Engine/Core/Types/TimeSpan.h"
 #endif
-#include <ThirdParty/mono-2.0/mono/jit/jit.h>
-#include <ThirdParty/mono-2.0/mono/utils/mono-counters.h>
-#include <ThirdParty/mono-2.0/mono/utils/mono-logger.h>
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
-#include <ThirdParty/mono-2.0/mono/metadata/object.h>
-#include <ThirdParty/mono-2.0/mono/metadata/assembly.h>
-#include <ThirdParty/mono-2.0/mono/metadata/threads.h>
-#include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
-#include <ThirdParty/mono-2.0/mono/metadata/mono-config.h>
-#include <ThirdParty/mono-2.0/mono/metadata/mono-gc.h>
-#include <ThirdParty/mono-2.0/mono/metadata/profiler.h>
+#include <mono/jit/jit.h>
+#include <mono/utils/mono-counters.h>
+#include <mono/utils/mono-logger.h>
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/object.h>
+#include <mono/metadata/assembly.h>
+#include <mono/metadata/threads.h>
+#include <mono/metadata/mono-debug.h>
+#include <mono/metadata/mono-config.h>
+#include <mono/metadata/mono-gc.h>
+#include <mono/metadata/profiler.h>
 #if !USE_MONO_DYNAMIC_LIB
-#include <ThirdParty/mono-2.0/mono/utils/mono-dl-fallback.h>
+#include <mono/utils/mono-dl-fallback.h>
 #endif
 #endif
 
@@ -159,6 +159,7 @@ void MCore::UnloadEngine()
     CoreCLR::CallStaticMethodByName<void>(TEXT("Exit"));
     MDomains.ClearDelete();
     MRootDomain = nullptr;
+    CoreCLR::ShutdownHostfxr();
 }
 #elif USE_MONO
 

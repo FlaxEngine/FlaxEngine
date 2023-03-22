@@ -3,7 +3,7 @@
 #include "MException.h"
 #include "ManagedCLR/MUtils.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/object.h>
+#include <mono/metadata/object.h>
 #endif
 
 MException::MException(MObject* exception)

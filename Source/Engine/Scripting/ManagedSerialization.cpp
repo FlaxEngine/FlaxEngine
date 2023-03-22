@@ -8,7 +8,7 @@
 #include "StdTypesContainer.h"
 #include "MException.h"
 #include "ManagedCLR/MMethod.h"
-#include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
+#include <mono/metadata/mono-debug.h>
 
 void ManagedSerialization::Serialize(ISerializable::SerializeStream& stream, MObject* object)
 {

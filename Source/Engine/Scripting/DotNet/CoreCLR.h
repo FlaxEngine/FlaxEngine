@@ -25,6 +25,7 @@ class CoreCLR
 {
 public:
     static bool InitHostfxr(const String& configPath, const String& libraryPath);
+    static void ShutdownHostfxr();
 
     /// <summary>
     /// Returns the function pointer to the managed static method in NativeInterop class.

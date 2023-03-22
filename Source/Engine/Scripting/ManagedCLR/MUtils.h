@@ -11,8 +11,8 @@
 
 #if USE_MONO
 
-#include <ThirdParty/mono-2.0/mono/metadata/object.h>
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#include <mono/metadata/object.h>
+#include <mono/metadata/appdomain.h>
 
 #if USE_NETCORE
 #include "Engine/Scripting/DotNet/CoreCLR.h"

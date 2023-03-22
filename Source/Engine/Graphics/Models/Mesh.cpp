@@ -18,7 +18,7 @@
 #include "Engine/Renderer/GBufferPass.h"
 #endif
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#include <mono/metadata/appdomain.h>
 #endif
 
 namespace

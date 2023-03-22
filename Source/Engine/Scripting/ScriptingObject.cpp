@@ -17,8 +17,8 @@
 #include "ManagedCLR/MCore.h"
 #include "FlaxEngine.Gen.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/object.h>
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#include <mono/metadata/object.h>
+#include <mono/metadata/appdomain.h>
 #endif
 
 #define ScriptingObject_unmanagedPtr "__unmanagedPtr"

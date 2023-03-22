@@ -12,8 +12,8 @@
 
 #if USE_MONO
 
-#include <ThirdParty/mono-2.0/mono/metadata/exception.h>
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#include <mono/metadata/exception.h>
+#include <mono/metadata/appdomain.h>
 
 namespace Impl
 {

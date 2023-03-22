@@ -33,7 +33,7 @@ public class nethost : ThirdPartyModule
         var dotnetSdk = DotNetSdk.Instance;
         if (!dotnetSdk.IsValid)
             throw new Exception($"Missing NET SDK {DotNetSdk.MinimumVersion}.");
-        if (!dotnetSdk.GetHostRuntime(options.Platform.Target, options.Architecture, out var hostRuntimePath))
+        if (!dotnetSdk.GetHostRuntime(options.Platform.Target, options.Architecture, out var hostRuntime))
         {
             if (options.Target.IsPreBuilt)
                 return; // Ignore missing Host Runtime when engine is already prebuilt
@@ -43,48 +43,51 @@ public class nethost : ThirdPartyModule
         }
 
         // Setup build configuration
-        bool useMonoHost = false;
         switch (options.Platform.Target)
         {
         case TargetPlatform.Windows:
         case TargetPlatform.XboxOne:
         case TargetPlatform.XboxScarlett:
         case TargetPlatform.UWP:
-            options.OutputFiles.Add(Path.Combine(hostRuntimePath, "nethost.lib"));
-            options.DependencyFiles.Add(Path.Combine(hostRuntimePath, "nethost.dll"));
+            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "nethost.lib"));
+            options.DependencyFiles.Add(Path.Combine(hostRuntime.Path, "nethost.dll"));
             break;
         case TargetPlatform.Linux:
-            options.OutputFiles.Add(Path.Combine(hostRuntimePath, "libnethost.a"));
-            options.DependencyFiles.Add(Path.Combine(hostRuntimePath, "libnethost.so"));
+            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libnethost.a"));
+            options.DependencyFiles.Add(Path.Combine(hostRuntime.Path, "libnethost.so"));
             break;
         case TargetPlatform.Mac:
-            options.OutputFiles.Add(Path.Combine(hostRuntimePath, "libnethost.a"));
-            options.DependencyFiles.Add(Path.Combine(hostRuntimePath, "libnethost.dylib"));
+            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libnethost.a"));
+            options.DependencyFiles.Add(Path.Combine(hostRuntime.Path, "libnethost.dylib"));
             break;
         case TargetPlatform.Switch:
         case TargetPlatform.PS4:
         case TargetPlatform.PS5:
-            options.OutputFiles.Add(Path.Combine(hostRuntimePath, "libnethost.a"));
-            //options.OutputFiles.Add(Path.Combine(hostRuntimePath, "libhostfxr.a"));
+            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libnethost.a"));
+            //options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libhostfxr.a"));
             break;
-        case TargetPlatform.Android:
-            useMonoHost = true;
-            break;
-        default:
-            throw new InvalidPlatformException(options.Platform.Target);
+        case TargetPlatform.Android: break;
+        default: throw new InvalidPlatformException(options.Platform.Target);
         }
         options.DependencyFiles.Add(Path.Combine(FolderPath, "FlaxEngine.CSharp.runtimeconfig.json"));
-        if (useMonoHost)
+        options.PublicDefinitions.Add("DOTNET_HOST_RUNTIME_IDENTIFIER=" + DotNetSdk.GetHostRuntimeIdentifier(options.Platform.Target, options.Architecture));
+        switch (hostRuntime.Type)
         {
-            // Use Mono for runtime hosting
-            options.PublicDefinitions.Add("DOTNET_HOST_MONO");
-            options.PublicIncludePaths.Add(Path.Combine(hostRuntimePath, "include", "mono-2.0"));
-        }
-        else
+        case DotNetSdk.HostType.CoreCRL:
         {
             // Use CoreCRL for runtime hosting
             options.PublicDefinitions.Add("DOTNET_HOST_CORECRL");
-            options.PublicIncludePaths.Add(hostRuntimePath);
+            options.PublicIncludePaths.Add(hostRuntime.Path);
+            break;
+        }
+        case DotNetSdk.HostType.Mono:
+        {
+            // Use Mono for runtime hosting
+            options.PublicDefinitions.Add("DOTNET_HOST_MONO");
+            //options.PublicIncludePaths.Add(Path.Combine(hostRuntime.Path, "include", "mono-2.0")); already setup in ProjectTarget.SetupTargetEnvironment
+            break;
+        }
+        default: throw new ArgumentOutOfRangeException();
         }
     }
 }

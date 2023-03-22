@@ -31,8 +31,8 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Serialization/JsonTools.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
-#include <ThirdParty/mono-2.0/mono/metadata/object.h>
+#include <mono/metadata/mono-debug.h>
+#include <mono/metadata/object.h>
 #endif
 #if USE_NETCORE
 #include "DotNet/CoreCLR.h"

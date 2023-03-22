@@ -15,7 +15,7 @@
 #include "Engine/Core/Types/Pair.h"
 #include "Engine/Threading/Threading.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/mono-gc.h>
+#include <mono/metadata/mono-gc.h>
 #endif
 
 #if USE_MONO

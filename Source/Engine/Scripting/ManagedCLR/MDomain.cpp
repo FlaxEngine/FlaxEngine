@@ -8,7 +8,7 @@
 #include "Engine/Debug/Exceptions/ArgumentException.h"
 #include "Engine/Debug/Exceptions/Exceptions.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/threads.h>
+#include <mono/metadata/threads.h>
 #endif
 
 extern MDomain* MActiveDomain;

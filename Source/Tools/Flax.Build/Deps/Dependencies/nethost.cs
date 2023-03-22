@@ -54,7 +54,7 @@ namespace Flax.Deps.Dependencies
             SetupDirectory(artifacts, true);
 
             // Peek options
-            string os, arch, runtimeFlavor, subset, hostRuntimeName, buildArgsBase = string.Empty;
+            string os, arch, runtimeFlavor, subset, hostRuntimeName = DotNetSdk.GetHostRuntimeIdentifier(targetPlatform, architecture), buildArgsBase = string.Empty;
             bool setupVersion = false;
             string[] hostRuntimeFiles = Array.Empty<string>();
             var envVars = new Dictionary<string, string>();
@@ -80,25 +80,21 @@ namespace Flax.Deps.Dependencies
                 os = "windows";
                 runtimeFlavor = "CoreCLR";
                 subset = "clr";
-                hostRuntimeName = $"win-{arch}";
                 break;
             case TargetPlatform.Linux:
                 os = "Linux";
                 runtimeFlavor = "CoreCLR";
                 subset = "clr";
-                hostRuntimeName = $"linux-{arch}";
                 break;
             case TargetPlatform.Mac:
                 os = "OSX";
                 runtimeFlavor = "CoreCLR";
                 subset = "clr";
-                hostRuntimeName = $"osx-{arch}";
                 break;
             case TargetPlatform.Android:
                 os = "Android";
                 runtimeFlavor = "Mono";
                 subset = "mono+libs";
-                hostRuntimeName = $"android-{arch}";
                 break;
             case TargetPlatform.PS4:
                 os = "PS4";
@@ -106,7 +102,6 @@ namespace Flax.Deps.Dependencies
                 subset = "mono+libs";
                 setupVersion = true;
                 buildArgsBase = " /p:RuntimeOS=ps4 -cmakeargs \"-DCLR_CROSS_COMPONENTS_BUILD=1\"";
-                hostRuntimeName = $"ps4-{arch}";
                 hostRuntimeFiles = new[]
                 {
                     "coreclr_delegates.h",

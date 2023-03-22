@@ -26,7 +26,87 @@ namespace Flax.Build
     /// </summary>
     public sealed class DotNetSdk : Sdk
     {
-        private Dictionary<KeyValuePair<TargetPlatform, TargetArchitecture>, string> _hostRuntimes = new();
+        /// <summary>
+        /// Runtime host types.
+        /// </summary>
+        public enum HostType
+        {
+            /// <summary>
+            /// Core CRL runtime.
+            /// </summary>
+            CoreCRL,
+
+            /// <summary>
+            /// Old-school Mono runtime.
+            /// </summary>
+            Mono,
+        }
+
+        /// <summary>
+        /// Host runtime description.
+        /// </summary>
+        public struct HostRuntime : IEquatable<HostRuntime>
+        {
+            /// <summary>
+            /// The path to runtime host contents folder for a given target platform and architecture.
+            /// In format: &lt;RootPath&gt;/packs/Microsoft.NETCore.App.Host.&lt;os&gt;/&lt;VersionName&gt;/runtimes/&lt;os&gt;-&lt;arch&gt;/native
+            /// </summary>
+            public string Path;
+
+            /// <summary>
+            /// Type of the host.
+            /// </summary>
+            public HostType Type;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="HostRuntime"/> class.
+            /// </summary>
+            /// <param name="platform">The target platform (used to guess the host type).</param>
+            /// <param name="path">The host contents folder path.</param>
+            public HostRuntime(TargetPlatform platform, string path)
+            {
+                Path = path;
+
+                // Detect host type (this could check if monosgen-2.0 or hostfxr lib exists but platform-switch is easier)
+                switch (platform)
+                {
+                case TargetPlatform.Windows:
+                case TargetPlatform.Linux:
+                case TargetPlatform.Mac:
+                    Type = HostType.CoreCRL;
+                    break;
+                default:
+                    Type = HostType.Mono;
+                    break;
+                }
+            }
+
+            /// <inheritdoc />
+            public bool Equals(HostRuntime other)
+            {
+                return Path == other.Path && Type == other.Type;
+            }
+
+            /// <inheritdoc />
+            public override bool Equals(object? obj)
+            {
+                return obj is HostRuntime other && Equals(other);
+            }
+
+            /// <inheritdoc />
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(Path, (int)Type);
+            }
+
+            /// <inheritdoc />
+            public override string ToString()
+            {
+                return Path;
+            }
+        }
+
+        private Dictionary<KeyValuePair<TargetPlatform, TargetArchitecture>, HostRuntime> _hostRuntimes = new();
 
         /// <summary>
         /// The singleton instance.
@@ -192,6 +272,65 @@ namespace Flax.Build
         }
 
         /// <summary>
+        /// Gets the host runtime identifier for a given platform (eg. linux-arm64).
+        /// </summary>
+        /// <param name="platform">Target platform.</param>
+        /// <param name="architecture">Target architecture.</param>
+        /// <returns>Runtime identifier.</returns>
+        public static string GetHostRuntimeIdentifier(TargetPlatform platform, TargetArchitecture architecture)
+        {
+            string result;
+            switch (platform)
+            {
+            case TargetPlatform.Windows:
+            case TargetPlatform.XboxOne:
+            case TargetPlatform.XboxScarlett:
+            case TargetPlatform.UWP:
+                result = "win";
+                break;
+            case TargetPlatform.Linux:
+                result = "linux";
+                break;
+            case TargetPlatform.PS4:
+                result = "ps4";
+                break;
+            case TargetPlatform.PS5:
+                result = "ps5";
+                break;
+            case TargetPlatform.Android:
+                result = "android";
+                break;
+            case TargetPlatform.Switch:
+                result = "switch";
+                break;
+            case TargetPlatform.Mac:
+                result = "osx";
+                break;
+            case TargetPlatform.iOS:
+                result = "ios";
+                break;
+            default: throw new InvalidPlatformException(platform);
+            }
+            switch (architecture)
+            {
+            case TargetArchitecture.x86:
+                result += "-x86";
+                break;
+            case TargetArchitecture.x64:
+                result += "-x64";
+                break;
+            case TargetArchitecture.ARM:
+                result += "-arm";
+                break;
+            case TargetArchitecture.ARM64:
+                result += "-arm64";
+                break;
+            default: throw new InvalidArchitectureException(architecture);
+            }
+            return result;
+        }
+
+        /// <summary>
         /// Prints the .NET runtimes hosts.
         /// </summary>
         public void PrintRuntimes()
@@ -211,12 +350,11 @@ namespace Flax.Build
         }
 
         /// <summary>
-        /// Gets the path to runtime host contents folder for a given target platform and architecture.
-        /// In format: &lt;RootPath&gt;/packs/Microsoft.NETCore.App.Host.&lt;os&gt;/&lt;VersionName&gt;/runtimes/&lt;os&gt;-&lt;arch&gt;/native
+        /// Gets the runtime host for a given target platform and architecture.
         /// </summary>
-        public bool GetHostRuntime(TargetPlatform platform, TargetArchitecture arch, out string path)
+        public bool GetHostRuntime(TargetPlatform platform, TargetArchitecture arch, out HostRuntime hostRuntime)
         {
-            return _hostRuntimes.TryGetValue(new KeyValuePair<TargetPlatform, TargetArchitecture>(platform, arch), out path);
+            return _hostRuntimes.TryGetValue(new KeyValuePair<TargetPlatform, TargetArchitecture>(platform, arch), out hostRuntime);
         }
 
         /// <summary>
@@ -228,7 +366,7 @@ namespace Flax.Build
         public void AddHostRuntime(TargetPlatform platform, TargetArchitecture arch, string path)
         {
             if (Directory.Exists(path))
-                _hostRuntimes[new KeyValuePair<TargetPlatform, TargetArchitecture>(platform, arch)] = path;
+                _hostRuntimes[new KeyValuePair<TargetPlatform, TargetArchitecture>(platform, arch)] = new HostRuntime(platform, path);
         }
 
         private bool TryAddHostRuntime(TargetPlatform platform, TargetArchitecture arch, string rid, string runtimeName = null)
@@ -254,7 +392,7 @@ namespace Flax.Build
             exists = Directory.Exists(path);
 
             if (exists)
-                _hostRuntimes[new KeyValuePair<TargetPlatform, TargetArchitecture>(platform, arch)] = path;
+                _hostRuntimes[new KeyValuePair<TargetPlatform, TargetArchitecture>(platform, arch)] = new HostRuntime(platform, path);
             return exists;
         }
 

@@ -47,7 +47,7 @@
 #include "FlaxEngine.Gen.h"
 #include "Engine/Level/Actors/AnimatedModel.h"
 #include "Engine/Serialization/JsonTools.h"
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
+#include <mono/metadata/appdomain.h>
 
 Guid ManagedEditor::ObjectID(0x91970b4e, 0x99634f61, 0x84723632, 0x54c776af);
 

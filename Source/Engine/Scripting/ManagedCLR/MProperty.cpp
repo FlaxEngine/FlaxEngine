@@ -6,7 +6,7 @@
 #include "MClass.h"
 #include "MType.h"
 #if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
+#include <mono/metadata/mono-debug.h>
 
 MProperty::MProperty(MonoProperty* monoProperty, const char* name, MClass* parentClass)
     : _monoProperty(monoProperty)

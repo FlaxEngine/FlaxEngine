@@ -11,8 +11,8 @@
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #if USE_MONO
 #include "Engine/Scripting/ManagedCLR/MDomain.h"
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
-#include <ThirdParty/mono-2.0/mono/metadata/threads.h>
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/threads.h>
 #endif
 
 // Jobs storage perf info:
