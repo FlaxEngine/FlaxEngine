@@ -150,6 +150,10 @@ namespace Flax.Build.Bindings
             if (type == null)
                 return ToString();
 
+            // Optimization for simple type
+            if (!IsConst && GenericArgs == null && !IsPtr && !IsRef)
+                return type.FullNameNative;
+
             var sb = new StringBuilder(64);
             if (IsConst)
                 sb.Append("const ");
