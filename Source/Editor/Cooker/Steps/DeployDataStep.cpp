@@ -98,10 +98,10 @@ bool DeployDataStep::Perform(CookingData& data)
                 String sdks;
                 bool failed = ScriptsBuilder::RunBuildTool(TEXT("-log -logMessagesOnly -logFileWithConsole -logfile=SDKs.txt -printSDKs"), data.CacheDirectory);
                 failed |= File::ReadAllText(data.CacheDirectory / TEXT("SDKs.txt"), sdks);
-                int32 idx = sdks.Find(TEXT("] DotNetSdk, "), StringSearchCase::CaseSensitive);
+                int32 idx = sdks.Find(TEXT("DotNetSdk, "), StringSearchCase::CaseSensitive);
                 if (idx != -1)
                 {
-                    idx = sdks.Find(TEXT(", "), StringSearchCase::CaseSensitive, idx + 14);
+                    idx = sdks.Find(TEXT(", "), StringSearchCase::CaseSensitive, idx + 12);
                     idx += 2;
                     int32 end = sdks.Find(TEXT("\n"), StringSearchCase::CaseSensitive, idx);
                     if (sdks[end] == '\r')
