@@ -1,14 +1,14 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "ManagedSerialization.h"
-#if USE_MONO
+#if USE_CSHARP
 #include "Engine/Core/Log.h"
 #include "Engine/Serialization/Json.h"
 #include "Engine/Serialization/JsonWriter.h"
-#include "StdTypesContainer.h"
-#include "MException.h"
-#include "ManagedCLR/MMethod.h"
-#include <mono/metadata/mono-debug.h>
+#include "Engine/Scripting/ManagedCLR/MException.h"
+#include "Engine/Scripting/ManagedCLR/MMethod.h"
+#include "Engine/Scripting/ManagedCLR/MCore.h"
+#include "Engine/Scripting/Internal/StdTypesContainer.h"
 
 void ManagedSerialization::Serialize(ISerializable::SerializeStream& stream, MObject* object)
 {
@@ -29,7 +29,7 @@ void ManagedSerialization::Serialize(ISerializable::SerializeStream& stream, MOb
     // Call serialization tool
     MObject* exception = nullptr;
     // TODO: use method thunk
-    auto invokeResultStr = (MonoString*)StdTypesContainer::Instance()->Json_Serialize->Invoke(nullptr, params, &exception);
+    auto invokeResultStr = (MString*)StdTypesContainer::Instance()->Json_Serialize->Invoke(nullptr, params, &exception);
     if (exception)
     {
         MException ex(exception);
@@ -42,9 +42,7 @@ void ManagedSerialization::Serialize(ISerializable::SerializeStream& stream, MOb
     }
 
     // Write result data
-    const auto invokeResultChars = mono_string_to_utf8(invokeResultStr);
-    stream.RawValue(invokeResultChars);
-    mono_free(invokeResultChars);
+    stream.RawValue(MCore::String::GetChars(invokeResultStr));
 }
 
 void ManagedSerialization::SerializeDiff(ISerializable::SerializeStream& stream, MObject* object, MObject* other)
@@ -67,7 +65,7 @@ void ManagedSerialization::SerializeDiff(ISerializable::SerializeStream& stream,
     // Call serialization tool
     MObject* exception = nullptr;
     // TODO: use method thunk
-    auto invokeResultStr = (MonoString*)StdTypesContainer::Instance()->Json_SerializeDiff->Invoke(nullptr, params, &exception);
+    auto invokeResultStr = (MString*)StdTypesContainer::Instance()->Json_SerializeDiff->Invoke(nullptr, params, &exception);
     if (exception)
     {
         MException ex(exception);
@@ -80,9 +78,7 @@ void ManagedSerialization::SerializeDiff(ISerializable::SerializeStream& stream,
     }
 
     // Write result data
-    auto invokeResultChars = mono_string_to_utf8(invokeResultStr);
-    stream.RawValue(invokeResultChars);
-    mono_free(invokeResultChars);
+    stream.RawValue(MCore::String::GetChars(invokeResultStr));
 }
 
 void ManagedSerialization::Deserialize(ISerializable::DeserializeStream& stream, MObject* object)

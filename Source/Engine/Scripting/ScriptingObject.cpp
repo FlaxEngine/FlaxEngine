@@ -3,7 +3,6 @@
 #include "ScriptingObject.h"
 #include "Scripting.h"
 #include "BinaryModule.h"
-#include "InternalCalls.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Utilities/StringConverter.h"
@@ -15,11 +14,8 @@
 #include "ManagedCLR/MUtils.h"
 #include "ManagedCLR/MField.h"
 #include "ManagedCLR/MCore.h"
+#include "Internal/InternalCalls.h"
 #include "FlaxEngine.Gen.h"
-#if USE_MONO
-#include <mono/metadata/object.h>
-#include <mono/metadata/appdomain.h>
-#endif
 
 #define ScriptingObject_unmanagedPtr "__unmanagedPtr"
 #define ScriptingObject_id "__internalId"
@@ -73,8 +69,8 @@ MObject* ScriptingObject::GetManagedInstance() const
 #elif USE_MONO
     const MGCHandle handle = Platform::AtomicRead((int32*)&_gcHandle);
 #endif
-#if USE_MONO
-    return handle ? MUtils::GetGCHandleTarget(handle) : nullptr;
+#if USE_CSHARP
+    return handle ? MCore::GCHandle::GetTarget(handle) : nullptr;
 #else
     return nullptr;
 #endif
@@ -180,13 +176,13 @@ void* ScriptingObject::ToInterface(ScriptingObject* obj, const ScriptingTypeHand
 ScriptingObject* ScriptingObject::ToNative(MObject* obj)
 {
     ScriptingObject* ptr = nullptr;
-#if USE_MONO
+#if USE_CSHARP
     if (obj)
     {
         // TODO: cache the field offset from object and read directly from object pointer
-        const auto ptrField = mono_class_get_field_from_name(mono_object_get_class(obj), ScriptingObject_unmanagedPtr);
+        const auto ptrField = MCore::Object::GetClass(obj)->GetField(ScriptingObject_unmanagedPtr);
         CHECK_RETURN(ptrField, nullptr);
-        mono_field_get_value(obj, ptrField, &ptr);
+        ptrField->GetValue(obj, &ptr);
     }
 #endif
     return ptr;
@@ -227,7 +223,7 @@ void ScriptingObject::SetManagedInstance(MObject* instance)
 #if USE_NETCORE
     _gcHandle = (MGCHandle)instance;
 #elif !COMPILE_WITHOUT_CSHARP
-    _gcHandle = MUtils::NewGCHandle(instance, false);
+    _gcHandle = MCore::GCHandle::New(instance, false);
 #endif
 }
 
@@ -236,8 +232,8 @@ void ScriptingObject::OnManagedInstanceDeleted()
     // Release the handle
     if (_gcHandle)
     {
-#if USE_MONO
-        MUtils::FreeGCHandle(_gcHandle);
+#if USE_CSHARP
+        MCore::GCHandle::Free(_gcHandle);
 #endif
         _gcHandle = 0;
     }
@@ -257,8 +253,8 @@ void ScriptingObject::OnScriptingDispose()
 
 bool ScriptingObject::CreateManaged()
 {
-#if USE_MONO
-    MonoObject* managedInstance = CreateManagedInternal();
+#if USE_CSHARP
+    MObject* managedInstance = CreateManagedInternal();
     if (!managedInstance)
         return true;
 
@@ -268,7 +264,7 @@ bool ScriptingObject::CreateManaged()
     auto oldHandle = Platform::InterlockedCompareExchange((int64*)&_gcHandle, *(int64*)&handle, 0);
     if (*(uint64*)&oldHandle != 0)
 #else
-    auto handle = MUtils::NewGCHandle(managedInstance, false);
+    auto handle = MCore::GCHandle::New(managedInstance, false);
     auto oldHandle = Platform::InterlockedCompareExchange((int32*)&_gcHandle, *(int32*)&handle, 0);
     if (*(uint32*)&oldHandle != 0)
 #endif
@@ -284,7 +280,7 @@ bool ScriptingObject::CreateManaged()
                 monoUnmanagedPtrField->SetValue(managedInstance, &param);
             }
         }
-        MUtils::FreeGCHandle(handle);
+        MCore::GCHandle::Free(handle);
         return true;
     }
 #endif
@@ -296,9 +292,9 @@ bool ScriptingObject::CreateManaged()
     return false;
 }
 
-#if USE_MONO
+#if USE_CSHARP
 
-MonoObject* ScriptingObject::CreateManagedInternal()
+MObject* ScriptingObject::CreateManagedInternal()
 {
     // Get class
     MClass* monoClass = GetClass();
@@ -309,15 +305,10 @@ MonoObject* ScriptingObject::CreateManagedInternal()
     }
 
     // Ensure to have managed domain attached (this can be called from custom native thread, eg. content loader)
-    auto domain = mono_domain_get();
-    if (!domain)
-    {
-        MCore::AttachThread();
-        domain = mono_domain_get();
-    }
+    MCore::Thread::Attach();
 
     // Allocate managed instance
-    MonoObject* managedInstance = mono_object_new(domain, monoClass->GetNative());
+    MObject* managedInstance = MCore::Object::New(monoClass);
     if (managedInstance == nullptr)
     {
         LOG(Warning, "Failed to create new instance of the object of type {0}", String(monoClass->GetFullName()));
@@ -339,7 +330,7 @@ MonoObject* ScriptingObject::CreateManagedInternal()
     }
 
     // Initialize managed instance (calls constructor)
-    mono_runtime_object_init(managedInstance);
+    MCore::Object::Init(managedInstance);
 
     return managedInstance;
 }
@@ -348,7 +339,7 @@ MonoObject* ScriptingObject::CreateManagedInternal()
 
 void ScriptingObject::DestroyManaged()
 {
-#if USE_MONO
+#if USE_CSHARP
     // Get managed instance
     const auto managedInstance = GetManagedInstance();
 
@@ -369,7 +360,7 @@ void ScriptingObject::DestroyManaged()
     // Clear the handle
     if (_gcHandle)
     {
-        MUtils::FreeGCHandle(_gcHandle);
+        MCore::GCHandle::Free(_gcHandle);
         _gcHandle = 0;
     }
 #else
@@ -407,29 +398,11 @@ bool ScriptingObject::CanCast(const MClass* from, const MClass* to)
 
 #if PLATFORM_LINUX || PLATFORM_MAC
     // Cannot enter GC unsafe region if the thread is not attached
-    MCore::AttachThread();
+    MCore::Thread::Attach();
 #endif
 
     return from->IsSubClassOf(to);
 }
-
-#if USE_MONO
-
-bool ScriptingObject::CanCast(const MClass* from, const MonoClass* to)
-{
-    if (!from && !to)
-        return true;
-    CHECK_RETURN(from && to, false);
-
-#if PLATFORM_LINUX
-    // Cannot enter GC unsafe region if the thread is not attached
-    MCore::AttachThread();
-#endif
-
-    return from->IsSubClassOf(to);
-}
-
-#endif
 
 void ScriptingObject::OnDeleteObject()
 {
@@ -460,7 +433,7 @@ void ManagedScriptingObject::SetManagedInstance(MObject* instance)
 #if USE_NETCORE
     _gcHandle = (MGCHandle)instance;
 #elif !COMPILE_WITHOUT_CSHARP
-    _gcHandle = MUtils::NewGCHandleWeakref(instance, false);
+    _gcHandle = MCore::GCHandle::NewWeak(instance, false);
 #endif
 }
 
@@ -484,8 +457,8 @@ void ManagedScriptingObject::OnScriptingDispose()
 
 bool ManagedScriptingObject::CreateManaged()
 {
-#if USE_MONO
-    MonoObject* managedInstance = CreateManagedInternal();
+#if USE_CSHARP
+    MObject* managedInstance = CreateManagedInternal();
     if (!managedInstance)
         return true;
 
@@ -495,7 +468,7 @@ bool ManagedScriptingObject::CreateManaged()
     auto oldHandle = Platform::InterlockedCompareExchange((int64*)&_gcHandle, *(int64*)&handle, 0);
     if (*(uint64*)&oldHandle != 0)
 #else
-    auto handle = MUtils::NewGCHandleWeakref(managedInstance, false);
+    auto handle = MCore::GCHandle::NewWeak(managedInstance, false);
     auto oldHandle = Platform::InterlockedCompareExchange((int32*)&_gcHandle, *(int32*)&handle, 0);
     if (*(uint32*)&oldHandle != 0)
 #endif
@@ -511,7 +484,7 @@ bool ManagedScriptingObject::CreateManaged()
                 monoUnmanagedPtrField->SetValue(managedInstance, &param);
             }
         }
-        MUtils::FreeGCHandle(handle);
+        MCore::GCHandle::Free(handle);
         return true;
     }
 #endif
@@ -528,21 +501,21 @@ PersistentScriptingObject::PersistentScriptingObject(const SpawnParams& params)
 {
 }
 
-#if !COMPILE_WITHOUT_CSHARP
+#if USE_CSHARP
 
-DEFINE_INTERNAL_CALL(MonoObject*) ObjectInternal_Create1(MonoReflectionType* type)
+DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_Create1(MTypeObject* type)
 {
     // Peek class for that type (handle generic class cases)
     if (!type)
         DebugLog::ThrowArgumentNull("type");
-    MonoType* monoType = mono_reflection_type_get_type(type);
-    const int32 monoTypeType = mono_type_get_type(monoType);
-    if (monoTypeType == MONO_TYPE_GENERICINST)
+    MType* mType = INTERNAL_TYPE_OBJECT_GET(type);
+    const MTypes mTypeType = MCore::Type::GetType(mType);
+    if (mTypeType == MTypes::GenericInst)
     {
         LOG(Error, "Generic scripts are not supported.");
         return nullptr;
     }
-    MonoClass* typeClass = mono_type_get_class(monoType);
+    MClass* typeClass = MCore::Type::GetClass(mType);
     if (typeClass == nullptr)
     {
         LOG(Error, "Invalid type.");
@@ -553,7 +526,7 @@ DEFINE_INTERNAL_CALL(MonoObject*) ObjectInternal_Create1(MonoReflectionType* typ
     auto module = ManagedBinaryModule::FindModule(typeClass);
     if (module == nullptr)
     {
-        LOG(Error, "Cannot find scripting assembly for type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
+        LOG(Error, "Cannot find scripting assembly for type \'{0}\'.", String(typeClass->GetFullName()));
         return nullptr;
     }
 
@@ -561,7 +534,7 @@ DEFINE_INTERNAL_CALL(MonoObject*) ObjectInternal_Create1(MonoReflectionType* typ
     int32 typeIndex;
     if (!module->ClassToTypeIndex.TryGet(typeClass, typeIndex))
     {
-        LOG(Error, "Cannot spawn objects of type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
+        LOG(Error, "Cannot spawn objects of type \'{0}\'.", String(typeClass->GetFullName()));
         return nullptr;
     }
     const ScriptingType& scriptingType = module->Types[typeIndex];
@@ -571,35 +544,36 @@ DEFINE_INTERNAL_CALL(MonoObject*) ObjectInternal_Create1(MonoReflectionType* typ
     ScriptingObject* obj = scriptingType.Script.Spawn(params);
     if (obj == nullptr)
     {
-        LOG(Error, "Failed to spawn object of type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
+        LOG(Error, "Failed to spawn object of type \'{0}\'.", String(typeClass->GetFullName()));
         return nullptr;
     }
 
     // Set default name for actors
     if (auto* actor = dynamic_cast<Actor*>(obj))
     {
-        actor->SetName(String(mono_class_get_name(typeClass)));
+        actor->SetName(String(typeClass->GetName()));
     }
 
     // Create managed object
     obj->CreateManaged();
-    MonoObject* managedInstance = obj->GetManagedInstance();
+    MObject* managedInstance = obj->GetManagedInstance();
     if (managedInstance == nullptr)
     {
-        LOG(Error, "Cannot create managed instance for type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
+        LOG(Error, "Cannot create managed instance for type \'{0}\'.", String(typeClass->GetFullName()));
         Delete(obj);
     }
 
     return managedInstance;
 }
 
-DEFINE_INTERNAL_CALL(MonoObject*) ObjectInternal_Create2(MonoString* typeNameObj)
+DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_Create2(MString* typeNameObj)
 {
     // Get typename
     if (typeNameObj == nullptr)
         DebugLog::ThrowArgumentNull("typeName");
-    const StringAsANSI<> typeNameData((const Char*)mono_string_chars(typeNameObj), (int32)mono_string_length(typeNameObj));
-    const StringAnsiView typeName(typeNameData.Get(), (int32)mono_string_length(typeNameObj));
+    const StringView typeNameChars = MCore::String::GetChars(typeNameObj);
+    const StringAsANSI<100> typeNameData(typeNameChars.Get(), typeNameChars.Length());
+    const StringAnsiView typeName(typeNameData.Get(), typeNameChars.Length());
 
     // Try to find the scripting type for this typename
     const ScriptingTypeHandle type = Scripting::FindScriptingType(typeName);
@@ -620,7 +594,7 @@ DEFINE_INTERNAL_CALL(MonoObject*) ObjectInternal_Create2(MonoString* typeNameObj
 
     // Create managed object
     obj->CreateManaged();
-    MonoObject* managedInstance = obj->GetManagedInstance();
+    MObject* managedInstance = obj->GetManagedInstance();
     if (managedInstance == nullptr)
     {
         LOG(Error, "Cannot create managed instance for type \'{0}\'.", String(typeName));
@@ -630,15 +604,15 @@ DEFINE_INTERNAL_CALL(MonoObject*) ObjectInternal_Create2(MonoString* typeNameObj
     return managedInstance;
 }
 
-DEFINE_INTERNAL_CALL(void) ObjectInternal_ManagedInstanceCreated(MonoObject* managedInstance)
+DEFINE_INTERNAL_CALL(void) ObjectInternal_ManagedInstanceCreated(MObject* managedInstance)
 {
-    MonoClass* typeClass = mono_object_get_class(managedInstance);
+    MClass* typeClass = MCore::Object::GetClass(managedInstance);
 
     // Get the assembly with that class
     auto module = ManagedBinaryModule::FindModule(typeClass);
     if (module == nullptr)
     {
-        LOG(Error, "Cannot find scripting assembly for type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
+        LOG(Error, "Cannot find scripting assembly for type \'{0}\'.", String(typeClass->GetFullName()));
         return;
     }
 
@@ -646,7 +620,7 @@ DEFINE_INTERNAL_CALL(void) ObjectInternal_ManagedInstanceCreated(MonoObject* man
     int32 typeIndex;
     if (!module->ClassToTypeIndex.TryGet(typeClass, typeIndex))
     {
-        LOG(Error, "Cannot spawn objects of type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
+        LOG(Error, "Cannot spawn objects of type \'{0}\'.", String(typeClass->GetFullName()));
         return;
     }
     const ScriptingType& scriptingType = module->Types[typeIndex];
@@ -656,14 +630,14 @@ DEFINE_INTERNAL_CALL(void) ObjectInternal_ManagedInstanceCreated(MonoObject* man
     ScriptingObject* obj = scriptingType.Script.Spawn(params);
     if (obj == nullptr)
     {
-        LOG(Error, "Failed to spawn object of type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
+        LOG(Error, "Failed to spawn object of type \'{0}\'.", String(typeClass->GetFullName()));
         return;
     }
 
     // Set default name for actors
     if (auto* actor = dynamic_cast<Actor*>(obj))
     {
-        actor->SetName(String(mono_class_get_name(typeClass)));
+        actor->SetName(String(typeClass->GetName()));
     }
 
     // Link created managed instance to the unmanaged object
@@ -706,21 +680,21 @@ DEFINE_INTERNAL_CALL(void) ObjectInternal_Destroy(ScriptingObject* obj, float ti
         obj->DeleteObject(timeLeft, useGameTime);
 }
 
-DEFINE_INTERNAL_CALL(MonoString*) ObjectInternal_GetTypeName(ScriptingObject* obj)
+DEFINE_INTERNAL_CALL(MString*) ObjectInternal_GetTypeName(ScriptingObject* obj)
 {
     INTERNAL_CALL_CHECK_RETURN(obj, nullptr);
     return MUtils::ToString(obj->GetType().Fullname);
 }
 
-DEFINE_INTERNAL_CALL(MonoObject*) ObjectInternal_FindObject(Guid* id, MonoReflectionType* type)
+DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FindObject(Guid* id, MTypeObject* type)
 {
     if (!id->IsValid())
         return nullptr;
-    auto klass = MUtils::GetClass(type);
+    MClass* klass = MUtils::GetClass(type);
     ScriptingObject* obj = Scripting::TryFindObject(*id);
     if (!obj)
     {
-        if (!klass || klass == ScriptingObject::GetStaticClass()->GetNative() || mono_class_is_subclass_of(klass, Asset::GetStaticClass()->GetNative(), false) != 0)
+        if (!klass || klass == ScriptingObject::GetStaticClass() || klass->IsSubClassOf(Asset::GetStaticClass()))
         {
             obj = Content::LoadAsync<Asset>(*id);
         }
@@ -729,19 +703,19 @@ DEFINE_INTERNAL_CALL(MonoObject*) ObjectInternal_FindObject(Guid* id, MonoReflec
     {
         if (klass && !obj->Is(klass))
         {
-            LOG(Warning, "Found scripting object with ID={0} of type {1} that doesn't match type {2}.", *id, String(obj->GetType().Fullname), String(MUtils::GetClassFullname(klass)));
+            LOG(Warning, "Found scripting object with ID={0} of type {1} that doesn't match type {2}.", *id, String(obj->GetType().Fullname), String(klass->GetFullName()));
             return nullptr;
         }
         return obj->GetOrCreateManagedInstance();
     }
     if (klass)
-        LOG(Warning, "Unable to find scripting object with ID={0}. Required type {1}.", *id, String(MUtils::GetClassFullname(klass)));
+        LOG(Warning, "Unable to find scripting object with ID={0}. Required type {1}.", *id, String(klass->GetFullName()));
     else
         LOG(Warning, "Unable to find scripting object with ID={0}", *id);
     return nullptr;
 }
 
-DEFINE_INTERNAL_CALL(MonoObject*) ObjectInternal_TryFindObject(Guid* id, MonoReflectionType* type)
+DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_TryFindObject(Guid* id, MTypeObject* type)
 {
     ScriptingObject* obj = Scripting::TryFindObject(*id);
     if (obj && !obj->Is(MUtils::GetClass(type)))
@@ -755,11 +729,11 @@ DEFINE_INTERNAL_CALL(void) ObjectInternal_ChangeID(ScriptingObject* obj, Guid* i
     obj->ChangeID(*id);
 }
 
-DEFINE_INTERNAL_CALL(void*) ObjectInternal_GetUnmanagedInterface(ScriptingObject* obj, MonoReflectionType* type)
+DEFINE_INTERNAL_CALL(void*) ObjectInternal_GetUnmanagedInterface(ScriptingObject* obj, MTypeObject* type)
 {
     if (obj && type)
     {
-        auto typeClass = MUtils::GetClass(type);
+        MClass* typeClass = MUtils::GetClass(type);
         const ScriptingTypeHandle interfaceType = ManagedBinaryModule::FindType(typeClass);
         if (interfaceType)
         {
@@ -769,9 +743,9 @@ DEFINE_INTERNAL_CALL(void*) ObjectInternal_GetUnmanagedInterface(ScriptingObject
     return nullptr;
 }
 
-DEFINE_INTERNAL_CALL(MonoObject*) ObjectInternal_FromUnmanagedPtr(ScriptingObject* obj)
+DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FromUnmanagedPtr(ScriptingObject* obj)
 {
-    MonoObject* result = nullptr;
+    MObject* result = nullptr;
     if (obj)
         result = obj->GetOrCreateManagedInstance();
     return result;

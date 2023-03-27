@@ -29,6 +29,8 @@ protected:
     }
 
 public:
+    typedef T CharType;
+
     /// <summary>
     /// Gets the specific const character from this string.
     /// </summary>

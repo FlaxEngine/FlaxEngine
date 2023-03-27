@@ -11,7 +11,7 @@ class CustomEditorsUtil
 {
 public:
 
-#if USE_MONO
-    static MonoReflectionType* GetCustomEditor(MonoReflectionType* refType);
+#if USE_CSHARP
+    static MTypeObject* GetCustomEditor(MTypeObject* refType);
 #endif
 };

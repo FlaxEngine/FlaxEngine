@@ -3,9 +3,10 @@
 #include "GameCooker.h"
 #include "PlatformTools.h"
 #include "FlaxEngine.Gen.h"
-#include "Engine/Scripting/MainThreadManagedInvokeAction.h"
 #include "Engine/Scripting/ManagedCLR/MTypes.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
+#include "Engine/Scripting/ManagedCLR/MException.h"
+#include "Engine/Scripting/Internal/MainThreadManagedInvokeAction.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Scripting/BinaryModule.h"
@@ -29,7 +30,6 @@
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Content/JsonAsset.h"
 #include "Engine/Content/AssetReference.h"
-#include "Engine/Scripting/MException.h"
 #if PLATFORM_TOOLS_WINDOWS
 #include "Platform/Windows/WindowsPlatformTools.h"
 #include "Engine/Platform/Windows/WindowsPlatformSettings.h"
@@ -596,9 +596,9 @@ void GameCookerImpl::OnCollectAssets(HashSet<Guid>& assets)
         ASSERT(GameCookerImpl::Internal_OnCollectAssets);
     }
 
-    MCore::AttachThread();
+    MCore::Thread::Attach();
     MObject* exception = nullptr;
-    auto list = (MonoArray*)Internal_OnCollectAssets->Invoke(nullptr, nullptr, &exception);
+    auto list = (MArray*)Internal_OnCollectAssets->Invoke(nullptr, nullptr, &exception);
     if (exception)
     {
         MException ex(exception);
@@ -632,7 +632,7 @@ bool GameCookerImpl::Build()
         Steps.Add(New<PostProcessStep>());
     }
 
-    MCore::AttachThread();
+    MCore::Thread::Attach();
 
     // Build Started
     CallEvent(GameCooker::EventType::BuildStarted);
@@ -760,7 +760,7 @@ void GameCookerService::Update()
             }
 
             MainThreadManagedInvokeAction::ParamsBuilder params;
-            params.AddParam(ProgressMsg, Scripting::GetScriptsDomain()->GetNative());
+            params.AddParam(ProgressMsg, Scripting::GetScriptsDomain());
             params.AddParam(ProgressValue);
             MainThreadManagedInvokeAction::Invoke(Internal_OnProgress, params);
             GameCooker::OnProgress(ProgressMsg, ProgressValue);

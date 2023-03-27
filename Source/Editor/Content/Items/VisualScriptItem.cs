@@ -134,7 +134,7 @@ namespace FlaxEditor.Content
             _index = index;
             type.Asset.GetMethodSignature(index, out _name, out _flags, out var returnTypeName, out var paramNames, out var paramTypeNames, out var paramOuts);
             _returnType = TypeUtils.GetType(returnTypeName);
-            if (paramNames.Length != 0)
+            if (paramNames != null && paramNames.Length != 0)
             {
                 _parameters = new ScriptMemberInfo.Parameter[paramNames.Length];
                 for (int i = 0; i < _parameters.Length; i++)

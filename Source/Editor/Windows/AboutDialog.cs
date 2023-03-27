@@ -125,6 +125,9 @@ namespace FlaxEditor.Windows
                 "Used third party software:",
                 "",
                 "Mono Project - www.mono-project.com",
+#if USE_NETCORE
+                ".NET - www.dotnet.microsoft.com",
+#endif
                 "FreeType Project - www.freetype.org",
                 "Assimp - www.assimp.sourceforge.net",
                 "DirectXMesh - Copyright (c) Microsoft Corporation. All rights reserved.",

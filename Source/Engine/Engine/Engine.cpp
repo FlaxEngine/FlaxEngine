@@ -39,7 +39,7 @@
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
-#include "Engine/Scripting/MException.h"
+#include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Core/Config/PlatformSettings.h"
 #endif
 
@@ -547,7 +547,7 @@ void EngineImpl::InitPaths()
 #endif
 #if USE_EDITOR
     Globals::EngineContentFolder = Globals::StartupFolder / TEXT("Content");
-#if USE_MONO && !USE_NETCORE
+#if USE_MONO
 #if PLATFORM_WINDOWS
     Globals::MonoPath = Globals::StartupFolder / TEXT("Source/Platforms/Editor/Windows/Mono");
 #elif PLATFORM_LINUX
@@ -559,7 +559,7 @@ void EngineImpl::InitPaths()
 #endif
 #endif
 #else
-#if USE_MONO && !USE_NETCORE
+#if USE_MONO
     Globals::MonoPath = Globals::StartupFolder / TEXT("Mono");
 #endif
 #endif

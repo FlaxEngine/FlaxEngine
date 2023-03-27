@@ -78,6 +78,12 @@ public:
         String(buf.Get());
     }
 
+    void String(const StringView& value)
+    {
+        const StringAsUTF8<256> buf(*value, value.Length());
+        String(buf.Get());
+    }
+
     void String(const StringAnsi& value)
     {
         String(value.Get(), static_cast<unsigned>(value.Length()));
@@ -85,7 +91,13 @@ public:
 
     FORCE_INLINE void RawValue(const StringAnsi& str)
     {
-        RawValue(str.Get(), static_cast<int32>(str.Length()));
+        RawValue(str.Get(), str.Length());
+    }
+
+    void RawValue(const StringView& str)
+    {
+        const StringAsUTF8<256> buf(*str, str.Length());
+        RawValue(buf.Get(), buf.Length());
     }
 
     FORCE_INLINE void RawValue(const CharType* json)

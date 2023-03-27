@@ -3,8 +3,8 @@
 #pragma once
 
 #include "Engine/Core/Types/String.h"
-#include "ManagedCLR/MTypes.h"
 #include "Engine/Core/Log.h"
+#include "MTypes.h"
 
 /// <summary>
 /// Represents errors that occur during script execution.
@@ -12,7 +12,6 @@
 class FLAXENGINE_API MException
 {
 public:
-
     /// <summary>
     /// Gets a message that describes the current exception.
     /// </summary>
@@ -29,18 +28,6 @@ public:
     MException* InnerException;
 
 public:
-
-#if USE_MONO
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MException"/> class.
-    /// </summary>
-    /// <param name="exception">The exception.</param>
-    explicit MException(MonoException* exception)
-        : MException((MonoObject*)exception)
-    {
-    }
-#endif
-
     /// <summary>
     /// Initializes a new instance of the <see cref="MException"/> class.
     /// </summary>
@@ -53,26 +40,10 @@ public:
     ~MException();
 
 public:
-
     /// <summary>
     /// Sends exception to the log.
     /// </summary>
     /// <param name="type">The log message type.</param>
     /// <param name="target">Execution target name.</param>
-    void Log(const LogType type, const Char* target)
-    {
-        // Log inner exceptions chain
-        auto inner = InnerException;
-        while (inner)
-        {
-            auto stackTrace = inner->StackTrace.HasChars() ? *inner->StackTrace : TEXT("<empty>");
-            Log::Logger::Write(LogType::Warning, String::Format(TEXT("Inner exception. {0}\nStack strace:\n{1}\n"), inner->Message, stackTrace));
-            inner = inner->InnerException;
-        }
-
-        // Send stack trace only to log file
-        auto stackTrace = StackTrace.HasChars() ? *StackTrace : TEXT("<empty>");
-        Log::Logger::Write(LogType::Warning, String::Format(TEXT("Exception has been thrown during {0}. {1}\nStack strace:\n{2}"), target, Message, stackTrace));
-        Log::Logger::Write(type, String::Format(TEXT("Exception has been thrown during {0}.\n{1}"), target, Message));
-    }
+    void Log(const LogType type, const Char* target);
 };

@@ -452,7 +452,7 @@ namespace Flax.Deps.Dependencies
             }
 
             // Update source file with exported symbols
-            var mCorePath = Path.Combine(Globals.EngineRoot, "Source", "Engine", "Scripting", "ManagedCLR", "MCore.Mono.cpp");
+            var mCorePath = Path.Combine(Globals.EngineRoot, "Source", "Engine", "Scripting", "Runtime", "Mono.cpp");
             var contents = File.ReadAllText(mCorePath);
             var startPos = contents.IndexOf("#pragma comment(linker,");
             var endPos = contents.LastIndexOf("#pragma comment(linker,");

@@ -1,13 +1,11 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "UICanvas.h"
-#include "Engine/Scripting/MException.h"
+#include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
+#include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Serialization/Serialization.h"
-#if USE_MONO
-#include <mono/metadata/appdomain.h>
-#endif
 
 #if COMPILE_WITHOUT_CSHARP
 #define UICANVAS_INVOKE(event)
@@ -85,7 +83,7 @@ void UICanvas::Serialize(SerializeStream& stream, const void* otherObj)
     params[0] = other ? other->GetOrCreateManagedInstance() : nullptr;
     MObject* exception = nullptr;
     auto method = other ? UICanvas_SerializeDiff : UICanvas_Serialize;
-    auto invokeResultStr = (MonoString*)method->Invoke(GetOrCreateManagedInstance(), params, &exception);
+    auto invokeResultStr = (MString*)method->Invoke(GetOrCreateManagedInstance(), params, &exception);
     if (exception)
     {
         MException ex(exception);
@@ -98,9 +96,7 @@ void UICanvas::Serialize(SerializeStream& stream, const void* otherObj)
     else
     {
         // Write result data
-        auto invokeResultChars = mono_string_to_utf8(invokeResultStr);
-        stream.RawValue(invokeResultChars);
-        mono_free(invokeResultChars);
+        stream.RawValue(MCore::String::GetChars(invokeResultStr));
     }
 #endif
 }
@@ -118,9 +114,8 @@ void UICanvas::Deserialize(DeserializeStream& stream, ISerializeModifier* modifi
         rapidjson_flax::StringBuffer buffer;
         rapidjson_flax::Writer<rapidjson_flax::StringBuffer> writer(buffer);
         dataMember->value.Accept(writer);
-        const auto str = buffer.GetString();
         void* args[1];
-        args[0] = mono_string_new(mono_domain_get(), str);
+        args[0] = MUtils::ToString(StringAnsiView(buffer.GetString(), (int32)buffer.GetSize()));
         MObject* exception = nullptr;
         UICanvas_Deserialize->Invoke(GetOrCreateManagedInstance(), args, &exception);
         if (exception)

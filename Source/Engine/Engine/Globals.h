@@ -49,7 +49,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Globals);
     // Project content directory path
     API_FIELD(ReadOnly) static String ProjectContentFolder;
 
-#if USE_MONO && !USE_NETCORE
+#if USE_MONO
     // Mono library folder path
     API_FIELD(ReadOnly) static String MonoPath;
 #endif

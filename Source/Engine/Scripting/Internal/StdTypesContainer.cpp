@@ -1,11 +1,11 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "StdTypesContainer.h"
-#include "Scripting.h"
-#include "ScriptingType.h"
-#include "BinaryModule.h"
-#include "ManagedCLR/MAssembly.h"
-#include "ManagedCLR/MClass.h"
+#include "Engine/Scripting/Scripting.h"
+#include "Engine/Scripting/ScriptingType.h"
+#include "Engine/Scripting/BinaryModule.h"
+#include "Engine/Scripting/ManagedCLR/MAssembly.h"
+#include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Core/Log.h"
 #include "FlaxEngine.Gen.h"
 
@@ -47,7 +47,7 @@ void StdTypesContainer::Clear()
 
 bool StdTypesContainer::Gather()
 {
-#if !COMPILE_WITHOUT_CSHARP
+#if USE_CSHARP
 #define GET_CLASS(assembly, type, typeName) \
     type = ((ManagedBinaryModule*)CONCAT_MACROS(GetBinaryModule, assembly)())->Assembly->GetClass(typeName); \
     if (type == nullptr) \

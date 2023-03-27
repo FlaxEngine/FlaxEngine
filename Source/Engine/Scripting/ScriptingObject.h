@@ -152,9 +152,6 @@ public:
     /// <param name="to">The destination class to the cast.</param>
     /// <returns>True if can, otherwise false.</returns>
     static bool CanCast(const MClass* from, const MClass* to);
-#if USE_MONO
-    static bool CanCast(const MClass* from, const MonoClass* to);
-#endif
 
     template<typename T>
     static T* Cast(ScriptingObject* obj)
@@ -168,13 +165,6 @@ public:
     {
         return CanCast(GetClass(), type);
     }
-
-#if USE_MONO
-    bool Is(MonoClass* klass) const
-    {
-        return CanCast(GetClass(), klass);
-    }
-#endif
 
     template<typename T>
     bool Is() const
@@ -217,11 +207,11 @@ public:
     void UnregisterObject();
 
 protected:
-#if USE_MONO
+#if USE_CSHARP
     /// <summary>
     /// Create a new managed object.
     /// </summary>
-    MonoObject* CreateManagedInternal();
+    MObject* CreateManagedInternal();
 #endif
 
 public:

@@ -7,7 +7,7 @@
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Textures/TextureData.h"
-#include "Engine/Scripting/MainThreadManagedInvokeAction.h"
+#include "Engine/Scripting/Internal/MainThreadManagedInvokeAction.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 
 REGISTER_BINARY_ASSET_WITH_UPGRADER(Texture, "FlaxEngine.Texture", TextureAssetUpgrader, true);

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Engine/Core/ISerializable.h"
-#include "ManagedCLR/MTypes.h"
+#include "Engine/Scripting/ManagedCLR/MTypes.h"
 
 /// <summary>
 /// Managed objects serialization utilities. Helps with C# scripts saving to JSON or loading.
@@ -11,8 +11,7 @@
 class FLAXENGINE_API ManagedSerialization
 {
 public:
-
-#if USE_MONO
+#if USE_CSHARP
     /// <summary>
     /// Serializes managed object to JSON.
     /// </summary>

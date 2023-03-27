@@ -7,6 +7,6 @@ StaticallyLinkedBinaryModuleInitializer StaticallyLinkedBinaryModuleFlaxEngine(G
 
 extern "C" BinaryModule* GetBinaryModuleFlaxEngine()
 {
-    static NativeBinaryModule module("FlaxEngine", MAssemblyOptions());
+    static NativeBinaryModule module("FlaxEngine");
     return &module;
 }

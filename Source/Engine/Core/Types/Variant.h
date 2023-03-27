@@ -3,10 +3,9 @@
 #pragma once
 
 #include "Engine/Core/Types/String.h"
+#include "Engine/Scripting/Types.h"
 
 class Asset;
-class ScriptingObject;
-struct ScriptingType;
 struct Transform;
 struct CommonValue;
 template<typename T>
@@ -105,7 +104,7 @@ public:
 
     explicit VariantType(Types type, const StringView& typeName);
     explicit VariantType(Types type, const StringAnsiView& typeName);
-    explicit VariantType(Types type, struct _MonoClass* klass);
+    explicit VariantType(Types type, MClass* klass);
     explicit VariantType(const StringAnsiView& typeName);
     VariantType(const VariantType& other);
     VariantType(VariantType&& other) noexcept;
@@ -215,7 +214,7 @@ public:
     Variant(void* v);
     Variant(ScriptingObject* v);
     Variant(Asset* v);
-    Variant(struct _MonoObject* v);
+    Variant(MObject* v);
     Variant(const StringView& v);
     Variant(const StringAnsiView& v);
     Variant(const Char* v);
@@ -296,7 +295,7 @@ public:
     explicit operator StringView() const; // Returned StringView, if not empty, is guaranteed to point to a null terminated buffer.
     explicit operator StringAnsiView() const; // Returned StringView, if not empty, is guaranteed to point to a null terminated buffer.
     explicit operator ScriptingObject*() const;
-    explicit operator struct _MonoObject*() const;
+    explicit operator MObject*() const;
     explicit operator Asset*() const;
     explicit operator Float2() const;
     explicit operator Float3() const;
@@ -356,7 +355,7 @@ public:
     void SetBlob(int32 length);
     void SetBlob(const void* data, int32 length);
     void SetObject(ScriptingObject* object);
-    void SetManagedObject(struct _MonoObject* object);
+    void SetManagedObject(MObject* object);
     void SetAsset(Asset* asset);
     String ToString() const;
 

@@ -26,7 +26,7 @@
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MDomain.h"
-#include "Engine/Scripting/MException.h"
+#include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Serialization/JsonTools.h"

@@ -15,7 +15,7 @@ String Globals::EngineContentFolder;
 String Globals::ProjectSourceFolder;
 #endif
 String Globals::ProjectContentFolder;
-#if USE_MONO && !USE_NETCORE
+#if USE_MONO
 String Globals::MonoPath;
 #endif
 bool Globals::FatalErrorOccurred;

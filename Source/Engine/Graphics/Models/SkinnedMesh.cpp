@@ -12,11 +12,9 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Threading/Task.h"
 #include "Engine/Threading/Threading.h"
-#if USE_MONO
-#include <mono/metadata/appdomain.h>
-#endif
 
 void SkinnedMesh::Init(SkinnedModel* model, int32 lodIndex, int32 index, int32 materialSlotIndex, const BoundingBox& box, const BoundingSphere& sphere)
 {
@@ -398,18 +396,18 @@ ScriptingObject* SkinnedMesh::GetParentModel()
 #if !COMPILE_WITHOUT_CSHARP
 
 template<typename IndexType>
-bool UpdateMesh(SkinnedMesh* mesh, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* blendIndicesObj, MonoArray* blendWeightsObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj)
+bool UpdateMesh(SkinnedMesh* mesh, MArray* verticesObj, MArray* trianglesObj, MArray* blendIndicesObj, MArray* blendWeightsObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj)
 {
     auto model = mesh->GetSkinnedModel();
     ASSERT(model && model->IsVirtual() && verticesObj && trianglesObj && blendIndicesObj && blendWeightsObj);
 
     // Get buffers data
-    const auto vertexCount = (uint32)mono_array_length(verticesObj);
-    const auto triangleCount = (uint32)mono_array_length(trianglesObj) / 3;
-    auto vertices = (Float3*)(void*)mono_array_addr_with_size(verticesObj, sizeof(Float3), 0);
-    auto ib = (IndexType*)(void*)mono_array_addr_with_size(trianglesObj, sizeof(int32), 0);
-    auto blendIndices = (Int4*)(void*)mono_array_addr_with_size(blendIndicesObj, sizeof(Int4), 0);
-    auto blendWeights = (Float4*)(void*)mono_array_addr_with_size(blendWeightsObj, sizeof(Float4), 0);
+    const auto vertexCount = (uint32)MCore::Array::GetLength(verticesObj);
+    const auto triangleCount = (uint32)MCore::Array::GetLength(trianglesObj) / 3;
+    auto vertices = MCore::Array::GetAddress<Float3>(verticesObj);
+    auto ib = MCore::Array::GetAddress<IndexType>(trianglesObj);
+    auto blendIndices = MCore::Array::GetAddress<Int4>(blendIndicesObj);
+    auto blendWeights = MCore::Array::GetAddress<Float4>(blendWeightsObj);
     Array<VB0SkinnedElementType> vb;
     vb.Resize(vertexCount);
     for (uint32 i = 0; i < vertexCount; i++)
@@ -418,10 +416,10 @@ bool UpdateMesh(SkinnedMesh* mesh, MonoArray* verticesObj, MonoArray* trianglesO
     }
     if (normalsObj)
     {
-        const auto normals = (Float3*)(void*)mono_array_addr_with_size(normalsObj, sizeof(Float3), 0);
+        const auto normals = MCore::Array::GetAddress<Float3>(normalsObj);
         if (tangentsObj)
         {
-            const auto tangents = (Float3*)(void*)mono_array_addr_with_size(tangentsObj, sizeof(Float3), 0);
+            const auto tangents = MCore::Array::GetAddress<Float3>(tangentsObj);
             for (uint32 i = 0; i < vertexCount; i++)
             {
                 // Peek normal and tangent
@@ -475,7 +473,7 @@ bool UpdateMesh(SkinnedMesh* mesh, MonoArray* verticesObj, MonoArray* trianglesO
     }
     if (uvObj)
     {
-        const auto uvs = (Float2*)(void*)mono_array_addr_with_size(uvObj, sizeof(Float2), 0);
+        const auto uvs = MCore::Array::GetAddress<Float2>(uvObj);
         for (uint32 i = 0; i < vertexCount; i++)
             vb[i].TexCoord = Half2(uvs[i]);
     }
@@ -499,12 +497,12 @@ bool UpdateMesh(SkinnedMesh* mesh, MonoArray* verticesObj, MonoArray* trianglesO
     return mesh->UpdateMesh(vertexCount, triangleCount, vb.Get(), ib);
 }
 
-bool SkinnedMesh::UpdateMeshUInt(MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* blendIndicesObj, MonoArray* blendWeightsObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj)
+bool SkinnedMesh::UpdateMeshUInt(MArray* verticesObj, MArray* trianglesObj, MArray* blendIndicesObj, MArray* blendWeightsObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj)
 {
     return ::UpdateMesh<uint32>(this, verticesObj, trianglesObj, blendIndicesObj, blendWeightsObj, normalsObj, tangentsObj, uvObj);
 }
 
-bool SkinnedMesh::UpdateMeshUShort(MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* blendIndicesObj, MonoArray* blendWeightsObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj)
+bool SkinnedMesh::UpdateMeshUShort(MArray* verticesObj, MArray* trianglesObj, MArray* blendIndicesObj, MArray* blendWeightsObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj)
 {
     return ::UpdateMesh<uint16>(this, verticesObj, trianglesObj, blendIndicesObj, blendWeightsObj, normalsObj, tangentsObj, uvObj);
 }
@@ -516,7 +514,7 @@ enum class InternalBufferType
     IB32 = 4,
 };
 
-MonoArray* SkinnedMesh::DownloadBuffer(bool forceGpu, MonoReflectionType* resultType, int32 typeI)
+MArray* SkinnedMesh::DownloadBuffer(bool forceGpu, MTypeObject* resultType, int32 typeI)
 {
     SkinnedMesh* mesh = this;
     InternalBufferType type = (InternalBufferType)typeI;
@@ -582,8 +580,8 @@ MonoArray* SkinnedMesh::DownloadBuffer(bool forceGpu, MonoReflectionType* result
     }
 
     // Convert into managed array
-    MonoArray* result = mono_array_new(mono_domain_get(), mono_type_get_class(mono_reflection_type_get_type(resultType)), dataCount);
-    void* managedArrayPtr = mono_array_addr_with_size(result, 0, 0);
+    MArray* result = MCore::Array::New(MCore::Type::GetClass(INTERNAL_TYPE_OBJECT_GET(resultType)), dataCount);
+    void* managedArrayPtr = MCore::Array::GetAddress(result);
     const int32 elementSize = data.Length() / dataCount;
     switch (type)
     {

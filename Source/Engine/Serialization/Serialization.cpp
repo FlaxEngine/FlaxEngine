@@ -18,14 +18,12 @@
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Math/Matrix.h"
-#include "Engine/Scripting/ManagedSerialization.h"
+#include "Engine/Scripting/Internal/ManagedSerialization.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
+#include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Utilities/Encryption.h"
-#if USE_MONO
-#include <mono/metadata/object.h>
-#endif
 
 void ISerializable::DeserializeIfExists(DeserializeStream& stream, const char* memberName, ISerializeModifier* modifier)
 {
@@ -216,12 +214,12 @@ void Serialization::Serialize(ISerializable::SerializeStream& stream, const Vari
     case VariantType::ManagedObject:
     case VariantType::Structure:
     {
-#if USE_MONO
-        MonoObject* obj;
+#if USE_CSHARP
+        MObject* obj;
         if (v.Type.Type == VariantType::Structure)
             obj = MUtils::BoxVariant(v);
         else
-            obj = (MonoObject*)v;
+            obj = (MObject*)v;
         ManagedSerialization::Serialize(stream, obj);
 #endif
         break;
@@ -365,24 +363,24 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Varian
     case VariantType::ManagedObject:
     case VariantType::Structure:
     {
-#if USE_MONO
-        auto obj = (MonoObject*)v;
+#if USE_CSHARP
+        auto obj = (MObject*)v;
         if (!obj && v.Type.TypeName)
         {
-            MonoClass* klass = MUtils::GetClass(v.Type);
+            MClass* klass = MUtils::GetClass(v.Type);
             if (!klass)
             {
                 LOG(Error, "Invalid variant type {0}", v.Type);
                 return;
             }
-            obj = mono_object_new(mono_domain_get(), klass);
+            obj = MCore::Object::New(klass);
             if (!obj)
             {
                 LOG(Error, "Failed to managed instance of the variant type {0}", v.Type);
                 return;
             }
-            if (!mono_class_is_valuetype(klass))
-                mono_runtime_object_init(obj);
+            if (!klass->IsValueType())
+                MCore::Object::Init(obj);
             if (v.Type.Type == VariantType::ManagedObject)
                 v.SetManagedObject(obj);
         }

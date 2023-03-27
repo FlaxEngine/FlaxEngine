@@ -12,10 +12,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/MainThreadTask.h"
 #include "Engine/Threading/ConcurrentTaskQueue.h"
-#if USE_MONO
-#include "Engine/Scripting/ManagedCLR/MUtils.h"
-#include <mono/metadata/mono-gc.h>
-#endif
+#include "Engine/Scripting/ManagedCLR/MCore.h"
 
 AssetReferenceBase::~AssetReferenceBase()
 {
@@ -270,9 +267,7 @@ void Asset::OnManagedInstanceDeleted()
     // Cleanup
     if (_gcHandle)
     {
-#if USE_MONO
-        MUtils::FreeGCHandle(_gcHandle);
-#endif
+        MCore::GCHandle::Free(_gcHandle);
         _gcHandle = 0;
     }
 

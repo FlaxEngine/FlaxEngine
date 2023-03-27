@@ -3,7 +3,7 @@
 #include "Script.h"
 #include "Engine/Core/Log.h"
 #if USE_EDITOR
-#include "StdTypesContainer.h"
+#include "Internal/StdTypesContainer.h"
 #include "ManagedCLR/MClass.h"
 #include "Editor/Editor.h"
 #endif

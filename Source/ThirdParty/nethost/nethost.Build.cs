@@ -84,7 +84,7 @@ public class nethost : ThirdPartyModule
         {
             // Use Mono for runtime hosting
             options.PublicDefinitions.Add("DOTNET_HOST_MONO");
-            //options.PublicIncludePaths.Add(Path.Combine(hostRuntime.Path, "include", "mono-2.0")); already setup in ProjectTarget.SetupTargetEnvironment
+            options.PublicIncludePaths.Add(Path.Combine(hostRuntime.Path, "include", "mono-2.0"));
             break;
         }
         default: throw new ArgumentOutOfRangeException();

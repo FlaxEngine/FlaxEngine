@@ -17,6 +17,8 @@ protected:
     int32 _length = 0;
 
 public:
+    typedef T CharType;
+
     /// <summary>
     /// Finalizes an instance of the <see cref="StringBase"/> class.
     /// </summary>

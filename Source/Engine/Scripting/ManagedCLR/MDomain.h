@@ -4,7 +4,6 @@
 
 #include "Engine/Core/Collections/Dictionary.h"
 #include "MTypes.h"
-#include "MAssemblyOptions.h"
 
 /// <summary>
 /// Domain separates multiple processes within one executed CLR environment.
@@ -17,24 +16,24 @@ class FLAXENGINE_API MDomain
 {
     friend MCore;
     friend MAssembly;
-public:
 
-    typedef Dictionary<MString, MAssembly*> AssembliesDictionary;
+public:
+    typedef Dictionary<StringAnsi, MAssembly*> AssembliesDictionary;
 
 private:
-
 #if USE_MONO
     MonoDomain* _monoDomain;
 #endif
-    MString _domainName;
+    StringAnsi _domainName;
     AssembliesDictionary _assemblies;
 
 public:
-
-    MDomain(const MString& domainName);
+    MDomain(const StringAnsi& domainName)
+        : _domainName(domainName)
+    {
+    }
 
 public:
-
 #if USE_MONO
     /// <summary>
     /// Gets native domain class.
@@ -48,7 +47,7 @@ public:
     /// <summary>
     /// Gets current domain name
     /// </summary>
-    FORCE_INLINE const MString& GetName() const
+    FORCE_INLINE const StringAnsi& GetName() const
     {
         return _domainName;
     }
@@ -62,27 +61,6 @@ public:
     }
 
 public:
-
-    /// <summary>
-    /// Create assembly container from current domain
-    /// </summary>
-    /// <param name="assemblyName">Assembly name to later receive from assemblies dictionary</param>
-    /// <param name="options">The assembly options container.</param>
-    /// <returns>MAssembly object ready to Load</returns>
-    MAssembly* CreateEmptyAssembly(const MString& assemblyName, const MAssemblyOptions options);
-
-    /// <summary>
-    /// Removes assembly from current domain and request unloading.
-    /// </summary>
-    /// <param name="assemblyName">Assembly name</param>
-    void RemoveAssembly(const MString& assemblyName);
-
-    /// <summary>
-    /// Gets current domain assembly.
-    /// </summary>
-    /// <returns>The managed assembly or null if not found.</returns>
-    MAssembly* GetAssembly(const MString& assemblyName) const;
-
     /// <summary>
     /// Attaches current CLR domain calls to the current thread.
     /// </summary>
@@ -93,9 +71,4 @@ public:
     /// </summary>
     /// <returns>True if succeed in settings, false if failed.</returns>
     bool SetCurrentDomain(bool force = false);
-
-    /// <summary>
-    /// Returns class from current domain.
-    /// </summary>
-    MClass* FindClass(const StringAnsiView& fullname) const;
 };

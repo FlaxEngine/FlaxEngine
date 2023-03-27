@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -213,6 +214,11 @@ namespace FlaxEngine
         {
             Version version = new Version(major, minor, Math.Max(build, 0), Math.Max(revision, 0));
             return ManagedHandle.Alloc(version);
+        }
+
+        internal static ManagedHandle CultureInfoToManaged(int lcid)
+        {
+            return ManagedHandle.Alloc(new CultureInfo(lcid));
         }
 
         internal static void VersionToNative(ManagedHandle versionHandle, IntPtr nativePtr)

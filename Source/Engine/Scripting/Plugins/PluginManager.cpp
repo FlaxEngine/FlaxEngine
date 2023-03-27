@@ -30,7 +30,7 @@ GamePlugin::GamePlugin(const SpawnParams& params)
 #if USE_EDITOR
 
 #include "EditorPlugin.h"
-#include "Engine/Scripting/MException.h"
+#include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 
 EditorPlugin::EditorPlugin(const SpawnParams& params)

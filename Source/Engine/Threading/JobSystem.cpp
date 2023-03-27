@@ -8,11 +8,8 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#if USE_CSHARP
 #include "Engine/Scripting/ManagedCLR/MCore.h"
-#if USE_MONO
-#include "Engine/Scripting/ManagedCLR/MDomain.h"
-#include <mono/metadata/appdomain.h>
-#include <mono/metadata/threads.h>
 #endif
 
 // Jobs storage perf info:
@@ -161,7 +158,7 @@ int32 JobSystemThread::Run()
     Platform::SetThreadAffinityMask(1ull << Index);
 
     JobData data;
-    bool attachMonoThread = true;
+    bool attachCSharpThread = true;
 #if !JOB_SYSTEM_USE_MUTEX
     moodycamel::ConsumerToken consumerToken(Jobs);
 #endif
@@ -190,13 +187,12 @@ int32 JobSystemThread::Run()
 
         if (data.Job.IsBinded())
         {
-#if USE_MONO
+#if USE_CSHARP
             // Ensure to have C# thread attached to this thead (late init due to MCore being initialized after Job System)
-            if (attachMonoThread && !mono_domain_get())
+            if (attachCSharpThread)
             {
-                const auto domain = MCore::GetActiveDomain();
-                mono_thread_attach(domain->GetNative());
-                attachMonoThread = false;
+                MCore::Thread::Attach();
+                attachCSharpThread = false;
             }
 #endif
 

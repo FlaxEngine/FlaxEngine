@@ -62,20 +62,6 @@ namespace Flax.Build
 
             // Add include paths for this project sources and engine third-party sources
             var depsRoot = options.DepsFolder;
-            {
-                // TODO: rethink how we should expose mono (and dotnet host api) in general
-                DotNetSdk.Instance.GetHostRuntime(options.Platform.Target, options.Architecture, out var hostRuntime);
-                if (hostRuntime.Type == DotNetSdk.HostType.Mono)
-                {
-                    // Use mono headers from the host runtime
-                    options.CompileEnv.IncludePaths.Add(Path.Combine(hostRuntime.Path, "include", "mono-2.0"));
-                }
-                else
-                {
-                    // Use in-built mono headers
-                    options.CompileEnv.IncludePaths.Add(Path.Combine(Globals.EngineRoot, @"Source\ThirdParty\mono-2.0"));
-                }
-            }
             options.CompileEnv.IncludePaths.Add(Path.Combine(Globals.EngineRoot, @"Source\ThirdParty"));
             options.LinkEnv.LibraryPaths.Add(depsRoot);
 

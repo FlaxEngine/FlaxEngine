@@ -2,13 +2,25 @@
 
 #include "CultureInfo.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Scripting/ManagedCLR/MType.h"
+#include "Engine/Core/Types/StringView.h"
 #include "Engine/Utilities/StringConverter.h"
-#if USE_MONO
-#include <mono/metadata/appdomain.h>
-#include <mono/metadata/culture-info.h>
-#include <mono/metadata/culture-info-tables.h>
+#include "Engine/Scripting/Types.h"
+#include "Engine/Scripting/ManagedCLR/MProperty.h"
 
+#if USE_CSHARP
+#include "Engine/Scripting/ScriptingType.h"
+#include "Engine/Scripting/BinaryModule.h"
+#include "Engine/Scripting/Scripting.h"
+#include "Engine/Scripting/ManagedCLR/MAssembly.h"
+#include "Engine/Scripting/ManagedCLR/MClass.h"
+#include "Engine/Scripting/ManagedCLR/MCore.h"
+#include "Engine/Scripting/ManagedCLR/MMethod.h"
+#endif
+
+// Use in-built cultures info tables from mono
+#include "CultureInfo.Tables.h"
+
+#if USE_MONO
 typedef struct
 {
     MonoObject obj;
@@ -30,7 +42,6 @@ CultureInfo::CultureInfo(int32 lcid)
         _englishName = TEXT("Invariant Culture");
         return;
     }
-#if USE_MONO
     for (int32 i = 0; i < NUM_CULTURE_ENTRIES; i++)
     {
         auto& e = culture_entries[i];
@@ -47,7 +58,6 @@ CultureInfo::CultureInfo(int32 lcid)
             break;
         }
     }
-#endif
     if (!_data)
     {
         _englishName = TEXT("Invariant Culture");
@@ -70,7 +80,6 @@ CultureInfo::CultureInfo(const StringAnsiView& name)
         _englishName = TEXT("Invariant Culture");
         return;
     }
-#if USE_MONO
     for (int32 i = 0; i < NUM_CULTURE_ENTRIES; i++)
     {
         auto& e = culture_entries[i];
@@ -87,7 +96,6 @@ CultureInfo::CultureInfo(const StringAnsiView& name)
             break;
         }
     }
-#endif
     if (!_data)
     {
         _lcid = 127;
@@ -122,16 +130,6 @@ const String& CultureInfo::GetEnglishName() const
     return _englishName;
 }
 
-bool CultureInfo::IsRightToLeft() const
-{
-#if USE_MONO
-    const auto data = static_cast<CultureInfoEntry*>(_data);
-    if (data)
-        return data->text_info.is_right_to_left ? true : false;
-#endif
-    return false;
-}
-
 String CultureInfo::ToString() const
 {
     return _name;
@@ -144,31 +142,18 @@ bool CultureInfo::operator==(const CultureInfo& other) const
 
 void* MUtils::ToManaged(const CultureInfo& value)
 {
-#if USE_MONO
-    const auto klass = mono_class_from_name(mono_get_corlib(), "System.Globalization", "CultureInfo");
-    if (klass)
-    {
-        void* iter = nullptr;
-        MonoMethod* method;
-        while ((method = mono_class_get_methods(klass, &iter)))
-        {
-            if (StringUtils::Compare(mono_method_get_name(method), ".ctor") == 0)
-            {
-                const auto sig = mono_method_signature(method);
-                void* sigParams = nullptr;
-                mono_signature_get_params(sig, &sigParams);
-                if (mono_signature_get_param_count(sig) == 1 && mono_type_get_class(((MonoType**)sigParams)[0]) != mono_get_string_class())
-                {
-                    MonoObject* obj = mono_object_new(mono_domain_get(), klass);
-                    int32 lcid = value.GetLCID();
-                    void* params[1];
-                    params[0] = &lcid;
-                    mono_runtime_invoke(method, obj, params, nullptr);
-                    return obj;
-                }
-            }
-        }
-    }
+#if USE_CSHARP
+    auto scriptingClass = Scripting::GetStaticClass();
+    CHECK_RETURN(scriptingClass, nullptr);
+    auto cultureInfoToManaged = scriptingClass->GetMethod("CultureInfoToManaged", 1);
+    CHECK_RETURN(cultureInfoToManaged, nullptr);
+
+    int32 lcid = value.GetLCID();
+    void* params[1];
+    params[0] = &lcid;
+    MObject* obj = cultureInfoToManaged->Invoke(nullptr, params, nullptr);
+
+    return obj;
 #endif
     return nullptr;
 }
@@ -179,6 +164,17 @@ CultureInfo MUtils::ToNative(void* value)
 #if USE_MONO
     if (value)
         lcid = static_cast<MonoCultureInfo*>(value)->lcid;
+#elif USE_CSHARP
+    const MClass* klass = GetBinaryModuleCorlib()->Assembly->GetClass("System.Globalization.CultureInfo");
+    if (value && klass)
+    {
+        MProperty* lcidProperty = klass->GetProperty("LCID");
+        if (lcidProperty && lcidProperty->GetGetMethod())
+        {
+            MObject* lcidObj = lcidProperty->GetGetMethod()->Invoke(value, nullptr, nullptr);
+            lcid = *(int32*)MCore::Object::Unbox(lcidObj);
+        }
+    }
 #endif
     return CultureInfo(lcid);
 }

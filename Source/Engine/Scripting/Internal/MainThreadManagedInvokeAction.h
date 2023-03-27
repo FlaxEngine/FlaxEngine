@@ -4,8 +4,8 @@
 
 #include "Engine/Threading/MainThreadTask.h"
 #include "Engine/Core/Log.h"
-#include "ManagedCLR/MMethod.h"
-#include "ManagedCLR/MUtils.h"
+#include "Engine/Scripting/ManagedCLR/MMethod.h"
+#include "Engine/Scripting/ManagedCLR/MUtils.h"
 
 /// <summary>
 /// Helper class for easy invoking managed code on main thread before all game systems update.
@@ -71,28 +71,28 @@ public:
             AddParam(val);
         }
 
-#if USE_MONO
+#if USE_CSHARP
         FORCE_INLINE void AddParam(const String& value)
         {
-            MonoString* val = MUtils::ToString(value);
+            MString* val = MUtils::ToString(value);
             AddParam(val);
         }
 
         FORCE_INLINE void AddParam(const StringView& value)
         {
-            MonoString* val = MUtils::ToString(value);
+            MString* val = MUtils::ToString(value);
             AddParam(val);
         }
 
-        FORCE_INLINE void AddParam(const String& value, MonoDomain* domain)
+        FORCE_INLINE void AddParam(const String& value, MDomain* domain)
         {
-            MonoString* val = MUtils::ToString(value, domain);
+            MString* val = MUtils::ToString(value, domain);
             AddParam(val);
         }
 
-        FORCE_INLINE void AddParam(const StringView& value, MonoDomain* domain)
+        FORCE_INLINE void AddParam(const StringView& value, MDomain* domain)
         {
-            MonoString* val = MUtils::ToString(value, domain);
+            MString* val = MUtils::ToString(value, domain);
             AddParam(val);
         }
 #endif

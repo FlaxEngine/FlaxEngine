@@ -3,7 +3,7 @@
 #include "MainThreadManagedInvokeAction.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Scripting/ScriptingCalls.h"
-#include "MException.h"
+#include "Engine/Scripting/ManagedCLR/MException.h"
 
 MainThreadManagedInvokeAction* MainThreadManagedInvokeAction::Invoke(MMethod* method, MObject* instance, LogType exceptionLevel)
 {

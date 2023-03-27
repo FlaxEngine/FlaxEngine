@@ -15,7 +15,7 @@
 #include "Engine/Platform/FileSystemWatcher.h"
 #include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Threading/Threading.h"
-#include "Engine/Scripting/MainThreadManagedInvokeAction.h"
+#include "Engine/Scripting/Internal/MainThreadManagedInvokeAction.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
@@ -77,7 +77,7 @@ namespace ScriptsBuilderImpl
     void onScriptsReloadEnd();
     void onScriptsLoaded();
 
-    void GetClassName(const MString& fullname, MString& className);
+    void GetClassName(const StringAnsi& fullname, StringAnsi& className);
 
     void onCodeEditorAsyncOpenBegin()
     {
@@ -245,12 +245,12 @@ bool ScriptsBuilder::RunBuildTool(const StringView& args, const StringView& work
     cmdLine.Append(TEXT("\""));
     cmdLine.Append(monoPath);
     cmdLine.Append(TEXT("\" "));
+    // TODO: Set env var for the mono MONO_GC_PARAMS=nursery-size64m to boost build performance -> profile it
 #endif
     cmdLine.Append(TEXT("\""));
     cmdLine.Append(buildToolPath);
     cmdLine.Append(TEXT("\" "));
     cmdLine.Append(args.Get(), args.Length());
-    // TODO: Set env var for the mono MONO_GC_PARAMS=nursery-size64m to boost build performance -> profile it
 
     // Call build tool
     CreateProcessSettings procSettings;
@@ -270,7 +270,7 @@ bool ScriptsBuilder::GenerateProject(const StringView& customArgs)
     return RunBuildTool(args);
 }
 
-void ScriptsBuilderImpl::GetClassName(const MString& fullname, MString& className)
+void ScriptsBuilderImpl::GetClassName(const StringAnsi& fullname, StringAnsi& className)
 {
     const auto lastDotIndex = fullname.FindLast('.');
     if (lastDotIndex != -1)
@@ -287,7 +287,7 @@ void ScriptsBuilderImpl::GetClassName(const MString& fullname, MString& classNam
 MClass* ScriptsBuilder::FindScript(const StringView& scriptName)
 {
     PROFILE_CPU();
-    const MString scriptNameStd = scriptName.ToStringAnsi();
+    const StringAnsi scriptNameStd = scriptName.ToStringAnsi();
 
     const ScriptingTypeHandle scriptingType = Scripting::FindScriptingType(scriptNameStd);
     if (scriptingType)
@@ -301,7 +301,7 @@ MClass* ScriptsBuilder::FindScript(const StringView& scriptName)
 
     // Check all assemblies (ignoring the typename namespace)
     auto& modules = BinaryModule::GetModules();
-    MString className;
+    StringAnsi className;
     GetClassName(scriptNameStd, className);
     MClass* scriptClass = Script::GetStaticClass();
     for (int32 j = 0; j < modules.Count(); j++)
@@ -318,7 +318,7 @@ MClass* ScriptsBuilder::FindScript(const StringView& scriptName)
             // Managed scripts
             if (mclass->IsSubClassOf(scriptClass) && !mclass->IsStatic() && !mclass->IsAbstract() && !mclass->IsInterface())
             {
-                MString mclassName;
+                StringAnsi mclassName;
                 GetClassName(mclass->GetFullName(), mclassName);
                 if (className == mclassName)
                 {

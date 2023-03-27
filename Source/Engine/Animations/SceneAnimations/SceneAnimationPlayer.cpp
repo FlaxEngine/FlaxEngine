@@ -13,12 +13,12 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/Script.h"
-#include "Engine/Scripting/MException.h"
+#include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/ManagedCLR/MProperty.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
-#include "Engine/Scripting/ManagedCLR/MType.h"
 #include "Engine/Scripting/ManagedCLR/MField.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
+#include "Engine/Scripting/ManagedCLR/MMethod.h"
 
 // This could be Update, LateUpdate or FixedUpdate
 #define UPDATE_POINT Update
@@ -260,7 +260,7 @@ void SceneAnimationPlayer::MapTrack(const StringView& from, const Guid& to)
 
 void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
 {
-#if USE_MONO
+#if USE_CSHARP
     // Restore all tracks
     for (int32 j = 0; j < anim->Tracks.Count(); j++)
     {
@@ -364,7 +364,7 @@ void SceneAnimationPlayer::Restore(SceneAnimation* anim, int32 stateIndexOffset)
 
 bool SceneAnimationPlayer::TickPropertyTrack(int32 trackIndex, int32 stateIndexOffset, SceneAnimation* anim, float time, const SceneAnimation::Track& track, TrackInstance& state, void* target)
 {
-#if USE_MONO
+#if USE_CSHARP
     switch (track.Type)
     {
     case SceneAnimation::Track::Types::KeyframesProperty:
@@ -511,7 +511,7 @@ bool SceneAnimationPlayer::TickPropertyTrack(int32 trackIndex, int32 stateIndexO
 
         // Return the value
         StringView str(keyframesValues[leftKey], keyframesLengths[leftKey]);
-        *(MonoString**)target = MUtils::ToString(str);
+        *(MString**)target = MUtils::ToString(str);
         break;
     }
     case SceneAnimation::Track::Types::StructProperty:
@@ -528,10 +528,10 @@ bool SceneAnimationPlayer::TickPropertyTrack(int32 trackIndex, int32 stateIndexO
             // Cache field
             if (!childTrackState.Field)
             {
-                MType type = state.Property ? state.Property->GetType() : (state.Field ? state.Field->GetType() : MType());
+                MType* type = state.Property ? state.Property->GetType() : (state.Field ? state.Field->GetType() : nullptr);
                 if (!type)
                     continue;
-                MClass* mclass = Scripting::FindClass(mono_type_get_class(type.GetNative()));
+                MClass* mclass = MCore::Type::GetClass(type);
                 childTrackState.Field = mclass->GetField(childTrackRuntimeData->PropertyName);
                 if (!childTrackState.Field)
                     continue;
@@ -556,7 +556,7 @@ bool SceneAnimationPlayer::TickPropertyTrack(int32 trackIndex, int32 stateIndexO
 
 void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int32 stateIndexOffset, CallStack& callStack)
 {
-#if USE_MONO
+#if USE_CSHARP
     const float fps = anim->FramesPerSecond;
 #if !BUILD_RELEASE || USE_EDITOR
     callStack.Add(anim);
@@ -873,7 +873,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
             // Cache property or field
             if (!state.Property && !state.Field)
             {
-                MClass* mclass = Scripting::FindClass(mono_object_get_class(instance));
+                MClass* mclass = MCore::Object::GetClass(instance);
                 state.Property = mclass->GetProperty(runtimeData->PropertyName);
                 if (!state.Property)
                 {
@@ -886,9 +886,8 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
             }
 
             // Get stack memory for data value
-            MType valueType = state.Property ? state.Property->GetType() : state.Field->GetType();
-            int32 valueAlignment;
-            int32 valueSize = mono_type_stack_size(valueType.GetNative(), &valueAlignment);
+            MType* valueType = state.Property ? state.Property->GetType() : state.Field->GetType();
+            int32 valueSize = MCore::Type::GetSize(valueType);
             _tracksDataStack.AddDefault(valueSize);
             void* value = &_tracksDataStack[_tracksDataStack.Count() - valueSize];
 
@@ -906,10 +905,10 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                         MException ex(exception);
                         ex.Log(LogType::Error, TEXT("Property"));
                     }
-                    else if (!valueType.IsPointer())
+                    else if (!MCore::Type::IsPointer(valueType))
                     {
                         if (boxed)
-                            Platform::MemoryCopy(value, mono_object_unbox(boxed), valueSize);
+                            Platform::MemoryCopy(value, MCore::Object::Unbox(boxed), valueSize);
                         else
                             Platform::MemoryClear(value, valueSize);
                     }
@@ -932,7 +931,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                     case SceneAnimation::Track::Types::StringProperty:
                     {
                         StringView str;
-                        MUtils::ToString(*(MonoString**)value, str);
+                        MUtils::ToString(*(MString**)value, str);
                         _restoreData.Add((byte*)str.Get(), str.Length());
                         _restoreData.Add('\0');
                         break;
@@ -957,7 +956,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
             if (TickPropertyTrack(j, stateIndexOffset, anim, time, track, state, value))
             {
                 // Set the value
-                if (valueType.IsPointer())
+                if (MCore::Type::IsPointer(valueType))
                     value = (void*)*(intptr*)value;
                 if (state.Property)
                 {
@@ -1027,7 +1026,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                         // Cache method
                         if (!state.Method)
                         {
-                            state.Method = mono_class_get_method_from_name(mono_object_get_class(instance), runtimeData->EventName, runtimeData->EventParamsCount);
+                            state.Method = MCore::Object::GetClass(instance)->FindMethod(runtimeData->EventName, runtimeData->EventParamsCount);
                             if (!state.Method)
                                 break;
                         }
@@ -1035,7 +1034,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                         // Invoke the method
                         Variant result;
                         MObject* exception = nullptr;
-                        mono_runtime_invoke((MonoMethod*)state.Method, instance, paramsData, &exception);
+                        state.Method->Invoke(instance, paramsData, &exception);
                         if (exception)
                         {
                             MException ex(exception);

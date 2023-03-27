@@ -19,6 +19,7 @@ namespace FlaxEngine
         internal static class Invoker
         {
             internal delegate IntPtr MarshalAndInvokeDelegate(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr);
+
             internal delegate IntPtr InvokeThunkDelegate(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs);
 
             /// <summary>
@@ -29,6 +30,7 @@ namespace FlaxEngine
             {
                 return (T*)ptr.ToPointer();
             }
+
             internal static MethodInfo ToPointerMethod = typeof(Invoker).GetMethod(nameof(Invoker.ToPointer), BindingFlags.Static | BindingFlags.NonPublic);
 
             /// <summary>
@@ -43,22 +45,18 @@ namespace FlaxEngine
                     methodParameters = method.GetParameters().Select(x => x.ParameterType).Prepend(method.DeclaringType).ToArray();
 
                 // Pass delegate parameters by reference
-                Type[] delegateParameters = methodParameters.Select(x => x.IsPointer ? typeof(IntPtr) : x)
-                    .Select(x => passParametersByRef && !x.IsByRef ? x.MakeByRefType() : x).ToArray();
+                Type[] delegateParameters = methodParameters.Select(x => x.IsPointer ? typeof(IntPtr) : x).Select(x => passParametersByRef && !x.IsByRef ? x.MakeByRefType() : x).ToArray();
                 if (!method.IsStatic && passParametersByRef)
                     delegateParameters[0] = method.DeclaringType;
 
                 // Convert unmanaged pointer parameters to IntPtr
-                ParameterExpression[] parameterExpressions = delegateParameters.Select(x => Expression.Parameter(x)).ToArray();
+                ParameterExpression[] parameterExpressions = delegateParameters.Select(Expression.Parameter).ToArray();
                 Expression[] callExpressions = new Expression[methodParameters.Length];
                 for (int i = 0; i < methodParameters.Length; i++)
                 {
                     Type parameterType = methodParameters[i];
                     if (parameterType.IsPointer)
-                    {
-                        callExpressions[i] =
-                            Expression.Call(null, ToPointerMethod.MakeGenericMethod(parameterType.GetElementType()), parameterExpressions[i]);
-                    }
+                        callExpressions[i] = Expression.Call(null, ToPointerMethod.MakeGenericMethod(parameterType.GetElementType()), parameterExpressions[i]);
                     else
                         callExpressions[i] = parameterExpressions[i];
                 }
@@ -70,7 +68,7 @@ namespace FlaxEngine
                 else
                     callDelegExp = Expression.Call(parameterExpressions[0], method, callExpressions.Skip(1).ToArray());
                 Type delegateType = DelegateHelpers.MakeNewCustomDelegate(delegateParameters.Append(method.ReturnType).ToArray());
-                return Expression.Lambda(delegateType, callDelegExp, parameterExpressions.ToArray()).Compile();
+                return Expression.Lambda(delegateType, callDelegExp, parameterExpressions).Compile();
             }
 
             internal static IntPtr MarshalReturnValue<TRet>(ref TRet returnValue)
@@ -79,8 +77,6 @@ namespace FlaxEngine
                     return IntPtr.Zero;
                 if (typeof(TRet) == typeof(string))
                     return ManagedString.ToNativeWeak(Unsafe.As<string>(returnValue));
-                if (typeof(TRet) == typeof(IntPtr))
-                    return (IntPtr)(object)returnValue;
                 if (typeof(TRet) == typeof(ManagedHandle))
                     return ManagedHandle.ToIntPtr((ManagedHandle)(object)returnValue);
                 if (typeof(TRet) == typeof(bool))
@@ -91,10 +87,10 @@ namespace FlaxEngine
                 {
                     var elementType = typeof(TRet).GetElementType();
                     if (ArrayFactory.GetMarshalledType(elementType) == elementType)
-                        return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnValue)), GCHandleType.Weak));
-                    return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnValue))), GCHandleType.Weak));
+                        return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnValue)), GCHandleType.Weak);
+                    return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnValue))), GCHandleType.Weak);
                 }
-                return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(returnValue, GCHandleType.Weak));
+                return ManagedHandle.ToIntPtr(returnValue, GCHandleType.Weak);
             }
 
             internal static IntPtr MarshalReturnValueGeneric(Type returnType, object returnObject)
@@ -103,8 +99,6 @@ namespace FlaxEngine
                     return IntPtr.Zero;
                 if (returnType == typeof(string))
                     return ManagedString.ToNativeWeak(Unsafe.As<string>(returnObject));
-                if (returnType == typeof(IntPtr))
-                    return (IntPtr)returnObject;
                 if (returnType == typeof(ManagedHandle))
                     return ManagedHandle.ToIntPtr((ManagedHandle)(object)returnObject);
                 if (returnType == typeof(bool))
@@ -112,10 +106,10 @@ namespace FlaxEngine
                 if (returnType == typeof(Type))
                     return ManagedHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnObject)));
                 if (returnType.IsArray && ArrayFactory.GetMarshalledType(returnType.GetElementType()) == returnType.GetElementType())
-                    return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnObject)), GCHandleType.Weak));
+                    return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnObject)), GCHandleType.Weak);
                 if (returnType.IsArray)
-                    return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnObject))), GCHandleType.Weak));
-                return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(returnObject, GCHandleType.Weak));
+                    return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnObject))), GCHandleType.Weak);
+                return ManagedHandle.ToIntPtr(returnObject, GCHandleType.Weak);
             }
 
             internal static IntPtr MarshalReturnValueThunk<TRet>(ref TRet returnValue)
@@ -134,8 +128,8 @@ namespace FlaxEngine
                 {
                     var elementType = typeof(TRet).GetElementType();
                     if (ArrayFactory.GetMarshalledType(elementType) == elementType)
-                        return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnValue)), GCHandleType.Weak));
-                    return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnValue))), GCHandleType.Weak));
+                        return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnValue)), GCHandleType.Weak);
+                    return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnValue))), GCHandleType.Weak);
                 }
                 // Match Mono bindings and pass value as pointer to prevent boxing it
                 if (typeof(TRet) == typeof(System.Boolean))
@@ -152,7 +146,7 @@ namespace FlaxEngine
                     return (IntPtr)new UIntPtr((ulong)(System.UInt32)(object)returnValue);
                 if (typeof(TRet) == typeof(System.UInt64))
                     return (IntPtr)new UIntPtr((ulong)(System.UInt64)(object)returnValue);
-                return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(returnValue, GCHandleType.Weak));
+                return ManagedHandle.ToIntPtr(returnValue, GCHandleType.Weak);
             }
 
             internal static IntPtr MarshalReturnValueThunkGeneric(Type returnType, object returnObject)
@@ -171,8 +165,8 @@ namespace FlaxEngine
                 {
                     var elementType = returnType.GetElementType();
                     if (ArrayFactory.GetMarshalledType(elementType) == elementType)
-                        return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnObject)), GCHandleType.Weak));
-                    return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnObject))), GCHandleType.Weak));
+                        return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnObject)), GCHandleType.Weak);
+                    return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnObject))), GCHandleType.Weak);
                 }
                 // Match Mono bindings and pass value as pointer to prevent boxing it
                 if (returnType == typeof(System.Boolean))
@@ -189,7 +183,7 @@ namespace FlaxEngine
                     return (IntPtr)new UIntPtr((ulong)(System.UInt32)(object)returnObject);
                 if (returnType == typeof(System.UInt64))
                     return (IntPtr)new UIntPtr((ulong)(System.UInt64)(object)returnObject);
-                return ManagedHandle.ToIntPtr(ManagedHandle.Alloc(returnObject, GCHandleType.Weak));
+                return ManagedHandle.ToIntPtr(returnObject, GCHandleType.Weak);
             }
 
             internal static class InvokerNoRet0<TInstance>

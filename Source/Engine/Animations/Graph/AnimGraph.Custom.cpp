@@ -2,25 +2,23 @@
 
 #include "AnimGraph.h"
 #include "Engine/Debug/DebugLog.h"
-#include "Engine/Scripting/InternalCalls.h"
+#include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/BinaryModule.h"
+#include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ManagedCLR/MDomain.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
-#include "Engine/Scripting/Scripting.h"
-#include "Engine/Scripting/MException.h"
+#include "Engine/Scripting/ManagedCLR/MException.h"
+#include "Engine/Scripting/Internal/InternalCalls.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
 
-#if !COMPILE_WITHOUT_CSHARP
-#if USE_MONO
-#include <mono/metadata/appdomain.h>
-#endif
+#if USE_CSHARP
 
 struct InternalInitData
 {
-    MonoArray* Values;
-    MonoObject* BaseModel;
+    MArray* Values;
+    MObject* BaseModel;
 };
 
 struct InternalContext
@@ -32,8 +30,8 @@ struct InternalContext
     int32 BoxId;
     float DeltaTime;
     uint64 CurrentFrameIndex;
-    MonoObject* BaseModel;
-    MonoObject* Instance;
+    MObject* BaseModel;
+    MObject* Instance;
 };
 
 struct InternalImpulse
@@ -57,7 +55,7 @@ DEFINE_INTERNAL_CALL(bool) AnimGraphInternal_HasConnection(InternalContext* cont
     return box->HasConnection();
 }
 
-DEFINE_INTERNAL_CALL(MonoObject*) AnimGraphInternal_GetInputValue(InternalContext* context, int32 boxId)
+DEFINE_INTERNAL_CALL(MObject*) AnimGraphInternal_GetInputValue(InternalContext* context, int32 boxId)
 {
     const auto box = context->Node->TryGetBox(boxId);
     if (box == nullptr)
@@ -85,16 +83,14 @@ DEFINE_INTERNAL_CALL(AnimGraphImpulse*) AnimGraphInternal_GetOutputImpulseData(I
 
 void AnimGraphExecutor::initRuntime()
 {
-#if USE_MONO
     ADD_INTERNAL_CALL("FlaxEngine.AnimationGraph::Internal_HasConnection", &AnimGraphInternal_HasConnection);
     ADD_INTERNAL_CALL("FlaxEngine.AnimationGraph::Internal_GetInputValue", &AnimGraphInternal_GetInputValue);
     ADD_INTERNAL_CALL("FlaxEngine.AnimationGraph::Internal_GetOutputImpulseData", &AnimGraphInternal_GetOutputImpulseData);
-#endif
 }
 
 void AnimGraphExecutor::ProcessGroupCustom(Box* boxBase, Node* nodeBase, Value& value)
 {
-#if USE_MONO
+#if USE_CSHARP
     auto& context = Context.Get();
     if (context.ValueCache.TryGet(boxBase, value))
         return;
@@ -120,7 +116,7 @@ void AnimGraphExecutor::ProcessGroupCustom(Box* boxBase, Node* nodeBase, Value& 
     internalContext.Instance = context.Data->Object ? context.Data->Object->GetOrCreateManagedInstance() : nullptr;
 
     // Peek managed object
-    const auto obj = MUtils::GetGCHandleTarget(data.Handle);
+    const auto obj = MCore::GCHandle::GetTarget(data.Handle);
     if (obj == nullptr)
     {
         LOG(Warning, "Custom node instance is null.");
@@ -131,7 +127,7 @@ void AnimGraphExecutor::ProcessGroupCustom(Box* boxBase, Node* nodeBase, Value& 
     void* params[1];
     params[0] = &internalContext;
     MObject* exception = nullptr;
-    MonoObject* result = data.Evaluate->Invoke(obj, params, &exception);
+    MObject* result = data.Evaluate->Invoke(obj, params, &exception);
     if (exception)
     {
         MException ex(exception);
@@ -163,16 +159,14 @@ void AnimGraph::ClearCustomNode(Node* node)
     data.Evaluate = nullptr;
     if (data.Handle)
     {
-#if USE_MONO
-        MUtils::FreeGCHandle(data.Handle);
-#endif
+        MCore::GCHandle::Free(data.Handle);
         data.Handle = 0;
     }
 }
 
 bool AnimGraph::InitCustomNode(Node* node)
 {
-#if USE_MONO
+#if USE_CSHARP
     // Fetch the node logic controller type
     if (node->Values.Count() < 2 || node->Values[0].Type.Type != ValueType::String)
     {
@@ -180,7 +174,7 @@ bool AnimGraph::InitCustomNode(Node* node)
         return false;
     }
     const StringView typeName(node->Values[0]);
-    const MString typeNameStd = typeName.ToStringAnsi();
+    const StringAnsi typeNameStd = typeName.ToStringAnsi();
     MClass* type = Scripting::FindClass(typeNameStd);
     if (type == nullptr)
     {
@@ -203,18 +197,15 @@ bool AnimGraph::InitCustomNode(Node* node)
     }
 
     // Create node values managed array
-    if (mono_domain_get() == nullptr)
-        Scripting::GetScriptsDomain()->Dispatch();
-    const auto values = mono_array_new(mono_domain_get(), mono_get_object_class(), node->Values.Count());
+    MCore::Thread::Attach();
+    MArray* values = MCore::Array::New( MCore::TypeCache::Object, node->Values.Count());
+    MObject** valuesPtr = MCore::Array::GetAddress<MObject*>(values);
     for (int32 i = 0; i < node->Values.Count(); i++)
-    {
-        const auto v = MUtils::BoxVariant(node->Values[i]);
-        mono_array_set(values, MonoObject*, i, v);
-    }
+        valuesPtr[i] = MUtils::BoxVariant(node->Values[i]);
 
     // Allocate managed node object (create GC handle to prevent destruction)
-    const auto obj = type->CreateInstance();
-    const auto handleGC = MUtils::NewGCHandle(obj, false);
+    MObject* obj = type->CreateInstance();
+    const MGCHandle handleGC = MCore::GCHandle::New(obj, false);
 
     // Initialize node
     InternalInitData initData;
@@ -226,7 +217,7 @@ bool AnimGraph::InitCustomNode(Node* node)
     load->Invoke(obj, params, &exception);
     if (exception)
     {
-        MUtils::FreeGCHandle(handleGC);
+        MCore::GCHandle::Free(handleGC);
 
         MException ex(exception);
         ex.Log(LogType::Warning, TEXT("AnimGraph"));

@@ -6,7 +6,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Level/Prefabs/Prefab.h"
 #include "Engine/Scripting/BinaryModule.h"
-#include "Engine/Scripting/ManagedSerialization.h"
+#include "Engine/Scripting/Internal/ManagedSerialization.h"
 #include "Engine/Serialization/ISerializeModifier.h"
 #include "Engine/Serialization/Serialization.h"
 

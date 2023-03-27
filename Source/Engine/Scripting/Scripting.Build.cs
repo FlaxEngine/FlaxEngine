@@ -17,9 +17,9 @@ public class Scripting : EngineModule
         {
             if (EngineConfiguration.WithDotNet(options))
             {
+                // .NET
                 options.PrivateDependencies.Add("nethost");
                 options.ScriptingAPI.Defines.Add("USE_NETCORE");
-                options.PublicDefinitions.Add("USE_NETCORE");
 
                 if (options.Target is EngineTarget engineTarget && engineTarget.UseSeparateMainExecutable(options))
                 {
@@ -30,7 +30,9 @@ public class Scripting : EngineModule
             }
             else
             {
-                options.PublicDependencies.Add("mono");
+                // Mono
+                options.PrivateDependencies.Add("mono");
+                options.ScriptingAPI.Defines.Add("USE_MONO");
             }
         }
 

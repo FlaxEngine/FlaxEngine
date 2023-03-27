@@ -24,15 +24,15 @@ namespace Log
         /// <summary>
         /// Creates default exception with additional data
         /// </summary>
-        /// <param name="message">Additional information that help describe error</param>
+        /// <param name="additionalInfo">Additional information that help describe error</param>
         CLRInnerException(const String& additionalInfo)
             : Exception(String::Format(TEXT("Current {0} CLR method has thrown an inner exception"),
 #if USE_MONO
-                                       TEXT("Mono")
+        TEXT("Mono")
 #elif USE_CORECLR
-				TEXT(".NET Core")
+            TEXT(".NET Core")
 #else
-				TEXT("Unknown engine")
+            TEXT("Unknown engine")
 #endif
                         ), additionalInfo)
         {

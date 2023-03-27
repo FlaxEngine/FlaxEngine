@@ -28,6 +28,7 @@ public class mono : DepsModule
         base.Setup(options);
 
         var depsRoot = options.DepsFolder;
+        options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, @"Source\ThirdParty\mono-2.0"));
 
         switch (options.Platform.Target)
         {

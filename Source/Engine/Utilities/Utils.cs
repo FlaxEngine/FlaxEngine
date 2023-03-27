@@ -1023,7 +1023,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="method">The method to get it's parameters.</param>
         /// <returns>Method parameters array.</returns>
-        public static Type[] GetParameterTypes(this MethodInfo method)
+        public static Type[] GetParameterTypes(this MethodBase method)
         {
             Type[] parameterTypes;
             var parameters = method.GetParameters();

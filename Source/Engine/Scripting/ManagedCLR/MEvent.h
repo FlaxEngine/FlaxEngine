@@ -12,35 +12,36 @@ class FLAXENGINE_API MEvent
     friend MClass;
 
 protected:
-
 #if USE_MONO
     MonoEvent* _monoEvent;
+#elif USE_NETCORE
+    void* _handle;
 #endif
 
-    MMethod* _addMethod;
-    MMethod* _removeMethod;
+    mutable MMethod* _addMethod;
+    mutable MMethod* _removeMethod;
     MClass* _parentClass;
 
-    MString _name;
+    StringAnsi _name;
 
-    int32 _hasCachedAttributes : 1;
-    int32 _hasAddMonoMethod : 1;
-    int32 _hasRemoveMonoMethod : 1;
+    mutable int32 _hasCachedAttributes : 1;
+    mutable int32 _hasAddMonoMethod : 1;
+    mutable int32 _hasRemoveMonoMethod : 1;
 
-    Array<MObject*> _attributes;
+    mutable Array<MObject*> _attributes;
 
 public:
-
 #if USE_MONO
     explicit MEvent(MonoEvent* monoEvent, const char* name, MClass* parentClass);
+#elif USE_NETCORE
+    MEvent(MClass* parentClass, void* handle, const char* name);
 #endif
 
 public:
-
     /// <summary>
     /// Gets the event name.
     /// </summary>
-    FORCE_INLINE const MString& GetName() const
+    FORCE_INLINE const StringAnsi& GetName() const
     {
         return _name;
     }
@@ -56,22 +57,22 @@ public:
     /// <summary>
     /// Gets the event type class.
     /// </summary>
-    MType GetType();
+    MType* GetType() const;
 
     /// <summary>
     /// Gets the event add method.
     /// </summary>
-    MMethod* GetAddMethod();
+    MMethod* GetAddMethod() const;
 
     /// <summary>
     /// Gets the event remove method.
     /// </summary>
-    MMethod* GetRemoveMethod();
+    MMethod* GetRemoveMethod() const;
 
     /// <summary>
     /// Gets event visibility in the class.
     /// </summary>
-    FORCE_INLINE MVisibility GetVisibility()
+    FORCE_INLINE MVisibility GetVisibility() const
     {
         return GetAddMethod()->GetVisibility();
     }
@@ -79,7 +80,7 @@ public:
     /// <summary>
     /// Returns true if event is static.
     /// </summary>
-    FORCE_INLINE bool IsStatic()
+    FORCE_INLINE bool IsStatic() const
     {
         return GetAddMethod()->IsStatic();
     }
@@ -95,7 +96,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Checks if event has an attribute of the specified type.
     /// </summary>
@@ -120,5 +120,5 @@ public:
     /// Returns an instance of all attributes connected with given event. Returns null if the event doesn't have any attributes.
     /// </summary>
     /// <returns>The array of attribute objects.</returns>
-    const Array<MObject*>& GetAttributes();
+    const Array<MObject*>& GetAttributes() const;
 };

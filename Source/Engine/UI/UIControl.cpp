@@ -1,14 +1,12 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "UIControl.h"
-#include "Engine/Scripting/MException.h"
+#include "Engine/Scripting/Scripting.h"
+#include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
-#include "Engine/Scripting/Scripting.h"
+#include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Serialization/Serialization.h"
-#if USE_MONO
-#include <mono/metadata/appdomain.h>
-#endif
 
 #if COMPILE_WITHOUT_CSHARP
 #define UICONTROL_INVOKE(event)
@@ -80,12 +78,12 @@ void UIControl::Serialize(SerializeStream& stream, const void* otherObj)
 
 #if !COMPILE_WITHOUT_CSHARP
     void* params[2];
-    MonoString* controlType = nullptr;
+    MString* controlType = nullptr;
     params[0] = &controlType;
     params[1] = other ? other->GetOrCreateManagedInstance() : nullptr;
     MObject* exception = nullptr;
     const auto method = other ? UIControl_SerializeDiff : UIControl_Serialize;
-    const auto invokeResultStr = (MonoString*)method->Invoke(GetOrCreateManagedInstance(), params, &exception);
+    const auto invokeResultStr = (MString*)method->Invoke(GetOrCreateManagedInstance(), params, &exception);
     if (exception)
     {
         MException ex(exception);
@@ -107,19 +105,16 @@ void UIControl::Serialize(SerializeStream& stream, const void* otherObj)
         return;
     }
 
-    const auto controlTypeLength = mono_string_length(controlType);
-    if (controlTypeLength != 0)
+    const StringView controlTypeChars = MCore::String::GetChars(controlType);
+    if (controlTypeChars.Length() != 0)
     {
         stream.JKEY("Control");
-        const auto controlTypeChars = mono_string_to_utf8(controlType);
         stream.String(controlTypeChars);
-        mono_free(controlTypeChars);
     }
 
+    const StringView invokeResultStrChars = MCore::String::GetChars(invokeResultStr);
     stream.JKEY("Data");
-    const auto invokeResultChars = mono_string_to_utf8(invokeResultStr);
-    stream.RawValue(invokeResultChars);
-    mono_free(invokeResultChars);
+    stream.RawValue(invokeResultStrChars);
 #endif
 }
 
@@ -134,15 +129,15 @@ void UIControl::Deserialize(DeserializeStream& stream, ISerializeModifier* modif
     DESERIALIZE_MEMBER(NavTargetRight, _navTargetRight);
 
 #if !COMPILE_WITHOUT_CSHARP
-    MonoReflectionType* typeObj = nullptr;
+    MTypeObject* typeObj = nullptr;
     const auto controlMember = stream.FindMember("Control");
     if (controlMember != stream.MemberEnd())
     {
         const StringAnsiView controlType(controlMember->value.GetStringAnsiView());
-        const auto type = Scripting::FindClass(controlType);
+        const MClass* type = Scripting::FindClass(controlType);
         if (type != nullptr)
         {
-            typeObj = mono_type_get_object(mono_domain_get(), mono_class_get_type(type->GetNative()));
+            typeObj = INTERNAL_TYPE_GET_OBJECT(type->GetType());
         }
         else
         {
@@ -156,9 +151,8 @@ void UIControl::Deserialize(DeserializeStream& stream, ISerializeModifier* modif
         rapidjson_flax::StringBuffer buffer;
         rapidjson_flax::Writer<rapidjson_flax::StringBuffer> writer(buffer);
         dataMember->value.Accept(writer);
-        const auto str = buffer.GetString();
         void* args[2];
-        args[0] = mono_string_new(mono_domain_get(), str);
+        args[0] = MCore::String::New(buffer.GetString(), (int32)buffer.GetSize());
         args[1] = typeObj;
         MObject* exception = nullptr;
         UIControl_Deserialize->Invoke(GetOrCreateManagedInstance(), args, &exception);

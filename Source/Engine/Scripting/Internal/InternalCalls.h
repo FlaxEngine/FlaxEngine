@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include "Engine/Debug/DebugLog.h"
 #include "Engine/Core/Log.h"
-#include "ScriptingType.h"
-#include "Types.h"
+#include "Engine/Debug/DebugLog.h"
+#include "Engine/Scripting/ScriptingType.h"
+#include "Engine/Scripting/Types.h"
 
 #if defined(__clang__)
 // Helper utility to override vtable entry with automatic restore
@@ -33,7 +33,7 @@ struct FLAXENGINE_API VTableFunctionInjector
 #define MSVC_FUNC_EXPORT(name) __pragma(comment(linker, "/EXPORT:" #name "=" __FUNCDNAME__))
 #endif
 
-#if USE_MONO
+#if USE_CSHARP
 
 #if USE_NETCORE
 #define ADD_INTERNAL_CALL(fullName, method)
