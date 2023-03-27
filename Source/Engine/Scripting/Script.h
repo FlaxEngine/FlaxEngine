@@ -109,6 +109,13 @@ public:
     }
 
     /// <summary>
+    /// Called every fixed framerate frame (after FixedUpdate) if object is enabled.
+    /// </summary>
+    API_FUNCTION(Attributes = "NoAnimate") virtual void OnLateFixedUpdate()
+    {
+    }
+
+    /// <summary>
     /// Called during drawing debug shapes in editor. Use <see cref="DebugDraw"/> to draw debug shapes and other visualization.
     /// </summary>
     API_FUNCTION(Attributes="NoAnimate") virtual void OnDebugDraw()

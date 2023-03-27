@@ -46,6 +46,7 @@ public:
     void Update() override;
     void LateUpdate() override;
     void FixedUpdate() override;
+    void LateFixedUpdate() override;
     void Draw() override;
     void BeforeExit() override;
     void Dispose() override;
@@ -100,6 +101,7 @@ namespace
     MMethod* _method_Update = nullptr;
     MMethod* _method_LateUpdate = nullptr;
     MMethod* _method_FixedUpdate = nullptr;
+    MMethod* _method_LateFixedUpdate = nullptr;
     MMethod* _method_Draw = nullptr;
     MMethod* _method_Exit = nullptr;
     Array<BinaryModule*, InlinedAllocation<64>> _nonNativeModules;
@@ -208,6 +210,12 @@ void ScriptingService::FixedUpdate()
 {
     PROFILE_CPU_NAMED("Scripting::FixedUpdate");
     INVOKE_EVENT(FixedUpdate);
+}
+
+void ScriptingService::LateFixedUpdate()
+{
+    PROFILE_CPU_NAMED("Scripting::LateFixedUpdate");
+    INVOKE_EVENT(LateFixedUpdate);
 }
 
 void ScriptingService::Draw()

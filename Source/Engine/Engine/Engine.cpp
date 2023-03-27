@@ -65,6 +65,7 @@ Action Engine::FixedUpdate;
 Action Engine::Update;
 TaskGraph* Engine::UpdateGraph = nullptr;
 Action Engine::LateUpdate;
+Action Engine::LateFixedUpdate;
 Action Engine::Draw;
 Action Engine::Pause;
 Action Engine::Unpause;
@@ -198,6 +199,7 @@ int32 Engine::Main(const Char* cmdLine)
         if (Time::OnBeginPhysics())
         {
             OnFixedUpdate();
+            OnLateFixedUpdate();
             Time::OnEndPhysics();
         }
 
@@ -271,6 +273,17 @@ void Engine::OnFixedUpdate()
         // After this point we should not modify physic objects state (rendering operations is mostly readonly)
         // That's because auto-simulation mode is performing rendering during physics simulation
     }
+}
+
+void Engine::OnLateFixedUpdate()
+{
+    PROFILE_CPU_NAMED("Late Fixed Update");
+
+    // Call event
+    LateFixedUpdate();
+
+    // Update services
+    EngineService::OnLateFixedUpdate();
 }
 
 void Engine::OnUpdate()

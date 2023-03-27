@@ -80,17 +80,22 @@ namespace FlaxEngine
         public static event Action Update;
 
         /// <summary>
-        /// Occurs on scripting 'late' update.
+        /// Occurs on scripting late update.
         /// </summary>
         public static event Action LateUpdate;
 
         /// <summary>
-        /// Occurs on scripting `fixed` update.
+        /// Occurs on scripting fixed update.
         /// </summary>
         public static event Action FixedUpdate;
 
         /// <summary>
-        /// Occurs on scripting `draw` update. Called during frame rendering and can be used to invoke custom rendering with GPUDevice.
+        /// Occurs on scripting late fixed update.
+        /// </summary>
+        public static event Action LateFixedUpdate;
+
+        /// <summary>
+        /// Occurs on scripting draw update. Called during frame rendering and can be used to invoke custom rendering with GPUDevice.
         /// </summary>
         public static event Action Draw;
 
@@ -300,6 +305,11 @@ namespace FlaxEngine
         internal static void Internal_FixedUpdate()
         {
             FixedUpdate?.Invoke();
+        }
+
+        internal static void Internal_LateFixedUpdate()
+        {
+            LateFixedUpdate?.Invoke();
         }
 
         internal static void Internal_Draw()
