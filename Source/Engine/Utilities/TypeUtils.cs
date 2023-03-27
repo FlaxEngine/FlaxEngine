@@ -33,11 +33,6 @@ namespace FlaxEngine.Utilities
                     sb.Append(genericArgs[i].GetTypeName());
                 }
                 sb.Append(']');
-                var sss = sb.ToString();
-                if (sss != type.FullName)
-                {
-                    Debug.LogError($"Different type name: {type.FullName} vs {sss}");
-                }
                 return sb.ToString();
             }
             return type.FullName;
