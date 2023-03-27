@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using FlaxEditor.Content;
 using FlaxEngine;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Scripting
 {

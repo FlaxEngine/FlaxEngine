@@ -12,6 +12,7 @@ using FlaxEditor.GUI;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEngine;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Surface.Archetypes
 {

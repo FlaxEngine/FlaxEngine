@@ -8,6 +8,7 @@ using System.Reflection;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.Json;
+using FlaxEngine.Utilities;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Content

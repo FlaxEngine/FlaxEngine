@@ -5,14 +5,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using FlaxEngine;
+using FlaxEditor;
+using FlaxEditor.Scripting;
 
-namespace FlaxEditor.Scripting
+namespace FlaxEngine.Utilities
 {
-    /// <summary>
-    /// Editor scripting utilities and helper functions.
-    /// </summary>
-    public static class TypeUtils
+    partial class TypeUtils
     {
         /// <summary>
         /// Custom list of scripting types containers. Can be used by custom scripting languages to provide types info for the editor.
@@ -33,34 +31,6 @@ namespace FlaxEditor.Scripting
                 return type.FullName != typeName ? GetType(typeName) : new ScriptType(type);
             }
             return o != null ? new ScriptType(o.GetType()) : ScriptType.Null;
-        }
-
-        /// <summary>
-        /// Gets the typename full name.
-        /// </summary>
-        /// <param name="type">The type.</param>
-        /// <returns>The full typename of the type.</returns>
-        public static string GetTypeName(this Type type)
-        {
-            if (type.IsGenericType)
-            {
-                // For generic types (eg. Dictionary) FullName returns generic parameter types with fully qualified name so simplify it manually
-                var sb = new StringBuilder();
-                sb.Append(type.Namespace);
-                sb.Append('.');
-                sb.Append(type.Name);
-                sb.Append('[');
-                var genericArgs = type.GetGenericArguments();
-                for (var i = 0; i < genericArgs.Length; i++)
-                {
-                    if (i != 0)
-                        sb.Append(',');
-                    sb.Append(genericArgs[i].GetTypeName());
-                }
-                sb.Append(']');
-                return sb.ToString();
-            }
-            return type.FullName;
         }
 
         /// <summary>
@@ -131,7 +101,7 @@ namespace FlaxEditor.Scripting
             if (type.IsValueType)
             {
                 var value = type.CreateInstance();
-                Utilities.Utils.InitDefaultValues(value);
+                FlaxEditor.Utilities.Utils.InitDefaultValues(value);
                 return value;
             }
             if (ScriptType.Object.IsAssignableFrom(type))
@@ -139,7 +109,7 @@ namespace FlaxEditor.Scripting
             if (type.CanCreateInstance)
             {
                 var value = type.CreateInstance();
-                Utilities.Utils.InitDefaultValues(value);
+                FlaxEditor.Utilities.Utils.InitDefaultValues(value);
                 return value;
             }
             return null;
@@ -366,7 +336,7 @@ namespace FlaxEditor.Scripting
                 }
             }
 
-            if (!Content.Settings.GameSettings.OptionalPlatformSettings.Contains(typeName))
+            if (!FlaxEditor.Content.Settings.GameSettings.OptionalPlatformSettings.Contains(typeName))
                 Editor.LogWarning($"Failed to find type '{typeName}'.");
             return ScriptType.Null;
         }

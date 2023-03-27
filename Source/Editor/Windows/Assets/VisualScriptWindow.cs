@@ -16,6 +16,7 @@ using FlaxEditor.Surface;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
+using FlaxEngine.Utilities;
 using FlaxEngine.Windows.Search;
 
 #pragma warning disable 649

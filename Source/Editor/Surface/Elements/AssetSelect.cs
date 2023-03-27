@@ -3,6 +3,7 @@
 using System;
 using FlaxEditor.GUI;
 using FlaxEngine;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Surface.Elements
 {
@@ -26,7 +27,7 @@ namespace FlaxEditor.Surface.Elements
         /// <param name="parentNode">The parent node.</param>
         /// <param name="archetype">The archetype.</param>
         public AssetSelect(SurfaceNode parentNode, NodeElementArchetype archetype)
-        : base(Scripting.TypeUtils.GetType(archetype.Text), archetype.ActualPosition)
+        : base(TypeUtils.GetType(archetype.Text), archetype.ActualPosition)
         {
             ParentNode = parentNode;
             Archetype = archetype;

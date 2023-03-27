@@ -9,6 +9,7 @@ using System.Runtime.InteropServices.Marshalling;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.Scripting;
 using FlaxEngine;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.CustomEditors
 {

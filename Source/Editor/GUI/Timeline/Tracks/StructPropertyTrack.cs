@@ -5,6 +5,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.GUI.Timeline.Tracks
 {
@@ -49,7 +50,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             if (stream.ReadChar() != 0)
                 throw new Exception("Invalid track data.");
 
-            var propertyType = Scripting.TypeUtils.GetType(e.MemberTypeName);
+            var propertyType = TypeUtils.GetType(e.MemberTypeName);
             if (!propertyType)
             {
                 if (!string.IsNullOrEmpty(e.MemberTypeName))

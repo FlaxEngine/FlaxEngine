@@ -1988,17 +1988,11 @@ namespace FlaxEngine
             {
                 var type = assemblyTypes[i];
                 IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativeClassDefinitions>() * i);
-                bool isStatic = type.IsAbstract && type.IsSealed;
-                bool isInterface = type.IsInterface;
-                bool isAbstract = type.IsAbstract;
-
-                ManagedHandle typeHandle = GetTypeGCHandle(type);
-
-                NativeClassDefinitions managedClass = new NativeClassDefinitions()
+                var managedClass = new NativeClassDefinitions
                 {
-                    typeHandle = typeHandle,
+                    typeHandle = GetTypeGCHandle(type),
                     name = NativeAllocStringAnsi(type.Name),
-                    fullname = NativeAllocStringAnsi(type.FullName),
+                    fullname = NativeAllocStringAnsi(type.GetTypeName()),
                     @namespace = NativeAllocStringAnsi(type.Namespace ?? ""),
                     typeAttributes = (uint)type.Attributes,
                 };
@@ -2013,12 +2007,11 @@ namespace FlaxEngine
         internal static unsafe void GetManagedClassFromType(ManagedHandle typeHandle, NativeClassDefinitions* managedClass, ManagedHandle* assemblyHandle)
         {
             Type type = Unsafe.As<Type>(typeHandle.Target);
-            ManagedHandle classTypeHandle = GetTypeGCHandle(type);
-            *managedClass = new NativeClassDefinitions()
+            *managedClass = new NativeClassDefinitions
             {
-                typeHandle = classTypeHandle,
+                typeHandle = GetTypeGCHandle(type),
                 name = NativeAllocStringAnsi(type.Name),
-                fullname = NativeAllocStringAnsi(type.FullName),
+                fullname = NativeAllocStringAnsi(type.GetTypeName()),
                 @namespace = NativeAllocStringAnsi(type.Namespace ?? ""),
                 typeAttributes = (uint)type.Attributes,
             };

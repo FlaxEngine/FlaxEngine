@@ -3,6 +3,7 @@
 using System;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEngine;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Surface.Elements
 {
@@ -30,7 +31,7 @@ namespace FlaxEditor.Surface.Elements
             ParentNode = parentNode;
             Archetype = archetype;
             Bounds = new Rectangle(Archetype.ActualPosition, archetype.Size);
-            Type = Scripting.TypeUtils.GetType(archetype.Text);
+            Type = TypeUtils.GetType(archetype.Text);
 
             ParentNode.ValuesChanged += OnNodeValuesChanged;
             OnNodeValuesChanged();

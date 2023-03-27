@@ -10,6 +10,7 @@ using FlaxEditor.Scripting;
 using FlaxEditor.Utilities;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.GUI.Timeline.Tracks

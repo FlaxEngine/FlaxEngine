@@ -9,6 +9,7 @@ using System.Text;
 using FlaxEditor.GUI.Timeline.Undo;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.GUI.Timeline.Tracks
 {
@@ -539,7 +540,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 throw new Exception("Invalid track data.");
 
             var keyframes = new object[keyframesCount];
-            var propertyType = Scripting.TypeUtils.GetType(e.MemberTypeName).Type;
+            var propertyType = TypeUtils.GetType(e.MemberTypeName).Type;
             if (propertyType == null)
             {
                 stream.ReadBytes(keyframesCount * (sizeof(float) + valueSize * 3));
