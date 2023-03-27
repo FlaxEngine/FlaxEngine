@@ -157,39 +157,49 @@ namespace FlaxEngine
     /// </summary>
     public unsafe class ManagedArray
     {
-        private ManagedHandle pinnedArrayHandle;
-        private IntPtr unmanagedData;
-        private Type elementType;
-        private int elementSize;
-        private int length;
+        private ManagedHandle _pinnedArrayHandle;
+        private IntPtr _unmanagedData;
+        private Type _arrayType;
+        private Type _elementType;
+        private int _elementSize;
+        private int _length;
 
-        public static ManagedArray WrapNewArray(Array arr) => new ManagedArray(arr);
+        public static ManagedArray WrapNewArray(Array arr) => new ManagedArray(arr, arr.GetType());
+
+        public static ManagedArray WrapNewArray(Array arr, Type arrayType) => new ManagedArray(arr, arrayType);
 
         /// <summary>
         /// Returns an instance of ManagedArray from shared pool.
         /// </summary>
-        /// <remarks>
-        /// The resources must be released by calling FreePooled() instead of Free()-method.
-        /// </remarks>
+        /// <remarks>The resources must be released by calling FreePooled() instead of Free()-method.</remarks>
         public static ManagedArray WrapPooledArray(Array arr)
         {
             ManagedArray managedArray = ManagedArrayPool.Get();
-            managedArray.WrapArray(arr);
+            managedArray.WrapArray(arr, arr.GetType());
             return managedArray;
         }
-
-        internal static ManagedArray AllocateNewArray(int length, Type elementType)
-            => new ManagedArray((IntPtr)NativeInterop.NativeAlloc(length, Marshal.SizeOf(elementType)), length, elementType);
-
-        internal static ManagedArray AllocateNewArray(IntPtr ptr, int length, Type elementType)
-            => new ManagedArray(ptr, length, elementType);
 
         /// <summary>
         /// Returns an instance of ManagedArray from shared pool.
         /// </summary>
-        /// <remarks>
-        /// The resources must be released by calling FreePooled() instead of Free()-method.
-        /// </remarks>
+        /// <remarks>The resources must be released by calling FreePooled() instead of Free()-method.</remarks>
+        public static ManagedArray WrapPooledArray(Array arr, Type arrayType)
+        {
+            ManagedArray managedArray = ManagedArrayPool.Get();
+            managedArray.WrapArray(arr, arrayType);
+            return managedArray;
+        }
+
+        internal static ManagedArray AllocateNewArray(int length, Type arrayType, Type elementType)
+            => new ManagedArray((IntPtr)NativeInterop.NativeAlloc(length, Marshal.SizeOf(elementType)), length, arrayType, elementType);
+
+        internal static ManagedArray AllocateNewArray(IntPtr ptr, int length, Type arrayType, Type elementType)
+            => new ManagedArray(ptr, length, arrayType, elementType);
+
+        /// <summary>
+        /// Returns an instance of ManagedArray from shared pool.
+        /// </summary>
+        /// <remarks>The resources must be released by calling FreePooled() instead of Free()-method.</remarks>
         public static ManagedArray AllocatePooledArray<T>(T* ptr, int length) where T : unmanaged
         {
             ManagedArray managedArray = ManagedArrayPool.Get();
@@ -200,67 +210,67 @@ namespace FlaxEngine
         /// <summary>
         /// Returns an instance of ManagedArray from shared pool.
         /// </summary>
-        /// <remarks>
-        /// The resources must be released by calling FreePooled() instead of Free()-method.
-        /// </remarks>
+        /// <remarks>The resources must be released by calling FreePooled() instead of Free()-method.</remarks>
         public static ManagedArray AllocatePooledArray<T>(int length) where T : unmanaged
         {
             ManagedArray managedArray = ManagedArrayPool.Get();
-            managedArray.Allocate((IntPtr)NativeInterop.NativeAlloc(length, Unsafe.SizeOf<T>()), length, typeof(T));
+            managedArray.Allocate((T*)NativeInterop.NativeAlloc(length, Unsafe.SizeOf<T>()), length);
             return managedArray;
         }
 
-        public ManagedArray(Array arr) => WrapArray(arr);
+        public ManagedArray(Array arr, Type elementType) => WrapArray(arr, elementType);
 
-        internal void WrapArray(Array arr)
+        internal void WrapArray(Array arr, Type arrayType)
         {
-            pinnedArrayHandle = ManagedHandle.Alloc(arr, GCHandleType.Pinned);
-            unmanagedData = Marshal.UnsafeAddrOfPinnedArrayElement(arr, 0);
-            length = arr.Length;
-            elementType = arr.GetType().GetElementType();
-            elementSize = Marshal.SizeOf(elementType);
+            _pinnedArrayHandle = ManagedHandle.Alloc(arr, GCHandleType.Pinned);
+            _unmanagedData = Marshal.UnsafeAddrOfPinnedArrayElement(arr, 0);
+            _length = arr.Length;
+            _arrayType = arrayType;
+            _elementType = arr.GetType().GetElementType();
+            _elementSize = Marshal.SizeOf(_elementType);
         }
 
         internal void Allocate<T>(T* ptr, int length) where T : unmanaged
         {
-            unmanagedData = new IntPtr(ptr);
-            this.length = length;
-            elementType = typeof(T);
-            elementSize = Unsafe.SizeOf<T>();
-        }
-
-        internal void Allocate(IntPtr ptr, int length, Type elementType)
-        {
-            unmanagedData = ptr;
-            this.length = length;
-            this.elementType = elementType;
-            elementSize = Marshal.SizeOf(elementType);
+            _unmanagedData = new IntPtr(ptr);
+            _length = length;
+            _arrayType = typeof(T).MakeArrayType();
+            _elementType = typeof(T);
+            _elementSize = Unsafe.SizeOf<T>();
         }
 
         private ManagedArray()
         {
         }
 
-        private ManagedArray(IntPtr ptr, int length, Type elementType) => Allocate(ptr, length, elementType);
+        private ManagedArray(IntPtr ptr, int length, Type arrayType, Type elementType)
+        {
+            Assert.IsTrue(arrayType.IsArray);
+            _unmanagedData = ptr;
+            _length = length;
+            _arrayType = arrayType;
+            _elementType = elementType;
+            _elementSize = Marshal.SizeOf(elementType);
+        }
 
         ~ManagedArray()
         {
-            if (unmanagedData != IntPtr.Zero)
+            if (_unmanagedData != IntPtr.Zero)
                 Free();
         }
 
         public void Free()
         {
             GC.SuppressFinalize(this);
-            if (pinnedArrayHandle.IsAllocated)
+            if (_pinnedArrayHandle.IsAllocated)
             {
-                pinnedArrayHandle.Free();
-                unmanagedData = IntPtr.Zero;
+                _pinnedArrayHandle.Free();
+                _unmanagedData = IntPtr.Zero;
             }
-            if (unmanagedData != IntPtr.Zero)
+            if (_unmanagedData != IntPtr.Zero)
             {
-                NativeInterop.NativeFree(unmanagedData.ToPointer());
-                unmanagedData = IntPtr.Zero;
+                NativeInterop.NativeFree(_unmanagedData.ToPointer());
+                _unmanagedData = IntPtr.Zero;
             }
         }
 
@@ -270,17 +280,21 @@ namespace FlaxEngine
             ManagedArrayPool.Put(this);
         }
 
-        internal IntPtr Pointer => unmanagedData;
+        internal IntPtr Pointer => _unmanagedData;
 
-        internal int Length => length;
+        internal int Length => _length;
 
-        internal int ElementSize => elementSize;
+        internal int ElementSize => _elementSize;
 
-        public Span<T> ToSpan<T>() where T : struct => new Span<T>(unmanagedData.ToPointer(), length);
+        internal Type ElementType => _elementType;
 
-        public T[] ToArray<T>() where T : struct => new Span<T>(unmanagedData.ToPointer(), length).ToArray();
+        internal Type ArrayType => _arrayType;
 
-        public Array ToArray() => ArrayCast.ToArray(new Span<byte>(unmanagedData.ToPointer(), length * elementSize), elementType);
+        public Span<T> ToSpan<T>() where T : struct => new Span<T>(_unmanagedData.ToPointer(), _length);
+
+        public T[] ToArray<T>() where T : struct => new Span<T>(_unmanagedData.ToPointer(), _length).ToArray();
+
+        public Array ToArray() => ArrayCast.ToArray(new Span<byte>(_unmanagedData.ToPointer(), _length * _elementSize), _elementType);
 
         /// <summary>
         /// Creates an Array of the specified type from span of bytes.
@@ -1251,6 +1265,8 @@ namespace FlaxEngine
 
         internal static IntPtr[] ManagedArrayToGCHandleArray(Array array)
         {
+            if (array.Length == 0)
+                return Array.Empty<IntPtr>();
             IntPtr[] pointerArray = new IntPtr[array.Length];
             for (int i = 0; i < pointerArray.Length; i++)
             {
@@ -1259,6 +1275,12 @@ namespace FlaxEngine
                     pointerArray.SetValue(ManagedHandle.ToIntPtr(obj), i);
             }
             return pointerArray;
+        }
+
+        internal static ManagedArray ManagedArrayToGCHandleWrappedArray(Array array)
+        {
+            IntPtr[] pointerArray = ManagedArrayToGCHandleArray(array);
+            return ManagedArray.WrapNewArray(pointerArray, array.GetType());
         }
 
         internal static T[] NativeArrayToManagedArray<T, U>(Span<U> nativeSpan, Func<U, T> toManagedFunc)
@@ -1877,11 +1899,11 @@ namespace FlaxEngine
                         var marshalledType = ArrayFactory.GetMarshalledType(elementType);
                         ManagedArray managedArray;
                         if (marshalledType == elementType)
-                            managedArray = ManagedArray.WrapNewArray(arr);
+                            managedArray = ManagedArray.WrapNewArray(arr, type);
                         else if (elementType.IsValueType)
                         {
                             // Convert array of custom structures into internal native layout
-                            managedArray = ManagedArray.AllocateNewArray(arr.Length, marshalledType);
+                            managedArray = ManagedArray.AllocateNewArray(arr.Length, type, marshalledType);
                             IntPtr managedArrayPtr = managedArray.Pointer;
                             for (int i = 0; i < arr.Length; i++)
                             {
@@ -1890,7 +1912,7 @@ namespace FlaxEngine
                             }
                         }
                         else
-                            managedArray = ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(arr));
+                            managedArray = ManagedArrayToGCHandleWrappedArray(arr);
                         managedPtr = ManagedHandle.ToIntPtr(managedArray, GCHandleType.Weak);
                     }
                 }
@@ -2325,19 +2347,28 @@ namespace FlaxEngine
         [UnmanagedCallersOnly]
         internal static ManagedHandle NewArray(ManagedHandle typeHandle, long size)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
-            Type marshalledType = ArrayFactory.GetMarshalledType(type);
+            Type elementType = Unsafe.As<Type>(typeHandle.Target);
+            Type marshalledType = ArrayFactory.GetMarshalledType(elementType);
+            Type arrayType = elementType.MakeArrayType();
             if (marshalledType.IsValueType)
             {
-                ManagedArray managedArray = ManagedArray.AllocateNewArray((int)size, marshalledType);
+                ManagedArray managedArray = ManagedArray.AllocateNewArray((int)size, arrayType, marshalledType);
                 return ManagedHandle.Alloc(managedArray);
             }
             else
             {
-                Array arr = ArrayFactory.CreateArray(type, size);
-                ManagedArray managedArray = ManagedArray.WrapNewArray(arr);
+                Array arr = ArrayFactory.CreateArray(elementType, size);
+                ManagedArray managedArray = ManagedArray.WrapNewArray(arr, arrayType);
                 return ManagedHandle.Alloc(managedArray);
             }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe ManagedHandle GetArrayTypeFromElementType(ManagedHandle elementTypeHandle)
+        {
+            Type elementType = Unsafe.As<Type>(elementTypeHandle.Target);
+            Type classType = elementType.MakeArrayType();
+            return GetTypeGCHandle(classType);
         }
 
         [UnmanagedCallersOnly]
@@ -2392,8 +2423,10 @@ namespace FlaxEngine
         [UnmanagedCallersOnly]
         internal static ManagedHandle GetObjectType(ManagedHandle handle)
         {
-            var obj = handle.Target;
+            object obj = handle.Target;
             Type classType = obj.GetType();
+            if (classType == typeof(ManagedArray))
+                classType = ((ManagedArray)obj).ArrayType;
             return GetTypeGCHandle(classType);
         }
 
@@ -2688,15 +2721,17 @@ namespace FlaxEngine
         }
 
         [UnmanagedCallersOnly]
-        internal static unsafe int NativeSizeOf(ManagedHandle typeHandle, uint* align)
+        internal static unsafe int NativeSizeOf(ManagedHandle typeHandle)
         {
             Type type = Unsafe.As<Type>(typeHandle.Target);
             Type nativeType = GetInternalType(type) ?? type;
             if (nativeType == typeof(Version))
                 nativeType = typeof(VersionNative);
-
-            int size = Marshal.SizeOf(nativeType);
-            *align = (uint)size; // Is this correct?
+            int size;
+            if (nativeType.IsClass)
+                size = sizeof(IntPtr);
+            else
+                size = Marshal.SizeOf(nativeType);
             return size;
         }
 
@@ -2927,6 +2962,7 @@ namespace FlaxEngine
                 break;
             }
             case Type _ when type.IsArray:
+            case Type _ when type == typeof(ManagedArray):
                 monoType = MTypes.Array;
                 break;
             case Type _ when type.IsValueType && !type.IsEnum && !type.IsPrimitive:

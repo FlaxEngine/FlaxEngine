@@ -88,7 +88,7 @@ namespace FlaxEngine
                     var elementType = typeof(TRet).GetElementType();
                     if (ArrayFactory.GetMarshalledType(elementType) == elementType)
                         return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnValue)), GCHandleType.Weak);
-                    return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnValue))), GCHandleType.Weak);
+                    return ManagedHandle.ToIntPtr(ManagedArrayToGCHandleWrappedArray(Unsafe.As<Array>(returnValue)), GCHandleType.Weak);
                 }
                 return ManagedHandle.ToIntPtr(returnValue, GCHandleType.Weak);
             }
@@ -108,7 +108,7 @@ namespace FlaxEngine
                 if (returnType.IsArray && ArrayFactory.GetMarshalledType(returnType.GetElementType()) == returnType.GetElementType())
                     return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnObject)), GCHandleType.Weak);
                 if (returnType.IsArray)
-                    return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnObject))), GCHandleType.Weak);
+                    return ManagedHandle.ToIntPtr(ManagedArrayToGCHandleWrappedArray(Unsafe.As<Array>(returnObject)), GCHandleType.Weak);
                 return ManagedHandle.ToIntPtr(returnObject, GCHandleType.Weak);
             }
 
@@ -129,7 +129,7 @@ namespace FlaxEngine
                     var elementType = typeof(TRet).GetElementType();
                     if (ArrayFactory.GetMarshalledType(elementType) == elementType)
                         return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnValue)), GCHandleType.Weak);
-                    return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnValue))), GCHandleType.Weak);
+                    return ManagedHandle.ToIntPtr(ManagedArrayToGCHandleWrappedArray(Unsafe.As<Array>(returnValue)), GCHandleType.Weak);
                 }
                 // Match Mono bindings and pass value as pointer to prevent boxing it
                 if (typeof(TRet) == typeof(System.Boolean))
@@ -166,7 +166,7 @@ namespace FlaxEngine
                     var elementType = returnType.GetElementType();
                     if (ArrayFactory.GetMarshalledType(elementType) == elementType)
                         return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnObject)), GCHandleType.Weak);
-                    return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(ManagedArrayToGCHandleArray(Unsafe.As<Array>(returnObject))), GCHandleType.Weak);
+                    return ManagedHandle.ToIntPtr(ManagedArrayToGCHandleWrappedArray(Unsafe.As<Array>(returnObject)), GCHandleType.Weak);
                 }
                 // Match Mono bindings and pass value as pointer to prevent boxing it
                 if (returnType == typeof(System.Boolean))

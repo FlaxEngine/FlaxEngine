@@ -391,8 +391,8 @@ namespace FlaxEditor.Content.Import
                     MaxSize = managed.MaxSize,
                     TextureGroup = managed.TextureGroup,
                     Size = managed.Size,
-                    SpriteAreas = managed.SpriteAreas?.Length > 0 ? ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(NativeInterop.ManagedArrayToGCHandleArray(managed.SpriteAreas))) : IntPtr.Zero,
-                    SpriteNames = managed.SpriteNames?.Length > 0 ? ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(NativeInterop.ManagedArrayToGCHandleArray(managed.SpriteNames))) : IntPtr.Zero,
+                    SpriteAreas = managed.SpriteAreas?.Length > 0 ? ManagedHandle.ToIntPtr(NativeInterop.ManagedArrayToGCHandleWrappedArray(managed.SpriteAreas)) : IntPtr.Zero,
+                    SpriteNames = managed.SpriteNames?.Length > 0 ? ManagedHandle.ToIntPtr(NativeInterop.ManagedArrayToGCHandleWrappedArray(managed.SpriteNames)) : IntPtr.Zero,
                 };
             }
             internal static void Free(InternalOptionsNative unmanaged)

@@ -389,7 +389,8 @@ Variant MUtils::UnboxVariant(MObject* value)
     case MTypes::Array:
     {
         void* ptr = MCore::Array::GetAddress((MArray*)value);
-        if (klass->GetElementClass() == MCore::TypeCache::Byte)
+        MClass* elementClass = klass->GetElementClass();
+        if (elementClass == MCore::TypeCache::Byte)
         {
             Variant v;
             v.SetBlob(ptr, MCore::Array::GetLength((MArray*)value));
@@ -401,7 +402,6 @@ Variant MUtils::UnboxVariant(MObject* value)
         auto& array = v.AsArray();
         array.Resize(MCore::Array::GetLength((MArray*)value));
         const StringAnsiView elementTypename(*fullname, fullname.Length() - 2);
-        MClass* elementClass = klass->GetElementClass();
         const int32 elementSize = elementClass->GetInstanceSize();
         if (elementClass->IsEnum())
         {

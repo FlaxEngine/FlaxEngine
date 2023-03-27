@@ -374,8 +374,9 @@ MArray* MCore::Array::New(const MClass* elementKlass, int32 length)
 
 MClass* MCore::Array::GetClass(MClass* elementKlass)
 {
-    MISSING_CODE("TODO: MCore::Array::GetClass"); // TODO: MCore::Object::GetClass
-    return nullptr;
+    static void* GetArrayLengthPtr = GetStaticMethodPointer(TEXT("GetArrayTypeFromElementType"));
+    void* classHandle = CallStaticMethod<void*, void*>(GetArrayLengthPtr, elementKlass->_handle);
+    return GetOrCreateClass((void*)classHandle);
 }
 
 int32 MCore::Array::GetLength(const MArray* obj)
@@ -806,9 +807,8 @@ uint32 MClass::GetInstanceSize() const
 {
     if (_size != 0)
         return _size;
-    uint32 align;
     static void* NativeSizeOfPtr = GetStaticMethodPointer(TEXT("NativeSizeOf"));
-    _size = CallStaticMethod<int, void*, uint32*>(NativeSizeOfPtr, _handle, &align);
+    _size = CallStaticMethod<int, void*>(NativeSizeOfPtr, _handle);
     return _size;
 }
 

@@ -1200,9 +1200,10 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
     {
         // Box instance into C# object
         MObject* instanceObject = MUtils::BoxVariant(instance);
+        const MClass* instanceObjectClass = MCore::Object::GetClass(instanceObject);
 
         // Validate instance
-        if (!instanceObject || !MCore::Object::GetClass(instanceObject)->IsSubClassOf(mMethod->GetParentClass(), withInterfaces))
+        if (!instanceObject || !instanceObjectClass->IsSubClassOf(mMethod->GetParentClass(), withInterfaces))
         {
             if (!instanceObject)
                 LOG(Error, "Failed to call method '{0}.{1}' (args count: {2}) without object instance", String(mMethod->GetParentClass()->GetFullName()), String(mMethod->GetName()), parametersCount);
@@ -1212,7 +1213,7 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
         }
 
         // For value-types instance is the actual boxed object data, not te object itself
-        mInstance = MCore::Object::GetClass(instanceObject)->IsValueType() ? MCore::Object::Unbox(instanceObject) : instanceObject;
+        mInstance = instanceObjectClass->IsValueType() ? MCore::Object::Unbox(instanceObject) : instanceObject;
     }
 
     // Marshal parameters
