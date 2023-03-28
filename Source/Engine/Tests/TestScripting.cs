@@ -12,13 +12,13 @@ namespace FlaxEngine.Tests
     public class TestScripting
     {
         /// <summary>
-        /// Tests all <see cref="LibraryImportAttribute"/> usages in the engine to verify all bindigns are correct to work with P/Invoke.
+        /// Tests all <see cref="LibraryImportAttribute"/> usages in the engine to verify all bindings are correct to work with P/Invoke.
         /// </summary>
         public static int TestLibraryImports()
         {
             var result = 0;
             var libraryName = "FlaxEngine";
-            var library = NativeLibrary.Load(NativeInterop.nativeLibraryPaths[libraryName]);
+            var library = NativeLibrary.Load(Interop.NativeInterop.nativeLibraryPaths[libraryName]);
             if (library == IntPtr.Zero)
                 return -1;
             var types = typeof(FlaxEngine.Object).Assembly.GetTypes();

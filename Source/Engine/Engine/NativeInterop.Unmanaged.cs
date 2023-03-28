@@ -13,7 +13,7 @@ using FlaxEngine.Utilities;
 
 #pragma warning disable 1591
 
-namespace FlaxEngine
+namespace FlaxEngine.Interop
 {
     [StructLayout(LayoutKind.Sequential)]
     internal struct NativeClassDefinitions

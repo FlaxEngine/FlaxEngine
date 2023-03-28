@@ -3,12 +3,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.Scripting;
 using FlaxEngine;
+using FlaxEngine.Interop;
 using FlaxEngine.Utilities;
 
 namespace FlaxEditor.CustomEditors
@@ -126,7 +126,7 @@ namespace FlaxEditor.CustomEditors
             return new GenericEditor();
         }
 
-        [LibraryImport("FlaxEngine", EntryPoint = "CustomEditorsUtilInternal_GetCustomEditor", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "CustomEditorsUtilInternal_GetCustomEditor", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         [return: MarshalUsing(typeof(SystemTypeMarshaller))]
         internal static partial Type Internal_GetCustomEditor([MarshalUsing(typeof(SystemTypeMarshaller))] Type targetType);
     }

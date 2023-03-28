@@ -15,7 +15,7 @@ using FlaxEngine.Assertions;
 using System.Collections.Concurrent;
 using System.Text;
 
-namespace FlaxEngine
+namespace FlaxEngine.Interop
 {
     /// <summary>
     /// Provides a Mono-like API for native code to access managed runtime.

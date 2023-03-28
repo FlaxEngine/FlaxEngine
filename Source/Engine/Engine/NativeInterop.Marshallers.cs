@@ -9,9 +9,8 @@ using System.Runtime.InteropServices.Marshalling;
 
 #pragma warning disable 1591
 
-namespace FlaxEngine
+namespace FlaxEngine.Interop
 {
-    
     [CustomMarshaller(typeof(object), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedHandleMarshaller.ManagedToNative))]
     [CustomMarshaller(typeof(object), MarshalMode.UnmanagedToManagedOut, typeof(ManagedHandleMarshaller.ManagedToNative))]
     [CustomMarshaller(typeof(object), MarshalMode.ElementIn, typeof(ManagedHandleMarshaller.ManagedToNative))]

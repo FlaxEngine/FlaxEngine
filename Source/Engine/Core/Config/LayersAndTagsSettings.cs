@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using FlaxEngine;
@@ -31,8 +30,8 @@ namespace FlaxEditor.Content.Settings
             return GetCurrentLayers(out int _);
         }
 
-        [LibraryImport("FlaxEngine", EntryPoint = "LayersAndTagsSettingsInternal_GetCurrentLayers", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
-        [return: MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = "layerCount")]
+        [LibraryImport("FlaxEngine", EntryPoint = "LayersAndTagsSettingsInternal_GetCurrentLayers", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.Interop.StringMarshaller))]
+        [return: MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = "layerCount")]
         internal static partial string[] GetCurrentLayers(out int layerCount);
     }
 }

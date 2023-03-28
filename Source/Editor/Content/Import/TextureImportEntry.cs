@@ -4,10 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using FlaxEngine;
+using FlaxEngine.Interop;
 
 // ReSharper disable InconsistentNaming
 
@@ -591,7 +591,7 @@ namespace FlaxEditor.Content.Import
 
         #region Internal Calls
 
-        [LibraryImport("FlaxEngine", EntryPoint = "TextureImportEntryInternal_GetTextureImportOptions", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]
+        [LibraryImport("FlaxEngine", EntryPoint = "TextureImportEntryInternal_GetTextureImportOptions", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_GetTextureImportOptions(string path, out TextureImportSettings.InternalOptions result);
 

@@ -494,24 +494,24 @@ namespace Flax.Build.Bindings
             if (returnValueType == "bool")
                 returnMarshalType = "MarshalAs(UnmanagedType.U1)";
             else if (returnValueType == "System.Type")
-                returnMarshalType = "MarshalUsing(typeof(FlaxEngine.SystemTypeMarshaller))";
+                returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemTypeMarshaller))";
             else if (returnValueType == "CultureInfo")
-                returnMarshalType = "MarshalUsing(typeof(FlaxEngine.CultureInfoMarshaller))";
+                returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.CultureInfoMarshaller))";
             else if (functionInfo.ReturnType.Type == "Variant")
-                returnMarshalType = "MarshalUsing(typeof(FlaxEngine.ManagedHandleMarshaller))";
+                returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.ManagedHandleMarshaller))";
             else if (FindApiTypeInfo(buildData, functionInfo.ReturnType, caller)?.IsInterface ?? false)
             {
                 // Interfaces are not supported by NativeMarshallingAttribute, marshal the parameter
                 returnMarshalType = $"MarshalUsing(typeof({returnValueType}Marshaller))";
             }
             else if (functionInfo.ReturnType.Type == "MonoArray" || functionInfo.ReturnType.Type == "MArray")
-                returnMarshalType = "MarshalUsing(typeof(FlaxEngine.SystemArrayMarshaller))";
+                returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemArrayMarshaller))";
             else if (functionInfo.ReturnType.Type == "Array" || functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "DataContainer" || functionInfo.ReturnType.Type == "BytesContainer" || returnNativeType == "Array")
-                returnMarshalType = $"MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = nameof(__returnCount))";
+                returnMarshalType = $"MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = nameof(__returnCount))";
             else if (functionInfo.ReturnType.Type == "Dictionary")
-                returnMarshalType = $"MarshalUsing(typeof(FlaxEngine.DictionaryMarshaller<,>), ConstantElementCount = 0)";
+                returnMarshalType = $"MarshalUsing(typeof(FlaxEngine.Interop.DictionaryMarshaller<,>), ConstantElementCount = 0)";
             else if (returnValueType == "byte[]")
-                returnMarshalType = $"MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = \"__returnCount\")";
+                returnMarshalType = $"MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = \"__returnCount\")";
             else if (returnValueType == "bool[]")
             {
                 // Boolean arrays does not support custom marshalling for some unknown reason
@@ -524,7 +524,7 @@ namespace Flax.Build.Bindings
 #else
             if (string.IsNullOrEmpty(functionInfo.Glue.LibraryEntryPoint))
                 throw new Exception($"Function {caller.FullNameNative}::{functionInfo.Name} has missing entry point for library import.");
-            contents.AppendLine().Append(indent).Append($"[LibraryImport(\"{caller.ParentModule.Module.BinaryModuleName}\", EntryPoint = \"{functionInfo.Glue.LibraryEntryPoint}\", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]");
+            contents.AppendLine().Append(indent).Append($"[LibraryImport(\"{caller.ParentModule.Module.BinaryModuleName}\", EntryPoint = \"{functionInfo.Glue.LibraryEntryPoint}\", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.Interop.StringMarshaller))]");
             if (!string.IsNullOrEmpty(returnMarshalType))
                 contents.AppendLine().Append(indent).Append($"[return: {returnMarshalType}]");
             contents.AppendLine().Append(indent).Append("internal static partial ");
@@ -548,19 +548,19 @@ namespace Flax.Build.Bindings
 #if USE_NETCORE
                 string parameterMarshalType = "";
                 if (nativeType == "System.Type")
-                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.SystemTypeMarshaller))";
+                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemTypeMarshaller))";
                 else if (parameterInfo.Type.Type == "CultureInfo")
-                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.CultureInfoMarshaller))";
+                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.CultureInfoMarshaller))";
                 else if (parameterInfo.Type.Type == "Variant") // object
-                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.ManagedHandleMarshaller))";
+                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.ManagedHandleMarshaller))";
                 else if (parameterInfo.Type.Type == "MonoArray" || parameterInfo.Type.Type == "MArray")
-                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.SystemArrayMarshaller))";
+                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemArrayMarshaller))";
                 else if (parameterInfo.Type.Type == "Array" && parameterInfo.Type.GenericArgs.Count > 0 && parameterInfo.Type.GenericArgs[0].Type == "bool")
                     parameterMarshalType = $"MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1, SizeParamIndex = {(!functionInfo.IsStatic ? 1 : 0) + functionInfo.Parameters.Count + (functionInfo.Glue.CustomParameters.FindIndex(x => x.Name == $"__{parameterInfo.Name}Count"))})";
                 else if (parameterInfo.Type.Type == "Array" || parameterInfo.Type.Type == "Span" || parameterInfo.Type.Type == "DataContainer" || parameterInfo.Type.Type == "BytesContainer" || nativeType == "Array")
-                    parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = \"__{parameterInfo.Name}Count\")";
+                    parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = \"__{parameterInfo.Name}Count\")";
                 else if (parameterInfo.Type.Type == "Dictionary")
-                    parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.DictionaryMarshaller<,>), ConstantElementCount = 0)";
+                    parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.Interop.DictionaryMarshaller<,>), ConstantElementCount = 0)";
                 else if (nativeType == "bool")
                     parameterMarshalType = "MarshalAs(UnmanagedType.U1)";
                 else if (nativeType == "char")
@@ -597,12 +597,12 @@ namespace Flax.Build.Bindings
                 if (parameterInfo.IsOut && parameterInfo.DefaultValue == "var __resultAsRef")
                 {
                     if (parameterInfo.Type.Type == "Array" || parameterInfo.Type.Type == "Span" || parameterInfo.Type.Type == "DataContainer" || parameterInfo.Type.Type == "BytesContainer")
-                        parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.ArrayMarshaller<,>), CountElementName = \"{parameterInfo.Name}Count\")";
+                        parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = \"{parameterInfo.Name}Count\")";
                     else if (parameterInfo.Type.Type == "Dictionary")
-                        parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.DictionaryMarshaller<,>), ConstantElementCount = 0)";
+                        parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.Interop.DictionaryMarshaller<,>), ConstantElementCount = 0)";
                 }
                 if (nativeType == "System.Type")
-                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.SystemTypeMarshaller))";
+                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemTypeMarshaller))";
 
                 if (!string.IsNullOrEmpty(parameterMarshalType))
                     contents.Append($"[{parameterMarshalType}] ");
@@ -1017,7 +1017,7 @@ namespace Flax.Build.Bindings
                     libraryEntryPoint = $"{classInfo.FullNameManaged}::Internal_{eventInfo.Name}_Bind"; // MSVC allows to override exported symbol name
                 else
                     libraryEntryPoint = CppNameMangling.MangleFunctionName(buildData, eventInfo.Name + "_ManagedBind", classInfo.FullNameNativeInternal + "Internal", CSharpEventBindReturn, eventInfo.IsStatic ? null : new TypeInfo(classInfo.FullNameNative) { IsPtr = true }, CSharpEventBindParams);
-                contents.Append(indent).Append($"[LibraryImport(\"{classInfo.ParentModule.Module.BinaryModuleName}\", EntryPoint = \"{libraryEntryPoint}\", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.StringMarshaller))]").AppendLine();
+                contents.Append(indent).Append($"[LibraryImport(\"{classInfo.ParentModule.Module.BinaryModuleName}\", EntryPoint = \"{libraryEntryPoint}\", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.Interop.StringMarshaller))]").AppendLine();
                 contents.Append(indent).Append($"internal static partial void Internal_{eventInfo.Name}_Bind(");
                 if (!eventInfo.IsStatic)
                     contents.Append("IntPtr obj, ");
@@ -2028,6 +2028,7 @@ namespace Flax.Build.Bindings
             CSharpUsedNamespaces.Add("System.Runtime.InteropServices.Marshalling");
 #endif
             CSharpUsedNamespaces.Add("FlaxEngine");
+            CSharpUsedNamespaces.Add("FlaxEngine.Interop");
 
             // Process all API types from the file
             var useBindings = false;

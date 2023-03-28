@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
+using FlaxEngine.Interop;
 
 namespace FlaxEngine
 {
@@ -238,7 +239,7 @@ namespace FlaxEngine
             var location = assembly.Location;
             if (!string.IsNullOrEmpty(location))
                 return location;
-            if (NativeInterop.AssemblyLocations.TryGetValue(assembly.FullName, out location))
+            if (Interop.NativeInterop.AssemblyLocations.TryGetValue(assembly.FullName, out location))
                 return location;
             return null;
 #else

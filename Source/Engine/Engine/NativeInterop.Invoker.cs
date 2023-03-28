@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 
-namespace FlaxEngine
+namespace FlaxEngine.Interop
 {
     unsafe partial class NativeInterop
     {
@@ -189,6 +189,7 @@ namespace FlaxEngine
             internal static class InvokerNoRet0<TInstance>
             {
                 internal delegate void InvokerDelegate(object instance);
+
                 internal delegate void ThunkInvokerDelegate(object instance);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -225,6 +226,7 @@ namespace FlaxEngine
             internal static class InvokerNoRet1<TInstance, T1>
             {
                 internal delegate void InvokerDelegate(object instance, ref T1 param1);
+
                 internal delegate void ThunkInvokerDelegate(object instance, T1 param1);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -245,12 +247,14 @@ namespace FlaxEngine
                     IntPtr param1Ptr = Marshal.ReadIntPtr(paramPtr);
 
                     T1 param1 = default;
-                    if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
+                    if (param1Ptr != IntPtr.Zero)
+                        MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
 
                     deleg(instancePtr.Target, ref param1);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef)
+                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -271,6 +275,7 @@ namespace FlaxEngine
             internal static class InvokerNoRet2<TInstance, T1, T2>
             {
                 internal delegate void InvokerDelegate(object instance, ref T1 param1, ref T2 param2);
+
                 internal delegate void ThunkInvokerDelegate(object instance, T1 param1, T2 param2);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -293,14 +298,18 @@ namespace FlaxEngine
 
                     T1 param1 = default;
                     T2 param2 = default;
-                    if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
-                    if (param2Ptr != IntPtr.Zero) MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
+                    if (param1Ptr != IntPtr.Zero)
+                        MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
+                    if (param2Ptr != IntPtr.Zero)
+                        MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
 
                     deleg(instancePtr.Target, ref param1, ref param2);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef)
+                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef)
+                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -322,6 +331,7 @@ namespace FlaxEngine
             internal static class InvokerNoRet3<TInstance, T1, T2, T3>
             {
                 internal delegate void InvokerDelegate(object instance, ref T1 param1, ref T2 param2, ref T3 param3);
+
                 internal delegate void ThunkInvokerDelegate(object instance, T1 param1, T2 param2, T3 param3);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -346,16 +356,22 @@ namespace FlaxEngine
                     T1 param1 = default;
                     T2 param2 = default;
                     T3 param3 = default;
-                    if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
-                    if (param2Ptr != IntPtr.Zero) MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
-                    if (param3Ptr != IntPtr.Zero) MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
+                    if (param1Ptr != IntPtr.Zero)
+                        MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
+                    if (param2Ptr != IntPtr.Zero)
+                        MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
+                    if (param3Ptr != IntPtr.Zero)
+                        MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
 
                     deleg(instancePtr.Target, ref param1, ref param2, ref param3);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef)
+                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef)
+                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef)
+                        MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -378,6 +394,7 @@ namespace FlaxEngine
             internal static class InvokerNoRet4<TInstance, T1, T2, T3, T4>
             {
                 internal delegate void InvokerDelegate(object instance, ref T1 param1, ref T2 param2, ref T3 param3, ref T4 param4);
+
                 internal delegate void ThunkInvokerDelegate(object instance, T1 param1, T2 param2, T3 param3, T4 param4);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -404,18 +421,26 @@ namespace FlaxEngine
                     T2 param2 = default;
                     T3 param3 = default;
                     T4 param4 = default;
-                    if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
-                    if (param2Ptr != IntPtr.Zero) MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
-                    if (param3Ptr != IntPtr.Zero) MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
-                    if (param4Ptr != IntPtr.Zero) MarshalHelper<T4>.ToManaged(ref param4, param4Ptr, types[3].IsByRef);
+                    if (param1Ptr != IntPtr.Zero)
+                        MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
+                    if (param2Ptr != IntPtr.Zero)
+                        MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
+                    if (param3Ptr != IntPtr.Zero)
+                        MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
+                    if (param4Ptr != IntPtr.Zero)
+                        MarshalHelper<T4>.ToManaged(ref param4, param4Ptr, types[3].IsByRef);
 
                     deleg(instancePtr.Target, ref param1, ref param2, ref param3, ref param4);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
-                    if (param4Ptr != IntPtr.Zero && types[3].IsByRef) MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef)
+                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef)
+                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef)
+                        MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (param4Ptr != IntPtr.Zero && types[3].IsByRef)
+                        MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -439,6 +464,7 @@ namespace FlaxEngine
             internal static class InvokerStaticNoRet0
             {
                 internal delegate void InvokerDelegate();
+
                 internal delegate void ThunkInvokerDelegate();
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -475,6 +501,7 @@ namespace FlaxEngine
             internal static class InvokerStaticNoRet1<T1>
             {
                 internal delegate void InvokerDelegate(ref T1 param1);
+
                 internal delegate void ThunkInvokerDelegate(T1 param1);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -495,12 +522,14 @@ namespace FlaxEngine
                     IntPtr param1Ptr = Marshal.ReadIntPtr(paramPtr);
 
                     T1 param1 = default;
-                    if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
+                    if (param1Ptr != IntPtr.Zero)
+                        MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
 
                     deleg(ref param1);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef)
+                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -521,6 +550,7 @@ namespace FlaxEngine
             internal static class InvokerStaticNoRet2<T1, T2>
             {
                 internal delegate void InvokerDelegate(ref T1 param1, ref T2 param2);
+
                 internal delegate void ThunkInvokerDelegate(T1 param1, T2 param2);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -543,14 +573,18 @@ namespace FlaxEngine
 
                     T1 param1 = default;
                     T2 param2 = default;
-                    if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
-                    if (param2Ptr != IntPtr.Zero) MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
+                    if (param1Ptr != IntPtr.Zero)
+                        MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
+                    if (param2Ptr != IntPtr.Zero)
+                        MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
 
                     deleg(ref param1, ref param2);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef)
+                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef)
+                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -572,6 +606,7 @@ namespace FlaxEngine
             internal static class InvokerStaticNoRet3<T1, T2, T3>
             {
                 internal delegate void InvokerDelegate(ref T1 param1, ref T2 param2, ref T3 param3);
+
                 internal delegate void ThunkInvokerDelegate(T1 param1, T2 param2, T3 param3);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -596,16 +631,22 @@ namespace FlaxEngine
                     T1 param1 = default;
                     T2 param2 = default;
                     T3 param3 = default;
-                    if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
-                    if (param2Ptr != IntPtr.Zero) MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
-                    if (param3Ptr != IntPtr.Zero) MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
+                    if (param1Ptr != IntPtr.Zero)
+                        MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
+                    if (param2Ptr != IntPtr.Zero)
+                        MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
+                    if (param3Ptr != IntPtr.Zero)
+                        MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
 
                     deleg(ref param1, ref param2, ref param3);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef)
+                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef)
+                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef)
+                        MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -628,6 +669,7 @@ namespace FlaxEngine
             internal static class InvokerStaticNoRet4<T1, T2, T3, T4>
             {
                 internal delegate void InvokerDelegate(ref T1 param1, ref T2 param2, ref T3 param3, ref T4 param4);
+
                 internal delegate void ThunkInvokerDelegate(T1 param1, T2 param2, T3 param3, T4 param4);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -654,18 +696,26 @@ namespace FlaxEngine
                     T2 param2 = default;
                     T3 param3 = default;
                     T4 param4 = default;
-                    if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
-                    if (param2Ptr != IntPtr.Zero) MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
-                    if (param3Ptr != IntPtr.Zero) MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
-                    if (param4Ptr != IntPtr.Zero) MarshalHelper<T4>.ToManaged(ref param4, param4Ptr, types[3].IsByRef);
+                    if (param1Ptr != IntPtr.Zero)
+                        MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
+                    if (param2Ptr != IntPtr.Zero)
+                        MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
+                    if (param3Ptr != IntPtr.Zero)
+                        MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
+                    if (param4Ptr != IntPtr.Zero)
+                        MarshalHelper<T4>.ToManaged(ref param4, param4Ptr, types[3].IsByRef);
 
                     deleg(ref param1, ref param2, ref param3, ref param4);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
-                    if (param4Ptr != IntPtr.Zero && types[3].IsByRef) MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef)
+                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef)
+                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef)
+                        MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (param4Ptr != IntPtr.Zero && types[3].IsByRef)
+                        MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -689,6 +739,7 @@ namespace FlaxEngine
             internal static class InvokerRet0<TInstance, TRet>
             {
                 internal delegate TRet InvokerDelegate(object instance);
+
                 internal delegate TRet ThunkInvokerDelegate(object instance);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -725,6 +776,7 @@ namespace FlaxEngine
             internal static class InvokerRet1<TInstance, TRet, T1>
             {
                 internal delegate TRet InvokerDelegate(object instance, ref T1 param1);
+
                 internal delegate TRet ThunkInvokerDelegate(object instance, T1 param1);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -745,12 +797,14 @@ namespace FlaxEngine
                     IntPtr param1Ptr = Marshal.ReadIntPtr(paramPtr);
 
                     T1 param1 = default;
-                    if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
+                    if (param1Ptr != IntPtr.Zero)
+                        MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
 
                     TRet ret = deleg(instancePtr.Target, ref param1);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef)
+                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -771,6 +825,7 @@ namespace FlaxEngine
             internal static class InvokerRet2<TInstance, TRet, T1, T2>
             {
                 internal delegate TRet InvokerDelegate(object instance, ref T1 param1, ref T2 param2);
+
                 internal delegate TRet ThunkInvokerDelegate(object instance, T1 param1, T2 param2);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -793,14 +848,18 @@ namespace FlaxEngine
 
                     T1 param1 = default;
                     T2 param2 = default;
-                    if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
-                    if (param2Ptr != IntPtr.Zero) MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
+                    if (param1Ptr != IntPtr.Zero)
+                        MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
+                    if (param2Ptr != IntPtr.Zero)
+                        MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
 
                     TRet ret = deleg(instancePtr.Target, ref param1, ref param2);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef)
+                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef)
+                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -822,6 +881,7 @@ namespace FlaxEngine
             internal static class InvokerRet3<TInstance, TRet, T1, T2, T3>
             {
                 internal delegate TRet InvokerDelegate(object instance, ref T1 param1, ref T2 param2, ref T3 param3);
+
                 internal delegate TRet ThunkInvokerDelegate(object instance, T1 param1, T2 param2, T3 param3);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -846,16 +906,22 @@ namespace FlaxEngine
                     T1 param1 = default;
                     T2 param2 = default;
                     T3 param3 = default;
-                    if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
-                    if (param2Ptr != IntPtr.Zero) MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
-                    if (param3Ptr != IntPtr.Zero) MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
+                    if (param1Ptr != IntPtr.Zero)
+                        MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
+                    if (param2Ptr != IntPtr.Zero)
+                        MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
+                    if (param3Ptr != IntPtr.Zero)
+                        MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
 
                     TRet ret = deleg(instancePtr.Target, ref param1, ref param2, ref param3);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef)
+                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef)
+                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef)
+                        MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -878,6 +944,7 @@ namespace FlaxEngine
             internal static class InvokerRet4<TInstance, TRet, T1, T2, T3, T4>
             {
                 internal delegate TRet InvokerDelegate(object instance, ref T1 param1, ref T2 param2, ref T3 param3, ref T4 param4);
+
                 internal delegate TRet ThunkInvokerDelegate(object instance, T1 param1, T2 param2, T3 param3, T4 param4);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -904,18 +971,26 @@ namespace FlaxEngine
                     T2 param2 = default;
                     T3 param3 = default;
                     T4 param4 = default;
-                    if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
-                    if (param2Ptr != IntPtr.Zero) MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
-                    if (param3Ptr != IntPtr.Zero) MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
-                    if (param4Ptr != IntPtr.Zero) MarshalHelper<T4>.ToManaged(ref param4, param4Ptr, types[3].IsByRef);
+                    if (param1Ptr != IntPtr.Zero)
+                        MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
+                    if (param2Ptr != IntPtr.Zero)
+                        MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
+                    if (param3Ptr != IntPtr.Zero)
+                        MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
+                    if (param4Ptr != IntPtr.Zero)
+                        MarshalHelper<T4>.ToManaged(ref param4, param4Ptr, types[3].IsByRef);
 
                     TRet ret = deleg(instancePtr.Target, ref param1, ref param2, ref param3, ref param4);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
-                    if (param4Ptr != IntPtr.Zero && types[3].IsByRef) MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef)
+                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef)
+                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef)
+                        MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (param4Ptr != IntPtr.Zero && types[3].IsByRef)
+                        MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -939,6 +1014,7 @@ namespace FlaxEngine
             internal static class InvokerStaticRet0<TRet>
             {
                 internal delegate TRet InvokerDelegate();
+
                 internal delegate TRet ThunkInvokerDelegate();
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -975,6 +1051,7 @@ namespace FlaxEngine
             internal static class InvokerStaticRet1<TRet, T1>
             {
                 internal delegate TRet InvokerDelegate(ref T1 param1);
+
                 internal delegate TRet ThunkInvokerDelegate(T1 param1);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -995,12 +1072,14 @@ namespace FlaxEngine
                     IntPtr param1Ptr = Marshal.ReadIntPtr(paramPtr);
 
                     T1 param1 = default;
-                    if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
+                    if (param1Ptr != IntPtr.Zero)
+                        MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
 
                     TRet ret = deleg(ref param1);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef)
+                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -1021,6 +1100,7 @@ namespace FlaxEngine
             internal static class InvokerStaticRet2<TRet, T1, T2>
             {
                 internal delegate TRet InvokerDelegate(ref T1 param1, ref T2 param2);
+
                 internal delegate TRet ThunkInvokerDelegate(T1 param1, T2 param2);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -1043,14 +1123,18 @@ namespace FlaxEngine
 
                     T1 param1 = default;
                     T2 param2 = default;
-                    if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
-                    if (param2Ptr != IntPtr.Zero) MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
+                    if (param1Ptr != IntPtr.Zero)
+                        MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
+                    if (param2Ptr != IntPtr.Zero)
+                        MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
 
                     TRet ret = deleg(ref param1, ref param2);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef)
+                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef)
+                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -1072,6 +1156,7 @@ namespace FlaxEngine
             internal static class InvokerStaticRet3<TRet, T1, T2, T3>
             {
                 internal delegate TRet InvokerDelegate(ref T1 param1, ref T2 param2, ref T3 param3);
+
                 internal delegate TRet ThunkInvokerDelegate(T1 param1, T2 param2, T3 param3);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -1096,16 +1181,22 @@ namespace FlaxEngine
                     T1 param1 = default;
                     T2 param2 = default;
                     T3 param3 = default;
-                    if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
-                    if (param2Ptr != IntPtr.Zero) MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
-                    if (param3Ptr != IntPtr.Zero) MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
+                    if (param1Ptr != IntPtr.Zero)
+                        MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
+                    if (param2Ptr != IntPtr.Zero)
+                        MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
+                    if (param3Ptr != IntPtr.Zero)
+                        MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
 
                     TRet ret = deleg(ref param1, ref param2, ref param3);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef)
+                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef)
+                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef)
+                        MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -1128,6 +1219,7 @@ namespace FlaxEngine
             internal static class InvokerStaticRet4<TRet, T1, T2, T3, T4>
             {
                 internal delegate TRet InvokerDelegate(ref T1 param1, ref T2 param2, ref T3 param3, ref T4 param4);
+
                 internal delegate TRet ThunkInvokerDelegate(T1 param1, T2 param2, T3 param3, T4 param4);
 
                 internal static object CreateDelegate(MethodInfo method)
@@ -1154,18 +1246,26 @@ namespace FlaxEngine
                     T2 param2 = default;
                     T3 param3 = default;
                     T4 param4 = default;
-                    if (param1Ptr != IntPtr.Zero) MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
-                    if (param2Ptr != IntPtr.Zero) MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
-                    if (param3Ptr != IntPtr.Zero) MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
-                    if (param4Ptr != IntPtr.Zero) MarshalHelper<T4>.ToManaged(ref param4, param4Ptr, types[3].IsByRef);
+                    if (param1Ptr != IntPtr.Zero)
+                        MarshalHelper<T1>.ToManaged(ref param1, param1Ptr, types[0].IsByRef);
+                    if (param2Ptr != IntPtr.Zero)
+                        MarshalHelper<T2>.ToManaged(ref param2, param2Ptr, types[1].IsByRef);
+                    if (param3Ptr != IntPtr.Zero)
+                        MarshalHelper<T3>.ToManaged(ref param3, param3Ptr, types[2].IsByRef);
+                    if (param4Ptr != IntPtr.Zero)
+                        MarshalHelper<T4>.ToManaged(ref param4, param4Ptr, types[3].IsByRef);
 
                     TRet ret = deleg(ref param1, ref param2, ref param3, ref param4);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
-                    if (param4Ptr != IntPtr.Zero && types[3].IsByRef) MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef)
+                        MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef)
+                        MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef)
+                        MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (param4Ptr != IntPtr.Zero && types[3].IsByRef)
+                        MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }

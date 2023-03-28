@@ -2,10 +2,10 @@
 
 using System;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using FlaxEngine;
+using FlaxEngine.Interop;
 
 namespace FlaxEditor.Content.Import
 {

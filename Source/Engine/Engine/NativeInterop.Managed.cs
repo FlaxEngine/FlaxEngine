@@ -8,11 +8,10 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using FlaxEngine.Assertions;
-using FlaxEngine.Utilities;
 
 #pragma warning disable 1591
 
-namespace FlaxEngine
+namespace FlaxEngine.Interop
 {
     /// <summary>
     /// Wrapper for managed arrays which are passed to unmanaged code.

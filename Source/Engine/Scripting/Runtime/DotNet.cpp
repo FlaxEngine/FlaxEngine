@@ -156,7 +156,7 @@ extern MDomain* MActiveDomain;
 extern Array<MDomain*, FixedAllocation<4>> MDomains;
 
 Dictionary<String, void*> CachedFunctions;
-const char_t* NativeInteropTypeName = FLAX_CORECLR_TEXT("FlaxEngine.NativeInterop, FlaxEngine.CSharp");
+const char_t* NativeInteropTypeName = FLAX_CORECLR_TEXT("FlaxEngine.Interop.NativeInterop, FlaxEngine.CSharp");
 
 Dictionary<void*, MClass*> classHandles;
 Dictionary<void*, MAssembly*> assemblyHandles;
