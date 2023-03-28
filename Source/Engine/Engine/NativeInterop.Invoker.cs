@@ -11,7 +11,7 @@ using System.Diagnostics;
 
 namespace FlaxEngine
 {
-    internal unsafe static partial class NativeInterop
+    unsafe partial class NativeInterop
     {
         /// <summary>
         /// Helper class for invoking managed methods from delegates.

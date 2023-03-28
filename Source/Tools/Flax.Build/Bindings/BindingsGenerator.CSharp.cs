@@ -1451,7 +1451,7 @@ namespace Flax.Build.Bindings
                             else if (type == "bool")
                                 type = "byte";
                             else if (type == "object")
-                                type = "VariantNative";
+                                type = "NativeVariant";
                             else if (internalType)
                             {
                                 internalTypeMarshaler = type + "Marshaller";
@@ -1468,8 +1468,8 @@ namespace Flax.Build.Bindings
                         if (fieldInfo.NoArray && fieldInfo.Type.IsArray)
                             continue;
 
-                        if (type == "VariantNative")
-                            continue; // FIXME
+                        if (type == "NativeVariant")
+                            continue; // TODO: FIXME
 
                         if (useSeparator)
                         {
