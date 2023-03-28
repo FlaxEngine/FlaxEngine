@@ -326,19 +326,19 @@ MClass* MCore::Object::GetClass(MObject* obj)
 {
     static void* GetObjectTypePtr = GetStaticMethodPointer(TEXT("GetObjectType"));
     void* classHandle = CallStaticMethod<void*, void*>(GetObjectTypePtr, obj);
-    return GetOrCreateClass((void*)classHandle);
+    return GetOrCreateClass(classHandle);
 }
 
 MString* MCore::Object::ToString(MObject* obj)
 {
-    MISSING_CODE("TODO: MCore::Object::ToString"); // TODO: MCore::Object::ToString
-    return nullptr;
+    static void* GetObjectStringPtr = GetStaticMethodPointer(TEXT("GetObjectString"));
+    return (MString*)CallStaticMethod<void*, void*>(GetObjectStringPtr, obj);
 }
 
 int32 MCore::Object::GetHashCode(MObject* obj)
 {
-    MISSING_CODE("TODO: MCore::Object::GetHashCode"); // TODO: MCore::Object::GetHashCode
-    return 0;
+    static void* GetObjectStringPtr = GetStaticMethodPointer(TEXT("GetObjectHashCode"));
+    return CallStaticMethod<int32, void*>(GetObjectStringPtr, obj);
 }
 
 MString* MCore::String::GetEmpty(MDomain* domain)
@@ -490,7 +490,8 @@ MObject* MCore::Exception::GetNullReference()
 
 MObject* MCore::Exception::Get(const char* msg)
 {
-    return nullptr; // TODO: implement generic exception with custom message
+    static void* GetExceptionPtr = GetStaticMethodPointer(TEXT("GetException"));
+    return (MObject*)CallStaticMethod<void*, const char*>(GetExceptionPtr, msg);
 }
 
 MObject* MCore::Exception::GetArgument(const char* arg, const char* msg)
@@ -748,7 +749,7 @@ MClass::MClass(const MAssembly* parentAssembly, void* handle, const char* name, 
     _isAbstract = !_isStatic && (attributes & MTypeAttributes::Abstract) == MTypeAttributes::Abstract;
     _isInterface = (attributes & MTypeAttributes::ClassSemanticsMask) == MTypeAttributes::Interface;
 
-    // TODO: pass type info from C# side at once (pack into flags)
+    // TODO: pass type info from C# side at once (pack into flags with attributes)
 
     static void* TypeIsValueTypePtr = GetStaticMethodPointer(TEXT("TypeIsValueType"));
     _isValueType = CallStaticMethod<bool, void*>(TypeIsValueTypePtr, handle);
@@ -1484,7 +1485,7 @@ bool InitHostfxr(const String& configPath, const String& libraryPath)
     get_hostfxr_params.size = sizeof(hostfxr_initialize_parameters);
     get_hostfxr_params.assembly_path = library_path.Get();
     FLAX_CORECLR_STRING dotnetRoot;
-    // TODO: implement proper lookup for dotnet instalation folder and handle standalone build of FlaxGame
+    // TODO: implement proper lookup for dotnet installation folder and handle standalone build of FlaxGame
 #if PLATFORM_MAC
     get_hostfxr_params.dotnet_root = "/usr/local/share/dotnet";
 #else

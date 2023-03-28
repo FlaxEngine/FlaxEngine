@@ -180,10 +180,10 @@ namespace FlaxEngine
         };
 
         [UnmanagedCallersOnly]
-        internal static void RegisterNativeLibrary(IntPtr moduleName_, IntPtr modulePath_)
+        internal static void RegisterNativeLibrary(IntPtr moduleNamePtr, IntPtr modulePathPtr)
         {
-            string moduleName = Marshal.PtrToStringAnsi(moduleName_);
-            string modulePath = Marshal.PtrToStringAnsi(modulePath_);
+            string moduleName = Marshal.PtrToStringAnsi(moduleNamePtr);
+            string modulePath = Marshal.PtrToStringAnsi(modulePathPtr);
             nativeLibraryPaths[moduleName] = modulePath;
         }
 
@@ -206,7 +206,7 @@ namespace FlaxEngine
         }
 
         [UnmanagedCallersOnly]
-        internal static unsafe void GetManagedClasses(ManagedHandle assemblyHandle, NativeClassDefinitions** managedClasses, int* managedClassCount)
+        internal static void GetManagedClasses(ManagedHandle assemblyHandle, NativeClassDefinitions** managedClasses, int* managedClassCount)
         {
             Assembly assembly = Unsafe.As<Assembly>(assemblyHandle.Target);
             var assemblyTypes = GetAssemblyTypes(assembly);
@@ -233,7 +233,7 @@ namespace FlaxEngine
         }
 
         [UnmanagedCallersOnly]
-        internal static unsafe void GetManagedClassFromType(ManagedHandle typeHandle, NativeClassDefinitions* managedClass, ManagedHandle* assemblyHandle)
+        internal static void GetManagedClassFromType(ManagedHandle typeHandle, NativeClassDefinitions* managedClass, ManagedHandle* assemblyHandle)
         {
             Type type = Unsafe.As<Type>(typeHandle.Target);
             *managedClass = new NativeClassDefinitions
@@ -448,7 +448,6 @@ namespace FlaxEngine
         {
             MethodHolder methodHolder = Unsafe.As<MethodHolder>(methodHandle.Target);
             Type returnType = methodHolder.returnType;
-
             return GetTypeGCHandle(returnType);
         }
 
@@ -515,7 +514,7 @@ namespace FlaxEngine
         }
 
         [UnmanagedCallersOnly]
-        internal static unsafe ManagedHandle GetArrayTypeFromElementType(ManagedHandle elementTypeHandle)
+        internal static ManagedHandle GetArrayTypeFromElementType(ManagedHandle elementTypeHandle)
         {
             Type elementType = Unsafe.As<Type>(elementTypeHandle.Target);
             Type classType = elementType.MakeArrayType();
@@ -523,7 +522,7 @@ namespace FlaxEngine
         }
 
         [UnmanagedCallersOnly]
-        internal static unsafe IntPtr GetArrayPointer(ManagedHandle arrayHandle)
+        internal static IntPtr GetArrayPointer(ManagedHandle arrayHandle)
         {
             if (!arrayHandle.IsAllocated)
                 return IntPtr.Zero;
@@ -581,11 +580,43 @@ namespace FlaxEngine
             return GetTypeGCHandle(classType);
         }
 
+        [UnmanagedCallersOnly]
+        internal static IntPtr GetObjectString(ManagedHandle handle)
+        {
+            object obj = handle.Target;
+            string result = string.Empty;
+            try
+            {
+                result = obj.ToString();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            return ManagedHandle.ToIntPtr(result);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static int GetObjectHashCode(ManagedHandle handle)
+        {
+            object obj = handle.Target;
+            int result = 0;
+            try
+            {
+                result = obj.GetHashCode();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            return result;
+        }
+
         /// <summary>
         /// Returns the address of the boxed value type.
         /// </summary>
         [UnmanagedCallersOnly]
-        internal static unsafe IntPtr UnboxValue(ManagedHandle handle)
+        internal static IntPtr UnboxValue(ManagedHandle handle)
         {
             object value = handle.Target;
             Type type = value.GetType();
@@ -727,7 +758,7 @@ namespace FlaxEngine
         }
 
         [UnmanagedCallersOnly]
-        internal static ManagedHandle LoadAssemblyImage(IntPtr data, int len, IntPtr assemblyPath_, IntPtr* assemblyName, IntPtr* assemblyFullName)
+        internal static ManagedHandle LoadAssemblyImage(IntPtr data, int len, IntPtr assemblyPathPtr, IntPtr* assemblyName, IntPtr* assemblyFullName)
         {
             if (!firstAssemblyLoaded)
             {
@@ -740,7 +771,7 @@ namespace FlaxEngine
                 return GetAssemblyHandle(flaxEngineAssembly);
             }
 
-            string assemblyPath = Marshal.PtrToStringAnsi(assemblyPath_);
+            string assemblyPath = Marshal.PtrToStringAnsi(assemblyPathPtr);
 
             byte[] raw = new byte[len];
             Marshal.Copy(data, raw, 0, len);
@@ -772,9 +803,9 @@ namespace FlaxEngine
         }
 
         [UnmanagedCallersOnly]
-        internal static ManagedHandle GetAssemblyByName(IntPtr name_, IntPtr* assemblyName, IntPtr* assemblyFullName)
+        internal static ManagedHandle GetAssemblyByName(IntPtr namePtr, IntPtr* assemblyName, IntPtr* assemblyFullName)
         {
-            string name = Marshal.PtrToStringAnsi(name_);
+            string name = Marshal.PtrToStringAnsi(namePtr);
             Assembly assembly = Utils.GetAssemblies().FirstOrDefault(x => x.GetName().Name == name);
             if (assembly == null)
                 return new ManagedHandle();
@@ -844,7 +875,7 @@ namespace FlaxEngine
         }
 
         [UnmanagedCallersOnly]
-        internal static unsafe int NativeSizeOf(ManagedHandle typeHandle)
+        internal static int NativeSizeOf(ManagedHandle typeHandle)
         {
             Type type = Unsafe.As<Type>(typeHandle.Target);
             Type nativeType = GetInternalType(type) ?? type;
@@ -927,6 +958,14 @@ namespace FlaxEngine
         internal static ManagedHandle GetNullReferenceException()
         {
             var exception = new NullReferenceException();
+            return ManagedHandle.Alloc(exception, GCHandleType.Weak);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static ManagedHandle GetException(IntPtr msgPtr)
+        {
+            string msg = Marshal.PtrToStringAnsi(msgPtr);
+            var exception = new Exception(msg);
             return ManagedHandle.Alloc(exception, GCHandleType.Weak);
         }
 
