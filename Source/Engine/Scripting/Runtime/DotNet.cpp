@@ -525,7 +525,15 @@ MObject* MCore::Exception::GetNotSupported(const char* msg)
 
 MClass* MCore::Type::GetClass(MType* type)
 {
+    static void* GetTypeClassPtr = GetStaticMethodPointer(TEXT("GetTypeClass"));
+    type = (MType*)CallStaticMethod<void*, void*>(GetTypeClassPtr, type);
     return GetOrCreateClass(type);
+}
+
+MType* MCore::Type::GetElementType(MType* type)
+{
+    static void* GetElementClassPtr = GetStaticMethodPointer(TEXT("GetElementClass"));
+    return (MType*)CallStaticMethod<void*, void*>(GetElementClassPtr, type);
 }
 
 int32 MCore::Type::GetSize(MType* type)
@@ -546,14 +554,14 @@ MTypes MCore::Type::GetType(MType* type)
 
 bool MCore::Type::IsPointer(MType* type)
 {
-    MISSING_CODE("TODO: MCore::Type::IsPointer"); // TODO: MCore::Type::IsPointer
-    return false;
+    static void* GetTypeIsPointerPtr = GetStaticMethodPointer(TEXT("GetTypeIsPointer"));
+    return CallStaticMethod<bool, void*>(GetTypeIsPointerPtr, type);
 }
 
 bool MCore::Type::IsReference(MType* type)
 {
-    MISSING_CODE("TODO: MCore::Type::IsReference"); // TODO: MCore::Type::IsReference
-    return false;
+    static void* GetTypeIsReferencePtr = GetStaticMethodPointer(TEXT("GetTypeIsReference"));
+    return CallStaticMethod<bool, void*>(GetTypeIsReferencePtr, type);
 }
 
 const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
@@ -1256,7 +1264,7 @@ void* MMethod::GetThunk()
 
 MMethod* MMethod::InflateGeneric() const
 {
-    // TODO: implement/test this on .NET (eg. C# script that inherits other generic C# script which implements C++ native method)
+    // This seams to be unused on .NET (Mono required inflating generic class of the script)
     return const_cast<MMethod*>(this);
 }
 
@@ -1355,13 +1363,16 @@ MMethod* MProperty::GetSetMethod() const
 
 MObject* MProperty::GetValue(MObject* instance, MObject** exception) const
 {
-    MISSING_CODE("TODO: MProperty::GetValue"); // TODO: MProperty::GetValue
-    return nullptr;
+    CHECK_RETURN(_getMethod, nullptr);
+    return _getMethod->Invoke(instance, nullptr, exception);
 }
 
 void MProperty::SetValue(MObject* instance, void* value, MObject** exception) const
 {
-    MISSING_CODE("TODO: MProperty::SetValue"); // TODO: MProperty::SetValue
+    CHECK(_setMethod);
+    void* params[1];
+    params[0] = value;
+    _setMethod->Invoke(instance, params, exception);
 }
 
 bool MProperty::HasAttribute(MClass* monoClass) const

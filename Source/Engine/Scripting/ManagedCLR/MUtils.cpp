@@ -1166,6 +1166,12 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, MType* type, bool& failed)
         }
     }
     break;
+    case MTypes::Enum:
+    {
+        if (value.Type.Type != VariantType::Enum)
+            return nullptr;
+        return &value.AsUint64;
+    }
     case MTypes::Class:
     {
         if (value.Type.Type == VariantType::Null)
@@ -1183,7 +1189,8 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, MType* type, bool& failed)
         if (value.Type.Type != VariantType::Array)
             return nullptr;
         MObject* object = BoxVariant(value);
-        if (object && !MCore::Object::GetClass(object)->IsSubClassOf(MCore::Array::GetClass(MCore::Type::GetClass(type))))
+        auto typeStr = MCore::Type::ToString(type);
+        if (object && !MCore::Object::GetClass(object)->IsSubClassOf(MCore::Type::GetClass(type)))
             object = nullptr;
         return object;
     }

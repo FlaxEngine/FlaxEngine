@@ -2857,6 +2857,29 @@ namespace FlaxEngine
             valueHandle.Free();
         }
 
+        [UnmanagedCallersOnly]
+        internal static ManagedHandle GetTypeClass(ManagedHandle typeHandle)
+        {
+            Type type = Unsafe.As<Type>(typeHandle.Target);
+            if (type.IsByRef)
+                type = type.GetElementType(); // Drop reference type (&) to get actual value type
+            return GetTypeGCHandle(type);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static bool GetTypeIsPointer(ManagedHandle typeHandle)
+        {
+            Type type = Unsafe.As<Type>(typeHandle.Target);
+            return type.IsPointer;
+        }
+
+        [UnmanagedCallersOnly]
+        internal static bool GetTypeIsReference(ManagedHandle typeHandle)
+        {
+            Type type = Unsafe.As<Type>(typeHandle.Target);
+            return type.IsByRef;
+        }
+
         internal enum MTypes : uint
         {
             End = 0x00,
@@ -2901,6 +2924,8 @@ namespace FlaxEngine
         internal static uint GetTypeMTypesEnum(ManagedHandle typeHandle)
         {
             Type type = Unsafe.As<Type>(typeHandle.Target);
+            if (type.IsByRef)
+                type = type.GetElementType(); // Drop reference type (&) to get actual value type
             MTypes monoType;
             switch (type)
             {
@@ -2943,24 +2968,8 @@ namespace FlaxEngine
                 monoType = MTypes.Ptr;
                 break;
             case Type _ when type.IsEnum:
-            {
-                var elementType = type.GetEnumUnderlyingType();
-                if (elementType == typeof(sbyte) || elementType == typeof(short))
-                    monoType = MTypes.I2;
-                else if (elementType == typeof(byte) || elementType == typeof(ushort))
-                    monoType = MTypes.U2;
-                else if (elementType == typeof(int))
-                    monoType = MTypes.I4;
-                else if (elementType == typeof(uint))
-                    monoType = MTypes.U4;
-                else if (elementType == typeof(long))
-                    monoType = MTypes.I8;
-                else if (elementType == typeof(ulong))
-                    monoType = MTypes.U8;
-                else
-                    throw new Exception($"Unsupported type '{type.FullName}'");
+                monoType = MTypes.Enum;
                 break;
-            }
             case Type _ when type.IsArray:
             case Type _ when type == typeof(ManagedArray):
                 monoType = MTypes.Array;

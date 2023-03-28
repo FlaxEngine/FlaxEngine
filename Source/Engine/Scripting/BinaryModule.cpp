@@ -798,10 +798,11 @@ namespace
         return nullptr;
     }
 
-    bool VariantTypeEquals(const VariantType& type, MType* mType)
+    bool VariantTypeEquals(const VariantType& type, MType* mType, bool isOut = false)
     {
         MClass* mClass = MCore::Type::GetClass(mType);
-        if (MUtils::GetClass(type) != mClass)
+        MClass* variantClass = MUtils::GetClass(type);
+        if (variantClass != mClass)
         {
             // Hack for Vector2/3/4 which alias with Float2/3/4 or Double2/3/4 (depending on USE_LARGE_WORLDS)
             const auto& stdTypes = *StdTypesContainer::Instance();
@@ -840,7 +841,7 @@ MMethod* ManagedBinaryModule::FindMethod(MClass* mclass, const ScriptingTypeMeth
             auto& param = signature.Params[paramIdx];
             MType* type = method->GetParameterType(paramIdx);
             if (param.IsOut != method->GetParameterIsOut(paramIdx) ||
-                !VariantTypeEquals(param.Type, type))
+                !VariantTypeEquals(param.Type, type, param.IsOut))
             {
                 isValid = false;
                 break;
@@ -1289,8 +1290,8 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
                     if (paramTypeHandle)
                     {
                         auto& valueType = paramTypeHandle.GetType();
-                        MISSING_CODE("TODO: reimplement unpacking managed structure out parameter from C# call");
-                        //valueType.Struct.Unbox(paramValue.AsBlob.Data, (MObject*)((byte*)param - sizeof(MonoObject))); // TODO: fix this for dotnet7
+                        MObject* boxed = MCore::Object::Box(param, valueType.ManagedClass);
+                        valueType.Struct.Unbox(paramValue.AsBlob.Data, boxed);
                     }
                     break;
                 }

@@ -147,6 +147,7 @@ public:
     {
         static ::String ToString(MType* type);
         static MClass* GetClass(MType* type);
+        static MType* GetElementType(MType* type);
         static int32 GetSize(MType* type);
         static MTypes GetType(MType* type);
         static bool IsPointer(MType* type);

@@ -928,6 +928,12 @@ MClass* MCore::Type::GetClass(MType* type)
     return FindClass(mclass);
 }
 
+MType* MCore::Type::GetElementType(MType* type)
+{
+    CRASH; // impl this (get type class and call GetElementClass)
+    return nullptr;
+}
+
 int32 MCore::Type::GetSize(MType* type)
 {
     int32 valueAlignment;

@@ -250,7 +250,7 @@ namespace FlaxEngine
                     deleg(instancePtr.Target, ref param1);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -299,8 +299,8 @@ namespace FlaxEngine
                     deleg(instancePtr.Target, ref param1, ref param2);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -353,9 +353,9 @@ namespace FlaxEngine
                     deleg(instancePtr.Target, ref param1, ref param2, ref param3);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -412,10 +412,10 @@ namespace FlaxEngine
                     deleg(instancePtr.Target, ref param1, ref param2, ref param3, ref param4);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
-                    if (types[3].IsByRef) MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (param4Ptr != IntPtr.Zero && types[3].IsByRef) MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -500,7 +500,7 @@ namespace FlaxEngine
                     deleg(ref param1);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -549,8 +549,8 @@ namespace FlaxEngine
                     deleg(ref param1, ref param2);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -603,9 +603,9 @@ namespace FlaxEngine
                     deleg(ref param1, ref param2, ref param3);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -662,10 +662,10 @@ namespace FlaxEngine
                     deleg(ref param1, ref param2, ref param3, ref param4);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
-                    if (types[3].IsByRef) MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (param4Ptr != IntPtr.Zero && types[3].IsByRef) MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
 
                     return IntPtr.Zero;
                 }
@@ -750,7 +750,7 @@ namespace FlaxEngine
                     TRet ret = deleg(instancePtr.Target, ref param1);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -799,8 +799,8 @@ namespace FlaxEngine
                     TRet ret = deleg(instancePtr.Target, ref param1, ref param2);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -853,9 +853,9 @@ namespace FlaxEngine
                     TRet ret = deleg(instancePtr.Target, ref param1, ref param2, ref param3);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -912,10 +912,10 @@ namespace FlaxEngine
                     TRet ret = deleg(instancePtr.Target, ref param1, ref param2, ref param3, ref param4);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
-                    if (types[3].IsByRef) MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (param4Ptr != IntPtr.Zero && types[3].IsByRef) MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -1000,7 +1000,7 @@ namespace FlaxEngine
                     TRet ret = deleg(ref param1);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -1049,8 +1049,8 @@ namespace FlaxEngine
                     TRet ret = deleg(ref param1, ref param2);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -1103,9 +1103,9 @@ namespace FlaxEngine
                     TRet ret = deleg(ref param1, ref param2, ref param3);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
@@ -1162,10 +1162,10 @@ namespace FlaxEngine
                     TRet ret = deleg(ref param1, ref param2, ref param3, ref param4);
 
                     // Marshal reference parameters back to original unmanaged references
-                    if (types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
-                    if (types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
-                    if (types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
-                    if (types[3].IsByRef) MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
+                    if (param1Ptr != IntPtr.Zero && types[0].IsByRef) MarshalHelper<T1>.ToNative(ref param1, param1Ptr);
+                    if (param2Ptr != IntPtr.Zero && types[1].IsByRef) MarshalHelper<T2>.ToNative(ref param2, param2Ptr);
+                    if (param3Ptr != IntPtr.Zero && types[2].IsByRef) MarshalHelper<T3>.ToNative(ref param3, param3Ptr);
+                    if (param4Ptr != IntPtr.Zero && types[3].IsByRef) MarshalHelper<T4>.ToNative(ref param4, param4Ptr);
 
                     return MarshalReturnValue(ref ret);
                 }
