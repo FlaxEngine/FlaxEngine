@@ -149,7 +149,7 @@ bool DeployDataStep::Perform(CookingData& data)
             {
                 // Ask Flax.Build to provide .Net Host Runtime location for the target platform
                 String sdks;
-                const Char* platformName, *archName;
+                const Char *platformName, *archName;
                 data.GetBuildPlatformName(platformName, archName);
                 String args = String::Format(TEXT("-log -logMessagesOnly -logFileWithConsole -logfile=SDKs.txt -printDotNetRuntime -platform={} -arch={}"), platformName, archName);
                 bool failed = ScriptsBuilder::RunBuildTool(args, data.CacheDirectory);
@@ -176,7 +176,24 @@ bool DeployDataStep::Perform(CookingData& data)
                 FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), packFolder / TEXT("THIRD-PARTY-NOTICES.TXT"));
                 failed |= FileSystem::CopyDirectory(dstDotnet / TEXT("shared/Microsoft.NETCore.App"), srcDotnet / TEXT("../lib/net7.0"), true);
                 failed |= FileSystem::CopyFile(dstDotnet / TEXT("shared/Microsoft.NETCore.App") / TEXT("System.Private.CoreLib.dll"), srcDotnet / TEXT("System.Private.CoreLib.dll"));
-                // TODO: copy .so/.dll files to native data files (eg. libSystem.IO.Compression.Native.so, libSystem.Native.so, libSystem.Security.Cryptography.Native.Android.so)
+                switch (data.Platform)
+                {
+                case BuildPlatform::AndroidARM64:
+#define DEPLOY_NATIVE_FILE(filename) failed |= FileSystem::CopyFile(data.NativeCodeOutputPath / TEXT(filename), srcDotnet / TEXT(filename));
+                    if (data.Configuration != BuildConfiguration::Release)
+                    {
+                        DEPLOY_NATIVE_FILE("libmono-component-debugger.so");
+                        DEPLOY_NATIVE_FILE("libmono-component-diagnostics_tracing.so");
+                        DEPLOY_NATIVE_FILE("libmono-component-hot_reload.so");
+                    }
+                    DEPLOY_NATIVE_FILE("libmonosgen-2.0.so");
+                    DEPLOY_NATIVE_FILE("libSystem.IO.Compression.Native.so");
+                    DEPLOY_NATIVE_FILE("libSystem.Native.so");
+                    DEPLOY_NATIVE_FILE("libSystem.Security.Cryptography.Native.Android.so");
+#undef DEPLOY_NATIVE_FILE
+                    break;
+                default: ;
+                }
                 if (failed)
                 {
                     data.Error(TEXT("Failed to copy .Net runtime data files."));

@@ -33,6 +33,7 @@
 #include <coreclr_delegates.h>
 #include <hostfxr.h>
 #elif DOTNET_HOST_MONO
+#include "Engine/Engine/CommandLine.h"
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
 #include <mono/utils/mono-logger.h>

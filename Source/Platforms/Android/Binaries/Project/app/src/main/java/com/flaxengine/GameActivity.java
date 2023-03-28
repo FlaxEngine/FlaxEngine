@@ -188,7 +188,7 @@ public class GameActivity extends NativeActivity {
         return new String(buffer, encoding);
     }
 
-    void extractMonoFiles() throws IOException
+    void extractDotnetFiles() throws IOException
     {
         String filesDir = getFilesDir().getAbsolutePath();
         AssetManager am = getAssets();
@@ -196,13 +196,13 @@ public class GameActivity extends NativeActivity {
 
         // Skip if extracted has is the same as in the package
         String hashFile = "hash.txt";
-        File monoHashFile = new File(filesDir + "/" + hashFile);
-        if (monoHashFile.exists()) {
+        File currentHashFile = new File(filesDir + "/" + hashFile);
+        if (currentHashFile.exists()) {
             for (int i = 0; i < amRootFiles.length; i++) {
                 if (amRootFiles[i].equals(hashFile)) {
-                    String monoHash = readFileText(new FileInputStream(monoHashFile), StandardCharsets.US_ASCII);
+                    String currentHash = readFileText(new FileInputStream(currentHashFile), StandardCharsets.US_ASCII);
                     String hash = readFileText(am.open(hashFile), StandardCharsets.US_ASCII);
-                    if (monoHash.equals(hash)) {
+                    if (currentHash.equals(hash)) {
                         return;
                     }
                     break;
@@ -211,9 +211,9 @@ public class GameActivity extends NativeActivity {
         }
 
         // Extract files
-        Log.i("Flax", "Extracting Mono files");
-        new File(filesDir + "/Mono").mkdir();
-        copyAssetDir(am, "Mono", filesDir + "/Mono");
+        Log.i("Flax", "Extracting Dotnet files");
+        new File(filesDir + "/Dotnet").mkdir();
+        copyAssetDir(am, "Dotnet", filesDir + "/Dotnet");
         for (int i = 0; i < amRootFiles.length; i++) {
             String fromFile = amRootFiles[i];
             if (!fromFile.endsWith(".dll") && !fromFile.equals(hashFile))
@@ -239,9 +239,9 @@ public class GameActivity extends NativeActivity {
     protected void onCreate(Bundle instance) {
         _activity = this;
 
-        // Extract Mono files and other bundled C# libraries from APK (Mono uses unix file access API which doesn't work with AAssetManager API)
+        // Extract Dotnet files and other bundled C# libraries from APK (Mono uses unix file access API which doesn't work with AAssetManager API)
         try {
-            extractMonoFiles();
+            extractDotnetFiles();
         } catch (Exception e) {
             Log.i("Flax", "Error", e);
         }

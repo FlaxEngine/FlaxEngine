@@ -157,7 +157,7 @@ namespace Flax.Build
             var outputPath = Path.GetDirectoryName(buildData.Target.GetOutputFilePath(buildOptions));
             var outputFile = Path.Combine(outputPath, name + ".dll");
             var outputDocFile = Path.Combine(outputPath, name + ".xml");
-            string monoRoot, monoPath = null, cscPath, referenceAssemblies, referenceAnalyzers;
+            string monoRoot, monoPath = null, cscPath, referenceAssemblies, referenceAnalyzers, dotnetPath = "dotnet";
             switch (buildPlatform)
             {
             case TargetPlatform.Windows:
@@ -172,6 +172,7 @@ namespace Flax.Build
                 if (dotnetSdk.IsValid)
                 {
                     // Use dotnet
+                    dotnetPath = Path.Combine(dotnetSdk.RootPath, "dotnet.exe");
                     cscPath = Path.Combine(dotnetSdk.RootPath, @$"sdk\{dotnetSdk.VersionName}\Roslyn\bincore\csc.dll");
                     referenceAssemblies = Path.Combine(dotnetSdk.RootPath, @$"shared\Microsoft.NETCore.App\{dotnetSdk.RuntimeVersionName}\");
                     referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, @$"packs\Microsoft.NETCore.App.Ref\{dotnetSdk.RuntimeVersionName}\analyzers\dotnet\cs\");
@@ -315,7 +316,7 @@ namespace Flax.Build
                 // https://github.com/dotnet/roslyn/blob/main/docs/compilers/Compiler%20Server.md
 
 #if USE_NETCORE
-                task.CommandPath = "dotnet";
+                task.CommandPath = dotnetPath;
                 task.CommandArguments = $"exec \"{cscPath}\" /noconfig /shared @\"{responseFile}\"";
 #else
                 task.CommandPath = cscPath;
