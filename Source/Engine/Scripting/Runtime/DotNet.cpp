@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "Engine/Scripting/Types.h"
-#include "Engine/Scripting/ManagedCLR/MCore.h"
 
 #if USE_NETCORE
 
@@ -14,6 +13,7 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MDomain.h"
@@ -34,10 +34,17 @@
 #include <hostfxr.h>
 #elif DOTNET_HOST_MONO
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Utilities/StringConverter.h"
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
 #include <mono/utils/mono-logger.h>
+#include <mono/metadata/assembly.h>
+#include <mono/metadata/class.h>
+#include <mono/metadata/metadata.h>
+#include <mono/metadata/reflection.h>
+#include <mono/metadata/mono-private-unstable.h>
 typedef char char_t;
+#define DOTNET_HOST_MONO_DEBUG 0
 #else
 #error "Unknown .NET runtime host."
 #endif
@@ -157,7 +164,6 @@ extern MDomain* MActiveDomain;
 extern Array<MDomain*, FixedAllocation<4>> MDomains;
 
 Dictionary<String, void*> CachedFunctions;
-const char_t* NativeInteropTypeName = FLAX_CORECLR_TEXT("FlaxEngine.Interop.NativeInterop, FlaxEngine.CSharp");
 
 Dictionary<void*, MClass*> classHandles;
 Dictionary<void*, MAssembly*> assemblyHandles;
@@ -1467,6 +1473,7 @@ void* GetCustomAttribute(const MClass* klass, const MClass* attributeClass)
 
 #if DOTNET_HOST_CORECRL
 
+const char_t* NativeInteropTypeName = FLAX_CORECLR_TEXT("FlaxEngine.Interop.NativeInterop, FlaxEngine.CSharp");
 hostfxr_initialize_for_runtime_config_fn hostfxr_initialize_for_runtime_config;
 hostfxr_initialize_for_dotnet_command_line_fn hostfxr_initialize_for_dotnet_command_line;
 hostfxr_get_runtime_delegate_fn hostfxr_get_runtime_delegate;
@@ -1687,9 +1694,47 @@ void OnPrintErrorCallback(const char* string, mono_bool isStdout)
     LOG_STR(Error, String(string));
 }
 
+static MonoAssembly* OnMonoAssemblyLoad(const char* aname)
+{
+    // Find assembly file
+    const String name(aname);
+#if DOTNET_HOST_MONO_DEBUG
+    LOG(Info, "Loading C# assembly {0}", name);
+#endif
+    String fileName = name;
+    if (!name.EndsWith(TEXT(".dll")) && !name.EndsWith(TEXT(".exe")))
+        fileName += TEXT(".dll");
+    String path = fileName;
+    if (!FileSystem::FileExists(path))
+    {
+        path = Globals::ProjectFolder / String(TEXT("/Dotnet/shared/Microsoft.NETCore.App/")) / fileName;
+    }
+
+    // Load assembly
+#if DOTNET_HOST_MONO_DEBUG
+    LOG(Info, "Loading C# assembly from path = {0}, exist = {1}", path, FileSystem::FileExists(path));
+#endif
+    MonoAssembly* assembly = nullptr;
+    if (FileSystem::FileExists(path))
+    {
+        StringAnsi pathAnsi(path);
+        assembly = mono_assembly_open(pathAnsi.Get(), nullptr);
+    }
+    if (!assembly)
+    {
+        LOG(Error, "Failed to load C# assembly {0}", path);
+    }
+    return assembly;
+}
+
+static MonoAssembly* OnMonoAssemblyPreloadHook(MonoAssemblyName* aname, char** assemblies_path, void* user_data)
+{
+    return OnMonoAssemblyLoad(mono_assembly_name_get_name(aname));
+}
+
 bool InitHostfxr(const String& configPath, const String& libraryPath)
 {
-#if 1
+#if DOTNET_HOST_MONO_DEBUG
     // Enable detailed Mono logging
     Platform::SetEnvironmentVariable(TEXT("MONO_LOG_LEVEL"), TEXT("debug"));
     Platform::SetEnvironmentVariable(TEXT("MONO_LOG_MASK"), TEXT("all"));
@@ -1797,6 +1842,7 @@ bool InitHostfxr(const String& configPath, const String& libraryPath)
     };
     static_assert(ARRAY_COUNT(appctxKeys) == ARRAY_COUNT(appctxValues), "Invalid appctx setup");
     monovm_initialize(ARRAY_COUNT(appctxKeys), appctxKeys, appctxValues);
+    mono_install_assembly_preload_hook(OnMonoAssemblyPreloadHook, nullptr);
 
     // Init managed runtime
 #if PLATFORM_ANDROID || PLATFORM_IOS
@@ -1831,8 +1877,39 @@ void ShutdownHostfxr()
 
 void* GetStaticMethodPointer(const String& methodName)
 {
-    MISSING_CODE("TODO: GetStaticMethodPointer for Mono host runtime"); // TODO: impl this
-    return nullptr;
+    void* fun;
+    if (CachedFunctions.TryGet(methodName, fun))
+        return fun;
+
+    static MonoClass* nativeInteropClass = nullptr;
+    if (!nativeInteropClass)
+    {
+        const char* assemblyName = "FlaxEngine.CSharp";
+        const char* className = "FlaxEngine.Interop.NativeInterop";
+        MonoAssembly* flaxEngineAssembly = OnMonoAssemblyLoad(assemblyName);
+        ASSERT(flaxEngineAssembly);
+        MonoType* interopTyp = mono_reflection_type_from_name((char*)className, mono_assembly_get_image(flaxEngineAssembly));
+        ASSERT(interopTyp);
+        nativeInteropClass = mono_class_from_mono_type(interopTyp);
+        ASSERT(nativeInteropClass);
+    }
+    const StringAsUTF8<40> methodNameAnsi(methodName.Get(), methodName.Length());
+    MonoMethod* method = mono_class_get_method_from_name(nativeInteropClass, methodNameAnsi.Get(), -1);
+    ASSERT(method);
+
+    MonoError error;
+    mono_error_init(&error);
+    fun = mono_method_get_unmanaged_callers_only_ftnptr(method, &error);
+    if (fun == nullptr)
+    {
+        const unsigned short errorCode = mono_error_get_error_code(&error);
+        const char* errorMessage = mono_error_get_message(&error);
+        LOG(Fatal, "mono_method_get_unmanaged_callers_only_ftnptr failed with error code 0x{0:x}, {1}", errorCode, String(errorMessage));
+    }
+    mono_error_cleanup(&error);
+
+    CachedFunctions.Add(methodName, fun);
+    return fun;
 }
 
 #endif
