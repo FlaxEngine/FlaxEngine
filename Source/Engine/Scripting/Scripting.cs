@@ -205,6 +205,8 @@ namespace FlaxEngine
 
         internal static object[] GetDictionaryKeys(IDictionary dictionary)
         {
+            if (dictionary == null)
+                return null;
             var keys = dictionary.Keys;
             var result = new object[keys.Count];
             keys.CopyTo(result, 0);

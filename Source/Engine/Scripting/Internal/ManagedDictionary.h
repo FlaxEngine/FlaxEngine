@@ -53,7 +53,9 @@ struct FLAXENGINE_API ManagedDictionary
         Dictionary<KeyType, ValueType> result;
         const ManagedDictionary wrapper(managed);
         MArray* managedKeys = wrapper.GetKeys();
-        int32 length = managedKeys ? MCore::Array::GetLength(managedKeys) : 0;
+        if (managedKeys == nullptr)
+            return result;
+        int32 length = MCore::Array::GetLength(managedKeys);
         Array<KeyType> keys;
         keys.Resize(length);
         result.EnsureCapacity(length);
