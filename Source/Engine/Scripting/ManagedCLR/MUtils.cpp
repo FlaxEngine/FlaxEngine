@@ -657,16 +657,18 @@ MObject* MUtils::BoxVariant(const Variant& value)
             if (elementClass->IsEnum())
             {
                 // Array of Enums
+                byte* managedPtr = (byte*)MCore::Array::GetAddress(managed);
                 for (int32 i = 0; i < array.Count(); i++)
                 {
                     auto data = (uint64)array[i];
-                    Platform::MemoryCopy((byte*)MCore::Array::GetAddress(managed) + elementSize * i, &data, elementSize);
+                    Platform::MemoryCopy(managedPtr + elementSize * i, &data, elementSize);
                 }
             }
             else if (elementClass->IsValueType())
             {
                 // Array of Structures
                 const VariantType elementType = UnboxVariantType(elementClass->GetType());
+                byte* managedPtr = (byte*)MCore::Array::GetAddress(managed);
                 switch (elementType.Type)
                 {
                 case VariantType::Bool:
@@ -697,7 +699,7 @@ MObject* MUtils::BoxVariant(const Variant& value)
 #endif
                     // Optimized boxing of raw data type
                     for (int32 i = 0; i < array.Count(); i++)
-                        Platform::MemoryCopy((byte*)MCore::Array::GetAddress(managed) + elementSize * i, &array[i].AsData, elementSize);
+                        Platform::MemoryCopy(managedPtr + elementSize * i, &array[i].AsData, elementSize);
                     break;
                 case VariantType::Transform:
                 case VariantType::Matrix:
@@ -709,7 +711,7 @@ MObject* MUtils::BoxVariant(const Variant& value)
 #endif
                     // Optimized boxing of raw data type
                     for (int32 i = 0; i < array.Count(); i++)
-                        Platform::MemoryCopy((byte*)MCore::Array::GetAddress(managed) + elementSize * i, array[i].AsBlob.Data, elementSize);
+                        Platform::MemoryCopy(managedPtr + elementSize * i, array[i].AsBlob.Data, elementSize);
                     break;
                 case VariantType::Structure:
                     if (typeHandle)
@@ -720,7 +722,7 @@ MObject* MUtils::BoxVariant(const Variant& value)
                         {
                             // TODO: optimize structures boxing to not return MObject* but use raw managed object to prevent additional boxing here
                             MObject* boxed = type.Struct.Box(array[i].AsBlob.Data);
-                            Platform::MemoryCopy((byte*)MCore::Array::GetAddress(managed) + elementSize * i, MCore::Object::Unbox(boxed), elementSize);
+                            Platform::MemoryCopy(managedPtr + elementSize * i, MCore::Object::Unbox(boxed), elementSize);
                         }
                         break;
                     }
