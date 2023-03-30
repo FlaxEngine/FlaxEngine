@@ -109,6 +109,8 @@ namespace FlaxEditor.Windows
                     switch (BuildPlatform)
                     {
                     case BuildPlatform.MacOSx64:
+                    case BuildPlatform.MacOSARM64:
+                    case BuildPlatform.iOSARM64:
                         IsSupported = false;
                         break;
                     default:
@@ -130,6 +132,7 @@ namespace FlaxEditor.Windows
                     switch (BuildPlatform)
                     {
                     case BuildPlatform.MacOSx64:
+                    case BuildPlatform.MacOSARM64:
                     case BuildPlatform.AndroidARM64:
                         IsSupported = true;
                         break;
@@ -228,7 +231,17 @@ namespace FlaxEditor.Windows
 
             class Mac : Platform
             {
-                protected override BuildPlatform BuildPlatform => BuildPlatform.MacOSx64;
+                public enum Archs
+                {
+                    [EditorDisplay(null, "arm64")]
+                    ARM64,
+                    [EditorDisplay(null, "x64")]
+                    x64,
+                }
+
+                public Archs CPU = Archs.ARM64;
+
+                protected override BuildPlatform BuildPlatform => CPU == Archs.ARM64 ? BuildPlatform.MacOSARM64 : BuildPlatform.MacOSx64;
             }
 
             class Editor : CustomEditor

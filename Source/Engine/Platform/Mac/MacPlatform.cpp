@@ -360,7 +360,7 @@ String MacPlatform::GetMainDirectory()
     if (path.EndsWith(TEXT("/Contents/MacOS")))
     {
         // If running from executable in a package, go up to the Contents
-        path = StringUtils::GetDirectoryName(path);
+        path = path.Left(path.Length() - 6);
     }
     return path;
 }

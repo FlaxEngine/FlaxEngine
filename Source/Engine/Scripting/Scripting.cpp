@@ -345,9 +345,12 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
                     {
                         // Load library
                         const auto startTime = DateTime::NowUTC();
-#if PLATFORM_ANDROID
-                        // On Android all native binaries are side-by-side with the app
-                        nativePath = String(StringUtils::GetDirectoryName(Platform::GetExecutableFilePath())) / StringUtils::GetFileName(nativePath);
+#if PLATFORM_ANDROID || PLATFORM_MAC
+                        // On some platforms all native binaries are side-by-side with the app in a different folder
+                        if (!FileSystem::FileExists(nativePath))
+                        {
+                            nativePath = String(StringUtils::GetDirectoryName(Platform::GetExecutableFilePath())) / StringUtils::GetFileName(nativePath);
+                        }
 #endif
                         auto library = Platform::LoadLibrary(nativePath.Get());
                         if (!library)

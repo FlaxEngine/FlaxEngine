@@ -95,8 +95,8 @@ bool CompileScriptsStep::DeployBinaries(CookingData& data, const String& path, c
             Scripting::ProcessBuildInfoPath(e.NativePath, projectFolderPath);
             Scripting::ProcessBuildInfoPath(e.ManagedPath, projectFolderPath);
 
-            e.NativePath = StringUtils::GetFileName(e.NativePath);
-            e.ManagedPath = StringUtils::GetFileName(e.ManagedPath);
+            e.NativePath = String(StringUtils::GetFileName(e.NativePath));
+            e.ManagedPath = String(StringUtils::GetFileName(e.ManagedPath));
 
             LOG(Info, "Collecting binary module {0}", e.Name);
         }
