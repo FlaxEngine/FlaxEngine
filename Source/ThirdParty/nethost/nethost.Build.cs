@@ -71,6 +71,11 @@ public class nethost : ThirdPartyModule
             options.DependencyFiles.Add(Path.Combine(hostRuntime.Path, "libmonosgen-2.0.so"));
             options.Libraries.Add(Path.Combine(hostRuntime.Path, "libmonosgen-2.0.so"));
             break;
+        case TargetPlatform.iOS:
+            options.PublicDefinitions.Add("USE_MONO_DYNAMIC_LIB");
+            options.DependencyFiles.Add(Path.Combine(hostRuntime.Path, "libmonosgen-2.0.dylib"));
+            options.Libraries.Add(Path.Combine(hostRuntime.Path, "libmonosgen-2.0.dylib"));
+            break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
         options.DependencyFiles.Add(Path.Combine(FolderPath, "FlaxEngine.CSharp.runtimeconfig.json"));
