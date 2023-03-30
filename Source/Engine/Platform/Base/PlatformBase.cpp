@@ -572,7 +572,7 @@ int32 PlatformBase::StartProcess(const StringView& filename, const StringView& a
     procSettings.WaitForEnd = waitForEnd;
     procSettings.LogOutput = waitForEnd;
     procSettings.ShellExecute = true;
-    return CreateProcess(procSettings);
+    return Platform::CreateProcess(procSettings);
 }
 
 int32 PlatformBase::RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow)
@@ -581,7 +581,7 @@ int32 PlatformBase::RunProcess(const StringView& cmdLine, const StringView& work
     procSettings.FileName = cmdLine;
     procSettings.WorkingDirectory = workingDir;
     procSettings.HiddenWindow = hiddenWindow;
-    return CreateProcess(procSettings);
+    return Platform::CreateProcess(procSettings);
 }
 
 int32 PlatformBase::RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool hiddenWindow)
@@ -591,7 +591,7 @@ int32 PlatformBase::RunProcess(const StringView& cmdLine, const StringView& work
     procSettings.WorkingDirectory = workingDir;
     procSettings.Environment = environment;
     procSettings.HiddenWindow = hiddenWindow;
-    return CreateProcess(procSettings);
+    return Platform::CreateProcess(procSettings);
 }
 
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
