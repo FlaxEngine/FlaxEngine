@@ -1170,6 +1170,11 @@ bool MAssembly::UnloadImage(bool isReloading)
     return false;
 }
 
+bool MAssembly::ResolveMissingFile(String& assemblyPath) const
+{
+    return true;
+}
+
 MClass::MClass(const MAssembly* parentAssembly, MonoClass* monoClass, const StringAnsi& fullname)
     : _assembly(parentAssembly)
     , _fullname(fullname)

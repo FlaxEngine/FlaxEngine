@@ -65,16 +65,23 @@ bool MAssembly::Load(const String& assemblyPath, const StringView& nativePath)
     PROFILE_CPU();
     ZoneText(*assemblyPath, assemblyPath.Length());
 
+    const String* pathPtr = &assemblyPath;
+    String path;
     if (!FileSystem::FileExists(assemblyPath))
     {
-        Log::FileNotFoundException ex(assemblyPath);
-        return true;
+        path = assemblyPath;
+        pathPtr = &path;
+        if (ResolveMissingFile(path))
+        {
+            Log::FileNotFoundException ex(assemblyPath);
+            return true;
+        }
     }
 
     const auto startTime = DateTime::NowUTC();
     OnLoading();
 
-    if (LoadImage(assemblyPath, nativePath))
+    if (LoadImage(*pathPtr, nativePath))
     {
         OnLoadFailed();
         return true;

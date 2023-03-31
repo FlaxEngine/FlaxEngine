@@ -761,6 +761,16 @@ MClass::MClass(const MAssembly* parentAssembly, void* handle, const char* name, 
     classHandles.Add(handle, this);
 }
 
+bool MAssembly::ResolveMissingFile(String& assemblyPath) const
+{
+#if DOTNET_HOST_MONO
+    // Fallback to AOT-ed assembly location
+    assemblyPath = Globals::BinariesFolder / TEXT("Dotnet") / StringUtils::GetFileName(assemblyPath);
+    return !FileSystem::FileExists(assemblyPath);
+#endif
+    return true;
+}
+
 MClass::~MClass()
 {
     _methods.ClearDelete();
