@@ -2,6 +2,7 @@
 
 #include "PrecompileAssembliesStep.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/File.h"
 #include "Engine/Core/Config/BuildSettings.h"
 #include "Engine/Engine/Globals.h"
 #include "Editor/Scripting/ScriptsBuilder.h"
@@ -16,6 +17,24 @@ void PrecompileAssembliesStep::OnBuildStarted(CookingData& data)
 
     // Redirect C# assemblies to intermediate cooking directory (processed by ILC)
     data.ManagedCodeOutputPath = data.CacheDirectory / TEXT("AOTAssemblies");
+
+    // Reset any AOT cache from previous run if the AOT mode has changed (eg. Mono AOT -> ILC on Desktop)
+    const String aotModeCacheFilePath = data.ManagedCodeOutputPath / TEXT("AOTMode.txt");
+    const String aotModeCacheValue = StringUtils::ToString((int32)aotMode);
+    if (FileSystem::DirectoryExists(data.ManagedCodeOutputPath))
+    {
+        String cachedData;
+        File::ReadAllText(aotModeCacheFilePath, cachedData);
+        if (cachedData != aotModeCacheValue)
+        {
+            FileSystem::DeleteDirectory(data.ManagedCodeOutputPath);
+        }
+    }
+    if (!FileSystem::DirectoryExists(data.ManagedCodeOutputPath))
+    {
+        FileSystem::CreateDirectory(data.ManagedCodeOutputPath);
+        File::WriteAllText(aotModeCacheFilePath, aotModeCacheValue, Encoding::ANSI);
+    }
 }
 
 bool PrecompileAssembliesStep::Perform(CookingData& data)
