@@ -279,7 +279,6 @@ namespace Flax.Build
                     var outputFilePath = assemblyPath + buildPlatform.SharedLibraryFileExtension;
                     if (!File.Exists(outputFilePath) || File.GetLastWriteTime(assemblyPath) > File.GetLastWriteTime(outputFilePath))
                     {
-                        Log.Error("Run AOT");
                         if (dotnetAotDebug)
                         {
                             // Increase log readability when spamming log with verbose mode
@@ -294,8 +293,6 @@ namespace Flax.Build
                     var deployedFilePath = monoAssembliesOutputPath != null ? Path.Combine(monoAssembliesOutputPath, Path.GetFileName(outputFilePath)) : outputFilePath;
                     if (monoAssembliesOutputPath != null && (!File.Exists(deployedFilePath) || File.GetLastWriteTime(outputFilePath) > File.GetLastWriteTime(deployedFilePath)))
                     {
-                        Log.Error("Copy files");
-
                         // Copy to the destination folder
                         Utilities.FileCopy(assemblyPath, Path.Combine(monoAssembliesOutputPath, Path.GetFileName(assemblyPath)));
                         Utilities.FileCopy(outputFilePath, deployedFilePath);
