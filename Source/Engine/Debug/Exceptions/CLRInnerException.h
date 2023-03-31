@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Debug/Exception.h"
+#include "Engine/Scripting/Types.h"
 
 namespace Log
 {
@@ -28,8 +29,8 @@ namespace Log
         CLRInnerException(const String& additionalInfo)
             : Exception(String::Format(TEXT("Current {0} CLR method has thrown an inner exception"),
 #if USE_MONO
-        TEXT("Mono")
-#elif USE_CORECLR
+            TEXT("Mono")
+#elif USE_NETCORE
             TEXT(".NET Core")
 #else
             TEXT("Unknown engine")

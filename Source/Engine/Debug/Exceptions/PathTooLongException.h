@@ -24,7 +24,7 @@ namespace Log
         /// <summary>
         /// Creates default exception with additional data
         /// </summary>
-        /// <param name="message">Additional information that help describe error</param>
+        /// <param name="additionalInfo">Additional information that help describe error</param>
         PathTooLongException(const String& additionalInfo)
             : Exception(TEXT("Path too long."), additionalInfo)
         {
