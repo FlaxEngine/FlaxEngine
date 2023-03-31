@@ -211,4 +211,5 @@ private:
     void OnLoading();
     void OnLoaded(const struct DateTime& startTime);
     void OnLoadFailed();
+    bool ResolveMissingFile(String& assemblyPath) const;
 };
