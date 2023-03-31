@@ -32,13 +32,15 @@ namespace FlaxEngine.Interop
         private static IntPtr boolFalsePtr = ManagedHandle.ToIntPtr(ManagedHandle.Alloc((int)0, GCHandleType.Pinned));
 
         private static List<ManagedHandle> methodHandles = new();
-        private static List<ManagedHandle> methodHandlesCollectible = new();
         private static ConcurrentDictionary<IntPtr, Delegate> cachedDelegates = new();
-        private static ConcurrentDictionary<IntPtr, Delegate> cachedDelegatesCollectible = new();
         private static Dictionary<Type, ManagedHandle> typeHandleCache = new();
-        private static Dictionary<Type, ManagedHandle> typeHandleCacheCollectible = new();
         private static List<ManagedHandle> fieldHandleCache = new();
+#if FLAX_EDITOR
+        private static List<ManagedHandle> methodHandlesCollectible = new();
+        private static ConcurrentDictionary<IntPtr, Delegate> cachedDelegatesCollectible = new();
+        private static Dictionary<Type, ManagedHandle> typeHandleCacheCollectible = new();
         private static List<ManagedHandle> fieldHandleCacheCollectible = new();
+#endif
         private static Dictionary<object, ManagedHandle> classAttributesCacheCollectible = new();
         private static Dictionary<Assembly, ManagedHandle> assemblyHandles = new();
 
@@ -840,10 +842,14 @@ namespace FlaxEngine.Interop
         {
             MethodHolder methodHolder = new MethodHolder(method);
             ManagedHandle handle = ManagedHandle.Alloc(methodHolder);
+#if FLAX_EDITOR
             if (methodHolder.parameterTypes.Any(x => x.IsCollectible) || method.IsCollectible)
                 methodHandlesCollectible.Add(handle);
             else
+#endif
+            {
                 methodHandles.Add(handle);
+            }
             return handle;
         }
 
@@ -975,14 +981,20 @@ namespace FlaxEngine.Interop
         {
             if (typeHandleCache.TryGetValue(type, out ManagedHandle handle))
                 return handle;
+#if FLAX_EDITOR
             if (typeHandleCacheCollectible.TryGetValue(type, out handle))
                 return handle;
+#endif
 
             handle = ManagedHandle.Alloc(type);
+#if FLAX_EDITOR
             if (type.IsCollectible) // check if generic parameters are also collectible?
                 typeHandleCacheCollectible.Add(type, handle);
             else
+#endif
+            {
                 typeHandleCache.Add(type, handle);
+            }
 
             return handle;
         }
@@ -990,7 +1002,9 @@ namespace FlaxEngine.Interop
         private static class DelegateHelpers
         {
             private static Func<Type[], Type> MakeNewCustomDelegateFunc;
+#if FLAX_EDITOR
             private static Func<Type[], Type> MakeNewCustomDelegateFuncCollectible;
+#endif
 
             internal static void InitMethods()
             {
@@ -998,6 +1012,7 @@ namespace FlaxEngine.Interop
                 typeof(Expression).Assembly.GetType("System.Linq.Expressions.Compiler.DelegateHelpers")
                                   .GetMethod("MakeNewCustomDelegate", BindingFlags.NonPublic | BindingFlags.Static).CreateDelegate<Func<Type[], Type>>();
 
+#if FLAX_EDITOR
                 // Load System.Linq.Expressions assembly to collectible ALC.
                 // The dynamic assembly where delegates are stored is cached in the DelegateHelpers class, so we should
                 // use the DelegateHelpers in collectible ALC to make sure the delegates are also stored in the same ALC.
@@ -1013,12 +1028,15 @@ namespace FlaxEngine.Interop
                     using var ctx = scriptingAssemblyLoadContext.EnterContextualReflection();
                     MakeNewCustomDelegateFuncCollectible(new[] { typeof(void) });
                 }
+#endif
             }
 
             internal static Type MakeNewCustomDelegate(Type[] parameters)
             {
+#if FLAX_EDITOR
                 if (parameters.Any(x => x.IsCollectible))
                     return MakeNewCustomDelegateFuncCollectible(parameters);
+#endif
                 return MakeNewCustomDelegateFunc(parameters);
             }
         }

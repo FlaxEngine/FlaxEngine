@@ -287,10 +287,14 @@ namespace FlaxEngine.Interop
                 FieldHolder fieldHolder = new FieldHolder(fields[i], type);
 
                 ManagedHandle fieldHandle = ManagedHandle.Alloc(fieldHolder);
+#if FLAX_EDITOR
                 if (type.IsCollectible)
                     fieldHandleCacheCollectible.Add(fieldHandle);
                 else
+#endif
+                {
                     fieldHandleCache.Add(fieldHandle);
+                }
 
                 NativeFieldDefinitions classField = new NativeFieldDefinitions()
                 {
@@ -721,10 +725,14 @@ namespace FlaxEngine.Interop
             IntPtr functionPtr = Marshal.GetFunctionPointerForDelegate(methodDelegate);
 
             // Keep a reference to the delegate to prevent it from being garbage collected
+#if FLAX_EDITOR
             if (methodHolder.method.IsCollectible)
                 cachedDelegatesCollectible[functionPtr] = methodDelegate;
             else
+#endif
+            {
                 cachedDelegates[functionPtr] = methodDelegate;
+            }
 
             return functionPtr;
         }
@@ -831,21 +839,21 @@ namespace FlaxEngine.Interop
             AssemblyLocations.Remove(assembly.FullName);
 
             // Clear all caches which might hold references to closing assembly
-            cachedDelegatesCollectible.Clear();
             typeCache.Clear();
 
-            // Release all GCHandles in collectible ALC
+            // Release all references in collectible ALC
+#if FLAX_EDITOR
+            cachedDelegatesCollectible.Clear();
             foreach (var pair in typeHandleCacheCollectible)
                 pair.Value.Free();
             typeHandleCacheCollectible.Clear();
-
             foreach (var handle in methodHandlesCollectible)
                 handle.Free();
             methodHandlesCollectible.Clear();
-
             foreach (var handle in fieldHandleCacheCollectible)
                 handle.Free();
             fieldHandleCacheCollectible.Clear();
+#endif
 
             foreach (var pair in classAttributesCacheCollectible)
                 pair.Value.Free();
@@ -869,8 +877,12 @@ namespace FlaxEngine.Interop
             while (unloading)
                 System.Threading.Thread.Sleep(1);
 
-            // TODO: benchmark collectible setting performance, maybe enable it only in editor builds?
-            scriptingAssemblyLoadContext = new AssemblyLoadContext("Flax", true);
+#if FLAX_EDITOR
+            var isCollectible = true;
+#else
+            var isCollectible = false;
+#endif
+            scriptingAssemblyLoadContext = new AssemblyLoadContext("Flax", isCollectible);
             DelegateHelpers.InitMethods();
         }
 
