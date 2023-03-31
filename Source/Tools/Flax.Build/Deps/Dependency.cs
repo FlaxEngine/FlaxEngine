@@ -52,6 +52,11 @@ namespace Flax.Deps
         public abstract TargetPlatform[] Platforms { get; }
 
         /// <summary>
+        /// True if build dependency by default, otherwise only when explicitly specified via command line.
+        /// </summary>
+        public virtual bool BuildByDefault => true;
+
+        /// <summary>
         /// Builds the dependency package using the specified options.
         /// </summary>
         /// <param name="options">The options.</param>

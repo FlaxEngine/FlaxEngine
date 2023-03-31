@@ -62,7 +62,7 @@ namespace Flax.Deps
             {
                 var dependency = dependencies[i];
                 var name = dependency.GetType().Name;
-                if (depsToBuild.Length > 0)
+                if (depsToBuild.Length > 0 || !dependency.BuildByDefault)
                 {
                     if (!depsToBuild.Contains(name.ToLower()))
                     {

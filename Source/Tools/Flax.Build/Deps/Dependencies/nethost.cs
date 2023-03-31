@@ -41,6 +41,9 @@ namespace Flax.Deps.Dependencies
             }
         }
 
+        /// <inheritdoc />
+        public override bool BuildByDefault => false;
+
         private string root;
 
         private void Build(BuildOptions options, TargetPlatform targetPlatform, TargetArchitecture architecture)
