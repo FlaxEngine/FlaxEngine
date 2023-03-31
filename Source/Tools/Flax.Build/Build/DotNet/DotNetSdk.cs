@@ -262,7 +262,10 @@ namespace Flax.Build
             TryAddHostRuntime(TargetPlatform.Windows, TargetArchitecture.ARM64, "win-arm64");
             TryAddHostRuntime(TargetPlatform.Mac, TargetArchitecture.x64, "osx-x64");
             TryAddHostRuntime(TargetPlatform.Mac, TargetArchitecture.ARM64, "osx-arm64");
+            TryAddHostRuntime(TargetPlatform.Android, TargetArchitecture.ARM, "android-arm", "Runtime.Mono");
             TryAddHostRuntime(TargetPlatform.Android, TargetArchitecture.ARM64, "android-arm64", "Runtime.Mono");
+            TryAddHostRuntime(TargetPlatform.iOS, TargetArchitecture.ARM, "ios-arm64", "Runtime.Mono");
+            TryAddHostRuntime(TargetPlatform.iOS, TargetArchitecture.ARM64, "ios-arm64", "Runtime.Mono");
 
             // Found
             IsValid = true;

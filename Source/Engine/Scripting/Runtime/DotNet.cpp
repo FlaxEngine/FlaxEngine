@@ -272,11 +272,18 @@ bool MCore::LoadEngine()
     CallStaticMethodByName<void>(TEXT("Init"));
 #ifdef MCORE_MAIN_MODULE_NAME
     // MCORE_MAIN_MODULE_NAME define is injected by Scripting.Build.cs on platforms that use separate shared library for engine symbols
-    const StringAnsi flaxLibraryPath(Platform::GetMainDirectory() / TEXT(MACRO_TO_STR(MCORE_MAIN_MODULE_NAME)));
+    ::String flaxLibraryPath(Platform::GetMainDirectory() / TEXT(MACRO_TO_STR(MCORE_MAIN_MODULE_NAME)));
 #else
-    const StringAnsi flaxLibraryPath(Platform::GetExecutableFilePath());
+    ::String flaxLibraryPath(Platform::GetExecutableFilePath());
 #endif
-    RegisterNativeLibrary("FlaxEngine", flaxLibraryPath.Get());
+#if PLATFORM_MAC
+    // On some platforms all native binaries are side-by-side with the app in a different folder
+    if (!FileSystem::FileExists(flaxLibraryPath))
+    {
+        flaxLibraryPath = ::String(StringUtils::GetDirectoryName(Platform::GetExecutableFilePath())) / StringUtils::GetFileName(flaxLibraryPath);
+    }
+#endif
+    RegisterNativeLibrary("FlaxEngine", StringAnsi(flaxLibraryPath).Get());
 
     MRootDomain = New<MDomain>("Root");
     MDomains.Add(MRootDomain);

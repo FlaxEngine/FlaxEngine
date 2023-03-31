@@ -115,7 +115,7 @@ bool DeployDataStep::Perform(CookingData& data)
                 }
                 for (String& version : versions)
                 {
-                    version = StringUtils::GetFileName(version);
+                    version = String(StringUtils::GetFileName(version));
                     if (!version.StartsWith(TEXT("7.")))
                         version.Clear();
                 }
