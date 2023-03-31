@@ -15,7 +15,6 @@ class TextureBase;
 class FLAXENGINE_API PlatformTools
 {
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="PlatformTools"/> class.
     /// </summary>
@@ -44,9 +43,9 @@ public:
     /// <summary>
     /// Gets the value indicating whenever platform requires AOT (needs C# assemblies to be precompiled).
     /// </summary>
-    virtual bool UseAOT() const
+    virtual DotNetAOTModes UseAOT() const
     {
-        return false;
+        return DotNetAOTModes::None;
     }
 
     /// <summary>
@@ -75,13 +74,9 @@ public:
     /// <param name="data">The cooking data.</param>
     /// <param name="file">The file path.</param>
     /// <returns>True if it's a native file, otherwise false.<returns>
-    virtual bool IsNativeCodeFile(CookingData& data, const String& file)
-    {
-        return false;
-    }
+    virtual bool IsNativeCodeFile(CookingData& data, const String& file);
 
 public:
-
     /// <summary>
     /// Called when game building starts.
     /// </summary>

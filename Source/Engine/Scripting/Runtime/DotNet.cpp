@@ -199,7 +199,7 @@ void RegisterNativeLibrary(const char* moduleName, const char* modulePath)
     CallStaticMethod<void, const char*, const char*>(RegisterNativeLibraryPtr, moduleName, modulePath);
 }
 
-bool InitHostfxr(const String& configPath, const String& libraryPath);
+bool InitHostfxr();
 void ShutdownHostfxr();
 
 MAssembly* GetAssembly(void* assemblyHandle);
@@ -263,15 +263,9 @@ void MCore::UnloadDomain(const StringAnsi& domainName)
 bool MCore::LoadEngine()
 {
     PROFILE_CPU();
-    const ::String csharpLibraryPath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.dll");
-    const ::String csharpRuntimeConfigPath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.runtimeconfig.json");
-    if (!FileSystem::FileExists(csharpLibraryPath))
-        LOG(Fatal, "Failed to initialize managed runtime, FlaxEngine.CSharp.dll is missing.");
-    if (!FileSystem::FileExists(csharpRuntimeConfigPath))
-        LOG(Fatal, "Failed to initialize managed runtime, FlaxEngine.CSharp.runtimeconfig.json is missing.");
 
     // Initialize hostfxr
-    if (InitHostfxr(csharpRuntimeConfigPath, csharpLibraryPath))
+    if (InitHostfxr())
         return true;
 
     // Prepare managed side
@@ -1484,14 +1478,20 @@ hostfxr_set_error_writer_fn hostfxr_set_error_writer;
 hostfxr_get_dotnet_environment_info_result_fn hostfxr_get_dotnet_environment_info_result;
 hostfxr_run_app_fn hostfxr_run_app;
 
-bool InitHostfxr(const String& configPath, const String& libraryPath)
+bool InitHostfxr()
 {
-    const FLAX_CORECLR_STRING& library_path = FLAX_CORECLR_STRING(libraryPath);
+    const ::String csharpLibraryPath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.dll");
+    const ::String csharpRuntimeConfigPath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.runtimeconfig.json");
+    if (!FileSystem::FileExists(csharpLibraryPath))
+        LOG(Fatal, "Failed to initialize managed runtime, missing file: {0}", csharpLibraryPath);
+    if (!FileSystem::FileExists(csharpRuntimeConfigPath))
+        LOG(Fatal, "Failed to initialize managed runtime, missing file: {0}", csharpRuntimeConfigPath);
+    const FLAX_CORECLR_STRING& libraryPath = FLAX_CORECLR_STRING(csharpLibraryPath);
 
     // Get path to hostfxr library
     get_hostfxr_parameters get_hostfxr_params;
     get_hostfxr_params.size = sizeof(hostfxr_initialize_parameters);
-    get_hostfxr_params.assembly_path = library_path.Get();
+    get_hostfxr_params.assembly_path = libraryPath.Get();
     FLAX_CORECLR_STRING dotnetRoot;
     // TODO: implement proper lookup for dotnet installation folder and handle standalone build of FlaxGame
 #if PLATFORM_MAC
@@ -1552,10 +1552,10 @@ bool InitHostfxr(const String& configPath, const String& libraryPath)
     }
 
     // Initialize hosting component
-    const char_t* argv[1] = { library_path.Get() };
+    const char_t* argv[1] = { libraryPath.Get() };
     hostfxr_initialize_parameters init_params;
     init_params.size = sizeof(hostfxr_initialize_parameters);
-    init_params.host_path = library_path.Get();
+    init_params.host_path = libraryPath.Get();
     path = String(StringUtils::GetDirectoryName(path)) / TEXT("/../../../");
     StringUtils::PathRemoveRelativeParts(path);
     dotnetRoot = FLAX_CORECLR_STRING(path);
@@ -1708,6 +1708,10 @@ static MonoAssembly* OnMonoAssemblyLoad(const char* aname)
     if (!FileSystem::FileExists(path))
     {
         path = Globals::ProjectFolder / String(TEXT("/Dotnet/shared/Microsoft.NETCore.App/")) / fileName;
+        if (!FileSystem::FileExists(path))
+        {
+            path = Globals::ProjectFolder / String(TEXT("/Dotnet/")) / fileName;
+        }
     }
 
     // Load assembly
@@ -1732,7 +1736,7 @@ static MonoAssembly* OnMonoAssemblyPreloadHook(MonoAssemblyName* aname, char** a
     return OnMonoAssemblyLoad(mono_assembly_name_get_name(aname));
 }
 
-bool InitHostfxr(const String& configPath, const String& libraryPath)
+bool InitHostfxr()
 {
 #if DOTNET_HOST_MONO_DEBUG
     // Enable detailed Mono logging

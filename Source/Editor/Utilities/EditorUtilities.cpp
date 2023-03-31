@@ -820,3 +820,49 @@ bool EditorUtilities::ReplaceInFile(const StringView& file, const StringView& fi
     text.Replace(findWhat.Get(), findWhat.Length(), replaceWith.Get(), replaceWith.Length());
     return File::WriteAllText(file, text, Encoding::ANSI);
 }
+
+bool EditorUtilities::CopyFileIfNewer(const StringView& dst, const StringView& src)
+{
+    if (FileSystem::FileExists(dst) && 
+        FileSystem::GetFileLastEditTime(src) <= FileSystem::GetFileLastEditTime(dst) &&
+        FileSystem::GetFileSize(dst) == FileSystem::GetFileSize(src))
+        return false;
+    return FileSystem::CopyFile(dst, src);
+}
+
+bool EditorUtilities::CopyDirectoryIfNewer(const StringView& dst, const StringView& src, bool withSubDirectories)
+{
+    if (FileSystem::DirectoryExists(dst))
+    {
+        // Copy all files
+        Array<String> cache(32);
+        if (FileSystem::DirectoryGetFiles(cache, *src, TEXT("*"), DirectorySearchOption::TopDirectoryOnly))
+            return true;
+        for (int32 i = 0; i < cache.Count(); i++)
+        {
+            String dstFile = String(dst) / StringUtils::GetFileName(cache[i]);
+            if (CopyFileIfNewer(*dstFile, *cache[i]))
+                return true;
+        }
+
+        // Copy all subdirectories (if need to)
+        if (withSubDirectories)
+        {
+            cache.Clear();
+            if (FileSystem::GetChildDirectories(cache, src))
+                return true;
+            for (int32 i = 0; i < cache.Count(); i++)
+            {
+                String dstDir = String(dst) / StringUtils::GetFileName(cache[i]);
+                if (CopyDirectoryIfNewer(dstDir, cache[i], true))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+    else
+    {
+        return FileSystem::CopyDirectory(dst, src, withSubDirectories);
+    }
+}

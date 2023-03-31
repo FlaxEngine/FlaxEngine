@@ -37,9 +37,9 @@ GDKPlatformTools::GDKPlatformTools()
     }
 }
 
-bool GDKPlatformTools::UseAOT() const
+DotNetAOTModes GDKPlatformTools::UseAOT() const
 {
-    return true;
+    return DotNetAOTModes::MonoAOTDynamic;
 }
 
 bool GDKPlatformTools::OnScriptsStepDone(CookingData& data)

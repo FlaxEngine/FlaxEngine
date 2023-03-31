@@ -49,8 +49,17 @@ public class nethost : ThirdPartyModule
         case TargetPlatform.XboxOne:
         case TargetPlatform.XboxScarlett:
         case TargetPlatform.UWP:
-            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "nethost.lib"));
-            options.DependencyFiles.Add(Path.Combine(hostRuntime.Path, "nethost.dll"));
+            if (hostRuntime.Type == DotNetSdk.HostType.CoreCRL)
+            {
+                options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "nethost.lib"));
+                options.DependencyFiles.Add(Path.Combine(hostRuntime.Path, "nethost.dll"));
+            }
+            else
+            {
+                options.PublicDefinitions.Add("USE_MONO_DYNAMIC_LIB");
+                options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "coreclr.import.lib"));
+                options.DependencyFiles.Add(Path.Combine(hostRuntime.Path, "coreclr.dll"));
+            }
             break;
         case TargetPlatform.Linux:
             options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libnethost.a"));

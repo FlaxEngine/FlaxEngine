@@ -154,6 +154,32 @@ API_ENUM() enum class BuildConfiguration
 
 extern FLAXENGINE_API const Char* ToString(const BuildConfiguration configuration);
 
+/// <summary>
+/// .NET Ahead of Time Compilation (AOT) modes.
+/// </summary>
+enum class DotNetAOTModes
+{
+    /// <summary>
+    /// AOT is not used.
+    /// </summary>
+    None,
+
+    /// <summary>
+    /// Use .NET Native IL Compiler (shorten as ILC) to convert all C# assemblies in native platform executable binary.
+    /// </summary>
+    ILC,
+
+    /// <summary>
+    /// Use Mono AOT to cross-compile all used C# assemblies into native platform shared libraries.
+    /// </summary>
+    MonoAOTDynamic,
+
+    /// <summary>
+    /// Use Mono AOT to cross-compile all used C# assemblies into native platform static libraries which can be linked into a single shared library.
+    /// </summary>
+    MonoAOTStatic,
+};
+
 #define BUILD_STEP_CANCEL_CHECK if (GameCooker::IsCancelRequested()) return true
 
 /// <summary>

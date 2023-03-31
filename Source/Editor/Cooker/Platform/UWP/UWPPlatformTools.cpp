@@ -37,9 +37,9 @@ ArchitectureType UWPPlatformTools::GetArchitecture() const
     return _arch;
 }
 
-bool UWPPlatformTools::UseAOT() const
+DotNetAOTModes UWPPlatformTools::UseAOT() const
 {
-    return true;
+    return DotNetAOTModes::MonoAOTDynamic;
 }
 
 bool UWPPlatformTools::OnScriptsStepDone(CookingData& data)

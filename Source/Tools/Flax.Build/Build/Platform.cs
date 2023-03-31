@@ -166,7 +166,7 @@ namespace Flax.Build
         public virtual string SharedLibraryFilePrefix => string.Empty;
 
         /// <summary>
-        /// Gets the statuc library files prefix.
+        /// Gets the static library files prefix.
         /// </summary>
         public virtual string StaticLibraryFilePrefix => string.Empty;
 

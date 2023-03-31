@@ -315,20 +315,25 @@ namespace Flax.Build
             ThrowExceptionOnError = 1 << 6,
 
             /// <summary>
+            /// Logs program output to the console, otherwise only when using verbose log.
+            /// </summary>
+            ConsoleLogOutput = 1 << 7,
+
+            /// <summary>
             /// The default options.
             /// </summary>
             Default = AppMustExist,
         }
 
-        private static void StdOut(object sender, DataReceivedEventArgs e)
+        private static void StdLogInfo(object sender, DataReceivedEventArgs e)
         {
             if (e.Data != null)
             {
-                Log.Verbose(e.Data);
+                Log.Info(e.Data);
             }
         }
 
-        private static void StdErr(object sender, DataReceivedEventArgs e)
+        private static void StdLogVerbose(object sender, DataReceivedEventArgs e)
         {
             if (e.Data != null)
             {
@@ -400,8 +405,16 @@ namespace Flax.Build
             {
                 proc.StartInfo.RedirectStandardOutput = true;
                 proc.StartInfo.RedirectStandardError = true;
-                proc.OutputDataReceived += StdOut;
-                proc.ErrorDataReceived += StdErr;
+                if (options.HasFlag(RunOptions.ConsoleLogOutput))
+                {
+                    proc.OutputDataReceived += StdLogInfo;
+                    proc.ErrorDataReceived += StdLogInfo;
+                }
+                else
+                {
+                    proc.OutputDataReceived += StdLogVerbose;
+                    proc.ErrorDataReceived += StdLogVerbose;
+                }
             }
 
             if (envVars != null)

@@ -1,8 +1,13 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using Mono.Cecil;
+using CustomAttributeNamedArgument = Mono.Cecil.CustomAttributeNamedArgument;
+using ICustomAttributeProvider = Mono.Cecil.ICustomAttributeProvider;
 
 namespace Flax.Build
 {
@@ -11,6 +16,62 @@ namespace Flax.Build
     /// </summary>
     internal static class MonoCecil
     {
+        public sealed class BasicAssemblyResolver : IAssemblyResolver
+        {
+            private readonly Dictionary<string, AssemblyDefinition> _cache = new();
+
+            public HashSet<string> SearchDirectories = new();
+
+            public AssemblyDefinition Resolve(AssemblyNameReference name)
+            {
+                return Resolve(name, new ReaderParameters());
+            }
+
+            public AssemblyDefinition Resolve(AssemblyNameReference name, ReaderParameters parameters)
+            {
+                if (_cache.TryGetValue(name.FullName, out var assembly))
+                    return assembly;
+
+                if (parameters.AssemblyResolver == null)
+                    parameters.AssemblyResolver = this;
+                foreach (var searchDirectory in SearchDirectories)
+                {
+                    if (TryLoad(name, parameters, searchDirectory, out assembly))
+                        return assembly;
+                }
+
+                throw new AssemblyResolutionException(name);
+            }
+
+            public void Dispose()
+            {
+                foreach (var assembly in _cache.Values)
+                    assembly.Dispose();
+                _cache.Clear();
+            }
+
+            private bool TryLoad(AssemblyNameReference name, ReaderParameters parameters, string directory, out AssemblyDefinition assembly)
+            {
+                assembly = null;
+
+                var file = Path.Combine(directory, name.Name + ".dll");
+                if (!File.Exists(file))
+                    return false;
+
+                try
+                {
+                    assembly = ModuleDefinition.ReadModule(file, parameters).Assembly;
+                }
+                catch (BadImageFormatException)
+                {
+                    return false;
+                }
+
+                _cache[name.FullName] = assembly;
+                return true;
+            }
+        }
+
         public static void CompilationError(string message)
         {
             Log.Error(message);

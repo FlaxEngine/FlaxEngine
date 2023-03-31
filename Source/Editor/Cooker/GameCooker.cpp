@@ -168,6 +168,16 @@ const Char* ToString(const BuildConfiguration configuration)
     }
 }
 
+bool PlatformTools::IsNativeCodeFile(CookingData& data, const String& file)
+{
+    const String filename = StringUtils::GetFileName(file);
+    if (filename.Contains(TEXT(".CSharp")) ||
+        filename.Contains(TEXT("Newtonsoft.Json")))
+        return false;
+    // TODO: maybe use Mono.Cecil via Flax.Build to read assembly image metadata and check if it contains C#?
+    return true;
+}
+
 bool CookingData::AssetTypeStatistics::operator<(const AssetTypeStatistics& other) const
 {
     if (ContentSize != other.ContentSize)
@@ -636,9 +646,9 @@ bool GameCookerImpl::Build()
 
     // Build Started
     CallEvent(GameCooker::EventType::BuildStarted);
+    data.Tools->OnBuildStarted(data);
     for (int32 stepIndex = 0; stepIndex < Steps.Count(); stepIndex++)
         Steps[stepIndex]->OnBuildStarted(data);
-    data.Tools->OnBuildStarted(data);
     data.InitProgress(Steps.Count());
 
     // Execute all steps in a sequence
@@ -705,9 +715,9 @@ bool GameCookerImpl::Build()
     }
     IsRunning = false;
     CancelFlag = 0;
-    data.Tools->OnBuildEnded(data, failed);
     for (int32 stepIndex = 0; stepIndex < Steps.Count(); stepIndex++)
         Steps[stepIndex]->OnBuildEnded(data, failed);
+    data.Tools->OnBuildEnded(data, failed);
     CallEvent(failed ? GameCooker::EventType::BuildFailed : GameCooker::EventType::BuildDone);
     Delete(Data);
     Data = nullptr;

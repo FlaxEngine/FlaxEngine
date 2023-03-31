@@ -10,6 +10,7 @@
 #include "Engine/Renderer/AntiAliasing/SMAA.h"
 #include "Engine/Engine/Globals.h"
 #include "Editor/Cooker/PlatformTools.h"
+#include "Editor/Utilities/EditorUtilities.h"
 
 bool DeployDataStep::Perform(CookingData& data)
 {
@@ -31,30 +32,20 @@ bool DeployDataStep::Perform(CookingData& data)
     FileSystem::CreateDirectory(contentDir);
     const String dstMono = data.DataOutputPath / TEXT("Mono");
 #if USE_NETCORE
-    // TODO: Optionally copy all files needed for self-contained deployment
     {
         // Remove old Mono files
         FileSystem::DeleteDirectory(dstMono);
         FileSystem::DeleteFile(data.DataOutputPath / TEXT("MonoPosixHelper.dll"));
     }
-#else
-    if (!FileSystem::DirectoryExists(dstMono))
+    String dstDotnet = data.DataOutputPath / TEXT("Dotnet");
+    const DotNetAOTModes aotMode = data.Tools->UseAOT();
+    const bool usAOT = aotMode != DotNetAOTModes::None;
+    if (usAOT)
     {
-        // Deploy Mono files (from platform data folder)
-        const String srcMono = depsRoot / TEXT("Mono");
-        if (!FileSystem::DirectoryExists(srcMono))
-        {
-            data.Error(TEXT("Missing Mono runtime data files."));
-            return true;
-        }
-        if (FileSystem::CopyDirectory(dstMono, srcMono, true))
-        {
-            data.Error(TEXT("Failed to copy Mono runtime data files."));
-            return true;
-        }
+        // Deploy Dotnet files into intermediate cooking directory for AOT
+        FileSystem::DeleteDirectory(dstDotnet);
+        dstDotnet = data.ManagedCodeOutputPath;
     }
-#endif
-    const String dstDotnet = data.DataOutputPath / TEXT("Dotnet");
     if (buildSettings.SkipDotnetPackaging && data.Tools->UseSystemDotnet())
     {
         // Use system-installed .Net Runtime
@@ -69,7 +60,7 @@ bool DeployDataStep::Perform(CookingData& data)
         {
             // Use prebuilt .Net installation for that platform
             LOG(Info, "Using .Net Runtime {} at {}", data.Tools->GetName(), srcDotnet);
-            if (FileSystem::CopyDirectory(dstDotnet, srcDotnet, true))
+            if (EditorUtilities::CopyDirectoryIfNewer(dstDotnet, srcDotnet, true))
             {
                 data.Error(TEXT("Failed to copy .Net runtime data files."));
                 return true;
@@ -92,7 +83,7 @@ bool DeployDataStep::Perform(CookingData& data)
                 canUseSystemDotnet = PLATFORM_TYPE == PlatformType::Mac;
                 break;
             }
-            if (canUseSystemDotnet)
+            if (canUseSystemDotnet && (aotMode == DotNetAOTModes::None || aotMode == DotNetAOTModes::ILC))
             {
                 // Ask Flax.Build to provide .Net SDK location for the current platform
                 String sdks;
@@ -130,6 +121,7 @@ bool DeployDataStep::Perform(CookingData& data)
                 }
                 Sorting::QuickSort(versions.Get(), versions.Count());
                 const String version = versions.Last();
+                FileSystem::NormalizePath(srcDotnet);
                 LOG(Info, "Using .Net Runtime {} at {}", version, srcDotnet);
 
                 // Deploy runtime files
@@ -137,8 +129,15 @@ bool DeployDataStep::Perform(CookingData& data)
                 FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), srcDotnet / TEXT("LICENSE.TXT"));
                 FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), srcDotnet / TEXT("ThirdPartyNotices.txt"));
                 FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), srcDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"));
-                failed |= FileSystem::CopyDirectory(dstDotnet / TEXT("host/fxr") / version, srcDotnet / TEXT("host/fxr") / version, true);
-                failed |= FileSystem::CopyDirectory(dstDotnet / TEXT("shared/Microsoft.NETCore.App") / version, srcDotnet / TEXT("shared/Microsoft.NETCore.App") / version, true);
+                if (usAOT)
+                {
+                    failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet, srcDotnet / TEXT("shared/Microsoft.NETCore.App") / version, true);
+                }
+                else
+                {
+                    failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet / TEXT("host/fxr") / version, srcDotnet / TEXT("host/fxr") / version, true);
+                    failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet / TEXT("shared/Microsoft.NETCore.App") / version, srcDotnet / TEXT("shared/Microsoft.NETCore.App") / version, true);
+                }
                 if (failed)
                 {
                     data.Error(TEXT("Failed to copy .Net runtime data files."));
@@ -166,16 +165,41 @@ bool DeployDataStep::Perform(CookingData& data)
                     data.Error(TEXT("Failed to get .Net SDK location for a current platform."));
                     return true;
                 }
+                FileSystem::NormalizePath(srcDotnet);
                 LOG(Info, "Using .Net Runtime {} at {}", TEXT("Host"), srcDotnet);
 
                 // Deploy runtime files
-                const String packFolder = srcDotnet / TEXT("../../../");
+                const Char* corlibPrivateName = TEXT("System.Private.CoreLib.dll");
+                const bool srcDotnetFromEngine = srcDotnet.Contains(TEXT("Source/Platforms"));
+                String packFolder = srcDotnet / TEXT("../../../");
+                String dstDotnetLibs = dstDotnet, srcDotnetLibs = srcDotnet;
+                StringUtils::PathRemoveRelativeParts(packFolder);
+                if (usAOT)
+                {
+                    // AOT runtime files inside Engine Platform folder
+                    packFolder /= TEXT("Dotnet");
+                    dstDotnetLibs /= TEXT("lib/net7.0");
+                    srcDotnetLibs = packFolder / TEXT("lib/net7.0");
+                }
+                else if (srcDotnetFromEngine)
+                {
+                    // Runtime files inside Engine Platform folder
+                    dstDotnetLibs /= TEXT("lib/net7.0");
+                    srcDotnetLibs /= TEXT("lib/net7.0");
+                }
+                else
+                {
+                    // Runtime files inside Dotnet SDK folder
+                    dstDotnetLibs /= TEXT("shared/Microsoft.NETCore.App");
+                    srcDotnetLibs /= TEXT("../lib/net7.0");
+                }
                 FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), packFolder / TEXT("LICENSE.txt"));
                 FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), packFolder / TEXT("LICENSE.TXT"));
                 FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), packFolder / TEXT("ThirdPartyNotices.txt"));
                 FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), packFolder / TEXT("THIRD-PARTY-NOTICES.TXT"));
-                failed |= FileSystem::CopyDirectory(dstDotnet / TEXT("shared/Microsoft.NETCore.App"), srcDotnet / TEXT("../lib/net7.0"), true);
-                failed |= FileSystem::CopyFile(dstDotnet / TEXT("shared/Microsoft.NETCore.App") / TEXT("System.Private.CoreLib.dll"), srcDotnet / TEXT("System.Private.CoreLib.dll"));
+                failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnetLibs, srcDotnetLibs, true);
+                if (FileSystem::FileExists(srcDotnet / corlibPrivateName))
+                    failed |= EditorUtilities::CopyFileIfNewer(dstDotnetLibs / corlibPrivateName, srcDotnet / corlibPrivateName);
                 switch (data.Platform)
                 {
                 case BuildPlatform::AndroidARM64:
@@ -202,6 +226,23 @@ bool DeployDataStep::Perform(CookingData& data)
             }
         }
     }
+#else
+    if (!FileSystem::DirectoryExists(dstMono))
+    {
+        // Deploy Mono files (from platform data folder)
+        const String srcMono = depsRoot / TEXT("Mono");
+        if (!FileSystem::DirectoryExists(srcMono))
+        {
+            data.Error(TEXT("Missing Mono runtime data files."));
+            return true;
+        }
+        if (FileSystem::CopyDirectory(dstMono, srcMono, true))
+        {
+            data.Error(TEXT("Failed to copy Mono runtime data files."));
+            return true;
+        }
+    }
+#endif
 
     // Deploy engine data for the target platform
     if (data.Tools->OnDeployBinaries(data))

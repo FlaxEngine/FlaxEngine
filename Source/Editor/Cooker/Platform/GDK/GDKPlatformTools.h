@@ -26,7 +26,7 @@ public:
 public:
 
     // [PlatformTools]
-    bool UseAOT() const override;
+    DotNetAOTModes UseAOT() const override;
     bool OnScriptsStepDone(CookingData& data) override;
     bool OnDeployBinaries(CookingData& data) override;
     void OnConfigureAOT(CookingData& data, AotConfig& config) override;

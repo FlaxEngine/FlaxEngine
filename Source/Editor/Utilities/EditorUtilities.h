@@ -82,4 +82,7 @@ public:
     /// <param name="replaceWith">The value to replace to.</param>
     /// <returns>True if failed, otherwise false.</returns>
     static bool ReplaceInFile(const StringView& file, const StringView& findWhat, const StringView& replaceWith);
+
+    static bool CopyFileIfNewer(const StringView& dst, const StringView& src);
+    static bool CopyDirectoryIfNewer(const StringView& dst, const StringView& src, bool withSubDirectories);
 };

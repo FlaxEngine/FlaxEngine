@@ -204,7 +204,7 @@ bool CompileScriptsStep::Perform(CookingData& data)
         // Assume FlaxGame was prebuilt for target platform
         args += TEXT(" -SkipTargets=FlaxGame");
     }
-    for (auto& define : data.CustomDefines)
+    for (const String& define : data.CustomDefines)
     {
         args += TEXT(" -D");
         args += define;

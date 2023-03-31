@@ -116,8 +116,6 @@ void AndroidPlatformTools::OnBuildStarted(CookingData& data)
     data.DataOutputPath /= TEXT("app/assets");
     data.NativeCodeOutputPath /= TEXT("app/assets");
     data.ManagedCodeOutputPath /= TEXT("app/assets");
-
-    PlatformTools::OnBuildStarted(data);
 }
 
 bool AndroidPlatformTools::OnPostProcess(CookingData& data)
