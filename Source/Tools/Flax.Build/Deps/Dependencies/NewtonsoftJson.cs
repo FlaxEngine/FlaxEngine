@@ -77,6 +77,10 @@ namespace Flax.Deps.Dependencies
 
             // AOT build (disabled codegen)
             Utilities.ReplaceInFile(Path.Combine(root, "Src", "Newtonsoft.Json", "Newtonsoft.Json.csproj"), "HAVE_REFLECTION_EMIT;", ";");
+            Utilities.ReplaceInFile(Path.Combine(root, "Src", "Newtonsoft.Json", "Newtonsoft.Json.csproj"), "HAVE_DYNAMIC;", ";");
+            Utilities.ReplaceInFile(Path.Combine(root, "Src", "Newtonsoft.Json", "Newtonsoft.Json.csproj"), "HAVE_EXPRESSIONS;", ";");
+            Utilities.ReplaceInFile(Path.Combine(root, "Src", "Newtonsoft.Json", "Newtonsoft.Json.csproj"), "HAVE_REGEX;", ";");
+            Utilities.ReplaceInFile(Path.Combine(root, "Src", "Newtonsoft.Json", "Newtonsoft.Json.csproj"), "HAVE_TYPE_DESCRIPTOR;", ";");
             Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, buildPlatform);
             foreach (var platform in options.Platforms)
             {
