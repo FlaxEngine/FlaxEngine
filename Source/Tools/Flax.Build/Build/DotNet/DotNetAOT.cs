@@ -244,11 +244,12 @@ namespace Flax.Build
                     assemblyResolver.SearchDirectories.Add(aotAssembliesPath);
                     assemblyResolver.SearchDirectories.Add(dotnetLibPath);
 
+                    var warnings = new HashSet<string>();
                     foreach (var inputFile in inputFiles)
                     {
                         try
                         {
-                            BuildAssembliesList(inputFile, assembliesPaths, assemblyResolver);
+                            BuildAssembliesList(inputFile, assembliesPaths, assemblyResolver, string.Empty, warnings);
                         }
                         catch (Exception)
                         {
@@ -322,7 +323,7 @@ namespace Flax.Build
             Utilities.FileCopy(Path.Combine(aotAssembliesPath, "THIRD-PARTY-NOTICES.TXT"), Path.Combine(dotnetOutputPath, "THIRD-PARTY-NOTICES.TXT"));
         }
 
-        internal static void BuildAssembliesList(string assemblyPath, List<string> outputList, IAssemblyResolver assemblyResolver)
+        internal static void BuildAssembliesList(string assemblyPath, List<string> outputList, IAssemblyResolver assemblyResolver, string callerPath, HashSet<string> warnings)
         {
             // Skip if already processed
             if (outputList.Contains(assemblyPath))
@@ -337,7 +338,7 @@ namespace Flax.Build
                     // Collected referenced assemblies
                     foreach (AssemblyNameReference assemblyReference in assemblyModule.AssemblyReferences)
                     {
-                        BuildAssembliesList(assemblyPath, assemblyReference, outputList, assemblyResolver);
+                        BuildAssembliesList(assemblyPath, assemblyReference, outputList, assemblyResolver, callerPath, warnings);
                     }
                 }
             }
@@ -347,7 +348,7 @@ namespace Flax.Build
             outputList.Add(assemblyPath);
         }
 
-        internal static void BuildAssembliesList(AssemblyDefinition assembly, List<string> outputList, IAssemblyResolver assemblyResolver)
+        internal static void BuildAssembliesList(AssemblyDefinition assembly, List<string> outputList, IAssemblyResolver assemblyResolver, string callerPath, HashSet<string> warnings)
         {
             // Skip if already processed
             var assemblyPath = Utilities.NormalizePath(assembly.MainModule.FileName);
@@ -360,7 +361,7 @@ namespace Flax.Build
                 // Collected referenced assemblies
                 foreach (AssemblyNameReference assemblyReference in assemblyModule.AssemblyReferences)
                 {
-                    BuildAssembliesList(assemblyPath, assemblyReference, outputList, assemblyResolver);
+                    BuildAssembliesList(assemblyPath, assemblyReference, outputList, assemblyResolver, callerPath, warnings);
                 }
             }
 
@@ -369,12 +370,31 @@ namespace Flax.Build
             outputList.Add(assemblyPath);
         }
 
-        internal static void BuildAssembliesList(string assemblyPath, AssemblyNameReference assemblyReference, List<string> outputList, IAssemblyResolver assemblyResolver)
+        internal static void BuildAssembliesList(string assemblyPath, AssemblyNameReference assemblyReference, List<string> outputList, IAssemblyResolver assemblyResolver, string callerPath, HashSet<string> warnings)
         {
+            // Detect usage of C# API that is not supported in AOT builds
+            var assemblyName = Path.GetFileName(assemblyPath);
+            if (assemblyReference.Name.Contains("System.Linq.Expressions") ||
+                assemblyReference.Name.Contains("System.Reflection.Emit") ||
+                assemblyReference.Name.Contains("System.Reflection.Emit.ILGeneration"))
+            {
+                if (!warnings.Contains(assemblyReference.Name))
+                {
+                    warnings.Add(assemblyReference.Name);
+                    if (callerPath.Length != 0)
+                        Log.Warning($"Warning! Assembly '{assemblyName}' (referenced by '{callerPath}') references '{assemblyReference.Name}' which is not supported in AOT builds and might cause error (due to lack of JIT at runtime).");
+                    else
+                        Log.Warning($"Warning! Assembly '{assemblyName}' references '{assemblyReference.Name}' which is not supported in AOT builds and might cause error (due to lack of JIT at runtime).");
+                }
+            }
+            if (callerPath.Length != 0)
+                callerPath += " - > ";
+            callerPath += assemblyName;
+
             try
             {
                 var reference = assemblyResolver.Resolve(assemblyReference);
-                BuildAssembliesList(reference, outputList, assemblyResolver);
+                BuildAssembliesList(reference, outputList, assemblyResolver, callerPath, warnings);
             }
             catch (Exception)
             {
