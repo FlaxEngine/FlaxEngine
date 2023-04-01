@@ -651,6 +651,7 @@ namespace FlaxEngine.Interop
         internal static IntPtr InvokeMethod(ManagedHandle instanceHandle, ManagedHandle methodHandle, IntPtr paramPtr, IntPtr exceptionPtr)
         {
             MethodHolder methodHolder = Unsafe.As<MethodHolder>(methodHandle.Target);
+#if !USE_AOT
             if (methodHolder.TryGetDelegate(out var methodDelegate, out var methodDelegateContext))
             {
                 // Fast path, invoke the method with minimal allocations
@@ -668,6 +669,7 @@ namespace FlaxEngine.Interop
                 return returnValue;
             }
             else
+#endif
             {
                 // Slow path, method parameters needs to be stored in heap
                 object returnObject;
@@ -715,8 +717,12 @@ namespace FlaxEngine.Interop
         }
 
         [UnmanagedCallersOnly]
-        internal static IntPtr GetMethodUnmanagedFunctionPointer(ManagedHandle methodHandle)
+        internal static IntPtr GetThunk(ManagedHandle methodHandle)
         {
+#if USE_AOT
+            Debug.LogError("GetThunk is not supported in C# AOT mode");
+            return IntPtr.Zero;
+#else
             MethodHolder methodHolder = Unsafe.As<MethodHolder>(methodHandle.Target);
 
             // Wrap the method call, this is needed to get the object instance from ManagedHandle and to pass the exception back to native side
@@ -733,8 +739,8 @@ namespace FlaxEngine.Interop
             {
                 cachedDelegates[functionPtr] = methodDelegate;
             }
-
             return functionPtr;
+#endif
         }
 
         [UnmanagedCallersOnly]

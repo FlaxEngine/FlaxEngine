@@ -18,59 +18,6 @@ namespace FlaxEngine.Interop
         /// </summary>
         internal static class Invoker
         {
-            internal delegate IntPtr MarshalAndInvokeDelegate(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr);
-
-            internal delegate IntPtr InvokeThunkDelegate(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs);
-
-            /// <summary>
-            /// Casts managed pointer to unmanaged pointer.
-            /// </summary>
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal static T* ToPointer<T>(IntPtr ptr) where T : unmanaged
-            {
-                return (T*)ptr.ToPointer();
-            }
-
-            internal static MethodInfo ToPointerMethod = typeof(Invoker).GetMethod(nameof(Invoker.ToPointer), BindingFlags.Static | BindingFlags.NonPublic);
-
-            /// <summary>
-            /// Creates a delegate for invoker to pass parameters as references.
-            /// </summary>
-            internal static Delegate CreateDelegateFromMethod(MethodInfo method, bool passParametersByRef = true)
-            {
-                Type[] methodParameters;
-                if (method.IsStatic)
-                    methodParameters = method.GetParameterTypes();
-                else
-                    methodParameters = method.GetParameters().Select(x => x.ParameterType).Prepend(method.DeclaringType).ToArray();
-
-                // Pass delegate parameters by reference
-                Type[] delegateParameters = methodParameters.Select(x => x.IsPointer ? typeof(IntPtr) : x).Select(x => passParametersByRef && !x.IsByRef ? x.MakeByRefType() : x).ToArray();
-                if (!method.IsStatic && passParametersByRef)
-                    delegateParameters[0] = method.DeclaringType;
-
-                // Convert unmanaged pointer parameters to IntPtr
-                ParameterExpression[] parameterExpressions = delegateParameters.Select(Expression.Parameter).ToArray();
-                Expression[] callExpressions = new Expression[methodParameters.Length];
-                for (int i = 0; i < methodParameters.Length; i++)
-                {
-                    Type parameterType = methodParameters[i];
-                    if (parameterType.IsPointer)
-                        callExpressions[i] = Expression.Call(null, ToPointerMethod.MakeGenericMethod(parameterType.GetElementType()), parameterExpressions[i]);
-                    else
-                        callExpressions[i] = parameterExpressions[i];
-                }
-
-                // Create and compile the delegate
-                MethodCallExpression callDelegExp;
-                if (method.IsStatic)
-                    callDelegExp = Expression.Call(null, method, callExpressions.ToArray());
-                else
-                    callDelegExp = Expression.Call(parameterExpressions[0], method, callExpressions.Skip(1).ToArray());
-                Type delegateType = DelegateHelpers.MakeNewCustomDelegate(delegateParameters.Append(method.ReturnType).ToArray());
-                return Expression.Lambda(delegateType, callDelegExp, parameterExpressions).Compile();
-            }
-
             internal static IntPtr MarshalReturnValue<TRet>(ref TRet returnValue)
             {
                 if (returnValue == null)
@@ -184,6 +131,60 @@ namespace FlaxEngine.Interop
                 if (returnType == typeof(System.UInt64))
                     return (IntPtr)new UIntPtr((ulong)(System.UInt64)(object)returnObject);
                 return ManagedHandle.ToIntPtr(returnObject, GCHandleType.Weak);
+            }
+
+#if !USE_AOT
+            internal delegate IntPtr MarshalAndInvokeDelegate(object delegateContext, ManagedHandle instancePtr, IntPtr paramPtr);
+
+            internal delegate IntPtr InvokeThunkDelegate(object delegateContext, ManagedHandle instancePtr, IntPtr* paramPtrs);
+
+            /// <summary>
+            /// Casts managed pointer to unmanaged pointer.
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal static T* ToPointer<T>(IntPtr ptr) where T : unmanaged
+            {
+                return (T*)ptr.ToPointer();
+            }
+
+            internal static MethodInfo ToPointerMethod = typeof(Invoker).GetMethod(nameof(Invoker.ToPointer), BindingFlags.Static | BindingFlags.NonPublic);
+
+            /// <summary>
+            /// Creates a delegate for invoker to pass parameters as references.
+            /// </summary>
+            internal static Delegate CreateDelegateFromMethod(MethodInfo method, bool passParametersByRef = true)
+            {
+                Type[] methodParameters;
+                if (method.IsStatic)
+                    methodParameters = method.GetParameterTypes();
+                else
+                    methodParameters = method.GetParameters().Select(x => x.ParameterType).Prepend(method.DeclaringType).ToArray();
+
+                // Pass delegate parameters by reference
+                Type[] delegateParameters = methodParameters.Select(x => x.IsPointer ? typeof(IntPtr) : x).Select(x => passParametersByRef && !x.IsByRef ? x.MakeByRefType() : x).ToArray();
+                if (!method.IsStatic && passParametersByRef)
+                    delegateParameters[0] = method.DeclaringType;
+
+                // Convert unmanaged pointer parameters to IntPtr
+                ParameterExpression[] parameterExpressions = delegateParameters.Select(Expression.Parameter).ToArray();
+                Expression[] callExpressions = new Expression[methodParameters.Length];
+                for (int i = 0; i < methodParameters.Length; i++)
+                {
+                    Type parameterType = methodParameters[i];
+                    if (parameterType.IsPointer)
+                        callExpressions[i] = Expression.Call(null, ToPointerMethod.MakeGenericMethod(parameterType.GetElementType()), parameterExpressions[i]);
+                    else
+                        callExpressions[i] = parameterExpressions[i];
+                }
+
+                // Create and compile the delegate
+                MethodCallExpression callDelegExp;
+                if (method.IsStatic)
+                    callDelegExp = Expression.Call(null, method, callExpressions.ToArray());
+                else
+                    callDelegExp = Expression.Call(parameterExpressions[0], method, callExpressions.Skip(1).ToArray());
+                Type delegateType = DelegateHelpers.MakeNewCustomDelegate(delegateParameters.Append(method.ReturnType).ToArray());
+                return Expression.Lambda(delegateType, callDelegExp, parameterExpressions).Compile();
             }
 
             internal static class InvokerNoRet0<TInstance>
@@ -1285,6 +1286,7 @@ namespace FlaxEngine.Interop
                     return MarshalReturnValueThunk(ref ret);
                 }
             }
+#endif
         }
     }
 }

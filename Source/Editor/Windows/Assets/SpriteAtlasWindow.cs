@@ -269,7 +269,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 var sprite = new Sprite
                 {
-                    Name = StringUtils.IncrementNameNumber("New Sprite", name => Asset.Sprites.All(s => s.Name != name)),
+                    Name = Utilities.Utils.IncrementNameNumber("New Sprite", name => Asset.Sprites.All(s => s.Name != name)),
                     Area = new Rectangle(Float2.Zero, Float2.One),
                 };
                 Asset.AddSprite(sprite);

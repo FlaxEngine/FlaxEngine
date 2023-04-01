@@ -472,7 +472,7 @@ namespace FlaxEditor.Surface
             {
                 Window = window,
                 IsAdd = true,
-                Name = StringUtils.IncrementNameNumber("New parameter", x => OnParameterRenameValidate(null, x)),
+                Name = Utilities.Utils.IncrementNameNumber("New parameter", x => OnParameterRenameValidate(null, x)),
                 Type = type,
                 Index = window.VisjectSurface.Parameters.Count,
             };

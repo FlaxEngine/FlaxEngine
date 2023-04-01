@@ -529,12 +529,12 @@ namespace FlaxEditor.Windows
             string destinationName;
             if (item.IsFolder)
             {
-                destinationName = StringUtils.IncrementNameNumber(item.ShortName, x => !Directory.Exists(StringUtils.CombinePaths(sourceFolder, x)));
+                destinationName = Utilities.Utils.IncrementNameNumber(item.ShortName, x => !Directory.Exists(StringUtils.CombinePaths(sourceFolder, x)));
             }
             else
             {
                 string extension = Path.GetExtension(sourcePath);
-                destinationName = StringUtils.IncrementNameNumber(item.ShortName, x => !File.Exists(StringUtils.CombinePaths(sourceFolder, x + extension))) + extension;
+                destinationName = Utilities.Utils.IncrementNameNumber(item.ShortName, x => !File.Exists(StringUtils.CombinePaths(sourceFolder, x + extension))) + extension;
             }
 
             return StringUtils.CombinePaths(sourceFolder, destinationName);

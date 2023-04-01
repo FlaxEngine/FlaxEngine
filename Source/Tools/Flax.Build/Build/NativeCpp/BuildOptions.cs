@@ -234,7 +234,7 @@ namespace Flax.Build.NativeCpp
                 "System.ObjectModel",
                 "System.Private.CoreLib",
                 "System.Private.Uri",
-                "System.Private.Xml",
+                //"System.Private.Xml",
 
                 "System.Reflection",
                 "System.Runtime",
@@ -245,11 +245,11 @@ namespace Flax.Build.NativeCpp
                 "System.Security.Cryptography",
                 "System.Security.Cryptography.Algorithms",
                 "System.Security.Cryptography.Primitives",
-                "System.Text.RegularExpressions",
+                //"System.Text.RegularExpressions",
                 "System.Threading.Tasks.Parallel",
-                "System.Xml",
+                //"System.Xml",
 
-                "System.Reflection.Metadata",
+                //"System.Reflection.Metadata",
                 "netstandard",
             },
             SystemAnalyzers = new HashSet<string>

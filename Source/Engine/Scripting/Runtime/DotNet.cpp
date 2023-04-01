@@ -1273,8 +1273,8 @@ void* MMethod::GetThunk()
 {
     if (!_cachedThunk)
     {
-        static void* GetMethodUnmanagedFunctionPointerPtr = GetStaticMethodPointer(TEXT("GetMethodUnmanagedFunctionPointer"));
-        _cachedThunk = CallStaticMethod<void*, void*>(GetMethodUnmanagedFunctionPointerPtr, _handle);
+        static void* GetThunkPtr = GetStaticMethodPointer(TEXT("GetThunk"));
+        _cachedThunk = CallStaticMethod<void*, void*>(GetThunkPtr, _handle);
     }
     return _cachedThunk;
 }

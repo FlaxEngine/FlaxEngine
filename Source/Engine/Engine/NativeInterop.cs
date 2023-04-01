@@ -6,7 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+#if !USE_AOT
 using System.Linq.Expressions;
+#endif
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
@@ -789,8 +791,10 @@ namespace FlaxEngine.Interop
             internal Type[] parameterTypes;
             internal MethodInfo method;
             internal Type returnType;
+#if !USE_AOT
             private Invoker.MarshalAndInvokeDelegate invokeDelegate;
             private object delegInvoke;
+#endif
 
             internal MethodHolder(MethodInfo method)
             {
@@ -799,6 +803,7 @@ namespace FlaxEngine.Interop
                 parameterTypes = method.GetParameterTypes();
             }
 
+#if !USE_AOT
             internal bool TryGetDelegate(out Invoker.MarshalAndInvokeDelegate outDeleg, out object outDelegInvoke)
             {
                 if (invokeDelegate == null)
@@ -836,6 +841,7 @@ namespace FlaxEngine.Interop
                 outDelegInvoke = delegInvoke;
                 return outDeleg != null;
             }
+#endif
         }
 
         internal static ManagedHandle GetMethodGCHandle(MethodInfo method)
@@ -1001,6 +1007,11 @@ namespace FlaxEngine.Interop
 
         private static class DelegateHelpers
         {
+#if USE_AOT
+            internal static void InitMethods()
+            {
+            }
+#else
             private static Func<Type[], Type> MakeNewCustomDelegateFunc;
 #if FLAX_EDITOR
             private static Func<Type[], Type> MakeNewCustomDelegateFuncCollectible;
@@ -1039,8 +1050,10 @@ namespace FlaxEngine.Interop
 #endif
                 return MakeNewCustomDelegateFunc(parameters);
             }
+#endif
         }
 
+#if !USE_AOT
         /// <summary>
         /// Wrapper class for invoking function pointers from unmanaged code.
         /// </summary>
@@ -1178,6 +1191,7 @@ namespace FlaxEngine.Interop
                 }
             }
         }
+#endif
     }
 }
 

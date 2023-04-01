@@ -37,6 +37,9 @@ public class Editor : EditorModule
     {
         base.Setup(options);
 
+        options.ScriptingAPI.SystemReferences.Add("System.Private.Xml");
+        options.ScriptingAPI.SystemReferences.Add("System.Text.RegularExpressions");
+
         options.PublicDependencies.Add("Engine");
         options.PrivateDependencies.Add("pugixml");
         options.PrivateDependencies.Add("UniversalAnalytics");
