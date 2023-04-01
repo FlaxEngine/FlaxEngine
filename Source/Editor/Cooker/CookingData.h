@@ -129,8 +129,6 @@ API_ENUM() enum class BuildPlatform
     iOSARM64 = 14,
 };
 
-extern FLAXENGINE_API const Char* ToString(const BuildPlatform platform);
-
 /// <summary>
 /// Game build configuration modes.
 /// </summary>
@@ -151,8 +149,6 @@ API_ENUM() enum class BuildConfiguration
     /// </summary>
     Release = 2,
 };
-
-extern FLAXENGINE_API const Char* ToString(const BuildConfiguration configuration);
 
 /// <summary>
 /// .NET Ahead of Time Compilation (AOT) modes.
@@ -179,6 +175,10 @@ enum class DotNetAOTModes
     /// </summary>
     MonoAOTStatic,
 };
+
+extern FLAXENGINE_API const Char* ToString(const BuildPlatform platform);
+extern FLAXENGINE_API const Char* ToString(const BuildConfiguration configuration);
+extern FLAXENGINE_API const Char* ToString(const DotNetAOTModes mode);
 
 #define BUILD_STEP_CANCEL_CHECK if (GameCooker::IsCancelRequested()) return true
 

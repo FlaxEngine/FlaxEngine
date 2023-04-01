@@ -149,7 +149,7 @@ const Char* ToString(const BuildPlatform platform)
     case BuildPlatform::iOSARM64:
         return TEXT("iOS ARM64");
     default:
-        return TEXT("?");
+        return TEXT("");
     }
 }
 
@@ -164,7 +164,24 @@ const Char* ToString(const BuildConfiguration configuration)
     case BuildConfiguration::Release:
         return TEXT("Release");
     default:
-        return TEXT("?");
+        return TEXT("");
+    }
+}
+
+const Char* ToString(const DotNetAOTModes mode)
+{
+    switch (mode)
+    {
+    case DotNetAOTModes::None:
+        return TEXT("None");
+    case DotNetAOTModes::ILC:
+        return TEXT("ILC");
+    case DotNetAOTModes::MonoAOTDynamic:
+        return TEXT("MonoAOTDynamic");
+    case DotNetAOTModes::MonoAOTStatic:
+        return TEXT("MonoAOTStatic");
+    default:
+        return TEXT("");
     }
 }
 

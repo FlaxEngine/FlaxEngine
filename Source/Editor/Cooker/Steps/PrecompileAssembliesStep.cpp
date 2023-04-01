@@ -58,22 +58,9 @@ bool PrecompileAssembliesStep::Perform(CookingData& data)
     const Char *platform, *architecture, *configuration = ::ToString(data.Configuration);
     data.GetBuildPlatformName(platform, architecture);
     const String logFile = data.CacheDirectory / TEXT("AotLog.txt");
-    const Char* aotModeName = TEXT("");
-    switch (aotMode)
-    {
-    case DotNetAOTModes::ILC:
-        aotModeName = TEXT("ILC");
-        break;
-    case DotNetAOTModes::MonoAOTDynamic:
-        aotModeName = TEXT("MonoAOTDynamic");
-        break;
-    case DotNetAOTModes::MonoAOTStatic:
-        aotModeName = TEXT("MonoAOTStatic");
-        break;
-    }
     auto args = String::Format(
         TEXT("-log -logfile=\"{}\" -runDotNetAOT -mutex -platform={} -arch={} -configuration={} -aotMode={} -binaries=\"{}\" -intermediate=\"{}\""),
-        logFile, platform, architecture, configuration, aotModeName, data.DataOutputPath, data.ManagedCodeOutputPath);
+        logFile, platform, architecture, configuration, ToString(aotMode), data.DataOutputPath, data.ManagedCodeOutputPath);
     for (const String& define : data.CustomDefines)
     {
         args += TEXT(" -D");

@@ -76,6 +76,10 @@ namespace Flax.Build
         {
             options.ScriptingAPI.Defines.Add(GetCSharpBuildDefine(options.Configuration));
             options.ScriptingAPI.Defines.Add(GetCSharpPlatformDefine(options.Platform.Target));
+            if ((options.Platform != null && !options.Platform.HasDynamicCodeExecutionSupport) || Configuration.AOTMode != DotNetAOTModes.None)
+            {
+                options.ScriptingAPI.Defines.Add("USE_AOT");
+            }
         }
 
         internal static string GetCSharpBuildDefine(TargetConfiguration configuration)
