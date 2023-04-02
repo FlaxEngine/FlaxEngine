@@ -662,16 +662,12 @@ bool MAssembly::LoadCorlib()
 
 bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePath)
 {
-    // Load assembly file data
-    Array<byte> data;
-    File::ReadAllBytes(assemblyPath, data);
-
     // Open .Net assembly
     const StringAnsi assemblyPathAnsi = assemblyPath.ToStringAnsi();
     const char* name;
     const char* fullname;
     static void* LoadAssemblyImagePtr = GetStaticMethodPointer(TEXT("LoadAssemblyImage"));
-    _handle = CallStaticMethod<void*, char*, int, const char*, const char**, const char**>(LoadAssemblyImagePtr, (char*)data.Get(), data.Count(), assemblyPathAnsi.Get(), &name, &fullname);
+    _handle = CallStaticMethod<void*, const char*, const char**, const char**>(LoadAssemblyImagePtr, assemblyPathAnsi.Get(), &name, &fullname);
     _name = name;
     _fullname = fullname;
     MCore::GC::FreeMemory((void*)name);

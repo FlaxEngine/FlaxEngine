@@ -772,7 +772,7 @@ namespace FlaxEngine.Interop
         }
 
         [UnmanagedCallersOnly]
-        internal static ManagedHandle LoadAssemblyImage(IntPtr data, int len, IntPtr assemblyPathPtr, IntPtr* assemblyName, IntPtr* assemblyFullName)
+        internal static ManagedHandle LoadAssemblyImage(IntPtr assemblyPathPtr, IntPtr* assemblyName, IntPtr* assemblyFullName)
         {
             if (!firstAssemblyLoaded)
             {
@@ -786,24 +786,27 @@ namespace FlaxEngine.Interop
             }
 
             string assemblyPath = Marshal.PtrToStringAnsi(assemblyPathPtr);
-
-            byte[] raw = new byte[len];
-            Marshal.Copy(data, raw, 0, len);
-
-            using MemoryStream stream = new MemoryStream(raw);
+            
             Assembly assembly;
-#if !BUILD_RELEASE
+#if FLAX_EDITOR
+            // Load assembly from loaded bytes to prevent file locking in Editor
+            var assemblyBytes = File.ReadAllBytes(assemblyPath);
+            using MemoryStream stream = new MemoryStream(assemblyBytes);
             var pdbPath = Path.ChangeExtension(assemblyPath, "pdb");
             if (File.Exists(pdbPath))
             {
+                // Load including debug symbols
                 using FileStream pdbStream = new FileStream(Path.ChangeExtension(assemblyPath, "pdb"), FileMode.Open);
                 assembly = scriptingAssemblyLoadContext.LoadFromStream(stream, pdbStream);
             }
             else
-#endif
             {
                 assembly = scriptingAssemblyLoadContext.LoadFromStream(stream);
             }
+#else
+            // Load assembly from file
+            assembly = scriptingAssemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
+#endif
             if (assembly == null)
                 return new ManagedHandle();
             NativeLibrary.SetDllImportResolver(assembly, NativeLibraryImportResolver);
