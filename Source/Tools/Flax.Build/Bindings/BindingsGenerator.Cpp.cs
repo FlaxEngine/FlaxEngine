@@ -1430,7 +1430,7 @@ namespace Flax.Build.Bindings
 
             // If platform supports JITed code execution then use method thunk, otherwise fallback to generic runtime invoke
             var returnType = functionInfo.ReturnType;
-            var useThunk = buildData.Platform.HasDynamicCodeExecutionSupport;
+            var useThunk = buildData.Platform.HasDynamicCodeExecutionSupport && Configuration.AOTMode == DotNetAOTModes.None;
             if (useThunk)
             {
                 contents.AppendLine($"        PROFILE_CPU_NAMED(\"{classInfo.FullNameManaged}::{functionInfo.Name}\");");
@@ -1480,7 +1480,7 @@ namespace Flax.Build.Bindings
                 {
                     contents.AppendLine($"        typedef MObject* (*Thunk)(void* instance{thunkParams}, MObject** exception);");
                     contents.AppendLine("        const auto thunk = (Thunk)method->GetThunk();");
-                    contents.AppendLine($"        auto __result = thunk(object->GetOrCreateManagedInstance(){thunkCall}, &exception);");
+                    contents.AppendLine($"        MObject* __result = thunk(object->GetOrCreateManagedInstance(){thunkCall}, &exception);");
                 }
 
                 // Convert parameter values back from managed to native (could be modified there)
@@ -1514,7 +1514,7 @@ namespace Flax.Build.Bindings
                 }
 
                 // Invoke method
-                contents.AppendLine("        auto __result = mmethod->Invoke(object->GetOrCreateManagedInstance(), params, &exception);");
+                contents.AppendLine("        MObject* __result = method->Invoke(object->GetOrCreateManagedInstance(), params, &exception);");
 
                 // Convert parameter values back from managed to native (could be modified there)
                 for (var i = 0; i < functionInfo.Parameters.Count; i++)
@@ -1935,12 +1935,12 @@ namespace Flax.Build.Bindings
                     contents.Append(')').AppendLine();
                     contents.Append("    {").AppendLine();
                     if (buildData.Target.IsEditor)
-                        contents.Append("        MMethod* mmethod = nullptr;").AppendLine(); // TODO: find a better way to cache event method in editor and handle C# hot-reload
+                        contents.Append("        MMethod* method = nullptr;").AppendLine(); // TODO: find a better way to cache event method in editor and handle C# hot-reload
                     else
-                        contents.Append("        static MMethod* mmethod = nullptr;").AppendLine();
-                    contents.Append("        if (!mmethod)").AppendLine();
-                    contents.AppendFormat("            mmethod = {1}::TypeInitializer.GetClass()->GetMethod(\"Internal_{0}_Invoke\", {2});", eventInfo.Name, classTypeNameNative, paramsCount).AppendLine();
-                    contents.Append("        CHECK(mmethod);").AppendLine();
+                        contents.Append("        static MMethod* method = nullptr;").AppendLine();
+                    contents.Append("        if (!method)").AppendLine();
+                    contents.AppendFormat("            method = {1}::TypeInitializer.GetClass()->GetMethod(\"Internal_{0}_Invoke\", {2});", eventInfo.Name, classTypeNameNative, paramsCount).AppendLine();
+                    contents.Append("        CHECK(method);").AppendLine();
                     contents.Append("        MObject* exception = nullptr;").AppendLine();
                     if (paramsCount == 0)
                         contents.AppendLine("        void** params = nullptr;");
@@ -1958,7 +1958,7 @@ namespace Flax.Build.Bindings
                         contents.AppendLine("        MObject* instance = nullptr;");
                     else
                         contents.AppendLine($"        MObject* instance = (({classTypeNameNative}*)this)->GetManagedInstance();");
-                    contents.Append("        mmethod->Invoke(instance, params, &exception);").AppendLine();
+                    contents.Append("        method->Invoke(instance, params, &exception);").AppendLine();
                     contents.Append("        if (exception)").AppendLine();
                     contents.Append("            DebugLog::LogException(exception);").AppendLine();
                     for (var i = 0; i < paramsCount; i++)
