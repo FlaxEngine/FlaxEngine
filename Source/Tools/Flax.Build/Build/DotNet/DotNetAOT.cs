@@ -259,23 +259,17 @@ namespace Flax.Build
                     }
                 }
 
-                // Setup options
-                var aotCompilerPath = Path.Combine(platformToolsRoot, "mono-aot-cross.exe");
-                var monoAotMode = "full";
-                var debugMode = configuration != TargetConfiguration.Release ? "soft-debug" : "nodebug";
-                var aotCompilerArgs = $"--aot={monoAotMode},verbose,stats,print-skipped,{debugMode} -O=all";
-                if (configuration != TargetConfiguration.Release)
-                    aotCompilerArgs = "--debug " + aotCompilerArgs;
-                var envVars = new Dictionary<string, string>();
-                envVars["MONO_PATH"] = aotAssembliesPath + ";" + dotnetLibPath;
-                if (dotnetAotDebug)
-                {
-                    envVars["MONO_LOG_LEVEL"] = "debug";
-                }
-
                 // Run compilation
                 var compileAssembly = (string assemblyPath) =>
                 {
+                    // Determinate whether use debug information for that assembly
+                    var useDebug = configuration != TargetConfiguration.Release;
+                    if (!dotnetAotDebug && !inputFiles.Contains(assemblyPath))
+                    {
+                        // Don't use debug for C# stdlib assemblies by default to reduce build size and improve build time (except manually overriden)
+                        useDebug = false;
+                    }
+
                     // Skip if output is already generated and is newer than a source assembly
                     var outputFilePath = assemblyPath + buildPlatform.SharedLibraryFileExtension;
                     if (!File.Exists(outputFilePath) || File.GetLastWriteTime(assemblyPath) > File.GetLastWriteTime(outputFilePath))
@@ -287,17 +281,34 @@ namespace Flax.Build
                             Log.Info("");
                         }
 
+                        // Setup options
+                        var aotCompilerPath = Path.Combine(platformToolsRoot, "mono-aot-cross.exe");
+                        var monoAotMode = "full";
+                        var debugMode = useDebug ? "soft-debug" : "nodebug";
+                        var aotCompilerArgs = $"--aot={monoAotMode},verbose,stats,print-skipped,{debugMode} -O=all";
+                        if (useDebug || dotnetAotDebug)
+                            aotCompilerArgs = "--debug " + aotCompilerArgs;
+                        var envVars = new Dictionary<string, string>();
+                        envVars["MONO_PATH"] = aotAssembliesPath + ";" + dotnetLibPath;
+                        if (dotnetAotDebug)
+                        {
+                            envVars["MONO_LOG_LEVEL"] = "debug";
+                        }
+
                         // Run cross-compiler compiler
                         Log.Info(" * " + assemblyPath);
                         Utilities.Run(aotCompilerPath, $"{aotCompilerArgs} \"{assemblyPath}\"", null, platformToolsRoot, Utilities.RunOptions.AppMustExist | Utilities.RunOptions.ThrowExceptionOnError | Utilities.RunOptions.ConsoleLogOutput, envVars);
                     }
+
+                    // Skip if deployed file is already valid
                     var deployedFilePath = monoAssembliesOutputPath != null ? Path.Combine(monoAssembliesOutputPath, Path.GetFileName(outputFilePath)) : outputFilePath;
                     if (monoAssembliesOutputPath != null && (!File.Exists(deployedFilePath) || File.GetLastWriteTime(outputFilePath) > File.GetLastWriteTime(deployedFilePath)))
                     {
                         // Copy to the destination folder
-                        Utilities.FileCopy(assemblyPath, Path.Combine(monoAssembliesOutputPath, Path.GetFileName(assemblyPath)));
+                        var assemblyFileName = Path.GetFileName(assemblyPath);
+                        Utilities.FileCopy(assemblyPath, Path.Combine(monoAssembliesOutputPath, assemblyFileName));
                         Utilities.FileCopy(outputFilePath, deployedFilePath);
-                        if (configuration == TargetConfiguration.Debug || !(buildPlatform is Platforms.WindowsPlatformBase))
+                        if (useDebug && File.Exists(outputFilePath + ".pdb"))
                             Utilities.FileCopy(outputFilePath + ".pdb", Path.Combine(monoAssembliesOutputPath, Path.GetFileName(outputFilePath + ".pdb")));
                     }
                 };
