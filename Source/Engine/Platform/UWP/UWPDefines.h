@@ -11,6 +11,6 @@
 
 // Use AOT for Mono
 #define USE_MONO_AOT 1
-#define USE_MONO_AOT_MODE MONO_AOT_MODE_INTERP // TODO: support Full AOT mode instead of interpreter
+#define USE_MONO_AOT_MODE MONO_AOT_MODE_FULL
 
 #endif

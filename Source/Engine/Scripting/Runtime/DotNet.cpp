@@ -1266,6 +1266,10 @@ void* MMethod::GetThunk()
     {
         static void* GetThunkPtr = GetStaticMethodPointer(TEXT("GetThunk"));
         _cachedThunk = CallStaticMethod<void*, void*>(GetThunkPtr, _handle);
+#if !BUILD_RELEASE
+        if (!_cachedThunk)
+            LOG(Error, "Failed to get C# method thunk for {0}::{1}", String(_parentClass->GetFullName()), String(_name));
+#endif
     }
     return _cachedThunk;
 }
@@ -1744,6 +1748,27 @@ static MonoAssembly* OnMonoAssemblyPreloadHook(MonoAssemblyName* aname, char** a
     return OnMonoAssemblyLoad(mono_assembly_name_get_name(aname));
 }
 
+#if 0
+static unsigned char* OnMonoLoadAOT(MonoAssembly* assembly, int size, void* user_data, void** out_handle)
+{
+    MonoAssemblyName* assemblyName = mono_assembly_get_name(assembly);
+    const char* assemblyNameStr = mono_assembly_name_get_name(assemblyName);
+#if DOTNET_HOST_MONO_DEBUG
+    LOG(Info, "Loading AOT data for C# assembly {0}", String(assemblyNameStr));
+#endif
+    return nullptr;
+}
+
+static void OnMonoFreeAOT(MonoAssembly* assembly, int size, void* user_data, void* handle)
+{
+#if DOTNET_HOST_MONO_DEBUG
+    MonoAssemblyName* assemblyName = mono_assembly_get_name(assembly);
+    const char* assemblyNameStr = mono_assembly_name_get_name(assemblyName);
+    LOG(Info, "Free AOT data for C# assembly {0}", String(assemblyNameStr));
+#endif
+}
+#endif
+
 bool InitHostfxr()
 {
 #if DOTNET_HOST_MONO_DEBUG
@@ -1855,6 +1880,9 @@ bool InitHostfxr()
     static_assert(ARRAY_COUNT(appctxKeys) == ARRAY_COUNT(appctxValues), "Invalid appctx setup");
     monovm_initialize(ARRAY_COUNT(appctxKeys), appctxKeys, appctxValues);
     mono_install_assembly_preload_hook(OnMonoAssemblyPreloadHook, nullptr);
+#if 0
+    mono_install_load_aot_data_hook(OnMonoLoadAOT, OnMonoFreeAOT, nullptr);
+#endif
 
     // Init managed runtime
 #if PLATFORM_ANDROID || PLATFORM_IOS

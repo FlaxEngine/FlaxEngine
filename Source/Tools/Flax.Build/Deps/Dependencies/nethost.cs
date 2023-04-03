@@ -251,6 +251,14 @@ namespace Flax.Deps.Dependencies
             CloneGitRepo(root, "https://github.com/FlaxEngine/dotnet-runtime.git", "flax-master", null, true);
             SetupDirectory(Path.Combine(root, "src", "external"), false);
 
+            /*
+             * Mono AOT building for Windows:
+             * .\build.cmd -c release -runtimeFlavor mono mono+libs -cmakeargs "-DDISABLE_JIT=1-DENABLE_PERFTRACING=0-DDISABLE_REFLECTION_EMIT=1-DDISABLE_EVENTPIPE=1-DDISABLE_COM=1-DDISABLE_PROFILER=1-DDISABLE_COMPONENTS=1" /p:FeaturePerfTracing=false /p:FeatureManagedEtw=false /p:FeatureManagedEtwChannels=false /p:FeatureEtw=false
+             * 
+             * Mono AOT cross-compiler for Windows:
+             * .\build.cmd -c release -runtimeFlavor mono -subset mono /p:BuildMonoAotCrossCompiler=true
+             */
+
             foreach (var platform in options.Platforms)
             {
                 var platformData = Path.Combine(GetBinariesFolder(options, platform), "Data", "nethost");

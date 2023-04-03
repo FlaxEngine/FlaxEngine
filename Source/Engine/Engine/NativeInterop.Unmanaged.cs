@@ -496,7 +496,6 @@ namespace FlaxEngine.Interop
             return ManagedHandle.Alloc(value);
         }
 
-
         [UnmanagedCallersOnly]
         internal static ManagedHandle NewArray(ManagedHandle typeHandle, long size)
         {
