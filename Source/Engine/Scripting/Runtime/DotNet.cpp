@@ -245,12 +245,6 @@ struct NativePropertyDefinitions
     MMethodAttributes setterAttributes;
 };
 
-struct NativeString
-{
-    int32 length;
-    Char chars[1];
-};
-
 MDomain* MCore::CreateDomain(const StringAnsi& domainName)
 {
     return nullptr;
@@ -369,9 +363,10 @@ MString* MCore::String::New(const Char* str, int32 length, MDomain* domain)
 
 StringView MCore::String::GetChars(MString* obj)
 {
+    int32 length = 0;
     static void* GetStringPointerPtr = GetStaticMethodPointer(TEXT("GetStringPointer"));
-    NativeString* str = (NativeString*)CallStaticMethod<void*, void*>(GetStringPointerPtr, obj);
-    return StringView(str->chars, str->length);
+    const Char* chars = CallStaticMethod<const Char*, void*, int*>(GetStringPointerPtr, obj, &length);
+    return StringView(chars, length);
 }
 
 MArray* MCore::Array::New(const MClass* elementKlass, int32 length)

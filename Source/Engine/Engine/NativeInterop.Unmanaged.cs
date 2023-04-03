@@ -473,13 +473,12 @@ namespace FlaxEngine.Interop
         /// Returns pointer to the string's internal structure, containing the buffer and length of the string.
         /// </summary>
         [UnmanagedCallersOnly]
-        internal static IntPtr GetStringPointer(ManagedHandle stringHandle)
+        internal static char* GetStringPointer(ManagedHandle stringHandle, int* len)
         {
             string str = Unsafe.As<string>(stringHandle.Target);
-            IntPtr ptr = (Unsafe.Read<IntPtr>(Unsafe.AsPointer(ref str)) + sizeof(int) * 2);
-            if (ptr < 0x1024)
-                throw new Exception("null string ptr");
-            return ptr;
+            *len = str.Length;
+            fixed (char* p = str)
+                return p;
         }
 
         [UnmanagedCallersOnly]
@@ -786,7 +785,7 @@ namespace FlaxEngine.Interop
             }
 
             string assemblyPath = Marshal.PtrToStringAnsi(assemblyPathPtr);
-            
+
             Assembly assembly;
 #if FLAX_EDITOR
             // Load assembly from loaded bytes to prevent file locking in Editor
