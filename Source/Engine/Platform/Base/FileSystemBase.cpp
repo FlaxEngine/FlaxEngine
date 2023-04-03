@@ -247,6 +247,16 @@ bool FileSystemBase::CopyDirectory(const String& dst, const String& src, bool wi
     return FileSystemBase::DirectoryCopyHelper(dst, src, withSubDirectories);
 }
 
+uint64 FileSystemBase::GetDirectorySize(const StringView& path)
+{
+    uint64 result = 0;
+    Array<String> files;
+    FileSystem::DirectoryGetFiles(files, path, TEXT("*"), DirectorySearchOption::AllDirectories);
+    for (const String& file : files)
+        result += FileSystem::GetFileSize(file);
+    return result;
+}
+
 String FileSystemBase::ConvertRelativePathToAbsolute(const String& path)
 {
     return ConvertRelativePathToAbsolute(Globals::StartupFolder, path);
