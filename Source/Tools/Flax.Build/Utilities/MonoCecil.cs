@@ -22,6 +22,19 @@ namespace Flax.Build
 
             public HashSet<string> SearchDirectories = new();
 
+            public AssemblyDefinition Resolve(string path)
+            {
+                var name = Path.GetFileNameWithoutExtension(path);
+                foreach (var e in _cache)
+                {
+                    if (string.Equals(e.Value.Name.Name, name, StringComparison.OrdinalIgnoreCase))
+                        return e.Value;
+                }
+                var assembly = ModuleDefinition.ReadModule(path, new ReaderParameters()).Assembly;
+                _cache[assembly.FullName] = assembly;
+                return assembly;
+            }
+
             public AssemblyDefinition Resolve(AssemblyNameReference name)
             {
                 return Resolve(name, new ReaderParameters());

@@ -56,19 +56,88 @@ namespace Flax.Build
         public static void RunDotNetAOT()
         {
             Log.Info("Running .NET AOT in mode " + AOTMode);
-            DotNetAOT.Run();
+            DotNetAOT.RunAOT();
+        }
+
+        /// <summary>
+        /// Executes .NET class library stripping process as a part of the game cooking (called by DeployDataStep in Editor).
+        /// </summary>
+        [CommandLine("runDotNetClassLibStripping", "")]
+        public static void RunDotNetClassLibStripping()
+        {
+            Log.Info("Running .NET class Library stripping");
+            DotNetAOT.RunClassLibStripping();
         }
     }
 
     /// <summary>
     /// The DotNet Ahead of Time Compilation (AOT) feature.
     /// </summary>
-    public static class DotNetAOT
+    internal static class DotNetAOT
     {
-        /// <summary>
-        /// Executes AOT process as a part of the game cooking (called by PrecompileAssembliesStep in Editor).
-        /// </summary>
-        public static void Run()
+        internal static void RunClassLibStripping()
+        {
+            var outputPath = Configuration.BinariesFolder; // Provided by DeployDataStep
+            if (!Directory.Exists(outputPath))
+                throw new Exception("Missing output folder " + outputPath);
+            var dotnetOutputPath = Path.Combine(outputPath, "Dotnet");
+            if (!Directory.Exists(dotnetOutputPath))
+                return;
+
+            // Find input files
+            var inputFiles = Directory.GetFiles(outputPath, "*.dll", SearchOption.TopDirectoryOnly).ToList();
+            inputFiles.RemoveAll(FilterAssembly);
+            for (int i = 0; i < inputFiles.Count; i++)
+                inputFiles[i] = Utilities.NormalizePath(inputFiles[i]);
+            inputFiles.Sort();
+
+            // Peek class library folder
+            var coreLibPaths = Directory.GetFiles(dotnetOutputPath, "System.Private.CoreLib.dll", SearchOption.AllDirectories);
+            if (coreLibPaths.Length != 1)
+                throw new Exception("Invalid C# class library setup in " + dotnetOutputPath);
+            var dotnetLibPath = Utilities.NormalizePath(Path.GetDirectoryName(coreLibPaths[0]));
+
+            using (var assemblyResolver = new MonoCecil.BasicAssemblyResolver())
+            {
+                assemblyResolver.SearchDirectories.Add(outputPath);
+                assemblyResolver.SearchDirectories.Add(dotnetLibPath);
+
+                // Build list of all used assemblies
+                var assembliesPaths = new List<string>();
+                foreach (var inputFile in inputFiles)
+                {
+                    try
+                    {
+                        BuildAssembliesList(inputFile, assembliesPaths, assemblyResolver, string.Empty, null);
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+
+                // Get all C# class lib assemblies
+                var stdLibFiles = Directory.GetFiles(dotnetLibPath, "*.dll", SearchOption.TopDirectoryOnly).ToList();
+                stdLibFiles.RemoveAll(FilterAssembly);
+                for (int i = 0; i < stdLibFiles.Count; i++)
+                    stdLibFiles[i] = Utilities.NormalizePath(stdLibFiles[i]);
+
+                // Remove any unused C# class lib assemblies
+                long sizeOfRemoved = 0;
+                foreach (var file in stdLibFiles)
+                {
+                    if (!assembliesPaths.Contains(file))
+                    {
+                        Log.Info("Removing unused C# assembly: " + Path.GetFileName(file));
+                        var fileInfo = new FileInfo(file);
+                        sizeOfRemoved += fileInfo.Length;
+                        fileInfo.Delete();
+                    }
+                }
+                Log.Info("Removed C# assemblies size: " + (sizeOfRemoved / (1024 * 1024) + " MB"));
+            }
+        }
+
+        internal static void RunAOT()
         {
             var platform = Configuration.BuildPlatforms[0];
             var arch = Configuration.BuildArchitectures[0];
@@ -435,19 +504,22 @@ namespace Flax.Build
 
         internal static void BuildAssembliesList(string assemblyPath, AssemblyNameReference assemblyReference, List<string> outputList, IAssemblyResolver assemblyResolver, string callerPath, HashSet<string> warnings)
         {
-            // Detect usage of C# API that is not supported in AOT builds
             var assemblyName = Path.GetFileName(assemblyPath);
-            if (assemblyReference.Name.Contains("System.Linq.Expressions") ||
-                assemblyReference.Name.Contains("System.Reflection.Emit") ||
-                assemblyReference.Name.Contains("System.Reflection.Emit.ILGeneration"))
+            if (warnings != null)
             {
-                if (!warnings.Contains(assemblyReference.Name))
+                // Detect usage of C# API that is not supported in AOT builds
+                if (assemblyReference.Name.Contains("System.Linq.Expressions") ||
+                    assemblyReference.Name.Contains("System.Reflection.Emit") ||
+                    assemblyReference.Name.Contains("System.Reflection.Emit.ILGeneration"))
                 {
-                    warnings.Add(assemblyReference.Name);
-                    if (callerPath.Length != 0)
-                        Log.Warning($"Warning! Assembly '{assemblyName}' (referenced by '{callerPath}') references '{assemblyReference.Name}' which is not supported in AOT builds and might cause error (due to lack of JIT at runtime).");
-                    else
-                        Log.Warning($"Warning! Assembly '{assemblyName}' references '{assemblyReference.Name}' which is not supported in AOT builds and might cause error (due to lack of JIT at runtime).");
+                    if (!warnings.Contains(assemblyReference.Name))
+                    {
+                        warnings.Add(assemblyReference.Name);
+                        if (callerPath.Length != 0)
+                            Log.Warning($"Warning! Assembly '{assemblyName}' (referenced by '{callerPath}') references '{assemblyReference.Name}' which is not supported in AOT builds and might cause error (due to lack of JIT at runtime).");
+                        else
+                            Log.Warning($"Warning! Assembly '{assemblyName}' references '{assemblyReference.Name}' which is not supported in AOT builds and might cause error (due to lack of JIT at runtime).");
+                    }
                 }
             }
             if (callerPath.Length != 0)

@@ -225,6 +225,26 @@ bool DeployDataStep::Perform(CookingData& data)
                 }
             }
         }
+
+        // Optimize deployed C# class library (remove DLLs unused by scripts)
+        if (aotMode == DotNetAOTModes::None && buildSettings.SkipUnusedDotnetLibsPackaging)
+        {
+            LOG(Info, "Optimizing .NET class library size to include only used assemblies");
+            const String logFile = data.CacheDirectory / TEXT("StripDotnetLibs.txt");
+            String args = String::Format(
+                TEXT("-log -logfile=\"{}\" -runDotNetClassLibStripping -mutex -binaries=\"{}\""),
+                logFile, data.DataOutputPath);
+            for (const String& define : data.CustomDefines)
+            {
+                args += TEXT(" -D");
+                args += define;
+            }
+            if (ScriptsBuilder::RunBuildTool(args))
+            {
+                data.Error(TEXT("Failed to optimize .Net class library."));
+                return true;
+            }
+        }
     }
 #else
     if (!FileSystem::DirectoryExists(dstMono))
