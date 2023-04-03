@@ -785,6 +785,7 @@ namespace Flax.Build.Bindings
                 }
             }
 #endif
+
             if (writeDefaultValue)
             {
                 // Write default value attribute
@@ -802,6 +803,27 @@ namespace Flax.Build.Bindings
         private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, MemberInfo memberInfo, bool useUnmanaged, string defaultValue = null, TypeInfo defaultValueType = null)
         {
             GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, memberInfo.Attributes, memberInfo.Comment, true, useUnmanaged, defaultValue, memberInfo.IsDeprecated, defaultValueType);
+        }
+
+        private static bool GenerateCSharpStructureUseDefaultInitialize(BuildData buildData, StructureInfo structureInfo)
+        {
+            foreach (var fieldInfo in structureInfo.Fields)
+            {
+                // Ignore non-member fields
+                if (fieldInfo.IsStatic || fieldInfo.IsReadOnly || fieldInfo.IsConstexpr)
+                    continue;
+
+                // Check if any field has default value
+                if (fieldInfo.HasAttribute("DefaultValue") ||
+                    fieldInfo.HasDefaultValue)
+                    return true;
+                
+                // Check any nested structure
+                var apiType = FindApiTypeInfo(buildData, fieldInfo.Type, structureInfo);
+                if (apiType is StructureInfo fieldTypeStruct && GenerateCSharpStructureUseDefaultInitialize(buildData, fieldTypeStruct))
+                    return true;
+            }
+            return false;
         }
 
         private static void GenerateCSharpAccessLevel(StringBuilder contents, AccessLevel access)
@@ -1668,7 +1690,7 @@ namespace Flax.Build.Bindings
             indent += "    ";
 
             // Fields
-            var hasDefaultMember = false;
+            bool hasDefaultMember = false;
             foreach (var fieldInfo in structureInfo.Fields)
             {
                 contents.AppendLine();
@@ -1766,9 +1788,13 @@ namespace Flax.Build.Bindings
             // Default value
             if (!structureInfo.NoDefault && !hasDefaultMember)
             {
-                contents.AppendLine();
-                contents.Append(indent).AppendLine("private static bool __defaultValid;");
-                contents.Append(indent).AppendLine($"private static {structureInfo.Name} __default;");
+                var useDefaultValueInit = GenerateCSharpStructureUseDefaultInitialize(buildData, structureInfo);
+                if (useDefaultValueInit)
+                {
+                    contents.AppendLine();
+                    contents.Append(indent).AppendLine("private static bool __defaultValid;");
+                    contents.Append(indent).AppendLine($"private static {structureInfo.Name} __default;");
+                }
                 contents.AppendLine();
                 contents.Append(indent).AppendLine("/// <summary>");
                 contents.Append(indent).AppendLine($"/// The default <see cref=\"{structureInfo.Name}\"/>.");
@@ -1778,28 +1804,38 @@ namespace Flax.Build.Bindings
                 indent += "    ";
                 contents.Append(indent).AppendLine("get");
                 contents.Append(indent).AppendLine("{");
-                indent += "    ";
-                contents.Append(indent).AppendLine("if (!__defaultValid)");
-                contents.Append(indent).AppendLine("{");
-                indent += "    ";
-                contents.Append(indent).AppendLine("__defaultValid = true;");
-                contents.Append(indent).AppendLine("object obj = __default;");
-                contents.Append(indent).AppendLine($"FlaxEngine.Utils.InitStructure(obj, typeof({structureInfo.Name}));");
-                contents.Append(indent).AppendLine($"__default = ({structureInfo.Name})obj;");
+                if (useDefaultValueInit)
+                {
+                    indent += "    ";
+                    contents.Append(indent).AppendLine("if (!__defaultValid)");
+                    contents.Append(indent).AppendLine("{");
+                    indent += "    ";
+                    contents.Append(indent).AppendLine("__defaultValid = true;");
+                    contents.Append(indent).AppendLine("object obj = __default;");
+                    contents.Append(indent).AppendLine($"FlaxEngine.Utils.InitStructure(obj, typeof({structureInfo.Name}));");
+                    contents.Append(indent).AppendLine($"__default = ({structureInfo.Name})obj;");
+                    indent = indent.Substring(0, indent.Length - 4);
+                    contents.Append(indent).AppendLine("}");
+                    contents.Append(indent).AppendLine("return __default;");
+                    indent = indent.Substring(0, indent.Length - 4);
+                }
+                else
+                {
+                    contents.Append(indent).AppendLine($"    return new {structureInfo.Name}();");
+                }
+                contents.Append(indent).AppendLine("}");
                 indent = indent.Substring(0, indent.Length - 4);
                 contents.Append(indent).AppendLine("}");
-                contents.Append(indent).AppendLine("return __default;");
-                indent = indent.Substring(0, indent.Length - 4);
-                contents.Append(indent).AppendLine("}");
-                indent = indent.Substring(0, indent.Length - 4);
-                contents.Append(indent).AppendLine("}");
-                contents.AppendLine();
-                contents.Append(indent).AppendLine("[System.Runtime.Serialization.OnDeserializing]");
-                contents.Append(indent).AppendLine("internal void OnDeserializing(System.Runtime.Serialization.StreamingContext context)");
-                contents.Append(indent).AppendLine("{");
-                contents.Append(indent).AppendLine("    // Initialize structure with default values to replicate C++ deserialization behavior");
-                contents.Append(indent).AppendLine("    this = Default;");
-                contents.Append(indent).AppendLine("}");
+                if (useDefaultValueInit)
+                {
+                    contents.AppendLine();
+                    contents.Append(indent).AppendLine("[System.Runtime.Serialization.OnDeserializing]");
+                    contents.Append(indent).AppendLine("internal void OnDeserializing(System.Runtime.Serialization.StreamingContext context)");
+                    contents.Append(indent).AppendLine("{");
+                    contents.Append(indent).AppendLine("    // Initialize structure with default values to replicate C++ deserialization behavior");
+                    contents.Append(indent).AppendLine("    this = Default;");
+                    contents.Append(indent).AppendLine("}");
+                }
             }
 
             GenerateCSharpManagedTypeInternals(buildData, structureInfo, contents, indent);
