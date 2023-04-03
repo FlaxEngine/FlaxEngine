@@ -14,13 +14,14 @@ void PrecompileAssembliesStep::OnBuildStarted(CookingData& data)
     const DotNetAOTModes aotMode = data.Tools->UseAOT();
     if (aotMode == DotNetAOTModes::None)
         return;
+    const auto& buildSettings = *BuildSettings::Get();
 
     // Redirect C# assemblies to intermediate cooking directory (processed by ILC)
     data.ManagedCodeOutputPath = data.CacheDirectory / TEXT("AOTAssemblies");
 
     // Reset any AOT cache from previous run if the AOT mode has changed (eg. Mono AOT -> ILC on Desktop)
     const String aotModeCacheFilePath = data.ManagedCodeOutputPath / TEXT("AOTMode.txt");
-    String aotModeCacheValue = String::Format(TEXT("{};{}"), (int32)aotMode, (int32)data.Configuration);
+    String aotModeCacheValue = String::Format(TEXT("{};{};{}"), (int32)aotMode, (int32)data.Configuration, (int32)buildSettings.SkipUnusedDotnetLibsPackaging);
     for (const String& define : data.CustomDefines)
         aotModeCacheValue += define;
     if (FileSystem::DirectoryExists(data.ManagedCodeOutputPath))
@@ -60,9 +61,11 @@ bool PrecompileAssembliesStep::Perform(CookingData& data)
     const Char *platform, *architecture, *configuration = ::ToString(data.Configuration);
     data.GetBuildPlatformName(platform, architecture);
     const String logFile = data.CacheDirectory / TEXT("AotLog.txt");
-    auto args = String::Format(
+    String args = String::Format(
         TEXT("-log -logfile=\"{}\" -runDotNetAOT -mutex -platform={} -arch={} -configuration={} -aotMode={} -binaries=\"{}\" -intermediate=\"{}\""),
         logFile, platform, architecture, configuration, ToString(aotMode), data.DataOutputPath, data.ManagedCodeOutputPath);
+    if (!buildSettings.SkipUnusedDotnetLibsPackaging)
+        args += TEXT(" -skipUnusedDotnetLibs=false"); // Run AOT on whole class library (not just used libs)
     for (const String& define : data.CustomDefines)
     {
         args += TEXT(" -D");

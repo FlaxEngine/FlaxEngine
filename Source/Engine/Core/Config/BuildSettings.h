@@ -77,10 +77,16 @@ public:
     bool ShadersGenerateDebugData = false;
 
     /// <summary>
-    /// If checked, .NET 7 Runtime won't be packaged with a game and will be required by user to be installed on system upon running game build. Available only on supported platforms such as Windows, Linux and macOS.
+    /// If checked, .NET Runtime won't be packaged with a game and will be required by user to be installed on system upon running game build. Available only on supported platforms such as Windows, Linux and macOS.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(3000), EditorDisplay(\"Scripting\", \"Skip .NET Runtime Packaging\")")
     bool SkipDotnetPackaging = false;
+
+    /// <summary>
+    /// If checked, .NET Runtime packaging will skip unused libraries from packaging resulting in smaller game builds.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(3010), EditorDisplay(\"Scripting\", \"Skip Unused .NET Runtime Libs Packaging\")")
+    bool SkipUnusedDotnetLibsPackaging = true;
 
 public:
     /// <summary>
@@ -101,5 +107,6 @@ public:
         DESERIALIZE(ShadersNoOptimize);
         DESERIALIZE(ShadersGenerateDebugData);
         DESERIALIZE(SkipDotnetPackaging);
+        DESERIALIZE(SkipUnusedDotnetLibsPackaging);
     }
 };

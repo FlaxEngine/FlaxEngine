@@ -44,6 +44,12 @@ namespace Flax.Build
         public static DotNetAOTModes AOTMode;
 
         /// <summary>
+        /// See SkipUnusedDotnetLibsPackaging in BuildSettings.
+        /// </summary>
+        [CommandLine("skipUnusedDotnetLibs", "")]
+        public static bool SkipUnusedDotnetLibsPackaging = true;
+
+        /// <summary>
         /// Executes AOT process as a part of the game cooking (called by PrecompileAssembliesStep in Editor).
         /// </summary>
         [CommandLine("runDotNetAOT", "")]
@@ -85,7 +91,7 @@ namespace Flax.Build
 
             // Find input files
             var inputFiles = Directory.GetFiles(aotAssembliesPath, "*.dll", SearchOption.TopDirectoryOnly).ToList();
-            inputFiles.RemoveAll(x => x.EndsWith(".dll.dll") || Path.GetFileName(x) == "BuilderRulesCache.dll");
+            inputFiles.RemoveAll(FilterAssembly);
             for (int i = 0; i < inputFiles.Count; i++)
                 inputFiles[i] = Utilities.NormalizePath(inputFiles[i]);
             inputFiles.Sort();
@@ -239,27 +245,43 @@ namespace Flax.Build
 
                 // Build list of assemblies to process (use game assemblies as root to walk over used references from stdlib)
                 var assembliesPaths = new List<string>();
-                using (var assemblyResolver = new MonoCecil.BasicAssemblyResolver())
+                if (Configuration.SkipUnusedDotnetLibsPackaging)
                 {
-                    assemblyResolver.SearchDirectories.Add(aotAssembliesPath);
-                    assemblyResolver.SearchDirectories.Add(dotnetLibPath);
-
-                    var warnings = new HashSet<string>();
-                    foreach (var inputFile in inputFiles)
+                    // Use game assemblies as root to walk over used references from stdlib
+                    using (var assemblyResolver = new MonoCecil.BasicAssemblyResolver())
                     {
-                        try
+                        assemblyResolver.SearchDirectories.Add(aotAssembliesPath);
+                        assemblyResolver.SearchDirectories.Add(dotnetLibPath);
+
+                        var warnings = new HashSet<string>();
+                        foreach (var inputFile in inputFiles)
                         {
-                            BuildAssembliesList(inputFile, assembliesPaths, assemblyResolver, string.Empty, warnings);
-                        }
-                        catch (Exception)
-                        {
-                            Log.Error($"Failed to load assembly '{inputFile}'");
-                            throw;
+                            try
+                            {
+                                BuildAssembliesList(inputFile, assembliesPaths, assemblyResolver, string.Empty, warnings);
+                            }
+                            catch (Exception)
+                            {
+                                Log.Error($"Failed to load assembly '{inputFile}'");
+                                throw;
+                            }
                         }
                     }
                 }
+                else
+                {
+                    // Use all libs
+                    var stdLibFiles = Directory.GetFiles(dotnetLibPath, "*.dll", SearchOption.TopDirectoryOnly).ToList();
+                    stdLibFiles.RemoveAll(FilterAssembly);
+                    for (int i = 0; i < stdLibFiles.Count; i++)
+                        stdLibFiles[i] = Utilities.NormalizePath(stdLibFiles[i]);
+                    stdLibFiles.Sort();
+                    assembliesPaths.AddRange(stdLibFiles);
+                    assembliesPaths.AddRange(inputFiles);
+                }
 
                 // Run compilation
+                bool failed = false;
                 var compileAssembly = (string assemblyPath) =>
                 {
                     // Determinate whether use debug information for that assembly
@@ -297,7 +319,13 @@ namespace Flax.Build
 
                         // Run cross-compiler compiler
                         Log.Info(" * " + assemblyPath);
-                        Utilities.Run(aotCompilerPath, $"{aotCompilerArgs} \"{assemblyPath}\"", null, platformToolsRoot, Utilities.RunOptions.AppMustExist | Utilities.RunOptions.ThrowExceptionOnError | Utilities.RunOptions.ConsoleLogOutput, envVars);
+                        int result = Utilities.Run(aotCompilerPath, $"{aotCompilerArgs} \"{assemblyPath}\"", null, platformToolsRoot, Utilities.RunOptions.AppMustExist | Utilities.RunOptions.ConsoleLogOutput, envVars);
+                        if (result != 0)
+                        {
+                            Log.Error("Failed to run AOT on assembly " + assemblyPath);
+                            failed = true;
+                            return;
+                        }
                     }
 
                     // Skip if deployed file is already valid
@@ -323,6 +351,8 @@ namespace Flax.Build
                     foreach (var assemblyPath in assembliesPaths)
                         compileAssembly(assemblyPath);
                 }
+                if (failed)
+                    throw new Exception($"Failed to run AOT. See log ({Configuration.LogFile}).");
             }
             else
             {
@@ -332,6 +362,28 @@ namespace Flax.Build
             // Deploy license files
             Utilities.FileCopy(Path.Combine(aotAssembliesPath, "LICENSE.TXT"), Path.Combine(dotnetOutputPath, "LICENSE.TXT"));
             Utilities.FileCopy(Path.Combine(aotAssembliesPath, "THIRD-PARTY-NOTICES.TXT"), Path.Combine(dotnetOutputPath, "THIRD-PARTY-NOTICES.TXT"));
+        }
+
+        internal static bool FilterAssembly(string x)
+        {
+            // Skip AOT output products
+            if (x.EndsWith(".dll.dll"))
+                return true;
+
+            // Skip Flax.Build rules assembly
+            if (Path.GetFileName(x) == "BuilderRulesCache.dll")
+                return true;
+
+            // Skip non-C# DLLs
+            try
+            {
+                using (AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly(x, new ReaderParameters { ReadSymbols = false, InMemory = true, ReadingMode = ReadingMode.Deferred }))
+                    return false;
+            }
+            catch
+            {
+                return true;
+            }
         }
 
         internal static void BuildAssembliesList(string assemblyPath, List<string> outputList, IAssemblyResolver assemblyResolver, string callerPath, HashSet<string> warnings)
