@@ -26,62 +26,73 @@ namespace Flax.Build.NativeCpp
             if (!File.Exists(CachePath))
                 return;
 
-            using (var stream = new FileStream(CachePath, FileMode.Open))
-            using (var reader = new BinaryReader(stream))
+            try
             {
-                int version = reader.ReadInt32();
-                if (version != 1)
-                    return;
-
-                // DirectIncludesCache
+                using (var stream = new FileStream(CachePath, FileMode.Open))
+                using (var reader = new BinaryReader(stream))
                 {
-                    int count = reader.ReadInt32();
-                    for (int i = 0; i < count; i++)
-                    {
-                        string key = reader.ReadString();
-                        string[] values = new string[reader.ReadInt32()];
-                        for (int j = 0; j < values.Length; j++)
-                            values[j] = reader.ReadString();
+                    int version = reader.ReadInt32();
+                    if (version != 1)
+                        return;
 
-                        DirectIncludesCache.Add(key, values);
+                    // DirectIncludesCache
+                    {
+                        int count = reader.ReadInt32();
+                        for (int i = 0; i < count; i++)
+                        {
+                            string key = reader.ReadString();
+                            string[] values = new string[reader.ReadInt32()];
+                            for (int j = 0; j < values.Length; j++)
+                                values[j] = reader.ReadString();
+
+                            DirectIncludesCache.Add(key, values);
+                        }
+                    }
+
+                    // AllIncludesCache
+                    {
+                        int count = reader.ReadInt32();
+                        for (int i = 0; i < count; i++)
+                        {
+                            string key = reader.ReadString();
+                            string[] values = new string[reader.ReadInt32()];
+                            for (int j = 0; j < values.Length; j++)
+                                values[j] = reader.ReadString();
+
+                            AllIncludesCache.Add(key, values);
+                        }
+                    }
+
+                    // DirectIncludesTimestampCache
+                    {
+                        int count = reader.ReadInt32();
+                        for (int i = 0; i < count; i++)
+                        {
+                            string key = reader.ReadString();
+                            DateTime value = new DateTime(reader.ReadInt64());
+                            DirectIncludesTimestampCache.Add(key, value);
+                        }
+                    }
+
+                    // AllIncludesTimestampCache
+                    {
+                        int count = reader.ReadInt32();
+                        for (int i = 0; i < count; i++)
+                        {
+                            string key = reader.ReadString();
+                            DateTime value = new DateTime(reader.ReadInt64());
+                            AllIncludesTimestampCache.Add(key, value);
+                        }
                     }
                 }
-
-                // AllIncludesCache
-                {
-                    int count = reader.ReadInt32();
-                    for (int i = 0; i < count; i++)
-                    {
-                        string key = reader.ReadString();
-                        string[] values = new string[reader.ReadInt32()];
-                        for (int j = 0; j < values.Length; j++)
-                            values[j] = reader.ReadString();
-
-                        AllIncludesCache.Add(key, values);
-                    }
-                }
-
-                // DirectIncludesTimestampCache
-                {
-                    int count = reader.ReadInt32();
-                    for (int i = 0; i < count; i++)
-                    {
-                        string key = reader.ReadString();
-                        DateTime value = new DateTime(reader.ReadInt64());
-                        DirectIncludesTimestampCache.Add(key, value);
-                    }
-                }
-
-                // AllIncludesTimestampCache
-                {
-                    int count = reader.ReadInt32();
-                    for (int i = 0; i < count; i++)
-                    {
-                        string key = reader.ReadString();
-                        DateTime value = new DateTime(reader.ReadInt64());
-                        AllIncludesTimestampCache.Add(key, value);
-                    }
-                }
+            }
+            catch (Exception)
+            {
+                // Clear cache in case of error when loading data (eg. corrupted file)
+                DirectIncludesCache.Clear();
+                AllIncludesCache.Clear();
+                DirectIncludesTimestampCache.Clear();
+                AllIncludesTimestampCache.Clear();
             }
         }
 
@@ -305,7 +316,7 @@ namespace Flax.Build.NativeCpp
                 if (includedFile.EndsWith('\\'))
                 {
                     int j = includeStart;
-                    while (j-- > 1 && fileContents[j-1] != '\n')
+                    while (j-- > 1 && fileContents[j - 1] != '\n')
                     {
                     }
                     var injectCode = fileContents.Substring(j, "API_INJECT_CODE".Length);
