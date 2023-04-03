@@ -197,6 +197,7 @@ extern "C" {
     #include <netinet/in.h>
     #include <netinet/tcp.h>
     #include <netdb.h>
+    #endif
     #include <unistd.h>
     #include <string.h>
     #include <errno.h>
@@ -240,7 +241,6 @@ extern "C" {
     #define ENET_SOCKETSET_ADD(sockset, socket)    FD_SET(socket, &(sockset))
     #define ENET_SOCKETSET_REMOVE(sockset, socket) FD_CLR(socket, &(sockset))
     #define ENET_SOCKETSET_CHECK(sockset, socket)  FD_ISSET(socket, &(sockset))
-    #endif
 #endif
 
 #ifdef __GNUC__
