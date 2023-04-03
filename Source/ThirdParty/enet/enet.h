@@ -143,6 +143,55 @@
     #include <sys/ioctl.h>
     #include <sys/time.h>
     #include <sys/socket.h>
+    #if PLATFORM_PS4 || PLATFORM_PS5
+    #define ENET_IPV6 0
+    #include <netinet/in.h>
+    in_addr in4addr_any = { 0 };
+    struct addrinfo {
+        int ai_flags;
+        int ai_family;
+        int ai_socktype;
+        int ai_protocol;
+        socklen_t ai_addrlen;
+        struct sockaddr *ai_addr;
+        char *ai_canonname;
+        struct addrinfo *ai_next;
+    };
+    struct pollfd {
+        int fd;
+        short int events;
+        short int revents;
+    };
+    #define AI_NUMERICHOST 0
+    #define NI_NAMEREQD 4
+    #define	EAI_NONAME 8
+    #define SOMAXCONN 4096
+    #define POLLIN 0x0001
+    #define POLLOUT 0x0004
+#ifdef __cplusplus
+extern "C" {
+#endif
+    extern int getaddrinfo(const char* node, const char* service, const struct addrinfo* hints, struct addrinfo** res);
+    extern void freeaddrinfo(struct addrinfo* res);
+    extern int getnameinfo(const struct sockaddr *addr, socklen_t addrlen, char *host, socklen_t hostlen, char *serv, socklen_t servlen, int flags);
+    extern int poll(struct pollfd *fds, int nfds, int timeout);
+#ifdef __cplusplus
+}
+#endif
+    #elif PLATFORM_SWITCH
+    #define ENET_IPV6 0
+    #include <poll.h>
+    #include <netdb.h>
+    in_addr in4addr_any = { 0 };
+#ifdef __cplusplus
+extern "C" {
+#endif
+    extern ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags);
+    extern ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags);
+#ifdef __cplusplus
+}
+#endif
+    #else
     #include <poll.h>
     #include <arpa/inet.h>
     #include <netinet/in.h>
