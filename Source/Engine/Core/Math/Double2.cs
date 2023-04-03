@@ -55,7 +55,6 @@ using Real = System.Single;
 * THE SOFTWARE.
 */
 using System;
-using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -63,7 +62,9 @@ using System.Runtime.InteropServices;
 namespace FlaxEngine
 {
     [Serializable]
-    [TypeConverter(typeof(TypeConverters.Double2Converter))]
+#if FLAX_EDITOR
+    [System.ComponentModel.TypeConverter(typeof(TypeConverters.Double2Converter))]
+#endif
     partial struct Double2 : IEquatable<Double2>, IFormattable
     {
         private static readonly string _formatString = "X:{0:F2} Y:{1:F2}";

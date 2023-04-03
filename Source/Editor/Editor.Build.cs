@@ -39,6 +39,7 @@ public class Editor : EditorModule
 
         options.ScriptingAPI.SystemReferences.Add("System.Private.Xml");
         options.ScriptingAPI.SystemReferences.Add("System.Text.RegularExpressions");
+        options.ScriptingAPI.SystemReferences.Add("System.ComponentModel.TypeConverter");
 
         options.PublicDependencies.Add("Engine");
         options.PrivateDependencies.Add("pugixml");

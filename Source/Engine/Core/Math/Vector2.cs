@@ -55,7 +55,6 @@ using Real = System.Single;
 * THE SOFTWARE.
 */
 using System;
-using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -68,7 +67,9 @@ namespace FlaxEngine
     [Unmanaged]
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    [TypeConverter(typeof(TypeConverters.Vector2Converter))]
+#if FLAX_EDITOR
+    [System.ComponentModel.TypeConverter(typeof(TypeConverters.Vector2Converter))]
+#endif
     public unsafe partial struct Vector2 : IEquatable<Vector2>, IFormattable
     {
         private static readonly string _formatString = "X:{0:F2} Y:{1:F2}";

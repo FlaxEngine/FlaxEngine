@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+#if FLAX_EDITOR
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -51,3 +52,4 @@ namespace FlaxEngine.TypeConverters
         }
     }
 }
+#endif

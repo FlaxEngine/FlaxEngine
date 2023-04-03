@@ -220,7 +220,7 @@ namespace Flax.Build.NativeCpp
                 "System.ComponentModel",
                 "System.ComponentModel.DataAnnotations",
                 "System.ComponentModel.Primitives",
-                "System.ComponentModel.TypeConverter",
+                //"System.ComponentModel.TypeConverter",
                 "System.Console",
                 "System.Core",
                 "System.Globalization",
