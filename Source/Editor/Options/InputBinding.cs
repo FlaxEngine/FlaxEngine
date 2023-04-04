@@ -397,14 +397,17 @@ namespace FlaxEditor.Options
             }
         }
 
-        private readonly List<Binding> _bindings;
+        /// <summary>
+        /// List of all available bindings.
+        /// </summary>
+        public List<Binding> Bindings;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InputActionsContainer"/> class.
         /// </summary>
         public InputActionsContainer()
         {
-            _bindings = new List<Binding>();
+            Bindings = new List<Binding>();
         }
 
         /// <summary>
@@ -413,7 +416,7 @@ namespace FlaxEditor.Options
         /// <param name="bindings">The input bindings collection.</param>
         public InputActionsContainer(params Binding[] bindings)
         {
-            _bindings = new List<Binding>(bindings);
+            Bindings = new List<Binding>(bindings);
         }
 
         /// <summary>
@@ -422,7 +425,7 @@ namespace FlaxEditor.Options
         /// <param name="binding">The input binding.</param>
         public void Add(Binding binding)
         {
-            _bindings.Add(binding);
+            Bindings.Add(binding);
         }
 
         /// <summary>
@@ -432,7 +435,7 @@ namespace FlaxEditor.Options
         /// <param name="callback">The callback to invoke on user input.</param>
         public void Add(Func<InputOptions, InputBinding> binder, Action callback)
         {
-            _bindings.Add(new Binding(binder, callback));
+            Bindings.Add(new Binding(binder, callback));
         }
 
         /// <summary>
@@ -441,7 +444,7 @@ namespace FlaxEditor.Options
         /// <param name="bindings">The input bindings collection.</param>
         public void Add(params Binding[] bindings)
         {
-            _bindings.AddRange(bindings);
+            Bindings.AddRange(bindings);
         }
 
         /// <summary>
@@ -456,12 +459,12 @@ namespace FlaxEditor.Options
             var root = control.Root;
             var options = editor.Options.Options.Input;
 
-            for (int i = 0; i < _bindings.Count; i++)
+            for (int i = 0; i < Bindings.Count; i++)
             {
-                var binding = _bindings[i].Binder(options);
+                var binding = Bindings[i].Binder(options);
                 if (binding.Process(control, key))
                 {
-                    _bindings[i].Callback();
+                    Bindings[i].Callback();
                     return true;
                 }
             }
