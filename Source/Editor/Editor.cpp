@@ -696,12 +696,6 @@ void EditorImpl::OnUpdate()
         // Boost our priority back to normal
         Platform::SetThreadPriority(ThreadPriority::Normal);
     }
-    if (!hasFocus)
-    {
-        // Sleep for a bit to not eat up all CPU time
-        PROFILE_CPU_NAMED("Sleep");
-        Platform::Sleep(5);
-    }
     HasFocus = hasFocus;
 }
 
