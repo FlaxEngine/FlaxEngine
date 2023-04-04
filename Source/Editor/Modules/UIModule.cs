@@ -356,6 +356,8 @@ namespace FlaxEditor.Modules
             InitStatusBar(mainWindow);
             InitDockPanel(mainWindow);
 
+            Editor.Options.OptionsChanged += OnOptionsChanged;
+
             // Add dummy control for drawing the main window borders if using a custom style
 #if PLATFORM_WINDOWS
             if (!Editor.Options.Options.Interface.UseNativeWindowSystem)
@@ -588,13 +590,10 @@ namespace FlaxEditor.Modules
             cm.AddButton("Information about Flax", () => new AboutDialog().Show());
         }
 
-        /// <summary>
-        /// Updates the short cut keys for the main menu
-        /// </summary>
-        public void UpdateMainMenuShortcuts()
+        private void OnOptionsChanged(FlaxEditor.Options.EditorOptions options)
         {
-            var inputOptions = Editor.Options.Options.Input;
-            
+            var inputOptions = options.Input;
+
             _menuSaveAll.ShortKeys = inputOptions.Save.ToString();
             _menuEditUndo.ShortKeys = inputOptions.Undo.ToString();
             _menuEditRedo.ShortKeys = inputOptions.Redo.ToString();
@@ -606,7 +605,7 @@ namespace FlaxEditor.Modules
             _menuEditFind.ShortKeys = inputOptions.Search.ToString();
             _menuGamePlay.ShortKeys = inputOptions.Play.ToString();
             _menuGamePause.ShortKeys = inputOptions.Pause.ToString();
-            
+
             MainMenuShortcutKeysUpdated?.Invoke();
         }
 
