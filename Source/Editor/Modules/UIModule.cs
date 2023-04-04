@@ -39,6 +39,7 @@ namespace FlaxEditor.Modules
         private ContextMenuButton _menuFileSaveScenes;
         private ContextMenuButton _menuFileCloseScenes;
         private ContextMenuButton _menuFileGenerateScriptsProjectFiles;
+        private ContextMenuButton _menuSaveAll;
         private ContextMenuButton _menuEditUndo;
         private ContextMenuButton _menuEditRedo;
         private ContextMenuButton _menuEditCut;
@@ -47,6 +48,7 @@ namespace FlaxEditor.Modules
         private ContextMenuButton _menuEditDelete;
         private ContextMenuButton _menuEditDuplicate;
         private ContextMenuButton _menuEditSelectAll;
+        private ContextMenuButton _menuEditFind;
         private ContextMenuButton _menuSceneMoveActorToViewport;
         private ContextMenuButton _menuSceneAlignActorWithViewport;
         private ContextMenuButton _menuSceneAlignViewportWithActor;
@@ -135,6 +137,11 @@ namespace FlaxEditor.Modules
         /// Gets the Help menu.
         /// </summary>
         public MainMenuButton MenuHelp { get; private set; }
+
+        /// <summary>
+        /// Fired when the main menu short cut keys are updated. Can be used to update plugin short cut keys.
+        /// </summary>
+        public event Action MainMenuShortcutKeysUpdated;
 
         internal UIModule(Editor editor)
         : base(editor)
@@ -464,11 +471,13 @@ namespace FlaxEditor.Modules
                 Parent = mainWindow
             };
 
+            var inputOptions = Editor.Options.Options.Input;
+
             // File
             MenuFile = MainMenu.AddButton("File");
             var cm = MenuFile.ContextMenu;
             cm.VisibleChanged += OnMenuFileShowHide;
-            cm.AddButton("Save All", "Ctrl+S", Editor.SaveAll);
+            _menuSaveAll = cm.AddButton("Save All", inputOptions.Save.ToString(), Editor.SaveAll);
             _menuFileSaveScenes = cm.AddButton("Save scenes", Editor.Scene.SaveScenes);
             _menuFileCloseScenes = cm.AddButton("Close scenes", Editor.Scene.CloseAllScenes);
             cm.AddSeparator();
@@ -484,18 +493,18 @@ namespace FlaxEditor.Modules
             MenuEdit = MainMenu.AddButton("Edit");
             cm = MenuEdit.ContextMenu;
             cm.VisibleChanged += OnMenuEditShowHide;
-            _menuEditUndo = cm.AddButton(string.Empty, "Ctrl+Z", Editor.PerformUndo);
-            _menuEditRedo = cm.AddButton(string.Empty, "Ctrl+Y", Editor.PerformRedo);
+            _menuEditUndo = cm.AddButton(string.Empty, inputOptions.Undo.ToString(), Editor.PerformUndo);
+            _menuEditRedo = cm.AddButton(string.Empty, inputOptions.Redo.ToString(), Editor.PerformRedo);
             cm.AddSeparator();
-            _menuEditCut = cm.AddButton("Cut", "Ctrl+X", Editor.SceneEditing.Cut);
-            _menuEditCopy = cm.AddButton("Copy", "Ctrl+C", Editor.SceneEditing.Copy);
-            _menuEditPaste = cm.AddButton("Paste", "Ctrl+V", Editor.SceneEditing.Paste);
+            _menuEditCut = cm.AddButton("Cut", inputOptions.Cut.ToString(), Editor.SceneEditing.Cut);
+            _menuEditCopy = cm.AddButton("Copy", inputOptions.Copy.ToString(), Editor.SceneEditing.Copy);
+            _menuEditPaste = cm.AddButton("Paste", inputOptions.Paste.ToString(), Editor.SceneEditing.Paste);
             cm.AddSeparator();
-            _menuEditDelete = cm.AddButton("Delete", "Del", Editor.SceneEditing.Delete);
-            _menuEditDuplicate = cm.AddButton("Duplicate", "Ctrl+D", Editor.SceneEditing.Duplicate);
+            _menuEditDelete = cm.AddButton("Delete", inputOptions.Delete.ToString(), Editor.SceneEditing.Delete);
+            _menuEditDuplicate = cm.AddButton("Duplicate", inputOptions.Duplicate.ToString(), Editor.SceneEditing.Duplicate);
             cm.AddSeparator();
-            _menuEditSelectAll = cm.AddButton("Select all", "Ctrl+A", Editor.SceneEditing.SelectAllScenes);
-            cm.AddButton("Find", "Ctrl+F", Editor.Windows.SceneWin.Search);
+            _menuEditSelectAll = cm.AddButton("Select all", inputOptions.SelectAll.ToString(), Editor.SceneEditing.SelectAllScenes);
+            _menuEditFind = cm.AddButton("Find", inputOptions.Search.ToString(), Editor.Windows.SceneWin.Search);
 
             // Scene
             MenuScene = MainMenu.AddButton("Scene");
@@ -512,8 +521,8 @@ namespace FlaxEditor.Modules
             MenuGame = MainMenu.AddButton("Game");
             cm = MenuGame.ContextMenu;
             cm.VisibleChanged += OnMenuGameShowHide;
-            _menuGamePlay = cm.AddButton("Play", "F5", Editor.Simulation.RequestStartPlay);
-            _menuGamePause = cm.AddButton("Pause", "F6", Editor.Simulation.RequestPausePlay);
+            _menuGamePlay = cm.AddButton("Play", inputOptions.Play.ToString(), Editor.Simulation.RequestStartPlay);
+            _menuGamePause = cm.AddButton("Pause", inputOptions.Pause.ToString(), Editor.Simulation.RequestPausePlay);
             cm.AddSeparator();
             cm.AddButton("Cook&Run", Editor.Windows.GameCookerWin.BuildAndRun).LinkTooltip("Runs Game Cooker to build the game for this platform and runs the game after.");
             cm.AddButton("Run cooked game", Editor.Windows.GameCookerWin.RunCooked).LinkTooltip("Runs the game build from the last cooking output. Use Cook&Play or Game Cooker first.");
@@ -577,6 +586,28 @@ namespace FlaxEditor.Modules
             cm.AddButton("Twitter", () => Platform.OpenUrl(Constants.TwitterUrl));
             cm.AddSeparator();
             cm.AddButton("Information about Flax", () => new AboutDialog().Show());
+        }
+
+        /// <summary>
+        /// Updates the short cut keys for the main menu
+        /// </summary>
+        public void UpdateMainMenuShortcuts()
+        {
+            var inputOptions = Editor.Options.Options.Input;
+            
+            _menuSaveAll.ShortKeys = inputOptions.Save.ToString();
+            _menuEditUndo.ShortKeys = inputOptions.Undo.ToString();
+            _menuEditRedo.ShortKeys = inputOptions.Redo.ToString();
+            _menuEditCut.ShortKeys = inputOptions.Cut.ToString();
+            _menuEditCopy.ShortKeys = inputOptions.Copy.ToString();
+            _menuEditDelete.ShortKeys = inputOptions.Delete.ToString();
+            _menuEditDuplicate.ShortKeys = inputOptions.Duplicate.ToString();
+            _menuEditSelectAll.ShortKeys = inputOptions.SelectAll.ToString();
+            _menuEditFind.ShortKeys = inputOptions.Search.ToString();
+            _menuGamePlay.ShortKeys = inputOptions.Play.ToString();
+            _menuGamePause.ShortKeys = inputOptions.Pause.ToString();
+            
+            MainMenuShortcutKeysUpdated?.Invoke();
         }
 
         private void InitToolstrip(RootControl mainWindow)
