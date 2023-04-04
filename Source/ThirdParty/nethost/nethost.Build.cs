@@ -54,7 +54,7 @@ public class nethost : ThirdPartyModule
                 options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "nethost.lib"));
                 options.DependencyFiles.Add(Path.Combine(hostRuntime.Path, "nethost.dll"));
             }
-            else
+            else if (hostRuntime.Type == DotNetSdk.HostType.Mono)
             {
                 options.PublicDefinitions.Add("USE_MONO_DYNAMIC_LIB");
                 options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "coreclr.import.lib"));

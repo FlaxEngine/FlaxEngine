@@ -133,5 +133,27 @@ namespace Flax.Build
         /// <param name="options">The build options with linking environment.</param>
         /// <param name="outputFilePath">The output file path (result linked file).</param>
         public abstract void LinkFiles(TaskGraph graph, BuildOptions options, string outputFilePath);
+
+        /// <summary>
+        /// C# compilation options container.
+        /// </summary>
+        public struct CSharpOptions
+        {
+            public string InputFile;
+            public string AssembliesFolder;
+            public string ClassLibraryPath;
+            public bool EnableDebugSymbols;
+            public bool EnableToolDebug;
+        }
+
+        /// <summary>
+        /// Compiles the C# assembly with AOT cross-compiler.
+        /// </summary>
+        /// <param name="options">The options.</param>
+        /// <returns>True if failed, or not supported.</returns>
+        public virtual bool CompileCSharp(CSharpOptions options)
+        {
+            return true;
+        }
     }
 }

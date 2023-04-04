@@ -1024,5 +1024,31 @@ namespace Flax.Build.Platforms
                 priNewFile.ProducedFiles.Add(priFile);
             }
         }
+
+        /// <inheritdoc />
+        public override bool CompileCSharp(CSharpOptions options)
+        {
+            var platformToolsRoot = Path.Combine(Globals.EngineRoot, "Source/Platforms", Platform.Target.ToString(), "Binaries/Tools");
+            if (!Directory.Exists(platformToolsRoot))
+                throw new Exception("Missing platform tools " + platformToolsRoot);
+            var aotCompilerPath = Path.Combine(platformToolsRoot, "mono-aot-cross.exe");
+
+            // Setup options
+            var monoAotMode = "full";
+            var debugMode = options.EnableDebugSymbols ? "soft-debug" : "nodebug";
+            var aotCompilerArgs = $"--aot={monoAotMode},verbose,stats,print-skipped,{debugMode} -O=all";
+            if (options.EnableDebugSymbols || options.EnableToolDebug)
+                aotCompilerArgs = "--debug " + aotCompilerArgs;
+            var envVars = new Dictionary<string, string>();
+            envVars["MONO_PATH"] = options.AssembliesFolder + ";" + options.ClassLibraryPath;
+            if (options.EnableToolDebug)
+            {
+                envVars["MONO_LOG_LEVEL"] = "debug";
+            }
+
+            // Run cross-compiler compiler
+            int result = Utilities.Run(aotCompilerPath, $"{aotCompilerArgs} \"{options.InputFile}\"", null, platformToolsRoot, Utilities.RunOptions.AppMustExist | Utilities.RunOptions.ConsoleLogOutput, envVars);
+            return result != 0;
+        }
     }
 }

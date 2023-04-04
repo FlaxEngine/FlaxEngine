@@ -304,13 +304,8 @@ namespace Flax.Build
             }
             else if (aotMode == DotNetAOTModes.MonoAOTDynamic || aotMode == DotNetAOTModes.MonoAOTStatic)
             {
-                var platformToolsRoot = Path.Combine(Globals.EngineRoot, "Source/Platforms", platform.ToString(), "Binaries/Tools");
-                if (!Directory.Exists(platformToolsRoot))
-                    throw new Exception("Missing platform tools " + platformToolsRoot);
                 var dotnetLibPath = Path.Combine(aotAssembliesPath, "lib/net7.0");
                 var monoAssembliesOutputPath = aotMode == DotNetAOTModes.MonoAOTDynamic ? dotnetOutputPath : null;
-
-                // TODO: impl Mono AOT more generic way, not just Windows-only case
 
                 // Build list of assemblies to process (use game assemblies as root to walk over used references from stdlib)
                 var assembliesPaths = new List<string>();
@@ -371,25 +366,16 @@ namespace Flax.Build
                             Log.Info("");
                             Log.Info("");
                         }
-
-                        // Setup options
-                        var aotCompilerPath = Path.Combine(platformToolsRoot, "mono-aot-cross.exe");
-                        var monoAotMode = "full";
-                        var debugMode = useDebug ? "soft-debug" : "nodebug";
-                        var aotCompilerArgs = $"--aot={monoAotMode},verbose,stats,print-skipped,{debugMode} -O=all";
-                        if (useDebug || dotnetAotDebug)
-                            aotCompilerArgs = "--debug " + aotCompilerArgs;
-                        var envVars = new Dictionary<string, string>();
-                        envVars["MONO_PATH"] = aotAssembliesPath + ";" + dotnetLibPath;
-                        if (dotnetAotDebug)
-                        {
-                            envVars["MONO_LOG_LEVEL"] = "debug";
-                        }
-
-                        // Run cross-compiler compiler
                         Log.Info(" * " + assemblyPath);
-                        int result = Utilities.Run(aotCompilerPath, $"{aotCompilerArgs} \"{assemblyPath}\"", null, platformToolsRoot, Utilities.RunOptions.AppMustExist | Utilities.RunOptions.ConsoleLogOutput, envVars);
-                        if (result != 0)
+                        var options = new Toolchain.CSharpOptions
+                        {
+                            InputFile = assemblyPath,
+                            AssembliesFolder = aotAssembliesPath,
+                            ClassLibraryPath = dotnetLibPath,
+                            EnableDebugSymbols = useDebug,
+                            EnableToolDebug = dotnetAotDebug,
+                        };
+                        if (buildToolchain.CompileCSharp(options))
                         {
                             Log.Error("Failed to run AOT on assembly " + assemblyPath);
                             failed = true;

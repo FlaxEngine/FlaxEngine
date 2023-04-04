@@ -275,6 +275,14 @@ namespace Flax.Build
         }
 
         /// <summary>
+        /// Initializes platforms which can register custom host runtime location
+        /// </summary>
+        private static void InitPlatforms()
+        {
+            Platform.GetPlatform(TargetPlatform.Windows, true);
+        }
+
+        /// <summary>
         /// Gets the host runtime identifier for a given platform (eg. linux-arm64).
         /// </summary>
         /// <param name="platform">Target platform.</param>
@@ -338,6 +346,7 @@ namespace Flax.Build
         /// </summary>
         public void PrintRuntimes()
         {
+            InitPlatforms();
             foreach (var e in _hostRuntimes)
             {
                 // Filter with input commandline
@@ -357,6 +366,7 @@ namespace Flax.Build
         /// </summary>
         public bool GetHostRuntime(TargetPlatform platform, TargetArchitecture arch, out HostRuntime hostRuntime)
         {
+            InitPlatforms();
             return _hostRuntimes.TryGetValue(new KeyValuePair<TargetPlatform, TargetArchitecture>(platform, arch), out hostRuntime);
         }
 

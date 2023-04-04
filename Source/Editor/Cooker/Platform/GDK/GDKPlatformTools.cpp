@@ -42,21 +42,6 @@ DotNetAOTModes GDKPlatformTools::UseAOT() const
     return DotNetAOTModes::MonoAOTDynamic;
 }
 
-bool GDKPlatformTools::OnScriptsStepDone(CookingData& data)
-{
-    // Override Newtonsoft.Json.dll for some platforms (that don't support runtime code generation)
-    const String customBinPath = data.GetPlatformBinariesRoot() / TEXT("Newtonsoft.Json.dll");
-    const String assembliesPath = data.ManagedCodeOutputPath;
-    if (FileSystem::CopyFile(assembliesPath / TEXT("Newtonsoft.Json.dll"), customBinPath))
-    {
-        data.Error(TEXT("Failed to copy deloy custom assembly."));
-        return true;
-    }
-    FileSystem::DeleteFile(assembliesPath / TEXT("Newtonsoft.Json.pdb"));
-
-    return false;
-}
-
 bool GDKPlatformTools::OnDeployBinaries(CookingData& data)
 {
     // Copy binaries
@@ -78,87 +63,6 @@ bool GDKPlatformTools::OnDeployBinaries(CookingData& data)
             data.Error(TEXT("Failed to setup output directory (file {0})."), files[i]);
             return true;
         }
-    }
-
-    return false;
-}
-
-void GDKPlatformTools::OnConfigureAOT(CookingData& data, AotConfig& config)
-{
-    const auto platformDataPath = data.GetPlatformBinariesRoot();
-    const bool useInterpreter = true; // TODO: use Full AOT on GDK
-    const bool enableDebug = data.Configuration != BuildConfiguration::Release;
-    const Char* aotMode = useInterpreter ? TEXT("full,interp") : TEXT("full");
-    const Char* debugMode = enableDebug ? TEXT("soft-debug") : TEXT("nodebug");
-    config.AotCompilerArgs = String::Format(TEXT("--aot={0},verbose,stats,print-skipped,{1} -O=all"), aotMode, debugMode);
-    if (enableDebug)
-        config.AotCompilerArgs = TEXT("--debug ") + config.AotCompilerArgs;
-    config.AotCompilerPath = platformDataPath / TEXT("Tools/mono.exe");
-}
-
-bool GDKPlatformTools::OnPerformAOT(CookingData& data, AotConfig& config, const String& assemblyPath)
-{
-    // Skip .dll.dll which could be a false result from the previous AOT which could fail
-    if (assemblyPath.EndsWith(TEXT(".dll.dll")))
-    {
-        LOG(Warning, "Skip AOT for file '{0}' as it can be a result from the previous task", assemblyPath);
-        return false;
-    }
-
-    // Check if skip this assembly (could be already processed)
-    const String filename = StringUtils::GetFileName(assemblyPath);
-    const String outputPath = config.AotCachePath / filename + TEXT(".dll");
-    if (FileSystem::FileExists(outputPath) && FileSystem::GetFileLastEditTime(assemblyPath) < FileSystem::GetFileLastEditTime(outputPath))
-        return false;
-    LOG(Info, "Calling AOT tool for \"{0}\"", assemblyPath);
-
-    // Cleanup temporary results (fromm the previous AT that fail or sth)
-    const String resultPath = assemblyPath + TEXT(".dll");
-    const String resultPathExp = resultPath + TEXT(".exp");
-    const String resultPathLib = resultPath + TEXT(".lib");
-    const String resultPathPdb = resultPath + TEXT(".pdb");
-    if (FileSystem::FileExists(resultPath))
-        FileSystem::DeleteFile(resultPath);
-    if (FileSystem::FileExists(resultPathExp))
-        FileSystem::DeleteFile(resultPathExp);
-    if (FileSystem::FileExists(resultPathLib))
-        FileSystem::DeleteFile(resultPathLib);
-    if (FileSystem::FileExists(resultPathPdb))
-        FileSystem::DeleteFile(resultPathPdb);
-
-    // Call tool
-    CreateProcessSettings procSettings;
-    procSettings.FileName = String::Format(TEXT("\"{0}\" {1} \"{2}\""), config.AotCompilerPath, config.AotCompilerArgs, assemblyPath);
-    procSettings.WorkingDirectory = StringUtils::GetDirectoryName(config.AotCompilerPath);
-    procSettings.Environment = config.EnvVars;
-    const int32 result = Platform::CreateProcess(procSettings);
-    if (result != 0)
-    {
-        data.Error(TEXT("AOT tool execution failed with result code {1} for assembly \"{0}\". See log for more info."), assemblyPath, result);
-        return true;
-    }
-
-    // Copy result
-    if (FileSystem::CopyFile(outputPath, resultPath))
-    {
-        data.Error(TEXT("Failed to copy the AOT tool result file. It can be missing."));
-        return true;
-    }
-
-    // Copy pdb file if exists
-    if (data.Configuration != BuildConfiguration::Release && FileSystem::FileExists(resultPathPdb))
-    {
-        FileSystem::CopyFile(config.AotCachePath / StringUtils::GetFileName(resultPathPdb), resultPathPdb);
-    }
-
-    // Clean intermediate results
-    if (FileSystem::DeleteFile(resultPath)
-        || (FileSystem::FileExists(resultPathExp) && FileSystem::DeleteFile(resultPathExp))
-        || (FileSystem::FileExists(resultPathLib) && FileSystem::DeleteFile(resultPathLib))
-        || (FileSystem::FileExists(resultPathPdb) && FileSystem::DeleteFile(resultPathPdb))
-    )
-    {
-        LOG(Warning, "Failed to remove the AOT tool result file(s).");
     }
 
     return false;
