@@ -802,18 +802,7 @@ void Actor::Initialize()
 
 void Actor::BeginPlay(SceneBeginData* data)
 {
-    // Perform additional verification
     ASSERT(!IsDuringPlay());
-#if BUILD_DEBUG
-    for (int32 i = 0; i < Children.Count(); i++)
-    {
-        ASSERT(Children[i]->IsDuringPlay() == IsDuringPlay());
-    }
-    for (int32 i = 0; i < Scripts.Count(); i++)
-    {
-        ASSERT(Scripts[i]->IsDuringPlay() == IsDuringPlay());
-    }
-#endif
 
     // Set flag
     Flags |= ObjectFlags::IsDuringPlay;
@@ -843,18 +832,7 @@ void Actor::BeginPlay(SceneBeginData* data)
 
 void Actor::EndPlay()
 {
-    // Perform additional verification
     ASSERT(IsDuringPlay());
-#if BUILD_DEBUG
-    for (int32 i = 0; i < Children.Count(); i++)
-    {
-        ASSERT(Children[i]->IsDuringPlay() == IsDuringPlay());
-    }
-    for (int32 i = 0; i < Scripts.Count(); i++)
-    {
-        ASSERT(Scripts[i]->IsDuringPlay() == IsDuringPlay());
-    }
-#endif
 
     // Fire event for scripting
     if (IsActiveInHierarchy() && GetScene())
@@ -871,7 +849,8 @@ void Actor::EndPlay()
     // Call event deeper
     for (int32 i = 0; i < Children.Count(); i++)
     {
-        Children[i]->EndPlay();
+        if (Children[i]->IsDuringPlay())
+            Children[i]->EndPlay();
     }
 
     // Fire event for scripting
@@ -886,7 +865,8 @@ void Actor::EndPlay()
     // Inform attached scripts
     for (int32 i = 0; i < Scripts.Count(); i++)
     {
-        Scripts[i]->EndPlay();
+        if (Scripts[i]->IsDuringPlay())
+            Scripts[i]->EndPlay();
     }
 
     // Cleanup managed object
