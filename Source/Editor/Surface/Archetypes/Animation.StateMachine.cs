@@ -357,10 +357,8 @@ namespace FlaxEditor.Surface.Archetypes
                 BackgroundColor = style.BackgroundNormal;
                 var dragAreaColor = BackgroundColor / 2.0f;
 
-                if (IsMouseOver)
-                    BackgroundColor *= 1.2f;
                 if (_textRectHovered)
-                    BackgroundColor *= 1.2f;
+                    BackgroundColor *= 1.5f;
 
                 Render2D.FillRectangle(_textRect, BackgroundColor);
                 Render2D.FillRectangle(_dragAreaRect, dragAreaColor);
@@ -1192,10 +1190,8 @@ namespace FlaxEditor.Surface.Archetypes
                 BackgroundColor = style.BackgroundNormal;
                 var dragAreaColor = BackgroundColor / 2.0f;
 
-                if (IsMouseOver)
-                    BackgroundColor *= 1.2f;
                 if (_textRectHovered)
-                    BackgroundColor *= 1.2f;
+                    BackgroundColor *= 1.5f;
 
                 Render2D.FillRectangle(_textRect, BackgroundColor);
                 Render2D.FillRectangle(_dragAreaRect, dragAreaColor);
