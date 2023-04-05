@@ -230,6 +230,8 @@ namespace Flax.Deps.Dependencies
             // TODO: shared/Microsoft.NETCore.App/<version>/System.IO.Compression.Native.dll
             if (runtimeFlavor == "Mono")
             {
+                // PS4 outputs mono into artifacts\obj\mono\PS4.x64.Release\out
+                // PS4 output AOT compiler into artifacts/obj/mono/PS4.x64.Release/cross/out/bin/mono-aot-cross.exe
                 Utilities.DirectoryCopy(Path.Combine(unpackTemp, "runtimes", hostRuntimeName, "native"), Path.Combine(dstDotnet, "native"), true, true);
                 Utilities.FileDelete(Path.Combine(dstDotnet, "native", privateCorelib));
             }
@@ -252,11 +254,17 @@ namespace Flax.Deps.Dependencies
             SetupDirectory(Path.Combine(root, "src", "external"), false);
 
             /*
-             * Mono AOT building for Windows:
-             * .\build.cmd -c release -runtimeFlavor mono mono+libs -cmakeargs "-DDISABLE_JIT=1-DENABLE_PERFTRACING=0-DDISABLE_REFLECTION_EMIT=1-DDISABLE_EVENTPIPE=1-DDISABLE_COM=1-DDISABLE_PROFILER=1-DDISABLE_COMPONENTS=1" /p:FeaturePerfTracing=false /p:FeatureManagedEtw=false /p:FeatureManagedEtwChannels=false /p:FeatureEtw=false
-             * 
+             * Mono AOT for Windows:
+             * .\build.cmd -c release -runtimeFlavor mono -subset mono+libs -cmakeargs "-DDISABLE_JIT=1-DENABLE_PERFTRACING=0-DDISABLE_REFLECTION_EMIT=1-DDISABLE_EVENTPIPE=1-DDISABLE_COM=1-DDISABLE_PROFILER=1-DDISABLE_COMPONENTS=1" /p:FeaturePerfTracing=false /p:FeatureManagedEtw=false /p:FeatureManagedEtwChannels=false /p:FeatureEtw=false
+             *
              * Mono AOT cross-compiler for Windows:
-             * .\build.cmd -c release -runtimeFlavor mono -subset mono /p:BuildMonoAotCrossCompiler=true
+             * .\build.cmd -c release -runtimeFlavor mono -subset mono /p:BuildMonoAotCrossCompiler=true /p:BuildMonoAOTCrossCompilerOnly=true
+             *
+             * Mono AOT for PS4:
+             * .\build.cmd -os PS4 -a x64 /p:RuntimeOS=ps4 -c release -runtimeFlavor mono -subset mono+libs -cmakeargs "-DDISABLE_JIT=1-DENABLE_PERFTRACING=0-DDISABLE_REFLECTION_EMIT=1-DDISABLE_EVENTPIPE=1-DDISABLE_COM=1-DDISABLE_PROFILER=1-DDISABLE_COMPONENTS=1" /p:FeaturePerfTracing=false /p:FeatureManagedEtw=false /p:FeatureManagedEtwChannels=false /p:FeatureEtw=false
+             *
+             * Mono AOT cross-compiler for PS4:
+             * .\build.cmd -c release -runtimeFlavor mono -subset mono /p:BuildMonoAotCrossCompiler=true /p:BuildMonoAOTCrossCompilerOnly=true /p:TargetOS=PS4 /p:HostOS=windows -cmakeargs "-DCMAKE_CROSSCOMPILING=True"
              */
 
             foreach (var platform in options.Platforms)

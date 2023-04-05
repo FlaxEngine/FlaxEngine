@@ -139,9 +139,19 @@ namespace Flax.Build
         /// </summary>
         public struct CSharpOptions
         {
+            public enum ActionTypes
+            {
+                MonoCompile,
+                MonoLink,
+            };
+
+            public ActionTypes Action;
             public string InputFile;
-            public string AssembliesFolder;
+            public List<string> InputFiles;
+            public string OutputFile;
+            public string AssembliesPath;
             public string ClassLibraryPath;
+            public string PlatformsToolsPath;
             public bool EnableDebugSymbols;
             public bool EnableToolDebug;
         }

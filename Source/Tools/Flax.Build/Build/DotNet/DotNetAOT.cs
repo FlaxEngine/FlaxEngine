@@ -305,7 +305,6 @@ namespace Flax.Build
             else if (aotMode == DotNetAOTModes.MonoAOTDynamic || aotMode == DotNetAOTModes.MonoAOTStatic)
             {
                 var dotnetLibPath = Path.Combine(aotAssembliesPath, "lib/net7.0");
-                var monoAssembliesOutputPath = aotMode == DotNetAOTModes.MonoAOTDynamic ? dotnetOutputPath : null;
 
                 // Build list of assemblies to process (use game assemblies as root to walk over used references from stdlib)
                 var assembliesPaths = new List<string>();
@@ -346,6 +345,10 @@ namespace Flax.Build
 
                 // Run compilation
                 bool failed = false;
+                bool validCache = true;
+                var platformsToolsPath = Path.Combine(Globals.EngineRoot, "Source/Platforms", platform.ToString(), "Binaries/Tools");
+                if (!Directory.Exists(platformsToolsPath))
+                    throw new Exception("Missing platform tools " + platformsToolsPath);
                 var compileAssembly = (string assemblyPath) =>
                 {
                     // Determinate whether use debug information for that assembly
@@ -357,7 +360,11 @@ namespace Flax.Build
                     }
 
                     // Skip if output is already generated and is newer than a source assembly
-                    var outputFilePath = assemblyPath + buildPlatform.SharedLibraryFileExtension;
+                    string outputFilePath;
+                    if (aotMode == DotNetAOTModes.MonoAOTDynamic)
+                        outputFilePath = assemblyPath + buildPlatform.SharedLibraryFileExtension;
+                    else
+                        outputFilePath = Path.Combine(Path.GetDirectoryName(assemblyPath), buildPlatform.StaticLibraryFilePrefix + Path.GetFileName(assemblyPath) + buildPlatform.StaticLibraryFileExtension);
                     if (!File.Exists(outputFilePath) || File.GetLastWriteTime(assemblyPath) > File.GetLastWriteTime(outputFilePath))
                     {
                         if (dotnetAotDebug)
@@ -366,33 +373,49 @@ namespace Flax.Build
                             Log.Info("");
                             Log.Info("");
                         }
-                        Log.Info(" * " + assemblyPath);
                         var options = new Toolchain.CSharpOptions
                         {
+                            Action = Toolchain.CSharpOptions.ActionTypes.MonoCompile,
                             InputFile = assemblyPath,
-                            AssembliesFolder = aotAssembliesPath,
+                            OutputFile = outputFilePath,
+                            AssembliesPath = aotAssembliesPath,
                             ClassLibraryPath = dotnetLibPath,
+                            PlatformsToolsPath = platformsToolsPath,
                             EnableDebugSymbols = useDebug,
                             EnableToolDebug = dotnetAotDebug,
                         };
+                        if (!Directory.Exists(options.PlatformsToolsPath))
+                            throw new Exception("Missing platform tools " + options.PlatformsToolsPath);
+                        Log.Info(" * " + options.OutputFile);
                         if (buildToolchain.CompileCSharp(options))
                         {
                             Log.Error("Failed to run AOT on assembly " + assemblyPath);
                             failed = true;
                             return;
                         }
+                        validCache = false;
                     }
 
-                    // Skip if deployed file is already valid
-                    var deployedFilePath = monoAssembliesOutputPath != null ? Path.Combine(monoAssembliesOutputPath, Path.GetFileName(outputFilePath)) : outputFilePath;
-                    if (monoAssembliesOutputPath != null && (!File.Exists(deployedFilePath) || File.GetLastWriteTime(outputFilePath) > File.GetLastWriteTime(deployedFilePath)))
+                    var assemblyFileName = Path.GetFileName(assemblyPath);
+                    // TODO: consider optimizing C# assemblies when doing Mono AOT - maybe we could strip them out of the code and leave just reference/api info for the runtime
+                    if (Configuration.AOTMode == DotNetAOTModes.MonoAOTDynamic)
+                    {
+                        // Skip if deployed file is already valid
+                        var deployedFilePath = Path.Combine(dotnetOutputPath, Path.GetFileName(outputFilePath));
+                        if (!File.Exists(deployedFilePath) || File.GetLastWriteTime(outputFilePath) > File.GetLastWriteTime(deployedFilePath))
+                        {
+                            // Copy to the destination folder
+                            Utilities.FileCopy(assemblyPath, Path.Combine(dotnetOutputPath, assemblyFileName));
+                            Utilities.FileCopy(outputFilePath, deployedFilePath);
+                            if (useDebug && File.Exists(outputFilePath + ".pdb"))
+                                Utilities.FileCopy(outputFilePath + ".pdb", Path.Combine(dotnetOutputPath, Path.GetFileName(outputFilePath + ".pdb")));
+                            validCache = false;
+                        }
+                    }
+                    else
                     {
                         // Copy to the destination folder
-                        var assemblyFileName = Path.GetFileName(assemblyPath);
-                        Utilities.FileCopy(assemblyPath, Path.Combine(monoAssembliesOutputPath, assemblyFileName));
-                        Utilities.FileCopy(outputFilePath, deployedFilePath);
-                        if (useDebug && File.Exists(outputFilePath + ".pdb"))
-                            Utilities.FileCopy(outputFilePath + ".pdb", Path.Combine(monoAssembliesOutputPath, Path.GetFileName(outputFilePath + ".pdb")));
+                        Utilities.FileCopy(assemblyPath, Path.Combine(dotnetOutputPath, assemblyFileName));
                     }
                 };
                 if (Configuration.MaxConcurrency > 1 && Configuration.ConcurrencyProcessorScale > 0.0f && !dotnetAotDebug)
@@ -408,6 +431,27 @@ namespace Flax.Build
                 }
                 if (failed)
                     throw new Exception($"Failed to run AOT. See log ({Configuration.LogFile}).");
+                var outputAotLib = Path.Combine(outputPath, buildPlatform.SharedLibraryFilePrefix + "AOT" + buildPlatform.SharedLibraryFileExtension);
+                if (Configuration.AOTMode == DotNetAOTModes.MonoAOTStatic && (!validCache || !File.Exists(outputAotLib)))
+                {
+                    // Link static native libraries into a single shared module with whole C# compiled in
+                    var options = new Toolchain.CSharpOptions
+                    {
+                        Action = Toolchain.CSharpOptions.ActionTypes.MonoLink,
+                        InputFiles = assembliesPaths,
+                        OutputFile = outputAotLib,
+                        AssembliesPath = aotAssembliesPath,
+                        ClassLibraryPath = dotnetLibPath,
+                        PlatformsToolsPath = platformsToolsPath,
+                        EnableDebugSymbols = configuration != TargetConfiguration.Release,
+                        EnableToolDebug = dotnetAotDebug,
+                    };
+                    Log.Info(" * " + options.OutputFile);
+                    if (buildToolchain.CompileCSharp(options))
+                    {
+                        throw new Exception("Mono AOT failed to link static libraries into a shared module");
+                    }
+                }
             }
             else
             {

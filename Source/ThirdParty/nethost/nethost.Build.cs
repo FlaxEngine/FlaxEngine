@@ -72,8 +72,7 @@ public class nethost : ThirdPartyModule
         case TargetPlatform.Switch:
         case TargetPlatform.PS4:
         case TargetPlatform.PS5:
-            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libnethost.a"));
-            //options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libhostfxr.a"));
+            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libmonosgen-2.0.a"));
             break;
         case TargetPlatform.Android:
             options.PublicDefinitions.Add("USE_MONO_DYNAMIC_LIB");
