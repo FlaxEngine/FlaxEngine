@@ -21,7 +21,11 @@ void PrecompileAssembliesStep::OnBuildStarted(CookingData& data)
 
     // Reset any AOT cache from previous run if the AOT mode has changed (eg. Mono AOT -> ILC on Desktop)
     const String aotModeCacheFilePath = data.ManagedCodeOutputPath / TEXT("AOTMode.txt");
-    String aotModeCacheValue = String::Format(TEXT("{};{};{}"), (int32)aotMode, (int32)data.Configuration, (int32)buildSettings.SkipUnusedDotnetLibsPackaging);
+    String aotModeCacheValue = String::Format(TEXT("{};{};{};{}"),
+                                              (int32)aotMode,
+                                              (int32)data.Configuration,
+                                              (int32)buildSettings.SkipUnusedDotnetLibsPackaging,
+                                              FileSystem::GetFileLastEditTime(ScriptsBuilder::GetBuildToolPath()).Ticks);
     for (const String& define : data.CustomDefines)
         aotModeCacheValue += define;
     if (FileSystem::DirectoryExists(data.ManagedCodeOutputPath))
@@ -60,7 +64,7 @@ bool PrecompileAssembliesStep::Perform(CookingData& data)
     // Run AOT by Flax.Build (see DotNetAOT)
     const Char *platform, *architecture, *configuration = ::ToString(data.Configuration);
     data.GetBuildPlatformName(platform, architecture);
-    const String logFile = data.CacheDirectory / TEXT("AotLog.txt");
+    const String logFile = data.CacheDirectory / TEXT("AOTLog.txt");
     String args = String::Format(
         TEXT("-log -logfile=\"{}\" -runDotNetAOT -mutex -platform={} -arch={} -configuration={} -aotMode={} -binaries=\"{}\" -intermediate=\"{}\""),
         logFile, platform, architecture, configuration, ToString(aotMode), data.DataOutputPath, data.ManagedCodeOutputPath);

@@ -134,6 +134,15 @@ int32 ScriptsBuilder::GetCompilationsCount()
     return _compilationsCount;
 }
 
+String ScriptsBuilder::GetBuildToolPath()
+{
+#if USE_NETCORE && (PLATFORM_LINUX || PLATFORM_MAC)
+    return Globals::StartupFolder / TEXT("Binaries/Tools/Flax.Build");
+#else
+    return Globals::StartupFolder / TEXT("Binaries/Tools/Flax.Build.exe");
+#endif
+}
+
 bool ScriptsBuilder::LastCompilationFailed()
 {
     return _lastCompilationFailed;
@@ -221,11 +230,7 @@ void ScriptsBuilder::Compile()
 bool ScriptsBuilder::RunBuildTool(const StringView& args, const StringView& workingDir)
 {
     PROFILE_CPU();
-#if USE_NETCORE && (PLATFORM_LINUX || PLATFORM_MAC)
-    const String buildToolPath = Globals::StartupFolder / TEXT("Binaries/Tools/Flax.Build");
-#else
-    const String buildToolPath = Globals::StartupFolder / TEXT("Binaries/Tools/Flax.Build.exe");
-#endif
+    const String buildToolPath = GetBuildToolPath();
     if (!FileSystem::FileExists(buildToolPath))
     {
         Log::FileNotFoundException(buildToolPath).SetLevel(LogType::Fatal);
