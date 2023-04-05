@@ -234,7 +234,7 @@ bool MAssembly::LoadCorlib()
     return false;
 }
 
-bool MAssembly::LoadImage(const String& assemblyPath)
+bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePath)
 {
     _hasCachedClasses = false;
     _assemblyPath = assemblyPath;
@@ -244,6 +244,11 @@ bool MAssembly::LoadImage(const String& assemblyPath)
 bool MAssembly::UnloadImage(bool isReloading)
 {
     return false;
+}
+
+bool MAssembly::ResolveMissingFile(String& assemblyPath) const
+{
+    return true;
 }
 
 MClass::~MClass()

@@ -1228,7 +1228,7 @@ bool Variant::operator==(const Variant& other) const
 #elif USE_MONO
             return AsUint == other.AsUint || MCore::GCHandle::GetTarget(AsUint) == MCore::GCHandle::GetTarget(other.AsUint);
 #else
-            return nullptr;
+            return false;
 #endif
         default:
             return false;
@@ -1324,7 +1324,7 @@ Variant::operator bool() const
 #elif USE_MONO
         return AsUint != 0 && MCore::GCHandle::GetTarget(AsUint) != nullptr;
 #else
-        return nullptr;
+        return false;
 #endif
     default:
         return false;
