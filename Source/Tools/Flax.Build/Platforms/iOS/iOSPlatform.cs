@@ -11,6 +11,9 @@ namespace Flax.Build.Platforms
         /// <inheritdoc />
         public override TargetPlatform Target => TargetPlatform.iOS;
 
+        /// <inheritdoc />
+        public override bool HasDynamicCodeExecutionSupport => false;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Flax.Build.Platforms.iOSPlatform"/> class.
         /// </summary>
