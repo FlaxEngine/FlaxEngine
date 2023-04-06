@@ -73,6 +73,9 @@ public class nethost : ThirdPartyModule
         case TargetPlatform.PS4:
         case TargetPlatform.PS5:
             options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libmonosgen-2.0.a"));
+            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.Native.a"));
+            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.IO.Ports.Native.a"));
+            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.IO.Compression.Native.a"));
             break;
         case TargetPlatform.Android:
             options.PublicDefinitions.Add("USE_MONO_DYNAMIC_LIB");
