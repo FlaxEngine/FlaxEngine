@@ -137,13 +137,13 @@ namespace FlaxEditor.Surface.ContextMenu
                 Y = 1,
                 BackgroundColor = Style.Current.BackgroundNormal,
             };
+
             // Title bar
             var titleLabel = new Label
             {
                 Width = Width - 8,
                 Height = 20,
                 X = 4,
-                Y = 1,
                 Parent = headerPanel,
                 Text = "Select Node",
                 HorizontalAlignment = TextAlignment.Near,
