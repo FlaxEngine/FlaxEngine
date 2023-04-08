@@ -46,6 +46,10 @@ namespace FlaxEditor.Surface.ContextMenu
             ContextMenu = cm;
             Archetypes.Add(archetype);
             Name = archetype.Name;
+            EnableDropDownIcon = true;
+            HeaderColor = Style.Current.Background;
+            ArrowImageOpened = new SpriteBrush(Style.Current.ArrowDown);
+            ArrowImageClosed = new SpriteBrush(Style.Current.ArrowRight);
         }
 
         /// <summary>
