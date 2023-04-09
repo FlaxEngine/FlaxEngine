@@ -50,6 +50,7 @@ namespace FlaxEditor.Surface.ContextMenu
             HeaderColor = Style.Current.Background;
             ArrowImageOpened = new SpriteBrush(Style.Current.ArrowDown);
             ArrowImageClosed = new SpriteBrush(Style.Current.ArrowRight);
+            CloseAnimationTime = 0;
         }
 
         /// <summary>
