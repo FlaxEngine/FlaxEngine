@@ -51,6 +51,7 @@ typedef char char_t;
 #if PLATFORM_WINDOWS
 #include <combaseapi.h>
 #undef SetEnvironmentVariable
+#undef GetEnvironmentVariable
 #undef LoadLibrary
 #undef LoadImage
 #endif
@@ -1504,13 +1505,18 @@ bool InitHostfxr()
     get_hostfxr_parameters get_hostfxr_params;
     get_hostfxr_params.size = sizeof(hostfxr_initialize_parameters);
     get_hostfxr_params.assembly_path = libraryPath.Get();
-    FLAX_CORECLR_STRING dotnetRoot;
-    // TODO: implement proper lookup for dotnet installation folder and handle standalone build of FlaxGame
 #if PLATFORM_MAC
     get_hostfxr_params.dotnet_root = "/usr/local/share/dotnet";
 #else
     get_hostfxr_params.dotnet_root = nullptr;
 #endif
+    FLAX_CORECLR_STRING dotnetRoot;
+    String dotnetRootEnvVar;
+    if (!Platform::GetEnvironmentVariable(TEXT("DOTNET_ROOT"), dotnetRootEnvVar) && FileSystem::DirectoryExists(dotnetRootEnvVar))
+    {
+        dotnetRoot = dotnetRootEnvVar;
+        get_hostfxr_params.dotnet_root = dotnetRoot.Get();
+    }
 #if !USE_EDITOR
     const String& bundledDotnetPath = Globals::ProjectFolder / TEXT("Dotnet");
     if (FileSystem::DirectoryExists(bundledDotnetPath))
