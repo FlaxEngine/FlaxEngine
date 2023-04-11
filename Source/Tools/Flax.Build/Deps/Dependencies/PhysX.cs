@@ -407,7 +407,7 @@ namespace Flax.Deps.Dependencies
                 }
                 case TargetPlatform.Switch:
                 {
-                    Utilities.DirectoryCopy(Path.Combine(options.PlatformsFolder, "Switch", "Data", "PhysX"), root, true, true);
+                    Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "PhysX"), root, true, true);
                     Build(options, "switch64", platform, TargetArchitecture.ARM64);
                     break;
                 }

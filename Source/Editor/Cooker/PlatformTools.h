@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CookingData.h"
-#include "Engine/Core/Collections/Dictionary.h"
 #include "Editor/Scripting/ScriptsBuilder.h"
 #include "Engine/Graphics/PixelFormat.h"
 
@@ -130,62 +129,6 @@ public:
     /// <param name="data">The cooking data.</param>
     /// <returns>True if failed, otherwise false.<returns>
     virtual bool OnDeployBinaries(CookingData& data)
-    {
-        return false;
-    }
-
-    /// <summary>
-    /// The C# scripts AOT configuration options.
-    /// </summary>
-    struct AotConfig
-    {
-        String AotCompilerPath;
-        String AotCompilerArgs;
-        String AssemblerPath;
-        String AssemblerArgs;
-        String ArchiverPath;
-        String ArchiverArgs;
-        String AuxToolPath;
-        String AuxToolArgs;
-        String AotCachePath;
-        Dictionary<String, String> EnvVars;
-        Array<String> AssembliesSearchDirs;
-        Array<String> Assemblies;
-
-        AotConfig(CookingData& data)
-        {
-            Platform::GetEnvironmentVariables(EnvVars);
-        }
-    };
-
-    /// <summary>
-    /// Called to configure AOT options.
-    /// </summary>
-    /// <param name="data">The cooking data.</param>
-    /// <param name="config">The configuration.</param>
-    virtual void OnConfigureAOT(CookingData& data, AotConfig& config)
-    {
-    }
-
-    /// <summary>
-    /// Called to execute AOT for the given assembly.
-    /// </summary>
-    /// <param name="data">The cooking data.</param>
-    /// <param name="config">The configuration.</param>
-    /// <param name="assemblyPath">The input managed library file path.</param>
-    /// <returns>True if failed, otherwise false.<returns>
-    virtual bool OnPerformAOT(CookingData& data, AotConfig& config, const String& assemblyPath)
-    {
-        return false;
-    }
-
-    /// <summary>
-    /// Called after AOT execution for the assemblies.
-    /// </summary>
-    /// <param name="data">The cooking data.</param>
-    /// <param name="config">The configuration.</param>
-    /// <returns>True if failed, otherwise false.<returns>
-    virtual bool OnPostProcessAOT(CookingData& data, AotConfig& config)
     {
         return false;
     }

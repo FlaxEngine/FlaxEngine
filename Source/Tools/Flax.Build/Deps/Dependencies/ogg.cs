@@ -204,7 +204,7 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.Switch:
                 {
                     // Get the build data files
-                    Utilities.DirectoryCopy(Path.Combine(options.PlatformsFolder, "Switch", "Data", "ogg"), root, true, true);
+                    Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "ogg"), root, true, true);
 
                     // Build for Switch
                     SetupDirectory(buildDir, true);

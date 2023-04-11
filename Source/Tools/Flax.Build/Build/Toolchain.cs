@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using System.IO;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
 
@@ -143,12 +144,12 @@ namespace Flax.Build
             {
                 MonoCompile,
                 MonoLink,
+                GetOutputFiles,
             };
 
             public ActionTypes Action;
-            public string InputFile;
             public List<string> InputFiles;
-            public string OutputFile;
+            public List<string> OutputFiles;
             public string AssembliesPath;
             public string ClassLibraryPath;
             public string PlatformsToolsPath;
@@ -161,8 +162,20 @@ namespace Flax.Build
         /// </summary>
         /// <param name="options">The options.</param>
         /// <returns>True if failed, or not supported.</returns>
-        public virtual bool CompileCSharp(CSharpOptions options)
+        public virtual bool CompileCSharp(ref CSharpOptions options)
         {
+            switch (options.Action)
+            {
+            case CSharpOptions.ActionTypes.GetOutputFiles:
+                foreach (var inputFile in options.InputFiles)
+                {
+                    if (Configuration.AOTMode == DotNetAOTModes.MonoAOTDynamic)
+                        options.OutputFiles.Add(inputFile + Platform.SharedLibraryFileExtension);
+                    else
+                        options.OutputFiles.Add(Path.Combine(Path.GetDirectoryName(inputFile), Platform.StaticLibraryFilePrefix + Path.GetFileName(inputFile) + Platform.StaticLibraryFileExtension));
+                }
+                return false;
+            }
             return true;
         }
     }

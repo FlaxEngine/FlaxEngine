@@ -32,8 +32,6 @@ public:
     DotNetAOTModes UseAOT() const override;
     bool OnScriptsStepDone(CookingData& data) override;
     bool OnDeployBinaries(CookingData& data) override;
-    void OnConfigureAOT(CookingData& data, AotConfig& config) override;
-    bool OnPerformAOT(CookingData& data, AotConfig& config, const String& assemblyPath) override;
     bool OnPostProcess(CookingData& data) override;
 };
 

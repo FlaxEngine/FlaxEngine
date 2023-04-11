@@ -77,6 +77,13 @@ public class PhysX : DepsModule
         }
 
         options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, "Source/ThirdParty/PhysX"));
+        switch (options.Platform.Target)
+        {
+        case TargetPlatform.Switch:
+            options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, "Source/Platforms", options.Platform.Target.ToString(), "Binaries/Data/PhysX/physx/include"));
+            options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, "Source/Platforms", options.Platform.Target.ToString(), "Binaries/Data/PhysX/physx/include/foundation"));
+            break;
+        }
 
         if (useDynamicLinking)
         {

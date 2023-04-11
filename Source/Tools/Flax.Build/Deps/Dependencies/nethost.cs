@@ -234,7 +234,7 @@ namespace Flax.Deps.Dependencies
                 // PS4 outputs mono into artifacts\obj\mono\PS4.x64.Release\out
                 // PS4 outputs native libs into artifacts\bin\native\net7.0-PS4-Release-x64\lib
                 // PS4 outputs System.Private.CoreLib lib into artifacts\bin\mono\PS4.x64.Release
-                // PS4 outputs C# libs into artifacts\bin\mono\PS4.x64.Release\cross\ps4-x64
+                // PS4 outputs C# libs into artifacts\bin\runtime\net7.0-PS4.Release.x64
                 // PS4 outputs AOT compiler into artifacts\bin\mono\PS4.x64.Release\cross\ps4-x64
                 Utilities.DirectoryCopy(Path.Combine(unpackTemp, "runtimes", hostRuntimeName, "native"), Path.Combine(dstDotnet, "native"), true, true);
                 Utilities.FileDelete(Path.Combine(dstDotnet, "native", privateCorelib));
