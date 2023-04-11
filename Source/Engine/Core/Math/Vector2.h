@@ -228,8 +228,9 @@ public:
     /// </summary>
     Vector2Base GetNormalized() const
     {
-        const T rcp = 1.0f / Length();
-        return Vector2Base(X * rcp, Y * rcp);
+		Vector2Base Result(X, Y);
+        Result.Normalize();
+        return Result;
     }
 
 public:
