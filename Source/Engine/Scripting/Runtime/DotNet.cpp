@@ -1518,7 +1518,7 @@ bool InitHostfxr()
         get_hostfxr_params.dotnet_root = dotnetRoot.Get();
     }
 #if !USE_EDITOR
-    const String& bundledDotnetPath = Globals::ProjectFolder / TEXT("Dotnet");
+    const String bundledDotnetPath = Globals::ProjectFolder / TEXT("Dotnet");
     if (FileSystem::DirectoryExists(bundledDotnetPath))
     {
         dotnetRoot = FLAX_CORECLR_STRING(bundledDotnetPath);
