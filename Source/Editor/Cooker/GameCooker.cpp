@@ -64,7 +64,7 @@
 #include "Platform/Mac/MacPlatformTools.h"
 #include "Engine/Platform/Mac/MacPlatformSettings.h"
 #endif
-#if PLATFORM_TOOLS_MAC
+#if PLATFORM_TOOLS_IOS
 #include "Platform/iOS/iOSPlatformTools.h"
 #include "Engine/Platform/iOS/iOSPlatformSettings.h"
 #endif

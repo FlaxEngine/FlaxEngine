@@ -47,6 +47,7 @@ namespace FlaxEditor.Windows
                 { PlatformType.Switch, new Switch() },
                 { PlatformType.PS5, new PS5() },
                 { PlatformType.Mac, new Mac() },
+                { PlatformType.iOS, new iOS() },
             };
 
             public BuildTabProxy(GameCookerWindow win, PlatformSelector platformSelector)
@@ -64,6 +65,7 @@ namespace FlaxEditor.Windows
                 PerPlatformOptions[PlatformType.Switch].Init("Output/Switch", "Switch");
                 PerPlatformOptions[PlatformType.PS5].Init("Output/PS5", "PS5");
                 PerPlatformOptions[PlatformType.Mac].Init("Output/Mac", "Mac");
+                PerPlatformOptions[PlatformType.iOS].Init("Output/iOS", "iOS");
             }
 
             [HideInEditor]
@@ -133,6 +135,7 @@ namespace FlaxEditor.Windows
                     {
                     case BuildPlatform.MacOSx64:
                     case BuildPlatform.MacOSARM64:
+                    case BuildPlatform.iOSARM64:
                     case BuildPlatform.AndroidARM64:
                         IsSupported = true;
                         break;
@@ -244,6 +247,11 @@ namespace FlaxEditor.Windows
                 protected override BuildPlatform BuildPlatform => CPU == Archs.ARM64 ? BuildPlatform.MacOSARM64 : BuildPlatform.MacOSx64;
             }
 
+            class iOS : Platform
+            {
+                protected override BuildPlatform BuildPlatform => BuildPlatform.iOSARM64;
+            }
+
             class Editor : CustomEditor
             {
                 private PlatformType _platform;
@@ -294,6 +302,9 @@ namespace FlaxEditor.Windows
                             break;
                         case PlatformType.Mac:
                             name = "Mac";
+                            break;
+                        case PlatformType.iOS:
+                            name = "iOS";
                             break;
                         default:
                             name = Utilities.Utils.GetPropertyNameUI(_platform.ToString());
