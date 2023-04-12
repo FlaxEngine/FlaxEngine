@@ -56,7 +56,7 @@ namespace Flax.Build
         public static void RunDotNetAOT()
         {
             Log.Info("Running .NET AOT in mode " + AOTMode);
-            Configuration.CustomDefines.Add("DOTNET_AOT_DEBUG");
+            //Configuration.CustomDefines.Add("DOTNET_AOT_DEBUG");
             DotNetAOT.RunAOT();
         }
 
