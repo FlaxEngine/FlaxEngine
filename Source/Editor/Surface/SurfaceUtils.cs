@@ -94,6 +94,7 @@ namespace FlaxEditor.Surface
             case MaterialParameterType.ChannelMask: return typeof(ChannelMask);
             case MaterialParameterType.GameplayGlobal: return typeof(GameplayGlobals);
             case MaterialParameterType.TextureGroupSampler: return typeof(int);
+            case MaterialParameterType.GlobalSDF: return typeof(object);
             default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
         }

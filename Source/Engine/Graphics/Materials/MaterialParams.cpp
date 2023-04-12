@@ -12,6 +12,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
+#include "Engine/Scripting/Enums.h"
 #include "Engine/Streaming/Streaming.h"
 
 bool MaterialInfo8::operator==(const MaterialInfo8& other) const
@@ -125,81 +126,6 @@ bool MaterialInfo::operator==(const MaterialInfo& other) const
             && Math::NearEqual(OpacityThreshold, other.OpacityThreshold)
             && TessellationMode == other.TessellationMode
             && MaxTessellationFactor == other.MaxTessellationFactor;
-}
-
-const Char* ToString(MaterialParameterType value)
-{
-    const Char* result;
-    switch (value)
-    {
-    case MaterialParameterType::Invalid:
-        result = TEXT("Invalid");
-        break;
-    case MaterialParameterType::Bool:
-        result = TEXT("Bool");
-        break;
-    case MaterialParameterType::Integer:
-        result = TEXT("Integer");
-        break;
-    case MaterialParameterType::Float:
-        result = TEXT("Float");
-        break;
-    case MaterialParameterType::Vector2:
-        result = TEXT("Vector2");
-        break;
-    case MaterialParameterType::Vector3:
-        result = TEXT("Vector3");
-        break;
-    case MaterialParameterType::Vector4:
-        result = TEXT("Vector4");
-        break;
-    case MaterialParameterType::Color:
-        result = TEXT("Color");
-        break;
-    case MaterialParameterType::Texture:
-        result = TEXT("Texture");
-        break;
-    case MaterialParameterType::CubeTexture:
-        result = TEXT("CubeTexture");
-        break;
-    case MaterialParameterType::NormalMap:
-        result = TEXT("NormalMap");
-        break;
-    case MaterialParameterType::SceneTexture:
-        result = TEXT("SceneTexture");
-        break;
-    case MaterialParameterType::GPUTexture:
-        result = TEXT("GPUTexture");
-        break;
-    case MaterialParameterType::Matrix:
-        result = TEXT("Matrix");
-        break;
-    case MaterialParameterType::GPUTextureArray:
-        result = TEXT("GPUTextureArray");
-        break;
-    case MaterialParameterType::GPUTextureVolume:
-        result = TEXT("GPUTextureVolume");
-        break;
-    case MaterialParameterType::GPUTextureCube:
-        result = TEXT("GPUTextureCube");
-        break;
-    case MaterialParameterType::ChannelMask:
-        result = TEXT("ChannelMask");
-        break;
-    case MaterialParameterType::GameplayGlobal:
-        result = TEXT("GameplayGlobal");
-        break;
-    case MaterialParameterType::TextureGroupSampler:
-        result = TEXT("TextureGroupSampler");
-        break;
-    case MaterialParameterType::GlobalSDF:
-        result = TEXT("GlobalSDF");
-        break;
-    default:
-        result = TEXT("");
-        break;
-    }
-    return result;
 }
 
 Variant MaterialParameter::GetValue() const
@@ -347,7 +273,7 @@ void MaterialParameter::SetValue(const Variant& value)
     }
     if (invalidType)
     {
-        LOG(Error, "Invalid material parameter value type {0} to set (param type: {1})", value.Type, ::ToString(_type));
+        LOG(Error, "Invalid material parameter value type {0} to set (param type: {1})", value.Type, ScriptingEnum::ToString<MaterialParameterType>(_type));
     }
 }
 
@@ -604,7 +530,7 @@ bool MaterialParameter::operator==(const MaterialParameter& other) const
 
 String MaterialParameter::ToString() const
 {
-    return String::Format(TEXT("\'{0}\' ({1}:{2}:{3})"), _name, ::ToString(_type), _paramId, _isPublic);
+    return String::Format(TEXT("\'{0}\' ({1}:{2}:{3})"), _name, ScriptingEnum::ToString<MaterialParameterType>(_type), _paramId, _isPublic);
 }
 
 MaterialParameter* MaterialParams::Get(const Guid& id)

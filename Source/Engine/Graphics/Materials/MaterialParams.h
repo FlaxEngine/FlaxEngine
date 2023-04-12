@@ -27,7 +27,7 @@ struct MaterialParamsLink
 /// <summary>
 /// The material parameter types.
 /// </summary>
-enum class MaterialParameterType : byte
+API_ENUM() enum class MaterialParameterType : byte
 {
     /// <summary>
     /// The invalid type.
@@ -134,8 +134,6 @@ enum class MaterialParameterType : byte
     /// </summary>
     GlobalSDF = 20,
 };
-
-const Char* ToString(MaterialParameterType value);
 
 /// <summary>
 /// Structure of serialized material parameter data.
