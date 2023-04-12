@@ -1257,7 +1257,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
             continue;
         auto& item = it->Item;
 
-        // Send despawn message
+        // Send RPC message
         //NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Rpc {}::{} object ID={}", e.Name.First.ToString(), String(e.Name.Second), item.ToString());
         NetworkMessageObjectRpc msgData;
         msgData.ObjectId = item.ObjectId;
