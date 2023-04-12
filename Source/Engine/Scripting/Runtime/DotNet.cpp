@@ -1514,7 +1514,7 @@ bool InitHostfxr()
     String dotnetRootEnvVar;
     if (!Platform::GetEnvironmentVariable(TEXT("DOTNET_ROOT"), dotnetRootEnvVar) && FileSystem::DirectoryExists(dotnetRootEnvVar))
     {
-        dotnetRoot = dotnetRootEnvVar;
+        dotnetRoot = FLAX_CORECLR_STRING(dotnetRootEnvVar);
         get_hostfxr_params.dotnet_root = dotnetRoot.Get();
     }
 #if !USE_EDITOR
