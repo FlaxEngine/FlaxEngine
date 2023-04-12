@@ -26,10 +26,6 @@ This repository contains full source code of the Flax Engine (excluding NDA-prot
 
 Follow the instructions below to compile and run the engine from source.
 
-## Flax plugin for Visual Studio
-
-Flax Visual Studio extension provides better programming workflow, C# scripts debugging functionality and allows to attach to running engine instance to debug C# source. This extension is available to download [here](https://marketplace.visualstudio.com/items?itemName=Flax.FlaxVS).
-
 ## Windows
 
 * Install Visual Studio 2022 or newer
@@ -43,8 +39,6 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 * Set Flax (C++) or FlaxEngine (C#) as startup project
 * Compile Flax project (hit F7 or CTRL+Shift+B)
 * Run Flax (hit F5 key)
-
-> When building on Windows to support Vulkan rendering, first install the Vulkan SDK then set an environment variable to provide the path to the SDK prior to running GenerateProjectFiles.bat: `set VULKAN_SDK=%sdk_path%`
 
 ## Linux
 
@@ -78,6 +72,24 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 * Run `GenerateProjectFiles.command`
 * Open workspace with XCode or Visual Studio Code
 * Build and run (configuration  `Editor.Mac.Development`)
+
+#### Troubleshooting
+
+* `Could not execute because the specified command or file was not found.`
+
+Restart PC - ensure DotNet is added to PATH for command line tools execution.
+
+* `Microsoft.NET.TargetFrameworkInference.targets(141,5): error NETSDK1045: The current .NET SDK does not support targeting .NET 7.0.  Either target .NET 5.0 or lower, or use a version of the .NET SDK that supports .NET 7.0`
+
+Use Visual Studio 2022, older versions are not supported by .NET SDK 7.
+
+* `Building for Windows without Vulkan rendering backend (Vulkan SDK is missing)`
+
+Install the Vulkan SDK then set an environment variable to provide the path to the SDK prior to running GenerateProjectFiles.bat: `set VULKAN_SDK=%sdk_path%`.
+
+* `The NuGetSdkResolver did not resolve this SDK`
+
+Install `.NET SDK`, `NuGet package manager` and `NuGet targets and build tasks` in Visual Studio components.
 
 ## Workspace directory
 
