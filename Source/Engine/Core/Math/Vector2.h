@@ -228,9 +228,9 @@ public:
     /// </summary>
     Vector2Base GetNormalized() const
     {
-		Vector2Base Result(X, Y);
-        Result.Normalize();
-        return Result;
+        Vector2Base result(X, Y);
+        result.Normalize();
+        return result;
     }
 
 public:
