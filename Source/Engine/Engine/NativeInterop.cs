@@ -371,40 +371,50 @@ namespace FlaxEngine.Interop
                     {
                         toManagedFieldMarshallers = new MarshalFieldTypedDelegate[marshallableFields.Length];
                         toNativeFieldMarshallers = new MarshalFieldTypedDelegate[marshallableFields.Length];
+                        BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
                         for (int i = 0; i < marshallableFields.Length; i++)
                         {
                             FieldInfo field = marshallableFields[i];
+                            Type fieldType = field.FieldType;
                             MethodInfo toManagedFieldMethod;
                             MethodInfo toNativeFieldMethod;
 
-                            if (field.FieldType.IsPointer)
+                            if (fieldType.IsPointer)
                             {
-                                toManagedFieldMethod = typeof(MarshalHelper<>).MakeGenericType(type).GetMethod(nameof(MarshalHelper<T>.ToManagedFieldPointer), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-                                toNativeFieldMethod = typeof(MarshalHelper<>).MakeGenericType(type).GetMethod(nameof(MarshalHelper<T>.ToNativeFieldPointer), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+                                toManagedFieldMethod = typeof(MarshalHelper<>).MakeGenericType(type).GetMethod(nameof(MarshalHelper<T>.ToManagedFieldPointer), bindingFlags);
+                                toNativeFieldMethod = typeof(MarshalHelper<>).MakeGenericType(type).GetMethod(nameof(MarshalHelper<T>.ToNativeFieldPointer), bindingFlags);
                             }
-                            else if (field.FieldType.IsValueType)
+                            else if (fieldType.IsValueType)
                             {
-                                toManagedFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>).MakeGenericType(type, field.FieldType).GetMethod(nameof(MarshalHelper<T>.ValueTypeField<ValueTypePlaceholder>.ToManagedField), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-                                toNativeFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>).MakeGenericType(type, field.FieldType).GetMethod(nameof(MarshalHelper<T>.ValueTypeField<ValueTypePlaceholder>.ToNativeField), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-                            }
-                            else if (field.FieldType.IsArray)
-                            {
-                                Type arrayElementType = field.FieldType.GetElementType();
-                                if (arrayElementType.IsValueType)
+                                if (Nullable.GetUnderlyingType(fieldType) != null)
                                 {
-                                    toManagedFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>).MakeGenericType(type, arrayElementType).GetMethod(nameof(MarshalHelper<T>.ValueTypeField<ValueTypePlaceholder>.ToManagedFieldArray), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-                                    toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, field.FieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToNativeField), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+                                    toManagedFieldMethod = typeof(MarshalHelper<>.NullableValueTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.NullableValueTypeField<ValueTypePlaceholder>.ToManagedField), bindingFlags);
+                                    toNativeFieldMethod = typeof(MarshalHelper<>.NullableValueTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.NullableValueTypeField<ValueTypePlaceholder>.ToNativeField), bindingFlags);
                                 }
                                 else
                                 {
-                                    toManagedFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, field.FieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToManagedField), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-                                    toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, field.FieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToNativeField), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+                                    toManagedFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ValueTypeField<ValueTypePlaceholder>.ToManagedField), bindingFlags);
+                                    toNativeFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ValueTypeField<ValueTypePlaceholder>.ToNativeField), bindingFlags);
+                                }
+                            }
+                            else if (fieldType.IsArray)
+                            {
+                                Type arrayElementType = fieldType.GetElementType();
+                                if (arrayElementType.IsValueType)
+                                {
+                                    toManagedFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>).MakeGenericType(type, arrayElementType).GetMethod(nameof(MarshalHelper<T>.ValueTypeField<ValueTypePlaceholder>.ToManagedFieldArray), bindingFlags);
+                                    toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToNativeField), bindingFlags);
+                                }
+                                else
+                                {
+                                    toManagedFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToManagedField), bindingFlags);
+                                    toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToNativeField), bindingFlags);
                                 }
                             }
                             else
                             {
-                                toManagedFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, field.FieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToManagedField), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-                                toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, field.FieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToNativeField), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+                                toManagedFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToManagedField), bindingFlags);
+                                toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToNativeField), bindingFlags);
                             }
                             toManagedFieldMarshallers[i] = toManagedFieldMethod.CreateDelegate<MarshalFieldTypedDelegate>();
                             toNativeFieldMarshallers[i] = toNativeFieldMethod.CreateDelegate<MarshalFieldTypedDelegate>();
@@ -580,6 +590,23 @@ namespace FlaxEngine.Interop
 
                     ref TField fieldValueRef = ref GetFieldReference<TField>(field, ref fieldOwner);
                     MarshalHelperValueType<TField>.ToNative(ref fieldValueRef, fieldPtr);
+                }
+            }
+
+            private static class NullableValueTypeField<TField>
+            {
+                static NullableValueTypeField()
+                {
+                }
+
+                internal static void ToManagedField(FieldInfo field, ref T fieldOwner, IntPtr fieldPtr, out int fieldOffset)
+                {
+                    fieldOffset = 0;
+                }
+
+                internal static void ToNativeField(FieldInfo field, ref T fieldOwner, IntPtr fieldPtr, out int fieldOffset)
+                {
+                    fieldOffset = 0;
                 }
             }
 
@@ -825,7 +852,7 @@ namespace FlaxEngine.Interop
                         else
                             genericParamTypes.Add(type);
                     }
-                    
+
                     string invokerTypeName = $"{typeof(Invoker).FullName}+Invoker{(method.IsStatic ? "Static" : "")}{(returnType != typeof(void) ? "Ret" : "NoRet")}{parameterTypes.Length}{(genericParamTypes.Count > 0 ? "`" + genericParamTypes.Count : "")}";
                     Type invokerType = Type.GetType(invokerTypeName);
                     if (invokerType != null)
