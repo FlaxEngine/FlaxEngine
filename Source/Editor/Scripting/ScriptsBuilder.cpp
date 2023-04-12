@@ -395,6 +395,8 @@ void ScriptsBuilder::GetBinariesConfiguration(const Char*& target, const Char*& 
     architecture = TEXT("x64");
 #elif PLATFORM_ARCH_X86
     architecture = TEXT("x86");
+#elif PLATFORM_ARCH_ARM
+    architecture = TEXT("arm");
 #elif PLATFORM_ARCH_ARM64
     architecture = TEXT("arm64");
 #else

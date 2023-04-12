@@ -579,7 +579,7 @@ void GameCooker::GetCurrentPlatform(PlatformType& platform, BuildPlatform& build
         buildPlatform = BuildPlatform::PS5;
         break;
     case PlatformType::Mac:
-        buildPlatform = PLATFORM_ARCH_ARM ? BuildPlatform::MacOSARM64 : BuildPlatform::MacOSx64;
+        buildPlatform = PLATFORM_ARCH_ARM || PLATFORM_ARCH_ARM64 ? BuildPlatform::MacOSARM64 : BuildPlatform::MacOSx64;
         break;
     case PlatformType::iOS:
         buildPlatform = BuildPlatform::iOSARM64;
