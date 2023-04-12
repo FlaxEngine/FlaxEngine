@@ -251,7 +251,7 @@ namespace Flax.Build
                             SetupProjectConfigurations(project, projectInfo);
 
                             // Get all modules aggregated into all binary modules used in all configurations of this target
-                            foreach (var configurationData in mainProject.Configurations)
+                            foreach (var configurationData in project.Configurations)
                             {
                                 var configurationBinaryModules = GetBinaryModules(projectInfo, configurationData.Target, configurationData.Modules);
                                 foreach (var configurationBinaryModule in configurationBinaryModules)
@@ -321,6 +321,10 @@ namespace Flax.Build
 
                             // Skip bindings projects for prebuilt targets (eg. no sources to build/view - just binaries)
                             if (targets[0].IsPreBuilt)
+                                continue;
+
+                            // Skip if project of that name has been already added
+                            if (projects.Any(x => x.OutputType == TargetOutputType.Library && x.Type == TargetType.DotNetCore && x.BaseName == binaryModuleName))
                                 continue;
 
                             using (new ProfileEventScope(binaryModuleName))

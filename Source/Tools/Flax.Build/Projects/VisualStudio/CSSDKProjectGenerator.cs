@@ -66,7 +66,7 @@ namespace Flax.Build.Projects.VisualStudio
             var allPlatforms = project.Configurations.Select(x => x.ArchitectureName).Distinct().ToArray();
             csProjectFileContent.AppendLine(string.Format("    <Configurations>{0}</Configurations>", string.Join(";", allConfigurations)));
             csProjectFileContent.AppendLine(string.Format("    <Platforms>{0}</Platforms>", string.Join(";", allPlatforms)));
-            
+
             // Provide default platform and configuration
             csProjectFileContent.AppendLine(string.Format("    <Configuration Condition=\" '$(Configuration)' == '' \">{0}</Configuration>", defaultConfiguration.Text));
             csProjectFileContent.AppendLine(string.Format("    <Platform Condition=\" '$(Platform)' == '' \">{0}</Platform>", defaultConfiguration.ArchitectureName));
@@ -128,11 +128,10 @@ namespace Flax.Build.Projects.VisualStudio
 
             csProjectFileContent.AppendLine("  <ItemGroup>");
 
-            // Unused when using explicitly NetCore7 ?
-            //foreach (var reference in project.CSharp.SystemReferences)
+            /*foreach (var reference in project.CSharp.SystemReferences)
             {
-                //csProjectFileContent.AppendLine(string.Format("    <Reference Include=\"{0}\" />", reference));
-            }
+                csProjectFileContent.AppendLine(string.Format("    <Reference Include=\"{0}\" />", reference));
+            }*/
 
             foreach (var reference in project.CSharp.FileReferences)
             {
@@ -235,7 +234,6 @@ namespace Flax.Build.Projects.VisualStudio
             csProjectFileContent.AppendLine("    <UseVSHostingProcess>true</UseVSHostingProcess>");
 
             csProjectFileContent.AppendLine("  </PropertyGroup>");
-            csProjectFileContent.AppendLine("");
 
             // Generate configuration-specific references
             foreach (var reference in configuration.TargetBuildOptions.ScriptingAPI.FileReferences)
@@ -246,9 +244,11 @@ namespace Flax.Build.Projects.VisualStudio
                     csProjectFileContent.AppendLine(string.Format("    <Reference Include=\"{0}\">", Path.GetFileNameWithoutExtension(reference)));
                     csProjectFileContent.AppendLine(string.Format("      <HintPath>{0}</HintPath>", Utilities.MakePathRelativeTo(reference, projectDirectory).Replace('/', '\\')));
                     csProjectFileContent.AppendLine("    </Reference>");
-                    csProjectFileContent.AppendLine("  </ItemGroup >");
+                    csProjectFileContent.AppendLine("  </ItemGroup>");
                 }
             }
+
+            csProjectFileContent.AppendLine("");
         }
     }
 }
