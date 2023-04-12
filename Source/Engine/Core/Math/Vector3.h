@@ -254,8 +254,9 @@ public:
     /// </summary>
     Vector3Base GetNormalized() const
     {
-        const T rcp = 1.0f / Length();
-        return Vector3Base(X * rcp, Y * rcp, Z * rcp);
+		Vector3Base Result(X, Y, Z);
+        Result.Normalize();
+        return Result;
     }
 
 public:
