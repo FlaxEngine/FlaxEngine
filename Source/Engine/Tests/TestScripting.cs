@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+#if FLAX_TESTS
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -171,3 +172,4 @@ namespace FlaxEngine
         }
     }
 }
+#endif

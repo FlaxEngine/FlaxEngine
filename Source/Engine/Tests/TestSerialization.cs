@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+#if FLAX_TESTS
 using System;
 using FlaxEngine.Json;
 using NUnit.Framework;
@@ -150,3 +151,4 @@ namespace FlaxEngine.Tests
         }
     }
 }
+#endif

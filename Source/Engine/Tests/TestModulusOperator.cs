@@ -1,3 +1,6 @@
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+
+#if FLAX_TESTS
 using NUnit.Framework;
 
 namespace FlaxEngine.Tests
@@ -54,3 +57,4 @@ namespace FlaxEngine.Tests
         }
     }
 }
+#endif

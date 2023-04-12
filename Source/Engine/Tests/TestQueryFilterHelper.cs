@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+#if FLAX_TESTS
 using FlaxEditor.Utilities;
 using NUnit.Framework;
 
@@ -80,3 +81,4 @@ namespace FlaxEditor.Tests
         }
     }
 }
+#endif

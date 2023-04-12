@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+#if FLAX_TESTS
 using System;
 using NUnit.Framework;
 using Assert = FlaxEngine.Assertions.Assert;
@@ -404,3 +405,4 @@ namespace FlaxEditor.Tests
         }
     }
 }
+#endif
