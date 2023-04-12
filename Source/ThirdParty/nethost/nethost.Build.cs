@@ -49,7 +49,7 @@ public class nethost : ThirdPartyModule
         case TargetPlatform.XboxOne:
         case TargetPlatform.XboxScarlett:
         case TargetPlatform.UWP:
-            if (hostRuntime.Type == DotNetSdk.HostType.CoreCRL)
+            if (hostRuntime.Type == DotNetSdk.HostType.CoreCLR)
             {
                 options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "nethost.lib"));
                 options.DependencyFiles.Add(Path.Combine(hostRuntime.Path, "nethost.dll"));
@@ -93,10 +93,10 @@ public class nethost : ThirdPartyModule
         options.PublicDefinitions.Add("DOTNET_HOST_RUNTIME_IDENTIFIER=" + DotNetSdk.GetHostRuntimeIdentifier(options.Platform.Target, options.Architecture));
         switch (hostRuntime.Type)
         {
-        case DotNetSdk.HostType.CoreCRL:
+        case DotNetSdk.HostType.CoreCLR:
         {
-            // Use CoreCRL for runtime hosting
-            options.PublicDefinitions.Add("DOTNET_HOST_CORECRL");
+            // Use CoreCLR for runtime hosting
+            options.PublicDefinitions.Add("DOTNET_HOST_CORECLR");
             options.PublicIncludePaths.Add(hostRuntime.Path);
             break;
         }

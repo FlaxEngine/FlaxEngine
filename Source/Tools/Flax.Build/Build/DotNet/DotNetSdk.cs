@@ -32,9 +32,9 @@ namespace Flax.Build
         public enum HostType
         {
             /// <summary>
-            /// Core CRL runtime.
+            /// Core CLR runtime.
             /// </summary>
-            CoreCRL,
+            CoreCLR,
 
             /// <summary>
             /// Old-school Mono runtime.
@@ -73,7 +73,7 @@ namespace Flax.Build
                 case TargetPlatform.Windows:
                 case TargetPlatform.Linux:
                 case TargetPlatform.Mac:
-                    Type = HostType.CoreCRL;
+                    Type = HostType.CoreCLR;
                     break;
                 default:
                     Type = HostType.Mono;

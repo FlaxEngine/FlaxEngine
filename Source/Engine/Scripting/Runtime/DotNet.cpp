@@ -28,7 +28,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Debug/Exceptions/CLRInnerException.h"
-#if DOTNET_HOST_CORECRL
+#if DOTNET_HOST_CORECLR
 #include <nethost.h>
 #include <coreclr_delegates.h>
 #include <hostfxr.h>
@@ -1478,7 +1478,7 @@ void* GetCustomAttribute(const MClass* klass, const MClass* attributeClass)
     return CallStaticMethod<void*, void*, void*>(GetCustomAttributePtr, klass->GetNative(), attributeClass ? attributeClass->GetNative() : nullptr);
 }
 
-#if DOTNET_HOST_CORECRL
+#if DOTNET_HOST_CORECLR
 
 const char_t* NativeInteropTypeName = FLAX_CORECLR_TEXT("FlaxEngine.Interop.NativeInterop, FlaxEngine.CSharp");
 hostfxr_initialize_for_runtime_config_fn hostfxr_initialize_for_runtime_config;
