@@ -174,24 +174,36 @@ bool DeployDataStep::Perform(CookingData& data)
                 String packFolder = srcDotnet / TEXT("../../../");
                 String dstDotnetLibs = dstDotnet, srcDotnetLibs = srcDotnet;
                 StringUtils::PathRemoveRelativeParts(packFolder);
-                if (usAOT && srcDotnetFromEngine)
+                if (usAOT)
                 {
-                    // AOT runtime files inside Engine Platform folder
-                    packFolder /= TEXT("Dotnet");
-                    dstDotnetLibs /= TEXT("lib/net7.0");
-                    srcDotnetLibs = packFolder / TEXT("lib/net7.0");
-                }
-                else if (srcDotnetFromEngine)
-                {
-                    // Runtime files inside Engine Platform folder
-                    dstDotnetLibs /= TEXT("lib/net7.0");
-                    srcDotnetLibs /= TEXT("lib/net7.0");
+                    if (srcDotnetFromEngine)
+                    {
+                        // AOT runtime files inside Engine Platform folder
+                        packFolder /= TEXT("Dotnet");
+                        dstDotnetLibs /= TEXT("lib/net7.0");
+                        srcDotnetLibs = packFolder / TEXT("lib/net7.0");
+                    }
+                    else
+                    {
+                        // Runtime files inside Dotnet SDK folder but placed for AOT
+                        dstDotnetLibs /= TEXT("lib/net7.0");
+                        srcDotnetLibs /= TEXT("../lib/net7.0");
+                    }
                 }
                 else
                 {
-                    // Runtime files inside Dotnet SDK folder
-                    dstDotnetLibs /= TEXT("shared/Microsoft.NETCore.App");
-                    srcDotnetLibs /= TEXT("../lib/net7.0");
+                    if (srcDotnetFromEngine)
+                    {
+                        // Runtime files inside Engine Platform folder
+                        dstDotnetLibs /= TEXT("lib/net7.0");
+                        srcDotnetLibs /= TEXT("lib/net7.0");
+                    }
+                    else
+                    {
+                        // Runtime files inside Dotnet SDK folder
+                        dstDotnetLibs /= TEXT("shared/Microsoft.NETCore.App");
+                        srcDotnetLibs /= TEXT("../lib/net7.0");
+                    }
                 }
                 FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), packFolder / TEXT("LICENSE.txt"));
                 FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), packFolder / TEXT("LICENSE.TXT"));
