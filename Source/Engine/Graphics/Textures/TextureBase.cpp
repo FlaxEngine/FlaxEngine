@@ -86,7 +86,7 @@ bool TextureMipData::GetPixels(Array<Color32>& pixels, int32 width, int32 height
     case PixelFormat::B8G8R8X8_UNorm:
     case PixelFormat::B8G8R8X8_UNorm_sRGB:
         if (srcRowSize == dstRowSize)
-            Platform::MemoryCopy(dst, src, size);
+            Platform::MemoryCopy(dst, src, RowPitch * Lines);
         else
         {
             for (uint32 row = 0; row < Lines; row++)
@@ -135,7 +135,7 @@ bool TextureMipData::GetPixels(Array<Color>& pixels, int32 width, int32 height, 
     case PixelFormat::R32G32B32A32_Typeless:
     case PixelFormat::R32G32B32A32_Float:
         if (srcRowSize == dstRowSize)
-            Platform::MemoryCopy(dst, src, size);
+            Platform::MemoryCopy(dst, src, RowPitch * Lines);
         else
         {
             for (uint32 row = 0; row < Lines; row++)
