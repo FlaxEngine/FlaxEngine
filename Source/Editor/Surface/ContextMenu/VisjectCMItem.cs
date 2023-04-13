@@ -192,7 +192,7 @@ namespace FlaxEditor.Surface.ContextMenu
         {
             var style = Style.Current;
             var rect = new Rectangle(Float2.Zero, Size);
-            var textRect = new Rectangle(2, 0, rect.Width - 4, rect.Height);
+            var textRect = new Rectangle(22, 0, rect.Width - 24, rect.Height);
             var showScoreHit = SortScore > 0.1f;
 
             // Overlay

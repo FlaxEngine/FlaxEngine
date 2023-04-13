@@ -126,12 +126,34 @@ namespace FlaxEditor.Surface.ContextMenu
                 _parameterSetNodeArchetype = info.ParameterSetNodeArchetype ?? Archetypes.Parameters.Nodes[3];
 
             // Context menu dimensions
-            Size = new Float2(320, 220);
+            Size = new Float2(320, 248);
+
+            var headerPanel = new Panel(ScrollBars.None)
+            {
+                Parent = this,
+                Height = 20,
+                Width = Width - 4,
+                X = 2,
+                Y = 1,
+                BackgroundColor = Style.Current.BackgroundNormal,
+            };
+
+            // Title bar
+            var titleLabel = new Label
+            {
+                Width = Width - 8,
+                Height = 20,
+                X = 4,
+                Parent = headerPanel,
+                Text = "Select Node",
+                HorizontalAlignment = TextAlignment.Near,
+                Font = new FontReference(Style.Current.FontLarge.Asset, 10),
+            };
 
             // Search box
-            _searchBox = new SearchBox(false, 1, 1)
+            _searchBox = new SearchBox(false, 2, 22)
             {
-                Width = Width - 3,
+                Width = Width - 4,
                 Parent = this
             };
             _searchBox.TextChanged += OnSearchFilterChanged;
@@ -548,6 +570,8 @@ namespace FlaxEditor.Surface.ContextMenu
                 };
 
                 var group = CreateGroup(groupArchetype);
+                group.ArrowImageOpened = new SpriteBrush(Style.Current.ArrowDown);
+                group.ArrowImageClosed = new SpriteBrush(Style.Current.ArrowRight);
                 group.Close(false);
                 archetypeIndex = 0;
                 for (int i = 0; i < parameters.Count; i++)
