@@ -34,6 +34,7 @@
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Scripting/Enums.h"
 
 #if !USE_EDITOR && (PLATFORM_WINDOWS || PLATFORM_LINUX)
 #include "Engine/Core/Config/PlatformSettings.h"
@@ -1385,7 +1386,7 @@ PixelFormat GPUDeviceVulkan::GetClosestSupportedPixelFormat(PixelFormat format, 
 #if !BUILD_RELEASE
             if (format != remap)
             {
-                LOG(Warning, "Unsupported Vulkan format {0}. Remapping to {1}", (int32)format, (int32)remap);
+                LOG(Warning, "Unsupported Vulkan format {0}. Remapping to {1}", ScriptingEnum::ToString(format), ScriptingEnum::ToString(remap));
                 format = GetClosestSupportedPixelFormat(remap, flags, optimalTiling);
             }
 #endif

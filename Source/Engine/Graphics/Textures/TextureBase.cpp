@@ -11,6 +11,7 @@
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
+#include "Engine/Scripting/Enums.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Threading/Threading.h"
 
@@ -85,7 +86,7 @@ bool TextureMipData::GetPixels(Array<Color32>& pixels, int32 width, int32 height
     case PixelFormat::B8G8R8X8_UNorm:
     case PixelFormat::B8G8R8X8_UNorm_sRGB:
         if (srcRowSize == dstRowSize)
-            Platform::MemoryCopy(dst, src, size);
+            Platform::MemoryCopy(dst, src, RowPitch * Lines);
         else
         {
             for (uint32 row = 0; row < Lines; row++)
@@ -112,7 +113,7 @@ bool TextureMipData::GetPixels(Array<Color32>& pixels, int32 width, int32 height
             }
             return false;
         }
-        LOG(Error, "Unsupported texture data format {0}.", (int32)format);
+        LOG(Error, "Unsupported texture data format {0}.", ScriptingEnum::ToString(format));
         return true;
     }
     }
@@ -134,7 +135,7 @@ bool TextureMipData::GetPixels(Array<Color>& pixels, int32 width, int32 height, 
     case PixelFormat::R32G32B32A32_Typeless:
     case PixelFormat::R32G32B32A32_Float:
         if (srcRowSize == dstRowSize)
-            Platform::MemoryCopy(dst, src, size);
+            Platform::MemoryCopy(dst, src, RowPitch * Lines);
         else
         {
             for (uint32 row = 0; row < Lines; row++)
@@ -161,7 +162,7 @@ bool TextureMipData::GetPixels(Array<Color>& pixels, int32 width, int32 height, 
             }
             return false;
         }
-        LOG(Error, "Unsupported texture data format {0}.", (int32)format);
+        LOG(Error, "Unsupported texture data format {0}.", ScriptingEnum::ToString(format));
         return true;
     }
     }
@@ -453,7 +454,7 @@ bool TextureBase::SetPixels(const Span<Color32>& pixels, int32 mipIndex, int32 a
     }
     if (error)
     {
-        LOG(Error, "Unsupported texture data format {0}.", (int32)format);
+        LOG(Error, "Unsupported texture data format {0}.", ScriptingEnum::ToString(format));
         return true;
     }
 
@@ -531,7 +532,7 @@ bool TextureBase::SetPixels(const Span<Color>& pixels, int32 mipIndex, int32 arr
     }
     if (error)
     {
-        LOG(Error, "Unsupported texture data format {0}.", (int32)format);
+        LOG(Error, "Unsupported texture data format {0}.", ScriptingEnum::ToString(format));
         return true;
     }
 
@@ -844,7 +845,7 @@ bool TextureBase::InitData::GenerateMip(int32 mipIndex, bool linear)
             break;
         }
         default:
-            LOG(Error, "Unsupported texture data format {0}.", (int32)Format);
+            LOG(Error, "Unsupported texture data format {0}.", ScriptingEnum::ToString(Format));
             return true;
         }
     }

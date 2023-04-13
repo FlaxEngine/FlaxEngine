@@ -16,6 +16,7 @@ DECLARE_SCRIPTING_TYPE(TaskGraphSystem);
     friend TaskGraph;
 private:
     Array<TaskGraphSystem*, InlinedAllocation<16>> _dependencies;
+    Array<TaskGraphSystem*, InlinedAllocation<16>> _reverseDependencies;
 
 public:
     /// <summary>
@@ -24,11 +25,19 @@ public:
     API_FIELD() int32 Order = 0;
 
 public:
+    ~TaskGraphSystem();
+
     /// <summary>
     /// Adds the dependency on the system execution. Before this system can be executed the given dependant system has to be executed first.
     /// </summary>
     /// <param name="system">The system to depend on.</param>
     API_FUNCTION() void AddDependency(TaskGraphSystem* system);
+
+    /// <summary>
+    /// Removes the dependency on the system execution.
+    /// </summary>
+    /// <param name="system">The system to not depend on anymore.</param>
+    API_FUNCTION() void RemoveDependency(TaskGraphSystem* system);
 
     /// <summary>
     /// Called before executing any systems of the graph. Can be used to initialize data (synchronous).

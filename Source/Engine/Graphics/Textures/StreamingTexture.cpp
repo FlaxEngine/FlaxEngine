@@ -9,6 +9,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Async/Tasks/GPUUploadTextureMipTask.h"
+#include "Engine/Scripting/Enums.h"
 
 TextureHeader_Deprecated::TextureHeader_Deprecated()
 {
@@ -354,7 +355,7 @@ protected:
         // Ensure that texture has been allocated before this task and has proper format
         if (!texture->IsAllocated() || texture->Format() != _streamingTexture->GetHeader()->Format)
         {
-            LOG(Error, "Cannot stream texture {0} (streaming format: {1})", texture->ToString(), (int32)_streamingTexture->GetHeader()->Format);
+            LOG(Error, "Cannot stream texture {0} (streaming format: {1})", texture->ToString(), ScriptingEnum::ToString(_streamingTexture->GetHeader()->Format));
             return Result::Failed;
         }
 

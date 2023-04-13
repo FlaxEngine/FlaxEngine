@@ -18,9 +18,29 @@ TaskGraphSystem::TaskGraphSystem(const SpawnParams& params)
 {
 }
 
+TaskGraphSystem::~TaskGraphSystem()
+{
+    // Cleanup any outstanding dependencies
+    for (auto* e : _reverseDependencies)
+        e->_dependencies.Remove(this);
+}
+
 void TaskGraphSystem::AddDependency(TaskGraphSystem* system)
 {
+    CHECK(system);
+    if (_dependencies.Contains(system))
+        return;
+    system->_reverseDependencies.Add(this);
     _dependencies.Add(system);
+}
+
+void TaskGraphSystem::RemoveDependency(TaskGraphSystem* system)
+{
+    CHECK(system);
+    if (!_dependencies.Contains(system))
+        return;
+    system->_reverseDependencies.Remove(this);
+    _dependencies.Remove(system);
 }
 
 void TaskGraphSystem::PreExecute(TaskGraph* graph)

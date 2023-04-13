@@ -69,7 +69,6 @@ namespace FlaxEditor.Windows
 
                 // Update UI
                 UpdateUI();
-                _view.SelectFirstItem();
             }
         }
 
