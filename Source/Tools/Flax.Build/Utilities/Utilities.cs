@@ -384,7 +384,11 @@ namespace Flax.Build
             Stopwatch stopwatch = Stopwatch.StartNew();
             if (!options.HasFlag(RunOptions.NoLoggingOfRunCommand))
             {
-                Log.Verbose("Running: " + app + (string.IsNullOrEmpty(commandLine) ? "" : " " + commandLine));
+                var msg = "Running: " + app + (string.IsNullOrEmpty(commandLine) ? "" : " " + commandLine);
+                if (options.HasFlag(RunOptions.ConsoleLogOutput))
+                    Log.Info(msg);
+                else
+                    Log.Verbose(msg);
             }
 
             bool redirectStdOut = (options & RunOptions.NoStdOutRedirect) != RunOptions.NoStdOutRedirect;
