@@ -106,6 +106,13 @@ namespace FlaxEditor.Options
         [DefaultValue(60.0f), Limit(0, 666)]
         [EditorDisplay("General", "Editor FPS"), EditorOrder(110), Tooltip("Limit for the editor draw/update frames per second rate (FPS). Use higher values if you need more responsive interface or lower values to use less device power. Value 0 disables any limits.")]
         public float EditorFPS { get; set; } = 60.0f;
+        
+        /// <summary>
+        /// Gets or sets The FPS of the editor when the editor window is not focused. Usually set to lower then the editor FPS.
+        /// </summary>
+        [DefaultValue(15.0f), Limit(0, 666)]
+        [EditorDisplay("General", "Editor FPS When Not Focused"), EditorOrder(111), Tooltip("The FPS of the editor when the editor window is not focused. Usually set to lower then the editor FPS.")]
+        public float EditorFPSWhenNotFocused { get; set; } = 15.0f;
 
         /// <summary>
         /// Gets or sets the sequence of actions to perform when using Build Scenes button. Can be used to configure this as button (eg. compile code or just update navmesh).
