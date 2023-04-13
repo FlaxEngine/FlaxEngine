@@ -73,11 +73,17 @@ namespace Flax.Build.Platforms
             case CSharpOptions.ActionTypes.MonoCompile:
             {
                 var aotCompilerPath = Path.Combine(options.PlatformToolsPath, "mono-aot-cross");
-return true; // TODO: impl this (output assembly from aot cross-compiler and manually compile into shared library for ios)
+                var clangPath = Path.Combine(ToolchainPath, "usr/bin/clang");
+
+                var inputFile = options.InputFiles[0];
+                var inputFileAsm = inputFile + ".s";
+                var inputFileObj = inputFile + ".o";
+                var outputFileDylib = options.OutputFiles[0];
+
                 // Setup options
                 var monoAotMode = "full";
                 var monoDebugMode = options.EnableDebugSymbols ? "soft-debug" : "nodebug";
-                var aotCompilerArgs = $"--aot={monoAotMode},verbose,stats,print-skipped,{monoDebugMode} -O=all";
+                var aotCompilerArgs = $"--aot={monoAotMode},asmonly,verbose,stats,print-skipped,{monoDebugMode} -O=all";
                 if (options.EnableDebugSymbols || options.EnableToolDebug)
                     aotCompilerArgs = "--debug " + aotCompilerArgs;
                 var envVars = new Dictionary<string, string>();
@@ -87,9 +93,32 @@ return true; // TODO: impl this (output assembly from aot cross-compiler and man
                     envVars["MONO_LOG_LEVEL"] = "debug";
                 }
 
-                // Run cross-compiler compiler
-                int result = Utilities.Run(aotCompilerPath, $"{aotCompilerArgs} \"{options.InputFiles[0]}\"", null, options.PlatformToolsPath, Utilities.RunOptions.AppMustExist | Utilities.RunOptions.ConsoleLogOutput, envVars);
-                return result != 0;
+                // Run cross-compiler compiler (outputs assembly code)
+                int result = Utilities.Run(aotCompilerPath, $"{aotCompilerArgs} \"{inputFile}\"", null, options.PlatformToolsPath, Utilities.RunOptions.AppMustExist | Utilities.RunOptions.ConsoleLogOutput, envVars);
+                if (result != 0)
+                {
+                    // Try without optimizations as a fallback
+                    aotCompilerArgs = aotCompilerArgs.Replace("-O=all", "");
+                    result = Utilities.Run(aotCompilerPath, $"{aotCompilerArgs} \"{inputFile}\"", null, options.PlatformToolsPath, Utilities.RunOptions.AppMustExist | Utilities.RunOptions.ConsoleLogOutput, envVars);
+                    if (result != 0)
+                        return true;
+                }
+
+                // Build object file
+                result = Utilities.Run(clangPath, $"\"{inputFileAsm}\" \"{inputFileObj}\"", null, options.PlatformToolsPath, Utilities.RunOptions.AppMustExist | Utilities.RunOptions.ConsoleLogOutput, envVars);
+                if (result != 0)
+                    return true;
+
+                // Build dylib file
+                result = Utilities.Run(clangPath, $"\"{inputFileObj}\" -dynamiclib -o \"{outputFileDylib}\"", null, options.PlatformToolsPath, Utilities.RunOptions.AppMustExist | Utilities.RunOptions.ConsoleLogOutput, envVars);
+                if (result != 0)
+                    return true;
+
+                // Clean intermediate results
+                File.Delete(inputFileAsm);
+                File.Delete(inputFileObj);
+
+                return false;
             }
             }
             return base.CompileCSharp(ref options);
