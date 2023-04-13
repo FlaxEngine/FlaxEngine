@@ -263,6 +263,7 @@ bool TextureTool::ExportTextureStb(ImageType type, const StringView& path, const
         if (ptr)
         {
             file->WriteBytes(ptr, ptrSize);
+            STBIW_FREE(ptr);
             result = 0;
         }
         else
