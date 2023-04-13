@@ -42,21 +42,6 @@ DotNetAOTModes UWPPlatformTools::UseAOT() const
     return DotNetAOTModes::MonoAOTDynamic;
 }
 
-bool UWPPlatformTools::OnScriptsStepDone(CookingData& data)
-{
-    // Override Newtonsoft.Json.dll for some platforms (that don't support runtime code generation)
-    const String customBinPath = data.GetPlatformBinariesRoot() / TEXT("Newtonsoft.Json.dll");
-    const String assembliesPath = data.ManagedCodeOutputPath;
-    if (FileSystem::CopyFile(assembliesPath / TEXT("Newtonsoft.Json.dll"), customBinPath))
-    {
-        data.Error(TEXT("Failed to copy deploy custom assembly."));
-        return true;
-    }
-    FileSystem::DeleteFile(assembliesPath / TEXT("Newtonsoft.Json.pdb"));
-
-    return false;
-}
-
 bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
 {
     const auto platformDataPath = Globals::StartupFolder / TEXT("Source/Platforms");
@@ -417,7 +402,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
 
 bool UWPPlatformTools::OnPostProcess(CookingData& data)
 {
-    LOG(Error, "UWP (Windows Store) platform has been deprecated and soon will be removed!");
+    LOG(Error, "UWP (Windows Store) platform has been deprecated and is no longer supported");
 
     // Special case for UWP
     // FlaxEngine.dll cannot be added to the solution as `Content` item (due to conflicts with C++ /CX FlaxEngine.dll)

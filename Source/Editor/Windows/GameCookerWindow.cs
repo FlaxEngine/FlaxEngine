@@ -280,7 +280,7 @@ namespace FlaxEditor.Windows
                             break;
                         case PlatformType.UWP:
                             name = "Windows Store";
-                            layout.Label("UWP (Windows Store) platform has been deprecated and soon will be removed!", TextAlignment.Center).Label.TextColor = Color.Red;
+                            layout.Label("UWP (Windows Store) platform has been deprecated and is no longer supported", TextAlignment.Center).Label.TextColor = Color.Red;
                             break;
                         case PlatformType.Linux:
                             name = "Linux";

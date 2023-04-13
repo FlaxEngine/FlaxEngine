@@ -50,7 +50,7 @@ namespace Flax.Build.Platforms
         {
             base.LogInfo();
 
-            Log.Error("UWP (Windows Store) platform has been deprecated and soon will be removed!");
+            Log.Error("UWP (Windows Store) platform has been deprecated and is no longer supported!");
         }
 
         /// <inheritdoc />
