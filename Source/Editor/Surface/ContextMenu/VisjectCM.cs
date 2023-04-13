@@ -146,7 +146,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 X = 4,
                 Parent = headerPanel,
                 Text = "Select Node",
-                HorizontalAlignment = TextAlignment.Near,
+                HorizontalAlignment = TextAlignment.Center,
                 Font = new FontReference(Style.Current.FontLarge.Asset, 10),
             };
 

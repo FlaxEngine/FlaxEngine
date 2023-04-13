@@ -87,6 +87,11 @@ namespace FlaxEditor.Surface.ContextMenu
                 SortScore += 5;
         }
 
+        private void GetTextRectangle(out Rectangle textRect)
+        {
+            textRect = new Rectangle(22, 0, Width - 24, Height);
+        }
+
         private bool CanConnectTo(Box startBox, NodeArchetype nodeArchetype)
         {
             if (startBox == null)
@@ -123,6 +128,7 @@ namespace FlaxEditor.Surface.ContextMenu
             }
             else
             {
+                GetTextRectangle(out var textRect);
                 if (QueryFilterHelper.Match(filterText, _archetype.Title, out var ranges))
                 {
                     // Update highlights
@@ -136,7 +142,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     {
                         var start = font.GetCharPosition(_archetype.Title, ranges[i].StartIndex);
                         var end = font.GetCharPosition(_archetype.Title, ranges[i].EndIndex);
-                        _highlights.Add(new Rectangle(start.X + 2, 0, end.X - start.X, Height));
+                        _highlights.Add(new Rectangle(start.X + textRect.X, 0, end.X - start.X, Height));
 
                         if (ranges[i].StartIndex <= 0)
                         {
@@ -158,7 +164,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     var font = style.FontSmall;
                     var start = font.GetCharPosition(_archetype.Title, 0);
                     var end = font.GetCharPosition(_archetype.Title, _archetype.Title.Length - 1);
-                    _highlights.Add(new Rectangle(start.X + 2, 0, end.X - start.X, Height));
+                    _highlights.Add(new Rectangle(start.X + textRect.X, 0, end.X - start.X, Height));
                     _isFullMatch = true;
                     Visible = true;
                 }
@@ -173,7 +179,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     var font = style.FontSmall;
                     var start = font.GetCharPosition(_archetype.Title, 0);
                     var end = font.GetCharPosition(_archetype.Title, _archetype.Title.Length - 1);
-                    _highlights.Add(new Rectangle(start.X + 2, 0, end.X - start.X, Height));
+                    _highlights.Add(new Rectangle(start.X + textRect.X, 0, end.X - start.X, Height));
                     Visible = true;
 
                     Data = data;
@@ -192,7 +198,7 @@ namespace FlaxEditor.Surface.ContextMenu
         {
             var style = Style.Current;
             var rect = new Rectangle(Float2.Zero, Size);
-            var textRect = new Rectangle(22, 0, rect.Width - 24, rect.Height);
+            GetTextRectangle(out var textRect);
             var showScoreHit = SortScore > 0.1f;
 
             // Overlay
