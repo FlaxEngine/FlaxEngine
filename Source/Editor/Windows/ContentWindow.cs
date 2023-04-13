@@ -941,6 +941,17 @@ namespace FlaxEditor.Windows
                 return true;
             }
 
+            if (button == MouseButton.Left)
+            {
+                // Find control that is under the mouse
+                var c = GetChildAtRecursive(location);
+                if (c is ContentView)
+                {
+                    _view.ClearSelection();
+                    return true;
+                }
+            }
+
             return base.OnMouseUp(location, button);
         }
 
