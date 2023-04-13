@@ -97,6 +97,7 @@ namespace Flax.Build
             if (coreLibPaths.Length != 1)
                 throw new Exception("Invalid C# class library setup in " + dotnetOutputPath);
             var dotnetLibPath = Utilities.NormalizePath(Path.GetDirectoryName(coreLibPaths[0]));
+            Log.Info("Class library found in: " + dotnetLibPath);
 
             using (var assemblyResolver = new MonoCecil.BasicAssemblyResolver())
             {
@@ -305,7 +306,12 @@ namespace Flax.Build
             }
             else if (aotMode == DotNetAOTModes.MonoAOTDynamic || aotMode == DotNetAOTModes.MonoAOTStatic)
             {
-                var dotnetLibPath = Path.Combine(aotAssembliesPath, "lib/net7.0");
+                // Peek class library folder
+                var coreLibPaths = Directory.GetFiles(aotAssembliesPath, "System.Private.CoreLib.dll", SearchOption.AllDirectories);
+                if (coreLibPaths.Length != 1)
+                    throw new Exception("Invalid C# class library setup in " + aotAssembliesPath);
+                var dotnetLibPath = Utilities.NormalizePath(Path.GetDirectoryName(coreLibPaths[0]));
+                Log.Info("Class library found in: " + dotnetLibPath);
 
                 // Build list of assemblies to process (use game assemblies as root to walk over used references from stdlib)
                 var assembliesPaths = new List<string>();
@@ -347,9 +353,21 @@ namespace Flax.Build
                 // Run compilation
                 bool failed = false;
                 bool validCache = true;
-                var platformsToolsPath = Path.Combine(Globals.EngineRoot, "Source/Platforms", platform.ToString(), "Binaries/Tools");
-                if (!Directory.Exists(platformsToolsPath))
-                    throw new Exception("Missing platform tools " + platformsToolsPath);
+                string platformToolsPath;
+                {
+                    var options = new Toolchain.CSharpOptions
+                    {
+                        Action = Toolchain.CSharpOptions.ActionTypes.GetPlatformTools,
+                        AssembliesPath = aotAssembliesPath,
+                        ClassLibraryPath = dotnetLibPath,
+                        EnableToolDebug = dotnetAotDebug,
+                    };
+                    buildToolchain.CompileCSharp(ref options);
+                    platformToolsPath = options.PlatformToolsPath;
+                }
+                if (!Directory.Exists(platformToolsPath))
+                    throw new Exception("Missing platform tools " + platformToolsPath);
+                Log.Info("Platform tools found in: " + platformToolsPath);
                 var compileAssembly = (string assemblyPath) =>
                 {
                     // Determinate whether use debug information for that assembly
@@ -368,7 +386,7 @@ namespace Flax.Build
                         OutputFiles = new List<string>(),
                         AssembliesPath = aotAssembliesPath,
                         ClassLibraryPath = dotnetLibPath,
-                        PlatformsToolsPath = platformsToolsPath,
+                        PlatformToolsPath = platformToolsPath,
                         EnableDebugSymbols = useDebug,
                         EnableToolDebug = dotnetAotDebug,
                     };
@@ -383,8 +401,8 @@ namespace Flax.Build
                             Log.Info("");
                             Log.Info("");
                         }
-                        if (!Directory.Exists(options.PlatformsToolsPath))
-                            throw new Exception("Missing platform tools " + options.PlatformsToolsPath);
+                        if (!Directory.Exists(options.PlatformToolsPath))
+                            throw new Exception("Missing platform tools " + options.PlatformToolsPath);
                         Log.Info(" * " + assemblyPath);
                         options.Action = Toolchain.CSharpOptions.ActionTypes.MonoCompile;
                         if (buildToolchain.CompileCSharp(ref options))
@@ -454,7 +472,7 @@ namespace Flax.Build
                         OutputFiles = new List<string>() { outputAotLib },
                         AssembliesPath = aotAssembliesPath,
                         ClassLibraryPath = dotnetLibPath,
-                        PlatformsToolsPath = platformsToolsPath,
+                        PlatformToolsPath = platformToolsPath,
                         EnableDebugSymbols = configuration != TargetConfiguration.Release,
                         EnableToolDebug = dotnetAotDebug,
                     };

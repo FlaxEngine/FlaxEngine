@@ -145,6 +145,7 @@ namespace Flax.Build
                 MonoCompile,
                 MonoLink,
                 GetOutputFiles,
+                GetPlatformTools,
             };
 
             public ActionTypes Action;
@@ -152,7 +153,7 @@ namespace Flax.Build
             public List<string> OutputFiles;
             public string AssembliesPath;
             public string ClassLibraryPath;
-            public string PlatformsToolsPath;
+            public string PlatformToolsPath;
             public bool EnableDebugSymbols;
             public bool EnableToolDebug;
         }
@@ -174,6 +175,9 @@ namespace Flax.Build
                     else
                         options.OutputFiles.Add(Path.Combine(Path.GetDirectoryName(inputFile), Platform.StaticLibraryFilePrefix + Path.GetFileName(inputFile) + Platform.StaticLibraryFileExtension));
                 }
+                return false;
+            case CSharpOptions.ActionTypes.GetPlatformTools:
+                options.PlatformToolsPath = Path.Combine(Globals.EngineRoot, "Source/Platforms", Platform.Target.ToString(), "Binaries/Tools");
                 return false;
             }
             return true;

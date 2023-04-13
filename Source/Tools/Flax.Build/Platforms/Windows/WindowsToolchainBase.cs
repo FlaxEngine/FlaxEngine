@@ -1032,7 +1032,7 @@ namespace Flax.Build.Platforms
             {
             case CSharpOptions.ActionTypes.MonoCompile:
             {
-                var aotCompilerPath = Path.Combine(options.PlatformsToolsPath, "mono-aot-cross.exe");
+                var aotCompilerPath = Path.Combine(options.PlatformToolsPath, "mono-aot-cross.exe");
 
                 // Setup options
                 var monoAotMode = "full";
@@ -1048,7 +1048,7 @@ namespace Flax.Build.Platforms
                 }
 
                 // Run cross-compiler compiler
-                int result = Utilities.Run(aotCompilerPath, $"{aotCompilerArgs} \"{options.InputFiles[0]}\"", null, options.PlatformsToolsPath, Utilities.RunOptions.AppMustExist | Utilities.RunOptions.ConsoleLogOutput, envVars);
+                int result = Utilities.Run(aotCompilerPath, $"{aotCompilerArgs} \"{options.InputFiles[0]}\"", null, options.PlatformToolsPath, Utilities.RunOptions.AppMustExist | Utilities.RunOptions.ConsoleLogOutput, envVars);
                 return result != 0;
             }
             }
