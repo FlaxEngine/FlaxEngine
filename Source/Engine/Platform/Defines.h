@@ -22,6 +22,7 @@ API_ENUM() enum class PlatformType
     /// <summary>
     /// Running Windows Store App (Universal Windows Platform).
     /// </summary>
+    API_ENUM(Attributes="EditorDisplay(null, \"UWP\")")
     UWP = 3,
 
     /// <summary>
@@ -32,6 +33,7 @@ API_ENUM() enum class PlatformType
     /// <summary>
     /// Running on PlayStation 4.
     /// </summary>
+    API_ENUM(Attributes="EditorDisplay(null, \"PS4\")")
     PS4 = 5,
 
     /// <summary>
@@ -52,6 +54,7 @@ API_ENUM() enum class PlatformType
     /// <summary>
     /// Running on PlayStation 5.
     /// </summary>
+    API_ENUM(Attributes="EditorDisplay(null, \"PS5\")")
     PS5 = 9,
 
     /// <summary>
@@ -62,6 +65,7 @@ API_ENUM() enum class PlatformType
     /// <summary>
     /// Running on iPhone.
     /// </summary>
+    API_ENUM(Attributes="EditorDisplay(null, \"iOS\")")
     iOS = 11,
 };
 
