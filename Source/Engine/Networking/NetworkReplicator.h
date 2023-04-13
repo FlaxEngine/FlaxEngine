@@ -34,6 +34,13 @@ API_CLASS(static, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API Netw
     typedef void (*SerializeFunc)(void* instance, NetworkStream* stream, void* tag);
 
 public:
+#if !BUILD_RELEASE
+    /// <summary>
+    /// Enables verbose logging of the networking runtime. Can be used to debug problems of missing RPC invoke or object replication issues.
+    /// </summary>
+    API_FIELD() static bool EnableLog;
+#endif
+
     /// <summary>
     /// Adds the network replication serializer for a given type.
     /// </summary>

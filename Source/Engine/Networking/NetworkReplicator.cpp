@@ -29,12 +29,10 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/Threading/ThreadLocal.h"
 
-// Enables verbose logging for Network Replicator actions (dev-only)
-#define NETWORK_REPLICATOR_DEBUG_LOG 0
-
-#if NETWORK_REPLICATOR_DEBUG_LOG
+#if !BUILD_RELEASE
+bool NetworkReplicator::EnableLog = false;
 #include "Engine/Core/Log.h"
-#define NETWORK_REPLICATOR_LOG(messageType, format, ...) LOG(messageType, format, ##__VA_ARGS__)
+#define NETWORK_REPLICATOR_LOG(messageType, format, ...) if (NetworkReplicator::EnableLog) { LOG(messageType, format, ##__VA_ARGS__); }
 #else
 #define NETWORK_REPLICATOR_LOG(messageType, format, ...)
 #endif
