@@ -273,7 +273,7 @@ void MaterialParameter::SetValue(const Variant& value)
     }
     if (invalidType)
     {
-        LOG(Error, "Invalid material parameter value type {0} to set (param type: {1})", value.Type, ScriptingEnum::ToString<MaterialParameterType>(_type));
+        LOG(Error, "Invalid material parameter value type {0} to set (param type: {1})", value.Type, ScriptingEnum::ToString(_type));
     }
 }
 
@@ -530,7 +530,7 @@ bool MaterialParameter::operator==(const MaterialParameter& other) const
 
 String MaterialParameter::ToString() const
 {
-    return String::Format(TEXT("\'{0}\' ({1}:{2}:{3})"), _name, ScriptingEnum::ToString<MaterialParameterType>(_type), _paramId, _isPublic);
+    return String::Format(TEXT("\'{0}\' ({1}:{2}:{3})"), _name, ScriptingEnum::ToString(_type), _paramId, _isPublic);
 }
 
 MaterialParameter* MaterialParams::Get(const Guid& id)

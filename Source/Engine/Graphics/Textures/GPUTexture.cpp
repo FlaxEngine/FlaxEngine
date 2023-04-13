@@ -15,6 +15,7 @@
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Scripting/Enums.h"
 
 namespace
 {
@@ -187,7 +188,7 @@ String GPUTextureDescription::ToString() const
                           ArraySize,
                           ::ToString(Dimensions),
                           MipLevels,
-                          (int32)Format,
+                          ScriptingEnum::ToString(Format),
                           ::ToString(MultiSampleLevel),
                           flags,
                           (int32)Usage);

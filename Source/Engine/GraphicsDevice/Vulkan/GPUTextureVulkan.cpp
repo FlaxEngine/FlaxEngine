@@ -9,6 +9,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/Textures/TextureData.h"
+#include "Engine/Scripting/Enums.h"
 
 void GPUTextureViewVulkan::Init(GPUDeviceVulkan* device, ResourceOwnerVulkan* owner, VkImage image, int32 totalMipLevels, PixelFormat format, MSAALevel msaa, VkExtent3D extent, VkImageViewType viewType, int32 mipLevels, int32 firstMipIndex, int32 arraySize, int32 firstArraySlice, bool readOnlyDepth)
 {
@@ -241,7 +242,7 @@ bool GPUTextureVulkan::OnInit()
     _desc.Format = _device->GetClosestSupportedPixelFormat(format, _desc.Flags, optimalTiling);
     if (_desc.Format == PixelFormat::Unknown)
     {
-        LOG(Error, "Unsupported texture format {0}.", (int32)format);
+        LOG(Error, "Unsupported texture format {0}.", ScriptingEnum::ToString(format));
         return true;
     }
 

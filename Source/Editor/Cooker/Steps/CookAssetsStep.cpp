@@ -35,6 +35,7 @@
 #include "Engine/Engine/Base/GameBase.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
+#include "Engine/Scripting/Enums.h"
 #if PLATFORM_TOOLS_WINDOWS
 #include "Engine/Platform/Windows/WindowsPlatformSettings.h"
 #endif
@@ -647,7 +648,7 @@ bool ProcessTextureBase(CookAssetsStep::AssetCookData& data)
         // Convert texture data to the target format
         if (TextureTool::Convert(textureDataTmp1, *textureData, targetFormat))
         {
-            LOG(Error, "Failed to convert texture {0} from format {1} to {2}", asset->ToString(), (int32)format, (int32)targetFormat);
+            LOG(Error, "Failed to convert texture {0} from format {1} to {2}", asset->ToString(), ScriptingEnum::ToString(format), ScriptingEnum::ToString(targetFormat));
             return true;
         }
         textureData = &textureDataTmp1;

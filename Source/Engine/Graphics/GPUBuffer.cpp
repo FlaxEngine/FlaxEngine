@@ -12,6 +12,7 @@
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
 #include "Engine/Debug/Exceptions/ArgumentNullException.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
+#include "Engine/Scripting/Enums.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Threading/Threading.h"
 
@@ -107,7 +108,7 @@ String GPUBufferDescription::ToString() const
                           Size,
                           Stride,
                           flags,
-                          (int32)Format,
+                          ScriptingEnum::ToString(Format),
                           (int32)Usage);
 }
 

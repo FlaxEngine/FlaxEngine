@@ -10,6 +10,7 @@
 #include "CmdBufferVulkan.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Graphics/GPULimits.h"
+#include "Engine/Scripting/Enums.h"
 
 void BackBufferVulkan::Setup(GPUSwapChainVulkan* window, VkImage backbuffer, PixelFormat format, VkExtent3D extent)
 {
@@ -231,13 +232,13 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
 
                 if (!found)
                 {
-                    LOG(Warning, "Requested pixel format {0} not supported by this swapchain. Falling back to supported swapchain formats...", (uint32)resultFormat);
+                    LOG(Warning, "Requested pixel format {0} not supported by this swapchain. Falling back to supported swapchain formats...", ScriptingEnum::ToString(resultFormat));
                     resultFormat = PixelFormat::Unknown;
                 }
             }
             else
             {
-                LOG(Warning, "Requested pixel format {0} is not supported by this Vulkan implementation", (uint32)resultFormat);
+                LOG(Warning, "Requested pixel format {0} is not supported by this Vulkan implementation", ScriptingEnum::ToString(resultFormat));
                 resultFormat = PixelFormat::Unknown;
             }
         }
