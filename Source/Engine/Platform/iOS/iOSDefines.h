@@ -14,4 +14,8 @@
 #define PLATFORM_CACHE_LINE_SIZE 128
 #define PLATFORM_DEBUG_BREAK __builtin_trap()
 
+// Use AOT for Mono
+#define USE_MONO_AOT 1
+#define USE_MONO_AOT_MODE MONO_AOT_MODE_FULL
+
 #endif

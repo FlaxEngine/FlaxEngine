@@ -54,6 +54,11 @@ ArchitectureType iOSPlatformTools::GetArchitecture() const
     return ArchitectureType::ARM64;
 }
 
+DotNetAOTModes iOSPlatformTools::UseAOT() const
+{
+    return DotNetAOTModes::MonoAOTDynamic;    
+}
+
 bool iOSPlatformTools::IsNativeCodeFile(CookingData& data, const String& file)
 {
     String extension = FileSystem::GetExtension(file);
@@ -170,6 +175,9 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
         plist.append_attribute(PUGIXML_TEXT("version")).set_value(PUGIXML_TEXT("1.0"));
         xml_node dict = plist.child_or_append(PUGIXML_TEXT("dict"));
 
+        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("LSRequiresIPhoneOS"));
+        dict.append_child(PUGIXML_TEXT("true"));
+
 #define ADD_ENTRY(key, value) \
     dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT(key)); \
     dict.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT(value))
@@ -192,16 +200,18 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
         ADD_ENTRY("UIRequiresFullScreen", "true");
         ADD_ENTRY("UIStatusBarHidden", "true");
 
-        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("CFBundleSupportedPlatforms"));
-        xml_node CFBundleSupportedPlatforms = dict.append_child(PUGIXML_TEXT("array"));
-        CFBundleSupportedPlatforms.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("iPhoneOS"));
+        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("UIRequiredDeviceCapabilities"));
+        xml_node UIRequiredDeviceCapabilities = dict.append_child(PUGIXML_TEXT("array"));
+        UIRequiredDeviceCapabilities.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("arm64"));
 
-        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("LSMinimumSystemVersionByArchitecture"));
-        xml_node LSMinimumSystemVersionByArchitecture = dict.append_child(PUGIXML_TEXT("dict"));
-        LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("arm64"));
-        LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("10.15"));
-        
+        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("UISupportedInterfaceOrientations"));
+        xml_node UISupportedInterfaceOrientations = dict.append_child(PUGIXML_TEXT("array"));
+        UISupportedInterfaceOrientations.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("UIInterfaceOrientationPortrait"));
+        UISupportedInterfaceOrientations.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("UIInterfaceOrientationLandscapeLeft"));
+        UISupportedInterfaceOrientations.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("UIInterfaceOrientationLandscapeRight"));
+
 #undef ADD_ENTRY
+#undef ADD_ENTRY_STR
 
         if (!doc.save_file(*StringAnsi(plistPath)))
         {

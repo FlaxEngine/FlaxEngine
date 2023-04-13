@@ -174,7 +174,7 @@ bool DeployDataStep::Perform(CookingData& data)
                 String packFolder = srcDotnet / TEXT("../../../");
                 String dstDotnetLibs = dstDotnet, srcDotnetLibs = srcDotnet;
                 StringUtils::PathRemoveRelativeParts(packFolder);
-                if (usAOT)
+                if (usAOT && srcDotnetFromEngine)
                 {
                     // AOT runtime files inside Engine Platform folder
                     packFolder /= TEXT("Dotnet");
@@ -202,8 +202,8 @@ bool DeployDataStep::Perform(CookingData& data)
                     failed |= EditorUtilities::CopyFileIfNewer(dstDotnetLibs / corlibPrivateName, srcDotnet / corlibPrivateName);
                 switch (data.Platform)
                 {
-                case BuildPlatform::AndroidARM64:
 #define DEPLOY_NATIVE_FILE(filename) failed |= FileSystem::CopyFile(data.NativeCodeOutputPath / TEXT(filename), srcDotnet / TEXT(filename));
+                case BuildPlatform::AndroidARM64:
                     if (data.Configuration != BuildConfiguration::Release)
                     {
                         DEPLOY_NATIVE_FILE("libmono-component-debugger.so");
@@ -214,8 +214,15 @@ bool DeployDataStep::Perform(CookingData& data)
                     DEPLOY_NATIVE_FILE("libSystem.IO.Compression.Native.so");
                     DEPLOY_NATIVE_FILE("libSystem.Native.so");
                     DEPLOY_NATIVE_FILE("libSystem.Security.Cryptography.Native.Android.so");
-#undef DEPLOY_NATIVE_FILE
                     break;
+                case BuildPlatform::iOSARM64:
+                    DEPLOY_NATIVE_FILE("libmonosgen-2.0.dylib");
+                    DEPLOY_NATIVE_FILE("libSystem.IO.Compression.Native.dylib");
+                    DEPLOY_NATIVE_FILE("libSystem.Native.dylib");
+                    DEPLOY_NATIVE_FILE("libSystem.Net.Security.Native.dylib");
+                    DEPLOY_NATIVE_FILE("libSystem.Security.Cryptography.Native.Apple.dylib");
+                    break;
+#undef DEPLOY_NATIVE_FILE
                 default: ;
                 }
                 if (failed)

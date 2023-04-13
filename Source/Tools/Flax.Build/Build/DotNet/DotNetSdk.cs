@@ -407,6 +407,13 @@ namespace Flax.Build
             return exists;
         }
 
+        internal static string SelectVersionFolder(string root)
+        {
+            var versions = GetVersions(root);
+            var version = GetVersion(versions);
+            return Path.Combine(root, version);
+        }
+
         private static Version ParseVersion(string version)
         {
             // Give precedence to final releases over release candidate / beta releases

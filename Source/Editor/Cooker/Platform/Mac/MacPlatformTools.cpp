@@ -218,6 +218,7 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
         LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("10.15"));
         
 #undef ADD_ENTRY
+#undef ADD_ENTRY_STR
 
         if (!doc.save_file(*StringAnsi(plistPath)))
         {

@@ -17,6 +17,7 @@ public:
     const Char* GetName() const override;
     PlatformType GetPlatform() const override;
     ArchitectureType GetArchitecture() const override;
+    DotNetAOTModes UseAOT() const override;
     bool IsNativeCodeFile(CookingData& data, const String& file) override;
     void OnBuildStarted(CookingData& data) override;
     bool OnPostProcess(CookingData& data) override;
