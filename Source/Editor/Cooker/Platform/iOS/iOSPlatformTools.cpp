@@ -69,9 +69,9 @@ void iOSPlatformTools::OnBuildStarted(CookingData& data)
 {
     // Adjust the cooking output folders for packaging app
     const auto appName = GetAppName();
-    String contents = appName + TEXT(".app/Contents/");
+    String contents = appName + TEXT(".app/");
     data.DataOutputPath /= contents;
-    data.NativeCodeOutputPath /= contents / TEXT("iPhoneOS");
+    data.NativeCodeOutputPath /= contents;
     data.ManagedCodeOutputPath /= contents;
 
     PlatformTools::OnBuildStarted(data);
@@ -134,8 +134,7 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
     TextureData iconData;
     if (!EditorUtilities::GetApplicationImage(platformSettings->OverrideIcon, iconData))
     {
-        String iconFolderPath = data.DataOutputPath / TEXT("Resources");
-        String tmpFolderPath = iconFolderPath / TEXT("icon.iconset");
+        String tmpFolderPath = data.DataOutputPath / TEXT("icon.iconset");
         if (!FileSystem::DirectoryExists(tmpFolderPath))
             FileSystem::CreateDirectory(tmpFolderPath);
         String srcIconPath = tmpFolderPath / TEXT("icon_1024x1024.png");
@@ -154,7 +153,7 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
         failed |= Platform::RunProcess(TEXT("sips -z 512 512 icon_1024x1024.png --out icon_256x256@2x.png"), tmpFolderPath);
         failed |= Platform::RunProcess(TEXT("sips -z 512 512 icon_1024x1024.png --out icon_512x512.png"), tmpFolderPath);
         failed |= Platform::RunProcess(TEXT("sips -z 1024 1024 icon_1024x1024.png --out icon_512x512@2x.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("iconutil -c icns icon.iconset"), iconFolderPath);
+        failed |= Platform::RunProcess(TEXT("iconutil -c icns icon.iconset"), data.DataOutputPath);
         if (failed)
         {
             LOG(Error, "Failed to export application icon.");
@@ -178,6 +177,18 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
         dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("LSRequiresIPhoneOS"));
         dict.append_child(PUGIXML_TEXT("true"));
 
+        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("UIStatusBarHidden"));
+        dict.append_child(PUGIXML_TEXT("true"));
+
+        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("UIRequiresFullScreen"));
+        dict.append_child(PUGIXML_TEXT("true"));
+
+        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("UIViewControllerBasedStatusBarAppearance"));
+        dict.append_child(PUGIXML_TEXT("false"));
+
+        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("CFBundleIcons"));
+        dict.append_child(PUGIXML_TEXT("dict"));
+
 #define ADD_ENTRY(key, value) \
     dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT(key)); \
     dict.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT(value))
@@ -188,27 +199,34 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
 
         ADD_ENTRY("CFBundleDevelopmentRegion", "English");
         ADD_ENTRY("CFBundlePackageType", "APPL");
-        ADD_ENTRY("NSPrincipalClass", "NSApplication");
+        ADD_ENTRY("CFBundleSignature", "????");
         ADD_ENTRY("LSApplicationCategoryType", "public.app-category.games");
-        ADD_ENTRY("LSMinimumSystemVersion", "14");
+        ADD_ENTRY("CFBundleInfoDictionaryVersion", "6.0");
         ADD_ENTRY("CFBundleIconFile", "icon.icns");
+        ADD_ENTRY("MinimumOSVersion", "14.0");
         ADD_ENTRY_STR("CFBundleExecutable", executableName);
         ADD_ENTRY_STR("CFBundleIdentifier", appIdentifier);
+        ADD_ENTRY_STR("CFBundleName", appName); // TODO: limit to 15 chars max
+        ADD_ENTRY_STR("CFBundleDisplayName", gameSettings->ProductName);
         ADD_ENTRY_STR("CFBundleGetInfoString", gameSettings->ProductName);
         ADD_ENTRY_STR("CFBundleVersion", projectVersion);
+        ADD_ENTRY_STR("CFBundleShortVersionString", projectVersion);
         ADD_ENTRY_STR("NSHumanReadableCopyright", gameSettings->CopyrightNotice);
-        ADD_ENTRY("UIRequiresFullScreen", "true");
-        ADD_ENTRY("UIStatusBarHidden", "true");
 
         dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("UIRequiredDeviceCapabilities"));
         xml_node UIRequiredDeviceCapabilities = dict.append_child(PUGIXML_TEXT("array"));
         UIRequiredDeviceCapabilities.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("arm64"));
+        UIRequiredDeviceCapabilities.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("metal"));
 
         dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("UISupportedInterfaceOrientations"));
         xml_node UISupportedInterfaceOrientations = dict.append_child(PUGIXML_TEXT("array"));
         UISupportedInterfaceOrientations.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("UIInterfaceOrientationPortrait"));
         UISupportedInterfaceOrientations.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("UIInterfaceOrientationLandscapeLeft"));
         UISupportedInterfaceOrientations.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("UIInterfaceOrientationLandscapeRight"));
+
+        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("CFBundleSupportedPlatforms"));
+        xml_node CFBundleSupportedPlatforms = dict.append_child(PUGIXML_TEXT("array"));
+        CFBundleSupportedPlatforms.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("iPhoneOS"));
 
 #undef ADD_ENTRY
 #undef ADD_ENTRY_STR
@@ -225,7 +243,7 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
     // TODO: expose event to inject custom post-processing before app packaging (eg. third-party plugins)
     
     // Package application
-    const auto buildSettings = BuildSettings::Get();
+    /*const auto buildSettings = BuildSettings::Get();
     if (buildSettings->SkipPackaging)
         return false;
     GameCooker::PackageFiles();
@@ -240,7 +258,7 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
     }
     // TODO: sign dmg
     LOG(Info, "Output application package: {0} (size: {1} MB)", dmgPath, FileSystem::GetFileSize(dmgPath) / 1024 / 1024);
-
+*/
     return false;
 }
 
