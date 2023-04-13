@@ -19,11 +19,11 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The default minimum opacity.
         /// </summary>
-        public const float DefaultMinimumOpacity = 0.7f;
+        public const float DefaultMinimumOpacity = 0.75f;
 
         // Scrolling
 
-        private float _clickChange = 20, _scrollChange = 75;
+        private float _clickChange = 20, _scrollChange = 100;
         private float _minimum, _maximum = 100;
         private float _value, _targetValue;
         private readonly Orientation _orientation;
@@ -51,17 +51,17 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the thumb box thickness.
         /// </summary>
-        public float ThumbThickness { get; set; } = 6;
+        public float ThumbThickness { get; set; } = 8;
 
         /// <summary>
         /// Gets or sets the track line thickness.
         /// </summary>
-        public float TrackThickness { get; set; } = 1;
+        public float TrackThickness { get; set; } = 2.0f;
 
         /// <summary>
         /// Gets or sets the value smoothing scale (0 to not use it).
         /// </summary>
-        public float SmoothingScale { get; set; } = 1;
+        public float SmoothingScale { get; set; } = 0.6f;
 
         /// <summary>
         /// Gets a value indicating whether use scroll value smoothing.
@@ -246,7 +246,7 @@ namespace FlaxEngine.GUI
             var height = Height;
             float trackSize = TrackSize;
             float range = _maximum - _minimum;
-            _thumbSize = Mathf.Min(trackSize, Mathf.Max(trackSize / range * 10.0f, 30.0f));
+            _thumbSize = Mathf.Min(trackSize - 10, Mathf.Max(trackSize / range * 100.0f, 50.0f));
             float pixelRange = trackSize - _thumbSize;
             float percentage = (_value - _minimum) / range;
             float thumbPosition = (int)(percentage * pixelRange);
