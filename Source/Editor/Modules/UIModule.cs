@@ -526,7 +526,7 @@ namespace FlaxEditor.Modules
             _menuGamePlay = cm.AddButton("Play", inputOptions.Play.ToString(), Editor.Simulation.RequestStartPlay);
             _menuGamePause = cm.AddButton("Pause", inputOptions.Pause.ToString(), Editor.Simulation.RequestPausePlay);
             cm.AddSeparator();
-            cm.AddButton("Cook&Run", Editor.Windows.GameCookerWin.BuildAndRun).LinkTooltip("Runs Game Cooker to build the game for this platform and runs the game after.");
+            cm.AddButton("Cook & Run", Editor.Windows.GameCookerWin.BuildAndRun).LinkTooltip("Runs Game Cooker to build the game for this platform and runs the game after.");
             cm.AddButton("Run cooked game", Editor.Windows.GameCookerWin.RunCooked).LinkTooltip("Runs the game build from the last cooking output. Use Cook&Play or Game Cooker first.");
 
             // Tools
