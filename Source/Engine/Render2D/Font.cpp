@@ -124,7 +124,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
 
     int32 lastUpperIndex = INVALID_INDEX;
     float lastUpperX = 0;
-    
+
     int32 lastUnderscoreIndex = INVALID_INDEX;
     float lastUnderscoreX = 0;
 
@@ -155,6 +155,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
             lastUpperX = cursorX;
         }
 
+        // Check if character is an underscore
         const bool isUnderscore = currentChar == '_';
         if (isUnderscore)
         {
