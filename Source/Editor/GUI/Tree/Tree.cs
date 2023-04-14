@@ -41,6 +41,11 @@ namespace FlaxEditor.GUI.Tree
         private bool _autoSize = true;
 
         /// <summary>
+        /// The TreeNode that is being dragged over. This could have a value when not dragging.
+        /// </summary>
+        public TreeNode DraggedOverNode = null;
+
+        /// <summary>
         /// Action fired when tree nodes selection gets changed.
         /// </summary>
         public event SelectionChangedDelegate SelectedChanged;
