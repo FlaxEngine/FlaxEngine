@@ -153,6 +153,13 @@ public:
     /// <returns>Found client or null.</returns>
     API_FUNCTION() static NetworkClient* GetClient(API_PARAM(Ref) const NetworkConnection& connection);
 
+    /// <summary>
+    /// Gets the network client with a given identifier. Returns null if failed to find it.
+    /// </summary>
+    /// <param name="clientId">Network client identifier (synchronized on all peers).</param>
+    /// <returns>Found client or null.</returns>
+    API_FUNCTION() static NetworkClient* GetClient(uint32 clientId);
+
 public:
     /// <summary>
     /// Starts the network in server mode. Returns true if failed (eg. invalid config).
