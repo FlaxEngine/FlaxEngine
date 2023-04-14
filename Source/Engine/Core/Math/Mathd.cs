@@ -395,7 +395,7 @@ namespace FlaxEngine
         /// <param name="f"></param>
         public static double Sign(double f)
         {
-            return f < 0d ? -1d : 1d;
+            return f > 0.0d ? 1.0d : f < 0.0d ? -1.0d : 0.0d;
         }
 
         /// <summary>
