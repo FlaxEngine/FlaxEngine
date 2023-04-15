@@ -573,10 +573,9 @@ namespace Flax.Build.Plugins
                 if (context.AddSerializers.Count != 0 || context.MethodRPCs.Count != 0)
                 {
                     // Create class
-                    var name = "Initializer";
-                    var idx = 0;
-                    while (module.Types.Any(x => x.Name == name))
-                        name = "Initializer" + idx++;
+                    var name = "NetworkingPlugin";
+                    if (module.Types.Any(x => x.Name == name))
+                        throw new Exception($"Failed to generate network replication for assembly '{Path.GetFileName(assemblyPath)}' that already has net code generated. Rebuild project.");
                     var c = new TypeDefinition("", name, TypeAttributes.Class | TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Abstract | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
                     module.GetType("System.Object", out var objectType);
                     c.BaseType = module.ImportReference(objectType);
