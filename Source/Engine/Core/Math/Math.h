@@ -386,6 +386,36 @@ namespace Math
         return Min(Min(Min(a, b), c), d);
     }
 
+    /// <summary>
+    /// Moves a value current towards target.
+    /// </summary>
+    /// <param name="current">The current value.</param>
+    /// <param name="target">The value to move towards.</param>
+    /// <param name="maxDelta">The maximum change that should be applied to the value.</param>
+    template<class T>
+    float MoveTowards(const T current, const T target, const T maxDelta)
+    {
+        if (Abs(target - current) <= maxDelta)
+            return target;
+        return current + Sign(target - current) * maxDelta;
+    }
+
+    /// <summary>
+    /// Same as MoveTowards but makes sure the values interpolate correctly when they wrap around 360 degrees.
+    /// </summary>
+    /// <param name="current"></param>
+    /// <param name="target"></param>
+    /// <param name="maxDelta"></param>
+    template<class T>
+    float MoveTowardsAngle(const T current, const T target, const T maxDelta)
+    {
+        float delta = DeltaAngle(current, target);
+        if ((-maxDelta < delta) && (delta < maxDelta))
+            return target;
+        target = current + delta;
+        return MoveTowards(current, target, maxDelta);
+    }
+
     // Multiply value by itself
     template<class T>
     static T Square(const T a)
