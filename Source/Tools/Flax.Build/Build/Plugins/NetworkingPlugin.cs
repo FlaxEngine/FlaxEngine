@@ -13,7 +13,7 @@ using Mono.Cecil.Cil;
 namespace Flax.Build.Plugins
 {
     /// <summary>
-    /// Flax.Build plugin for Networking extenrions support. Generates required bindings glue code for automatic types replication and RPCs invoking. 
+    /// Flax.Build plugin for Networking extensions support. Generates required bindings glue code for automatic types replication and RPCs invoking. 
     /// </summary>
     /// <seealso cref="Flax.Build.Plugin" />
     internal sealed class NetworkingPlugin : Plugin
@@ -231,9 +231,16 @@ namespace Flax.Build.Plugins
                             var arg = functionInfo.Parameters[i];
                             if (i != 0)
                                 argNames += ", ";
-                            argNames += arg.Name;
-
+                            
+                            // Special handling of Rpc Params
+                            if (!arg.Type.IsPtr && arg.Type.Type == "NetworkRpcParams")
+                            {
+                                argNames += "NetworkRpcParams(stream)";
+                                continue;
+                            }
+                            
                             // Deserialize arguments
+                            argNames += arg.Name;
                             contents.AppendLine($"        {arg.Type.Type} {arg.Name};");
                             contents.AppendLine($"        stream->Read({arg.Name});");
                         }
@@ -250,16 +257,24 @@ namespace Flax.Build.Plugins
                         contents.Append("    static void ").Append(functionInfo.Name).AppendLine("_Invoke(ScriptingObject* obj, void** args)");
                         contents.AppendLine("    {");
                         contents.AppendLine("        NetworkStream* stream = NetworkReplicator::BeginInvokeRPC();");
+                        contents.AppendLine("        Span<uint32> targetIds;");
                         for (int i = 0; i < functionInfo.Parameters.Count; i++)
                         {
                             var arg = functionInfo.Parameters[i];
 
+                            // Special handling of Rpc Params
+                            if (!arg.Type.IsPtr && arg.Type.Type == "NetworkRpcParams")
+                            {
+                                contents.AppendLine($"        targetIds = ((NetworkRpcParams*)args[{i}])->TargetIds;");
+                                continue;
+                            }
+                            
                             // Serialize arguments
                             contents.AppendLine($"        stream->Write(*({arg.Type.Type}*)args[{i}]);");
                         }
 
                         // Invoke RPC
-                        contents.AppendLine($"        NetworkReplicator::EndInvokeRPC(obj, {typeInfo.NativeName}::TypeInitializer, StringAnsiView(\"{functionInfo.Name}\", {functionInfo.Name.Length}), stream);");
+                        contents.AppendLine($"        NetworkReplicator::EndInvokeRPC(obj, {typeInfo.NativeName}::TypeInitializer, StringAnsiView(\"{functionInfo.Name}\", {functionInfo.Name.Length}), stream, targetIds);");
                         contents.AppendLine("    }");
                     }
                     contents.AppendLine();
@@ -1403,6 +1418,22 @@ namespace Flax.Build.Plugins
                 {
                     var parameter = method.Parameters[i];
                     var parameterType = parameter.ParameterType;
+
+                    // Special handling of Rpc Params
+                    if (string.Equals(parameterType.FullName, "FlaxEngine.Networking.NetworkRpcParams", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // new NetworkRpcParams { SenderId = networkStream.SenderId }
+                        il.Emit(OpCodes.Ldloca_S, (byte)(argsStart + i));
+                        il.Emit(OpCodes.Initobj, parameterType);
+                        il.Emit(OpCodes.Ldloca_S, (byte)(argsStart + i));
+                        il.Emit(OpCodes.Ldloc_1);
+                        var getSenderId = networkStreamType.Resolve().GetMethod("get_SenderId");
+                        il.Emit(OpCodes.Callvirt, module.ImportReference(getSenderId));
+                        var senderId = parameterType.Resolve().GetField("SenderId");
+                        il.Emit(OpCodes.Stfld, module.ImportReference(senderId));
+                        continue;
+                    }
+
                     GenerateDotNetRPCSerializerType(ref context, type, false, argsStart + i, parameterType, il, networkStream.Resolve(), 1, null);
                 }
 
@@ -1431,6 +1462,8 @@ namespace Flax.Build.Plugins
                 var networkManagerGetMode = networkManagerType.Resolve().GetMethod("get_Mode", 0);
                 il.Body.InitLocals = true;
                 var varsStart = il.Body.Variables.Count;
+
+                il.InsertBefore(ilStart, il.Create(OpCodes.Nop));
 
                 // Is Server/Is Client boolean constants
                 il.Body.Variables.Add(new VariableDefinition(module.ImportReference(boolType))); // [0]
@@ -1476,14 +1509,25 @@ namespace Flax.Build.Plugins
                 il.InsertBefore(ilStart, il.Create(OpCodes.Stloc, streamLocalIndex)); // stream loc=3
 
                 // Serialize all RPC parameters
+                var targetIdsArgIndex = -1;
+                FieldDefinition targetIdsField = null;
                 for (int i = 0; i < method.Parameters.Count; i++)
                 {
                     var parameter = method.Parameters[i];
                     var parameterType = parameter.ParameterType;
+
+                    // Special handling of Rpc Params
+                    if (string.Equals(parameterType.FullName, "FlaxEngine.Networking.NetworkRpcParams", StringComparison.OrdinalIgnoreCase))
+                    {
+                        targetIdsArgIndex = i + 1; // NetworkRpcParams value argument index (starts at 1, 0 holds this)
+                        targetIdsField = parameterType.Resolve().GetField("TargetIds");
+                        continue;
+                    }
+
                     GenerateDotNetRPCSerializerType(ref context, type, true, i + 1, parameterType, il, networkStream.Resolve(), streamLocalIndex, ilStart);
                 }
 
-                // NetworkReplicator.EndInvokeRPC(this, typeof(<type>), "<name>", stream);
+                // NetworkReplicator.EndInvokeRPC(this, typeof(<type>), "<name>", stream, targetIds);
                 il.InsertBefore(ilStart, il.Create(OpCodes.Nop));
                 il.InsertBefore(ilStart, il.Create(OpCodes.Ldarg_0));
                 il.InsertBefore(ilStart, il.Create(OpCodes.Ldtoken, type));
@@ -1492,7 +1536,14 @@ namespace Flax.Build.Plugins
                 il.InsertBefore(ilStart, il.Create(OpCodes.Call, module.ImportReference(getTypeFromHandle)));
                 il.InsertBefore(ilStart, il.Create(OpCodes.Ldstr, method.Name));
                 il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, streamLocalIndex));
-                var endInvokeRPC = networkReplicatorType.Resolve().GetMethod("EndInvokeRPC", 4);
+                if (targetIdsArgIndex != -1)
+                {
+                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldarg, targetIdsArgIndex));
+                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldfld, module.ImportReference(targetIdsField)));
+                }
+                else
+                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldnull));
+                var endInvokeRPC = networkReplicatorType.Resolve().GetMethod("EndInvokeRPC", 5);
                 il.InsertBefore(ilStart, il.Create(OpCodes.Call, module.ImportReference(endInvokeRPC)));
 
                 // if (server && networkMode == NetworkManagerMode.Client) return;

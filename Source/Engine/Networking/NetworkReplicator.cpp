@@ -178,6 +178,7 @@ struct RpcItem
     NetworkRpcName Name;
     NetworkRpcInfo Info;
     BytesContainer ArgsData;
+    DataContainer<uint32> Targets;
 };
 
 namespace
@@ -326,6 +327,46 @@ void BuildCachedTargets(const Array<NetworkClient*>& clients, const DataContaine
             if (client->State == NetworkConnectionState::Connected && client->ClientId != excludedClientId)
                 CachedTargets.Add(client->Connection);
         }
+    }
+}
+
+void BuildCachedTargets(const Array<NetworkClient*>& clients, const DataContainer<uint32>& clientIds1, const Span<uint32>& clientIds2, const uint32 excludedClientId = NetworkManager::ServerClientId)
+{
+    CachedTargets.Clear();
+    if (clientIds1.IsValid())
+    {
+        if (clientIds2.IsValid())
+        {
+            for (const NetworkClient* client : clients)
+            {
+                if (client->State == NetworkConnectionState::Connected && client->ClientId != excludedClientId)
+                {
+                    for (int32 i = 0; i < clientIds1.Length(); i++)
+                    {
+                        if (clientIds1[i] == client->ClientId)
+                        {
+                            for (int32 j = 0; j < clientIds2.Length(); j++)
+                            {
+                                if (clientIds2[j] == client->ClientId)
+                                {
+                                    CachedTargets.Add(client->Connection);
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            BuildCachedTargets(clients, clientIds1, excludedClientId);
+        }
+    }
+    else
+    {
+        BuildCachedTargets(clients, clientIds2, excludedClientId);
     }
 }
 
@@ -560,6 +601,11 @@ void InvokeObjectReplication(NetworkReplicatedObject& item, uint32 ownerFrame, b
         DirtyObjectImpl(item, obj);
 }
 
+NetworkRpcParams::NetworkRpcParams(const NetworkStream* stream)
+    : SenderId(stream->SenderId)
+{
+}
+
 #if !COMPILE_WITHOUT_CSHARP
 
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
@@ -601,9 +647,9 @@ void NetworkReplicator::AddRPC(const ScriptingTypeHandle& typeHandle, const Stri
     NetworkRpcInfo::RPCsTable[rpcName] = rpcInfo;
 }
 
-void NetworkReplicator::CSharpEndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream)
+void NetworkReplicator::CSharpEndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, MonoArray* targetIds)
 {
-    EndInvokeRPC(obj, type, GetCSharpCachedName(name), argsStream);
+    EndInvokeRPC(obj, type, GetCSharpCachedName(name), argsStream, MUtils::ToSpan<uint32>(targetIds));
 }
 
 StringAnsiView NetworkReplicator::GetCSharpCachedName(const StringAnsiView& name)
@@ -886,7 +932,7 @@ NetworkStream* NetworkReplicator::BeginInvokeRPC()
     return CachedWriteStream;
 }
 
-void NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream)
+void NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, Span<uint32> targetIds)
 {
     const NetworkRpcInfo* info = NetworkRpcInfo::RPCsTable.TryGet(NetworkRpcName(type, name));
     if (!info || !obj || NetworkManager::IsOffline())
@@ -897,8 +943,8 @@ void NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHa
     rpc.Name.First = type;
     rpc.Name.Second = name;
     rpc.Info = *info;
-    const Span<byte> argsData(argsStream->GetBuffer(), argsStream->GetPosition());
-    rpc.ArgsData.Copy(argsData);
+    rpc.ArgsData.Copy(Span<byte>(argsStream->GetBuffer(), argsStream->GetPosition()));
+    rpc.Targets.Copy(targetIds);
 #if USE_EDITOR || !BUILD_RELEASE
     auto it = Objects.Find(obj->GetID());
     if (it == Objects.End())
@@ -1279,12 +1325,16 @@ void NetworkInternal::NetworkReplicatorUpdate()
         if (e.Info.Server && isClient)
         {
             // Client -> Server
+#if !BUILD_RELEASE
+            if (e.Targets.Length() != 0)
+                NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Server RPC '{}::{}' called with non-empty list of targets is not supported (only server will receive it)", e.Name.First.ToString(), e.Name.Second.ToString());
+#endif
             peer->EndSendMessage(channel, msg);
         }
         else if (e.Info.Client && (isServer || isHost))
         {
             // Server -> Client(s)
-            BuildCachedTargets(NetworkManager::Clients, item.TargetClientIds, NetworkManager::LocalClientId);
+            BuildCachedTargets(NetworkManager::Clients, item.TargetClientIds, e.Targets, NetworkManager::LocalClientId);
             peer->EndSendMessage(channel, msg, CachedTargets);
         }
     }
@@ -1310,7 +1360,7 @@ void NetworkInternal::OnNetworkMessageObjectReplicate(NetworkEvent& event, Netwo
     if (client && item.OwnerClientId != client->ClientId)
         return;
 
-    const uint32 senderClientId = client ? client->ClientId : NetworkManager::LocalClientId;
+    const uint32 senderClientId = client ? client->ClientId : NetworkManager::ServerClientId;
     if (msgData.PartsCount == 1)
     {
         // Replicate
@@ -1333,7 +1383,7 @@ void NetworkInternal::OnNetworkMessageObjectReplicatePart(NetworkEvent& event, N
     if (DespawnedObjects.Contains(msgData.ObjectId))
         return; // Skip replicating not-existing objects
 
-    const uint32 senderClientId = client ? client->ClientId : NetworkManager::LocalClientId;
+    const uint32 senderClientId = client ? client->ClientId : NetworkManager::ServerClientId;
     AddObjectReplicateItem(event, msgData, msgData.PartStart, msgData.PartSize, senderClientId);
 }
 
@@ -1627,7 +1677,7 @@ void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClie
         if (CachedReadStream == nullptr)
             CachedReadStream = New<NetworkStream>();
         NetworkStream* stream = CachedReadStream;
-        stream->SenderId = client ? client->ClientId : NetworkManager::LocalClientId;
+        stream->SenderId = client ? client->ClientId : NetworkManager::ServerClientId;
         stream->Initialize(event.Message.Buffer + event.Message.Position, msgData.ArgsSize);
 
         // Execute RPC

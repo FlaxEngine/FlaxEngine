@@ -17,3 +17,4 @@ struct NetworkConnection;
 struct NetworkMessage;
 struct NetworkConfig;
 struct NetworkDriverStats;
+struct NetworkRpcParams;

@@ -5,12 +5,31 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/Pair.h"
+#include "Engine/Core/Types/Span.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Networking/NetworkManager.h"
 
 class NetworkStream;
+
+// Additional context parameters for Network RPC execution (eg. to identify who sends the data).
+API_STRUCT(NoDefault, Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkRpcParams
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkRpcParams);
+    NetworkRpcParams() = default;
+    NetworkRpcParams(const NetworkStream* stream);
+
+    /// <summary>
+    /// The ClientId of the network client that is a data sender. Can be used to detect who send the incoming RPC or replication data. Ignored when sending data.
+    /// </summary>
+    API_FIELD() uint32 SenderId = 0;
+
+    /// <summary>
+    /// The list of ClientId of the network clients that should receive RPC. Can be used to send RPC to a specific client(s). Ignored when receiving data.
+    /// </summary>
+    API_FIELD() Span<uint32> TargetIds;
+};
 
 // Network RPC identifier name (pair of type and function name)
 typedef Pair<ScriptingTypeHandle, StringAnsiView> NetworkRpcName;
