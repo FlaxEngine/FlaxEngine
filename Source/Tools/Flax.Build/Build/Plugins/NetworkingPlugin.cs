@@ -1045,18 +1045,27 @@ namespace Flax.Build.Plugins
                 il.Body.Variables.Add(new VariableDefinition(intType));
                 il.Body.Variables.Add(new VariableDefinition(new PointerType(elementType)));
                 il.Body.Variables.Add(new VariableDefinition(new PinnedType(valueType)));
+                if (property != null)
+                    il.Body.Variables.Add(new VariableDefinition(valueType));
                 il.Body.InitLocals = true;
                 if (serialize)
                 {
-                    // <elementType>[] array2 = Array1;
+                    // <elementType>[] array = Array;
                     il.Emit(OpCodes.Nop);
                     il.Emit(OpCodes.Ldarg_0);
                     if (field != null)
+                    {
                         il.Emit(OpCodes.Ldfld, field);
+                    }
                     else
+                    {
+                        // <elementType>[] array = ArrayProperty;
                         il.Emit(propertyGetOpCode, property.GetMethod);
+                        il.Emit(OpCodes.Stloc, varStart + 3);
+                        il.Emit(OpCodes.Ldloc, varStart + 3);
+                    }
 
-                    // int num2 = ((array2 != null) ? array2.Length : 0);
+                    // int num2 = ((array != null) ? array.Length : 0);
                     il.Emit(OpCodes.Dup);
                     Instruction jmp1 = il.Create(OpCodes.Nop);
                     il.Emit(OpCodes.Brtrue_S, jmp1);
@@ -1076,13 +1085,17 @@ namespace Flax.Build.Plugins
                     var m = networkStreamType.GetMethod("WriteInt32");
                     il.Emit(OpCodes.Callvirt, module.ImportReference(m));
 
-                    // fixed (<elementType>* bytes2 = Array1)
+                    // fixed (<elementType>* bytes2 = Array)
                     il.Emit(OpCodes.Nop);
-                    il.Emit(OpCodes.Ldarg_0);
                     if (field != null)
+                    {
+                        il.Emit(OpCodes.Ldarg_0);
                         il.Emit(OpCodes.Ldfld, field);
+                    }
                     else
-                        il.Emit(propertyGetOpCode, property.GetMethod);
+                    {
+                        il.Emit(OpCodes.Ldloc, varStart + 3);
+                    }
                     il.Emit(OpCodes.Dup);
                     il.Emit(OpCodes.Stloc, varStart + 2);
                     Instruction jmp3 = il.Create(OpCodes.Nop);
@@ -1120,9 +1133,6 @@ namespace Flax.Build.Plugins
                 }
                 else
                 {
-                    if (field == null)
-                        throw new NotImplementedException("TODO: add support for array property replication");
-
                     // int num = stream.ReadInt32();
                     il.Emit(OpCodes.Nop);
                     il.Emit(OpCodes.Ldarg_1);
@@ -1130,18 +1140,37 @@ namespace Flax.Build.Plugins
                     il.Emit(OpCodes.Callvirt, module.ImportReference(m));
                     il.Emit(OpCodes.Stloc, varStart + 0);
 
-                    // System.Array.Resize(ref Array1, num);
+                    // System.Array.Resize(ref ArrayField, num);
                     il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldflda, field);
+                    if (field != null)
+                    {
+                        il.Emit(OpCodes.Ldflda, field);
+                    }
+                    else
+                    {
+                        // <elementType>[] array = ArrayProperty;
+                        il.Emit(propertyGetOpCode, property.GetMethod);
+                        il.Emit(OpCodes.Stloc, varStart + 3);
+                        il.Emit(OpCodes.Ldloca_S, (byte)(varStart + 3));
+                    }
                     il.Emit(OpCodes.Ldloc, varStart + 0);
                     module.TryGetTypeReference("System.Array", out var arrayType);
+                    if (arrayType == null)
+                        module.GetType("System.Array", out arrayType);
                     m = arrayType.Resolve().GetMethod("Resize", 2);
                     il.Emit(OpCodes.Call, module.ImportReference(m.InflateGeneric(elementType)));
 
-                    // fixed (int* buffer = Array1)
+                    // fixed (<elementType>* buffer = Array)
                     il.Emit(OpCodes.Nop);
-                    il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldfld, field);
+                    if (field != null)
+                    {
+                        il.Emit(OpCodes.Ldarg_0);
+                        il.Emit(OpCodes.Ldfld, field);
+                    }
+                    else
+                    {
+                        il.Emit(OpCodes.Ldloc, varStart + 3);
+                    }
                     il.Emit(OpCodes.Dup);
                     il.Emit(OpCodes.Stloc, varStart + 2);
                     Instruction jmp1 = il.Create(OpCodes.Nop);
@@ -1176,6 +1205,12 @@ namespace Flax.Build.Plugins
                     il.Emit(OpCodes.Nop);
                     il.Emit(OpCodes.Ldnull);
                     il.Emit(OpCodes.Stloc, varStart + 2);
+                    if (property != null)
+                    {
+                        il.Emit(OpCodes.Ldarg_0);
+                        il.Emit(OpCodes.Ldloc, varStart + 3);
+                        il.Emit(propertySetOpCode, property.SetMethod);
+                    }
                 }
             }
             else
