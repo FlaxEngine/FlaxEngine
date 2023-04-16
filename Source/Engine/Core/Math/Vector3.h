@@ -569,7 +569,7 @@ public:
     /// <summary>
     /// Makes sure that Length of the output vector is always below max and above 0.
     /// </summary>
-    /// <param name="vector">Input Vector.</param>
+    /// <param name="v">Input Vector.</param>
     /// <param name="max">Max Length</param>
     static Vector3Base ClampLength(const Vector3Base& v, float max)
     {
@@ -579,7 +579,7 @@ public:
     /// <summary>
     /// Makes sure that Length of the output vector is always below max and above min.
     /// </summary>
-    /// <param name="vector">Input Vector.</param>
+    /// <param name="v">Input Vector.</param>
     /// <param name="min">Min Length</param>
     /// <param name="max">Max Length</param>
     static Vector3Base ClampLength(const Vector3Base& v, float min, float max)
@@ -592,26 +592,24 @@ public:
     /// <summary>
     /// Makes sure that Length of the output vector is always below max and above min.
     /// </summary>
-    /// <param name="vector">Input Vector.</param>
+    /// <param name="v">Input Vector.</param>
     /// <param name="min">Min Length</param>
     /// <param name="max">Max Length</param>
     /// <param name="result">The result vector.</param>
     static void ClampLength(const Vector3Base& v, float min, float max, Vector3Base& result)
     {
-        result.X = v.X;
-        result.Y = v.Y;
-        result.Z = v.Z;
-        auto lenSq = result.LengthSquared();
+        result = v;
+        T lenSq = result.LengthSquared();
         if (lenSq > max * max)
         {
-            auto scaleFactor = max / (float)Math::Sqrt(lenSq);
+            T scaleFactor = max / (T)Math::Sqrt(lenSq);
             result.X *= scaleFactor;
             result.Y *= scaleFactor;
             result.Z *= scaleFactor;
         }
         if (lenSq < min * min)
         {
-            auto scaleFactor = min / (float)Math::Sqrt(lenSq);
+            T scaleFactor = min / (T)Math::Sqrt(lenSq);
             result.X *= scaleFactor;
             result.Y *= scaleFactor;
             result.Z *= scaleFactor;
