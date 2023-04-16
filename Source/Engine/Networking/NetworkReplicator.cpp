@@ -32,7 +32,9 @@
 #if !BUILD_RELEASE
 bool NetworkReplicator::EnableLog = false;
 #include "Engine/Core/Log.h"
+#include "Engine/Content/Content.h"
 #define NETWORK_REPLICATOR_LOG(messageType, format, ...) if (NetworkReplicator::EnableLog) { LOG(messageType, format, ##__VA_ARGS__); }
+#define USE_NETWORK_REPLICATOR_LOG 1
 #else
 #define NETWORK_REPLICATOR_LOG(messageType, format, ...)
 #endif
@@ -105,9 +107,14 @@ struct NetworkReplicatedObject
     uint32 OwnerClientId;
     uint32 LastOwnerFrame = 0;
     NetworkObjectRole Role;
-    uint8 Spawned = false;
+    uint8 Spawned : 1;
     DataContainer<uint32> TargetClientIds;
     INetworkObject* AsNetworkObject;
+
+    NetworkReplicatedObject()
+    {
+        Spawned = 0;
+    }
 
     bool operator==(const NetworkReplicatedObject& other) const
     {
@@ -522,6 +529,36 @@ void SetupObjectSpawnGroupItem(ScriptingObject* obj, Array<SpawnGroup, InlinedAl
     // Create new group
     group = &spawnGroups.AddOne();
     group->Items.Add(&spawnItem);
+}
+
+void FindObjectsForSpawn(SpawnGroup& group, ChunkedArray<SpawnItem, 256>& spawnItems, ScriptingObject* obj)
+{
+    // Add any registered network objects
+    auto it = Objects.Find(obj->GetID());
+    if (it != Objects.End())
+    {
+        auto& item = it->Item;
+        if (!item.Spawned)
+        {
+            // One of the parents of this object is being spawned so spawn it too
+            item.Spawned = true;
+            auto& spawnItem = spawnItems.AddOne();
+            spawnItem.Object = obj;
+            spawnItem.Targets.Link(item.TargetClientIds);
+            spawnItem.OwnerClientId = item.OwnerClientId;
+            spawnItem.Role = item.Role;
+            group.Items.Add(&spawnItem);
+        }
+    }
+
+    // Iterate over children
+    if (auto* actor = ScriptingObject::Cast<Actor>(obj))
+    {
+        for (auto* script : actor->Scripts)
+            FindObjectsForSpawn(group, spawnItems, script);
+        for (auto* child : actor->Children)
+            FindObjectsForSpawn(group, spawnItems, child);
+    }
 }
 
 void DirtyObjectImpl(NetworkReplicatedObject& item, ScriptingObject* obj)
@@ -1159,9 +1196,16 @@ void NetworkInternal::NetworkReplicatorUpdate()
         }
 
         // Spawn groups of objects
+        ChunkedArray<SpawnItem, 256> spawnItems;
         for (SpawnGroup& g : spawnGroups)
         {
+            // Include any added objects within spawn group that were not spawned manually (eg. AddObject for script/actor attached to spawned actor)
+            ScriptingObject* groupRoot = g.Items[0]->Object.Get();
+            FindObjectsForSpawn(g, spawnItems, groupRoot);
+
             SendObjectSpawnMessage(g, NetworkManager::Clients);
+
+            spawnItems.Clear();
         }
         SpawnQueue.Clear();
     }
@@ -1325,7 +1369,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
         if (e.Info.Server && isClient)
         {
             // Client -> Server
-#if !BUILD_RELEASE
+#if USE_NETWORK_REPLICATOR_LOG
             if (e.Targets.Length() != 0)
                 NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Server RPC '{}::{}' called with non-empty list of targets is not supported (only server will receive it)", e.Name.First.ToString(), e.Name.Second.ToString());
 #endif
@@ -1520,10 +1564,6 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
         if (!obj->IsRegistered())
             obj->RegisterObject();
         const NetworkReplicatedObject* parent = ResolveObject(msgDataItem.ParentId);
-        if (!parent && msgDataItem.ParentId.IsValid())
-        {
-            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to find object {} as parent to spawned object", msgDataItem.ParentId.ToString());
-        }
 
         // Add object to the list
         NetworkReplicatedObject item;
@@ -1554,6 +1594,21 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
                 sceneObject->SetParent(parent->Object.As<Actor>());
             else if (auto* parentActor = Scripting::TryFindObject<Actor>(msgDataItem.ParentId))
                 sceneObject->SetParent(parentActor);
+            else if (msgDataItem.ParentId.IsValid())
+            {
+#if USE_NETWORK_REPLICATOR_LOG
+                // Ignore case when parent object in a message was a scene (eg. that is already unloaded on a client)
+                AssetInfo assetInfo;
+                if (!Content::GetAssetInfo(msgDataItem.ParentId, assetInfo) || assetInfo.TypeName == TEXT("FlaxEngine.SceneAsset"))
+                {
+                    NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to find object {} as parent to spawned object", msgDataItem.ParentId.ToString());
+                }
+#endif
+            }
+        }
+        else if (!parent && msgDataItem.ParentId.IsValid())
+        {
+            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to find object {} as parent to spawned object", msgDataItem.ParentId.ToString());
         }
 
         if (item.AsNetworkObject)
@@ -1657,7 +1712,7 @@ void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClie
         const NetworkRpcInfo* info = NetworkRpcInfo::RPCsTable.TryGet(name);
         if (!info)
         {
-            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Unknown object {} RPC {}::{}", msgData.ObjectId, String(msgData.RpcTypeName), String(msgData.RpcName));
+            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Unknown RPC {}::{} for object {}", String(msgData.RpcTypeName), String(msgData.RpcName), msgData.ObjectId);
             return;
         }
 
