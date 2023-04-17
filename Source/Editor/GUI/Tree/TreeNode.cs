@@ -922,7 +922,8 @@ namespace FlaxEditor.GUI.Tree
             if (result == DragDropEffect.None)
             {
                 UpdateDrawPositioning(ref location);
-                _tree.DraggedOverNode = this;
+                if (ParentTree != null)
+                    ParentTree.DraggedOverNode = this;
 
                 // Check if mouse is over header
                 _isDragOverHeader = TestHeaderHit(ref location);
@@ -1000,6 +1001,8 @@ namespace FlaxEditor.GUI.Tree
             // Clear cache
             _isDragOverHeader = false;
             _dragOverMode = DragItemPositioning.None;
+            if (ParentTree != null)
+                ParentTree.DraggedOverNode = null;
 
             return result;
         }
