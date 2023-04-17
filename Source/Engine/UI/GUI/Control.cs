@@ -987,7 +987,7 @@ namespace FlaxEngine.GUI
         {
             // Hide tooltip
             Tooltip?.Hide();
-            Root.DoDragDrop(data);
+            Root?.DoDragDrop(data);
         }
 
         #endregion
