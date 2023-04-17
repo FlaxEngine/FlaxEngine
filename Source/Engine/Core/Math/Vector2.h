@@ -240,9 +240,9 @@ public:
     void Normalize()
     {
         const T length = Math::Sqrt(X * X + Y * Y);
-        if (!Math::IsZero(length))
+        if (length >= ZeroTolerance)
         {
-            const T invLength = 1.0f / length;
+            const T invLength = (T)1.0f / length;
             X *= invLength;
             Y *= invLength;
         }
@@ -547,9 +547,9 @@ public:
     {
         Vector2Base r = v;
         const T length = Math::Sqrt(r.X * r.X + r.Y * r.Y);
-        if (Math::Abs(length) >= ZeroTolerance)
+        if (length >= ZeroTolerance)
         {
-            const T inv = 1.0f / length;
+            const T inv = (T)1.0f / length;
             r.X *= inv;
             r.Y *= inv;
         }

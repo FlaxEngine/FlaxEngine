@@ -707,6 +707,8 @@ namespace FlaxEditor.SceneGraph.GUI
         {
             DragData data;
             var tree = ParentTree;
+            if (tree.Selection.Count == 1)
+                Select();
 
             // Check if this node is selected
             if (tree.Selection.Contains(this))
@@ -716,6 +718,11 @@ namespace FlaxEditor.SceneGraph.GUI
                 for (var i = 0; i < tree.Selection.Count; i++)
                 {
                     var e = tree.Selection[i];
+                    
+                    // Skip if parent is already selected to keep correct parenting
+                    if (tree.Selection.Contains(e.Parent))
+                        continue;
+
                     if (e is ActorTreeNode node && node.ActorNode.CanDrag)
                         actors.Add(node.ActorNode);
                 }

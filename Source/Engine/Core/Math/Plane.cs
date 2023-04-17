@@ -2,8 +2,10 @@
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
+using Mathr = FlaxEngine.Mathd;
 #else
 using Real = System.Single;
+using Mathr = FlaxEngine.Mathf;
 #endif
 
 // -----------------------------------------------------------------------------
@@ -175,7 +177,7 @@ namespace FlaxEngine
         public void Normalize()
         {
             Real length = Normal.Length;
-            if (!Mathf.IsZero(length))
+            if (length >= Mathr.Epsilon)
             {
                 Real rcp = 1.0f / length;
                 Normal.X *= rcp;

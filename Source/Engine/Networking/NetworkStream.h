@@ -24,6 +24,11 @@ public:
     ~NetworkStream();
 
     /// <summary>
+    /// The ClientId of the network client that is a data sender. Can be used to detect who send the incoming RPC or replication data. Set to the current client when writing data.
+    /// </summary>
+    API_FIELD(ReadOnly) uint32 SenderId = 0;
+
+    /// <summary>
     /// Gets the pointer to the native stream memory buffer.
     /// </summary>
     API_PROPERTY() byte* GetBuffer() const

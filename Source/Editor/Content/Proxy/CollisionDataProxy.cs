@@ -80,7 +80,8 @@ namespace FlaxEditor.Content
         /// </summary>
         /// <param name="model">The associated model.</param>
         /// <param name="created">The action to call once the collision data gets created (or reused from existing).</param>
-        public void CreateCollisionDataFromModel(Model model, Action<CollisionData> created = null)
+        /// <param name="withRenaming">True if start initial item renaming by user, or tru to skip it.</param>
+        public void CreateCollisionDataFromModel(Model model, Action<CollisionData> created = null, bool withRenaming = true)
         {
             // Check if there already is collision data for that model to reuse
             var modelItem = (AssetItem)Editor.Instance.ContentDatabase.Find(model.ID);
@@ -140,7 +141,7 @@ namespace FlaxEditor.Content
                 });
             };
             var initialName = (modelItem?.ShortName ?? Path.GetFileNameWithoutExtension(model.Path)) + " Collision";
-            Editor.Instance.Windows.ContentWin.NewItem(this, null, create, initialName);
+            Editor.Instance.Windows.ContentWin.NewItem(this, null, create, initialName, withRenaming);
         }
     }
 }

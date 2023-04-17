@@ -448,8 +448,8 @@ namespace MUtils
     /// </summary>
     /// <param name="data">The native array object.</param>
     /// <returns>The output array pointer and size.</returns>
-    template<typename T>
-    FORCE_INLINE Span<T> ToSpan(const Array<T>& data)
+    template<typename T, typename AllocationType = HeapAllocation>
+    FORCE_INLINE Span<T> ToSpan(const Array<T, AllocationType>& data)
     {
         return Span<T>(data.Get(), data.Count());
     }

@@ -175,6 +175,10 @@ namespace Flax.Build.Bindings
                 CppVariantFromTypes[wrapperName] = typeInfo;
                 return $"VariantFrom{wrapperName}Dictionary({value})";
             }
+            if (typeInfo.Type == "Span" && typeInfo.GenericArgs != null)
+            {
+                return "Variant()"; // TODO: Span to Variant converting (use utility method the same way as for arrays)
+            }
 
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
             if (apiType != null)
@@ -220,6 +224,10 @@ namespace Flax.Build.Bindings
             {
                 CppVariantToTypes.Add(typeInfo);
                 return $"MoveTemp(VariantTo{GenerateCppWrapperNativeToVariantMethodName(typeInfo)}({value}))";
+            }
+            if (typeInfo.Type == "Span" && typeInfo.GenericArgs != null)
+            {
+                return $"{typeInfo}()"; // Cannot be implemented since Variant stores array of Variants thus cannot get linear span of data
             }
 
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
@@ -487,7 +495,7 @@ namespace Flax.Build.Bindings
                     return "{0}.GetManagedInstance()";
                 }
 
-                // Array or Span or DataContainer
+                // Array or DataContainer
                 if ((typeInfo.Type == "Array" || typeInfo.Type == "Span" || typeInfo.Type == "DataContainer") && typeInfo.GenericArgs != null)
                 {
 #if USE_NETCORE
@@ -500,6 +508,13 @@ namespace Flax.Build.Bindings
 #endif
                     type = "MArray*";
                     return "MUtils::ToArray({0}, " + GenerateCppGetMClass(buildData, typeInfo.GenericArgs[0], caller, functionInfo) + ")";
+                }
+
+                // Span
+                if (typeInfo.Type == "Span" && typeInfo.GenericArgs != null)
+                {
+                    type = "MonoArray*";
+                    return "MUtils::Span({0}, " + GenerateCppGetNativeClass(buildData, typeInfo.GenericArgs[0], caller, functionInfo) + ")";
                 }
 
                 // BytesContainer

@@ -320,6 +320,7 @@ namespace FlaxEditor.Windows
         /// Shows popup dialog with UI to rename content item.
         /// </summary>
         /// <param name="item">The item to rename.</param>
+        /// <returns>The created renaming popup.</returns>
         public void Rename(ContentItem item)
         {
             // Show element in the view
@@ -337,24 +338,7 @@ namespace FlaxEditor.Windows
             popup.Tag = item;
             popup.Validate += OnRenameValidate;
             popup.Renamed += renamePopup => Rename((ContentItem)renamePopup.Tag, renamePopup.Text);
-            popup.Closed += renamePopup =>
-            {
-                // Restore scrolling in content view
-                if (_contentViewPanel.VScrollBar != null)
-                    _contentViewPanel.VScrollBar.ThumbEnabled = true;
-                if (_contentViewPanel.HScrollBar != null)
-                    _contentViewPanel.HScrollBar.ThumbEnabled = true;
-                ScrollingOnContentView(true);
-
-                // Check if was creating new element
-                if (_newElement != null)
-                {
-                    // Destroy mock control
-                    _newElement.ParentFolder = null;
-                    _newElement.Dispose();
-                    _newElement = null;
-                }
-            };
+            popup.Closed += OnRenameClosed;
 
             // For new asset we want to mock the initial value so user can press just Enter to use default name
             if (_newElement != null)
@@ -366,6 +350,25 @@ namespace FlaxEditor.Windows
         private bool OnRenameValidate(RenamePopup popup, string value)
         {
             return Editor.ContentEditing.IsValidAssetName((ContentItem)popup.Tag, value, out _);
+        }
+
+        private void OnRenameClosed(RenamePopup popup)
+        {
+            // Restore scrolling in content view
+            if (_contentViewPanel.VScrollBar != null)
+                _contentViewPanel.VScrollBar.ThumbEnabled = true;
+            if (_contentViewPanel.HScrollBar != null)
+                _contentViewPanel.HScrollBar.ThumbEnabled = true;
+            ScrollingOnContentView(true);
+
+            // Check if was creating new element
+            if (_newElement != null)
+            {
+                // Destroy mock control
+                _newElement.ParentFolder = null;
+                _newElement.Dispose();
+                _newElement = null;
+            }
         }
 
         /// <summary>
@@ -486,7 +489,7 @@ namespace FlaxEditor.Windows
         /// <param name="item">The item to delete.</param>
         public void Delete(ContentItem item)
         {
-            Delete(new List<ContentItem>(1) { item });
+            Delete(Editor.Instance.Windows.ContentWin.View.Selection);
         }
 
         /// <summary>
@@ -537,7 +540,7 @@ namespace FlaxEditor.Windows
                 destinationName = Utilities.Utils.IncrementNameNumber(item.ShortName, x => !File.Exists(StringUtils.CombinePaths(sourceFolder, x + extension))) + extension;
             }
 
-            return StringUtils.CombinePaths(sourceFolder, destinationName);
+            return StringUtils.NormalizePath(StringUtils.CombinePaths(sourceFolder, destinationName));
         }
 
         /// <summary>
@@ -564,6 +567,7 @@ namespace FlaxEditor.Windows
             // Start renaming it
             if (targetItem != null)
             {
+                Select(targetItem);
                 Rename(targetItem);
             }
         }
@@ -645,7 +649,8 @@ namespace FlaxEditor.Windows
         /// <param name="argument">The argument passed to the proxy for the item creation. In most cases it is null.</param>
         /// <param name="created">The event called when the item is crated by the user. The argument is the new item.</param>
         /// <param name="initialName">The initial item name.</param>
-        public void NewItem(ContentProxy proxy, object argument = null, Action<ContentItem> created = null, string initialName = null)
+        /// <param name="withRenaming">True if start initial item renaming by user, or tru to skip it.</param>
+        public void NewItem(ContentProxy proxy, object argument = null, Action<ContentItem> created = null, string initialName = null, bool withRenaming = true)
         {
             Assert.IsNull(_newElement);
             if (proxy == null)
@@ -667,14 +672,52 @@ namespace FlaxEditor.Windows
                 } while (parentFolder.FindChild(path) != null);
             }
 
-            // Create new asset proxy, add to view and rename it
-            _newElement = new NewItem(path, proxy, argument)
+            if (withRenaming)
             {
-                ParentFolder = parentFolder,
-                Tag = created,
-            };
-            RefreshView();
-            Rename(_newElement);
+                // Create new asset proxy, add to view and rename it
+                _newElement = new NewItem(path, proxy, argument)
+                {
+                    ParentFolder = parentFolder,
+                    Tag = created,
+                };
+                RefreshView();
+                Rename(_newElement);
+            }
+            else
+            {
+                // Create new asset
+                try
+                {
+                    Editor.Log(string.Format("Creating asset {0} in {1}", proxy.Name, path));
+                    proxy.Create(path, argument);
+                }
+                catch (Exception ex)
+                {
+                    Editor.LogWarning(ex);
+                    Editor.LogError("Failed to create asset.");
+                    return;
+                }
+
+                // Focus content window
+                Focus();
+                RootWindow?.Focus();
+
+                // Refresh database and view now
+                Editor.ContentDatabase.RefreshFolder(parentFolder, false);
+                RefreshView();
+                var newItem = parentFolder.FindChild(path);
+                if (newItem == null)
+                {
+                    Editor.LogWarning("Failed to find the created new item.");
+                    return;
+                }
+
+                // Auto-select item
+                Select(newItem, true);
+
+                // Custom post-action
+                created?.Invoke(newItem);
+            }
         }
 
         private void ContentDatabaseOnItemRemoved(ContentItem contentItem)

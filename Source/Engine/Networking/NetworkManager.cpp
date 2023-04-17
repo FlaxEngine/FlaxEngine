@@ -236,6 +236,16 @@ NetworkClient* NetworkManager::GetClient(const NetworkConnection& connection)
     return nullptr;
 }
 
+NetworkClient* NetworkManager::GetClient(uint32 clientId)
+{
+    for (NetworkClient* client : Clients)
+    {
+        if (client->ClientId == clientId)
+            return client;
+    }
+    return nullptr;
+}
+
 bool NetworkManager::StartServer()
 {
     PROFILE_CPU();

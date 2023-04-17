@@ -659,7 +659,7 @@ namespace FlaxEditor.GUI.Tree
             Render2D.DrawText(TextFont.GetFont(), _text, textRect, _cachedTextColor, TextAlignment.Near, TextAlignment.Center);
 
             // Draw drag and drop effect
-            if (IsDragOver)
+            if (IsDragOver && _tree.DraggedOverNode == this)
             {
                 Color dragOverColor = style.BackgroundSelected * 0.6f;
                 Rectangle rect;
@@ -669,10 +669,10 @@ namespace FlaxEditor.GUI.Tree
                     rect = textRect;
                     break;
                 case DragItemPositioning.Above:
-                    rect = new Rectangle(textRect.X, textRect.Y - DefaultDragInsertPositionMargin - DefaultNodeOffsetY, textRect.Width, DefaultDragInsertPositionMargin * 2.0f);
+                    rect = new Rectangle(textRect.X, textRect.Top - DefaultDragInsertPositionMargin - DefaultNodeOffsetY - _margin.Top, textRect.Width, DefaultDragInsertPositionMargin * 2.0f);
                     break;
                 case DragItemPositioning.Below:
-                    rect = new Rectangle(textRect.X, textRect.Bottom - DefaultDragInsertPositionMargin, textRect.Width, DefaultDragInsertPositionMargin * 2.0f);
+                    rect = new Rectangle(textRect.X, textRect.Bottom + _margin.Bottom - DefaultDragInsertPositionMargin, textRect.Width, DefaultDragInsertPositionMargin * 2.0f);
                     break;
                 default:
                     rect = Rectangle.Empty;
@@ -922,6 +922,8 @@ namespace FlaxEditor.GUI.Tree
             if (result == DragDropEffect.None)
             {
                 UpdateDrawPositioning(ref location);
+                if (ParentTree != null)
+                    ParentTree.DraggedOverNode = this;
 
                 // Check if mouse is over header
                 _isDragOverHeader = TestHeaderHit(ref location);
@@ -999,6 +1001,8 @@ namespace FlaxEditor.GUI.Tree
             // Clear cache
             _isDragOverHeader = false;
             _dragOverMode = DragItemPositioning.None;
+            if (ParentTree != null)
+                ParentTree.DraggedOverNode = null;
 
             return result;
         }

@@ -156,7 +156,6 @@ void NetworkTransform::Serialize(NetworkStream* stream)
         transform = Transform::Identity;
 
     // Encode data
-    const NetworkObjectRole role = NetworkReplicator::GetObjectRole(this);
     Data data;
     data.LocalSpace = LocalSpace;
     data.HasSequenceIndex = Mode == ReplicationModes::Prediction;

@@ -266,9 +266,9 @@ public:
     void Normalize()
     {
         const T length = Math::Sqrt(X * X + Y * Y + Z * Z);
-        if (Math::Abs(length) >= ZeroTolerance)
+        if (length >= ZeroTolerance)
         {
-            const T inv = 1.0f / length;
+            const T inv = (T)1.0f / length;
             X *= inv;
             Y *= inv;
             Z *= inv;
@@ -566,6 +566,56 @@ public:
         result = Vector3Base(Math::Clamp(v.X, min.X, max.X), Math::Clamp(v.Y, min.Y, max.Y), Math::Clamp(v.Z, min.Z, max.Z));
     }
 
+    /// <summary>
+    /// Makes sure that Length of the output vector is always below max and above 0.
+    /// </summary>
+    /// <param name="v">Input Vector.</param>
+    /// <param name="max">Max Length</param>
+    static Vector3Base ClampLength(const Vector3Base& v, float max)
+    {
+        return ClampLength(v, 0, max);
+    }
+
+    /// <summary>
+    /// Makes sure that Length of the output vector is always below max and above min.
+    /// </summary>
+    /// <param name="v">Input Vector.</param>
+    /// <param name="min">Min Length</param>
+    /// <param name="max">Max Length</param>
+    static Vector3Base ClampLength(const Vector3Base& v, float min, float max)
+    {
+        Vector3Base result;
+        ClampLength(v, min, max, result);
+        return result;
+    }
+
+    /// <summary>
+    /// Makes sure that Length of the output vector is always below max and above min.
+    /// </summary>
+    /// <param name="v">Input Vector.</param>
+    /// <param name="min">Min Length</param>
+    /// <param name="max">Max Length</param>
+    /// <param name="result">The result vector.</param>
+    static void ClampLength(const Vector3Base& v, float min, float max, Vector3Base& result)
+    {
+        result = v;
+        T lenSq = result.LengthSquared();
+        if (lenSq > max * max)
+        {
+            T scaleFactor = max / (T)Math::Sqrt(lenSq);
+            result.X *= scaleFactor;
+            result.Y *= scaleFactor;
+            result.Z *= scaleFactor;
+        }
+        if (lenSq < min * min)
+        {
+            T scaleFactor = min / (T)Math::Sqrt(lenSq);
+            result.X *= scaleFactor;
+            result.Y *= scaleFactor;
+            result.Z *= scaleFactor;
+        }
+    }
+
     // Calculates the distance between two vectors
     // @param a The first vector
     // @param b The second vector
@@ -595,9 +645,9 @@ public:
     {
         Vector3Base r = v;
         const T length = Math::Sqrt(r.X * r.X + r.Y * r.Y + r.Z * r.Z);
-        if (Math::Abs(length) >= ZeroTolerance)
+        if (length >= ZeroTolerance)
         {
-            const T inv = 1.0f / length;
+            const T inv = (T)1.0f / length;
             r.X *= inv;
             r.Y *= inv;
             r.Z *= inv;

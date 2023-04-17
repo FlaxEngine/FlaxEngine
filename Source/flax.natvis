@@ -221,4 +221,16 @@
     <DisplayString Condition="Index != 0">Tag={TagsListDebug[Index - 1]}</DisplayString>
   </Type>
 
+  <!-- Span<T> -->
+	<Type Name="Span&lt;*&gt;">
+		<DisplayString>{{ Length={_length} }}</DisplayString>
+		<Expand>
+			<Item Name="[Length]" ExcludeView="simple">_length</Item>
+      <ArrayItems Condition="_data != nullptr">
+				<Size>_length</Size>
+				<ValuePointer>_data</ValuePointer>
+			</ArrayItems>
+		</Expand>
+	</Type>
+
 </AutoVisualizer>

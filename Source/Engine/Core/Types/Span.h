@@ -8,7 +8,7 @@
 /// Universal representation of a contiguous region of arbitrary memory.
 /// </summary>
 template<typename T>
-class Span
+API_CLASS(InBuild) class Span
 {
 protected:
     T* _data;
