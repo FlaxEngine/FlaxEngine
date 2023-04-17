@@ -2,8 +2,10 @@
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
+using Mathr = FlaxEngine.Mathd;
 #else
 using Real = System.Single;
+using Mathr = FlaxEngine.Mathf;
 #endif
 
 // -----------------------------------------------------------------------------
@@ -255,27 +257,27 @@ namespace FlaxEngine
         /// <summary>
         /// Gets a value indicting whether this instance is normalized.
         /// </summary>
-        public bool IsNormalized => Mathf.IsOne(X * X + Y * Y + Z * Z + W * W);
+        public bool IsNormalized => Mathr.IsOne(X * X + Y * Y + Z * Z + W * W);
 
         /// <summary>
         /// Gets a value indicting whether this vector is zero
         /// </summary>
-        public bool IsZero => Mathf.IsZero(X) && Mathf.IsZero(Y) && Mathf.IsZero(Z) && Mathf.IsZero(W);
+        public bool IsZero => Mathr.IsZero(X) && Mathr.IsZero(Y) && Mathr.IsZero(Z) && Mathr.IsZero(W);
 
         /// <summary>
         /// Gets a value indicting whether this vector is one
         /// </summary>
-        public bool IsOne => Mathf.IsOne(X) && Mathf.IsOne(Y) && Mathf.IsOne(Z) && Mathf.IsOne(W);
+        public bool IsOne => Mathr.IsOne(X) && Mathr.IsOne(Y) && Mathr.IsOne(Z) && Mathr.IsOne(W);
 
         /// <summary>
         /// Gets a minimum component value
         /// </summary>
-        public Real MinValue => Mathf.Min(X, Mathf.Min(Y, Mathf.Min(Z, W)));
+        public Real MinValue => Mathr.Min(X, Mathr.Min(Y, Mathr.Min(Z, W)));
 
         /// <summary>
         /// Gets a maximum component value
         /// </summary>
-        public Real MaxValue => Mathf.Max(X, Mathf.Max(Y, Mathf.Max(Z, W)));
+        public Real MaxValue => Mathr.Max(X, Mathr.Max(Y, Mathr.Max(Z, W)));
 
         /// <summary>
         /// Gets an arithmetic average value of all vector components.
@@ -290,7 +292,7 @@ namespace FlaxEngine
         /// <summary>
         /// Gets a vector with values being absolute values of that vector.
         /// </summary>
-        public Vector4 Absolute => new Vector4(Mathf.Abs(X), Mathf.Abs(Y), Mathf.Abs(Z), Mathf.Abs(W));
+        public Vector4 Absolute => new Vector4(Mathr.Abs(X), Mathr.Abs(Y), Mathr.Abs(Z), Mathr.Abs(W));
 
         /// <summary>
         /// Gets a vector with values being opposite to values of that vector.
@@ -357,8 +359,8 @@ namespace FlaxEngine
         /// </summary>
         public void Normalize()
         {
-            Real length = Length;
-            if (!Mathf.IsZero(length))
+            Real length = (Real)Math.Sqrt(X * X + Y * Y + Z * Z + W * W);
+            if (length >= Mathr.Epsilon)
             {
                 Real inverse = 1.0f / length;
                 X *= inverse;
@@ -855,10 +857,10 @@ namespace FlaxEngine
         /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static void Lerp(ref Vector4 start, ref Vector4 end, Real amount, out Vector4 result)
         {
-            result.X = Mathf.Lerp(start.X, end.X, amount);
-            result.Y = Mathf.Lerp(start.Y, end.Y, amount);
-            result.Z = Mathf.Lerp(start.Z, end.Z, amount);
-            result.W = Mathf.Lerp(start.W, end.W, amount);
+            result.X = Mathr.Lerp(start.X, end.X, amount);
+            result.Y = Mathr.Lerp(start.Y, end.Y, amount);
+            result.Z = Mathr.Lerp(start.Z, end.Z, amount);
+            result.W = Mathr.Lerp(start.W, end.W, amount);
         }
 
         /// <summary>
@@ -884,7 +886,7 @@ namespace FlaxEngine
         /// <param name="result">When the method completes, contains the cubic interpolation of the two vectors.</param>
         public static void SmoothStep(ref Vector4 start, ref Vector4 end, Real amount, out Vector4 result)
         {
-            amount = Mathf.SmoothStep(amount);
+            amount = Mathr.SmoothStep(amount);
             Lerp(ref start, ref end, amount, out result);
         }
 
@@ -1359,7 +1361,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Vector4 left, Vector4 right)
         {
-            return Mathf.NearEqual(left.X, right.X) && Mathf.NearEqual(left.Y, right.Y) && Mathf.NearEqual(left.Z, right.Z) && Mathf.NearEqual(left.W, right.W);
+            return Mathr.NearEqual(left.X, right.X) && Mathr.NearEqual(left.Y, right.Y) && Mathr.NearEqual(left.Z, right.Z) && Mathr.NearEqual(left.W, right.W);
         }
 
         /// <summary>
@@ -1480,7 +1482,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public bool Equals(ref Vector4 other)
         {
-            return Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y) && Mathf.NearEqual(other.Z, Z) && Mathf.NearEqual(other.W, W);
+            return Mathr.NearEqual(other.X, X) && Mathr.NearEqual(other.Y, Y) && Mathr.NearEqual(other.Z, Z) && Mathr.NearEqual(other.W, W);
         }
 
         /// <summary>
@@ -1491,7 +1493,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector4 other)
         {
-            return Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y) && Mathf.NearEqual(other.Z, Z) && Mathf.NearEqual(other.W, W);
+            return Mathr.NearEqual(other.X, X) && Mathr.NearEqual(other.Y, Y) && Mathr.NearEqual(other.Z, Z) && Mathr.NearEqual(other.W, W);
         }
 
         /// <summary>
@@ -1501,7 +1503,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
-            return value is Vector4 other && Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y) && Mathf.NearEqual(other.Z, Z) && Mathf.NearEqual(other.W, W);
+            return value is Vector4 other && Mathr.NearEqual(other.X, X) && Mathr.NearEqual(other.Y, Y) && Mathr.NearEqual(other.Z, Z) && Mathr.NearEqual(other.W, W);
         }
     }
 }

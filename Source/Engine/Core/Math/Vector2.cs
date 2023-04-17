@@ -2,8 +2,10 @@
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
+using Mathr = FlaxEngine.Mathd;
 #else
 using Real = System.Single;
+using Mathr = FlaxEngine.Mathf;
 #endif
 
 // -----------------------------------------------------------------------------
@@ -203,22 +205,22 @@ namespace FlaxEngine
         /// <summary>
         /// Gets a value indicting whether this instance is normalized.
         /// </summary>
-        public bool IsNormalized => Mathf.IsOne(X * X + Y * Y);
+        public bool IsNormalized => Mathr.IsOne(X * X + Y * Y);
 
         /// <summary>
         /// Gets a value indicting whether this vector is zero
         /// </summary>
-        public bool IsZero => Mathf.IsZero(X) && Mathf.IsZero(Y);
+        public bool IsZero => Mathr.IsZero(X) && Mathr.IsZero(Y);
 
         /// <summary>
         /// Gets a minimum component value
         /// </summary>
-        public Real MinValue => Mathf.Min(X, Y);
+        public Real MinValue => Mathr.Min(X, Y);
 
         /// <summary>
         /// Gets a maximum component value
         /// </summary>
-        public Real MaxValue => Mathf.Max(X, Y);
+        public Real MaxValue => Mathr.Max(X, Y);
 
         /// <summary>
         /// Gets an arithmetic average value of all vector components.
@@ -233,7 +235,7 @@ namespace FlaxEngine
         /// <summary>
         /// Gets a vector with values being absolute values of that vector.
         /// </summary>
-        public Vector2 Absolute => new Vector2(Mathf.Abs(X), Mathf.Abs(Y));
+        public Vector2 Absolute => new Vector2(Mathr.Abs(X), Mathr.Abs(Y));
 
         /// <summary>
         /// Gets a vector with values being opposite to values of that vector.
@@ -292,8 +294,8 @@ namespace FlaxEngine
         /// </summary>
         public void Normalize()
         {
-            Real length = Length;
-            if (!Mathf.IsZero(length))
+            Real length = (Real)Math.Sqrt(X * X + Y * Y);
+            if (length >= Mathr.Epsilon)
             {
                 Real inv = 1.0f / length;
                 X *= inv;
@@ -904,8 +906,8 @@ namespace FlaxEngine
         /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static void Lerp(ref Vector2 start, ref Vector2 end, float amount, out Vector2 result)
         {
-            result.X = Mathf.Lerp(start.X, end.X, amount);
-            result.Y = Mathf.Lerp(start.Y, end.Y, amount);
+            result.X = Mathr.Lerp(start.X, end.X, amount);
+            result.Y = Mathr.Lerp(start.Y, end.Y, amount);
         }
 
         /// <summary>
@@ -932,8 +934,8 @@ namespace FlaxEngine
         /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static void Lerp(ref Vector2 start, ref Vector2 end, ref Vector2 amount, out Vector2 result)
         {
-            result.X = Mathf.Lerp(start.X, end.X, amount.X);
-            result.Y = Mathf.Lerp(start.Y, end.Y, amount.Y);
+            result.X = Mathr.Lerp(start.X, end.X, amount.X);
+            result.Y = Mathr.Lerp(start.Y, end.Y, amount.Y);
         }
 
         /// <summary>
@@ -959,7 +961,7 @@ namespace FlaxEngine
         /// <param name="result">When the method completes, contains the cubic interpolation of the two vectors.</param>
         public static void SmoothStep(ref Vector2 start, ref Vector2 end, float amount, out Vector2 result)
         {
-            amount = Mathf.SmoothStep(amount);
+            amount = Mathr.SmoothStep(amount);
             Lerp(ref start, ref end, amount, out result);
         }
 
@@ -1552,7 +1554,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Vector2 left, Vector2 right)
         {
-            return Mathf.NearEqual(left.X, right.X) && Mathf.NearEqual(left.Y, right.Y);
+            return Mathr.NearEqual(left.X, right.X) && Mathr.NearEqual(left.Y, right.Y);
         }
 
         /// <summary>
@@ -1564,7 +1566,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Vector2 left, Vector2 right)
         {
-            return !Mathf.NearEqual(left.X, right.X) || !Mathf.NearEqual(left.Y, right.Y);
+            return !Mathr.NearEqual(left.X, right.X) || !Mathr.NearEqual(left.Y, right.Y);
         }
 
         /// <summary>
@@ -1670,7 +1672,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Vector2 other)
         {
-            return Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y);
+            return Mathr.NearEqual(other.X, X) && Mathr.NearEqual(other.Y, Y);
         }
 
         /// <summary>
@@ -1678,7 +1680,7 @@ namespace FlaxEngine
         /// </summary>
         public static bool Equals(ref Vector2 a, ref Vector2 b)
         {
-            return Mathf.NearEqual(a.X, b.X) && Mathf.NearEqual(a.Y, b.Y);
+            return Mathr.NearEqual(a.X, b.X) && Mathr.NearEqual(a.Y, b.Y);
         }
 
         /// <summary>
@@ -1689,7 +1691,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector2 other)
         {
-            return Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y);
+            return Mathr.NearEqual(other.X, X) && Mathr.NearEqual(other.Y, Y);
         }
 
         /// <summary>
@@ -1699,7 +1701,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
-            return value is Vector2 other && Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y);
+            return value is Vector2 other && Mathr.NearEqual(other.X, X) && Mathr.NearEqual(other.Y, Y);
         }
     }
 }

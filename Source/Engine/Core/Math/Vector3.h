@@ -266,9 +266,9 @@ public:
     void Normalize()
     {
         const T length = Math::Sqrt(X * X + Y * Y + Z * Z);
-        if (Math::Abs(length) >= ZeroTolerance)
+        if (length >= ZeroTolerance)
         {
-            const T inv = 1.0f / length;
+            const T inv = (T)1.0f / length;
             X *= inv;
             Y *= inv;
             Z *= inv;
@@ -645,9 +645,9 @@ public:
     {
         Vector3Base r = v;
         const T length = Math::Sqrt(r.X * r.X + r.Y * r.Y + r.Z * r.Z);
-        if (Math::Abs(length) >= ZeroTolerance)
+        if (length >= ZeroTolerance)
         {
-            const T inv = 1.0f / length;
+            const T inv = (T)1.0f / length;
             r.X *= inv;
             r.Y *= inv;
             r.Z *= inv;

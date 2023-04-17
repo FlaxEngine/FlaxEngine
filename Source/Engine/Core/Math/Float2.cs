@@ -286,7 +286,7 @@ namespace FlaxEngine
         public void Normalize()
         {
             float length = Length;
-            if (!Mathf.IsZero(length))
+            if (length >= Mathf.Epsilon)
             {
                 float inv = 1.0f / length;
                 X *= inv;
