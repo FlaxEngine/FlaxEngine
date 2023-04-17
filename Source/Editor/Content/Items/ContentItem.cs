@@ -222,7 +222,7 @@ namespace FlaxEditor.Content
         /// <summary>
         /// Gets a value indicating whether this item can be dragged and dropped.
         /// </summary>
-        public virtual bool CanDrag => true;
+        public virtual bool CanDrag => Root != null;
 
         /// <summary>
         /// Gets a value indicating whether this <see cref="ContentItem"/> exists on drive.
