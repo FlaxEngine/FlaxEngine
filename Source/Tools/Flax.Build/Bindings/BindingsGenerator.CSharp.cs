@@ -1387,6 +1387,7 @@ namespace Flax.Build.Bindings
 
                 {
                     // Native struct begin
+                    // TODO: skip using this utility structure if the auto-generated C# struct is already the same as XXXInternal here below
                     GenerateCSharpAttributes(buildData, contents, indent, structureInfo, true);
                     contents.Append(indent).AppendLine("[HideInEditor]");
                     contents.Append(indent).AppendLine("[StructLayout(LayoutKind.Sequential)]");
@@ -1433,7 +1434,7 @@ namespace Flax.Build.Bindings
 
                         var apiType = FindApiTypeInfo(buildData, fieldInfo.Type, structureInfo);
                         bool internalType = apiType is StructureInfo fieldStructureInfo && UseCustomMarshalling(buildData, fieldStructureInfo, structureInfo);
-                        string internalTypeMarshaler = "";
+                        string internalTypeMarshaller = "";
 
                         if (fieldInfo.Type.IsArray && (fieldInfo.NoArray || structureInfo.IsPod))
                         {
@@ -1460,7 +1461,7 @@ namespace Flax.Build.Bindings
                                 type = "IntPtr";
                             else if (fieldInfo.Type.IsPtr && !originalType.EndsWith("*"))
                                 type = "IntPtr";
-                            else if (fieldInfo.Type.Type == "Array")
+                            else if (fieldInfo.Type.Type == "Array" || fieldInfo.Type.Type == "Span" || fieldInfo.Type.Type == "DataContainer" || fieldInfo.Type.Type == "BytesContainer")
                             {
                                 type = "IntPtr";
                                 apiType = FindApiTypeInfo(buildData, fieldInfo.Type.GenericArgs[0], structureInfo);
@@ -1476,8 +1477,8 @@ namespace Flax.Build.Bindings
                                 type = "NativeVariant";
                             else if (internalType)
                             {
-                                internalTypeMarshaler = type + "Marshaller";
-                                type = $"{internalTypeMarshaler}.{type}Internal";
+                                internalTypeMarshaller = type + "Marshaller";
+                                type = $"{internalTypeMarshaller}.{type}Internal";
                             }
                             //else if (type == "Guid")
                             //    type = "GuidNative";
@@ -1546,7 +1547,7 @@ namespace Flax.Build.Bindings
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                             freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                         }
-                        else if (fieldInfo.Type.Type == "Array")
+                        else if (fieldInfo.Type.Type == "Array" || fieldInfo.Type.Type == "Span" || fieldInfo.Type.Type == "DataContainer" || fieldInfo.Type.Type == "BytesContainer")
                         {
                             string originalElementType = originalType.Substring(0, originalType.Length - 2);
                             if (internalType)
@@ -1597,10 +1598,10 @@ namespace Flax.Build.Bindings
                         }
                         else if (internalType)
                         {
-                            toManagedContent.Append($"{internalTypeMarshaler}.ToManaged(managed.{fieldInfo.Name})");
-                            toNativeContent.Append($"{internalTypeMarshaler}.ToNative(managed.{fieldInfo.Name})");
-                            freeContents.AppendLine($"{internalTypeMarshaler}.Free(unmanaged.{fieldInfo.Name});");
-                            freeContents2.AppendLine($"{internalTypeMarshaler}.Free(unmanaged.{fieldInfo.Name});");
+                            toManagedContent.Append($"{internalTypeMarshaller}.ToManaged(managed.{fieldInfo.Name})");
+                            toNativeContent.Append($"{internalTypeMarshaller}.ToNative(managed.{fieldInfo.Name})");
+                            freeContents.AppendLine($"{internalTypeMarshaller}.Free(unmanaged.{fieldInfo.Name});");
+                            freeContents2.AppendLine($"{internalTypeMarshaller}.Free(unmanaged.{fieldInfo.Name});");
                         }
                         /*else if (originalType == "Guid")
                         {

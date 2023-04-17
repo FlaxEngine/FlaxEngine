@@ -684,7 +684,7 @@ void NetworkReplicator::AddRPC(const ScriptingTypeHandle& typeHandle, const Stri
     NetworkRpcInfo::RPCsTable[rpcName] = rpcInfo;
 }
 
-void NetworkReplicator::CSharpEndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, MonoArray* targetIds)
+void NetworkReplicator::CSharpEndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, MArray* targetIds)
 {
     EndInvokeRPC(obj, type, GetCSharpCachedName(name), argsStream, MUtils::ToSpan<uint32>(targetIds));
 }

@@ -514,7 +514,7 @@ namespace Flax.Build.Bindings
                 if (typeInfo.Type == "Span" && typeInfo.GenericArgs != null)
                 {
                     type = "MonoArray*";
-                    return "MUtils::Span({0}, " + GenerateCppGetNativeClass(buildData, typeInfo.GenericArgs[0], caller, functionInfo) + ")";
+                    return "MUtils::Span({0}, " + GenerateCppGetMClass(buildData, typeInfo.GenericArgs[0], caller, functionInfo) + ")";
                 }
 
                 // BytesContainer
