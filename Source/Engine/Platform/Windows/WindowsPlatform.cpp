@@ -923,7 +923,7 @@ bool WindowsPlatform::GetEnvironmentVariable(const String& name, String& value)
     DWORD result = GetEnvironmentVariableW(*name, buffer, bufferSize);
     if (result == 0)
     {
-        LOG_WIN32_LAST_ERROR;
+        //LOG_WIN32_LAST_ERROR;
         return true;
     }
     if (bufferSize < result)
