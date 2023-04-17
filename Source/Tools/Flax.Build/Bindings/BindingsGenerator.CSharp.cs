@@ -1979,8 +1979,7 @@ namespace Flax.Build.Bindings
             // End
             indent = indent.Substring(0, indent.Length - 4);
             contents.AppendLine(indent + "}");
-            if (!string.IsNullOrEmpty(interfaceInfo.Namespace))
-                contents.AppendLine("}");
+
 #if USE_NETCORE
             {
                 string marshallerName = interfaceInfo.Name + "Marshaller";
@@ -1998,6 +1997,9 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine("}");
             }
 #endif
+
+            if (!string.IsNullOrEmpty(interfaceInfo.Namespace))
+                contents.AppendLine("}");
         }
 
         private static bool GenerateCSharpType(BuildData buildData, StringBuilder contents, string indent, object type)
