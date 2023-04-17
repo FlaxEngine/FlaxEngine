@@ -539,7 +539,7 @@ namespace FlaxEditor.Windows
                 destinationName = StringUtils.IncrementNameNumber(item.ShortName, x => !File.Exists(StringUtils.CombinePaths(sourceFolder, x + extension))) + extension;
             }
 
-            return StringUtils.CombinePaths(sourceFolder, destinationName);
+            return StringUtils.NormalizePath(StringUtils.CombinePaths(sourceFolder, destinationName));
         }
 
         /// <summary>
@@ -566,6 +566,7 @@ namespace FlaxEditor.Windows
             // Start renaming it
             if (targetItem != null)
             {
+                Select(targetItem);
                 Rename(targetItem);
             }
         }
