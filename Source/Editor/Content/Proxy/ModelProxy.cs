@@ -47,9 +47,23 @@ namespace FlaxEditor.Content
 
             menu.AddButton("Create collision data", () =>
             {
-                var model = FlaxEngine.Content.LoadAsync<Model>(((ModelItem)item).ID);
                 var collisionDataProxy = (CollisionDataProxy)Editor.Instance.ContentDatabase.GetProxy<CollisionData>();
-                collisionDataProxy.CreateCollisionDataFromModel(model);
+                var selection = Editor.Instance.Windows.ContentWin.View.Selection;
+                if (selection.Count > 1)
+                {
+                    // Batch action
+                    var items = selection.ToArray(); // Clone to prevent issue when iterating over and content window changes the selection
+                    foreach (var contentItem in items)
+                    {
+                        if (contentItem is ModelItem modelItem)
+                            collisionDataProxy.CreateCollisionDataFromModel(FlaxEngine.Content.LoadAsync<Model>(modelItem.ID), null, false);
+                    }
+                }
+                else
+                {
+                    var model = FlaxEngine.Content.LoadAsync<Model>(((ModelItem)item).ID);
+                    collisionDataProxy.CreateCollisionDataFromModel(model);
+                }
             });
         }
 
