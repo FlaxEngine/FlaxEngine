@@ -15,6 +15,7 @@ using System.Runtime.Loader;
 using System.Runtime.CompilerServices;
 using FlaxEngine.Assertions;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Text;
 
 namespace FlaxEngine.Interop
@@ -56,7 +57,21 @@ namespace FlaxEngine.Interop
         {
             if (!loadedNativeLibraries.TryGetValue(libraryName, out IntPtr nativeLibrary))
             {
-                nativeLibrary = NativeLibrary.Load(nativeLibraryPaths[libraryName], assembly, dllImportSearchPath);
+                if (!nativeLibraryPaths.TryGetValue(libraryName, out var nativeLibraryPath))
+                {
+                    nativeLibraryPath = libraryName;
+
+                    // Check if any of the loaded assemblies has matching native module filename
+                    foreach (var e in nativeLibraryPaths)
+                    {
+                        if (string.Equals(Path.GetFileNameWithoutExtension(e.Value), libraryName, StringComparison.Ordinal))
+                        {
+                            nativeLibraryPath = e.Value;
+                            break;
+                        }
+                    }
+                }
+                nativeLibrary = NativeLibrary.Load(nativeLibraryPath, assembly, dllImportSearchPath);
                 loadedNativeLibraries.Add(libraryName, nativeLibrary);
                 assemblyOwnedNativeLibraries.Add(assembly, libraryName);
             }
