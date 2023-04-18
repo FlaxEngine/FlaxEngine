@@ -64,6 +64,7 @@ namespace Flax.Build
                     Log.Verbose("Arguments: " + CommandLine.Get());
                     Log.Verbose("Workspace: " + Globals.Root);
                     Log.Verbose("Engine: " + Globals.EngineRoot);
+                    Log.Verbose(System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription);
                 }
 
                 // Load project
