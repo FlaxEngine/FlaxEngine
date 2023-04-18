@@ -223,7 +223,7 @@ void ScriptingObject::SetManagedInstance(MObject* instance)
 #if USE_NETCORE
     _gcHandle = (MGCHandle)instance;
 #elif !COMPILE_WITHOUT_CSHARP
-    _gcHandle = MCore::GCHandle::New(instance, false);
+    _gcHandle = MCore::GCHandle::New(instance);
 #endif
 }
 
@@ -433,7 +433,7 @@ void ManagedScriptingObject::SetManagedInstance(MObject* instance)
 #if USE_NETCORE
     _gcHandle = (MGCHandle)instance;
 #elif !COMPILE_WITHOUT_CSHARP
-    _gcHandle = MCore::GCHandle::NewWeak(instance, false);
+    _gcHandle = MCore::GCHandle::NewWeak(instance);
 #endif
 }
 

@@ -618,9 +618,9 @@ Variant::Variant(MObject* v)
     : Type(VariantType::ManagedObject, v ? MCore::Object::GetClass(v) : nullptr)
 {
 #if USE_NETCORE
-    AsUint64 = v ? MCore::GCHandle::New(v, true) : 0;
+    AsUint64 = v ? MCore::GCHandle::New(v) : 0;
 #else
-    AsUint = v ? MCore::GCHandle::New(v, true) : 0;
+    AsUint = v ? MCore::GCHandle::New(v) : 0;
 #endif
 }
 
@@ -1094,9 +1094,9 @@ Variant& Variant::operator=(const Variant& other)
         break;
     case VariantType::ManagedObject:
 #if USE_NETCORE
-        AsUint64 = other.AsUint64 ? MCore::GCHandle::New(MCore::GCHandle::GetTarget(other.AsUint64), true) : 0;
+        AsUint64 = other.AsUint64 ? MCore::GCHandle::New(MCore::GCHandle::GetTarget(other.AsUint64)) : 0;
 #elif USE_MONO
-        AsUint = other.AsUint ? MCore::GCHandle::New(MCore::GCHandle::GetTarget(other.AsUint), true) : 0;
+        AsUint = other.AsUint ? MCore::GCHandle::New(MCore::GCHandle::GetTarget(other.AsUint)) : 0;
 #endif
         break;
     case VariantType::Null:
@@ -2660,9 +2660,9 @@ void Variant::SetManagedObject(MObject* object)
         if (Type.Type != VariantType::ManagedObject)
             SetType(VariantType(VariantType::ManagedObject, MCore::Object::GetClass(object)));
 #if USE_NETCORE
-        AsUint64 = MCore::GCHandle::New(object, true);
+        AsUint64 = MCore::GCHandle::New(object);
 #else
-        AsUint = MCore::GCHandle::New(object, true);
+        AsUint = MCore::GCHandle::New(object);
 #endif
     }
     else
@@ -3708,9 +3708,9 @@ void Variant::AllocStructure()
             Type.Type = VariantType::ManagedObject;
 
 #if USE_NETCORE
-            AsUint64 = MCore::GCHandle::New(instance, true);
+            AsUint64 = MCore::GCHandle::New(instance);
 #else
-            AsUint = MCore::GCHandle::New(instance, true);
+            AsUint = MCore::GCHandle::New(instance);
 #endif
 #endif
         }

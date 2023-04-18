@@ -205,7 +205,7 @@ bool AnimGraph::InitCustomNode(Node* node)
 
     // Allocate managed node object (create GC handle to prevent destruction)
     MObject* obj = type->CreateInstance();
-    const MGCHandle handleGC = MCore::GCHandle::New(obj, false);
+    const MGCHandle handleGC = MCore::GCHandle::New(obj);
 
     // Initialize node
     InternalInitData initData;

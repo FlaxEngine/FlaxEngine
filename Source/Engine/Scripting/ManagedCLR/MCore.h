@@ -93,8 +93,8 @@ public:
     /// </summary>
     struct FLAXENGINE_API GCHandle
     {
-        static MGCHandle New(MObject* obj, bool pinned);
-        static MGCHandle NewWeak(MObject* obj, bool trackResurrection);
+        static MGCHandle New(MObject* obj, bool pinned = false);
+        static MGCHandle NewWeak(MObject* obj, bool trackResurrection = false);
         static MObject* GetTarget(const MGCHandle& handle);
         static void Free(const MGCHandle& handle);
     };

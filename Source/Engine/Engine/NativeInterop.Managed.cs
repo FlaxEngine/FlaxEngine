@@ -420,7 +420,6 @@ namespace FlaxEngine.Interop
                     else if (type == GCHandleType.Weak || type == GCHandleType.WeakTrackResurrection)
                         weakPool.Add(handle, value);
                 }
-
                 return handle;
             }
 
@@ -439,7 +438,6 @@ namespace FlaxEngine.Interop
                     else if (weakPoolOther.TryGetValue(handle, out value))
                         return value;
                 }
-
                 throw new Exception("Invalid ManagedHandle");
             }
 
@@ -456,9 +454,8 @@ namespace FlaxEngine.Interop
                         weakPool[handle] = value;
                     else if (weakPoolOther.ContainsKey(handle))
                         weakPoolOther[handle] = value;
-                    else
-                        throw new Exception("Invalid ManagedHandle");
                 }
+                throw new Exception("Invalid ManagedHandle");
             }
 
             internal static void FreeHandle(IntPtr handle)
@@ -478,7 +475,6 @@ namespace FlaxEngine.Interop
                     else if (weakPoolOther.Remove(handle))
                         return;
                 }
-
                 throw new Exception("Invalid ManagedHandle");
             }
         }

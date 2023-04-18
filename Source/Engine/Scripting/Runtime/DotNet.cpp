@@ -327,6 +327,7 @@ void MCore::Object::Init(MObject* obj)
 
 MClass* MCore::Object::GetClass(MObject* obj)
 {
+    ASSERT(obj);
     static void* GetObjectTypePtr = GetStaticMethodPointer(TEXT("GetObjectType"));
     void* classHandle = CallStaticMethod<void*, void*>(GetObjectTypePtr, obj);
     return GetOrCreateClass(classHandle);
@@ -397,12 +398,14 @@ void* MCore::Array::GetAddress(const MArray* obj)
 
 MGCHandle MCore::GCHandle::New(MObject* obj, bool pinned)
 {
+    ASSERT(obj);
     static void* NewGCHandlePtr = GetStaticMethodPointer(TEXT("NewGCHandle"));
     return (MGCHandle)CallStaticMethod<void*, void*, bool>(NewGCHandlePtr, obj, pinned);
 }
 
 MGCHandle MCore::GCHandle::NewWeak(MObject* obj, bool trackResurrection)
 {
+    ASSERT(obj);
     static void* NewGCHandleWeakPtr = GetStaticMethodPointer(TEXT("NewGCHandleWeak"));
     return (MGCHandle)CallStaticMethod<void*, void*, bool>(NewGCHandleWeakPtr, obj, trackResurrection);
 }

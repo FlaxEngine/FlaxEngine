@@ -561,17 +561,6 @@ namespace FlaxEngine.Interop
             return ManagedString.ToNativeWeak(new string(text, 0, length));
         }
 
-        /// <summary>
-        /// Creates a managed copy of the value, and stores it in a boxed reference.
-        /// </summary>
-        [UnmanagedCallersOnly]
-        internal static ManagedHandle BoxValue(ManagedHandle typeHandle, IntPtr valuePtr)
-        {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
-            object value = MarshalToManaged(valuePtr, type);
-            return ManagedHandle.Alloc(value, GCHandleType.Weak);
-        }
-
         [UnmanagedCallersOnly]
         internal static ManagedHandle GetObjectType(ManagedHandle handle)
         {
@@ -612,6 +601,17 @@ namespace FlaxEngine.Interop
                 Debug.LogException(ex);
             }
             return result;
+        }
+
+        /// <summary>
+        /// Creates a managed copy of the value, and stores it in a boxed reference.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        internal static ManagedHandle BoxValue(ManagedHandle typeHandle, IntPtr valuePtr)
+        {
+            Type type = Unsafe.As<Type>(typeHandle.Target);
+            object value = MarshalToManaged(valuePtr, type);
+            return ManagedHandle.Alloc(value, GCHandleType.Weak);
         }
 
         /// <summary>
@@ -1019,17 +1019,13 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static ManagedHandle NewGCHandle(ManagedHandle valueHandle, byte pinned)
         {
-            object value = valueHandle.Target;
-            ManagedHandle handle = ManagedHandle.Alloc(value, pinned != 0 ? GCHandleType.Pinned : GCHandleType.Normal);
-            return handle;
+            return ManagedHandle.Alloc(valueHandle.Target, pinned != 0 ? GCHandleType.Pinned : GCHandleType.Normal);
         }
 
         [UnmanagedCallersOnly]
         internal static ManagedHandle NewGCHandleWeak(ManagedHandle valueHandle, byte trackResurrection)
         {
-            object value = valueHandle.Target;
-            ManagedHandle handle = ManagedHandle.Alloc(value, trackResurrection != 0 ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
-            return handle;
+            return ManagedHandle.Alloc(valueHandle.Target, trackResurrection != 0 ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
         }
 
         [UnmanagedCallersOnly]

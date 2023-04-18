@@ -995,7 +995,7 @@ MClass* MUtils::GetClass(const Variant& value)
         return stdTypes.MatrixClass;
     case VariantType::Array:
     case VariantType::Dictionary:
-        return GetClass(value.Type);
+        break;
     case VariantType::Object:
         return value.AsObject ? value.AsObject->GetClass() : nullptr;
     case VariantType::Asset:
@@ -1004,10 +1004,14 @@ MClass* MUtils::GetClass(const Variant& value)
     case VariantType::Enum:
         return Scripting::FindClass(StringAnsiView(value.Type.TypeName));
     case VariantType::ManagedObject:
-        return MCore::Object::GetClass((MObject*)value);
+        {
+            MObject* obj = (MObject*)value;
+            if (obj)
+                return MCore::Object::GetClass(obj);
+        }
     default: ;
     }
-    return nullptr;
+    return GetClass(value.Type);
 }
 
 MTypeObject* MUtils::GetType(MObject* object)
