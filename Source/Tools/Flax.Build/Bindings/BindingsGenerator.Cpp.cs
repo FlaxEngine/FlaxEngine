@@ -1466,9 +1466,7 @@ namespace Flax.Build.Bindings
                         {
                             // Pass as pointer to value when using ref/out parameter
                             contents.Append($"        auto __param_{parameterInfo.Name} = {paramValue};").AppendLine();
-                            var useLocalVarPointer = !apiType.IsValueType;
-                            paramValue = $"{(useLocalVarPointer ? "&" : "")}__param_{parameterInfo.Name}";
-                            CppParamsThatNeedConversion[i] = useLocalVarPointer;
+                            paramValue = $"&__param_{parameterInfo.Name}";
                             useLocalVar = true;
                         }
                         CppParamsThatNeedLocalVariable[i] = useLocalVar;
@@ -1507,9 +1505,7 @@ namespace Flax.Build.Bindings
                     {
                         // Unbox from MObject*
                         parameterInfo.Type.IsRef = false;
-                        var useLocalVarPointer = CppParamsThatNeedConversion[i];
-                        var boxedValueCast = useLocalVarPointer ? "*(MObject**)" : "(MObject*)";
-                        contents.Append($"        {parameterInfo.Name} = MUtils::Unbox<{parameterInfo.Type}>({boxedValueCast}params[{i}]);").AppendLine();
+                        contents.Append($"        {parameterInfo.Name} = MUtils::Unbox<{parameterInfo.Type}>(*(MObject**)params[{i}]);").AppendLine();
                         parameterInfo.Type.IsRef = true;
                     }
                 }

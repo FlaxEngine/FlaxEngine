@@ -970,26 +970,42 @@ namespace FlaxEngine.Interop
 
         internal static class ValueTypeUnboxer
         {
+            private delegate IntPtr UnboxerDelegate(object value);
             private static ConcurrentDictionary<Type, UnboxerDelegate> unboxers = new ConcurrentDictionary<Type, UnboxerDelegate>(1, 3);
             private static MethodInfo unboxerMethod = typeof(ValueTypeUnboxer).GetMethod(nameof(ValueTypeUnboxer.UnboxPointer), BindingFlags.Static | BindingFlags.NonPublic);
+            private static MethodInfo unboxerToNativeMethod = typeof(ValueTypeUnboxer).GetMethod(nameof(ValueTypeUnboxer.UnboxPointerWithConverter), BindingFlags.Static | BindingFlags.NonPublic);
 
-            private delegate IntPtr UnboxerDelegate(object value);
-
-            private static UnboxerDelegate UnboxerDelegateFactory(Type type)
+            internal static IntPtr GetPointer(object value, Type type)
             {
-                return unboxerMethod.MakeGenericMethod(type).CreateDelegate<UnboxerDelegate>();
+                if (!unboxers.TryGetValue(type, out var deleg))
+                {
+                    // Non-POD structures use internal layout (eg. SpriteHandleManaged in C++ with SpriteHandleMarshaller.SpriteHandleInternal in C#) so convert C# data into C++ data
+                    var attr = type.GetCustomAttribute<System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute>();
+                    var toNativeMethod = attr?.NativeType.GetMethod("ToNative", BindingFlags.Static | BindingFlags.NonPublic);
+                    if (toNativeMethod != null)
+                    {
+                        deleg = unboxerToNativeMethod.MakeGenericMethod(toNativeMethod.ReturnType).CreateDelegate<UnboxerDelegate>();
+                    }
+                    else
+                    {
+                        deleg = unboxerMethod.MakeGenericMethod(type).CreateDelegate<UnboxerDelegate>();
+                    }
+                    deleg = unboxers.GetOrAdd(type, deleg);
+                }
+                return deleg(value);
             }
 
-            internal static IntPtr GetPointer(object value)
+            private static IntPtr UnboxPointer<T>(object value) where T : struct
             {
-                Type type = value.GetType();
-                if (unboxers.TryGetValue(type, out var deleg))
-                    return deleg(value);
-                return unboxers.GetOrAdd(type, UnboxerDelegateFactory)(value);
+                return new IntPtr(Unsafe.AsPointer(ref Unsafe.Unbox<T>(value)));
             }
 
-            private static unsafe IntPtr UnboxPointer<T>(object value) where T : struct
+            private static IntPtr UnboxPointerWithConverter<T>(object value) where T : struct
             {
+                var type = value.GetType();
+                var attr = type.GetCustomAttribute<System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute>();
+                var toNative = attr.NativeType.GetMethod("ToNative", BindingFlags.Static | BindingFlags.NonPublic);
+                value = toNative.Invoke(null, new[] { value });
                 return new IntPtr(Unsafe.AsPointer(ref Unsafe.Unbox<T>(value)));
             }
         }
@@ -1111,7 +1127,7 @@ namespace FlaxEngine.Interop
                 this.method = method;
                 parameterTypes = method.GetParameterTypes();
 
-                // Thunk delegates don't support IsByRef parameters (use egenric invocation for now)
+                // Thunk delegates don't support IsByRef parameters (use generic invocation that handles 'out' and 'ref' prams)
                 foreach (var type in parameterTypes)
                 {
                     if (type.IsByRef)
@@ -1172,7 +1188,7 @@ namespace FlaxEngine.Interop
                 }
                 else
                 {
-                    // The parameters are wrapped in GCHandles
+                    // The parameters are wrapped (boxed) in GCHandles
                     object returnObject;
                     int numParams = parameterTypes.Length;
                     object[] methodParameters = new object[numParams];
@@ -1184,8 +1200,9 @@ namespace FlaxEngine.Interop
                         {
                             Type type = parameterTypes[i];
                             Type elementType = type.GetElementType();
-                            if (type.IsByRef && !elementType.IsValueType)
+                            if (type.IsByRef)
                             {
+                                // References use indirection to support value returning
                                 nativePtr = Marshal.ReadIntPtr(nativePtr);
                                 type = elementType;
                             }
@@ -1215,16 +1232,16 @@ namespace FlaxEngine.Interop
                     {
                         IntPtr nativePtr = nativePtrs[i];
                         Type type = parameterTypes[i];
-                        Type elementType = type.GetElementType();
+                        object managed = methodParameters[i];
                         if (nativePtr != IntPtr.Zero && type.IsByRef)
                         {
-                            if (elementType.IsValueType)
-                            {
-                                // Return directly to the original value
-                                var ęxistingValue = ManagedHandle.FromIntPtr(nativePtr).Target;
-                                nativePtr = ValueTypeUnboxer.GetPointer(ęxistingValue);
-                            }
-                            MarshalToNative(methodParameters[i], nativePtr, elementType);
+                            type = type.GetElementType();
+                            if (managed == null)
+                                Marshal.WriteIntPtr(nativePtr, IntPtr.Zero);
+                            else if (type.IsArray)
+                                MarshalToNative(managed, nativePtr, type);
+                            else
+                                Marshal.WriteIntPtr(nativePtr, ManagedHandle.ToIntPtr(ManagedHandle.Alloc(managed, GCHandleType.Weak)));
                         }
                     }
 

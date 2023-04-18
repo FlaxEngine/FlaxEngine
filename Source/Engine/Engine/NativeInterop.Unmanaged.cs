@@ -626,7 +626,7 @@ namespace FlaxEngine.Interop
                 return ManagedHandle.ToIntPtr(handle);
 
             // HACK: Get the address of a non-pinned value
-            return ValueTypeUnboxer.GetPointer(value);
+            return ValueTypeUnboxer.GetPointer(value, type);
         }
 
         [UnmanagedCallersOnly]
