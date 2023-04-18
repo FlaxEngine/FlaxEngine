@@ -1051,7 +1051,7 @@ namespace FlaxEngine
         /// <param name="result">When the method completes, contains the cubic interpolation of the two vectors.</param>
         public static void SmoothStep(ref Vector3 start, ref Vector3 end, float amount, out Vector3 result)
         {
-            amount = Mathr.SmoothStep(amount);
+            amount = Mathf.SmoothStep(amount);
             Lerp(ref start, ref end, amount, out result);
         }
 
