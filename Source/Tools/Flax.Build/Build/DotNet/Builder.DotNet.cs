@@ -157,79 +157,60 @@ namespace Flax.Build
             var outputPath = Path.GetDirectoryName(buildData.Target.GetOutputFilePath(buildOptions));
             var outputFile = Path.Combine(outputPath, name + ".dll");
             var outputDocFile = Path.Combine(outputPath, name + ".xml");
-            string monoRoot, monoPath = null, cscPath, referenceAssemblies, referenceAnalyzers, dotnetPath = "dotnet";
+            string cscPath, referenceAssemblies;
+#if USE_NETCORE
+            var dotnetSdk = DotNetSdk.Instance;
+            if (!dotnetSdk.IsValid)
+                throw new Exception("Cannot compile C# without .NET SDK");
+            string dotnetPath = "dotnet", referenceAnalyzers;
+#else
+            string monoRoot, monoPath;
+#endif
             switch (buildPlatform)
             {
             case TargetPlatform.Windows:
             {
-                monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Windows", "Mono");
-
-                // Prefer installed Roslyn C# compiler over Mono one
-                cscPath = Path.Combine(Path.GetDirectoryName(VCEnvironment.MSBuildPath), "Roslyn", "csc.exe");
-
 #if USE_NETCORE
-                var dotnetSdk = DotNetSdk.Instance;
-                if (dotnetSdk.IsValid)
-                {
-                    // Use dotnet
-                    dotnetPath = Path.Combine(dotnetSdk.RootPath, "dotnet.exe");
-                    cscPath = Path.Combine(dotnetSdk.RootPath, @$"sdk\{dotnetSdk.VersionName}\Roslyn\bincore\csc.dll");
-                    referenceAssemblies = Path.Combine(dotnetSdk.RootPath, @$"shared\Microsoft.NETCore.App\{dotnetSdk.RuntimeVersionName}\");
-                    referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, @$"packs\Microsoft.NETCore.App.Ref\{dotnetSdk.RuntimeVersionName}\analyzers\dotnet\cs\");
-                }
-                else
-#endif
-                {
-                    // Fallback to Mono binaries
-                    monoPath = Path.Combine(monoRoot, "bin", "mono.exe");
+                dotnetPath = Path.Combine(dotnetSdk.RootPath, "dotnet.exe");
+                cscPath = Path.Combine(dotnetSdk.RootPath, @$"sdk\{dotnetSdk.VersionName}\Roslyn\bincore\csc.dll");
+                referenceAssemblies = Path.Combine(dotnetSdk.RootPath, @$"shared\Microsoft.NETCore.App\{dotnetSdk.RuntimeVersionName}\");
+                referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, @$"packs\Microsoft.NETCore.App.Ref\{dotnetSdk.RuntimeVersionName}\analyzers\dotnet\cs\");
+#else
+                monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Windows", "Mono");
+                monoPath = Path.Combine(monoRoot, "bin", "mono.exe");
+                cscPath = Path.Combine(Path.GetDirectoryName(VCEnvironment.MSBuildPath), "Roslyn", "csc.exe");
+                if (!File.Exists(cscPath))
                     cscPath = Path.Combine(monoRoot, "lib", "mono", "4.5", "csc.exe");
-                    referenceAssemblies = Path.Combine(monoRoot, "lib", "mono", "4.5-api");
-                    referenceAnalyzers = "";
-                }
+                referenceAssemblies = Path.Combine(monoRoot, "lib", "mono", "4.5-api");
+#endif
                 break;
             }
             case TargetPlatform.Linux:
             {
 #if USE_NETCORE
-                var dotnetSdk = DotNetSdk.Instance;
-                if (dotnetSdk.IsValid)
-                {
-                    // Use dotnet
-                    cscPath = Path.Combine(dotnetSdk.RootPath, $"sdk/{dotnetSdk.VersionName}/Roslyn/bincore/csc.dll");
-                    referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"shared/Microsoft.NETCore.App/{dotnetSdk.RuntimeVersionName}/");
-                    referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/analyzers/dotnet/cs/");
-                }
-                else
+                cscPath = Path.Combine(dotnetSdk.RootPath, $"sdk/{dotnetSdk.VersionName}/Roslyn/bincore/csc.dll");
+                referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"shared/Microsoft.NETCore.App/{dotnetSdk.RuntimeVersionName}/");
+                referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/analyzers/dotnet/cs/");
+#else
+                monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Linux", "Mono");
+                monoPath = Path.Combine(monoRoot, "bin", "mono");
+                cscPath = Path.Combine(monoRoot, "lib", "mono", "4.5", "csc.exe");
+                referenceAssemblies = Path.Combine(monoRoot, "lib", "mono", "4.5-api");
 #endif
-                {
-                    monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Linux", "Mono");
-                    monoPath = Path.Combine(monoRoot, "bin", "mono");
-                    cscPath = Path.Combine(monoRoot, "lib", "mono", "4.5", "csc.exe");
-                    referenceAssemblies = Path.Combine(monoRoot, "lib", "mono", "4.5-api");
-                    referenceAnalyzers = "";
-                }
                 break;
             }
             case TargetPlatform.Mac:
             {
 #if USE_NETCORE
-                var dotnetSdk = DotNetSdk.Instance;
-                if (dotnetSdk.IsValid)
-                {
-                    // Use dotnet
-                    cscPath = Path.Combine(dotnetSdk.RootPath, $"sdk/{dotnetSdk.VersionName}/Roslyn/bincore/csc.dll");
-                    referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"shared/Microsoft.NETCore.App/{dotnetSdk.RuntimeVersionName}/");
-                    referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/analyzers/dotnet/cs/");
-                }
-                else
+                cscPath = Path.Combine(dotnetSdk.RootPath, $"sdk/{dotnetSdk.VersionName}/Roslyn/bincore/csc.dll");
+                referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"shared/Microsoft.NETCore.App/{dotnetSdk.RuntimeVersionName}/");
+                referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/analyzers/dotnet/cs/");
+#else
+                monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Mac", "Mono");
+                monoPath = Path.Combine(monoRoot, "bin", "mono");
+                cscPath = Path.Combine(monoRoot, "lib", "mono", "4.5", "csc.exe");
+                referenceAssemblies = Path.Combine(monoRoot, "lib", "mono", "4.5-api");
 #endif
-                {
-                    monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Mac", "Mono");
-                    monoPath = Path.Combine(monoRoot, "bin", "mono");
-                    cscPath = Path.Combine(monoRoot, "lib", "mono", "4.5", "csc.exe");
-                    referenceAssemblies = Path.Combine(monoRoot, "lib", "mono", "4.5-api");
-                    referenceAnalyzers = "";
-                }
                 break;
             }
             default: throw new InvalidPlatformException(buildPlatform);
@@ -305,6 +286,12 @@ namespace Flax.Build
             task.InfoMessage = "Compiling " + outputFile;
             task.Cost = task.PrerequisiteFiles.Count;
 
+            // The "/shared" flag enables the compiler server support:
+            // https://github.com/dotnet/roslyn/blob/main/docs/compilers/Compiler%20Server.md
+#if USE_NETCORE
+            task.CommandPath = dotnetPath;
+            task.CommandArguments = $"exec \"{cscPath}\" /noconfig /shared @\"{responseFile}\"";
+#else
             if (monoPath != null)
             {
                 task.CommandPath = monoPath;
@@ -312,17 +299,10 @@ namespace Flax.Build
             }
             else
             {
-                // The "/shared" flag enables the compiler server support:
-                // https://github.com/dotnet/roslyn/blob/main/docs/compilers/Compiler%20Server.md
-
-#if USE_NETCORE
-                task.CommandPath = dotnetPath;
-                task.CommandArguments = $"exec \"{cscPath}\" /noconfig /shared @\"{responseFile}\"";
-#else
                 task.CommandPath = cscPath;
                 task.CommandArguments = $"/noconfig /shared @\"{responseFile}\"";
-#endif
             }
+#endif
 
             BuildDotNetAssembly?.Invoke(graph, buildData, buildOptions, task, binaryModule);
 

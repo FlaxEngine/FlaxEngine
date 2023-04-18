@@ -69,7 +69,7 @@ namespace Flax.Deploy
 
                     var packageZipPath = Path.Combine(Deployer.PackageOutputPath, platformName + ".zip");
                     Utilities.FileDelete(packageZipPath);
-#if true
+#if false
                     using (var zip = new Ionic.Zip.ZipFile())
                     {
                         zip.AddDirectory(dst);

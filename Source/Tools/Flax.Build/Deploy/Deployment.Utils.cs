@@ -20,7 +20,7 @@ namespace Flax.Deploy
 
                 Log.Verbose("Deploy file " + filename);
 
-                File.Copy(files[i], Path.Combine(dst, filename));
+                File.Copy(files[i], Path.Combine(dst, filename), true);
             }
         }
 
