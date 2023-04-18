@@ -20,8 +20,7 @@ namespace Flax.Build
     /// </summary>
     public class Assembler
     {
-        private string _cacheAssemblyPath = null;
-        private string _cachePath = null;
+        private string _cacheFolderPath;
 
         /// <summary>
         /// The default assembly references added to the projects.
@@ -31,7 +30,7 @@ namespace Flax.Build
             typeof(IntPtr).Assembly, // mscorlib.dll
             typeof(Enumerable).Assembly, // System.Linq.dll
             typeof(ISet<>).Assembly, // System.dll
-            typeof(Builder).Assembly, // Flax.Build.exe
+            typeof(Builder).Assembly, // Flax.Build.dll
         };
 
         /// <summary>
@@ -49,11 +48,10 @@ namespace Flax.Build
         /// </summary>
         public readonly List<string> References = new List<string>();
 
-        public Assembler(List<string> sourceFiles, string cachePath = null)
+        public Assembler(List<string> sourceFiles, string cacheFolderPath = null)
         {
             SourceFiles.AddRange(sourceFiles);
-            _cachePath = cachePath;
-            _cacheAssemblyPath = cachePath != null ? Path.Combine(Directory.GetParent(cachePath).FullName, "BuilderRulesCache.dll") : null;
+            _cacheFolderPath = cacheFolderPath;
         }
 
         /// <summary>
@@ -64,8 +62,12 @@ namespace Flax.Build
         public Assembly Build()
         {
             DateTime recentWriteTime = DateTime.MinValue;
-            if (_cachePath != null)
+            string cacheAssemblyPath = null, cacheInfoPath = null, buildInfo = null;
+            if (_cacheFolderPath != null)
             {
+                cacheAssemblyPath = Path.Combine(_cacheFolderPath, "BuilderRules.dll");
+                cacheInfoPath = Path.Combine(_cacheFolderPath, "BuilderRulesInfo.txt");
+
                 foreach (var sourceFile in SourceFiles)
                 {
                     // FIXME: compare and cache individual write times!
@@ -75,13 +77,14 @@ namespace Flax.Build
                 }
 
                 // Include build tool version (eg. skip using cached assembly after editing build tool)
+                var executingAssembly = Assembly.GetExecutingAssembly();
+                var executingAssemblyLocation = executingAssembly.Location;
                 {
-                    var executingAssembly = Assembly.GetExecutingAssembly();
-                    DateTime lastWriteTime = File.GetLastWriteTime(executingAssembly.Location);
+                    DateTime lastWriteTime = File.GetLastWriteTime(executingAssemblyLocation);
                     if (lastWriteTime > recentWriteTime)
                         recentWriteTime = lastWriteTime;
                 }
-                
+
                 // Skip when project references were changed
                 if (Globals.Project != null)
                 {
@@ -90,13 +93,24 @@ namespace Flax.Build
                         recentWriteTime = lastWriteTime;
                 }
 
-                DateTime cacheTime = File.Exists(_cachePath)
-                    ? DateTime.FromBinary(long.Parse(File.ReadAllText(_cachePath)))
-                    : DateTime.MinValue;
-                if (recentWriteTime <= cacheTime && File.Exists(_cacheAssemblyPath))
+                // Construct current configuration and runtime info to be cached alongside with compiled assembly so the build rules are cached only when using the same .NET/Flax.Build/etc.
+                buildInfo = Globals.EngineRoot + ';' + System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription + ';' + executingAssemblyLocation;
+
+                // Check if cache files exist
+                if (File.Exists(cacheAssemblyPath) && File.Exists(cacheInfoPath))
                 {
-                    Assembly cachedAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(_cacheAssemblyPath);
-                    return cachedAssembly;
+                    var lines = File.ReadAllLines(cacheInfoPath);
+                    if (lines.Length == 2 && long.TryParse(lines[0], out var cacheTimeTicks) && string.Equals(buildInfo, lines[1], StringComparison.Ordinal))
+                    {
+                        // Cached time and
+                        var cacheTime = DateTime.FromBinary(cacheTimeTicks);
+                        if (recentWriteTime <= cacheTime)
+                        {
+                            // use cached assembly
+                            Assembly cachedAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(cacheAssemblyPath);
+                            return cachedAssembly;
+                        }
+                    }
                 }
             }
 
@@ -161,21 +175,26 @@ namespace Flax.Build
             memoryStream.Seek(0, SeekOrigin.Begin);
             Assembly compiledAssembly = AssemblyLoadContext.Default.LoadFromStream(memoryStream);
 
-            if (_cachePath != null && _cacheAssemblyPath != null)
+            if (_cacheFolderPath != null)
             {
                 memoryStream.Seek(0, SeekOrigin.Begin);
 
-                var cacheDirectory = Path.GetDirectoryName(_cacheAssemblyPath);
-                if (!Directory.Exists(cacheDirectory))
-                    Directory.CreateDirectory(cacheDirectory);
+                if (!Directory.Exists(_cacheFolderPath))
+                    Directory.CreateDirectory(_cacheFolderPath);
 
-                using (FileStream fileStream = File.Open(_cacheAssemblyPath, FileMode.Create, FileAccess.Write))
+                // Save assembly to cache file
+                using (FileStream fileStream = File.Open(cacheAssemblyPath, FileMode.Create, FileAccess.Write))
                 {
                     memoryStream.CopyTo(fileStream);
                     fileStream.Close();
                 }
 
-                File.WriteAllText(_cachePath, recentWriteTime.ToBinary().ToString());
+                // Save build info to cache file
+                File.WriteAllLines(cacheInfoPath, new[]
+                {
+                    recentWriteTime.ToBinary().ToString(),
+                    buildInfo
+                });
             }
 
             sw.Stop();

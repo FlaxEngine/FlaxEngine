@@ -188,7 +188,7 @@ namespace Flax.Build
                 Assembly assembly;
                 using (new ProfileEventScope("CompileRules"))
                 {
-                    var assembler = new Assembler(files, Path.Combine(Globals.Root, Configuration.IntermediateFolder, "BuilderRules.cache"));
+                    var assembler = new Assembler(files, Path.Combine(Globals.Root, Configuration.IntermediateFolder));
                     assembly = assembler.Build();
                 }
 
