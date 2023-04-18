@@ -124,6 +124,23 @@ bool DeployDataStep::Perform(CookingData& data)
                 FileSystem::NormalizePath(srcDotnet);
                 LOG(Info, "Using .Net Runtime {} at {}", version, srcDotnet);
 
+                // Check if previously deployed files are valid (eg. system-installed .NET was updated from version 7.0.3 to 7.0.5)
+                {
+                    const String dotnetCacheFilePath = data.CacheDirectory / TEXT("SystemDotnetInfo.txt");
+                    String dotnetCachedValue = String::Format(TEXT("{};{}"), version, srcDotnet);
+                    if (FileSystem::DirectoryExists(dstDotnet))
+                    {
+                        String cachedData;
+                        File::ReadAllText(dotnetCacheFilePath, cachedData);
+                        if (cachedData != dotnetCachedValue)
+                        {
+                            FileSystem::DeleteDirectory(dstDotnet);
+                            FileSystem::CreateDirectory(dstDotnet);
+                        }
+                    }
+                    File::WriteAllText(dotnetCacheFilePath, dotnetCachedValue, Encoding::ANSI);
+                }
+
                 // Deploy runtime files
                 FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), srcDotnet / TEXT("LICENSE.txt"));
                 FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), srcDotnet / TEXT("LICENSE.TXT"));
