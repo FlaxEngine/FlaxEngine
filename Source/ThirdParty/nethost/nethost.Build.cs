@@ -39,6 +39,8 @@ public class nethost : ThirdPartyModule
                 return; // Ignore missing Host Runtime when engine is already prebuilt
             if (options.Flags.HasFlag(BuildFlags.GenerateProject))
                 return; // Ignore missing Host Runtime at projects evaluation stage (not important)
+            if (Configuration.BuildBindingsOnly)
+                return; // Ignore missing Host Runtime when just building C# bindings (without native code)
             throw new Exception($"Missing NET SDK runtime for {options.Platform.Target} {options.Architecture}.");
         }
 

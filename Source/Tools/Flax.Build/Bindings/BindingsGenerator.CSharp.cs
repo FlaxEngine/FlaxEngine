@@ -1035,7 +1035,7 @@ namespace Flax.Build.Bindings
                 contents.Append("bool bind);");
 #else
                 string libraryEntryPoint;
-                if (buildData.Toolchain.Compiler == TargetCompiler.MSVC)
+                if (buildData.Toolchain?.Compiler == TargetCompiler.MSVC)
                     libraryEntryPoint = $"{classInfo.FullNameManaged}::Internal_{eventInfo.Name}_Bind"; // MSVC allows to override exported symbol name
                 else
                     libraryEntryPoint = CppNameMangling.MangleFunctionName(buildData, eventInfo.Name + "_ManagedBind", classInfo.FullNameNativeInternal + "Internal", CSharpEventBindReturn, eventInfo.IsStatic ? null : new TypeInfo(classInfo.FullNameNative) { IsPtr = true }, CSharpEventBindParams);

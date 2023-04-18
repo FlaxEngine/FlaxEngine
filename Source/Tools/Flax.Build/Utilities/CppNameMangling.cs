@@ -39,6 +39,8 @@ namespace Flax.Build
         {
             if (name.Contains(":"))
                 throw new NotImplementedException("No nested types mangling support.");
+            if (buildData.Toolchain == null)
+                return name; // Ignore when building C# bindings only without native toolchain
             var sb = BindingsGenerator.GetStringBuilder();
             switch (buildData.Toolchain.Compiler)
             {

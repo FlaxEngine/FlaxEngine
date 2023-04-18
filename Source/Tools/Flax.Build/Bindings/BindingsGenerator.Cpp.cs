@@ -984,7 +984,7 @@ namespace Flax.Build.Bindings
             bool useLibraryExportInPlainC = false; // True if generate separate wrapper for library imports that uses plain-C style binding (without C++ name mangling)
 #if USE_NETCORE
             string libraryEntryPoint;
-            if (buildData.Toolchain.Compiler == TargetCompiler.MSVC)
+            if (buildData.Toolchain?.Compiler == TargetCompiler.MSVC)
             {
                 libraryEntryPoint = $"{caller.FullNameManaged}::Internal_{functionInfo.UniqueName}"; // MSVC allows to override exported symbol name
             }
@@ -1123,7 +1123,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine();
             contents.Append(prevIndent).AppendLine("{");
 #if USE_NETCORE
-            if (buildData.Toolchain.Compiler == TargetCompiler.MSVC && !useLibraryExportInPlainC)
+            if (buildData.Toolchain?.Compiler == TargetCompiler.MSVC && !useLibraryExportInPlainC)
                 contents.Append(indent).AppendLine($"MSVC_FUNC_EXPORT(\"{libraryEntryPoint}\")"); // Export generated function binding under the C# name
 #endif
             if (!functionInfo.IsStatic)
@@ -2003,7 +2003,7 @@ namespace Flax.Build.Bindings
                     bool useSeparateImpl = false; // True if separate function declaration from implementation
                     contents.AppendFormat("    DLLEXPORT static void {0}_ManagedBind(", eventInfo.Name);
                     var signatureStart = contents.Length;
-                    if (buildData.Toolchain.Compiler == TargetCompiler.Clang)
+                    if (buildData.Toolchain?.Compiler == TargetCompiler.Clang)
                         useSeparateImpl = true; // DLLEXPORT doesn't properly export function thus separate implementation from declaration
                     if (!eventInfo.IsStatic)
                         contents.AppendFormat("{0}* obj, ", classTypeNameNative);
@@ -2021,7 +2021,7 @@ namespace Flax.Build.Bindings
                         indent = null;
                     }
                     contents.AppendLine().Append(indent).Append('{').AppendLine();
-                    if (buildData.Toolchain.Compiler == TargetCompiler.MSVC)
+                    if (buildData.Toolchain?.Compiler == TargetCompiler.MSVC)
                         contents.Append(indent).AppendLine($"    MSVC_FUNC_EXPORT(\"{classTypeNameManaged}::Internal_{eventInfo.Name}_Bind\")"); // Export generated function binding under the C# name
                     contents.Append(indent).Append("    Function<void(");
                     for (var i = 0; i < paramsCount; i++)
