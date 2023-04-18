@@ -196,8 +196,8 @@ void PlatformBase::OnMemoryAlloc(void* ptr, uint64 size)
 
 #if TRACY_ENABLE_MEMORY
     // Track memory allocation in Tracy
-    //tracy::Profiler::MemAlloc(ptr, size, false);
-    tracy::Profiler::MemAllocCallstack(ptr, size, 12, false);
+    //tracy::Profiler::MemAlloc(ptr, (size_t)size, false);
+    tracy::Profiler::MemAllocCallstack(ptr, (size_t)size, 12, false);
 #endif
 
     // Register allocation during the current CPU event
