@@ -10,9 +10,9 @@
 /// </summary>
 API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API AudioSettings : public SettingsBase
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(AudioSettings);
-public:
+    DECLARE_SCRIPTING_TYPE_MINIMAL(AudioSettings);
 
+public:
     /// <summary>
     /// If checked, audio playback will be disabled in build game. Can be used if game uses custom audio playback engine.
     /// </summary>
@@ -32,15 +32,13 @@ public:
     bool MuteOnFocusLoss = true;
 
     /// <summary>
-    /// Enables/disables HRTF audio for in-engine processing of 3d audio.
+    /// Enables or disables HRTF audio for in-engine processing of 3D audio (if supported by platform).
     /// If enabled, the user should be using two-channel/headphones audio output and have all other surround virtualization disabled (Atmos, DTS:X, vendor specific, etc.)
-    /// Note: this is currently only available with the OpenAL audio backend.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(300), DefaultValue(true), EditorDisplay(\"Spatial Audio\")")
-    bool UseHRTFWhenAvailable = true;
+    bool EnableHRTF = true;
 
 public:
-
     /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
     /// </summary>
@@ -54,6 +52,6 @@ public:
         DESERIALIZE(DisableAudio);
         DESERIALIZE(DopplerFactor);
         DESERIALIZE(MuteOnFocusLoss);
-        DESERIALIZE(UseHRTFWhenAvailable);
+        DESERIALIZE(EnableHRTF);
     }
 };

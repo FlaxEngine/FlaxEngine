@@ -18,7 +18,6 @@ API_CLASS(Static) class FLAXENGINE_API Audio
     friend class AudioClip;
 
 public:
-
     /// <summary>
     /// The audio listeners collection registered by the service.
     /// </summary>
@@ -45,7 +44,6 @@ public:
     API_EVENT() static Action ActiveDeviceChanged;
 
 public:
-
     /// <summary>
     /// Gets the active device.
     /// </summary>
@@ -65,7 +63,6 @@ public:
     API_PROPERTY() static void SetActiveDeviceIndex(int32 index);
 
 public:
-
     /// <summary>
     /// Gets the master volume applied to all the audio sources (normalized to range 0-1).
     /// </summary>
@@ -91,18 +88,17 @@ public:
     API_PROPERTY() static void SetDopplerFactor(float value);
 
     /// <summary>
-    /// Gets the preference to use HRTF audio when available.  Default is true.
+    /// Gets the preference to use HRTF audio (when available on platform). Default is true.
     /// </summary>
-    API_PROPERTY() static bool GetUseHRTFWhenAvailable();
+    API_PROPERTY() static bool GetEnableHRTF();
 
     /// <summary>
-    /// Sets the preference to use HRTF audio when available.  Default is true.
+    /// Sets the preference to use HRTF audio (when available on platform). Default is true.
     /// </summary>
     /// <param name="value">The value.</param>
-    API_PROPERTY() static void SetUseHRTFWhenAvailable(bool value);
+    API_PROPERTY() static void SetEnableHRTF(bool value);
 
 public:
-
     static void OnAddListener(AudioListener* listener);
     static void OnRemoveListener(AudioListener* listener);
 

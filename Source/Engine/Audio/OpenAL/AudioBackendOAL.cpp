@@ -156,7 +156,7 @@ namespace ALC
 
     void RebuildContexts(bool isChangingDevice)
     {
-        LOG(Info, "Audio: Rebuilding audio contexts");
+        LOG(Info, "Rebuilding audio contexts");
 
         if (!isChangingDevice)
         {
@@ -169,29 +169,26 @@ namespace ALC
         if (Device == nullptr)
             return;
 
+        ALCint attrsHrtf[] = { ALC_HRTF_SOFT, ALC_TRUE };
+        const ALCint* attrList = nullptr;
+        if (Audio::GetEnableHRTF())
+        {
+            LOG(Info, "Enabling OpenAL HRTF");
+            attrList = attrsHrtf;
+        }
+
 #if ALC_MULTIPLE_LISTENERS
         const int32 numListeners = Audio::Listeners.Count();
         const int32 numContexts = numListeners > 1 ? numListeners : 1;
         Contexts.Resize(numContexts);
 
         ALC_FOR_EACH_CONTEXT()
-            ALCcontext* context = alcCreateContext(Device, nullptr);
+            ALCcontext* context = alcCreateContext(Device, attrList);
             Contexts[i] = context;
         }
 #else
         Contexts.Resize(1);
-
-        if (Audio::GetUseHRTFWhenAvailable())
-        {
-            LOG(Info, "Audio: Enabling OpenAL HRTF");
-
-            ALCint attrs[] = { ALC_HRTF_SOFT, ALC_TRUE };
-            Contexts[0] = alcCreateContext(Device, attrs);
-        }
-        else
-        {
-            Contexts[0] = alcCreateContext(Device, nullptr);
-        }
+        Contexts[0] = alcCreateContext(Device, attrList);
 #endif
 
         // If only one context is available keep it active as an optimization.
