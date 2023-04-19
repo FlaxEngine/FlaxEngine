@@ -26,7 +26,9 @@
 #define MAX_OUTPUT_CHANNELS 8
 #define MAX_CHANNELS_MATRIX_SIZE (MAX_INPUT_CHANNELS*MAX_OUTPUT_CHANNELS)
 
-#define FLAX_POS_TO_XAUDIO(vec) X3DAUDIO_VECTOR(vec.X * 0.01f,  vec.Y *  0.01f, vec.Z * 0.01f)
+#define FLAX_COORD_SCALE 0.01f
+#define FLAX_POS_TO_XAUDIO(vec) X3DAUDIO_VECTOR(vec.X * FLAX_COORD_SCALE,  vec.Y * FLAX_COORD_SCALE, vec.Z * FLAX_COORD_SCALE)
+#define FLAX_VEL_TO_XAUDIO(vec) X3DAUDIO_VECTOR(vec.X * (FLAX_COORD_SCALE*FLAX_COORD_SCALE),  vec.Y * (FLAX_COORD_SCALE*FLAX_COORD_SCALE), vec.Z * (FLAX_COORD_SCALE*FLAX_COORD_SCALE))
 #define FLAX_VEC_TO_XAUDIO(vec) (*((X3DAUDIO_VECTOR*)&vec))
 
 namespace XAudio2
@@ -68,7 +70,7 @@ namespace XAudio2
         {
             const Vector3& velocity = AudioListener->GetVelocity();
 
-            Data.Velocity = FLAX_POS_TO_XAUDIO(velocity);
+            Data.Velocity = FLAX_VEL_TO_XAUDIO(velocity);
         }
     };
 
@@ -166,7 +168,7 @@ namespace XAudio2
         {
             const Vector3& velocity = source->GetVelocity();
 
-            Data.Velocity = FLAX_POS_TO_XAUDIO(velocity);
+            Data.Velocity = FLAX_VEL_TO_XAUDIO(velocity);
         }
     };
 

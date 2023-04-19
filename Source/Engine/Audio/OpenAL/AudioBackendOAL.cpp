@@ -21,7 +21,9 @@
 
 #define ALC_MULTIPLE_LISTENERS 0
 
-#define FLAX_POS_TO_OAL(vec) ((ALfloat)vec.X * -0.01f), ((ALfloat)vec.Y * 0.01f), ((ALfloat)vec.Z * 0.01f)
+#define FLAX_COORD_SCALE 0.01f
+#define FLAX_POS_TO_OAL(vec) ((ALfloat)vec.X * -FLAX_COORD_SCALE), ((ALfloat)vec.Y * FLAX_COORD_SCALE), ((ALfloat)vec.Z * FLAX_COORD_SCALE)
+#define FLAX_VEL_TO_OAL(vec) ((ALfloat)vec.X * -(FLAX_COORD_SCALE*FLAX_COORD_SCALE)), ((ALfloat)vec.Y * (FLAX_COORD_SCALE*FLAX_COORD_SCALE)), ((ALfloat)vec.Z * (FLAX_COORD_SCALE*FLAX_COORD_SCALE))
 #if BUILD_RELEASE
 #define ALC_CHECK_ERROR(method)
 #else
@@ -112,7 +114,7 @@ namespace ALC
             AudioBackend::Listener::TransformChanged(listener);
 
             const auto& velocity = listener->GetVelocity();
-            alListener3f(AL_VELOCITY, FLAX_POS_TO_OAL(velocity));
+            alListener3f(AL_VELOCITY, FLAX_VEL_TO_OAL(velocity));
             alListenerf(AL_GAIN, Audio::GetVolume());
         }
     }
@@ -124,8 +126,6 @@ namespace ALC
             ASSERT(source->SourceIDs.IsEmpty());
             const bool is3D = source->Is3D();
             const bool loop = source->GetIsLooping() && !source->UseStreaming();
-            const Vector3 position = is3D ? source->GetPosition() : Vector3::Zero;
-            const Vector3 velocity = is3D ? source->GetVelocity() : Vector3::Zero;
 
             ALC_FOR_EACH_CONTEXT()
                 uint32 sourceID = 0;
@@ -140,13 +140,22 @@ namespace ALC
                 alSourcef(sourceID, AL_GAIN, source->GetVolume());
                 alSourcef(sourceID, AL_PITCH, source->GetPitch());
                 alSourcef(sourceID, AL_SEC_OFFSET, 0.0f);
-                alSourcef(sourceID, AL_REFERENCE_DISTANCE, source->GetMinDistance());
-                alSourcef(sourceID, AL_ROLLOFF_FACTOR, source->GetAttenuation());
                 alSourcei(sourceID, AL_LOOPING, loop);
                 alSourcei(sourceID, AL_SOURCE_RELATIVE, !is3D);
                 alSourcei(sourceID, AL_BUFFER, 0);
-                alSource3f(sourceID, AL_POSITION, FLAX_POS_TO_OAL(position));
-                alSource3f(sourceID, AL_VELOCITY, FLAX_POS_TO_OAL(velocity));
+                if (is3D)
+                {
+                    alSourcef(sourceID, AL_ROLLOFF_FACTOR, source->GetAttenuation());
+                    alSourcef(sourceID, AL_REFERENCE_DISTANCE, source->GetMinDistance());
+                    alSource3f(sourceID, AL_POSITION, FLAX_POS_TO_OAL(source->GetPosition()));
+                    alSource3f(sourceID, AL_VELOCITY, FLAX_VEL_TO_OAL(source->GetVelocity()));
+                }
+                else
+                {
+                    alSourcef(sourceID, AL_ROLLOFF_FACTOR, 0.0f);
+                    alSource3f(sourceID, AL_POSITION, 0.0f, 0.0f, 0.0f);
+                    alSource3f(sourceID, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
+                }
             }
 
             // Restore state after Cleanup
@@ -285,7 +294,7 @@ void AudioBackendOAL::Listener_OnAdd(AudioListener* listener)
 #else
     AudioBackend::Listener::TransformChanged(listener);
     const auto& velocity = listener->GetVelocity();
-    alListener3f(AL_VELOCITY, FLAX_POS_TO_OAL(velocity));
+    alListener3f(AL_VELOCITY, FLAX_VEL_TO_OAL(velocity));
     alListenerf(AL_GAIN, Audio::GetVolume());
 #endif
 }
@@ -302,7 +311,7 @@ void AudioBackendOAL::Listener_VelocityChanged(AudioListener* listener)
     ALC_GET_LISTENER_CONTEXT(listener)
 
     const auto& velocity = listener->GetVelocity();
-    alListener3f(AL_VELOCITY, FLAX_POS_TO_OAL(velocity));
+    alListener3f(AL_VELOCITY, FLAX_VEL_TO_OAL(velocity));
 }
 
 void AudioBackendOAL::Listener_TransformChanged(AudioListener* listener)
@@ -342,25 +351,21 @@ void AudioBackendOAL::Source_OnRemove(AudioSource* source)
 
 void AudioBackendOAL::Source_VelocityChanged(AudioSource* source)
 {
-    const bool is3D = source->Is3D();
-    const Vector3 velocity = is3D ? source->GetVelocity() : Vector3::Zero;
-
+    if (!source->Is3D())
+        return;
     ALC_FOR_EACH_CONTEXT()
         const uint32 sourceID = source->SourceIDs[i];
-
-        alSource3f(sourceID, AL_VELOCITY, FLAX_POS_TO_OAL(velocity));
+        alSource3f(sourceID, AL_VELOCITY, FLAX_VEL_TO_OAL(source->GetVelocity()));
     }
 }
 
 void AudioBackendOAL::Source_TransformChanged(AudioSource* source)
 {
-    const bool is3D = source->Is3D();
-    const Vector3 position = is3D ? source->GetPosition() : Vector3::Zero;
-
+    if (!source->Is3D())
+        return;
     ALC_FOR_EACH_CONTEXT()
         const uint32 sourceID = source->SourceIDs[i];
-
-        alSource3f(sourceID, AL_POSITION, FLAX_POS_TO_OAL(position));
+        alSource3f(sourceID, AL_POSITION, FLAX_POS_TO_OAL(source->GetPosition()));
     }
 }
 
@@ -368,7 +373,6 @@ void AudioBackendOAL::Source_VolumeChanged(AudioSource* source)
 {
     ALC_FOR_EACH_CONTEXT()
         const uint32 sourceID = source->SourceIDs[i];
-
         alSourcef(sourceID, AL_GAIN, source->GetVolume());
     }
 }
@@ -377,7 +381,6 @@ void AudioBackendOAL::Source_PitchChanged(AudioSource* source)
 {
     ALC_FOR_EACH_CONTEXT()
         const uint32 sourceID = source->SourceIDs[i];
-
         alSourcef(sourceID, AL_PITCH, source->GetPitch());
     }
 }
@@ -387,25 +390,26 @@ void AudioBackendOAL::Source_IsLoopingChanged(AudioSource* source)
     const bool loop = source->GetIsLooping() && !source->UseStreaming();
     ALC_FOR_EACH_CONTEXT()
         const uint32 sourceID = source->SourceIDs[i];
-
         alSourcei(sourceID, AL_LOOPING, loop);
     }
 }
 
 void AudioBackendOAL::Source_MinDistanceChanged(AudioSource* source)
 {
+    if (!source->Is3D())
+        return;
     ALC_FOR_EACH_CONTEXT()
         const uint32 sourceID = source->SourceIDs[i];
-
         alSourcef(sourceID, AL_REFERENCE_DISTANCE, source->GetMinDistance());
     }
 }
 
 void AudioBackendOAL::Source_AttenuationChanged(AudioSource* source)
 {
+    if (!source->Is3D())
+        return;
     ALC_FOR_EACH_CONTEXT()
         const uint32 sourceID = source->SourceIDs[i];
-
         alSourcef(sourceID, AL_ROLLOFF_FACTOR, source->GetAttenuation());
     }
 }
@@ -420,7 +424,6 @@ void AudioBackendOAL::Source_ClipLoaded(AudioSource* source)
 
     ALC_FOR_EACH_CONTEXT()
         const uint32 sourceID = source->SourceIDs[i];
-
         alSourcei(sourceID, AL_SOURCE_RELATIVE, !is3D);
         alSourcei(sourceID, AL_LOOPING, loop);
     }
@@ -430,7 +433,6 @@ void AudioBackendOAL::Source_Cleanup(AudioSource* source)
 {
     ALC_FOR_EACH_CONTEXT()
         const uint32 sourceID = source->SourceIDs[i];
-
         alSourcei(sourceID, AL_BUFFER, 0);
         ALC_CHECK_ERROR(alSourcei);
         alDeleteSources(1, &sourceID);
