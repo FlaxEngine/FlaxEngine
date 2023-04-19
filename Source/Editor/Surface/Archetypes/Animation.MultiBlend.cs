@@ -206,14 +206,14 @@ namespace FlaxEditor.Surface.Archetypes
             if (_is2D)
             {
                 pos = new Float2(
-                                 Mathf.Map(pos.X, pointsArea.Left, pointsArea.Right, _rangeX.X, _rangeX.Y),
-                                 Mathf.Map(pos.Y, pointsArea.Bottom, pointsArea.Top, _rangeY.X, _rangeY.Y)
+                                 Mathf.Remap(pos.X, pointsArea.Left, pointsArea.Right, _rangeX.X, _rangeX.Y),
+                                 Mathf.Remap(pos.Y, pointsArea.Bottom, pointsArea.Top, _rangeY.X, _rangeY.Y)
                                 );
             }
             else
             {
                 pos = new Float2(
-                                 Mathf.Map(pos.X, pointsArea.Left, pointsArea.Right, _rangeX.X, _rangeX.Y),
+                                 Mathf.Remap(pos.X, pointsArea.Left, pointsArea.Right, _rangeX.X, _rangeX.Y),
                                  0
                                 );
             }
@@ -231,14 +231,14 @@ namespace FlaxEditor.Surface.Archetypes
             if (_is2D)
             {
                 pos = new Float2(
-                                 Mathf.Map(pos.X, _rangeX.X, _rangeX.Y, pointsArea.Left, pointsArea.Right),
-                                 Mathf.Map(pos.Y, _rangeY.X, _rangeY.Y, pointsArea.Bottom, pointsArea.Top)
+                                 Mathf.Remap(pos.X, _rangeX.X, _rangeX.Y, pointsArea.Left, pointsArea.Right),
+                                 Mathf.Remap(pos.Y, _rangeY.X, _rangeY.Y, pointsArea.Bottom, pointsArea.Top)
                                 );
             }
             else
             {
                 pos = new Float2(
-                                 Mathf.Map(pos.X, _rangeX.X, _rangeX.Y, pointsArea.Left, pointsArea.Right),
+                                 Mathf.Remap(pos.X, _rangeX.X, _rangeX.Y, pointsArea.Left, pointsArea.Right),
                                  pointsArea.Center.Y
                                 );
             }
