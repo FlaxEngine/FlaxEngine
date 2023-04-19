@@ -548,7 +548,7 @@ namespace FlaxEngine
         /// <param name="f"></param>
         public static float Sign(float f)
         {
-            return f < 0f ? -1f : 1f;
+            return f > 0.0f ? 1.0f : f < 0.0f ? -1.0f : 0.0f;
         }
 
         /// <summary>
