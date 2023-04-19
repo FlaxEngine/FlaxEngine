@@ -25,6 +25,7 @@ private:
     virtual void Listener_OnRemove(AudioListener* listener) = 0;
     virtual void Listener_VelocityChanged(AudioListener* listener) = 0;
     virtual void Listener_TransformChanged(AudioListener* listener) = 0;
+    virtual void Listener_ReinitializeAll() = 0;
 
     // Source
     virtual void Source_OnAdd(AudioSource* source) = 0;
@@ -93,6 +94,11 @@ public:
         FORCE_INLINE static void TransformChanged(AudioListener* listener)
         {
             Instance->Listener_TransformChanged(listener);
+        }
+
+        FORCE_INLINE static void ReinitializeAll()
+        {
+            Instance->Listener_ReinitializeAll();
         }
     };
 

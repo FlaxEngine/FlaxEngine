@@ -18,6 +18,7 @@ public:
     void Listener_OnRemove(AudioListener* listener) override;
     void Listener_VelocityChanged(AudioListener* listener) override;
     void Listener_TransformChanged(AudioListener* listener) override;
+    void Listener_ReinitializeAll() override;
     void Source_OnAdd(AudioSource* source) override;
     void Source_OnRemove(AudioSource* source) override;
     void Source_VelocityChanged(AudioSource* source) override;

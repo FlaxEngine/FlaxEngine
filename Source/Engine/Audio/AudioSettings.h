@@ -31,6 +31,14 @@ public:
     API_FIELD(Attributes="EditorOrder(200), DefaultValue(true), EditorDisplay(\"General\", \"Mute On Focus Loss\")")
     bool MuteOnFocusLoss = true;
 
+    /// <summary>
+    /// Enables/disables HRTF audio for in-engine processing of 3d audio.
+    /// If enabled, the user should be using two-channel/headphones audio output and have all other surround virtualization disabled (Atmos, DTS:X, vendor specific, etc.)
+    /// Note: this is currently only available with the OpenAL audio backend.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(300), DefaultValue(true), EditorDisplay(\"Spatial Audio\")")
+    bool UseHRTFWhenAvailable = true;
+
 public:
 
     /// <summary>
@@ -46,5 +54,6 @@ public:
         DESERIALIZE(DisableAudio);
         DESERIALIZE(DopplerFactor);
         DESERIALIZE(MuteOnFocusLoss);
+        DESERIALIZE(UseHRTFWhenAvailable);
     }
 };

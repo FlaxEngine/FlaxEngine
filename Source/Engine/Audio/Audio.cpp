@@ -57,6 +57,7 @@ namespace
     float Volume = 1.0f;
     int32 ActiveDeviceIndex = -1;
     bool MuteOnFocusLoss = true;
+    bool UseHRTFWhenAvailable = true;
 }
 
 class AudioService : public EngineService
@@ -94,6 +95,7 @@ void AudioSettings::Apply()
     if (AudioBackend::Instance != nullptr)
     {
         Audio::SetDopplerFactor(DopplerFactor);
+        Audio::SetUseHRTFWhenAvailable(UseHRTFWhenAvailable);
     }
 }
 
@@ -139,6 +141,17 @@ void Audio::SetDopplerFactor(float value)
 {
     value = Math::Max(0.0f, value);
     AudioBackend::SetDopplerFactor(value);
+}
+
+bool Audio::GetUseHRTFWhenAvailable()
+{
+    return UseHRTFWhenAvailable;
+}
+
+void Audio::SetUseHRTFWhenAvailable(bool value)
+{
+    UseHRTFWhenAvailable = value;
+    AudioBackend::Listener::ReinitializeAll();
 }
 
 void Audio::OnAddListener(AudioListener* listener)

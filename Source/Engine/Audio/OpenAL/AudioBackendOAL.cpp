@@ -17,10 +17,11 @@
 //#define AL_LIBTYPE_STATIC
 #include <OpenAL/al.h>
 #include <OpenAL/alc.h>
+#include <OpenAL/alext.h>
 
 #define ALC_MULTIPLE_LISTENERS 0
 
-#define FLAX_POS_TO_OAL(vec) ((ALfloat)vec.X * -0.01f), ((ALfloat)vec.Y * 0.01f), ((ALfloat)vec.Z * -0.01f)
+#define FLAX_POS_TO_OAL(vec) ((ALfloat)vec.X * -0.01f), ((ALfloat)vec.Y * 0.01f), ((ALfloat)vec.Z * 0.01f)
 #if BUILD_RELEASE
 #define ALC_CHECK_ERROR(method)
 #else
@@ -55,7 +56,6 @@
 namespace ALC
 {
     ALCdevice* Device = nullptr;
-    bool AL_EXT_float32 = false;
     Array<ALCcontext*, FixedAllocation<AUDIO_MAX_LISTENERS>> Contexts;
 
     bool IsExtensionSupported(const char* extension)
@@ -156,7 +156,7 @@ namespace ALC
 
     void RebuildContexts(bool isChangingDevice)
     {
-        LOG(Info, "Rebuild audio contexts");
+        LOG(Info, "Audio: Rebuilding audio contexts");
 
         if (!isChangingDevice)
         {
@@ -180,7 +180,18 @@ namespace ALC
         }
 #else
         Contexts.Resize(1);
-        Contexts[0] = alcCreateContext(Device, nullptr);
+
+        if (Audio::GetUseHRTFWhenAvailable())
+        {
+            LOG(Info, "Audio: Enabling OpenAL HRTF");
+
+            ALCint attrs[] = { ALC_HRTF_SOFT, ALC_TRUE };
+            Contexts[0] = alcCreateContext(Device, attrs);
+        }
+        else
+        {
+            Contexts[0] = alcCreateContext(Device, nullptr);
+        }
 #endif
 
         // If only one context is available keep it active as an optimization.
@@ -303,16 +314,23 @@ void AudioBackendOAL::Listener_TransformChanged(AudioListener* listener)
 
     const Vector3& position = listener->GetPosition();
     const Quaternion& orientation = listener->GetOrientation();
+    const Vector3& flipX = Vector3(-1, 1, 1);
+
     Vector3 alOrientation[2] =
     {
         // Forward
-        orientation * Vector3::Forward,
+        orientation * Vector3::Forward * flipX,
         // Up
-        orientation * Vector3::Up
+        orientation * Vector3::Up * flipX
     };
 
     alListenerfv(AL_ORIENTATION, (float*)alOrientation);
     alListener3f(AL_POSITION, FLAX_POS_TO_OAL(position));
+}
+
+void AudioBackendOAL::Listener_ReinitializeAll()
+{
+    ALC::RebuildContexts(false);
 }
 
 void AudioBackendOAL::Source_OnAdd(AudioSource* source)
@@ -567,7 +585,7 @@ void AudioBackendOAL::Buffer_Write(uint32 bufferId, byte* samples, const AudioDa
     {
         if (info.BitDepth > 16)
         {
-            if (ALC::AL_EXT_float32)
+            if (ALC::IsExtensionSupported("AL_EXT_float32"))
             {
                 const uint32 bufferSize = info.NumSamples * sizeof(float);
                 float* sampleBufferFloat = (float*)Allocator::Allocate(bufferSize);
@@ -688,7 +706,6 @@ void AudioBackendOAL::Base_OnActiveDeviceChanged()
     }
 
     // Setup
-    ALC::AL_EXT_float32 = ALC::IsExtensionSupported("AL_EXT_float32");
     ALC::RebuildContexts(true);
 }
 
@@ -800,7 +817,6 @@ bool AudioBackendOAL::Base_Init()
     }
 
     // Init
-    ALC::AL_EXT_float32 = ALC::IsExtensionSupported("AL_EXT_float32");
     SetDopplerFactor(AudioSettings::Get()->DopplerFactor);
     ALC::RebuildContexts(true);
     Audio::SetActiveDeviceIndex(activeDeviceIndex);
