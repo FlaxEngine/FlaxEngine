@@ -150,11 +150,6 @@ AudioClip::~AudioClip()
     ASSERT(_streamingTask == nullptr);
 }
 
-float AudioClip::GetLength() const
-{
-    return AudioHeader.Info.NumSamples / static_cast<float>(Math::Max(1U, AudioHeader.Info.SampleRate * AudioHeader.Info.NumChannels));
-}
-
 float AudioClip::GetBufferStartTime(int32 bufferIndex) const
 {
     ASSERT(IsLoaded());
@@ -164,7 +159,7 @@ float AudioClip::GetBufferStartTime(int32 bufferIndex) const
 int32 AudioClip::GetFirstBufferIndex(float time, float& offset) const
 {
     ASSERT(IsLoaded());
-    ASSERT(time >= 0 && time <= GetLength());
+    time = Math::Clamp(time, 0.0f, GetLength());
 
     for (int32 i = 0; i < _totalChunks; i++)
     {

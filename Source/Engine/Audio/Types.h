@@ -30,7 +30,7 @@ const Char* ToString(AudioFormat value);
 /// <summary>
 /// Meta-data describing a chunk of audio.
 /// </summary>
-API_STRUCT() struct AudioDataInfo
+API_STRUCT(NoDefault) struct AudioDataInfo
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(AudioDataInfo);
 
@@ -53,4 +53,9 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(AudioDataInfo);
     /// The number of bits per sample.
     /// </summary>
     API_FIELD() uint32 BitDepth;
+
+    /// <summary>
+    /// Gets the length of the audio data (in seconds).
+    /// </summary>
+    float GetLength() const;
 };

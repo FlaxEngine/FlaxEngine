@@ -44,6 +44,11 @@ const Char* ToString(AudioFormat value)
     }
 }
 
+float AudioDataInfo::GetLength() const
+{
+    return (float)NumSamples / (float)Math::Max(1U, SampleRate * NumChannels);
+}
+
 Array<AudioListener*> Audio::Listeners;
 Array<AudioSource*> Audio::Sources;
 Array<AudioDevice> Audio::Devices;

@@ -107,7 +107,6 @@ public:
     /// <summary>
     /// Gets the audio data format.
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY() FORCE_INLINE AudioFormat Format() const
     {
         return AudioHeader.Format;
@@ -116,7 +115,6 @@ public:
     /// <summary>
     /// Gets the audio data info metadata.
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY() FORCE_INLINE const AudioDataInfo& Info() const
     {
         return AudioHeader.Info;
@@ -125,7 +123,6 @@ public:
     /// <summary>
     /// Returns true if the sound source is three dimensional (volume and pitch varies based on listener distance and velocity).
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY() FORCE_INLINE bool Is3D() const
     {
         return AudioHeader.Is3D;
@@ -134,7 +131,6 @@ public:
     /// <summary>
     /// Returns true if the sound is using data streaming.
     /// </summary>
-    /// <returns>The value.</returns>
     API_PROPERTY() FORCE_INLINE bool IsStreamable() const
     {
         return AudioHeader.Streamable;
@@ -143,7 +139,6 @@ public:
     /// <summary>
     /// Returns true if the sound data is during streaming by an async task.
     /// </summary>
-    /// <returns>The streaming task existence value flag.</returns>
     API_PROPERTY() FORCE_INLINE bool IsStreamingTaskActive() const
     {
         return _streamingTask != nullptr;
@@ -152,8 +147,10 @@ public:
     /// <summary>
     /// Gets the length of the audio clip (in seconds).
     /// </summary>
-    /// <returns>The value.</returns>
-    API_PROPERTY() float GetLength() const;
+    API_PROPERTY() float GetLength() const
+    {
+        return AudioHeader.Info.GetLength();
+    }
 
 public:
 
