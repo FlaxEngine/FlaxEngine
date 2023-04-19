@@ -80,6 +80,20 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <summary>
+        /// Gets the cached audio data info.
+        /// </summary>
+        public AudioDataInfo DataInfo
+        {
+            get
+            {
+                lock (_locker)
+                {
+                    return _pcmInfo;
+                }
+            }
+        }
+
+        /// <summary>
         /// The draw mode.
         /// </summary>
         public DrawModes DrawMode = DrawModes.Fill;

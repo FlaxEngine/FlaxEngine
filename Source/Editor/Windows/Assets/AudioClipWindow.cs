@@ -19,6 +19,48 @@ namespace FlaxEditor.Windows.Assets
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
     public sealed class AudioClipWindow : AssetEditorWindowBase<AudioClip>
     {
+        private sealed class Preview : AudioClipPreview
+        {
+            public AudioSource Source;
+
+            public override void Draw()
+            {
+                base.Draw();
+
+                if (!Source || Source.State == AudioSource.States.Stopped)
+                    return;
+                var info = DataInfo;
+                if (!HasData || info.NumSamples == 0)
+                    return;
+                var height = Height;
+                var width = Width;
+                
+                // Draw current time
+                var playPosition = Source.Time / info.Length * width;
+                Render2D.DrawLine(new Float2(playPosition, 0), new Float2( playPosition, height), Color.White);
+                
+                // Draw current mouse pointer
+                var mousePos = PointFromScreen(Input.MouseScreenPosition);
+                if (mousePos.X > 0 && mousePos.Y > 0 && mousePos.X < width && mousePos.Y < height)
+                {
+                    Render2D.DrawLine(new Float2(mousePos.X, 0), new Float2( mousePos.X, height), Color.White.AlphaMultiplied(0.3f));
+                }
+            }
+
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (base.OnMouseDown(location, button))
+                    return true;
+
+                if (button == MouseButton.Left && Source && Source.State != AudioSource.States.Stopped)
+                {
+                    var info = DataInfo;
+                    Source.Time = location.X / Width * info.Length;
+                }
+                return false;
+            }
+        }
+
         /// <summary>
         /// The AudioClip properties proxy object.
         /// </summary>
@@ -113,7 +155,7 @@ namespace FlaxEditor.Windows.Assets
         }
 
         private readonly SplitPanel _split;
-        private readonly AudioClipPreview _preview;
+        private readonly Preview _preview;
         private readonly CustomEditorPresenter _propertiesEditor;
         private readonly ToolStripButton _playButton;
         private readonly ToolStripButton _pauseButton;
@@ -137,7 +179,7 @@ namespace FlaxEditor.Windows.Assets
             };
 
             // Preview
-            _preview = new AudioClipPreview
+            _preview = new Preview
             {
                 DrawMode = AudioClipPreview.DrawModes.Fill,
                 AnchorPreset = AnchorPresets.StretchAll,
@@ -173,6 +215,7 @@ namespace FlaxEditor.Windows.Assets
                     Parent = _previewScene,
                     Clip = _asset,
                 };
+                _preview.Source = _previewSource;
             }
             if (_previewSource.State == AudioSource.States.Playing)
                 _previewSource.Stop();
@@ -230,6 +273,7 @@ namespace FlaxEditor.Windows.Assets
         {
             if (_previewSource)
             {
+                _preview.Source = null;
                 _previewSource.Stop();
                 Object.Destroy(_previewSource);
                 _previewSource = null;
