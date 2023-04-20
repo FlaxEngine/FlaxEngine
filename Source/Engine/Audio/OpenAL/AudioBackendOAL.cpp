@@ -60,6 +60,7 @@ namespace ALC
 {
     ALCdevice* Device = nullptr;
     Array<ALCcontext*, FixedAllocation<AUDIO_MAX_LISTENERS>> Contexts;
+    AudioBackend::FeatureFlags Features = AudioBackend::FeatureFlags::None;
 
     bool IsExtensionSupported(const char* extension)
     {
@@ -146,6 +147,9 @@ namespace ALC
                 alSourcei(sourceID, AL_BUFFER, 0);
                 if (is3D)
                 {
+#ifdef AL_SOFT_source_spatialize
+                    alSourcei(sourceID, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE);
+#endif
                     alSourcef(sourceID, AL_ROLLOFF_FACTOR, source->GetAttenuation());
                     alSourcef(sourceID, AL_REFERENCE_DISTANCE, FLAX_DST_TO_OAL(source->GetMinDistance()));
                     alSource3f(sourceID, AL_POSITION, FLAX_POS_TO_OAL(source->GetPosition()));
@@ -683,6 +687,11 @@ const Char* AudioBackendOAL::Base_Name()
     return TEXT("OpenAL");
 }
 
+AudioBackend::FeatureFlags AudioBackendOAL::Base_Features()
+{
+    return ALC::Features;
+}
+
 void AudioBackendOAL::Base_OnActiveDeviceChanged()
 {
     // Cleanup
@@ -820,6 +829,10 @@ bool AudioBackendOAL::Base_Init()
     alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED); // Default attenuation model
     ALC::RebuildContexts(true);
     Audio::SetActiveDeviceIndex(activeDeviceIndex);
+#ifdef AL_SOFT_source_spatialize
+    if (ALC::IsExtensionSupported("AL_SOFT_source_spatialize"))
+        ALC::Features = (FeatureFlags)((uint32)ALC::Features | (uint32)FeatureFlags::SpatialMultiChannel);
+#endif
 
     // Log service info
     LOG(Info, "{0} ({1})", String(alGetString(AL_RENDERER)), String(alGetString(AL_VERSION)));

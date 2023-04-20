@@ -368,7 +368,7 @@ void AudioBackendXAudio2::Source_OnAdd(AudioSource* source)
     auto& header = clip->AudioHeader;
     auto& format = aSource->Format;
     format.wFormatTag = WAVE_FORMAT_PCM;
-    format.nChannels = header.Info.NumChannels;
+    format.nChannels = source->Is3D() ? 1 : header.Info.NumChannels; // 3d audio is always mono (AudioClip auto-converts before buffer write)
     format.nSamplesPerSec = header.Info.SampleRate;
     format.wBitsPerSample = header.Info.BitDepth;
     format.nBlockAlign = (WORD)(format.nChannels * (format.wBitsPerSample / 8));
@@ -394,7 +394,7 @@ void AudioBackendXAudio2::Source_OnAdd(AudioSource* source)
     // Prepare source state
     aSource->Callback.Source = source;
     aSource->IsDirty = true;
-    aSource->Data.ChannelCount = header.Info.NumChannels;
+    aSource->Data.ChannelCount = format.nChannels;
     aSource->Data.InnerRadius = FLAX_DST_TO_XAUDIO(source->GetMinDistance());
     aSource->Is3D = source->Is3D();
     aSource->Pitch = source->GetPitch();
@@ -591,7 +591,8 @@ float AudioBackendXAudio2::Source_GetCurrentBufferTime(const AudioSource* source
         const auto& clipInfo = source->Clip->AudioHeader.Info;
         XAUDIO2_VOICE_STATE state;
         aSource->Voice->GetState(&state);
-        const UINT32 totalSamples = clipInfo.NumSamples / clipInfo.NumChannels;
+        const uint32 numChannels = source->Is3D() ? 1 : clipInfo.NumChannels; // 3d audio is always mono (AudioClip auto-converts before buffer write)
+        const UINT32 totalSamples = clipInfo.NumSamples / numChannels;
         state.SamplesPlayed -= aSource->LastBufferStartSamplesPlayed % totalSamples; // Offset by the last buffer start to get time relative to its begin
         time = aSource->StartTime + (state.SamplesPlayed % totalSamples) / static_cast<float>(Math::Max(1U, clipInfo.SampleRate));
     }
@@ -714,6 +715,11 @@ void AudioBackendXAudio2::Buffer_Write(uint32 bufferId, byte* samples, const Aud
 const Char* AudioBackendXAudio2::Base_Name()
 {
     return TEXT("XAudio2");
+}
+
+AudioBackend::FeatureFlags AudioBackendXAudio2::Base_Features()
+{
+    return FeatureFlags::None;
 }
 
 void AudioBackendXAudio2::Base_OnActiveDeviceChanged()

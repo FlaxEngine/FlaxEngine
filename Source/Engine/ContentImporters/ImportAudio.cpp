@@ -114,22 +114,6 @@ CreateAssetResult ImportAudio::Import(CreateAssetContext& context, AudioDecoder&
     DataContainer<byte> sampleBuffer;
     sampleBuffer.Link(audioData.Get());
 
-    // Convert to Mono if used as 3D source
-    if (options.Is3D && info.NumChannels > 1)
-    {
-        const uint32 numSamplesPerChannel = info.NumSamples / info.NumChannels;
-
-        const uint32 monoBufferSize = numSamplesPerChannel * bytesPerSample;
-        sampleBuffer.Allocate(monoBufferSize);
-
-        AudioTool::ConvertToMono(audioData.Get(), sampleBuffer.Get(), info.BitDepth, numSamplesPerChannel, info.NumChannels);
-
-        info.NumSamples = numSamplesPerChannel;
-        info.NumChannels = 1;
-
-        bufferSize = monoBufferSize;
-    }
-
     // Convert bit depth if need to
     if (options.BitDepth != static_cast<int32>(info.BitDepth))
     {

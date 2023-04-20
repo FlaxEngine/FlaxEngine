@@ -50,6 +50,7 @@ private:
     float _attenuation;
     bool _loop;
     bool _playOnStart;
+    bool _allowSpatialization;
 
     bool _isActuallyPlayingSth = false;
     bool _needToUpdateStreamingBuffers = false;
@@ -162,6 +163,20 @@ public:
     /// Sets the attenuation that controls how quickly does audio volume drop off as the listener moves further from the source. At 0, no distance attenuation ever occurs.
     /// </summary>
     API_PROPERTY() void SetAttenuation(float value);
+
+    /// <summary>
+    /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound. At 0, no distance attenuation ever occurs.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(80), DefaultValue(true), EditorDisplay(\"Audio Source\")")
+    FORCE_INLINE bool GetAllowSpatialization() const
+    {
+        return _allowSpatialization;
+    }
+
+    /// <summary>
+    /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound.
+    /// </summary>
+    API_PROPERTY() void SetAllowSpatialization(bool value);
 
 public:
     /// <summary>

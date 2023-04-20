@@ -32,7 +32,6 @@ bool AudioClip::StreamingTask::Run()
     {
         const auto idx = queue[i];
         uint32& bufferId = clip->Buffers[idx];
-
         if (bufferId == AUDIO_BUFFER_ID_INVALID)
         {
             AudioBackend::Buffer::Create(bufferId);
@@ -45,64 +44,13 @@ bool AudioClip::StreamingTask::Run()
         }
     }
 
-    // Load missing buffers data
-    const auto format = clip->Format();
-    AudioDataInfo info = clip->AudioHeader.Info;
-    const uint32 bytesPerSample = info.BitDepth / 8;
+    // Load missing buffers data (from asset chunks)
     for (int32 i = 0; i < queue.Count(); i++)
     {
-        const auto idx = queue[i];
-        const uint32 bufferId = clip->Buffers[idx];
-        if (bufferId == AUDIO_BUFFER_ID_INVALID)
-            continue;
-
-        byte* data;
-        uint32 dataSize;
-        Array<byte> outTmp;
-
-        const auto chunk = clip->GetChunk(idx);
-        if (chunk == nullptr || chunk->IsMissing())
+        if (clip->WriteBuffer(queue[i]))
         {
-            LOG(Warning, "Missing audio streaming data chunk.");
             return true;
         }
-
-        // Get raw data or decompress it
-        switch (format)
-        {
-        case AudioFormat::Vorbis:
-        {
-#if COMPILE_WITH_OGG_VORBIS
-            OggVorbisDecoder decoder;
-            MemoryReadStream stream(chunk->Get(), chunk->Size());
-            AudioDataInfo outInfo;
-            if (decoder.Convert(&stream, outInfo, outTmp))
-            {
-                LOG(Warning, "Audio data decode failed (OggVorbisDecoder).");
-                return true;
-            }
-            // TODO: validate decompressed data header info?
-            data = outTmp.Get();
-            dataSize = outTmp.Count();
-#else
-			LOG(Warning, "OggVorbisDecoder is disabled.");
-			return true;
-#endif
-        }
-        break;
-        case AudioFormat::Raw:
-        {
-            data = chunk->Get();
-            dataSize = chunk->Size();
-        }
-        break;
-        default:
-            return true;
-        }
-
-        // Write samples to the audio buffer
-        info.NumSamples = dataSize / bytesPerSample;
-        AudioBackend::Buffer::Write(bufferId, data, info);
     }
 
     // Update the sources
@@ -360,7 +308,7 @@ bool AudioClip::init(AssetInitData& initData)
     }
     if (initData.CustomData.Length() != sizeof(AudioHeader))
     {
-        LOG(Warning, "Missing audio clip header.");
+        LOG(Warning, "Missing audio data.");
         return true;
     }
 
@@ -420,44 +368,15 @@ Asset::LoadResult AudioClip::load()
     // Load the whole audio at once
     if (LoadChunk(0))
         return LoadResult::CannotLoadData;
-    auto chunk0 = GetChunk(0);
-    if (chunk0 == nullptr || chunk0->IsMissing())
-        return LoadResult::MissingDataChunk;
 
     // Create single buffer
-    if (!AudioBackend::Instance)
-        return LoadResult::Failed;
     uint32 bufferId;
     AudioBackend::Buffer::Create(bufferId);
     Buffers[0] = bufferId;
 
-    // Write samples to the audio buffer
-    switch (AudioHeader.Format)
-    {
-    case AudioFormat::Vorbis:
-    {
-#if COMPILE_WITH_OGG_VORBIS
-        OggVorbisDecoder decoder;
-        MemoryReadStream stream(chunk0->Get(), chunk0->Size());
-        AudioDataInfo outInfo;
-        Array<byte> outTmp;
-        if (decoder.Convert(&stream, outInfo, outTmp))
-        {
-            LOG(Warning, "Audio data decode failed (OggVorbisDecoder).");
-            return LoadResult::InvalidData;
-        }
-        AudioBackend::Buffer::Write(bufferId, outTmp.Get(), outInfo);
-#endif
-        break;
-    }
-    case AudioFormat::Raw:
-    {
-        AudioBackend::Buffer::Write(bufferId, chunk0->Get(), AudioHeader.Info);
-        break;
-    }
-    default:
-        return LoadResult::InvalidData;
-    }
+    // Write data to audio buffer
+    if (WriteBuffer(0))
+        return LoadResult::Failed;
 
     return LoadResult::Ok;
 }
@@ -492,4 +411,75 @@ void AudioClip::unload(bool isReloading)
     Buffers.Clear();
     _totalChunks = 0;
     Platform::MemoryClear(&AudioHeader, sizeof(AudioHeader));
+}
+
+bool AudioClip::WriteBuffer(int32 chunkIndex)
+{
+    // Ignore if buffer is not created
+    const uint32 bufferId = Buffers[chunkIndex];
+    if (bufferId == AUDIO_BUFFER_ID_INVALID)
+        return false;
+
+    // Ensure audio backend exists
+    if (AudioBackend::Instance == nullptr)
+        return true;
+
+    const auto chunk = GetChunk(chunkIndex);
+    if (chunk == nullptr || chunk->IsMissing())
+    {
+        LOG(Warning, "Missing audio data.");
+        return true;
+    }
+    Span<byte> data;
+    Array<byte> tmp1, tmp2;
+    AudioDataInfo info = AudioHeader.Info;
+    const uint32 bytesPerSample = info.BitDepth / 8;
+
+    // Get raw data or decompress it
+    switch (Format())
+    {
+    case AudioFormat::Vorbis:
+    {
+#if COMPILE_WITH_OGG_VORBIS
+        OggVorbisDecoder decoder;
+        MemoryReadStream stream(chunk->Get(), chunk->Size());
+        AudioDataInfo tmpInfo;
+        if (decoder.Convert(&stream, tmpInfo, tmp1))
+        {
+            LOG(Warning, "Audio data decode failed (OggVorbisDecoder).");
+            return true;
+        }
+        // TODO: validate decompressed data header info?
+        data = Span<byte>(tmp1.Get(), tmp1.Count());
+#else
+		LOG(Warning, "OggVorbisDecoder is disabled.");
+		return true;
+#endif
+    }
+    break;
+    case AudioFormat::Raw:
+    {
+        data = Span<byte>(chunk->Get(), chunk->Size());
+    }
+    break;
+    default:
+        return true;
+    }
+    info.NumSamples = data.Length() / bytesPerSample;
+
+    // Convert to Mono if used as 3D source and backend doesn't support it
+    if (Is3D() && info.NumChannels > 1 && EnumHasNoneFlags(AudioBackend::Features(), AudioBackend::FeatureFlags::SpatialMultiChannel))
+    {
+        const uint32 samplesPerChannel = info.NumSamples / info.NumChannels;
+        const uint32 monoBufferSize = samplesPerChannel * bytesPerSample;
+        tmp2.Resize(monoBufferSize);
+        AudioTool::ConvertToMono(data.Get(), tmp2.Get(), info.BitDepth, samplesPerChannel, info.NumChannels);
+        info.NumChannels = 1;
+        info.NumSamples = samplesPerChannel;
+        data = Span<byte>(tmp2.Get(), tmp2.Count());
+    }
+
+    // Write samples to the audio buffer
+    AudioBackend::Buffer::Write(bufferId, data.Get(), info);
+    return false;
 }

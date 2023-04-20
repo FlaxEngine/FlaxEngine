@@ -131,7 +131,7 @@ public:
     /// <summary>
     /// Stops the streaming (eg. on streaming fail).
     /// </summary>
-    void CancelStreaming();
+    void ResetStreaming();
 
 protected:
 

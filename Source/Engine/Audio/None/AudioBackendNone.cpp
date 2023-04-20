@@ -128,6 +128,11 @@ const Char* AudioBackendNone::Base_Name()
     return TEXT("None");
 }
 
+AudioBackend::FeatureFlags AudioBackendNone::Base_Features()
+{
+    return FeatureFlags::None;
+}
+
 void AudioBackendNone::Base_OnActiveDeviceChanged()
 {
 }

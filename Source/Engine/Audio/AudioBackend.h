@@ -16,6 +16,13 @@ class AudioBackend
 
 public:
 
+    enum class FeatureFlags
+    {
+        None = 0,
+        // Supports multi-channel (incl. stereo) audio playback for spatial sources (3D), otherwise 3d audio needs to be in mono format.
+        SpatialMultiChannel = 1,
+    };
+
     static AudioBackend* Instance;
 
 private:
@@ -56,6 +63,7 @@ private:
 
     // Base
     virtual const Char* Base_Name() = 0;
+    virtual FeatureFlags Base_Features() = 0;
     virtual void Base_OnActiveDeviceChanged() = 0;
     virtual void Base_SetDopplerFactor(float value) = 0;
     virtual void Base_SetVolume(float value) = 0;
@@ -230,6 +238,11 @@ public:
     FORCE_INLINE static const Char* Name()
     {
         return Instance->Base_Name();
+    }
+
+    FORCE_INLINE static FeatureFlags Features()
+    {
+        return Instance->Base_Features();
     }
 
     FORCE_INLINE static void OnActiveDeviceChanged()

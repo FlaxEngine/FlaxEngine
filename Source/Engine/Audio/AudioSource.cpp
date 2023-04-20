@@ -20,6 +20,7 @@ AudioSource::AudioSource(const SpawnParams& params)
     , _attenuation(1.0f)
     , _loop(false)
     , _playOnStart(false)
+    , _allowSpatialization(true)
 {
     Clip.Changed.Bind<AudioSource, &AudioSource::OnClipChanged>(this);
     Clip.Loaded.Bind<AudioSource, &AudioSource::OnClipLoaded>(this);
@@ -77,7 +78,15 @@ void AudioSource::SetAttenuation(float value)
     if (Math::NearEqual(_attenuation, value))
         return;
     _attenuation = value;
+    if (SourceIDs.HasItems())
+        AudioBackend::Source::SpatialSetupChanged(this);
+}
 
+void AudioSource::SetAllowSpatialization(bool value)
+{
+    if (_allowSpatialization == value)
+        return;
+    _allowSpatialization = value;
     if (SourceIDs.HasItems())
         AudioBackend::Source::SpatialSetupChanged(this);
 }
@@ -213,7 +222,7 @@ bool AudioSource::Is3D() const
 {
     if (Clip == nullptr || Clip->WaitForLoaded())
         return false;
-    return Clip->Is3D();
+    return _allowSpatialization && Clip->Is3D();
 }
 
 void AudioSource::RequestStreamingBuffersUpdate()
@@ -325,6 +334,7 @@ void AudioSource::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(Attenuation, _attenuation);
     SERIALIZE_MEMBER(Loop, _loop);
     SERIALIZE_MEMBER(PlayOnStart, _playOnStart);
+    SERIALIZE_MEMBER(AllowSpatialization, _allowSpatialization);
 }
 
 void AudioSource::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -339,6 +349,7 @@ void AudioSource::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(Attenuation, _attenuation);
     DESERIALIZE_MEMBER(Loop, _loop);
     DESERIALIZE_MEMBER(PlayOnStart, _playOnStart);
+    DESERIALIZE_MEMBER(AllowSpatialization, _allowSpatialization);
 }
 
 bool AudioSource::HasContentLoaded() const

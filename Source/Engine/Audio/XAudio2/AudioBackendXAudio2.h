@@ -43,6 +43,7 @@ public:
     void Buffer_Delete(uint32& bufferId) override;
     void Buffer_Write(uint32 bufferId, byte* samples, const AudioDataInfo& info) override;
     const Char* Base_Name() override;
+    FeatureFlags Base_Features() override;
     void Base_OnActiveDeviceChanged() override;
     void Base_SetDopplerFactor(float value) override;
     void Base_SetVolume(float value) override;
