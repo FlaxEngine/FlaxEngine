@@ -119,6 +119,7 @@ namespace XAudio2
         XAUDIO2_SEND_DESCRIPTOR Destination;
         float Pitch;
         float StartTime;
+        float DopplerFactor;
         uint64 LastBufferStartSamplesPlayed;
         int32 BuffersProcessed;
         bool IsDirty;
@@ -398,6 +399,7 @@ void AudioBackendXAudio2::Source_OnAdd(AudioSource* source)
     aSource->Data.InnerRadius = FLAX_DST_TO_XAUDIO(source->GetMinDistance());
     aSource->Is3D = source->Is3D();
     aSource->Pitch = source->GetPitch();
+    aSource->DopplerFactor = source->GetDopplerFactor();
     aSource->UpdateTransform(source);
     aSource->UpdateVelocity(source);
 
@@ -502,6 +504,7 @@ void AudioBackendXAudio2::Source_SpatialSetupChanged(AudioSource* source)
     if (aSource)
     {
         // TODO: implement attenuation settings for 3d audio
+        aSource->DopplerFactor = source->GetDopplerFactor();
         aSource->Data.InnerRadius = FLAX_DST_TO_XAUDIO(source->GetMinDistance());
         aSource->IsDirty = true;
     }
@@ -827,7 +830,7 @@ void AudioBackendXAudio2::Base_Update()
             }
         }
 
-        const float frequencyRatio = dopplerFactor * source.Pitch * dsp.DopplerFactor;
+        const float frequencyRatio = dopplerFactor * source.Pitch * dsp.DopplerFactor * source.DopplerFactor;
         source.Voice->SetFrequencyRatio(frequencyRatio);
         source.Voice->SetOutputMatrix(XAudio2::MasteringVoice, dsp.SrcChannelCount, dsp.DstChannelCount, dsp.pMatrixCoefficients);
 

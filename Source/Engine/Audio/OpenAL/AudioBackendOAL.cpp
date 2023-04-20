@@ -151,6 +151,7 @@ namespace ALC
                     alSourcei(sourceID, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE);
 #endif
                     alSourcef(sourceID, AL_ROLLOFF_FACTOR, source->GetAttenuation());
+                    alSourcef(sourceID, AL_DOPPLER_FACTOR, source->GetDopplerFactor());
                     alSourcef(sourceID, AL_REFERENCE_DISTANCE, FLAX_DST_TO_OAL(source->GetMinDistance()));
                     alSource3f(sourceID, AL_POSITION, FLAX_POS_TO_OAL(source->GetPosition()));
                     alSource3f(sourceID, AL_VELOCITY, FLAX_VEL_TO_OAL(source->GetVelocity()));
@@ -158,6 +159,7 @@ namespace ALC
                 else
                 {
                     alSourcef(sourceID, AL_ROLLOFF_FACTOR, 0.0f);
+                    alSourcef(sourceID, AL_DOPPLER_FACTOR, 1.0f);
                     alSourcef(sourceID, AL_REFERENCE_DISTANCE, 0.0f);
                     alSource3f(sourceID, AL_POSITION, 0.0f, 0.0f, 0.0f);
                     alSource3f(sourceID, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
@@ -408,11 +410,13 @@ void AudioBackendOAL::Source_SpatialSetupChanged(AudioSource* source)
         if (is3D)
         {
             alSourcef(sourceID, AL_ROLLOFF_FACTOR, source->GetAttenuation());
+            alSourcef(sourceID, AL_DOPPLER_FACTOR, source->GetDopplerFactor());
             alSourcef(sourceID, AL_REFERENCE_DISTANCE, FLAX_DST_TO_OAL(source->GetMinDistance()));
         }
         else
         {
             alSourcef(sourceID, AL_ROLLOFF_FACTOR, 0.0f);
+            alSourcef(sourceID, AL_DOPPLER_FACTOR, 1.0f);
             alSourcef(sourceID, AL_REFERENCE_DISTANCE, 0.0f);
         }
     }
@@ -825,7 +829,7 @@ bool AudioBackendOAL::Base_Init()
     }
 
     // Init
-    SetDopplerFactor(AudioSettings::Get()->DopplerFactor);
+    Base_SetDopplerFactor(AudioSettings::Get()->DopplerFactor);
     alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED); // Default attenuation model
     ALC::RebuildContexts(true);
     Audio::SetActiveDeviceIndex(activeDeviceIndex);

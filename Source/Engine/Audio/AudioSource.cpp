@@ -17,7 +17,6 @@ AudioSource::AudioSource(const SpawnParams& params)
     , _volume(1.0f)
     , _pitch(1.0f)
     , _minDistance(1000.0f)
-    , _attenuation(1.0f)
     , _loop(false)
     , _playOnStart(false)
     , _allowSpatialization(true)
@@ -78,6 +77,16 @@ void AudioSource::SetAttenuation(float value)
     if (Math::NearEqual(_attenuation, value))
         return;
     _attenuation = value;
+    if (SourceIDs.HasItems())
+        AudioBackend::Source::SpatialSetupChanged(this);
+}
+
+void AudioSource::SetDopplerFactor(float value)
+{
+    value = Math::Max(0.0f, value);
+    if (Math::NearEqual(_dopplerFactor, value))
+        return;
+    _dopplerFactor = value;
     if (SourceIDs.HasItems())
         AudioBackend::Source::SpatialSetupChanged(this);
 }
@@ -332,6 +341,7 @@ void AudioSource::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(Pitch, _pitch);
     SERIALIZE_MEMBER(MinDistance, _minDistance);
     SERIALIZE_MEMBER(Attenuation, _attenuation);
+    SERIALIZE_MEMBER(DopplerFactor, _dopplerFactor);
     SERIALIZE_MEMBER(Loop, _loop);
     SERIALIZE_MEMBER(PlayOnStart, _playOnStart);
     SERIALIZE_MEMBER(AllowSpatialization, _allowSpatialization);
@@ -347,6 +357,7 @@ void AudioSource::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(Pitch, _pitch);
     DESERIALIZE_MEMBER(MinDistance, _minDistance);
     DESERIALIZE_MEMBER(Attenuation, _attenuation);
+    DESERIALIZE_MEMBER(DopplerFactor, _dopplerFactor);
     DESERIALIZE_MEMBER(Loop, _loop);
     DESERIALIZE_MEMBER(PlayOnStart, _playOnStart);
     DESERIALIZE_MEMBER(AllowSpatialization, _allowSpatialization);

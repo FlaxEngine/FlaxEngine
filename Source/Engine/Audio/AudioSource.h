@@ -47,7 +47,8 @@ private:
     float _volume;
     float _pitch;
     float _minDistance;
-    float _attenuation;
+    float _attenuation = 1.0f;
+    float _dopplerFactor = 1.0f;
     bool _loop;
     bool _playOnStart;
     bool _allowSpatialization;
@@ -163,6 +164,20 @@ public:
     /// Sets the attenuation that controls how quickly does audio volume drop off as the listener moves further from the source. At 0, no distance attenuation ever occurs.
     /// </summary>
     API_PROPERTY() void SetAttenuation(float value);
+
+    /// <summary>
+    /// Gets the doppler effect factor. Scale for source velocity. Default is 1.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(75), DefaultValue(1.0f), Limit(0, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\")")
+    FORCE_INLINE float GetDopplerFactor() const
+    {
+        return _dopplerFactor;
+    }
+
+    /// <summary>
+    /// Sets the doppler effect factor. Scale for source velocity. Default is 1.
+    /// </summary>
+    API_PROPERTY() void SetDopplerFactor(float value);
 
     /// <summary>
     /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound. At 0, no distance attenuation ever occurs.
