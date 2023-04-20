@@ -126,12 +126,18 @@ namespace FlaxEditor.Viewport.Previews
         {
             lock (_locker)
             {
-                // Release any cached data
-                _pcmData = null;
+                if (_asset != null)
+                {
+                    // Release any cached data
+                    _pcmData = null;
 
-                // Invalidate any in-flight data download to reject cached data due to refresh
-                if (_pcmSequence != 0)
-                    _pcmSequence++;
+                    // Invalidate any in-flight data download to reject cached data due to refresh
+                    if (_pcmSequence != 0)
+                        _pcmSequence++;
+
+                    // Use async task to gather PCM data (engine loads it from the asset)
+                    Task.Run(DownloadData);
+                }
             }
         }
 

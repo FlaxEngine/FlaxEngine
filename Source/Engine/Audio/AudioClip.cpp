@@ -200,6 +200,8 @@ bool AudioClip::ExtractData(Array<byte>& resultData, AudioDataInfo& resultDataIn
     ASSERT(!IsVirtual());
     if (WaitForLoaded())
         return true;
+    ScopeLock lock(Locker);
+    auto storageLock = Storage->LockSafe();
 
     // Allocate memory
     ASSERT(_totalChunksSize > 0);
@@ -245,6 +247,7 @@ bool AudioClip::ExtractDataRaw(Array<byte>& resultData, AudioDataInfo& resultDat
 {
     if (WaitForLoaded())
         return true;
+    ScopeLock lock(Locker);
     switch (Format())
     {
     case AudioFormat::Raw:
@@ -461,20 +464,32 @@ Asset::LoadResult AudioClip::load()
 
 void AudioClip::unload(bool isReloading)
 {
+    bool hasAnyBuffer = false;
+    for (const AUDIO_BUFFER_ID_TYPE bufferId : Buffers)
+        hasAnyBuffer |= bufferId != AUDIO_BUFFER_ID_INVALID;
+
+    // Stop any audio sources that are using this clip right now
+    // TODO: find better way to collect audio sources using audio clip and impl it for AudioStreamingHandler too
+    for (int32 sourceIndex = 0; sourceIndex < Audio::Sources.Count(); sourceIndex++)
+    {
+        const auto src = Audio::Sources[sourceIndex];
+        if (src->Clip == this)
+            src->Stop();
+    }
+
     StopStreaming();
     StreamingQueue.Clear();
-    if (Buffers.HasItems())
+    if (hasAnyBuffer)
     {
-        for (int32 i = 0; i < Buffers.Count(); i++)
+        for (AUDIO_BUFFER_ID_TYPE bufferId : Buffers)
         {
-            auto bufferId = Buffers[i];
             if (bufferId != AUDIO_BUFFER_ID_INVALID)
             {
                 AudioBackend::Buffer::Delete(bufferId);
             }
         }
-        Buffers.Clear();
     }
+    Buffers.Clear();
     _totalChunks = 0;
     Platform::MemoryClear(&AudioHeader, sizeof(AudioHeader));
 }
