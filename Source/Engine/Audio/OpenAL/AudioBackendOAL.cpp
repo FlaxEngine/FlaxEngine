@@ -831,7 +831,7 @@ bool AudioBackendOAL::Base_Init()
     Audio::SetActiveDeviceIndex(activeDeviceIndex);
 #ifdef AL_SOFT_source_spatialize
     if (ALC::IsExtensionSupported("AL_SOFT_source_spatialize"))
-        ALC::Features = (FeatureFlags)((uint32)ALC::Features | (uint32)FeatureFlags::SpatialMultiChannel);
+        ALC::Features = EnumAddFlags(ALC::Features, FeatureFlags::SpatialMultiChannel);
 #endif
 
     // Log service info
