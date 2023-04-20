@@ -35,8 +35,7 @@ private:
     virtual void Source_VolumeChanged(AudioSource* source) = 0;
     virtual void Source_PitchChanged(AudioSource* source) = 0;
     virtual void Source_IsLoopingChanged(AudioSource* source) = 0;
-    virtual void Source_MinDistanceChanged(AudioSource* source) = 0;
-    virtual void Source_AttenuationChanged(AudioSource* source) = 0;
+    virtual void Source_SpatialSetupChanged(AudioSource* source) = 0;
     virtual void Source_ClipLoaded(AudioSource* source) = 0;
     virtual void Source_Cleanup(AudioSource* source) = 0;
     virtual void Source_Play(AudioSource* source) = 0;
@@ -141,14 +140,9 @@ public:
             Instance->Source_IsLoopingChanged(source);
         }
 
-        FORCE_INLINE static void MinDistanceChanged(AudioSource* source)
+        FORCE_INLINE static void SpatialSetupChanged(AudioSource* source)
         {
-            Instance->Source_MinDistanceChanged(source);
-        }
-
-        FORCE_INLINE static void AttenuationChanged(AudioSource* source)
-        {
-            Instance->Source_AttenuationChanged(source);
+            Instance->Source_SpatialSetupChanged(source);
         }
 
         FORCE_INLINE static void ClipLoaded(AudioSource* source)

@@ -25,24 +25,14 @@ public:
     /// </summary>
     struct Options : public ISerializable
     {
-        AudioFormat Format;
-        bool DisableStreaming;
-        bool Is3D;
-        int32 BitDepth;
-        float Quality;
+        AudioFormat Format = AudioFormat::Vorbis;
+        bool DisableStreaming = false;
+        bool Is3D = false;
+        int32 BitDepth = 16;
+        float Quality = 0.4f;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Options"/> struct.
-        /// </summary>
-        Options();
-
-        /// <summary>
-        /// Gets string that contains information about options
-        /// </summary>
-        /// <returns>String</returns>
         String ToString() const;
 
-    public:
         // [ISerializable]
         void Serialize(SerializeStream& stream, const void* otherObj) override;
         void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
@@ -55,7 +45,7 @@ public:
     /// <param name="path">The asset path.</param>
     /// <param name="options">The options.</param>
     /// <returns>True if success, otherwise false.</returns>
-    static bool TryGetImportOptions(String path, Options& options);
+    static bool TryGetImportOptions(const String& path, Options& options);
 
     /// <summary>
     /// Imports the audio data (with given audio decoder).
@@ -80,14 +70,12 @@ public:
     static CreateAssetResult ImportMp3(CreateAssetContext& context);
 
 #if COMPILE_WITH_OGG_VORBIS
-
     /// <summary>
     /// Imports the .ogg audio file.
     /// </summary>
     /// <param name="context">The importing context.</param>
     /// <returns>Result.</returns>
     static CreateAssetResult ImportOgg(CreateAssetContext& context);
-
 #endif
 };
 

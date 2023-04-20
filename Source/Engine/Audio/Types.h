@@ -25,8 +25,6 @@ API_ENUM() enum class AudioFormat
     Vorbis,
 };
 
-const Char* ToString(AudioFormat value);
-
 /// <summary>
 /// Meta-data describing a chunk of audio.
 /// </summary>

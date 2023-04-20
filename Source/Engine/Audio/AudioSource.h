@@ -138,8 +138,7 @@ public:
     /// <summary>
     /// Gets the minimum distance at which audio attenuation starts. When the listener is closer to the source than this value, audio is heard at full volume. Once farther away the audio starts attenuating.
     /// </summary>
-    /// <returns>The value.</returns>
-    API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(1.0f), Limit(0, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\")")
+    API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(1000.0f), Limit(0, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\")")
     FORCE_INLINE float GetMinDistance() const
     {
         return _minDistance;
@@ -160,7 +159,7 @@ public:
     }
 
     /// <summary>
-    /// Sets the attenuation that controls how quickly does audio volume drop off as the listener moves further from the source.
+    /// Sets the attenuation that controls how quickly does audio volume drop off as the listener moves further from the source. At 0, no distance attenuation ever occurs.
     /// </summary>
     API_PROPERTY() void SetAttenuation(float value);
 
@@ -257,6 +256,9 @@ public:
         const Vector3 size(50);
         return BoundingBox(_transform.Translation - size, _transform.Translation + size);
     }
+#endif
+#if USE_EDITOR
+    void OnDebugDrawSelected() override;
 #endif
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

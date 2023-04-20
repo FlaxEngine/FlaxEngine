@@ -16,7 +16,7 @@ AudioSource::AudioSource(const SpawnParams& params)
     , _velocity(Vector3::Zero)
     , _volume(1.0f)
     , _pitch(1.0f)
-    , _minDistance(1.0f)
+    , _minDistance(1000.0f)
     , _attenuation(1.0f)
     , _loop(false)
     , _playOnStart(false)
@@ -30,13 +30,9 @@ void AudioSource::SetVolume(float value)
     value = Math::Saturate(value);
     if (Math::NearEqual(_volume, value))
         return;
-
     _volume = value;
-
     if (SourceIDs.HasItems())
-    {
         AudioBackend::Source::VolumeChanged(this);
-    }
 }
 
 void AudioSource::SetPitch(float value)
@@ -44,27 +40,20 @@ void AudioSource::SetPitch(float value)
     value = Math::Clamp(value, 0.5f, 2.0f);
     if (Math::NearEqual(_pitch, value))
         return;
-
     _pitch = value;
-
     if (SourceIDs.HasItems())
-    {
         AudioBackend::Source::PitchChanged(this);
-    }
 }
 
 void AudioSource::SetIsLooping(bool value)
 {
     if (_loop == value)
         return;
-
     _loop = value;
 
     // When streaming we handle looping manually by the proper buffers submission
     if (SourceIDs.HasItems() && !UseStreaming())
-    {
         AudioBackend::Source::IsLoopingChanged(this);
-    }
 }
 
 void AudioSource::SetPlayOnStart(bool value)
@@ -77,13 +66,9 @@ void AudioSource::SetMinDistance(float value)
     value = Math::Max(0.0f, value);
     if (Math::NearEqual(_minDistance, value))
         return;
-
     _minDistance = value;
-
     if (SourceIDs.HasItems())
-    {
-        AudioBackend::Source::MinDistanceChanged(this);
-    }
+        AudioBackend::Source::SpatialSetupChanged(this);
 }
 
 void AudioSource::SetAttenuation(float value)
@@ -91,13 +76,10 @@ void AudioSource::SetAttenuation(float value)
     value = Math::Max(0.0f, value);
     if (Math::NearEqual(_attenuation, value))
         return;
-
     _attenuation = value;
 
     if (SourceIDs.HasItems())
-    {
-        AudioBackend::Source::AttenuationChanged(this);
-    }
+        AudioBackend::Source::SpatialSetupChanged(this);
 }
 
 void AudioSource::Play()
@@ -312,6 +294,22 @@ void AudioSource::PlayInternal()
 
     _isActuallyPlayingSth = true;
 }
+
+#if USE_EDITOR
+
+#include "Engine/Debug/DebugDraw.h"
+
+void AudioSource::OnDebugDrawSelected()
+{
+    // Draw influence range
+    if (_allowSpatialization)
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(_transform.Translation, _minDistance), Color::CornflowerBlue, 0, true);
+
+    // Base
+    Actor::OnDebugDrawSelected();
+}
+
+#endif
 
 void AudioSource::Serialize(SerializeStream& stream, const void* otherObj)
 {

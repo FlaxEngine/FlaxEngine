@@ -26,7 +26,8 @@
 #define MAX_OUTPUT_CHANNELS 8
 #define MAX_CHANNELS_MATRIX_SIZE (MAX_INPUT_CHANNELS*MAX_OUTPUT_CHANNELS)
 
-#define FLAX_COORD_SCALE 0.01f
+#define FLAX_COORD_SCALE 0.01f // units are meters
+#define FLAX_DST_TO_XAUDIO(x) x * FLAX_COORD_SCALE
 #define FLAX_POS_TO_XAUDIO(vec) X3DAUDIO_VECTOR(vec.X * FLAX_COORD_SCALE,  vec.Y * FLAX_COORD_SCALE, vec.Z * FLAX_COORD_SCALE)
 #define FLAX_VEL_TO_XAUDIO(vec) X3DAUDIO_VECTOR(vec.X * (FLAX_COORD_SCALE*FLAX_COORD_SCALE),  vec.Y * (FLAX_COORD_SCALE*FLAX_COORD_SCALE), vec.Z * (FLAX_COORD_SCALE*FLAX_COORD_SCALE))
 #define FLAX_VEC_TO_XAUDIO(vec) (*((X3DAUDIO_VECTOR*)&vec))
@@ -105,7 +106,6 @@ namespace XAudio2
         }
 
     public:
-
         AudioSource* Source;
 
         void PeekSamples();
@@ -200,13 +200,11 @@ namespace XAudio2
     DWORD ChannelMask;
     UINT32 SampleRate;
     UINT32 Channels;
-    bool UseRedirectToLFE;
     bool ForceDirty = true;
     Listener Listeners[AUDIO_MAX_LISTENERS];
     Array<Source> Sources(32); // TODO: use ChunkedArray for better performance
     Array<Buffer*> Buffers(64); // TODO: use ChunkedArray for better performance or use buffers pool?
     EngineCallback Callback;
-    float MatrixCoefficients[MAX_CHANNELS_MATRIX_SIZE];
 
     Listener* GetListener()
     {
@@ -397,9 +395,9 @@ void AudioBackendXAudio2::Source_OnAdd(AudioSource* source)
     aSource->Callback.Source = source;
     aSource->IsDirty = true;
     aSource->Data.ChannelCount = header.Info.NumChannels;
+    aSource->Data.InnerRadius = FLAX_DST_TO_XAUDIO(source->GetMinDistance());
     aSource->Is3D = source->Is3D();
     aSource->Pitch = source->GetPitch();
-    aSource->Data.InnerRadius = source->GetMinDistance();
     aSource->UpdateTransform(source);
     aSource->UpdateVelocity(source);
 
@@ -498,19 +496,15 @@ void AudioBackendXAudio2::Source_IsLoopingChanged(AudioSource* source)
         aSource->Voice->Start();
 }
 
-void AudioBackendXAudio2::Source_MinDistanceChanged(AudioSource* source)
+void AudioBackendXAudio2::Source_SpatialSetupChanged(AudioSource* source)
 {
     auto aSource = XAudio2::GetSource(source);
     if (aSource)
     {
-        aSource->Data.InnerRadius = source->GetMinDistance();
+        // TODO: implement attenuation settings for 3d audio
+        aSource->Data.InnerRadius = FLAX_DST_TO_XAUDIO(source->GetMinDistance());
         aSource->IsDirty = true;
     }
-}
-
-void AudioBackendXAudio2::Source_AttenuationChanged(AudioSource* source)
-{
-    // TODO: implement it
 }
 
 void AudioBackendXAudio2::Source_ClipLoaded(AudioSource* source)
@@ -769,7 +763,6 @@ bool AudioBackendXAudio2::Base_Init()
         LOG(Error, "Failed to get XAudio2 mastering voice channel mask. Error: 0x{0:x}", hr);
         return true;
     }
-    XAudio2::UseRedirectToLFE = ((XAudio2::ChannelMask & SPEAKER_LOW_FREQUENCY) != 0);
 
     // Initialize spatial audio subsystem
     DWORD dwChannelMask;
@@ -794,19 +787,13 @@ bool AudioBackendXAudio2::Base_Init()
 
 void AudioBackendXAudio2::Base_Update()
 {
-    // Note: only one listener is supported for now
-    const auto listener = XAudio2::GetListener();
-    if (!listener)
-    {
-        // How can we play audio when no one is listening
-        return;
-    }
-
     // Update dirty voices
+    const auto listener = XAudio2::GetListener();
     const float dopplerFactor = AudioSettings::Get()->DopplerFactor;
+    float matrixCoefficients[MAX_CHANNELS_MATRIX_SIZE];
     X3DAUDIO_DSP_SETTINGS dsp = { 0 };
     dsp.DstChannelCount = XAudio2::Channels;
-    dsp.pMatrixCoefficients = XAudio2::MatrixCoefficients;
+    dsp.pMatrixCoefficients = matrixCoefficients;
     for (int32 i = 0; i < XAudio2::Sources.Count(); i++)
     {
         auto& source = XAudio2::Sources[i];
@@ -814,7 +801,7 @@ void AudioBackendXAudio2::Base_Update()
             continue;
 
         dsp.SrcChannelCount = source.Data.ChannelCount;
-        if (source.Is3D)
+        if (source.Is3D && listener)
         {
             X3DAudioCalculate(XAudio2::X3DInstance, &listener->Data, &source.Data, X3DAUDIO_CALCULATE_MATRIX | X3DAUDIO_CALCULATE_DOPPLER, &dsp);
         }
@@ -822,7 +809,7 @@ void AudioBackendXAudio2::Base_Update()
         {
             // Stereo
             dsp.DopplerFactor = 1.0f;
-            Platform::MemoryClear(dsp.pMatrixCoefficients, sizeof(XAudio2::MatrixCoefficients));
+            Platform::MemoryClear(dsp.pMatrixCoefficients, sizeof(matrixCoefficients));
             dsp.pMatrixCoefficients[0] = 1.0f;
             if (source.Format.nChannels == 1)
             {

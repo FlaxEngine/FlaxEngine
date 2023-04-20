@@ -21,7 +21,8 @@
 
 #define ALC_MULTIPLE_LISTENERS 0
 
-#define FLAX_COORD_SCALE 0.01f
+#define FLAX_COORD_SCALE 0.01f // units are meters
+#define FLAX_DST_TO_OAL(x) x * FLAX_COORD_SCALE
 #define FLAX_POS_TO_OAL(vec) ((ALfloat)vec.X * -FLAX_COORD_SCALE), ((ALfloat)vec.Y * FLAX_COORD_SCALE), ((ALfloat)vec.Z * FLAX_COORD_SCALE)
 #define FLAX_VEL_TO_OAL(vec) ((ALfloat)vec.X * -(FLAX_COORD_SCALE*FLAX_COORD_SCALE)), ((ALfloat)vec.Y * (FLAX_COORD_SCALE*FLAX_COORD_SCALE)), ((ALfloat)vec.Z * (FLAX_COORD_SCALE*FLAX_COORD_SCALE))
 #if BUILD_RELEASE
@@ -102,7 +103,7 @@ namespace ALC
     {
         alcMakeContextCurrent(nullptr);
 
-        for (auto& context : Contexts)
+        for (ALCcontext* context : Contexts)
             alcDestroyContext(context);
         Contexts.Clear();
     }
@@ -113,7 +114,7 @@ namespace ALC
         {
             AudioBackend::Listener::TransformChanged(listener);
 
-            const auto& velocity = listener->GetVelocity();
+            const Vector3 velocity = listener->GetVelocity();
             alListener3f(AL_VELOCITY, FLAX_VEL_TO_OAL(velocity));
             alListenerf(AL_GAIN, Audio::GetVolume());
         }
@@ -146,13 +147,14 @@ namespace ALC
                 if (is3D)
                 {
                     alSourcef(sourceID, AL_ROLLOFF_FACTOR, source->GetAttenuation());
-                    alSourcef(sourceID, AL_REFERENCE_DISTANCE, source->GetMinDistance());
+                    alSourcef(sourceID, AL_REFERENCE_DISTANCE, FLAX_DST_TO_OAL(source->GetMinDistance()));
                     alSource3f(sourceID, AL_POSITION, FLAX_POS_TO_OAL(source->GetPosition()));
                     alSource3f(sourceID, AL_VELOCITY, FLAX_VEL_TO_OAL(source->GetVelocity()));
                 }
                 else
                 {
                     alSourcef(sourceID, AL_ROLLOFF_FACTOR, 0.0f);
+                    alSourcef(sourceID, AL_REFERENCE_DISTANCE, 0.0f);
                     alSource3f(sourceID, AL_POSITION, 0.0f, 0.0f, 0.0f);
                     alSource3f(sourceID, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
                 }
@@ -169,7 +171,7 @@ namespace ALC
 
         if (!isChangingDevice)
         {
-            for (auto& source : Audio::Sources)
+            for (AudioSource* source : Audio::Sources)
                 source->Cleanup();
         }
 
@@ -204,10 +206,10 @@ namespace ALC
         // Audio listeners and sources will avoid excessive context switching in such case.
         alcMakeContextCurrent(Contexts[0]);
 
-        for (auto& listener : Audio::Listeners)
+        for (AudioListener* listener : Audio::Listeners)
             Listener::Rebuild(listener);
 
-        for (auto& source : Audio::Sources)
+        for (AudioSource* source : Audio::Sources)
             Source::Rebuild(source);
     }
 }
@@ -293,7 +295,7 @@ void AudioBackendOAL::Listener_OnAdd(AudioListener* listener)
     ALC::RebuildContexts(false);
 #else
     AudioBackend::Listener::TransformChanged(listener);
-    const auto& velocity = listener->GetVelocity();
+    const Vector3 velocity = listener->GetVelocity();
     alListener3f(AL_VELOCITY, FLAX_VEL_TO_OAL(velocity));
     alListenerf(AL_GAIN, Audio::GetVolume());
 #endif
@@ -310,7 +312,7 @@ void AudioBackendOAL::Listener_VelocityChanged(AudioListener* listener)
 {
     ALC_GET_LISTENER_CONTEXT(listener)
 
-    const auto& velocity = listener->GetVelocity();
+    const Vector3 velocity = listener->GetVelocity();
     alListener3f(AL_VELOCITY, FLAX_VEL_TO_OAL(velocity));
 }
 
@@ -318,11 +320,10 @@ void AudioBackendOAL::Listener_TransformChanged(AudioListener* listener)
 {
     ALC_GET_LISTENER_CONTEXT(listener)
 
-    const Vector3& position = listener->GetPosition();
-    const Quaternion& orientation = listener->GetOrientation();
-    const Vector3& flipX = Vector3(-1, 1, 1);
-
-    Vector3 alOrientation[2] =
+    const Vector3 position = listener->GetPosition();
+    const Quaternion orientation = listener->GetOrientation();
+    const Vector3 flipX(-1, 1, 1);
+    const Vector3 alOrientation[2] =
     {
         // Forward
         orientation * Vector3::Forward * flipX,
@@ -394,23 +395,22 @@ void AudioBackendOAL::Source_IsLoopingChanged(AudioSource* source)
     }
 }
 
-void AudioBackendOAL::Source_MinDistanceChanged(AudioSource* source)
+void AudioBackendOAL::Source_SpatialSetupChanged(AudioSource* source)
 {
-    if (!source->Is3D())
-        return;
+    const bool is3D = source->Is3D();
     ALC_FOR_EACH_CONTEXT()
         const uint32 sourceID = source->SourceIDs[i];
-        alSourcef(sourceID, AL_REFERENCE_DISTANCE, source->GetMinDistance());
-    }
-}
-
-void AudioBackendOAL::Source_AttenuationChanged(AudioSource* source)
-{
-    if (!source->Is3D())
-        return;
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
-        alSourcef(sourceID, AL_ROLLOFF_FACTOR, source->GetAttenuation());
+        alSourcei(sourceID, AL_SOURCE_RELATIVE, !is3D);
+        if (is3D)
+        {
+            alSourcef(sourceID, AL_ROLLOFF_FACTOR, source->GetAttenuation());
+            alSourcef(sourceID, AL_REFERENCE_DISTANCE, FLAX_DST_TO_OAL(source->GetMinDistance()));
+        }
+        else
+        {
+            alSourcef(sourceID, AL_ROLLOFF_FACTOR, 0.0f);
+            alSourcef(sourceID, AL_REFERENCE_DISTANCE, 0.0f);
+        }
     }
 }
 
@@ -496,7 +496,7 @@ float AudioBackendOAL::Source_GetCurrentBufferTime(const AudioSource* source)
     alGetSourcef(source->SourceIDs[0], AL_SEC_OFFSET, &time);
 #else
     ASSERT(source->Clip && source->Clip->IsLoaded());
-    const auto& clipInfo = source->Clip->AudioHeader.Info;
+    const AudioDataInfo& clipInfo = source->Clip->AudioHeader.Info;
     ALint samplesPlayed;
     alGetSourcei(source->SourceIDs[0], AL_SAMPLE_OFFSET, &samplesPlayed);
     const uint32 totalSamples = clipInfo.NumSamples / clipInfo.NumChannels;
@@ -686,7 +686,7 @@ const Char* AudioBackendOAL::Base_Name()
 void AudioBackendOAL::Base_OnActiveDeviceChanged()
 {
     // Cleanup
-    for (auto& source : Audio::Sources)
+    for (AudioSource* source : Audio::Sources)
         source->Cleanup();
     ALC::ClearContexts();
     if (ALC::Device != nullptr)
@@ -696,7 +696,7 @@ void AudioBackendOAL::Base_OnActiveDeviceChanged()
     }
 
     // Open device
-    const auto& name = Audio::GetActiveDevice()->InternalName;
+    const StringAnsi& name = Audio::GetActiveDevice()->InternalName;
     ALC::Device = alcOpenDevice(name.Get());
     if (ALC::Device == nullptr)
     {
@@ -817,6 +817,7 @@ bool AudioBackendOAL::Base_Init()
 
     // Init
     SetDopplerFactor(AudioSettings::Get()->DopplerFactor);
+    alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED); // Default attenuation model
     ALC::RebuildContexts(true);
     Audio::SetActiveDeviceIndex(activeDeviceIndex);
 

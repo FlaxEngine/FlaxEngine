@@ -31,19 +31,6 @@
 #include "XAudio2/AudioBackendXAudio2.h"
 #endif
 
-const Char* ToString(AudioFormat value)
-{
-    switch (value)
-    {
-    case AudioFormat::Raw:
-        return TEXT("Raw");
-    case AudioFormat::Vorbis:
-        return TEXT("Vorbis");
-    default:
-        return TEXT("");
-    }
-}
-
 float AudioDataInfo::GetLength() const
 {
     return (float)NumSamples / (float)Math::Max(1U, SampleRate * NumChannels);

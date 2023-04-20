@@ -56,11 +56,7 @@ void AudioBackendNone::Source_IsLoopingChanged(AudioSource* source)
 {
 }
 
-void AudioBackendNone::Source_MinDistanceChanged(AudioSource* source)
-{
-}
-
-void AudioBackendNone::Source_AttenuationChanged(AudioSource* source)
+void AudioBackendNone::Source_SpatialSetupChanged(AudioSource* source)
 {
 }
 

@@ -26,8 +26,7 @@ public:
     void Source_VolumeChanged(AudioSource* source) override;
     void Source_PitchChanged(AudioSource* source) override;
     void Source_IsLoopingChanged(AudioSource* source) override;
-    void Source_MinDistanceChanged(AudioSource* source) override;
-    void Source_AttenuationChanged(AudioSource* source) override;
+    void Source_SpatialSetupChanged(AudioSource* source) override;
     void Source_ClipLoaded(AudioSource* source) override;
     void Source_Cleanup(AudioSource* source) override;
     void Source_Play(AudioSource* source) override;
