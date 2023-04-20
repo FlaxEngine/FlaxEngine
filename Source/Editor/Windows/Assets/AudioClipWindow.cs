@@ -307,6 +307,7 @@ namespace FlaxEditor.Windows.Assets
                 _propertiesEditor.BuildLayout();
                 if (_previewSource)
                     _previewSource.Stop();
+                _preview.RefreshPreview();
 
                 // Setup
                 ClearEditedFlag();
