@@ -363,7 +363,6 @@ void AudioSource::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     // Base
     Actor::Deserialize(stream, modifier);
 
-    DESERIALIZE(Clip);
     DESERIALIZE_MEMBER(Volume, _volume);
     DESERIALIZE_MEMBER(Pitch, _pitch);
     DESERIALIZE_MEMBER(Pan, _pan);
@@ -373,6 +372,7 @@ void AudioSource::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(Loop, _loop);
     DESERIALIZE_MEMBER(PlayOnStart, _playOnStart);
     DESERIALIZE_MEMBER(AllowSpatialization, _allowSpatialization);
+    DESERIALIZE(Clip);
 }
 
 bool AudioSource::HasContentLoaded() const
