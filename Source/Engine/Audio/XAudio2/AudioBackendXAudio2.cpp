@@ -126,6 +126,7 @@ namespace XAudio2
         bool IsDirty;
         bool Is3D;
         bool IsPlaying;
+        bool IsForceMono3D;
         VoiceCallback Callback;
 
         Source()
@@ -368,7 +369,7 @@ void AudioBackendXAudio2::Source_OnAdd(AudioSource* source)
     }
 
     // Initialize audio data format information (from clip)
-    auto& header = clip->AudioHeader;
+    const auto& header = clip->AudioHeader;
     auto& format = aSource->Format;
     format.wFormatTag = WAVE_FORMAT_PCM;
     format.nChannels = source->Is3D() ? 1 : header.Info.NumChannels; // 3d audio is always mono (AudioClip auto-converts before buffer write)
@@ -400,6 +401,7 @@ void AudioBackendXAudio2::Source_OnAdd(AudioSource* source)
     aSource->Data.ChannelCount = format.nChannels;
     aSource->Data.InnerRadius = FLAX_DST_TO_XAUDIO(source->GetMinDistance());
     aSource->Is3D = source->Is3D();
+    aSource->IsForceMono3D = header.Is3D && header.Info.NumChannels > 1;
     aSource->Pitch = source->GetPitch();
     aSource->Pan = source->GetPan();
     aSource->DopplerFactor = source->GetDopplerFactor();
@@ -517,6 +519,14 @@ void AudioBackendXAudio2::Source_SpatialSetupChanged(AudioSource* source)
     if (aSource)
     {
         // TODO: implement attenuation settings for 3d audio
+        auto clip = source->Clip.Get();
+        if (clip && clip->IsLoaded())
+        {
+            const auto& header = clip->AudioHeader;
+            aSource->Data.ChannelCount = source->Is3D() ? 1 : header.Info.NumChannels; // 3d audio is always mono (AudioClip auto-converts before buffer write)
+            aSource->IsForceMono3D = header.Is3D && header.Info.NumChannels > 1;
+        }
+        aSource->Is3D = source->Is3D();
         aSource->DopplerFactor = source->GetDopplerFactor();
         aSource->Data.InnerRadius = FLAX_DST_TO_XAUDIO(source->GetMinDistance());
         aSource->IsDirty = true;
@@ -607,8 +617,8 @@ float AudioBackendXAudio2::Source_GetCurrentBufferTime(const AudioSource* source
         const auto& clipInfo = source->Clip->AudioHeader.Info;
         XAUDIO2_VOICE_STATE state;
         aSource->Voice->GetState(&state);
-        const uint32 numChannels = source->Is3D() ? 1 : clipInfo.NumChannels; // 3d audio is always mono (AudioClip auto-converts before buffer write)
-        const UINT32 totalSamples = clipInfo.NumSamples / numChannels;
+        const uint32 numChannels = clipInfo.NumChannels;
+        const uint32 totalSamples = clipInfo.NumSamples / numChannels;
         state.SamplesPlayed -= aSource->LastBufferStartSamplesPlayed % totalSamples; // Offset by the last buffer start to get time relative to its begin
         time = aSource->StartTime + (state.SamplesPlayed % totalSamples) / static_cast<float>(Math::Max(1U, clipInfo.SampleRate));
     }
@@ -850,7 +860,11 @@ void AudioBackendXAudio2::Base_Update()
                 dsp.pMatrixCoefficients[3] *= panRight;
             }
         }
-
+        if (source.IsForceMono3D)
+        {
+            // Hack to fix playback speed for 3D clip that has auto-converted stereo to mono at runtime
+            dsp.DopplerFactor *= 0.5f;
+        }
         const float frequencyRatio = dopplerFactor * source.Pitch * dsp.DopplerFactor * source.DopplerFactor;
         source.Voice->SetFrequencyRatio(frequencyRatio);
         source.Voice->SetOutputMatrix(XAudio2::MasteringVoice, dsp.SrcChannelCount, dsp.DstChannelCount, dsp.pMatrixCoefficients);
