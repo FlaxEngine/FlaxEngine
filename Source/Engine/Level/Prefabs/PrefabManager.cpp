@@ -263,6 +263,16 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
         obj->LinkPrefab(prefabId, prefabObjectId);
     }
 
+    // Set static flags to match parent
+    if (parent && parent != root->GetScene())
+    {
+        Array<Actor*> childActors = root->GetActorsTree();
+        for(auto& child : childActors)
+        {
+            child->SetStaticFlags(parent->GetStaticFlags());
+        }
+    }
+
     // Update transformations
     root->OnTransformChanged();
 

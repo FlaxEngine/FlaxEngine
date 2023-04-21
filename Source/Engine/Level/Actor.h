@@ -821,6 +821,11 @@ public:
 
 public:
     /// <summary>
+    /// Gets all of the actor tree of this actor.
+    /// </summary>
+    API_FUNCTION() Array<Actor*> GetActorsTree();
+
+    /// <summary>
     /// Execute custom action on actors tree.
     /// Action should returns false to stop calling deeper.
     /// First action argument is current actor object.
@@ -997,6 +1002,8 @@ private:
     // Helper methods used by templates GetChildren/GetScripts to prevent including MClass/Script here
     static bool IsSubClassOf(const Actor* object, const MClass* klass);
     static bool IsSubClassOf(const Script* object, const MClass* klass);
+
+    void GetActorsTree(Array<Actor*>& list, Actor* a);
 
 public:
     // [ScriptingObject]

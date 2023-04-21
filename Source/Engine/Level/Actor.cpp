@@ -287,6 +287,15 @@ void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefa
     if (_parent)
     {
         _parent->Children.Add(this);
+        if (_parent != this->GetScene())
+        {
+            // Set static flags to same as parent
+            Array<Actor*> childActors = GetActorsTree();
+            for(auto& child : childActors)
+            {
+                child->SetStaticFlags(_parent->GetStaticFlags());
+            }
+        }
     }
 
     // Sync scene change if need to
@@ -352,6 +361,23 @@ void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefa
 void Actor::SetParent(Actor* value, bool canBreakPrefabLink)
 {
     SetParent(value, false, canBreakPrefabLink);
+}
+
+void Actor::GetActorsTree(Array<Actor*> &list, Actor* a)
+{
+    list.Add(a);
+    const int cnt = a->Children.Count();
+    for (int i = 0; i < cnt; i++)
+    {
+        GetActorsTree(list, a->GetChild(i));
+    }
+}
+
+Array<Actor*> Actor::GetActorsTree()
+{
+    Array<Actor*> actors;
+    GetActorsTree(actors, this);
+    return actors;
 }
 
 int32 Actor::GetOrderInParent() const
