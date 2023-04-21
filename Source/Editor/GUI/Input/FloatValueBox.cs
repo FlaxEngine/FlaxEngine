@@ -84,7 +84,7 @@ namespace FlaxEditor.GUI.Input
             var range = _max - _min;
             if (Mathf.IsOne(_slideSpeed) && range > Mathf.Epsilon * 200.0f && range < 1000000.0f)
             {
-                _slideSpeed = range * 0.01f;
+                _slideSpeed = range * 0.001f;
             }
         }
 
