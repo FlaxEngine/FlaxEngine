@@ -52,6 +52,10 @@ void AudioBackendNone::Source_PitchChanged(AudioSource* source)
 {
 }
 
+void AudioBackendNone::Source_PanChanged(AudioSource* source)
+{
+}
+
 void AudioBackendNone::Source_IsLoopingChanged(AudioSource* source)
 {
 }

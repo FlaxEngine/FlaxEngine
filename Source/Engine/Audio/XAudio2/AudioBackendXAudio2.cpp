@@ -118,6 +118,7 @@ namespace XAudio2
         WAVEFORMATEX Format;
         XAUDIO2_SEND_DESCRIPTOR Destination;
         float Pitch;
+        float Pan;
         float StartTime;
         float DopplerFactor;
         uint64 LastBufferStartSamplesPlayed;
@@ -140,6 +141,7 @@ namespace XAudio2
             Destination.Flags = 0;
             Destination.pOutputVoice = nullptr;
             Pitch = 1.0f;
+            Pan = 0.0f;
             StartTime = 0.0f;
             IsDirty = false;
             Is3D = false;
@@ -399,6 +401,7 @@ void AudioBackendXAudio2::Source_OnAdd(AudioSource* source)
     aSource->Data.InnerRadius = FLAX_DST_TO_XAUDIO(source->GetMinDistance());
     aSource->Is3D = source->Is3D();
     aSource->Pitch = source->GetPitch();
+    aSource->Pan = source->GetPan();
     aSource->DopplerFactor = source->GetDopplerFactor();
     aSource->UpdateTransform(source);
     aSource->UpdateVelocity(source);
@@ -451,6 +454,16 @@ void AudioBackendXAudio2::Source_PitchChanged(AudioSource* source)
     if (aSource)
     {
         aSource->Pitch = source->GetPitch();
+        aSource->IsDirty = true;
+    }
+}
+
+void AudioBackendXAudio2::Source_PanChanged(AudioSource* source)
+{
+    auto aSource = XAudio2::GetSource(source);
+    if (aSource)
+    {
+        aSource->Pan = source->GetPan();
         aSource->IsDirty = true;
     }
 }
@@ -812,11 +825,12 @@ void AudioBackendXAudio2::Base_Update()
         dsp.SrcChannelCount = source.Data.ChannelCount;
         if (source.Is3D && listener)
         {
+            // 3D sound
             X3DAudioCalculate(XAudio2::X3DInstance, &listener->Data, &source.Data, X3DAUDIO_CALCULATE_MATRIX | X3DAUDIO_CALCULATE_DOPPLER, &dsp);
         }
         else
         {
-            // Stereo
+            // 2D sound
             dsp.DopplerFactor = 1.0f;
             Platform::MemoryClear(dsp.pMatrixCoefficients, sizeof(matrixCoefficients));
             dsp.pMatrixCoefficients[0] = 1.0f;
@@ -827,6 +841,13 @@ void AudioBackendXAudio2::Base_Update()
             else
             {
                 dsp.pMatrixCoefficients[3] = 1.0f;
+            }
+            const float panLeft = Math::Min(1.0f - source.Pan, 1.0f);
+            const float panRight = Math::Min(1.0f + source.Pan, 1.0f);
+            if (source.Format.nChannels >= 2)
+            {
+                dsp.pMatrixCoefficients[0] *= panLeft;
+                dsp.pMatrixCoefficients[3] *= panRight;
             }
         }
 

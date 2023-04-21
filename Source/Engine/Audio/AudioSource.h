@@ -46,6 +46,7 @@ private:
     Vector3 _prevPos;
     float _volume;
     float _pitch;
+    float _pan = 0.0f;
     float _minDistance;
     float _attenuation = 1.0f;
     float _dopplerFactor = 1.0f;
@@ -108,6 +109,20 @@ public:
     /// Sets the pitch of the played audio. The default is 1.
     /// </summary>
     API_PROPERTY() void SetPitch(float value);
+
+    /// <summary>
+    /// Gets the stereo pan of the played audio (-1 is left speaker, 1 is right speaker, 0 is balanced). The default is 1. Used by non-spatial audio only.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(30), DefaultValue(0.0f), Limit(-1.0f, 1.0f), EditorDisplay(\"Audio Source\")")
+    FORCE_INLINE float GetPan() const
+    {
+        return _pan;
+    }
+
+    /// <summary>
+    /// Sets the stereo pan of the played audio (-1 is left speaker, 1 is right speaker, 0 is balanced). The default is 0. Used by non-spatial audio only.
+    /// </summary>
+    API_PROPERTY() void SetPan(float value);
 
     /// <summary>
     /// Determines whether the audio clip should loop when it finishes playing.

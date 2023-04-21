@@ -164,6 +164,11 @@ namespace ALC
                     alSource3f(sourceID, AL_POSITION, 0.0f, 0.0f, 0.0f);
                     alSource3f(sourceID, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
                 }
+#ifdef AL_EXT_STEREO_ANGLES
+                const float panAngle = source->GetPan() * PI_HALF;
+                const ALfloat panAngles[2] = { (ALfloat)(PI / 6.0 - panAngle), (ALfloat)(-PI / 6.0 - panAngle) }; // Angles are specified counter-clockwise in radians
+                alSourcefv(sourceID, AL_STEREO_ANGLES, panAngles);
+#endif
             }
 
             // Restore state after Cleanup
@@ -392,6 +397,18 @@ void AudioBackendOAL::Source_PitchChanged(AudioSource* source)
     }
 }
 
+void AudioBackendOAL::Source_PanChanged(AudioSource* source)
+{
+#ifdef AL_EXT_STEREO_ANGLES
+    const float panAngle = source->GetPan() * PI_HALF;
+    const ALfloat panAngles[2] = { (ALfloat)(PI / 6.0 - panAngle), (ALfloat)(-PI / 6.0 - panAngle) }; // Angles are specified counter-clockwise in radians
+    ALC_FOR_EACH_CONTEXT()
+        const uint32 sourceID = source->SourceIDs[i];
+        alSourcefv(sourceID, AL_STEREO_ANGLES, panAngles);
+    }
+#endif
+}
+
 void AudioBackendOAL::Source_IsLoopingChanged(AudioSource* source)
 {
     const bool loop = source->GetIsLooping() && !source->UseStreaming();
@@ -409,6 +426,9 @@ void AudioBackendOAL::Source_SpatialSetupChanged(AudioSource* source)
         alSourcei(sourceID, AL_SOURCE_RELATIVE, !is3D);
         if (is3D)
         {
+#ifdef AL_SOFT_source_spatialize
+            alSourcei(sourceID, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE);
+#endif
             alSourcef(sourceID, AL_ROLLOFF_FACTOR, source->GetAttenuation());
             alSourcef(sourceID, AL_DOPPLER_FACTOR, source->GetDopplerFactor());
             alSourcef(sourceID, AL_REFERENCE_DISTANCE, FLAX_DST_TO_OAL(source->GetMinDistance()));

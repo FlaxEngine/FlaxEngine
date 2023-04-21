@@ -41,6 +41,7 @@ private:
     virtual void Source_TransformChanged(AudioSource* source) = 0;
     virtual void Source_VolumeChanged(AudioSource* source) = 0;
     virtual void Source_PitchChanged(AudioSource* source) = 0;
+    virtual void Source_PanChanged(AudioSource* source) = 0;
     virtual void Source_IsLoopingChanged(AudioSource* source) = 0;
     virtual void Source_SpatialSetupChanged(AudioSource* source) = 0;
     virtual void Source_ClipLoaded(AudioSource* source) = 0;
@@ -141,6 +142,11 @@ public:
         FORCE_INLINE static void PitchChanged(AudioSource* source)
         {
             Instance->Source_PitchChanged(source);
+        }
+
+        FORCE_INLINE static void PanChanged(AudioSource* source)
+        {
+            Instance->Source_PanChanged(source);
         }
 
         FORCE_INLINE static void IsLoopingChanged(AudioSource* source)
