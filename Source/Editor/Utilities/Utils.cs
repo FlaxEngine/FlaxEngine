@@ -888,6 +888,21 @@ namespace FlaxEditor.Utilities
                 }
             }
         }
+        
+        /// <summary>
+        /// Gets all of the Actors in the actor's tree. This list will include the Actor passed in.
+        /// </summary>
+        /// <param name="list">The list to add all of the actors to</param>
+        /// <param name="a">The Actor which the tree will be created from</param>
+        public static void GetActorsTree(List<Actor> list, Actor a)
+        {
+            list.Add(a);
+            int cnt = a.ChildrenCount;
+            for (int i = 0; i < cnt; i++)
+            {
+                GetActorsTree(list, a.GetChild(i));
+            }
+        }
 
         /// <summary>
         /// Gets the property name for UI. Removes unnecessary characters and filters text. Makes it more user-friendly.

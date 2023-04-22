@@ -45,7 +45,6 @@ namespace FlaxEditor.Content.GUI
 
         private void ImportActors(DragActors actors, ContentFolder location)
         {
-            // Use only the first actor
             foreach (var actorNode in actors.Objects)
             {
                 var actor = actorNode.Actor;

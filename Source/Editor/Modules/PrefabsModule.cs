@@ -37,7 +37,10 @@ namespace FlaxEditor.Modules
         /// </summary>
         public event Action<Prefab, Actor> PrefabApplied;
 
-        private Actor _actor;
+        /// <summary>
+        /// Locally cached actor for prefab creation.
+        /// </summary>
+        private Actor _prefabCreationActor;
 
         internal PrefabsModule(Editor editor)
         : base(editor)
@@ -102,7 +105,7 @@ namespace FlaxEditor.Modules
             PrefabCreating?.Invoke(actor);
 
             var proxy = Editor.ContentDatabase.GetProxy<Prefab>();
-            _actor = actor;
+            _prefabCreationActor = actor;
             Editor.Windows.ContentWin.NewItem(proxy, actor, OnPrefabCreated, actor.Name, rename);
         }
 
@@ -120,11 +123,11 @@ namespace FlaxEditor.Modules
             // Record undo for prefab creating (backend links the target instance with the prefab)
             if (Editor.Undo.Enabled)
             {
-                if (!_actor)
+                if (!_prefabCreationActor)
                     return;
 
                 var actorsList = new List<Actor>();
-                GetActorsTree(actorsList, _actor);
+                FlaxEditor.Utilities.Utils.GetActorsTree(actorsList, _prefabCreationActor);
                 
                 var actions = new IUndoAction[actorsList.Count];
                 for (int i = 0; i < actorsList.Count; i++)
@@ -134,20 +137,10 @@ namespace FlaxEditor.Modules
                 }
                 Undo.AddAction(new MultiUndoAction(actions));
 
-                _actor = null;
+                _prefabCreationActor = null;
             }
 
             Editor.Instance.Windows.PropertiesWin.Presenter.BuildLayout();
-        }
-        
-        private void GetActorsTree(List<Actor> list, Actor a)
-        {
-            list.Add(a);
-            int cnt = a.ChildrenCount;
-            for (int i = 0; i < cnt; i++)
-            {
-                GetActorsTree(list, a.GetChild(i));
-            }
         }
 
         /// <summary>
