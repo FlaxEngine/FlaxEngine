@@ -40,8 +40,8 @@ public:
     void Source_GetQueuedBuffersCount(AudioSource* source, int32& queuedBuffersCount) override;
     void Source_QueueBuffer(AudioSource* source, uint32 bufferId) override;
     void Source_DequeueProcessedBuffers(AudioSource* source) override;
-    void Buffer_Create(uint32& bufferId) override;
-    void Buffer_Delete(uint32& bufferId) override;
+    uint32 Buffer_Create() override;
+    void Buffer_Delete(uint32 bufferId) override;
     void Buffer_Write(uint32 bufferId, byte* samples, const AudioDataInfo& info) override;
     const Char* Base_Name() override;
     FeatureFlags Base_Features() override;

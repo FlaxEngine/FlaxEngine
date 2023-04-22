@@ -19,7 +19,7 @@ REGISTER_BINARY_ASSET_WITH_UPGRADER(AudioClip, "FlaxEngine.AudioClip", AudioClip
 bool AudioClip::StreamingTask::Run()
 {
     AssetReference<AudioClip> ref = _asset.Get();
-    if (ref == nullptr)
+    if (ref == nullptr || AudioBackend::Instance == nullptr)
         return true;
     ScopeLock lock(ref->Locker);
     const auto& queue = ref->StreamingQueue;
@@ -34,13 +34,13 @@ bool AudioClip::StreamingTask::Run()
         uint32& bufferId = clip->Buffers[idx];
         if (bufferId == AUDIO_BUFFER_ID_INVALID)
         {
-            AudioBackend::Buffer::Create(bufferId);
+            bufferId = AudioBackend::Buffer::Create();
         }
         else
         {
             // Release unused data
             AudioBackend::Buffer::Delete(bufferId);
-            bufferId = 0;
+            bufferId = AUDIO_BUFFER_ID_INVALID;
         }
     }
 
@@ -370,9 +370,7 @@ Asset::LoadResult AudioClip::load()
         return LoadResult::CannotLoadData;
 
     // Create single buffer
-    uint32 bufferId;
-    AudioBackend::Buffer::Create(bufferId);
-    Buffers[0] = bufferId;
+    Buffers[0] = AudioBackend::Buffer::Create();
 
     // Write data to audio buffer
     if (WriteBuffer(0))
@@ -398,14 +396,12 @@ void AudioClip::unload(bool isReloading)
 
     StopStreaming();
     StreamingQueue.Clear();
-    if (hasAnyBuffer)
+    if (hasAnyBuffer && AudioBackend::Instance)
     {
         for (AUDIO_BUFFER_ID_TYPE bufferId : Buffers)
         {
             if (bufferId != AUDIO_BUFFER_ID_INVALID)
-            {
                 AudioBackend::Buffer::Delete(bufferId);
-            }
         }
     }
     Buffers.Clear();

@@ -9,6 +9,7 @@
 #include "Engine/Audio/Audio.h"
 #include "Engine/Audio/AudioSource.h"
 #include "Engine/Audio/AudioListener.h"
+#include "Engine/Threading/Threading.h"
 
 #if PLATFORM_WINDOWS
 // Tweak Win ver
@@ -206,6 +207,7 @@ namespace XAudio2
     UINT32 Channels;
     bool ForceDirty = true;
     Listener Listeners[AUDIO_MAX_LISTENERS];
+    CriticalSection Locker;
     Array<Source> Sources(32); // TODO: use ChunkedArray for better performance
     Array<Buffer*> Buffers(64); // TODO: use ChunkedArray for better performance or use buffers pool?
     EngineCallback Callback;
@@ -306,7 +308,6 @@ void AudioBackendXAudio2::Listener_OnAdd(AudioListener* listener)
 
 void AudioBackendXAudio2::Listener_OnRemove(AudioListener* listener)
 {
-    // Free listener
     XAudio2::Listener* aListener = XAudio2::GetListener(listener);
     if (aListener)
     {
@@ -346,6 +347,7 @@ void AudioBackendXAudio2::Source_OnAdd(AudioSource* source)
     if (source->Clip == nullptr || !source->Clip->IsLoaded())
         return;
     auto clip = source->Clip.Get();
+    ScopeLock lock(XAudio2::Locker);
 
     // Get first free source
     XAudio2::Source* aSource = nullptr;
@@ -419,6 +421,7 @@ void AudioBackendXAudio2::Source_OnAdd(AudioSource* source)
 
 void AudioBackendXAudio2::Source_OnRemove(AudioSource* source)
 {
+    ScopeLock lock(XAudio2::Locker);
     source->Cleanup();
 }
 
@@ -485,8 +488,10 @@ void AudioBackendXAudio2::Source_IsLoopingChanged(AudioSource* source)
 
     // Looping is defined during buffer submission so reset source buffer (this is called only for non-streamable sources that ue single buffer)
 
+    XAudio2::Locker.Lock();
     const uint32 bufferId = source->Clip->Buffers[0];
     XAudio2::Buffer* aBuffer = XAudio2::Buffers[bufferId - 1];
+    XAudio2::Locker.Unlock();
 
     const bool isPlaying = source->IsActuallyPlayingSth();
     if (isPlaying)
@@ -536,6 +541,7 @@ void AudioBackendXAudio2::Source_SpatialSetupChanged(AudioSource* source)
 
 void AudioBackendXAudio2::Source_ClipLoaded(AudioSource* source)
 {
+    ScopeLock lock(XAudio2::Locker);
     auto aSource = XAudio2::GetSource(source);
     if (!aSource)
     {
@@ -546,6 +552,7 @@ void AudioBackendXAudio2::Source_ClipLoaded(AudioSource* source)
 
 void AudioBackendXAudio2::Source_Cleanup(AudioSource* source)
 {
+    ScopeLock lock(XAudio2::Locker);
     auto aSource = XAudio2::GetSource(source);
     if (!aSource)
         return;
@@ -632,8 +639,10 @@ void AudioBackendXAudio2::Source_SetNonStreamingBuffer(AudioSource* source)
     if (!aSource)
         return;
 
+    XAudio2::Locker.Lock();
     const uint32 bufferId = source->Clip->Buffers[0];
     XAudio2::Buffer* aBuffer = XAudio2::Buffers[bufferId - 1];
+    XAudio2::Locker.Unlock();
 
     XAUDIO2_BUFFER buffer = { 0 };
     buffer.pContext = aBuffer;
@@ -695,8 +704,11 @@ void AudioBackendXAudio2::Source_DequeueProcessedBuffers(AudioSource* source)
     }
 }
 
-void AudioBackendXAudio2::Buffer_Create(uint32& bufferId)
+uint32 AudioBackendXAudio2::Buffer_Create()
 {
+    uint32 bufferId;
+    ScopeLock lock(XAudio2::Locker);
+
     // Get first free buffer slot
     XAudio2::Buffer* aBuffer = nullptr;
     for (int32 i = 0; i < XAudio2::Buffers.Count(); i++)
@@ -718,10 +730,12 @@ void AudioBackendXAudio2::Buffer_Create(uint32& bufferId)
     }
 
     aBuffer->Data.Resize(0);
+    return bufferId;
 }
 
-void AudioBackendXAudio2::Buffer_Delete(uint32& bufferId)
+void AudioBackendXAudio2::Buffer_Delete(uint32 bufferId)
 {
+    ScopeLock lock(XAudio2::Locker);
     XAudio2::Buffer*& aBuffer = XAudio2::Buffers[bufferId - 1];
     aBuffer->Data.Resize(0);
     Delete(aBuffer);
@@ -730,7 +744,9 @@ void AudioBackendXAudio2::Buffer_Delete(uint32& bufferId)
 
 void AudioBackendXAudio2::Buffer_Write(uint32 bufferId, byte* samples, const AudioDataInfo& info)
 {
+    XAudio2::Locker.Lock();
     XAudio2::Buffer* aBuffer = XAudio2::Buffers[bufferId - 1];
+    XAudio2::Locker.Unlock();
 
     const uint32 bytesPerSample = info.BitDepth / 8;
     const int32 samplesLength = info.NumSamples * bytesPerSample;

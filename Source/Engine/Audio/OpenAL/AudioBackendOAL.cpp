@@ -589,13 +589,15 @@ void AudioBackendOAL::Source_DequeueProcessedBuffers(AudioSource* source)
     }
 }
 
-void AudioBackendOAL::Buffer_Create(uint32& bufferId)
+uint32 AudioBackendOAL::Buffer_Create()
 {
+    uint32 bufferId;
     alGenBuffers(1, &bufferId);
     ALC_CHECK_ERROR(alGenBuffers);
+    return bufferId;
 }
 
-void AudioBackendOAL::Buffer_Delete(uint32& bufferId)
+void AudioBackendOAL::Buffer_Delete(uint32 bufferId)
 {
     alDeleteBuffers(1, &bufferId);
     ALC_CHECK_ERROR(alDeleteBuffers);
