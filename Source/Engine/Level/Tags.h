@@ -92,6 +92,13 @@ API_CLASS(Static) class FLAXENGINE_API Tags
     /// <returns>The tag.</returns>
     API_FUNCTION() static Tag Get(const StringView& tagName);
 
+    /// <summary>
+    /// Get all subtags of the specific Tag
+    /// </summary>
+    /// <param name="tag"></param>
+    /// <returns></returns>
+    API_FUNCTION() static Array<Tag> GetSubTags(Tag tag);
+
 public:
     /// <summary>
     /// Checks if the list of tags contains a given tag (including parent tags check). For example, HasTag({"A.B"}, "A") returns true, for exact check use HasTagExact.

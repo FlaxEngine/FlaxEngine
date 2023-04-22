@@ -55,6 +55,24 @@ Tag Tags::Get(const StringView& tagName)
     return tag;
 }
 
+Array<Tag> Tags::GetSubTags(Tag parentTag)
+{
+    Array<Tag> subTags = Array<Tag>();
+
+    auto _parentTagName = parentTag.ToString();
+
+    for (int i = 0; i < Tags::List.Count(); i++)
+    {
+        auto& subTagName = Tags::List[i];
+        if (subTagName.Contains(_parentTagName) && subTagName != _parentTagName)
+        {
+            subTags.Add(Tags::Get(subTagName));
+        }
+    }
+
+    return subTags;
+}
+
 bool Tags::HasTag(const Array<Tag>& list, const Tag& tag)
 {
     if (tag.Index == 0)
