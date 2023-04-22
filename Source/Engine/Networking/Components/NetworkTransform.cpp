@@ -176,9 +176,9 @@ void NetworkTransform::Serialize(NetworkStream* stream)
             if (EnumHasAnyFlags(data.Components, ReplicationComponents::PositionX))
                 stream->Write(transform.Translation.X);
             if (EnumHasAnyFlags(data.Components, ReplicationComponents::PositionY))
-                stream->Write(transform.Translation.X);
+                stream->Write(transform.Translation.Y);
             if (EnumHasAnyFlags(data.Components, ReplicationComponents::PositionZ))
-                stream->Write(transform.Translation.X);
+                stream->Write(transform.Translation.Z);
         }
         if (EnumHasAllFlags(data.Components, ReplicationComponents::Scale))
         {
@@ -189,9 +189,9 @@ void NetworkTransform::Serialize(NetworkStream* stream)
             if (EnumHasAnyFlags(data.Components, ReplicationComponents::ScaleX))
                 stream->Write(transform.Scale.X);
             if (EnumHasAnyFlags(data.Components, ReplicationComponents::ScaleY))
-                stream->Write(transform.Scale.X);
+                stream->Write(transform.Scale.Y);
             if (EnumHasAnyFlags(data.Components, ReplicationComponents::ScaleZ))
-                stream->Write(transform.Scale.X);
+                stream->Write(transform.Scale.Z);
         }
         if (EnumHasAllFlags(data.Components, ReplicationComponents::Rotation))
         {
@@ -241,9 +241,9 @@ void NetworkTransform::Deserialize(NetworkStream* stream)
             if (EnumHasAnyFlags(data.Components, ReplicationComponents::PositionX))
                 stream->Read(transform.Translation.X);
             if (EnumHasAnyFlags(data.Components, ReplicationComponents::PositionY))
-                stream->Read(transform.Translation.X);
+                stream->Read(transform.Translation.Y);
             if (EnumHasAnyFlags(data.Components, ReplicationComponents::PositionZ))
-                stream->Read(transform.Translation.X);
+                stream->Read(transform.Translation.Z);
         }
         if (EnumHasAllFlags(data.Components, ReplicationComponents::Scale))
         {
@@ -254,9 +254,9 @@ void NetworkTransform::Deserialize(NetworkStream* stream)
             if (EnumHasAnyFlags(data.Components, ReplicationComponents::ScaleX))
                 stream->Read(transform.Scale.X);
             if (EnumHasAnyFlags(data.Components, ReplicationComponents::ScaleY))
-                stream->Read(transform.Scale.X);
+                stream->Read(transform.Scale.Y);
             if (EnumHasAnyFlags(data.Components, ReplicationComponents::ScaleZ))
-                stream->Read(transform.Scale.X);
+                stream->Read(transform.Scale.Z);
         }
         if (EnumHasAllFlags(data.Components, ReplicationComponents::Rotation))
         {
