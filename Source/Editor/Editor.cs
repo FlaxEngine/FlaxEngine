@@ -325,8 +325,7 @@ namespace FlaxEditor
                 {
                     if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out var lastSceneIdName))
                     {
-                        var lastSceneList = JsonSerializer.Deserialize<List<Guid>>(lastSceneIdName);
-
+                        var lastSceneList = JsonSerializer.Deserialize<Guid[]>(lastSceneIdName);
                         foreach (var scene in lastSceneList)
                         {
                             var lastScene = scene;
@@ -448,8 +447,7 @@ namespace FlaxEditor
             {
                 if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out var lastSceneIdName))
                 {
-                    var lastSceneList = JsonSerializer.Deserialize<List<Guid>>(lastSceneIdName);
-
+                    var lastSceneList = JsonSerializer.Deserialize<Guid[]>(lastSceneIdName);
                     foreach (var sceneId in lastSceneList)
                     {
                         var lastScene = ContentDatabase.Find(sceneId);
@@ -677,7 +675,7 @@ namespace FlaxEditor
             // Start exit
             StateMachine.GoToState<ClosingState>();
 
-            // Cache last opened scene
+            // Cache last opened scenes
             {
                 List<Guid> lastSceneIds = new List<Guid>();
                 if (Level.ScenesCount > 0)
