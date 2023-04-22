@@ -57,8 +57,7 @@ Tag Tags::Get(const StringView& tagName)
 
 Array<Tag> Tags::GetSubTags(Tag parentTag)
 {
-    Array<Tag> subTags = Array<Tag>();
-
+    Array<Tag> subTags;
     auto _parentTagName = parentTag.ToString();
 
     for (int i = 0; i < Tags::List.Count(); i++)
