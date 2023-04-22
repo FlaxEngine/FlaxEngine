@@ -407,6 +407,7 @@ void AudioBackendXAudio2::Source_OnAdd(AudioSource* source)
     aSource->DopplerFactor = source->GetDopplerFactor();
     aSource->UpdateTransform(source);
     aSource->UpdateVelocity(source);
+    aSource->Voice->SetVolume(source->GetVolume());
 
     // 0 is invalid ID so shift them
     sourceID++;
