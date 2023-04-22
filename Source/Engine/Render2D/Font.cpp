@@ -211,7 +211,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
                 {
                     cursorX = lastUpperX;
                     tmpLine.LastCharIndex = lastUpperIndex - 1;
-                    currentIndex = lastUpperIndex;
+                    currentIndex = lastUpperIndex + 1;
                     nextCharIndex = currentIndex;
                 }
                 else if (lastUnderscoreIndex != INVALID_INDEX)
