@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
@@ -34,6 +35,19 @@ namespace Flax.Build
                 }
                 return _engineVersion;
             }
+        }
+
+        /// <summary>
+        /// Adds the version defines for the preprocessor (eg. FLAX_1_6_OR_NEWER).
+        /// </summary>
+        /// <param name="defines">Output list.</param>
+        public static void AddVersionDefines(ICollection<string> defines)
+        {
+            var engineVersion = EngineVersion;
+            defines.Add(string.Format("FLAX_{0}", engineVersion.Major));
+            defines.Add(string.Format("FLAX_{0}_{1}", engineVersion.Major, engineVersion.Minor));
+            for (int minor = 1; minor <= engineVersion.Minor; minor++)
+                defines.Add(string.Format("FLAX_{0}_{1}_OR_NEWER", engineVersion.Major, minor));
         }
 
         /// <inheritdoc />

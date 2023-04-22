@@ -189,6 +189,7 @@ namespace Flax.Build
                 using (new ProfileEventScope("CompileRules"))
                 {
                     var assembler = new Assembler(files, Path.Combine(Globals.Root, Configuration.IntermediateFolder));
+                    EngineTarget.AddVersionDefines(assembler.PreprocessorSymbols);
                     assembly = assembler.Build();
                 }
 

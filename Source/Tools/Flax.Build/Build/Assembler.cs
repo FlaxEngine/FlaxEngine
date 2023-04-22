@@ -39,14 +39,19 @@ namespace Flax.Build
         public readonly List<string> SourceFiles = new List<string>();
 
         /// <summary>
-        /// The external user assembly references to use while compiling
+        /// The external user assembly references to use while compiling.
         /// </summary>
         public readonly List<Assembly> Assemblies = new List<Assembly>();
 
         /// <summary>
-        /// The external user assembly file names to use while compiling
+        /// The external user assembly file names to use while compiling.
         /// </summary>
         public readonly List<string> References = new List<string>();
+
+        /// <summary>
+        /// The C# preprocessor symbols to use while compiling.
+        /// </summary>
+        public readonly List<string> PreprocessorSymbols = new List<string>();
 
         public Assembler(List<string> sourceFiles, string cacheFolderPath = null)
         {
@@ -127,10 +132,11 @@ namespace Flax.Build
                 if (!assembly.IsDynamic)
                     references.Add(assembly.Location);
             }
-            references.Add(Path.Combine(Directory.GetParent(DefaultReferences[0].Location).FullName, "System.dll"));
-            references.Add(Path.Combine(Directory.GetParent(DefaultReferences[0].Location).FullName, "System.Runtime.dll"));
-            references.Add(Path.Combine(Directory.GetParent(DefaultReferences[0].Location).FullName, "System.Collections.dll"));
-            references.Add(Path.Combine(Directory.GetParent(DefaultReferences[0].Location).FullName, "Microsoft.Win32.Registry.dll"));
+            var stdLibPath = Directory.GetParent(DefaultReferences[0].Location).FullName;
+            references.Add(Path.Combine(stdLibPath, "System.dll"));
+            references.Add(Path.Combine(stdLibPath, "System.Runtime.dll"));
+            references.Add(Path.Combine(stdLibPath, "System.Collections.dll"));
+            references.Add(Path.Combine(stdLibPath, "Microsoft.Win32.Registry.dll"));
 
             // HACK: C# will give compilation errors if a LIB variable contains non-existing directories
             Environment.SetEnvironmentVariable("LIB", null);
@@ -147,13 +153,12 @@ namespace Flax.Build
 
             // Run the compilation
             using var memoryStream = new MemoryStream();
-
+            CSharpParseOptions parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp11).WithPreprocessorSymbols(PreprocessorSymbols);
             var syntaxTrees = new List<SyntaxTree>();
             foreach (var sourceFile in SourceFiles)
             {
                 var stringText = SourceText.From(File.ReadAllText(sourceFile), Encoding.UTF8);
-                var parsedSyntaxTree = SyntaxFactory.ParseSyntaxTree(stringText,
-                    CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp9), sourceFile);
+                var parsedSyntaxTree = SyntaxFactory.ParseSyntaxTree(stringText, parseOptions, sourceFile);
                 syntaxTrees.Add(parsedSyntaxTree);
             }
 
