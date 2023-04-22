@@ -110,7 +110,7 @@ void VisualStudioCodeEditor::OpenFile(const String& path, int32 line)
 
     // Open file
     line = line > 0 ? line : 1;
-    const String args = String::Format(TEXT("\"{0}\" -g \"{1}\":{2}"), _workspacePath, path, line);
+    const String args = String::Format(TEXT("\"{0}\" -g \"{1}:{2}\""), _workspacePath, path, line);
     Platform::StartProcess(_execPath, args, StringView::Empty);
 }
 
