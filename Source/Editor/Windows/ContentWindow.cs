@@ -814,7 +814,10 @@ namespace FlaxEditor.Windows
         /// </summary>
         public void RefreshView()
         {
-            RefreshView(SelectedNode);
+            if (_view.IsSearching)
+                UpdateItemsSearch();
+            else
+                RefreshView(SelectedNode);
         }
 
         /// <summary>
