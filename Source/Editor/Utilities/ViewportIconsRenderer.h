@@ -12,7 +12,7 @@ class Actor;
 /// <summary>
 /// Editor viewports icons rendering service.
 /// </summary>
-API_CLASS(Static, Namespace="FlaxEditor") class ViewportIconsRenderer
+API_CLASS(Static, Namespace="FlaxEditor") class FLAXENGINE_API ViewportIconsRenderer
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(ViewportIconsRenderer);
 

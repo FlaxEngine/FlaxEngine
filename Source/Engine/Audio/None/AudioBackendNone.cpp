@@ -22,6 +22,10 @@ void AudioBackendNone::Listener_TransformChanged(AudioListener* listener)
 {
 }
 
+void AudioBackendNone::Listener_ReinitializeAll()
+{
+}
+
 void AudioBackendNone::Source_OnAdd(AudioSource* source)
 {
     source->Restore();
@@ -48,15 +52,15 @@ void AudioBackendNone::Source_PitchChanged(AudioSource* source)
 {
 }
 
+void AudioBackendNone::Source_PanChanged(AudioSource* source)
+{
+}
+
 void AudioBackendNone::Source_IsLoopingChanged(AudioSource* source)
 {
 }
 
-void AudioBackendNone::Source_MinDistanceChanged(AudioSource* source)
-{
-}
-
-void AudioBackendNone::Source_AttenuationChanged(AudioSource* source)
+void AudioBackendNone::Source_SpatialSetupChanged(AudioSource* source)
 {
 }
 
@@ -110,12 +114,12 @@ void AudioBackendNone::Source_DequeueProcessedBuffers(AudioSource* source)
 {
 }
 
-void AudioBackendNone::Buffer_Create(uint32& bufferId)
+uint32 AudioBackendNone::Buffer_Create()
 {
-    bufferId = 1;
+    return 1;
 }
 
-void AudioBackendNone::Buffer_Delete(uint32& bufferId)
+void AudioBackendNone::Buffer_Delete(uint32 bufferId)
 {
 }
 
@@ -126,6 +130,11 @@ void AudioBackendNone::Buffer_Write(uint32 bufferId, byte* samples, const AudioD
 const Char* AudioBackendNone::Base_Name()
 {
     return TEXT("None");
+}
+
+AudioBackend::FeatureFlags AudioBackendNone::Base_Features()
+{
+    return FeatureFlags::None;
 }
 
 void AudioBackendNone::Base_OnActiveDeviceChanged()

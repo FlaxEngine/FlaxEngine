@@ -548,7 +548,7 @@ namespace FlaxEngine
         /// <param name="f"></param>
         public static float Sign(float f)
         {
-            return f < 0f ? -1f : 1f;
+            return f > 0.0f ? 1.0f : f < 0.0f ? -1.0f : 0.0f;
         }
 
         /// <summary>
@@ -815,6 +815,8 @@ namespace FlaxEngine
         /// <param name="toMin">The destination range minimum value.</param>
         /// <param name="toMax">The destination range maximum value.</param>
         /// <returns>The mapped value in range [toMin; toMax].</returns>
+        // [Deprecated on 17.04.2023, expires on 17.04.2024]
+        [Obsolete("Please use Remap to upkeep the API consistency")]
         public static float Map(float value, float fromMin, float fromMax, float toMin, float toMax)
         {
             float t = (value - fromMin) / (fromMax - fromMin);

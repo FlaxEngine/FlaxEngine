@@ -49,7 +49,7 @@ namespace Flax.Deps.Dependencies
         public override void Build(BuildOptions options)
         {
             var root = options.IntermediateFolder;
-            var version = "1.23.0";
+            var version = "1.23.1";
             var dstIncludePath = Path.Combine(options.ThirdPartyFolder, "OpenAL");
 
             foreach (var platform in options.Platforms)

@@ -395,7 +395,7 @@ namespace FlaxEngine
         /// <param name="f"></param>
         public static double Sign(double f)
         {
-            return f < 0d ? -1d : 1d;
+            return f > 0.0d ? 1.0d : f < 0.0d ? -1.0d : 0.0d;
         }
 
         /// <summary>
@@ -652,6 +652,8 @@ namespace FlaxEngine
         /// <param name="toMin">The destination range minimum value.</param>
         /// <param name="toMax">The destination range maximum value.</param>
         /// <returns>The mapped value in range [toMin; toMax].</returns>
+        // [Deprecated on 17.04.2023, expires on 17.04.2024]
+        [Obsolete("Please use Remap to upkeep the API consistency")]
         public static double Map(double value, double fromMin, double fromMax, double toMin, double toMax)
         {
             double t = (value - fromMin) / (fromMax - fromMin);

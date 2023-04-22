@@ -196,7 +196,7 @@ namespace FlaxEditor.GUI.Input
                 {
                     // Update sliding
                     var slidePosition = location + Root.TrackingMouseOffset;
-                    Value = Mathf.Map(slidePosition.X, 4, TrackSize - 4, Minimum, Maximum);
+                    Value = Mathf.Remap(slidePosition.X, 4, TrackSize - 4, Minimum, Maximum);
                 }
                 else
                 {
@@ -380,7 +380,7 @@ namespace FlaxEditor.GUI.Input
             if (_valueIsChanging)
                 return;
 
-            Value = Mathf.Map(_slider.Value, Slider.Minimum, Slider.Maximum, MinValue, MaxValue);
+            Value = Mathf.Remap(_slider.Value, Slider.Minimum, Slider.Maximum, MinValue, MaxValue);
         }
 
         private void OnTextBoxEditEnd()
@@ -434,7 +434,7 @@ namespace FlaxEditor.GUI.Input
         /// </summary>
         protected virtual void UpdateSlider()
         {
-            _slider.Value = Mathf.Map(_value, MinValue, MaxValue, Slider.Minimum, Slider.Maximum);
+            _slider.Value = Mathf.Remap(_value, MinValue, MaxValue, Slider.Minimum, Slider.Maximum);
         }
 
         /// <summary>

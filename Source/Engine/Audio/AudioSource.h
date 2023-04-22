@@ -46,10 +46,13 @@ private:
     Vector3 _prevPos;
     float _volume;
     float _pitch;
+    float _pan = 0.0f;
     float _minDistance;
-    float _attenuation;
+    float _attenuation = 1.0f;
+    float _dopplerFactor = 1.0f;
     bool _loop;
     bool _playOnStart;
+    bool _allowSpatialization;
 
     bool _isActuallyPlayingSth = false;
     bool _needToUpdateStreamingBuffers = false;
@@ -108,6 +111,20 @@ public:
     API_PROPERTY() void SetPitch(float value);
 
     /// <summary>
+    /// Gets the stereo pan of the played audio (-1 is left speaker, 1 is right speaker, 0 is balanced). The default is 1. Used by non-spatial audio only.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(30), DefaultValue(0.0f), Limit(-1.0f, 1.0f), EditorDisplay(\"Audio Source\")")
+    FORCE_INLINE float GetPan() const
+    {
+        return _pan;
+    }
+
+    /// <summary>
+    /// Sets the stereo pan of the played audio (-1 is left speaker, 1 is right speaker, 0 is balanced). The default is 0. Used by non-spatial audio only.
+    /// </summary>
+    API_PROPERTY() void SetPan(float value);
+
+    /// <summary>
     /// Determines whether the audio clip should loop when it finishes playing.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(40), DefaultValue(false), EditorDisplay(\"Audio Source\")")
@@ -138,8 +155,7 @@ public:
     /// <summary>
     /// Gets the minimum distance at which audio attenuation starts. When the listener is closer to the source than this value, audio is heard at full volume. Once farther away the audio starts attenuating.
     /// </summary>
-    /// <returns>The value.</returns>
-    API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(1.0f), Limit(0, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\")")
+    API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(1000.0f), Limit(0, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\")")
     FORCE_INLINE float GetMinDistance() const
     {
         return _minDistance;
@@ -160,9 +176,37 @@ public:
     }
 
     /// <summary>
-    /// Sets the attenuation that controls how quickly does audio volume drop off as the listener moves further from the source.
+    /// Sets the attenuation that controls how quickly does audio volume drop off as the listener moves further from the source. At 0, no distance attenuation ever occurs.
     /// </summary>
     API_PROPERTY() void SetAttenuation(float value);
+
+    /// <summary>
+    /// Gets the doppler effect factor. Scale for source velocity. Default is 1.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(75), DefaultValue(1.0f), Limit(0, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\")")
+    FORCE_INLINE float GetDopplerFactor() const
+    {
+        return _dopplerFactor;
+    }
+
+    /// <summary>
+    /// Sets the doppler effect factor. Scale for source velocity. Default is 1.
+    /// </summary>
+    API_PROPERTY() void SetDopplerFactor(float value);
+
+    /// <summary>
+    /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound. At 0, no distance attenuation ever occurs.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(80), DefaultValue(true), EditorDisplay(\"Audio Source\")")
+    FORCE_INLINE bool GetAllowSpatialization() const
+    {
+        return _allowSpatialization;
+    }
+
+    /// <summary>
+    /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound.
+    /// </summary>
+    API_PROPERTY() void SetAllowSpatialization(bool value);
 
 public:
     /// <summary>
@@ -257,6 +301,9 @@ public:
         const Vector3 size(50);
         return BoundingBox(_transform.Translation - size, _transform.Translation + size);
     }
+#endif
+#if USE_EDITOR
+    void OnDebugDrawSelected() override;
 #endif
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

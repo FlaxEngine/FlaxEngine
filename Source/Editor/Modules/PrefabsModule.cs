@@ -90,7 +90,7 @@ namespace FlaxEditor.Modules
             PrefabCreating?.Invoke(actor);
 
             var proxy = Editor.ContentDatabase.GetProxy<Prefab>();
-            Editor.Windows.ContentWin.NewItem(proxy, actor, OnPrefabCreated);
+            Editor.Windows.ContentWin.NewItem(proxy, actor, OnPrefabCreated, actor.Name);
         }
 
         private void OnPrefabCreated(ContentItem contentItem)

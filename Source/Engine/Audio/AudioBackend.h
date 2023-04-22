@@ -16,6 +16,13 @@ class AudioBackend
 
 public:
 
+    enum class FeatureFlags
+    {
+        None = 0,
+        // Supports multi-channel (incl. stereo) audio playback for spatial sources (3D), otherwise 3d audio needs to be in mono format.
+        SpatialMultiChannel = 1,
+    };
+
     static AudioBackend* Instance;
 
 private:
@@ -25,6 +32,7 @@ private:
     virtual void Listener_OnRemove(AudioListener* listener) = 0;
     virtual void Listener_VelocityChanged(AudioListener* listener) = 0;
     virtual void Listener_TransformChanged(AudioListener* listener) = 0;
+    virtual void Listener_ReinitializeAll() = 0;
 
     // Source
     virtual void Source_OnAdd(AudioSource* source) = 0;
@@ -33,9 +41,9 @@ private:
     virtual void Source_TransformChanged(AudioSource* source) = 0;
     virtual void Source_VolumeChanged(AudioSource* source) = 0;
     virtual void Source_PitchChanged(AudioSource* source) = 0;
+    virtual void Source_PanChanged(AudioSource* source) = 0;
     virtual void Source_IsLoopingChanged(AudioSource* source) = 0;
-    virtual void Source_MinDistanceChanged(AudioSource* source) = 0;
-    virtual void Source_AttenuationChanged(AudioSource* source) = 0;
+    virtual void Source_SpatialSetupChanged(AudioSource* source) = 0;
     virtual void Source_ClipLoaded(AudioSource* source) = 0;
     virtual void Source_Cleanup(AudioSource* source) = 0;
     virtual void Source_Play(AudioSource* source) = 0;
@@ -50,12 +58,13 @@ private:
     virtual void Source_DequeueProcessedBuffers(AudioSource* source) = 0;
 
     // Buffer
-    virtual void Buffer_Create(uint32& bufferId) = 0;
-    virtual void Buffer_Delete(uint32& bufferId) = 0;
+    virtual uint32 Buffer_Create() = 0;
+    virtual void Buffer_Delete(uint32 bufferId) = 0;
     virtual void Buffer_Write(uint32 bufferId, byte* samples, const AudioDataInfo& info) = 0;
 
     // Base
     virtual const Char* Base_Name() = 0;
+    virtual FeatureFlags Base_Features() = 0;
     virtual void Base_OnActiveDeviceChanged() = 0;
     virtual void Base_SetDopplerFactor(float value) = 0;
     virtual void Base_SetVolume(float value) = 0;
@@ -94,6 +103,11 @@ public:
         {
             Instance->Listener_TransformChanged(listener);
         }
+
+        FORCE_INLINE static void ReinitializeAll()
+        {
+            Instance->Listener_ReinitializeAll();
+        }
     };
 
     class Source
@@ -130,19 +144,19 @@ public:
             Instance->Source_PitchChanged(source);
         }
 
+        FORCE_INLINE static void PanChanged(AudioSource* source)
+        {
+            Instance->Source_PanChanged(source);
+        }
+
         FORCE_INLINE static void IsLoopingChanged(AudioSource* source)
         {
             Instance->Source_IsLoopingChanged(source);
         }
 
-        FORCE_INLINE static void MinDistanceChanged(AudioSource* source)
+        FORCE_INLINE static void SpatialSetupChanged(AudioSource* source)
         {
-            Instance->Source_MinDistanceChanged(source);
-        }
-
-        FORCE_INLINE static void AttenuationChanged(AudioSource* source)
-        {
-            Instance->Source_AttenuationChanged(source);
+            Instance->Source_SpatialSetupChanged(source);
         }
 
         FORCE_INLINE static void ClipLoaded(AudioSource* source)
@@ -210,15 +224,14 @@ public:
     {
     public:
 
-        FORCE_INLINE static void Create(uint32& bufferId)
+        FORCE_INLINE static uint32 Create()
         {
-            Instance->Buffer_Create(bufferId);
+            return Instance->Buffer_Create();
         }
 
-        FORCE_INLINE static void Delete(uint32& bufferId)
+        FORCE_INLINE static void Delete(uint32 bufferId)
         {
-            if (Instance)
-                Instance->Buffer_Delete(bufferId);
+            Instance->Buffer_Delete(bufferId);
         }
 
         FORCE_INLINE static void Write(uint32 bufferId, byte* samples, const AudioDataInfo& info)
@@ -230,6 +243,11 @@ public:
     FORCE_INLINE static const Char* Name()
     {
         return Instance->Base_Name();
+    }
+
+    FORCE_INLINE static FeatureFlags Features()
+    {
+        return Instance->Base_Features();
     }
 
     FORCE_INLINE static void OnActiveDeviceChanged()

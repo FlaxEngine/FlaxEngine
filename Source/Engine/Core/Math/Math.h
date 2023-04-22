@@ -386,6 +386,61 @@ namespace Math
         return Min(Min(Min(a, b), c), d);
     }
 
+    /// <summary>
+    /// Moves a value current towards target.
+    /// </summary>
+    /// <param name="current">The current value.</param>
+    /// <param name="target">The value to move towards.</param>
+    /// <param name="maxDelta">The maximum change that should be applied to the value.</param>
+    template<class T>
+    static T MoveTowards(const T current, const T target, const T maxDelta)
+    {
+        if (Abs(target - current) <= maxDelta)
+            return target;
+        return current + Sign(target - current) * maxDelta;
+    }
+
+    /// <summary>
+    /// Same as MoveTowards but makes sure the values interpolate correctly when they wrap around 360 degrees.
+    /// </summary>
+    /// <param name="current"></param>
+    /// <param name="target"></param>
+    /// <param name="maxDelta"></param>
+    template<class T>
+    static T MoveTowardsAngle(const T current, const T target, const T maxDelta)
+    {
+        T delta = DeltaAngle(current, target);
+        if ((-maxDelta < delta) && (delta < maxDelta))
+            return target;
+        T deltaTarget = current + delta;
+        return MoveTowards(current, deltaTarget, maxDelta);
+    }
+
+    /// <summary>
+    /// Calculates the shortest difference between two given angles given in degrees.
+    /// </summary>
+    /// <param name="current"></param>
+    /// <param name="target"></param>
+    template<class T>
+    static T DeltaAngle(const T current, const T target)
+    {
+        T t = Repeat(target - current, (T)360);
+        if (t > (T)180)
+            t -= (T)360;
+        return t;
+    }
+
+    /// <summary>
+    /// Loops the value t, so that it is never larger than length and never smaller than 0.
+    /// </summary>
+    /// <param name="t"></param>
+    /// <param name="length"></param>
+    template<class T>
+    static T Repeat(const T t, const T length)
+    {
+        return t - Floor(t / length) * length;
+    }
+
     // Multiply value by itself
     template<class T>
     static T Square(const T a)

@@ -404,7 +404,7 @@ protected:
         if (_streamingTexture)
         {
             // Stop streaming on fail
-            _streamingTexture->CancelStreaming();
+            _streamingTexture->ResetStreaming();
         }
 
         GPUUploadTextureMipTask::OnFail();

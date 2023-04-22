@@ -144,7 +144,7 @@ void VisualStudioCodeEditor::OpenFile(const String& path, int32 line)
     line = line > 0 ? line : 1;
     CreateProcessSettings procSettings;
     procSettings.FileName = _execPath;
-    procSettings.Arguments = String::Format(TEXT("\"{0}\" -g \"{1}\":{2}"), _workspacePath, path, line);
+    procSettings.Arguments = String::Format(TEXT("\"{0}\" -g \"{1}:{2}\""), _workspacePath, path, line);
     procSettings.HiddenWindow = false;
     procSettings.WaitForEnd = false;
     procSettings.LogOutput = false;

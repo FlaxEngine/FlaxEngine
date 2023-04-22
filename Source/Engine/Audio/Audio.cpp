@@ -31,17 +31,9 @@
 #include "XAudio2/AudioBackendXAudio2.h"
 #endif
 
-const Char* ToString(AudioFormat value)
+float AudioDataInfo::GetLength() const
 {
-    switch (value)
-    {
-    case AudioFormat::Raw:
-        return TEXT("Raw");
-    case AudioFormat::Vorbis:
-        return TEXT("Vorbis");
-    default:
-        return TEXT("");
-    }
+    return (float)NumSamples / (float)Math::Max(1U, SampleRate * NumChannels);
 }
 
 Array<AudioListener*> Audio::Listeners;
@@ -57,6 +49,7 @@ namespace
     float Volume = 1.0f;
     int32 ActiveDeviceIndex = -1;
     bool MuteOnFocusLoss = true;
+    bool EnableHRTF = true;
 }
 
 class AudioService : public EngineService
@@ -94,6 +87,7 @@ void AudioSettings::Apply()
     if (AudioBackend::Instance != nullptr)
     {
         Audio::SetDopplerFactor(DopplerFactor);
+        Audio::SetEnableHRTF(EnableHRTF);
     }
 }
 
@@ -139,6 +133,19 @@ void Audio::SetDopplerFactor(float value)
 {
     value = Math::Max(0.0f, value);
     AudioBackend::SetDopplerFactor(value);
+}
+
+bool Audio::GetEnableHRTF()
+{
+    return EnableHRTF;
+}
+
+void Audio::SetEnableHRTF(bool value)
+{
+    if (EnableHRTF == value)
+        return;
+    EnableHRTF = value;
+    AudioBackend::Listener::ReinitializeAll();
 }
 
 void Audio::OnAddListener(AudioListener* listener)

@@ -612,22 +612,26 @@ namespace FlaxEditor.SceneGraph.GUI
                         script.SetParent(newParent, true);
                     }
                 }
-
+                Select();
                 result = DragDropEffect.Move;
             }
             // Drag assets
             else if (_dragAssets != null && _dragAssets.HasValidDrag)
             {
+                var spawnParent = myActor;
+                if (DragOverMode == DragItemPositioning.Above || DragOverMode == DragItemPositioning.Below)
+                    spawnParent = newParent;
+                
                 for (int i = 0; i < _dragAssets.Objects.Count; i++)
                 {
                     var item = _dragAssets.Objects[i];
                     var actor = item.OnEditorDrop(this);
-                    actor.StaticFlags = Actor.StaticFlags;
+                    actor.StaticFlags = spawnParent.StaticFlags;
                     actor.Name = item.ShortName;
-                    actor.Transform = Actor.Transform;
-                    ActorNode.Root.Spawn(actor, Actor);
+                    actor.Transform = spawnParent.Transform;
+                    Editor.Instance.SceneEditing.Spawn(actor, spawnParent, false);
+                    actor.OrderInParent = newOrder;
                 }
-
                 result = DragDropEffect.Move;
             }
             // Drag actor type
