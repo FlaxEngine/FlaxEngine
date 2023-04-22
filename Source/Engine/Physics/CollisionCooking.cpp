@@ -118,12 +118,7 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
         indexCounts.Resize(needIndexBuffer ? meshesCount : 0);
         vertexCounts.SetAll(0);
         indexCounts.SetAll(0);
-        bool useCpuData = IsInMainThread() && !arg.Model->IsVirtual();
-        if (!useCpuData)
-        {
-            // If mesh data is already cached in memory then we could use it instead of GPU
-            useCpuData |= arg.Model->HasChunkLoaded(MODEL_LOD_TO_CHUNK_INDEX(lodIndex));
-        }
+        bool useCpuData = IsInMainThread() || !arg.Model->IsVirtual();
         if (useCpuData)
         {
             // Read directly from the asset storage
