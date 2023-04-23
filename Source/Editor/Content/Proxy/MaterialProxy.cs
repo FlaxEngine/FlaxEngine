@@ -75,8 +75,9 @@ namespace FlaxEditor.Content
             if (materialItem == null)
                 throw new ArgumentNullException();
 
+            var materialInstanceName = materialItem.FileName.Replace(".flax", " Instance");
             var materialInstanceProxy = Editor.Instance.ContentDatabase.GetProxy<MaterialInstance>();
-            Editor.Instance.Windows.ContentWin.NewItem(materialInstanceProxy, null, item => OnMaterialInstanceCreated(item, materialItem));
+            Editor.Instance.Windows.ContentWin.NewItem(materialInstanceProxy, null, item => OnMaterialInstanceCreated(item, materialItem), materialInstanceName);
         }
 
         private static void OnMaterialInstanceCreated(ContentItem item, BinaryAssetItem materialItem)
