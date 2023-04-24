@@ -651,7 +651,7 @@ public:
     /// <summary>
     /// Gets actor bounding box (single actor, no children included) for editor tools.
     /// </summary>
-    API_PROPERTY() virtual BoundingBox GetEditorBox() const;
+    API_FUNCTION() virtual BoundingBox GetEditorBox() const;
 
     /// <summary>
     /// Gets actor bounding box of the actor including all child actors for editor tools.
