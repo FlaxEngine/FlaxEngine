@@ -9,7 +9,7 @@
 template<class BoxType>
 class GraphNode;
 
-#define GRAPH_NODE_MAKE_TYPE(groupID, typeID) ((groupID) << 16 | (typeID))
+#define GRAPH_NODE_MAKE_TYPE(groupID, typeID) (uint32)((groupID) << 16 | (typeID))
 
 #define GRAPH_NODE_MAX_VALUES 32
 

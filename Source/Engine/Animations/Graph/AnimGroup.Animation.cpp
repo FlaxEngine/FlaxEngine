@@ -11,7 +11,7 @@
 
 namespace
 {
-    void BlendAdditiveWeightedRotation(Quaternion& base, Quaternion& additive, float weight)
+    FORCE_INLINE void BlendAdditiveWeightedRotation(Quaternion& base, Quaternion& additive, float weight)
     {
         // Pick a shortest path between rotation to fix blending artifacts
         additive *= weight;
@@ -461,6 +461,79 @@ Variant AnimGraphExecutor::SampleState(AnimGraphNode* state)
     auto result = eatBox((Node*)rootNode, &rootNode->Boxes[0]);
 
     return result;
+}
+
+void AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, AnimGraphInstanceData::StateMachineBucket& stateMachineBucket, const AnimGraphNode::StateBaseData& stateData)
+{
+    int32 transitionIndex = 0;
+    while (transitionIndex < ANIM_GRAPH_MAX_STATE_TRANSITIONS && stateData.Transitions[transitionIndex] != AnimGraphNode::StateData::InvalidTransitionIndex)
+    {
+        const uint16 idx = stateData.Transitions[transitionIndex];
+        ASSERT(idx < stateMachineData.Graph->StateTransitions.Count());
+        auto& transition = stateMachineData.Graph->StateTransitions[idx];
+        if (transition.Destination == stateMachineBucket.CurrentState)
+        {
+            // Ignore transition to the current state
+            transitionIndex++;
+            continue;
+        }
+        const bool useDefaultRule = EnumHasAnyFlags(transition.Flags, AnimGraphStateTransition::FlagTypes::UseDefaultRule);
+        if (transition.RuleGraph && !useDefaultRule)
+        {
+            // Execute transition rule
+            auto rootNode = transition.RuleGraph->GetRootNode();
+            ASSERT(rootNode);
+            if (!(bool)eatBox((Node*)rootNode, &rootNode->Boxes[0]))
+            {
+                transitionIndex++;
+                continue;
+            }
+        }
+
+        // Evaluate source state transition data (position, length, etc.)
+        const Value sourceStatePtr = SampleState(stateMachineBucket.CurrentState);
+        auto& transitionData = context.TransitionData; // Note: this could support nested transitions but who uses state machine inside transition rule?
+        if (ANIM_GRAPH_IS_VALID_PTR(sourceStatePtr))
+        {
+            // Use source state as data provider
+            const auto sourceState = (AnimGraphImpulse*)sourceStatePtr.AsPointer;
+            auto sourceLength = Math::Max(sourceState->Length, 0.0f);
+            transitionData.Position = Math::Clamp(sourceState->Position, 0.0f, sourceLength);
+            transitionData.Length = sourceLength;
+        }
+        else
+        {
+            // Reset
+            transitionData.Position = 0;
+            transitionData.Length = ZeroTolerance;
+        }
+
+        // Check if can trigger the transition
+        bool canEnter = false;
+        if (useDefaultRule)
+        {
+            // Start transition when the current state animation is about to end (split blend duration evenly into two states)
+            const auto transitionDurationHalf = transition.BlendDuration * 0.5f + ZeroTolerance;
+            const auto endPos = transitionData.Length - transitionDurationHalf;
+            canEnter = transitionData.Position >= endPos;
+        }
+        else if (transition.RuleGraph)
+            canEnter = true;
+        if (canEnter)
+        {
+            // Start transition
+            stateMachineBucket.ActiveTransition = &transition;
+            stateMachineBucket.TransitionPosition = 0.0f;
+            break;
+        }
+
+        // Skip after Solo transition
+        // TODO: don't load transitions after first enabled Solo transition and remove this check here
+        if (EnumHasAnyFlags(transition.Flags, AnimGraphStateTransition::FlagTypes::Solo))
+            break;
+
+        transitionIndex++;
+    }
 }
 
 void ComputeMultiBlendLength(float& length, AnimGraphNode* node)
@@ -1502,77 +1575,21 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             }
         }
 
-        ASSERT(bucket.CurrentState && bucket.CurrentState->GroupID == 9 && bucket.CurrentState->TypeID == 20);
+        ASSERT(bucket.CurrentState && bucket.CurrentState->Type == GRAPH_NODE_MAKE_TYPE(9, 20));
 
         // Update transitions
-        // Note: this logic assumes that all transitions are sorted by Order property and Enabled
+        // Note: this logic assumes that all transitions are sorted by Order property and Enabled (by Editor when saving Anim Graph asset)
         while (!bucket.ActiveTransition && transitionsLeft-- > 0)
         {
-            // Check if can change the current state
-            const auto& stateData = bucket.CurrentState->Data.State;
-            int32 transitionIndex = 0;
-            while (stateData.Transitions[transitionIndex] != AnimGraphNode::StateData::InvalidTransitionIndex
-                && transitionIndex < ANIM_GRAPH_MAX_STATE_TRANSITIONS)
+            // State transitions
+            UpdateStateTransitions(context, data, bucket, bucket.CurrentState->Data.State);
+
+            // Any state transitions
+            // TODO: cache Any state nodes inside State Machine to optimize the loop below
+            for (const AnimGraphNode& anyStateNode : data.Graph->Nodes)
             {
-                const uint16 idx = stateData.Transitions[transitionIndex];
-                ASSERT(idx < data.Graph->StateTransitions.Count());
-                auto& transition = data.Graph->StateTransitions[idx];
-                const bool useDefaultRule = EnumHasAnyFlags(transition.Flags, AnimGraphStateTransition::FlagTypes::UseDefaultRule);
-                if (transition.RuleGraph && !useDefaultRule)
-                {
-                    // Execute transition rule
-                    auto rootNode = transition.RuleGraph->GetRootNode();
-                    ASSERT(rootNode);
-                    if (!(bool)eatBox((Node*)rootNode, &rootNode->Boxes[0]))
-                    {
-                        transitionIndex++;
-                        continue;
-                    }
-                }
-
-                // Evaluate source state transition data (position, length, etc.)
-                const Value sourceStatePtr = SampleState(bucket.CurrentState);
-                auto& transitionData = context.TransitionData; // Note: this could support nested transitions but who uses state machine inside transition rule?
-                if (ANIM_GRAPH_IS_VALID_PTR(sourceStatePtr))
-                {
-                    // Use source state as data provider
-                    const auto sourceState = (AnimGraphImpulse*)sourceStatePtr.AsPointer;
-                    auto sourceLength = Math::Max(sourceState->Length, 0.0f);
-                    transitionData.Position = Math::Clamp(sourceState->Position, 0.0f, sourceLength);
-                    transitionData.Length = sourceLength;
-                }
-                else
-                {
-                    // Reset
-                    transitionData.Position = 0;
-                    transitionData.Length = ZeroTolerance;
-                }
-
-                // Check if can trigger the transition
-                bool canEnter = false;
-                if (useDefaultRule)
-                {
-                    // Start transition when the current state animation is about to end (split blend duration evenly into two states)
-                    const auto transitionDurationHalf = transition.BlendDuration * 0.5f + ZeroTolerance;
-                    const auto endPos = transitionData.Length - transitionDurationHalf;
-                    canEnter = transitionData.Position >= endPos;
-                }
-                else if (transition.RuleGraph)
-                    canEnter = true;
-                if (canEnter)
-                {
-                    // Start transition
-                    bucket.ActiveTransition = &transition;
-                    bucket.TransitionPosition = 0.0f;
-                    break;
-                }
-
-                // Skip after Solo transition
-                // TODO: don't load transitions after first enabled Solo transition and remove this check here
-                if (EnumHasAnyFlags(transition.Flags, AnimGraphStateTransition::FlagTypes::Solo))
-                    break;
-
-                transitionIndex++;
+                if (anyStateNode.Type == GRAPH_NODE_MAKE_TYPE(9, 34))
+                    UpdateStateTransitions(context, data, bucket, anyStateNode.Data.AnyState);
             }
 
             // Check for instant transitions
@@ -1608,13 +1625,10 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     }
     // Entry
     case 19:
-    {
-        // Not used
-        CRASH;
-        break;
-    }
     // State
     case 20:
+    // Any State
+    case 34:
     {
         // Not used
         CRASH;
@@ -1622,8 +1636,6 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     }
     // State Output
     case 21:
-        value = box->HasConnection() ? eatBox(nodeBase, box->FirstConnection()) : Value::Null;
-        break;
     // Rule Output
     case 22:
         value = box->HasConnection() ? eatBox(nodeBase, box->FirstConnection()) : Value::Null;

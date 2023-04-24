@@ -180,8 +180,6 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
             const Float4 range = n->Values[0].AsFloat4();
             for (int32 i = 0; i < ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS; i++)
             {
-                auto data0 = n->Values[i * 2 + 4].AsFloat4();
-                data0.X = Math::Clamp(data0.X, range.X, range.Y);
                 n->Assets[i] = Content::LoadAsync<Animation>((Guid)n->Values[i * 2 + 5]);
                 n->Data.MultiBlend1D.IndicesSorted[i] = n->Assets[i] ? i : ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS;
             }
@@ -200,9 +198,6 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
             const Float4 range = n->Values[0].AsFloat4();
             for (int32 i = 0; i < ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS; i++)
             {
-                auto data0 = n->Values[i * 2 + 4].AsFloat4();
-                data0.X = Math::Clamp(data0.X, range.X, range.Y);
-                data0.Y = Math::Clamp(data0.Y, range.Z, range.W);
                 n->Assets[i] = (Asset*)Content::LoadAsync<Animation>((Guid)n->Values[i * 2 + 5]);
                 if (n->Assets[i])
                 {
@@ -283,91 +278,11 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
             Value& surfaceData = n->Values[1];
             data.Graph = LoadSubGraph(surfaceData.AsBlob.Data, surfaceData.AsBlob.Length, (const Char*)name.AsBlob.Data);
 
-            // Initialize transitions
-            Value& transitionsData = n->Values[2];
-            int32 validTransitions = 0;
-            if (transitionsData.Type == VariantType::Blob && transitionsData.AsBlob.Length)
-            {
-                MemoryReadStream stream((byte*)transitionsData.AsBlob.Data, transitionsData.AsBlob.Length);
-
-                int32 version;
-                stream.ReadInt32(&version);
-                if (version != 1)
-                {
-                    LOG(Warning, "Invalid version of the Anim Graph state transitions data.");
-                    return true;
-                }
-
-                int32 transitionsCount;
-                stream.ReadInt32(&transitionsCount);
-
-                StateTransitions.EnsureCapacity(StateTransitions.Count() + transitionsCount);
-
-                AnimGraphStateTransition transition;
-                for (int32 i = 0; i < transitionsCount; i++)
-                {
-                    struct Data
-                    {
-                        int32 Destination;
-                        int32 Flags;
-                        int32 Order;
-                        float BlendDuration;
-                        int32 BlendMode;
-                        int32 Unused0;
-                        int32 Unused1;
-                        int32 Unused2;
-                    };
-                    Data transitionData;
-                    stream.ReadBytes(&transitionData, sizeof(transitionData));
-
-                    transition.Flags = (AnimGraphStateTransition::FlagTypes)transitionData.Flags;
-                    transition.BlendDuration = transitionData.BlendDuration;
-                    transition.BlendMode = (AlphaBlendMode)transitionData.BlendMode;
-                    transition.Destination = GetNode(transitionData.Destination);
-                    transition.RuleGraph = nullptr;
-
-                    int32 ruleSize;
-                    stream.ReadInt32(&ruleSize);
-                    const auto ruleBytes = (byte*)stream.Move(ruleSize);
-
-                    if (static_cast<int32>(transition.Flags & AnimGraphStateTransition::FlagTypes::Enabled) == 0)
-                    {
-                        // Skip disabled transitions
-                        continue;
-                    }
-
-                    if (ruleSize != 0)
-                    {
-                        transition.RuleGraph = LoadSubGraph(ruleBytes, ruleSize, TEXT("Rule"));
-                        if (transition.RuleGraph && transition.RuleGraph->GetRootNode() == nullptr)
-                        {
-                            LOG(Warning, "Missing root node for the state machine transition rule graph.");
-                            continue;
-                        }
-                    }
-
-                    if (transition.Destination == nullptr)
-                    {
-                        LOG(Warning, "Missing target node for the state machine transition.");
-                        continue;
-                    }
-
-                    if (validTransitions == ANIM_GRAPH_MAX_STATE_TRANSITIONS)
-                    {
-                        LOG(Warning, "State uses too many transitions.");
-                        continue;
-                    }
-
-                    data.Transitions[validTransitions++] = (uint16)StateTransitions.Count();
-                    StateTransitions.Add(transition);
-                }
-            }
-            if (validTransitions != ANIM_GRAPH_MAX_STATE_TRANSITIONS)
-                data.Transitions[validTransitions] = AnimGraphNode::StateData::InvalidTransitionIndex;
-
             // Release data to don't use that memory
             surfaceData = Value::Null;
-            transitionsData = Value::Null;
+
+            // Initialize transitions
+            LoadStateTransitions(data, n->Values[2]);
 
             break;
         }
@@ -443,6 +358,10 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
         case 33:
             ADD_BUCKET(InstanceDataBucketInit);
             break;
+        // Any State
+        case 34:
+            LoadStateTransitions(n->Data.AnyState, n->Values[0]);
+            break;
         }
         break;
     // Custom
@@ -463,6 +382,93 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
     }
 
     return VisjectGraph::onNodeLoaded(n);
+}
+
+void AnimGraphBase::LoadStateTransitions(AnimGraphNode::StateBaseData& data, Value& transitionsData)
+{
+    int32 validTransitions = 0;
+    if (transitionsData.Type == VariantType::Blob && transitionsData.AsBlob.Length)
+    {
+        MemoryReadStream stream((byte*)transitionsData.AsBlob.Data, transitionsData.AsBlob.Length);
+
+        int32 version;
+        stream.ReadInt32(&version);
+        if (version != 1)
+        {
+            LOG(Warning, "Invalid version of the Anim Graph state transitions data.");
+            return;
+        }
+
+        int32 transitionsCount;
+        stream.ReadInt32(&transitionsCount);
+
+        StateTransitions.EnsureCapacity(StateTransitions.Count() + transitionsCount);
+
+        AnimGraphStateTransition transition;
+        for (int32 i = 0; i < transitionsCount; i++)
+        {
+            // Must match StateMachineTransition.Data in C#
+            struct Data
+            {
+                int32 Destination;
+                int32 Flags;
+                int32 Order;
+                float BlendDuration;
+                int32 BlendMode;
+                int32 Unused0;
+                int32 Unused1;
+                int32 Unused2;
+            };
+            Data transitionData;
+            stream.ReadBytes(&transitionData, sizeof(transitionData));
+
+            transition.Flags = (AnimGraphStateTransition::FlagTypes)transitionData.Flags;
+            transition.BlendDuration = transitionData.BlendDuration;
+            transition.BlendMode = (AlphaBlendMode)transitionData.BlendMode;
+            transition.Destination = GetNode(transitionData.Destination);
+            transition.RuleGraph = nullptr;
+
+            int32 ruleSize;
+            stream.ReadInt32(&ruleSize);
+            const auto ruleBytes = (byte*)stream.Move(ruleSize);
+
+            if (static_cast<int32>(transition.Flags & AnimGraphStateTransition::FlagTypes::Enabled) == 0)
+            {
+                // Skip disabled transitions
+                continue;
+            }
+
+            if (ruleSize != 0)
+            {
+                transition.RuleGraph = LoadSubGraph(ruleBytes, ruleSize, TEXT("Rule"));
+                if (transition.RuleGraph && transition.RuleGraph->GetRootNode() == nullptr)
+                {
+                    LOG(Warning, "Missing root node for the state machine transition rule graph.");
+                    continue;
+                }
+            }
+
+            if (transition.Destination == nullptr)
+            {
+                LOG(Warning, "Missing target node for the state machine transition.");
+                continue;
+            }
+
+            if (validTransitions == ANIM_GRAPH_MAX_STATE_TRANSITIONS)
+            {
+                LOG(Warning, "State uses too many transitions.");
+                continue;
+            }
+
+            data.Transitions[validTransitions++] = (uint16)StateTransitions.Count();
+            StateTransitions.Add(transition);
+        }
+    }
+    if (validTransitions != ANIM_GRAPH_MAX_STATE_TRANSITIONS)
+        data.Transitions[validTransitions] = AnimGraphNode::StateData::InvalidTransitionIndex;
+
+    // Release data to don't use that memory
+    transitionsData = AnimGraphExecutor::Value::Null;
 }
 
 #undef ADD_BUCKET

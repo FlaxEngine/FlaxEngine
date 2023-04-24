@@ -495,22 +495,29 @@ public:
         AnimSubGraph* Graph;
     };
 
-    struct StateData
+    struct StateBaseData
     {
         /// <summary>
         /// The invalid transition valid used in Transitions to indicate invalid transition linkage.
         /// </summary>
         const static uint16 InvalidTransitionIndex = MAX_uint16;
-
-        /// <summary>
-        /// The graph of the state. Contains the state animation evaluation graph. Its root node is the state output node with an input box for the state blend pose sampling.
-        /// </summary>
-        AnimSubGraph* Graph;
-
+        
         /// <summary>
         /// The outgoing transitions from this state to the other states. Each array item contains index of the transition data from the state node graph transitions cache. Value InvalidTransitionIndex is used for last transition to indicate the transitions amount.
         /// </summary>
         uint16 Transitions[ANIM_GRAPH_MAX_STATE_TRANSITIONS];
+    };
+
+    struct StateData : StateBaseData
+    {
+        /// <summary>
+        /// The graph of the state. Contains the state animation evaluation graph. Its root node is the state output node with an input box for the state blend pose sampling.
+        /// </summary>
+        AnimSubGraph* Graph;
+    };
+
+    struct AnyStateData : StateBaseData
+    {
     };
 
     struct CustomData
@@ -564,6 +571,7 @@ public:
             MultiBlend2DData MultiBlend2D;
             StateMachineData StateMachine;
             StateData State;
+            AnyStateData AnyState;
             CustomData Custom;
             CurveData Curve;
             AnimationGraphFunctionData AnimationGraphFunction;
@@ -681,6 +689,9 @@ public:
 protected:
     // [Graph]
     bool onNodeLoaded(Node* n) override;
+
+private:
+    void LoadStateTransitions(AnimGraphNode::StateBaseData& data, Value& transitionsData);
 };
 
 /// <summary>
@@ -895,4 +906,5 @@ private:
     Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* animA, Animation* animB, Animation* animC, float speedA, float speedB, float speedC, float alphaA, float alphaB, float alphaC);
     Variant Blend(AnimGraphNode* node, const Value& poseA, const Value& poseB, float alpha, AlphaBlendMode alphaMode);
     Variant SampleState(AnimGraphNode* state);
+    void UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, AnimGraphInstanceData::StateMachineBucket& stateMachineBucket, const AnimGraphNode::StateBaseData& stateData);
 };
