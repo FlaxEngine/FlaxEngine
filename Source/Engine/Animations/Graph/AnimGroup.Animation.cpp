@@ -1521,11 +1521,10 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     // State Machine
     case 18:
     {
+        ANIM_GRAPH_PROFILE_EVENT("State Machine");
         const int32 maxTransitionsPerUpdate = node->Values[2].AsInt;
         const bool reinitializeOnBecomingRelevant = node->Values[3].AsBool;
         const bool skipFirstUpdateTransition = node->Values[4].AsBool;
-
-        ANIM_GRAPH_PROFILE_EVENT("State Machine");
 
         // Prepare
         auto& bucket = context.Data->State[node->BucketIndex].StateMachine;
@@ -1558,6 +1557,11 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             // Reset all state buckets pof the graphs and nodes included inside the state machine
             ResetBuckets(context, data.Graph);
         }
+#define END_TRANSITION() \
+    ResetBuckets(context, bucket.CurrentState->Data.State.Graph); \
+    bucket.CurrentState = bucket.ActiveTransition->Destination; \
+    bucket.ActiveTransition = nullptr; \
+    bucket.TransitionPosition = 0.0f
 
         // Update the active transition
         if (bucket.ActiveTransition)
@@ -1567,11 +1571,42 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             // Check for transition end
             if (bucket.TransitionPosition >= bucket.ActiveTransition->BlendDuration)
             {
-                // End transition
-                ResetBuckets(context, bucket.CurrentState->Data.State.Graph);
-                bucket.CurrentState = bucket.ActiveTransition->Destination;
-                bucket.ActiveTransition = nullptr;
-                bucket.TransitionPosition = 0.0f;
+                END_TRANSITION();
+            }
+            // Check for transition interruption
+            else if (EnumHasAnyFlags(bucket.ActiveTransition->Flags, AnimGraphStateTransition::FlagTypes::InterruptionRuleRechecking))
+            {
+                const bool useDefaultRule = EnumHasAnyFlags(bucket.ActiveTransition->Flags, AnimGraphStateTransition::FlagTypes::UseDefaultRule);
+                if (bucket.ActiveTransition->RuleGraph && !useDefaultRule)
+                {
+                    // Execute transition rule
+                    auto rootNode = bucket.ActiveTransition->RuleGraph->GetRootNode();
+                    if (!(bool)eatBox((Node*)rootNode, &rootNode->Boxes[0]))
+                    {
+                        bool cancelTransition = false;
+                        if (EnumHasAnyFlags(bucket.ActiveTransition->Flags, AnimGraphStateTransition::FlagTypes::InterruptionInstant))
+                        {
+                            cancelTransition = true;
+                        }
+                        else
+                        {
+                            // Blend back to the source state (remove currently applied delta and rewind transition)
+                            bucket.TransitionPosition -= context.DeltaTime;
+                            bucket.TransitionPosition -= context.DeltaTime;
+                            if (bucket.TransitionPosition <= ZeroTolerance)
+                            {
+                                cancelTransition = true;
+                            }
+                        }
+                        if (cancelTransition)
+                        {
+                            // Go back to the source state
+                            ResetBuckets(context, bucket.CurrentState->Data.State.Graph);
+                            bucket.ActiveTransition = nullptr;
+                            bucket.TransitionPosition = 0.0f;
+                        }
+                    }
+                }
             }
         }
 
@@ -1595,11 +1630,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             // Check for instant transitions
             if (bucket.ActiveTransition && bucket.ActiveTransition->BlendDuration <= ZeroTolerance)
             {
-                // End transition
-                ResetBuckets(context, bucket.CurrentState->Data.State.Graph);
-                bucket.CurrentState = bucket.ActiveTransition->Destination;
-                bucket.ActiveTransition = nullptr;
-                bucket.TransitionPosition = 0.0f;
+                END_TRANSITION();
             }
         }
 
@@ -1620,6 +1651,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
 
         // Update bucket
         bucket.LastUpdateFrame = context.CurrentFrameIndex;
+#undef END_TRANSITION
 
         break;
     }

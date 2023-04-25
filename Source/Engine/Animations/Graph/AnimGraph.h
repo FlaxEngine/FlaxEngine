@@ -172,25 +172,12 @@ public:
     /// </summary>
     enum class FlagTypes
     {
-        /// <summary>
-        /// The none.
-        /// </summary>
         None = 0,
-
-        /// <summary>
-        /// The enabled flag.
-        /// </summary>
         Enabled = 1,
-
-        /// <summary>
-        /// The solo flag.
-        /// </summary>
         Solo = 2,
-
-        /// <summary>
-        /// The use default rule flag.
-        /// </summary>
         UseDefaultRule = 4,
+        InterruptionRuleRechecking = 8,
+        InterruptionInstant = 16,
     };
 
 public:

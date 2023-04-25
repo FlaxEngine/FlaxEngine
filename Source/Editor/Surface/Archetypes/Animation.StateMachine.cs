@@ -1552,7 +1552,7 @@ namespace FlaxEditor.Surface.Archetypes
             : base(id, context, nodeArch, groupArch)
             {
             }
-            
+
             /// <inheritdoc />
             public override int TransitionsDataIndex => 0;
         }
@@ -1565,6 +1565,28 @@ namespace FlaxEditor.Surface.Archetypes
         internal class StateMachineTransition : ISurfaceContext
         {
             /// <summary>
+            /// State transition interruption flags.
+            /// </summary>
+            [Flags]
+            public enum InterruptionFlags
+            {
+                /// <summary>
+                /// Nothing.
+                /// </summary>
+                None = 0,
+
+                /// <summary>
+                /// Transition rule will be rechecked during active transition with option to interrupt transition.
+                /// </summary>
+                RuleRechecking = 1,
+
+                /// <summary>
+                /// Interrupted transition is immediately stopped without blending out.
+                /// </summary>
+                Instant = 2,
+            }
+
+            /// <summary>
             /// The packed data container for the transition data storage. Helps with serialization and versioning the data.
             /// Must match AnimGraphBase::LoadStateTransition in C++
             /// </summary>
@@ -1574,31 +1596,16 @@ namespace FlaxEditor.Surface.Archetypes
             [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 32)]
             internal struct Data
             {
-                /// <summary>
-                /// The transition flag types.
-                /// </summary>
+                // Must match AnimGraphStateTransition::FlagTypes
                 [Flags]
                 public enum FlagTypes
                 {
-                    /// <summary>
-                    /// The none.
-                    /// </summary>
                     None = 0,
-
-                    /// <summary>
-                    /// The enabled flag.
-                    /// </summary>
                     Enabled = 1,
-
-                    /// <summary>
-                    /// The solo flag.
-                    /// </summary>
                     Solo = 2,
-
-                    /// <summary>
-                    /// The use default rule flag.
-                    /// </summary>
                     UseDefaultRule = 4,
+                    InterruptionRuleRechecking = 8,
+                    InterruptionInstant = 16,
                 }
 
                 /// <summary>
@@ -1641,21 +1648,11 @@ namespace FlaxEditor.Surface.Archetypes
                 /// </summary>
                 public int Unused2;
 
-                /// <summary>
-                /// Determines whether the data has a given flag set.
-                /// </summary>
-                /// <param name="flag">The flag.</param>
-                /// <returns><c>true</c> if the specified flag is set; otherwise, <c>false</c>.</returns>
                 public bool HasFlag(FlagTypes flag)
                 {
                     return (Flags & flag) == flag;
                 }
 
-                /// <summary>
-                /// Sets the flag to the given value.
-                /// </summary>
-                /// <param name="flag">The flag.</param>
-                /// <param name="value">If set to <c>true</c> the flag will be set, otherwise it will be cleared.</param>
                 public void SetFlag(FlagTypes flag, bool value)
                 {
                     if (value)
@@ -1683,7 +1680,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <summary>
             /// If checked, the transition can be triggered, otherwise it will be ignored.
             /// </summary>
-            [EditorOrder(10), DefaultValue(true), Tooltip("If checked, the transition can be triggered, otherwise it will be ignored.")]
+            [EditorOrder(10), DefaultValue(true)]
             public bool Enabled
             {
                 get => _data.HasFlag(Data.FlagTypes.Enabled);
@@ -1698,7 +1695,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <summary>
             /// If checked, animation graph will ignore other transitions from the source state and use only this transition.
             /// </summary>
-            [EditorOrder(20), DefaultValue(false), Tooltip("If checked, animation graph will ignore other transitions from the source state and use only this transition.")]
+            [EditorOrder(20), DefaultValue(false)]
             public bool Solo
             {
                 get => _data.HasFlag(Data.FlagTypes.Solo);
@@ -1713,7 +1710,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <summary>
             /// If checked, animation graph will perform automatic transition based on the state animation pose (single shot animation play).
             /// </summary>
-            [EditorOrder(30), DefaultValue(false), Tooltip("If checked, animation graph will perform automatic transition based on the state animation pose (single shot animation play).")]
+            [EditorOrder(30), DefaultValue(false)]
             public bool UseDefaultRule
             {
                 get => _data.HasFlag(Data.FlagTypes.UseDefaultRule);
@@ -1725,9 +1722,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <summary>
-            /// The transition order (higher first).
+            /// The transition order. Transitions with the higher order are handled before the ones with the lower order.
             /// </summary>
-            [EditorOrder(40), DefaultValue(0), Tooltip("The transition order. Transitions with the higher order are handled before the ones with the lower order.")]
+            [EditorOrder(40), DefaultValue(0)]
             public int Order
             {
                 get => _data.Order;
@@ -1743,7 +1740,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <summary>
             /// The blend duration (in seconds).
             /// </summary>
-            [EditorOrder(50), DefaultValue(0.1f), Limit(0, 20.0f, 0.1f), Tooltip("Transition blend duration (in seconds).")]
+            [EditorOrder(50), DefaultValue(0.1f), Limit(0, 20.0f, 0.1f)]
             public float BlendDuration
             {
                 get => _data.BlendDuration;
@@ -1755,15 +1752,38 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <summary>
-            /// The blend mode.
+            /// Transition blending mode for blend alpha.
             /// </summary>
-            [EditorOrder(60), DefaultValue(AlphaBlendMode.HermiteCubic), Tooltip("Transition blending mode for blend alpha.")]
+            [EditorOrder(60), DefaultValue(AlphaBlendMode.HermiteCubic)]
             public AlphaBlendMode BlendMode
             {
                 get => _data.BlendMode;
                 set
                 {
                     _data.BlendMode = value;
+                    SourceState.SaveTransitions(true);
+                }
+            }
+
+            /// <summary>
+            /// Transition interruption options.
+            /// </summary>
+            [EditorOrder(70), DefaultValue(InterruptionFlags.None)]
+            public InterruptionFlags Interruption
+            {
+                get
+                {
+                    var flags = InterruptionFlags.None;
+                    if (_data.HasFlag(Data.FlagTypes.InterruptionRuleRechecking))
+                        flags |= InterruptionFlags.RuleRechecking;
+                    if (_data.HasFlag(Data.FlagTypes.InterruptionInstant))
+                        flags |= InterruptionFlags.Instant;
+                    return flags;
+                }
+                set
+                {
+                    _data.SetFlag(Data.FlagTypes.InterruptionRuleRechecking, value.HasFlag(InterruptionFlags.RuleRechecking));
+                    _data.SetFlag(Data.FlagTypes.InterruptionInstant, value.HasFlag(InterruptionFlags.Instant));
                     SourceState.SaveTransitions(true);
                 }
             }
