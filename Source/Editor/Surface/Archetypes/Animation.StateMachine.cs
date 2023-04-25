@@ -543,6 +543,7 @@ namespace FlaxEditor.Surface.Archetypes
                 private readonly uint _srcStateId;
                 private readonly uint _dstStateId;
                 private StateMachineTransition.Data _data;
+                private byte[] _ruleGraph;
 
                 public AddRemoveTransitionAction(StateMachineTransition transition)
                 {
@@ -552,6 +553,7 @@ namespace FlaxEditor.Surface.Archetypes
                     _dstStateId = transition.DestinationState.ID;
                     _isAdd = false;
                     transition.GetData(out _data);
+                    _ruleGraph = (byte[])transition.RuleGraph.Clone();
                 }
 
                 public AddRemoveTransitionAction(SurfaceNode src, SurfaceNode dst)
@@ -603,7 +605,7 @@ namespace FlaxEditor.Surface.Archetypes
                     if (dst == null)
                         throw new Exception("Missing destination state.");
 
-                    var transition = new StateMachineTransition(src, dst, ref _data);
+                    var transition = new StateMachineTransition(src, dst, ref _data, _ruleGraph);
                     src.Transitions.Add(transition);
 
                     src.UpdateTransitionsOrder();
@@ -641,6 +643,8 @@ namespace FlaxEditor.Surface.Archetypes
                 public void Dispose()
                 {
                     _surface = null;
+                    _context = new ContextHandle();
+                    _ruleGraph = null;
                 }
             }
 
