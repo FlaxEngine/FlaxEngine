@@ -11,6 +11,8 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Tree;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Previews;
@@ -296,6 +298,7 @@ namespace FlaxEditor.Windows.Assets
                         var group = layout.Group("Skeleton Bones");
 
                         var tree = group.Tree();
+                        tree.TreeControl.RightClick += OnTreeNodeRightClick;
                         for (int i = 0; i < bones.Length; i++)
                         {
                             if (bones[i].ParentIndex == -1)
@@ -312,6 +315,7 @@ namespace FlaxEditor.Windows.Assets
                         var group = layout.Group("Skeleton Nodes");
 
                         var tree = group.Tree();
+                        tree.TreeControl.RightClick += OnTreeNodeRightClick;
                         for (int i = 0; i < nodes.Length; i++)
                         {
                             if (nodes[i].ParentIndex == -1)
@@ -344,6 +348,25 @@ namespace FlaxEditor.Windows.Assets
                             editor.ValueBox.ValueChanged += () => { proxy.Window._preview.SetBlendShapeWeight(blendShape, editor.ValueBox.Value); };
                         }
                     }
+                }
+
+                private void OnTreeNodeRightClick(TreeNode node, Float2 location)
+                {
+                    var menu = new ContextMenu
+                    {
+                        MinimumWidth = 120
+                    };
+                    
+                    var b = menu.AddButton("Copy name");
+                    b.Tag = node.Text;
+                    b.ButtonClicked += OnTreeNodeCopyName;
+                    
+                    menu.Show(node, location);
+                }
+
+                private void OnTreeNodeCopyName(ContextMenuButton b)
+                {
+                    Clipboard.Text = (string)b.Tag;
                 }
 
                 private void BuildSkeletonBonesTree(SkeletonNode[] nodes, SkeletonBone[] bones, TreeNodeElement layout, int boneIndex)
