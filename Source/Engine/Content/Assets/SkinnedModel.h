@@ -20,6 +20,7 @@ API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedModel : public ModelBase
 private:
     int32 _loadedLODs = 0;
     StreamSkinnedModelLODTask* _streamingTask = nullptr;
+    Dictionary<Asset*, Span<int32>> _skeletonMappingCache;
 
 public:
     /// <summary>
@@ -76,13 +77,11 @@ public:
     /// <summary>
     /// Determines whether any LOD has been initialized.
     /// </summary>
-    /// <returns>True if any LOD has been initialized, otherwise false.</returns>
     bool HasAnyLODInitialized() const;
 
     /// <summary>
     /// Determines whether this model can be rendered.
     /// </summary>
-    /// <returns>True if can render that model, otherwise false.</returns>
     FORCE_INLINE bool CanBeRendered() const
     {
         return _loadedLODs > 0;
@@ -154,7 +153,13 @@ public:
     /// <param name="data">The data (may be missing if failed to get it).</param>
     void GetLODData(int32 lodIndex, BytesContainer& data) const;
 
-public:
+    /// <summary>
+    /// Gets the skeleton mapping for a given asset (animation or other skinned model). Uses identity mapping or manually created retargeting setup.
+    /// </summary>
+    /// <param name="source">The source asset (animation or other skinned model) to get mapping to its skeleton.</param>
+    /// <returns>The cached node-to-node mapping for the fast animation sampling for the skinned model skeleton nodes. Each span item is index of the source skeleton node for this skeleton.</returns>
+    Span<int32> GetSkeletonMapping(Asset* source);
+
     /// <summary>
     /// Determines if there is an intersection between the SkinnedModel and a Ray in given world using given instance.
     /// </summary>
@@ -194,7 +199,6 @@ public:
     /// <returns>The bounding box.</returns>
     API_FUNCTION() BoundingBox GetBox(int32 lodIndex = 0) const;
 
-public:
     /// <summary>
     /// Draws the meshes. Binds vertex and index buffers and invokes the draw calls.
     /// </summary>
@@ -219,7 +223,6 @@ public:
     /// <param name="info">The packed drawing info data.</param>
     void Draw(const RenderContextBatch& renderContextBatch, const SkinnedMesh::DrawInfo& info);
 
-public:
     /// <summary>
     /// Setups the model LODs collection including meshes creation.
     /// </summary>
@@ -244,7 +247,6 @@ public:
     API_FUNCTION() bool SetupSkeleton(const Array<SkeletonNode>& nodes, const Array<SkeletonBone>& bones, bool autoCalculateOffsetMatrix);
 
 #if USE_EDITOR
-
     /// <summary>
     /// Saves this asset to the file. Supported only in Editor.
     /// </summary>
@@ -253,7 +255,6 @@ public:
     /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
     /// <returns>True if cannot save data, otherwise false.</returns>
     API_FUNCTION() bool Save(bool withMeshDataFromGpu = false, const StringView& path = StringView::Empty);
-
 #endif
 
 private:
@@ -264,8 +265,11 @@ private:
     /// <returns>True if failed, otherwise false.</returns>
     bool Init(const Span<int32>& meshesCountPerLod);
 
+    void OnSkeletonMappingSourceAssetUnloaded(Asset* obj);
+
 public:
     // [ModelBase]
+    uint64 GetMemoryUsage() const override;
     void SetupMaterialSlots(int32 slotsCount) override;
     int32 GetLODsCount() const override;
     void GetMeshes(Array<MeshBase*>& meshes, int32 lodIndex = 0) override;

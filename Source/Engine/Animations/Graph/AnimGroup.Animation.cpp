@@ -40,10 +40,10 @@ int32 AnimGraphExecutor::GetRootNodeIndex(Animation* anim)
     return rootNodeIndex;
 }
 
-void AnimGraphExecutor::ExtractRootMotion(const Animation::NodeToChannel* mapping, int32 rootNodeIndex, Animation* anim, float pos, float prevPos, Transform& rootNode, RootMotionData& rootMotion)
+void AnimGraphExecutor::ExtractRootMotion(const Span<int32> mapping, int32 rootNodeIndex, Animation* anim, float pos, float prevPos, Transform& rootNode, RootMotionData& rootMotion)
 {
     const Transform& refPose = GetEmptyNodes()->Nodes[rootNodeIndex];
-    const int32 nodeToChannel = mapping->At(rootNodeIndex);
+    const int32 nodeToChannel = mapping[rootNodeIndex];
     if (_rootMotionMode == RootMotionMode::Enable && nodeToChannel != -1)
     {
         // Get the root bone transformation
@@ -258,12 +258,14 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
     }
 
     // Evaluate nodes animations
-    const auto mapping = anim->GetMapping(_graph.BaseModel);
+    const Span<int32> mapping = _graph.BaseModel->GetSkeletonMapping(anim);
+    if (mapping.IsInvalid())
+        return;
     const bool weighted = weight < 1.0f;
     const auto emptyNodes = GetEmptyNodes();
     for (int32 i = 0; i < nodes->Nodes.Count(); i++)
     {
-        const int32 nodeToChannel = mapping->At(i);
+        const int32 nodeToChannel = mapping[i];
         Transform& dstNode = nodes->Nodes[i];
         Transform srcNode = emptyNodes->Nodes[i];
         if (nodeToChannel != -1)
