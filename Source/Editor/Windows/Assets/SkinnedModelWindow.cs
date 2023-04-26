@@ -278,6 +278,8 @@ namespace FlaxEditor.Windows.Assets
         [CustomEditor(typeof(ProxyEditor))]
         private sealed class SkeletonPropertiesProxy : PropertiesProxyBase
         {
+            internal Tree NodesTree;
+
             private class ProxyEditor : ProxyEditorBase
             {
                 public override void Initialize(LayoutElementsContainer layout)
@@ -325,6 +327,7 @@ namespace FlaxEditor.Windows.Assets
                                 node.TreeNode.ExpandAll(true);
                             }
                         }
+                        proxy.NodesTree = tree.TreeControl;
                     }
 
                     // Blend Shapes
@@ -808,6 +811,21 @@ namespace FlaxEditor.Windows.Assets
             {
                 Proxy = new SkeletonPropertiesProxy();
                 Presenter.Select(Proxy);
+                window._preview.CustomDebugDraw += OnDebugDraw;
+            }
+
+            private void OnDebugDraw(GPUContext context, ref RenderContext renderContext)
+            {
+                var proxy = (SkeletonPropertiesProxy)Proxy;
+                if (proxy.NodesTree != null)
+                {
+                    // Draw selected skeleton nodes
+                    foreach (var node in proxy.NodesTree.Selection)
+                    {
+                        proxy.Window._preview.PreviewActor.GetNodeTransformation(node.Text, out var nodeTransformation, true);
+                        DebugDraw.DrawWireSphere(new BoundingSphere(nodeTransformation.TranslationVector, 4.0f), Color.Red, 0.0f, false);
+                    }
+                }
             }
         }
 
