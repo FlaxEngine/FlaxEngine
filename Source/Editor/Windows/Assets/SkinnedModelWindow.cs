@@ -298,6 +298,7 @@ namespace FlaxEditor.Windows.Assets
                     // Skeleton Bones
                     {
                         var group = layout.Group("Skeleton Bones");
+                        group.Panel.Close();
 
                         var tree = group.Tree();
                         tree.TreeControl.RightClick += OnTreeNodeRightClick;

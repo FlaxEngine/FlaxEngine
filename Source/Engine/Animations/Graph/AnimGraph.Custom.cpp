@@ -146,12 +146,6 @@ bool AnimGraph::IsReady() const
     return BaseModel && BaseModel->IsLoaded();
 }
 
-bool AnimGraph::CanUseWithSkeleton(SkinnedModel* other) const
-{
-    // All data loaded and nodes count the same
-    return IsReady() && other && other->IsLoaded() && other->Skeleton.Nodes.Count() == BaseModel->Skeleton.Nodes.Count();
-}
-
 void AnimGraph::ClearCustomNode(Node* node)
 {
     // Clear data

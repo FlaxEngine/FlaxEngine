@@ -262,10 +262,7 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
         context.EmptyNodes.Length = 0.0f;
         context.EmptyNodes.Nodes.Resize(_skeletonNodesCount, false);
         for (int32 i = 0; i < _skeletonNodesCount; i++)
-        {
-            auto& node = skeleton.Nodes[i];
-            context.EmptyNodes.Nodes[i] = node.LocalTransform;
-        }
+            context.EmptyNodes.Nodes[i] = skeleton.Nodes[i].LocalTransform;
     }
 
     // Update the animation graph and gather skeleton nodes transformations in nodes local space
@@ -301,6 +298,54 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
             }
         }
     }
+    SkeletonData* animResultSkeleton = &skeleton;
+
+    // Retarget animation when using output pose from other skeleton
+    AnimGraphImpulse retargetNodes;
+    if (_graph.BaseModel != data.NodesSkeleton)
+    {
+        ANIM_GRAPH_PROFILE_EVENT("Retarget");
+
+        // Init nodes for the target skeleton
+        auto& targetSkeleton = data.NodesSkeleton->Skeleton;
+        retargetNodes = *animResult;
+        retargetNodes.Nodes.Resize(targetSkeleton.Nodes.Count());
+        Transform* targetNodes = retargetNodes.Nodes.Get();
+        for (int32 i = 0; i < retargetNodes.Nodes.Count(); i++)
+            targetNodes[i] = targetSkeleton.Nodes[i].LocalTransform;
+
+        // Use skeleton mapping
+        const Span<int32> mapping = data.NodesSkeleton->GetSkeletonMapping(_graph.BaseModel);
+        if (mapping.IsValid())
+        {
+            const auto& sourceSkeleton = _graph.BaseModel->Skeleton;
+            Transform* sourceNodes = animResult->Nodes.Get();
+            for (int32 i = 0; i < retargetNodes.Nodes.Count(); i++)
+            {
+                const auto& targetNode = targetSkeleton.Nodes[i];
+                const int32 nodeToNode = mapping[i];
+                if (nodeToNode != -1)
+                {
+                    // Map source skeleton node to the target skeleton (use ref pose difference)
+                    const auto& sourceNode = sourceSkeleton.Nodes[nodeToNode];
+                    Transform value = sourceNodes[nodeToNode];
+                    Transform sourceToTarget = targetNode.LocalTransform - sourceNode.LocalTransform;
+                    value.Translation += sourceToTarget.Translation;
+                    value.Scale *= sourceToTarget.Scale;
+                    //value.Orientation = sourceToTarget.Orientation * value.Orientation; // TODO: find out why this doesn't match referenced animation when played on that skeleton originally
+                    //value.Orientation.Normalize();
+                    targetNodes[i] = value;
+                }
+                else
+                {
+                    int a = 10;
+                }
+            }
+        }
+
+        animResult = &retargetNodes;
+        animResultSkeleton = &targetSkeleton;
+    }
 
     // Allow for external override of the local pose (eg. by the ragdoll)
     data.LocalPoseOverride(animResult);
@@ -309,13 +354,14 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
     {
         ANIM_GRAPH_PROFILE_EVENT("Global Pose");
 
-        data.NodesPose.Resize(_skeletonNodesCount, false);
+        ASSERT(animResultSkeleton->Nodes.Count() == animResult->Nodes.Count());
+        data.NodesPose.Resize(animResultSkeleton->Nodes.Count(), false);
         Transform* nodesTransformations = animResult->Nodes.Get();
 
         // Note: this assumes that nodes are sorted (parents first)
-        for (int32 nodeIndex = 0; nodeIndex < _skeletonNodesCount; nodeIndex++)
+        for (int32 nodeIndex = 0; nodeIndex < animResultSkeleton->Nodes.Count(); nodeIndex++)
         {
-            const int32 parentIndex = skeleton.Nodes[nodeIndex].ParentIndex;
+            const int32 parentIndex = animResultSkeleton->Nodes[nodeIndex].ParentIndex;
             if (parentIndex != -1)
             {
                 nodesTransformations[parentIndex].LocalToWorld(nodesTransformations[nodeIndex], nodesTransformations[nodeIndex]);

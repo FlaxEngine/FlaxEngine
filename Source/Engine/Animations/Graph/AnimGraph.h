@@ -371,7 +371,12 @@ public:
     ScriptingObject* Object;
 
     /// <summary>
-    /// The custom event called after local pose evaluation.
+    /// The output nodes pose skeleton asset to use. Allows to remap evaluated animation pose for Base Model of the Anim Graph to the target Animated Model that plays it. Nodes Pose will match its skeleton. Use null if disable retargetting.
+    /// </summary>
+    SkinnedModel* NodesSkeleton = nullptr;
+
+    /// <summary>
+    /// The custom event called after local pose evaluation and retargetting.
     /// </summary>
     Delegate<AnimGraphImpulse*> LocalPoseOverride;
 
@@ -760,13 +765,6 @@ public:
     /// Determines whether this graph is ready for the animation evaluation.
     /// </summary>
     bool IsReady() const;
-
-    /// <summary>
-    /// Determines whether this graph can be used with the specified skeleton.
-    /// </summary>
-    /// <param name="other">The other skinned model to check.</param>
-    /// <returns>True if can perform the update, otherwise false.</returns>
-    bool CanUseWithSkeleton(SkinnedModel* other) const;
 
 private:
     void ClearCustomNode(Node* node);

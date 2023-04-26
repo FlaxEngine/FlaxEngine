@@ -176,10 +176,27 @@ Span<int32> SkinnedModel::GetSkeletonMapping(Asset* source)
             const auto& channels = sourceAnim->Data.Channels;
             for (int32 i = 0; i < channels.Count(); i++)
             {
-                auto& nodeAnim = channels[i];
+                const NodeAnimationData& nodeAnim = channels[i];
                 for (int32 j = 0; j < nodesCount; j++)
                 {
                     if (StringUtils::CompareIgnoreCase(Skeleton.Nodes[j].Name.GetText(), nodeAnim.NodeName.GetText()) == 0)
+                    {
+                        result[j] = i;
+                        break;
+                    }
+                }
+            }
+        }
+        else if (const auto* sourceModel = Cast<SkinnedModel>(source))
+        {
+            // Map source skeleton nodes to the target skeleton nodes (by name)
+            const auto& nodes = sourceModel->Skeleton.Nodes;
+            for (int32 i = 0; i < nodes.Count(); i++)
+            {
+                const SkeletonNode& node = nodes[i];
+                for (int32 j = 0; j < nodesCount; j++)
+                {
+                    if (StringUtils::CompareIgnoreCase(Skeleton.Nodes[j].Name.GetText(), node.Name.GetText()) == 0)
                     {
                         result[j] = i;
                         break;
