@@ -249,13 +249,13 @@ bool AndroidFileSystem::DeleteFile(const StringView& path)
 uint64 AndroidFileSystem::GetFileSize(const StringView& path)
 {
     struct stat fileInfo;
-    fileInfo.st_size = -1;
+    fileInfo.st_size = 0;
     const StringAsANSI<> pathANSI(*path, path.Length());
     if (stat(pathANSI.Get(), &fileInfo) != -1)
     {
         if (S_ISDIR(fileInfo.st_mode))
         {
-            fileInfo.st_size = -1;
+            fileInfo.st_size = 0;
         }
     }
     else
