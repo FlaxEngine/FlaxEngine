@@ -690,7 +690,7 @@ namespace FlaxEditor
                     lastSceneIds.Add(Guid.Empty);
                 }
                 var lastSceneSpawn = Windows.EditWin.Viewport.ViewRay;
-                ProjectCache.SetCustomData(ProjectDataLastScene, JsonSerializer.Serialize(lastSceneIds));
+                ProjectCache.SetCustomData(ProjectDataLastScene, JsonSerializer.Serialize(lastSceneIds.ToArray()));
                 ProjectCache.SetCustomData(ProjectDataLastSceneSpawn, JsonSerializer.Serialize(lastSceneSpawn));
             }
 
