@@ -240,7 +240,8 @@ void GPUTextureDX12::OnResidentMipsChanged()
     GPUTextureViewDX12& view = IsVolume() ? _handleVolume : _handlesPerSlice[0];
     if (view.GetParent() == nullptr)
         view.Init(this, _device, this, Format(), MultiSampleLevel());
-    view.SetSRV(srDesc);
+    if (mipLevels != 0)
+        view.SetSRV(srDesc);
 }
 
 void GPUTextureDX12::OnReleaseGPU()
