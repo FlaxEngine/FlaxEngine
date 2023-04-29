@@ -500,7 +500,8 @@ namespace Flax.Build
                 return true;
 
             // Skip Flax.Build rules assembly
-            if (Path.GetFileName(x) == "BuilderRulesCache.dll")
+            var fileName = Path.GetFileName(x);
+            if (fileName == Assembler.CacheFileName || fileName == "BuilderRulesCache.dll")
                 return true;
 
             // Skip non-C# DLLs

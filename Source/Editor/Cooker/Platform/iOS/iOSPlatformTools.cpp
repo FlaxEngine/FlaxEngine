@@ -69,7 +69,7 @@ void iOSPlatformTools::OnBuildStarted(CookingData& data)
 {
     // Adjust the cooking output folders for packaging app
     const auto appName = GetAppName();
-    String contents = appName + TEXT(".app/");
+    String contents = String(TEXT("/Payload/")) / appName + TEXT(".app/");
     data.DataOutputPath /= contents;
     data.NativeCodeOutputPath /= contents;
     data.ManagedCodeOutputPath /= contents;
@@ -160,6 +160,13 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
             return true;
         }
         FileSystem::DeleteDirectory(tmpFolderPath);
+        String iTunesArtworkPath = data.OriginalOutputPath / TEXT("iTunesArtwork.png");
+        if (EditorUtilities::ExportApplicationImage(iconData, 512, 512, PixelFormat::R8G8B8A8_UNorm, iTunesArtworkPath))
+        {
+            LOG(Error, "Failed to export application icon.");
+            return true;
+        }
+        FileSystem::MoveFile(data.OriginalOutputPath / TEXT("iTunesArtwork"), iTunesArtworkPath, true);
     }
 
     // Create PkgInfo file
@@ -238,27 +245,24 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
         }
     }
 
-    // TODO: sign binaries
-
     // TODO: expose event to inject custom post-processing before app packaging (eg. third-party plugins)
-    
+
     // Package application
-    /*const auto buildSettings = BuildSettings::Get();
+    const auto buildSettings = BuildSettings::Get();
     if (buildSettings->SkipPackaging)
         return false;
     GameCooker::PackageFiles();
     LOG(Info, "Building app package...");
-    const String dmgPath = data.OriginalOutputPath / appName + TEXT(".dmg");
-    const String dmgCommand = String::Format(TEXT("hdiutil create {0}.dmg -volname {0} -fs HFS+ -srcfolder {0}.app"), appName);
-    const int32 result = Platform::RunProcess(dmgCommand, data.OriginalOutputPath);
+    const String ipaPath = data.OriginalOutputPath / appName + TEXT(".ipa");
+    const String ipaCommand = String::Format(TEXT("zip -r -X {0}.ipa Payload iTunesArtwork"), appName);
+    const int32 result = Platform::RunProcess(ipaCommand, data.OriginalOutputPath);
     if (result != 0)
     {
         data.Error(TEXT("Failed to package app (result code: {0}). See log for more info."), result);
         return true;
     }
-    // TODO: sign dmg
-    LOG(Info, "Output application package: {0} (size: {1} MB)", dmgPath, FileSystem::GetFileSize(dmgPath) / 1024 / 1024);
-*/
+    LOG(Info, "Output application package: {0} (size: {1} MB)", ipaPath, FileSystem::GetFileSize(ipaPath) / 1024 / 1024);
+
     return false;
 }
 

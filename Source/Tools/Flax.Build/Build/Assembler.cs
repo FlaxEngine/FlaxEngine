@@ -20,6 +20,7 @@ namespace Flax.Build
     /// </summary>
     public class Assembler
     {
+        internal static string CacheFileName = "BuilderRules.dll";
         private string _cacheFolderPath;
 
         /// <summary>
@@ -70,7 +71,7 @@ namespace Flax.Build
             string cacheAssemblyPath = null, cacheInfoPath = null, buildInfo = null;
             if (_cacheFolderPath != null)
             {
-                cacheAssemblyPath = Path.Combine(_cacheFolderPath, "BuilderRules.dll");
+                cacheAssemblyPath = Path.Combine(_cacheFolderPath, CacheFileName);
                 cacheInfoPath = Path.Combine(_cacheFolderPath, "BuilderRulesInfo.txt");
 
                 foreach (var sourceFile in SourceFiles)
@@ -162,7 +163,7 @@ namespace Flax.Build
                 syntaxTrees.Add(parsedSyntaxTree);
             }
 
-            var compilation = CSharpCompilation.Create("BuilderRulesCache.dll", syntaxTrees.ToArray(), defaultReferences, defaultCompilationOptions);
+            var compilation = CSharpCompilation.Create(CacheFileName, syntaxTrees.ToArray(), defaultReferences, defaultCompilationOptions);
             EmitResult emitResult = compilation.Emit(memoryStream);
 
             // Process warnings and errors

@@ -172,7 +172,7 @@ namespace Flax.Build
             catch (Exception ex)
             {
                 Log.Exception(ex);
-                return 1;
+                failed = true;
             }
             finally
             {
