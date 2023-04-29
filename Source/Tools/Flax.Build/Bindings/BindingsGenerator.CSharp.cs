@@ -330,7 +330,7 @@ namespace Flax.Build.Bindings
                 // TODO: generate delegates globally in the module namespace to share more code (smaller binary size)
                 var key = string.Empty;
                 for (int i = 0; i < typeInfo.GenericArgs.Count; i++)
-                    key += GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[i], caller);        
+                    key += GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[i], caller);
                 if (!CSharpAdditionalCodeCache.TryGetValue(key, out var delegateName))
                 {
                     delegateName = "Delegate" + CSharpAdditionalCodeCache.Count;
@@ -462,7 +462,7 @@ namespace Flax.Build.Bindings
                 return string.Empty;
             }
         }
-        
+
         private static void GenerateCSharpManagedTypeInternals(BuildData buildData, ApiTypeInfo apiTypeInfo, StringBuilder contents, string indent)
         {
             if (CSharpAdditionalCode.Count != 0)
@@ -817,7 +817,7 @@ namespace Flax.Build.Bindings
                 if (fieldInfo.HasAttribute("DefaultValue") ||
                     fieldInfo.HasDefaultValue)
                     return true;
-                
+
                 // Check any nested structure
                 var apiType = FindApiTypeInfo(buildData, fieldInfo.Type, structureInfo);
                 if (apiType is StructureInfo fieldTypeStruct && GenerateCSharpStructureUseDefaultInitialize(buildData, fieldTypeStruct))
@@ -826,14 +826,13 @@ namespace Flax.Build.Bindings
             return false;
         }
 
-        private static void GenerateCSharpAccessLevel(StringBuilder contents, AccessLevel access)
+        private static string GenerateCSharpAccessLevel(AccessLevel access)
         {
-            if (access == AccessLevel.Public)
-                contents.Append("public ");
-            else if (access == AccessLevel.Protected)
-                contents.Append("protected ");
-            else if (access == AccessLevel.Private)
-                contents.Append("private ");
+            if (access == AccessLevel.Protected)
+                return "protected ";
+            if (access == AccessLevel.Private)
+                return "private ";
+            return "public ";
         }
 
         private static void GenerateCSharpClass(BuildData buildData, StringBuilder contents, string indent, ClassInfo classInfo)
@@ -863,8 +862,7 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine($"[NativeMarshalling(typeof({marshallerName}))]");
             }
 #endif
-            contents.Append(indent);
-            GenerateCSharpAccessLevel(contents, classInfo.Access);
+            contents.Append(indent).Append(GenerateCSharpAccessLevel(classInfo.Access));
             if (classInfo.IsStatic)
                 contents.Append("static ");
             else if (classInfo.IsSealed)
@@ -963,8 +961,7 @@ namespace Flax.Build.Bindings
 
                 GenerateCSharpComment(contents, indent, eventInfo.Comment, true);
                 GenerateCSharpAttributes(buildData, contents, indent, classInfo, eventInfo, useUnmanaged);
-                contents.Append(indent);
-                GenerateCSharpAccessLevel(contents, eventInfo.Access);
+                contents.Append(indent).Append(GenerateCSharpAccessLevel(eventInfo.Access));
                 if (eventInfo.IsStatic)
                     contents.Append("static ");
                 contents.Append(eventSignature);
@@ -1056,8 +1053,7 @@ namespace Flax.Build.Bindings
                 contents.AppendLine();
                 GenerateCSharpComment(contents, indent, fieldInfo.Comment, true);
                 GenerateCSharpAttributes(buildData, contents, indent, classInfo, fieldInfo, useUnmanaged, fieldInfo.DefaultValue, fieldInfo.Type);
-                contents.Append(indent);
-                GenerateCSharpAccessLevel(contents, fieldInfo.Access);
+                contents.Append(indent).Append(GenerateCSharpAccessLevel(fieldInfo.Access));
                 if (fieldInfo.IsConstexpr)
                     contents.Append("const ");
                 else if (fieldInfo.IsStatic)
@@ -1105,8 +1101,7 @@ namespace Flax.Build.Bindings
                 contents.AppendLine();
                 GenerateCSharpComment(contents, indent, propertyInfo.Comment, true);
                 GenerateCSharpAttributes(buildData, contents, indent, classInfo, propertyInfo, useUnmanaged);
-                contents.Append(indent);
-                GenerateCSharpAccessLevel(contents, propertyInfo.Access);
+                contents.Append(indent).Append(GenerateCSharpAccessLevel(propertyInfo.Access));
                 if (propertyInfo.IsStatic)
                     contents.Append("static ");
                 var returnValueType = GenerateCSharpNativeToManaged(buildData, propertyInfo.Type, classInfo);
@@ -1118,7 +1113,7 @@ namespace Flax.Build.Bindings
                 {
                     contents.Append(indent);
                     if (propertyInfo.Access != propertyInfo.Getter.Access)
-                        GenerateCSharpAccessLevel(contents, propertyInfo.Getter.Access);
+                        contents.Append(GenerateCSharpAccessLevel(propertyInfo.Access));
                     contents.Append("get { ");
                     GenerateCSharpWrapperFunctionCall(buildData, contents, classInfo, propertyInfo.Getter);
                     contents.Append(" }").AppendLine();
@@ -1128,7 +1123,7 @@ namespace Flax.Build.Bindings
                 {
                     contents.Append(indent);
                     if (propertyInfo.Access != propertyInfo.Setter.Access)
-                        GenerateCSharpAccessLevel(contents, propertyInfo.Setter.Access);
+                        contents.Append(GenerateCSharpAccessLevel(propertyInfo.Access));
                     contents.Append("set { ");
                     GenerateCSharpWrapperFunctionCall(buildData, contents, classInfo, propertyInfo.Setter, true);
                     contents.Append(" }").AppendLine();
@@ -1161,8 +1156,7 @@ namespace Flax.Build.Bindings
                     contents.AppendLine();
                     GenerateCSharpComment(contents, indent, functionInfo.Comment);
                     GenerateCSharpAttributes(buildData, contents, indent, classInfo, functionInfo, true);
-                    contents.Append(indent);
-                    GenerateCSharpAccessLevel(contents, functionInfo.Access);
+                    contents.Append(indent).Append(GenerateCSharpAccessLevel(functionInfo.Access));
                     if (functionInfo.IsStatic)
                         contents.Append("static ");
                     if (functionInfo.IsVirtual && !classInfo.IsSealed)
@@ -1224,8 +1218,7 @@ namespace Flax.Build.Bindings
                         if (functionInfo.Comment.Length != 0)
                             contents.Append(indent).AppendLine("/// <inheritdoc />");
                         GenerateCSharpAttributes(buildData, contents, indent, classInfo, functionInfo.Attributes, null, false, useUnmanaged);
-                        contents.Append(indent);
-                        GenerateCSharpAccessLevel(contents, functionInfo.Access);
+                        contents.Append(indent).Append(GenerateCSharpAccessLevel(functionInfo.Access));
                         if (functionInfo.IsVirtual && !classInfo.IsSealed)
                             contents.Append("virtual ");
                         var returnValueType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType, classInfo);
@@ -1303,7 +1296,7 @@ namespace Flax.Build.Bindings
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ManagedToUnmanagedRef, typeof({{marshallerName}}.Bidirectional))]
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.UnmanagedToManagedRef, typeof({{marshallerName}}.Bidirectional))]
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ElementRef, typeof({{marshallerName}}))]
-                public static class {{marshallerName}}
+                {{GenerateCSharpAccessLevel(classInfo.Access)}}static class {{marshallerName}}
                 {
                 #pragma warning disable 1591
                     public static class NativeToManaged
@@ -1374,7 +1367,7 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ManagedToUnmanagedRef, typeof({marshallerName}.Bidirectional))]");
                 contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.UnmanagedToManagedRef, typeof({marshallerName}.Bidirectional))]");
                 contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ElementRef, typeof({marshallerName}))]");
-                contents.Append(indent).AppendLine($"public static unsafe class {marshallerName}");
+                contents.Append(indent).AppendLine($"{GenerateCSharpAccessLevel(structureInfo.Access)}static unsafe class {marshallerName}");
                 contents.Append(indent).AppendLine("{");
                 contents.AppendLine("#pragma warning disable 1591");
 
@@ -1538,12 +1531,8 @@ namespace Flax.Build.Bindings
                         }
                         else if (fieldInfo.Type.Type == "Dictionary")
                         {
-                            string dictionaryArgs = String.Join(", ",
-                                fieldInfo.Type.GenericArgs.Select(x => CSharpNativeToManagedBasicTypes.ContainsKey(x.Type) ? CSharpNativeToManagedBasicTypes[x.Type] : x.Type).ToArray());
-                            toManagedContent.Append(
-                                $"managed.{fieldInfo.Name} != IntPtr.Zero ? (System.Collections.Generic.{fieldInfo.Type.Type}<{dictionaryArgs}>)ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target : null");
-                            toNativeContent.Append(
-                                $"ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak)");
+                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? ({originalType})ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target : null");
+                            toNativeContent.Append($"ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak)");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                             freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                         }
@@ -1665,7 +1654,7 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine("{").Append(indent2).AppendLine(toManagedContent.Replace("\n", "\n" + indent2).ToString().TrimEnd()).Append(indent).AppendLine("}");
                 contents.Append(indent).AppendLine($"internal static {structureInfo.Name}Internal ToNative({structureInfo.Name} managed)");
                 contents.Append(indent).AppendLine("{").Append(indent2).AppendLine(toNativeContent.Replace("\n", "\n" + indent2).ToString().TrimEnd()).Append(indent).AppendLine("}");
-                
+
                 contents.AppendLine("#pragma warning restore 1591");
                 indent = indent.Substring(0, indent.Length - 4);
                 contents.Append(indent).AppendLine("}").AppendLine();
@@ -1681,8 +1670,7 @@ namespace Flax.Build.Bindings
             if (!string.IsNullOrEmpty(structNativeMarshaling))
                 contents.Append(indent).AppendLine(structNativeMarshaling);
 #endif
-            contents.Append(indent);
-            GenerateCSharpAccessLevel(contents, structureInfo.Access);
+            contents.Append(indent).Append(GenerateCSharpAccessLevel(structureInfo.Access));
             contents.Append("unsafe partial struct ").Append(structureInfo.Name);
             if (structureInfo.BaseType != null && structureInfo.IsPod)
                 contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo(structureInfo.BaseType), structureInfo));
@@ -1703,8 +1691,7 @@ namespace Flax.Build.Bindings
                 else if (fieldInfo.Type.Type == "bool")
                     contents.Append(indent).AppendLine("[MarshalAs(UnmanagedType.U1)]");
 #endif
-                contents.Append(indent);
-                GenerateCSharpAccessLevel(contents, fieldInfo.Access);
+                contents.Append(indent).Append(GenerateCSharpAccessLevel(fieldInfo.Access));
                 if (fieldInfo.IsConstexpr)
                     contents.Append("const ");
                 else if (fieldInfo.IsStatic)
@@ -1734,8 +1721,7 @@ namespace Flax.Build.Bindings
                             contents.AppendLine();
                             GenerateCSharpComment(contents, indent, fieldInfo.Comment);
                             GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic);
-                            contents.Append(indent);
-                            GenerateCSharpAccessLevel(contents, fieldInfo.Access);
+                            contents.Append(indent).Append(GenerateCSharpAccessLevel(fieldInfo.Access));
                             if (fieldInfo.IsStatic)
                                 contents.Append("static ");
                             contents.Append(type).Append(' ').Append(fieldInfo.Name + i).Append(';').AppendLine();
@@ -1876,8 +1862,7 @@ namespace Flax.Build.Bindings
 
             // Enum begin
             GenerateCSharpAttributes(buildData, contents, indent, enumInfo, true);
-            contents.Append(indent);
-            GenerateCSharpAccessLevel(contents, enumInfo.Access);
+            contents.Append(indent).Append(GenerateCSharpAccessLevel(enumInfo.Access));
             contents.Append("enum ").Append(enumInfo.Name);
             if (enumInfo.UnderlyingType != null)
                 contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, enumInfo.UnderlyingType, enumInfo));
@@ -1922,8 +1907,7 @@ namespace Flax.Build.Bindings
             }
             GenerateCSharpComment(contents, indent, interfaceInfo.Comment);
             GenerateCSharpAttributes(buildData, contents, indent, interfaceInfo, true);
-            contents.Append(indent);
-            GenerateCSharpAccessLevel(contents, interfaceInfo.Access);
+            contents.Append(indent).Append(GenerateCSharpAccessLevel(interfaceInfo.Access));
             contents.Append("unsafe partial interface ").Append(interfaceInfo.Name);
             contents.AppendLine();
             contents.Append(indent + "{");
