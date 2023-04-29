@@ -94,6 +94,11 @@ public:
     /// </summary>
     API_FIELD(ReadOnly) static Array<NetworkClient*, HeapAllocation> Clients;
 
+    /// <summary>
+    /// Returns remote invoker of the current RPC call (returns LocalClientId on local call).
+    /// </summary>
+    API_FIELD(ReadOnly) static uint32 RPCInvoker;
+
 public:
     /// <summary>
     /// Event called when network manager state gets changed (eg. client connected to the server, or server shutdown started).

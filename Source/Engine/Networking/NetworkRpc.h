@@ -88,6 +88,7 @@ FORCE_INLINE void NetworkRpcInitArg(Array<void*, FixedAllocation<16>>& args, con
             return; \
         if (rpcInfo.Client && networkMode == NetworkManagerMode::Server) \
             return; \
+        NetworkManager::RPCInvoker = NetworkManager::LocalClientId; \
     } \
     }
 
@@ -102,5 +103,6 @@ FORCE_INLINE void NetworkRpcInitArg(Array<void*, FixedAllocation<16>>& args, con
             return; \
         if (rpcInfo.Client && networkMode == NetworkManagerMode::Server) \
             return; \
+        NetworkManager::RPCInvoker = NetworkManager::LocalClientId; \
     } \
     }

@@ -1735,6 +1735,8 @@ void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClie
         stream->SenderId = client ? client->ClientId : NetworkManager::ServerClientId;
         stream->Initialize(event.Message.Buffer + event.Message.Position, msgData.ArgsSize);
 
+        NetworkManager::RPCInvoker = stream->SenderId;
+
         // Execute RPC
         info->Execute(obj, stream, info->Tag);
     }

@@ -25,6 +25,7 @@ uint32 NetworkManager::Frame = 0;
 uint32 NetworkManager::LocalClientId = 0;
 NetworkClient* NetworkManager::LocalClient = nullptr;
 Array<NetworkClient*> NetworkManager::Clients;
+uint32 NetworkManager::RPCInvoker = 0;
 Action NetworkManager::StateChanged;
 Delegate<NetworkClientConnectionData&> NetworkManager::ClientConnecting;
 Delegate<NetworkClient*> NetworkManager::ClientConnected;
