@@ -95,19 +95,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     if (actor != null)
                         group.Panel.TooltipText = Surface.SurfaceUtils.GetVisualScriptTypeDescription(TypeUtils.GetObjectType(actor));
-                    float settingsButtonSize = group.Panel.HeaderHeight;
-                    var settingsButton = new Image
-                    {
-                        TooltipText = "Settings",
-                        AutoFocus = true,
-                        AnchorPreset = AnchorPresets.TopRight,
-                        Parent = group.Panel,
-                        Bounds = new Rectangle(group.Panel.Width - settingsButtonSize, 0, settingsButtonSize, settingsButtonSize),
-                        IsScrollable = false,
-                        Color = FlaxEngine.GUI.Style.Current.ForegroundGrey,
-                        Margin = new Margin(1),
-                        Brush = new SpriteBrush(FlaxEngine.GUI.Style.Current.Settings),
-                    };
+                    var settingsButton = group.AddSettingsButton();
                     settingsButton.Clicked += OnSettingsButtonClicked;
                     break;
                 }
