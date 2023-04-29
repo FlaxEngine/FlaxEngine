@@ -201,25 +201,29 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
                 moveLine = true;
                 if (lastWhitespaceIndex != INVALID_INDEX)
                 {
-                    // Back
                     cursorX = lastWhitespaceX;
                     tmpLine.LastCharIndex = lastWhitespaceIndex - 1;
-                    currentIndex = lastWhitespaceIndex + 1;
-                    nextCharIndex = currentIndex;
+                    nextCharIndex = currentIndex = lastWhitespaceIndex + 1;
                 }
                 else if (lastUpperIndex != INVALID_INDEX)
                 {
+                    // Skip moving twice for the same character
+                    if (outputLines.HasItems() && outputLines.Last().LastCharIndex == lastUpperIndex - 1)
+                    {
+                        currentIndex = nextCharIndex;
+                        lastMoveLine = moveLine;
+                        continue;
+                    }
+
                     cursorX = lastUpperX;
                     tmpLine.LastCharIndex = lastUpperIndex - 1;
-                    currentIndex = lastUpperIndex + 1;
-                    nextCharIndex = currentIndex;
+                    nextCharIndex = currentIndex = lastUpperIndex;
                 }
                 else if (lastUnderscoreIndex != INVALID_INDEX)
                 {
                     cursorX = lastUnderscoreX;
-                    tmpLine.LastCharIndex = lastUnderscoreIndex;
-                    currentIndex = lastUnderscoreIndex + 1;
-                    nextCharIndex = currentIndex;
+                    tmpLine.LastCharIndex = lastUnderscoreIndex - 2;
+                    nextCharIndex = currentIndex = lastUnderscoreIndex + 1;
                 }
                 else
                 {
