@@ -336,10 +336,6 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
                     //value.Orientation.Normalize();
                     targetNodes[i] = value;
                 }
-                else
-                {
-                    int a = 10;
-                }
             }
         }
 

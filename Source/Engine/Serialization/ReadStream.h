@@ -193,14 +193,11 @@ public:
         ReadInt32(&count);
         data.Clear();
         data.EnsureCapacity(count);
-        if (count > 0)
+        for (int32 i = 0; i < count; i++)
         {
-            for (int32 i = 0; i < count; i++)
-            {
-                KeyType key;
-                Read(key);
-                Read(data[key]);
-            }
+            KeyType key;
+            Read(key);
+            Read(data[key]);
         }
     }
 

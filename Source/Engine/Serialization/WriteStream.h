@@ -199,13 +199,10 @@ public:
     {
         const int32 count = data.Count();
         WriteInt32(count);
-        if (count > 0)
+        for (const auto& e : data)
         {
-            for (const auto& e : data)
-            {
-                Write(e.Key);
-                Write(e.Value);
-            }
+            Write(e.Key);
+            Write(e.Value);
         }
     }
 

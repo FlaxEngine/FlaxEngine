@@ -89,6 +89,15 @@ namespace FlaxEditor.Content
         public override ContentItemType ItemType => ContentItemType.Asset;
 
         /// <summary>
+        /// Loads the asset.
+        /// </summary>
+        /// <returns>The asset object.</returns>
+        public Asset LoadAsync()
+        {
+            return FlaxEngine.Content.LoadAsync<BinaryAsset>(ID);
+        }
+
+        /// <summary>
         /// Determines whether asset is of the specified type (included inheritance checks).
         /// </summary>
         /// <typeparam name="T">The type to check.</typeparam>
