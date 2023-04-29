@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
 #pragma warning disable 1591
@@ -34,13 +35,16 @@ namespace FlaxEngine.Interop
 
         public static class ManagedToNative
         {
-            public static IntPtr ConvertToUnmanaged(object managed) => managed != null ? ManagedHandle.ToIntPtr(managed) : IntPtr.Zero;
+            public static IntPtr ConvertToUnmanaged(object managed) => managed != null ? ManagedHandle.ToIntPtr(managed, GCHandleType.Weak) : IntPtr.Zero;
 
             public static void Free(IntPtr unmanaged)
             {
+                // This is a weak handle, no need to free it
+                /*
                 if (unmanaged == IntPtr.Zero)
                     return;
                 ManagedHandle.FromIntPtr(unmanaged).Free();
+                */
             }
         }
 
@@ -170,7 +174,7 @@ namespace FlaxEngine.Interop
             {
                 if (managedArray == null)
                     return IntPtr.Zero;
-                handle = ManagedHandle.Alloc(managedArray);
+                handle = ManagedHandle.Alloc(managedArray, GCHandleType.Weak);
                 return ManagedHandle.ToIntPtr(handle);
             }
 
@@ -179,7 +183,7 @@ namespace FlaxEngine.Interop
                 if (managedArray == null)
                     return;
                 managedArray.FreePooled();
-                handle.Free();
+                //handle.Free(); // No need to free weak handles
             }
         }
 
@@ -232,8 +236,11 @@ namespace FlaxEngine.Interop
 
         public static class ManagedToNative
         {
-            public static IntPtr ConvertToUnmanaged(Dictionary<T, U> managed) => DictionaryMarshaller<T, U>.ToNative(managed);
-            public static void Free(IntPtr unmanaged) => DictionaryMarshaller<T, U>.Free(unmanaged);
+            public static IntPtr ConvertToUnmanaged(Dictionary<T, U> managed) => DictionaryMarshaller<T, U>.ToNative(managed, GCHandleType.Weak);
+            public static void Free(IntPtr unmanaged)
+            {
+                //DictionaryMarshaller<T, U>.Free(unmanaged); // No need to free weak handles
+            }
         }
 
         public struct Bidirectional
@@ -265,7 +272,7 @@ namespace FlaxEngine.Interop
         public static IntPtr ConvertToUnmanaged(Dictionary<T, U> managed) => managed != null ? ManagedHandle.ToIntPtr(managed) : IntPtr.Zero;
 
         public static Dictionary<T, U> ToManaged(IntPtr unmanaged) => unmanaged != IntPtr.Zero ? Unsafe.As<Dictionary<T, U>>(ManagedHandle.FromIntPtr(unmanaged).Target) : null;
-        public static IntPtr ToNative(Dictionary<T, U> managed) => managed != null ? ManagedHandle.ToIntPtr(managed) : IntPtr.Zero;
+        public static IntPtr ToNative(Dictionary<T, U> managed, GCHandleType handleType = GCHandleType.Normal) => managed != null ? ManagedHandle.ToIntPtr(managed, handleType) : IntPtr.Zero;
 
         public static void Free(IntPtr unmanaged)
         {
@@ -334,8 +341,7 @@ namespace FlaxEngine.Interop
                 }
                 numElements = managed.Length;
                 ManagedArray managedArray = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
-                var ptr = ManagedHandle.ToIntPtr(managedArray);
-                return (TUnmanagedElement*)ptr;
+                return (TUnmanagedElement*)ManagedHandle.ToIntPtr(managedArray, GCHandleType.Weak);
             }
 
             public static ReadOnlySpan<T> GetManagedValuesSource(T[]? managed) => managed;
@@ -354,7 +360,7 @@ namespace FlaxEngine.Interop
                     return;
                 ManagedHandle handle = ManagedHandle.FromIntPtr(new IntPtr(unmanaged));
                 (Unsafe.As<ManagedArray>(handle.Target)).FreePooled();
-                handle.Free();
+                //handle.Free(); // No need to free weak handles
             }
         }
 
@@ -475,10 +481,13 @@ namespace FlaxEngine.Interop
         {
             public static unsafe IntPtr ConvertToUnmanaged(string managed)
             {
-                return managed == null ? IntPtr.Zero : ManagedHandle.ToIntPtr(managed);
+                return managed == null ? IntPtr.Zero : ManagedHandle.ToIntPtr(managed, GCHandleType.Weak);
             }
 
-            public static void Free(IntPtr unmanaged) => ManagedString.Free(unmanaged);
+            public static void Free(IntPtr unmanaged)
+            {
+                //ManagedString.Free(unmanaged); // No need to free weak handles
+            }
         }
 
         public struct Bidirectional
