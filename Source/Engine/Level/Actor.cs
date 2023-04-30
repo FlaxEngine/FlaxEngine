@@ -357,27 +357,5 @@ namespace FlaxEngine
         {
             return $"{Name} ({GetType().Name})";
         }
-
-        /// <summary>
-        /// Check if Actors are equals
-        /// </summary>
-        /// <param name="left"></param>
-        /// <param name="right"></param>
-        /// <returns></returns>
-        public static bool operator ==(Actor left, Actor right)
-        {
-            return Object.Equals(left, right);
-        }
-
-        /// <summary>
-        /// Check if Actors aren't equals
-        /// </summary>
-        /// <param name="left"></param>
-        /// <param name="right"></param>
-        /// <returns></returns>
-        public static bool operator !=(Actor left, Actor right)
-        {
-            return !Object.Equals(left, right);
-        }
     }
 }
