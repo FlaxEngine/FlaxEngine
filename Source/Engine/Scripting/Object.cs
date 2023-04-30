@@ -206,7 +206,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// 
+        /// Checks whether the two objects are equal.
         /// </summary>
         /// <param name="left"></param>
         /// <param name="right"></param>
@@ -218,7 +218,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// 
+        /// Checks whether the two objects are not equal.
         /// </summary>
         /// <param name="left"></param>
         /// <param name="right"></param>
