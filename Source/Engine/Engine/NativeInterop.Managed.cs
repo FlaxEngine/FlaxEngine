@@ -350,7 +350,8 @@ namespace FlaxEngine.Interop
 
         private static class ManagedHandlePool
         {
-            private const int WeakPoolCollectionThreshold = 10000000;
+            private const int WeakPoolCollectionSizeThreshold = 10000000;
+            private const int WeakPoolCollectionTimeThreshold = 500;
 
             private static ulong normalHandleAccumulator = 0;
             private static ulong pinnedHandleAccumulator = 0;
@@ -365,6 +366,7 @@ namespace FlaxEngine.Interop
             [ThreadStatic] private static Dictionary<IntPtr, object> weakPoolOther;
             [ThreadStatic] private static ulong nextWeakPoolCollection;
             [ThreadStatic] private static int nextWeakPoolGCCollection;
+            [ThreadStatic] private static long lastWeakPoolCollectionTime;
 
             /// <summary>
             /// Tries to free all references to old weak handles so GC can collect them.
@@ -379,19 +381,22 @@ namespace FlaxEngine.Interop
                 {
                     weakPool = new Dictionary<nint, object>();
                     weakPoolOther = new Dictionary<nint, object>();
-                    nextWeakPoolGCCollection = GC.CollectionCount(0);
+                    nextWeakPoolGCCollection = GC.CollectionCount(0) + 1;
                     return;
                 }
-                // Collect right after garbage collection or whenever the pool gets too large
+                // Try to swap pools after garbage collection or whenever the pool gets too large
                 var gc0CollectionCount = GC.CollectionCount(0);
-                if (gc0CollectionCount < nextWeakPoolGCCollection && weakPool.Count < WeakPoolCollectionThreshold)
+                if (gc0CollectionCount < nextWeakPoolGCCollection && weakPool.Count < WeakPoolCollectionSizeThreshold)
                     return;
-
                 nextWeakPoolGCCollection = gc0CollectionCount + 1;
 
-                var swap = weakPoolOther;
-                weakPoolOther = weakPool;
-                weakPool = swap;
+                // Prevent huge allocations from swapping the pools in the middle of the operation
+                if (System.Diagnostics.Stopwatch.GetElapsedTime(lastWeakPoolCollectionTime).TotalMilliseconds < WeakPoolCollectionTimeThreshold)
+                    return;
+                lastWeakPoolCollectionTime = System.Diagnostics.Stopwatch.GetTimestamp();
+
+                // Swap the pools and release the oldest pool for GC
+                (weakPool, weakPoolOther) = (weakPoolOther, weakPool);
                 weakPool.Clear();
             }
 
