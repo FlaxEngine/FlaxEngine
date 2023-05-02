@@ -6,7 +6,7 @@ using FlaxEngine.GUI;
 namespace FlaxEditor.CustomEditors.Elements
 {
     /// <summary>
-    /// The combobx element.
+    /// The combobox element.
     /// </summary>
     /// <seealso cref="FlaxEditor.CustomEditors.LayoutElement" />
     public class ComboBoxElement : LayoutElement
