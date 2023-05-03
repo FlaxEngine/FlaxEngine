@@ -156,6 +156,16 @@ namespace FlaxEditor.GUI.Tree
         /// Gets a value indicating whether this node is root.
         /// </summary>
         public bool IsRoot => !(Parent is TreeNode);
+        
+        /// <summary>
+        /// Sets whether or not the expand animation will pay when arrow is clicked
+        /// </summary>
+        public bool AnimateExpand = false;
+        
+        /// <summary>
+        /// Sets whether or not the Collapse animation will pay when arrow is clicked
+        /// </summary>
+        public bool AnimateCollapse = false;
 
         /// <summary>
         /// Gets the minimum width of the node sub-tree.
@@ -771,9 +781,9 @@ namespace FlaxEditor.GUI.Tree
                 {
                     // Toggle open state
                     if (_opened)
-                        Collapse();
+                        Collapse(!AnimateCollapse);
                     else
-                        Expand();
+                        Expand(!AnimateExpand);
                 }
 
                 // Check if mouse hits bar
