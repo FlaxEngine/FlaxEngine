@@ -77,6 +77,8 @@ namespace FlaxEditor.SceneGraph.Actors
             }
             contextMenu.AddButton("Save scene", OnSave).LinkTooltip("Saves this scene.").Enabled = IsEdited && !Editor.IsPlayMode;
             contextMenu.AddButton("Unload scene", OnUnload).LinkTooltip("Unloads this scene.").Enabled = Editor.Instance.StateMachine.CurrentState.CanChangeScene;
+            if (Level.ScenesCount > 1)
+                contextMenu.AddButton("Unload all but this scene", OnUnloadAllButSelectedScene).LinkTooltip("Unloads all of the active scenes except for the selected scene.").Enabled = Editor.Instance.StateMachine.CurrentState.CanChangeScene;
 
             base.OnContextMenu(contextMenu);
         }
@@ -94,6 +96,11 @@ namespace FlaxEditor.SceneGraph.Actors
         private void OnUnload()
         {
             Editor.Instance.Scene.CloseScene(Scene);
+        }
+
+        private void OnUnloadAllButSelectedScene()
+        {
+            Editor.Instance.Scene.CloseAllScenesExcept(Scene);
         }
     }
 }
