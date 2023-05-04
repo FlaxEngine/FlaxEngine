@@ -831,7 +831,6 @@ private:
     };
 
     int32 GetRootNodeIndex(Animation* anim);
-    void ExtractRootMotion(Span<int32> mapping, int32 rootNodeIndex, Animation* anim, float pos, float prevPos, Transform& rootNode, Transform& rootMotion);
     void ProcessAnimEvents(AnimGraphNode* node, bool loop, float length, float animPos, float animPrevPos, Animation* anim, float speed);
     void ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode* node, bool loop, float length, float pos, float prevPos, Animation* anim, float speed, float weight = 1.0f, ProcessAnimationMode mode = ProcessAnimationMode::Override);
     Variant SampleAnimation(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* anim, float speed);

@@ -19,6 +19,18 @@ namespace
             additive *= -1;
         base += additive;
     }
+
+    FORCE_INLINE void NormalizeRotations(AnimGraphImpulse* nodes, RootMotionMode rootMotionMode)
+    {
+        for (int32 i = 0; i < nodes->Nodes.Count(); i++)
+        {
+            nodes->Nodes[i].Orientation.Normalize();
+        }
+        if (rootMotionMode != RootMotionMode::NoExtraction)
+        {
+            nodes->RootMotion.Orientation.Normalize();
+        }
+    }
 }
 
 void RetargetSkeletonNode(const SkeletonData& sourceSkeleton, const SkeletonData& targetSkeleton, const SkinnedModel::SkeletonMapping& mapping, Transform& node, int32 i)
@@ -56,52 +68,6 @@ int32 AnimGraphExecutor::GetRootNodeIndex(Animation* anim)
         }
     }
     return rootNodeIndex;
-}
-
-void AnimGraphExecutor::ExtractRootMotion(const Span<int32> mapping, int32 rootNodeIndex, Animation* anim, float pos, float prevPos, Transform& rootNode, Transform& rootMotion)
-{
-    const Transform& refPose = GetEmptyNodes()->Nodes[rootNodeIndex];
-    const int32 nodeToChannel = mapping[rootNodeIndex];
-    if (_rootMotionMode == RootMotionMode::Enable && nodeToChannel != -1)
-    {
-        // Get the root bone transformation
-        Transform rootBefore = refPose;
-        const NodeAnimationData& rootChannel = anim->Data.Channels[nodeToChannel];
-        rootChannel.Evaluate(prevPos, &rootBefore, false);
-
-        // Check if animation looped
-        if (pos < prevPos)
-        {
-            const float length = anim->GetLength();
-            const float endPos = length * static_cast<float>(anim->Data.FramesPerSecond);
-            const float timeToEnd = endPos - prevPos;
-
-            Transform rootBegin = refPose;
-            rootChannel.Evaluate(0, &rootBegin, false);
-
-            Transform rootEnd = refPose;
-            rootChannel.Evaluate(endPos, &rootEnd, false);
-
-            //rootChannel.Evaluate(pos - timeToEnd, &rootNow, true);
-
-            // Complex motion calculation to preserve the looped movement
-            // (end - before + now - begin)
-            // It sums the motion since the last update to anim end and since the start to now
-            rootMotion.Translation = rootEnd.Translation - rootBefore.Translation + rootNode.Translation - rootBegin.Translation;
-            rootMotion.Orientation = rootEnd.Orientation * rootBefore.Orientation.Conjugated() * (rootNode.Orientation * rootBegin.Orientation.Conjugated());
-            //rootMotion.Orientation = Quaternion::Identity;
-        }
-        else
-        {
-            // Simple motion delta
-            // (now - before)
-            rootMotion.Translation = rootNode.Translation - rootBefore.Translation;
-            rootMotion.Orientation = rootBefore.Orientation.Conjugated() * rootNode.Orientation;
-        }
-    }
-
-    // Remove root node motion after extraction
-    rootNode = refPose;
 }
 
 void AnimGraphExecutor::ProcessAnimEvents(AnimGraphNode* node, bool loop, float length, float animPos, float animPrevPos, Animation* anim, float speed)
@@ -334,10 +300,60 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
     {
         // Calculate the root motion node transformation
         const int32 rootNodeIndex = GetRootNodeIndex(anim);
-        Transform rootNode = emptyNodes->Nodes[rootNodeIndex];
+        const Transform& refPose = emptyNodes->Nodes[rootNodeIndex];
+        Transform& rootNode = nodes->Nodes[rootNodeIndex];
         Transform& dstNode = nodes->RootMotion;
-        Transform srcNode(rootNode);
-        ExtractRootMotion(mapping.NodesMapping, rootNodeIndex, anim, animPos, animPrevPos, rootNode, srcNode);
+        Transform srcNode = Transform::Identity;
+        const int32 nodeToChannel = mapping.NodesMapping[rootNodeIndex];
+        if (_rootMotionMode == RootMotionMode::Enable && nodeToChannel != -1)
+        {
+            // Get the root bone transformation
+            Transform rootBefore = refPose;
+            const NodeAnimationData& rootChannel = anim->Data.Channels[nodeToChannel];
+            rootChannel.Evaluate(animPrevPos, &rootBefore, false);
+
+            // Check if animation looped
+            if (animPos < animPrevPos)
+            {
+                const float endPos = anim->GetLength() * static_cast<float>(anim->Data.FramesPerSecond);
+                const float timeToEnd = endPos - animPrevPos;
+
+                Transform rootBegin = refPose;
+                rootChannel.Evaluate(0, &rootBegin, false);
+
+                Transform rootEnd = refPose;
+                rootChannel.Evaluate(endPos, &rootEnd, false);
+
+                //rootChannel.Evaluate(animPos - timeToEnd, &rootNow, true);
+
+                // Complex motion calculation to preserve the looped movement
+                // (end - before + now - begin)
+                // It sums the motion since the last update to anim end and since the start to now
+                srcNode.Translation = rootEnd.Translation - rootBefore.Translation + rootNode.Translation - rootBegin.Translation;
+                srcNode.Orientation = rootEnd.Orientation * rootBefore.Orientation.Conjugated() * (rootNode.Orientation * rootBegin.Orientation.Conjugated());
+                //srcNode.Orientation = Quaternion::Identity;
+            }
+            else
+            {
+                // Simple motion delta
+                // (now - before)
+                srcNode.Translation = rootNode.Translation - rootBefore.Translation;
+                srcNode.Orientation = rootBefore.Orientation.Conjugated() * rootNode.Orientation;
+            }
+
+            // Convert root motion from local-space to the actor-space (eg. if root node is not actually a root and its parents have rotation/scale)
+            auto& skeleton = _graph.BaseModel->Skeleton;
+            int32 parentIndex = skeleton.Nodes[rootNodeIndex].ParentIndex;
+            while (parentIndex != -1)
+            {
+                const Transform& parentNode = nodes->Nodes[parentIndex];
+                srcNode.Translation = parentNode.LocalToWorld(srcNode.Translation);
+                parentIndex = skeleton.Nodes[parentIndex].ParentIndex;
+            }
+        }
+
+        // Remove root node motion after extraction
+        rootNode = refPose;
 
         // Blend root motion
         if (mode == ProcessAnimationMode::BlendAdditive)
@@ -381,6 +397,7 @@ Variant AnimGraphExecutor::SampleAnimation(AnimGraphNode* node, bool loop, float
     nodes->Position = pos;
     nodes->Length = length;
     ProcessAnimation(nodes, node, loop, length, pos, prevPos, anim, speed);
+    NormalizeRotations(nodes, _rootMotionMode);
 
     return nodes;
 }
@@ -402,16 +419,7 @@ Variant AnimGraphExecutor::SampleAnimationsWithBlend(AnimGraphNode* node, bool l
     nodes->Length = length;
     ProcessAnimation(nodes, node, loop, length, pos, prevPos, animA, speedA, 1.0f - alpha, ProcessAnimationMode::Override);
     ProcessAnimation(nodes, node, loop, length, pos, prevPos, animB, speedB, alpha, ProcessAnimationMode::BlendAdditive);
-
-    // Normalize rotations
-    for (int32 i = 0; i < nodes->Nodes.Count(); i++)
-    {
-        nodes->Nodes[i].Orientation.Normalize();
-    }
-    if (_rootMotionMode != RootMotionMode::NoExtraction)
-    {
-        nodes->RootMotion.Orientation.Normalize();
-    }
+    NormalizeRotations(nodes, _rootMotionMode);
 
     return nodes;
 }
@@ -436,16 +444,7 @@ Variant AnimGraphExecutor::SampleAnimationsWithBlend(AnimGraphNode* node, bool l
     ProcessAnimation(nodes, node, loop, length, pos, prevPos, animA, speedA, alphaA, ProcessAnimationMode::Override);
     ProcessAnimation(nodes, node, loop, length, pos, prevPos, animB, speedB, alphaB, ProcessAnimationMode::BlendAdditive);
     ProcessAnimation(nodes, node, loop, length, pos, prevPos, animC, speedC, alphaC, ProcessAnimationMode::BlendAdditive);
-
-    // Normalize rotations
-    for (int32 i = 0; i < nodes->Nodes.Count(); i++)
-    {
-        nodes->Nodes[i].Orientation.Normalize();
-    }
-    if (_rootMotionMode != RootMotionMode::NoExtraction)
-    {
-        nodes->RootMotion.Orientation.Normalize();
-    }
+    NormalizeRotations(nodes, _rootMotionMode);
 
     return nodes;
 }
