@@ -112,7 +112,7 @@ public:
         Bones.Swap(other.Bones);
     }
 
-    int32 FindNode(const StringView& name)
+    int32 FindNode(const StringView& name) const
     {
         for (int32 i = 0; i < Nodes.Count(); i++)
         {
@@ -122,7 +122,7 @@ public:
         return -1;
     }
 
-    int32 FindBone(int32 nodeIndex)
+    int32 FindBone(int32 nodeIndex) const
     {
         for (int32 i = 0; i < Bones.Count(); i++)
         {

@@ -7,6 +7,8 @@
 #include "Engine/Graphics/Models/SkeletonData.h"
 #include "Engine/Scripting/Scripting.h"
 
+extern void RetargetSkeletonNode(const SkeletonData& sourceSkeleton, const SkeletonData& targetSkeleton, const SkinnedModel::SkeletonMapping& sourceMapping, Transform& node, int32 i);
+
 ThreadLocal<AnimGraphContext> AnimGraphExecutor::Context;
 
 RootMotionData RootMotionData::Identity = { Vector3(0.0f), Quaternion(0.0f, 0.0f, 0.0f, 1.0f) };
@@ -315,27 +317,21 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
             targetNodes[i] = targetSkeleton.Nodes[i].LocalTransform;
 
         // Use skeleton mapping
-        const Span<int32> mapping = data.NodesSkeleton->GetSkeletonMapping(_graph.BaseModel);
-        if (mapping.IsValid())
+        const SkinnedModel::SkeletonMapping mapping = data.NodesSkeleton->GetSkeletonMapping(_graph.BaseModel);
+        if (mapping.NodesMapping.IsValid())
         {
             const auto& sourceSkeleton = _graph.BaseModel->Skeleton;
             Transform* sourceNodes = animResult->Nodes.Get();
             for (int32 i = 0; i < retargetNodes.Nodes.Count(); i++)
             {
-                const auto& targetNode = targetSkeleton.Nodes[i];
-                const int32 nodeToNode = mapping[i];
+                const int32 nodeToNode = mapping.NodesMapping[i];
                 if (nodeToNode != -1)
                 {
-                    // Map source skeleton node to the target skeleton (use ref pose difference)
-                    const auto& sourceNode = sourceSkeleton.Nodes[nodeToNode];
-                    Transform value = sourceNodes[nodeToNode];
-                    Transform sourceToTarget = targetNode.LocalTransform - sourceNode.LocalTransform;
-                    value.Translation += sourceToTarget.Translation;
-                    value.Scale *= sourceToTarget.Scale;
-                    //value.Orientation = sourceToTarget.Orientation * value.Orientation; // TODO: find out why this doesn't match referenced animation when played on that skeleton originally
-                    //value.Orientation.Normalize();
-                    targetNodes[i] = value;
+                    Transform node = sourceNodes[nodeToNode];
+                    RetargetSkeletonNode(sourceSkeleton, targetSkeleton, mapping, node, i);
+                    targetNodes[i] = node;
                 }
+
             }
         }
 

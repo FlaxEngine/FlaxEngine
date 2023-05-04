@@ -331,6 +331,7 @@ bool SkinnedMesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result, i
         MemoryReadStream stream(chunk->Get(), chunk->Size());
 
         // Seek to find mesh location
+        byte version = stream.ReadByte();
         for (int32 i = 0; i <= _index; i++)
         {
             // #MODEL_DATA_FORMAT_USAGE

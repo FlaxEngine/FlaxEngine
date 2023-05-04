@@ -21,6 +21,24 @@ namespace
     }
 }
 
+void RetargetSkeletonNode(const SkeletonData& sourceSkeleton, const SkeletonData& targetSkeleton, const SkinnedModel::SkeletonMapping& mapping, Transform& node, int32 i)
+{
+    const int32 nodeToNode = mapping.NodesMapping[i];
+    if (nodeToNode == -1)
+        return;
+
+    // Map source skeleton node to the target skeleton (use ref pose difference)
+    const auto& sourceNode = sourceSkeleton.Nodes[nodeToNode];
+    const auto& targetNode = targetSkeleton.Nodes[i];
+    Transform value = node;
+    const Transform sourceToTarget = targetNode.LocalTransform - sourceNode.LocalTransform;
+    value.Translation += sourceToTarget.Translation;
+    value.Scale *= sourceToTarget.Scale;
+    value.Orientation = sourceToTarget.Orientation * value.Orientation; // TODO: find out why this doesn't match referenced animation when played on that skeleton originally
+    value.Orientation.Normalize();
+    node = value;
+}
+
 int32 AnimGraphExecutor::GetRootNodeIndex(Animation* anim)
 {
     // TODO: cache the root node index (use dictionary with Animation* -> int32 for fast lookups)
@@ -257,21 +275,33 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
         }
     }
 
-    // Evaluate nodes animations
-    const Span<int32> mapping = _graph.BaseModel->GetSkeletonMapping(anim);
-    if (mapping.IsInvalid())
+    // Get skeleton nodes mapping descriptor
+    const SkinnedModel::SkeletonMapping mapping = _graph.BaseModel->GetSkeletonMapping(anim);
+    if (mapping.NodesMapping.IsInvalid())
         return;
+
+    // Evaluate nodes animations
     const bool weighted = weight < 1.0f;
+    const bool retarget = mapping.SourceSkeleton && mapping.SourceSkeleton != mapping.TargetSkeleton;
     const auto emptyNodes = GetEmptyNodes();
+    SkinnedModel::SkeletonMapping sourceMapping;
+    if (retarget)
+        sourceMapping = _graph.BaseModel->GetSkeletonMapping(mapping.SourceSkeleton);
     for (int32 i = 0; i < nodes->Nodes.Count(); i++)
     {
-        const int32 nodeToChannel = mapping[i];
+        const int32 nodeToChannel = mapping.NodesMapping[i];
         Transform& dstNode = nodes->Nodes[i];
         Transform srcNode = emptyNodes->Nodes[i];
         if (nodeToChannel != -1)
         {
             // Calculate the animated node transformation
             anim->Data.Channels[nodeToChannel].Evaluate(animPos, &srcNode, false);
+
+            // Optionally retarget animation into the skeleton used by the Anim Graph
+            if (retarget)
+            {
+                RetargetSkeletonNode(mapping.SourceSkeleton->Skeleton, mapping.TargetSkeleton->Skeleton, sourceMapping, srcNode, i);
+            }
         }
 
         // Blend node
@@ -307,7 +337,7 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
         Transform rootNode = emptyNodes->Nodes[rootNodeIndex];
         RootMotionData& dstNode = nodes->RootMotion;
         RootMotionData srcNode(rootNode);
-        ExtractRootMotion(mapping, rootNodeIndex, anim, animPos, animPrevPos, rootNode, srcNode);
+        ExtractRootMotion(mapping.NodesMapping, rootNodeIndex, anim, animPos, animPrevPos, rootNode, srcNode);
 
         // Blend root motion
         if (mode == ProcessAnimationMode::BlendAdditive)

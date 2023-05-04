@@ -14,13 +14,31 @@ class StreamSkinnedModelLODTask;
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedModel : public ModelBase
 {
-    DECLARE_BINARY_ASSET_HEADER(SkinnedModel, 4);
+    DECLARE_BINARY_ASSET_HEADER(SkinnedModel, 5);
     friend SkinnedMesh;
     friend StreamSkinnedModelLODTask;
+public:
+    // Skeleton mapping descriptor.
+    struct FLAXENGINE_API SkeletonMapping
+    {
+        // Target skeleton.
+        AssetReference<SkinnedModel> TargetSkeleton;
+        // Source skeleton.
+        AssetReference<SkinnedModel> SourceSkeleton;
+        // The node-to-node mapping for the fast animation sampling for the skinned model skeleton nodes. Each item is index of the source skeleton node into target skeleton node.
+        Span<int32> NodesMapping;
+    };
+
 private:
+    struct SkeletonMappingData
+    {
+        AssetReference<SkinnedModel> SourceSkeleton;
+        Span<int32> NodesMapping;
+    };
+
     int32 _loadedLODs = 0;
     StreamSkinnedModelLODTask* _streamingTask = nullptr;
-    Dictionary<Asset*, Span<int32>> _skeletonMappingCache;
+    Dictionary<Asset*, SkeletonMappingData> _skeletonMappingCache;
 
 public:
     /// <summary>
@@ -108,7 +126,7 @@ public:
     /// </summary>
     /// <param name="name">The name of the node.</param>
     /// <returns>The index of the node or -1 if not found.</returns>
-    API_FUNCTION() FORCE_INLINE int32 FindNode(const StringView& name)
+    API_FUNCTION() FORCE_INLINE int32 FindNode(const StringView& name) const
     {
         return Skeleton.FindNode(name);
     }
@@ -118,7 +136,7 @@ public:
     /// </summary>
     /// <param name="name">The name of the node used by the bone.</param>
     /// <returns>The index of the bone or -1 if not found.</returns>
-    API_FUNCTION() FORCE_INLINE int32 FindBone(const StringView& name)
+    API_FUNCTION() FORCE_INLINE int32 FindBone(const StringView& name) const
     {
         return FindBone(FindNode(name));
     }
@@ -128,7 +146,7 @@ public:
     /// </summary>
     /// <param name="nodeIndex">The index of the node.</param>
     /// <returns>The index of the bone or -1 if not found.</returns>
-    API_FUNCTION() FORCE_INLINE int32 FindBone(int32 nodeIndex)
+    API_FUNCTION() FORCE_INLINE int32 FindBone(int32 nodeIndex) const
     {
         return Skeleton.FindBone(nodeIndex);
     }
@@ -157,8 +175,8 @@ public:
     /// Gets the skeleton mapping for a given asset (animation or other skinned model). Uses identity mapping or manually created retargeting setup.
     /// </summary>
     /// <param name="source">The source asset (animation or other skinned model) to get mapping to its skeleton.</param>
-    /// <returns>The cached node-to-node mapping for the fast animation sampling for the skinned model skeleton nodes. Each span item is index of the source skeleton node for this skeleton.</returns>
-    Span<int32> GetSkeletonMapping(Asset* source);
+    /// <returns>The skeleton mapping for the source asset into this skeleton.</returns>
+    SkeletonMapping GetSkeletonMapping(Asset* source);
 
     /// <summary>
     /// Determines if there is an intersection between the SkinnedModel and a Ray in given world using given instance.
@@ -265,7 +283,34 @@ private:
     /// <returns>True if failed, otherwise false.</returns>
     bool Init(const Span<int32>& meshesCountPerLod);
 
+    void ClearSkeletonMapping();
     void OnSkeletonMappingSourceAssetUnloaded(Asset* obj);
+
+#if USE_EDITOR
+public:
+    // Skeleton retargeting setup (internal use only - accessed by Editor)
+    API_STRUCT(NoDefault) struct SkeletonRetarget
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(SkeletonRetarget);
+        // Source asset id.
+        API_FIELD() Guid SourceAsset;
+        // Skeleton asset id to use for remapping.
+        API_FIELD() Guid SkeletonAsset;
+        // Skeleton nodes remapping table (maps this skeleton node name to other skeleton node).
+        API_FIELD() Dictionary<String, String, HeapAllocation> NodesMapping;
+    };
+    // Gets or sets the skeleton retarget entries (accessed in Editor only).
+    API_PROPERTY() const Array<SkeletonRetarget>& GetSkeletonRetargets() const { return _skeletonRetargets; }
+    API_PROPERTY() void SetSkeletonRetargets(const Array<SkeletonRetarget>& value) { Locker.Lock(); _skeletonRetargets = value; ClearSkeletonMapping(); Locker.Unlock(); }
+private:
+#else
+    struct SkeletonRetarget
+    {
+        Guid SourceAsset, SkeletonAsset;
+        Dictionary<String, String, HeapAllocation> NodesMapping;
+    };
+#endif
+    Array<SkeletonRetarget> _skeletonRetargets;
 
 public:
     // [ModelBase]

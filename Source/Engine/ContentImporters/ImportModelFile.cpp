@@ -269,6 +269,9 @@ CreateAssetResult ImportModelFile::ImportSkinnedModel(CreateAssetContext& contex
     {
         stream.SetPosition(0);
 
+        // Mesh Data Version
+        stream.WriteByte(1);
+
         // Pack meshes
         auto& meshes = modelData.LODs[lodIndex].Meshes;
         for (int32 meshIndex = 0; meshIndex < meshes.Count(); meshIndex++)

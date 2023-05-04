@@ -876,10 +876,13 @@ namespace FlaxEditor.Windows.Assets
         {
             if (!IsEdited)
                 return;
-
             if (_asset.WaitForLoaded())
-            {
                 return;
+
+            foreach (var child in _tabs.Children)
+            {
+                if (child is Tab tab && tab.Proxy.Window != null)
+                    tab.Proxy.OnSave();
             }
 
             if (_asset.Save())

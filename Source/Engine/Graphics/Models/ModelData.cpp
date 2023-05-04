@@ -782,6 +782,9 @@ bool ModelData::Pack2SkinnedModelHeader(WriteStream* stream) const
         return true;
     }
 
+    // Version
+    stream->WriteByte(1);
+
     // Min Screen Size
     stream->WriteFloat(MinScreenSize);
 
@@ -792,7 +795,6 @@ bool ModelData::Pack2SkinnedModelHeader(WriteStream* stream) const
     for (int32 materialSlotIndex = 0; materialSlotIndex < Materials.Count(); materialSlotIndex++)
     {
         auto& slot = Materials[materialSlotIndex];
-
         stream->Write(slot.AssetID);
         stream->WriteByte(static_cast<byte>(slot.ShadowsMode));
         stream->WriteString(slot.Name, 11);
@@ -876,6 +878,11 @@ bool ModelData::Pack2SkinnedModelHeader(WriteStream* stream) const
             stream->WriteTransform(bone.LocalTransform);
             stream->Write(bone.OffsetMatrix);
         }
+    }
+
+    // Retargeting
+    {
+        stream->WriteInt32(0);
     }
 
     return false;

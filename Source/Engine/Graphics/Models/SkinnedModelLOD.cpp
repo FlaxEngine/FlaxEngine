@@ -15,6 +15,7 @@ bool SkinnedModelLOD::HasAnyMeshInitialized() const
 bool SkinnedModelLOD::Load(MemoryReadStream& stream)
 {
     // Load LOD for each mesh
+    byte version = stream.ReadByte();
     for (int32 i = 0; i < Meshes.Count(); i++)
     {
         auto& mesh = Meshes[i];
