@@ -801,6 +801,8 @@ namespace FlaxEditor.CustomEditors
         /// <returns>True if allow to handle this event, otherwise false.</returns>
         protected virtual bool OnDirty(CustomEditor editor, object value, object token = null)
         {
+            if (ParentEditor == null)
+                return false;
             return ParentEditor.OnDirty(editor, value, token);
         }
 
