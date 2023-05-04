@@ -631,10 +631,15 @@ namespace Flax.Build
                     if (stack.Count != 0)
                     {
                         var popped = stack.Pop();
+                        var windowsDriveStart = popped.IndexOf('\\');
                         if (popped == "..")
                         {
                             stack.Push(popped);
                             stack.Push(bit);
+                        }
+                        else if (windowsDriveStart != -1)
+                        {
+                            stack.Push(popped.Substring(windowsDriveStart + 1));
                         }
                     }
                     else

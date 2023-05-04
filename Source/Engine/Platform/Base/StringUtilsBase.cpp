@@ -337,17 +337,22 @@ void StringUtils::PathRemoveRelativeParts(String& path)
     path.Split(TEXT('/'), components);
 
     Array<String, InlinedAllocation<16>> stack;
-    for (auto& bit : components)
+    for (String& bit : components)
     {
         if (bit == TEXT(".."))
         {
             if (stack.HasItems())
             {
-                auto popped = stack.Pop();
+                String popped = stack.Pop();
+                const int32 windowsDriveStart = popped.Find('\\');
                 if (popped == TEXT(".."))
                 {
                     stack.Push(popped);
                     stack.Push(bit);
+                }
+                else if (windowsDriveStart != -1)
+                {
+                    stack.Add(MoveTemp(popped.Left(windowsDriveStart + 1)));
                 }
             }
             else
@@ -361,13 +366,13 @@ void StringUtils::PathRemoveRelativeParts(String& path)
         }
         else
         {
-            stack.Push(bit);
+            stack.Add(MoveTemp(bit));
         }
     }
 
     const bool isRooted = path.StartsWith(TEXT('/')) || (path.Length() >= 2 && path[0] == '.' && path[1] == '/');
     path.Clear();
-    for (auto& e : stack)
+    for (const String& e : stack)
         path /= e;
     if (isRooted && path.HasChars() && path[0] != '/')
         path.Insert(0, TEXT("/"));
