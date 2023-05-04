@@ -766,19 +766,9 @@ bool ModelData::Pack2SkinnedModelHeader(WriteStream* stream) const
         return true;
     }
     const int32 lodCount = GetLODsCount();
-    if (lodCount == 0 || lodCount > MODEL_MAX_LODS)
+    if (lodCount > MODEL_MAX_LODS)
     {
         Log::ArgumentOutOfRangeException();
-        return true;
-    }
-    if (Materials.IsEmpty())
-    {
-        Log::ArgumentOutOfRangeException(TEXT("MaterialSlots"), TEXT("Material slots collection cannot be empty."));
-        return true;
-    }
-    if (!HasSkeleton())
-    {
-        Log::InvalidOperationException(TEXT("Missing skeleton."));
         return true;
     }
 

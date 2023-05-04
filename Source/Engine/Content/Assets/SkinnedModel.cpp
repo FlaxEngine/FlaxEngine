@@ -292,21 +292,29 @@ SkinnedModel::SkeletonMapping SkinnedModel::GetSkeletonMapping(Asset* source)
 
 bool SkinnedModel::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex)
 {
+    if (LODs.Count() == 0)
+        return false;
     return LODs[lodIndex].Intersects(ray, world, distance, normal, mesh);
 }
 
 bool SkinnedModel::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex)
 {
+    if (LODs.Count() == 0)
+        return false;
     return LODs[lodIndex].Intersects(ray, transform, distance, normal, mesh);
 }
 
 BoundingBox SkinnedModel::GetBox(const Matrix& world, int32 lodIndex) const
 {
+    if (LODs.Count() == 0)
+        return BoundingBox::Zero;
     return LODs[lodIndex].GetBox(world);
 }
 
 BoundingBox SkinnedModel::GetBox(int32 lodIndex) const
 {
+    if (LODs.Count() == 0)
+        return BoundingBox::Zero;
     return LODs[lodIndex].GetBox();
 }
 
@@ -837,6 +845,7 @@ bool SkinnedModel::Init(const Span<int32>& meshesCountPerLod)
     for (int32 lodIndex = 0; lodIndex < LODs.Count(); lodIndex++)
         LODs[lodIndex].Dispose();
     LODs.Resize(meshesCountPerLod.Length());
+    _initialized = true;
 
     // Setup meshes
     for (int32 lodIndex = 0; lodIndex < meshesCountPerLod.Length(); lodIndex++)
@@ -1069,7 +1078,7 @@ Asset::LoadResult SkinnedModel::load()
     // Amount of material slots
     int32 materialSlotsCount;
     stream->ReadInt32(&materialSlotsCount);
-    if (materialSlotsCount <= 0 || materialSlotsCount > 4096)
+    if (materialSlotsCount < 0 || materialSlotsCount > 4096)
         return LoadResult::InvalidData;
     MaterialSlots.Resize(materialSlotsCount, false);
 
@@ -1093,9 +1102,10 @@ Asset::LoadResult SkinnedModel::load()
     // Amount of LODs
     byte lods;
     stream->ReadByte(&lods);
-    if (lods == 0 || lods > MODEL_MAX_LODS)
+    if (lods > MODEL_MAX_LODS)
         return LoadResult::InvalidData;
     LODs.Resize(lods);
+    _initialized = true;
 
     // For each LOD
     for (int32 lodIndex = 0; lodIndex < lods; lodIndex++)
@@ -1220,6 +1230,7 @@ void SkinnedModel::unload(bool isReloading)
         LODs[i].Dispose();
     LODs.Clear();
     Skeleton.Dispose();
+    _initialized = false;
     _loadedLODs = 0;
     _skeletonRetargets.Clear();
     ClearSkeletonMapping();

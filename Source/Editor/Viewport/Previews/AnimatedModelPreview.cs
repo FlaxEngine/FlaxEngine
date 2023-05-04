@@ -273,6 +273,41 @@ namespace FlaxEditor.Viewport.Previews
             _playAnimationOnce = true;
         }
 
+        /// <summary>
+        /// Gets the skinned model bounds. Handles skeleton-only assets.
+        /// </summary>
+        /// <returns>The local bounds.</returns>
+        public BoundingBox GetBounds()
+        {
+            var box = BoundingBox.Zero;
+            var skinnedModel = SkinnedModel;
+            if (skinnedModel && skinnedModel.IsLoaded)
+            {
+                if (skinnedModel.LODs.Length != 0)
+                {
+                    // Use model geometry bounds
+                    box = skinnedModel.GetBox();
+                }
+                else
+                {
+                    // Use skeleton bounds
+                    _previewModel.GetCurrentPose(out var pose);
+                    if (pose != null && pose.Length != 0)
+                    {
+                        var point = pose[0].TranslationVector;
+                        box = new BoundingBox(point, point);
+                        for (int i = 1; i < pose.Length; i++)
+                        {
+                            point = pose[i].TranslationVector;
+                            box.Minimum = Vector3.Min(box.Minimum, point);
+                            box.Maximum = Vector3.Max(box.Maximum, point);
+                        }
+                    }
+                }
+            }
+            return box;
+        }
+
         private void OnBegin(RenderTask task, GPUContext context)
         {
             if (!ScaleToFit)
@@ -290,7 +325,7 @@ namespace FlaxEditor.Viewport.Previews
             if (skinnedModel && skinnedModel.IsLoaded)
             {
                 float targetSize = 50.0f;
-                BoundingBox box = skinnedModel.GetBox();
+                BoundingBox box = GetBounds();
                 float maxSize = Mathf.Max(0.001f, (float)box.Size.MaxValue);
                 float scale = targetSize / maxSize;
                 _previewModel.Scale = new Vector3(scale);
@@ -411,13 +446,21 @@ namespace FlaxEditor.Viewport.Previews
             base.Draw();
 
             var skinnedModel = _previewModel.SkinnedModel;
-            if (_showCurrentLOD && skinnedModel)
+            if (skinnedModel == null || !skinnedModel.IsLoaded)
+                return;
+            var lods = skinnedModel.LODs;
+            if (lods.Length == 0)
+            {
+                // Force show skeleton for models without geometry
+                ShowNodes = true;
+                return;
+            }
+            if (_showCurrentLOD)
             {
                 var lodIndex = ComputeLODIndex(skinnedModel);
                 string text = string.Format("Current LOD: {0}", lodIndex);
                 if (lodIndex != -1)
                 {
-                    var lods = skinnedModel.LODs;
                     lodIndex = Mathf.Clamp(lodIndex + PreviewActor.LODBias, 0, lods.Length - 1);
                     var lod = lods[lodIndex];
                     int triangleCount = 0, vertexCount = 0;

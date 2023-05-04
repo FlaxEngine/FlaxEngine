@@ -36,6 +36,7 @@ private:
         Span<int32> NodesMapping;
     };
 
+    bool _initialized = false;
     int32 _loadedLODs = 0;
     StreamSkinnedModelLODTask* _streamingTask = nullptr;
     Dictionary<Asset*, SkeletonMappingData> _skeletonMappingCache;
@@ -63,7 +64,7 @@ public:
     /// </summary>
     FORCE_INLINE bool IsInitialized() const
     {
-        return LODs.HasItems();
+        return _initialized;
     }
 
     /// <summary>

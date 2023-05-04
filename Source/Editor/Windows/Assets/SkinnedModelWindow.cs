@@ -712,21 +712,24 @@ namespace FlaxEditor.Windows.Assets
                     Render2D.PushClip(new Rectangle(Float2.Zero, size));
 
                     var meshDatas = Proxy.Window._meshDatas;
-                    var lodIndex = Mathf.Clamp(_lod, 0, meshDatas.Length - 1);
-                    var lod = meshDatas[lodIndex];
-                    var mesh = Mathf.Clamp(_mesh, -1, lod.Length - 1);
-                    if (mesh == -1)
+                    if (meshDatas.Length != 0)
                     {
-                        for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
+                        var lodIndex = Mathf.Clamp(_lod, 0, meshDatas.Length - 1);
+                        var lod = meshDatas[lodIndex];
+                        var mesh = Mathf.Clamp(_mesh, -1, lod.Length - 1);
+                        if (mesh == -1)
                         {
-                            if (_isolateIndex != -1 && _isolateIndex != meshIndex)
-                                continue;
-                            DrawMeshUVs(meshIndex, lod[meshIndex]);
+                            for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
+                            {
+                                if (_isolateIndex != -1 && _isolateIndex != meshIndex)
+                                    continue;
+                                DrawMeshUVs(meshIndex, lod[meshIndex]);
+                            }
                         }
-                    }
-                    else
-                    {
-                        DrawMeshUVs(mesh, lod[mesh]);
+                        else
+                        {
+                            DrawMeshUVs(mesh, lod[mesh]);
+                        }
                     }
 
                     Render2D.PopClip();
@@ -1314,7 +1317,7 @@ namespace FlaxEditor.Windows.Assets
         protected override void OnAssetLoaded()
         {
             _refreshOnLODsLoaded = true;
-            _preview.ViewportCamera.SetArcBallView(Asset.GetBox());
+            _preview.ViewportCamera.SetArcBallView(_preview.GetBounds());
             UpdateEffectsOnAsset();
 
             // TODO: disable streaming for this model
