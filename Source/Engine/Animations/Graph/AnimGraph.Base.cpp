@@ -23,7 +23,7 @@ AnimSubGraph* AnimGraphBase::LoadSubGraph(const void* data, int32 dataLength, co
     auto subGraph = New<AnimSubGraph>(_graph);
 
     // Load graph
-    MemoryReadStream stream((byte*)data, dataLength);
+    MemoryReadStream stream((const byte*)data, dataLength);
     if (subGraph->Load(&stream, false))
     {
         // Load failed

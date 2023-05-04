@@ -368,7 +368,7 @@ namespace FlaxEditor.Surface
             }
             if (!asset.IsLoaded)
             {
-                layout.Label("Loading...");
+                layout.Label("Loading...", TextAlignment.Center);
                 return;
             }
             var parameters = window.VisjectSurface.Parameters;

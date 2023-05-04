@@ -135,8 +135,7 @@ BoundingBox SkinnedModelLOD::GetBox(const Matrix& world) const
     for (int32 j = 0; j < Meshes.Count(); j++)
     {
         const auto& mesh = Meshes[j];
-        mesh.GetCorners(corners);
-
+        mesh.GetBox().GetCorners(corners);
         for (int32 i = 0; i < 8; i++)
         {
             Vector3::Transform(corners[i], world, tmp);
@@ -154,7 +153,7 @@ BoundingBox SkinnedModelLOD::GetBox(const Matrix& world, int32 meshIndex) const
     Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
     Vector3 corners[8];
     const auto& mesh = Meshes[meshIndex];
-    mesh.GetCorners(corners);
+    mesh.GetBox().GetCorners(corners);
     for (int32 i = 0; i < 8; i++)
     {
         Vector3::Transform(corners[i], world, tmp);
@@ -172,8 +171,7 @@ BoundingBox SkinnedModelLOD::GetBox() const
     Vector3 corners[8];
     for (int32 j = 0; j < Meshes.Count(); j++)
     {
-        Meshes[j].GetCorners(corners);
-
+        Meshes[j].GetBox().GetCorners(corners);
         for (int32 i = 0; i < 8; i++)
         {
             min = Vector3::Min(min, corners[i]);

@@ -155,15 +155,6 @@ public:
     /// <returns>True whether the two objects intersected</returns>
     bool Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal) const;
 
-    /// <summary>
-    /// Retrieves the eight corners of the bounding box.
-    /// </summary>
-    /// <param name="corners">An array of points representing the eight corners of the bounding box.</param>
-    FORCE_INLINE void GetCorners(Vector3 corners[8]) const
-    {
-        _box.GetCorners(corners);
-    }
-
 public:
     /// <summary>
     /// Draws the mesh. Binds vertex and index buffers and invokes the draw call.

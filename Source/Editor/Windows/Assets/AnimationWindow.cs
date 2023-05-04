@@ -166,10 +166,9 @@ namespace FlaxEditor.Windows.Assets
                 public override void Initialize(LayoutElementsContainer layout)
                 {
                     var proxy = (PropertiesProxy)Values[0];
-
                     if (proxy.Asset == null || !proxy.Asset.IsLoaded)
                     {
-                        layout.Label("Loading...");
+                        layout.Label("Loading...", TextAlignment.Center);
                         return;
                     }
 

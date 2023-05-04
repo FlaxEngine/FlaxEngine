@@ -157,7 +157,7 @@ namespace FlaxEditor.Windows.Assets
                     var proxy = (MeshesPropertiesProxy)Values[0];
                     if (proxy.Asset == null || !proxy.Asset.IsLoaded)
                     {
-                        layout.Label("Loading...");
+                        layout.Label("Loading...", TextAlignment.Center);
                         return;
                     }
                     proxy._materialSlotComboBoxes.Clear();
@@ -402,7 +402,7 @@ namespace FlaxEditor.Windows.Assets
                     var proxy = (MaterialsPropertiesProxy)Values[0];
                     if (proxy.Asset == null || !proxy.Asset.IsLoaded)
                     {
-                        layout.Label("Loading...");
+                        layout.Label("Loading...", TextAlignment.Center);
                         return;
                     }
 
@@ -464,7 +464,7 @@ namespace FlaxEditor.Windows.Assets
                     var proxy = (UVsPropertiesProxy)Values[0];
                     if (proxy.Asset == null || !proxy.Asset.IsLoaded)
                     {
-                        layout.Label("Loading...");
+                        layout.Label("Loading...", TextAlignment.Center);
                         return;
                     }
 
@@ -713,7 +713,7 @@ namespace FlaxEditor.Windows.Assets
                     var proxy = (ImportPropertiesProxy)Values[0];
                     if (proxy.Asset == null || !proxy.Asset.IsLoaded)
                     {
-                        layout.Label("Loading...");
+                        layout.Label("Loading...", TextAlignment.Center);
                         return;
                     }
 

@@ -233,7 +233,7 @@ namespace FlaxEditor.Windows.Assets
                 }
                 if (!materialInstance.IsLoaded || (materialInstance.BaseMaterial && !materialInstance.BaseMaterial.IsLoaded))
                 {
-                    layout.Label("Loading...");
+                    layout.Label("Loading...", TextAlignment.Center);
                     return;
                 }
                 var parameters = materialInstance.Parameters;

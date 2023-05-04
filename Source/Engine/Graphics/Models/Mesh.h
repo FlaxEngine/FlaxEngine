@@ -92,7 +92,6 @@ public:
     }
 
 #if USE_PRECISE_MESH_INTERSECTS
-
     /// <summary>
     /// Gets the collision proxy used by the mesh.
     /// </summary>
@@ -100,7 +99,6 @@ public:
     {
         return _collisionProxy;
     }
-
 #endif
 
 public:
