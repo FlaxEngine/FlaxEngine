@@ -419,10 +419,10 @@ bool AnimatedModel::IsPlayingSlotAnimation(const StringView& slotName, Animation
     return false;
 }
 
-void AnimatedModel::ApplyRootMotion(const RootMotionData& rootMotionDelta)
+void AnimatedModel::ApplyRootMotion(const Transform& rootMotionDelta)
 {
     // Skip if no motion
-    if (rootMotionDelta.Translation.IsZero() && rootMotionDelta.Rotation.IsIdentity())
+    if (rootMotionDelta.Translation.IsZero() && rootMotionDelta.Orientation.IsIdentity())
         return;
 
     // Transform translation from actor space into world space
@@ -430,7 +430,7 @@ void AnimatedModel::ApplyRootMotion(const RootMotionData& rootMotionDelta)
 
     // Apply movement
     Actor* target = RootMotionTarget ? RootMotionTarget.Get() : this;
-    target->AddMovement(translation, rootMotionDelta.Rotation);
+    target->AddMovement(translation, rootMotionDelta.Orientation);
 }
 
 void AnimatedModel::SyncParameters()

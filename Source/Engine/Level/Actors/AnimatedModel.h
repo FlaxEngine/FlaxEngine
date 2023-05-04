@@ -344,7 +344,7 @@ public:
     API_FUNCTION() bool IsPlayingSlotAnimation(const StringView& slotName, Animation* anim);
 
 private:
-    void ApplyRootMotion(const RootMotionData& rootMotionDelta);
+    void ApplyRootMotion(const Transform& rootMotionDelta);
     void SyncParameters();
 
     void Update();

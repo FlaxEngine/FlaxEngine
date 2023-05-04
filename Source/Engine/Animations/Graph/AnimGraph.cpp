@@ -11,53 +11,6 @@ extern void RetargetSkeletonNode(const SkeletonData& sourceSkeleton, const Skele
 
 ThreadLocal<AnimGraphContext> AnimGraphExecutor::Context;
 
-RootMotionData RootMotionData::Identity = { Vector3(0.0f), Quaternion(0.0f, 0.0f, 0.0f, 1.0f) };
-
-RootMotionData& RootMotionData::operator+=(const RootMotionData& b)
-{
-    Translation += b.Translation;
-    Rotation *= b.Rotation;
-    return *this;
-}
-
-RootMotionData& RootMotionData::operator+=(const Transform& b)
-{
-    Translation += b.Translation;
-    Rotation *= b.Orientation;
-    return *this;
-}
-
-RootMotionData& RootMotionData::operator-=(const Transform& b)
-{
-    Translation -= b.Translation;
-    Quaternion invRotation = Rotation;
-    invRotation.Invert();
-    Quaternion::Multiply(invRotation, b.Orientation, Rotation);
-    return *this;
-}
-
-RootMotionData RootMotionData::operator+(const RootMotionData& b) const
-{
-    RootMotionData result;
-
-    result.Translation = Translation + b.Translation;
-    result.Rotation = Rotation * b.Rotation;
-
-    return result;
-}
-
-RootMotionData RootMotionData::operator-(const RootMotionData& b) const
-{
-    RootMotionData result;
-
-    result.Rotation = Rotation;
-    result.Rotation.Invert();
-    Vector3::Transform(b.Translation - Translation, result.Rotation, result.Translation);
-    Quaternion::Multiply(result.Rotation, b.Rotation, result.Rotation);
-
-    return result;
-}
-
 Transform AnimGraphImpulse::GetNodeModelTransformation(SkeletonData& skeleton, int32 nodeIndex) const
 {
     const int32 parentIndex = skeleton.Nodes[nodeIndex].ParentIndex;
@@ -89,7 +42,7 @@ void AnimGraphInstanceData::Clear()
     LastUpdateTime = -1;
     CurrentFrame = 0;
     RootTransform = Transform::Identity;
-    RootMotion = RootMotionData::Identity;
+    RootMotion = Transform::Identity;
     Parameters.Resize(0);
     State.Resize(0);
     NodesPose.Resize(0);
@@ -105,7 +58,7 @@ void AnimGraphInstanceData::ClearState()
     LastUpdateTime = -1;
     CurrentFrame = 0;
     RootTransform = Transform::Identity;
-    RootMotion = RootMotionData::Identity;
+    RootMotion = Transform::Identity;
     State.Resize(0);
     NodesPose.Resize(0);
     Slots.Clear();
@@ -259,7 +212,7 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
             e.Hit = false;
 
         // Init empty nodes data
-        context.EmptyNodes.RootMotion = RootMotionData::Identity;
+        context.EmptyNodes.RootMotion = Transform::Identity;
         context.EmptyNodes.Position = 0.0f;
         context.EmptyNodes.Length = 0.0f;
         context.EmptyNodes.Nodes.Resize(_skeletonNodesCount, false);

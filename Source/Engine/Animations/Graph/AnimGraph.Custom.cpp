@@ -39,8 +39,7 @@ struct InternalImpulse
     int32 NodesCount;
     int32 Unused;
     Transform* Nodes;
-    Vector3 RootMotionTranslation;
-    Quaternion RootMotionRotation;
+    Transform RootMotion;
     float Position;
     float Length;
 };

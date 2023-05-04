@@ -27,58 +27,6 @@ class SkinnedModel;
 class SkeletonData;
 
 /// <summary>
-/// The root motion data container. Supports displacement and rotation (no scale component).
-/// </summary>
-struct RootMotionData
-{
-    static RootMotionData Identity;
-
-    Vector3 Translation;
-    Quaternion Rotation;
-
-    RootMotionData()
-    {
-    }
-
-    RootMotionData(const Vector3& translation, const Quaternion& rotation)
-    {
-        Translation = translation;
-        Rotation = rotation;
-    }
-
-    RootMotionData(const RootMotionData& other)
-    {
-        Translation = other.Translation;
-        Rotation = other.Rotation;
-    }
-
-    explicit RootMotionData(const Transform& other)
-    {
-        Translation = other.Translation;
-        Rotation = other.Orientation;
-    }
-
-    RootMotionData& operator=(const Transform& other)
-    {
-        Translation = other.Translation;
-        Rotation = other.Orientation;
-        return *this;
-    }
-
-    RootMotionData& operator+=(const RootMotionData& b);
-    RootMotionData& operator+=(const Transform& b);
-    RootMotionData& operator-=(const Transform& b);
-    RootMotionData operator+(const RootMotionData& b) const;
-    RootMotionData operator-(const RootMotionData& b) const;
-
-    static void Lerp(const RootMotionData& t1, const RootMotionData& t2, float amount, RootMotionData& result)
-    {
-        Vector3::Lerp(t1.Translation, t2.Translation, amount, result.Translation);
-        Quaternion::Slerp(t1.Rotation, t2.Rotation, amount, result.Rotation);
-    }
-};
-
-/// <summary>
 /// The animation graph 'impulse' connections data container (the actual transfer is done via pointer as it gives better performance). 
 /// Container for skeleton nodes transformation hierarchy and any other required data. 
 /// Unified layout for both local and model transformation spaces.
@@ -93,7 +41,7 @@ struct FLAXENGINE_API AnimGraphImpulse
     /// <summary>
     /// The root motion extracted from the animation to apply on animated object.
     /// </summary>
-    RootMotionData RootMotion = RootMotionData::Identity;
+    Transform RootMotion = Transform::Identity;
 
     /// <summary>
     /// The animation time position (in seconds).
@@ -348,7 +296,7 @@ public:
     /// <summary>
     /// The current root motion delta to apply on a target object.
     /// </summary>
-    RootMotionData RootMotion = RootMotionData::Identity;
+    Transform RootMotion = Transform::Identity;
 
     /// <summary>
     /// The animation graph parameters collection (instanced, override the default values).
@@ -883,7 +831,7 @@ private:
     };
 
     int32 GetRootNodeIndex(Animation* anim);
-    void ExtractRootMotion(Span<int32> mapping, int32 rootNodeIndex, Animation* anim, float pos, float prevPos, Transform& rootNode, RootMotionData& rootMotion);
+    void ExtractRootMotion(Span<int32> mapping, int32 rootNodeIndex, Animation* anim, float pos, float prevPos, Transform& rootNode, Transform& rootMotion);
     void ProcessAnimEvents(AnimGraphNode* node, bool loop, float length, float animPos, float animPrevPos, Animation* anim, float speed);
     void ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode* node, bool loop, float length, float pos, float prevPos, Animation* anim, float speed, float weight = 1.0f, ProcessAnimationMode mode = ProcessAnimationMode::Override);
     Variant SampleAnimation(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* anim, float speed);

@@ -175,12 +175,7 @@ namespace FlaxEngine
                 /// <summary>
                 /// The root motion data.
                 /// </summary>
-                public Vector3 RootMotionTranslation;
-
-                /// <summary>
-                /// The root motion data.
-                /// </summary>
-                public Quaternion RootMotionRotation;
+                public Transform RootMotion;
 
                 /// <summary>
                 /// The animation time position (in seconds).
@@ -251,8 +246,7 @@ namespace FlaxEngine
                 destination->NodesCount = source->NodesCount;
                 destination->Unused = source->Unused;
                 Utils.MemoryCopy(new IntPtr(destination->Nodes), new IntPtr(source->Nodes), (ulong)(source->NodesCount * sizeof(Transform)));
-                destination->RootMotionTranslation = source->RootMotionTranslation;
-                destination->RootMotionRotation = source->RootMotionRotation;
+                destination->RootMotion = source->RootMotion;
                 destination->Position = source->Position;
                 destination->Length = source->Length;
             }

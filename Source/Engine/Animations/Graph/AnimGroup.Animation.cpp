@@ -58,7 +58,7 @@ int32 AnimGraphExecutor::GetRootNodeIndex(Animation* anim)
     return rootNodeIndex;
 }
 
-void AnimGraphExecutor::ExtractRootMotion(const Span<int32> mapping, int32 rootNodeIndex, Animation* anim, float pos, float prevPos, Transform& rootNode, RootMotionData& rootMotion)
+void AnimGraphExecutor::ExtractRootMotion(const Span<int32> mapping, int32 rootNodeIndex, Animation* anim, float pos, float prevPos, Transform& rootNode, Transform& rootMotion)
 {
     const Transform& refPose = GetEmptyNodes()->Nodes[rootNodeIndex];
     const int32 nodeToChannel = mapping[rootNodeIndex];
@@ -88,15 +88,15 @@ void AnimGraphExecutor::ExtractRootMotion(const Span<int32> mapping, int32 rootN
             // (end - before + now - begin)
             // It sums the motion since the last update to anim end and since the start to now
             rootMotion.Translation = rootEnd.Translation - rootBefore.Translation + rootNode.Translation - rootBegin.Translation;
-            rootMotion.Rotation = rootEnd.Orientation * rootBefore.Orientation.Conjugated() * (rootNode.Orientation * rootBegin.Orientation.Conjugated());
-            //rootMotion.Rotation = Quaternion::Identity;
+            rootMotion.Orientation = rootEnd.Orientation * rootBefore.Orientation.Conjugated() * (rootNode.Orientation * rootBegin.Orientation.Conjugated());
+            //rootMotion.Orientation = Quaternion::Identity;
         }
         else
         {
             // Simple motion delta
             // (now - before)
             rootMotion.Translation = rootNode.Translation - rootBefore.Translation;
-            rootMotion.Rotation = rootBefore.Orientation.Conjugated() * rootNode.Orientation;
+            rootMotion.Orientation = rootBefore.Orientation.Conjugated() * rootNode.Orientation;
         }
     }
 
@@ -335,25 +335,25 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
         // Calculate the root motion node transformation
         const int32 rootNodeIndex = GetRootNodeIndex(anim);
         Transform rootNode = emptyNodes->Nodes[rootNodeIndex];
-        RootMotionData& dstNode = nodes->RootMotion;
-        RootMotionData srcNode(rootNode);
+        Transform& dstNode = nodes->RootMotion;
+        Transform srcNode(rootNode);
         ExtractRootMotion(mapping.NodesMapping, rootNodeIndex, anim, animPos, animPrevPos, rootNode, srcNode);
 
         // Blend root motion
         if (mode == ProcessAnimationMode::BlendAdditive)
         {
             dstNode.Translation += srcNode.Translation * weight;
-            BlendAdditiveWeightedRotation(dstNode.Rotation, srcNode.Rotation, weight);
+            BlendAdditiveWeightedRotation(dstNode.Orientation, srcNode.Orientation, weight);
         }
         else if (mode == ProcessAnimationMode::Add)
         {
             dstNode.Translation += srcNode.Translation * weight;
-            dstNode.Rotation += srcNode.Rotation * weight;
+            dstNode.Orientation += srcNode.Orientation * weight;
         }
         else if (weighted)
         {
             dstNode.Translation = srcNode.Translation * weight;
-            dstNode.Rotation = srcNode.Rotation * weight;
+            dstNode.Orientation = srcNode.Orientation * weight;
         }
         else
         {
@@ -410,7 +410,7 @@ Variant AnimGraphExecutor::SampleAnimationsWithBlend(AnimGraphNode* node, bool l
     }
     if (_rootMotionMode != RootMotionMode::NoExtraction)
     {
-        nodes->RootMotion.Rotation.Normalize();
+        nodes->RootMotion.Orientation.Normalize();
     }
 
     return nodes;
@@ -444,7 +444,7 @@ Variant AnimGraphExecutor::SampleAnimationsWithBlend(AnimGraphNode* node, bool l
     }
     if (_rootMotionMode != RootMotionMode::NoExtraction)
     {
-        nodes->RootMotion.Rotation.Normalize();
+        nodes->RootMotion.Orientation.Normalize();
     }
 
     return nodes;
@@ -469,7 +469,7 @@ Variant AnimGraphExecutor::Blend(AnimGraphNode* node, const Value& poseA, const 
     {
         Transform::Lerp(nodesA->Nodes[i], nodesB->Nodes[i], alpha, nodes->Nodes[i]);
     }
-    RootMotionData::Lerp(nodesA->RootMotion, nodesB->RootMotion, alpha, nodes->RootMotion);
+    Transform::Lerp(nodesA->RootMotion, nodesB->RootMotion, alpha, nodes->RootMotion);
     nodes->Position = Math::Lerp(nodesA->Position, nodesB->Position, alpha);
     nodes->Length = Math::Lerp(nodesA->Length, nodesB->Length, alpha);
 
@@ -1017,7 +1017,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             {
                 Transform::Lerp(nodesA->Nodes[i], nodesB->Nodes[i], alpha, nodes->Nodes[i]);
             }
-            RootMotionData::Lerp(nodesA->RootMotion, nodesB->RootMotion, alpha, nodes->RootMotion);
+            Transform::Lerp(nodesA->RootMotion, nodesB->RootMotion, alpha, nodes->RootMotion);
             value = nodes;
         }
 
@@ -1063,7 +1063,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                     t.Orientation.Normalize();
                     Transform::Lerp(tA, t, alpha, nodes->Nodes[i]);
                 }
-                RootMotionData::Lerp(nodesA->RootMotion, nodesA->RootMotion + nodesB->RootMotion, alpha, nodes->RootMotion);
+                Transform::Lerp(nodesA->RootMotion, nodesA->RootMotion + nodesB->RootMotion, alpha, nodes->RootMotion);
                 value = nodes;
             }
         }
@@ -1111,7 +1111,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                     nodes->Nodes[nodeIndex] = tA;
                 }
             }
-            RootMotionData::Lerp(nodesA->RootMotion, nodesB->RootMotion, alpha, nodes->RootMotion);
+            Transform::Lerp(nodesA->RootMotion, nodesB->RootMotion, alpha, nodes->RootMotion);
 
             value = nodes;
         }
@@ -1496,7 +1496,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 value = poseData->RootMotion.Translation;
                 break;
             case 1:
-                value = poseData->RootMotion.Rotation;
+                value = poseData->RootMotion.Orientation;
                 break;
             }
         }
@@ -1528,7 +1528,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         auto nodes = node->GetNodes(this);
         nodes->Nodes = poseData->Nodes;
         nodes->RootMotion.Translation = (Vector3)tryGetValue(node->GetBox(2), Value::Zero);
-        nodes->RootMotion.Rotation = (Quaternion)tryGetValue(node->GetBox(3), Value::Zero);
+        nodes->RootMotion.Orientation = (Quaternion)tryGetValue(node->GetBox(3), Value::Zero);
         value = nodes;
         break;
     }
@@ -1546,7 +1546,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         auto nodes = node->GetNodes(this);
         nodes->Nodes = poseData->Nodes;
         nodes->RootMotion.Translation = poseData->RootMotion.Translation + (Vector3)tryGetValue(node->GetBox(2), Value::Zero);
-        nodes->RootMotion.Rotation = poseData->RootMotion.Rotation * (Quaternion)tryGetValue(node->GetBox(3), Value::Zero);
+        nodes->RootMotion.Orientation = poseData->RootMotion.Orientation * (Quaternion)tryGetValue(node->GetBox(3), Value::Zero);
         value = nodes;
         break;
     }
