@@ -299,7 +299,7 @@ namespace FlaxEditor.Content.Import
         public List<SpriteInfo> Sprites = new List<SpriteInfo>();
 
         [StructLayout(LayoutKind.Sequential)]
-        [NativeMarshalling(typeof(InternalOptionsMarshaler))]
+        [NativeMarshalling(typeof(InternalOptionsMarshaller))]
         internal struct InternalOptions
         {
             public TextureFormatType Type;
@@ -321,8 +321,8 @@ namespace FlaxEditor.Content.Import
             public string[] SpriteNames;
         }
 
-        [CustomMarshaller(typeof(InternalOptions), MarshalMode.Default, typeof(InternalOptionsMarshaler))]
-        internal static class InternalOptionsMarshaler
+        [CustomMarshaller(typeof(InternalOptions), MarshalMode.Default, typeof(InternalOptionsMarshaller))]
+        internal static class InternalOptionsMarshaller
         {
             [StructLayout(LayoutKind.Sequential)]
             internal struct InternalOptionsNative

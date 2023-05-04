@@ -45,7 +45,7 @@ namespace FlaxEngine
             /// The node evaluation context structure.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            [NativeMarshalling(typeof(ContextMarshaler))]
+            [NativeMarshalling(typeof(ContextMarshaller))]
             public struct Context
             {
                 /// <summary>
@@ -94,8 +94,8 @@ namespace FlaxEngine
                 public AnimatedModel Instance;
             }
 
-            [CustomMarshaller(typeof(Context), MarshalMode.Default, typeof(ContextMarshaler))]
-            internal static class ContextMarshaler
+            [CustomMarshaller(typeof(Context), MarshalMode.Default, typeof(ContextMarshaller))]
+            internal static class ContextMarshaller
             {
                 [StructLayout(LayoutKind.Sequential)]
                 public struct ContextNative

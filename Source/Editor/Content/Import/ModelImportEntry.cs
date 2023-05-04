@@ -364,7 +364,7 @@ namespace FlaxEditor.Content.Import
         private bool ShowAnimation => Type == ModelType.Animation;
 
         [StructLayout(LayoutKind.Sequential)]
-        [NativeMarshalling(typeof(InternalOptionsMarshaler))]
+        [NativeMarshalling(typeof(InternalOptionsMarshaller))]
         internal struct InternalOptions
         {
             public ModelType Type;
@@ -421,8 +421,8 @@ namespace FlaxEditor.Content.Import
             public int ObjectIndex;
         }
 
-        [CustomMarshaller(typeof(InternalOptions), MarshalMode.Default, typeof(InternalOptionsMarshaler))]
-        internal static class InternalOptionsMarshaler
+        [CustomMarshaller(typeof(InternalOptions), MarshalMode.Default, typeof(InternalOptionsMarshaller))]
+        internal static class InternalOptionsMarshaller
         {
             [Unmanaged]
             [StructLayout(LayoutKind.Sequential)]
@@ -442,7 +442,6 @@ namespace FlaxEditor.Content.Import
                 public byte ImportVertexColors;
                 public byte ImportBlendShapes;
                 public int LightmapUVsSource;
-                //[MarshalAs(UnmanagedType.LPWStr)]
                 public IntPtr CollisionMeshesPrefix;
 
                 // Transform
@@ -459,8 +458,8 @@ namespace FlaxEditor.Content.Import
                 public float SamplingRate;
                 public byte SkipEmptyCurves;
                 public byte OptimizeKeyframes;
+                public byte ImportScaleTracks;
                 public byte EnableRootMotion;
-                //[MarshalAs(UnmanagedType.LPWStr)]
                 public IntPtr RootNodeName;
 
                 // Level Of Detail
@@ -514,6 +513,7 @@ namespace FlaxEditor.Content.Import
                     SamplingRate = managed.SamplingRate,
                     SkipEmptyCurves = managed.SkipEmptyCurves,
                     OptimizeKeyframes = managed.OptimizeKeyframes,
+                    ImportScaleTracks = managed.ImportScaleTracks,
                     EnableRootMotion = managed.EnableRootMotion,
                     RootNodeName = ManagedString.ToManaged(managed.RootNodeName),
                     GenerateLODs = managed.GenerateLODs,
@@ -557,6 +557,7 @@ namespace FlaxEditor.Content.Import
                     SamplingRate = managed.SamplingRate,
                     SkipEmptyCurves = managed.SkipEmptyCurves,
                     OptimizeKeyframes = managed.OptimizeKeyframes,
+                    ImportScaleTracks = managed.ImportScaleTracks,
                     EnableRootMotion = managed.EnableRootMotion,
                     RootNodeName = ManagedString.ToNative(managed.RootNodeName),
                     GenerateLODs = managed.GenerateLODs,
