@@ -190,7 +190,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 _size.IntValue.MinValue = 0;
                 _size.IntValue.MaxValue = _notNullItems ? size : ushort.MaxValue;
                 _size.IntValue.Value = size;
-                _size.IntValue.ValueChanged += OnSizeChanged;
+                _size.IntValue.EditEnd += OnSizeChanged;
             }
 
             // Elements
