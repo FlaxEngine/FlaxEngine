@@ -9,7 +9,6 @@ using FlaxEditor.Content;
 using FlaxEditor.Content.Import;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.Content.Thumbnails;
-using FlaxEditor.GUI;
 using FlaxEditor.Modules;
 using FlaxEditor.Modules.SourceCodeEditing;
 using FlaxEditor.Options;
@@ -337,7 +336,7 @@ namespace FlaxEditor
                 }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Ignore errors
             }
@@ -473,7 +472,7 @@ namespace FlaxEditor
                 }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Ignore errors
             }
