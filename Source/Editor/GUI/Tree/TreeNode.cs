@@ -661,17 +661,20 @@ namespace FlaxEditor.GUI.Tree
             // Draw drag and drop effect
             if (IsDragOver && _tree.DraggedOverNode == this)
             {
-                Color dragOverColor = style.BackgroundSelected * 0.6f;
+                Color dragOverColor = style.BackgroundSelected;
                 Rectangle rect;
                 switch (_dragOverMode)
                 {
                 case DragItemPositioning.At:
+                    dragOverColor *= 0.6f;
                     rect = textRect;
                     break;
                 case DragItemPositioning.Above:
+                    dragOverColor *= 1.2f;
                     rect = new Rectangle(textRect.X, textRect.Top - DefaultDragInsertPositionMargin - DefaultNodeOffsetY - _margin.Top, textRect.Width, DefaultDragInsertPositionMargin * 2.0f);
                     break;
                 case DragItemPositioning.Below:
+                    dragOverColor *= 1.2f;
                     rect = new Rectangle(textRect.X, textRect.Bottom + _margin.Bottom - DefaultDragInsertPositionMargin, textRect.Width, DefaultDragInsertPositionMargin * 2.0f);
                     break;
                 default:
