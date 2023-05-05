@@ -1472,11 +1472,11 @@ MType* GetObjectType(MObject* obj)
 
 void* GetCustomAttribute(const MClass* klass, const MClass* attributeClass)
 {
-    auto attributes = klass->GetAttributes();
-    for (auto attr : attributes)
+    const Array<MObject*>& attributes = klass->GetAttributes();
+    for (MObject* attr : attributes)
     {
         MType* typeHandle = GetObjectType(attr);
-        auto attrClass = GetOrCreateClass(typeHandle);
+        MClass* attrClass = GetOrCreateClass(typeHandle);
         if (attrClass == attributeClass)
             return attr;
     }
