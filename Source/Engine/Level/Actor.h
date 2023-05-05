@@ -379,7 +379,7 @@ public:
     }
 
     /// <summary>
-    /// Gets the actor static fags.
+    /// Gets the actor static flags.
     /// </summary>
     API_PROPERTY(Attributes="NoAnimate, EditorDisplay(\"General\"), EditorOrder(-80), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorStaticFlagsEditor\")")
     FORCE_INLINE StaticFlags GetStaticFlags() const
