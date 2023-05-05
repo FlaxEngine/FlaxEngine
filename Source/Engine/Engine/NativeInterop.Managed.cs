@@ -20,6 +20,7 @@ namespace FlaxEngine.Interop
     {
         private ManagedHandle _pinnedArrayHandle;
         private IntPtr _unmanagedData;
+        private int _unmanagedAllocationSize;
         private Type _arrayType;
         private Type _elementType;
         private int _elementSize;
@@ -46,7 +47,7 @@ namespace FlaxEngine.Interop
         /// <remarks>The resources must be released by calling FreePooled() instead of Free()-method.</remarks>
         public static ManagedArray WrapPooledArray(Array arr, Type arrayType)
         {
-            ManagedArray managedArray = ManagedArrayPool.Get();
+            ManagedArray managedArray = ManagedArrayPool.Get(arr.Length * Marshal.SizeOf(arr.GetType().GetElementType()));
             managedArray.WrapArray(arr, arrayType);
             return managedArray;
         }
@@ -61,21 +62,10 @@ namespace FlaxEngine.Interop
         /// Returns an instance of ManagedArray from shared pool.
         /// </summary>
         /// <remarks>The resources must be released by calling FreePooled() instead of Free()-method.</remarks>
-        public static ManagedArray AllocatePooledArray<T>(T* ptr, int length) where T : unmanaged
-        {
-            ManagedArray managedArray = ManagedArrayPool.Get();
-            managedArray.Allocate(ptr, length);
-            return managedArray;
-        }
-
-        /// <summary>
-        /// Returns an instance of ManagedArray from shared pool.
-        /// </summary>
-        /// <remarks>The resources must be released by calling FreePooled() instead of Free()-method.</remarks>
         public static ManagedArray AllocatePooledArray<T>(int length) where T : unmanaged
         {
-            ManagedArray managedArray = ManagedArrayPool.Get();
-            managedArray.Allocate((T*)NativeInterop.NativeAlloc(length, Unsafe.SizeOf<T>()), length);
+            ManagedArray managedArray = ManagedArrayPool.Get(length * Unsafe.SizeOf<T>());
+            managedArray.Allocate<T>(length);
             return managedArray;
         }
 
@@ -83,17 +73,27 @@ namespace FlaxEngine.Interop
 
         internal void WrapArray(Array arr, Type arrayType)
         {
+            if (_unmanagedData != IntPtr.Zero)
+                NativeInterop.NativeFree(_unmanagedData.ToPointer());
             _pinnedArrayHandle = ManagedHandle.Alloc(arr, GCHandleType.Pinned);
             _unmanagedData = Marshal.UnsafeAddrOfPinnedArrayElement(arr, 0);
+            _unmanagedAllocationSize = 0;
             _length = arr.Length;
             _arrayType = arrayType;
             _elementType = arr.GetType().GetElementType();
             _elementSize = Marshal.SizeOf(_elementType);
         }
 
-        internal void Allocate<T>(T* ptr, int length) where T : unmanaged
+        internal void Allocate<T>(int length) where T : unmanaged
         {
-            _unmanagedData = new IntPtr(ptr);
+            // Try to reuse existing allocated buffer
+            if (length * Unsafe.SizeOf<T>() > _unmanagedAllocationSize)
+            {
+                if (_unmanagedAllocationSize > 0)
+                    NativeInterop.NativeFree(_unmanagedData.ToPointer());
+                _unmanagedData = (IntPtr)NativeInterop.NativeAlloc(length, Unsafe.SizeOf<T>());
+                _unmanagedAllocationSize = Unsafe.SizeOf<T>() * length;
+            }
             _length = length;
             _arrayType = typeof(T).MakeArrayType();
             _elementType = typeof(T);
@@ -108,6 +108,7 @@ namespace FlaxEngine.Interop
         {
             Assert.IsTrue(arrayType.IsArray);
             _unmanagedData = ptr;
+            _unmanagedAllocationSize = Marshal.SizeOf(elementType) * length;
             _length = length;
             _arrayType = arrayType;
             _elementType = elementType;
@@ -132,12 +133,17 @@ namespace FlaxEngine.Interop
             {
                 NativeInterop.NativeFree(_unmanagedData.ToPointer());
                 _unmanagedData = IntPtr.Zero;
+                _unmanagedAllocationSize = 0;
             }
         }
 
         public void FreePooled()
         {
-            Free();
+            if (_pinnedArrayHandle.IsAllocated)
+            {
+                _pinnedArrayHandle.Free();
+                _unmanagedData = IntPtr.Zero;
+            }
             ManagedArrayPool.Put(this);
         }
 
@@ -194,39 +200,65 @@ namespace FlaxEngine.Interop
         private static class ManagedArrayPool
         {
             [ThreadStatic]
-            private static List<ValueTuple<bool, ManagedArray>> pool;
+            private static List<(bool inUse, ManagedArray array)> pool;
 
-            internal static ManagedArray Get()
+            /// <summary>
+            /// Borrows an array from the pool. 
+            /// </summary>
+            /// <param name="minimumSize">Minimum size in bytes for the borrowed array. With value of 0, the returned array allocation is always zero.</param>
+            /// <remarks>The returned array size may be smaller than the requested minimumSize.</remarks>
+            internal static ManagedArray Get(int minimumSize = 0)
             {
                 if (pool == null)
-                    pool = new List<ValueTuple<bool, ManagedArray>>();
-                for (int i = 0; i < pool.Count; i++)
+                    pool = new();
+
+                int smallest = -1;
+                int smallestSize = int.MaxValue;
+                var poolSpan = CollectionsMarshal.AsSpan(pool);
+                for (int i = 0; i < poolSpan.Length; i++)
                 {
-                    if (!pool[i].Item1)
+                    ref var tuple = ref poolSpan[i];
+                    if (tuple.inUse)
+                        continue;
+
+                    // Try to get larger arrays than requested in order to avoid reallocations
+                    if (minimumSize > 0)
                     {
-                        var tuple = pool[i];
-                        tuple.Item1 = true;
-                        pool[i] = tuple;
-                        return tuple.Item2;
+                        if (tuple.array._unmanagedAllocationSize >= minimumSize && tuple.array._unmanagedAllocationSize < smallestSize)
+                            smallest = i;
+                        continue;
                     }
+                    else if (minimumSize == 0 && tuple.Item2._unmanagedAllocationSize != 0)
+                        continue;
+
+                    tuple.inUse = true;
+                    return tuple.array;
+                }
+                if (minimumSize > 0 && smallest != -1)
+                {
+                    ref var tuple = ref poolSpan[smallest];
+                    tuple.inUse = true;
+                    return tuple.array;
                 }
 
-                var newTuple = (true, new ManagedArray());
+                var newTuple = (inUse: true, array: new ManagedArray());
                 pool.Add(newTuple);
-                return newTuple.Item2;
+                return newTuple.array;
             }
 
+            /// <summary>
+            /// Returns the borrowed ManagedArray back to pool.
+            /// </summary>
+            /// <param name="obj">The array borrowed from the pool</param>
             internal static void Put(ManagedArray obj)
             {
-                for (int i = 0; i < pool.Count; i++)
+                foreach (ref var tuple in CollectionsMarshal.AsSpan(pool))
                 {
-                    if (pool[i].Item2 == obj)
-                    {
-                        var tuple = pool[i];
-                        tuple.Item1 = false;
-                        pool[i] = tuple;
-                        return;
-                    }
+                    if (tuple.array != obj)
+                        continue;
+
+                    tuple.inUse = false;
+                    return;
                 }
 
                 throw new Exception("Tried to free non-pooled ManagedArray as pooled ManagedArray");
