@@ -38,6 +38,13 @@ public:
     API_FUNCTION() static void AddActor(Actor* actor);
 
     /// <summary>
+    /// Adds actor to the viewport icon rendering.
+    /// </summary>
+    /// <param name="actor">The actor to register for icon drawing.</param>
+    /// <param name="iconTexture">The icon texture to draw.</param>
+    API_FUNCTION() static void AddActorWithTexture(Actor* actor, Texture* iconTexture);
+
+    /// <summary>
     /// Removes actor from the viewport icon rendering.
     /// </summary>
     /// <param name="actor">The actor to unregister for icon drawing.</param>
