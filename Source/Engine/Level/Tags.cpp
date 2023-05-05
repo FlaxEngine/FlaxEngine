@@ -55,7 +55,7 @@ Tag Tags::Get(const StringView& tagName)
     return tag;
 }
 
-bool Tags::HasTag(const Array<Tag>& list, const Tag& tag)
+bool Tags::HasTag(const Array<Tag>& list, const Tag tag)
 {
     if (tag.Index == 0)
         return false;
@@ -69,7 +69,7 @@ bool Tags::HasTag(const Array<Tag>& list, const Tag& tag)
     return false;
 }
 
-bool Tags::HasTagExact(const Array<Tag>& list, const Tag& tag)
+bool Tags::HasTagExact(const Array<Tag>& list, const Tag tag)
 {
     if (tag.Index == 0)
         return false;
