@@ -204,11 +204,10 @@ bool InitHostfxr();
 void ShutdownHostfxr();
 
 MAssembly* GetAssembly(void* assemblyHandle);
-MClass* GetClass(void* typeHandle);
-MClass* GetOrCreateClass(void* typeHandle);
+MClass* GetClass(MType* typeHandle);
+MClass* GetOrCreateClass(MType* typeHandle);
+MType* GetObjectType(MObject* obj);
 
-bool HasCustomAttribute(const MClass* klass, const MClass* attributeClass);
-bool HasCustomAttribute(const MClass* klass);
 void* GetCustomAttribute(const MClass* klass, const MClass* attributeClass);
 
 // Structures used to pass information from runtime, must match with the structures in managed side
@@ -328,9 +327,8 @@ void MCore::Object::Init(MObject* obj)
 MClass* MCore::Object::GetClass(MObject* obj)
 {
     ASSERT(obj);
-    static void* GetObjectTypePtr = GetStaticMethodPointer(TEXT("GetObjectType"));
-    void* classHandle = CallStaticMethod<void*, void*>(GetObjectTypePtr, obj);
-    return GetOrCreateClass(classHandle);
+    MType* typeHandle = GetObjectType(obj);
+    return GetOrCreateClass(typeHandle);
 }
 
 MString* MCore::Object::ToString(MObject* obj)
@@ -380,8 +378,8 @@ MArray* MCore::Array::New(const MClass* elementKlass, int32 length)
 MClass* MCore::Array::GetClass(MClass* elementKlass)
 {
     static void* GetArrayLengthPtr = GetStaticMethodPointer(TEXT("GetArrayTypeFromElementType"));
-    void* classHandle = CallStaticMethod<void*, void*>(GetArrayLengthPtr, elementKlass->_handle);
-    return GetOrCreateClass((void*)classHandle);
+    MType* typeHandle = (MType*)CallStaticMethod<void*, void*>(GetArrayLengthPtr, elementKlass->_handle);
+    return GetOrCreateClass(typeHandle);
 }
 
 int32 MCore::Array::GetLength(const MArray* obj)
@@ -551,7 +549,7 @@ int32 MCore::Type::GetSize(MType* type)
 
 MTypes MCore::Type::GetType(MType* type)
 {
-    MClass* klass = GetOrCreateClass((void*)type);
+    MClass* klass = GetOrCreateClass(type);
     if (klass->_types == 0)
     {
         static void* GetTypeMTypesEnumPtr = GetStaticMethodPointer(TEXT("GetTypeMTypesEnum"));
@@ -801,8 +799,8 @@ MType* MClass::GetType() const
 MClass* MClass::GetBaseClass() const
 {
     static void* GetClassParentPtr = GetStaticMethodPointer(TEXT("GetClassParent"));
-    void* parentHandle = CallStaticMethod<void*, void*>(GetClassParentPtr, _handle);
-    return GetOrCreateClass(parentHandle);
+    MType* parentTypeHandle = CallStaticMethod<MType*, void*>(GetClassParentPtr, _handle);
+    return GetOrCreateClass(parentTypeHandle);
 }
 
 bool MClass::IsSubClassOf(const MClass* klass, bool checkInterfaces) const
@@ -837,8 +835,8 @@ uint32 MClass::GetInstanceSize() const
 MClass* MClass::GetElementClass() const
 {
     static void* GetElementClassPtr = GetStaticMethodPointer(TEXT("GetElementClass"));
-    void* elementType = CallStaticMethod<void*, void*>(GetElementClassPtr, _handle);
-    return GetOrCreateClass(elementType);
+    MType* elementTypeHandle = CallStaticMethod<MType*, void*>(GetElementClassPtr, _handle);
+    return GetOrCreateClass(elementTypeHandle);
 }
 
 MMethod* MClass::GetMethod(const char* name, int32 numParams) const
@@ -959,16 +957,16 @@ const Array<MClass*>& MClass::GetInterfaces() const
     if (_hasCachedInterfaces)
         return _interfaces;
 
-    void** foundInterfaces;
+    MType** foundInterfaceTypes;
     int numInterfaces;
     static void* GetClassInterfacesPtr = GetStaticMethodPointer(TEXT("GetClassInterfaces"));
-    CallStaticMethod<void, void*, void***, int*>(GetClassInterfacesPtr, _handle, &foundInterfaces, &numInterfaces);
+    CallStaticMethod<void, void*, MType***, int*>(GetClassInterfacesPtr, _handle, &foundInterfaceTypes, &numInterfaces);
     for (int32 i = 0; i < numInterfaces; i++)
     {
-        MClass* interfaceClass = GetOrCreateClass(foundInterfaces[i]);
+        MClass* interfaceClass = GetOrCreateClass(foundInterfaceTypes[i]);
         _interfaces.Add(interfaceClass);
     }
-    MCore::GC::FreeMemory(foundInterfaces);
+    MCore::GC::FreeMemory(foundInterfaceTypes);
 
     _hasCachedInterfaces = true;
     return _interfaces;
@@ -976,12 +974,12 @@ const Array<MClass*>& MClass::GetInterfaces() const
 
 bool MClass::HasAttribute(const MClass* monoClass) const
 {
-    return HasCustomAttribute(this, monoClass);
+    return GetCustomAttribute(this, monoClass) != nullptr;
 }
 
 bool MClass::HasAttribute() const
 {
-    return HasCustomAttribute(this);
+    return GetCustomAttribute(this, nullptr) != nullptr;
 }
 
 MObject* MClass::GetAttribute(const MClass* monoClass) const
@@ -1001,7 +999,7 @@ const Array<MObject*>& MClass::GetAttributes() const
     _attributes.Resize(numAttributes);
     for (int i = 0; i < numAttributes; i++)
     {
-        _attributes.Add(attributes[i]);
+        _attributes[i] = attributes[i];
     }
     MCore::GC::FreeMemory(attributes);
 
@@ -1429,14 +1427,14 @@ MAssembly* GetAssembly(void* assemblyHandle)
     return nullptr;
 }
 
-MClass* GetClass(void* typeHandle)
+MClass* GetClass(MType* typeHandle)
 {
     MClass* klass = nullptr;
     classHandles.TryGet(typeHandle, klass);
     return nullptr;
 }
 
-MClass* GetOrCreateClass(void* typeHandle)
+MClass* GetOrCreateClass(MType* typeHandle)
 {
     if (!typeHandle)
         return nullptr;
@@ -1465,20 +1463,24 @@ MClass* GetOrCreateClass(void* typeHandle)
     return klass;
 }
 
-bool HasCustomAttribute(const MClass* klass, const MClass* attributeClass)
+MType* GetObjectType(MObject* obj)
 {
-    return GetCustomAttribute(klass, attributeClass) != nullptr;
-}
-
-bool HasCustomAttribute(const MClass* klass)
-{
-    return GetCustomAttribute(klass, nullptr) != nullptr;
+    static void* GetObjectTypePtr = GetStaticMethodPointer(TEXT("GetObjectType"));
+    void* typeHandle = CallStaticMethod<void*, void*>(GetObjectTypePtr, obj);
+    return (MType*)typeHandle;
 }
 
 void* GetCustomAttribute(const MClass* klass, const MClass* attributeClass)
 {
-    static void* GetCustomAttributePtr = GetStaticMethodPointer(TEXT("GetCustomAttribute"));
-    return CallStaticMethod<void*, void*, void*>(GetCustomAttributePtr, klass->GetNative(), attributeClass ? attributeClass->GetNative() : nullptr);
+    auto attributes = klass->GetAttributes();
+    for (auto attr : attributes)
+    {
+        MType* typeHandle = GetObjectType(attr);
+        auto attrClass = GetOrCreateClass(typeHandle);
+        if (attrClass == attributeClass)
+            return attr;
+    }
+    return nullptr;
 }
 
 #if DOTNET_HOST_CORECLR
