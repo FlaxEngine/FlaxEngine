@@ -165,7 +165,7 @@ namespace FlaxEngine
         public bool TryGetChild<T>(out T actor) where T : Actor
         {
             actor = GetChild(typeof(T)) as T;
-            return actor != null;
+            return (object)actor != null;
         }
 
         /// <summary>
@@ -236,7 +236,7 @@ namespace FlaxEngine
         public bool TryGetScript<T>(out T script) where T : class
         {
             script = GetScript(typeof(T)) as T;
-            return script != null;
+            return (object)script != null;
         }
 
         /// <summary>
