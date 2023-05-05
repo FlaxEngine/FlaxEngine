@@ -381,7 +381,14 @@ namespace FlaxEngine.Interop
                 attrib = attributes.FirstOrDefault();
             }
             if (attrib != null)
-                return ManagedHandle.Alloc(attrib, GCHandleType.Weak);
+            {
+                if (!classAttributesCacheCollectible.TryGetValue(attrib, out var handle))
+                {
+                    handle = ManagedHandle.Alloc(attrib);
+                    classAttributesCacheCollectible.Add(attrib, handle);
+                }
+                return handle;
+            }
             return new ManagedHandle();
         }
 
