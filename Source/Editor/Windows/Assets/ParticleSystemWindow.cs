@@ -156,14 +156,14 @@ namespace FlaxEditor.Windows.Assets
 
             private bool HasEmitter => _track.Asset != null;
 
-            [EditorDisplay("Particle Emitter"), VisibleIf("HasEmitter"), EditorOrder(200), Tooltip("The start frame of the media event.")]
+            [EditorDisplay("Particle Emitter"), VisibleIf(nameof(HasEmitter)), EditorOrder(200), Tooltip("The start frame of the media event.")]
             public int StartFrame
             {
                 get => _track.Media.Count > 0 ? _track.TrackMedia.StartFrame : 0;
                 set => _track.TrackMedia.StartFrame = value;
             }
 
-            [EditorDisplay("Particle Emitter"), Limit(1), VisibleIf("HasEmitter"), EditorOrder(300), Tooltip("The total duration of the media event in the timeline sequence frames amount.")]
+            [EditorDisplay("Particle Emitter"), Limit(1), VisibleIf(nameof(HasEmitter)), EditorOrder(300), Tooltip("The total duration of the media event in the timeline sequence frames amount.")]
             public int DurationFrames
             {
                 get => _track.Media.Count > 0 ? _track.TrackMedia.DurationFrames : 0;

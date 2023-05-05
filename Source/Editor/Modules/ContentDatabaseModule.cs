@@ -656,7 +656,7 @@ namespace FlaxEditor.Modules
                     var children = folder.Children.ToArray();
                     for (int i = 0; i < children.Length; i++)
                     {
-                        Delete(children[0]);
+                        Delete(children[i]);
                     }
                 }
 

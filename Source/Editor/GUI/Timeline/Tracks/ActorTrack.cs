@@ -174,7 +174,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     continue;
 
                 // Prevent from adding the same track twice
-                if (SubTracks.Any(x => x is IObjectTrack y && y.Object == script))
+                if (SubTracks.Any(x => x is IObjectTrack y && y.Object as SceneObject == script))
                     continue;
 
                 var name = Utilities.Utils.GetPropertyNameUI(script.GetType().Name);
