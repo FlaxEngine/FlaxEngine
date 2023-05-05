@@ -187,7 +187,7 @@ namespace FlaxEditor.CustomEditors
                     {
                         for (int i = 0; i < Count; i++)
                         {
-                            if (this[i] == referenceSceneObject)
+                            if ((SceneObject)this[i] == referenceSceneObject)
                                 continue;
 
                             if (this[i] == null || (this[i] is SceneObject valueSceneObject && valueSceneObject && valueSceneObject.PrefabObjectID != referenceSceneObject.PrefabObjectID))

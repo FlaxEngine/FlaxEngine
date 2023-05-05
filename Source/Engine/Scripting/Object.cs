@@ -212,9 +212,11 @@ namespace FlaxEngine
         /// <param name="right"></param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator == (Object left, Object right)
+        public static bool operator ==(Object left, Object right)
         {
-            return Object.Equals(left, right);
+            IntPtr leftPtr = (object)left != null ? left.__unmanagedPtr : IntPtr.Zero;
+            IntPtr rightPtr = (object)right != null ? right.__unmanagedPtr : IntPtr.Zero;
+            return leftPtr == rightPtr;
         }
 
         /// <summary>
@@ -226,7 +228,17 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Object left, Object right)
         {
-            return !Object.Equals(left, right);
+            IntPtr leftPtr = (object)left != null ? left.__unmanagedPtr : IntPtr.Zero;
+            IntPtr rightPtr = (object)right != null ? right.__unmanagedPtr : IntPtr.Zero;
+            return leftPtr != rightPtr;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            if (obj is FlaxEngine.Object o)
+                return o.__unmanagedPtr == __unmanagedPtr;
+            return false;
         }
 
         /// <summary>
