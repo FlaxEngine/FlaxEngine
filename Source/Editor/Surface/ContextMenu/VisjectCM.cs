@@ -136,7 +136,6 @@ namespace FlaxEditor.Surface.ContextMenu
                 Width = Width - 4,
                 X = 2,
                 Y = 1,
-                BackgroundColor = Style.Current.BackgroundNormal,
             };
 
             // Title bar
