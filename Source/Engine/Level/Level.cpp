@@ -903,12 +903,11 @@ bool LevelImpl::unloadScene(Scene* scene)
 bool LevelImpl::unloadScenes()
 {
     auto scenes = Level::Scenes;
-    for (int32 i = 0; i < scenes.Count(); i++)
+    for (int32 i = scenes.Count() - 1; i >= 0; i--)
     {
         if (unloadScene(scenes[i]))
             return true;
     }
-
     return false;
 }
 
