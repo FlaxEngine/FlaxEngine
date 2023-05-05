@@ -456,7 +456,7 @@ namespace Serialization
         Guid id;
         Deserialize(stream, id, modifier);
 		modifier->IdsMapping.TryGet(id, id);
-        v = (T*)FindObject(id, T::GetStaticClass());
+        v = (T*)::FindObject(id, T::GetStaticClass());
     }
 
     // Scripting Object Reference
