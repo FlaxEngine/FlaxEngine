@@ -1022,12 +1022,8 @@ namespace FlaxEngine.GUI
                 return;
 
             _isEditing = false;
-            if (_onStartEditValue != _text)
-            {
-                _onStartEditValue = _text;
-                EditEnd?.Invoke();
-                TextBoxEditEnd?.Invoke(this);
-            }
+            EditEnd?.Invoke();
+            TextBoxEditEnd?.Invoke(this);
             _onStartEditValue = string.Empty;
 
             ClearSelection();
