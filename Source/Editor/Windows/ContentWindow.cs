@@ -656,6 +656,11 @@ namespace FlaxEditor.Windows
                 throw new ArgumentNullException(nameof(proxy));
 
             string name = initialName ?? proxy.NewItemName;
+
+            // If the proxy can not be created in the current folder, then navigate to the content folder
+            if (!proxy.CanCreate(CurrentViewFolder))
+                Navigate(Editor.Instance.ContentDatabase.Game.Content);
+
             ContentFolder parentFolder = CurrentViewFolder;
             string parentFolderPath = parentFolder.Path;
 

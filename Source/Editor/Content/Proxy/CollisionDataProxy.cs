@@ -141,13 +141,7 @@ namespace FlaxEditor.Content
                 });
             };
             var initialName = (modelItem?.ShortName ?? Path.GetFileNameWithoutExtension(model.Path)) + " Collision";
-            
-            // If folder can not have assets then move to folder with the model and create asset
-            var contentWin = Editor.Instance.Windows.ContentWin;
-            if (!contentWin.CurrentViewFolder.CanHaveAssets)
-                contentWin.Navigate(modelItem?.ParentFolder?.Node);
-            
-            contentWin.NewItem(this, null, create, initialName, withRenaming);
+            Editor.Instance.Windows.ContentWin.NewItem(this, null, create, initialName, withRenaming);
         }
     }
 }
