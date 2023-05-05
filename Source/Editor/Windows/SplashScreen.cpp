@@ -123,7 +123,6 @@ const Char* SplashScreenQuotes[] =
     TEXT("Hello There"),
     TEXT("BAGUETTE"),
     TEXT("All we had to do was follow the damn train, CJ"),
-    TEXT("28 stab wounds"),
     TEXT("Here we go again"),
     TEXT("@everyone"),
     TEXT("Potato"),
@@ -135,7 +134,8 @@ const Char* SplashScreenQuotes[] =
     TEXT("Scooby dooby doo"),
     TEXT("You shall not load!"),
     TEXT("The roof, the roof, the roof is on fire!"),
-    TEXT("I've seen better documentation ...\nFrom ransomware gangs !")
+    TEXT("I've seen better documentation ...\nFrom ransomware gangs!"),
+    TEXT("Slava Ukraini!"),
 };
 
 SplashScreen::~SplashScreen()
