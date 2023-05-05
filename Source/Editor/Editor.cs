@@ -323,8 +323,15 @@ namespace FlaxEditor
                 }
                 case GeneralOptions.StartupSceneModes.LastOpened:
                 {
-                    if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out var lastSceneIdName) && Guid.TryParse(lastSceneIdName, out var lastSceneId))
-                        Internal_LoadAsset(ref lastSceneId);
+                    if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out var lastSceneIdName))
+                    {
+                        var lastSceneList = JsonSerializer.Deserialize<Guid[]>(lastSceneIdName);
+                        foreach (var scene in lastSceneList)
+                        {
+                            var lastScene = scene;
+                            Internal_LoadAsset(ref lastScene);
+                        }
+                    }
                     break;
                 }
                 }
@@ -438,18 +445,24 @@ namespace FlaxEditor
             }
             case GeneralOptions.StartupSceneModes.LastOpened:
             {
-                if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out var lastSceneIdName) && Guid.TryParse(lastSceneIdName, out var lastSceneId))
+                if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out var lastSceneIdName))
                 {
-                    var lastScene = ContentDatabase.Find(lastSceneId);
-                    if (lastScene is SceneItem)
+                    var lastSceneList = JsonSerializer.Deserialize<Guid[]>(lastSceneIdName);
+                    foreach (var sceneId in lastSceneList)
                     {
-                        Editor.Log("Loading last opened scene");
-                        Scene.OpenScene(lastSceneId);
-
-                        // Restore view
-                        if (ProjectCache.TryGetCustomData(ProjectDataLastSceneSpawn, out var lastSceneSpawnName))
-                            Windows.EditWin.Viewport.ViewRay = JsonSerializer.Deserialize<Ray>(lastSceneSpawnName);
+                        var lastScene = ContentDatabase.Find(sceneId);
+                        if (!(lastScene is SceneItem))
+                            continue;
+                        
+                        Editor.Log($"Loading last opened scene: {lastScene.ShortName}");
+                        if (sceneId == lastSceneList[0])
+                            Scene.OpenScene(sceneId);
+                        else
+                            Level.LoadSceneAsync(sceneId);
                     }
+                    // Restore view
+                    if (ProjectCache.TryGetCustomData(ProjectDataLastSceneSpawn, out var lastSceneSpawnName))
+                        Windows.EditWin.Viewport.ViewRay = JsonSerializer.Deserialize<Ray>(lastSceneSpawnName);
                 }
                 break;
             }
@@ -662,11 +675,22 @@ namespace FlaxEditor
             // Start exit
             StateMachine.GoToState<ClosingState>();
 
-            // Cache last opened scene
+            // Cache last opened scenes
             {
-                var lastSceneId = Level.ScenesCount > 0 ? Level.Scenes[0].ID : Guid.Empty;
+                List<Guid> lastSceneIds = new List<Guid>();
+                if (Level.ScenesCount > 0)
+                {
+                    foreach (var scene in Level.Scenes)
+                    {
+                        lastSceneIds.Add(scene.ID);
+                    }
+                }
+                else
+                {
+                    lastSceneIds.Add(Guid.Empty);
+                }
                 var lastSceneSpawn = Windows.EditWin.Viewport.ViewRay;
-                ProjectCache.SetCustomData(ProjectDataLastScene, lastSceneId.ToString());
+                ProjectCache.SetCustomData(ProjectDataLastScene, JsonSerializer.Serialize(lastSceneIds.ToArray()));
                 ProjectCache.SetCustomData(ProjectDataLastSceneSpawn, JsonSerializer.Serialize(lastSceneSpawn));
             }
 
