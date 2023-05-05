@@ -632,9 +632,10 @@ void DebugDrawService::Update()
         desc.VS = shader->GetVS("VS");
 
         // Default
-        desc.PS = shader->GetPS("PS");
+        desc.PS = shader->GetPS("PSUnlit");
         desc.PrimitiveTopologyType = PrimitiveTopologyType::Line;
         failed |= DebugDrawPsLinesDefault.Create(desc);
+        desc.PS = shader->GetPS("PS");
         desc.PrimitiveTopologyType = PrimitiveTopologyType::Triangle;
         failed |= DebugDrawPsTrianglesDefault.Create(desc);
         desc.Wireframe = true;
@@ -642,9 +643,10 @@ void DebugDrawService::Update()
 
         // Depth Test
         desc.Wireframe = false;
-        desc.PS = shader->GetPS("PS_DepthTest");
+        desc.PS = shader->GetPS("PS_DepthTestUnlit");
         desc.PrimitiveTopologyType = PrimitiveTopologyType::Line;
         failed |= DebugDrawPsLinesDepthTest.Create(desc);
+        desc.PS = shader->GetPS("PS_DepthTest");
         desc.PrimitiveTopologyType = PrimitiveTopologyType::Triangle;
         failed |= DebugDrawPsTrianglesDepthTest.Create(desc);
         desc.Wireframe = true;
