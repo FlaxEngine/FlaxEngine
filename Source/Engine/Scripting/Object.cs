@@ -206,6 +206,30 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Checks whether the two objects are equal.
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator == (Object left, Object right)
+        {
+            return Object.Equals(left, right);
+        }
+
+        /// <summary>
+        /// Checks whether the two objects are not equal.
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(Object left, Object right)
+        {
+            return !Object.Equals(left, right);
+        }
+
+        /// <summary>
         /// Gets the pointer to the native object. Handles null object reference (returns zero).
         /// </summary>
         /// <param name="obj">The object.</param>
