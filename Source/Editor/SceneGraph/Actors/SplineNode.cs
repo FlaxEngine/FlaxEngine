@@ -336,7 +336,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 StaticFlags = Actor.StaticFlags,
                 Transform = Actor.Transform,
             };
-            Editor.Instance.SceneEditing.Spawn(actor, Actor);
+            Root.Spawn(actor, Actor);
         }
 
         private void OnAddSplineCollider()
@@ -347,7 +347,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 Transform = Actor.Transform,
             };
             // TODO: auto pick the collision data if already using spline model
-            Editor.Instance.SceneEditing.Spawn(actor, Actor);
+            Root.Spawn(actor, Actor);
         }
 
         private void OnAddSplineRopeBody()
@@ -357,7 +357,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 StaticFlags = StaticFlags.None,
                 Transform = Actor.Transform,
             };
-            Editor.Instance.SceneEditing.Spawn(actor, Actor);
+            Root.Spawn(actor, Actor);
         }
 
         internal static void OnSplineEdited(Spline spline)

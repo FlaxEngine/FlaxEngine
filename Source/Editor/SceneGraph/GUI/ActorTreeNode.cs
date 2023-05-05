@@ -629,7 +629,7 @@ namespace FlaxEditor.SceneGraph.GUI
                     actor.StaticFlags = spawnParent.StaticFlags;
                     actor.Name = item.ShortName;
                     actor.Transform = spawnParent.Transform;
-                    Editor.Instance.SceneEditing.Spawn(actor, spawnParent, false);
+                    ActorNode.Root.Spawn(actor, spawnParent);
                     actor.OrderInParent = newOrder;
                 }
                 result = DragDropEffect.Move;
@@ -640,8 +640,6 @@ namespace FlaxEditor.SceneGraph.GUI
                 for (int i = 0; i < _dragActorType.Objects.Count; i++)
                 {
                     var item = _dragActorType.Objects[i];
-
-                    // Create actor
                     var actor = item.CreateInstance() as Actor;
                     if (actor == null)
                     {
@@ -651,8 +649,6 @@ namespace FlaxEditor.SceneGraph.GUI
                     actor.StaticFlags = Actor.StaticFlags;
                     actor.Name = item.Name;
                     actor.Transform = Actor.Transform;
-
-                    // Spawn
                     ActorNode.Root.Spawn(actor, Actor);
                 }
 

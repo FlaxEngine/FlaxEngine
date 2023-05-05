@@ -298,13 +298,13 @@ namespace FlaxEditor.Windows.Assets
             }
 
             // Custom options
-            bool showCustomNodeOptions = Editor.SceneEditing.Selection.Count == 1;
-            if (!showCustomNodeOptions && Editor.SceneEditing.Selection.Count != 0)
+            bool showCustomNodeOptions = Selection.Count == 1;
+            if (!showCustomNodeOptions && Selection.Count != 0)
             {
                 showCustomNodeOptions = true;
-                for (int i = 1; i < Editor.SceneEditing.Selection.Count; i++)
+                for (int i = 1; i < Selection.Count; i++)
                 {
-                    if (Editor.SceneEditing.Selection[0].GetType() != Editor.SceneEditing.Selection[i].GetType())
+                    if (Selection[0].GetType() != Selection[i].GetType())
                     {
                         showCustomNodeOptions = false;
                         break;
@@ -313,7 +313,7 @@ namespace FlaxEditor.Windows.Assets
             }
             if (showCustomNodeOptions)
             {
-                Editor.SceneEditing.Selection[0].OnContextMenu(contextMenu);
+                Selection[0].OnContextMenu(contextMenu);
             }
             ContextMenuShow?.Invoke(contextMenu);
 
