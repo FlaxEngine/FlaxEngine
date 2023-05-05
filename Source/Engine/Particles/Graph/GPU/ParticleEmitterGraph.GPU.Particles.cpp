@@ -388,32 +388,32 @@ void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Va
     // Random Float Range
     case 213:
     {
-        auto a = tryGetValue(node->GetBox(1), node->Values[0]).AsFloat();
-        auto b = tryGetValue(node->GetBox(2), node->Values[1]).AsFloat();
+        auto a = tryGetValue(node->TryGetBox(1), node->Values[0]).AsFloat();
+        auto b = tryGetValue(node->TryGetBox(2), node->Values[1]).AsFloat();
         value = writeLocal(VariantType::Float, String::Format(TEXT("lerp({0}, {1}, RAND)"), a.Value, b.Value), node);
         break;
     }
     // Random Vector2 Range
     case 214:
     {
-        auto a = tryGetValue(node->GetBox(1), node->Values[0]).AsFloat2();
-        auto b = tryGetValue(node->GetBox(2), node->Values[1]).AsFloat2();
+        auto a = tryGetValue(node->TryGetBox(1), node->Values[0]).AsFloat2();
+        auto b = tryGetValue(node->TryGetBox(2), node->Values[1]).AsFloat2();
         value = writeLocal(VariantType::Float2, String::Format(TEXT("float2(lerp({0}.x, {1}.x, RAND), lerp({0}.y, {1}.y, RAND))"), a.Value, b.Value), node);
         break;
     }
     // Random Vector3 Range
     case 215:
     {
-        auto a = tryGetValue(node->GetBox(1), node->Values[0]).AsFloat3();
-        auto b = tryGetValue(node->GetBox(2), node->Values[1]).AsFloat3();
+        auto a = tryGetValue(node->TryGetBox(1), node->Values[0]).AsFloat3();
+        auto b = tryGetValue(node->TryGetBox(2), node->Values[1]).AsFloat3();
         value = writeLocal(VariantType::Float3, String::Format(TEXT("float3(lerp({0}.x, {1}.x, RAND), lerp({0}.y, {1}.y, RAND), lerp({0}.z, {1}.z, RAND))"), a.Value, b.Value), node);
         break;
     }
     // Random Vector4 Range
     case 216:
     {
-        auto a = tryGetValue(node->GetBox(1), node->Values[0]).AsFloat4();
-        auto b = tryGetValue(node->GetBox(2), node->Values[1]).AsFloat4();
+        auto a = tryGetValue(node->TryGetBox(1), node->Values[0]).AsFloat4();
+        auto b = tryGetValue(node->TryGetBox(2), node->Values[1]).AsFloat4();
         value = writeLocal(VariantType::Float4, String::Format(TEXT("float4(lerp({0}.x, {1}.x, RAND), lerp({0}.y, {1}.y, RAND), lerp({0}.z, {1}.z, RAND), lerp({0}.w, {1}.w, RAND))"), a.Value, b.Value), node);
         break;
     }
