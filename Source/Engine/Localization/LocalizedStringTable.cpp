@@ -15,6 +15,7 @@ REGISTER_JSON_ASSET(LocalizedStringTable, "FlaxEngine.LocalizedStringTable", tru
 LocalizedStringTable::LocalizedStringTable(const SpawnParams& params, const AssetInfo* info)
     : JsonAssetBase(params, info)
 {
+    DataTypeName = TypeName;
 }
 
 void LocalizedStringTable::AddString(const StringView& id, const StringView& value)

@@ -35,6 +35,11 @@ namespace FlaxEngine
                 return null;
 
             var dataTypeName = DataTypeName;
+            if (string.IsNullOrEmpty(dataTypeName))
+            {
+                Debug.LogError(string.Format("Missing typename of data in Json asset '{0}'.", Path), this);
+                return null;
+            }
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
             for (int i = 0; i < assemblies.Length; i++)
             {
