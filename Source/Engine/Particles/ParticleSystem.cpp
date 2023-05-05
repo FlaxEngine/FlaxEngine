@@ -212,6 +212,12 @@ Asset::LoadResult ParticleSystem::load()
 
     int32 version;
     stream.ReadInt32(&version);
+#if USE_EDITOR
+    // Skip unused parameters
+#define SKIP_UNUSED_PARAM_OVERRIDE() if (key.First < 0 || key.First >= Emitters.Count() || Emitters[key.First] == nullptr || Emitters[key.First]->Graph.GetParameter(key.Second) == nullptr) continue
+#else
+#define SKIP_UNUSED_PARAM_OVERRIDE()
+#endif
     switch (version)
     {
     case 1:
@@ -281,13 +287,7 @@ Asset::LoadResult ParticleSystem::load()
                 stream.ReadInt32(&key.First);
                 stream.Read(key.Second);
                 stream.ReadCommonValue(&value);
-
-#if USE_EDITOR
-                // Skip unused parameters
-                if (key.First < 0 || key.First >= Emitters.Count() || Emitters[key.First]->Graph.GetParameter(key.Second) == nullptr)
-                    continue;
-#endif
-
+                SKIP_UNUSED_PARAM_OVERRIDE();
                 EmittersParametersOverrides.Add(key, Variant(value));
             }
         }
@@ -361,13 +361,7 @@ Asset::LoadResult ParticleSystem::load()
                 stream.ReadInt32(&key.First);
                 stream.Read(key.Second);
                 stream.ReadCommonValue(&value);
-
-#if USE_EDITOR
-                // Skip unused parameters
-                if (key.First < 0 || key.First >= Emitters.Count() || Emitters[key.First]->Graph.GetParameter(key.Second) == nullptr)
-                    continue;
-#endif
-
+                SKIP_UNUSED_PARAM_OVERRIDE();
                 EmittersParametersOverrides[key] = Variant(value);
             }
         }
@@ -440,13 +434,7 @@ Asset::LoadResult ParticleSystem::load()
                 stream.ReadInt32(&key.First);
                 stream.Read(key.Second);
                 stream.ReadVariant(&value);
-
-#if USE_EDITOR
-                // Skip unused parameters
-                if (key.First < 0 || key.First >= Emitters.Count() || Emitters[key.First]->Graph.GetParameter(key.Second) == nullptr)
-                    continue;
-#endif
-
+                SKIP_UNUSED_PARAM_OVERRIDE();
                 EmittersParametersOverrides[key] = value;
             }
         }
@@ -457,6 +445,7 @@ Asset::LoadResult ParticleSystem::load()
         LOG(Warning, "Unknown timeline version {0}.", version);
         return LoadResult::InvalidData;
     }
+#undef SKIP_UNUSED_PARAM_OVERRIDE
 
 #if !BUILD_RELEASE
     _debugName = StringUtils::GetFileNameWithoutExtension(GetPath());
