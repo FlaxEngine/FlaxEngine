@@ -47,6 +47,8 @@ AssetReference<MaterialInstance> CustomTextureMaterial;
 ModelInstanceEntries InstanceBuffers[static_cast<int32>(IconTypes::MAX)];
 Dictionary<ScriptingTypeHandle, IconTypes> ActorTypeToIconType;
 Dictionary<ScriptingTypeHandle, AssetReference<Texture>> ActorTypeToTexture;
+Dictionary<ScriptingObjectReference<Actor>, AssetReference<Texture>> ActorToTexture;
+Dictionary<AssetReference<Texture>, AssetReference<MaterialBase>> TextureToMaterial;
 
 class ViewportIconsRendererService : public EngineService
 {
@@ -103,10 +105,18 @@ void ViewportIconsRenderer::AddActor(Actor* actor)
     actor->GetSceneRendering()->AddViewportIcon(actor);
 }
 
+void ViewportIconsRenderer::AddActorWithTexture(Actor* actor, Texture* iconTexture)
+{
+    CHECK(actor && actor->GetScene() && iconTexture);
+    ActorToTexture[actor] = iconTexture;
+    actor->GetSceneRendering()->AddViewportIcon(actor);
+}
+
 void ViewportIconsRenderer::RemoveActor(Actor* actor)
 {
     CHECK(actor && actor->GetScene());
     actor->GetSceneRendering()->RemoveViewportIcon(actor);
+    ActorToTexture.Remove(actor);
 }
 
 void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Scene* scene, Mesh::DrawInfo& draw)
@@ -128,7 +138,7 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Scene
         ScriptingTypeHandle typeHandle = icon->GetTypeHandle();
         draw.Buffer = nullptr;
 
-        if (ActorTypeToTexture.TryGet(typeHandle, texture))
+        if (ActorToTexture.TryGet(icon, texture) || ActorTypeToTexture.TryGet(typeHandle, texture))
         {
             // Use custom texture
             draw.Buffer = &InstanceBuffers[static_cast<int32>(IconTypes::CustomTexture)];
@@ -137,9 +147,20 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Scene
                 // Lazy-init (use in-built icon material with custom texture)
                 draw.Buffer->Setup(1);
                 draw.Buffer->At(0).ReceiveDecals = false;
-                draw.Buffer->At(0).Material = InstanceBuffers[0][0].Material->CreateVirtualInstance();
+                draw.Buffer->At(0).ShadowsMode = ShadowsCastingMode::None;
             }
-            draw.Buffer->At(0).Material->SetParameterValue(TEXT("Image"), Variant(texture));
+
+            AssetReference<MaterialBase> material;
+
+            if (!TextureToMaterial.TryGet(texture, material))
+            {
+                // Create custom material per custom texture
+                TextureToMaterial[texture] = InstanceBuffers[0][0].Material->CreateVirtualInstance();
+                TextureToMaterial[texture]->SetParameterValue(TEXT("Image"), Variant(texture));
+                material = TextureToMaterial[texture];
+            }
+
+            draw.Buffer->At(0).Material = material;
         }
         else if (ActorTypeToIconType.TryGet(typeHandle, iconType))
         {
@@ -170,6 +191,8 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor
     Matrix m1, m2, world;
     BoundingSphere sphere(actor->GetPosition() - renderContext.View.Origin, ICON_RADIUS);
     IconTypes iconType;
+    AssetReference<Texture> texture;
+
     if (frustum.Intersects(sphere) && ActorTypeToIconType.TryGet(actor->GetTypeHandle(), iconType))
     {
         // Create world matrix
@@ -182,7 +205,39 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor
         // Draw icon
         GeometryDrawStateData drawState;
         draw.DrawState = &drawState;
-        draw.Buffer = &InstanceBuffers[static_cast<int32>(iconType)];
+
+        // Support custom icons through types, but not onces that were added through actors,
+        // since they cant register while in prefab view anyway
+        if (ActorTypeToTexture.TryGet(actor->GetTypeHandle(), texture))
+        {
+            // Use custom texture
+            draw.Buffer = &InstanceBuffers[static_cast<int32>(IconTypes::CustomTexture)];
+            if (draw.Buffer->Count() == 0)
+            {
+                // Lazy-init (use in-built icon material with custom texture)
+                draw.Buffer->Setup(1);
+                draw.Buffer->At(0).ReceiveDecals = false;
+                draw.Buffer->At(0).ShadowsMode = ShadowsCastingMode::None;
+            }
+
+            AssetReference<MaterialBase> material;
+
+            if (!TextureToMaterial.TryGet(texture, material))
+            {
+                // Create custom material per custom texture
+                TextureToMaterial[texture] = InstanceBuffers[0][0].Material->CreateVirtualInstance();
+                TextureToMaterial[texture]->SetParameterValue(TEXT("Image"), Variant(texture));
+                material = TextureToMaterial[texture];
+            }
+
+            draw.Buffer->At(0).Material = material;
+        }
+        else
+        {
+            // Use predefined material
+            draw.Buffer = &InstanceBuffers[static_cast<int32>(iconType)];
+        }
+
         draw.World = &world;
         draw.Bounds = sphere;
         QuadModel->Draw(renderContext, draw);
@@ -196,9 +251,10 @@ bool ViewportIconsRendererService::Init()
 {
     QuadModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Quad"));
 #define INIT(type, path) \
-	InstanceBuffers[static_cast<int32>(IconTypes::type)].Setup(1); \
-	InstanceBuffers[static_cast<int32>(IconTypes::type)][0].ReceiveDecals = false; \
-	InstanceBuffers[static_cast<int32>(IconTypes::type)][0].Material = Content::LoadAsyncInternal<MaterialInstance>(TEXT(path))
+    InstanceBuffers[static_cast<int32>(IconTypes::type)].Setup(1); \
+    InstanceBuffers[static_cast<int32>(IconTypes::type)][0].ReceiveDecals = false; \
+    InstanceBuffers[static_cast<int32>(IconTypes::type)][0].ShadowsMode = ShadowsCastingMode::None; \
+    InstanceBuffers[static_cast<int32>(IconTypes::type)][0].Material = Content::LoadAsyncInternal<MaterialInstance>(TEXT(path))
     INIT(PointLight, "Editor/Icons/PointLight");
     INIT(DirectionalLight, "Editor/Icons/DirectionalLight");
     INIT(EnvironmentProbe, "Editor/Icons/EnvironmentProbe");
@@ -236,4 +292,6 @@ void ViewportIconsRendererService::Dispose()
     for (int32 i = 0; i < ARRAY_COUNT(InstanceBuffers); i++)
         InstanceBuffers[i].Release();
     ActorTypeToIconType.Clear();
+    ActorToTexture.Clear();
+    TextureToMaterial.Clear();
 }
