@@ -634,14 +634,14 @@ DEFINE_INTERNAL_CALL(void) ObjectInternal_ManagedInstanceCreated(MObject* manage
         return;
     }
 
+    // Link created managed instance to the unmanaged object
+    obj->SetManagedInstance(managedInstance);
+
     // Set default name for actors
     if (auto* actor = dynamic_cast<Actor*>(obj))
     {
         actor->SetName(String(typeClass->GetName()));
     }
-
-    // Link created managed instance to the unmanaged object
-    obj->SetManagedInstance(managedInstance);
 
     MClass* monoClass = obj->GetClass();
 
