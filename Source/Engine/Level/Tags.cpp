@@ -64,7 +64,7 @@ Array<Tag> Tags::GetSubTags(Tag parentTag)
     {
         const Tag tag = Tag(i + 1);
         const String& tagName = Tags::List[i];
-        if (tagName.StartsWith(parentTagName) && parentTag.Index != tag)
+        if (tagName.StartsWith(parentTagName) && parentTag.Index != tag.Index)
         {
             subTags.Add(tag);
         }
