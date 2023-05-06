@@ -100,7 +100,7 @@ API_ENUM(Attributes="Flags") enum class StaticFlags
     Navigation = 1 << 3,
 
     /// <summary>
-    /// Objects is fully static on the scene.
+    /// Object is fully static in the scene.
     /// </summary>
     FullyStatic = Transform | ReflectionProbe | Lightmap | Navigation,
 

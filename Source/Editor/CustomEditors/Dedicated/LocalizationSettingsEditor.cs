@@ -145,7 +145,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         else
                         {
                             // No localization so initialize with empty table
-                            var path = Path.Combine(Path.Combine(Path.GetDirectoryName(GameSettings.Load().Localization.Path), "Localization", culture.Name + ".json"));
+                            var folder = Path.Combine(Path.GetDirectoryName(GameSettings.Load().Localization.Path), "Localization");
+                            if (!Directory.Exists(folder))
+                                Directory.CreateDirectory(folder);
+                            var path = Path.Combine(Path.Combine(folder, culture.Name + ".json"));
                             var table = FlaxEngine.Content.CreateVirtualAsset<LocalizedStringTable>();
                             table.Locale = culture.Name;
                             if (!table.Save(path))

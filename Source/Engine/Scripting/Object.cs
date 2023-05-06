@@ -206,6 +206,42 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Checks whether the two objects are equal.
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator ==(Object left, Object right)
+        {
+            IntPtr leftPtr = (object)left != null ? left.__unmanagedPtr : IntPtr.Zero;
+            IntPtr rightPtr = (object)right != null ? right.__unmanagedPtr : IntPtr.Zero;
+            return leftPtr == rightPtr;
+        }
+
+        /// <summary>
+        /// Checks whether the two objects are not equal.
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(Object left, Object right)
+        {
+            IntPtr leftPtr = (object)left != null ? left.__unmanagedPtr : IntPtr.Zero;
+            IntPtr rightPtr = (object)right != null ? right.__unmanagedPtr : IntPtr.Zero;
+            return leftPtr != rightPtr;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            if (obj is FlaxEngine.Object o)
+                return o.__unmanagedPtr == __unmanagedPtr;
+            return false;
+        }
+
+        /// <summary>
         /// Gets the pointer to the native object. Handles null object reference (returns zero).
         /// </summary>
         /// <param name="obj">The object.</param>

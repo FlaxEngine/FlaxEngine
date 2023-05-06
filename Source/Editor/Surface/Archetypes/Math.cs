@@ -47,7 +47,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = desc,
                 Flags = NodeFlags.AllGraphs,
                 AlternativeTitles = altTitles,
-                Size = new Float2(140, 40),
+                Size = new Float2(150, 40),
                 DefaultType = new ScriptType(inputType),
                 ConnectionsHints = hints,
                 IndependentBoxes = new[] { 0, 1 },

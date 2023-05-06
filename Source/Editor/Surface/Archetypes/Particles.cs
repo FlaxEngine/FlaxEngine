@@ -730,12 +730,8 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 0),
-
-                    NodeElementArchetype.Factory.Text(0, 0, "Min", 30.0f, 18.0f),
-                    NodeElementArchetype.Factory.Float(30, 0, 0),
-
-                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY, "Max", 30.0f, 18.0f),
-                    NodeElementArchetype.Factory.Float(30, Surface.Constants.LayoutOffsetY, 1),
+                    NodeElementArchetype.Factory.Input(0, "Min", true, typeof(float), 1, 0),
+                    NodeElementArchetype.Factory.Input(1, "Max", true, typeof(float), 2, 1),
                 }
             },
             new NodeArchetype
@@ -753,14 +749,8 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float2), 0),
-
-                    NodeElementArchetype.Factory.Text(0, 0, "Min", 30.0f, 18.0f),
-                    NodeElementArchetype.Factory.Vector_X(30, 0, 0),
-                    NodeElementArchetype.Factory.Vector_Y(83, 0, 0),
-
-                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY, "Max", 30.0f, 18.0f),
-                    NodeElementArchetype.Factory.Vector_X(30, Surface.Constants.LayoutOffsetY, 1),
-                    NodeElementArchetype.Factory.Vector_Y(83, Surface.Constants.LayoutOffsetY, 1),
+                    NodeElementArchetype.Factory.Input(0, "Min", true, typeof(Float2), 1, 0),
+                    NodeElementArchetype.Factory.Input(1, "Max", true, typeof(Float2), 2, 1),
                 }
             },
             new NodeArchetype
@@ -778,16 +768,8 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 0),
-
-                    NodeElementArchetype.Factory.Text(0, 0, "Min", 30.0f, 18.0f),
-                    NodeElementArchetype.Factory.Vector_X(30, 0, 0),
-                    NodeElementArchetype.Factory.Vector_Y(83, 0, 0),
-                    NodeElementArchetype.Factory.Vector_Z(136, 0, 0),
-
-                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY, "Max", 30.0f, 18.0f),
-                    NodeElementArchetype.Factory.Vector_X(30, Surface.Constants.LayoutOffsetY, 1),
-                    NodeElementArchetype.Factory.Vector_Y(83, Surface.Constants.LayoutOffsetY, 1),
-                    NodeElementArchetype.Factory.Vector_Z(136, Surface.Constants.LayoutOffsetY, 1),
+                    NodeElementArchetype.Factory.Input(0, "Min", true, typeof(Float3), 1, 0),
+                    NodeElementArchetype.Factory.Input(1, "Max", true, typeof(Float3), 2, 1),
                 }
             },
             new NodeArchetype
@@ -805,18 +787,8 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float4), 0),
-
-                    NodeElementArchetype.Factory.Text(0, 0, "Min", 30.0f, 18.0f),
-                    NodeElementArchetype.Factory.Vector_X(30, 0, 0),
-                    NodeElementArchetype.Factory.Vector_Y(83, 0, 0),
-                    NodeElementArchetype.Factory.Vector_Z(136, 0, 0),
-                    NodeElementArchetype.Factory.Vector_W(189, 0, 0),
-
-                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY, "Max", 30.0f, 18.0f),
-                    NodeElementArchetype.Factory.Vector_X(30, Surface.Constants.LayoutOffsetY, 1),
-                    NodeElementArchetype.Factory.Vector_Y(83, Surface.Constants.LayoutOffsetY, 1),
-                    NodeElementArchetype.Factory.Vector_Z(136, Surface.Constants.LayoutOffsetY, 1),
-                    NodeElementArchetype.Factory.Vector_W(189, Surface.Constants.LayoutOffsetY, 1),
+                    NodeElementArchetype.Factory.Input(0, "Min", true, typeof(Float4), 1, 0),
+                    NodeElementArchetype.Factory.Input(1, "Max", true, typeof(Float4), 2, 1),
                 }
             },
 
