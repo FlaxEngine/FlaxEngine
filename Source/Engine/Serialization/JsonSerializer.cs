@@ -33,6 +33,7 @@ namespace FlaxEngine.Json
             {
                 JsonSerializer = Newtonsoft.Json.JsonSerializer.CreateDefault(settings);
                 JsonSerializer.Formatting = Formatting.Indented;
+                JsonSerializer.ReferenceLoopHandling = ReferenceLoopHandling.Serialize;
                 StringBuilder = new StringBuilder(256);
                 StringWriter = new StringWriter(StringBuilder, CultureInfo.InvariantCulture);
                 SerializerWriter = new JsonSerializerInternalWriter(JsonSerializer);
