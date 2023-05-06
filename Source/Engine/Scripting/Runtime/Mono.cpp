@@ -857,6 +857,13 @@ void MCore::GC::WriteArrayRef(MArray* dst, MObject* ref, int32 index)
     mono_gc_wbarrier_set_arrayref(dst, (byte*)ptr + index * sizeof(void*), ref);
 }
 
+void MCore::GC::WriteArrayRef(MArray* dst, Span<MObject*> refs)
+{
+    void* ptr = mono_array_addr_with_size(dst, 0, 0);
+    for (int32 index = 0; index < refs.Length(); index++)
+        mono_gc_wbarrier_set_arrayref(dst, (byte*)ptr + index * sizeof(void*), refs[index]);
+}
+
 void MCore::Thread::Attach()
 {
     if (!IsInMainThread() && !mono_domain_get())

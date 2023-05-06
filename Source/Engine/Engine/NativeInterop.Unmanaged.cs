@@ -770,10 +770,18 @@ namespace FlaxEngine.Interop
         }
 
         [UnmanagedCallersOnly]
-        internal static void SetArrayValueReference(ManagedHandle arrayHandle, IntPtr valueHandle, int index)
+        internal static void WriteArrayReference(ManagedHandle arrayHandle, IntPtr valueHandle, int index)
         {
             ManagedArray managedArray = Unsafe.As<ManagedArray>(arrayHandle.Target);
             managedArray.ToSpan<IntPtr>()[index] = valueHandle;
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void WriteArrayReferences(ManagedHandle arrayHandle, IntPtr spanPtr, int spanLength)
+        {
+            ManagedArray managedArray = Unsafe.As<ManagedArray>(arrayHandle.Target);
+            var unmanagedSpan = new Span<IntPtr>(spanPtr.ToPointer(), spanLength);
+            unmanagedSpan.CopyTo(managedArray.ToSpan<IntPtr>());
         }
 
         [UnmanagedCallersOnly]

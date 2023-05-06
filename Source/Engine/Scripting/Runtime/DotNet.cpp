@@ -450,8 +450,14 @@ void MCore::GC::WriteValue(void* dst, void* src, int32 count, const MClass* klas
 
 void MCore::GC::WriteArrayRef(MArray* dst, MObject* ref, int32 index)
 {
-    static void* SetArrayValueReferencePtr = GetStaticMethodPointer(TEXT("SetArrayValueReference"));
-    CallStaticMethod<void, void*, void*, int32>(SetArrayValueReferencePtr, dst, ref, index);
+    static void* WriteArrayReferencePtr = GetStaticMethodPointer(TEXT("WriteArrayReference"));
+    CallStaticMethod<void, void*, void*, int32>(WriteArrayReferencePtr, dst, ref, index);
+}
+
+void MCore::GC::WriteArrayRef(MArray* dst, Span<MObject*> refs)
+{
+    static void* WriteArrayReferencesPtr = GetStaticMethodPointer(TEXT("WriteArrayReferences"));
+    CallStaticMethod<void, void*, void*, int32>(WriteArrayReferencesPtr, dst, refs.Get(), refs.Length());
 }
 
 void* MCore::GC::AllocateMemory(int32 size, bool coTaskMem)

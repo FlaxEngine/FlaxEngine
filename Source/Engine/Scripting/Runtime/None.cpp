@@ -176,6 +176,10 @@ void MCore::GC::WriteArrayRef(MArray* dst, MObject* ref, int32 index)
 {
 }
 
+void MCore::GC::WriteArrayRef(MArray* dst, Span<MObject*> refs)
+{
+}
+
 void MCore::Thread::Attach()
 {
 }
