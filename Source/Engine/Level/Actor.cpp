@@ -240,8 +240,15 @@ const Guid& Actor::GetSceneObjectId() const
 void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefabLink)
 {
     // Check if value won't change
-    if (_parent == value)
+    if (_parent == value) {
         return;
+    }
+
+    if (value == nullptr) {
+        SetParent((Actor*)Level::FindActor<SceneObject>(), worldPositionsStays, canBreakPrefabLink);
+        return;
+    }
+        
     if (IsDuringPlay() && !IsInMainThread())
     {
         LOG(Error, "Editing scene hierarchy is only allowed on a main thread.");
