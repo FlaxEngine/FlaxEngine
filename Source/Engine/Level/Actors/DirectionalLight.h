@@ -19,7 +19,7 @@ public:
     int32 CascadeCount = 4;
 
     /// <summary>
-    /// Delayed shadows only works when you have one window open, if you have the editor and game window open at the same time it will not work. For best result set shadow distance to 8000+ and change resolution to 2048.
+    /// Delayed shadows only update cascade shadows each second frame, double the speed of shadows. For best result set shadow distance to 8000+ and change resolution to 2048.
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(66), DefaultValue(false), EditorDisplay(\"Shadow\")")
     bool DelayedShadows = false;

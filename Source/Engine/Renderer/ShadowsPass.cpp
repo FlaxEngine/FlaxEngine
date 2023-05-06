@@ -775,6 +775,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererD
     // Render shadow map for each projection
     for (int32 cascadeIndex = 0; cascadeIndex < shadowData.ContextCount; cascadeIndex++)
     {
+        //PE: Check if delayed shadows is enabled, then only render each cascade every second frame, cache the ShadowVP for the CB update.
         static bool bTriggerUpdateAllCascades = false;
         static uint64 lastFrameCount = -1;
         static Matrix lastShadowVP[4];
@@ -795,7 +796,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererD
                 }
             }
 
-            //PE: Ignore delayed shadows when running custom actors , from preview windows.
+            //PE: Ignore delayed shadows when running custom actors, from preview windows.
             static int32 ignore_delay_frames = 0;
             if (bTriggerUpdateAllCascades)
             {
@@ -806,8 +807,8 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererD
             {
                 //PE: Delayed shadows, use patterns to only render 2 shadows cascades every frame. 4 cascades at 60,30,15,15 fps.
                 //PE: TODO - Add other patterns like 2 cascades at 30 fps , 3 cascades at 20 fps, 4 cascades at 30fps, 
-                //const int32 update_shadows_pattern[10] = { 0,1 , 0,2 , 0,1 , 0,3 };
-                const int32 update_shadows_pattern[10] = { 0,1 , 2,3 , 0,1 , 2,3 };
+                //const int32 update_shadows_pattern[10] = { 0,1 , 0,2 , 0,1 , 0,3 }; //PE: 60,30,15,15
+                const int32 update_shadows_pattern[10] = { 0,1 , 2,3 , 0,1 , 2,3 }; //PE: 30,30,30,30 Looks better.
                 static int32 pattern_count = 0;
                 if (cascadeIndex == 0)
                 {
@@ -818,7 +819,6 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererD
                 if (!(cascadeIndex == update_shadows_pattern[pattern_count] || cascadeIndex == update_shadows_pattern[pattern_count + 1]))
                 {
                     //PE: Use VP from last rendered shadow.
-                    //sperLight.LightShadow.ShadowVP[cascadeIndex] = lastShadowVP[cascadeIndex];
                     shadowData.Constants.ShadowVP[cascadeIndex] = lastShadowVP[cascadeIndex];
                     continue;
                 }
@@ -827,7 +827,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererD
             {
                 ignore_delay_frames--;
             }
-            lastShadowVP[cascadeIndex] = shadowData.Constants.ShadowVP[cascadeIndex]; // sperLight.LightShadow.ShadowVP[cascadeIndex];
+            lastShadowVP[cascadeIndex] = shadowData.Constants.ShadowVP[cascadeIndex];
         }
         else
         {
