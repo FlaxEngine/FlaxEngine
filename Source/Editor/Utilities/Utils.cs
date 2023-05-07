@@ -20,6 +20,8 @@ using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEditor.Options;
+using System.Linq;
 
 namespace FlaxEngine
 {
@@ -1015,6 +1017,32 @@ namespace FlaxEditor.Utilities
             else
                 node.Collapse(true);
             node.Visible = isThisVisible | isAnyChildVisible;
+        }
+
+        /// <summary>
+        /// Gets the asset type, translating if possible, and if enabled in InterfaceOptions.TranslateTypes.
+        /// </summary>
+        /// <param name="typeName">The type name.</param>
+        /// <returns>The translated type name.</returns>
+        public static string TranslateTypeName(string typeName)
+        {
+            // TODO: Surely there is a better way to get this value.
+            if (!Editor.Instance.Options.Options.Interface.TranslateTypeNames)
+            {
+                return typeName;
+            }
+
+            string[] typeNamespaces = typeName.Split('.');
+            string lastNamespace = typeNamespaces.Last();
+
+            // TODO: Add better handling for unconventional type names.
+            try
+            {
+                // Adds spaces between capital letters.
+                return string.Concat(lastNamespace.Select(x => Char.IsUpper(x) ? " " + x : x.ToString())).TrimStart(' ');
+            } catch { 
+                return typeName;
+            }
         }
 
         /// <summary>

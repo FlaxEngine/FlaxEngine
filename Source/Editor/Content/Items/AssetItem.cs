@@ -80,9 +80,9 @@ namespace FlaxEditor.Content
         /// <param name="sb">The String Builder.</param>
         protected virtual void OnBuildTooltipText(StringBuilder sb)
         {
-            sb.Append("Type: ").Append(TypeName).AppendLine();
+            sb.Append("Type: ").Append(Utilities.Utils.TranslateTypeName(TypeName)).AppendLine();
             sb.Append("Size: ").Append(Utilities.Utils.FormatBytesCount((int)new FileInfo(Path).Length)).AppendLine();
-            sb.Append("Path: ").Append(FlaxEditor.Utilities.Utils.GetAssetNamePathWithExt(Path)).AppendLine();
+            sb.Append("Path: ").Append(Utilities.Utils.GetAssetNamePathWithExt(Path)).AppendLine();
         }
 
         /// <inheritdoc />
