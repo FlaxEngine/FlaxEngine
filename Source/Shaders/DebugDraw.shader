@@ -27,49 +27,31 @@ VS2PS VS(float3 Position : POSITION, float4 Color : COLOR)
 	return output;
 }
 
-void PerformDepthTest(float4 svPosition)
+META_PS(true, FEATURE_LEVEL_ES2)
+META_PERMUTATION_2(USE_DEPTH_TEST=0,USE_FAKE_LIGHTING=0)
+META_PERMUTATION_2(USE_DEPTH_TEST=0,USE_FAKE_LIGHTING=1)
+META_PERMUTATION_2(USE_DEPTH_TEST=1,USE_FAKE_LIGHTING=0)
+META_PERMUTATION_2(USE_DEPTH_TEST=1,USE_FAKE_LIGHTING=1)
+float4 PS(VS2PS input) : SV_Target
 {
+#if USE_DEPTH_TEST
 	// Depth test manually if compositing editor primitives
 	FLATTEN
 	if (EnableDepthTest)
 	{
-		float sceneDepthDeviceZ = SceneDepthTexture.Load(int3(svPosition.xy, 0)).r;
-		float interpolatedDeviceZ = svPosition.z;
+		float sceneDepthDeviceZ = SceneDepthTexture.Load(int3(input.Position.xy, 0)).r;
+		float interpolatedDeviceZ = input.Position.z;
 		clip(sceneDepthDeviceZ - interpolatedDeviceZ);
 	}
-}
+#endif
 
-float4 PerformFakeLighting(float4 svPosition, float4 c)
-{
+    float4 color = input.Color;
+#if USE_FAKE_LIGHTING
 	// Reconstruct view normal and calculate faked lighting
-	float depth = svPosition.z * 10000;
+	float depth = input.Position.z * 10000;
 	float3 n = normalize(float3(-ddx(depth), -ddy(depth), 1.0f));
-	c.rgb *= saturate(abs(dot(n, float3(0, 1, 0))) + 0.5f);
-	return c;
-}
+	color.rgb *= saturate(abs(dot(n, float3(0, 1, 0))) + 0.5f);
+#endif
 
-META_PS(true, FEATURE_LEVEL_ES2)
-float4 PS(VS2PS input) : SV_Target
-{
-	return PerformFakeLighting(input.Position, input.Color);
-}
-
-META_PS(true, FEATURE_LEVEL_ES2)
-float4 PSUnlit(VS2PS input) : SV_Target
-{
-	return input.Color;
-}
-
-META_PS(true, FEATURE_LEVEL_ES2)
-float4 PS_DepthTest(VS2PS input) : SV_Target
-{
-	PerformDepthTest(input.Position);
-	return PerformFakeLighting(input.Position, input.Color);
-}
-
-META_PS(true, FEATURE_LEVEL_ES2)
-float4 PS_DepthTestUnlit(VS2PS input) : SV_Target
-{
-	PerformDepthTest(input.Position);
-	return input.Color;
+    return color;
 }
