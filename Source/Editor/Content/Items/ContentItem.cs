@@ -2,6 +2,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using FlaxEditor.Content.GUI;
 using FlaxEditor.GUI.Drag;
 using FlaxEngine;
@@ -353,13 +355,19 @@ namespace FlaxEditor.Content
         }
 
         /// <summary>
-        /// Updates the tooltip text text.
+        /// Updates the tooltip text.
         /// </summary>
         public virtual void UpdateTooltipText()
         {
-            Editor.Log(FlaxEditor.Utilities.Utils.GetAssetNamePath(Path));
+            string fileExtension = System.IO.Path.GetExtension(Path);
+            string fileDescription = Utilities.Utils.TranslateFileExtension(fileExtension);
+            StringBuilder sb = new StringBuilder();
 
-            TooltipText = "Path: " + Path;
+            sb.Append("Type: ").Append(fileDescription).AppendLine();
+            sb.Append("Size: ").Append(Utilities.Utils.FormatBytesCount((int)new FileInfo(Path).Length)).AppendLine();
+            sb.Append("Path: ").Append(Utilities.Utils.GetAssetNamePathWithExt(Path)).AppendLine();
+
+            TooltipText = sb.ToString();
         }
 
         /// <summary>

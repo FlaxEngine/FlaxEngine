@@ -1046,11 +1046,41 @@ namespace FlaxEditor.Utilities
         }
 
         /// <summary>
+        /// Gets a description of a file from it's extension.
+        /// </summary>
+        /// <param name="fileExtension">The file's extension</param>
+        /// <returns>The processed description.</returns>
+        public static string TranslateFileExtension(string fileExtension)
+        {
+            string fileDescription = "";
+            switch (fileExtension)
+            {
+                case ".cs":
+                    fileDescription = "C# Source Code";
+                    break;
+                case ".cpp":
+                    fileDescription = "C++ Source Code";
+                    break;
+                case ".h":
+                    fileDescription = "C++ Header File";
+                    break;
+                case ".json":
+                    fileDescription = "JSON File";
+                    break;
+                default:
+                    fileDescription = fileExtension;
+                    break;
+            }
+
+            return fileDescription;
+        }
+
+
+        /// <summary>
         /// Gets the asset name relative to the project root folder (with asset file extension)
         /// </summary>
         /// <param name="path">The asset path.</param>
-        /// <returns>The processed name path.</returns>
-        /// 
+        /// <returns>The processed name path.</returns> 
         public static string GetAssetNamePathWithExt(string path)
         {
             var projectFolder = Globals.ProjectFolder;
@@ -1064,7 +1094,6 @@ namespace FlaxEditor.Utilities
         /// </summary>
         /// <param name="path">The asset path.</param>
         /// <returns>The processed name path.</returns>
-        /// 
         public static string GetAssetNamePath(string path)
         {
             path = GetAssetNamePathWithExt(path);
