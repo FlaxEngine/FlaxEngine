@@ -82,12 +82,12 @@ public:
 
 private:
 #if USE_EDITOR
+    typedef Array<class PrefabInstanceData> PrefabInstancesData;
     typedef Array<AssetReference<Prefab>> NestedPrefabsList;
-    bool ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPrefab);
+    bool ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPrefab, PrefabInstancesData& prefabInstancesData);
     bool UpdateInternal(const Array<SceneObject*>& defaultInstanceObjects, rapidjson_flax::StringBuffer& tmpBuffer);
-    bool SyncChanges(const NestedPrefabsList& allPrefabs);
-    bool SyncChangesInternal();
-    void SyncNestedPrefabs(const NestedPrefabsList& allPrefabs);
+    bool SyncChangesInternal(PrefabInstancesData& prefabInstancesData);
+    void SyncNestedPrefabs(const NestedPrefabsList& allPrefabs, Array<PrefabInstancesData>& allPrefabsInstancesData) const;
 #endif
     void DeleteDefaultInstance();
 
