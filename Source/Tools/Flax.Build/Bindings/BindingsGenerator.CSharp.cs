@@ -1301,7 +1301,7 @@ namespace Flax.Build.Bindings
                 #pragma warning disable 1591
                     public static class NativeToManaged
                     {
-                        public static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => ({{classInfo.Name}})ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged);
+                        public static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{{classInfo.Name}}>(ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged));
                         public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.NativeToManaged.Free(unmanaged);
                     }
                     public static class ManagedToNative
@@ -1316,14 +1316,14 @@ namespace Flax.Build.Bindings
                         public void FromManaged({{classInfo.Name}} managed) => marsh.FromManaged(managed);
                         public IntPtr ToUnmanaged() => marsh.ToUnmanaged();
                         public void FromUnmanaged(IntPtr unmanaged) => marsh.FromUnmanaged(unmanaged);
-                        public {{classInfo.Name}} ToManaged() => ({{classInfo.Name}})marsh.ToManaged();
+                        public {{classInfo.Name}} ToManaged() => Unsafe.As<{{classInfo.Name}}>(marsh.ToManaged());
                         public void Free() => marsh.Free();
                     }
-                    internal static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => ({{classInfo.Name}})ManagedHandleMarshaller.ConvertToManaged(unmanaged);
+                    internal static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{{classInfo.Name}}>(ManagedHandleMarshaller.ConvertToManaged(unmanaged));
                     internal static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => ManagedHandleMarshaller.ConvertToUnmanaged(managed);
                     internal static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.Free(unmanaged);
 
-                    internal static {{classInfo.Name}} ToManaged(IntPtr managed) => ({{classInfo.Name}})ManagedHandleMarshaller.ToManaged(managed);
+                    internal static {{classInfo.Name}} ToManaged(IntPtr managed) => Unsafe.As<{{classInfo.Name}}>(ManagedHandleMarshaller.ToManaged(managed));
                     internal static IntPtr ToNative({{classInfo.Name}} managed) => ManagedHandleMarshaller.ToNative(managed);
                 #pragma warning restore 1591
                 }
@@ -1504,7 +1504,7 @@ namespace Flax.Build.Bindings
 
                         if (fieldInfo.Type.IsObjectRef)
                         {
-                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? ({fieldInfo.Type.GenericArgs[0].Type})ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target : null");
+                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{fieldInfo.Type.GenericArgs[0].Type}>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target) : null");
                             toNativeContent.Append($"managed.{fieldInfo.Name} != null ? ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak) : IntPtr.Zero");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
 
@@ -1513,7 +1513,7 @@ namespace Flax.Build.Bindings
                         }
                         else if (fieldInfo.Type.Type == "ScriptingObject")
                         {
-                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? (FlaxEngine.Object)ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target : null");
+                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<FlaxEngine.Object>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target) : null");
                             toNativeContent.Append($"managed.{fieldInfo.Name} != null ? ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak) : IntPtr.Zero");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
 
@@ -1522,7 +1522,7 @@ namespace Flax.Build.Bindings
                         }
                         else if (fieldInfo.Type.IsPtr && originalType != "IntPtr" && !originalType.EndsWith("*"))
                         {
-                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? ({originalType})ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target : null");
+                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{originalType}>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target) : null");
                             toNativeContent.Append($"managed.{fieldInfo.Name} != null ? ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak) : IntPtr.Zero");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
 
@@ -1531,7 +1531,7 @@ namespace Flax.Build.Bindings
                         }
                         else if (fieldInfo.Type.Type == "Dictionary")
                         {
-                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? ({originalType})ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target : null");
+                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{originalType}>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target) : null");
                             toNativeContent.Append($"ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak)");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                             freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
@@ -1544,31 +1544,31 @@ namespace Flax.Build.Bindings
                                 // Marshal blittable array elements back to original non-blittable elements
                                 string originalElementTypeMarshaller = originalElementType + "Marshaller";
                                 string internalElementType = $"{originalElementTypeMarshaller}.{originalElementType}Internal";
-                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.NativeArrayToManagedArray<{originalElementType}, {internalElementType}>(((ManagedArray)ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target).ToSpan<{internalElementType}>(), {originalElementTypeMarshaller}.ToManaged) : null");
+                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.NativeArrayToManagedArray<{originalElementType}, {internalElementType}>((Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target)).ToSpan<{internalElementType}>(), {originalElementTypeMarshaller}.ToManaged) : null");
                                 toNativeContent.Append($"ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(managed.{fieldInfo.Name}), GCHandleType.Weak)");
-                                freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = ((ManagedArray)handle.Target).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} ((ManagedArray)handle.Target).Free(); handle.Free(); }}");
-                                freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = ((ManagedArray)handle.Target).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} ((ManagedArray)handle.Target).Free(); handle.Free(); }}");
+                                freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
+                                freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
                             }
                             else if (fieldInfo.Type.GenericArgs[0].IsObjectRef)
                             {
                                 // Array elements passed as GCHandles
-                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.GCHandleArrayToManagedArray<{originalElementType}>((ManagedArray)ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target) : null");
+                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.GCHandleArrayToManagedArray<{originalElementType}>(Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target)) : null");
                                 toNativeContent.Append($"managed.{fieldInfo.Name}?.Length > 0 ? ManagedHandle.ToIntPtr(NativeInterop.ManagedArrayToGCHandleWrappedArray(managed.{fieldInfo.Name}), GCHandleType.Weak) : IntPtr.Zero");
-                                freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<IntPtr> ptrs = ((ManagedArray)handle.Target).ToSpan<IntPtr>(); foreach (var ptr in ptrs) {{ if (ptr != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(ptr).Free(); }} }} ((ManagedArray)handle.Target).Free(); handle.Free(); }}");
-                                freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<IntPtr> ptrs = ((ManagedArray)handle.Target).ToSpan<IntPtr>(); foreach (var ptr in ptrs) {{ if (ptr != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(ptr).Free(); }} }} ((ManagedArray)handle.Target).Free(); handle.Free(); }}");
+                                freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<IntPtr> ptrs = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<IntPtr>(); foreach (var ptr in ptrs) {{ if (ptr != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(ptr).Free(); }} }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
+                                freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<IntPtr> ptrs = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<IntPtr>(); foreach (var ptr in ptrs) {{ if (ptr != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(ptr).Free(); }} }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
                             }
                             else
                             {
                                 // Blittable array elements
-                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? ((ManagedArray)ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target).ToArray<{originalElementType}>() : null");
+                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? (Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target)).ToArray<{originalElementType}>() : null");
                                 toNativeContent.Append($"managed.{fieldInfo.Name}?.Length > 0 ? ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(managed.{fieldInfo.Name}), GCHandleType.Weak) : IntPtr.Zero");
-                                freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); ((ManagedArray)handle.Target).Free(); handle.Free(); }}");
-                                freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); ((ManagedArray)handle.Target).Free(); handle.Free(); }}");
+                                freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
+                                freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
                             }
                         }
                         else if (fieldInfo.Type.Type == "Version")
                         {
-                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? ({originalType})ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target : null");
+                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{originalType}>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target) : null");
                             toNativeContent.Append($"ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak)");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                             freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
