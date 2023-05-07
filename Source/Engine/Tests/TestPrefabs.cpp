@@ -245,4 +245,89 @@ TEST_CASE("Prefabs")
         Content::DeleteAsset(prefabA);
         Content::DeleteAsset(prefabB);
     }
+    SECTION("Test Syncing Changes In Nested Prefab Instance")
+    {
+        // https://github.com/FlaxEngine/FlaxEngine/issues/1015
+
+        // Create TestActor prefab with just root object
+        AssetReference<Prefab> testActorPrefab = Content::CreateVirtualAsset<Prefab>();
+        REQUIRE(testActorPrefab);
+        Guid id;
+        Guid::Parse("7691e981482f2a486e10cfae149e07d3", id);
+        testActorPrefab->ChangeID(id);
+        auto testActorPrefabInit = testActorPrefab->Init(Prefab::TypeName,
+                                         "["
+                                         "{"
+                                         "\"ID\": \"5d73990240497afc0c6d36814cc6ebbe\","
+                                         "\"TypeName\": \"FlaxEngine.EmptyActor\","
+                                         "\"Name\": \"TestActor\""
+                                         "}"
+                                         "]");
+        REQUIRE(!testActorPrefabInit);
+
+        // Create NestedActor prefab that inherits from TestActor prefab
+        AssetReference<Prefab> nestedActorPrefab = Content::CreateVirtualAsset<Prefab>();
+        REQUIRE(nestedActorPrefab);
+        Guid::Parse("1d521df4465ad849e274748c6d14b703", id);
+        nestedActorPrefab->ChangeID(id);
+        auto nestedActorPrefabInit = nestedActorPrefab->Init(Prefab::TypeName,
+                                         "["
+                                         "{"
+                                         "\"ID\": \"75c1587b4caeea27241ba7af00dafd45\","
+                                         "\"PrefabID\": \"7691e981482f2a486e10cfae149e07d3\","
+                                         "\"PrefabObjectID\": \"5d73990240497afc0c6d36814cc6ebbe\","
+                                         "\"Name\": \"NestedActor\""
+                                         "}"
+                                         "]");
+        REQUIRE(!nestedActorPrefabInit);
+
+        // Spawn test instances of both prefabs
+        ScriptingObjectReference<Actor> testActor = PrefabManager::SpawnPrefab(testActorPrefab);
+        ScriptingObjectReference<Actor> nestedActor = PrefabManager::SpawnPrefab(nestedActorPrefab);
+
+        // Verify initial scenario
+        REQUIRE(testActor);
+        CHECK(testActor->GetName() == TEXT("TestActor"));
+        CHECK(testActor->GetStaticFlags() == StaticFlags::FullyStatic);
+        REQUIRE(nestedActor);
+        CHECK(nestedActor->GetName() == TEXT("NestedActor"));
+        CHECK(nestedActor->GetStaticFlags() == StaticFlags::FullyStatic);
+
+        // Modify TestActor instance to have Static Flags property changed
+        testActor->SetStaticFlags(StaticFlags::None);
+
+        // Apply prefab changes
+        auto applyResult = PrefabManager::ApplyAll(testActor);
+        REQUIRE(!applyResult);
+
+        // Verify if instances were properly updated
+        REQUIRE(testActor);
+        CHECK(testActor->GetName() == TEXT("TestActor"));
+        CHECK(testActor->GetStaticFlags() == StaticFlags::None);
+        REQUIRE(nestedActor);
+        CHECK(nestedActor->GetName() == TEXT("NestedActor"));
+        CHECK(nestedActor->GetStaticFlags() == StaticFlags::None);
+
+        // Cleanup
+        nestedActor->DeleteObject();
+        testActor->DeleteObject();
+
+        // Spawn another test instances instances of both prefabs
+        testActor = PrefabManager::SpawnPrefab(testActorPrefab);
+        nestedActor = PrefabManager::SpawnPrefab(nestedActorPrefab);
+
+        // Verify if instances were properly updated
+        REQUIRE(testActor);
+        CHECK(testActor->GetName() == TEXT("TestActor"));
+        CHECK(testActor->GetStaticFlags() == StaticFlags::None);
+        REQUIRE(nestedActor);
+        CHECK(nestedActor->GetName() == TEXT("NestedActor"));
+        CHECK(nestedActor->GetStaticFlags() == StaticFlags::None);
+
+        // Cleanup
+        nestedActor->DeleteObject();
+        testActor->DeleteObject();
+        Content::DeleteAsset(nestedActorPrefab);
+        Content::DeleteAsset(testActorPrefab);
+    }
 }
