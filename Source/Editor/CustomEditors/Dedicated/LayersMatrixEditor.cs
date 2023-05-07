@@ -45,7 +45,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var upperRightCell = new VerticalPanel
             {
                 ClipChildren = false,
-                Pivot = new Float2(0.0f, 0.0f),
+                Pivot = new Float2(0.00001f, 0.0f),
                 Offset = new Float2(-labelsWidth, 0),
                 Rotation = -90,
                 Spacing = 0,
