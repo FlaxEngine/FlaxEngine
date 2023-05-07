@@ -10,11 +10,9 @@
 class EditorAnalytics
 {
 public:
-
     /// <summary>
     /// Determines whether analytics session is active.
     /// </summary>
-    /// <returns><c>true</c> if there is active analytics session running; otherwise, <c>false</c>.</returns>
     static bool IsSessionActive();
 
     /// <summary>

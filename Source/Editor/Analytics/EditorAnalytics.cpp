@@ -1,19 +1,20 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "EditorAnalytics.h"
-#include "EditorAnalyticsController.h"
+#include "Editor/Editor.h"
+#include "Editor/ProjectInfo.h"
+#include "Editor/Cooker/GameCooker.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/TimeSpan.h"
-#include "Editor/Editor.h"
-#include "Editor/ProjectInfo.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Utilities/StringConverter.h"
+#include "Engine/ShadowsOfMordor/Builder.h"
 #include "FlaxEngine.Gen.h"
 #include <ThirdParty/UniversalAnalytics/universal-analytics.h>
 
@@ -34,8 +35,53 @@ namespace EditorAnalyticsImpl
 
     CriticalSection Locker;
     bool IsSessionActive = false;
-    EditorAnalyticsController Controller;
-    Array<char> TmpBuffer;
+}
+
+void RegisterGameCookingStart(GameCooker::EventType type)
+{
+    auto& data = *GameCooker::GetCurrentData();
+    auto platform = ToString(data.Platform);
+    if (type == GameCooker::EventType::BuildStarted)
+    {
+        EditorAnalytics::SendEvent("Actions", "GameCooker.Start", platform);
+    }
+    else if (type == GameCooker::EventType::BuildFailed)
+    {
+        EditorAnalytics::SendEvent("Actions", "GameCooker.Failed", platform);
+    }
+    else if (type == GameCooker::EventType::BuildDone)
+    {
+        EditorAnalytics::SendEvent("Actions", "GameCooker.End", platform);
+    }
+}
+
+void RegisterLightmapsBuildingStart()
+{
+    EditorAnalytics::SendEvent("Actions", "ShadowsOfMordor.Build", "ShadowsOfMordor.Build");
+}
+
+void RegisterError(LogType type, const StringView& msg)
+{
+    if (type == LogType::Error && false)
+    {
+        String value = msg.ToString();
+        const int32 MaxLength = 300;
+        if (msg.Length() > MaxLength)
+            value = value.Substring(0, MaxLength);
+        value.Replace('\n', ' ');
+        value.Replace('\r', ' ');
+        EditorAnalytics::SendEvent("Errors", "Log.Error", value);
+    }
+    else if (type == LogType::Fatal)
+    {
+        String value = msg.ToString();
+        const int32 MaxLength = 300;
+        if (msg.Length() > MaxLength)
+            value = value.Substring(0, MaxLength);
+        value.Replace('\n', ' ');
+        value.Replace('\r', ' ');
+        EditorAnalytics::SendEvent("Errors", "Log.Fatal", value);
+    }
 }
 
 using namespace EditorAnalyticsImpl;
@@ -43,7 +89,6 @@ using namespace EditorAnalyticsImpl;
 class EditorAnalyticsService : public EngineService
 {
 public:
-
     EditorAnalyticsService()
         : EngineService(TEXT("Editor Analytics"))
     {
@@ -63,7 +108,6 @@ bool EditorAnalytics::IsSessionActive()
 void EditorAnalytics::StartSession()
 {
     ScopeLock lock(Locker);
-
     if (EditorAnalyticsImpl::IsSessionActive)
         return;
 
@@ -140,7 +184,10 @@ void EditorAnalytics::StartSession()
 
     EditorAnalyticsImpl::IsSessionActive = true;
 
-    Controller.Init();
+    // Bind events
+    GameCooker::OnEvent.Bind<RegisterGameCookingStart>();
+    ShadowsOfMordor::Builder::Instance()->OnBuildStarted.Bind<RegisterLightmapsBuildingStart>();
+    Log::Logger::OnError.Bind<RegisterError>();
 
     // Report GPU model
     if (GPU.HasChars())
@@ -152,11 +199,13 @@ void EditorAnalytics::StartSession()
 void EditorAnalytics::EndSession()
 {
     ScopeLock lock(Locker);
-
     if (!EditorAnalyticsImpl::IsSessionActive)
         return;
 
-    Controller.Cleanup();
+    // Unbind events
+    GameCooker::OnEvent.Unbind<RegisterGameCookingStart>();
+    ShadowsOfMordor::Builder::Instance()->OnBuildStarted.Unbind<RegisterLightmapsBuildingStart>();
+    Log::Logger::OnError.Unbind<RegisterError>();
 
     StringAnsi sessionLength = StringAnsi::Format("{0}", (int32)(DateTime::Now() - SessionStartTime).GetTotalSeconds());
 
@@ -197,7 +246,6 @@ void EditorAnalytics::EndSession()
 void EditorAnalytics::SendEvent(const char* category, const char* name, const char* label)
 {
     ScopeLock lock(Locker);
-
     if (!EditorAnalyticsImpl::IsSessionActive)
         return;
 
@@ -209,7 +257,6 @@ void EditorAnalytics::SendEvent(const char* category, const char* name, const ch
             { UA_EVENT_LABEL, 0, (char*)label },
         }
     };
-
     sendTracking(Tracker, UA_EVENT, &opts);
 }
 
@@ -221,28 +268,10 @@ void EditorAnalytics::SendEvent(const char* category, const char* name, const St
 void EditorAnalytics::SendEvent(const char* category, const char* name, const Char* label)
 {
     ScopeLock lock(Locker);
-
     if (!EditorAnalyticsImpl::IsSessionActive)
         return;
-
-    ASSERT(category && name && label);
-
-    const int32 labelLength = StringUtils::Length(label);
-    TmpBuffer.Clear();
-    TmpBuffer.Resize(labelLength + 1);
-    StringUtils::ConvertUTF162ANSI(label, TmpBuffer.Get(), labelLength);
-    TmpBuffer[labelLength] = 0;
-
-    UAOptions opts =
-    {
-        {
-            { UA_EVENT_CATEGORY, 0, (char*)category },
-            { UA_EVENT_ACTION, 0, (char*)name },
-            { UA_EVENT_LABEL, 0, (char*)TmpBuffer.Get() },
-        }
-    };
-
-    sendTracking(Tracker, UA_EVENT, &opts);
+    const StringAsANSI<> labelAnsi(label);
+    SendEvent(category, name, labelAnsi.Get());
 }
 
 bool EditorAnalyticsService::Init()
@@ -265,7 +294,6 @@ bool EditorAnalyticsService::Init()
     }
 
     LOG(Info, "Editor analytics service is enabled. Curl version: {0}", TEXT(LIBCURL_VERSION));
-
     EditorAnalytics::StartSession();
 
     return false;
