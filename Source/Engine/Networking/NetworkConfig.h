@@ -88,5 +88,8 @@ API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkConfi
     {
         NetworkDriverType = NetworkDriverType::ENet;
     }
+    NetworkConfig(const NetworkConfig& other) = default;
+    NetworkConfig(NetworkConfig&& other) = default;
+    NetworkConfig& operator=(const NetworkConfig& other) = default;
     PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };
