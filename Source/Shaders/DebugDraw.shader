@@ -55,8 +55,21 @@ float4 PS(VS2PS input) : SV_Target
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
+float4 PSUnlit(VS2PS input) : SV_Target
+{
+	return input.Color;
+}
+
+META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_DepthTest(VS2PS input) : SV_Target
 {
 	PerformDepthTest(input.Position);
 	return PerformFakeLighting(input.Position, input.Color);
+}
+
+META_PS(true, FEATURE_LEVEL_ES2)
+float4 PS_DepthTestUnlit(VS2PS input) : SV_Target
+{
+	PerformDepthTest(input.Position);
+	return input.Color;
 }
