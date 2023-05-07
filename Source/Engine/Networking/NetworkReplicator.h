@@ -104,14 +104,14 @@ public:
     /// </summary>
     /// <param name="obj">The network object.</param>
     /// <returns>The Client Id.</returns>
-    API_FUNCTION() static uint32 GetObjectOwnerClientId(ScriptingObject* obj);
+    API_FUNCTION() static uint32 GetObjectOwnerClientId(const ScriptingObject* obj);
 
     /// <summary>
     /// Gets the role of the network object used locally (eg. to check if can simulate object).
     /// </summary>
     /// <param name="obj">The network object.</param>
     /// <returns>The object role.</returns>
-    API_FUNCTION() static NetworkObjectRole GetObjectRole(ScriptingObject* obj);
+    API_FUNCTION() static NetworkObjectRole GetObjectRole(const ScriptingObject* obj);
 
     /// <summary>
     /// Checks if the network object is owned locally (thus current client has authority to manage it).
@@ -119,7 +119,7 @@ public:
     /// <remarks>Equivalent to GetObjectRole == OwnedAuthoritative.</remarks>
     /// <param name="obj">The network object.</param>
     /// <returns>True if object is owned by this client, otherwise false.</returns>
-    API_FUNCTION() FORCE_INLINE static bool IsObjectOwned(ScriptingObject* obj)
+    API_FUNCTION() FORCE_INLINE static bool IsObjectOwned(const ScriptingObject* obj)
     {
         return GetObjectRole(obj) == NetworkObjectRole::OwnedAuthoritative;
     }
@@ -130,7 +130,7 @@ public:
     /// <remarks>Equivalent to GetObjectRole != Replicated.</remarks>
     /// <param name="obj">The network object.</param>
     /// <returns>True if object is simulated on this client, otherwise false.</returns>
-    API_FUNCTION() FORCE_INLINE static bool IsObjectSimulated(ScriptingObject* obj)
+    API_FUNCTION() FORCE_INLINE static bool IsObjectSimulated(const ScriptingObject* obj)
     {
         return GetObjectRole(obj) != NetworkObjectRole::Replicated;
     }
@@ -141,7 +141,7 @@ public:
     /// <remarks>Equivalent to (GetObjectRole == Replicated or GetObjectRole == ReplicatedAutonomous).</remarks>
     /// <param name="obj">The network object.</param>
     /// <returns>True if object is simulated on this client, otherwise false.</returns>
-    API_FUNCTION() FORCE_INLINE static bool IsObjectReplicated(ScriptingObject* obj)
+    API_FUNCTION() FORCE_INLINE static bool IsObjectReplicated(const ScriptingObject* obj)
     {
         const NetworkObjectRole role = GetObjectRole(obj);
         return role == NetworkObjectRole::Replicated || role == NetworkObjectRole::ReplicatedSimulated;

@@ -861,7 +861,7 @@ void NetworkReplicator::DespawnObject(ScriptingObject* obj)
     DeleteNetworkObject(obj);
 }
 
-uint32 NetworkReplicator::GetObjectOwnerClientId(ScriptingObject* obj)
+uint32 NetworkReplicator::GetObjectOwnerClientId(const ScriptingObject* obj)
 {
     uint32 id = NetworkManager::ServerClientId;
     if (obj)
@@ -870,11 +870,23 @@ uint32 NetworkReplicator::GetObjectOwnerClientId(ScriptingObject* obj)
         const auto it = Objects.Find(obj->GetID());
         if (it != Objects.End())
             id = it->Item.OwnerClientId;
+        else
+        {
+            for (const SpawnItem& item : SpawnQueue)
+            {
+                if (item.Object == obj)
+                {
+                    if (item.HasOwnership)
+                        id = item.OwnerClientId;
+                    break;
+                }
+            }
+        }
     }
     return id;
 }
 
-NetworkObjectRole NetworkReplicator::GetObjectRole(ScriptingObject* obj)
+NetworkObjectRole NetworkReplicator::GetObjectRole(const ScriptingObject* obj)
 {
     NetworkObjectRole role = NetworkObjectRole::None;
     if (obj)
@@ -883,6 +895,18 @@ NetworkObjectRole NetworkReplicator::GetObjectRole(ScriptingObject* obj)
         const auto it = Objects.Find(obj->GetID());
         if (it != Objects.End())
             role = it->Item.Role;
+        else
+        {
+            for (const SpawnItem& item : SpawnQueue)
+            {
+                if (item.Object == obj)
+                {
+                    if (item.HasOwnership)
+                        role = item.Role;
+                    break;
+                }
+            }
+        }
     }
     return role;
 }
@@ -901,6 +925,18 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
             auto& item = SpawnQueue[i];
             if (item.Object == obj)
             {
+#if !BUILD_RELEASE
+                if (ownerClientId == NetworkManager::LocalClientId)
+                {
+                    // Ensure local client owns that object actually
+                    CHECK(localRole == NetworkObjectRole::OwnedAuthoritative);
+                }
+                else
+                {
+                    // Ensure local client doesn't own that object since it's owned by other client
+                    CHECK(localRole != NetworkObjectRole::OwnedAuthoritative);
+                }
+#endif
                 item.HasOwnership = true;
                 item.HierarchicalOwnership = hierarchical;
                 item.OwnerClientId = ownerClientId;
