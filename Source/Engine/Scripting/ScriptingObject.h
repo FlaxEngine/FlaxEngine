@@ -251,3 +251,5 @@ API_CLASS(InBuild) class FLAXENGINE_API PersistentScriptingObject : public Scrip
 public:
     PersistentScriptingObject(const SpawnParams& params);
 };
+
+extern FLAXENGINE_API class ScriptingObject* FindObject(const Guid& id, class MClass* type);

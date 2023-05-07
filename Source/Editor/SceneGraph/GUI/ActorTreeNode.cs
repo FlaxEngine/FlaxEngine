@@ -626,7 +626,16 @@ namespace FlaxEditor.SceneGraph.GUI
                 {
                     var item = _dragAssets.Objects[i];
                     var actor = item.OnEditorDrop(this);
-                    actor.StaticFlags = spawnParent.StaticFlags;
+                    if (spawnParent.GetType() != typeof(Scene))
+                    {
+                        // Set all Actors static flags to match parents
+                        List<Actor> childActors = new List<Actor>();
+                        GetActorsTree(childActors, actor);
+                        foreach (var child in childActors)
+                        {
+                            child.StaticFlags = spawnParent.StaticFlags;
+                        }
+                    }
                     actor.Name = item.ShortName;
                     actor.Transform = spawnParent.Transform;
                     ActorNode.Root.Spawn(actor, spawnParent);
@@ -666,6 +675,16 @@ namespace FlaxEditor.SceneGraph.GUI
             }
 
             return result;
+        }
+        
+        private void GetActorsTree(List<Actor> list, Actor a)
+        {
+            list.Add(a);
+            int cnt = a.ChildrenCount;
+            for (int i = 0; i < cnt; i++)
+            {
+                GetActorsTree(list, a.GetChild(i));
+            }
         }
 
         private bool ValidateDragActor(ActorNode actorNode)

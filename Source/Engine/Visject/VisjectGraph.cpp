@@ -1275,16 +1275,16 @@ void VisjectExecutor::ProcessGroupParticles(Box* box, Node* node, Value& value)
     // Random Float Range
     case 213:
     {
-        auto& a = node->Values[0].AsFloat;
-        auto& b = node->Values[1].AsFloat;
+        auto a = tryGetValue(node->TryGetBox(1), node->Values[0]).AsFloat;
+        auto b = tryGetValue(node->TryGetBox(2), node->Values[1]).AsFloat;
         value = Math::Lerp(a, b, RAND);
         break;
     }
     // Random Vector2 Range
     case 214:
     {
-        auto a = (Float2)node->Values[0];
-        auto b = (Float2)node->Values[1];
+        auto a = tryGetValue(node->TryGetBox(1),  node->Values[0]).AsFloat2();
+        auto b = tryGetValue(node->TryGetBox(2),  node->Values[1]).AsFloat2();
         value = Float2(
             Math::Lerp(a.X, b.X, RAND),
             Math::Lerp(a.Y, b.Y, RAND)
@@ -1294,8 +1294,8 @@ void VisjectExecutor::ProcessGroupParticles(Box* box, Node* node, Value& value)
     // Random Vector3 Range
     case 215:
     {
-        auto a = (Float3)node->Values[0];
-        auto b = (Float3)node->Values[1];
+        auto a = tryGetValue(node->TryGetBox(1), node->Values[0]).AsFloat3();
+        auto b = tryGetValue(node->TryGetBox(2), node->Values[1]).AsFloat3();
         value = Float3(
             Math::Lerp(a.X, b.X, RAND),
             Math::Lerp(a.Y, b.Y, RAND),
@@ -1306,8 +1306,8 @@ void VisjectExecutor::ProcessGroupParticles(Box* box, Node* node, Value& value)
     // Random Vector4 Range
     case 216:
     {
-        auto a = (Float4)node->Values[0];
-        auto b = (Float4)node->Values[1];
+        auto a = tryGetValue(node->TryGetBox(1), node->Values[0]).AsFloat4();
+        auto b = tryGetValue(node->TryGetBox(2), node->Values[1]).AsFloat4();
         value = Float4(
             Math::Lerp(a.X, b.X, RAND),
             Math::Lerp(a.Y, b.Y, RAND),

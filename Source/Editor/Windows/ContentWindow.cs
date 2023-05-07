@@ -489,7 +489,10 @@ namespace FlaxEditor.Windows
         /// <param name="item">The item to delete.</param>
         public void Delete(ContentItem item)
         {
-            Delete(Editor.Instance.Windows.ContentWin.View.Selection);
+            var items = View.Selection;
+            if (items.Count == 0)
+                items = new List<ContentItem>() { item };
+            Delete(items);
         }
 
         /// <summary>
@@ -657,6 +660,11 @@ namespace FlaxEditor.Windows
                 throw new ArgumentNullException(nameof(proxy));
 
             string name = initialName ?? proxy.NewItemName;
+
+            // If the proxy can not be created in the current folder, then navigate to the content folder
+            if (!proxy.CanCreate(CurrentViewFolder))
+                Navigate(Editor.Instance.ContentDatabase.Game.Content);
+
             ContentFolder parentFolder = CurrentViewFolder;
             string parentFolderPath = parentFolder.Path;
 

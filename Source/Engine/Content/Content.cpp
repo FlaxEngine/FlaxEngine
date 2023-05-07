@@ -1002,17 +1002,12 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
     }
 
 #if ASSETS_LOADING_EXTRA_VERIFICATION
-
-    // Ensure we have valid asset info
-    ASSERT(assetInfo.TypeName.HasChars() && assetInfo.Path.HasChars());
-
     // Check if file exists
     if (!FileSystem::FileExists(assetInfo.Path))
     {
         LOG(Error, "Cannot find file '{0}'", assetInfo.Path);
         return nullptr;
     }
-
 #endif
 
     // Find asset factory based in its type

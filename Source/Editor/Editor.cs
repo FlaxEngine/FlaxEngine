@@ -10,7 +10,6 @@ using FlaxEditor.Content;
 using FlaxEditor.Content.Import;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.Content.Thumbnails;
-using FlaxEditor.GUI;
 using FlaxEditor.Modules;
 using FlaxEditor.Modules.SourceCodeEditing;
 using FlaxEditor.Options;
@@ -314,6 +313,7 @@ namespace FlaxEditor
             _areModulesInited = true;
 
             // Preload initial scene asset
+            try
             {
                 var startupSceneMode = Options.Options.General.StartupSceneMode;
                 if (startupSceneMode == GeneralOptions.StartupSceneModes.LastOpened && !ProjectCache.HasCustomData(ProjectDataLastScene))
@@ -330,11 +330,22 @@ namespace FlaxEditor
                 }
                 case GeneralOptions.StartupSceneModes.LastOpened:
                 {
-                    if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out var lastSceneIdName) && Guid.TryParse(lastSceneIdName, out var lastSceneId))
-                        Internal_LoadAsset(ref lastSceneId);
+                    if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out var lastSceneIdName))
+                    {
+                        var lastScenes = JsonSerializer.Deserialize<Guid[]>(lastSceneIdName);
+                        foreach (var scene in lastScenes)
+                        {
+                            var lastScene = scene;
+                            Internal_LoadAsset(ref lastScene);
+                        }
+                    }
                     break;
                 }
                 }
+            }
+            catch (Exception)
+            {
+                // Ignore errors
             }
 
             InitializationStart?.Invoke();
@@ -408,58 +419,69 @@ namespace FlaxEditor
             }
 
             // Load scene
-
-            // scene cmd line argument
-            var scene = ContentDatabase.Find(_startupSceneCmdLine);
-            if (scene is SceneItem)
+            try
             {
-                Editor.Log("Loading scene specified in command line");
-                Scene.OpenScene(_startupSceneCmdLine);
-                return;
-            }
-
-            // if no scene cmd line argument is provided
-            var startupSceneMode = Options.Options.General.StartupSceneMode;
-            if (startupSceneMode == GeneralOptions.StartupSceneModes.LastOpened && !ProjectCache.HasCustomData(ProjectDataLastScene))
-            {
-                // Fallback to default project scene if nothing saved in the cache
-                startupSceneMode = GeneralOptions.StartupSceneModes.ProjectDefault;
-            }
-            switch (startupSceneMode)
-            {
-            case GeneralOptions.StartupSceneModes.ProjectDefault:
-            {
-                if (string.IsNullOrEmpty(GameProject.DefaultScene))
-                    break;
-                JsonSerializer.ParseID(GameProject.DefaultScene, out var defaultSceneId);
-                var defaultScene = ContentDatabase.Find(defaultSceneId);
-                if (defaultScene is SceneItem)
+                // Scene cmd line argument
+                var scene = ContentDatabase.Find(_startupSceneCmdLine);
+                if (scene is SceneItem)
                 {
-                    Editor.Log("Loading default project scene");
-                    Scene.OpenScene(defaultSceneId);
-
-                    // Use spawn point
-                    Windows.EditWin.Viewport.ViewRay = GameProject.DefaultSceneSpawn;
+                    Editor.Log("Loading scene specified in command line");
+                    Scene.OpenScene(_startupSceneCmdLine);
+                    return;
                 }
-                break;
-            }
-            case GeneralOptions.StartupSceneModes.LastOpened:
-            {
-                if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out var lastSceneIdName) && Guid.TryParse(lastSceneIdName, out var lastSceneId))
+                var startupSceneMode = Options.Options.General.StartupSceneMode;
+                if (startupSceneMode == GeneralOptions.StartupSceneModes.LastOpened && !ProjectCache.HasCustomData(ProjectDataLastScene))
                 {
-                    var lastScene = ContentDatabase.Find(lastSceneId);
-                    if (lastScene is SceneItem)
+                    // Fallback to default project scene if nothing saved in the cache
+                    startupSceneMode = GeneralOptions.StartupSceneModes.ProjectDefault;
+                }
+                switch (startupSceneMode)
+                {
+                case GeneralOptions.StartupSceneModes.ProjectDefault:
+                {
+                    if (string.IsNullOrEmpty(GameProject.DefaultScene))
+                        break;
+                    JsonSerializer.ParseID(GameProject.DefaultScene, out var defaultSceneId);
+                    var defaultScene = ContentDatabase.Find(defaultSceneId);
+                    if (defaultScene is SceneItem)
                     {
-                        Editor.Log("Loading last opened scene");
-                        Scene.OpenScene(lastSceneId);
+                        Editor.Log("Loading default project scene");
+                        Scene.OpenScene(defaultSceneId);
+
+                        // Use spawn point
+                        Windows.EditWin.Viewport.ViewRay = GameProject.DefaultSceneSpawn;
+                    }
+                    break;
+                }
+                case GeneralOptions.StartupSceneModes.LastOpened:
+                {
+                    if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out var lastSceneIdName))
+                    {
+                        var lastScenes = JsonSerializer.Deserialize<Guid[]>(lastSceneIdName);
+                        foreach (var sceneId in lastScenes)
+                        {
+                            var lastScene = ContentDatabase.Find(sceneId);
+                            if (!(lastScene is SceneItem))
+                                continue;
+
+                            Editor.Log($"Loading last opened scene: {lastScene.ShortName}");
+                            if (sceneId == lastScenes[0])
+                                Scene.OpenScene(sceneId);
+                            else
+                                Level.LoadSceneAsync(sceneId);
+                        }
 
                         // Restore view
                         if (ProjectCache.TryGetCustomData(ProjectDataLastSceneSpawn, out var lastSceneSpawnName))
                             Windows.EditWin.Viewport.ViewRay = JsonSerializer.Deserialize<Ray>(lastSceneSpawnName);
                     }
+                    break;
                 }
-                break;
+                }
             }
+            catch (Exception)
+            {
+                // Ignore errors
             }
         }
 
@@ -669,11 +691,14 @@ namespace FlaxEditor
             // Start exit
             StateMachine.GoToState<ClosingState>();
 
-            // Cache last opened scene
+            // Cache last opened scenes
             {
-                var lastSceneId = Level.ScenesCount > 0 ? Level.Scenes[0].ID : Guid.Empty;
+                var lastScenes = Level.Scenes;
+                var lastSceneIds = new Guid[lastScenes.Length];
+                for (int i = 0; i < lastScenes.Length; i++)
+                    lastSceneIds[i] = lastScenes[i].ID;
                 var lastSceneSpawn = Windows.EditWin.Viewport.ViewRay;
-                ProjectCache.SetCustomData(ProjectDataLastScene, lastSceneId.ToString());
+                ProjectCache.SetCustomData(ProjectDataLastScene, JsonSerializer.Serialize(lastSceneIds));
                 ProjectCache.SetCustomData(ProjectDataLastSceneSpawn, JsonSerializer.Serialize(lastSceneSpawn));
             }
 

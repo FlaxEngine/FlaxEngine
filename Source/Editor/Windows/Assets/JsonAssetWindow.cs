@@ -126,6 +126,10 @@ namespace FlaxEditor.Windows.Assets
                         _presenter.NoSelectionText = "Failed to load asset. See log for more. " + ex.Message.Replace('\n', ' ');
                     }
                 }
+                else if (string.IsNullOrEmpty(dataTypeName))
+                {
+                    _presenter.NoSelectionText = "Empty data type.";
+                }
                 else
                 {
                     _presenter.NoSelectionText = string.Format("Missing type '{0}'.", dataTypeName);

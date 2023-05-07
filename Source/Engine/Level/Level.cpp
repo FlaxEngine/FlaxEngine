@@ -903,12 +903,11 @@ bool LevelImpl::unloadScene(Scene* scene)
 bool LevelImpl::unloadScenes()
 {
     auto scenes = Level::Scenes;
-    for (int32 i = 0; i < scenes.Count(); i++)
+    for (int32 i = scenes.Count() - 1; i >= 0; i--)
     {
         if (unloadScene(scenes[i]))
             return true;
     }
-
     return false;
 }
 
@@ -1209,6 +1208,15 @@ bool LevelImpl::saveScene(Scene* scene, const String& path)
     }
 
     LOG(Info, "Scene saved! Time {0} ms", Math::CeilToInt((float)(DateTime::NowUTC() - startTime).GetTotalMilliseconds()));
+
+#if USE_EDITOR
+    // Reload asset at the target location if is loaded
+    Asset* asset = Content::GetAsset(sceneId);
+    if (!asset)
+        asset = Content::GetAsset(path);
+    if (asset)
+        asset->Reload();
+#endif
 
     // Fire event
     CallSceneEvent(SceneEventType::OnSceneSaved, scene, sceneId);

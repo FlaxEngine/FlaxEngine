@@ -37,7 +37,7 @@ namespace FlaxEngine.Json
         {
             // Skip serialization as reference id for the root object serialization (eg. Script)
             var cache = JsonSerializer.Current.Value;
-            if (cache != null && cache.IsDuringSerialization && cache.SerializerWriter.SerializeStackSize == 0)
+            if (cache != null && cache.IsWriting && cache.SerializerWriter.SerializeStackSize == 0)
             {
                 return false;
             }
