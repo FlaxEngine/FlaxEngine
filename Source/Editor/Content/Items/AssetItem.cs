@@ -82,7 +82,7 @@ namespace FlaxEditor.Content
         {
             sb.Append("Type: ").Append(TypeName).AppendLine();
             sb.Append("Size: ").Append(Utilities.Utils.FormatBytesCount((int)new FileInfo(Path).Length)).AppendLine();
-            sb.Append("Path: ").Append(Path).AppendLine();
+            sb.Append("Path: ").Append(FlaxEditor.Utilities.Utils.GetAssetNamePathWithExt(Path)).AppendLine();
         }
 
         /// <inheritdoc />

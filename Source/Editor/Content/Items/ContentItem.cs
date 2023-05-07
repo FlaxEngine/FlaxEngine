@@ -357,6 +357,8 @@ namespace FlaxEditor.Content
         /// </summary>
         public virtual void UpdateTooltipText()
         {
+            Editor.Log(FlaxEditor.Utilities.Utils.GetAssetNamePath(Path));
+
             TooltipText = "Path: " + Path;
         }
 

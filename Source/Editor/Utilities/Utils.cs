@@ -1018,15 +1018,28 @@ namespace FlaxEditor.Utilities
         }
 
         /// <summary>
-        /// Gets the asset name relative to the project root folder (without asset file extension)
+        /// Gets the asset name relative to the project root folder (with asset file extension)
         /// </summary>
         /// <param name="path">The asset path.</param>
         /// <returns>The processed name path.</returns>
-        public static string GetAssetNamePath(string path)
+        /// 
+        public static string GetAssetNamePathWithExt(string path)
         {
             var projectFolder = Globals.ProjectFolder;
             if (path.StartsWith(projectFolder))
                 path = path.Substring(projectFolder.Length + 1);
+            return path;
+        }
+
+        /// <summary>
+        /// Gets the asset name relative to the project root folder (without asset file extension)
+        /// </summary>
+        /// <param name="path">The asset path.</param>
+        /// <returns>The processed name path.</returns>
+        /// 
+        public static string GetAssetNamePath(string path)
+        {
+            path = GetAssetNamePathWithExt(path);
             return StringUtils.GetPathWithoutExtension(path);
         }
 
