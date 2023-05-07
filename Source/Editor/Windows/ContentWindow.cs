@@ -488,7 +488,10 @@ namespace FlaxEditor.Windows
         /// <param name="item">The item to delete.</param>
         public void Delete(ContentItem item)
         {
-            Delete(Editor.Instance.Windows.ContentWin.View.Selection);
+            var items = View.Selection;
+            if (items.Count == 0)
+                items = new List<ContentItem>() { item };
+            Delete(items);
         }
 
         /// <summary>
