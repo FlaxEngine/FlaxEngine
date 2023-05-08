@@ -12,6 +12,10 @@
 
 #ifdef TRACY_HAS_CALLSTACK
 
+#ifdef TRACY_DEBUGINFOD
+#  include <elfutils/debuginfod.h>
+#endif
+
 #include <assert.h>
 #include <stdint.h>
 
@@ -25,6 +29,7 @@ struct CallstackSymbolData
     const char* file;
     uint32_t line;
     bool needFree;
+    uint64_t symAddr;
 };
 
 struct CallstackEntry
@@ -44,19 +49,33 @@ struct CallstackEntryData
 };
 
 CallstackSymbolData DecodeSymbolAddress( uint64_t ptr );
-CallstackSymbolData DecodeCodeAddress( uint64_t ptr );
 const char* DecodeCallstackPtrFast( uint64_t ptr );
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr );
 void InitCallstack();
+void InitCallstackCritical();
+void EndCallstack();
+const char* GetKernelModulePath( uint64_t addr );
+
+#ifdef TRACY_DEBUGINFOD
+const uint8_t* GetBuildIdForImage( const char* image, size_t& size );
+debuginfod_client* GetDebuginfodClient();
+#endif
 
 #if TRACY_HAS_CALLSTACK == 1
 
-TRACY_API uintptr_t* CallTrace( int depth );
+extern "C"
+{
+    typedef unsigned long (__stdcall *___tracy_t_RtlWalkFrameChain)( void**, unsigned long, unsigned long );
+    TRACY_API extern ___tracy_t_RtlWalkFrameChain ___tracy_RtlWalkFrameChain;
+}
 
 static tracy_force_inline void* Callstack( int depth )
 {
     assert( depth >= 1 && depth < 63 );
-    return CallTrace( depth );
+    auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
+    const auto num = ___tracy_RtlWalkFrameChain( (void**)( trace + 1 ), depth, 0 );
+    *trace = num;
+    return trace;
 }
 
 #elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 5

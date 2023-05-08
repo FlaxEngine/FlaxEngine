@@ -25,7 +25,7 @@ API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API Asset : public ManagedScriptin
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(Asset);
     friend Content;
-    friend LoadAssetTask;
+    friend class LoadAssetTask;
     friend class ContentService;
 public:
     /// <summary>

@@ -1271,7 +1271,7 @@ backtrace_initialize (struct backtrace_state *state, const char *filename,
       mff = macho_nodebug;
       if (!macho_add (state, name, d, 0, NULL, base_address, 0,
 		      error_callback, data, &mff, &mfs))
-	return 0;
+	continue;
 
       if (mff != macho_nodebug)
 	macho_fileline_fn = mff;
@@ -1292,7 +1292,7 @@ backtrace_initialize (struct backtrace_state *state, const char *filename,
   else
     {
       if (found_sym)
-	backtrace_atomic_store_pointer (&state->syminfo_fn, macho_syminfo);
+	backtrace_atomic_store_pointer (&state->syminfo_fn, &macho_syminfo);
       else
 	(void) __sync_bool_compare_and_swap (&state->syminfo_fn, NULL,
 					     macho_nosyms);
@@ -1338,7 +1338,7 @@ backtrace_initialize (struct backtrace_state *state, const char *filename,
   else
     {
       if (found_sym)
-	backtrace_atomic_store_pointer (&state->syminfo_fn, macho_syminfo);
+	backtrace_atomic_store_pointer (&state->syminfo_fn, &macho_syminfo);
       else
 	(void) __sync_bool_compare_and_swap (&state->syminfo_fn, NULL,
 					     macho_nosyms);

@@ -7,7 +7,7 @@
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #if TRACY_ENABLE
 #include "Engine/Core/Math/Math.h"
-#include <ThirdParty/tracy/Tracy.h>
+#include <ThirdParty/tracy/tracy/Tracy.hpp>
 #endif
 
 Delegate<Thread*> ThreadBase::ThreadStarting;

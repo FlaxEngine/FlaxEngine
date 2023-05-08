@@ -73,9 +73,7 @@ void RenderView::PrepareCache(const RenderContext& renderContext, float width, f
 
     WorldPosition = Origin + Position;
 
-    // Ortho views have issues with screen size LOD culling
-    const float modelLODDistanceFactor = (renderContext.LodProxyView ? renderContext.LodProxyView->IsOrthographicProjection() : IsOrthographicProjection()) ? 100.0f : ModelLODDistanceFactor;
-    ModelLODDistanceFactorSqrt = modelLODDistanceFactor * modelLODDistanceFactor;
+    ModelLODDistanceFactorSqrt = ModelLODDistanceFactor * ModelLODDistanceFactor;
 
     // Setup main view render info
     if (!mainView)

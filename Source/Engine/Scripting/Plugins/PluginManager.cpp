@@ -127,7 +127,7 @@ void PluginManagerService::InvokeDeinitialize(Plugin* plugin)
         return;
     StringAnsiView typeName = plugin->GetType().GetName();
     PROFILE_CPU();
-    ZoneName(typeName.Get(), typeName.Length())
+    ZoneName(typeName.Get(), typeName.Length());
 
     LOG(Info, "Unloading plugin {}", plugin->ToString());
 
