@@ -3,6 +3,7 @@
 using FlaxEditor.GUI.Input;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using System;
 
 namespace FlaxEditor.GUI.Dialogs
 {
@@ -25,6 +26,7 @@ namespace FlaxEditor.GUI.Dialogs
     {
         private const float ButtonsWidth = 60.0f;
         private const float PickerMargin = 6.0f;
+        private const float EyedropperMargin = 8.0f;
         private const float RGBAMargin = 12.0f;
         private const float HSVMargin = 0.0f;
         private const float ChannelsMargin = 4.0f;
@@ -48,6 +50,7 @@ namespace FlaxEditor.GUI.Dialogs
         private TextBox _cHex;
         private Button _cCancel;
         private Button _cOK;
+        private IconButton _cEyedropper;
 
         /// <summary>
         /// Gets the selected color.
@@ -192,8 +195,24 @@ namespace FlaxEditor.GUI.Dialogs
             };
             _cOK.Clicked += OnSubmit;
 
+            // Eyedropper button
+            _cEyedropper = new IconButton(_cOK.X - EyedropperMargin, _cHex.Bottom + PickerMargin, Editor.Instance.Icons.Add64, hideBorder: false)
+            {
+                Parent = this,
+            };
+            _cEyedropper.Clicked += OnEyedropColor;
+            _cEyedropper.Height = (_cValue.Bottom - _cEyedropper.Y) * 0.5f;
+            _cEyedropper.Width = _cEyedropper.Height;
+            _cEyedropper.X -= _cEyedropper.Width;
+            //_cEyedropper.SetColors(_cEyedropper.BackgroundColor);
+
             // Set initial color
             SelectedColor = initialValue;
+        }
+
+        private void OnEyedropColor()
+        {
+            throw new NotImplementedException();
         }
 
         private void OnRGBAChanged()
