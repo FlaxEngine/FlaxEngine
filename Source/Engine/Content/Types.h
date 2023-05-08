@@ -7,5 +7,6 @@ struct AssetInfo;
 class Content;
 class Asset;
 class ContentLoadTask;
+class LoadAssetTask;
 template<typename T>
 class AssetReference;
