@@ -2051,8 +2051,8 @@ bool LinuxPlatform::Init()
     if (UserLocale.FindLast('.') != -1)
         UserLocale = UserLocale.Left(UserLocale.Find('.'));
     UserLocale.Replace('_', '-');
-    if (UserLocale == "C")
-        UserLocale = "en";
+    if (UserLocale == TEXT("C"))
+        UserLocale = TEXT("en");
 
     // Get computer name string
     gethostname(buffer, UNIX_APP_BUFF_SIZE);
