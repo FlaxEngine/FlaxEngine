@@ -2047,12 +2047,12 @@ bool LinuxPlatform::Init()
     // Get user locale string
     setlocale(LC_ALL, "");
     const char* locale = setlocale(LC_CTYPE, NULL);
-    if (strcmp(locale, "C") == 0)
-        locale = "";
     UserLocale = String(locale);
     if (UserLocale.FindLast('.') != -1)
         UserLocale = UserLocale.Left(UserLocale.Find('.'));
     UserLocale.Replace('_', '-');
+    if (UserLocale == "C")
+        UserLocale = "en";
 
     // Get computer name string
     gethostname(buffer, UNIX_APP_BUFF_SIZE);
