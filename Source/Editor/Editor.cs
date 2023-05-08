@@ -351,11 +351,19 @@ namespace FlaxEditor
         {
             // Check if prefab root control is this UIControl
             var loadingPreview = Viewport.Previews.PrefabPreview.LoadingPreview;
-            if (loadingPreview != null)
+            var activePreviews = Viewport.Previews.PrefabPreview.ActivePreviews;
+            if (activePreviews != null)
             {
-                // Link it to the prefab preview to see it in the editor
-                loadingPreview.customControlLinked = control;
-                return loadingPreview;
+                foreach (var preview in activePreviews)
+                {
+                    if (preview == loadingPreview || 
+                        (preview.Instance != null && (preview.Instance == control || preview.Instance.HasActorInHierarchy(control))))
+                    {
+                        // Link it to the prefab preview to see it in the editor
+                        preview.customControlLinked = control;
+                        return preview;
+                    }
+                }
             }
             return null;
         }
