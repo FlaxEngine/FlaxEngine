@@ -8,7 +8,7 @@
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingType.h"
-#include <ThirdParty/tracy/Tracy.h>
+#include <ThirdParty/tracy/tracy/Tracy.hpp>
 
 #if COMPILE_WITH_PROFILER
 
