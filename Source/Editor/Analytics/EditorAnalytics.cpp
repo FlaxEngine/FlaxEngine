@@ -4,6 +4,7 @@
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
 #include "Editor/Cooker/GameCooker.h"
+#include "Engine/Threading/Task.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/MemoryStats.h"
@@ -267,7 +268,7 @@ bool EditorAnalyticsService::Init()
     }
 
     LOG(Info, "Editor analytics service is enabled. Curl version: {0}", TEXT(LIBCURL_VERSION));
-    EditorAnalytics::StartSession();
+    Task::StartNew(EditorAnalytics::StartSession);
 
     return false;
 }
