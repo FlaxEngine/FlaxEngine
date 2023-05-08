@@ -56,6 +56,14 @@ enum class MTypes : uint32
     Enum = 0x55,
 };
 
+enum class MGCCollectionMode
+{
+    Default = 0,
+    Forced = 1,
+    Optimized = 2,
+    Aggressive = 3
+};
+
 #if USE_NETCORE
 
 enum class MTypeAttributes : uint32;

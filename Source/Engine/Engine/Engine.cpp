@@ -20,6 +20,7 @@
 #include "Engine/Threading/MainThreadTask.h"
 #include "Engine/Threading/ThreadRegistry.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
@@ -309,6 +310,14 @@ void Engine::OnUpdate()
 
     // Update services
     EngineService::OnUpdate();
+
+#ifdef USE_NETCORE
+    // Force GC to run in background periodically to avoid large blocking collections causing hitches
+    if (Time::Update.TicksCount % 60 == 0)
+    {
+        MCore::GC::Collect(MCore::GC::MaxGeneration(), MGCCollectionMode::Forced, false, false);
+    }
+#endif
 }
 
 void Engine::OnLateUpdate()
