@@ -195,7 +195,7 @@ namespace FlaxEngine.GUI
         /// Sets the button colors palette based on a given main color.
         /// </summary>
         /// <param name="color">The main color.</param>
-        public void SetColors(Color color)
+        public virtual void SetColors(Color color)
         {
             BackgroundColor = color;
             BorderColor = color.RGBMultiplied(0.5f);
