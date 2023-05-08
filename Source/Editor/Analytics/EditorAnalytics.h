@@ -28,24 +28,7 @@ public:
     /// <summary>
     /// Sends the custom event.
     /// </summary>
-    /// <param name="category">The event category name.</param>
     /// <param name="name">The event name.</param>
-    /// <param name="label">The event label.</param>
-    static void SendEvent(const char* category, const char* name, const char* label = nullptr);
-
-    /// <summary>
-    /// Sends the custom event.
-    /// </summary>
-    /// <param name="category">The event category name.</param>
-    /// <param name="name">The event name.</param>
-    /// <param name="label">The event label.</param>
-    static void SendEvent(const char* category, const char* name, const StringView& label);
-
-    /// <summary>
-    /// Sends the custom event.
-    /// </summary>
-    /// <param name="category">The event category name.</param>
-    /// <param name="name">The event name.</param>
-    /// <param name="label">The event label.</param>
-    static void SendEvent(const char* category, const char* name, const Char* label);
+    /// <param name="parameters">The event parameters (key and value pairs).</param>
+    static void SendEvent(const char* name, Span<Pair<const char*, const char*>> parameters);
 };

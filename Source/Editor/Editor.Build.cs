@@ -43,7 +43,7 @@ public class Editor : EditorModule
 
         options.PublicDependencies.Add("Engine");
         options.PrivateDependencies.Add("pugixml");
-        options.PrivateDependencies.Add("UniversalAnalytics");
+        options.PrivateDependencies.Add("curl");
         options.PrivateDependencies.Add("ContentImporters");
         options.PrivateDependencies.Add("ContentExporters");
         options.PrivateDependencies.Add("ShadowsOfMordor");
