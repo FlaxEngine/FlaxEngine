@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using FlaxEditor.GUI.Drag;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -138,13 +137,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void UpdateTooltipText()
         {
-            string fileDescription = "Folder";
-            StringBuilder sb = new StringBuilder();
-
-            sb.Append("Type: ").Append(fileDescription).AppendLine();
-            sb.Append("Path: ").Append(Utilities.Utils.GetAssetNamePathWithExt(Path)).AppendLine();
-
-            TooltipText = sb.ToString();
+            TooltipText = Path;
         }
 
         /// <inheritdoc />

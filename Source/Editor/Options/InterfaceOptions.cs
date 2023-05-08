@@ -135,13 +135,6 @@ namespace FlaxEditor.Options
         public FlaxEngine.GUI.Orientation ContentWindowOrientation { get; set; } = FlaxEngine.GUI.Orientation.Horizontal;
 
         /// <summary>
-        /// Gets or sets the option to use type name translations.
-        /// </summary>
-        [DefaultValue(true)]
-        [EditorDisplay("Interface"), EditorOrder(290), Tooltip("Attempt to translate asset type names.")]
-        public bool TranslateTypeNames { get; set; } = true;
-
-        /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.
         /// </summary>
         [DefaultValue(TimestampsFormats.TimeSinceStartup)]
