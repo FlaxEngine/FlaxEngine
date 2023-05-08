@@ -9,159 +9,66 @@ namespace FlaxEngine.GUI
     /// </summary>
     public class IconButton : Button
     {
-        /// <inheritdoc />
-        public override void ClearState()
+        /// <summary>
+        /// The sprite rendered on the button.
+        /// </summary>
+        public SpriteHandle ButtonSprite { get; set; }
+
+        /// <summary>
+        /// Whether or not to hide the border of the button.
+        /// </summary>
+        public bool HideBorder = true;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IconButton"/> class.
+        /// </summary>
+        /// <param name="buttonSprite">The sprite used by the button.</param>
+        public IconButton(SpriteHandle buttonSprite)
+        : this(0, 0, buttonSprite)
         {
-            base.ClearState();
-            
-            if (_isPressed)
-                OnPressEnd();
         }
 
-        /// <inheritdoc />
-        public override void DrawSelf()
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IconButton"/> class.
+        /// </summary>
+        /// <param name="x">Position X coordinate</param>
+        /// <param name="y">Position Y coordinate</param>
+        /// <param name="buttonSprite">The sprite used by the button.</param>
+        /// <param name="width">Width</param>
+        /// <param name="height">Height</param>
+        /// <param name="hideBorder">Whether or not to hide the border.</param>
+        public IconButton(float x, float y, SpriteHandle buttonSprite, float width = 120, float height = DefaultHeight, bool hideBorder = true)
+        : base(x, y, width, height)
         {
-            // Cache data
-            Rectangle clientRect = new Rectangle(Float2.Zero, Size);
-            bool enabled = EnabledInHierarchy;
-            Color backgroundColor = BackgroundColor;
-            Color borderColor = BorderColor;
-            Color textColor = TextColor;
-            if (!enabled)
-            {
-                backgroundColor *= 0.5f;
-                borderColor *= 0.5f;
-                textColor *= 0.6f;
-            }
-            else if (_isPressed)
-            {
-                backgroundColor = BackgroundColorSelected;
-                borderColor = BorderColorSelected;
-            }
-            else if (IsMouseOver || IsNavFocused)
-            {
-                backgroundColor = BackgroundColorHighlighted;
-                borderColor = BorderColorHighlighted;
-            }
-
-            // Draw background
-            if (BackgroundBrush != null)
-                BackgroundBrush.Draw(clientRect, backgroundColor);
-            else
-                Render2D.FillRectangle(clientRect, backgroundColor);
-            Render2D.DrawRectangle(clientRect, borderColor);
-
-            // Draw text
-            Render2D.DrawText(_font?.GetFont(), TextMaterial, _text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
+            ButtonSprite = buttonSprite;
+            BackgroundBrush = new SpriteBrush(ButtonSprite);
+            HideBorder = hideBorder;
         }
 
-        /// <inheritdoc />
-        public override void OnMouseEnter(Float2 location)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IconButton"/> class.
+        /// </summary>
+        /// <param name="location">Position</param>
+        /// <param name="size">Size</param>
+        /// <param name="buttonSprite">The sprite used by the button.</param>
+        public IconButton(Float2 location, Float2 size, SpriteHandle buttonSprite)
+        : this(location.X, location.Y, buttonSprite, size.X, size.Y)
         {
-            base.OnMouseEnter(location);
-
-            HoverBegin?.Invoke();
         }
 
-        /// <inheritdoc />
-        public override void OnMouseLeave()
+        /// <summary>
+        /// Sets the colors of the button, taking into account the <see cref="HideBorder"/> field.>
+        /// </summary>
+        /// <param name="color">The color to use.</param>
+        public override void SetColors(Color color)
         {
-            if (_isPressed)
-            {
-                OnPressEnd();
-            }
+            BackgroundColor = color;
+            BackgroundColorSelected = color.RGBMultiplied(0.8f);
+            BackgroundColorHighlighted = color.RGBMultiplied(1.2f);
 
-            HoverEnd?.Invoke();
-
-            base.OnMouseLeave();
-        }
-
-        /// <inheritdoc />
-        public override bool OnMouseDown(Float2 location, MouseButton button)
-        {
-            if (base.OnMouseDown(location, button))
-                return true;
-
-            if (button == MouseButton.Left && !_isPressed)
-            {
-                OnPressBegin();
-                return true;
-            }
-            return false;
-        }
-
-        /// <inheritdoc />
-        public override bool OnMouseUp(Float2 location, MouseButton button)
-        {
-            if (base.OnMouseUp(location, button))
-                return true;
-
-            if (button == MouseButton.Left && _isPressed)
-            {
-                OnPressEnd();
-                OnClick();
-                return true;
-            }
-            return false;
-        }
-
-        /// <inheritdoc />
-        public override bool OnTouchDown(Float2 location, int pointerId)
-        {
-            if (base.OnTouchDown(location, pointerId))
-                return true;
-
-            if (!_isPressed)
-            {
-                OnPressBegin();
-                return true;
-            }
-            return false;
-        }
-
-        /// <inheritdoc />
-        public override bool OnTouchUp(Float2 location, int pointerId)
-        {
-            if (base.OnTouchUp(location, pointerId))
-                return true;
-
-            if (_isPressed)
-            {
-                OnPressEnd();
-                OnClick();
-                return true;
-            }
-            return false;
-        }
-
-        /// <inheritdoc />
-        public override void OnTouchLeave()
-        {
-            if (_isPressed)
-            {
-                OnPressEnd();
-            }
-
-            base.OnTouchLeave();
-        }
-
-        /// <inheritdoc />
-        public override void OnLostFocus()
-        {
-            if (_isPressed)
-            {
-                OnPressEnd();
-            }
-
-            base.OnLostFocus();
-        }
-
-        /// <inheritdoc />
-        public override void OnSubmit()
-        {
-            OnClick();
-
-            base.OnSubmit();
+            BorderColor = HideBorder ? Color.Transparent : color.RGBMultiplied(0.5f);
+            BorderColorSelected = BorderColor;
+            BorderColorHighlighted = BorderColor;
         }
     }
 }

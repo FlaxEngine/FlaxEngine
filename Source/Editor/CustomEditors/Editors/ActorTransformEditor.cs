@@ -79,7 +79,6 @@ namespace FlaxEditor.CustomEditors.Editors
         public class ScaleEditor : Float3Editor
         {
             private Button _linkButton;
-            private SpriteBrush _linkBrush;
 
             /// <inheritdoc />
             public override void Initialize(LayoutElementsContainer layout)
@@ -89,20 +88,16 @@ namespace FlaxEditor.CustomEditors.Editors
                 LinkValues = Editor.Instance.Windows.PropertiesWin.ScaleLinked;
 
                 // Add button with the link icon.
-                _linkBrush = new SpriteBrush(Editor.Instance.Icons.Link32);
-                _linkButton = new Button
+                //Editor.Instance.Icons.Link32
+                _linkButton = new IconButton(Editor.Instance.Icons.Link32)
                 {
                     Parent = LinkedLabel,
                     Width = 18,
                     Height = 18,
-                    BackgroundBrush = _linkBrush,
-                    AnchorPreset = AnchorPresets.TopLeft,
+                    AnchorPreset = AnchorPresets.TopLeft
                 };
 
                 _linkButton.Clicked += ToggleLink;
-                _linkButton.BorderColor = Color.Transparent;
-                _linkButton.BorderColorSelected = Color.Transparent;
-                _linkButton.BorderColorHighlighted = Color.Transparent;
                 SetLinkStyle();
 
                 var x = LinkedLabel.Text.Value.Length * 7 + 5;
@@ -142,9 +137,7 @@ namespace FlaxEditor.CustomEditors.Editors
             private void SetLinkStyle()
             {
                 Color backgroundColor = LinkValues ? FlaxEngine.GUI.Style.Current.BackgroundSelected : FlaxEngine.GUI.Style.Current.ForegroundDisabled;
-                _linkButton.BackgroundColor = backgroundColor;
-                _linkButton.BackgroundColorHighlighted = backgroundColor.RGBMultiplied(0.9f);
-                _linkButton.BackgroundColorSelected = backgroundColor.RGBMultiplied(0.8f);
+                _linkButton.SetColors(backgroundColor);
                 _linkButton.TooltipText = (LinkValues ? "Unlink" : "Link") + " values for uniform scaling.";
             }
         }
