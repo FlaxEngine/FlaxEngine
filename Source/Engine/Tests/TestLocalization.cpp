@@ -2,8 +2,10 @@
 
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Math/Vector3.h"
+#include "Engine/Core/Types/Guid.h"
 #include "Engine/Localization/Localization.h"
 #include <ThirdParty/catch2/catch.hpp>
 
@@ -50,5 +52,15 @@ TEST_CASE("Localization")
         String text1 = String::Format(TEXT("text: {0}, {1}"), TEXT("one"), TEXT("two"));
         String text2 = String::Format(TEXT("text: {arg0}, {arg1}"), fmt::arg(TEXT("arg0"), TEXT("one")), fmt::arg(TEXT("arg1"), TEXT("two")));
         CHECK(text1 == text2);
+    }
+    SECTION("Test Guid String")
+    {
+        const StringView text = TEXT("665bb01c49a3370f14a023b5395de261");
+        Guid guid;
+        Guid::Parse(text, guid);
+        String guidText1 = guid.ToString();
+        String guidText2 = String::Format(TEXT("{}"), guid);
+        CHECK(text == guidText1);
+        CHECK(text == guidText2);
     }
 }
