@@ -3,6 +3,7 @@
 #include "Screenshot.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Math/Color32.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Graphics/Textures/TextureData.h"
@@ -129,6 +130,66 @@ void CaptureScreenshot::OnFail()
     ThreadPoolTask::OnFail();
 }
 
+
+
+/// <summary>
+/// Capture screenshot helper
+/// </summary>
+/// <seealso cref="ThreadPoolTask" />
+class GetPixelData : public ThreadPoolTask
+{
+    friend Screenshot;
+private:
+    TextureData _data;
+    Color32 _color;
+
+public:
+    int32 x;
+    int32 y;
+
+public:
+    /// <summary>
+    /// Gets the texture data container.
+    /// </summary>
+    /// <returns>Texture data</returns>
+    FORCE_INLINE TextureData& GetData()
+    {
+        return _data;
+    }
+
+    FORCE_INLINE Color32 GetColor()
+    {
+        return _color;
+    }
+
+protected:
+    // [ThreadPoolTask]
+    bool Run() override;
+    void OnFail() override;
+};
+
+bool GetPixelData::Run()
+{
+    LOG(Warning, "REAL");
+    TextureMipData *mipData = _data.GetData(0, 0);
+    Array<Color32> pixels;
+    mipData->GetPixels(pixels, _data.Width, _data.Height, _data.Format);
+
+    _color = pixels[(y * _data.Width) + x];
+    LOG(Warning, "really real");
+    LOG(Warning, "Color: {0} {1} {2}", _color.R, _color.B, _color.G);
+    return false;
+}
+
+void GetPixelData::OnFail()
+{
+    LOG(Warning, "Cannot get pixel data.");
+
+    // Base
+    ThreadPoolTask::OnFail();
+}
+
+
 void Screenshot::Capture(GPUTexture* target, const StringView& path)
 {
     // Validate
@@ -241,4 +302,19 @@ void Screenshot::Capture(const StringView& path)
     }
 
     Capture(mainTask, path);
+}
+
+Color32 Screenshot::GetPixelAt(int32 x, int32 y) {
+    GPUSwapChain* swapChain = Engine::MainWindow->GetSwapChain();
+
+    auto getPixelTask = New<GetPixelData>();
+    getPixelTask->x = x;
+    getPixelTask->y = y;
+
+    Task* downloadTask = swapChain->DownloadDataAsync(getPixelTask->GetData());
+    downloadTask->ContinueWith(getPixelTask);
+    downloadTask->Start();
+
+    //downloadTask->Wait(750);
+    return getPixelTask->GetColor();
 }

@@ -212,7 +212,7 @@ namespace FlaxEditor.GUI.Dialogs
 
         private void OnEyedropColor()
         {
-            throw new NotImplementedException();
+            Editor.Log("Color: " + Screenshot.GetPixelAt(7, 6).ToString());
         }
 
         private void OnRGBAChanged()
