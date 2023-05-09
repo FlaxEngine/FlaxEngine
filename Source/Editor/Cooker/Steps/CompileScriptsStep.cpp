@@ -129,7 +129,7 @@ bool CompileScriptsStep::DeployBinaries(CookingData& data, const String& path, c
             continue;
         if (FileSystem::CopyFile(dst, file))
         {
-            data.Error(TEXT("Failed to copy file from {0} to {1}."), file, dst);
+            data.Error(String::Format(TEXT("Failed to copy file from {0} to {1}."), file, dst));
             return true;
         }
 

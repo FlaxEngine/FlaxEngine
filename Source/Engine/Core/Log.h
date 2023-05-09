@@ -13,7 +13,7 @@
 /// <summary>
 /// Sends a formatted message to the log file (message type - describes level of the log (see LogType enum))
 /// </summary>
-#define LOG(messageType, format, ...) Log::Logger::Write(LogType::messageType, TEXT(format), ##__VA_ARGS__)
+#define LOG(messageType, format, ...) Log::Logger::Write(LogType::messageType, ::String::Format(TEXT(format), ##__VA_ARGS__))
 
 /// <summary>
 /// Sends a string message to the log file (message type - describes level of the log (see LogType enum))

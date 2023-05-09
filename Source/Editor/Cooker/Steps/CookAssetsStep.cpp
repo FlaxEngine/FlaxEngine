@@ -410,7 +410,7 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
 		assetBase->InitCompilationOptions(options); \
 		if (ShadersCompilation::Compile(options)) \
 		{ \
-			data.Data.Error(TEXT("Failed to compile shader '{0}' (profile: {1})."), asset->ToString(), ::ToString(options.Profile)); \
+			data.Data.Error(String::Format(TEXT("Failed to compile shader '{0}' (profile: {1})."), asset->ToString(), ::ToString(options.Profile))); \
 			return true; \
 		} \
         includes.Clear(); \

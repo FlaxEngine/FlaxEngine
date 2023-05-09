@@ -65,7 +65,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
     {
         if (!FileSystem::FileExists(files[i]))
         {
-            data.Error(TEXT("Missing source file {0}."), files[i]);
+            data.Error(String::Format(TEXT("Missing source file {0}."), files[i]));
             return true;
         }
 

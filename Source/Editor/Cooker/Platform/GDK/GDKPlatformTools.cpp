@@ -52,7 +52,7 @@ bool GDKPlatformTools::OnDeployBinaries(CookingData& data)
     files.Add(binPath / executableFilename);
     if (!FileSystem::FileExists(files[0]))
     {
-        data.Error(TEXT("Missing executable file ({0})."), files[0]);
+        data.Error(String::Format(TEXT("Missing executable file ({0})."), files[0]));
         return true;
     }
     FileSystem::DirectoryGetFiles(files, binPath, TEXT("*.dll"), DirectorySearchOption::TopDirectoryOnly);
@@ -60,7 +60,7 @@ bool GDKPlatformTools::OnDeployBinaries(CookingData& data)
     {
         if (FileSystem::CopyFile(data.NativeCodeOutputPath / StringUtils::GetFileName(files[i]), files[i]))
         {
-            data.Error(TEXT("Failed to setup output directory (file {0})."), files[i]);
+            data.Error(String::Format(TEXT("Failed to setup output directory (file {0})."), files[i]));
             return true;
         }
     }

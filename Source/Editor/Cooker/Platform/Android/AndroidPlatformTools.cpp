@@ -314,7 +314,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
     const int32 result = Platform::CreateProcess(procSettings);
     if (result != 0)
     {
-        data.Error(TEXT("Failed to build Gradle project into package (result code: {0}). See log for more info."), result);
+        data.Error(String::Format(TEXT("Failed to build Gradle project into package (result code: {0}). See log for more info."), result));
         return true;
     }
 

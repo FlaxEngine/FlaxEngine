@@ -409,17 +409,15 @@ public:
 
 public:
 
-    void Error(const String& msg);
+    void Error(const StringView& msg);
+
+    void Error(const String& msg)
+    {
+        Error(StringView(msg));
+    }
 
     void Error(const Char* msg)
     {
-        Error(String(msg));
-    }
-
-    template<typename... Args>
-    void Error(const Char* format, const Args& ... args)
-    {
-        const String msg = String::Format(format, args...);
-        Error(msg);
+        Error(StringView(msg));
     }
 };

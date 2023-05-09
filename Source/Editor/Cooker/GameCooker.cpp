@@ -343,7 +343,7 @@ void CookingData::AddRootEngineAsset(const String& internalPath)
     }
 }
 
-void CookingData::Error(const String& msg)
+void CookingData::Error(const StringView& msg)
 {
     LOG_STR(Error, msg);
 }
