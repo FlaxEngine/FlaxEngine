@@ -18,8 +18,7 @@ namespace fmt_flax
     FORCE_INLINE static void format(fmt::basic_memory_buffer<T, fmt::inline_buffer_size, std_flax::allocator<T>>& buffer, const T* format, const Args& ... args)
     {
         typedef fmt::buffer_context<T> context;
-        fmt::format_arg_store<context, Args...> as{ args... };
-        fmt::internal::vformat_to(buffer, fmt::to_string_view(format), fmt::basic_format_args<context>(as));
+        fmt::detail::vformat_to(buffer, fmt::basic_string_view<T>(format), fmt::make_format_args<context>(args...), {});
     }
 }
 
@@ -37,7 +36,7 @@ namespace fmt_flax
             template<typename FormatContext> \
             auto format(const type& v, FormatContext& ctx) -> decltype(ctx.out()) \
             { \
-                return format_to(ctx.out(), TEXT(formatText), ##__VA_ARGS__); \
+                return fmt::format_to(ctx.out(), basic_string_view<Char>(TEXT(formatText)), ##__VA_ARGS__); \
             } \
         }; \
     }
@@ -57,7 +56,7 @@ namespace fmt_flax
             auto format(const type& v, FormatContext& ctx) -> decltype(ctx.out()) \
             { \
                 const String str = v.ToString(); \
-                return fmt::internal::copy(str.Get(), str.Get() + str.Length(), ctx.out()); \
+                return fmt::detail::copy_str<Char>(str.Get(), str.Get() + str.Length(), ctx.out()); \
             } \
         }; \
     }

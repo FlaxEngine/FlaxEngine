@@ -34,7 +34,7 @@ TEST_CASE("Localization")
         auto str2 = String::Format(TEXT("1: {}, 2: {}, 3: {}"), 1, 2, 3);
         CHECK(str2 == TEXT("1: 1, 2: 2, 3: 3"));
         auto str3 = String::Format(TEXT("vector: {0}"), Vector3(1, 2, 3));
-        CHECK(str3 == TEXT("vector: X:1.0 Y:2.0 Z:3.0"));
+        CHECK(str3 == TEXT("vector: X:1 Y:2 Z:3"));
         String str = TEXT("hello");
         auto str4 = String::Format(TEXT("string: {0}"), str.ToString());
         CHECK(str4 == TEXT("string: hello"));
@@ -44,7 +44,7 @@ TEST_CASE("Localization")
         // Custom type formatting
         MyStruct data = { Vector2(1, 2), 10.0f };
         auto str6 = String::Format(TEXT("{0}"), data);
-        CHECK(str6 == TEXT("Direction:X:1.0 Y:2.0 Speed:10.0"));
+        CHECK(str6 == TEXT("Direction:X:1 Y:2 Speed:10"));
 
         // Named arguments formatting
         String text1 = String::Format(TEXT("text: {0}, {1}"), TEXT("one"), TEXT("two"));

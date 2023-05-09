@@ -1239,7 +1239,7 @@ namespace fmt
         template<typename FormatContext>
         auto format(const String& v, FormatContext& ctx) -> decltype(ctx.out())
         {
-            return fmt::internal::copy(v.Get(), v.Get() + v.Length(), ctx.out());
+            return fmt::detail::copy_str<Char>(v.Get(), v.Get() + v.Length(), ctx.out());
         }
     };
 }
@@ -1810,7 +1810,7 @@ namespace fmt
         template<typename FormatContext>
         auto format(const StringAnsi& v, FormatContext& ctx) -> decltype(ctx.out())
         {
-            return fmt::internal::copy(v.Get(), v.Get() + v.Length(), ctx.out());
+            return fmt::detail::copy_str<char>(v.Get(), v.Get() + v.Length(), ctx.out());
         }
     };
 }

@@ -309,7 +309,7 @@ namespace fmt
         {
             int32 year, month, day;
             v.GetDate(year, month, day);
-            return format_to(ctx.out(), TEXT("{0}-{1:0>2}-{2:0>2} {3:0>2}:{4:0>2}:{5:0>2}"), year, month, day, v.GetHour(), v.GetMinute(), v.GetSecond());
+            return fmt::format_to(ctx.out(), basic_string_view<Char>(TEXT("{0}-{1:0>2}-{2:0>2} {3:0>2}:{4:0>2}:{5:0>2}")), year, month, day, v.GetHour(), v.GetMinute(), v.GetSecond());
         }
     };
 }
