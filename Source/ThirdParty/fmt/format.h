@@ -1546,6 +1546,7 @@ FMT_CONSTEXPR inline fp get_cached_power(int min_exponent,
 }
 
 #ifndef _MSC_VER
+#include <stdio.h>
 #  define FMT_SNPRINTF snprintf
 #else
 FMT_API auto fmt_snprintf(char* buf, size_t size, const char* fmt, ...) -> int;
@@ -1749,6 +1750,8 @@ inline auto find_escape(const char* begin, const char* end)
   \endrst
  */
 #define FMT_STRING(s) FMT_STRING_IMPL(s, fmt::detail::compile_string, )
+#else
+#define FMT_STRING(s) s
 #endif
 
 template <size_t width, typename Char, typename OutputIt>
@@ -3333,7 +3336,13 @@ template <typename T> struct formatter<group_digits_view<T>> : formatter<T> {
         specs_.precision, specs_.precision_ref, ctx);
     return detail::write_int_localized(
         ctx.out(), static_cast<detail::uint64_or_128_t<T>>(t.value), 0, specs_,
-        detail::digit_grouping<char>({"\3", ','}));
+        detail::digit_grouping<char>(
+#if FMT_USE_LOCALE_GROUPING
+            {"\3", ','}
+#else
+            {','}
+#endif
+    ));
   }
 };
 

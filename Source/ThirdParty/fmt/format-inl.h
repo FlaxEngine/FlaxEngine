@@ -68,10 +68,6 @@ template <typename Char> FMT_FUNC Char decimal_point_impl(locale_ref) {
 #endif
 }  // namespace detail
 
-#if !FMT_MSC_VERSION
-FMT_API FMT_FUNC format_error::~format_error() noexcept = default;
-#endif
-
 namespace detail {
 
 template <typename F> inline bool operator==(basic_fp<F> x, basic_fp<F> y) {
@@ -1760,7 +1756,7 @@ int format_float(Float value, int precision, float_specs specs, buffer<char>& bu
     // This is based on log10(value) == log2(value) / log2(10) and approximation
     // of log2(value) by e + num_fraction_bits idea from double-conversion.
     exp = static_cast<int>(
-        std::ceil((f.e + count_digits<1>(f.f) - 1) * inv_log2_10 - 1e-10));
+        ::ceil((f.e + count_digits<1>(f.f) - 1) * inv_log2_10 - 1e-10));
     dragon_flags = dragon::fixup;
   } else if (!is_constant_evaluated() && precision < 0) {
     // Use Dragonbox for the shortest format.
@@ -1858,7 +1854,7 @@ template <> struct formatter<detail::bigint> {
 
 FMT_FUNC detail::utf8_to_utf16::utf8_to_utf16(string_view s) {
   for_each_codepoint(s, [this](uint32_t cp, string_view) {
-    if (cp == invalid_code_point) FMT_THROW(std::runtime_error("invalid utf8"));
+    if (cp == invalid_code_point) FMT_THROW("invalid utf8");
     if (cp <= 0xFFFF) {
       buffer_.push_back(static_cast<wchar_t>(cp));
     } else {

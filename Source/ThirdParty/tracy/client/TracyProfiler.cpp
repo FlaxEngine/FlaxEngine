@@ -369,8 +369,10 @@ static int64_t SetupHwTimer()
 #endif
     }
 #endif
+#else
+static int64_t SetupHwTimer()
+{
 #endif
-
     return Profiler::GetTime();
 }
 #else

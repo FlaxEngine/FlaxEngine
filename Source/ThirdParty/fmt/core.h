@@ -8,7 +8,18 @@
 #ifndef FMT_CORE_H_
 #define FMT_CORE_H_
 
-// Custom configuration for Flax
+/*
+Customizations done to fmt lib:
+- Expose fmt within Flax DLL
+- Use Flax utilities instead of std (eg. string length util, assert)
+- Remove: dynamic args, chrono, colors, printf, ranges, os
+- Remove file-related api
+- Reduce `std` library usage (including `std::string`)
+- Disable literal-based api
+- Disable compile-time formatting
+- Move `bigint`, `format_float` to internal api
+- Remove `fmt::ptr`, `fmt::vformat_to_n`, `fmt::print`, `fmt::underlying`, `fmt::to_string`, `fmt::join`
+*/
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/StringUtils.h"
 #include "Engine/Core/Templates.h"
