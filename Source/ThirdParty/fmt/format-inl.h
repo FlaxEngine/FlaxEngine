@@ -10,7 +10,6 @@
 
 #include "format.h"
 
-#include <algorithm>
 #include <memory>
 #include <cctype>
 #include <cerrno>  // errno
