@@ -191,7 +191,7 @@ void EditorAnalytics::EndSession()
 
     // End session
     {
-        StringAnsi sessionLength = StringAnsi::Format("{0}", (int32)(DateTime::Now() - SessionStartTime).GetTotalSeconds());
+        StringAnsi sessionLength = StringAnsi::Format("{}", (int32)(DateTime::Now() - SessionStartTime).GetTotalSeconds());
         const Pair<const char*, const char*> params[1] =
         {
             { "Duration", sessionLength.Get() },

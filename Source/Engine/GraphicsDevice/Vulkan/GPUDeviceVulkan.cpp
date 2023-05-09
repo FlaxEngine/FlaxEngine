@@ -1899,13 +1899,14 @@ bool GPUDeviceVulkan::Init()
                 {
                     dataPtr++;
                     const int32 version = *dataPtr++;
-                    if (version == VK_PIPELINE_CACHE_HEADER_VERSION_ONE)
+                    const int32 versionExpected = VK_PIPELINE_CACHE_HEADER_VERSION_ONE;
+                    if (version == versionExpected)
                     {
                         dataPtr += VK_UUID_SIZE / sizeof(int32);
                     }
                     else
                     {
-                        LOG(Warning, "Bad validation cache file, version: {0}, expected: {1}", version, VK_PIPELINE_CACHE_HEADER_VERSION_ONE);
+                        LOG(Warning, "Bad validation cache file, version: {0}, expected: {1}", version, versionExpected);
                         data.Clear();
                     }
                 }

@@ -600,7 +600,7 @@ bool CollisionCooking::CookConvexMesh(CookingInput& input, BytesContainer& outpu
     PxConvexMeshCookingResult::Enum result;
     if (!cooking->cookConvexMesh(desc, outputStream, &result))
     {
-        LOG(Warning, "Convex Mesh cooking failed. Error code: {0}, Input vertices count: {1}", result, input.VertexCount);
+        LOG(Warning, "Convex Mesh cooking failed. Error code: {0}, Input vertices count: {1}", (int32)result, input.VertexCount);
         return true;
     }
 
@@ -634,7 +634,7 @@ bool CollisionCooking::CookTriangleMesh(CookingInput& input, BytesContainer& out
     PxTriangleMeshCookingResult::Enum result;
     if (!cooking->cookTriangleMesh(desc, outputStream, &result))
     {
-        LOG(Warning, "Triangle Mesh cooking failed. Error code: {0}, Input vertices count: {1}, indices count: {2}", result, input.VertexCount, input.IndexCount);
+        LOG(Warning, "Triangle Mesh cooking failed. Error code: {0}, Input vertices count: {1}, indices count: {2}", (int32)result, input.VertexCount, input.IndexCount);
         return true;
     }
 

@@ -329,10 +329,10 @@ bool GPUDeviceDX12::Init()
     // Spawn some info about the hardware
     D3D12_FEATURE_DATA_D3D12_OPTIONS options;
     VALIDATE_DIRECTX_RESULT(_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options)));
-    LOG(Info, "Tiled Resources Tier: {0}", options.TiledResourcesTier);
-    LOG(Info, "Resource Binding Tier: {0}", options.ResourceBindingTier);
-    LOG(Info, "Conservative Rasterization Tier: {0}", options.ConservativeRasterizationTier);
-    LOG(Info, "Resource Heap Tier: {0}", options.ResourceHeapTier);
+    LOG(Info, "Tiled Resources Tier: {0}", (int32)options.TiledResourcesTier);
+    LOG(Info, "Resource Binding Tier: {0}", (int32)options.ResourceBindingTier);
+    LOG(Info, "Conservative Rasterization Tier: {0}", (int32)options.ConservativeRasterizationTier);
+    LOG(Info, "Resource Heap Tier: {0}", (int32)options.ResourceHeapTier);
 
     // Init device limits
     {
