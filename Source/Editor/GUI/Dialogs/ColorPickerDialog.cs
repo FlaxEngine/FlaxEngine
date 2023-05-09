@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI.Input;
+using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using System;
@@ -212,7 +213,15 @@ namespace FlaxEditor.GUI.Dialogs
 
         private void OnEyedropColor()
         {
-            Editor.Log("Color: " + Screenshot.GetPixelAt(7, 6).ToString());
+            Float2 mousePosition = new Float2(0, 0);
+            foreach (EditorWindow window in Editor.Instance.Windows.Windows)
+            {
+                if (window.IsMouseOver)
+                {
+                    mousePosition = window.RootWindow.MousePosition;
+                }
+            }
+            Editor.Log("Color: " + Screenshot.GetPixelAt(Mathf.FloorToInt(mousePosition.X), Mathf.FloorToInt(mousePosition.Y)).ToString());
         }
 
         private void OnRGBAChanged()

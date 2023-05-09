@@ -174,10 +174,11 @@ bool GetPixelData::Run()
     TextureMipData *mipData = _data.GetData(0, 0);
     Array<Color32> pixels;
     mipData->GetPixels(pixels, _data.Width, _data.Height, _data.Format);
-
-    _color = pixels[(y * _data.Width) + x];
-    LOG(Warning, "really real");
-    LOG(Warning, "Color: {0} {1} {2}", _color.R, _color.B, _color.G);
+    
+    LOG(Warning, "{0}, {1} ({2} at {3})", x, y, pixels.Count(), (y * _data.Width) + x);
+    //_color = pixels[(y * _data.Width) + x];
+    //LOG(Warning, "really real");
+    //LOG(Warning, "Color: {0} {1} {2}", _color.R, _color.B, _color.G);
     return false;
 }
 
