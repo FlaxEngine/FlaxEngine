@@ -151,6 +151,7 @@ ExportAssetResult AssetExporters::ExportSkinnedModel(ExportAssetContext& context
     // Extract all meshes
     const auto& lod = asset->LODs[lodIndex];
     int32 vertexStart = 1; // OBJ counts vertices from 1 not from 0
+    byte version = stream.ReadByte();
     for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
     {
         auto& mesh = lod.Meshes[meshIndex];
