@@ -47,4 +47,6 @@ API_CLASS(Static) class FLAXENGINE_API Screenshot
     /// <param name="y">The y coordinate to read.</param>
     /// <returns>The color </returns>
     API_FUNCTION() static Color32 GetPixelAt(int32 x, int32 y);
+
+    API_EVENT() static Delegate<Color32> PixelReadDelegate;
 };

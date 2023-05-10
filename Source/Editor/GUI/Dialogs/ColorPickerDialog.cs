@@ -112,6 +112,9 @@ namespace FlaxEditor.GUI.Dialogs
             _onChanged = colorChanged;
             _onClosed = pickerClosed;
 
+            // Register the event for eyedropper pixels being read.
+            Screenshot.PixelReadDelegate += PixelDataRead;
+
             // Selector
             _cSelector = new ColorSelectorWithSliders(180, 18)
             {
@@ -211,17 +214,16 @@ namespace FlaxEditor.GUI.Dialogs
             SelectedColor = initialValue;
         }
 
+        private void PixelDataRead(Color32 pixel_color)
+        {
+	        Color color = pixel_color;
+	        Editor.Log(string.Format("Color: {0} {1} {2}", color.R, color.G, color.B));
+        }
+
         private void OnEyedropColor()
         {
-            Float2 mousePosition = new Float2(0, 0);
-            foreach (EditorWindow window in Editor.Instance.Windows.Windows)
-            {
-                if (window.IsMouseOver)
-                {
-                    mousePosition = window.RootWindow.MousePosition;
-                }
-            }
-            Editor.Log("Color: " + Screenshot.GetPixelAt(Mathf.FloorToInt(mousePosition.X), Mathf.FloorToInt(mousePosition.Y)).ToString());
+	        Float2 mousePosition = FlaxEngine.Input.MouseScreenPosition;
+	        Screenshot.GetPixelAt(Mathf.FloorToInt(mousePosition.X), Mathf.FloorToInt(mousePosition.Y));
         }
 
         private void OnRGBAChanged()

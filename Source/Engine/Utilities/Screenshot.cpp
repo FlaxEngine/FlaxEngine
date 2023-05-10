@@ -130,7 +130,7 @@ void CaptureScreenshot::OnFail()
     ThreadPoolTask::OnFail();
 }
 
-
+Delegate<Color32> Screenshot::PixelReadDelegate;
 
 /// <summary>
 /// Capture screenshot helper
@@ -176,9 +176,12 @@ bool GetPixelData::Run()
     mipData->GetPixels(pixels, _data.Width, _data.Height, _data.Format);
     
     LOG(Warning, "{0}, {1} ({2} at {3})", x, y, pixels.Count(), (y * _data.Width) + x);
-    //_color = pixels[(y * _data.Width) + x];
-    //LOG(Warning, "really real");
-    //LOG(Warning, "Color: {0} {1} {2}", _color.R, _color.B, _color.G);
+    _color = pixels[(y * _data.Width) + x];
+    LOG(Warning, "really real");
+    LOG(Warning, "Color: R: {0}, G: {1}, B: {2}", _color.R, _color.G, _color.B);
+
+    LOG(Warning, "Bound functions: {0}", Screenshot::PixelReadDelegate.Count());
+    Screenshot::PixelReadDelegate(_color);
     return false;
 }
 
@@ -314,8 +317,8 @@ Color32 Screenshot::GetPixelAt(int32 x, int32 y) {
 
     Task* downloadTask = swapChain->DownloadDataAsync(getPixelTask->GetData());
     downloadTask->ContinueWith(getPixelTask);
+    LOG(Warning, "Started download task. real");
     downloadTask->Start();
 
-    //downloadTask->Wait(750);
     return getPixelTask->GetColor();
 }
