@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using FlaxEditor.GUI;
 using FlaxEngine;
@@ -15,7 +16,7 @@ namespace FlaxEditor.Windows.Profiler
     /// <seealso cref="FlaxEditor.Windows.Profiler.ProfilerMode" />
     internal sealed class MemoryGPU : ProfilerMode
     {
-        private struct Resource
+        private class Resource
         {
             public string Name;
             public string Tooltip;
@@ -126,10 +127,11 @@ namespace FlaxEditor.Windows.Profiler
             for (int i = 0; i < resources.Length; i++)
             {
                 var gpuResource = gpuResources[i];
+                ref var resource = ref resources[i];
 
                 // Try to reuse cached resource info
                 var gpuResourceId = gpuResource.ID;
-                if (!_resourceCache.TryGetValue(gpuResourceId, out var resource))
+                if (!_resourceCache.TryGetValue(gpuResourceId, out resource))
                 {
                     resource = new Resource
                     {
@@ -194,9 +196,7 @@ namespace FlaxEditor.Windows.Profiler
                 resource.MemoryUsage = gpuResource.MemoryUsage;
                 if (resource.MemoryUsage == 1)
                     resource.MemoryUsage = 0; // Sometimes GPU backend fakes memory usage as 1 to mark as allocated but not resided in actual GPU memory
-                resources[i] = resource;
             }
-            Array.Sort(resources, SortResources);
             if (_resources == null)
                 _resources = new SamplesBuffer<Resource[]>();
             _resources.Add(resources);
@@ -240,11 +240,6 @@ namespace FlaxEditor.Windows.Profiler
             base.OnDestroy();
         }
 
-        private static int SortResources(Resource a, Resource b)
-        {
-            return (int)(b.MemoryUsage - a.MemoryUsage);
-        }
-
         private void UpdateTable()
         {
             _table.IsLayoutLocked = true;
@@ -278,12 +273,13 @@ namespace FlaxEditor.Windows.Profiler
             if (resources == null || resources.Length == 0)
                 return;
 
+            var resourcesOrdered = resources.OrderByDescending(x => x.MemoryUsage);
+
             // Add rows
             var rowColor2 = Style.Current.Background * 1.4f;
-            for (int i = 0; i < resources.Length; i++)
+            int rowIndex = 0;
+            foreach (var e in resourcesOrdered)
             {
-                ref var e = ref resources[i];
-
                 ClickableRow row;
                 if (_tableRowsCache.Count != 0)
                 {
@@ -314,8 +310,9 @@ namespace FlaxEditor.Windows.Profiler
 
                 // Add row to the table
                 row.Width = _table.Width;
-                row.BackgroundColor = i % 2 == 0 ? rowColor2 : Color.Transparent;
+                row.BackgroundColor = rowIndex % 2 == 0 ? rowColor2 : Color.Transparent;
                 row.Parent = _table;
+                rowIndex++;
             }
         }
 

@@ -8,6 +8,7 @@ using FlaxEngine;
 using FlaxEngine.Json;
 using FlaxEngine.GUI;
 using FlaxEditor.GUI.ContextMenu;
+using System.Linq;
 
 namespace FlaxEditor.Windows.Profiler
 {
@@ -17,7 +18,7 @@ namespace FlaxEditor.Windows.Profiler
     /// <seealso cref="FlaxEditor.Windows.Profiler.ProfilerMode" />
     internal sealed class Assets : ProfilerMode
     {
-        private struct Resource
+        private class Resource
         {
             public string Name;
             public string TypeName;
@@ -120,19 +121,18 @@ namespace FlaxEditor.Windows.Profiler
 
             // Capture current assets usage info
             var assets = FlaxEngine.Content.Assets;
-            var sb = _stringBuilder;
             var resources = new Resource[assets.Length];
-            var contentDatabase = Editor.Instance.ContentDatabase;
             ulong totalMemoryUsage = 0;
             for (int i = 0; i < resources.Length; i++)
             {
                 var asset = assets[i];
+                ref var resource = ref resources[i];
                 if (!asset)
                     continue;
 
                 // Try to reuse cached resource info
                 var assetId = asset.ID;
-                if (!_resourceCache.TryGetValue(assetId, out var resource))
+                if (!_resourceCache.TryGetValue(assetId, out resource))
                 {
                     resource = new Resource
                     {
@@ -154,12 +154,10 @@ namespace FlaxEditor.Windows.Profiler
                 }
 
                 resource.MemoryUsage = asset.MemoryUsage;
-                totalMemoryUsage += resource.MemoryUsage;
                 resource.ReferencesCount = asset.ReferencesCount;
-                resources[i] = resource;
+                totalMemoryUsage += resource.MemoryUsage;
             }
             _memoryUsageChart.AddSample((float)totalMemoryUsage);
-            Array.Sort(resources, SortResources);
             if (_resources == null)
                 _resources = new SamplesBuffer<Resource[]>();
             _resources.Add(resources);
@@ -186,11 +184,6 @@ namespace FlaxEditor.Windows.Profiler
             _stringBuilder?.Clear();
 
             base.OnDestroy();
-        }
-
-        private static int SortResources(Resource a, Resource b)
-        {
-            return (int)(b.MemoryUsage - a.MemoryUsage);
         }
 
         private void UpdateTable()
@@ -226,12 +219,13 @@ namespace FlaxEditor.Windows.Profiler
             if (resources == null || resources.Length == 0)
                 return;
 
+            var resourcesOrdered = resources.OrderByDescending(x => x.MemoryUsage);
+
             // Add rows
             var rowColor2 = Style.Current.Background * 1.4f;
-            for (int i = 0; i < resources.Length; i++)
+            int rowIndex = 0;
+            foreach (var e in resourcesOrdered)
             {
-                ref var e = ref resources[i];
-
                 ClickableRow row;
                 if (_tableRowsCache.Count != 0)
                 {
@@ -257,8 +251,9 @@ namespace FlaxEditor.Windows.Profiler
 
                 // Add row to the table
                 row.Width = _table.Width;
-                row.BackgroundColor = i % 2 == 0 ? rowColor2 : Color.Transparent;
+                row.BackgroundColor = rowIndex % 2 == 0 ? rowColor2 : Color.Transparent;
                 row.Parent = _table;
+                rowIndex++;
             }
         }
 
