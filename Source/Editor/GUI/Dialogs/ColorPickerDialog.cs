@@ -37,6 +37,7 @@ namespace FlaxEditor.GUI.Dialogs
         private Color _value;
         private bool _disableEvents;
         private bool _useDynamicEditing;
+        private bool _activeEyedropper;
         private ColorValueBox.ColorPickerEvent _onChanged;
         private ColorValueBox.ColorPickerClosedEvent _onClosed;
 
@@ -108,6 +109,7 @@ namespace FlaxEditor.GUI.Dialogs
         {
             _initialValue = initialValue;
             _useDynamicEditing = useDynamicEditing;
+            _activeEyedropper = false;
             _value = Color.Transparent;
             _onChanged = colorChanged;
             _onClosed = pickerClosed;
@@ -221,10 +223,16 @@ namespace FlaxEditor.GUI.Dialogs
 
         private void OnEyedropStart()
         {
-            Color32 pixelColor = GetEyedropColor();
-            Editor.Log(string.Format("Pixel Color: ({0}, {1}, {2})", pixelColor.R, pixelColor.G, pixelColor.B));
+            _activeEyedropper = true;
         }
 
+        private void UpdateEyedrop()
+        {
+            Color32 pixelColor = GetEyedropColor();
+            Editor.Log(string.Format("Pixel Color: ({0}, {1}, {2})", pixelColor.R, pixelColor.G, pixelColor.B));
+
+            SelectedColor = new Color(pixelColor.R, pixelColor.G, pixelColor.B);
+        }
 
         private void OnRGBAChanged()
         {
@@ -257,6 +265,10 @@ namespace FlaxEditor.GUI.Dialogs
         {
             base.Update(deltaTime);
 
+            if (_activeEyedropper)
+            {
+                UpdateEyedrop();
+            }
         }
 
         /// <inheritdoc />
