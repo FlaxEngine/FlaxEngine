@@ -97,6 +97,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the size of the box.
         /// </summary>
+        [EditorOrder(20)]
         public float BoxSize
         {
             get => _boxSize;
