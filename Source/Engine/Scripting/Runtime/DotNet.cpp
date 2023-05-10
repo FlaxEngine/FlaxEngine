@@ -442,8 +442,7 @@ void MCore::GC::Collect(int32 generation, MGCCollectionMode collectionMode, bool
 
 int32 MCore::GC::MaxGeneration()
 {
-    static void* GCMaxGenerationPtr = GetStaticMethodPointer(TEXT("GCMaxGeneration"));
-    static int32 maxGeneration = CallStaticMethod<int32>(GCMaxGenerationPtr);
+    static int32 maxGeneration = CallStaticMethod<int32>(GetStaticMethodPointer(TEXT("GCMaxGeneration")));
     return maxGeneration;
 }
 
