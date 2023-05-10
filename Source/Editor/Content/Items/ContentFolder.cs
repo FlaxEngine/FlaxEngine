@@ -122,6 +122,9 @@ namespace FlaxEditor.Content
         public override bool Exists => Directory.Exists(Path);
 
         /// <inheritdoc />
+        public override string TypeDescription => "Folder";
+
+        /// <inheritdoc />
         public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.Folder128;
 
         /// <inheritdoc />
@@ -136,15 +139,10 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override void UpdateTooltipText()
+        protected override void OnBuildTooltipText(StringBuilder sb)
         {
-            string fileDescription = "Folder";
-            StringBuilder sb = new StringBuilder();
-
-            sb.Append("Type: ").Append(fileDescription).AppendLine();
+            sb.Append("Type: ").Append(TypeDescription).AppendLine();
             sb.Append("Path: ").Append(Utilities.Utils.GetAssetNamePathWithExt(Path)).AppendLine();
-
-            TooltipText = sb.ToString();
         }
 
         /// <inheritdoc />
