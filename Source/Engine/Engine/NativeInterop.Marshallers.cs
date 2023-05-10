@@ -141,7 +141,7 @@ namespace FlaxEngine.Interop
 
         public static class ManagedToNative
         {
-            public static IntPtr ConvertToUnmanaged(FlaxEngine.Object managed) => (object)managed != null ? ManagedHandle.ToIntPtr(managed) : IntPtr.Zero;
+            public static IntPtr ConvertToUnmanaged(FlaxEngine.Object managed) => Unsafe.As<object>(managed) != null ? ManagedHandle.ToIntPtr(managed) : IntPtr.Zero;
         }
     }
 
