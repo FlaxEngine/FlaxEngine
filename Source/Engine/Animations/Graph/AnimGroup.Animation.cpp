@@ -747,9 +747,6 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     {
         const auto anim = node->Assets[0].As<Animation>();
         auto& bucket = context.Data->State[node->BucketIndex].Animation;
-        const float speed = (float)tryGetValue(node->GetBox(5), node->Values[1]);
-        const bool loop = (bool)tryGetValue(node->GetBox(6), node->Values[2]);
-        const float startTimePos = (float)tryGetValue(node->GetBox(7), node->Values[3]);
 
         switch (box->ID)
         {
@@ -757,6 +754,9 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         case 0:
         {
             ANIM_GRAPH_PROFILE_EVENT("Animation");
+            const float speed = (float)tryGetValue(node->GetBox(5), node->Values[1]);
+            const bool loop = (bool)tryGetValue(node->GetBox(6), node->Values[2]);
+            const float startTimePos = (float)tryGetValue(node->GetBox(7), node->Values[3]);
             const float length = anim ? anim->GetLength() : 0.0f;
 
             // Calculate new time position
@@ -776,14 +776,20 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         }
         // Normalized Time
         case 1:
+        {
+            const float startTimePos = (float)tryGetValue(node->GetBox(7), node->Values[3]);
             value = startTimePos + bucket.TimePosition;
             if (anim && anim->IsLoaded())
                 value.AsFloat /= anim->GetLength();
             break;
+        }
         // Time
         case 2:
+        {
+            const float startTimePos = (float)tryGetValue(node->GetBox(7), node->Values[3]);
             value = startTimePos + bucket.TimePosition;
             break;
+        }
         // Length
         case 3:
             value = anim ? anim->GetLength() : 0.0f;
