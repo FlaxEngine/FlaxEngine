@@ -169,13 +169,15 @@ float GetAnimPos(float& timePos, float startTimePos, bool loop, float length)
         {
             // Animation looped
             result = Math::Mod(result, length);
+
+            // Remove start time offset to properly loop from animation start during the next frame
+            timePos = result - startTimePos;
         }
         else
         {
             // Animation ended
-            result = length;
+            timePos = result = length;
         }
-        timePos = result;
     }
     return result;
 }
