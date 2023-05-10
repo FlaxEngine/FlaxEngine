@@ -1030,6 +1030,7 @@ namespace FlaxEditor.Utilities
             return path;
         }
 
+        /// <summary>
         /// Gets the asset name relative to the project root folder (without asset file extension)
         /// </summary>
         /// <param name="path">The asset path.</param>
