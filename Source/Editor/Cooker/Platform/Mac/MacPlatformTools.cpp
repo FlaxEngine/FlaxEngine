@@ -242,7 +242,7 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
     const int32 result = Platform::RunProcess(dmgCommand, data.OriginalOutputPath);
     if (result != 0)
     {
-        data.Error(TEXT("Failed to package app (result code: {0}). See log for more info."), result);
+        data.Error(String::Format(TEXT("Failed to package app (result code: {0}). See log for more info."), result));
         return true;
     }
     // TODO: sign dmg
