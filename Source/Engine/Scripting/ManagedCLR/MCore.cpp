@@ -212,18 +212,19 @@ MType* MEvent::GetType() const
 void MException::Log(const LogType type, const Char* target)
 {
     // Log inner exceptions chain
-    auto inner = InnerException;
+    MException* inner = InnerException;
     while (inner)
     {
-        auto stackTrace = inner->StackTrace.HasChars() ? *inner->StackTrace : TEXT("<empty>");
+        const Char* stackTrace = inner->StackTrace.HasChars() ? *inner->StackTrace : TEXT("<empty>");
         Log::Logger::Write(LogType::Warning, String::Format(TEXT("Inner exception. {0}\nStack strace:\n{1}\n"), inner->Message, stackTrace));
         inner = inner->InnerException;
     }
 
     // Send stack trace only to log file
-    auto stackTrace = StackTrace.HasChars() ? *StackTrace : TEXT("<empty>");
-    Log::Logger::Write(LogType::Warning, String::Format(TEXT("Exception has been thrown during {0}. {1}\nStack strace:\n{2}"), target, Message, stackTrace));
-    Log::Logger::Write(type, String::Format(TEXT("Exception has been thrown during {0}.\n{1}"), target, Message));
+    const Char* stackTrace = StackTrace.HasChars() ? *StackTrace : TEXT("<empty>");
+    const String info = target && *target ? String::Format(TEXT("Exception has been thrown during {0}."), target) : TEXT("Exception has been thrown.");
+    Log::Logger::Write(LogType::Warning, String::Format(TEXT("{0} {1}\nStack strace:\n{2}"), info, Message, stackTrace));
+    Log::Logger::Write(type, String::Format(TEXT("{0}\n{1}"), info, Message));
 }
 
 MType* MProperty::GetType() const
