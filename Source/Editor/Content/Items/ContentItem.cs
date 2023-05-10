@@ -2,6 +2,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using FlaxEditor.Content.GUI;
 using FlaxEditor.GUI.Drag;
 using FlaxEngine;
