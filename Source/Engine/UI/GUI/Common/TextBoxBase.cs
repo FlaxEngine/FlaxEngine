@@ -243,42 +243,43 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets a value indicating whether you can scroll the text in the text box (eg. with a mouse wheel).
         /// </summary>
+        [EditorOrder(41)]
         public bool IsMultilineScrollable { get; set; } = true;
 
         /// <summary>
         /// Gets or sets textbox background color when the control is selected (has focus).
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The textbox background color when the control is selected (has focus).")]
+        [EditorDisplay("Background Style"), EditorOrder(2001), Tooltip("The textbox background color when the control is selected (has focus)."), ExpandGroups]
         public Color BackgroundSelectedColor { get; set; }
 
         /// <summary>
         /// Gets or sets the color of the caret (Transparent if not used).
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The color of the caret (Transparent if not used).")]
+        [EditorDisplay("Caret Style"), EditorOrder(2020), Tooltip("The color of the caret (Transparent if not used)."), ExpandGroups]
         public Color CaretColor { get; set; }
 
         /// <summary>
         /// Gets or sets the speed of the caret flashing animation.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The speed of the caret flashing animation.")]
+        [EditorDisplay("Caret Style"), EditorOrder(2021), Tooltip("The speed of the caret flashing animation.")]
         public float CaretFlashSpeed { get; set; } = 6.0f;
 
         /// <summary>
         /// Gets or sets the speed of the selection background flashing animation.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The speed of the selection background flashing animation.")]
+        [EditorDisplay("Background Style"), EditorOrder(2002), Tooltip("The speed of the selection background flashing animation.")]
         public float BackgroundSelectedFlashSpeed { get; set; } = 6.0f;
 
         /// <summary>
         /// Gets or sets the color of the border (Transparent if not used).
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The color of the border (Transparent if not used).")]
+        [EditorDisplay("Border Style"), EditorOrder(2010), Tooltip("The color of the border (Transparent if not used)."), ExpandGroups]
         public Color BorderColor { get; set; }
 
         /// <summary>
         /// Gets or sets the color of the border when control is focused (Transparent if not used).
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The color of the border when control is focused (Transparent if not used)")]
+        [EditorDisplay("Border Style"), EditorOrder(2011), Tooltip("The color of the border when control is focused (Transparent if not used)")]
         public Color BorderSelectedColor { get; set; }
 
         /// <summary>
@@ -409,6 +410,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the selection range.
         /// </summary>
+        [EditorOrder(50)]
         public TextRange SelectionRange
         {
             get => new TextRange(SelectionLeft, SelectionRight);

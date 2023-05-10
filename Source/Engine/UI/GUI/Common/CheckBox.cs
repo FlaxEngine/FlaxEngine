@@ -108,33 +108,33 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Gets or sets the color of the checkbox icon.
-        /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
-        public Color ImageColor { get; set; }
-
-        /// <summary>
         /// Gets or sets the color of the border.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
+        [EditorDisplay("Border Style"), EditorOrder(2010), ExpandGroups]
         public Color BorderColor { get; set; }
 
         /// <summary>
         /// Gets or sets the border color when checkbox is hovered.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
+        [EditorDisplay("Border Style"), EditorOrder(2011)]
         public Color BorderColorHighlighted { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the color of the checkbox icon.
+        /// </summary>
+        [EditorDisplay("Image Style"), EditorOrder(2020), ExpandGroups]
+        public Color ImageColor { get; set; }
 
         /// <summary>
         /// Gets or sets the image used to render checkbox checked state.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The image used to render checkbox checked state.")]
+        [EditorDisplay("Image Style"), EditorOrder(2021), Tooltip("The image used to render checkbox checked state.")]
         public IBrush CheckedImage { get; set; }
 
         /// <summary>
         /// Gets or sets the image used to render checkbox intermediate state.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The image used to render checkbox intermediate state.")]
+        [EditorDisplay("Image Style"), EditorOrder(2022), Tooltip("The image used to render checkbox intermediate state.")]
         public IBrush IntermediateImage { get; set; }
 
         /// <summary>

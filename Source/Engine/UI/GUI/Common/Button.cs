@@ -42,7 +42,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the font used to draw button text.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
+        [EditorDisplay("Text Style"), EditorOrder(2022), ExpandGroups]
         public FontReference Font
         {
             get => _font;
@@ -52,14 +52,50 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("Custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.")]
+        [EditorDisplay("Text Style"), EditorOrder(2021), Tooltip("Custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.")]
         public MaterialBase TextMaterial { get; set; }
 
         /// <summary>
         /// Gets or sets the color used to draw button text.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
+        [EditorDisplay("Text Style"), EditorOrder(2020)]
         public Color TextColor;
+        
+        /// <summary>
+        /// Gets or sets the brush used for background drawing.
+        /// </summary>
+        [EditorDisplay("Background Style"), EditorOrder(1999), Tooltip("The brush used for background drawing."), ExpandGroups]
+        public IBrush BackgroundBrush { get; set; }
+
+        /// <summary>
+        /// Gets or sets the background color when button is highlighted.
+        /// </summary>
+        [EditorDisplay("Background Style"), EditorOrder(2001)]
+        public Color BackgroundColorHighlighted { get; set; }
+
+        /// <summary>
+        /// Gets or sets the background color when button is selected.
+        /// </summary>
+        [EditorDisplay("Background Style"), EditorOrder(2002)]
+        public Color BackgroundColorSelected { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the color of the border.
+        /// </summary>
+        [EditorDisplay("Border Style"), EditorOrder(2010), ExpandGroups]
+        public Color BorderColor { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the border color when button is highlighted.
+        /// </summary>
+        [EditorDisplay("Border Style"), EditorOrder(2011)]
+        public Color BorderColorHighlighted { get; set; }
+
+        /// <summary>
+        /// Gets or sets the border color when button is selected.
+        /// </summary>
+        [EditorDisplay("Border Style"), EditorOrder(2012)]
+        public Color BorderColorSelected { get; set; }
 
         /// <summary>
         /// Event fired when user clicks on the button.
@@ -80,42 +116,6 @@ namespace FlaxEngine.GUI
         /// Event fired when users mouse leaves the control.
         /// </summary>
         public event Action HoverEnd;
-
-        /// <summary>
-        /// Gets or sets the brush used for background drawing.
-        /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The brush used for background drawing.")]
-        public IBrush BackgroundBrush { get; set; }
-
-        /// <summary>
-        /// Gets or sets the color of the border.
-        /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
-        public Color BorderColor { get; set; }
-
-        /// <summary>
-        /// Gets or sets the background color when button is selected.
-        /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2010)]
-        public Color BackgroundColorSelected { get; set; }
-
-        /// <summary>
-        /// Gets or sets the border color when button is selected.
-        /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2020)]
-        public Color BorderColorSelected { get; set; }
-
-        /// <summary>
-        /// Gets or sets the background color when button is highlighted.
-        /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
-        public Color BackgroundColorHighlighted { get; set; }
-
-        /// <summary>
-        /// Gets or sets the border color when button is highlighted.
-        /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
-        public Color BorderColorHighlighted { get; set; }
 
         /// <summary>
         /// Gets a value indicating whether this button is being pressed (by mouse or touch).

@@ -94,48 +94,48 @@ namespace FlaxEngine.GUI
                 }
             }
         }
-
-        /// <summary>
-        /// Gets or sets the color used to draw header text.
-        /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
-        public Color HeaderTextColor;
-
-        /// <summary>
-        /// Gets or sets the color of the header.
-        /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
-        public Color HeaderColor { get; set; }
-
-        /// <summary>
-        /// Gets or sets the color of the header when mouse is over.
-        /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
-        public Color HeaderColorMouseOver { get; set; }
-
-        /// <summary>
-        /// Gets or sets the font used to render panel header text.
-        /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
-        public FontReference HeaderTextFont { get; set; }
-
-        /// <summary>
-        /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
-        /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("Custom material used to render the header text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.")]
-        public MaterialBase HeaderTextMaterial { get; set; }
-
+        
         /// <summary>
         /// Gets or sets a value indicating whether enable drop down icon drawing.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
+        [EditorOrder(1)]
         public bool EnableDropDownIcon { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether to enable containment line drawing,
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
+        [EditorOrder(2)]
         public bool EnableContainmentLines { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the color used to draw header text.
+        /// </summary>
+        [EditorDisplay("Header Style"), EditorOrder(2010), ExpandGroups]
+        public Color HeaderTextColor;
+
+        /// <summary>
+        /// Gets or sets the color of the header.
+        /// </summary>
+        [EditorDisplay("Header Style"), EditorOrder(2011)]
+        public Color HeaderColor { get; set; }
+
+        /// <summary>
+        /// Gets or sets the color of the header when mouse is over.
+        /// </summary>
+        [EditorDisplay("Header Style"), EditorOrder(2012)]
+        public Color HeaderColorMouseOver { get; set; }
+
+        /// <summary>
+        /// Gets or sets the font used to render panel header text.
+        /// </summary>
+        [EditorDisplay("Header Text Style"), EditorOrder(2020), ExpandGroups]
+        public FontReference HeaderTextFont { get; set; }
+
+        /// <summary>
+        /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
+        /// </summary>
+        [EditorDisplay("Header Text Style"), EditorOrder(2021), Tooltip("Custom material used to render the header text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.")]
+        public MaterialBase HeaderTextMaterial { get; set; }
 
         /// <summary>
         /// Occurs when mouse right-clicks over the header.
@@ -192,13 +192,13 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the image used to render drop panel drop arrow icon when panel is opened.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The image used to render drop panel drop arrow icon when panel is opened.")]
+        [EditorDisplay("Icon Style"), EditorOrder(2030), Tooltip("The image used to render drop panel drop arrow icon when panel is opened."), ExpandGroups]
         public IBrush ArrowImageOpened { get; set; }
 
         /// <summary>
         /// Gets or sets the image used to render drop panel drop arrow icon when panel is closed.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The image used to render drop panel drop arrow icon when panel is closed.")]
+        [EditorDisplay("Icon Style"), EditorOrder(2031), Tooltip("The image used to render drop panel drop arrow icon when panel is closed.")]
         public IBrush ArrowImageClosed { get; set; }
 
         /// <summary>

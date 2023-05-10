@@ -27,7 +27,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the text wrapping within the control bounds.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The text wrapping within the control bounds.")]
+        [EditorDisplay("Text Style"), EditorOrder(2023), Tooltip("The text wrapping within the control bounds.")]
         public TextWrapping Wrapping
         {
             get => _layout.TextWrapping;
@@ -37,31 +37,31 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the font.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
+        [EditorDisplay("Text Style"), EditorOrder(2024)]
         public FontReference Font { get; set; }
 
         /// <summary>
         /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("Custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.")]
+        [EditorDisplay("Text Style"), EditorOrder(2025), Tooltip("Custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.")]
         public MaterialBase TextMaterial { get; set; }
 
         /// <summary>
         /// Gets or sets the color of the text.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The color of the text.")]
+        [EditorDisplay("Text Style"), EditorOrder(2020), Tooltip("The color of the text."), ExpandGroups]
         public Color TextColor { get; set; }
 
         /// <summary>
         /// Gets or sets the color of the text.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The color of the watermark text.")]
+        [EditorDisplay("Text Style"), EditorOrder(2021), Tooltip("The color of the watermark text.")]
         public Color WatermarkTextColor { get; set; }
 
         /// <summary>
         /// Gets or sets the color of the selection (Transparent if not used).
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The color of the selection (Transparent if not used).")]
+        [EditorDisplay("Text Style"), EditorOrder(2022), Tooltip("The color of the selection (Transparent if not used).")]
         public Color SelectionColor { get; set; }
 
         /// <summary>
