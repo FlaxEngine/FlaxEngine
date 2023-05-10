@@ -104,8 +104,14 @@ struct MConverter<String>
 
     void ToManagedArray(MArray* result, const Span<String>& data)
     {
+        if (data.Length() == 0)
+            return;
+
+        Array<MObject*> objects;
+        objects.Resize(data.Length(), false);
         for (int32 i = 0; i < data.Length(); i++)
-            MCore::GC::WriteArrayRef(result, (MObject*)MUtils::ToString(data[i]), i);
+            objects[i] = (MObject*)MUtils::ToString(data[i]);
+        MCore::GC::WriteArrayRef(result, Span<MObject*>(objects.Get(), objects.Count()));
     }
 
     void ToNativeArray(Span<String>& result, const MArray* data)
@@ -132,8 +138,14 @@ struct MConverter<StringAnsi>
 
     void ToManagedArray(MArray* result, const Span<StringAnsi>& data)
     {
+        if (data.Length() == 0)
+            return;
+
+        Array<MObject*> objects;
+        objects.Resize(data.Length(), false);
         for (int32 i = 0; i < data.Length(); i++)
-            MCore::GC::WriteArrayRef(result, (MObject*)MUtils::ToString(data[i]), i);
+            objects[i] = (MObject*)MUtils::ToString(data[i]);
+        MCore::GC::WriteArrayRef(result, Span<MObject*>(objects.Get(), objects.Count()));
     }
 
     void ToNativeArray(Span<StringAnsi>& result, const MArray* data)
@@ -160,8 +172,14 @@ struct MConverter<StringView>
 
     void ToManagedArray(MArray* result, const Span<StringView>& data)
     {
+        if (data.Length() == 0)
+            return;
+
+        Array<MObject*> objects;
+        objects.Resize(data.Length(), false);
         for (int32 i = 0; i < data.Length(); i++)
-            MCore::GC::WriteArrayRef(result, (MObject*)MUtils::ToString(data[i]), i);
+            objects[i] = (MObject*)MUtils::ToString(data[i]);
+        MCore::GC::WriteArrayRef(result, Span<MObject*>(objects.Get(), objects.Count()));
     }
 
     void ToNativeArray(Span<StringView>& result, const MArray* data)
@@ -188,8 +206,14 @@ struct MConverter<Variant>
 
     void ToManagedArray(MArray* result, const Span<Variant>& data)
     {
+        if (data.Length() == 0)
+            return;
+
+        Array<MObject*> objects;
+        objects.Resize(data.Length(), false);
         for (int32 i = 0; i < data.Length(); i++)
-            MCore::GC::WriteArrayRef(result, MUtils::BoxVariant(data[i]), i);
+            objects[i] = MUtils::BoxVariant(data[i]);
+        MCore::GC::WriteArrayRef(result, Span<MObject*>(objects.Get(), objects.Count()));
     }
 
     void ToNativeArray(Span<Variant>& result, const MArray* data)
@@ -216,8 +240,14 @@ struct MConverter<T*, typename TEnableIf<TIsBaseOf<class ScriptingObject, T>::Va
 
     void ToManagedArray(MArray* result, const Span<T*>& data)
     {
+        if (data.Length() == 0)
+            return;
+
+        Array<MObject*> objects;
+        objects.Resize(data.Length(), false);
         for (int32 i = 0; i < data.Length(); i++)
-            MCore::GC::WriteArrayRef(result, data[i] ? data[i]->GetOrCreateManagedInstance() : nullptr, i);
+            objects[i] = data[i] ? data[i]->GetOrCreateManagedInstance() : nullptr;
+        MCore::GC::WriteArrayRef(result, Span<MObject*>(objects.Get(), objects.Count()));
     }
 
     void ToNativeArray(Span<T*>& result, const MArray* data)
@@ -239,8 +269,14 @@ struct MConverter<T, typename TEnableIf<TIsBaseOf<class ScriptingObject, T>::Val
 
     void ToManagedArray(MArray* result, const Span<T>& data)
     {
+        if (data.Length() == 0)
+            return;
+
+        Array<MObject*> objects;
+        objects.Resize(data.Length(), false);
         for (int32 i = 0; i < data.Length(); i++)
-            MCore::GC::WriteArrayRef(result, data[i].GetOrCreateManagedInstance(), i);
+            objects[i] = data[i].GetOrCreateManagedInstance();
+        MCore::GC::WriteArrayRef(result, Span<MObject*>(objects.Get(), objects.Count()));
     }
 };
 
@@ -263,8 +299,16 @@ struct MConverter<ScriptingObjectReference<T>>
 
     void ToManagedArray(MArray* result, const Span<ScriptingObjectReference<T>>& data)
     {
+        if (data.Length() == 0)
+            return;
+
+        Array<MObject*> objects;
+        objects.Resize(data.Length(), false);
         for (int32 i = 0; i < data.Length(); i++)
-            MCore::GC::WriteArrayRef(result, data[i].GetManagedInstance(), i);
+            objects[i] = data[i].GetManagedInstance();
+        MCore::GC::WriteArrayRef(result, Span<MObject*>(objects.Get(), objects.Count()));
+        //for (int32 i = 0; i < data.Length(); i++)
+        //    MCore::GC::WriteArrayRef(result, data[i].GetManagedInstance(), i);
     }
 
     void ToNativeArray(Span<ScriptingObjectReference<T>>& result, const MArray* data)
@@ -294,8 +338,14 @@ struct MConverter<AssetReference<T>>
 
     void ToManagedArray(MArray* result, const Span<AssetReference<T>>& data)
     {
+        if (data.Length() == 0)
+            return;
+
+        Array<MObject*> objects;
+        objects.Resize(data.Length(), false);
         for (int32 i = 0; i < data.Length(); i++)
-            MCore::GC::WriteArrayRef(result, data[i].GetManagedInstance(), i);
+            objects[i] = data[i].GetManagedInstance();
+        MCore::GC::WriteArrayRef(result, Span<MObject*>(objects.Get(), objects.Count()));
     }
 
     void ToNativeArray(Span<AssetReference<T>>& result, const MArray* data)

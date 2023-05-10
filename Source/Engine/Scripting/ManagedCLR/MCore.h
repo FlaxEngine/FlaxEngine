@@ -112,6 +112,7 @@ public:
         static void WriteRef(void* ptr, MObject* ref);
         static void WriteValue(void* dst, void* src, int32 count, const MClass* klass);
         static void WriteArrayRef(MArray* dst, MObject* ref, int32 index);
+        static void WriteArrayRef(MArray* dst, Span<MObject*> span);
 #if USE_NETCORE
         static void* AllocateMemory(int32 size, bool coTaskMem = false);
         static void FreeMemory(void* ptr, bool coTaskMem = false);

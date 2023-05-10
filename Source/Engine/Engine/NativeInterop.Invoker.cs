@@ -18,6 +18,8 @@ namespace FlaxEngine.Interop
         /// </summary>
         internal static class Invoker
         {
+            // TODO: Use .NET8 Unsafe.BitCast<TRet, ValueType>(returnValue) for more efficient casting of value types over boxing cast
+
             internal static IntPtr MarshalReturnValue<TRet>(ref TRet returnValue)
             {
                 if (returnValue == null)
