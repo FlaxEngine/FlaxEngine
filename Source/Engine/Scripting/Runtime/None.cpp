@@ -160,6 +160,15 @@ void MCore::GC::Collect(int32 generation)
 {
 }
 
+void MCore::GC::Collect(int32 generation, MGCCollectionMode collectionMode, bool blocking, bool compacting)
+{
+}
+
+int32 MCore::GC::MaxGeneration()
+{
+    return 0;
+}
+
 void MCore::GC::WaitForPendingFinalizers()
 {
 }

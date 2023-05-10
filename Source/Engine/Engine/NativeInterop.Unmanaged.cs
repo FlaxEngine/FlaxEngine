@@ -1042,6 +1042,24 @@ namespace FlaxEngine.Interop
         }
 
         [UnmanagedCallersOnly]
+        internal static void GCCollect(int generation, int mode, bool blocking, bool compacting)
+        {
+            GC.Collect(generation, (GCCollectionMode)mode, blocking, compacting);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static int GCMaxGeneration()
+        {
+            return GC.MaxGeneration;
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void GCWaitForPendingFinalizers()
+        {
+            GC.WaitForPendingFinalizers();
+        }
+
+        [UnmanagedCallersOnly]
         internal static ManagedHandle GetTypeClass(ManagedHandle typeHandle)
         {
             Type type = Unsafe.As<Type>(typeHandle.Target);
