@@ -422,19 +422,36 @@ void MCore::GCHandle::Free(const MGCHandle& handle)
 void MCore::GC::Collect()
 {
     PROFILE_CPU();
-    // TODO: call System.GC.Collect()
+    static void* GCCollectPtr = GetStaticMethodPointer(TEXT("GCCollect"));
+    CallStaticMethod<void, int, int, bool, bool>(GCCollectPtr, MaxGeneration(), (int)MGCCollectionMode::Default, true, false);
 }
 
 void MCore::GC::Collect(int32 generation)
 {
     PROFILE_CPU();
-    // TODO: call System.GC.Collect(int32)
+    static void* GCCollectPtr = GetStaticMethodPointer(TEXT("GCCollect"));
+    CallStaticMethod<void, int, int, bool, bool>(GCCollectPtr, generation, (int)MGCCollectionMode::Default, true, false);
+}
+
+void MCore::GC::Collect(int32 generation, MGCCollectionMode collectionMode, bool blocking, bool compacting)
+{
+    PROFILE_CPU();
+    static void* GCCollectPtr = GetStaticMethodPointer(TEXT("GCCollect"));
+    CallStaticMethod<void, int, int, bool, bool>(GCCollectPtr, generation, (int)collectionMode, blocking, compacting);
+}
+
+int32 MCore::GC::MaxGeneration()
+{
+    static void* GCMaxGenerationPtr = GetStaticMethodPointer(TEXT("GCMaxGeneration"));
+    static int32 maxGeneration = CallStaticMethod<int32>(GCMaxGenerationPtr);
+    return maxGeneration;
 }
 
 void MCore::GC::WaitForPendingFinalizers()
 {
     PROFILE_CPU();
-    // TODO: call System.GC.WaitForPendingFinalizers()
+    static void* GCWaitForPendingFinalizersPtr = GetStaticMethodPointer(TEXT("GCWaitForPendingFinalizers"));
+    CallStaticMethod<void>(GCWaitForPendingFinalizersPtr);
 }
 
 void MCore::GC::WriteRef(void* ptr, MObject* ref)

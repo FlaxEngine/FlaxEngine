@@ -828,6 +828,18 @@ void MCore::GC::Collect(int32 generation)
     mono_gc_collect(generation);
 }
 
+void MCore::GC::Collect(int32 generation, MGCCollectionMode collectionMode, bool blocking, bool compacting)
+{
+    PROFILE_CPU();
+    mono_gc_collect(generation);
+}
+
+int32 MCore::GC::MaxGeneration()
+{
+    PROFILE_CPU();
+    return mono_gc_max_generation();
+}
+
 void MCore::GC::WaitForPendingFinalizers()
 {
     PROFILE_CPU();
