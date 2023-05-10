@@ -218,7 +218,6 @@ namespace FlaxEditor.Windows.Profiler
             var resources = _resources.Get(_memoryUsageChart.SelectedSampleIndex);
             if (resources == null || resources.Length == 0)
                 return;
-
             var resourcesOrdered = resources.OrderByDescending(x => x.MemoryUsage);
 
             // Add rows
