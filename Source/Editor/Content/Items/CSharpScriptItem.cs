@@ -20,6 +20,9 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
+        public override string TypeDescription => "C# Source Code";
+
+        /// <inheritdoc />
         public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.CSharpScript128;
     }
 }

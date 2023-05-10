@@ -57,13 +57,13 @@ void ProfilingToolsService::Update()
     ProfilingTools::EventsCPU.EnsureCapacity(threads.Count());
     for (int32 i = 0; i < threads.Count(); i++)
     {
-        auto t = threads[i];
-        if (t == nullptr)
+        ProfilerCPU::Thread* thread = threads[i];
+        if (thread == nullptr)
             continue;
         ProfilingTools::ThreadStats* pt = nullptr;
         for (auto& e : ProfilingTools::EventsCPU)
         {
-            if (e.Name == t->GetName())
+            if (e.Name == thread->GetName())
             {
                 pt = &e;
                 break;
@@ -72,10 +72,10 @@ void ProfilingToolsService::Update()
         if (!pt)
         {
             pt = &ProfilingTools::EventsCPU.AddOne();
-            pt->Name = t->GetName();
+            pt->Name = thread->GetName();
         }
 
-        t->Buffer.Extract(pt->Events, true);
+        thread->Buffer.Extract(pt->Events, true);
     }
 
 #if 0

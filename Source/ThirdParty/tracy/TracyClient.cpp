@@ -26,6 +26,8 @@
 #include "client/TracySysTrace.cpp"
 #include "common/TracySocket.cpp"
 #include "client/tracy_rpmalloc.cpp"
+#include "client/TracyAlloc.cpp"
+
 
 #if TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6
 #  include "libbacktrace/alloc.cpp"
@@ -40,6 +42,7 @@
 #  else
 #    include "libbacktrace/elf.cpp"
 #  endif
+#  include "common/TracyStackFrames.cpp"
 #endif
 
 #ifdef _MSC_VER

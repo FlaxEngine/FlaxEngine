@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using FlaxEngine;
 using Object = FlaxEngine.Object;
 
@@ -13,9 +14,14 @@ namespace FlaxEditor.Viewport.Previews
     public class PrefabPreview : AssetPreview
     {
         /// <summary>
-        /// The preview that is during prefab instance spawning. Used to link some actors such as UIControl to preview scene and view.
+        /// The currently spawned prefab instance owner. Used to link some actors such as UIControl to preview scene and view.
         /// </summary>
         internal static PrefabPreview LoadingPreview;
+
+        /// <summary>
+        /// The list of active prefab previews. Used to link some actors such as UIControl to preview scene and view.
+        /// </summary>
+        internal static List<PrefabPreview> ActivePreviews;
 
         private Prefab _prefab;
         private Actor _instance;
@@ -48,13 +54,13 @@ namespace FlaxEditor.Viewport.Previews
                     _prefab.WaitForLoaded();
 
                     // Spawn prefab
-                    var prevPreview = LoadingPreview;
                     LoadingPreview = this;
                     var instance = PrefabManager.SpawnPrefab(_prefab, null);
-                    LoadingPreview = prevPreview;
+                    LoadingPreview = null;
                     if (instance == null)
                     {
                         _prefab = null;
+                        ActivePreviews.Remove(this);
                         throw new Exception("Failed to spawn a prefab for the preview.");
                     }
 
@@ -120,6 +126,9 @@ namespace FlaxEditor.Viewport.Previews
         public PrefabPreview(bool useWidgets)
         : base(useWidgets)
         {
+            if (ActivePreviews == null)
+                ActivePreviews = new List<PrefabPreview>();
+            ActivePreviews.Add(this);
         }
 
         /// <inheritdoc />
@@ -137,6 +146,7 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            ActivePreviews.Remove(this);
             Prefab = null;
 
             base.OnDestroy();

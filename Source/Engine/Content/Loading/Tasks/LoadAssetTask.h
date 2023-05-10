@@ -69,9 +69,24 @@ protected:
 
         return Result::Ok;
     }
+    void OnFail() override
+    {
+        if (Asset)
+        {
+            Asset->_loadingTask = nullptr;
+            Asset = nullptr;
+        }
+
+        // Base
+        ContentLoadTask::OnFail();
+    }
     void OnEnd() override
     {
-        Asset = nullptr;
+        if (Asset)
+        {
+            Asset->_loadingTask = nullptr;
+            Asset = nullptr;
+        }
 
         // Base
         ContentLoadTask::OnEnd();

@@ -274,6 +274,11 @@ namespace FlaxEditor.Content
         public string NamePath => FlaxEditor.Utilities.Utils.GetAssetNamePath(Path);
 
         /// <summary>
+        /// Gets the content item type description (for UI).
+        /// </summary>
+        public abstract string TypeDescription { get; }
+
+        /// <summary>
         /// Gets the default name of the content item thumbnail. Returns null if not used.
         /// </summary>
         public virtual SpriteHandle DefaultThumbnail => SpriteHandle.Invalid;
@@ -357,7 +362,28 @@ namespace FlaxEditor.Content
         /// </summary>
         public virtual void UpdateTooltipText()
         {
-            TooltipText = "Path: " + Path;
+            var sb = new StringBuilder();
+            OnBuildTooltipText(sb);
+            if (sb.Length != 0 && sb[sb.Length - 1] == '\n')
+            {
+                // Remove new-line from end
+                int sub = 1;
+                if (sb.Length != 1 && sb[sb.Length - 2] == '\r')
+                    sub = 2;
+                sb.Length -= sub;
+            }
+            TooltipText = sb.ToString();
+        }
+
+        /// <summary>
+        /// Called when building tooltip text.
+        /// </summary>
+        /// <param name="sb">The output string builder.</param>
+        protected virtual void OnBuildTooltipText(StringBuilder sb)
+        {
+            sb.Append("Type: ").Append(TypeDescription).AppendLine();
+            sb.Append("Size: ").Append(Utilities.Utils.FormatBytesCount((int)new FileInfo(Path).Length)).AppendLine();
+            sb.Append("Path: ").Append(Utilities.Utils.GetAssetNamePathWithExt(Path)).AppendLine();
         }
 
         /// <summary>

@@ -9,8 +9,8 @@ namespace tracy
 
 constexpr unsigned Lz4CompressBound( unsigned isize ) { return isize + ( isize / 255 ) + 16; }
 
-enum : uint32_t { ProtocolVersion = 46 };
-enum : uint16_t { BroadcastVersion = 2 };
+enum : uint32_t { ProtocolVersion = 63 };
+enum : uint16_t { BroadcastVersion = 3 };
 
 using lz4sz_t = uint32_t;
 
@@ -34,7 +34,7 @@ enum HandshakeStatus : uint8_t
 enum { WelcomeMessageProgramNameSize = 64 };
 enum { WelcomeMessageHostInfoSize = 1024 };
 
-#pragma pack( 1 )
+#pragma pack( push, 1 )
 
 // Must increase left query space after handling!
 enum ServerQuery : uint8_t
@@ -44,14 +44,15 @@ enum ServerQuery : uint8_t
     ServerQueryThreadString,
     ServerQuerySourceLocation,
     ServerQueryPlotName,
-    ServerQueryCallstackFrame,
     ServerQueryFrameName,
-    ServerQueryDisconnect,
-    ServerQueryExternalName,
     ServerQueryParameter,
+    ServerQueryFiberName,
+    // Items above are high priority. Split order must be preserved. See IsQueryPrio().
+    ServerQueryDisconnect,
+    ServerQueryCallstackFrame,
+    ServerQueryExternalName,
     ServerQuerySymbol,
     ServerQuerySymbolCode,
-    ServerQueryCodeLocation,
     ServerQuerySourceCode,
     ServerQueryDataTransfer,
     ServerQueryDataTransferPart
@@ -77,6 +78,18 @@ enum CpuArchitecture : uint8_t
 };
 
 
+struct WelcomeFlag
+{
+    enum _t : uint8_t
+    {
+        OnDemand        = 1 << 0,
+        IsApple         = 1 << 1,
+        CodeTransfer    = 1 << 2,
+        CombineSamples  = 1 << 3,
+        IdentifySamples = 1 << 4,
+    };
+};
+
 struct WelcomeMessage
 {
     double timerMul;
@@ -88,10 +101,8 @@ struct WelcomeMessage
     uint64_t exectime;
     uint64_t pid;
     int64_t samplingPeriod;
-    uint8_t onDemand;
-    uint8_t isApple;
+    uint8_t flags;
     uint8_t cpuArch;
-    uint8_t codeTransfer;
     char cpuManufacturer[12];
     uint32_t cpuId;
     char programName[WelcomeMessageProgramNameSize];
@@ -115,13 +126,43 @@ struct BroadcastMessage
     uint16_t broadcastVersion;
     uint16_t listenPort;
     uint32_t protocolVersion;
+    uint64_t pid;
     int32_t activeTime;        // in seconds
     char programName[WelcomeMessageProgramNameSize];
 };
 
-enum { BroadcastMessageSize = sizeof( BroadcastMessage ) };
+struct BroadcastMessage_v2
+{
+    uint16_t broadcastVersion;
+    uint16_t listenPort;
+    uint32_t protocolVersion;
+    int32_t activeTime;
+    char programName[WelcomeMessageProgramNameSize];
+};
 
-#pragma pack()
+struct BroadcastMessage_v1
+{
+    uint32_t broadcastVersion;
+    uint32_t protocolVersion;
+    uint32_t listenPort;
+    uint32_t activeTime;
+    char programName[WelcomeMessageProgramNameSize];
+};
+
+struct BroadcastMessage_v0
+{
+    uint32_t broadcastVersion;
+    uint32_t protocolVersion;
+    uint32_t activeTime;
+    char programName[WelcomeMessageProgramNameSize];
+};
+
+enum { BroadcastMessageSize = sizeof( BroadcastMessage ) };
+enum { BroadcastMessageSize_v2 = sizeof( BroadcastMessage_v2 ) };
+enum { BroadcastMessageSize_v1 = sizeof( BroadcastMessage_v1 ) };
+enum { BroadcastMessageSize_v0 = sizeof( BroadcastMessage_v0 ) };
+
+#pragma pack( pop )
 
 }
 

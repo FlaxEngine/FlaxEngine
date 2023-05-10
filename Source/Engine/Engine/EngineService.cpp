@@ -4,7 +4,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Sorting.h"
-#include <ThirdParty/tracy/Tracy.h>
+#include <ThirdParty/tracy/tracy/Tracy.hpp>
 
 static bool CompareEngineServices(EngineService* const& a, EngineService* const& b)
 {
