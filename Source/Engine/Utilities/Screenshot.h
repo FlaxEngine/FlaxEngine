@@ -39,14 +39,4 @@ API_CLASS(Static) class FLAXENGINE_API Screenshot
     /// </summary>
     /// <param name="path">The custom file location. Use null or empty to use default one.</param>
     API_FUNCTION() static void Capture(const StringView& path = StringView::Empty);
-
-    /// <summary>
-    /// Get the pixel at specified coordinates.
-    /// </summary>
-    /// <param name="x">The x coordinate to read.</param>
-    /// <param name="y">The y coordinate to read.</param>
-    /// <returns>The color </returns>
-    API_FUNCTION() static Color32 GetPixelAt(int32 x, int32 y);
-
-    API_EVENT() static Delegate<Color32> PixelReadDelegate;
 };
