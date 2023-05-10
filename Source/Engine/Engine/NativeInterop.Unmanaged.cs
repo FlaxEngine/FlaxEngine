@@ -646,10 +646,19 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static void ObjectInit(ManagedHandle objectHandle)
         {
-            object obj = objectHandle.Target;
-            Type type = obj.GetType();
-            ConstructorInfo ctor = type.GetMember(".ctor", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).First() as ConstructorInfo;
-            ctor.Invoke(obj, null);
+            try
+            {
+                object obj = objectHandle.Target;
+                Type type = obj.GetType();
+                ConstructorInfo ctor = type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null);
+                if (ctor == null)
+                    throw new Exception($"Missing empty constructor in type '{type}'.");
+                ctor.Invoke(obj, null);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
         }
 
         [UnmanagedCallersOnly]
