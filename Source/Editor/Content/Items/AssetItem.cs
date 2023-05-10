@@ -1,8 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
-using System.IO;
-using System.Text;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -38,14 +36,6 @@ namespace FlaxEditor.Content
             ID = id;
         }
 
-        /// <inheritdoc />
-        public override void UpdateTooltipText()
-        {
-            var sb = new StringBuilder();
-            OnBuildTooltipText(sb);
-            TooltipText = sb.ToString();
-        }
-
         private sealed class TooltipDoubleClickHook : Control
         {
             public AssetItem Item;
@@ -74,19 +64,24 @@ namespace FlaxEditor.Content
             hook.Item = this;
         }
 
-        /// <summary>
-        /// Called when building tooltip text.
-        /// </summary>
-        /// <param name="sb">The String Builder.</param>
-        protected virtual void OnBuildTooltipText(StringBuilder sb)
-        {
-            sb.Append("Type: ").Append(TypeName).AppendLine();
-            sb.Append("Size: ").Append(Utilities.Utils.FormatBytesCount((int)new FileInfo(Path).Length)).AppendLine();
-            sb.Append("Path: ").Append(Path).AppendLine();
-        }
-
         /// <inheritdoc />
         public override ContentItemType ItemType => ContentItemType.Asset;
+
+        /// <inheritdoc />
+        public override string TypeDescription
+        {
+            get
+            {
+                // Translate asset type name
+                var typeName = TypeName;
+                string[] typeNamespaces = typeName.Split('.');
+                if (typeNamespaces.Length != 0 && typeNamespaces.Length != 0)
+                {
+                    typeName = Utilities.Utils.GetPropertyNameUI(typeNamespaces[typeNamespaces.Length - 1]);
+                }
+                return typeName;
+            }
+        }
 
         /// <summary>
         /// Loads the asset.
