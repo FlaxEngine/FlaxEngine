@@ -112,9 +112,6 @@ namespace FlaxEditor.GUI.Dialogs
             _onChanged = colorChanged;
             _onClosed = pickerClosed;
 
-            // Register the event for eyedropper pixels being read.
-            Screenshot.PixelReadDelegate += PixelDataRead;
-
             // Selector
             _cSelector = new ColorSelectorWithSliders(180, 18)
             {
@@ -204,7 +201,7 @@ namespace FlaxEditor.GUI.Dialogs
             {
                 Parent = this,
             };
-            _cEyedropper.Clicked += OnEyedropColor;
+            _cEyedropper.Clicked += OnEyedropStart;
             _cEyedropper.Height = (_cValue.Bottom - _cEyedropper.Y) * 0.5f;
             _cEyedropper.Width = _cEyedropper.Height;
             _cEyedropper.X -= _cEyedropper.Width;
@@ -214,17 +211,20 @@ namespace FlaxEditor.GUI.Dialogs
             SelectedColor = initialValue;
         }
 
-        private void PixelDataRead(Color32 pixel_color)
+        private Color32 GetEyedropColor()
         {
-	        Color color = pixel_color;
-	        Editor.Log(string.Format("Color: {0} {1} {2}", color.R, color.G, color.B));
+            Int2 mousePosition = ScreenUtils.GetScreenCursorPosition();
+            Color32 pixelColor = ScreenUtils.GetPixelAt(mousePosition.X, mousePosition.Y);
+
+            return pixelColor;
         }
 
-        private void OnEyedropColor()
+        private void OnEyedropStart()
         {
-	        Float2 mousePosition = FlaxEngine.Input.MouseScreenPosition;
-	        Screenshot.GetPixelAt(Mathf.FloorToInt(mousePosition.X), Mathf.FloorToInt(mousePosition.Y));
+            Color32 pixelColor = GetEyedropColor();
+            Editor.Log(string.Format("Pixel Color: ({0}, {1}, {2})", pixelColor.R, pixelColor.G, pixelColor.B));
         }
+
 
         private void OnRGBAChanged()
         {
@@ -249,6 +249,14 @@ namespace FlaxEditor.GUI.Dialogs
 
             if (Color.TryParseHex(_cHex.Text, out Color color))
                 SelectedColor = color;
+        }
+
+
+        /// <inheritdoc />
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+
         }
 
         /// <inheritdoc />

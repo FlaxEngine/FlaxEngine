@@ -9,9 +9,3 @@
 #endif
 
 #include "Types.h"
-#include "Engine/Scripting/ScriptingType.h"
-
-API_CLASS(Static) class FLAXENGINE_API ScreenUtils
-{
-    DECLARE_SCRIPTING_TYPE_NO_SPAWN(ScreenUtils);
-};

@@ -4,7 +4,11 @@
 
 #include <Windows.h>
 
-Color32 PlatformScreenUtils::GetPixelAt(int32 x, int32 y) {
+#if PLATFORM_WINDOWS
+#pragma comment(lib, "Gdi32.lib")
+#endif
+
+Color32 ScreenUtils::GetPixelAt(int32 x, int32 y) {
     HDC deviceContext = GetDC(NULL);
     COLORREF color = GetPixel(deviceContext, x, y);
     ReleaseDC(NULL, deviceContext);
@@ -13,7 +17,7 @@ Color32 PlatformScreenUtils::GetPixelAt(int32 x, int32 y) {
     return returnColor;
 }
 
-Int2 PlatformScreenUtils::GetScreenCursorPosition() {
+Int2 ScreenUtils::GetScreenCursorPosition() {
     POINT cursorPos;
     GetCursorPos(&cursorPos);
 
