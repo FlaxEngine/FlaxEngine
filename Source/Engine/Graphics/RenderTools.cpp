@@ -395,7 +395,7 @@ uint64 RenderTools::CalculateTextureMemoryUsage(PixelFormat format, int32 width,
 float RenderTools::ComputeBoundsScreenRadiusSquared(const Float3& origin, float radius, const Float3& viewOrigin, const Matrix& projectionMatrix)
 {
     const float screenMultiple = 0.5f * Math::Max(projectionMatrix.Values[0][0], projectionMatrix.Values[1][1]);
-    const float distSqr = Float3::DistanceSquared(origin, viewOrigin);
+    const float distSqr = Float3::DistanceSquared(origin, viewOrigin) * projectionMatrix.Values[2][3];
     return Math::Square(screenMultiple * radius) / Math::Max(1.0f, distSqr);
 }
 

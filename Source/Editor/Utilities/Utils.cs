@@ -991,7 +991,7 @@ namespace FlaxEditor.Utilities
         }
 
         /// <summary>
-        /// Updates (recursivly) search popup tree structures based on the filter text.
+        /// Updates (recursively) search popup tree structures based on the filter text.
         /// </summary>
         public static void UpdateSearchPopupFilter(TreeNode node, string filterText)
         {
@@ -1015,6 +1015,19 @@ namespace FlaxEditor.Utilities
             else
                 node.Collapse(true);
             node.Visible = isThisVisible | isAnyChildVisible;
+        }
+
+        /// <summary>
+        /// Gets the asset name relative to the project root folder (with asset file extension)
+        /// </summary>
+        /// <param name="path">The asset path.</param>
+        /// <returns>The processed name path.</returns> 
+        public static string GetAssetNamePathWithExt(string path)
+        {
+            var projectFolder = Globals.ProjectFolder;
+            if (path.StartsWith(projectFolder))
+                path = path.Substring(projectFolder.Length + 1);
+            return path;
         }
 
         /// <summary>
