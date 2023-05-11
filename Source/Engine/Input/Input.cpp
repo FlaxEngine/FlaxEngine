@@ -25,7 +25,7 @@ struct AxisEvaluation
     bool Used;
 };
 
-struct ActionData
+struct  ActionData
 {
     bool Active;
     uint64 FrameIndex;
@@ -35,7 +35,7 @@ struct ActionData
     {
         Active = false;
         FrameIndex = 0;
-        Phase = InputActionPhase::None;
+        Phase = InputActionPhase::Waiting;
     }
 };
 
@@ -844,11 +844,17 @@ void InputService::Update()
         }
 
         if (Input::GetKeyDown(config.Key) || Input::GetMouseButtonDown(config.MouseButton) || Input::GetGamepadButtonDown(config.Gamepad, config.GamepadButton))
+        {
             data.Phase = InputActionPhase::Press;
+        }
         else if (Input::GetKey(config.Key) || Input::GetMouseButton(config.MouseButton) || Input::GetGamepadButton(config.Gamepad, config.GamepadButton))
+        {
             data.Phase = InputActionPhase::Pressing;
+        }
         else if (Input::GetKeyUp(config.Key) || Input::GetMouseButtonUp(config.MouseButton) || Input::GetGamepadButtonUp(config.Gamepad, config.GamepadButton))
+        {
             data.Phase = InputActionPhase::Release;
+        }
 
         data.Active |= isActive;
     }
