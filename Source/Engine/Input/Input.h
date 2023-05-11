@@ -310,6 +310,14 @@ public:
     API_FUNCTION() static bool GetAction(const StringView& name);
 
     /// <summary>
+    /// Gets the value of the virtual action identified by name. Use <see cref="ActionMappings"/> to get the current config.
+    /// </summary>
+    /// <param name="name">The action name.</param>
+    /// <returns>True if action has been triggered in the current frame (e.g. button pressed), otherwise false.</returns>
+    /// <seealso cref="ActionMappings"/>
+    API_FUNCTION() static InputActionPhase GetActionPhase(const StringView& name);
+
+    /// <summary>
     /// Gets the value of the virtual axis identified by name. Use <see cref="AxisMappings"/> to get the current config.
     /// </summary>
     /// <param name="name">The action name.</param>

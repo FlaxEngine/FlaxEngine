@@ -264,6 +264,31 @@ API_ENUM() enum class InputActionMode
 };
 
 /// <summary>
+/// The input action event trigger modes.
+/// </summary>
+API_ENUM() enum class InputActionPhase
+{
+    /// <summary>
+    /// User is pressing the key/button.
+    /// </summary>
+    Pressing = 0,
+
+    /// <summary>
+    /// User pressed the key/button (but wasn't pressing it in the previous frame).
+    /// </summary>
+    Press = 1,
+
+    /// <summary>
+    /// User released the key/button (was pressing it in the previous frame).
+    /// </summary>
+    Release = 2,
+
+    Waiting = 3,
+
+    None = 4,
+};
+
+/// <summary>
 /// The input gamepad index.
 /// </summary>
 API_ENUM() enum class InputGamepadIndex

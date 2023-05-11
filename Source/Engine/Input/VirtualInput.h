@@ -48,6 +48,9 @@ API_STRUCT() struct ActionConfig
     /// </summary>
     API_FIELD(Attributes="EditorOrder(40)")
     InputGamepadIndex Gamepad;
+
+    API_FIELD(Attributes = "EditorOrder(50)")
+    InputActionMode Phase;
 };
 
 /// <summary>
