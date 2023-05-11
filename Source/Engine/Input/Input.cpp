@@ -29,13 +29,13 @@ struct  ActionData
 {
     bool Active;
     uint64 FrameIndex;
-    InputActionState Phase;
+    InputActionState State;
 
     ActionData()
     {
         Active = false;
         FrameIndex = 0;
-        Phase = InputActionState::Waiting;
+        State = InputActionState::Waiting;
     }
 };
 
@@ -604,7 +604,7 @@ InputActionState Input::GetActionState(const StringView& name)
     const auto e = Actions.TryGet(name);
     if (e != nullptr) 
     {
-        return e->Phase;
+        return e->State;
     }
     return InputActionState::None;
 }
@@ -818,7 +818,7 @@ void InputService::Update()
         ActionData& data = Actions[name];
 
         data.Active = false;
-        data.Phase = InputActionState::Waiting;
+        data.State = InputActionState::Waiting;
 
         // Mark as updated in this frame
         data.FrameIndex = frame;
@@ -845,15 +845,15 @@ void InputService::Update()
 
         if (Input::GetKeyDown(config.Key) || Input::GetMouseButtonDown(config.MouseButton) || Input::GetGamepadButtonDown(config.Gamepad, config.GamepadButton))
         {
-            data.Phase = InputActionState::Press;
+            data.State = InputActionState::Press;
         }
         else if (Input::GetKey(config.Key) || Input::GetMouseButton(config.MouseButton) || Input::GetGamepadButton(config.Gamepad, config.GamepadButton))
         {
-            data.Phase = InputActionState::Pressing;
+            data.State = InputActionState::Pressing;
         }
         else if (Input::GetKeyUp(config.Key) || Input::GetMouseButtonUp(config.MouseButton) || Input::GetGamepadButtonUp(config.Gamepad, config.GamepadButton))
         {
-            data.Phase = InputActionState::Release;
+            data.State = InputActionState::Release;
         }
 
         data.Active |= isActive;
