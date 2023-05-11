@@ -11,6 +11,7 @@ public:
     // [ScreenUtilsBase]
     static Color32 GetPixelAt(int32 x, int32 y);
     static Int2 GetScreenCursorPosition();
+    static void BlockAndReadMouse();
 };
 
 #endif

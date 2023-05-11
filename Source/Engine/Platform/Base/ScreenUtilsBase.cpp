@@ -9,3 +9,6 @@ Color32 ScreenUtilsBase::GetPixelAt(int32 x, int32 y) {
 Int2 ScreenUtilsBase::GetScreenCursorPosition() {
     return { 0, 0 };
 }
+
+void ScreenUtilsBase::BlockAndReadMouse() {
+}

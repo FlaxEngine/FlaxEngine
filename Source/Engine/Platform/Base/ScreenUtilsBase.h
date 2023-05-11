@@ -26,4 +26,9 @@ public:
     /// </summary>
     /// <returns>Cursor position, in screen coordinates.</returns>
     API_FUNCTION() static Int2 GetScreenCursorPosition();
+
+    /// <summary>
+    /// Blocks mouse input and runs a callback
+    /// </summary>
+    API_FUNCTION() static void BlockAndReadMouse();
 };
