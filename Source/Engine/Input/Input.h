@@ -315,7 +315,7 @@ public:
     /// <param name="name">The action name.</param>
     /// <returns>A InputActionPhase determining the current phase of the Action (e.g If it was just pressed, is being held or just released).</returns>
     /// <seealso cref="ActionMappings"/>
-    API_FUNCTION() static InputActionPhase GetActionPhase(const StringView& name);
+    API_FUNCTION() static InputActionState GetActionState(const StringView& name);
 
     /// <summary>
     /// Gets the value of the virtual axis identified by name. Use <see cref="AxisMappings"/> to get the current config.

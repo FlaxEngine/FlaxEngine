@@ -266,7 +266,7 @@ API_ENUM() enum class InputActionMode
 /// <summary>
 /// The input action event phases.
 /// </summary>
-API_ENUM() enum class InputActionPhase
+API_ENUM() enum class InputActionState
 {
     /// <summary>
     /// The key/button is not assigned.
