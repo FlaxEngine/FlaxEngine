@@ -129,9 +129,8 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
         toLight = lightData.Position - gBuffer.WorldPos;
         float distanceSqr = dot(toLight, toLight);
         L = toLight * rsqrt(distanceSqr);
-        float distanceAttenuation = 1, lightRadiusMask = 1, spotAttenuation = 1;
-        GetRadialLightAttenuation(lightData, isSpotLight, N, distanceSqr, 1, toLight, L, NoL, distanceAttenuation, lightRadiusMask, spotAttenuation);
-        float attenuation = distanceAttenuation * lightRadiusMask * spotAttenuation;
+        float attenuation = 1;
+        GetRadialLightAttenuation(lightData, isSpotLight, N, distanceSqr, 1, toLight, L, NoL, attenuation);
         shadow.SurfaceShadow *= attenuation;
         shadow.TransmissionShadow *= attenuation;
     }

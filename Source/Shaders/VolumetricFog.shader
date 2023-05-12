@@ -205,9 +205,6 @@ float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 	uint samplesCount = historyAlpha < 0.001f ? MissedHistorySamplesCount : 1;
 
 	float NoL = 0;
-	float distanceAttenuation = 1;
-	float lightRadiusMask = 1;
-	float spotAttenuation = 1;
 	bool isSpotLight = LocalLight.SpotAngles.x > -2.0f;
 	float4 scattering = 0;
 	for (uint sampleIndex = 0; sampleIndex < samplesCount; sampleIndex++)
@@ -224,19 +221,19 @@ float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 		float3 L = toLight * rsqrt(distanceSqr);
 
 		// Calculate the light attenuation
-		GetRadialLightAttenuation(LocalLight, isSpotLight, float3(0, 0, 1), distanceSqr, distanceBias * distanceBias, toLight, L, NoL, distanceAttenuation, lightRadiusMask, spotAttenuation);
-		float combinedAttenuation = distanceAttenuation * lightRadiusMask * spotAttenuation;
+		float attenuation = 1;
+		GetRadialLightAttenuation(LocalLight, isSpotLight, float3(0, 0, 1), distanceSqr, distanceBias * distanceBias, toLight, L, NoL, attenuation);
 
 		// Peek the shadow
 		float shadowFactor = 1.0f;
 #if USE_SHADOW
-		if (combinedAttenuation > 0)
+		if (attenuation > 0)
 		{
 			shadowFactor = ComputeVolumeShadowing(positionWS, isSpotLight);
 		}
 #endif
 
-		scattering.rgb += LocalLight.Color * (GetPhase(PhaseG, dot(L, -cameraVector)) * combinedAttenuation * shadowFactor * LocalLightScatteringIntensity);
+		scattering.rgb += LocalLight.Color * (GetPhase(PhaseG, dot(L, -cameraVector)) * attenuation * shadowFactor * LocalLightScatteringIntensity);
 	}
 
 	scattering.rgb /= (float)samplesCount;
