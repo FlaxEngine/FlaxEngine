@@ -18,6 +18,7 @@ public:
     PlatformType GetPlatform() const override;
     ArchitectureType GetArchitecture() const override;
     DotNetAOTModes UseAOT() const override;
+    PixelFormat GetTextureFormat(CookingData& data, TextureBase* texture, PixelFormat format) override;
     bool IsNativeCodeFile(CookingData& data, const String& file) override;
     void OnBuildStarted(CookingData& data) override;
     bool OnPostProcess(CookingData& data) override;
