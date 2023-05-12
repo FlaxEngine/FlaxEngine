@@ -94,7 +94,7 @@ namespace FlaxEngine.GUI
                 }
             }
         }
-        
+
         /// <summary>
         /// Gets or sets a value indicating whether enable drop down icon drawing.
         /// </summary>
@@ -376,7 +376,6 @@ namespace FlaxEngine.GUI
 
             Render2D.DrawText(HeaderTextFont.GetFont(), HeaderTextMaterial, HeaderText, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
 
-            
             if (!_isClosed && EnableContainmentLines)
             {
                 Color lineColor = Style.Current.ForegroundGrey - new Color(0, 0, 0, 100);
@@ -385,7 +384,7 @@ namespace FlaxEngine.GUI
                 Render2D.DrawLine(new Float2(1, Height), new Float2(Width, Height), lineColor, lineThickness);
                 Render2D.DrawLine(new Float2(Width, HeaderHeight), new Float2(Width, Height), lineColor, lineThickness);
             }
-            
+
             // Children
             DrawChildren();
         }

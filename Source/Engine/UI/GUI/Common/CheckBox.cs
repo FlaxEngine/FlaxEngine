@@ -119,7 +119,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         [EditorDisplay("Border Style"), EditorOrder(2011)]
         public Color BorderColorHighlighted { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the color of the checkbox icon.
         /// </summary>

@@ -60,7 +60,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         [EditorDisplay("Text Style"), EditorOrder(2020)]
         public Color TextColor;
-        
+
         /// <summary>
         /// Gets or sets the brush used for background drawing.
         /// </summary>
@@ -78,13 +78,13 @@ namespace FlaxEngine.GUI
         /// </summary>
         [EditorDisplay("Background Style"), EditorOrder(2002)]
         public Color BackgroundColorSelected { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the color of the border.
         /// </summary>
         [EditorDisplay("Border Style"), EditorOrder(2010), ExpandGroups]
         public Color BorderColor { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the border color when button is highlighted.
         /// </summary>
@@ -209,7 +209,7 @@ namespace FlaxEngine.GUI
         public override void ClearState()
         {
             base.ClearState();
-            
+
             if (_isPressed)
                 OnPressEnd();
         }

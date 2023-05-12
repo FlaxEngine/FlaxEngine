@@ -25,7 +25,7 @@ struct AxisEvaluation
     bool Used;
 };
 
-struct  ActionData
+struct ActionData
 {
     bool Active;
     uint64 FrameIndex;
@@ -602,7 +602,7 @@ bool Input::GetAction(const StringView& name)
 InputActionState Input::GetActionState(const StringView& name)
 {
     const auto e = Actions.TryGet(name);
-    if (e != nullptr) 
+    if (e != nullptr)
     {
         return e->State;
     }
