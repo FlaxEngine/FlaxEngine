@@ -253,6 +253,11 @@ int32 ParticleEffect::GetParticlesCount() const
     return Instance.GetParticlesCount();
 }
 
+bool ParticleEffect::GetIsPlaying() const
+{
+    return _isPlaying;
+}
+
 void ParticleEffect::ResetSimulation()
 {
     Instance.ClearState();
@@ -273,6 +278,30 @@ void ParticleEffect::UpdateSimulation(bool singleFrame)
     if (singleFrame)
         Instance.LastUpdateTime = (UseTimeScale ? Time::Update.Time : Time::Update.UnscaledTime).GetTotalSeconds();
     Particles::UpdateEffect(this);
+}
+
+void ParticleEffect::Play(bool reset)
+{
+    _play = true;
+    _isPlaying = true;
+    
+    if (reset)
+        ResetSimulation();
+    else
+        UpdateSimulation(true);
+}
+
+void ParticleEffect::Pause()
+{
+    _play = false;
+    _isPlaying = false;
+}
+
+void ParticleEffect::Stop()
+{
+    _play = false;
+    _isPlaying = false;
+    ResetSimulation();
 }
 
 void ParticleEffect::UpdateBounds()
@@ -395,6 +424,9 @@ void ParticleEffect::SetParametersOverrides(const Array<ParameterOverride>& valu
 
 void ParticleEffect::Update()
 {
+    if (!_play)
+        return;
+    
     // Skip if off-screen
     if (!UpdateWhenOffscreen && _lastMinDstSqr >= MAX_Real)
         return;
@@ -417,7 +449,17 @@ void ParticleEffect::Update()
 void ParticleEffect::UpdateExecuteInEditor()
 {
     if (!Editor::IsPlayMode)
+    {
+        // Always Play in editor while not playing.
+        // Could be useful to have a GUI to change this state
+        if (!_play)
+        {
+            _play = true;
+            _isPlaying = true;
+        }
+        
         Update();
+    }
 }
 
 #endif
@@ -576,6 +618,7 @@ void ParticleEffect::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(SimulationSpeed);
     SERIALIZE(UseTimeScale);
     SERIALIZE(IsLooping);
+    SERIALIZE(PlayOnStart);
     SERIALIZE(UpdateWhenOffscreen);
     SERIALIZE(DrawModes);
     SERIALIZE(SortOrder);
@@ -675,6 +718,7 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     DESERIALIZE(SimulationSpeed);
     DESERIALIZE(UseTimeScale);
     DESERIALIZE(IsLooping);
+    DESERIALIZE(PlayOnStart);
     DESERIALIZE(UpdateWhenOffscreen);
     DESERIALIZE(DrawModes);
     DESERIALIZE(SortOrder);
@@ -706,6 +750,9 @@ void ParticleEffect::OnEnable()
     GetScene()->Ticking.Update.AddTickExecuteInEditor<ParticleEffect, &ParticleEffect::UpdateExecuteInEditor>(this);
 #endif
 
+    if (PlayOnStart)
+        Play();
+    
     // Base
     Actor::OnEnable();
 }
