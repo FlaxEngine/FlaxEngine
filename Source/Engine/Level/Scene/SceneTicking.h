@@ -109,6 +109,13 @@ public:
         void TickScripts(const Array<Script*>& scripts) override;
     };
 
+    class FLAXENGINE_API LateFixedUpdateTickData : public TickData
+    {
+    public:
+        LateFixedUpdateTickData();
+        void TickScripts(const Array<Script*>& scripts) override;
+    };
+
 public:
     /// <summary>
     /// Adds the script to scene ticking system.
@@ -142,4 +149,9 @@ public:
     /// The late update tick function.
     /// </summary>
     LateUpdateTickData LateUpdate;
+
+    /// <summary>
+    /// The late fixed update tick function.
+    /// </summary>
+    LateFixedUpdateTickData LateFixedUpdate;
 };
