@@ -729,8 +729,6 @@ namespace FlaxEditor.SceneGraph.GUI
         {
             DragData data;
             var tree = ParentTree;
-            if (tree.Selection.Count == 1)
-                Select();
 
             // Check if this node is selected
             if (tree.Selection.Contains(this))
