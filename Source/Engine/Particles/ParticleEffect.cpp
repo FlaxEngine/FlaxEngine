@@ -280,26 +280,18 @@ void ParticleEffect::UpdateSimulation(bool singleFrame)
     Particles::UpdateEffect(this);
 }
 
-void ParticleEffect::Play(bool reset)
+void ParticleEffect::Play()
 {
-    _play = true;
     _isPlaying = true;
-    
-    if (reset)
-        ResetSimulation();
-    else
-        UpdateSimulation(true);
 }
 
 void ParticleEffect::Pause()
 {
-    _play = false;
     _isPlaying = false;
 }
 
 void ParticleEffect::Stop()
 {
-    _play = false;
     _isPlaying = false;
     ResetSimulation();
 }
@@ -424,9 +416,13 @@ void ParticleEffect::SetParametersOverrides(const Array<ParameterOverride>& valu
 
 void ParticleEffect::Update()
 {
-    if (!_play)
+    if (!_isPlaying)
+    {
+        // Move update timer forward while paused for correct delta time after unpause
+        Instance.LastUpdateTime = (UseTimeScale ? Time::Update.Time : Time::Update.UnscaledTime).GetTotalSeconds();
         return;
-    
+    }
+
     // Skip if off-screen
     if (!UpdateWhenOffscreen && _lastMinDstSqr >= MAX_Real)
         return;
@@ -448,16 +444,10 @@ void ParticleEffect::Update()
 
 void ParticleEffect::UpdateExecuteInEditor()
 {
+    // Auto-play in Editor
     if (!Editor::IsPlayMode)
     {
-        // Always Play in editor while not playing.
-        // Could be useful to have a GUI to change this state
-        if (!_play)
-        {
-            _play = true;
-            _isPlaying = true;
-        }
-        
+        _isPlaying = true;
         Update();
     }
 }
@@ -632,6 +622,7 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     const auto overridesMember = stream.FindMember("Overrides");
     if (overridesMember != stream.MemberEnd())
     {
+        // [Deprecated on 25.11.2018, expires on 25.11.2022]
         if (modifier->EngineBuild < 6197)
         {
             const auto& overrides = overridesMember->value;
@@ -752,7 +743,7 @@ void ParticleEffect::OnEnable()
 
     if (PlayOnStart)
         Play();
-    
+
     // Base
     Actor::OnEnable();
 }

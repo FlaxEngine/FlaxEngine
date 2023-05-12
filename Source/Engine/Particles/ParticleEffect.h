@@ -184,7 +184,6 @@ private:
     uint32 _parametersVersion = 0; // Version number for _parameters to be in sync with Instance.ParametersVersion
     Array<ParticleEffectParameter> _parameters; // Cached for scripting API
     Array<ParameterOverride> _parametersOverrides; // Cached parameter modifications to be applied to the parameters
-    bool _play = false;
     bool _isPlaying = false;
 
 public:
@@ -353,8 +352,7 @@ public:
     /// <summary>
     /// Plays the simulation.
     /// </summary>
-    /// /// <param name="reset">If true, the simulation will be reset</param>
-    API_FUNCTION() void Play(bool reset = true);
+    API_FUNCTION() void Play();
 
     /// <summary>
     /// Pauses the simulation.
