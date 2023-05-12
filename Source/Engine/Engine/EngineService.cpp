@@ -33,6 +33,7 @@ static bool CompareEngineServices(EngineService* const& a, EngineService* const&
 DEFINE_ENGINE_SERVICE_EVENT(FixedUpdate);
 DEFINE_ENGINE_SERVICE_EVENT(Update);
 DEFINE_ENGINE_SERVICE_EVENT(LateUpdate);
+DEFINE_ENGINE_SERVICE_EVENT(LateFixedUpdate);
 DEFINE_ENGINE_SERVICE_EVENT(Draw);
 DEFINE_ENGINE_SERVICE_EVENT_INVERTED(BeforeExit);
 
