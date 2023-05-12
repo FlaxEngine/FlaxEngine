@@ -908,12 +908,7 @@ namespace FlaxEngine.Interop
             while (unloading)
                 System.Threading.Thread.Sleep(1);
 
-#if FLAX_EDITOR
-            var isCollectible = true;
-#else
-            var isCollectible = false;
-#endif
-            scriptingAssemblyLoadContext = new AssemblyLoadContext("Flax", isCollectible);
+            InitScriptingAssemblyLoadContext();
             DelegateHelpers.InitMethods();
         }
 

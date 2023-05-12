@@ -78,6 +78,19 @@ namespace FlaxEngine.Interop
             return nativeLibrary;
         }
 
+        private static void InitScriptingAssemblyLoadContext()
+        {
+#if FLAX_EDITOR
+            var isCollectible = true;
+#else
+            var isCollectible = false;
+#endif
+            scriptingAssemblyLoadContext = new AssemblyLoadContext("Flax", isCollectible);
+#if FLAX_EDITOR
+            scriptingAssemblyLoadContext.Resolving += ScriptingAssemblyLoadContext_Resolving;
+#endif
+        }
+
         [UnmanagedCallersOnly]
         internal static unsafe void Init()
         {
@@ -89,13 +102,19 @@ namespace FlaxEngine.Interop
             System.Threading.Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
             System.Threading.Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
 
-#if FLAX_EDITOR
-            var isCollectible = true;
-#else
-            var isCollectible = false;
-#endif
-            scriptingAssemblyLoadContext = new AssemblyLoadContext("Flax", isCollectible);
+            InitScriptingAssemblyLoadContext();
             DelegateHelpers.InitMethods();
+        }
+
+        private static Assembly? ScriptingAssemblyLoadContext_Resolving(AssemblyLoadContext assemblyLoadContext, AssemblyName assemblyName)
+        {
+            // FIXME: There should be a better way to resolve the path to EditorTargetPath where the dependencies are stored
+            string editorTargetPath = Path.GetDirectoryName(nativeLibraryPaths.Keys.First(x => x != "FlaxEngine"));
+
+            var assemblyPath = Path.Combine(editorTargetPath, assemblyName.Name + ".dll");
+            if (File.Exists(assemblyPath))
+                return assemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
+            return null;
         }
 
         [UnmanagedCallersOnly]
