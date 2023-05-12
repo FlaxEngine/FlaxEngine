@@ -145,7 +145,6 @@ void SceneTicking::AddScript(Script* obj)
         LateUpdate.AddScript(obj);
     if (obj->_tickLateFixedUpdate)
         LateFixedUpdate.AddScript(obj);
-    
 }
 
 void SceneTicking::RemoveScript(Script* obj)
