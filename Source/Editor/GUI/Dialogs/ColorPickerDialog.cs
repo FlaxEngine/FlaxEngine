@@ -221,18 +221,25 @@ namespace FlaxEditor.GUI.Dialogs
             return pixelColor;
         }
 
+        private void ColorPicked(Color32 colorPicked)
+        {
+            Editor.LogWarning("Ok???");
+            _activeEyedropper = false;
+            SelectedColor = colorPicked;
+            ScreenUtils.PickColorDone -= ColorPicked;
+        }
+
         private void OnEyedropStart()
         {
             _activeEyedropper = true;
-            ScreenUtils.BlockAndReadMouse();
+            ScreenUtils.PickColor();
+            ScreenUtils.PickColorDone += ColorPicked;
         }
 
         private void UpdateEyedrop()
         {
             Color32 pixelColor = GetEyedropColor();
-            SelectedColor = new Color(pixelColor.R, pixelColor.G, pixelColor.B);
-
-
+            SelectedColor = pixelColor;
         }
 
         private void OnRGBAChanged()

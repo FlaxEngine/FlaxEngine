@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/Core/Types/BaseTypes.h"
+#include "Engine/Core/Delegate.h"
 
 API_INJECT_CODE(cpp, "#include \"Engine/Platform/ScreenUtils.h\"");
 
@@ -28,7 +29,17 @@ public:
     API_FUNCTION() static Int2 GetScreenCursorPosition();
 
     /// <summary>
+    /// Starts async color picking. Will return a color through ColorReturnCallback.
+    /// </summary
+    API_FUNCTION() static void PickColor();
+
+    /// <summary>
     /// Blocks mouse input and runs a callback
     /// </summary>
     API_FUNCTION() static void BlockAndReadMouse();
+
+    /// <summary>
+    /// Called when PickColor() is finished.
+    /// </summary>
+    API_EVENT() static Delegate<Color32> PickColorDone;
 };

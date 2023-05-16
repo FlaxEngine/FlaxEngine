@@ -1,6 +1,7 @@
 #include "WindowsScreenUtils.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Math/Vector2.h"
+#include "Engine/Core/Delegate.h"
 
 #include <Windows.h>
 
@@ -8,6 +9,7 @@
 #pragma comment(lib, "Gdi32.lib")
 #endif
 #include <Engine/Core/Log.h>
+#include <Engine/Scripting/ManagedCLR/MCore.h>
 
 Color32 ScreenUtils::GetPixelAt(int32 x, int32 y)
 {
@@ -48,8 +50,12 @@ LRESULT CALLBACK ScreenUtilsMouseCallback(
     if (nCode >= 0 && wParam == WM_LBUTTONDOWN) { // Now try to run our code.
         LOG(Warning, "Mouse callback hit. Skipping event. (hopefully)");
         UnhookWindowsHookEx(_mouseCallbackHook);
+
+        ScreenUtils::PickSelected();
         return 1;
     }
+
+    return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
 
 void ScreenUtils::BlockAndReadMouse()
@@ -60,4 +66,26 @@ void ScreenUtils::BlockAndReadMouse()
         LOG(Warning, "Failed to set mouse hook.");
         LOG(Warning, "Error: {0}", GetLastError());
     }
+}
+
+Delegate<Color32> ScreenUtils::PickColorDone;
+
+void ScreenUtils::Test(Color32 testVal) {
+    LOG(Warning, "GOT IT");
+}
+
+void ScreenUtils::PickSelected() {
+    // Push event with color.
+    Int2 cursorPos = ScreenUtils::GetScreenCursorPosition();
+    Color32 colorPicked = ScreenUtils::GetPixelAt(cursorPos.X, cursorPos.Y);
+
+    LOG(Warning, "REAL: {0}", PickColorDone.Count());
+    PickColorDone(colorPicked);
+    LOG(Warning, "FAKE");
+}
+
+void ScreenUtils::PickColor()
+{
+    MCore::AttachThread();
+    BlockAndReadMouse();
 }

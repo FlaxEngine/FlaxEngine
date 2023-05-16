@@ -12,3 +12,8 @@ Int2 ScreenUtilsBase::GetScreenCursorPosition() {
 
 void ScreenUtilsBase::BlockAndReadMouse() {
 }
+
+void ScreenUtilsBase::PickColor() {
+}
+
+Delegate<Color32> ScreenUtilsBase::PickColorDone;
