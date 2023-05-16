@@ -215,8 +215,8 @@ namespace FlaxEditor.GUI.Dialogs
 
         private Color32 GetEyedropColor()
         {
-            Int2 mousePosition = ScreenUtils.GetScreenCursorPosition();
-            Color32 pixelColor = ScreenUtils.GetPixelAt(mousePosition.X, mousePosition.Y);
+            Int2 mousePosition = ScreenUtilities.GetScreenCursorPosition();
+            Color32 pixelColor = ScreenUtilities.GetPixelAt(mousePosition.X, mousePosition.Y);
 
             return pixelColor;
         }
@@ -226,14 +226,14 @@ namespace FlaxEditor.GUI.Dialogs
             Editor.LogWarning("Ok???");
             _activeEyedropper = false;
             SelectedColor = colorPicked;
-            ScreenUtils.PickColorDone -= ColorPicked;
+            ScreenUtilities.PickColorDone -= ColorPicked;
         }
 
         private void OnEyedropStart()
         {
             _activeEyedropper = true;
-            ScreenUtils.PickColor();
-            ScreenUtils.PickColorDone += ColorPicked;
+            ScreenUtilities.PickColor();
+            ScreenUtilities.PickColorDone += ColorPicked;
         }
 
         private void UpdateEyedrop()

@@ -8,7 +8,7 @@ API_INJECT_CODE(cpp, "#include \"Editor/Utilities/ScreenUtilities/ScreenUtilitie
 /// <summary>
 /// Platform-dependent screen utilties.
 /// </summary>
-API_CLASS(Static, Name = "ScreenUtils", Tag = "NativeInvokeUseName")
+API_CLASS(Static, Name = "ScreenUtilities", Tag = "NativeInvokeUseName")
 class FLAXENGINE_API ScreenUtilities
 {
 public:
