@@ -87,23 +87,20 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 LinkValues = Editor.Instance.Windows.PropertiesWin.ScaleLinked;
 
-                // Add button with the link icon.
-                //Editor.Instance.Icons.Link32
-                _linkButton = new IconButton(Editor.Instance.Icons.Link32)
+                // Add button with the link icon
+                _linkButton = new Button
                 {
+                    BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Link32),
                     Parent = LinkedLabel,
                     Width = 18,
                     Height = 18,
-                    AnchorPreset = AnchorPresets.TopLeft
+                    AnchorPreset = AnchorPresets.TopLeft,
                 };
-
                 _linkButton.Clicked += ToggleLink;
                 SetLinkStyle();
-
                 var x = LinkedLabel.Text.Value.Length * 7 + 5;
                 _linkButton.LocalX += x;
                 _linkButton.LocalY += 1;
-
                 LinkedLabel.SetupContextMenu += (label, menu, editor) =>
                 {
                     menu.AddSeparator();
@@ -136,9 +133,11 @@ namespace FlaxEditor.CustomEditors.Editors
 
             private void SetLinkStyle()
             {
-                Color backgroundColor = LinkValues ? FlaxEngine.GUI.Style.Current.BackgroundSelected : FlaxEngine.GUI.Style.Current.ForegroundDisabled;
+                var style = FlaxEngine.GUI.Style.Current;
+                var backgroundColor = LinkValues ? style.Foreground : style.ForegroundDisabled;
                 _linkButton.SetColors(backgroundColor);
-                _linkButton.TooltipText = (LinkValues ? "Unlink" : "Link") + " values for uniform scaling.";
+                _linkButton.BorderColor = _linkButton.BorderColorSelected = _linkButton.BorderColorHighlighted = Color.Transparent;
+                _linkButton.TooltipText = LinkValues ? "Unlinks scale components from uniform scaling" : "Links scale components for uniform scaling";
             }
         }
     }
