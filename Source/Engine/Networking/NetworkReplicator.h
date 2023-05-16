@@ -100,6 +100,13 @@ public:
     API_FUNCTION() static void DespawnObject(ScriptingObject* obj);
 
     /// <summary>
+    /// Checks if the network object is spawned or added to the network replication system.
+    /// </summary>
+    /// <param name="obj">The network object.</param>
+    /// <returns>True if object exists in networking, otherwise false.</returns>
+    API_FUNCTION() static bool HasObject(const ScriptingObject* obj);
+
+    /// <summary>
     /// Gets the Client Id of the network object owner.
     /// </summary>
     /// <param name="obj">The network object.</param>

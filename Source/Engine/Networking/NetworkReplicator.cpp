@@ -874,6 +874,23 @@ void NetworkReplicator::DespawnObject(ScriptingObject* obj)
     DeleteNetworkObject(obj);
 }
 
+bool NetworkReplicator::HasObject(const ScriptingObject* obj)
+{
+    if (obj)
+    {
+        ScopeLock lock(ObjectsLock);
+        const auto it = Objects.Find(obj->GetID());
+        if (it != Objects.End())
+            return true;
+        for (const SpawnItem& item : SpawnQueue)
+        {
+            if (item.Object == obj)
+                return true;
+        }
+    }
+    return false;
+}
+
 uint32 NetworkReplicator::GetObjectOwnerClientId(const ScriptingObject* obj)
 {
     uint32 id = NetworkManager::ServerClientId;
