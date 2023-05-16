@@ -10,7 +10,7 @@ namespace FlaxEngine.GUI
     public class Button : ContainerControl
     {
         /// <summary>
-        /// The default height fro the buttons.
+        /// The default height for the buttons.
         /// </summary>
         public const float DefaultHeight = 24.0f;
 
@@ -195,7 +195,7 @@ namespace FlaxEngine.GUI
         /// Sets the button colors palette based on a given main color.
         /// </summary>
         /// <param name="color">The main color.</param>
-        public void SetColors(Color color)
+        public virtual void SetColors(Color color)
         {
             BackgroundColor = color;
             BorderColor = color.RGBMultiplied(0.5f);

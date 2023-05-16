@@ -78,7 +78,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <seealso cref="FlaxEditor.CustomEditors.Editors.Float3Editor" />
         public class ScaleEditor : Float3Editor
         {
-            private Image _linkImage;
+            private Button _linkButton;
 
             /// <inheritdoc />
             public override void Initialize(LayoutElementsContainer layout)
@@ -87,18 +87,22 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 LinkValues = Editor.Instance.Windows.PropertiesWin.ScaleLinked;
 
-                _linkImage = new Image
+                // Add button with the link icon.
+                //Editor.Instance.Icons.Link32
+                _linkButton = new IconButton(Editor.Instance.Icons.Link32)
                 {
                     Parent = LinkedLabel,
                     Width = 18,
                     Height = 18,
-                    Brush = LinkValues ? new SpriteBrush(Editor.Instance.Icons.Link32) : new SpriteBrush(),
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    TooltipText = "Scale values are linked together.",
+                    AnchorPreset = AnchorPresets.TopLeft
                 };
+
+                _linkButton.Clicked += ToggleLink;
+                SetLinkStyle();
+
                 var x = LinkedLabel.Text.Value.Length * 7 + 5;
-                _linkImage.LocalX += x;
-                _linkImage.LocalY += 1;
+                _linkButton.LocalX += x;
+                _linkButton.LocalY += 1;
 
                 LinkedLabel.SetupContextMenu += (label, menu, editor) =>
                 {
@@ -127,7 +131,14 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 LinkValues = !LinkValues;
                 Editor.Instance.Windows.PropertiesWin.ScaleLinked = LinkValues;
-                _linkImage.Brush = LinkValues ? new SpriteBrush(Editor.Instance.Icons.Link32) : new SpriteBrush();
+                SetLinkStyle();
+            }
+
+            private void SetLinkStyle()
+            {
+                Color backgroundColor = LinkValues ? FlaxEngine.GUI.Style.Current.BackgroundSelected : FlaxEngine.GUI.Style.Current.ForegroundDisabled;
+                _linkButton.SetColors(backgroundColor);
+                _linkButton.TooltipText = (LinkValues ? "Unlink" : "Link") + " values for uniform scaling.";
             }
         }
     }

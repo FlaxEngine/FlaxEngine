@@ -360,7 +360,7 @@ namespace FlaxEditor.Content
         }
 
         /// <summary>
-        /// Updates the tooltip text.
+        /// Updates the tooltip text text.
         /// </summary>
         public virtual void UpdateTooltipText()
         {
