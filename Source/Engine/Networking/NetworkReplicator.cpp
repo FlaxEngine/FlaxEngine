@@ -878,9 +878,16 @@ uint32 NetworkReplicator::GetObjectOwnerClientId(const ScriptingObject* obj)
                 {
                     if (item.HasOwnership)
                         id = item.OwnerClientId;
+#if USE_NETWORK_REPLICATOR_LOG
+                    return id;
+#else
                     break;
+#endif
                 }
             }
+#if USE_NETWORK_REPLICATOR_LOG
+            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to get ownership of unregistered network object {} ({})", obj->GetID(), obj->GetType().ToString());
+#endif
         }
     }
     return id;
@@ -903,9 +910,16 @@ NetworkObjectRole NetworkReplicator::GetObjectRole(const ScriptingObject* obj)
                 {
                     if (item.HasOwnership)
                         role = item.Role;
+#if USE_NETWORK_REPLICATOR_LOG
+                    return role;
+#else
                     break;
+#endif
                 }
             }
+#if USE_NETWORK_REPLICATOR_LOG
+            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to get ownership of unregistered network object {} ({})", obj->GetID(), obj->GetType().ToString());
+#endif
         }
     }
     return role;
