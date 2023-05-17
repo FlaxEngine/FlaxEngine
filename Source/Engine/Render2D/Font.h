@@ -17,17 +17,17 @@ class FontAsset;
 /// <summary>
 /// The text range.
 /// </summary>
-API_STRUCT() struct TextRange
+API_STRUCT(NoDefault) struct TextRange
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(TextRange);
 
     /// <summary>
-    /// The start index.
+    /// The start index (inclusive).
     /// </summary>
     API_FIELD() int32 StartIndex;
 
     /// <summary>
-    /// The end index.
+    /// The end index (exclusive).
     /// </summary>
     API_FIELD() int32 EndIndex;
 
@@ -70,7 +70,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(TextRange);
     /// <summary>
     /// Gets the substring from the source text.
     /// </summary>
-    /// <param name="other">The text.</param>
+    /// <param name="text">The text.</param>
     /// <returns>The substring of the original text of the defined range.</returns>
     StringView Substring(const StringView& text) const
     {
@@ -87,7 +87,7 @@ struct TIsPODType<TextRange>
 /// <summary>
 /// The font line info generated during text processing.
 /// </summary>
-API_STRUCT() struct FontLineCache
+API_STRUCT(NoDefault) struct FontLineCache
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(FontLineCache);
 
@@ -151,7 +151,7 @@ struct TIsPODType<FontLineCache>
 /// <summary>
 /// The cached font character entry (read for rendering and further processing).
 /// </summary>
-API_STRUCT() struct FontCharacterEntry
+API_STRUCT(NoDefault) struct FontCharacterEntry
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(FontCharacterEntry);
 
