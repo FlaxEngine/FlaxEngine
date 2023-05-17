@@ -34,6 +34,7 @@
 #include <mach-o/dyld.h>
 #include <uuid/uuid.h>
 #include <CoreFoundation/CoreFoundation.h>
+#include <Foundation/Foundation.h>
 #include <CoreGraphics/CoreGraphics.h>
 #include <SystemConfiguration/SystemConfiguration.h>
 #include <IOKit/IOKitLib.h>
@@ -193,6 +194,13 @@ void ApplePlatform::GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int3
     minute = localTime.tm_min;
     second = localTime.tm_sec;
     millisecond = time.tv_usec / 1000;
+}
+
+void ApplePlatform::Log(const StringView& msg)
+{
+#if !BUILD_RELEASE && !USE_EDITOR
+    NSLog(@"%s", StringAsANSI<>(*msg, msg.Length()).Get());
+#endif
 }
 
 bool ApplePlatform::Init()

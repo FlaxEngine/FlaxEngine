@@ -79,6 +79,7 @@ public:
     static uint64 GetClockFrequency();
     static void GetSystemTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond);
     static void GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond);
+    static void Log(const StringView& msg);
     static bool Init();
     static void Tick();
     static void BeforeExit();
