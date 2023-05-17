@@ -318,10 +318,10 @@ bool NetworkManager::StartHost()
 
     // Auto-connect host
     LocalClient->State = NetworkConnectionState::Connected;
-    ClientConnected(LocalClient);
-
     State = NetworkConnectionState::Connected;
     StateChanged();
+
+    ClientConnected(LocalClient);
     return false;
 }
 
