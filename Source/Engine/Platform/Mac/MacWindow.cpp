@@ -255,6 +255,15 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
 
 @implementation MacWindowImpl
 
+- (BOOL)canBecomeKeyWindow
+{
+    if (Window && !Window->GetSettings().AllowInput)
+    {
+        return NO;
+    }
+    return YES;
+}
+
 - (void)windowDidBecomeKey:(NSNotification*)notification
 {
 	// Handle resizing to be sure that content has valid size when window was resized
@@ -377,6 +386,10 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
         // Ignore text from special keys
     case KeyboardKeys::Delete:
     case KeyboardKeys::Backspace:
+    case KeyboardKeys::ArrowLeft:
+    case KeyboardKeys::ArrowRight:
+    case KeyboardKeys::ArrowUp:
+    case KeyboardKeys::ArrowDown:
         return;
     }
     NSString* text = [event characters];
