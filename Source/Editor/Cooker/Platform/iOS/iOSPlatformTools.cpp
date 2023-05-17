@@ -298,6 +298,10 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
 
     // TODO: expose event to inject custom post-processing before app packaging (eg. third-party plugins)
 
+    // Run code signing for Apple platform
+    if (EditorUtilities::CodeSignApple(data.DataOutputPath, GetPlatform(), *platformSettings))
+        return true;
+
     // Package application
     const auto buildSettings = BuildSettings::Get();
     if (buildSettings->SkipPackaging)

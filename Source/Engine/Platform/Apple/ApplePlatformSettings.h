@@ -29,12 +29,46 @@ API_CLASS(abstract, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_AP
     API_FIELD(Attributes="EditorOrder(1000), EditorDisplay(\"Other\")")
     SoftObjectReference<Texture> OverrideIcon;
 
+#if USE_EDITOR
+    // Package code signing modes.
+    API_ENUM() enum class CodeSigningMode
+    {
+        // No code signing.
+        None,
+        // Signing code with Provision File (.mobileprovision).
+        WithProvisionFile,
+    };
+
+    /// <summary>
+    /// App code signing mode.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2000), EditorDisplay(\"Code Signing\")")
+    CodeSigningMode CodeSigning = CodeSigningMode::None;
+
+    /// <summary>
+    /// App code signing provision file path (absolute or relative to the project).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2050), EditorDisplay(\"Code Signing\")")
+    String ProvisionFile;
+
+    /// <summary>
+    /// App code signing idenity name (from local Mac keychain). Use 'security find-identity -v -p codesigning' to list possible options.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2080), EditorDisplay(\"Code Signing\")")
+    String SignIdenity;
+#endif
+
 public:
     // [SettingsBase]
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override
     {
         DESERIALIZE(AppIdentifier);
         DESERIALIZE(OverrideIcon);
+#if USE_EDITOR
+        DESERIALIZE(CodeSigning);
+        DESERIALIZE(ProvisionFile);
+        DESERIALIZE(SignIdenity);
+#endif
     }
 };
 
