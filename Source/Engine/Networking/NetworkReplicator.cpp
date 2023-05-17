@@ -1026,6 +1026,12 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
             if (e.Item.ParentId == objectId)
                 SetObjectOwnership(e.Item.Object.Get(), ownerClientId, localRole, hierarchical);
         }
+
+        for (const SpawnItem& spawnItem : SpawnQueue)
+        {
+            if (IsParentOf(spawnItem.Object, obj))
+                SetObjectOwnership(spawnItem.Object, ownerClientId, localRole, hierarchical);
+        }
     }
 }
 
