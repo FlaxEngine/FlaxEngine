@@ -745,7 +745,7 @@ bool NetworkReplicator::InvokeSerializer(const ScriptingTypeHandle& typeHandle, 
     return false;
 }
 
-void NetworkReplicator::AddObject(ScriptingObject* obj, ScriptingObject* parent)
+void NetworkReplicator::AddObject(ScriptingObject* obj, const ScriptingObject* parent)
 {
     if (!obj || NetworkManager::IsOffline())
         return;
@@ -774,6 +774,19 @@ void NetworkReplicator::AddObject(ScriptingObject* obj, ScriptingObject* parent)
     item.OwnerClientId = NetworkManager::ServerClientId; // Server owns objects by default
     item.Role = NetworkManager::IsClient() ? NetworkObjectRole::Replicated : NetworkObjectRole::OwnedAuthoritative;
     NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Add new object {}:{}, parent {}:{}", item.ToString(), obj->GetType().ToString(), item.ParentId.ToString(), parent ? parent->GetType().ToString() : String::Empty);
+    for (const SpawnItem& spawnItem : SpawnQueue)
+    {
+        if (spawnItem.HasOwnership && spawnItem.HierarchicalOwnership)
+        {
+            if (IsParentOf(obj, spawnItem.Object))
+            {
+                // Inherit ownership
+                item.Role = spawnItem.Role;
+                item.OwnerClientId = spawnItem.OwnerClientId;
+                break;
+            }
+        }
+    }
     Objects.Add(MoveTemp(item));
 }
 
@@ -861,10 +874,27 @@ void NetworkReplicator::DespawnObject(ScriptingObject* obj)
     DeleteNetworkObject(obj);
 }
 
+bool NetworkReplicator::HasObject(const ScriptingObject* obj)
+{
+    if (obj)
+    {
+        ScopeLock lock(ObjectsLock);
+        const auto it = Objects.Find(obj->GetID());
+        if (it != Objects.End())
+            return true;
+        for (const SpawnItem& item : SpawnQueue)
+        {
+            if (item.Object == obj)
+                return true;
+        }
+    }
+    return false;
+}
+
 uint32 NetworkReplicator::GetObjectOwnerClientId(const ScriptingObject* obj)
 {
     uint32 id = NetworkManager::ServerClientId;
-    if (obj)
+    if (obj && NetworkManager::IsConnected())
     {
         ScopeLock lock(ObjectsLock);
         const auto it = Objects.Find(obj->GetID());
@@ -878,9 +908,16 @@ uint32 NetworkReplicator::GetObjectOwnerClientId(const ScriptingObject* obj)
                 {
                     if (item.HasOwnership)
                         id = item.OwnerClientId;
+#if USE_NETWORK_REPLICATOR_LOG
+                    return id;
+#else
                     break;
+#endif
                 }
             }
+#if USE_NETWORK_REPLICATOR_LOG
+            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to get ownership of unregistered network object {} ({})", obj->GetID(), obj->GetType().ToString());
+#endif
         }
     }
     return id;
@@ -889,7 +926,7 @@ uint32 NetworkReplicator::GetObjectOwnerClientId(const ScriptingObject* obj)
 NetworkObjectRole NetworkReplicator::GetObjectRole(const ScriptingObject* obj)
 {
     NetworkObjectRole role = NetworkObjectRole::None;
-    if (obj)
+    if (obj && NetworkManager::IsConnected())
     {
         ScopeLock lock(ObjectsLock);
         const auto it = Objects.Find(obj->GetID());
@@ -903,9 +940,16 @@ NetworkObjectRole NetworkReplicator::GetObjectRole(const ScriptingObject* obj)
                 {
                     if (item.HasOwnership)
                         role = item.Role;
+#if USE_NETWORK_REPLICATOR_LOG
+                    return role;
+#else
                     break;
+#endif
                 }
             }
+#if USE_NETWORK_REPLICATOR_LOG
+            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to get ownership of unregistered network object {} ({})", obj->GetID(), obj->GetType().ToString());
+#endif
         }
     }
     return role;
@@ -913,10 +957,11 @@ NetworkObjectRole NetworkReplicator::GetObjectRole(const ScriptingObject* obj)
 
 void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerClientId, NetworkObjectRole localRole, bool hierarchical)
 {
-    if (!obj)
+    if (!obj || NetworkManager::IsOffline())
         return;
+    const Guid objectId = obj->GetID();
     ScopeLock lock(ObjectsLock);
-    const auto it = Objects.Find(obj->GetID());
+    const auto it = Objects.Find(objectId);
     if (it == Objects.End())
     {
         // Special case if we're just spawning this object
@@ -944,31 +989,33 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
                 break;
             }
         }
-        return;
-    }
-    auto& item = it->Item;
-    if (item.Object != obj)
-        return;
-
-    // Check if this client is object owner
-    if (item.OwnerClientId == NetworkManager::LocalClientId)
-    {
-        // Check if object owner will change
-        if (item.OwnerClientId != ownerClientId)
-        {
-            // Change role locally
-            CHECK(localRole != NetworkObjectRole::OwnedAuthoritative);
-            item.OwnerClientId = ownerClientId;
-            item.LastOwnerFrame = 1;
-            item.Role = localRole;
-            SendObjectRoleMessage(item);
-        }
     }
     else
     {
-        // Allow to change local role of the object (except ownership)
-        CHECK(localRole != NetworkObjectRole::OwnedAuthoritative);
-        item.Role = localRole;
+        auto& item = it->Item;
+        if (item.Object != obj)
+            return;
+
+        // Check if this client is object owner
+        if (item.OwnerClientId == NetworkManager::LocalClientId)
+        {
+            // Check if object owner will change
+            if (item.OwnerClientId != ownerClientId)
+            {
+                // Change role locally
+                CHECK(localRole != NetworkObjectRole::OwnedAuthoritative);
+                item.OwnerClientId = ownerClientId;
+                item.LastOwnerFrame = 1;
+                item.Role = localRole;
+                SendObjectRoleMessage(item);
+            }
+        }
+        else
+        {
+            // Allow to change local role of the object (except ownership)
+            CHECK(localRole != NetworkObjectRole::OwnedAuthoritative);
+            item.Role = localRole;
+        }
     }
 
     // Go down hierarchy
@@ -976,8 +1023,14 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
     {
         for (auto& e : Objects)
         {
-            if (e.Item.ParentId == item.ObjectId)
+            if (e.Item.ParentId == objectId)
                 SetObjectOwnership(e.Item.Object.Get(), ownerClientId, localRole, hierarchical);
+        }
+
+        for (const SpawnItem& spawnItem : SpawnQueue)
+        {
+            if (IsParentOf(spawnItem.Object, obj))
+                SetObjectOwnership(spawnItem.Object, ownerClientId, localRole, hierarchical);
         }
     }
 }
@@ -1182,9 +1235,11 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 {
                     if (!q.HasOwnership && IsParentOf(q.Object, e.Object))
                     {
+                        // Inherit ownership
                         q.HasOwnership = true;
                         q.Role = e.Role;
                         q.OwnerClientId = e.OwnerClientId;
+                        break;
                     }
                 }
             }
@@ -1623,7 +1678,7 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
         }
     }
 
-    // Setup all newly spawned objects
+    // Add all newly spawned objects
     for (int32 i = 0; i < msgData.ItemsCount; i++)
     {
         auto& msgDataItem = msgDataItems[i];
@@ -1652,6 +1707,16 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
         // Boost future lookups by using indirection
         NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Remap object ID={} into object {}:{}", msgDataItem.ObjectId, item.ToString(), obj->GetType().ToString());
         IdsRemappingTable.Add(msgDataItem.ObjectId, item.ObjectId);
+    }
+
+    // Spawn all newly spawned objects (ensure to have valid ownership hierarchy set before spawning object)
+    for (int32 i = 0; i < msgData.ItemsCount; i++)
+    {
+        auto& msgDataItem = msgDataItems[i];
+        ScriptingObject* obj = objects[i];
+        auto it = Objects.Find(obj->GetID());
+        auto& item = it->Item;
+        const NetworkReplicatedObject* parent = ResolveObject(msgDataItem.ParentId);
 
         // Automatic parenting for scene objects
         auto sceneObject = ScriptingObject::Cast<SceneObject>(obj);

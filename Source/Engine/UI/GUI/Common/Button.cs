@@ -10,7 +10,7 @@ namespace FlaxEngine.GUI
     public class Button : ContainerControl
     {
         /// <summary>
-        /// The default height fro the buttons.
+        /// The default height for the buttons.
         /// </summary>
         public const float DefaultHeight = 24.0f;
 

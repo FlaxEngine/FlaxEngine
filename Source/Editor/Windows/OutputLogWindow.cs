@@ -541,7 +541,7 @@ namespace FlaxEditor.Windows
                     {
                         ref var line = ref lines[j];
                         textBlock.Range.StartIndex = startIndex + line.FirstCharIndex;
-                        textBlock.Range.EndIndex = startIndex + line.LastCharIndex;
+                        textBlock.Range.EndIndex = startIndex + line.LastCharIndex + 1;
                         textBlock.Bounds = new Rectangle(new Float2(0.0f, prevBlockBottom), line.Size);
 
                         if (textBlock.Range.Length > 0)
@@ -550,7 +550,7 @@ namespace FlaxEditor.Windows
                             var regexStart = line.FirstCharIndex;
                             if (j == 0)
                                 regexStart += prefixLength;
-                            var regexLength = line.LastCharIndex - regexStart;
+                            var regexLength = line.LastCharIndex + 1 - regexStart;
                             if (regexLength > 0)
                             {
                                 var match = _compileRegex.Match(entryText, regexStart, regexLength);

@@ -68,7 +68,7 @@ public:
     /// <remarks>Does nothing if network is offline.</remarks>
     /// <param name="obj">The object to replicate.</param>
     /// <param name="parent">The parent of the object (eg. player that spawned it).</param>
-    API_FUNCTION() static void AddObject(ScriptingObject* obj, ScriptingObject* parent = nullptr);
+    API_FUNCTION() static void AddObject(ScriptingObject* obj, const ScriptingObject* parent = nullptr);
 
     /// <summary>
     /// Removes the object from the network replication system.
@@ -80,14 +80,14 @@ public:
     /// <summary>
     /// Spawns the object to the other clients. Can be spawned by the owner who locally created it (eg. from prefab).
     /// </summary>
-    /// <remarks>Does nothing if network is offline.</remarks>
+    /// <remarks>Does nothing if network is offline. Doesn't spawn actor in a level - but in network replication system.</remarks>
     /// <param name="obj">The object to spawn on other clients.</param>
     API_FUNCTION() static void SpawnObject(ScriptingObject* obj);
 
     /// <summary>
     /// Spawns the object to the other clients. Can be spawned by the owner who locally created it (eg. from prefab).
     /// </summary>
-    /// <remarks>Does nothing if network is offline.</remarks>
+    /// <remarks>Does nothing if network is offline. Doesn't spawn actor in a level - but in network replication system.</remarks>
     /// <param name="obj">The object to spawn on other clients.</param>
     /// <param name="clientIds">List with network client IDs that should receive network spawn event. Empty to spawn on all clients.</param>
     API_FUNCTION() static void SpawnObject(ScriptingObject* obj, const DataContainer<uint32>& clientIds);
@@ -98,6 +98,13 @@ public:
     /// <remarks>Does nothing if network is offline.</remarks>
     /// <param name="obj">The object to despawn on other clients.</param>
     API_FUNCTION() static void DespawnObject(ScriptingObject* obj);
+
+    /// <summary>
+    /// Checks if the network object is spawned or added to the network replication system.
+    /// </summary>
+    /// <param name="obj">The network object.</param>
+    /// <returns>True if object exists in networking, otherwise false.</returns>
+    API_FUNCTION() static bool HasObject(const ScriptingObject* obj);
 
     /// <summary>
     /// Gets the Client Id of the network object owner.
