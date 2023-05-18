@@ -34,11 +34,6 @@ public:
     API_FUNCTION() static void PickColor();
 
     /// <summary>
-    /// Blocks mouse input and runs a callback
-    /// </summary>
-    API_FUNCTION() static void BlockAndReadMouse();
-
-    /// <summary>
     /// Called when PickColor() is finished.
     /// </summary>
     API_EVENT() static Delegate<Color32> PickColorDone;

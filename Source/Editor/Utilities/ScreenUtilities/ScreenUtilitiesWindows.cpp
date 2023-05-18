@@ -36,6 +36,7 @@ class ScreenUtilitiesWindows
 {
 public:
     static void PickSelected();
+    static void BlockAndReadMouse();
 };
 
 void ScreenUtilitiesWindows::PickSelected() {
@@ -76,7 +77,7 @@ LRESULT CALLBACK ScreenUtilsMouseCallback(
     return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
 
-void ScreenUtilities::BlockAndReadMouse()
+void ScreenUtilitiesWindows::BlockAndReadMouse()
 {
     _mouseCallbackHook = SetWindowsHookEx(WH_MOUSE_LL, ScreenUtilsMouseCallback, NULL, NULL);
     if (_mouseCallbackHook == NULL)
@@ -90,8 +91,7 @@ Delegate<Color32> ScreenUtilities::PickColorDone;
 
 void ScreenUtilities::PickColor()
 {
-//    MCore::AttachThread();
-    BlockAndReadMouse();
+    ScreenUtilitiesWindows::BlockAndReadMouse();
 }
 
 

@@ -17,9 +17,10 @@ Int2 ScreenUtilities::GetScreenCursorPosition()
 class ScreenUtilitiesLinux
 {
 public:
+  static void BlockAndReadMouse();
 };
 
-void ScreenUtilities::BlockAndReadMouse()
+void ScreenUtilitiesLinux::BlockAndReadMouse()
 {
 }
 
