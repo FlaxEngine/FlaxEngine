@@ -223,7 +223,6 @@ namespace FlaxEditor.GUI.Dialogs
 
         private void ColorPicked(Color32 colorPicked)
         {
-            Editor.LogWarning("Ok???");
             _activeEyedropper = false;
             SelectedColor = colorPicked;
             ScreenUtilities.PickColorDone -= ColorPicked;
