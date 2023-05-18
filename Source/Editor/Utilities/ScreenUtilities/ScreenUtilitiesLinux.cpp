@@ -63,6 +63,16 @@ public:
 
 void ScreenUtilitiesLinux::BlockAndReadMouse()
 {
+    X11::Display* display = X11::XOpenDisplay(NULL);
+    X11::Window rootWindow = X11::XRootWindow(display, X11::XDefaultScreen(display));
+
+    int grabbedPointer = X11::XGrabPointer(display, rootWindow, 0, Button1Mask, GrabModeAsync, GrabModeAsync, rootWindow, NULL, CurrentTime);
+    if (grabbedPointer != GrabSuccess) {
+        LOG(Error, "Failed to grab cursor for events.");
+    }
+
+    // No idea how to proceed from here for events.
+
     return;
 }
 
