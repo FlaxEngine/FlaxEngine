@@ -40,13 +40,11 @@ public:
 };
 
 void ScreenUtilitiesWindows::PickSelected() {
-    // Push event with the picked color.
     Int2 cursorPos = ScreenUtilities::GetScreenCursorPosition();
     Color32 colorPicked = ScreenUtilities::GetPixelAt(cursorPos.X, cursorPos.Y);
 
-    LOG(Warning, "REAL: {0}", ScreenUtilities::PickColorDone.Count());
+    // Push event with the picked color.
     ScreenUtilities::PickColorDone(colorPicked);
-    LOG(Warning, "FAKE");
 }
 
 static HHOOK _mouseCallbackHook;
@@ -56,7 +54,6 @@ LRESULT CALLBACK ScreenUtilsMouseCallback(
     _In_ LPARAM lParam
 )
 {
-    LOG(Warning, "Hell lag. {0}", GetCurrentThreadId());
     if (wParam != WM_LBUTTONDOWN) { // Return as early as possible.
         return CallNextHookEx(NULL, nCode, wParam, lParam);
     }
@@ -67,7 +64,6 @@ LRESULT CALLBACK ScreenUtilsMouseCallback(
 
 
     if (nCode >= 0 && wParam == WM_LBUTTONDOWN) { // Now try to run our code.
-        LOG(Warning, "Mouse callback hit. Skipping event. (hopefully)");
         UnhookWindowsHookEx(_mouseCallbackHook);
 
         ScreenUtilitiesWindows::PickSelected();
