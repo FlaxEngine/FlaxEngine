@@ -5,6 +5,7 @@
 #include "LinuxPlatform.h"
 #include "LinuxWindow.h"
 #include "LinuxInput.h"
+#include "IncludeX11.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/String.h"
@@ -30,7 +31,6 @@
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
 #include "Engine/Input/Keyboard.h"
-#include "IncludeX11.h"
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
 #include <sys/time.h>
@@ -2217,6 +2217,8 @@ void LinuxPlatform::BeforeRun()
 {
 }
 
+Delegate<void*> LinuxPlatform::xEventRecieved;
+
 void LinuxPlatform::Tick()
 {
 	UnixPlatform::Tick();
@@ -2234,7 +2236,8 @@ void LinuxPlatform::Tick()
 
 		if (X11::XFilterEvent(&event, 0))
 			continue;
-
+		
+		xEventRecieved(&event); // Fire the event, since we recieved an event.
 		LinuxWindow* window;
 		switch (event.type)
 		{

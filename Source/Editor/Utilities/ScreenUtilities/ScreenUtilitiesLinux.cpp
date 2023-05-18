@@ -5,6 +5,7 @@
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Delegate.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Platform/Linux/LinuxPlatform.h"
 
 #include "Engine/Platform/Linux/IncludeX11.h"
 
@@ -40,7 +41,7 @@ Int2 ScreenUtilities::GetScreenCursorPosition()
     X11::Window rootWindowBuffer;
     int rootX, rootY;
     int winXBuffer, winYBuffer;
-    uint maskBuffer;
+    unsigned int maskBuffer;
 
     int gotPointer = X11::XQueryPointer(display, rootWindow, &rootWindowBuffer, &rootWindowBuffer, &rootX, &rootY, &winXBuffer, &winYBuffer, &maskBuffer);
     if (!gotPointer) {
@@ -59,28 +60,43 @@ class ScreenUtilitiesLinux
 {
 public:
   static void BlockAndReadMouse();
+  static void xEventHandler(void* event);
 };
+
+void ScreenUtilitiesLinux::xEventHandler(void* eventPtr) {
+    X11::XEvent* event = (X11::XEvent*) eventPtr;
+
+    LOG(Warning, "Got event. {0}", event->type);
+
+    if (0) {
+        LOG(Warning, "Got MOUSE CLICK event.");
+        X11::Display* display = X11::XOpenDisplay(NULL);
+        LOG(Warning, "Tried to ungrab pointer. {0}", X11::XUngrabPointer(display, CurrentTime));
+        X11::XCloseDisplay(display);
+
+        LinuxPlatform::xEventRecieved.Unbind(xEventHandler); // Unbind the event, we only want to handle one click event.
+    }
+}
 
 void ScreenUtilitiesLinux::BlockAndReadMouse()
 {
     X11::Display* display = X11::XOpenDisplay(NULL);
     X11::Window rootWindow = X11::XRootWindow(display, X11::XDefaultScreen(display));
 
-    int grabbedPointer = X11::XGrabPointer(display, rootWindow, 0, Button1Mask, GrabModeAsync, GrabModeAsync, rootWindow, NULL, CurrentTime);
+    int grabbedPointer = X11::XGrabPointer(display, rootWindow, 1, Button1Mask, GrabModeAsync, GrabModeAsync, rootWindow, NULL, CurrentTime);
     if (grabbedPointer != GrabSuccess) {
         LOG(Error, "Failed to grab cursor for events.");
+        return;
     }
 
-    // No idea how to proceed from here for events.
-
-    return;
+    LinuxPlatform::xEventRecieved.Bind(xEventHandler);
 }
 
 Delegate<Color32> ScreenUtilities::PickColorDone;
 
 void ScreenUtilities::PickColor()
 {
-    return;
+    ScreenUtilitiesLinux::BlockAndReadMouse();
 }
 
 #endif
