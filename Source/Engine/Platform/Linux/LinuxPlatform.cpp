@@ -2237,7 +2237,8 @@ void LinuxPlatform::Tick()
 		if (X11::XFilterEvent(&event, 0))
 			continue;
 		
-		xEventRecieved(&event); // Fire the event, since we recieved an event.
+		xEventRecieved(&event); // Fire this event, since we recieved an event.
+		
 		LinuxWindow* window;
 		switch (event.type)
 		{

@@ -67,14 +67,18 @@ void ScreenUtilitiesLinux::xEventHandler(void* eventPtr) {
     X11::XEvent* event = (X11::XEvent*) eventPtr;
 
     LOG(Warning, "Got event. {0}", event->type);
+    X11::Display* display = X11::XOpenDisplay(NULL);
 
-    if (0) {
+    if (event->type == ButtonPress) {
         LOG(Warning, "Got MOUSE CLICK event.");
-        X11::Display* display = X11::XOpenDisplay(NULL);
-        LOG(Warning, "Tried to ungrab pointer. {0}", X11::XUngrabPointer(display, CurrentTime));
-        X11::XCloseDisplay(display);
-
         LinuxPlatform::xEventRecieved.Unbind(xEventHandler); // Unbind the event, we only want to handle one click event.
+
+        X11::XUngrabPointer(display, CurrentTime);
+        X11::XCloseDisplay(display);
+    } else 
+    {
+        LOG(Warning, "Got a different event..");
+        X11::XCloseDisplay(display);
     }
 }
 
@@ -83,7 +87,8 @@ void ScreenUtilitiesLinux::BlockAndReadMouse()
     X11::Display* display = X11::XOpenDisplay(NULL);
     X11::Window rootWindow = X11::XRootWindow(display, X11::XDefaultScreen(display));
 
-    int grabbedPointer = X11::XGrabPointer(display, rootWindow, 1, Button1Mask, GrabModeAsync, GrabModeAsync, rootWindow, NULL, CurrentTime);
+    X11::Cursor cursor = XCreateFontCursor(display, 130);
+    int grabbedPointer = X11::XGrabPointer(display, rootWindow, 0,  ButtonPressMask, GrabModeAsync, GrabModeAsync, rootWindow, cursor, CurrentTime);
     if (grabbedPointer != GrabSuccess) {
         LOG(Error, "Failed to grab cursor for events.");
         return;
