@@ -90,7 +90,7 @@ namespace Flax.Build.Bindings
             "Int4",
         };
 
-        private static string GenerateCSharpDefaultValueNativeToManaged(BuildData buildData, string value, ApiTypeInfo caller, TypeInfo valueType = null, bool attribute = false)
+        private static string GenerateCSharpDefaultValueNativeToManaged(BuildData buildData, string value, ApiTypeInfo caller, TypeInfo valueType = null, bool attribute = false, string managedType = null)
         {
             if (string.IsNullOrEmpty(value))
                 return null;
@@ -98,6 +98,13 @@ namespace Flax.Build.Bindings
             // Special case for Engine TEXT macro
             if (value.StartsWith("TEXT(\"") && value.EndsWith("\")"))
                 return value.Substring(5, value.Length - 6);
+
+            // Pointer constant value
+            if (managedType != null && managedType == "IntPtr" &&
+                (value == "nullptr" || value == "NULL" || value == "0"))
+            {
+                return "new IntPtr()";
+            }
 
             // In-built constants
             switch (value)
@@ -1059,12 +1066,12 @@ namespace Flax.Build.Bindings
                 else if (fieldInfo.IsStatic)
                     contents.Append("static ");
 
-                var returnValueType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, classInfo);
-                contents.Append(returnValueType).Append(' ').Append(fieldInfo.Name);
+                var managedType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, classInfo);
+                contents.Append(managedType).Append(' ').Append(fieldInfo.Name);
 
                 if (!useUnmanaged || fieldInfo.IsConstexpr)
                 {
-                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, classInfo, fieldInfo.Type);
+                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, classInfo, fieldInfo.Type, false, managedType);
                     if (!string.IsNullOrEmpty(defaultValue))
                         contents.Append(" = ").Append(defaultValue);
                     contents.AppendLine(";");
@@ -1183,7 +1190,7 @@ namespace Flax.Build.Bindings
                         contents.Append(' ');
                         contents.Append(parameterInfo.Name);
 
-                        var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo, parameterInfo.Type);
+                        var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo, parameterInfo.Type, false, managedType);
                         if (!string.IsNullOrEmpty(defaultValue))
                             contents.Append(" = ").Append(defaultValue);
                     }
@@ -1243,7 +1250,7 @@ namespace Flax.Build.Bindings
                             contents.Append(' ');
                             contents.Append(parameterInfo.Name);
 
-                            var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo, parameterInfo.Type);
+                            var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo, parameterInfo.Type, false, managedType);
                             if (!string.IsNullOrEmpty(defaultValue))
                                 contents.Append(" = ").Append(defaultValue);
                         }
@@ -1697,25 +1704,25 @@ namespace Flax.Build.Bindings
                 else if (fieldInfo.IsStatic)
                     contents.Append("static ");
                 hasDefaultMember |= string.Equals(fieldInfo.Name, "Default", StringComparison.Ordinal);
-                string type;
+                string managedType;
 
                 if (fieldInfo.Type.IsArray && (fieldInfo.NoArray || structureInfo.IsPod))
                 {
                     fieldInfo.Type.IsArray = false;
-                    type = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
+                    managedType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
                     fieldInfo.Type.IsArray = true;
 #if USE_NETCORE
                     // Use fixed statement with primitive types of buffers
-                    if (type == "char")
+                    if (managedType == "char")
                     {
                         // char's are not blittable, store as short instead
-                        contents.Append($"fixed short {fieldInfo.Name}0[{fieldInfo.Type.ArraySize}]; // {type}*").AppendLine();
+                        contents.Append($"fixed short {fieldInfo.Name}0[{fieldInfo.Type.ArraySize}]; // {managedType}*").AppendLine();
                     }
                     else
 #endif
                     {
                         // Padding in structs for fixed-size array
-                        contents.Append(type).Append(' ').Append(fieldInfo.Name + "0;").AppendLine();
+                        contents.Append(managedType).Append(' ').Append(fieldInfo.Name + "0;").AppendLine();
                         for (int i = 1; i < fieldInfo.Type.ArraySize; i++)
                         {
                             contents.AppendLine();
@@ -1724,19 +1731,19 @@ namespace Flax.Build.Bindings
                             contents.Append(indent).Append(GenerateCSharpAccessLevel(fieldInfo.Access));
                             if (fieldInfo.IsStatic)
                                 contents.Append("static ");
-                            contents.Append(type).Append(' ').Append(fieldInfo.Name + i).Append(';').AppendLine();
+                            contents.Append(managedType).Append(' ').Append(fieldInfo.Name + i).Append(';').AppendLine();
                         }
                     }
                     continue;
                 }
 
-                type = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
-                contents.Append(type).Append(' ').Append(fieldInfo.Name);
+                managedType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
+                contents.Append(managedType).Append(' ').Append(fieldInfo.Name);
 
                 if (fieldInfo.IsConstexpr)
                 {
                     // Compile-time constant
-                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, structureInfo, fieldInfo.Type);
+                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, structureInfo, fieldInfo.Type, false, managedType);
                     if (!string.IsNullOrEmpty(defaultValue))
                         contents.Append(" = ").Append(defaultValue);
                     contents.AppendLine(";");
@@ -1950,7 +1957,7 @@ namespace Flax.Build.Bindings
                     contents.Append(' ');
                     contents.Append(parameterInfo.Name);
 
-                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, interfaceInfo, parameterInfo.Type);
+                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, interfaceInfo, parameterInfo.Type, false, managedType);
                     if (!string.IsNullOrEmpty(defaultValue))
                         contents.Append(" = ").Append(defaultValue);
                 }
