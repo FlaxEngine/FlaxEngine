@@ -14,7 +14,7 @@ Color32 ScreenUtilities::GetPixelAt(int32 x, int32 y)
     X11::XColor color;
     Color32 outputColor;
     
-    X11::Display* display = X11::XOpenDisplay((char *) NULL);
+    X11::Display* display = (X11::Display*) LinuxPlatform::GetXDisplay();
     int defaultScreen = X11::XDefaultScreen(display);
 
     X11::XImage* image;
@@ -27,14 +27,13 @@ Color32 ScreenUtilities::GetPixelAt(int32 x, int32 y)
     outputColor.G = color.green / 256;
     outputColor.B = color.blue / 256;
 
-    X11::XCloseDisplay(display);
     return outputColor;
 }
 
 Int2 ScreenUtilities::GetScreenCursorPosition()
 {
     Int2 cursorPosition = { 0, 0 };
-    X11::Display* display = X11::XOpenDisplay(NULL);
+    X11::Display* display = (X11::Display*) LinuxPlatform::GetXDisplay();
     X11::Window rootWindow = X11::XRootWindow(display, X11::XDefaultScreen(display));
 
     // Buffers (Some useful, some not.)
@@ -45,14 +44,13 @@ Int2 ScreenUtilities::GetScreenCursorPosition()
 
     int gotPointer = X11::XQueryPointer(display, rootWindow, &rootWindowBuffer, &rootWindowBuffer, &rootX, &rootY, &winXBuffer, &winYBuffer, &maskBuffer);
     if (!gotPointer) {
-        LOG(Error, "Failed to read mouse pointer (Are you using multiple displays?)");
+        LOG(Error, "Failed to find the mouse pointer (Are you using multiple displays?)");
         return cursorPosition;
     }
 
     cursorPosition.X = rootX;
     cursorPosition.Y = rootY;
 
-    X11::XCloseDisplay(display);
     return cursorPosition;
 }
 
@@ -66,34 +64,33 @@ public:
 void ScreenUtilitiesLinux::xEventHandler(void* eventPtr) {
     X11::XEvent* event = (X11::XEvent*) eventPtr;
 
-    LOG(Warning, "Got event. {0}", event->type);
-    X11::Display* display = X11::XOpenDisplay(NULL);
+    X11::Display* display = (X11::Display*) LinuxPlatform::GetXDisplay();
 
     if (event->type == ButtonPress) {
-        LOG(Warning, "Got MOUSE CLICK event.");
-        LinuxPlatform::xEventRecieved.Unbind(xEventHandler); // Unbind the event, we only want to handle one click event.
+        Int2 cursorPosition = ScreenUtilities::GetScreenCursorPosition();
+        Color32 colorPicked = ScreenUtilities::GetPixelAt(cursorPosition.X, cursorPosition.Y);
 
+        ScreenUtilities::PickColorDone(colorPicked); // Run the callback for picking colors being complete.
+        LinuxPlatform::xEventRecieved.Unbind(xEventHandler); // Unbind the event, we only want to handle one click event
         X11::XUngrabPointer(display, CurrentTime);
-        X11::XCloseDisplay(display);
-    } else 
-    {
-        LOG(Warning, "Got a different event..");
-        X11::XCloseDisplay(display);
     }
 }
 
 void ScreenUtilitiesLinux::BlockAndReadMouse()
 {
-    X11::Display* display = X11::XOpenDisplay(NULL);
+    X11::Display* display = (X11::Display*) LinuxPlatform::GetXDisplay();
     X11::Window rootWindow = X11::XRootWindow(display, X11::XDefaultScreen(display));
 
     X11::Cursor cursor = XCreateFontCursor(display, 130);
     int grabbedPointer = X11::XGrabPointer(display, rootWindow, 0,  ButtonPressMask, GrabModeAsync, GrabModeAsync, rootWindow, cursor, CurrentTime);
     if (grabbedPointer != GrabSuccess) {
         LOG(Error, "Failed to grab cursor for events.");
+
+        X11::XFreeCursor(display, cursor);
         return;
     }
 
+    X11::XFreeCursor(display, cursor);
     LinuxPlatform::xEventRecieved.Bind(xEventHandler);
 }
 
