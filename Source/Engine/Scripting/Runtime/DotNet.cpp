@@ -299,6 +299,17 @@ void MCore::UnloadEngine()
     ShutdownHostfxr();
 }
 
+#if USE_EDITOR
+
+void MCore::OnMidHotReload()
+{
+    // Clear any cached class attributes (see https://github.com/FlaxEngine/FlaxEngine/issues/1108)
+    for (auto e : CachedClassHandles)
+        e.Value->_attributes.Clear();
+}
+
+#endif
+
 MObject* MCore::Object::Box(void* value, const MClass* klass)
 {
     static void* BoxValuePtr = GetStaticMethodPointer(TEXT("BoxValue"));

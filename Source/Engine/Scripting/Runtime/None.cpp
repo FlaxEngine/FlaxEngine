@@ -59,6 +59,14 @@ void MCore::UnloadEngine()
     MRootDomain = nullptr;
 }
 
+#if USE_EDITOR
+
+void MCore::OnMidHotReload()
+{
+}
+
+#endif
+
 MObject* MCore::Object::Box(void* value, const MClass* klass)
 {
     return nullptr;

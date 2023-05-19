@@ -665,6 +665,7 @@ void Scripting::Reload(bool canTriggerSceneReload)
     modules.Clear();
     _nonNativeModules.ClearDelete();
     _hasGameModulesLoaded = false;
+    MCore::OnMidHotReload();
 
     // Give GC a try to cleanup old user objects and the other mess
     MCore::GC::Collect();
