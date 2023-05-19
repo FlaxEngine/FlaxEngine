@@ -1,9 +1,12 @@
 #if PLATFORM_MAC
 #include <Cocoa/Cocoa.h>
 #include <AppKit/AppKit.h>
+
 #include "ScreenUtilities.h"
-#include "Engine/Core/Types/BaseTypes.h"
+#include "Engine/Core/Math/Color32.h"
+#include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Delegate.h"
+#include "Engine/Core/Log.h"
 
 Color32 ScreenUtilities::GetPixelAt(int32 x, int32 y)
 {
