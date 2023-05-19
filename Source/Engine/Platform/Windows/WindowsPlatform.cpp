@@ -1221,10 +1221,11 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
     return handle;
 }
 
+#if CRASH_LOG_ENABLE
+
 Array<PlatformBase::StackFrame> WindowsPlatform::GetStackFrames(int32 skipCount, int32 maxDepth, void* context)
 {
     Array<StackFrame> result;
-#if CRASH_LOG_ENABLE
     DbgHelpLock();
 
     // Initialize
@@ -1350,11 +1351,8 @@ Array<PlatformBase::StackFrame> WindowsPlatform::GetStackFrames(int32 skipCount,
     }
 
     DbgHelpUnlock();
-#endif
     return result;
 }
-
-#if CRASH_LOG_ENABLE
 
 void WindowsPlatform::CollectCrashData(const String& crashDataFolder, void* context)
 {
