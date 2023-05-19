@@ -87,7 +87,7 @@ namespace FlaxEngine.Interop
 #endif
             scriptingAssemblyLoadContext = new AssemblyLoadContext("Flax", isCollectible);
 #if FLAX_EDITOR
-            scriptingAssemblyLoadContext.Resolving += ScriptingAssemblyLoadContext_Resolving;
+            scriptingAssemblyLoadContext.Resolving += OnScriptingAssemblyLoadContextResolving;
 #endif
         }
 
@@ -106,7 +106,8 @@ namespace FlaxEngine.Interop
             DelegateHelpers.InitMethods();
         }
 
-        private static Assembly? ScriptingAssemblyLoadContext_Resolving(AssemblyLoadContext assemblyLoadContext, AssemblyName assemblyName)
+#if FLAX_EDITOR
+        private static Assembly? OnScriptingAssemblyLoadContextResolving(AssemblyLoadContext assemblyLoadContext, AssemblyName assemblyName)
         {
             // FIXME: There should be a better way to resolve the path to EditorTargetPath where the dependencies are stored
             string editorTargetPath = Path.GetDirectoryName(nativeLibraryPaths.Keys.First(x => x != "FlaxEngine"));
@@ -116,6 +117,7 @@ namespace FlaxEngine.Interop
                 return assemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
             return null;
         }
+#endif
 
         [UnmanagedCallersOnly]
         internal static unsafe void Exit()
@@ -523,7 +525,7 @@ namespace FlaxEngine.Interop
                     }
                 }
 
-                throw new Exception($"Invalid field {field.Name} to marshal for type {typeof(T).Name}");
+                throw new NativeInteropException($"Invalid field {field.Name} to marshal for type {typeof(T).Name}");
             }
 
             private static void ToManagedFieldPointer(FieldInfo field, ref T fieldOwner, IntPtr fieldPtr, out int fieldOffset)
@@ -1270,6 +1272,17 @@ namespace FlaxEngine.Interop
             }
         }
 #endif
+    }
+
+    internal class NativeInteropException : Exception
+    {
+        public NativeInteropException(string message)
+        : base(message)
+        {
+#if !BUILD_RELEASE
+            Debug.Logger.LogHandler.LogWrite(LogType.Error, "Native interop exception!");
+#endif
+        }
     }
 }
 

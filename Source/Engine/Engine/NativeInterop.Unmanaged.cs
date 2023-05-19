@@ -1157,7 +1157,7 @@ namespace FlaxEngine.Interop
             case Type _ when type.IsClass:
                 monoType = MTypes.Object;
                 break;
-            default: throw new Exception($"Unsupported type '{type.FullName}'");
+            default: throw new NativeInteropException($"Unsupported type '{type.FullName}'");
             }
             return (uint)monoType;
         }
