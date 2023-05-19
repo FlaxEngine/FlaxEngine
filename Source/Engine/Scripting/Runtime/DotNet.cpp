@@ -691,6 +691,7 @@ bool MAssembly::LoadCorlib()
 
 bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePath)
 {
+    // TODO: Use new hostfxr delegate load_assembly_bytes? (.NET 8+)
     // Open .Net assembly
     const StringAnsi assemblyPathAnsi = assemblyPath.ToStringAnsi();
     const char* name;
@@ -1573,9 +1574,9 @@ bool InitHostfxr()
         Platform::OpenUrl(TEXT("https://dotnet.microsoft.com/en-us/download/dotnet/7.0"));
 #endif
 #if USE_EDITOR
-        LOG(Fatal, "Missing .NET 7 SDK installation requried to run Flax Editor.");
+        LOG(Fatal, "Missing .NET 7 SDK installation required to run Flax Editor.");
 #else
-        LOG(Fatal, "Missing .NET 7 Runtime installation requried to run this application.");
+        LOG(Fatal, "Missing .NET 7 Runtime installation required to run this application.");
 #endif
         return true;
     }
@@ -1601,6 +1602,15 @@ bool InitHostfxr()
         LOG(Fatal, "Failed to setup hostfxr API ({0})", path);
         return true;
     }
+
+    // TODO: Implement picking different version of hostfxr, currently prefers highest available version.
+    // Allow future and preview versions of .NET
+    String dotnetRollForward;
+    String dotnetRollForwardPr;
+    if (Platform::GetEnvironmentVariable(TEXT("DOTNET_ROLL_FORWARD"), dotnetRollForward))
+        Platform::SetEnvironmentVariable(TEXT("DOTNET_ROLL_FORWARD"), TEXT("LatestMajor"));
+    if (Platform::GetEnvironmentVariable(TEXT("DOTNET_ROLL_FORWARD_TO_PRERELEASE"), dotnetRollForwardPr))
+        Platform::SetEnvironmentVariable(TEXT("DOTNET_ROLL_FORWARD_TO_PRERELEASE"), TEXT("1"));
 
     // Initialize hosting component
     const char_t* argv[1] = { libraryPath.Get() };
