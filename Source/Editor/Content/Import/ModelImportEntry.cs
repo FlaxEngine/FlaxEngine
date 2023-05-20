@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -317,6 +318,20 @@ namespace FlaxEditor.Content.Import
         public bool ImportMaterials { get; set; } = true;
 
         /// <summary>
+        /// If checked, materials will be imported as instances of a base material.
+        /// </summary>
+        [EditorDisplay("Materials"), VisibleIf(nameof(ImportMaterials))]
+        [EditorOrder(405), DefaultValue(false)]
+        public bool ImportMaterialsAsInstances = false;
+
+        /// <summary>
+        /// The material to import the model's materials as an instance of.
+        /// </summary>
+        [EditorDisplay("Materials"), VisibleIf(nameof(ImportMaterialsAsInstances))]
+        [EditorOrder(406)]
+        public Material InstanceToImportAs = null; // TODO: only show if BOTH ImportMaterials and ImportMaterialsAsInstances are true.
+
+        /// <summary>
         /// If checked, the importer will import texture files used by the model and any embedded texture resources.
         /// </summary>
         [EditorDisplay("Materials"), VisibleIf(nameof(ShowGeometry))]
@@ -406,6 +421,8 @@ namespace FlaxEditor.Content.Import
 
             // Misc
             public byte ImportMaterials;
+            public byte ImportMaterialsAsInstances;
+            public Guid InstanceToImportAs;
             public byte ImportTextures;
             public byte RestoreMaterialsOnReimport;
 
@@ -454,6 +471,8 @@ namespace FlaxEditor.Content.Import
                 LODCount = LODCount,
                 TriangleReduction = TriangleReduction,
                 ImportMaterials = (byte)(ImportMaterials ? 1 : 0),
+                ImportMaterialsAsInstances = (byte)(ImportMaterialsAsInstances ? 1 : 0),
+                InstanceToImportAs = InstanceToImportAs.ID,
                 ImportTextures = (byte)(ImportTextures ? 1 : 0),
                 RestoreMaterialsOnReimport = (byte)(RestoreMaterialsOnReimport ? 1 : 0),
                 GenerateSDF = (byte)(GenerateSDF ? 1 : 0),
@@ -496,6 +515,8 @@ namespace FlaxEditor.Content.Import
             LODCount = options.LODCount;
             TriangleReduction = options.TriangleReduction;
             ImportMaterials = options.ImportMaterials != 0;
+            ImportMaterialsAsInstances = options.ImportMaterialsAsInstances != 0;
+            InstanceToImportAs = FlaxEngine.Content.Load<Material>(options.InstanceToImportAs);
             ImportTextures = options.ImportTextures != 0;
             RestoreMaterialsOnReimport = options.RestoreMaterialsOnReimport != 0;
             GenerateSDF = options.GenerateSDF != 0;

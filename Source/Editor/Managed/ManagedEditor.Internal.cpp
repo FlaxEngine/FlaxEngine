@@ -195,6 +195,8 @@ struct InternalModelOptions
 
     // Misc
     byte ImportMaterials;
+    byte ImportMaterialsAsInstances;
+    Guid InstanceToImportAs;
     byte ImportTextures;
     byte RestoreMaterialsOnReimport;
 
@@ -240,6 +242,8 @@ struct InternalModelOptions
         to->LODCount = from->LODCount;
         to->TriangleReduction = from->TriangleReduction;
         to->ImportMaterials = from->ImportMaterials;
+        to->ImportMaterialsAsInstances = from->ImportMaterialsAsInstances;
+        to->InstanceToImportAs = from->InstanceToImportAs;
         to->ImportTextures = from->ImportTextures;
         to->RestoreMaterialsOnReimport = from->RestoreMaterialsOnReimport;
         to->GenerateSDF = from->GenerateSDF;
@@ -282,6 +286,8 @@ struct InternalModelOptions
         to->LODCount = from->LODCount;
         to->TriangleReduction = from->TriangleReduction;
         to->ImportMaterials = from->ImportMaterials;
+        to->ImportMaterialsAsInstances = from->ImportMaterialsAsInstances;
+        to->InstanceToImportAs = from->InstanceToImportAs;
         to->ImportTextures = from->ImportTextures;
         to->RestoreMaterialsOnReimport = from->RestoreMaterialsOnReimport;
         to->GenerateSDF = from->GenerateSDF;

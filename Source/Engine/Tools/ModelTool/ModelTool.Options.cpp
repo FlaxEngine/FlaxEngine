@@ -61,6 +61,8 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(LODCount);
     SERIALIZE(TriangleReduction);
     SERIALIZE(ImportMaterials);
+    SERIALIZE(ImportMaterialsAsInstances);
+    SERIALIZE(InstanceToImportAs);
     SERIALIZE(ImportTextures);
     SERIALIZE(RestoreMaterialsOnReimport);
     SERIALIZE(GenerateSDF);
@@ -102,6 +104,8 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(LODCount);
     DESERIALIZE(TriangleReduction);
     DESERIALIZE(ImportMaterials);
+    DESERIALIZE(ImportMaterialsAsInstances);
+    DESERIALIZE(InstanceToImportAs);
     DESERIALIZE(ImportTextures);
     DESERIALIZE(RestoreMaterialsOnReimport);
     DESERIALIZE(GenerateSDF);
