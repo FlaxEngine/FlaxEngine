@@ -76,6 +76,7 @@ namespace FlaxEngine.GUI
         private float _rotation;
         internal Matrix3x3 _cachedTransform;
         internal Matrix3x3 _cachedTransformInv;
+        private bool _pivotRelativeSizing = false;
 
         // Style
 

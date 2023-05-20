@@ -487,8 +487,35 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             BuildLocationSizeOffsets(horUp, horDown, _cachedXEq, _cachedYEq, valueTypes);
 
+            BuildExtraButtons(group);
+
             main.Space(10);
             BuildAnchorsDropper(main, valueTypes);
+        }
+
+        private void BuildExtraButtons(VerticalPanelElement group)
+        {
+            var panel = group.CustomContainer<Panel>();
+            panel.CustomControl.Height = TextBoxBase.DefaultHeight;
+            panel.CustomControl.ClipChildren = false;
+            panel.CustomControl.Parent = group.ContainerControl;
+            panel.CustomControl.Y += 50;
+
+            var pivotSizeRelativeBtn = new Button()
+            {
+                Parent = panel.ContainerControl,
+                Width = 18,
+                Height = 18,
+                BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Scale32),
+                AnchorPreset = AnchorPresets.TopRight,
+            };
+            pivotSizeRelativeBtn.Clicked += () =>
+            {
+                var current = (Values[0] as Control).PivotRelative;
+                (Values[0] as Control).PivotRelative = !current;
+                pivotSizeRelativeBtn.BorderColor = current ? Color.Transparent : Color.AliceBlue;
+                pivotSizeRelativeBtn.BackgroundColor = current ? Color.Gray : Color.White;
+            };
         }
 
         private void BuildAnchorsDropper(LayoutElementsContainer main, ScriptType[] valueTypes)

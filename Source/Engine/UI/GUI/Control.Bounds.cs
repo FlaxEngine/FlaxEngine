@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Runtime.Remoting.Messaging;
 
 namespace FlaxEngine.GUI
 {
@@ -172,8 +173,12 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Whether to resize the UI Control based on where the pivot is rather than just the top-left.
         /// </summary>
-        [ExpandGroups, EditorDisplay("Transform"), EditorOrder(1060)]
-        public bool PivotRelative = false;
+        [NoSerialize, HideInEditor]
+        public bool PivotRelative
+        {
+            get => _pivotRelativeSizing;
+            set => _pivotRelativeSizing = value;
+        }
 
         /// <summary>
         /// Gets or sets width of the control.
