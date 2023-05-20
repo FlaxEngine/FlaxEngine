@@ -207,7 +207,7 @@ struct OpenFbxImporterData
         return false;
     }
 
-    int32 AddMaterial(ImportedModelData& result, const ofbx::Material* mat)
+    int32 AddMaterial(ImportedModelData& result, const ofbx::Material* mat, const Material* instanceOf)
     {
         int32 index = Materials.Find(mat);
         if (index == -1)
