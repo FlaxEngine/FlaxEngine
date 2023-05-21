@@ -1347,6 +1347,15 @@ void NetworkInternal::NetworkReplicatorUpdate()
         if (item.Role != NetworkObjectRole::OwnedAuthoritative && (!isClient && item.OwnerClientId != NetworkManager::LocalClientId))
             continue; // Send replication messages of only owned objects or from other client objects
 
+        // Skip serialization of objects that none will receive
+        if (!isClient)
+        {
+            // TODO: per-object relevancy for connected clients (eg. skip replicating actor to far players)
+            BuildCachedTargets(item);
+            if (CachedTargets.Count() == 0)
+                continue;
+        }
+
         if (item.AsNetworkObject)
             item.AsNetworkObject->OnNetworkSerialize();
 
@@ -1400,8 +1409,6 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 peer->EndSendMessage(NetworkChannelType::Unreliable, msg);
             else
             {
-                // TODO: per-object relevancy for connected clients (eg. skip replicating actor to far players)
-                BuildCachedTargets(item);
                 peer->EndSendMessage(NetworkChannelType::Unreliable, msg, CachedTargets);
             }
 
