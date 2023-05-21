@@ -1,4 +1,5 @@
 #pragma once
+#include <Engine/Core/Types/Guid.h>
 
 
 namespace ofbx

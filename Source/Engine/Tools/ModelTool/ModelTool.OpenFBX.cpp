@@ -207,7 +207,7 @@ struct OpenFbxImporterData
         return false;
     }
 
-    int32 AddMaterial(ImportedModelData& result, const ofbx::Material* mat, const Material* instanceOf)
+    int32 AddMaterial(ImportedModelData& result, const ofbx::Material* mat)
     {
         int32 index = Materials.Find(mat);
         if (index == -1)
@@ -542,6 +542,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
         else
             aMaterial = aMesh->getMaterial(0);
     }
+
     mesh.MaterialSlotIndex = data.AddMaterial(result, aMaterial);
 
     // Vertex positions

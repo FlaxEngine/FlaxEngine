@@ -30,6 +30,7 @@
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/ContentImporters/CreateMaterial.h"
+#include "Engine/ContentImporters/CreateMaterialInstance.h"
 #include "Engine/ContentImporters/CreateCollisionData.h"
 #include "Editor/Utilities/EditorUtilities.h"
 #include <ThirdParty/meshoptimizer/meshoptimizer.h>
@@ -862,24 +863,57 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         importedFileNames.Add(filename);
 #if COMPILE_WITH_ASSETS_IMPORTER
         auto assetPath = autoImportOutput / filename + ASSET_FILES_EXTENSION_WITH_DOT;
-        CreateMaterial::Options materialOptions;
-        materialOptions.Diffuse.Color = material.Diffuse.Color;
-        if (material.Diffuse.TextureIndex != -1)
-            materialOptions.Diffuse.Texture = data.Textures[material.Diffuse.TextureIndex].AssetID;
-        materialOptions.Diffuse.HasAlphaMask = material.Diffuse.HasAlphaMask;
-        materialOptions.Emissive.Color = material.Emissive.Color;
-        if (material.Emissive.TextureIndex != -1)
-            materialOptions.Emissive.Texture = data.Textures[material.Emissive.TextureIndex].AssetID;
-        materialOptions.Opacity.Value = material.Opacity.Value;
-        if (material.Opacity.TextureIndex != -1)
-            materialOptions.Opacity.Texture = data.Textures[material.Opacity.TextureIndex].AssetID;
-        if (material.Normals.TextureIndex != -1)
-            materialOptions.Normals.Texture = data.Textures[material.Normals.TextureIndex].AssetID;
-        if (material.TwoSided || material.Diffuse.HasAlphaMask)
-            materialOptions.Info.CullMode = CullMode::TwoSided;
-        if (!Math::IsOne(material.Opacity.Value) || material.Opacity.TextureIndex != -1)
-            materialOptions.Info.BlendMode = MaterialBlendMode::Transparent;
-        AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialTag, assetPath, material.AssetID, &materialOptions);
+        if (options.ImportMaterialsAsInstances) {
+            LOG(Warning, "Did work poggers");
+            if (AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialInstanceTag, assetPath, material.AssetID))
+            {
+                LOG(Error, "Failed to create material instance.");
+                return true;
+            }
+            else
+            {
+                MaterialInstance* materialInstance = (MaterialInstance*) LoadAsset(material.AssetID, ScriptingTypeHandle());
+                if (materialInstance == nullptr)
+                {
+                    LOG(Error, "Failed to find created material instance.");
+                    return true;
+                }
+
+                MaterialBase *materialInstanceOf = (MaterialBase*) LoadAsset(options.InstanceToImportAs, ScriptingTypeHandle());
+                if (materialInstanceOf == nullptr)
+                {
+                    LOG(Error, "Failed to find the material to create an instance of.");
+                    return true;
+                }
+
+                materialInstance->SetBaseMaterial(materialInstanceOf);
+                if (materialInstance->Save())
+                {
+                    LOG(Error, "Failed to save the material instance.");
+                    return true;
+                }
+            }
+        }
+        else {
+            CreateMaterial::Options materialOptions;
+            materialOptions.Diffuse.Color = material.Diffuse.Color;
+            if (material.Diffuse.TextureIndex != -1)
+                materialOptions.Diffuse.Texture = data.Textures[material.Diffuse.TextureIndex].AssetID;
+            materialOptions.Diffuse.HasAlphaMask = material.Diffuse.HasAlphaMask;
+            materialOptions.Emissive.Color = material.Emissive.Color;
+            if (material.Emissive.TextureIndex != -1)
+                materialOptions.Emissive.Texture = data.Textures[material.Emissive.TextureIndex].AssetID;
+            materialOptions.Opacity.Value = material.Opacity.Value;
+            if (material.Opacity.TextureIndex != -1)
+                materialOptions.Opacity.Texture = data.Textures[material.Opacity.TextureIndex].AssetID;
+            if (material.Normals.TextureIndex != -1)
+                materialOptions.Normals.Texture = data.Textures[material.Normals.TextureIndex].AssetID;
+            if (material.TwoSided || material.Diffuse.HasAlphaMask)
+                materialOptions.Info.CullMode = CullMode::TwoSided;
+            if (!Math::IsOne(material.Opacity.Value) || material.Opacity.TextureIndex != -1)
+                materialOptions.Info.BlendMode = MaterialBlendMode::Transparent;
+            AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialTag, assetPath, material.AssetID, &materialOptions);
+        }
 #endif
     }
 
