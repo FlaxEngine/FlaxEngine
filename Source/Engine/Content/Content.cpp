@@ -30,6 +30,7 @@
 #if ENABLE_ASSETS_DISCOVERY
 #include "Engine/Core/Collections/HashSet.h"
 #endif
+#include <Engine/Debug/DebugLog.h>
 
 TimeSpan Content::AssetsUpdateInterval = TimeSpan::FromMilliseconds(500);
 TimeSpan Content::AssetsUnloadInterval = TimeSpan::FromSeconds(10);
@@ -1003,6 +1004,7 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
     if (!GetAssetInfo(id, assetInfo))
     {
         LOG(Warning, "Invalid or missing asset ({0}, {1}).", id.ToString(Guid::FormatType::N), type.ToString());
+        LOG(Warning, "{0}", DebugLog::GetStackTrace());
         return nullptr;
     }
 

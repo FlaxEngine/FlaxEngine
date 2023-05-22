@@ -863,18 +863,19 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         importedFileNames.Add(filename);
 #if COMPILE_WITH_ASSETS_IMPORTER
         auto assetPath = autoImportOutput / filename + ASSET_FILES_EXTENSION_WITH_DOT;
-        if (options.ImportMaterialsAsInstances) {
-            LOG(Warning, "Adding material instance for {0}", assetPath);
-
+        if (options.ImportMaterialsAsInstances)
+        {
             AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialInstanceTag, assetPath, material.AssetID);
             MaterialInstance* materialInstance = (MaterialInstance*) LoadAsset(assetPath, MaterialInstance::TypeInitializer);
-            if (materialInstance->WaitForLoaded()) {
+            if (materialInstance->WaitForLoaded())
+            {
                 LOG(Error, "Failed to load material instance after creation. ({0})", assetPath);
                 return true;
             }
 
             MaterialBase* materialInstanceOf = (MaterialBase*) LoadAsset(options.InstanceToImportAs, MaterialBase::TypeInitializer);
-            if (materialInstanceOf->WaitForLoaded()) {
+            if (materialInstanceOf->WaitForLoaded())
+            {
                 LOG(Error, "Failed to load material to create an instance of. ({0})", options.InstanceToImportAs);
                 return true;
             }
@@ -882,7 +883,8 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             materialInstance->SetBaseMaterial(materialInstanceOf);
             materialInstance->Save();
         }
-        else {
+        else
+        {
             CreateMaterial::Options materialOptions;
             materialOptions.Diffuse.Color = material.Diffuse.Color;
             if (material.Diffuse.TextureIndex != -1) 

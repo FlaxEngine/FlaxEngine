@@ -437,6 +437,12 @@ namespace FlaxEditor.Content.Import
 
         internal void ToInternal(out InternalOptions options)
         {
+            Guid instanceToImportAsGuid = Guid.Empty;
+            if (InstanceToImportAs != null)
+            {
+                instanceToImportAsGuid = InstanceToImportAs.ID;
+            }
+
             options = new InternalOptions
             {
                 Type = Type,
@@ -472,7 +478,7 @@ namespace FlaxEditor.Content.Import
                 TriangleReduction = TriangleReduction,
                 ImportMaterials = (byte)(ImportMaterials ? 1 : 0),
                 ImportMaterialsAsInstances = (byte)(ImportMaterialsAsInstances ? 1 : 0),
-                InstanceToImportAs = InstanceToImportAs.ID,
+                InstanceToImportAs = instanceToImportAsGuid,
                 ImportTextures = (byte)(ImportTextures ? 1 : 0),
                 RestoreMaterialsOnReimport = (byte)(RestoreMaterialsOnReimport ? 1 : 0),
                 GenerateSDF = (byte)(GenerateSDF ? 1 : 0),
@@ -484,6 +490,16 @@ namespace FlaxEditor.Content.Import
 
         internal void FromInternal(ref InternalOptions options)
         {
+            Material instanceToImportAsMat = null;
+            if (options.InstanceToImportAs != Guid.Empty)
+            {
+                AssetInfo assetInfo;
+                if (FlaxEngine.Content.GetAssetInfo(options.InstanceToImportAs, out assetInfo))
+                {
+                    instanceToImportAsMat = FlaxEngine.Content.Load<Material>(options.InstanceToImportAs);
+                }
+            }
+
             Type = options.Type;
             CalculateNormals = options.CalculateNormals != 0;
             SmoothingNormalsAngle = options.SmoothingNormalsAngle;
@@ -516,7 +532,7 @@ namespace FlaxEditor.Content.Import
             TriangleReduction = options.TriangleReduction;
             ImportMaterials = options.ImportMaterials != 0;
             ImportMaterialsAsInstances = options.ImportMaterialsAsInstances != 0;
-            InstanceToImportAs = FlaxEngine.Content.Load<Material>(options.InstanceToImportAs);
+            InstanceToImportAs = instanceToImportAsMat;
             ImportTextures = options.ImportTextures != 0;
             RestoreMaterialsOnReimport = options.RestoreMaterialsOnReimport != 0;
             GenerateSDF = options.GenerateSDF != 0;
