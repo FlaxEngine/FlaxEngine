@@ -866,7 +866,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         if (options.ImportMaterialsAsInstances) {
             LOG(Warning, "Adding material instance for {0}", assetPath);
 
-            AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialInstanceTag, assetPath);
+            AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialInstanceTag, assetPath, material.AssetID);
             MaterialInstance* materialInstance = (MaterialInstance*) LoadAsset(assetPath, MaterialInstance::TypeInitializer);
             if (materialInstance->WaitForLoaded()) {
                 LOG(Error, "Failed to load material instance after creation. ({0})", assetPath);
