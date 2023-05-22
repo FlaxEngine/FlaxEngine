@@ -864,40 +864,28 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
 #if COMPILE_WITH_ASSETS_IMPORTER
         auto assetPath = autoImportOutput / filename + ASSET_FILES_EXTENSION_WITH_DOT;
         if (options.ImportMaterialsAsInstances) {
-            LOG(Warning, "Did work poggers");
-            if (AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialInstanceTag, assetPath, material.AssetID))
-            {
-                LOG(Error, "Failed to create material instance.");
+            LOG(Warning, "Adding material instance for {0}", assetPath);
+
+            AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialInstanceTag, assetPath);
+            MaterialInstance* materialInstance = (MaterialInstance*) LoadAsset(assetPath, MaterialInstance::TypeInitializer);
+            if (materialInstance->WaitForLoaded()) {
+                LOG(Error, "Failed to load material instance after creation. ({0})", assetPath);
                 return true;
             }
-            else
-            {
-                MaterialInstance* materialInstance = (MaterialInstance*) LoadAsset(material.AssetID, ScriptingTypeHandle());
-                if (materialInstance == nullptr)
-                {
-                    LOG(Error, "Failed to find created material instance.");
-                    return true;
-                }
 
-                MaterialBase *materialInstanceOf = (MaterialBase*) LoadAsset(options.InstanceToImportAs, ScriptingTypeHandle());
-                if (materialInstanceOf == nullptr)
-                {
-                    LOG(Error, "Failed to find the material to create an instance of.");
-                    return true;
-                }
-
-                materialInstance->SetBaseMaterial(materialInstanceOf);
-                if (materialInstance->Save())
-                {
-                    LOG(Error, "Failed to save the material instance.");
-                    return true;
-                }
+            MaterialBase* materialInstanceOf = (MaterialBase*) LoadAsset(options.InstanceToImportAs, MaterialBase::TypeInitializer);
+            if (materialInstanceOf->WaitForLoaded()) {
+                LOG(Error, "Failed to load material to create an instance of. ({0})", options.InstanceToImportAs);
+                return true;
             }
+
+            materialInstance->SetBaseMaterial(materialInstanceOf);
+            materialInstance->Save();
         }
         else {
             CreateMaterial::Options materialOptions;
             materialOptions.Diffuse.Color = material.Diffuse.Color;
-            if (material.Diffuse.TextureIndex != -1)
+            if (material.Diffuse.TextureIndex != -1) 
                 materialOptions.Diffuse.Texture = data.Textures[material.Diffuse.TextureIndex].AssetID;
             materialOptions.Diffuse.HasAlphaMask = material.Diffuse.HasAlphaMask;
             materialOptions.Emissive.Color = material.Emissive.Color;
