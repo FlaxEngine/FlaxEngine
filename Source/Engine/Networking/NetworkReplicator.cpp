@@ -1302,28 +1302,31 @@ void NetworkInternal::NetworkReplicatorUpdate()
     }
 
     // Apply parts replication
-    for (int32 i = ReplicationParts.Count() - 1; i >= 0; i--)
     {
-        auto& e = ReplicationParts[i];
-        if (e.PartsLeft > 0)
+        PROFILE_CPU_NAMED("ReplicationParts");
+        for (int32 i = ReplicationParts.Count() - 1; i >= 0; i--)
         {
-            // TODO: remove replication items after some TTL to prevent memory leaks
-            continue;
-        }
-        ScriptingObject* obj = e.Object.Get();
-        if (obj)
-        {
-            auto it = Objects.Find(obj->GetID());
-            if (it != Objects.End())
+            auto& e = ReplicationParts[i];
+            if (e.PartsLeft > 0)
             {
-                auto& item = it->Item;
-
-                // Replicate from all collected parts data
-                InvokeObjectReplication(item, e.OwnerFrame, e.Data.Get(), e.Data.Count(), e.OwnerClientId);
+                // TODO: remove replication items after some TTL to prevent memory leaks
+                continue;
             }
-        }
+            ScriptingObject* obj = e.Object.Get();
+            if (obj)
+            {
+                auto it = Objects.Find(obj->GetID());
+                if (it != Objects.End())
+                {
+                    auto& item = it->Item;
 
-        ReplicationParts.RemoveAt(i);
+                    // Replicate from all collected parts data
+                    InvokeObjectReplication(item, e.OwnerFrame, e.Data.Get(), e.Data.Count(), e.OwnerClientId);
+                }
+            }
+
+            ReplicationParts.RemoveAt(i);
+        }
     }
 
     // Brute force synchronize all networked objects with clients
@@ -1438,49 +1441,52 @@ void NetworkInternal::NetworkReplicatorUpdate()
     }
 
     // Invoke RPCs
-    for (auto& e : RpcQueue)
     {
-        ScriptingObject* obj = e.Object.Get();
-        if (!obj)
-            continue;
-        auto it = Objects.Find(obj->GetID());
-        if (it == Objects.End())
-            continue;
-        auto& item = it->Item;
+        PROFILE_CPU_NAMED("Rpc");
+        for (auto& e : RpcQueue)
+        {
+            ScriptingObject* obj = e.Object.Get();
+            if (!obj)
+                continue;
+            auto it = Objects.Find(obj->GetID());
+            if (it == Objects.End())
+                continue;
+            auto& item = it->Item;
 
-        // Send despawn message
-        //NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Rpc {}::{} object ID={}", e.Name.First.ToString(), String(e.Name.Second), item.ToString());
-        NetworkMessageObjectRpc msgData;
-        msgData.ObjectId = item.ObjectId;
-        if (isClient)
-        {
-            // Remap local client object ids into server ids
-            IdsRemappingTable.KeyOf(msgData.ObjectId, &msgData.ObjectId);
-        }
-        GetNetworkName(msgData.RpcTypeName, e.Name.First.GetType().Fullname);
-        GetNetworkName(msgData.RpcName, e.Name.Second);
-        msgData.ArgsSize = (uint16)e.ArgsData.Length();
-        NetworkMessage msg = peer->BeginSendMessage();
-        msg.WriteStructure(msgData);
-        msg.WriteBytes(e.ArgsData.Get(), e.ArgsData.Length());
-        NetworkChannelType channel = (NetworkChannelType)e.Info.Channel;
-        if (e.Info.Server && isClient)
-        {
-            // Client -> Server
+            // Send despawn message
+            //NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Rpc {}::{} object ID={}", e.Name.First.ToString(), String(e.Name.Second), item.ToString());
+            NetworkMessageObjectRpc msgData;
+            msgData.ObjectId = item.ObjectId;
+            if (isClient)
+            {
+                // Remap local client object ids into server ids
+                IdsRemappingTable.KeyOf(msgData.ObjectId, &msgData.ObjectId);
+            }
+            GetNetworkName(msgData.RpcTypeName, e.Name.First.GetType().Fullname);
+            GetNetworkName(msgData.RpcName, e.Name.Second);
+            msgData.ArgsSize = (uint16)e.ArgsData.Length();
+            NetworkMessage msg = peer->BeginSendMessage();
+            msg.WriteStructure(msgData);
+            msg.WriteBytes(e.ArgsData.Get(), e.ArgsData.Length());
+            NetworkChannelType channel = (NetworkChannelType)e.Info.Channel;
+            if (e.Info.Server && isClient)
+            {
+                // Client -> Server
 #if USE_NETWORK_REPLICATOR_LOG
-            if (e.Targets.Length() != 0)
-                NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Server RPC '{}::{}' called with non-empty list of targets is not supported (only server will receive it)", e.Name.First.ToString(), e.Name.Second.ToString());
+                if (e.Targets.Length() != 0)
+                    NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Server RPC '{}::{}' called with non-empty list of targets is not supported (only server will receive it)", e.Name.First.ToString(), e.Name.Second.ToString());
 #endif
-            peer->EndSendMessage(channel, msg);
+                peer->EndSendMessage(channel, msg);
+            }
+            else if (e.Info.Client && (isServer || isHost))
+            {
+                // Server -> Client(s)
+                BuildCachedTargets(NetworkManager::Clients, item.TargetClientIds, e.Targets, NetworkManager::LocalClientId);
+                peer->EndSendMessage(channel, msg, CachedTargets);
+            }
         }
-        else if (e.Info.Client && (isServer || isHost))
-        {
-            // Server -> Client(s)
-            BuildCachedTargets(NetworkManager::Clients, item.TargetClientIds, e.Targets, NetworkManager::LocalClientId);
-            peer->EndSendMessage(channel, msg, CachedTargets);
-        }
+        RpcQueue.Clear();
     }
-    RpcQueue.Clear();
 
     // Clear networked objects mapping table
     Scripting::ObjectsLookupIdMapping.Set(nullptr);
@@ -1488,6 +1494,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
 
 void NetworkInternal::OnNetworkMessageObjectReplicate(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
+    PROFILE_CPU();
     NetworkMessageObjectReplicate msgData;
     event.Message.ReadStructure(msgData);
     ScopeLock lock(ObjectsLock);
@@ -1519,6 +1526,7 @@ void NetworkInternal::OnNetworkMessageObjectReplicate(NetworkEvent& event, Netwo
 
 void NetworkInternal::OnNetworkMessageObjectReplicatePart(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
+    PROFILE_CPU();
     NetworkMessageObjectReplicatePart msgData;
     event.Message.ReadStructure(msgData);
     ScopeLock lock(ObjectsLock);
@@ -1531,6 +1539,7 @@ void NetworkInternal::OnNetworkMessageObjectReplicatePart(NetworkEvent& event, N
 
 void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
+    PROFILE_CPU();
     NetworkMessageObjectSpawn msgData;
     event.Message.ReadStructure(msgData);
     auto* msgDataItems = (NetworkMessageObjectSpawnItem*)event.Message.SkipBytes(msgData.ItemsCount * sizeof(NetworkMessageObjectSpawnItem));
@@ -1759,6 +1768,7 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
 
 void NetworkInternal::OnNetworkMessageObjectDespawn(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
+    PROFILE_CPU();
     NetworkMessageObjectDespawn msgData;
     event.Message.ReadStructure(msgData);
     ScopeLock lock(ObjectsLock);
@@ -1790,6 +1800,7 @@ void NetworkInternal::OnNetworkMessageObjectDespawn(NetworkEvent& event, Network
 
 void NetworkInternal::OnNetworkMessageObjectRole(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
+    PROFILE_CPU();
     NetworkMessageObjectRole msgData;
     event.Message.ReadStructure(msgData);
     ScopeLock lock(ObjectsLock);
@@ -1833,6 +1844,7 @@ void NetworkInternal::OnNetworkMessageObjectRole(NetworkEvent& event, NetworkCli
 
 void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
+    PROFILE_CPU();
     NetworkMessageObjectRpc msgData;
     event.Message.ReadStructure(msgData);
     ScopeLock lock(ObjectsLock);
