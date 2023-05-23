@@ -2339,7 +2339,7 @@ namespace Flax.Build.Bindings
                 contents.AppendLine("        auto typeHandle = Object->GetTypeHandle();");
                 contents.AppendLine("        while (typeHandle)");
                 contents.AppendLine("        {");
-                contents.AppendLine($"            auto method = typeHandle.Module->FindMethod(typeHandle, \"{functionInfo.Name}\", {functionInfo.Parameters.Count});");
+                contents.AppendLine($"            auto method = typeHandle.Module->FindMethod(typeHandle, StringAnsiView(\"{functionInfo.Name}\", {functionInfo.Name.Length}), {functionInfo.Parameters.Count});");
                 contents.AppendLine("            if (method)");
                 contents.AppendLine("            {");
                 contents.AppendLine("                Variant __result;");
