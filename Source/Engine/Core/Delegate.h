@@ -204,22 +204,11 @@ public:
     }
 
     /// <summary>
-    /// Calls the binded function if any has been assigned.
-    /// </summary>
-    /// <param name="params">A list of parameters for the function invocation.</param>
-    /// <returns>Function result</returns>
-    void TryCall(Params ... params) const
-    {
-        if (_function)
-            _function(_callee, Forward<Params>(params)...);
-    }
-
-    /// <summary>
     /// Calls the binded function (it must be assigned).
     /// </summary>
     /// <param name="params">A list of parameters for the function invocation.</param>
     /// <returns>Function result</returns>
-    ReturnType operator()(Params ... params) const
+    FORCE_INLINE ReturnType operator()(Params ... params) const
     {
         ASSERT(_function);
         return _function(_callee, Forward<Params>(params)...);
