@@ -1120,7 +1120,7 @@ namespace Flax.Build.Bindings
                 {
                     contents.Append(indent);
                     if (propertyInfo.Access != propertyInfo.Getter.Access)
-                        contents.Append(GenerateCSharpAccessLevel(propertyInfo.Access));
+                        contents.Append(GenerateCSharpAccessLevel(propertyInfo.Getter.Access));
                     contents.Append("get { ");
                     GenerateCSharpWrapperFunctionCall(buildData, contents, classInfo, propertyInfo.Getter);
                     contents.Append(" }").AppendLine();
@@ -1130,7 +1130,7 @@ namespace Flax.Build.Bindings
                 {
                     contents.Append(indent);
                     if (propertyInfo.Access != propertyInfo.Setter.Access)
-                        contents.Append(GenerateCSharpAccessLevel(propertyInfo.Access));
+                        contents.Append(GenerateCSharpAccessLevel(propertyInfo.Setter.Access));
                     contents.Append("set { ");
                     GenerateCSharpWrapperFunctionCall(buildData, contents, classInfo, propertyInfo.Setter, true);
                     contents.Append(" }").AppendLine();
