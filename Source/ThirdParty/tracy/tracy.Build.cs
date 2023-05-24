@@ -57,6 +57,7 @@ public class tracy : ThirdPartyModule
 
         files.Add(Path.Combine(FolderPath, "tracy", "Tracy.hpp"));
         files.Add(Path.Combine(FolderPath, "common", "TracySystem.hpp"));
+        files.Add(Path.Combine(FolderPath, "common", "TracyQueue.hpp"));
         files.Add(Path.Combine(FolderPath, "client", "TracyCallstack.h"));
     }
 }
