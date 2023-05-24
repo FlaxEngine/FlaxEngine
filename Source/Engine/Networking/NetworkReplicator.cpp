@@ -1835,7 +1835,7 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
 #if USE_NETWORK_REPLICATOR_LOG
                 // Ignore case when parent object in a message was a scene (eg. that is already unloaded on a client)
                 AssetInfo assetInfo;
-                if (!Content::GetAssetInfo(msgDataItem.ParentId, assetInfo) || assetInfo.TypeName == TEXT("FlaxEngine.SceneAsset"))
+                if (!Content::GetAssetInfo(msgDataItem.ParentId, assetInfo) || assetInfo.TypeName != TEXT("FlaxEngine.SceneAsset"))
                 {
                     NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to find object {} as parent to spawned object", msgDataItem.ParentId.ToString());
                 }
