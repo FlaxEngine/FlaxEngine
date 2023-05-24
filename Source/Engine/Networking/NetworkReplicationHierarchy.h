@@ -18,7 +18,7 @@ API_STRUCT(NoDefault, Namespace = "FlaxEngine.Networking") struct FLAXENGINE_API
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkReplicationObjectInfo);
     // The object to replicate.
-    API_FIELD() ScriptingObject* Object;
+    API_FIELD() ScriptingObjectReference<ScriptingObject> Object;
     // The target amount of the replication updates per second (frequency of the replication). Constrained by NetworkManager::NetworkFPS.
     API_FIELD() float ReplicationFPS = 60;
     // The minimum distance from the player to the object at which it can process replication. For example, players further away won't receive object data.

@@ -110,7 +110,7 @@ void NetworkReplicationNode::Update(NetworkReplicationHierarchyUpdateResult* res
                     }
                 }
             }
-            if (targetClients)
+            if (targetClients && obj.Object)
             {
                 // Replicate this frame
                 result->AddObject(obj.Object, targetClients);
