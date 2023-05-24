@@ -147,7 +147,7 @@ namespace FlaxEditor.CustomEditors
                 return;
 
             // Special case for root objects to run normal layout build
-            if (_presenter.Selection == Values)
+            if (_presenter != null && _presenter.Selection == Values)
             {
                 _presenter.BuildLayout();
                 return;
@@ -158,7 +158,7 @@ namespace FlaxEditor.CustomEditors
             var layout = _layout;
             var control = layout.ContainerControl;
             var parent = _parent;
-            var parentScrollV = (_presenter.Panel.Parent as Panel)?.VScrollBar?.Value ?? -1;
+            var parentScrollV = (_presenter?.Panel.Parent as Panel)?.VScrollBar?.Value ?? -1;
 
             control.IsLayoutLocked = true;
             control.DisposeChildren();
@@ -248,6 +248,28 @@ namespace FlaxEditor.CustomEditors
 
         internal virtual void RefreshRootChild()
         {
+            // Check if need to update value
+            if (_hasValueDirty)
+            {
+                IsSettingValue = true;
+                try
+                {
+                    // Cleanup (won't retry update in case of exception)
+                    object val = _valueToSet;
+                    _hasValueDirty = false;
+                    _valueToSet = null;
+
+                    // Assign value
+                    for (int i = 0; i < _values.Count; i++)
+                        _values[i] = val;
+                }
+                finally
+                {
+                    OnUnDirty();
+                    IsSettingValue = false;
+                }
+            }
+
             Refresh();
 
             for (int i = 0; i < _children.Count; i++)
