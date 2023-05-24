@@ -17,11 +17,12 @@ class Actor;
 API_STRUCT(NoDefault, Namespace = "FlaxEngine.Networking") struct FLAXENGINE_API NetworkReplicationHierarchyObject
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkReplicationObjectInfo);
+
     // The object to replicate.
     API_FIELD() ScriptingObjectReference<ScriptingObject> Object;
-    // The target amount of the replication updates per second (frequency of the replication). Constrained by NetworkManager::NetworkFPS.
+    // The target amount of the replication updates per second (frequency of the replication). Constrained by NetworkManager::NetworkFPS. Use 0 for 'always relevant' object.
     API_FIELD() float ReplicationFPS = 60;
-    // The minimum distance from the player to the object at which it can process replication. For example, players further away won't receive object data.
+    // The minimum distance from the player to the object at which it can process replication. For example, players further away won't receive object data. Use 0 if unused.
     API_FIELD() float CullDistance = 15000;
     // Runtime value for update frames left for the next replication of this object. Matches NetworkManager::NetworkFPS calculated from ReplicationFPS.
     API_FIELD(Attributes="HideInEditor") uint16 ReplicationUpdatesLeft = 0;
@@ -61,6 +62,7 @@ inline uint32 GetHash(const NetworkReplicationHierarchyObject& key)
 API_STRUCT(NoDefault, Namespace = "FlaxEngine.Networking") struct FLAXENGINE_API NetworkClientsMask
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkClientsMask);
+
     // The first 64 bits (each for one client).
     API_FIELD() uint64 Word0 = 0;
     // The second 64 bits (each for one client).

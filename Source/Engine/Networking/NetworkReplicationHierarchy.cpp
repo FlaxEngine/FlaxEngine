@@ -49,10 +49,11 @@ bool NetworkReplicationHierarchyUpdateResult::GetClientLocation(int32 clientInde
 
 void NetworkReplicationNode::AddObject(NetworkReplicationHierarchyObject obj)
 {
-    ASSERT(obj.Object && obj.ReplicationFPS > 0.0f);
-
-    // Randomize initial replication update to spread rep rates more evenly for large scenes that register all objects within the same frame
-    obj.ReplicationUpdatesLeft = NetworkReplicationNodeObjectCounter++ % Math::Clamp(Math::RoundToInt(NetworkManager::NetworkFPS / obj.ReplicationFPS), 1, 60);
+    if (obj.ReplicationFPS > 0.0f)
+    {
+        // Randomize initial replication update to spread rep rates more evenly for large scenes that register all objects within the same frame
+        obj.ReplicationUpdatesLeft = NetworkReplicationNodeObjectCounter++ % Math::Clamp(Math::RoundToInt(NetworkManager::NetworkFPS / obj.ReplicationFPS), 1, 60);
+    }
 
     Objects.Add(obj);
 }
@@ -79,7 +80,12 @@ void NetworkReplicationNode::Update(NetworkReplicationHierarchyUpdateResult* res
     const float networkFPS = NetworkManager::NetworkFPS / result->ReplicationScale;
     for (NetworkReplicationHierarchyObject& obj : Objects)
     {
-        if (obj.ReplicationUpdatesLeft > 0)
+        if (obj.ReplicationFPS <= 0.0f)
+        {
+            // Always relevant
+            result->AddObject(obj.Object);
+        }
+        else if (obj.ReplicationUpdatesLeft > 0)
         {
             // Move to the next frame
             obj.ReplicationUpdatesLeft--;
@@ -87,7 +93,7 @@ void NetworkReplicationNode::Update(NetworkReplicationHierarchyUpdateResult* res
         else
         {
             NetworkClientsMask targetClients = result->GetClientsMask();
-            if (result->_clientsHaveLocation)
+            if (result->_clientsHaveLocation && obj.CullDistance > 0.0f)
             {
                 // Cull object against viewers locations
                 if (const Actor* actor = obj.GetActor())

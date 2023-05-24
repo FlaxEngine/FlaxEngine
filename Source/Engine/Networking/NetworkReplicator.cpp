@@ -1430,7 +1430,8 @@ void NetworkInternal::NetworkReplicatorUpdate()
         {
             ScriptingObject* obj = e.Object;
             auto it = Objects.Find(obj->GetID());
-            ASSERT(it.IsNotEnd());
+            if (it.IsEnd())
+                continue;
             auto& item = it->Item;
 
             // Skip serialization of objects that none will receive
