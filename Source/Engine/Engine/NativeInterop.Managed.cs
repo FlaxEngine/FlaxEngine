@@ -16,6 +16,9 @@ namespace FlaxEngine.Interop
     /// <summary>
     /// Wrapper for managed arrays which are passed to unmanaged code.
     /// </summary>
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     public unsafe class ManagedArray
     {
         private ManagedHandle _pinnedArrayHandle;
@@ -266,6 +269,9 @@ namespace FlaxEngine.Interop
         }
     }
 
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     internal static class ManagedString
     {
         internal static ManagedHandle EmptyStringHandle = ManagedHandle.Alloc(string.Empty);
@@ -315,6 +321,9 @@ namespace FlaxEngine.Interop
     /// <summary>
     /// Handle to managed objects which can be stored in native code.
     /// </summary>
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     public struct ManagedHandle
     {
         private IntPtr handle;

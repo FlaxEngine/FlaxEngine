@@ -12,6 +12,9 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace FlaxEngine.Interop
 {
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     [CustomMarshaller(typeof(object), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedHandleMarshaller.ManagedToNative))]
     [CustomMarshaller(typeof(object), MarshalMode.UnmanagedToManagedOut, typeof(ManagedHandleMarshaller.ManagedToNative))]
     [CustomMarshaller(typeof(object), MarshalMode.ElementIn, typeof(ManagedHandleMarshaller.ManagedToNative))]
@@ -23,6 +26,9 @@ namespace FlaxEngine.Interop
     [CustomMarshaller(typeof(object), MarshalMode.ElementRef, typeof(ManagedHandleMarshaller))]
     public static class ManagedHandleMarshaller
     {
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
         public static class NativeToManaged
         {
             public static object ConvertToManaged(IntPtr unmanaged) => unmanaged == IntPtr.Zero ? null : ManagedHandle.FromIntPtr(unmanaged).Target;
@@ -33,6 +39,9 @@ namespace FlaxEngine.Interop
             }
         }
 
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
         public static class ManagedToNative
         {
             public static IntPtr ConvertToUnmanaged(object managed) => managed != null ? ManagedHandle.ToIntPtr(managed, GCHandleType.Weak) : IntPtr.Zero;
@@ -48,6 +57,9 @@ namespace FlaxEngine.Interop
             }
         }
 
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
         public struct Bidirectional
         {
             object managed;
@@ -99,6 +111,9 @@ namespace FlaxEngine.Interop
         }
     }
 
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     [CustomMarshaller(typeof(Type), MarshalMode.Default, typeof(SystemTypeMarshaller))]
     public static class SystemTypeMarshaller
     {
@@ -118,6 +133,9 @@ namespace FlaxEngine.Interop
         }
     }
 
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     [CustomMarshaller(typeof(Exception), MarshalMode.Default, typeof(ExceptionMarshaller))]
     public static class ExceptionMarshaller
     {
@@ -126,6 +144,9 @@ namespace FlaxEngine.Interop
         public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.Free(unmanaged);
     }
 
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.ManagedToUnmanagedIn, typeof(ObjectMarshaller.ManagedToNative))]
     [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.UnmanagedToManagedOut, typeof(ObjectMarshaller.ManagedToNative))]
     [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.ElementIn, typeof(ObjectMarshaller.ManagedToNative))]
@@ -134,17 +155,26 @@ namespace FlaxEngine.Interop
     [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.ElementOut, typeof(ObjectMarshaller.NativeToManaged))]
     public static class ObjectMarshaller
     {
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
         public static class NativeToManaged
         {
             public static FlaxEngine.Object ConvertToManaged(IntPtr unmanaged) => unmanaged != IntPtr.Zero ? Unsafe.As<FlaxEngine.Object>(ManagedHandle.FromIntPtr(unmanaged).Target) : null;
         }
 
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
         public static class ManagedToNative
         {
             public static IntPtr ConvertToUnmanaged(FlaxEngine.Object managed) => Unsafe.As<object>(managed) != null ? ManagedHandle.ToIntPtr(managed) : IntPtr.Zero;
         }
     }
 
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     [CustomMarshaller(typeof(CultureInfo), MarshalMode.Default, typeof(CultureInfoMarshaller))]
     public static class CultureInfoMarshaller
     {
@@ -159,6 +189,9 @@ namespace FlaxEngine.Interop
     [CustomMarshaller(typeof(Array), MarshalMode.UnmanagedToManagedIn, typeof(SystemArrayMarshaller.NativeToManaged))]
     public static unsafe class SystemArrayMarshaller
     {
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
         public struct ManagedToNative
         {
             ManagedArray managedArray;
@@ -187,6 +220,9 @@ namespace FlaxEngine.Interop
             }
         }
 
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
         public struct NativeToManaged
         {
             ManagedHandle handle;
@@ -217,6 +253,9 @@ namespace FlaxEngine.Interop
         }
     }
 
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ManagedToUnmanagedIn, typeof(DictionaryMarshaller<,>.ManagedToNative))]
     [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.UnmanagedToManagedOut, typeof(DictionaryMarshaller<,>.ManagedToNative))]
     [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ElementIn, typeof(DictionaryMarshaller<,>.ManagedToNative))]
@@ -228,21 +267,31 @@ namespace FlaxEngine.Interop
     [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ElementRef, typeof(DictionaryMarshaller<,>))]
     public static unsafe class DictionaryMarshaller<T, U>
     {
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
         public static class NativeToManaged
         {
             public static Dictionary<T, U> ConvertToManaged(IntPtr unmanaged) => DictionaryMarshaller<T, U>.ToManaged(unmanaged);
             public static void Free(IntPtr unmanaged) => DictionaryMarshaller<T, U>.Free(unmanaged);
         }
 
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
         public static class ManagedToNative
         {
             public static IntPtr ConvertToUnmanaged(Dictionary<T, U> managed) => DictionaryMarshaller<T, U>.ToNative(managed, GCHandleType.Weak);
+
             public static void Free(IntPtr unmanaged)
             {
                 //DictionaryMarshaller<T, U>.Free(unmanaged); // No need to free weak handles
             }
         }
 
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
         public struct Bidirectional
         {
             Dictionary<T, U> managed;
@@ -281,6 +330,9 @@ namespace FlaxEngine.Interop
         }
     }
 
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ManagedToUnmanagedIn, typeof(ArrayMarshaller<,>.ManagedToNative))]
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.UnmanagedToManagedOut, typeof(ArrayMarshaller<,>.ManagedToNative))]
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ElementIn, typeof(ArrayMarshaller<,>.ManagedToNative))]
@@ -293,6 +345,9 @@ namespace FlaxEngine.Interop
     [ContiguousCollectionMarshaller]
     public static unsafe class ArrayMarshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
     {
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
         public static class NativeToManaged
         {
             public static T[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
@@ -330,6 +385,9 @@ namespace FlaxEngine.Interop
             }
         }
 
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
         public static class ManagedToNative
         {
             public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
@@ -364,6 +422,9 @@ namespace FlaxEngine.Interop
             }
         }
 
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
         public struct Bidirectional
         {
             T[] managedArray;
@@ -460,6 +521,9 @@ namespace FlaxEngine.Interop
         }
     }
 
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     [CustomMarshaller(typeof(string), MarshalMode.ManagedToUnmanagedIn, typeof(StringMarshaller.ManagedToNative))]
     [CustomMarshaller(typeof(string), MarshalMode.UnmanagedToManagedOut, typeof(StringMarshaller.ManagedToNative))]
     [CustomMarshaller(typeof(string), MarshalMode.ElementIn, typeof(StringMarshaller.ManagedToNative))]
@@ -471,12 +535,18 @@ namespace FlaxEngine.Interop
     [CustomMarshaller(typeof(string), MarshalMode.ElementRef, typeof(StringMarshaller))]
     public static class StringMarshaller
     {
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
         public static class NativeToManaged
         {
             public static string ConvertToManaged(IntPtr unmanaged) => ManagedString.ToManaged(unmanaged);
             public static void Free(IntPtr unmanaged) => ManagedString.Free(unmanaged);
         }
 
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
         public static class ManagedToNative
         {
             public static unsafe IntPtr ConvertToUnmanaged(string managed)
@@ -490,6 +560,9 @@ namespace FlaxEngine.Interop
             }
         }
 
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
         public struct Bidirectional
         {
             string managed;

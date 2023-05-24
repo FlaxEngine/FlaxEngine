@@ -1294,6 +1294,9 @@ namespace Flax.Build.Bindings
                 /// <summary>
                 /// Marshaller for type <see cref="{{classInfo.Name}}"/>.
                 /// </summary>");
+                #if FLAX_EDITOR
+                [HideInEditor]
+                #endif
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ManagedToUnmanagedIn, typeof({{marshallerName}}.ManagedToNative))]
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.UnmanagedToManagedOut, typeof({{marshallerName}}.ManagedToNative))]
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ElementIn, typeof({{marshallerName}}.ManagedToNative))]
@@ -1306,17 +1309,25 @@ namespace Flax.Build.Bindings
                 {{GenerateCSharpAccessLevel(classInfo.Access)}}static class {{marshallerName}}
                 {
                 #pragma warning disable 1591
+                #if FLAX_EDITOR
+                    [HideInEditor]
+                #endif
                     public static class NativeToManaged
                     {
                         public static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{{classInfo.Name}}>(ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged));
                         public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.NativeToManaged.Free(unmanaged);
                     }
+                #if FLAX_EDITOR
+                    [HideInEditor]
+                #endif
                     public static class ManagedToNative
                     {
                         public static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => ManagedHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);
                         public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.ManagedToNative.Free(unmanaged);
                     }
+                #if FLAX_EDITOR
                     [HideInEditor]
+                #endif
                     public struct Bidirectional
                     {
                         ManagedHandleMarshaller.Bidirectional marsh;
@@ -1365,6 +1376,8 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine($"/// <summary>");
                 contents.Append(indent).AppendLine($"/// Marshaller for type <see cref=\"{structureInfo.Name}\"/>.");
                 contents.Append(indent).AppendLine($"/// </summary>");
+                if (buildData.Target != null & buildData.Target.IsEditor)
+                    contents.Append(indent).AppendLine("[HideInEditor]");
                 contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ManagedToUnmanagedIn, typeof({marshallerName}.ManagedToNative))]");
                 contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.UnmanagedToManagedOut, typeof({marshallerName}.ManagedToNative))]");
                 contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ElementIn, typeof({marshallerName}.ManagedToNative))]");
@@ -1389,7 +1402,8 @@ namespace Flax.Build.Bindings
                     // Native struct begin
                     // TODO: skip using this utility structure if the auto-generated C# struct is already the same as XXXInternal here below
                     GenerateCSharpAttributes(buildData, contents, indent, structureInfo, true);
-                    contents.Append(indent).AppendLine("[HideInEditor]");
+                    if (buildData.Target != null & buildData.Target.IsEditor)
+                        contents.Append(indent).AppendLine("[HideInEditor]");
                     contents.Append(indent).AppendLine("[StructLayout(LayoutKind.Sequential)]");
                     contents.Append(indent).Append("public struct ").Append(structureInfo.Name).Append("Internal");
                     if (structureInfo.BaseType != null && structureInfo.IsPod)
@@ -1625,13 +1639,17 @@ namespace Flax.Build.Bindings
 
                 // NativeToManaged stateless shape
                 // NOTE: GCHandles of FlaxEngine.Object must not be released in this case
-                contents.Append(indent).AppendLine($"public static class NativeToManaged").Append(indent).AppendLine("{");
+                if (buildData.Target != null && buildData.Target.IsEditor)
+                    contents.Append(indent).AppendLine("[HideInEditor]");
+                contents.Append(indent).AppendLine("public static class NativeToManaged").Append(indent).AppendLine("{");
                 contents.Append(indent2).AppendLine($"public static {structureInfo.Name} ConvertToManaged({structureInfo.Name}Internal unmanaged) => {marshallerName}.ToManaged(unmanaged);");
                 contents.Append(indent2).AppendLine($"public static void Free({structureInfo.Name}Internal unmanaged)");
                 contents.Append(indent2).AppendLine("{").Append(indent3).AppendLine(freeContents2.Replace("\n", "\n" + indent3).ToString().TrimEnd()).Append(indent2).AppendLine("}");
                 contents.Append(indent).AppendLine("}");
 
                 // ManagedToNative stateless shape
+                if (buildData.Target != null && buildData.Target.IsEditor)
+                    contents.Append(indent).AppendLine("[HideInEditor]");
                 contents.Append(indent).AppendLine($"public static class ManagedToNative").Append(indent).AppendLine("{");
                 contents.Append(indent2).AppendLine($"public static {structureInfo.Name}Internal ConvertToUnmanaged({structureInfo.Name} managed) => {marshallerName}.ToNative(managed);");
                 contents.Append(indent2).AppendLine($"public static void Free({structureInfo.Name}Internal unmanaged) => {marshallerName}.Free(unmanaged);");
@@ -1639,7 +1657,8 @@ namespace Flax.Build.Bindings
 
                 // Bidirectional stateful shape
                 // NOTE: GCHandles of FlaxEngine.Object must not be released unless they were allocated by this marshaller
-                contents.Append(indent).AppendLine("[HideInEditor]");
+                if (buildData.Target != null && buildData.Target.IsEditor)
+                    contents.Append(indent).AppendLine("[HideInEditor]");
                 contents.Append(indent).AppendLine($"public struct Bidirectional").Append(indent).AppendLine("{");
                 contents.Append(indent2).AppendLine($"{structureInfo.Name} managed;");
                 contents.Append(indent2).AppendLine($"{structureInfo.Name}Internal unmanaged;");
@@ -1976,9 +1995,11 @@ namespace Flax.Build.Bindings
             {
                 string marshallerName = interfaceInfo.Name + "Marshaller";
                 contents.AppendLine();
-                contents.Append(indent).AppendLine($"/// <summary>");
+                contents.Append(indent).AppendLine("/// <summary>");
                 contents.Append(indent).AppendLine($"/// Marshaller for type <see cref=\"{interfaceInfo.Name}\"/>.");
-                contents.Append(indent).AppendLine($"/// </summary>");
+                contents.Append(indent).AppendLine("/// </summary>");
+                if (buildData.Target != null & buildData.Target.IsEditor)
+                    contents.Append(indent).AppendLine("[HideInEditor]");
                 contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({interfaceInfo.Name}), MarshalMode.Default, typeof({marshallerName}))]");
                 contents.Append(indent).AppendLine($"public static class {marshallerName}");
                 contents.Append(indent).AppendLine("{");
