@@ -1436,10 +1436,9 @@ void NetworkInternal::NetworkReplicatorUpdate()
             // Skip serialization of objects that none will receive
             if (!isClient)
             {
-                // TODO: per-object relevancy for connected clients (eg. skip replicating actor to far players)
                 BuildCachedTargets(item, e.TargetClients);
                 if (CachedTargets.Count() == 0)
-                    return;
+                    continue;
             }
 
             if (item.AsNetworkObject)
@@ -1451,74 +1450,72 @@ void NetworkInternal::NetworkReplicatorUpdate()
             if (failed)
             {
                 //NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Cannot serialize object {} of type {} (missing serialization logic)", item.ToString(), obj->GetType().ToString());
-                return;
+                continue;
             }
 
             // Send object to clients
+            const uint32 size = stream->GetPosition();
+            ASSERT(size <= MAX_uint16)
+            NetworkMessageObjectReplicate msgData;
+            msgData.OwnerFrame = NetworkManager::Frame;
+            msgData.ObjectId = item.ObjectId;
+            msgData.ParentId = item.ParentId;
+            if (isClient)
             {
-                const uint32 size = stream->GetPosition();
-                ASSERT(size <= MAX_uint16)
-                NetworkMessageObjectReplicate msgData;
-                msgData.OwnerFrame = NetworkManager::Frame;
-                msgData.ObjectId = item.ObjectId;
-                msgData.ParentId = item.ParentId;
-                if (isClient)
-                {
-                    // Remap local client object ids into server ids
-                    IdsRemappingTable.KeyOf(msgData.ObjectId, &msgData.ObjectId);
-                    IdsRemappingTable.KeyOf(msgData.ParentId, &msgData.ParentId);
-                }
-                GetNetworkName(msgData.ObjectTypeName, obj->GetType().Fullname);
-                msgData.DataSize = size;
-                const uint32 msgMaxData = peer->Config.MessageSize - sizeof(NetworkMessageObjectReplicate);
-                const uint32 partMaxData = peer->Config.MessageSize - sizeof(NetworkMessageObjectReplicatePart);
-                uint32 partsCount = 1;
-                uint32 dataStart = 0;
-                uint32 msgDataSize = size;
-                if (size > msgMaxData)
-                {
-                    // Send msgMaxData within first message
-                    msgDataSize = msgMaxData;
-                    dataStart += msgMaxData;
+                // Remap local client object ids into server ids
+                IdsRemappingTable.KeyOf(msgData.ObjectId, &msgData.ObjectId);
+                IdsRemappingTable.KeyOf(msgData.ParentId, &msgData.ParentId);
+            }
+            GetNetworkName(msgData.ObjectTypeName, obj->GetType().Fullname);
+            msgData.DataSize = size;
+            const uint32 msgMaxData = peer->Config.MessageSize - sizeof(NetworkMessageObjectReplicate);
+            const uint32 partMaxData = peer->Config.MessageSize - sizeof(NetworkMessageObjectReplicatePart);
+            uint32 partsCount = 1;
+            uint32 dataStart = 0;
+            uint32 msgDataSize = size;
+            if (size > msgMaxData)
+            {
+                // Send msgMaxData within first message
+                msgDataSize = msgMaxData;
+                dataStart += msgMaxData;
 
-                    // Send rest of the data in separate parts
-                    partsCount += Math::DivideAndRoundUp(size - dataStart, partMaxData);
-                }
-                else
-                    dataStart += size;
-                ASSERT(partsCount <= MAX_uint8)
-                msgData.PartsCount = partsCount;
-                NetworkMessage msg = peer->BeginSendMessage();
-                msg.WriteStructure(msgData);
-                msg.WriteBytes(stream->GetBuffer(), msgDataSize);
+                // Send rest of the data in separate parts
+                partsCount += Math::DivideAndRoundUp(size - dataStart, partMaxData);
+            }
+            else
+                dataStart += size;
+            ASSERT(partsCount <= MAX_uint8)
+            msgData.PartsCount = partsCount;
+            NetworkMessage msg = peer->BeginSendMessage();
+            msg.WriteStructure(msgData);
+            msg.WriteBytes(stream->GetBuffer(), msgDataSize);
+            if (isClient)
+                peer->EndSendMessage(NetworkChannelType::Unreliable, msg);
+            else
+                peer->EndSendMessage(NetworkChannelType::Unreliable, msg, CachedTargets);
+
+            // Send all other parts
+            for (uint32 partIndex = 1; partIndex < partsCount; partIndex++)
+            {
+                NetworkMessageObjectReplicatePart msgDataPart;
+                msgDataPart.OwnerFrame = msgData.OwnerFrame;
+                msgDataPart.ObjectId = msgData.ObjectId;
+                msgDataPart.DataSize = msgData.DataSize;
+                msgDataPart.PartsCount = msgData.PartsCount;
+                msgDataPart.PartStart = dataStart;
+                msgDataPart.PartSize = Math::Min(size - dataStart, partMaxData);
+                msg = peer->BeginSendMessage();
+                msg.WriteStructure(msgDataPart);
+                msg.WriteBytes(stream->GetBuffer() + msgDataPart.PartStart, msgDataPart.PartSize);
+                dataStart += msgDataPart.PartSize;
                 if (isClient)
                     peer->EndSendMessage(NetworkChannelType::Unreliable, msg);
                 else
                     peer->EndSendMessage(NetworkChannelType::Unreliable, msg, CachedTargets);
-
-                // Send all other parts
-                for (uint32 partIndex = 1; partIndex < partsCount; partIndex++)
-                {
-                    NetworkMessageObjectReplicatePart msgDataPart;
-                    msgDataPart.OwnerFrame = msgData.OwnerFrame;
-                    msgDataPart.ObjectId = msgData.ObjectId;
-                    msgDataPart.DataSize = msgData.DataSize;
-                    msgDataPart.PartsCount = msgData.PartsCount;
-                    msgDataPart.PartStart = dataStart;
-                    msgDataPart.PartSize = Math::Min(size - dataStart, partMaxData);
-                    msg = peer->BeginSendMessage();
-                    msg.WriteStructure(msgDataPart);
-                    msg.WriteBytes(stream->GetBuffer() + msgDataPart.PartStart, msgDataPart.PartSize);
-                    dataStart += msgDataPart.PartSize;
-                    if (isClient)
-                        peer->EndSendMessage(NetworkChannelType::Unreliable, msg);
-                    else
-                        peer->EndSendMessage(NetworkChannelType::Unreliable, msg, CachedTargets);
-                }
-                ASSERT_LOW_LAYER(dataStart == size);
-
-                // TODO: stats for bytes send per object type
             }
+            ASSERT_LOW_LAYER(dataStart == size);
+
+            // TODO: stats for bytes send per object type
         }
     }
 
