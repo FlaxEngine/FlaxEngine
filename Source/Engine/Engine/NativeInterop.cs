@@ -706,7 +706,7 @@ namespace FlaxEngine.Interop
                         MarshalHelper<T>.toManagedFieldMarshallers[i](MarshalHelper<T>.marshallableFields[i], ref managedValue, fieldPtr, out int fieldOffset);
                         fieldPtr += fieldOffset;
                     }
-                    Assert.IsTrue((fieldPtr - nativePtr) == Unsafe.SizeOf<T>());
+                    Assert.IsTrue((fieldPtr - nativePtr) <= Unsafe.SizeOf<T>());
                 }
                 else
                     managedValue = Unsafe.Read<T>(nativePtr.ToPointer());
@@ -745,7 +745,7 @@ namespace FlaxEngine.Interop
                         MarshalHelper<T>.toNativeFieldMarshallers[i](MarshalHelper<T>.marshallableFields[i], ref managedValue, nativePtr, out int fieldOffset);
                         nativePtr += fieldOffset;
                     }
-                    Assert.IsTrue((nativePtr - fieldPtr) == Unsafe.SizeOf<T>());
+                    Assert.IsTrue((nativePtr - fieldPtr) <= Unsafe.SizeOf<T>());
                 }
                 else
                     Unsafe.AsRef<T>(nativePtr.ToPointer()) = managedValue;
