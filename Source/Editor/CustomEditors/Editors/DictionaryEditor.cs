@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.CustomEditors.GUI;
@@ -46,8 +45,8 @@ namespace FlaxEditor.CustomEditors.Editors
 
             private void OnSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkedEditor)
             {
-                menu.AddSeparator();
-
+                if (menu.Items.Any())
+                    menu.AddSeparator();
                 menu.AddButton("Remove", OnRemoveClicked).Enabled = !_editor._readOnly;
                 menu.AddButton("Edit", OnEditClicked).Enabled = _editor._canEditKeys;
             }
@@ -62,6 +61,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 var keyType = _editor.Values.Type.GetGenericArguments()[0];
                 if (keyType == typeof(string) || keyType.IsPrimitive)
                 {
+                    // Edit as text
                     var popup = RenamePopup.Show(Parent, Rectangle.Margin(Bounds, Margin), Text, false);
                     popup.Validate += (renamePopup, value) =>
                     {
@@ -79,7 +79,6 @@ namespace FlaxEditor.CustomEditors.Editors
                             newKey = JsonSerializer.Deserialize(renamePopup.Text, keyType);
                         else
                             newKey = renamePopup.Text;
-
                         _editor.ChangeKey(_key, newKey);
                         _key = newKey;
                         Text = _key.ToString();
@@ -87,6 +86,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 }
                 else if (keyType.IsEnum)
                 {
+                    // Edit via enum picker
                     var popup = RenamePopup.Show(Parent, Rectangle.Margin(Bounds, Margin), Text, false);
                     var picker = new EnumComboBox(keyType)
                     {
@@ -109,7 +109,21 @@ namespace FlaxEditor.CustomEditors.Editors
                 }
                 else
                 {
-                    throw new NotImplementedException("Missing editing for dictionary key type " + keyType);
+                    // Generic editor
+                    var popup = ContextMenuBase.ShowEmptyMenu(Parent, Rectangle.Margin(Bounds, Margin));
+                    var presenter = new CustomEditorPresenter(null);
+                    presenter.Panel.AnchorPreset = AnchorPresets.StretchAll;
+                    presenter.Panel.IsScrollable = false;
+                    presenter.Panel.Parent = popup;
+                    presenter.Select(_key);
+                    presenter.Modified += () =>
+                    {
+                        popup.Hide();
+                        object newKey = presenter.Selection[0];
+                        _editor.ChangeKey(_key, newKey);
+                        _key = newKey;
+                        Text = _key?.ToString();
+                    };
                 }
             }
 
@@ -160,7 +174,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var argTypes = type.GetGenericArguments();
             var keyType = argTypes[0];
             var valueType = argTypes[1];
-            _canEditKeys = keyType == typeof(string) || keyType.IsPrimitive || keyType.IsEnum;
+            _canEditKeys = keyType == typeof(string) || keyType.IsPrimitive || keyType.IsEnum || keyType.IsValueType;
             _background = FlaxEngine.GUI.Style.Current.CollectionBackgroundColor;
             _readOnly = false;
             _notNullItems = false;
@@ -383,6 +397,7 @@ namespace FlaxEditor.CustomEditors.Editors
             int newItemsLeft = newSize - oldSize;
             while (newItemsLeft-- > 0)
             {
+                object newKey = null;
                 if (keyType.IsPrimitive)
                 {
                     long uniqueKey = 0;
@@ -401,8 +416,7 @@ namespace FlaxEditor.CustomEditors.Editors
                             }
                         }
                     } while (!isUnique);
-
-                    newValues[Convert.ChangeType(uniqueKey, keyType)] = TypeUtils.GetDefaultValue(new ScriptType(valueType));
+                    newKey = Convert.ChangeType(uniqueKey, keyType);
                 }
                 else if (keyType.IsEnum)
                 {
@@ -422,8 +436,7 @@ namespace FlaxEditor.CustomEditors.Editors
                             }
                         }
                     } while (!isUnique && uniqueKeyIndex < enumValues.Length);
-
-                    newValues[enumValues.GetValue(uniqueKeyIndex)] = TypeUtils.GetDefaultValue(new ScriptType(valueType));
+                    newKey = enumValues.GetValue(uniqueKeyIndex);
                 }
                 else if (keyType == typeof(string))
                 {
@@ -442,13 +455,13 @@ namespace FlaxEditor.CustomEditors.Editors
                             }
                         }
                     } while (!isUnique);
-
-                    newValues[uniqueKey] = TypeUtils.GetDefaultValue(new ScriptType(valueType));
+                    newKey = uniqueKey;
                 }
                 else
                 {
-                    throw new InvalidOperationException();
+                    newKey = TypeUtils.GetDefaultValue(new ScriptType(keyType));
                 }
+                newValues[newKey] = TypeUtils.GetDefaultValue(new ScriptType(valueType));
             }
 
             SetValue(newValues);

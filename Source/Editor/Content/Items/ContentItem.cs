@@ -360,7 +360,7 @@ namespace FlaxEditor.Content
         }
 
         /// <summary>
-        /// Updates the tooltip text.
+        /// Updates the tooltip text text.
         /// </summary>
         public virtual void UpdateTooltipText()
         {
@@ -384,7 +384,8 @@ namespace FlaxEditor.Content
         protected virtual void OnBuildTooltipText(StringBuilder sb)
         {
             sb.Append("Type: ").Append(TypeDescription).AppendLine();
-            sb.Append("Size: ").Append(Utilities.Utils.FormatBytesCount((int)new FileInfo(Path).Length)).AppendLine();
+            if (File.Exists(Path))
+                sb.Append("Size: ").Append(Utilities.Utils.FormatBytesCount((int)new FileInfo(Path).Length)).AppendLine();
             sb.Append("Path: ").Append(Utilities.Utils.GetAssetNamePathWithExt(Path)).AppendLine();
         }
 
@@ -718,7 +719,7 @@ namespace FlaxEditor.Content
         public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             Focus();
-            
+
             // Open
             (Parent as ContentView).OnItemDoubleClick(this);
 

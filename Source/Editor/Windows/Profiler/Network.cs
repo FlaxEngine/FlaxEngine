@@ -52,7 +52,7 @@ namespace FlaxEditor.Windows.Profiler
 
         private static string FormatSampleBytes(float v)
         {
-            return (uint)v + " bytes";
+            return Utilities.Utils.FormatBytesCount((ulong)v);
         }
 
         /// <inheritdoc />

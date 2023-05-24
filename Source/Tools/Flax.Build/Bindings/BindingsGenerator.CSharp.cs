@@ -541,7 +541,7 @@ namespace Flax.Build.Bindings
             var separator = false;
             if (!functionInfo.IsStatic)
             {
-                contents.Append("IntPtr obj");
+                contents.Append("IntPtr __obj");
                 separator = true;
             }
 
@@ -1511,7 +1511,8 @@ namespace Flax.Build.Bindings
 
                         if (fieldInfo.Type.IsObjectRef)
                         {
-                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{fieldInfo.Type.GenericArgs[0].Type}>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target) : null");
+                            var managedType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type.GenericArgs[0], structureInfo);
+                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{managedType}>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target) : null");
                             toNativeContent.Append($"managed.{fieldInfo.Name} != null ? ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak) : IntPtr.Zero");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
 

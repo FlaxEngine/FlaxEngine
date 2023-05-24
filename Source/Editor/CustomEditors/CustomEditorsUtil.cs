@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using FlaxEditor.CustomEditors.Dedicated;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.Scripting;
 using FlaxEngine;
@@ -110,7 +111,7 @@ namespace FlaxEditor.CustomEditors
             // Select default editor (based on type)
             if (targetType.IsEnum)
                 return new EnumEditor();
-                if (targetType.IsGenericType)
+            if (targetType.IsGenericType)
             {
                 if (targetTypeType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
                     return new DictionaryEditor();
@@ -121,6 +122,8 @@ namespace FlaxEditor.CustomEditors
                 if (customEditorType != null)
                     return (CustomEditor)Activator.CreateInstance(customEditorType);
             }
+            if (typeof(FlaxEngine.Object).IsAssignableFrom(targetTypeType))
+                return new ScriptingObjectEditor();
 
             // The most generic editor
             return new GenericEditor();
