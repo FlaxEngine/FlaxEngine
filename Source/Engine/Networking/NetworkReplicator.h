@@ -43,6 +43,17 @@ public:
 #endif
 
     /// <summary>
+    /// Gets the network replication hierarchy.
+    /// </summary>
+    API_PROPERTY() static NetworkReplicationHierarchy* GetHierarchy();
+
+    /// <summary>
+    /// Sets the network replication hierarchy.
+    /// </summary>
+    API_PROPERTY() static void SetHierarchy(NetworkReplicationHierarchy* value);
+
+public:
+    /// <summary>
     /// Adds the network replication serializer for a given type.
     /// </summary>
     /// <param name="typeHandle">The scripting type to serialize.</param>
