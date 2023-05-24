@@ -111,6 +111,25 @@ namespace FlaxEditor.GUI.ContextMenu
         }
 
         /// <summary>
+        /// Shows the empty menu popup o na screen.
+        /// </summary>
+        /// <param name="control">The target control.</param>
+        /// <param name="area">The target control area to cover.</param>
+        /// <returns>Created popup.</returns>
+        public static ContextMenuBase ShowEmptyMenu(Control control, Rectangle area)
+        {
+            // Calculate the control size in the window space to handle scaled controls
+            var upperLeft = control.PointToWindow(area.UpperLeft);
+            var bottomRight = control.PointToWindow(area.BottomRight);
+            var size = bottomRight - upperLeft;
+
+            var popup = new ContextMenuBase();
+            popup.Size = size;
+            popup.Show(control, area.Location + new Float2(0, (size.Y - popup.Height) * 0.5f));
+            return popup;
+        }
+
+        /// <summary>
         /// Show context menu over given control.
         /// </summary>
         /// <param name="parent">Parent control to attach to it.</param>
