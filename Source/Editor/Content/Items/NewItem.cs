@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System.Text;
 using FlaxEngine;
 
 namespace FlaxEditor.Content
@@ -47,5 +48,11 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         protected override bool DrawShadow => true;
+
+        /// <inheritdoc />
+        public override void UpdateTooltipText()
+        {
+            TooltipText = null;
+        }
     }
 }
