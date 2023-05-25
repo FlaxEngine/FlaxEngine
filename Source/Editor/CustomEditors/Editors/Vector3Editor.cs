@@ -135,17 +135,17 @@ namespace FlaxEditor.CustomEditors.Editors
                 case ValueChanged.X:
                     valueChange = xValue - ((Float3)Values[0]).X;
                     yValue = NewLinkedValue(yValue, valueChange);
-                    zValue =  NewLinkedValue(zValue, valueChange);
+                    zValue = NewLinkedValue(zValue, valueChange);
                     break;
                 case ValueChanged.Y:
                     valueChange = yValue - ((Float3)Values[0]).Y;
-                    xValue =  NewLinkedValue(xValue, valueChange);
-                    zValue =  NewLinkedValue(zValue, valueChange);
+                    xValue = NewLinkedValue(xValue, valueChange);
+                    zValue = NewLinkedValue(zValue, valueChange);
                     break;
                 case ValueChanged.Z:
                     valueChange = zValue - ((Float3)Values[0]).Z;
-                    xValue =  NewLinkedValue(xValue, valueChange);
-                    yValue =  NewLinkedValue(yValue, valueChange);
+                    xValue = NewLinkedValue(xValue, valueChange);
+                    yValue = NewLinkedValue(yValue, valueChange);
                     break;
                 default: break;
                 }
