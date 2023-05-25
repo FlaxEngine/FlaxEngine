@@ -134,18 +134,18 @@ namespace FlaxEditor.CustomEditors.Editors
                 {
                 case ValueChanged.X:
                     valueChange = xValue - ((Float3)Values[0]).X;
-                    yValue += valueChange;
-                    zValue += valueChange;
+                    yValue = NewLinkedValue(yValue, valueChange);
+                    zValue =  NewLinkedValue(zValue, valueChange);
                     break;
                 case ValueChanged.Y:
                     valueChange = yValue - ((Float3)Values[0]).Y;
-                    xValue += valueChange;
-                    zValue += valueChange;
+                    xValue =  NewLinkedValue(xValue, valueChange);
+                    zValue =  NewLinkedValue(zValue, valueChange);
                     break;
                 case ValueChanged.Z:
                     valueChange = zValue - ((Float3)Values[0]).Z;
-                    xValue += valueChange;
-                    yValue += valueChange;
+                    xValue =  NewLinkedValue(xValue, valueChange);
+                    yValue =  NewLinkedValue(yValue, valueChange);
                     break;
                 default: break;
                 }
@@ -162,6 +162,11 @@ namespace FlaxEditor.CustomEditors.Editors
             else if (v is Double3)
                 v = (Double3)value;
             SetValue(v, token);
+        }
+
+        private float NewLinkedValue(float value, float valueChange)
+        {
+            return Mathf.NearEqual(value, 0) ? value : value + valueChange;
         }
 
         /// <inheritdoc />
