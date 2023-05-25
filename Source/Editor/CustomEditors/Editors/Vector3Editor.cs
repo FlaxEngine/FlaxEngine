@@ -129,23 +129,23 @@ namespace FlaxEditor.CustomEditors.Editors
 
             if (LinkValues)
             {
-                var valueChange = 0.0f;
+                var valueRatio = 0.0f;
                 switch (_valueChanged)
                 {
                 case ValueChanged.X:
-                    valueChange = xValue - ((Float3)Values[0]).X;
-                    yValue = NewLinkedValue(yValue, valueChange);
-                    zValue = NewLinkedValue(zValue, valueChange);
+                    valueRatio = GetRatio(xValue, ((Float3)Values[0]).X);
+                    yValue = NewLinkedValue(yValue, valueRatio);
+                    zValue = NewLinkedValue(zValue, valueRatio);
                     break;
                 case ValueChanged.Y:
-                    valueChange = yValue - ((Float3)Values[0]).Y;
-                    xValue = NewLinkedValue(xValue, valueChange);
-                    zValue = NewLinkedValue(zValue, valueChange);
+                    valueRatio = GetRatio(yValue, ((Float3)Values[0]).Y);
+                    xValue = NewLinkedValue(xValue, valueRatio);
+                    zValue = NewLinkedValue(zValue, valueRatio);
                     break;
                 case ValueChanged.Z:
-                    valueChange = zValue - ((Float3)Values[0]).Z;
-                    xValue = NewLinkedValue(xValue, valueChange);
-                    yValue = NewLinkedValue(yValue, valueChange);
+                    valueRatio = GetRatio(zValue, ((Float3)Values[0]).Z);
+                    xValue = NewLinkedValue(xValue, valueRatio);
+                    yValue = NewLinkedValue(yValue, valueRatio);
                     break;
                 default: break;
                 }
@@ -164,9 +164,14 @@ namespace FlaxEditor.CustomEditors.Editors
             SetValue(v, token);
         }
 
-        private float NewLinkedValue(float value, float valueChange)
+        private float GetRatio(float value, float initialValue)
         {
-            return Mathf.NearEqual(value, 0) ? value : value + valueChange;
+            return Mathf.Abs(value / initialValue);
+        }
+
+        private float NewLinkedValue(float value, float valueRatio)
+        {
+            return Mathf.NearEqual(value, 0) ? value : value * valueRatio;
         }
 
         /// <inheritdoc />
