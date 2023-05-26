@@ -6,7 +6,7 @@ namespace Flax.Build.Graph
     /// The C++ file compilation task.
     /// </summary>
     /// <seealso cref="Flax.Build.Graph.Task" />
-    public class CompileCppTask : Task
+    public class CompileTask : Task
     {
     }
 }
