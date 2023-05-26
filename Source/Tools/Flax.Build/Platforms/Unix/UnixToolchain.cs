@@ -315,6 +315,7 @@ namespace Flax.Build.Platforms
 
             // Setup arguments shared by all source files
             var commonArgs = new List<string>();
+            commonArgs.AddRange(options.CompileEnv.CustomArgs);
             SetupCompileCppFilesArgs(graph, options, commonArgs, outputPath);
             {
                 commonArgs.Add("-c");
@@ -501,6 +502,7 @@ namespace Flax.Build.Platforms
 
             // Setup arguments
             var args = new List<string>();
+            args.AddRange(options.LinkEnv.CustomArgs);
             {
                 args.Add(string.Format("-o \"{0}\"", outputFilePath));
 

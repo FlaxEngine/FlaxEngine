@@ -125,6 +125,7 @@ namespace Flax.Build.Platforms
 
             // Setup arguments shared by all source files
             var commonArgs = new List<string>();
+            commonArgs.AddRange(options.CompileEnv.CustomArgs);
             {
                 commonArgs.Add("-c");
                 commonArgs.Add("-fmessage-length=0");
@@ -252,6 +253,7 @@ namespace Flax.Build.Platforms
 
             // Setup arguments
             var args = new List<string>();
+            args.AddRange(options.LinkEnv.CustomArgs);
             {
                 args.Add(string.Format("-o \"{0}\"", outputFilePath));
                 AddArgsCommon(options, args);

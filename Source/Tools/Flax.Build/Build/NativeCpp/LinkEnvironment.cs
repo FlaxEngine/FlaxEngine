@@ -106,6 +106,11 @@ namespace Flax.Build.NativeCpp
         /// </summary>
         public readonly List<string> LibraryPaths = new List<string>();
 
+        /// <summary>
+        /// The collection of custom arguments to pass to the linker.
+        /// </summary>
+        public readonly HashSet<string> CustomArgs = new HashSet<string>();
+
         /// <inheritdoc />
         public object Clone()
         {
@@ -127,6 +132,7 @@ namespace Flax.Build.NativeCpp
             clone.DocumentationFiles.AddRange(DocumentationFiles);
             clone.InputLibraries.AddRange(InputLibraries);
             clone.LibraryPaths.AddRange(LibraryPaths);
+            clone.CustomArgs.AddRange(CustomArgs);
             return clone;
         }
     }
