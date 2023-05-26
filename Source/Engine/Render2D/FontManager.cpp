@@ -242,7 +242,7 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
 
     // Find atlas for the character texture
     int32 atlasIndex = 0;
-    const FontTextureAtlas::Slot* slot = nullptr;
+    const FontTextureAtlasSlot* slot = nullptr;
     for (; atlasIndex < Atlases.Count(); atlasIndex++)
     {
         // Add the character to the texture
@@ -283,6 +283,7 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
     entry.UV.Y = static_cast<float>(slot->Y + padding);
     entry.UVSize.X = static_cast<float>(slot->Width - 2 * padding);
     entry.UVSize.Y = static_cast<float>(slot->Height - 2 * padding);
+    entry.Slot = slot;
 
     return false;
 }

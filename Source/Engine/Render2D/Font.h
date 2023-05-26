@@ -10,6 +10,7 @@
 #include "TextLayoutOptions.h"
 
 class FontAsset;
+struct FontTextureAtlasSlot;
 
 // The default DPI that engine is using
 #define DefaultDPI 96
@@ -204,6 +205,11 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(FontCharacterEntry);
     /// The size the character in the texture (in texture coordinates space).
     /// </summary>
     API_FIELD() Float2 UVSize;
+
+    /// <summary>
+    /// The slot in texture atlas, containing the pixel data of the glyph.
+    /// </summary>
+    API_FIELD() const FontTextureAtlasSlot* Slot;
 };
 
 template<>
