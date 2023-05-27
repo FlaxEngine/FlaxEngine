@@ -45,7 +45,7 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override string NewItemName => "Script";
+        public override string NewItemName => "MyScript";
 
         /// <inheritdoc />
         public override bool CanCreate(ContentFolder targetLocation)
@@ -71,6 +71,8 @@ namespace FlaxEditor.Content
         {
             // Scripts cannot start with digit. 
             if (Char.IsDigit(filename[0]))
+                return false;
+            if (filename.Equals("Script"))
                 return false;
             return true;
         }
