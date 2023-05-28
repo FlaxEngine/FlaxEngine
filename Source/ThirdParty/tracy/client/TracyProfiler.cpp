@@ -369,7 +369,6 @@ static int64_t SetupHwTimer()
 #endif
     }
 #endif
-#endif
 
     return Profiler::GetTime();
 }
@@ -4784,4 +4783,4 @@ TRACY_API void ___tracy_shutdown_profiler( void )
 #endif
 #endif
 
-
+#endif
