@@ -818,19 +818,21 @@ namespace FlaxEditor.Windows
             // Selected UI controls outline
             bool drawAnySelectedControl = false;
             // TODO: optimize this (eg. cache list of selected UIControl's when selection gets changed)
-            for (var i = 0; i < Editor.Instance.SceneEditing.Selection.Count; i++)
+            var selection = Editor.SceneEditing.Selection;
+            for (var i = 0; i < selection.Count; i++)
             {
-                if (Editor.Instance.SceneEditing.Selection[i].EditableObject is UIControl controlActor && controlActor && controlActor.Control != null)
+                if (selection[i].EditableObject is UIControl controlActor && controlActor && controlActor.Control != null)
                 {
                     if (!drawAnySelectedControl)
                     {
                         drawAnySelectedControl = true;
                         Render2D.PushTransform(ref _viewport._cachedTransform);
                     }
+                    var options = Editor.Options.Options.Visual;
                     var control = controlActor.Control;
                     var bounds = control.EditorBounds;
                     bounds = Rectangle.FromPoints(control.PointToParent(_viewport, bounds.Location), control.PointToParent(_viewport, bounds.Size));
-                    Render2D.DrawRectangle(bounds, Editor.Instance.Options.Options.Visual.SelectionOutlineColor0, Editor.Instance.Options.Options.Visual.UISelectionOutlineSize);
+                    Render2D.DrawRectangle(bounds, options.SelectionOutlineColor0, options.UISelectionOutlineSize);
                 }
             }
             if (drawAnySelectedControl)
@@ -863,7 +865,7 @@ namespace FlaxEditor.Windows
                 }
 
                 // Add overlay during debugger breakpoint hang
-                if (Editor.Instance.Simulation.IsDuringBreakpointHang)
+                if (Editor.Simulation.IsDuringBreakpointHang)
                 {
                     var bounds = new Rectangle(Float2.Zero, Size);
                     Render2D.FillRectangle(bounds, new Color(0.0f, 0.0f, 0.0f, 0.2f));
