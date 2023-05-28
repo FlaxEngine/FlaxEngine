@@ -408,6 +408,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
     {
         private Type _cachedType;
         private bool _anchorDropDownClosed = true;
+        private Button _pivotRelativeButton;
+
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
@@ -495,27 +497,40 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void BuildExtraButtons(VerticalPanelElement group)
         {
+            // Set to default for UI editing
+            (Values[0] as Control).PivotRelative = true;
+
             var panel = group.CustomContainer<Panel>();
             panel.CustomControl.Height = TextBoxBase.DefaultHeight;
             panel.CustomControl.ClipChildren = false;
             panel.CustomControl.Parent = group.ContainerControl;
-            panel.CustomControl.Y += 50;
 
-            var pivotSizeRelativeBtn = new Button()
+            _pivotRelativeButton = new Button()
             {
                 Parent = panel.ContainerControl,
                 Width = 18,
                 Height = 18,
                 BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Scale32),
                 AnchorPreset = AnchorPresets.TopRight,
+                X = 77,
             };
-            pivotSizeRelativeBtn.Clicked += () =>
-            {
-                var current = (Values[0] as Control).PivotRelative;
-                (Values[0] as Control).PivotRelative = !current;
-                pivotSizeRelativeBtn.BorderColor = current ? Color.Transparent : Color.AliceBlue;
-                pivotSizeRelativeBtn.BackgroundColor = current ? Color.Gray : Color.White;
-            };
+
+            SetStyle(true);
+            _pivotRelativeButton.Clicked += PivotRelativeClicked;
+        }
+
+        private void PivotRelativeClicked()
+        {
+            var current = (Values[0] as Control).PivotRelative;
+            (Values[0] as Control).PivotRelative = !current;
+            SetStyle((Values[0] as Control).PivotRelative);
+        }
+
+        private void SetStyle(bool current)
+        {
+            var style = FlaxEngine.GUI.Style.Current;
+            var backgroundColor = current ? style.Foreground : style.ForegroundDisabled;
+            _pivotRelativeButton.SetColors(backgroundColor);
         }
 
         private void BuildAnchorsDropper(LayoutElementsContainer main, ScriptType[] valueTypes)
