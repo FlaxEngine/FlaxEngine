@@ -3,6 +3,7 @@
 #include "Screenshot.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Math/Color32.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Graphics/Textures/TextureData.h"

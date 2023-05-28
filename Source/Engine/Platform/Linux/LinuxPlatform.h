@@ -33,6 +33,11 @@ public:
     /// <returns>The user home directory.</returns>
     static const String& GetHomeDirectory();
 
+    /// <summary>
+    /// An event that is fired when an XEvent is recieved by Flax.
+    /// </summary>
+    static Delegate<void*> xEventRecieved;
+
 public:
 
     // [UnixPlatform]
