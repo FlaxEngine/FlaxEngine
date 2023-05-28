@@ -13,22 +13,27 @@ API_INTERFACE(Namespace = "FlaxEngine.Networking") class FLAXENGINE_API INetwork
     DECLARE_SCRIPTING_TYPE_MINIMAL(INetworkObject);
 public:
     /// <summary>
-    /// Event called when network objects gets spawned.
+    /// Event called when network object gets spawned.
     /// </summary>
-    API_FUNCTION() virtual void OnNetworkSpawn() = 0;
+    API_FUNCTION() virtual void OnNetworkSpawn() {};
 
     /// <summary>
-    /// Event called when network objects gets despawned.
+    /// Event called when network object gets despawned.
     /// </summary>
-    API_FUNCTION() virtual void OnNetworkDespawn() = 0;
+    API_FUNCTION() virtual void OnNetworkDespawn() {};
 
     /// <summary>
     /// Event called before network object gets replicated (before reading data).
     /// </summary>
-    API_FUNCTION() virtual void OnNetworkSerialize() = 0;
+    API_FUNCTION() virtual void OnNetworkSerialize() {};
 
     /// <summary>
-    /// Event called when network objects gets replicated (after reading data).
+    /// Event called when network object gets replicated (after reading data).
     /// </summary>
-    API_FUNCTION() virtual void OnNetworkDeserialize() = 0;
+    API_FUNCTION() virtual void OnNetworkDeserialize() {};
+
+    /// <summary>
+    /// Event called when network object gets synced (called only once upon initial sync).
+    /// </summary>
+    API_FUNCTION() virtual void OnNetworkSync() {};
 };

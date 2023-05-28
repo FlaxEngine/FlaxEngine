@@ -111,6 +111,7 @@ struct NetworkReplicatedObject
     uint8 Spawned : 1;
     DataContainer<uint32> TargetClientIds;
     INetworkObject* AsNetworkObject;
+    bool NetworkObjectSync = false;
 
     NetworkReplicatedObject()
     {
@@ -637,7 +638,14 @@ void InvokeObjectReplication(NetworkReplicatedObject& item, uint32 ownerFrame, b
     }
 
     if (item.AsNetworkObject)
+    {
         item.AsNetworkObject->OnNetworkDeserialize();
+        if (!item.NetworkObjectSync)
+        {
+            item.AsNetworkObject->OnNetworkSync();
+            item.NetworkObjectSync = true;
+        }
+    }
 
     // Speed up replication of client-owned objects to other clients from server to reduce lag (data has to go from client to server and then to other clients)
     if (NetworkManager::IsServer())
