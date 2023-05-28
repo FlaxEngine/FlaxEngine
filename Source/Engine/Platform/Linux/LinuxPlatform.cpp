@@ -2643,10 +2643,8 @@ Float2 LinuxPlatform::GetMousePosition()
 {
     if (!xDisplay)
         return Float2::Zero;
-
-	int32 x, y;
+	int32 x = 0, y = 0;
 	uint32 screenCount = (uint32)X11::XScreenCount(xDisplay);
-
 	for (uint32 i = 0; i < screenCount; i++)
 	{
 		X11::Window outRoot, outChild;
@@ -2655,7 +2653,6 @@ Float2 LinuxPlatform::GetMousePosition()
 		if (X11::XQueryPointer(xDisplay, X11::XRootWindow(xDisplay, i), &outRoot, &outChild, &x, &y, &childX, &childY, &mask))
 			break;
 	}
-
 	return Float2((float)x, (float)y);
 }
 
