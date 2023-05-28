@@ -4,12 +4,19 @@
 
 #include "Types/BaseTypes.h"
 #include "Types/String.h"
+#include "Types/Span.h"
 #if _MSC_VER && PLATFORM_SIMD_SSE4_2
 #include <intrin.h>
 #endif
 
 namespace Utilities
 {
+    struct Private
+    {
+        static FLAXENGINE_API Span<const Char*> BytesSizes;
+        static FLAXENGINE_API Span<const Char*> HertzSizes;
+    };
+
     // Round floating point value up to 1 decimal place
     template<typename T>
     FORCE_INLINE T RoundTo1DecimalPlace(T value)
@@ -37,17 +44,17 @@ namespace Utilities
     // @param sizes Array with human-readable sizes to convert from
     // @return The best fitting string of the units
     template<typename T>
-    String UnitsToText(T units, int32 divider, const Array<String>& sizes)
+    String UnitsToText(T units, int32 divider, const Span<const Char*> sizes)
     {
-        if(sizes.Count() == 0)
+        if (sizes.Length() == 0)
             return String::Format(TEXT("{0}"), units);
         int32 i = 0;
         double dblSUnits = static_cast<double>(units);
         for (; static_cast<uint64>(units / static_cast<double>(divider)) > 0; i++, units /= divider)
             dblSUnits = units / static_cast<double>(divider);
-        if (i >= sizes.Count())
-            return String::Format(TEXT("{0}{1}"), units, sizes[0]);
-        return String::Format(TEXT("{0}{1}"), RoundTo2DecimalPlaces(dblSUnits), sizes[i]);
+        if (i >= sizes.Length())
+            i = 0;
+        return String::Format(TEXT("{0} {1}"), RoundTo2DecimalPlaces(dblSUnits), sizes[i]);
     }
 
     // Converts size of the file (in bytes) to the best fitting string
@@ -56,8 +63,7 @@ namespace Utilities
     template<typename T>
     String BytesToText(T bytes)
     {
-        static Array<String> sizes = { TEXT("b"), TEXT("Kb"), TEXT("Mb"), TEXT("Gb"), TEXT("Tb"), TEXT("Pb"), TEXT("Eb"), TEXT("Zb"), TEXT("Yb") };
-        return UnitsToText(bytes, 1024, sizes);
+        return UnitsToText(bytes, 1024, Private::BytesSizes);
     }
 
     // Converts hertz to the best fitting string
@@ -66,8 +72,7 @@ namespace Utilities
     template<typename T>
     String HertzToText(T hertz)
     {
-        static Array<String> sizes = { TEXT("Hz"), TEXT("KHz"), TEXT("MHz"), TEXT("GHz"), TEXT("THz"), TEXT("PHz"), TEXT("EHz"), TEXT("ZHz"), TEXT("YHz") };
-        return UnitsToText(hertz, 1000, sizes);
+        return UnitsToText(hertz, 1000, Private::HertzSizes);
     }
 
     // Returns the amount of set bits in 32-bit integer.

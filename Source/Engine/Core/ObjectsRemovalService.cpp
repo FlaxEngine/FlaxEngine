@@ -1,12 +1,18 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "ObjectsRemovalService.h"
+#include "Utilities.h"
 #include "Collections/Dictionary.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/ScriptingObject.h"
+
+const Char* BytesSizesData[] = { TEXT("b"), TEXT("Kb"), TEXT("Mb"), TEXT("Gb"), TEXT("Tb"), TEXT("Pb"), TEXT("Eb"), TEXT("Zb"), TEXT("Yb") };
+const Char* HertzSizesData[] = { TEXT("Hz"), TEXT("KHz"), TEXT("MHz"), TEXT("GHz"), TEXT("THz"), TEXT("PHz"), TEXT("EHz"), TEXT("ZHz"), TEXT("YHz") };
+Span<const Char*> Utilities::Private::BytesSizes(BytesSizesData, ARRAY_COUNT(BytesSizesData));
+Span<const Char*> Utilities::Private::HertzSizes(HertzSizesData, ARRAY_COUNT(HertzSizesData));
 
 namespace ObjectsRemovalServiceImpl
 {
