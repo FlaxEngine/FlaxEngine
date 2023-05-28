@@ -71,6 +71,8 @@ public:
     static bool GetHasFocus();
     static bool CanOpenUrl(const StringView& url);
     static void OpenUrl(const StringView& url);
+    static Float2 GetMousePosition();
+    static void SetMousePosition(const Float2& pos);
     static Rectangle GetMonitorBounds(const Float2& screenPos);
     static Float2 GetDesktopSize();
     static Rectangle GetVirtualDesktopBounds();

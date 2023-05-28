@@ -158,27 +158,6 @@ void UWPPlatform::OpenUrl(const StringView& url)
     // TODO: add support for OpenUrl on UWP
 }
 
-Float2 UWPPlatform::GetMousePosition()
-{
-    // Use the main window
-    auto win = Engine::MainWindow;
-    if (win)
-    {
-        return win->ClientToScreen(win->GetMousePosition());
-    }
-    return Float2::Minimum;
-}
-
-void UWPPlatform::SetMousePosition(const Float2& pos)
-{
-    // Use the main window
-    auto win = Engine::MainWindow;
-    if (win)
-    {
-        win->SetMousePosition(win->ScreenToClient(pos));
-    }
-}
-
 Float2 UWPPlatform::GetDesktopSize()
 {
     Float2 result;

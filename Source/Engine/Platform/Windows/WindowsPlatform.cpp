@@ -830,6 +830,18 @@ void WindowsPlatform::OpenUrl(const StringView& url)
     ::ShellExecuteW(nullptr, TEXT("open"), *url, nullptr, nullptr, SW_SHOWNORMAL);
 }
 
+Float2 WindowsPlatform::GetMousePosition()
+{
+    POINT cursorPos;
+    GetCursorPos(&cursorPos);
+    return Float2((float)cursorPos.x, (float)cursorPos.y);
+}
+
+void WindowsPlatform::SetMousePosition(const Float2& pos)
+{
+    ::SetCursorPos((int)pos.X, (int)pos.Y);
+}
+
 struct GetMonitorBoundsData
 {
     Float2 Pos;

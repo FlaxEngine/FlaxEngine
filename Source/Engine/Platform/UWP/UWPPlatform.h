@@ -37,8 +37,6 @@ public:
     static bool GetHasFocus();
     static bool CanOpenUrl(const StringView& url);
     static void OpenUrl(const StringView& url);
-    static Float2 GetMousePosition();
-    static void SetMousePosition(const Float2& pos);
     static Float2 GetDesktopSize();
     static Window* CreateWindow(const CreateWindowSettings& settings);
     static void* LoadLibrary(const Char* filename);

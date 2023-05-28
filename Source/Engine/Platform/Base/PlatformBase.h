@@ -652,6 +652,18 @@ public:
 
 public:
     /// <summary>
+    /// Gets the mouse cursor position in screen-space coordinates.
+    /// </summary>
+    /// <returns>Mouse cursor coordinates.</returns>
+    API_PROPERTY() static Float2 GetMousePosition();
+
+    /// <summary>
+    /// Sets the mouse cursor position in screen-space coordinates.
+    /// </summary>
+    /// <param name="position">Cursor position to set.</param>
+    API_PROPERTY() static void SetMousePosition(const Float2& position);
+
+    /// <summary>
     /// Gets the origin position and size of the monitor at the given screen-space location.
     /// </summary>
     /// <param name="screenPos">The screen position (in pixels).</param>

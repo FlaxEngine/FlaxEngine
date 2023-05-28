@@ -109,12 +109,14 @@ struct NetworkReplicatedObject
     uint32 LastOwnerFrame = 0;
     NetworkObjectRole Role;
     uint8 Spawned : 1;
+    uint8 Synced : 1;
     DataContainer<uint32> TargetClientIds;
     INetworkObject* AsNetworkObject;
 
     NetworkReplicatedObject()
     {
         Spawned = 0;
+        Synced = 0;
     }
 
     bool operator==(const NetworkReplicatedObject& other) const
@@ -637,7 +639,14 @@ void InvokeObjectReplication(NetworkReplicatedObject& item, uint32 ownerFrame, b
     }
 
     if (item.AsNetworkObject)
+    {
         item.AsNetworkObject->OnNetworkDeserialize();
+        if (!item.Synced)
+        {
+            item.Synced = true;
+            item.AsNetworkObject->OnNetworkSync();
+        }
+    }
 
     // Speed up replication of client-owned objects to other clients from server to reduce lag (data has to go from client to server and then to other clients)
     if (NetworkManager::IsServer())
