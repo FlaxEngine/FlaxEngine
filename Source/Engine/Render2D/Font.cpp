@@ -178,7 +178,8 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
                 if (lastWrapCharIndex != INVALID_INDEX)
                 {
                     // Skip moving twice for the same character
-                    if (outputLines.HasItems() && outputLines.Last().LastCharIndex == lastWrapCharIndex - 1)
+                    int32 lastLineLasCharIndex = outputLines.HasItems() ? outputLines.Last().LastCharIndex : -10000;
+                    if (lastLineLasCharIndex == lastWrapCharIndex || lastLineLasCharIndex == lastWrapCharIndex - 1 || lastLineLasCharIndex == lastWrapCharIndex - 2)
                     {
                         currentIndex = nextCharIndex;
                         lastMoveLine = moveLine;
