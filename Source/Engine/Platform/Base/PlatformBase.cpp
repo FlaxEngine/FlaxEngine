@@ -5,6 +5,7 @@
 #include "Engine/Platform/MemoryStats.h"
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/Window.h"
 #include "Engine/Platform/User.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DateTime.h"
@@ -518,6 +519,21 @@ void PlatformBase::CreateGuid(Guid& result)
     const uint32 cyclesThing = Platform::GetTimeCycles() & 0xffffffff;
 
     result = Guid(dateThingHigh, randomThing | (sequentialThing << 16), cyclesThing, dateThingLow);
+}
+
+Float2 PlatformBase::GetMousePosition()
+{
+    const Window* win = Engine::MainWindow;
+    if (win)
+        return win->ClientToScreen(win->GetMousePosition());
+    return Float2::Minimum;
+}
+
+void PlatformBase::SetMousePosition(const Float2& position)
+{
+    const Window* win = Engine::MainWindow;
+    if (win)
+        win->SetMousePosition(win->ScreenToClient(position));
 }
 
 Float2 PlatformBase::GetVirtualDesktopSize()
