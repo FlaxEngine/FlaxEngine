@@ -31,20 +31,43 @@ namespace Utilities
         return (T)round((double)value * 1000.0) / (T)1000;
     }
 
+    // Converts units to the best fitting human-readable denominator
+    // @param units Units count
+    // @param divider Amount of units required for the next size
+    // @param sizes Array with human-readable sizes to convert from
+    // @return The best fitting string of the units
+    template<typename T>
+    String UnitsToText(T units, int32 divider, const Array<String>& sizes)
+    {
+        if(sizes.Count() == 0)
+            return String::Format(TEXT("{0}"), units);
+        int32 i = 0;
+        double dblSUnits = static_cast<double>(units);
+        for (; static_cast<uint64>(units / static_cast<double>(divider)) > 0; i++, units /= divider)
+            dblSUnits = units / static_cast<double>(divider);
+        if (i >= sizes.Count())
+            return String::Format(TEXT("{0}{1}"), units, sizes[0]);
+        return String::Format(TEXT("{0}{1}"), RoundTo2DecimalPlaces(dblSUnits), sizes[i]);
+    }
+
     // Converts size of the file (in bytes) to the best fitting string
     // @param bytes Size of the file in bytes
     // @return The best fitting string of the file size
     template<typename T>
     String BytesToText(T bytes)
     {
-        static const Char* sizes[] = { TEXT("B"), TEXT("KB"), TEXT("MB"), TEXT("GB"), TEXT("TB") };
-        uint64 i = 0;
-        double dblSByte = static_cast<double>(bytes);
-        for (; static_cast<uint64>(bytes / 1024.0) > 0; i++, bytes /= 1024)
-            dblSByte = bytes / 1024.0;
-        if (i >= ARRAY_COUNT(sizes))
-            return String::Empty;
-        return String::Format(TEXT("{0} {1}"), RoundTo2DecimalPlaces(dblSByte), sizes[i]);
+        static Array<String> sizes = { TEXT("b"), TEXT("Kb"), TEXT("Mb"), TEXT("Gb"), TEXT("Tb"), TEXT("Pb"), TEXT("Eb"), TEXT("Zb"), TEXT("Yb") };
+        return UnitsToText(bytes, 1024, sizes);
+    }
+
+    // Converts hertz to the best fitting string
+    // @param hertz Hertz for convertion
+    // @return The best fitting string
+    template<typename T>
+    String HertzToText(T hertz)
+    {
+        static Array<String> sizes = { TEXT("Hz"), TEXT("KHz"), TEXT("MHz"), TEXT("GHz"), TEXT("THz"), TEXT("PHz"), TEXT("EHz"), TEXT("ZHz"), TEXT("YHz") };
+        return UnitsToText(hertz, 1000, sizes);
     }
 
     // Returns the amount of set bits in 32-bit integer.
