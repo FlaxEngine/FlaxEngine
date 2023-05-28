@@ -151,6 +151,23 @@ public:
     API_FUNCTION() void ProjectPoint(const Vector3& worldSpaceLocation, API_PARAM(Out) Float2& cameraViewportSpaceLocation, API_PARAM(Ref) const Viewport& viewport) const;
 
     /// <summary>
+    /// Converts a game window-space point into a corresponding point in world space.
+    /// </summary>
+    /// <param name="gameWindowSpaceLocation">The input game window coordinates (XY in screen pixels).</param>
+    /// <param name="depth">The input camera-relative depth position (eg. clipping plane).</param>
+    /// <param name="worldSpaceLocation">The output world-space location (XYZ in world).</param>
+    API_FUNCTION() void UnprojectPoint(const Float2& gameWindowSpaceLocation, float depth, API_PARAM(Out) Vector3& worldSpaceLocation) const;
+
+    /// <summary>
+    /// Converts a camera viewport-space point into a corresponding point in world space.
+    /// </summary>
+    /// <param name="cameraViewportSpaceLocation">The input camera viewport-space location (XY in screen pixels).</param>
+    /// <param name="depth">The input camera-relative depth position (eg. clipping plane).</param>
+    /// <param name="worldSpaceLocation">The output world-space location (XYZ in world).</param>
+    /// <param name="viewport">The viewport.</param>
+    API_FUNCTION() void UnprojectPoint(const Float2& cameraViewportSpaceLocation, float depth, API_PARAM(Out) Vector3& worldSpaceLocation, API_PARAM(Ref) const Viewport& viewport) const;
+
+    /// <summary>
     /// Checks if the 3d point of the world is in the camera's field of view.
     /// </summary>
     /// <param name="worldSpaceLocation">World Position (XYZ).</param>

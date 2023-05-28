@@ -151,6 +151,20 @@ void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Float2& cameraViewp
     cameraViewportSpaceLocation = Float2(clipSpaceLocation);
 }
 
+void Camera::UnprojectPoint(const Float2& gameWindowSpaceLocation, float depth, Vector3& worldSpaceLocation) const
+{
+    UnprojectPoint(gameWindowSpaceLocation, depth, worldSpaceLocation, GetViewport());
+}
+
+void Camera::UnprojectPoint(const Float2& cameraViewportSpaceLocation, float depth, Vector3& worldSpaceLocation, const Viewport& viewport) const
+{
+    Matrix v, p, ivp;
+    GetMatrices(v, p, viewport);
+    Matrix::Multiply(v, p, ivp);
+    ivp.Invert();
+    viewport.Unproject(Vector3(cameraViewportSpaceLocation, depth), ivp, worldSpaceLocation);
+}
+
 bool Camera::IsPointOnView(const Vector3& worldSpaceLocation) const
 {
     Vector3 cameraUp = GetTransform().GetUp();
