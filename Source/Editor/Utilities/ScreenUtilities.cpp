@@ -63,7 +63,7 @@ Color32 ScreenUtilities::GetColorAt(const Float2& pos)
     int defaultScreen = X11::XDefaultScreen(display);
 
     X11::XImage* image;
-    image = X11::XGetImage(display, X11::XRootWindow(display, defaultScreen), x, y, 1, 1, AllPlanes, XYPixmap);
+    image = X11::XGetImage(display, X11::XRootWindow(display, defaultScreen), (int)pos.X, (int)pos.Y, 1, 1, AllPlanes, XYPixmap);
     color.pixel = XGetPixel(image, 0, 0);
     X11::XFree(image);
 
