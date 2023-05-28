@@ -611,19 +611,15 @@ namespace FlaxEditor.Windows
         /// <param name="files">The files paths to import.</param>
         public void Paste(string[] files)
         {
-            List<string> importFiles = new List<string>();
+            var importFiles = new List<string>();
             foreach (var sourcePath in files)
             {
                 var item = Editor.ContentDatabase.Find(sourcePath);
                 if (item != null)
-                {
-                    string targetPath = Path.Combine(CurrentViewFolder.Path, item.FileName);
-                    Editor.ContentDatabase.Copy(item, targetPath);
-                }
+                    Editor.ContentDatabase.Copy(item, Path.Combine(CurrentViewFolder.Path, item.FileName));
                 else
                     importFiles.Add(sourcePath);
             }
-
             Editor.ContentImporting.Import(importFiles, CurrentViewFolder);
         }
 
