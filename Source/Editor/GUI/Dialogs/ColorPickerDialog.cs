@@ -1,10 +1,8 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI.Input;
-using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using System;
 
 namespace FlaxEditor.GUI.Dialogs
 {
@@ -52,7 +50,7 @@ namespace FlaxEditor.GUI.Dialogs
         private TextBox _cHex;
         private Button _cCancel;
         private Button _cOK;
-        private IconButton _cEyedropper;
+        private Button _cEyedropper;
 
         /// <summary>
         /// Gets the selected color.
@@ -109,7 +107,6 @@ namespace FlaxEditor.GUI.Dialogs
         {
             _initialValue = initialValue;
             _useDynamicEditing = useDynamicEditing;
-            _activeEyedropper = false;
             _value = Color.Transparent;
             _onChanged = colorChanged;
             _onClosed = pickerClosed;
@@ -199,46 +196,41 @@ namespace FlaxEditor.GUI.Dialogs
             _cOK.Clicked += OnSubmit;
 
             // Eyedropper button
-            _cEyedropper = new IconButton(_cOK.X - EyedropperMargin, _cHex.Bottom + PickerMargin, Editor.Instance.Icons.Add64, hideBorder: false)
+            var style = Style.Current;
+            _cEyedropper = new Button(_cOK.X - EyedropperMargin, _cHex.Bottom + PickerMargin)
             {
+                TooltipText = "Eyedropper tool to pick a color directly from the screen",
+                BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Search32),
+                BackgroundColor = style.Foreground,
+                BackgroundColorHighlighted = style.Foreground.RGBMultiplied(0.9f),
+                BorderColor = Color.Transparent,
+                BorderColorHighlighted = style.BorderSelected,
                 Parent = this,
             };
             _cEyedropper.Clicked += OnEyedropStart;
             _cEyedropper.Height = (_cValue.Bottom - _cEyedropper.Y) * 0.5f;
             _cEyedropper.Width = _cEyedropper.Height;
             _cEyedropper.X -= _cEyedropper.Width;
-            //_cEyedropper.SetColors(_cEyedropper.BackgroundColor);
 
             // Set initial color
             SelectedColor = initialValue;
         }
 
-        private Color32 GetEyedropColor()
+        private void OnColorPicked(Color32 colorPicked)
         {
-            Int2 mousePosition = ScreenUtilities.GetScreenCursorPosition();
-            Color32 pixelColor = ScreenUtilities.GetPixelAt(mousePosition.X, mousePosition.Y);
-
-            return pixelColor;
-        }
-
-        private void ColorPicked(Color32 colorPicked)
-        {
-            _activeEyedropper = false;
-            SelectedColor = colorPicked;
-            ScreenUtilities.PickColorDone -= ColorPicked;
+            if (_activeEyedropper)
+            {
+                _activeEyedropper = false;
+                SelectedColor = colorPicked;
+                ScreenUtilities.PickColorDone -= OnColorPicked;
+            }
         }
 
         private void OnEyedropStart()
         {
             _activeEyedropper = true;
             ScreenUtilities.PickColor();
-            ScreenUtilities.PickColorDone += ColorPicked;
-        }
-
-        private void UpdateEyedrop()
-        {
-            Color32 pixelColor = GetEyedropColor();
-            SelectedColor = pixelColor;
+            ScreenUtilities.PickColorDone += OnColorPicked;
         }
 
         private void OnRGBAChanged()
@@ -266,15 +258,16 @@ namespace FlaxEditor.GUI.Dialogs
                 SelectedColor = color;
         }
 
-
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
             base.Update(deltaTime);
 
+            // Update eye dropper tool
             if (_activeEyedropper)
             {
-                UpdateEyedrop();
+                Float2 mousePosition = Platform.MousePosition;
+                SelectedColor = ScreenUtilities.GetColorAt(mousePosition);
             }
         }
 
@@ -329,6 +322,20 @@ namespace FlaxEditor.GUI.Dialogs
             ((WindowRootControl)Root).Window.LostFocus += OnCancel;
 
             base.OnShow();
+        }
+
+        /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            if (_activeEyedropper && key == KeyboardKeys.Escape)
+            {
+                // Cancel eye dropping
+                _activeEyedropper = false;
+                ScreenUtilities.PickColorDone -= OnColorPicked;
+                return true;
+            }
+
+            return base.OnKeyDown(key);
         }
 
         /// <inheritdoc />

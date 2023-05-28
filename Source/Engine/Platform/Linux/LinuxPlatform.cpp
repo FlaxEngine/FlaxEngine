@@ -5,7 +5,6 @@
 #include "LinuxPlatform.h"
 #include "LinuxWindow.h"
 #include "LinuxInput.h"
-#include "IncludeX11.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/String.h"
@@ -31,6 +30,7 @@
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
 #include "Engine/Input/Keyboard.h"
+#include "IncludeX11.h"
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
 #include <sys/time.h>
@@ -88,6 +88,7 @@ X11::Cursor Cursors[(int32)CursorType::MAX];
 X11::XcursorImage* CursorsImg[(int32)CursorType::MAX];
 Dictionary<StringAnsi, X11::KeyCode> KeyNameMap;
 Array<KeyboardKeys> KeyCodeMap;
+Delegate<void*> LinuxPlatform::xEventRecieved;
 
 // Message boxes configuration
 #define LINUX_DIALOG_MIN_BUTTON_WIDTH 64
@@ -2217,8 +2218,6 @@ void LinuxPlatform::BeforeRun()
 {
 }
 
-Delegate<void*> LinuxPlatform::xEventRecieved;
-
 void LinuxPlatform::Tick()
 {
 	UnixPlatform::Tick();
@@ -2233,12 +2232,12 @@ void LinuxPlatform::Tick()
 	{
 		X11::XEvent event;
 		X11::XNextEvent(xDisplay, &event);
-
 		if (X11::XFilterEvent(&event, 0))
 			continue;
-		
-		xEventRecieved(&event); // Fire this event, since we recieved an event.
-		
+
+        // External event handling
+		xEventRecieved(&event);
+
 		LinuxWindow* window;
 		switch (event.type)
 		{

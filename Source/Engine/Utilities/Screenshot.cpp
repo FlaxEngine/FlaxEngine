@@ -3,7 +3,6 @@
 #include "Screenshot.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
-#include "Engine/Core/Math/Color32.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Graphics/Textures/TextureData.h"
@@ -11,7 +10,6 @@
 #include "Engine/Graphics/GPUResourceProperty.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUSwapChain.h"
-#include "Engine/Engine/Engine.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Engine/Globals.h"
 #if COMPILE_WITH_TEXTURE_TOOL
