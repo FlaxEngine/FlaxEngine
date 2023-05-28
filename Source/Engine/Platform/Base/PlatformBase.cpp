@@ -521,6 +521,15 @@ void PlatformBase::CreateGuid(Guid& result)
     result = Guid(dateThingHigh, randomThing | (sequentialThing << 16), cyclesThing, dateThingLow);
 }
 
+bool PlatformBase::CanOpenUrl(const StringView& url)
+{
+    return false;
+}
+
+void PlatformBase::OpenUrl(const StringView& url)
+{
+}
+
 Float2 PlatformBase::GetMousePosition()
 {
     const Window* win = Engine::MainWindow;

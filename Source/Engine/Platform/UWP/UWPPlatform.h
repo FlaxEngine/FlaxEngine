@@ -35,8 +35,6 @@ public:
     static String GetUserLocaleName();
     static String GetComputerName();
     static bool GetHasFocus();
-    static bool CanOpenUrl(const StringView& url);
-    static void OpenUrl(const StringView& url);
     static Float2 GetDesktopSize();
     static Window* CreateWindow(const CreateWindowSettings& settings);
     static void* LoadLibrary(const Char* filename);

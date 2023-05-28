@@ -148,16 +148,6 @@ bool UWPPlatform::GetHasFocus()
     return true;
 }
 
-bool UWPPlatform::CanOpenUrl(const StringView& url)
-{
-    return false;
-}
-
-void UWPPlatform::OpenUrl(const StringView& url)
-{
-    // TODO: add support for OpenUrl on UWP
-}
-
 Float2 UWPPlatform::GetDesktopSize()
 {
     Float2 result;

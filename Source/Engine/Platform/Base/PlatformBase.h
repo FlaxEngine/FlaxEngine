@@ -642,13 +642,13 @@ public:
     /// </summary>
     /// <param name="url">The URI to assign to web browser.</param>
     /// <returns>True if can open URL, otherwise false.</returns>
-    API_FUNCTION() static bool CanOpenUrl(const StringView& url) = delete;
+    API_FUNCTION() static bool CanOpenUrl(const StringView& url);
 
     /// <summary>
     /// Launches a web browser and opens a given URL.
     /// </summary>
     /// <param name="url">The URI to assign to web browser.</param>
-    API_FUNCTION() static void OpenUrl(const StringView& url) = delete;
+    API_FUNCTION() static void OpenUrl(const StringView& url);
 
 public:
     /// <summary>

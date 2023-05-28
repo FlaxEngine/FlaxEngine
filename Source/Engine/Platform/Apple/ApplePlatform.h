@@ -87,8 +87,6 @@ public:
     static String GetUserLocaleName();
     static bool GetHasFocus();
     static void CreateGuid(Guid& result);
-    static bool CanOpenUrl(const StringView& url);
-    static void OpenUrl(const StringView& url);
 	static Float2 GetDesktopSize();
 	static String GetMainDirectory();
 	static String GetExecutableFilePath();

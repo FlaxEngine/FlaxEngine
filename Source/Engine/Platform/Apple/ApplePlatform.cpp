@@ -315,15 +315,6 @@ void ApplePlatform::CreateGuid(Guid& result)
     result.D = ptr[3];
 }
 
-bool ApplePlatform::CanOpenUrl(const StringView& url)
-{
-    return false;
-}
-
-void ApplePlatform::OpenUrl(const StringView& url)
-{
-}
-
 String ApplePlatform::GetExecutableFilePath()
 {
     char buf[PATH_MAX];
