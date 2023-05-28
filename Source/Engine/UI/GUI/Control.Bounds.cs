@@ -105,7 +105,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Helper for Editor UI (see UIControlControlEditor).
         /// </summary>
-        [NoSerialize, HideInEditor]
+        [NoSerialize, HideInEditor, NoAnimate]
         internal float Proxy_Offset_Left
         {
             get => _offsets.Left;
@@ -115,7 +115,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Helper for Editor UI (see UIControlControlEditor).
         /// </summary>
-        [NoSerialize, HideInEditor]
+        [NoSerialize, HideInEditor, NoAnimate]
         internal float Proxy_Offset_Right
         {
             get => _offsets.Right;
@@ -125,7 +125,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Helper for Editor UI (see UIControlControlEditor).
         /// </summary>
-        [NoSerialize, HideInEditor]
+        [NoSerialize, HideInEditor, NoAnimate]
         internal float Proxy_Offset_Top
         {
             get => _offsets.Top;
@@ -135,7 +135,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Helper for Editor UI (see UIControlControlEditor).
         /// </summary>
-        [NoSerialize, HideInEditor]
+        [NoSerialize, HideInEditor, NoAnimate]
         internal float Proxy_Offset_Bottom
         {
             get => _offsets.Bottom;
