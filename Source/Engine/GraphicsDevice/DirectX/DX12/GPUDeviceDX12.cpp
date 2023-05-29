@@ -202,15 +202,6 @@ GPUDevice* GPUDeviceDX12::Create()
         return nullptr;
     }
 
-#if !(PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE)
-    if (dxgiFactory6 != nullptr)
-        dxgiFactory6->Release();
-    else
-#endif
-    {
-        dxgiFactory->Release();
-    }
-
     return device;
 }
 
