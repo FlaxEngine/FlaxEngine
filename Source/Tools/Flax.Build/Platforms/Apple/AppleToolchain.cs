@@ -378,6 +378,23 @@ namespace Flax.Build.Platforms
                     lastTask = rpathTask;
                 }
             }
+            else if (options.LinkEnv.Output == LinkerOutput.SharedLibrary)
+            {
+                // Fix rpath for dynamic library
+                var rpathTask = graph.Add<Task>();
+                rpathTask.ProducedFiles.Add(outputFilePath);
+                rpathTask.WorkingDirectory = Path.GetDirectoryName(outputFilePath);
+                rpathTask.CommandPath = "install_name_tool";
+                var filename = Path.GetFileName(outputFilePath);
+                rpathTask.CommandArguments = string.Format("-id \"@rpath/{0}\" \"{0}\"", filename);
+                rpathTask.InfoMessage = "Fixing rpath id " + filename;
+                rpathTask.Cost = 1;
+                rpathTask.DisableCache = true;
+                rpathTask.DependentTasks = new HashSet<Task>();
+                rpathTask.DependentTasks.Add(lastTask);
+                lastTask = rpathTask;
+            }
+            // TODO: fix dylib ID: 'install_name_tool -id @rpath/FlaxGame.dylib FlaxGame.dylib'
             if (!options.LinkEnv.DebugInformation)
             {
                 // Strip debug symbols
