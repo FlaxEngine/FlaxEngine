@@ -497,8 +497,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void BuildExtraButtons(VerticalPanelElement group)
         {
-            // Set to default for UI editing
-            (Values[0] as Control).PivotRelative = true;
+            (Values[0] as Control).PivotRelative = Editor.Instance.Windows.PropertiesWin.PivotRelativeSize;
+
+            var current = Editor.Instance.Windows.PropertiesWin.PivotRelativeSize;
 
             var panel = group.CustomContainer<Panel>();
             panel.CustomControl.Height = TextBoxBase.DefaultHeight;
@@ -515,7 +516,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 X = 77,
             };
 
-            SetStyle(true);
+            SetStyle(current);
             _pivotRelativeButton.Clicked += PivotRelativeClicked;
         }
 
@@ -523,6 +524,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             var current = (Values[0] as Control).PivotRelative;
             (Values[0] as Control).PivotRelative = !current;
+            Editor.Instance.Windows.PropertiesWin.PivotRelativeSize = !current;
             SetStyle((Values[0] as Control).PivotRelative);
         }
 
