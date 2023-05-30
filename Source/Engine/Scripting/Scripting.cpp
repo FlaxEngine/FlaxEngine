@@ -351,6 +351,12 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
                         {
                             nativePath = String(StringUtils::GetDirectoryName(Platform::GetExecutableFilePath())) / StringUtils::GetFileName(nativePath);
                         }
+#elif PLATFORM_IOS
+                        // iOS uses Frameworks folder with native binaries
+                        if (!FileSystem::FileExists(nativePath))
+                        {
+                            nativePath = Globals::ProjectFolder / TEXT("Frameworks") / StringUtils::GetFileName(nativePath);
+                        }
 #endif
                         auto library = Platform::LoadLibrary(nativePath.Get());
                         if (!library)

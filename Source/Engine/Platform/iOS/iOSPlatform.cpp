@@ -4,6 +4,8 @@
 
 #include "iOSPlatform.h"
 #include "iOSWindow.h"
+#include "iOSFile.h"
+#include "iOSFileSystem.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Collections/Array.h"
@@ -13,11 +15,19 @@
 #include "Engine/Platform/Window.h"
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Globals.h"
 #include <UIKit/UIKit.h>
 #include <sys/utsname.h>
 
 int32 Dpi = 96;
 Guid DeviceId;
+
+// Used by iOS project in XCode to run engine (see main.m)
+extern "C" FLAXENGINE_API int FlaxEngineMain()
+{
+    return Engine::Main(TEXT(""));
+}
 
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
 {
@@ -37,6 +47,40 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
     }
     return DialogResult::OK;
 }
+
+#define IOS_FALLBACK_PATH(path) (Globals::ProjectFolder / StringUtils::GetFileName(path))
+
+iOSFile* iOSFile::Open(const StringView& path, FileMode mode, FileAccess access, FileShare share)
+{
+    iOSFile* file = (iOSFile*)UnixFile::Open(path, mode, access, share);
+    if (!file && mode == FileMode::OpenExisting)
+    {
+        // Fallback to file placed side-by-side with application
+        file = (iOSFile*)UnixFile::Open(IOS_FALLBACK_PATH(path), mode, access, share);
+    }
+    return file;
+}
+
+bool iOSFileSystem::FileExists(const StringView& path)
+{
+    return AppleFileSystem::FileExists(path) || AppleFileSystem::FileExists(IOS_FALLBACK_PATH(path));
+}
+
+uint64 iOSFileSystem::GetFileSize(const StringView& path)
+{
+    if (AppleFileSystem::FileExists(path))
+        return AppleFileSystem::GetFileSize(path);
+    return AppleFileSystem::GetFileSize(IOS_FALLBACK_PATH(path));
+}
+
+bool iOSFileSystem::IsReadOnly(const StringView& path)
+{
+    if (AppleFileSystem::FileExists(path))
+        return AppleFileSystem::IsReadOnly(path);
+    return AppleFileSystem::IsReadOnly(IOS_FALLBACK_PATH(path));
+}
+
+#undef IOS_FALLBACK_PATH
 
 bool iOSPlatform::Init()
 {

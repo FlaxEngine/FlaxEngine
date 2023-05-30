@@ -1782,6 +1782,7 @@ static MonoAssembly* OnMonoAssemblyPreloadHook(MonoAssemblyName* aname, char** a
 }
 
 #if 0
+
 static unsigned char* OnMonoLoadAOT(MonoAssembly* assembly, int size, void* user_data, void** out_handle)
 {
     MonoAssemblyName* assemblyName = mono_assembly_get_name(assembly);
@@ -1800,6 +1801,57 @@ static void OnMonoFreeAOT(MonoAssembly* assembly, int size, void* user_data, voi
     LOG(Info, "Free AOT data for C# assembly {0}", String(assemblyNameStr));
 #endif
 }
+
+#endif
+
+#if PLATFORM_IOS
+
+#include "Engine/Engine/Globals.h"
+#include <mono/utils/mono-dl-fallback.h>
+#include <dlfcn.h>
+
+static void* OnMonoDlFallbackLoad(const char* name, int flags, char** err, void* user_data)
+{
+    const String fileName = StringUtils::GetFileName(String(name));
+#if DOTNET_HOST_MONO_DEBUG
+    LOG(Info, "Loading dynamic library {0}", fileName);
+#endif
+    int dlFlags = 0;
+    if (flags & MONO_DL_GLOBAL && !(flags & MONO_DL_LOCAL))
+		dlFlags |= RTLD_GLOBAL;
+	else
+		dlFlags |= RTLD_LOCAL;
+	if (flags & MONO_DL_LAZY)
+		dlFlags |= RTLD_LAZY;
+	else
+		dlFlags |= RTLD_NOW;
+    void* result = dlopen(name, dlFlags);
+    if (!result)
+    {
+        // Try Frameworks location on iOS
+        String path = Globals::ProjectFolder / TEXT("Frameworks") / fileName;
+        if (!path.EndsWith(TEXT(".dylib")))
+            path += TEXT(".dylib");
+        result = dlopen(StringAsANSI<>(*path).Get(), dlFlags);
+        if (!result)
+        {
+            LOG(Error, "Failed to load dynamic libary {0}", String(name));
+        }
+    }
+    return result;
+}
+
+static void* OnMonoDlFallbackSymbol(void* handle, const char* name, char** err, void* user_data)
+{
+	return dlsym(handle, name);
+}
+
+static void* OnMonoDlFallbackClose(void* handle, void* user_data)
+{
+	dlclose(handle);
+    return 0;
+}
+
 #endif
 
 bool InitHostfxr()
@@ -1814,6 +1866,12 @@ bool InitHostfxr()
 #if defined(USE_MONO_AOT_MODE)
     // Enable AOT mode (per-platform)
     mono_jit_set_aot_mode(USE_MONO_AOT_MODE);
+#endif
+    
+    // Platform-specific setup
+#if PLATFORM_IOS
+    setenv("MONO_AOT_MODE", "aot", 1);
+    setenv("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", 1);
 #endif
 
 #ifdef USE_MONO_AOT_MODULE
@@ -1915,6 +1973,9 @@ bool InitHostfxr()
     mono_install_assembly_preload_hook(OnMonoAssemblyPreloadHook, nullptr);
 #if 0
     mono_install_load_aot_data_hook(OnMonoLoadAOT, OnMonoFreeAOT, nullptr);
+#endif
+#if PLATFORM_IOS
+    mono_dl_fallback_register(OnMonoDlFallbackLoad, OnMonoDlFallbackSymbol, OnMonoDlFallbackClose, nullptr);
 #endif
 
     // Init managed runtime
