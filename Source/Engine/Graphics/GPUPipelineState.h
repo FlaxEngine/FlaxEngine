@@ -20,7 +20,7 @@ public:
     /// <summary>
     /// Pipeline state description
     /// </summary>
-    API_STRUCT() struct Description
+    API_STRUCT() struct FLAXENGINE_API Description
     {
         DECLARE_SCRIPTING_TYPE_NO_SPAWN(Description);
 
