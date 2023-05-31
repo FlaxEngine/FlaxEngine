@@ -128,7 +128,36 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 LinkValues = !LinkValues;
                 Editor.Instance.Windows.PropertiesWin.ScaleLinked = LinkValues;
+                ToggleEnabled();
                 SetLinkStyle();
+            }
+
+            /// <summary>
+            /// Toggles enables on value boxes.
+            /// </summary>
+            public void ToggleEnabled()
+            {
+                if (LinkValues)
+                {
+                    if (Mathf.NearEqual(((Float3)Values[0]).X, 0))
+                    {
+                        XElement.ValueBox.Enabled = false;
+                    }
+                    if (Mathf.NearEqual(((Float3)Values[0]).Y, 0))
+                    {
+                        YElement.ValueBox.Enabled = false;
+                    }
+                    if (Mathf.NearEqual(((Float3)Values[0]).Z, 0))
+                    {
+                        ZElement.ValueBox.Enabled = false;
+                    }
+                }
+                else
+                {
+                    XElement.ValueBox.Enabled = true;
+                    YElement.ValueBox.Enabled = true;
+                    ZElement.ValueBox.Enabled = true;
+                }
             }
 
             private void SetLinkStyle()
