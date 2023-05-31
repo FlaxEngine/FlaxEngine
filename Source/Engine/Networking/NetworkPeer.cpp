@@ -6,6 +6,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Platform/CPUInfo.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 
 namespace
 {
@@ -131,6 +132,7 @@ void NetworkPeer::Disconnect(const NetworkConnection& connection)
 
 bool NetworkPeer::PopEvent(NetworkEvent& eventRef)
 {
+    PROFILE_CPU();
     return NetworkDriver->PopEvent(&eventRef);
 }
 

@@ -760,9 +760,14 @@ bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPat
         // Change asset ID
         {
             auto storage = ContentStorageManager::GetStorage(tmpPath);
+            if (!storage)
+            {
+                LOG(Warning, "Cannot change asset ID.");
+                return true;
+            }
             FlaxStorage::Entry e;
             storage->GetEntry(0, e);
-            if (!storage || storage->ChangeAssetID(e, dstId))
+            if (storage->ChangeAssetID(e, dstId))
             {
                 LOG(Warning, "Cannot change asset ID.");
                 return true;

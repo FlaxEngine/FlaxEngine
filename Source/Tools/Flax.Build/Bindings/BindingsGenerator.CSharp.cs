@@ -90,7 +90,7 @@ namespace Flax.Build.Bindings
             "Int4",
         };
 
-        private static string GenerateCSharpDefaultValueNativeToManaged(BuildData buildData, string value, ApiTypeInfo caller, TypeInfo valueType = null, bool attribute = false)
+        private static string GenerateCSharpDefaultValueNativeToManaged(BuildData buildData, string value, ApiTypeInfo caller, TypeInfo valueType = null, bool attribute = false, string managedType = null)
         {
             if (string.IsNullOrEmpty(value))
                 return null;
@@ -98,6 +98,13 @@ namespace Flax.Build.Bindings
             // Special case for Engine TEXT macro
             if (value.StartsWith("TEXT(\"") && value.EndsWith("\")"))
                 return value.Substring(5, value.Length - 6);
+
+            // Pointer constant value
+            if (managedType != null && managedType == "IntPtr" &&
+                (value == "nullptr" || value == "NULL" || value == "0"))
+            {
+                return "new IntPtr()";
+            }
 
             // In-built constants
             switch (value)
@@ -534,7 +541,7 @@ namespace Flax.Build.Bindings
             var separator = false;
             if (!functionInfo.IsStatic)
             {
-                contents.Append("IntPtr obj");
+                contents.Append("IntPtr __obj");
                 separator = true;
             }
 
@@ -1059,12 +1066,12 @@ namespace Flax.Build.Bindings
                 else if (fieldInfo.IsStatic)
                     contents.Append("static ");
 
-                var returnValueType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, classInfo);
-                contents.Append(returnValueType).Append(' ').Append(fieldInfo.Name);
+                var managedType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, classInfo);
+                contents.Append(managedType).Append(' ').Append(fieldInfo.Name);
 
                 if (!useUnmanaged || fieldInfo.IsConstexpr)
                 {
-                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, classInfo, fieldInfo.Type);
+                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, classInfo, fieldInfo.Type, false, managedType);
                     if (!string.IsNullOrEmpty(defaultValue))
                         contents.Append(" = ").Append(defaultValue);
                     contents.AppendLine(";");
@@ -1113,7 +1120,7 @@ namespace Flax.Build.Bindings
                 {
                     contents.Append(indent);
                     if (propertyInfo.Access != propertyInfo.Getter.Access)
-                        contents.Append(GenerateCSharpAccessLevel(propertyInfo.Access));
+                        contents.Append(GenerateCSharpAccessLevel(propertyInfo.Getter.Access));
                     contents.Append("get { ");
                     GenerateCSharpWrapperFunctionCall(buildData, contents, classInfo, propertyInfo.Getter);
                     contents.Append(" }").AppendLine();
@@ -1123,7 +1130,7 @@ namespace Flax.Build.Bindings
                 {
                     contents.Append(indent);
                     if (propertyInfo.Access != propertyInfo.Setter.Access)
-                        contents.Append(GenerateCSharpAccessLevel(propertyInfo.Access));
+                        contents.Append(GenerateCSharpAccessLevel(propertyInfo.Setter.Access));
                     contents.Append("set { ");
                     GenerateCSharpWrapperFunctionCall(buildData, contents, classInfo, propertyInfo.Setter, true);
                     contents.Append(" }").AppendLine();
@@ -1183,7 +1190,7 @@ namespace Flax.Build.Bindings
                         contents.Append(' ');
                         contents.Append(parameterInfo.Name);
 
-                        var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo, parameterInfo.Type);
+                        var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo, parameterInfo.Type, false, managedType);
                         if (!string.IsNullOrEmpty(defaultValue))
                             contents.Append(" = ").Append(defaultValue);
                     }
@@ -1243,7 +1250,7 @@ namespace Flax.Build.Bindings
                             contents.Append(' ');
                             contents.Append(parameterInfo.Name);
 
-                            var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo, parameterInfo.Type);
+                            var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, classInfo, parameterInfo.Type, false, managedType);
                             if (!string.IsNullOrEmpty(defaultValue))
                                 contents.Append(" = ").Append(defaultValue);
                         }
@@ -1287,6 +1294,9 @@ namespace Flax.Build.Bindings
                 /// <summary>
                 /// Marshaller for type <see cref="{{classInfo.Name}}"/>.
                 /// </summary>");
+                #if FLAX_EDITOR
+                [HideInEditor]
+                #endif
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ManagedToUnmanagedIn, typeof({{marshallerName}}.ManagedToNative))]
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.UnmanagedToManagedOut, typeof({{marshallerName}}.ManagedToNative))]
                 [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ElementIn, typeof({{marshallerName}}.ManagedToNative))]
@@ -1299,17 +1309,25 @@ namespace Flax.Build.Bindings
                 {{GenerateCSharpAccessLevel(classInfo.Access)}}static class {{marshallerName}}
                 {
                 #pragma warning disable 1591
+                #if FLAX_EDITOR
+                    [HideInEditor]
+                #endif
                     public static class NativeToManaged
                     {
                         public static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{{classInfo.Name}}>(ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged));
                         public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.NativeToManaged.Free(unmanaged);
                     }
+                #if FLAX_EDITOR
+                    [HideInEditor]
+                #endif
                     public static class ManagedToNative
                     {
                         public static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => ManagedHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);
                         public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.ManagedToNative.Free(unmanaged);
                     }
+                #if FLAX_EDITOR
                     [HideInEditor]
+                #endif
                     public struct Bidirectional
                     {
                         ManagedHandleMarshaller.Bidirectional marsh;
@@ -1358,6 +1376,8 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine($"/// <summary>");
                 contents.Append(indent).AppendLine($"/// Marshaller for type <see cref=\"{structureInfo.Name}\"/>.");
                 contents.Append(indent).AppendLine($"/// </summary>");
+                if (buildData.Target != null & buildData.Target.IsEditor)
+                    contents.Append(indent).AppendLine("[HideInEditor]");
                 contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ManagedToUnmanagedIn, typeof({marshallerName}.ManagedToNative))]");
                 contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.UnmanagedToManagedOut, typeof({marshallerName}.ManagedToNative))]");
                 contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ElementIn, typeof({marshallerName}.ManagedToNative))]");
@@ -1382,7 +1402,8 @@ namespace Flax.Build.Bindings
                     // Native struct begin
                     // TODO: skip using this utility structure if the auto-generated C# struct is already the same as XXXInternal here below
                     GenerateCSharpAttributes(buildData, contents, indent, structureInfo, true);
-                    contents.Append(indent).AppendLine("[HideInEditor]");
+                    if (buildData.Target != null & buildData.Target.IsEditor)
+                        contents.Append(indent).AppendLine("[HideInEditor]");
                     contents.Append(indent).AppendLine("[StructLayout(LayoutKind.Sequential)]");
                     contents.Append(indent).Append("public struct ").Append(structureInfo.Name).Append("Internal");
                     if (structureInfo.BaseType != null && structureInfo.IsPod)
@@ -1504,7 +1525,8 @@ namespace Flax.Build.Bindings
 
                         if (fieldInfo.Type.IsObjectRef)
                         {
-                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{fieldInfo.Type.GenericArgs[0].Type}>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target) : null");
+                            var managedType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type.GenericArgs[0], structureInfo);
+                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{managedType}>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target) : null");
                             toNativeContent.Append($"managed.{fieldInfo.Name} != null ? ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak) : IntPtr.Zero");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
 
@@ -1617,13 +1639,17 @@ namespace Flax.Build.Bindings
 
                 // NativeToManaged stateless shape
                 // NOTE: GCHandles of FlaxEngine.Object must not be released in this case
-                contents.Append(indent).AppendLine($"public static class NativeToManaged").Append(indent).AppendLine("{");
+                if (buildData.Target != null && buildData.Target.IsEditor)
+                    contents.Append(indent).AppendLine("[HideInEditor]");
+                contents.Append(indent).AppendLine("public static class NativeToManaged").Append(indent).AppendLine("{");
                 contents.Append(indent2).AppendLine($"public static {structureInfo.Name} ConvertToManaged({structureInfo.Name}Internal unmanaged) => {marshallerName}.ToManaged(unmanaged);");
                 contents.Append(indent2).AppendLine($"public static void Free({structureInfo.Name}Internal unmanaged)");
                 contents.Append(indent2).AppendLine("{").Append(indent3).AppendLine(freeContents2.Replace("\n", "\n" + indent3).ToString().TrimEnd()).Append(indent2).AppendLine("}");
                 contents.Append(indent).AppendLine("}");
 
                 // ManagedToNative stateless shape
+                if (buildData.Target != null && buildData.Target.IsEditor)
+                    contents.Append(indent).AppendLine("[HideInEditor]");
                 contents.Append(indent).AppendLine($"public static class ManagedToNative").Append(indent).AppendLine("{");
                 contents.Append(indent2).AppendLine($"public static {structureInfo.Name}Internal ConvertToUnmanaged({structureInfo.Name} managed) => {marshallerName}.ToNative(managed);");
                 contents.Append(indent2).AppendLine($"public static void Free({structureInfo.Name}Internal unmanaged) => {marshallerName}.Free(unmanaged);");
@@ -1631,7 +1657,8 @@ namespace Flax.Build.Bindings
 
                 // Bidirectional stateful shape
                 // NOTE: GCHandles of FlaxEngine.Object must not be released unless they were allocated by this marshaller
-                contents.Append(indent).AppendLine("[HideInEditor]");
+                if (buildData.Target != null && buildData.Target.IsEditor)
+                    contents.Append(indent).AppendLine("[HideInEditor]");
                 contents.Append(indent).AppendLine($"public struct Bidirectional").Append(indent).AppendLine("{");
                 contents.Append(indent2).AppendLine($"{structureInfo.Name} managed;");
                 contents.Append(indent2).AppendLine($"{structureInfo.Name}Internal unmanaged;");
@@ -1697,25 +1724,25 @@ namespace Flax.Build.Bindings
                 else if (fieldInfo.IsStatic)
                     contents.Append("static ");
                 hasDefaultMember |= string.Equals(fieldInfo.Name, "Default", StringComparison.Ordinal);
-                string type;
+                string managedType;
 
                 if (fieldInfo.Type.IsArray && (fieldInfo.NoArray || structureInfo.IsPod))
                 {
                     fieldInfo.Type.IsArray = false;
-                    type = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
+                    managedType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
                     fieldInfo.Type.IsArray = true;
 #if USE_NETCORE
                     // Use fixed statement with primitive types of buffers
-                    if (type == "char")
+                    if (managedType == "char")
                     {
                         // char's are not blittable, store as short instead
-                        contents.Append($"fixed short {fieldInfo.Name}0[{fieldInfo.Type.ArraySize}]; // {type}*").AppendLine();
+                        contents.Append($"fixed short {fieldInfo.Name}0[{fieldInfo.Type.ArraySize}]; // {managedType}*").AppendLine();
                     }
                     else
 #endif
                     {
                         // Padding in structs for fixed-size array
-                        contents.Append(type).Append(' ').Append(fieldInfo.Name + "0;").AppendLine();
+                        contents.Append(managedType).Append(' ').Append(fieldInfo.Name + "0;").AppendLine();
                         for (int i = 1; i < fieldInfo.Type.ArraySize; i++)
                         {
                             contents.AppendLine();
@@ -1724,19 +1751,19 @@ namespace Flax.Build.Bindings
                             contents.Append(indent).Append(GenerateCSharpAccessLevel(fieldInfo.Access));
                             if (fieldInfo.IsStatic)
                                 contents.Append("static ");
-                            contents.Append(type).Append(' ').Append(fieldInfo.Name + i).Append(';').AppendLine();
+                            contents.Append(managedType).Append(' ').Append(fieldInfo.Name + i).Append(';').AppendLine();
                         }
                     }
                     continue;
                 }
 
-                type = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
-                contents.Append(type).Append(' ').Append(fieldInfo.Name);
+                managedType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
+                contents.Append(managedType).Append(' ').Append(fieldInfo.Name);
 
                 if (fieldInfo.IsConstexpr)
                 {
                     // Compile-time constant
-                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, structureInfo, fieldInfo.Type);
+                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, fieldInfo.DefaultValue, structureInfo, fieldInfo.Type, false, managedType);
                     if (!string.IsNullOrEmpty(defaultValue))
                         contents.Append(" = ").Append(defaultValue);
                     contents.AppendLine(";");
@@ -1950,7 +1977,7 @@ namespace Flax.Build.Bindings
                     contents.Append(' ');
                     contents.Append(parameterInfo.Name);
 
-                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, interfaceInfo, parameterInfo.Type);
+                    var defaultValue = GenerateCSharpDefaultValueNativeToManaged(buildData, parameterInfo.DefaultValue, interfaceInfo, parameterInfo.Type, false, managedType);
                     if (!string.IsNullOrEmpty(defaultValue))
                         contents.Append(" = ").Append(defaultValue);
                 }
@@ -1968,9 +1995,11 @@ namespace Flax.Build.Bindings
             {
                 string marshallerName = interfaceInfo.Name + "Marshaller";
                 contents.AppendLine();
-                contents.Append(indent).AppendLine($"/// <summary>");
+                contents.Append(indent).AppendLine("/// <summary>");
                 contents.Append(indent).AppendLine($"/// Marshaller for type <see cref=\"{interfaceInfo.Name}\"/>.");
-                contents.Append(indent).AppendLine($"/// </summary>");
+                contents.Append(indent).AppendLine("/// </summary>");
+                if (buildData.Target != null & buildData.Target.IsEditor)
+                    contents.Append(indent).AppendLine("[HideInEditor]");
                 contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({interfaceInfo.Name}), MarshalMode.Default, typeof({marshallerName}))]");
                 contents.Append(indent).AppendLine($"public static class {marshallerName}");
                 contents.Append(indent).AppendLine("{");

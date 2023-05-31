@@ -1,8 +1,10 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Linq;
 using FlaxEditor.Surface;
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.CustomEditors.Dedicated
 {
@@ -13,6 +15,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
     [CustomEditor(typeof(ParticleEffect)), DefaultEditor]
     public class ParticleEffectEditor : ActorEditor
     {
+        private Label _infoLabel;
         private bool _isValid;
         private bool _isActive;
         private uint _parametersVersion;
@@ -48,6 +51,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
             return null;
         }
 
+        private void Foreach(Action<ParticleEffect> func)
+        {
+            foreach (var value in Values)
+            {
+                if (value is ParticleEffect player)
+                    func(player);
+            }
+        }
+
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
@@ -59,6 +71,26 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var effect = (ParticleEffect)Values[0];
             _parametersVersion = effect.ParametersVersion;
             _isActive = effect.IsActive;
+
+            // Show playback options during simulation
+            if (Editor.IsPlayMode)
+            {
+                var playbackGroup = layout.Group("Playback");
+                playbackGroup.Panel.Open();
+
+                _infoLabel = playbackGroup.Label(string.Empty).Label;
+                _infoLabel.AutoHeight = true;
+
+                var grid = playbackGroup.CustomContainer<UniformGridPanel>();
+                var gridControl = grid.CustomControl;
+                gridControl.ClipChildren = false;
+                gridControl.Height = Button.DefaultHeight;
+                gridControl.SlotsHorizontally = 3;
+                gridControl.SlotsVertically = 1;
+                grid.Button("Play").Button.Clicked += () => Foreach(x => x.Play());
+                grid.Button("Pause").Button.Clicked += () => Foreach(x => x.Pause());
+                grid.Button("Stop").Button.Clicked += () => Foreach(x => x.Stop());
+            }
 
             // Show all effect parameters grouped by the emitter track name
             var groups = layout.Group("Parameters");
@@ -99,7 +131,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 base.RefreshRootChild();
                 return;
             }
-            
+
             for (int i = 0; i < ChildrenEditors.Count; i++)
             {
                 if (_isActive != effect.IsActive || _parametersVersion != effect.ParametersVersion)

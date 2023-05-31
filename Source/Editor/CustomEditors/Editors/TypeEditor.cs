@@ -394,11 +394,8 @@ namespace FlaxEditor.CustomEditors.Editors
             if (_element != null)
             {
                 _element.CustomControl.ValueChanged += () => SetValue(_element.CustomControl.Value.Type);
-
                 if (_element.CustomControl.Type == ScriptType.Object)
-                {
                     _element.CustomControl.Type = Values.Type.Type != typeof(object) || Values[0] == null ? ScriptType.Object : TypeUtils.GetObjectType(Values[0]);
-                }
             }
         }
 
@@ -408,9 +405,7 @@ namespace FlaxEditor.CustomEditors.Editors
             base.Refresh();
 
             if (!HasDifferentValues)
-            {
                 _element.CustomControl.Value = new ScriptType(Values[0] as Type);
-            }
         }
     }
 
@@ -426,9 +421,7 @@ namespace FlaxEditor.CustomEditors.Editors
             base.Initialize(layout);
 
             if (_element != null)
-            {
                 _element.CustomControl.ValueChanged += () => SetValue(_element.CustomControl.Value);
-            }
         }
 
         /// <inheritdoc />
@@ -437,9 +430,32 @@ namespace FlaxEditor.CustomEditors.Editors
             base.Refresh();
 
             if (!HasDifferentValues)
-            {
                 _element.CustomControl.Value = (ScriptType)Values[0];
-            }
+        }
+    }
+
+    /// <summary>
+    /// Default implementation of the inspector used to edit reference to the <see cref="FlaxEngine.SoftTypeReference"/>. Used to pick classes.
+    /// </summary>
+    [CustomEditor(typeof(SoftTypeReference)), DefaultEditor]
+    public class SoftTypeReferenceEditor : TypeEditorBase
+    {
+        /// <inheritdoc />
+        public override void Initialize(LayoutElementsContainer layout)
+        {
+            base.Initialize(layout);
+
+            if (_element != null)
+                _element.CustomControl.ValueChanged += () => SetValue(new SoftTypeReference(_element.CustomControl.ValueTypeName));
+        }
+
+        /// <inheritdoc />
+        public override void Refresh()
+        {
+            base.Refresh();
+
+            if (!HasDifferentValues)
+                _element.CustomControl.ValueTypeName = ((SoftTypeReference)Values[0]).TypeName;
         }
     }
 

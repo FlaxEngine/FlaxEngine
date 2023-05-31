@@ -428,6 +428,7 @@ namespace Flax.Build.Platforms
 
             // Setup arguments shared by all source files
             var commonArgs = new List<string>();
+            commonArgs.AddRange(options.CompileEnv.CustomArgs);
             SetupCompileCppFilesArgs(graph, options, commonArgs);
             {
                 // Suppress Startup Banner
@@ -669,6 +670,7 @@ namespace Flax.Build.Platforms
 
             // Setup arguments
             var args = new List<string>();
+            args.AddRange(options.LinkEnv.CustomArgs);
             SetupLinkFilesArgs(graph, options, args);
             {
                 // Suppress startup banner

@@ -167,7 +167,6 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(PlatformBase);
     static void Exit();
 
 public:
-
     /// <summary>
     /// Copy memory region
     /// </summary>
@@ -334,7 +333,6 @@ public:
     static void FreePages(void* ptr);
 
 public:
-
     /// <summary>
     /// Returns the current runtime platform type. It's compile-time constant.
     /// </summary>
@@ -409,7 +407,6 @@ public:
     static void Sleep(int32 milliseconds) = delete;
 
 public:
-
     /// <summary>
     /// Gets the current time in seconds.
     /// </summary>
@@ -455,7 +452,6 @@ public:
     static void GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond) = delete;
 
 public:
-
     /// <summary>
     /// Shows the fatal error message to the user.
     /// </summary>
@@ -482,7 +478,6 @@ public:
     static void Info(const Char* msg);
 
 public:
-
     /// <summary>
     /// Shows the fatal error message to the user.
     /// </summary>
@@ -520,7 +515,6 @@ public:
     static bool IsDebuggerPresent();
 
 public:
-
     /// <summary>
     /// Performs a fatal crash.
     /// </summary>
@@ -560,7 +554,6 @@ public:
     static void CheckFailed(const char* message, const char* file, int line);
 
 public:
-
     /// <summary>
     /// Sets the High DPI awareness.
     /// </summary>
@@ -628,7 +621,6 @@ public:
     static void CreateGuid(Guid& result);
 
 public:
-
     /// <summary>
     /// The list of users.
     /// </summary>
@@ -645,21 +637,31 @@ public:
     API_EVENT() static Delegate<User*> UserRemoved;
 
 public:
-
     /// <summary>
     /// Returns a value indicating whether can open a given URL in a web browser.
     /// </summary>
     /// <param name="url">The URI to assign to web browser.</param>
     /// <returns>True if can open URL, otherwise false.</returns>
-    API_FUNCTION() static bool CanOpenUrl(const StringView& url) = delete;
+    API_FUNCTION() static bool CanOpenUrl(const StringView& url);
 
     /// <summary>
     /// Launches a web browser and opens a given URL.
     /// </summary>
     /// <param name="url">The URI to assign to web browser.</param>
-    API_FUNCTION() static void OpenUrl(const StringView& url) = delete;
+    API_FUNCTION() static void OpenUrl(const StringView& url);
 
 public:
+    /// <summary>
+    /// Gets the mouse cursor position in screen-space coordinates.
+    /// </summary>
+    /// <returns>Mouse cursor coordinates.</returns>
+    API_PROPERTY() static Float2 GetMousePosition();
+
+    /// <summary>
+    /// Sets the mouse cursor position in screen-space coordinates.
+    /// </summary>
+    /// <param name="position">Cursor position to set.</param>
+    API_PROPERTY() static void SetMousePosition(const Float2& position);
 
     /// <summary>
     /// Gets the origin position and size of the monitor at the given screen-space location.
@@ -686,7 +688,6 @@ public:
     API_PROPERTY() static Float2 GetVirtualDesktopSize();
 
 public:
-
     /// <summary>
     /// Gets full path of the main engine directory.
     /// </summary>
@@ -719,7 +720,6 @@ public:
     static bool SetWorkingDirectory(const String& path);
 
 public:
-
     /// <summary>
     /// Gets the process environment variables (pairs of key and value).
     /// </summary>

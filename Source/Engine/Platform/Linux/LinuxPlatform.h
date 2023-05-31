@@ -33,6 +33,11 @@ public:
     /// <returns>The user home directory.</returns>
     static const String& GetHomeDirectory();
 
+    /// <summary>
+    /// An event that is fired when an XEvent is received during platform tick.
+    /// </summary>
+    static Delegate<void*> xEventRecieved;
+
 public:
 
     // [UnixPlatform]

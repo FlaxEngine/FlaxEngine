@@ -55,6 +55,11 @@ public:
     static Action LateUpdate;
 
     /// <summary>
+    /// Event called after engine update.
+    /// </summary>
+    static Action LateFixedUpdate;
+
+    /// <summary>
     /// Event called during frame rendering and can be used to invoke custom rendering with GPUDevice.
     /// </summary>
     static Action Draw;
@@ -106,6 +111,11 @@ public:
     /// Late update callback.
     /// </summary>
     static void OnLateUpdate();
+
+    /// <summary>
+    /// Late fixed update callback.
+    /// </summary>
+    static void OnLateFixedUpdate();
 
     /// <summary>
     /// Draw callback.

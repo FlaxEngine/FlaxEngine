@@ -114,7 +114,15 @@ GPUDevice* GPUDeviceDX11::Create()
     // Create DXGI factory
 #if PLATFORM_WINDOWS
     IDXGIFactory1* dxgiFactory;
-    HRESULT hr = CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
+    IDXGIFactory6* dxgiFactory6;
+    HRESULT hr = CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory6));
+    if (hr == S_OK)
+        dxgiFactory = dxgiFactory6;
+    else
+    {
+        dxgiFactory6 = nullptr;
+        hr = CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
+    }
 #else
     IDXGIFactory2* dxgiFactory;
     HRESULT hr = CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
@@ -126,16 +134,17 @@ GPUDevice* GPUDeviceDX11::Create()
     }
 
     // Enumerate the DXGIFactory's adapters
+    int32 selectedAdapterIndex = -1;
     Array<GPUAdapterDX> adapters;
-    IDXGIAdapter* tmpAdapter;
-    for (uint32 index = 0; dxgiFactory->EnumAdapters(index, &tmpAdapter) != DXGI_ERROR_NOT_FOUND; index++)
+    IDXGIAdapter* tempAdapter;
+    for (uint32 index = 0; dxgiFactory->EnumAdapters(index, &tempAdapter) != DXGI_ERROR_NOT_FOUND; index++)
     {
         GPUAdapterDX adapter;
-        if (tmpAdapter && TryCreateDevice(tmpAdapter, maxAllowedFeatureLevel, &adapter.MaxFeatureLevel))
+        if (tempAdapter && TryCreateDevice(tempAdapter, maxAllowedFeatureLevel, &adapter.MaxFeatureLevel))
         {
             adapter.Index = index;
-            VALIDATE_DIRECTX_RESULT(tmpAdapter->GetDesc(&adapter.Description));
-            uint32 outputs = RenderToolsDX::CountAdapterOutputs(tmpAdapter);
+            VALIDATE_DIRECTX_RESULT(tempAdapter->GetDesc(&adapter.Description));
+            uint32 outputs = RenderToolsDX::CountAdapterOutputs(tempAdapter);
 
             LOG(Info, "Adapter {1}: '{0}', DirectX {2}", adapter.Description.Description, index, RenderToolsDX::GetFeatureLevelString(adapter.MaxFeatureLevel));
             LOG(Info, "	Dedicated Video Memory: {0}, Dedicated System Memory: {1}, Shared System Memory: {2}, Output(s): {3}", Utilities::BytesToText(adapter.Description.DedicatedVideoMemory), Utilities::BytesToText(adapter.Description.DedicatedSystemMemory), Utilities::BytesToText(adapter.Description.SharedSystemMemory), outputs);
@@ -143,14 +152,41 @@ GPUDevice* GPUDeviceDX11::Create()
             adapters.Add(adapter);
         }
     }
+#if PLATFORM_WINDOWS
+    // Find the best performing adapter and prefer using it instead of the first device
+    const auto gpuPreference = DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE;
+    if (dxgiFactory6 != nullptr && selectedAdapterIndex == -1)
+    {
+        if (dxgiFactory6->EnumAdapterByGpuPreference(0, gpuPreference, IID_PPV_ARGS(&tempAdapter)) != DXGI_ERROR_NOT_FOUND)
+        {
+            GPUAdapterDX adapter;
+            if (tempAdapter && TryCreateDevice(tempAdapter, maxAllowedFeatureLevel, &adapter.MaxFeatureLevel))
+            {
+                DXGI_ADAPTER_DESC desc;
+                VALIDATE_DIRECTX_RESULT(tempAdapter->GetDesc(&desc));
+                for (int i = 0; i < adapters.Count(); i++)
+                {
+                    if (adapters[i].Description.AdapterLuid.LowPart == desc.AdapterLuid.LowPart &&
+                        adapters[i].Description.AdapterLuid.HighPart == desc.AdapterLuid.HighPart)
+                    {
+                        selectedAdapterIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+#endif
 
     // Select the adapter to use
-    if (adapters.Count() == 0)
+    if (selectedAdapterIndex < 0)
+        selectedAdapterIndex = 0;
+    if (adapters.Count() == 0 || selectedAdapterIndex >= adapters.Count())
     {
         LOG(Error, "Failed to find valid DirectX adapter!");
         return nullptr;
     }
-    GPUAdapterDX selectedAdapter = adapters[0];
+    GPUAdapterDX selectedAdapter = adapters[selectedAdapterIndex];
     uint32 vendorId = 0;
     if (CommandLine::Options.NVIDIA)
         vendorId = GPU_VENDOR_ID_NVIDIA;
@@ -184,6 +220,15 @@ GPUDevice* GPUDeviceDX11::Create()
         LOG(Warning, "Graphics Device init failed");
         Delete(device);
         return nullptr;
+    }
+    
+#if PLATFORM_WINDOWS
+    if (dxgiFactory6 != nullptr)
+        dxgiFactory6->Release();
+    else
+#endif
+    {
+        dxgiFactory->Release();
     }
 
     return device;

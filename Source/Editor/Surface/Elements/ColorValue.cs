@@ -30,7 +30,7 @@ namespace FlaxEditor.Surface.Elements
         {
             ParentNode = parentNode;
             Archetype = archetype;
-
+            UseDynamicEditing = false;
             ParentNode.ValuesChanged += OnNodeValuesChanged;
         }
 

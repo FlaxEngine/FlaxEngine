@@ -78,6 +78,19 @@ namespace FlaxEngine.Interop
             return nativeLibrary;
         }
 
+        private static void InitScriptingAssemblyLoadContext()
+        {
+#if FLAX_EDITOR
+            var isCollectible = true;
+#else
+            var isCollectible = false;
+#endif
+            scriptingAssemblyLoadContext = new AssemblyLoadContext("Flax", isCollectible);
+#if FLAX_EDITOR
+            scriptingAssemblyLoadContext.Resolving += OnScriptingAssemblyLoadContextResolving;
+#endif
+        }
+
         [UnmanagedCallersOnly]
         internal static unsafe void Init()
         {
@@ -89,14 +102,22 @@ namespace FlaxEngine.Interop
             System.Threading.Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
             System.Threading.Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
 
-#if FLAX_EDITOR
-            var isCollectible = true;
-#else
-            var isCollectible = false;
-#endif
-            scriptingAssemblyLoadContext = new AssemblyLoadContext("Flax", isCollectible);
+            InitScriptingAssemblyLoadContext();
             DelegateHelpers.InitMethods();
         }
+
+#if FLAX_EDITOR
+        private static Assembly? OnScriptingAssemblyLoadContextResolving(AssemblyLoadContext assemblyLoadContext, AssemblyName assemblyName)
+        {
+            // FIXME: There should be a better way to resolve the path to EditorTargetPath where the dependencies are stored
+            string editorTargetPath = Path.GetDirectoryName(nativeLibraryPaths.Keys.First(x => x != "FlaxEngine"));
+
+            var assemblyPath = Path.Combine(editorTargetPath, assemblyName.Name + ".dll");
+            if (File.Exists(assemblyPath))
+                return assemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
+            return null;
+        }
+#endif
 
         [UnmanagedCallersOnly]
         internal static unsafe void Exit()
@@ -504,7 +525,7 @@ namespace FlaxEngine.Interop
                     }
                 }
 
-                throw new Exception($"Invalid field {field.Name} to marshal for type {typeof(T).Name}");
+                throw new NativeInteropException($"Invalid field {field.Name} to marshal for type {typeof(T).Name}");
             }
 
             private static void ToManagedFieldPointer(FieldInfo field, ref T fieldOwner, IntPtr fieldPtr, out int fieldOffset)
@@ -685,7 +706,7 @@ namespace FlaxEngine.Interop
                         MarshalHelper<T>.toManagedFieldMarshallers[i](MarshalHelper<T>.marshallableFields[i], ref managedValue, fieldPtr, out int fieldOffset);
                         fieldPtr += fieldOffset;
                     }
-                    Assert.IsTrue((fieldPtr - nativePtr) == Unsafe.SizeOf<T>());
+                    Assert.IsTrue((fieldPtr - nativePtr) <= Unsafe.SizeOf<T>());
                 }
                 else
                     managedValue = Unsafe.Read<T>(nativePtr.ToPointer());
@@ -724,7 +745,7 @@ namespace FlaxEngine.Interop
                         MarshalHelper<T>.toNativeFieldMarshallers[i](MarshalHelper<T>.marshallableFields[i], ref managedValue, nativePtr, out int fieldOffset);
                         nativePtr += fieldOffset;
                     }
-                    Assert.IsTrue((nativePtr - fieldPtr) == Unsafe.SizeOf<T>());
+                    Assert.IsTrue((nativePtr - fieldPtr) <= Unsafe.SizeOf<T>());
                 }
                 else
                     Unsafe.AsRef<T>(nativePtr.ToPointer()) = managedValue;
@@ -1251,6 +1272,17 @@ namespace FlaxEngine.Interop
             }
         }
 #endif
+    }
+
+    internal class NativeInteropException : Exception
+    {
+        public NativeInteropException(string message)
+        : base(message)
+        {
+#if !BUILD_RELEASE
+            Debug.Logger.LogHandler.LogWrite(LogType.Error, "Native interop exception!");
+#endif
+        }
     }
 }
 

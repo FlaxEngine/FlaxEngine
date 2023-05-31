@@ -16,6 +16,9 @@ namespace FlaxEngine.Interop
     /// <summary>
     /// Wrapper for managed arrays which are passed to unmanaged code.
     /// </summary>
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     public unsafe class ManagedArray
     {
         private ManagedHandle _pinnedArrayHandle;
@@ -261,11 +264,14 @@ namespace FlaxEngine.Interop
                     return;
                 }
 
-                throw new Exception("Tried to free non-pooled ManagedArray as pooled ManagedArray");
+                throw new NativeInteropException("Tried to free non-pooled ManagedArray as pooled ManagedArray");
             }
         }
     }
 
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     internal static class ManagedString
     {
         internal static ManagedHandle EmptyStringHandle = ManagedHandle.Alloc(string.Empty);
@@ -315,6 +321,9 @@ namespace FlaxEngine.Interop
     /// <summary>
     /// Handle to managed objects which can be stored in native code.
     /// </summary>
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     public struct ManagedHandle
     {
         private IntPtr handle;
@@ -499,7 +508,7 @@ namespace FlaxEngine.Interop
                 else if (weakPoolOther.TryGetValue(handle, out value))
                     return value;
 
-                throw new Exception("Invalid ManagedHandle");
+                throw new NativeInteropException("Invalid ManagedHandle");
             }
 
             internal static void SetObject(IntPtr handle, object value)
@@ -527,7 +536,7 @@ namespace FlaxEngine.Interop
                 else if (weakPoolOther.ContainsKey(handle))
                     weakPoolOther[handle] = value;
 
-                throw new Exception("Invalid ManagedHandle");
+                throw new NativeInteropException("Invalid ManagedHandle");
             }
 
             internal static void FreeHandle(IntPtr handle)
@@ -556,7 +565,7 @@ namespace FlaxEngine.Interop
                 else
                     return;
 
-                throw new Exception("Invalid ManagedHandle");
+                throw new NativeInteropException("Invalid ManagedHandle");
             }
         }
     }

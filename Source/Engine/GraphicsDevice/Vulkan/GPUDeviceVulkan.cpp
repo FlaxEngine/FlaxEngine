@@ -1155,6 +1155,7 @@ GPUDevice* GPUDeviceVulkan::Create()
 #endif
 
     // Enumerate all GPU devices and pick one
+    int32 selectedAdapterIndex = -1;
     uint32 gpuCount = 0;
     VALIDATE_VULKAN_RESULT(vkEnumeratePhysicalDevices(Instance, &gpuCount, nullptr));
     if (gpuCount <= 0)
@@ -1187,6 +1188,9 @@ GPUDevice* GPUDeviceVulkan::Create()
             break;
         case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
             type = TEXT("Discrete GPU");
+            // Select the first discrete GPU device
+            if (selectedAdapterIndex == -1)
+                selectedAdapterIndex = gpuIndex;
             break;
         case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
             type = TEXT("Virtual GPU");
@@ -1203,12 +1207,13 @@ GPUDevice* GPUDeviceVulkan::Create()
     }
 
     // Select the adapter to use
-    if (adapters.Count() == 0)
+    if (selectedAdapterIndex < 0)
+        selectedAdapterIndex = 0;
+    if (adapters.Count() == 0 || selectedAdapterIndex >= adapters.Count())
     {
         LOG(Error, "Failed to find valid Vulkan adapter!");
         return nullptr;
     }
-    int32 selectedAdapter = 0;
     uint32 vendorId = 0;
     if (CommandLine::Options.NVIDIA)
         vendorId = GPU_VENDOR_ID_NVIDIA;
@@ -1222,15 +1227,15 @@ GPUDevice* GPUDeviceVulkan::Create()
         {
             if (adapters[i].GetVendorId() == vendorId)
             {
-                selectedAdapter = i;
+                selectedAdapterIndex = i;
                 break;
             }
         }
     }
-    ASSERT(selectedAdapter != -1 && adapters[selectedAdapter].IsValid());
+    ASSERT(adapters[selectedAdapterIndex].IsValid());
 
     // Create device
-    auto device = New<GPUDeviceVulkan>(ShaderProfile::Vulkan_SM5, New<GPUAdapterVulkan>(adapters[selectedAdapter]));
+    auto device = New<GPUDeviceVulkan>(ShaderProfile::Vulkan_SM5, New<GPUAdapterVulkan>(adapters[selectedAdapterIndex]));
     if (device->Init())
     {
         LOG(Warning, "Graphics Device init failed");

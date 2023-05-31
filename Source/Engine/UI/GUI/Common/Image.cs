@@ -25,19 +25,19 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the color used to multiply the image pixels.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
+        [EditorDisplay("Image Style"), EditorOrder(2010), ExpandGroups]
         public Color Color { get; set; } = Color.White;
 
         /// <summary>
         /// Gets or sets the color used to multiply the image pixels when mouse is over the image.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
+        [EditorDisplay("Image Style"), EditorOrder(2011)]
         public Color MouseOverColor { get; set; } = Color.White;
 
         /// <summary>
         /// Gets or sets the color used to multiply the image pixels when control is disabled.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
+        [EditorDisplay("Image Style"), EditorOrder(2012)]
         public Color DisabledTint { get; set; } = Color.Gray;
 
         /// <summary>

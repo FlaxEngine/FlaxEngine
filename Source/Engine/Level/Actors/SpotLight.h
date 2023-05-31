@@ -32,7 +32,7 @@ public:
     /// <summary>
     /// Controls the radial falloff of light when UseInverseSquaredFalloff is disabled.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(13), DefaultValue(8.0f), EditorDisplay(\"Light\"), Limit(2, 16, 0.01f)")
+    API_FIELD(Attributes="EditorOrder(13), DefaultValue(8.0f), EditorDisplay(\"Light\"), Limit(2, 16, 0.01f), VisibleIf(nameof(UseInverseSquaredFalloff), true)")
     float FallOffExponent = 8.0f;
 
     /// <summary>

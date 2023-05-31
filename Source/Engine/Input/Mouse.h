@@ -58,7 +58,6 @@ public:
     /// <summary>
     /// Gets the position of the mouse in the screen-space coordinates.
     /// </summary>
-    /// <returns>The mouse position</returns>
     API_PROPERTY() FORCE_INLINE Float2 GetPosition() const
     {
         return _state.MousePosition;
@@ -72,7 +71,6 @@ public:
     /// <summary>
     /// Gets the delta position of the mouse in the screen-space coordinates.
     /// </summary>
-    /// <returns>The mouse position delta</returns>
     API_PROPERTY() FORCE_INLINE Float2 GetPositionDelta() const
     {
         return _state.MousePosition - _prevState.MousePosition;
@@ -81,7 +79,6 @@ public:
     /// <summary>
     /// Gets the mouse wheel change during the last frame.
     /// </summary>
-    /// <returns>Mouse wheel value delta</returns>
     API_PROPERTY() FORCE_INLINE float GetScrollDelta() const
     {
         return _state.MouseWheelDelta;

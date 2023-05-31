@@ -714,6 +714,14 @@ void MCore::UnloadEngine()
 #endif
 }
 
+#if USE_EDITOR
+
+void MCore::OnMidHotReload()
+{
+}
+
+#endif
+
 MObject* MCore::Object::Box(void* value, const MClass* klass)
 {
     return mono_value_box(mono_domain_get(), klass->GetNative(), value);

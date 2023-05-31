@@ -165,9 +165,8 @@ extern MDomain* MActiveDomain;
 extern Array<MDomain*, FixedAllocation<4>> MDomains;
 
 Dictionary<String, void*> CachedFunctions;
-
-Dictionary<void*, MClass*> classHandles;
-Dictionary<void*, MAssembly*> assemblyHandles;
+Dictionary<void*, MClass*> CachedClassHandles;
+Dictionary<void*, MAssembly*> CachedAssemblyHandles;
 
 /// <summary>
 /// Returns the function pointer to the managed static method in NativeInterop class.
@@ -299,6 +298,17 @@ void MCore::UnloadEngine()
     MRootDomain = nullptr;
     ShutdownHostfxr();
 }
+
+#if USE_EDITOR
+
+void MCore::OnMidHotReload()
+{
+    // Clear any cached class attributes (see https://github.com/FlaxEngine/FlaxEngine/issues/1108)
+    for (auto e : CachedClassHandles)
+        e.Value->_attributes.Clear();
+}
+
+#endif
 
 MObject* MCore::Object::Box(void* value, const MClass* klass)
 {
@@ -672,7 +682,7 @@ bool MAssembly::LoadCorlib()
         return true;
     }
     _hasCachedClasses = false;
-    assemblyHandles.Add(_handle, this);
+    CachedAssemblyHandles.Add(_handle, this);
 
     // End
     OnLoaded(startTime);
@@ -681,6 +691,7 @@ bool MAssembly::LoadCorlib()
 
 bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePath)
 {
+    // TODO: Use new hostfxr delegate load_assembly_bytes? (.NET 8+)
     // Open .Net assembly
     const StringAnsi assemblyPathAnsi = assemblyPath.ToStringAnsi();
     const char* name;
@@ -696,7 +707,7 @@ bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePa
         Log::CLRInnerException(TEXT(".NET assembly image is invalid at ") + assemblyPath);
         return true;
     }
-    assemblyHandles.Add(_handle, this);
+    CachedAssemblyHandles.Add(_handle, this);
 
     // Provide new path of hot-reloaded native library path for managed DllImport
     if (nativePath.HasChars())
@@ -722,7 +733,7 @@ bool MAssembly::UnloadImage(bool isReloading)
             CallStaticMethod<void, const void*>(CloseAssemblyPtr, _handle);
         }
 
-        assemblyHandles.Remove(_handle);
+        CachedAssemblyHandles.Remove(_handle);
         _handle = nullptr;
     }
     return false;
@@ -780,7 +791,7 @@ MClass::MClass(const MAssembly* parentAssembly, void* handle, const char* name, 
     static void* TypeIsEnumPtr = GetStaticMethodPointer(TEXT("TypeIsEnum"));
     _isEnum = CallStaticMethod<bool, void*>(TypeIsEnumPtr, handle);
 
-    classHandles.Add(handle, this);
+    CachedClassHandles.Add(handle, this);
 }
 
 bool MAssembly::ResolveMissingFile(String& assemblyPath) const
@@ -800,7 +811,7 @@ MClass::~MClass()
     _properties.ClearDelete();
     _events.ClearDelete();
 
-    classHandles.Remove(_handle);
+    CachedClassHandles.Remove(_handle);
 }
 
 StringAnsiView MClass::GetName() const
@@ -1018,11 +1029,7 @@ const Array<MObject*>& MClass::GetAttributes() const
     int numAttributes;
     static void* GetClassAttributesPtr = GetStaticMethodPointer(TEXT("GetClassAttributes"));
     CallStaticMethod<void, void*, MObject***, int*>(GetClassAttributesPtr, _handle, &attributes, &numAttributes);
-    _attributes.Resize(numAttributes);
-    for (int i = 0; i < numAttributes; i++)
-    {
-        _attributes[i] = attributes[i];
-    }
+    _attributes.Set(attributes, numAttributes);
     MCore::GC::FreeMemory(attributes);
 
     _hasCachedAttributes = true;
@@ -1444,7 +1451,7 @@ const Array<MObject*>& MProperty::GetAttributes() const
 MAssembly* GetAssembly(void* assemblyHandle)
 {
     MAssembly* assembly;
-    if (assemblyHandles.TryGet(assemblyHandle, assembly))
+    if (CachedAssemblyHandles.TryGet(assemblyHandle, assembly))
         return assembly;
     return nullptr;
 }
@@ -1452,7 +1459,7 @@ MAssembly* GetAssembly(void* assemblyHandle)
 MClass* GetClass(MType* typeHandle)
 {
     MClass* klass = nullptr;
-    classHandles.TryGet(typeHandle, klass);
+    CachedClassHandles.TryGet(typeHandle, klass);
     return nullptr;
 }
 
@@ -1461,7 +1468,7 @@ MClass* GetOrCreateClass(MType* typeHandle)
     if (!typeHandle)
         return nullptr;
     MClass* klass;
-    if (!classHandles.TryGet(typeHandle, klass))
+    if (!CachedClassHandles.TryGet(typeHandle, klass))
     {
         NativeClassDefinitions classInfo;
         void* assemblyHandle;
@@ -1567,9 +1574,9 @@ bool InitHostfxr()
         Platform::OpenUrl(TEXT("https://dotnet.microsoft.com/en-us/download/dotnet/7.0"));
 #endif
 #if USE_EDITOR
-        LOG(Fatal, "Missing .NET 7 SDK installation requried to run Flax Editor.");
+        LOG(Fatal, "Missing .NET 7 SDK installation required to run Flax Editor.");
 #else
-        LOG(Fatal, "Missing .NET 7 Runtime installation requried to run this application.");
+        LOG(Fatal, "Missing .NET 7 Runtime installation required to run this application.");
 #endif
         return true;
     }
@@ -1595,6 +1602,15 @@ bool InitHostfxr()
         LOG(Fatal, "Failed to setup hostfxr API ({0})", path);
         return true;
     }
+
+    // TODO: Implement picking different version of hostfxr, currently prefers highest available version.
+    // Allow future and preview versions of .NET
+    String dotnetRollForward;
+    String dotnetRollForwardPr;
+    if (Platform::GetEnvironmentVariable(TEXT("DOTNET_ROLL_FORWARD"), dotnetRollForward))
+        Platform::SetEnvironmentVariable(TEXT("DOTNET_ROLL_FORWARD"), TEXT("LatestMajor"));
+    if (Platform::GetEnvironmentVariable(TEXT("DOTNET_ROLL_FORWARD_TO_PRERELEASE"), dotnetRollForwardPr))
+        Platform::SetEnvironmentVariable(TEXT("DOTNET_ROLL_FORWARD_TO_PRERELEASE"), TEXT("1"));
 
     // Initialize hosting component
     const char_t* argv[1] = { libraryPath.Get() };

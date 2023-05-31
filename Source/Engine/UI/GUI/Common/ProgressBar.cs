@@ -99,19 +99,19 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the margin for the progress bar rectangle within the control bounds.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The margin for the progress bar rectangle within the control bounds.")]
+        [EditorDisplay("Bar Style"), EditorOrder(2011), Tooltip("The margin for the progress bar rectangle within the control bounds.")]
         public Margin BarMargin { get; set; }
 
         /// <summary>
         /// Gets or sets the color of the progress bar rectangle.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The color of the progress bar rectangle.")]
+        [EditorDisplay("Bar Style"), EditorOrder(2010), Tooltip("The color of the progress bar rectangle."), ExpandGroups]
         public Color BarColor { get; set; }
 
         /// <summary>
         /// Gets or sets the brush used for progress bar drawing.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The brush used for progress bar drawing.")]
+        [EditorDisplay("Bar Style"), EditorOrder(2012), Tooltip("The brush used for progress bar drawing.")]
         public IBrush BarBrush { get; set; }
 
         /// <summary>

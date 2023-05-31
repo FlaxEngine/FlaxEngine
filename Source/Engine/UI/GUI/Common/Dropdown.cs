@@ -246,79 +246,79 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the font used to draw text.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
+        [EditorDisplay("Text Style"), EditorOrder(2021)]
         public FontReference Font { get; set; }
 
         /// <summary>
         /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("Custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.")]
+        [EditorDisplay("Text Style"), EditorOrder(2022), Tooltip("Custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.")]
         public MaterialBase FontMaterial { get; set; }
 
         /// <summary>
         /// Gets or sets the color of the text.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
+        [EditorDisplay("Text Style"), EditorOrder(2020), ExpandGroups]
         public Color TextColor { get; set; }
 
         /// <summary>
         /// Gets or sets the color of the border.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
+        [EditorDisplay("Border Style"), EditorOrder(2010), ExpandGroups]
         public Color BorderColor { get; set; }
 
         /// <summary>
         /// Gets or sets the background color when dropdown popup is opened.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2010)]
+        [EditorDisplay("Background Style"), EditorOrder(2002)]
         public Color BackgroundColorSelected { get; set; }
 
         /// <summary>
         /// Gets or sets the border color when dropdown popup is opened.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2020)]
+        [EditorDisplay("Border Style"), EditorOrder(2012)]
         public Color BorderColorSelected { get; set; }
 
         /// <summary>
         /// Gets or sets the background color when dropdown is highlighted.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
+        [EditorDisplay("Background Style"), EditorOrder(2001), ExpandGroups]
         public Color BackgroundColorHighlighted { get; set; }
 
         /// <summary>
         /// Gets or sets the border color when dropdown is highlighted.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
+        [EditorDisplay("Border Style"), EditorOrder(2011)]
         public Color BorderColorHighlighted { get; set; }
 
         /// <summary>
         /// Gets or sets the image used to render dropdown drop arrow icon.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The image used to render dropdown drop arrow icon.")]
+        [EditorDisplay("Icon Style"), EditorOrder(2033), Tooltip("The image used to render dropdown drop arrow icon.")]
         public IBrush ArrowImage { get; set; }
 
         /// <summary>
         /// Gets or sets the color used to render dropdown drop arrow icon.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The color used to render dropdown drop arrow icon.")]
+        [EditorDisplay("Icon Style"), EditorOrder(2030), Tooltip("The color used to render dropdown drop arrow icon."), ExpandGroups]
         public Color ArrowColor { get; set; }
 
         /// <summary>
         /// Gets or sets the color used to render dropdown drop arrow icon (menu is opened).
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The color used to render dropdown drop arrow icon (menu is opened).")]
+        [EditorDisplay("Icon Style"), EditorOrder(2032), Tooltip("The color used to render dropdown drop arrow icon (menu is opened).")]
         public Color ArrowColorSelected { get; set; }
 
         /// <summary>
         /// Gets or sets the color used to render dropdown drop arrow icon (menu is highlighted).
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The color used to render dropdown drop arrow icon (menu is highlighted).")]
+        [EditorDisplay("Icon Style"), EditorOrder(2031), Tooltip("The color used to render dropdown drop arrow icon (menu is highlighted).")]
         public Color ArrowColorHighlighted { get; set; }
 
         /// <summary>
         /// Gets or sets the image used to render dropdown checked item icon.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The image used to render dropdown checked item icon.")]
+        [EditorDisplay("Icon Style"), EditorOrder(2034), Tooltip("The image used to render dropdown checked item icon.")]
         public IBrush CheckedImage { get; set; }
 
         /// <summary>

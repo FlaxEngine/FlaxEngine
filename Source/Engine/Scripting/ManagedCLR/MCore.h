@@ -45,6 +45,11 @@ public:
     /// </summary>
     static void UnloadEngine();
 
+#if USE_EDITOR
+    // Called by Scripting in a middle of hot-reload (after unloading modules but before loading them again).
+    static void OnMidHotReload();
+#endif
+
 public:
     /// <summary>
     /// Utilities for C# object management.
