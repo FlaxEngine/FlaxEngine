@@ -31,8 +31,42 @@ Guid DeviceId;
 FlaxView* MainView = nullptr;
 FlaxViewController* MainViewController = nullptr;
 iOSWindow* MainWindow = nullptr;
-CriticalSection UIThreadFuncLocker;
-Array<Function<void()>> UIThreadFuncList;
+
+struct MessagePipeline
+{
+    CriticalSection Locker;
+    Array<Function<void()>> List;
+
+    void Add(const Function<void()>& func, bool wait)
+    {
+        Locker.Lock();
+        List.Add(func);
+        Locker.Unlock();
+
+        // TODO: use atomic counters for more optimized waiting
+        while (wait)
+        {
+            Platform::Sleep(1);
+            Locker.Lock();
+            wait = List.HasItems();
+            Locker.Unlock();
+        }
+    }
+
+    void Run()
+    {
+        Locker.Lock();
+        for (const auto& func : List)
+        {
+            func();
+        }
+        List.Clear();
+        Locker.Unlock();
+    }
+};
+
+MessagePipeline UIThreadPipeline;
+MessagePipeline MainThreadPipeline;
 
 @implementation FlaxView
 
@@ -44,7 +78,9 @@ Array<Function<void()>> UIThreadFuncList;
     if (!MainWindow)
         return;
     float scale = [[UIScreen mainScreen] scale];
-    MainWindow->CheckForResize((float)frame.size.width * scale, (float)frame.size.height * scale);
+    float width = (float)frame.size.width * scale;
+    float height = (float)frame.size.height * scale;
+    iOSPlatform::RunOnMainThread([width, height]() { MainWindow->CheckForResize(width, height); });
 }
 
 @end
@@ -66,16 +102,6 @@ Array<Function<void()>> UIThreadFuncList;
     return UIStatusBarAnimationSlide;
 }
 
-- (void)loadView
-{
-  [super loadView];
-  UILabel *label = [[UILabel alloc] initWithFrame:self.view.bounds];
-  [label setText:@"Hello World from Flax"];
-  [label setBackgroundColor:[UIColor systemBackgroundColor]];
-  [label setTextAlignment:NSTextAlignmentCenter];
-  self.view = label;
-}
-
 @end
 
 @interface FlaxAppDelegate()
@@ -86,7 +112,7 @@ Array<Function<void()>> UIThreadFuncList;
 
 @implementation FlaxAppDelegate
 
--(void)GameThreadMain:(NSDictionary*)launchOptions
+-(void)MainThreadMain:(NSDictionary*)launchOptions
 {
     // Run engine on a separate game thread
     Engine::Main(TEXT(""));
@@ -95,13 +121,7 @@ Array<Function<void()>> UIThreadFuncList;
 -(void)UIThreadMain
 {
     // Invoke callbacks
-    UIThreadFuncLocker.Lock();
-    for (const auto& func : UIThreadFuncList)
-    {
-        func();
-    }
-    UIThreadFuncList.Clear();
-    UIThreadFuncLocker.Unlock();
+    UIThreadPipeline.Run();
 }
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
@@ -109,10 +129,6 @@ Array<Function<void()>> UIThreadFuncList;
     // Create window
 	CGRect frame = [[UIScreen mainScreen] bounds];
     self.window = [[UIWindow alloc] initWithFrame:frame];
-
-    // Create view controller
-    self.viewController = [[FlaxViewController alloc] init];
-    MainViewController = self.viewController;
 
     // Create view
     self.view = [[FlaxView alloc] initWithFrame:frame];
@@ -122,6 +138,13 @@ Array<Function<void()>> UIThreadFuncList;
 	[self.view setOpaque:YES];
 	self.view.backgroundColor = [UIColor clearColor];
     MainView = self.view;
+
+    // Create view controller
+    self.viewController = [[FlaxViewController alloc] init];
+    [self.viewController setView:self.view];
+	[self.viewController setNeedsUpdateOfHomeIndicatorAutoHidden];
+	[self.viewController setNeedsStatusBarAppearanceUpdate];
+    MainViewController = self.viewController;
 
     // Create navigation controller
     UINavigationController* navController = [[UINavigationController alloc] initWithRootViewController:self.viewController];
@@ -133,15 +156,15 @@ Array<Function<void()>> UIThreadFuncList;
     self.displayLink.preferredFramesPerSecond = 30;
     [self.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
 
-    // Run engine on a separate game thread
-	NSThread* gameThread = [[NSThread alloc] initWithTarget:self selector:@selector(GameThreadMain:) object:launchOptions];
+    // Run engine on a separate main thread
+	NSThread* mainThread = [[NSThread alloc] initWithTarget:self selector:@selector(MainThreadMain:) object:launchOptions];
 #if BUILD_DEBUG
-    const int32 gameThreadStackSize = 4 * 1024 * 1024; // 4 MB
+    const int32 mainThreadStackSize = 4 * 1024 * 1024; // 4 MB
 #else
-    const int32 gameThreadStackSize = 2 * 1024 * 1024; // 2 MB
+    const int32 mainThreadStackSize = 2 * 1024 * 1024; // 2 MB
 #endif
-	[gameThread setStackSize:gameThreadStackSize];
-	[gameThread start];
+	[mainThread setStackSize:mainThreadStackSize];
+	[mainThread start];
 
     return YES;
 }
@@ -285,18 +308,12 @@ bool iOSFileSystem::IsReadOnly(const StringView& path)
 
 void iOSPlatform::RunOnUIThread(const Function<void()>& func, bool wait)
 {
-    UIThreadFuncLocker.Lock();
-    UIThreadFuncList.Add(func);
-    UIThreadFuncLocker.Unlock();
+    UIThreadPipeline.Add(func, wait);
+}
 
-    // TODO: use atomic counters for more optimized waiting
-    while (wait)
-    {
-        Platform::Sleep(1);
-        UIThreadFuncLocker.Lock();
-        wait = UIThreadFuncList.HasItems();
-        UIThreadFuncLocker.Unlock();
-    }
+void iOSPlatform::RunOnMainThread(const Function<void()>& func, bool wait)
+{
+    MainThreadPipeline.Add(func, wait);
 }
 
 bool iOSPlatform::Init()
@@ -330,7 +347,8 @@ void iOSPlatform::LogInfo()
 
 void iOSPlatform::Tick()
 {
-    // TODO: get events from UI Thread
+    // Invoke callbacks
+    MainThreadPipeline.Run();
 
     ApplePlatform::Tick();
 }
