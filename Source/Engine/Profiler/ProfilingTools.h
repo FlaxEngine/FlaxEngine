@@ -12,7 +12,7 @@
 /// <summary>
 /// Profiler tools for development. Allows to gather profiling data and events from the engine.
 /// </summary>
-API_CLASS(Static) class ProfilingTools
+API_CLASS(Static) class FLAXENGINE_API ProfilingTools
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(ProfilingTools);
 public:

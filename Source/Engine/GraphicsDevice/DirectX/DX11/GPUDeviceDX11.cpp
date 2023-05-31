@@ -221,15 +221,6 @@ GPUDevice* GPUDeviceDX11::Create()
         Delete(device);
         return nullptr;
     }
-    
-#if PLATFORM_WINDOWS
-    if (dxgiFactory6 != nullptr)
-        dxgiFactory6->Release();
-    else
-#endif
-    {
-        dxgiFactory->Release();
-    }
 
     return device;
 }
