@@ -15,6 +15,7 @@
 Collider::Collider(const SpawnParams& params)
     : PhysicsColliderActor(params)
     , _center(Float3::Zero)
+    , _colliderOrientation(Quaternion::Identity)
     , _isTrigger(false)
     , _shape(nullptr)
     , _staticActor(nullptr)
@@ -45,11 +46,36 @@ void Collider::SetCenter(const Vector3& value)
     _center = value;
     if (_staticActor)
     {
-        PhysicsBackend::SetShapeLocalPose(_shape, _center, Quaternion::Identity);
+        Quaternion result;
+        Quaternion::Multiply(Quaternion::Identity, _colliderOrientation, result);
+        PhysicsBackend::SetShapeLocalPose(_shape, _center, result);
     }
     else if (const RigidBody* rigidBody = GetAttachedRigidBody())
     {
-        PhysicsBackend::SetShapeLocalPose(_shape, (_localTransform.Translation + _localTransform.Orientation * _center) * rigidBody->GetScale(), _localTransform.Orientation);
+        Quaternion result;
+        Quaternion::Multiply(_localTransform.Orientation, _colliderOrientation, result);
+        PhysicsBackend::SetShapeLocalPose(_shape, (_localTransform.Translation + result * _center) * rigidBody->GetScale(), result);
+    }
+    UpdateBounds();
+}
+
+void Collider::SetColliderOrientation(const Quaternion& value)
+{
+
+    if (Quaternion::NearEqual(value, _colliderOrientation))
+        return;
+    _colliderOrientation = value;
+    if (_staticActor)
+    {
+        Quaternion result;
+        Quaternion::Multiply(Quaternion::Identity, _colliderOrientation, result);
+        PhysicsBackend::SetShapeLocalPose(_shape, _center, result);
+    }
+    else if (const RigidBody* rigidBody = GetAttachedRigidBody())
+    {
+        Quaternion result;
+        Quaternion::Multiply(_localTransform.Orientation, _colliderOrientation, result);
+        PhysicsBackend::SetShapeLocalPose(_shape, (_localTransform.Translation + result * _center) * rigidBody->GetScale(), result);
     }
     UpdateBounds();
 }
@@ -169,8 +195,10 @@ void Collider::Attach(RigidBody* rigidBody)
 
     // Attach
     PhysicsBackend::AttachShape(_shape, rigidBody->GetPhysicsActor());
-    _cachedLocalPosePos = (_localTransform.Translation + _localTransform.Orientation * _center) * rigidBody->GetScale();
-    _cachedLocalPoseRot = _localTransform.Orientation;
+    Quaternion result;
+    Quaternion::Multiply(_localTransform.Orientation, _colliderOrientation, result);
+    _cachedLocalPosePos = (_localTransform.Translation + result * _center) * rigidBody->GetScale();
+    _cachedLocalPoseRot = result;
     PhysicsBackend::SetShapeLocalPose(_shape, _cachedLocalPosePos, _cachedLocalPoseRot);
     if (rigidBody->IsDuringPlay())
     {
@@ -262,7 +290,9 @@ void Collider::CreateStaticActor()
     _staticActor = PhysicsBackend::CreateRigidStaticActor(nullptr, _transform.Translation, _transform.Orientation, scene);
 
     // Reset local pos of the shape and link it to the actor
-    PhysicsBackend::SetShapeLocalPose(_shape, _center, Quaternion::Identity);
+    Quaternion result;
+    Quaternion::Multiply(Quaternion::Identity, _colliderOrientation, result);
+    PhysicsBackend::SetShapeLocalPose(_shape, _center, result);
     PhysicsBackend::AttachShape(_shape, _staticActor);
 
     PhysicsBackend::AddSceneActor(scene, _staticActor);
@@ -301,6 +331,7 @@ void Collider::Serialize(SerializeStream& stream, const void* otherObj)
 
     SERIALIZE_MEMBER(IsTrigger, _isTrigger);
     SERIALIZE_MEMBER(Center, _center);
+    SERIALIZE_MEMBER(ColliderOrientation, _colliderOrientation);
     SERIALIZE_MEMBER(ContactOffset, _contactOffset);
     SERIALIZE(Material);
 }
@@ -312,6 +343,7 @@ void Collider::Deserialize(DeserializeStream& stream, ISerializeModifier* modifi
 
     DESERIALIZE_MEMBER(IsTrigger, _isTrigger);
     DESERIALIZE_MEMBER(Center, _center);
+     DESERIALIZE_MEMBER(ColliderOrientation, _colliderOrientation);
     DESERIALIZE_MEMBER(ContactOffset, _contactOffset);
     DESERIALIZE(Material);
 }
@@ -429,15 +461,19 @@ void Collider::OnTransformChanged()
 
     if (_staticActor)
     {
-        PhysicsBackend::SetRigidActorPose(_staticActor, _transform.Translation, _transform.Orientation);
+        Quaternion result;
+        Quaternion::Multiply(_localTransform.Orientation, _colliderOrientation, result);
+        PhysicsBackend::SetRigidActorPose(_staticActor, _transform.Translation, result);
     }
     else if (const RigidBody* rigidBody = GetAttachedRigidBody())
     {
-        const Vector3 localPosePos = (_localTransform.Translation + _localTransform.Orientation * _center) * rigidBody->GetScale();
-        if (_cachedLocalPosePos != localPosePos || _cachedLocalPoseRot != _localTransform.Orientation)
+        Quaternion result;
+        Quaternion::Multiply(_localTransform.Orientation, _colliderOrientation, result);
+        const Vector3 localPosePos = (_localTransform.Translation + result * _center) * rigidBody->GetScale();
+        if (_cachedLocalPosePos != localPosePos || _cachedLocalPoseRot != result)
         {
             _cachedLocalPosePos = localPosePos;
-            _cachedLocalPoseRot = _localTransform.Orientation;
+            _cachedLocalPoseRot = result;
             PhysicsBackend::SetShapeLocalPose(_shape, localPosePos, _cachedLocalPoseRot);
         }
     }
