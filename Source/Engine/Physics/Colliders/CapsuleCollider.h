@@ -10,8 +10,19 @@
 /// </summary>
 API_ENUM() enum class ColliderOrientationDirection
 {
+    /// <summary>
+    /// Orient to the X-Axis.
+    /// </summary>
     XAxis,
+
+    /// <summary>
+    /// Orient to the Y-Axis.
+    /// </summary>
     YAxis,
+
+    /// <summary>
+    /// Orient to the Z-Axis.
+    /// </summary>
     ZAxis
 };
 
@@ -66,9 +77,8 @@ public:
     /// <summary>
     /// Gets the orientation direction of the capsule collider.
     /// </summary>
-    /// <remarks>The capsule height will be scaled by the actor's world scale.</remarks>
     API_PROPERTY(Attributes="EditorOrder(111), DefaultValue(typeof(ColliderOrientationDirection), \"YAxis\"), EditorDisplay(\"Collider\")")
-    FORCE_INLINE ColliderOrientationDirection GetDirection() const
+    FORCE_INLINE ColliderOrientationDirection GetColliderDirection() const
     {
         return _direction;
     }
@@ -76,8 +86,7 @@ public:
     /// <summary>
     /// Sets the orientation direction of the capsule collider.
     /// </summary>
-    /// <remarks>The capsule height will be scaled by the actor's world scale.</remarks>
-    API_PROPERTY() void SetDirection(ColliderOrientationDirection value);
+    API_PROPERTY() void SetColliderDirection(ColliderOrientationDirection value);
 
 public:
     // [Collider]

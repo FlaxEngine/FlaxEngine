@@ -9,7 +9,7 @@ CapsuleCollider::CapsuleCollider(const SpawnParams& params)
     , _height(100.0f)
     , _direction(ColliderOrientationDirection::YAxis)
 {
-    SetDirection(_direction);
+    SetColliderDirection(_direction);
 }
 
 void CapsuleCollider::SetRadius(const float value)
@@ -34,6 +34,24 @@ void CapsuleCollider::SetHeight(const float value)
     UpdateBounds();
 }
 
+void CapsuleCollider::SetColliderDirection(ColliderOrientationDirection value)
+{
+    _direction = value;
+    switch (value)
+    {
+    case ColliderOrientationDirection::XAxis:
+        SetColliderOrientation(Quaternion::Identity);
+        break;
+    case ColliderOrientationDirection::YAxis:
+        SetColliderOrientation(Quaternion::Euler(0, 0, 90));
+        break;
+    case ColliderOrientationDirection::ZAxis:
+        SetColliderOrientation(Quaternion::Euler(0, 90, 0));
+        break;
+    default: ;
+    }
+}
+
 #if USE_EDITOR
 
 #include "Engine/Debug/DebugDraw.h"
@@ -56,24 +74,6 @@ void CapsuleCollider::DrawPhysicsDebug(RenderView& view)
         DEBUG_DRAW_TUBE(_transform.LocalToWorld(_center), rot, radius, height, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
     else
         DEBUG_DRAW_WIRE_TUBE(_transform.LocalToWorld(_center), rot, radius, height, Color::GreenYellow * 0.8f, 0, true);
-}
-
-void CapsuleCollider::SetDirection(ColliderOrientationDirection value)
-{
-    _direction = value;
-    switch (value)
-    {
-    case ColliderOrientationDirection::XAxis:
-        SetColliderOrientation(Quaternion::Identity);
-        break;
-    case ColliderOrientationDirection::YAxis:
-        SetColliderOrientation(Quaternion::Euler(0, 0, 90));
-        break;
-    case ColliderOrientationDirection::ZAxis:
-        SetColliderOrientation(Quaternion::Euler(0, 90, 0));
-        break;
-    default: ;
-    }
 }
 
 void CapsuleCollider::OnDebugDrawSelected()
@@ -119,7 +119,7 @@ void CapsuleCollider::Deserialize(DeserializeStream& stream, ISerializeModifier*
     DESERIALIZE_MEMBER(Radius, _radius);
     DESERIALIZE_MEMBER(Height, _height);
     DESERIALIZE(_direction);
-    SetDirection(_direction);
+    SetColliderDirection(_direction);
 }
 
 void CapsuleCollider::UpdateBounds()
