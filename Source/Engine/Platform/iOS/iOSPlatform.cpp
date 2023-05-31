@@ -6,7 +6,9 @@
 #include "iOSWindow.h"
 #include "iOSFile.h"
 #include "iOSFileSystem.h"
+#include "iOSApp.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Delegate.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Platform/Apple/AppleUtils.h"
@@ -15,19 +17,157 @@
 #include "Engine/Platform/Window.h"
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Input/Input.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/Globals.h"
 #include <UIKit/UIKit.h>
+#include <CoreFoundation/CoreFoundation.h>
+#include <QuartzCore/CAMetalLayer.h>
 #include <sys/utsname.h>
 
 int32 Dpi = 96;
 Guid DeviceId;
+FlaxView* MainView = nullptr;
+FlaxViewController* MainViewController = nullptr;
+iOSWindow* MainWindow = nullptr;
+CriticalSection UIThreadFuncLocker;
+Array<Function<void()>> UIThreadFuncList;
 
-// Used by iOS project in XCode to run engine (see main.m)
-extern "C" FLAXENGINE_API int FlaxEngineMain()
+@implementation FlaxView
+
++(Class) layerClass { return [CAMetalLayer class]; }
+
+- (void)setFrame:(CGRect)frame
 {
-    return Engine::Main(TEXT(""));
+    [super setFrame:frame];
+    if (!MainWindow)
+        return;
+    float scale = [[UIScreen mainScreen] scale];
+    MainWindow->CheckForResize((float)frame.size.width * scale, (float)frame.size.height * scale);
 }
+
+@end
+
+@implementation FlaxViewController
+
+- (BOOL)prefersHomeIndicatorAutoHidden
+{
+    return YES;
+}
+
+- (BOOL)prefersStatusBarHidden
+{
+    return YES;
+}
+
+-(UIStatusBarAnimation)preferredStatusBarUpdateAnimation
+{
+    return UIStatusBarAnimationSlide;
+}
+
+- (void)loadView
+{
+  [super loadView];
+  UILabel *label = [[UILabel alloc] initWithFrame:self.view.bounds];
+  [label setText:@"Hello World from Flax"];
+  [label setBackgroundColor:[UIColor systemBackgroundColor]];
+  [label setTextAlignment:NSTextAlignmentCenter];
+  self.view = label;
+}
+
+@end
+
+@interface FlaxAppDelegate()
+
+@property(strong, nonatomic) CADisplayLink* displayLink;
+
+@end
+
+@implementation FlaxAppDelegate
+
+-(void)GameThreadMain:(NSDictionary*)launchOptions
+{
+    // Run engine on a separate game thread
+    Engine::Main(TEXT(""));
+}
+
+-(void)UIThreadMain
+{
+    // Invoke callbacks
+    UIThreadFuncLocker.Lock();
+    for (const auto& func : UIThreadFuncList)
+    {
+        func();
+    }
+    UIThreadFuncList.Clear();
+    UIThreadFuncLocker.Unlock();
+}
+
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+{
+    // Create window
+	CGRect frame = [[UIScreen mainScreen] bounds];
+    self.window = [[UIWindow alloc] initWithFrame:frame];
+
+    // Create view controller
+    self.viewController = [[FlaxViewController alloc] init];
+    MainViewController = self.viewController;
+
+    // Create view
+    self.view = [[FlaxView alloc] initWithFrame:frame];
+	[self.view resignFirstResponder];
+	[self.view setNeedsDisplay];
+	[self.view setHidden:NO];
+	[self.view setOpaque:YES];
+	self.view.backgroundColor = [UIColor clearColor];
+    MainView = self.view;
+
+    // Create navigation controller
+    UINavigationController* navController = [[UINavigationController alloc] initWithRootViewController:self.viewController];
+    [self.window setRootViewController:navController];
+    [self.window makeKeyAndVisible];
+
+    // Create UI thread update callback
+    self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(UIThreadMain)];
+    self.displayLink.preferredFramesPerSecond = 30;
+    [self.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+
+    // Run engine on a separate game thread
+	NSThread* gameThread = [[NSThread alloc] initWithTarget:self selector:@selector(GameThreadMain:) object:launchOptions];
+#if BUILD_DEBUG
+    const int32 gameThreadStackSize = 4 * 1024 * 1024; // 4 MB
+#else
+    const int32 gameThreadStackSize = 2 * 1024 * 1024; // 2 MB
+#endif
+	[gameThread setStackSize:gameThreadStackSize];
+	[gameThread start];
+
+    return YES;
+}
+
+- (void)applicationWillResignActive:(UIApplication *)application
+{
+    // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
+    // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks. Games should use this method to pause the game.
+}
+
+- (void)applicationDidEnterBackground:(UIApplication *)application
+{
+    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
+}
+
+- (void)applicationWillEnterForeground:(UIApplication *)application
+{
+    // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
+}
+
+- (void)applicationDidBecomeActive:(UIApplication *)application
+{
+    // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+}
+
+@end
 
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
 {
@@ -36,28 +176,89 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
 	UIAlertController* alert = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
 	UIAlertAction* button = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:^(id){ }];
 	[alert addAction:button];
-	ScopeLock lock(WindowsManager::WindowsLocker);
-	for (auto window : WindowsManager::Windows)
-    {
-        if (window->IsVisible())
-        {
-	        [(UIViewController*)window->GetViewController() presentViewController:alert animated:YES completion:nil];
-            break;
-        }        
-    }
+    [MainViewController presentViewController:alert animated:YES completion:nil];
     return DialogResult::OK;
 }
 
+iOSWindow::iOSWindow(const CreateWindowSettings& settings)
+    : WindowBase(settings)
+{
+ 	CGRect frame = [[UIScreen mainScreen] bounds];
+	float scale = [[UIScreen mainScreen] scale];
+    _clientSize = Float2((float)frame.size.width * scale, (float)frame.size.height * scale);
+
+    MainWindow = this;
+}
+
+iOSWindow::~iOSWindow()
+{
+    MainWindow = nullptr;
+}
+
+void iOSWindow::CheckForResize(float width, float height)
+{
+    const Float2 clientSize(width, height);
+	if (clientSize != _clientSize)
+	{
+        _clientSize = clientSize;
+		OnResize(width, height);
+	}
+}
+
+void* iOSWindow::GetNativePtr() const
+{
+    return MainView;
+}
+
+void iOSWindow::Show()
+{
+    if (!_visible)
+    {
+        InitSwapChain();
+        if (_showAfterFirstPaint)
+        {
+            if (RenderTask)
+                RenderTask->Enabled = true;
+            return;
+        }
+
+        // Show
+        _focused = true;
+
+        // Base
+        WindowBase::Show();
+    }
+}
+
+bool iOSWindow::IsClosed() const
+{
+    return false;
+}
+
+bool iOSWindow::IsForegroundWindow() const
+{
+    return Platform::GetHasFocus() && IsFocused();
+}
+
+void iOSWindow::BringToFront(bool force)
+{
+    Focus();
+}
+
+void iOSWindow::SetIsFullscreen(bool isFullscreen)
+{
+}
+
+// Fallback to file placed side-by-side with application
 #define IOS_FALLBACK_PATH(path) (Globals::ProjectFolder / StringUtils::GetFileName(path))
 
 iOSFile* iOSFile::Open(const StringView& path, FileMode mode, FileAccess access, FileShare share)
 {
-    iOSFile* file = (iOSFile*)UnixFile::Open(path, mode, access, share);
-    if (!file && mode == FileMode::OpenExisting)
-    {
-        // Fallback to file placed side-by-side with application
+    iOSFile* file;
+    if (mode == FileMode::OpenExisting && !AppleFileSystem::FileExists(path))
         file = (iOSFile*)UnixFile::Open(IOS_FALLBACK_PATH(path), mode, access, share);
-    }
+    else
+        file = (iOSFile*)UnixFile::Open(path, mode, access, share);
     return file;
 }
 
@@ -81,6 +282,22 @@ bool iOSFileSystem::IsReadOnly(const StringView& path)
 }
 
 #undef IOS_FALLBACK_PATH
+
+void iOSPlatform::RunOnUIThread(const Function<void()>& func, bool wait)
+{
+    UIThreadFuncLocker.Lock();
+    UIThreadFuncList.Add(func);
+    UIThreadFuncLocker.Unlock();
+
+    // TODO: use atomic counters for more optimized waiting
+    while (wait)
+    {
+        Platform::Sleep(1);
+        UIThreadFuncLocker.Lock();
+        wait = UIThreadFuncList.HasItems();
+        UIThreadFuncLocker.Unlock();
+    }
+}
 
 bool iOSPlatform::Init()
 {
@@ -113,10 +330,9 @@ void iOSPlatform::LogInfo()
 
 void iOSPlatform::Tick()
 {
-    // Process system events
-	while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.0001, true) == kCFRunLoopRunHandledSource)
-    {
-    }
+    // TODO: get events from UI Thread
+
+    ApplePlatform::Tick();
 }
 
 int32 iOSPlatform::GetDpi()

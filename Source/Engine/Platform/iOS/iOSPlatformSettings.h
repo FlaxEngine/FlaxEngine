@@ -14,6 +14,12 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     DECLARE_SCRIPTING_TYPE_MINIMAL(ApplePlatformSettings);
 
     /// <summary>
+    /// The app developer name - App Store Team ID.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(10), EditorDisplay(\"General\")")
+    String AppTeamId;
+
+    /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
     /// </summary>
     static iOSPlatformSettings* Get();
@@ -22,6 +28,7 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override
     {
         ApplePlatformSettings::Deserialize(stream, modifier);
+        DESERIALIZE(AppTeamId);
     }
 };
 

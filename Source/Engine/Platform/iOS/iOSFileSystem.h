@@ -12,6 +12,7 @@
 class FLAXENGINE_API iOSFileSystem : public AppleFileSystem
 {
 public:
+    // [AppleFileSystem]
     static bool FileExists(const StringView& path);
     static uint64 GetFileSize(const StringView& path);
     static bool IsReadOnly(const StringView& path);

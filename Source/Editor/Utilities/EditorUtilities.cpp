@@ -866,6 +866,16 @@ bool EditorUtilities::ReplaceInFile(const StringView& file, const StringView& fi
     return File::WriteAllText(file, text, Encoding::ANSI);
 }
 
+bool EditorUtilities::ReplaceInFile(const StringView& file, const Dictionary<String, String, HeapAllocation>& replaceMap)
+{
+    String text;
+    if (File::ReadAllText(file, text))
+        return true;
+    for (const auto& e : replaceMap)
+        text.Replace(e.Key.Get(), e.Key.Length(), e.Value.Get(), e.Value.Length());
+    return File::WriteAllText(file, text, Encoding::ANSI);
+}
+
 bool EditorUtilities::CopyFileIfNewer(const StringView& dst, const StringView& src)
 {
     if (FileSystem::FileExists(dst) && 

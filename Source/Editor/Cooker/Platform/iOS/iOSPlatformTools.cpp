@@ -5,9 +5,11 @@
 #include "iOSPlatformTools.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Platform/iOS/iOSPlatformSettings.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Core/Config/BuildSettings.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Content/Content.h"
@@ -119,11 +121,10 @@ bool iOSPlatformTools::IsNativeCodeFile(CookingData& data, const String& file)
 void iOSPlatformTools::OnBuildStarted(CookingData& data)
 {
     // Adjust the cooking output folders for packaging app
-    const auto appName = GetAppName();
-    String contents = String(TEXT("/Payload/")) / appName + TEXT(".app/");
-    data.DataOutputPath /= contents;
-    data.NativeCodeOutputPath /= contents;
-    data.ManagedCodeOutputPath /= contents;
+    const Char* subDir = TEXT("FlaxGame/Data");
+    data.DataOutputPath /= subDir;
+    data.NativeCodeOutputPath /= subDir;
+    data.ManagedCodeOutputPath /= subDir;
 
     PlatformTools::OnBuildStarted(data);
 }
@@ -166,141 +167,85 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
         }
     }
 
-    // Find executable
-    String executableName;
+    // Copy fresh Gradle project template
+    if (FileSystem::CopyDirectory(data.OriginalOutputPath, platformDataPath / TEXT("Project"), true))
     {
-        Array<String> files;
-        FileSystem::DirectoryGetFiles(files, data.NativeCodeOutputPath, TEXT("*"), DirectorySearchOption::TopDirectoryOnly);
-        for (auto& file : files)
-        {
-            if (FileSystem::GetExtension(file).IsEmpty())
-            {
-                executableName = StringUtils::GetFileName(file);
-                break;
-            }
-        }
-    }
-
-    // Deploy app icon
-    TextureData iconData;
-    if (!EditorUtilities::GetApplicationImage(platformSettings->OverrideIcon, iconData))
-    {
-        String tmpFolderPath = data.DataOutputPath / TEXT("icon.iconset");
-        if (!FileSystem::DirectoryExists(tmpFolderPath))
-            FileSystem::CreateDirectory(tmpFolderPath);
-        String srcIconPath = tmpFolderPath / TEXT("icon_1024x1024.png");
-        if (EditorUtilities::ExportApplicationImage(iconData, 1024, 1024, PixelFormat::R8G8B8A8_UNorm, srcIconPath))
-        {
-            LOG(Error, "Failed to export application icon.");
-            return true;
-        }
-        bool failed = Platform::RunProcess(TEXT("sips -z 16 16 icon_1024x1024.png --out icon_16x16.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 32 32 icon_1024x1024.png --out icon_16x16@2x.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 32 32 icon_1024x1024.png --out icon_32x32.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 64 64 icon_1024x1024.png --out icon_32x32@2x.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 128 128 icon_1024x1024.png --out icon_128x128.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 256 256 icon_1024x1024.png --out icon_128x128@2x.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 256 256 icon_1024x1024.png --out icon_256x256.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 512 512 icon_1024x1024.png --out icon_256x256@2x.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 512 512 icon_1024x1024.png --out icon_512x512.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 1024 1024 icon_1024x1024.png --out icon_512x512@2x.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("iconutil -c icns icon.iconset"), data.DataOutputPath);
-        if (failed)
-        {
-            LOG(Error, "Failed to export application icon.");
-            return true;
-        }
-        FileSystem::DeleteDirectory(tmpFolderPath);
-        String iTunesArtworkPath = data.OriginalOutputPath / TEXT("iTunesArtwork.png");
-        if (EditorUtilities::ExportApplicationImage(iconData, 512, 512, PixelFormat::R8G8B8A8_UNorm, iTunesArtworkPath))
-        {
-            LOG(Error, "Failed to export application icon.");
-            return true;
-        }
-        FileSystem::MoveFile(data.OriginalOutputPath / TEXT("iTunesArtwork"), iTunesArtworkPath, true);
-    }
-
-    // Create PkgInfo file
-    const String pkgInfoPath = data.DataOutputPath / TEXT("PkgInfo");
-    File::WriteAllText(pkgInfoPath, TEXT("APPL???"), Encoding::ANSI);
-
-    // Create Info.plist file with package description
-    const String plistPath = data.DataOutputPath / TEXT("Info.plist");
-    {
-        xml_document doc;
-        xml_node plist = doc.child_or_append(PUGIXML_TEXT("plist"));
-        plist.append_attribute(PUGIXML_TEXT("version")).set_value(PUGIXML_TEXT("1.0"));
-        xml_node dict = plist.child_or_append(PUGIXML_TEXT("dict"));
-
-        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("LSRequiresIPhoneOS"));
-        dict.append_child(PUGIXML_TEXT("true"));
-
-        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("UIStatusBarHidden"));
-        dict.append_child(PUGIXML_TEXT("true"));
-
-        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("UIRequiresFullScreen"));
-        dict.append_child(PUGIXML_TEXT("true"));
-
-        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("UIViewControllerBasedStatusBarAppearance"));
-        dict.append_child(PUGIXML_TEXT("false"));
-
-        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("CFBundleIcons"));
-        dict.append_child(PUGIXML_TEXT("dict"));
-
-#define ADD_ENTRY(key, value) \
-    dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT(key)); \
-    dict.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT(value))
-#define ADD_ENTRY_STR(key, value) \
-    dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT(key)); \
-    { std::u16string valueStr(value.GetText()); \
-    dict.append_child(PUGIXML_TEXT("string")).set_child_value(pugi::string_t(valueStr.begin(), valueStr.end()).c_str()); }
-
-        ADD_ENTRY("CFBundleDevelopmentRegion", "English");
-        ADD_ENTRY("CFBundlePackageType", "APPL");
-        ADD_ENTRY("CFBundleSignature", "????");
-        ADD_ENTRY("LSApplicationCategoryType", "public.app-category.games");
-        ADD_ENTRY("CFBundleInfoDictionaryVersion", "6.0");
-        ADD_ENTRY("CFBundleIconFile", "icon.icns");
-        ADD_ENTRY("MinimumOSVersion", "14.0");
-        ADD_ENTRY_STR("CFBundleExecutable", executableName);
-        ADD_ENTRY_STR("CFBundleIdentifier", appIdentifier);
-        ADD_ENTRY_STR("CFBundleName", appName); // TODO: limit to 15 chars max
-        ADD_ENTRY_STR("CFBundleDisplayName", gameSettings->ProductName);
-        ADD_ENTRY_STR("CFBundleGetInfoString", gameSettings->ProductName);
-        ADD_ENTRY_STR("CFBundleVersion", projectVersion);
-        ADD_ENTRY_STR("CFBundleShortVersionString", projectVersion);
-        ADD_ENTRY_STR("NSHumanReadableCopyright", gameSettings->CopyrightNotice);
-
-        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("UIRequiredDeviceCapabilities"));
-        xml_node UIRequiredDeviceCapabilities = dict.append_child(PUGIXML_TEXT("array"));
-        UIRequiredDeviceCapabilities.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("arm64"));
-        UIRequiredDeviceCapabilities.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("metal"));
-
-        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("UISupportedInterfaceOrientations"));
-        xml_node UISupportedInterfaceOrientations = dict.append_child(PUGIXML_TEXT("array"));
-        UISupportedInterfaceOrientations.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("UIInterfaceOrientationPortrait"));
-        UISupportedInterfaceOrientations.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("UIInterfaceOrientationLandscapeLeft"));
-        UISupportedInterfaceOrientations.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("UIInterfaceOrientationLandscapeRight"));
-
-        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("CFBundleSupportedPlatforms"));
-        xml_node CFBundleSupportedPlatforms = dict.append_child(PUGIXML_TEXT("array"));
-        CFBundleSupportedPlatforms.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("iPhoneOS"));
-
-#undef ADD_ENTRY
-#undef ADD_ENTRY_STR
-
-        if (!doc.save_file(*StringAnsi(plistPath)))
-        {
-            LOG(Error, "Failed to save {0}", plistPath);
-            return true;
-        }
-    }
-
-    // TODO: expose event to inject custom post-processing before app packaging (eg. third-party plugins)
-
-    // Run code signing for Apple platform
-    if (EditorUtilities::CodeSignApple(data.DataOutputPath, GetPlatform(), *platformSettings))
+        LOG(Error, "Failed to deploy XCode project to {0} from {1}", data.OriginalOutputPath, platformDataPath);
         return true;
+    }
+
+    // Format project template files
+    Dictionary<String, String> configReplaceMap;
+    configReplaceMap[TEXT("${AppName}")] = appName;
+    configReplaceMap[TEXT("${AppIdentifier}")] = appIdentifier;
+    configReplaceMap[TEXT("${AppTeamId}")] = platformSettings->AppTeamId;
+    configReplaceMap[TEXT("${AppVersion}")] = TEXT("1"); // TODO: expose to iOS platform settings (matches CURRENT_PROJECT_VERSION in XCode)
+    configReplaceMap[TEXT("${ProjectName}")] = gameSettings->ProductName;
+    configReplaceMap[TEXT("${ProjectVersion}")] = projectVersion;
+    configReplaceMap[TEXT("${HeaderSearchPaths}")] = Globals::StartupFolder;
+    // TODO: screen rotation settings in XCode project from iOS Platform Settings
+    {
+        // Initialize auto-generated areas as empty
+        configReplaceMap[TEXT("${PBXBuildFile}")] = String::Empty;
+        configReplaceMap[TEXT("${PBXCopyFilesBuildPhaseFiles}")] = String::Empty;
+        configReplaceMap[TEXT("${PBXFileReference}")] = String::Empty;
+        configReplaceMap[TEXT("${PBXFrameworksBuildPhase}")] = String::Empty;
+        configReplaceMap[TEXT("${PBXFrameworksGroup}")] = String::Empty;
+        configReplaceMap[TEXT("${PBXFilesGroup}")] = String::Empty;
+        configReplaceMap[TEXT("${PBXResourcesGroup}")] = String::Empty;
+    }
+    {
+        // Rename dotnet license files to not mislead the actual game licensing
+        FileSystem::MoveFile(data.DataOutputPath / TEXT("Dotnet/DOTNET-LICENSE.TXT"), data.DataOutputPath / TEXT("Dotnet/LICENSE.TXT"), true);
+        FileSystem::MoveFile(data.DataOutputPath / TEXT("Dotnet/DOTNET-THIRD-PARTY-NOTICES.TXT"), data.DataOutputPath / TEXT("Dotnet/THIRD-PARTY-NOTICES.TXT"), true);
+    }
+    Array<String> files;
+    FileSystem::DirectoryGetFiles(files, data.DataOutputPath, TEXT("*"), DirectorySearchOption::AllDirectories);
+    for (const String& file : files)
+    {
+        String name = StringUtils::GetFileName(file);
+        if (name == TEXT(".DS_Store") || name == TEXT("FlaxGame"))
+            continue;
+        String fileId = Guid::New().ToString(Guid::FormatType::N).Left(24);
+        String projectPath = FileSystem::ConvertAbsolutePathToRelative(data.DataOutputPath, file);
+        if (name.EndsWith(TEXT(".dylib")))
+        {
+            String frameworkId = Guid::New().ToString(Guid::FormatType::N).Left(24);
+            String frameworkEmbedId = Guid::New().ToString(Guid::FormatType::N).Left(24);
+            configReplaceMap[TEXT("${PBXBuildFile}")] += String::Format(TEXT("\t\t{0} /* {1} in Frameworks */ = {{isa = PBXBuildFile; fileRef = {2} /* {1} */; }};\n"), frameworkId, name, fileId);
+            configReplaceMap[TEXT("${PBXBuildFile}")] += String::Format(TEXT("\t\t{0} /* {1} in Embed Frameworks */ = {{isa = PBXBuildFile; fileRef = {2} /* {1} */; settings = {{ATTRIBUTES = (CodeSignOnCopy, ); }}; }};\n"), frameworkEmbedId, name, fileId);
+            configReplaceMap[TEXT("${PBXCopyFilesBuildPhaseFiles}")] += String::Format(TEXT("\t\t\t\t{0} /* {1} in Embed Frameworks */,\n"), frameworkEmbedId, name);
+            configReplaceMap[TEXT("${PBXFileReference}")] += String::Format(TEXT("\t\t{0} /* {1} */ = {{isa = PBXFileReference; lastKnownFileType = \"compiled.mach-o.dylib\"; name = \"{1}\"; path = \"FlaxGame/Data/{2}\"; sourceTree = \"<group>\"; }};\n"), fileId, name, projectPath);
+            configReplaceMap[TEXT("${PBXFrameworksBuildPhase}")] += String::Format(TEXT("\t\t\t\t{0} /* {1} in Frameworks */,\n"), frameworkId, name);
+            configReplaceMap[TEXT("${PBXFrameworksGroup}")] += String::Format(TEXT("\t\t\t\t{0} /* {1} */,\n"), fileId, name);
+
+            // Fix rpath id
+            // TODO: run this only for dylibs during AOT process (other libs are fine)
+            CreateProcessSettings proc;
+            proc.FileName = TEXT("install_name_tool");
+            proc.Arguments = String::Format(TEXT("-id \"@rpath/{0}\" \"{1}\""), name, file);
+            Platform::CreateProcess(proc);
+        }
+        else
+        {
+            String fileRefId = Guid::New().ToString(Guid::FormatType::N).Left(24);
+            configReplaceMap[TEXT("${PBXBuildFile}")] += String::Format(TEXT("\t\t{0} /* {1} in Resources */ = {{isa = PBXBuildFile; fileRef = {2} /* {1} */; }};\n"), fileRefId, name, fileId);
+            configReplaceMap[TEXT("${PBXFileReference}")] += String::Format(TEXT("\t\t{0} /* {1} */ = {{isa = PBXFileReference; lastKnownFileType = file; name = \"{1}\"; path = \"Data/{2}\"; sourceTree = \"<group>\"; }};\n"), fileId, name, projectPath);
+            configReplaceMap[TEXT("${PBXFilesGroup}")] += String::Format(TEXT("\t\t\t\t{0} /* {1} */,\n"), fileId, name);
+            configReplaceMap[TEXT("${PBXResourcesGroup}")] += String::Format(TEXT("\t\t\t\t{0} /* {1} in Resources */,\n"), fileRefId, name);
+        }
+    }
+    bool failed = false;
+    failed |= EditorUtilities::ReplaceInFile(data.OriginalOutputPath / TEXT("FlaxGame.xcodeproj/project.pbxproj"), configReplaceMap);
+    if (failed)
+    {
+        LOG(Error, "Failed to format XCode project");
+        return true;
+    }
+
+    // TODO: update splash screen images
+
+    // TODO: update game icon
 
     // Package application
     const auto buildSettings = BuildSettings::Get();
@@ -308,6 +253,8 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
         return false;
     GameCooker::PackageFiles();
     LOG(Info, "Building app package...");
+    // TODO: run XCode archive and export
+#if 0
     const String ipaPath = data.OriginalOutputPath / appName + TEXT(".ipa");
     const String ipaCommand = String::Format(TEXT("zip -r -X {0}.ipa Payload iTunesArtwork"), appName);
     const int32 result = Platform::RunProcess(ipaCommand, data.OriginalOutputPath);
@@ -317,6 +264,7 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
         return true;
     }
     LOG(Info, "Output application package: {0} (size: {1} MB)", ipaPath, FileSystem::GetFileSize(ipaPath) / 1024 / 1024);
+#endif
 
     return false;
 }

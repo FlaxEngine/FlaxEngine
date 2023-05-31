@@ -51,7 +51,6 @@
 
 Guid DeviceId;
 String ComputerName;
-NSAutoreleasePool* AutoreleasePool = nullptr;
 
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
 {
@@ -232,7 +231,6 @@ bool MacPlatform::Init()
     // Init application
     [NSApplication sharedApplication];
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
-    AutoreleasePool = [[NSAutoreleasePool alloc] init];
 
     // Init main menu
     NSMenu* mainMenu = [[[NSMenu alloc] initWithTitle:@""] autorelease];
@@ -276,8 +274,7 @@ void MacPlatform::Tick()
         [NSApp sendEvent:event];
     }
 
-    [AutoreleasePool drain];
-    AutoreleasePool = [[NSAutoreleasePool alloc] init];
+    ApplePlatform::Tick();
 }
 
 int32 MacPlatform::GetDpi()
