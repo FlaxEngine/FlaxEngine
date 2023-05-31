@@ -166,7 +166,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private float GetRatio(float value, float initialValue)
         {
-            return Mathf.Abs(value / initialValue);
+            return (initialValue == 0) ? Mathf.Abs(value / 0.0001f) : Mathf.Abs(value / initialValue);
         }
 
         private float NewLinkedValue(float value, float valueRatio)
