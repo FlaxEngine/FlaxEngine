@@ -46,6 +46,7 @@
 CPUInfo Cpu;
 String UserLocale;
 double SecondsPerCycle;
+NSAutoreleasePool* AutoreleasePool = nullptr;
 
 float ApplePlatform::ScreenScale = 1.0f;
 
@@ -268,11 +269,16 @@ bool ApplePlatform::Init()
         OnPlatformUserAdd(New<User>(username));
     }
 
+    AutoreleasePool = [[NSAutoreleasePool alloc] init];
+
     return false;
 }
 
 void ApplePlatform::Tick()
 {
+    // TODO: do it once every X fames
+    [AutoreleasePool drain];
+    AutoreleasePool = [[NSAutoreleasePool alloc] init];
 }
 
 void ApplePlatform::BeforeExit()

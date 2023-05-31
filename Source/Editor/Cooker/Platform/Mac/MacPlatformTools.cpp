@@ -229,8 +229,6 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
 
     // TODO: sign binaries
 
-    // TODO: expose event to inject custom post-processing before app packaging (eg. third-party plugins)
-    
     // Package application
     const auto buildSettings = BuildSettings::Get();
     if (buildSettings->SkipPackaging)

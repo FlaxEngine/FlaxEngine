@@ -30,7 +30,6 @@ private:
     bool _clipCursorSet = false;
     bool _isDuringMaximize = false;
     Windows::HANDLE _monitor = nullptr;
-    Float2 _clientSize;
     Windows::LONG _clipCursorRect[4];
     int32 _regionWidth = 0, _regionHeight = 0;
 
@@ -95,7 +94,7 @@ private:
 
 public:
 
-    // [Window]
+    // [WindowBase]
     void* GetNativePtr() const override;
     void Show() override;
     void Hide() override;
