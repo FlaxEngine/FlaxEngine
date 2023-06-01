@@ -97,6 +97,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     AnchorPreset = AnchorPresets.TopLeft,
                 };
                 _linkButton.Clicked += ToggleLink;
+                ToggleEnabled();
                 SetLinkStyle();
                 var x = LinkedLabel.Text.Value.Length * 7 + 5;
                 _linkButton.LocalX += x;
