@@ -779,8 +779,8 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererD
         static bool bTriggerUpdateAllCascades = false;
         static uint64 lastFrameCount = -1;
         static Matrix lastShadowVP[4];
-
-        if (light.DelayedShadows)
+        
+        if (light.CacheShadows)
         {
             if (cascadeIndex == 0)
             {

@@ -132,6 +132,13 @@ public:
     API_FIELD(Attributes="EditorOrder(60), EditorDisplay(\"Shadow\", \"Mode\")")
     ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
 
+    /// <summary>
+    /// Cache shadows only update shadows each second frame, double the speed of shadows.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(66), DefaultValue(false), EditorDisplay(\"Shadow\")")
+    bool CacheShadows = false;
+
+
 public:
     // [Light]
     void Serialize(SerializeStream& stream, const void* otherObj) override;

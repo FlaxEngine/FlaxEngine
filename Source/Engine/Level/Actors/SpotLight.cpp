@@ -161,6 +161,7 @@ void SpotLight::Draw(RenderContext& renderContext)
         data.CosOuterCone = _cosOuterCone;
         data.InvCosConeDifference = _invCosConeDifference;
         data.ContactShadowsLength = ContactShadowsLength;
+        data.CacheShadows = CacheShadows;
         data.IndirectLightingIntensity = IndirectLightingIntensity;
         data.IESTexture = IESTexture ? IESTexture->GetTexture() : nullptr;
         Float3::Transform(Float3::Up, GetOrientation(), data.UpVector);

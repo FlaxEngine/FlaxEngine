@@ -109,6 +109,7 @@ void PointLight::Draw(RenderContext& renderContext)
         data.UseInverseSquaredFalloff = UseInverseSquaredFalloff;
         data.SourceRadius = SourceRadius;
         data.SourceLength = SourceLength;
+        data.CacheShadows = CacheShadows;
         data.ContactShadowsLength = ContactShadowsLength;
         data.IndirectLightingIntensity = IndirectLightingIntensity;
         data.IESTexture = IESTexture ? IESTexture->GetTexture() : nullptr;

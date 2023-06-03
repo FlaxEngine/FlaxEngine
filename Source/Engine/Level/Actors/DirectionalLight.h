@@ -18,12 +18,6 @@ public:
     API_FIELD(Attributes="EditorOrder(65), DefaultValue(4), Limit(1, 4), EditorDisplay(\"Shadow\")")
     int32 CascadeCount = 4;
 
-    /// <summary>
-    /// Delayed shadows only update cascade shadows each second frame, double the speed of shadows. For best result set shadow distance to 8000+ and change resolution to 2048.
-    /// </summary>
-    API_FIELD(Attributes = "EditorOrder(66), DefaultValue(false), EditorDisplay(\"Shadow\")")
-    bool DelayedShadows = false;
-
 public:
     // [LightWithShadow]
     void Draw(RenderContext& renderContext) override;
