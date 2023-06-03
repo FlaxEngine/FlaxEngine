@@ -214,7 +214,7 @@ public:
     /// </summary>
     /// <param name="index">The index of the item.</param>
     /// <param name="value">The value to set.</param>
-    void Set(int32 index, bool value) const
+    void Set(int32 index, bool value)
     {
         ASSERT(index >= 0 && index < _count);
         const ItemType offset = index / sizeof(ItemType);

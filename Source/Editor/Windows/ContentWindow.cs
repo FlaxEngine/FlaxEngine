@@ -488,7 +488,10 @@ namespace FlaxEditor.Windows
         /// <param name="item">The item to delete.</param>
         public void Delete(ContentItem item)
         {
-            Delete(Editor.Instance.Windows.ContentWin.View.Selection);
+            var items = View.Selection;
+            if (items.Count == 0)
+                items = new List<ContentItem>() { item };
+            Delete(items);
         }
 
         /// <summary>
@@ -608,7 +611,16 @@ namespace FlaxEditor.Windows
         /// <param name="files">The files paths to import.</param>
         public void Paste(string[] files)
         {
-            Editor.ContentImporting.Import(files, CurrentViewFolder);
+            var importFiles = new List<string>();
+            foreach (var sourcePath in files)
+            {
+                var item = Editor.ContentDatabase.Find(sourcePath);
+                if (item != null)
+                    Editor.ContentDatabase.Copy(item, Path.Combine(CurrentViewFolder.Path, item.FileName));
+                else
+                    importFiles.Add(sourcePath);
+            }
+            Editor.ContentImporting.Import(importFiles, CurrentViewFolder);
         }
 
         /// <summary>

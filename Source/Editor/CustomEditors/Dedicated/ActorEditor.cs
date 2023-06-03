@@ -20,7 +20,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
     /// </summary>
     /// <seealso cref="FlaxEditor.CustomEditors.Editors.GenericEditor" />
     [CustomEditor(typeof(Actor)), DefaultEditor]
-    public class ActorEditor : GenericEditor
+    public class ActorEditor : ScriptingObjectEditor
     {
         private Guid _linkedPrefabId;
 

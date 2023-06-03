@@ -948,7 +948,7 @@ namespace Flax.Build.Bindings
             var separator = false;
             if (!functionInfo.IsStatic)
             {
-                contents.Append(string.Format("{0}* obj", caller.Name));
+                contents.Append(string.Format("{0}* __obj", caller.Name));
                 separator = true;
             }
 
@@ -1025,7 +1025,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine();
             contents.AppendLine("    {");
             if (!functionInfo.IsStatic)
-                contents.AppendLine("        if (obj == nullptr) DebugLog::ThrowNullReference();");
+                contents.AppendLine("        if (__obj == nullptr) DebugLog::ThrowNullReference();");
 
             string callBegin = "        ";
             if (functionInfo.Glue.UseReferenceForResult)
@@ -1052,7 +1052,7 @@ namespace Flax.Build.Bindings
             else
             {
                 // Call native member method
-                call = $"obj->{functionInfo.Name}";
+                call = $"__obj->{functionInfo.Name}";
             }
             string callParams = string.Empty;
             separator = false;
@@ -1760,7 +1760,7 @@ namespace Flax.Build.Bindings
                     continue;
                 var paramsCount = eventInfo.Type.GenericArgs?.Count ?? 0;
                 CppIncludeFiles.Add("Engine/Profiler/ProfilerCPU.h");
-                var bindPrefix = eventInfo.IsStatic ? classTypeNameNative + "::" : "obj->";
+                var bindPrefix = eventInfo.IsStatic ? classTypeNameNative + "::" : "__obj->";
 
                 if (useCSharp)
                 {
@@ -1838,7 +1838,7 @@ namespace Flax.Build.Bindings
                     CppInternalCalls.Add(new KeyValuePair<string, string>(eventInfo.Name + "_Bind", eventInfo.Name + "_ManagedBind"));
                     contents.AppendFormat("    static void {0}_ManagedBind(", eventInfo.Name);
                     if (!eventInfo.IsStatic)
-                        contents.AppendFormat("{0}* obj, ", classTypeNameNative);
+                        contents.AppendFormat("{0}* __obj, ", classTypeNameNative);
                     contents.Append("bool bind)").AppendLine();
                     contents.Append("    {").AppendLine();
                     contents.Append("        Function<void(");
@@ -1852,7 +1852,7 @@ namespace Flax.Build.Bindings
                     if (eventInfo.IsStatic)
                         contents.AppendFormat("        f.Bind<{0}_ManagedWrapper>();", eventInfo.Name).AppendLine();
                     else
-                        contents.AppendFormat("        f.Bind<{1}Internal, &{1}Internal::{0}_ManagedWrapper>(({1}Internal*)obj);", eventInfo.Name, classTypeNameInternal).AppendLine();
+                        contents.AppendFormat("        f.Bind<{1}Internal, &{1}Internal::{0}_ManagedWrapper>(({1}Internal*)__obj);", eventInfo.Name, classTypeNameInternal).AppendLine();
                     contents.Append("        if (bind)").AppendLine();
                     contents.AppendFormat("            {0}{1}.Bind(f);", bindPrefix, eventInfo.Name).AppendLine();
                     contents.Append("        else").AppendLine();
@@ -1890,7 +1890,7 @@ namespace Flax.Build.Bindings
 
                 // Scripting event wrapper binding method (binds/unbinds generic wrapper to C++ delegate)
                 contents.AppendFormat("    static void {0}_Bind(", eventInfo.Name);
-                contents.AppendFormat("{0}* obj, void* instance, bool bind)", classTypeNameNative).AppendLine();
+                contents.AppendFormat("{0}* __obj, void* instance, bool bind)", classTypeNameNative).AppendLine();
                 contents.Append("    {").AppendLine();
                 contents.Append("        Function<void(");
                 for (var i = 0; i < paramsCount; i++)
@@ -2339,7 +2339,7 @@ namespace Flax.Build.Bindings
                 contents.AppendLine("        auto typeHandle = Object->GetTypeHandle();");
                 contents.AppendLine("        while (typeHandle)");
                 contents.AppendLine("        {");
-                contents.AppendLine($"            auto method = typeHandle.Module->FindMethod(typeHandle, \"{functionInfo.Name}\", {functionInfo.Parameters.Count});");
+                contents.AppendLine($"            auto method = typeHandle.Module->FindMethod(typeHandle, StringAnsiView(\"{functionInfo.Name}\", {functionInfo.Name.Length}), {functionInfo.Parameters.Count});");
                 contents.AppendLine("            if (method)");
                 contents.AppendLine("            {");
                 contents.AppendLine("                Variant __result;");
@@ -2378,10 +2378,10 @@ namespace Flax.Build.Bindings
             contents.AppendLine("    }").AppendLine();
 
             // Interface implementation wrapper accessor for scripting types
-            contents.AppendLine("    static void* GetInterfaceWrapper(ScriptingObject* obj)");
+            contents.AppendLine("    static void* GetInterfaceWrapper(ScriptingObject* __obj)");
             contents.AppendLine("    {");
             contents.AppendLine($"        auto wrapper = New<{interfaceTypeNameInternal}Wrapper>();");
-            contents.AppendLine("        wrapper->Object = obj;");
+            contents.AppendLine("        wrapper->Object = __obj;");
             contents.AppendLine("        return wrapper;");
             contents.AppendLine("    }");
 

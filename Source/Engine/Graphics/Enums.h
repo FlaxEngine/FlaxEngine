@@ -360,7 +360,7 @@ API_ENUM() enum class CullMode : byte
 /// <summary>
 /// Render target blending mode descriptor.
 /// </summary>
-API_STRUCT() struct BlendingMode
+API_STRUCT() struct FLAXENGINE_API BlendingMode
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(BlendingMode);
 

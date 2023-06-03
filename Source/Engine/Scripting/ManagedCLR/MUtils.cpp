@@ -191,10 +191,9 @@ ScriptingTypeHandle MUtils::UnboxScriptingTypeHandle(MonoReflectionType* value)
     MonoClass* klass = GetClass(value);
     if (!klass)
         return ScriptingTypeHandle();
-    const MString typeName = MUtils::GetClassFullname(klass);
-    const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeName);
+    const ScriptingTypeHandle typeHandle = ManagedBinaryModule::FindType(klass);
     if (!typeHandle)
-        LOG(Warning, "Unknown scripting type {}", String(typeName));
+        LOG(Warning, "Unknown scripting type {}", String(MUtils::GetClassFullname(klass)));
     return typeHandle;
 }
 

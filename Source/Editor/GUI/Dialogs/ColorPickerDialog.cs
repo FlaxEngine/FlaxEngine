@@ -25,6 +25,7 @@ namespace FlaxEditor.GUI.Dialogs
     {
         private const float ButtonsWidth = 60.0f;
         private const float PickerMargin = 6.0f;
+        private const float EyedropperMargin = 8.0f;
         private const float RGBAMargin = 12.0f;
         private const float HSVMargin = 0.0f;
         private const float ChannelsMargin = 4.0f;
@@ -34,6 +35,7 @@ namespace FlaxEditor.GUI.Dialogs
         private Color _value;
         private bool _disableEvents;
         private bool _useDynamicEditing;
+        private bool _activeEyedropper;
         private ColorValueBox.ColorPickerEvent _onChanged;
         private ColorValueBox.ColorPickerClosedEvent _onClosed;
 
@@ -48,6 +50,7 @@ namespace FlaxEditor.GUI.Dialogs
         private TextBox _cHex;
         private Button _cCancel;
         private Button _cOK;
+        private Button _cEyedropper;
 
         /// <summary>
         /// Gets the selected color.
@@ -192,8 +195,42 @@ namespace FlaxEditor.GUI.Dialogs
             };
             _cOK.Clicked += OnSubmit;
 
+            // Eyedropper button
+            var style = Style.Current;
+            _cEyedropper = new Button(_cOK.X - EyedropperMargin, _cHex.Bottom + PickerMargin)
+            {
+                TooltipText = "Eyedropper tool to pick a color directly from the screen",
+                BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Search32),
+                BackgroundColor = style.Foreground,
+                BackgroundColorHighlighted = style.Foreground.RGBMultiplied(0.9f),
+                BorderColor = Color.Transparent,
+                BorderColorHighlighted = style.BorderSelected,
+                Parent = this,
+            };
+            _cEyedropper.Clicked += OnEyedropStart;
+            _cEyedropper.Height = (_cValue.Bottom - _cEyedropper.Y) * 0.5f;
+            _cEyedropper.Width = _cEyedropper.Height;
+            _cEyedropper.X -= _cEyedropper.Width;
+
             // Set initial color
             SelectedColor = initialValue;
+        }
+
+        private void OnColorPicked(Color32 colorPicked)
+        {
+            if (_activeEyedropper)
+            {
+                _activeEyedropper = false;
+                SelectedColor = colorPicked;
+                ScreenUtilities.PickColorDone -= OnColorPicked;
+            }
+        }
+
+        private void OnEyedropStart()
+        {
+            _activeEyedropper = true;
+            ScreenUtilities.PickColor();
+            ScreenUtilities.PickColorDone += OnColorPicked;
         }
 
         private void OnRGBAChanged()
@@ -219,6 +256,19 @@ namespace FlaxEditor.GUI.Dialogs
 
             if (Color.TryParseHex(_cHex.Text, out Color color))
                 SelectedColor = color;
+        }
+
+        /// <inheritdoc />
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+
+            // Update eye dropper tool
+            if (_activeEyedropper)
+            {
+                Float2 mousePosition = Platform.MousePosition;
+                SelectedColor = ScreenUtilities.GetColorAt(mousePosition);
+            }
         }
 
         /// <inheritdoc />
@@ -272,6 +322,20 @@ namespace FlaxEditor.GUI.Dialogs
             ((WindowRootControl)Root).Window.LostFocus += OnCancel;
 
             base.OnShow();
+        }
+
+        /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            if (_activeEyedropper && key == KeyboardKeys.Escape)
+            {
+                // Cancel eye dropping
+                _activeEyedropper = false;
+                ScreenUtilities.PickColorDone -= OnColorPicked;
+                return true;
+            }
+
+            return base.OnKeyDown(key);
         }
 
         /// <inheritdoc />

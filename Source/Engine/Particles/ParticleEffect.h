@@ -184,6 +184,7 @@ private:
     uint32 _parametersVersion = 0; // Version number for _parameters to be in sync with Instance.ParametersVersion
     Array<ParticleEffectParameter> _parameters; // Cached for scripting API
     Array<ParameterOverride> _parametersOverrides; // Cached parameter modifications to be applied to the parameters
+    bool _isPlaying = false;
 
 public:
     /// <summary>
@@ -235,9 +236,15 @@ public:
     bool IsLooping = true;
 
     /// <summary>
-    /// If true, the particle simulation will be updated even when an actor cannot be seen by any camera. Otherwise, the simulation will stop running when the actor is off-screen.
+    /// Determines whether the particle effect should play on start.
     /// </summary>
     API_FIELD(Attributes="EditorDisplay(\"Particle Effect\"), DefaultValue(true), EditorOrder(60)")
+    bool PlayOnStart = true;
+
+    /// <summary>
+    /// If true, the particle simulation will be updated even when an actor cannot be seen by any camera. Otherwise, the simulation will stop running when the actor is off-screen.
+    /// </summary>
+    API_FIELD(Attributes="EditorDisplay(\"Particle Effect\"), DefaultValue(true), EditorOrder(70)")
     bool UpdateWhenOffscreen = true;
 
     /// <summary>
@@ -327,6 +334,11 @@ public:
     API_PROPERTY() int32 GetParticlesCount() const;
 
     /// <summary>
+    /// Gets whether or not the particle effect is playing.
+    /// </summary>
+    API_PROPERTY(Attributes="NoSerialize, HideInEditor") bool GetIsPlaying() const;
+
+    /// <summary>
     /// Resets the particles simulation state (clears the instance state data but preserves the instance parameters values).
     /// </summary>
     API_FUNCTION() void ResetSimulation();
@@ -336,6 +348,21 @@ public:
     /// </summary>
     /// <param name="singleFrame">True if update animation by a single frame only (time time since last engine update), otherwise will update simulation with delta time since last update.</param>
     API_FUNCTION() void UpdateSimulation(bool singleFrame = false);
+
+    /// <summary>
+    /// Plays the simulation.
+    /// </summary>
+    API_FUNCTION() void Play();
+
+    /// <summary>
+    /// Pauses the simulation.
+    /// </summary>
+    API_FUNCTION() void Pause();
+
+    /// <summary>
+    /// Stops and resets the simulation.
+    /// </summary>
+    API_FUNCTION() void Stop();
 
     /// <summary>
     /// Updates the actor bounds.

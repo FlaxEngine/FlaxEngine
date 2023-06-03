@@ -450,7 +450,7 @@ namespace Flax.Build.Bindings
             var separator = false;
             if (!functionInfo.IsStatic)
             {
-                contents.Append("IntPtr obj");
+                contents.Append("IntPtr __obj");
                 separator = true;
             }
 

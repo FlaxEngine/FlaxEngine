@@ -157,6 +157,11 @@ namespace Flax.Build.NativeCpp
         /// </summary>
         public readonly List<string> IncludePaths = new List<string>();
 
+        /// <summary>
+        /// The collection of custom arguments to pass to the compilator.
+        /// </summary>
+        public readonly HashSet<string> CustomArgs = new HashSet<string>();
+
         /// <inheritdoc />
         public object Clone()
         {
@@ -183,6 +188,7 @@ namespace Flax.Build.NativeCpp
             };
             clone.PreprocessorDefinitions.AddRange(PreprocessorDefinitions);
             clone.IncludePaths.AddRange(IncludePaths);
+            clone.CustomArgs.AddRange(CustomArgs);
             return clone;
         }
     }

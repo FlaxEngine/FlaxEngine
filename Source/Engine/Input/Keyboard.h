@@ -26,9 +26,8 @@ protected:
 
 public:
     /// <summary>
-    /// Gets the text entered during the current frame.
+    /// Gets the text entered during the current frame (Unicode format).
     /// </summary>
-    /// <returns>The input text (Unicode).</returns>
     API_PROPERTY() StringView GetInputText() const
     {
         return StringView(_state.InputText, _state.InputTextLength);

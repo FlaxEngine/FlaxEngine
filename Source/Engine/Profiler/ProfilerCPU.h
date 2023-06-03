@@ -8,7 +8,7 @@
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingType.h"
-#include <ThirdParty/tracy/Tracy.h>
+#include <ThirdParty/tracy/tracy/Tracy.hpp>
 
 #if COMPILE_WITH_PROFILER
 
@@ -106,8 +106,8 @@ public:
         /// Extracts the buffer data (only ended events starting from the root level with depth=0).
         /// </summary>
         /// <param name="data">The output data.</param>
-        /// <param name="withRemove">True if also remove extracted events to prevent double-gather, false if don't modify the buffer data.</param>
-        void Extract(Array<Event, HeapAllocation>& data, bool withRemove);
+        /// <param name="withRemoval">True if also remove extracted events to prevent double-gather, false if don't modify the buffer data.</param>
+        void Extract(Array<Event, HeapAllocation>& data, bool withRemoval);
 
     public:
         /// <summary>

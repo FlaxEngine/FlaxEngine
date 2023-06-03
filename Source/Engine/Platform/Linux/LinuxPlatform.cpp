@@ -88,6 +88,7 @@ X11::Cursor Cursors[(int32)CursorType::MAX];
 X11::XcursorImage* CursorsImg[(int32)CursorType::MAX];
 Dictionary<StringAnsi, X11::KeyCode> KeyNameMap;
 Array<KeyboardKeys> KeyCodeMap;
+Delegate<void*> LinuxPlatform::xEventRecieved;
 
 // Message boxes configuration
 #define LINUX_DIALOG_MIN_BUTTON_WIDTH 64
@@ -2047,12 +2048,12 @@ bool LinuxPlatform::Init()
     // Get user locale string
     setlocale(LC_ALL, "");
     const char* locale = setlocale(LC_CTYPE, NULL);
-    if (strcmp(locale, "C") == 0)
-        locale = "";
     UserLocale = String(locale);
     if (UserLocale.FindLast('.') != -1)
         UserLocale = UserLocale.Left(UserLocale.Find('.'));
     UserLocale.Replace('_', '-');
+    if (UserLocale == TEXT("C"))
+        UserLocale = TEXT("en");
 
     // Get computer name string
     gethostname(buffer, UNIX_APP_BUFF_SIZE);
@@ -2231,9 +2232,11 @@ void LinuxPlatform::Tick()
 	{
 		X11::XEvent event;
 		X11::XNextEvent(xDisplay, &event);
-
 		if (X11::XFilterEvent(&event, 0))
 			continue;
+
+        // External event handling
+		xEventRecieved(&event);
 
 		LinuxWindow* window;
 		switch (event.type)
@@ -2639,10 +2642,8 @@ Float2 LinuxPlatform::GetMousePosition()
 {
     if (!xDisplay)
         return Float2::Zero;
-
-	int32 x, y;
+	int32 x = 0, y = 0;
 	uint32 screenCount = (uint32)X11::XScreenCount(xDisplay);
-
 	for (uint32 i = 0; i < screenCount; i++)
 	{
 		X11::Window outRoot, outChild;
@@ -2651,7 +2652,6 @@ Float2 LinuxPlatform::GetMousePosition()
 		if (X11::XQueryPointer(xDisplay, X11::XRootWindow(xDisplay, i), &outRoot, &outChild, &x, &y, &childX, &childY, &mask))
 			break;
 	}
-
 	return Float2((float)x, (float)y);
 }
 

@@ -29,34 +29,6 @@ namespace FlaxEngine.GUI
             return ((CanvasRootControl)a).Canvas.Order - ((CanvasRootControl)b).Canvas.Order;
         }
 
-        private bool IntersectsChildContent(CanvasRootControl child, ref Ray ray, out Float2 childSpaceLocation)
-        {
-            // Inline bounds calculations (it will reuse world matrix)
-            var bounds = new OrientedBoundingBox
-            {
-                Extents = new Vector3(child.Size * 0.5f, Mathf.Epsilon)
-            };
-
-            child.Canvas.GetWorldMatrix(out var world);
-            Matrix.Translation((float)bounds.Extents.X, (float)bounds.Extents.Y, 0, out var offset);
-            Matrix.Multiply(ref offset, ref world, out var boxWorld);
-            boxWorld.Decompose(out bounds.Transformation);
-
-            // Hit test
-            if (bounds.Intersects(ref ray, out Vector3 hitPoint))
-            {
-                // Transform world-space hit point to canvas local-space
-                world.Invert();
-                Vector3.Transform(ref hitPoint, ref world, out Vector3 localHitPoint);
-
-                childSpaceLocation = new Float2(localHitPoint);
-                return child.ContainsPoint(ref childSpaceLocation);
-            }
-
-            childSpaceLocation = Float2.Zero;
-            return false;
-        }
-
         /// <inheritdoc />
         public override void OnChildrenChanged()
         {
@@ -102,7 +74,7 @@ namespace FlaxEngine.GUI
                 var child = (CanvasRootControl)_children[i];
                 if (child.Visible && child.Enabled && child.Is3D)
                 {
-                    if (IntersectsChildContent(child, ref ray, out var childLocation))
+                    if (child.Intersects3D(ref ray, out var childLocation))
                     {
                         child.OnMouseEnter(childLocation);
                         return;
@@ -148,7 +120,7 @@ namespace FlaxEngine.GUI
                     }
                     else
                     {
-                        if (!isFirst3DHandled && IntersectsChildContent(child, ref ray, out var childLocation))
+                        if (!isFirst3DHandled && child.Intersects3D(ref ray, out var childLocation))
                         {
                             isFirst3DHandled = true;
 
@@ -189,7 +161,7 @@ namespace FlaxEngine.GUI
                 var child = (CanvasRootControl)_children[i];
                 if (child.Visible && child.Enabled && child.Is3D)
                 {
-                    if (IntersectsChildContent(child, ref ray, out var childLocation))
+                    if (child.Intersects3D(ref ray, out var childLocation))
                     {
                         child.OnMouseWheel(childLocation, delta);
                         return true;
@@ -216,7 +188,7 @@ namespace FlaxEngine.GUI
                 var child = (CanvasRootControl)_children[i];
                 if (child.Visible && child.Enabled && child.Is3D)
                 {
-                    if (IntersectsChildContent(child, ref ray, out var childLocation))
+                    if (child.Intersects3D(ref ray, out var childLocation))
                     {
                         child.OnMouseDown(childLocation, button);
                         return true;
@@ -243,7 +215,7 @@ namespace FlaxEngine.GUI
                 var child = (CanvasRootControl)_children[i];
                 if (child.Visible && child.Enabled && child.Is3D)
                 {
-                    if (IntersectsChildContent(child, ref ray, out var childLocation))
+                    if (child.Intersects3D(ref ray, out var childLocation))
                     {
                         child.OnMouseUp(childLocation, button);
                         return true;
@@ -270,7 +242,7 @@ namespace FlaxEngine.GUI
                 var child = (CanvasRootControl)_children[i];
                 if (child.Visible && child.Enabled && child.Is3D)
                 {
-                    if (IntersectsChildContent(child, ref ray, out var childLocation))
+                    if (child.Intersects3D(ref ray, out var childLocation))
                     {
                         child.OnMouseDoubleClick(childLocation, button);
                         return true;

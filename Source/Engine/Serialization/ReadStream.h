@@ -5,6 +5,8 @@
 #include "Stream.h"
 #include "Engine/Core/Templates.h"
 
+extern FLAXENGINE_API class ScriptingObject* FindObject(const Guid& id, class MClass* type);
+
 /// <summary>
 /// Base class for all data read streams
 /// </summary>

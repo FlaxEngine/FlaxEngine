@@ -47,37 +47,37 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the color of the text.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The color of the text.")]
+        [EditorDisplay("Text Style"), EditorOrder(2010), Tooltip("The color of the text."), ExpandGroups]
         public Color TextColor { get; set; }
 
         /// <summary>
         /// Gets or sets the color of the text when it is highlighted (mouse is over).
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000), Tooltip("The color of the text when it is highlighted (mouse is over).")]
+        [EditorDisplay("Text Style"), EditorOrder(2011), Tooltip("The color of the text when it is highlighted (mouse is over).")]
         public Color TextColorHighlighted { get; set; }
 
         /// <summary>
         /// Gets or sets the horizontal text alignment within the control bounds.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2010), Tooltip("The horizontal text alignment within the control bounds.")]
+        [EditorDisplay("Text Style"), EditorOrder(2020), Tooltip("The horizontal text alignment within the control bounds.")]
         public TextAlignment HorizontalAlignment { get; set; } = TextAlignment.Center;
 
         /// <summary>
         /// Gets or sets the vertical text alignment within the control bounds.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2020), Tooltip("The vertical text alignment within the control bounds.")]
+        [EditorDisplay("Text Style"), EditorOrder(2021), Tooltip("The vertical text alignment within the control bounds.")]
         public TextAlignment VerticalAlignment { get; set; } = TextAlignment.Center;
 
         /// <summary>
         /// Gets or sets the text wrapping within the control bounds.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2030), Tooltip("The text wrapping within the control bounds.")]
+        [EditorDisplay("Text Style"), EditorOrder(2022), Tooltip("The text wrapping within the control bounds.")]
         public TextWrapping Wrapping { get; set; } = TextWrapping.NoWrap;
 
         /// <summary>
         /// Gets or sets the font.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
+        [EditorDisplay("Text Style"), EditorOrder(2023)]
         public FontReference Font
         {
             get => _font;
@@ -99,7 +99,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
         /// </summary>
-        [EditorDisplay("Style"), EditorOrder(2000)]
+        [EditorDisplay("Text Style"), EditorOrder(2024)]
         public MaterialBase Material { get; set; }
 
         /// <summary>

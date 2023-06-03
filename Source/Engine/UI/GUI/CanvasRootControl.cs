@@ -40,6 +40,40 @@ namespace FlaxEngine.GUI
             _canvas = canvas;
         }
 
+        /// <summary>
+        /// Checks if the 3D canvas intersects with a given 3D mouse ray.
+        /// </summary>
+        /// <param name="ray">The input ray to test (in world-space).</param>
+        /// <param name="canvasLocation">Output canvas-space local position.</param>
+        /// <returns>True if canvas intersects with that point, otherwise false.</returns>
+        public bool Intersects3D(ref Ray ray, out Float2 canvasLocation)
+        {
+            // Inline bounds calculations (it will reuse world matrix)
+            var bounds = new OrientedBoundingBox
+            {
+                Extents = new Vector3(Size * 0.5f, Mathf.Epsilon)
+            };
+
+            _canvas.GetWorldMatrix(out var world);
+            Matrix.Translation((float)bounds.Extents.X, (float)bounds.Extents.Y, 0, out var offset);
+            Matrix.Multiply(ref offset, ref world, out var boxWorld);
+            boxWorld.Decompose(out bounds.Transformation);
+
+            // Hit test
+            if (bounds.Intersects(ref ray, out Vector3 hitPoint))
+            {
+                // Transform world-space hit point to canvas local-space
+                world.Invert();
+                Vector3.Transform(ref hitPoint, ref world, out Vector3 localHitPoint);
+
+                canvasLocation = new Float2(localHitPoint);
+                return ContainsPoint(ref canvasLocation);
+            }
+
+            canvasLocation = Float2.Zero;
+            return false;
+        }
+
         /// <inheritdoc />
         public override CursorType Cursor
         {
@@ -133,6 +167,22 @@ namespace FlaxEngine.GUI
             Vector3 locationCanvasSpace = new Vector3(location, 0.0f);
             Vector3.Transform(ref locationCanvasSpace, ref world, out Vector3 locationWorldSpace);
             camera.ProjectPoint(locationWorldSpace, out location);
+            return location;
+        }
+
+        /// <inheritdoc />
+        public override Float2 PointFromParent(ref Float2 locationParent)
+        {
+            if (Is2D)
+                return base.PointFromParent(ref locationParent);
+
+            var camera = Camera.MainCamera;
+            if (!camera)
+                return locationParent;
+
+            // Use world-space ray to convert it to the local-space of the canvas
+            UICanvas.CalculateRay(ref locationParent, out Ray ray);
+            Intersects3D(ref ray, out var location);
             return location;
         }
 

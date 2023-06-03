@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System.Text;
 using FlaxEngine;
 
 namespace FlaxEditor.Content
@@ -40,9 +41,18 @@ namespace FlaxEditor.Content
         public override ContentItemSearchFilter SearchFilter => ContentItemSearchFilter.Other;
 
         /// <inheritdoc />
+        public override string TypeDescription => "New";
+
+        /// <inheritdoc />
         public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.Document128;
 
         /// <inheritdoc />
         protected override bool DrawShadow => true;
+
+        /// <inheritdoc />
+        public override void UpdateTooltipText()
+        {
+            TooltipText = null;
+        }
     }
 }

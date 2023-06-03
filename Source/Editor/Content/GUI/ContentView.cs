@@ -692,10 +692,13 @@ namespace FlaxEditor.Content.GUI
                 c = char.ToLowerInvariant(c);
                 for (int i = 0; i < _items.Count; i++)
                 {
-                    var name = _items[i].ShortName;
+                    var item = _items[i];
+                    var name = item.ShortName;
                     if (!string.IsNullOrEmpty(name) && char.ToLowerInvariant(name[0]) == c)
                     {
-                        Select(_items[i]);
+                        Select(item);
+                        if (Parent is Panel panel)
+                            panel.ScrollViewTo(item, true);
                         break;
                     }
                 }

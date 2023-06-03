@@ -317,11 +317,12 @@ bool NetworkManager::StartHost()
     LocalClient = New<NetworkClient>(LocalClientId, NetworkConnection{ 0 });
 
     // Auto-connect host
+    LocalClient->State = NetworkConnectionState::Connecting;
+    State = NetworkConnectionState::Connected;
+    StateChanged();
     LocalClient->State = NetworkConnectionState::Connected;
     ClientConnected(LocalClient);
 
-    State = NetworkConnectionState::Connected;
-    StateChanged();
     return false;
 }
 

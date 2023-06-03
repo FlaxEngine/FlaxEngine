@@ -28,6 +28,9 @@ namespace FlaxEditor.Content
         public override ContentItemSearchFilter SearchFilter => ContentItemSearchFilter.Scene;
 
         /// <inheritdoc />
+        public override string TypeDescription => "Scene";
+
+        /// <inheritdoc />
         public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.Scene128;
 
         /// <inheritdoc />

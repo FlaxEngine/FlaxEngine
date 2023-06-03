@@ -24,7 +24,7 @@ ProfilerCPU::EventBuffer::~EventBuffer()
     DeleteArray(_data, _capacity);
 }
 
-void ProfilerCPU::EventBuffer::Extract(Array<Event>& data, bool withRemove)
+void ProfilerCPU::EventBuffer::Extract(Array<Event>& data, bool withRemoval)
 {
     data.Clear();
 
@@ -35,6 +35,13 @@ void ProfilerCPU::EventBuffer::Extract(Array<Event>& data, bool withRemove)
     // Skip if empty
     if (count == 0)
         return;
+
+    // Fix iterators when buffer is full (begin == end)
+    if (count == capacity)
+    {
+        _count--;
+        count--;
+    }
 
     // Find the first item (skip non-root events)
     Iterator firstEvent = Begin();
@@ -55,7 +62,7 @@ void ProfilerCPU::EventBuffer::Extract(Array<Event>& data, bool withRemove)
     Iterator lastEndedRoot = End();
     for (auto i = Last(); i != firstEvent; --i)
     {
-        if (i.Event().Depth == 0 && i.Event().End != 0)
+        if (i.Event().Depth == 0 && i.Event().End > 0)
         {
             lastEndedRoot = i;
             break;
@@ -71,31 +78,27 @@ void ProfilerCPU::EventBuffer::Extract(Array<Event>& data, bool withRemove)
     const double lastRootEventEndTime = lastEndedRoot.Event().End;
     for (auto i = --End(); i != lastEndedRoot; --i)
     {
-        if (i.Event().End != 0 && i.Event().End <= lastRootEventEndTime)
+        if (i.Event().End > 0 && i.Event().End <= lastRootEventEndTime)
         {
             lastEvent = i;
             break;
         }
     }
 
-    if (withRemove)
+    if (withRemoval)
     {
         // Remove all the events between [Begin(), lastEvent]
         _count -= (lastEvent.Index() - Begin().Index()) & _capacityMask;
     }
 
     // Extract all the events between [firstEvent, lastEvent]
-
     const int32 head = (lastEvent.Index() + 1) & _capacityMask;
     count = (lastEvent.Index() - firstEvent.Index() + 1) & _capacityMask;
-
     data.Resize(count, false);
-
-    int32 tail = (head - count) & _capacityMask;
-    int32 spaceLeft = capacity - tail;
-    int32 spaceLeftCount = Math::Min(spaceLeft, count);
-    int32 overflow = count - spaceLeft;
-
+    const int32 tail = (head - count) & _capacityMask;
+    const int32 spaceLeft = capacity - tail;
+    const int32 spaceLeftCount = Math::Min(spaceLeft, count);
+    const int32 overflow = count - spaceLeft;
     Platform::MemoryCopy(data.Get(), &_data[tail], spaceLeftCount * sizeof(Event));
     if (overflow > 0)
         Platform::MemoryCopy(data.Get() + spaceLeftCount, &_data[0], overflow * sizeof(Event));
