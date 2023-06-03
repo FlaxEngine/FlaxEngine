@@ -397,6 +397,7 @@ public:
     /// <returns>Found actors list.</returns>
     API_FUNCTION() static Array<Actor*> GetActors(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type);
 
+
     /// <summary>
     /// Finds all the scripts of the given type in all the loaded scenes.
     /// </summary>
@@ -478,6 +479,8 @@ public:
     /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
     /// <returns>Found actors or empty if none.</returns>
     API_FUNCTION() static Array<Actor*> FindActors(const Tag& tag, Actor* root = nullptr);
+
+    API_FUNCTION() static Array<Actor*> FindActorsByParentTag(const Tag& tag, Actor* root = nullptr);
 
 private:
     // Actor API
