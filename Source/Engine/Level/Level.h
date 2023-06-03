@@ -465,22 +465,28 @@ public:
 
 public:
     /// <summary>
-    /// Tries to find the actor with the given tag (returns the first one found).
+    /// Tries to find the actor with the given parentTag (returns the first one found).
     /// </summary>
-    /// <param name="tag">The tag of the actor to search for.</param>
+    /// <param name="parentTag">The parentTag of the actor to search for.</param>
     /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
     /// <returns>Found actor or null.</returns>
     API_FUNCTION() static Actor* FindActor(const Tag& tag, Actor* root = nullptr);
 
     /// <summary>
-    /// Tries to find the actors with the given tag (returns all found).
+    /// Tries to find the actors with the given parentTag (returns all found).
     /// </summary>
-    /// <param name="tag">The tag of the actor to search for.</param>
+    /// <param name="parentTag">The parentTag of the actor to search for.</param>
     /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
     /// <returns>Found actors or empty if none.</returns>
     API_FUNCTION() static Array<Actor*> FindActors(const Tag& tag, Actor* root = nullptr);
 
-    API_FUNCTION() static Array<Actor*> FindActorsByParentTag(const Tag& tag, Actor* root = nullptr);
+    /// <summary>
+    /// Search actors using a parent parentTag.
+    /// </summary>
+    /// <param name="parentTag">The tag to search actors with subtags belonging to this tag</param>
+    /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
+    /// <returns>Returns all actors that have subtags belonging to the given parent parentTag</returns>
+    API_FUNCTION() static Array<Actor*> FindActorsByParentTag(const Tag& parentTag, Actor* root = nullptr);
 
 private:
     // Actor API
