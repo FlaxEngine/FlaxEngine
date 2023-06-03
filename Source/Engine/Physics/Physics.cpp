@@ -218,6 +218,11 @@ void Physics::FlushRequests()
     PhysicsBackend::FlushRequests();
 }
 
+bool Physics::LineCast(const Vector3& start, const Vector3& end, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->LineCast(start, end, layerMask, hitTriggers);
+}
+
 bool Physics::RayCast(const Vector3& origin, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
     return DefaultScene->RayCast(origin, direction, maxDistance, layerMask, hitTriggers);
@@ -448,6 +453,13 @@ void PhysicsScene::CollectResults()
     ASSERT(IsInMainThread());
     PhysicsBackend::EndSimulateScene(_scene);
     _isDuringSimulation = false;
+}
+
+bool PhysicsScene::LineCast(const Vector3& start, const Vector3& end, uint32 layerMask, bool hitTriggers)
+{
+    float distanceToEnd = Vector3::Distance(start, end);
+    Vector3 directionToEnd = (end - start).GetNormalized();
+    return PhysicsBackend::RayCast(_scene, start, directionToEnd, distanceToEnd, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::RayCast(const Vector3& origin, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
