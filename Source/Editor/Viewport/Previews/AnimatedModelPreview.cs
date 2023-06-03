@@ -5,6 +5,7 @@ using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using FlaxEditor.GUI.Input;
 using FlaxEngine.GUI;
+using FlaxEditor.Viewport.Widgets;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport.Previews
@@ -22,6 +23,11 @@ namespace FlaxEditor.Viewport.Previews
         private ContextMenuButton _showCurrentLODButton;
         private bool _playAnimation, _playAnimationOnce;
         private float _playSpeed = 1.0f;
+
+        /// <summary>
+        /// The "PreviewLODS" widget button context menu.
+        /// </summary>
+        private ContextMenu previewLODSWidgetButtonMenu;
 
         /// <summary>
         /// Snaps the preview actor to the world origin.
@@ -135,6 +141,24 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <summary>
+        /// Gets or sets a value that shows LOD statistics
+        /// </summary>
+        public bool ShowCurrentLOD
+        {
+            get => _showCurrentLOD;
+            set
+            {
+                if (_showCurrentLOD == value)
+                    return;
+                _showCurrentLOD = value;
+                if (value)
+                    ShowDebugDraw = true;
+                if (_showCurrentLODButton != null)
+                    _showCurrentLODButton.Checked = value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets a value indicating whether show floor model.
         /// </summary>
         public bool ShowFloor
@@ -216,17 +240,16 @@ namespace FlaxEditor.Viewport.Previews
                 });
                 _showCurrentLODButton.IndexInParent = 2;
 
-                // Preview LOD
+                // PreviewLODS mode widget
+                var PreviewLODSMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
+                previewLODSWidgetButtonMenu = new ContextMenu();
+                previewLODSWidgetButtonMenu.VisibleChanged += PreviewLODSWidgetMenuOnVisibleChanged;
+                var previewLODSModeButton = new ViewportWidgetButton("Preview LOD", SpriteHandle.Invalid, previewLODSWidgetButtonMenu)
                 {
-                    var previewLOD = ViewWidgetButtonMenu.AddButton("Preview LOD");
-                    previewLOD.CloseMenuOnClick = false;
-                    var previewLODValue = new IntValueBox(-1, 90, 2, 70.0f, -1, 10, 0.02f)
-                    {
-                        Parent = previewLOD
-                    };
-                    previewLODValue.ValueChanged += () => _previewModel.ForcedLOD = previewLODValue.Value;
-                    ViewWidgetButtonMenu.VisibleChanged += control => previewLODValue.Value = _previewModel.ForcedLOD;
-                }
+                    TooltipText = "Preview LOD properties",
+                    Parent = PreviewLODSMode,
+                };
+                PreviewLODSMode.Parent = this;
             }
 
             // Enable shadows
@@ -234,6 +257,32 @@ namespace FlaxEditor.Viewport.Previews
             PreviewLight.CascadeCount = 3;
             PreviewLight.ShadowsDistance = 2000.0f;
             Task.ViewFlags |= ViewFlags.Shadows;
+        }
+
+        /// <summary>
+        /// Fill out all SkinnedModel LODS
+        /// </summary>
+        /// <param name="control"></param>
+        private void PreviewLODSWidgetMenuOnVisibleChanged(Control control)
+        {
+            if (!control.Visible)
+                return;
+
+            var skinned = _previewModel.SkinnedModel;
+            if (skinned && !skinned.WaitForLoaded() && skinned.IsLoaded)
+            {
+                previewLODSWidgetButtonMenu.ItemsContainer.DisposeChildren();
+                var lods = skinned.LODs.Length;
+                for (int i = -1; i < lods; i++)
+                {
+                    var index = i;
+                    var button = previewLODSWidgetButtonMenu.AddButton("LOD " + (index == -1 ? "Auto" : index));
+                    button.ButtonClicked += (button) => _previewModel.ForcedLOD = index;
+                    button.Checked = _previewModel.ForcedLOD == index;
+                    button.Tag = index;
+                    if (lods <= 1) return;
+                }
+            }
         }
 
         /// <summary>
@@ -339,8 +388,9 @@ namespace FlaxEditor.Viewport.Previews
             _previewModel.ResetAnimation();
         }
 
-        private int ComputeLODIndex(SkinnedModel model)
+        private int ComputeLODIndex(SkinnedModel model, out float screenSize)
         {
+            screenSize = 1.0f;
             if (PreviewActor.ForcedLOD != -1)
                 return PreviewActor.ForcedLOD;
 
@@ -351,6 +401,7 @@ namespace FlaxEditor.Viewport.Previews
             var viewOrigin = ViewPosition;
             var distSqr = Vector3.DistanceSquared(ref sphere.Center, ref viewOrigin);
             var screenRadiusSquared = Mathf.Square(screenMultiple * sphere.Radius) / Mathf.Max(1.0f, distSqr);
+            screenSize = Mathf.Sqrt((float)screenRadiusSquared) * 2.0f;
 
             // Check if model is being culled
             if (Mathf.Square(model.MinScreenSize * 0.5f) > screenRadiusSquared)
@@ -457,8 +508,11 @@ namespace FlaxEditor.Viewport.Previews
             }
             if (_showCurrentLOD)
             {
-                var lodIndex = ComputeLODIndex(skinnedModel);
-                string text = string.Format("Current LOD: {0}", lodIndex);
+                var lodIndex = ComputeLODIndex(skinnedModel, out var screenSize);
+                var auto = _previewModel.ForcedLOD == -1;
+                string text = auto ? "LOD Automatic" : "";
+                text += auto ? string.Format("\nScreen Size: {0:F2}", screenSize) : "";
+                text += string.Format("\nCurrent LOD: {0}", lodIndex);
                 if (lodIndex != -1)
                 {
                     lodIndex = Mathf.Clamp(lodIndex + PreviewActor.LODBias, 0, lods.Length - 1);
@@ -498,14 +552,22 @@ namespace FlaxEditor.Viewport.Previews
             }
         }
 
+        /// <summary>
+        /// Calls SetArcBallView from ViewportCamera
+        /// </summary>
+        public void CallSetArcBallView()
+        {
+            ViewportCamera.SetArcBallView(_previewModel.Box);
+        }
+
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
             switch (key)
             {
             case KeyboardKeys.F:
-                // Pay respect..
-                ViewportCamera.SetArcBallView(_previewModel.Box);
+                    // Pay respect..
+                    CallSetArcBallView();
                 return true;
             case KeyboardKeys.Spacebar:
                 PlayAnimation = !PlayAnimation;

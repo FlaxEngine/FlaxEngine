@@ -4,7 +4,9 @@ using System;
 using FlaxEditor.Surface;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEditor.Viewport.Widgets;
 using Object = FlaxEngine.Object;
+using FlaxEditor.GUI.ContextMenu;
 
 namespace FlaxEditor.Viewport.Previews
 {
@@ -64,6 +66,11 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <summary>
+        /// The "Model" widget button context menu.
+        /// </summary>
+        private ContextMenu modelWidgetButtonMenu;
+
+        /// <summary>
         /// Gets or sets the selected preview model index.
         /// </summary>
         public int SelectedModelIndex
@@ -95,20 +102,39 @@ namespace FlaxEditor.Viewport.Previews
             Task.AddCustomActor(_previewModel);
 
             // Create context menu for primitive switching
-            if (useWidgets && ViewWidgetButtonMenu != null)
+            if (useWidgets)
             {
-                ViewWidgetButtonMenu.AddSeparator();
-                var modelSelect = ViewWidgetButtonMenu.AddChildMenu("Model").ContextMenu;
-
-                // Fill out all models 
-                for (int i = 0; i < Models.Length; i++)
+                // Model mode widget
+                var modelMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
+                modelWidgetButtonMenu = new ContextMenu();
+                modelWidgetButtonMenu.VisibleChanged += ModelWidgetMenuOnVisibleChanged;
+                var previewLODSModeButton = new ViewportWidgetButton("Model", SpriteHandle.Invalid, modelWidgetButtonMenu)
                 {
-                    var button = modelSelect.AddButton(Models[i]);
-                    button.Tag = i;
-                }
+                    TooltipText = "Change material model",
+                    Parent = modelMode,
+                };
+                modelMode.Parent = this;
+            }
+        }
 
-                // Link the action
-                modelSelect.ButtonClicked += (button) => SelectedModelIndex = (int)button.Tag;
+        /// <summary>
+        /// Fill out all models
+        /// </summary>
+        /// <param name="control"></param>
+        private void ModelWidgetMenuOnVisibleChanged(Control control)
+        {
+            if (!control.Visible) return;
+
+            modelWidgetButtonMenu.ItemsContainer.DisposeChildren();
+
+            // Fill out all models
+            for (int i = 0; i < Models.Length; i++)
+            {
+                var index = i;
+                var button = modelWidgetButtonMenu.AddButton(Models[index]);
+                button.ButtonClicked += (button) => SelectedModelIndex = index;
+                button.Checked = SelectedModelIndex == index;
+                button.Tag = index;
             }
         }
 
