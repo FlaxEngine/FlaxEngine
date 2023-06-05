@@ -1121,7 +1121,7 @@ namespace FlaxEditor.Windows.Assets
 
             _showNodesButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Bone64, () => _preview.ShowNodes = !_preview.ShowNodes).LinkTooltip("Show animated model nodes debug view");
 
-            _toolstrip.AddButton(editor.Icons.CenterView64, () =>  _preview.CallSetArcBallView()).LinkTooltip("Show whole model");
+            _toolstrip.AddButton(editor.Icons.CenterView64, () => _preview.CallSetArcBallView()).LinkTooltip("Show whole model");
 
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/animation/skinned-model/index.html")).LinkTooltip("See documentation to learn more");

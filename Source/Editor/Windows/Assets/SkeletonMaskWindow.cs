@@ -186,7 +186,7 @@ namespace FlaxEditor.Windows.Assets
         }
 
         private readonly SplitPanel _split;
-        private readonly AnimatedModelPreview _preview;
+        private readonly SkeletonMaskPreview _preview;
         private readonly CustomEditorPresenter _propertiesPresenter;
         private readonly PropertiesProxy _properties;
         private readonly ToolStripButton _saveButton;
@@ -198,6 +198,9 @@ namespace FlaxEditor.Windows.Assets
             // Toolstrip
             _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save asset to the file");
             _toolstrip.AddSeparator();
+
+            _toolstrip.AddButton(editor.Icons.CenterView64, () => _preview.CallSetArcBallView()).LinkTooltip("Show whole model");
+
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/animation/skeleton-mask.html")).LinkTooltip("See documentation to learn more");
 
             // Split Panel
@@ -210,7 +213,7 @@ namespace FlaxEditor.Windows.Assets
             };
 
             // Model preview
-            _preview = new AnimatedModelPreview(true)
+            _preview = new SkeletonMaskPreview(true)
             {
                 ViewportCamera = new FPSCamera(),
                 ShowNodes = true,

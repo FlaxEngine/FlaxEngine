@@ -1,11 +1,6 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
-
 using FlaxEditor.GUI.ContextMenu;
-using FlaxEditor.GUI.Input;
 using FlaxEngine;
-using FlaxEditor.Viewport.Widgets;
 using FlaxEngine.GUI;
-using System;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport.Previews
@@ -14,16 +9,12 @@ namespace FlaxEditor.Viewport.Previews
     /// Animation asset preview editor viewport.
     /// </summary>
     /// <seealso cref="AssetPreview" />
-    public class AnimationPreview : AssetPreview
+    public class SkeletonMaskPreview : AssetPreview
     {
         private ContextMenuButton _showNodesButton, _showBoundsButton, _showFloorButton, _showNodesNamesButton;
         private bool _showNodes, _showBounds, _showFloor, _showNodesNames;
         private AnimatedModel _previewModel;
         private StaticModel _floorModel;
-        private bool _playAnimation, _playAnimationOnce;
-        private float _playSpeed = 1.0f;
-
-        private ViewportWidgetButton _playPauseButton;
 
         /// <summary>
         /// Snaps the preview actor to the world origin.
@@ -43,44 +34,6 @@ namespace FlaxEditor.Viewport.Previews
         /// Gets the skinned model actor used to preview selected asset.
         /// </summary>
         public AnimatedModel PreviewActor => _previewModel;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether play the animation in editor.
-        /// </summary>
-        public bool PlayAnimation
-        {
-            get => _playAnimation;
-            set
-            {
-                if (_playAnimation == value)
-                    return;
-                if (!value)
-                    _playSpeed = _previewModel.UpdateSpeed;
-                _playAnimation = value;
-                _previewModel.UpdateSpeed = value ? _playSpeed : 0.0f;
-                PlayAnimationChanged?.Invoke();
-            }
-        }
-
-        /// <summary>
-        /// Occurs when animation playback state gets changed.
-        /// </summary>
-        public event Action PlayAnimationChanged;
-
-        /// <summary>
-        /// Gets or sets the animation playback speed.
-        /// </summary>
-        public float PlaySpeed
-        {
-            get => _playAnimation ? _previewModel.UpdateSpeed : _playSpeed;
-            set
-            {
-                if (_playAnimation)
-                    _previewModel.UpdateSpeed = value;
-                else
-                    _playSpeed = value;
-            }
-        }
 
         /// <summary>
         /// Gets or sets a value indicating whether show animated model skeleton nodes debug view.
@@ -176,24 +129,10 @@ namespace FlaxEditor.Viewport.Previews
         public bool[] NodesMask { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether enable root motion.
-        /// </summary>
-        public bool RootMotion
-        {
-            get => !_snapToOrigin;
-            set
-            {
-                if (!_snapToOrigin == value)
-                    return;
-                _snapToOrigin = !value;
-            }
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AnimationPreview"/> class.
+        /// Initializes a new instance of the <see cref="SkeletonMaskPreview"/> class.
         /// </summary>
         /// <param name="useWidgets">if set to <c>true</c> use widgets.</param>
-        public AnimationPreview(bool useWidgets)
+        public SkeletonMaskPreview(bool useWidgets)
         : base(useWidgets)
         {
             Task.Begin += OnBegin;
@@ -209,10 +148,6 @@ namespace FlaxEditor.Viewport.Previews
             };
             Task.AddCustomActor(_previewModel);
 
-            PlayAnimation = true;
-            PlayAnimationChanged += OnPlayAnimationChanged;
-            _snapToOrigin = false;
-
             if (useWidgets)
             {
                 // Show Bounds
@@ -227,34 +162,6 @@ namespace FlaxEditor.Viewport.Previews
                 // Show Floor
                 _showFloorButton = ViewWidgetShowMenu.AddButton("Floor", button => ShowFloor = !ShowFloor);
                 _showFloorButton.IndexInParent = 1;
-
-                // Playback Speed
-                var playbackSpeed = ViewWidgetButtonMenu.AddButton("Playback Speed");
-                var playbackSpeedValue = new FloatValueBox(-1, 90, 2, 70.0f, -10000.0f, 10000.0f, 0.001f)
-                {
-                    Parent = playbackSpeed
-                };
-                playbackSpeedValue.ValueChanged += () => PlaySpeed = playbackSpeedValue.Value;
-                ViewWidgetButtonMenu.VisibleChanged += control => playbackSpeedValue.Value = PlaySpeed;
-
-                // Play/Pause widget
-                var playPauseWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-                _playPauseButton = new ViewportWidgetButton(null, Editor.Instance.Icons.Pause64)
-                {
-                    TooltipText = "Animation playback play (F5) or pause (F6)",
-                    Parent = playPauseWidget,
-                };
-                _playPauseButton.Clicked += button => PlayAnimation = !PlayAnimation;
-                playPauseWidget.Parent = this;
-
-                // Play Root Motion
-                var button = ViewWidgetButtonMenu.AddButton("Root Motion");
-                var buttonValue = new CheckBox(90, 2, !_snapToOrigin)
-                {
-                    Parent = button
-                };
-                buttonValue.StateChanged += checkbox => RootMotion = !RootMotion;
-                ViewWidgetButtonMenu.VisibleChanged += control => buttonValue.Checked = RootMotion;
             }
 
             // Enable shadows
@@ -262,43 +169,6 @@ namespace FlaxEditor.Viewport.Previews
             PreviewLight.CascadeCount = 2;
             PreviewLight.ShadowsDistance = 1000.0f;
             Task.ViewFlags |= ViewFlags.Shadows;
-        }
-
-        /// <summary>
-        /// Starts the animation playback.
-        /// </summary>
-        public void Play()
-        {
-            PlayAnimation = true;
-        }
-
-        /// <summary>
-        /// Pauses the animation playback.
-        /// </summary>
-        public void Pause()
-        {
-            PlayAnimation = false;
-        }
-
-        /// <summary>
-        /// Stops the animation playback.
-        /// </summary>
-        public void Stop()
-        {
-            PlayAnimation = false;
-            _previewModel.ResetAnimation();
-            _previewModel.UpdateAnimation();
-        }
-
-        /// <summary>
-        /// Sets the weight of the blend shape and updates the preview model (if not animated right now).
-        /// </summary>
-        /// <param name="name">The blend shape name.</param>
-        /// <param name="value">The normalized weight of the blend shape (in range -1:1).</param>
-        public void SetBlendShapeWeight(string name, float value)
-        {
-            _previewModel.SetBlendShapeWeight(name, value);
-            _playAnimationOnce = true;
         }
 
         /// <summary>
@@ -357,7 +227,7 @@ namespace FlaxEditor.Viewport.Previews
                 float maxSize = Mathf.Max(0.001f, (float)box.Size.MaxValue);
                 float scale = targetSize / maxSize;
                 _previewModel.Scale = new Vector3(scale);
-                _previewModel.Position = box.Center * (-0.5f * scale) + new Vector3(0, -10, 0);
+                _previewModel.Position = box.Center * (-0.5f * scale) + new Vector3(0, -20, 0);
             }
         }
 
@@ -430,11 +300,6 @@ namespace FlaxEditor.Viewport.Previews
             }
         }
 
-        private void OnPlayAnimationChanged()
-        {
-            _playPauseButton.Icon = PlayAnimation ? Editor.Instance.Icons.Pause64 : Editor.Instance.Icons.Play64;
-        }
-
         /// <inheritdoc />
         public override void Draw()
         {
@@ -442,7 +307,7 @@ namespace FlaxEditor.Viewport.Previews
 
             var style = Style.Current;
             var skinnedModel = SkinnedModel;
-            
+
             if (skinnedModel == null)
             {
                 Render2D.DrawText(style.FontLarge, "Missing Base Model", new Rectangle(Float2.Zero, Size), Color.Red, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapWords);
@@ -463,25 +328,6 @@ namespace FlaxEditor.Viewport.Previews
             }
         }
 
-        /// <inheritdoc />
-        public override void Update(float deltaTime)
-        {
-            base.Update(deltaTime);
-
-            // Manually update animation
-            if (PlayAnimation || _playAnimationOnce)
-            {
-                _playAnimationOnce = false;
-                _previewModel.UpdateAnimation();
-            }
-            else
-            {
-                // Invalidate playback timer (preserves playback state, clears ticking info in LastUpdateTime)
-                _previewModel.IsActive = !_previewModel.IsActive;
-                _previewModel.IsActive = !_previewModel.IsActive;
-            }
-        }
-
         /// <summary>
         /// Calls SetArcBallView from ViewportCamera
         /// </summary>
@@ -499,22 +345,8 @@ namespace FlaxEditor.Viewport.Previews
                     // Pay respect..
                     CallSetArcBallView();
                     return true;
-                case KeyboardKeys.Spacebar:
-                    PlayAnimation = !PlayAnimation;
-                    return true;
             }
-
-            var inputOptions = Editor.Instance.Options.Options.Input;
-            if (inputOptions.Play.Process(this, key))
-            {
-                PlayAnimation = true;
-                return true;
-            }
-            if (inputOptions.Pause.Process(this, key))
-            {
-                PlayAnimation = false;
-                return true;
-            }
+            
             return base.OnKeyDown(key);
         }
 
@@ -529,8 +361,6 @@ namespace FlaxEditor.Viewport.Previews
             _showBoundsButton = null;
             _showFloorButton = null;
             _showNodesNamesButton = null;
-
-            _playPauseButton = null;
 
             base.OnDestroy();
         }

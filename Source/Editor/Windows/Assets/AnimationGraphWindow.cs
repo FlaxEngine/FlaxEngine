@@ -27,8 +27,8 @@ namespace FlaxEditor.Windows.Assets
     /// </summary>
     /// <seealso cref="AnimationGraph" />
     /// <seealso cref="AnimGraphSurface" />
-    /// <seealso cref="AnimatedModelPreview" />
-    public sealed class AnimationGraphWindow : VisjectSurfaceWindow<AnimationGraph, AnimGraphSurface, AnimatedModelPreview>, ISearchWindow
+    /// <seealso cref="AnimationPreview" />
+    public sealed class AnimationGraphWindow : VisjectSurfaceWindow<AnimationGraph, AnimGraphSurface, AnimationPreview>, ISearchWindow
     {
         internal static Guid BaseModelId = new Guid(1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
