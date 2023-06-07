@@ -265,6 +265,14 @@ void AudioService::Update()
     AudioBackend::Update();
 }
 
+Array<AudioSource*>& Audio::GetAudioSources() {
+    return Sources;
+}
+
+Array<AudioListener*>& Audio::GetAudioListeners() {
+    return Listeners;
+}
+
 void AudioService::Dispose()
 {
     ASSERT(Audio::Sources.IsEmpty() && Audio::Listeners.IsEmpty());

@@ -423,23 +423,38 @@ void AudioBackendOAL::Source_SpatialSetupChanged(AudioSource* source)
     const bool is3D = source->Is3D();
     ALC_FOR_EACH_CONTEXT()
         const uint32 sourceID = source->SourceIDs[i];
-        alSourcei(sourceID, AL_SOURCE_RELATIVE, !is3D);
-        if (is3D)
-        {
+    alSourcei(sourceID, AL_SOURCE_RELATIVE, !is3D);
+    if (is3D)
+    {
 #ifdef AL_SOFT_source_spatialize
-            alSourcei(sourceID, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE);
+        alSourcei(sourceID, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE);
 #endif
-            alSourcef(sourceID, AL_ROLLOFF_FACTOR, source->GetAttenuation());
-            alSourcef(sourceID, AL_DOPPLER_FACTOR, source->GetDopplerFactor());
-            alSourcef(sourceID, AL_REFERENCE_DISTANCE, FLAX_DST_TO_OAL(source->GetMinDistance()));
+        alSourcef(sourceID, AL_ROLLOFF_FACTOR, source->GetAttenuation());
+        alSourcef(sourceID, AL_DOPPLER_FACTOR, source->GetDopplerFactor());
+        alSourcef(sourceID, AL_REFERENCE_DISTANCE, FLAX_DST_TO_OAL(source->GetMinDistance()));
+
+        // Check if audio is enabled
+        if (!source->GetAudioEnabled())
+        {
+            // Set volume to zero if audio is disabled
+            alSourcef(sourceID, AL_GAIN, 0.0f);
         }
         else
         {
-            alSourcef(sourceID, AL_ROLLOFF_FACTOR, 0.0f);
-            alSourcef(sourceID, AL_DOPPLER_FACTOR, 1.0f);
-            alSourcef(sourceID, AL_REFERENCE_DISTANCE, 0.0f);
+            // Set volume based on AudioSource volume
+            alSourcef(sourceID, AL_GAIN, source->GetVolume());
         }
     }
+    else
+    {
+        // Set volume based on AudioSource volume
+        alSourcef(sourceID, AL_GAIN, source->GetVolume());
+
+        alSourcef(sourceID, AL_ROLLOFF_FACTOR, 0.0f);
+        alSourcef(sourceID, AL_DOPPLER_FACTOR, 1.0f);
+        alSourcef(sourceID, AL_REFERENCE_DISTANCE, 0.0f);
+    }
+}
 }
 
 void AudioBackendOAL::Source_ClipLoaded(AudioSource* source)

@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "AudioSource.h"
+#include "AudioListener.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Level/SceneObjectsFactory.h"
 #include "Engine/Serialization/Serialization.h"
@@ -16,10 +17,12 @@ AudioSource::AudioSource(const SpawnParams& params)
     , _velocity(Vector3::Zero)
     , _volume(1.0f)
     , _pitch(1.0f)
-    , _minDistance(1000.0f)
+    , _minDistance(100.0f)
+    , _maxDistance(1000.0f)
+    , _audioEnabled(false)
     , _loop(false)
     , _playOnStart(false)
-    , _allowSpatialization(true)
+    , _allowSpatialization(false)
 {
     Clip.Changed.Bind<AudioSource, &AudioSource::OnClipChanged>(this);
     Clip.Loaded.Bind<AudioSource, &AudioSource::OnClipLoaded>(this);
@@ -81,6 +84,16 @@ void AudioSource::SetMinDistance(float value)
         AudioBackend::Source::SpatialSetupChanged(this);
 }
 
+void AudioSource::SetMaxDistance(float value) 
+{
+    value = Math::Max(0.0f, value);
+    if (Math::NearEqual(_maxDistance, value))
+        return;
+    _maxDistance = value;
+    if (SourceIDs.HasItems())
+        AudioBackend::Source::SpatialSetupChanged(this);
+}
+
 void AudioSource::SetAttenuation(float value)
 {
     value = Math::Max(0.0f, value);
@@ -108,6 +121,61 @@ void AudioSource::SetAllowSpatialization(bool value)
     _allowSpatialization = value;
     if (SourceIDs.HasItems())
         AudioBackend::Source::SpatialSetupChanged(this);
+}
+
+void AudioSource::SetAudioEnabled(bool enabled) {
+    _audioEnabled = enabled;
+    if (SourceIDs.HasItems())
+        AudioBackend::Source::SpatialSetupChanged(this);
+}
+
+void AudioSource::CheckMaxDistance(Vector3 pos)
+{
+    bool audioEnabled = false;
+
+    // Check if spacialization is allowed
+    if (!_allowSpatialization)
+    {
+        audioEnabled = true; // Force 2D audio playback
+    }
+    else
+    {
+        // Get the list of active AudioListeners in the scene
+        const auto& audioListeners = Audio::GetAudioListeners();
+
+        // Check if there are any active AudioListeners
+        if (audioListeners.IsEmpty())
+        {
+            // No AudioListener found, allow 2D audio playback
+            audioEnabled = true;
+        }
+        else
+        {
+            // Calculate the position of the AudioSource
+            const Vector3 sourcePosition = pos;
+
+            // Iterate over each AudioListener and check the distance to the AudioSource
+            for (const auto& audioListener : audioListeners)
+            {
+                if (audioListener == nullptr)
+                    return;
+
+                // Calculate the distance between AudioSource and AudioListener
+                const Vector3 listenerPosition = audioListener->GetPosition();
+                const float distance = (sourcePosition - listenerPosition).Length();
+
+                // Check if the distance is within the AudioSource's MaxDistance
+                if (distance <= GetMaxDistance())
+                {
+                    audioEnabled = true;
+                    break; // If within the MaxDistance of an AudioListener, no need to check with others
+                }
+            }
+        }
+    }
+
+    // Set AudioSource audio enabled/disabled status
+    SetAudioEnabled(audioEnabled);
 }
 
 void AudioSource::Play()
@@ -330,8 +398,10 @@ void AudioSource::PlayInternal()
 void AudioSource::OnDebugDrawSelected()
 {
     // Draw influence range
-    if (_allowSpatialization)
+    if (_allowSpatialization) {
         DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(_transform.Translation, _minDistance), Color::CornflowerBlue, 0, true);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(_transform.Translation, _maxDistance), Color::CornflowerBlue, 0, true);
+    }
 
     // Base
     Actor::OnDebugDrawSelected();
@@ -351,6 +421,7 @@ void AudioSource::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(Pitch, _pitch);
     SERIALIZE_MEMBER(Pan, _pan);
     SERIALIZE_MEMBER(MinDistance, _minDistance);
+    SERIALIZE_MEMBER(MaxDistance, _maxDistance);
     SERIALIZE_MEMBER(Attenuation, _attenuation);
     SERIALIZE_MEMBER(DopplerFactor, _dopplerFactor);
     SERIALIZE_MEMBER(Loop, _loop);
@@ -367,6 +438,7 @@ void AudioSource::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(Pitch, _pitch);
     DESERIALIZE_MEMBER(Pan, _pan);
     DESERIALIZE_MEMBER(MinDistance, _minDistance);
+    DESERIALIZE_MEMBER(MaxDistance, _maxDistance);
     DESERIALIZE_MEMBER(Attenuation, _attenuation);
     DESERIALIZE_MEMBER(DopplerFactor, _dopplerFactor);
     DESERIALIZE_MEMBER(Loop, _loop);
@@ -391,6 +463,7 @@ void AudioSource::Update()
 
     // Update the velocity
     const Vector3 pos = GetPosition();
+    CheckMaxDistance(pos);
     const float dt = Math::Max(Time::Update.UnscaledDeltaTime.GetTotalSeconds(), ZeroTolerance);
     const auto prevVelocity = _velocity;
     _velocity = (pos - _prevPos) / dt;
