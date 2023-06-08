@@ -81,6 +81,7 @@ namespace FlaxEditor.Gizmo
         : base(owner)
         {
             InitDrawing();
+            ModeChanged += ResetTranslationScale;
         }
 
         /// <summary>
@@ -291,21 +292,21 @@ namespace FlaxEditor.Gizmo
                 _translationScaleSnapDelta += delta;
                 if (!isScaling && snapValue.X < 0.0f)
                 {
-                    // Snap to object bounding box
-                    GetSelectedObjectsBounds(out var b, out _);
-                    if (b.Minimum.X < 0.0f)
-                        snapValue.X = (Real)Math.Abs(b.Minimum.X) + b.Maximum.X;
-                    else
-                        snapValue.X = (Real)b.Minimum.X - b.Maximum.X;
-                    if (b.Minimum.Y < 0.0f)
-                        snapValue.Y = (Real)Math.Abs(b.Minimum.Y) + b.Maximum.Y;
-                    else
-                        snapValue.Y = (Real)b.Minimum.Y - b.Maximum.Y;
-                    if (b.Minimum.Z < 0.0f)
-                        snapValue.Z = (Real)Math.Abs(b.Minimum.Z) + b.Maximum.Z;
-                    else
-                        snapValue.Z = (Real)b.Minimum.Z - b.Maximum.Z;
-                }
+                        // Snap to object bounding box
+                        GetSelectedObjectsBounds(out var b, out _);
+                        if (b.Minimum.X < 0.0f)
+                            snapValue.X = (Real)Math.Abs(b.Minimum.X) + b.Maximum.X;
+                        else
+                            snapValue.X = (Real)b.Minimum.X - b.Maximum.X;
+                        if (b.Minimum.Y < 0.0f)
+                            snapValue.Y = (Real)Math.Abs(b.Minimum.Y) + b.Maximum.Y;
+                        else
+                            snapValue.Y = (Real)b.Minimum.Y - b.Maximum.Y;
+                        if (b.Minimum.Z < 0.0f)
+                            snapValue.Z = (Real)Math.Abs(b.Minimum.Z) + b.Maximum.Z;
+                        else
+                            snapValue.Z = (Real)b.Minimum.Z - b.Maximum.Z;
+                    }
                 delta = new Vector3(
                                     (int)(_translationScaleSnapDelta.X / snapValue.X) * snapValue.X,
                                     (int)(_translationScaleSnapDelta.Y / snapValue.Y) * snapValue.Y,
@@ -324,6 +325,11 @@ namespace FlaxEditor.Gizmo
                 // Scale
                 _scaleDelta = delta;
             }
+        }
+
+        private void ResetTranslationScale()
+        {
+            _translationScaleSnapDelta.Normalize();
         }
 
         private void UpdateRotate(float dt)
