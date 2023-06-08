@@ -169,16 +169,16 @@ public:
     API_PROPERTY() void SetAllowSpatialization(bool value);
 
     /// <summary>
-    /// Gets the maximum distance at which it is responsible for stopping the audio
+    /// Gets the maximum distance at which it is responsible for clipping the audio. It is possible to disable the Max Distance by setting the value 0
     /// </summary>
-    API_PROPERTY(Attributes = "EditorOrder(70), DefaultValue(1000.0f), Limit(0.1f, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\"), VisibleIf(nameof(AllowSpatialization))")
+    API_PROPERTY(Attributes = "EditorOrder(70), DefaultValue(1000.0f), Limit(0.0f, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\"), VisibleIf(nameof(AllowSpatialization))")
     FORCE_INLINE float GetMaxDistance() const
     {
         return _maxDistance;
     }
 
     /// <summary>
-    /// Sets the maximum distance at which it is responsible for stopping the audio
+    /// Sets the maximum distance at which it is responsible for clipping the audio. It is possible to disable the Max Distance by setting the value 0
     /// </summary>
     /// <param name="value"></param>
     /// <returns></returns>

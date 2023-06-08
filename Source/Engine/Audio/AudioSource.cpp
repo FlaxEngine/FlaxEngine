@@ -138,7 +138,7 @@ void AudioSource::CheckMaxDistance(Vector3 pos)
     bool audioEnabled = false;
 
     // Check if spacialization is allowed
-    if (!_allowSpatialization)
+    if (!_allowSpatialization || _maxDistance <= 0)
     {
         audioEnabled = true; // Force 2D audio playback
     }
