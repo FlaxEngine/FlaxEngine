@@ -383,10 +383,13 @@ void AudioBackendOAL::Source_TransformChanged(AudioSource* source)
 
 void AudioBackendOAL::Source_VolumeChanged(AudioSource* source)
 {
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
+    if (source->GetAudioEnabled())
+    {
+        ALC_FOR_EACH_CONTEXT()
+            const uint32 sourceID = source->SourceIDs[i];
         alSourcef(sourceID, AL_GAIN, source->GetVolume());
     }
+}
 }
 
 void AudioBackendOAL::Source_PitchChanged(AudioSource* source)
@@ -434,15 +437,15 @@ void AudioBackendOAL::Source_SpatialSetupChanged(AudioSource* source)
         alSourcef(sourceID, AL_REFERENCE_DISTANCE, FLAX_DST_TO_OAL(source->GetMinDistance()));
 
         // Check if audio is enabled
-        if (!source->GetAudioEnabled())
-        {
-            // Set volume to zero if audio is disabled
-            alSourcef(sourceID, AL_GAIN, 0.0f);
-        }
-        else
+        if (source->GetAudioEnabled())
         {
             // Set volume based on AudioSource volume
             alSourcef(sourceID, AL_GAIN, source->GetVolume());
+        }
+        else
+        {
+            // Set volume to zero if audio is disabled
+            alSourcef(sourceID, AL_GAIN, 0.0f);
         }
     }
     else

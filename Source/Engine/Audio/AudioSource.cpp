@@ -19,7 +19,7 @@ AudioSource::AudioSource(const SpawnParams& params)
     , _pitch(1.0f)
     , _minDistance(100.0f)
     , _maxDistance(1000.0f)
-    , _audioEnabled(false)
+    , _audioEnabled(true)
     , _loop(false)
     , _playOnStart(false)
     , _allowSpatialization(false)
@@ -124,6 +124,8 @@ void AudioSource::SetAllowSpatialization(bool value)
 }
 
 void AudioSource::SetAudioEnabled(bool enabled) {
+    if (_audioEnabled == enabled)
+        return;
     _audioEnabled = enabled;
     if (SourceIDs.HasItems())
         AudioBackend::Source::SpatialSetupChanged(this);
@@ -131,6 +133,8 @@ void AudioSource::SetAudioEnabled(bool enabled) {
 
 void AudioSource::CheckMaxDistance(Vector3 pos)
 {
+    if (Clip == nullptr || Clip->WaitForLoaded()) return;
+
     bool audioEnabled = false;
 
     // Check if spacialization is allowed
@@ -157,8 +161,7 @@ void AudioSource::CheckMaxDistance(Vector3 pos)
             // Iterate over each AudioListener and check the distance to the AudioSource
             for (const auto& audioListener : audioListeners)
             {
-                if (audioListener == nullptr)
-                    return;
+                if (audioListener == nullptr) return;
 
                 // Calculate the distance between AudioSource and AudioListener
                 const Vector3 listenerPosition = audioListener->GetPosition();
@@ -463,7 +466,6 @@ void AudioSource::Update()
 
     // Update the velocity
     const Vector3 pos = GetPosition();
-    CheckMaxDistance(pos);
     const float dt = Math::Max(Time::Update.UnscaledDeltaTime.GetTotalSeconds(), ZeroTolerance);
     const auto prevVelocity = _velocity;
     _velocity = (pos - _prevPos) / dt;
@@ -549,6 +551,9 @@ void AudioSource::Update()
     }
 
     clip->Locker.Unlock();
+
+    //Check MaxDistance based on AudioListiner
+    CheckMaxDistance(GetPosition());
 }
 
 void AudioSource::OnEnable()

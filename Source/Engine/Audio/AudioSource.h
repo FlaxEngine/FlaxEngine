@@ -171,7 +171,7 @@ public:
     /// <summary>
     /// Gets the maximum distance at which it is responsible for stopping the audio
     /// </summary>
-    API_PROPERTY(Attributes = "EditorOrder(70), DefaultValue(1000.0f), Limit(0, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\"), VisibleIf(nameof(AllowSpatialization))")
+    API_PROPERTY(Attributes = "EditorOrder(70), DefaultValue(1000.0f), Limit(0.1f, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\"), VisibleIf(nameof(AllowSpatialization))")
     FORCE_INLINE float GetMaxDistance() const
     {
         return _maxDistance;
@@ -187,7 +187,7 @@ public:
     /// <summary>
     /// Gets the minimum distance at which audio attenuation starts. When the listener is closer to the source than this value, audio is heard at full volume. Once farther away the audio starts attenuating.
     /// </summary>
-    API_PROPERTY(Attributes = "EditorOrder(80), DefaultValue(100.0f), Limit(0, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\"), VisibleIf(nameof(AllowSpatialization))")
+    API_PROPERTY(Attributes = "EditorOrder(80), DefaultValue(100.0f), Limit(0.1f, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\"), VisibleIf(nameof(AllowSpatialization))")
         FORCE_INLINE float GetMinDistance() const
     {
         return _minDistance;
