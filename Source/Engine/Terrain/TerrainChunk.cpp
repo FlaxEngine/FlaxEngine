@@ -287,7 +287,7 @@ void TerrainChunk::Serialize(SerializeStream& stream, const void* otherObj)
 
     if (HasLightmap()
 #if USE_EDITOR
-        && PrefabManager::IsNotCreatingPrefab
+        && !PrefabManager::IsCreatingPrefab
 #endif
     )
     {

@@ -21,7 +21,6 @@
 
 #if USE_EDITOR
 bool PrefabManager::IsCreatingPrefab = false;
-bool PrefabManager::IsNotCreatingPrefab = true;
 Dictionary<Guid, Array<Actor*>> PrefabManager::PrefabsReferences;
 CriticalSection PrefabManager::PrefabsReferencesLocker;
 #endif
@@ -316,8 +315,8 @@ bool PrefabManager::CreatePrefab(Actor* targetActor, const StringView& outputPat
     LOG(Info, "Creating prefab from actor {0} (total objects count: {2}) to {1}...", targetActor->ToString(), outputPath, sceneObjects->Count());
 
     // Serialize to json data
+    ASSERT(!IsCreatingPrefab);
     IsCreatingPrefab = true;
-    IsNotCreatingPrefab = false;
     rapidjson_flax::StringBuffer actorsDataBuffer;
     {
         CompactJsonWriter writerObj(actorsDataBuffer);
@@ -331,7 +330,6 @@ bool PrefabManager::CreatePrefab(Actor* targetActor, const StringView& outputPat
         writer.EndArray();
     }
     IsCreatingPrefab = false;
-    IsNotCreatingPrefab = true;
 
     // Randomize the objects ids (prevent overlapping of the prefab instance objects ids and the prefab objects ids)
     Dictionary<Guid, Guid> objectInstanceIdToPrefabObjectId;

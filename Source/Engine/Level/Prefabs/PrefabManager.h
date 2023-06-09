@@ -20,7 +20,7 @@ struct Transform;
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API PrefabManager
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(PrefabManager);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(PrefabManager);
 
     /// <summary>
     /// Spawns the instance of the prefab objects. Prefab will be spawned to the first loaded scene.
@@ -91,11 +91,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(PrefabManager);
     /// Helper global state flag set to true during prefab asset creation. Can be used to skip local objects data serialization to prefab data.
     /// </summary>
     static bool IsCreatingPrefab;
-
-    /// <summary>
-    /// Helper global state flag set to false during prefab asset creation. Can be used to skip local objects data serialization to prefab data.
-    /// </summary>
-    static bool IsNotCreatingPrefab;
 
     /// <summary>
     /// Creates the prefab asset from the given root actor. Saves it to the output file path.
