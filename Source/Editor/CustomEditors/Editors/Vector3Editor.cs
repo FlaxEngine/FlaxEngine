@@ -122,7 +122,7 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             if (IsSetBlocked)
                 return;
-            
+
             var xValue = XElement.ValueBox.Value;
             var yValue = YElement.ValueBox.Value;
             var zValue = ZElement.ValueBox.Value;
@@ -162,7 +162,6 @@ namespace FlaxEditor.CustomEditors.Editors
                     xValue = NewLinkedValue(xValue, valueRatio);
                     yValue = NewLinkedValue(yValue, valueRatio);
                     break;
-                default: break;
                 }
             }
 
