@@ -830,6 +830,7 @@ Array<Actor*> Level::FindActors(const Tag& tag, Actor* root)
     }
     else
     {
+        ScopeLock lock(ScenesLock);
         for (Scene* scene : Scenes)
             FindActorsRecursive(scene, tag, result);
     }
@@ -858,6 +859,7 @@ Array<Actor*> Level::FindActorsByParentTag(const Tag& parentTag, Actor* root)
     }
     else
     {
+        ScopeLock lock(ScenesLock);
         for (Scene* scene : Scenes)
             FindActorsRecursiveByParentTags(scene, subTags, result);
     }
@@ -1521,6 +1523,16 @@ Actor* Level::FindActor(const MClass* type)
     ScopeLock lock(ScenesLock);
     for (int32 i = 0; result == nullptr && i < Scenes.Count(); i++)
         result = Scenes[i]->FindActor(type);
+    return result;
+}
+
+Actor* Level::FindActor(const MClass* type, const StringView& name)
+{
+    CHECK_RETURN(type, nullptr);
+    Actor* result = nullptr;
+    ScopeLock lock(ScenesLock);
+    for (int32 i = 0; result == nullptr && i < Scenes.Count(); i++)
+        result = Scenes[i]->FindActor(type, name);
     return result;
 }
 
