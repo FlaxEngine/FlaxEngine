@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Runtime.Remoting.Messaging;
 
 namespace FlaxEngine.GUI
 {
@@ -191,13 +190,12 @@ namespace FlaxEngine.GUI
             {
                 if (Mathf.NearEqual(_bounds.Size.X, value))
                     return;
-                var rectLocation = _bounds.Location;
-                if (PivotRelative)
+                var bounds = new Rectangle(_bounds.Location, value, _bounds.Size.Y);
+                if (_pivotRelativeSizing)
                 {
                     var delta = _bounds.Size.X - value;
-                    rectLocation.X += delta * Pivot.X;
+                    bounds.Location.X += delta * Pivot.X;
                 }
-                var bounds = new Rectangle(rectLocation, value, _bounds.Size.Y);
                 SetBounds(ref bounds);
             }
         }
@@ -213,13 +211,12 @@ namespace FlaxEngine.GUI
             {
                 if (Mathf.NearEqual(_bounds.Size.Y, value))
                     return;
-                var rectLocation = _bounds.Location;
-                if (PivotRelative)
+                var bounds = new Rectangle(_bounds.Location, _bounds.Size.X, value);
+                if (_pivotRelativeSizing)
                 {
                     var delta = _bounds.Size.Y - value;
-                    rectLocation.Y += delta * Pivot.Y;
+                    bounds.Location.Y += delta * Pivot.Y;
                 }
-                var bounds = new Rectangle(rectLocation, _bounds.Size.X, value);
                 SetBounds(ref bounds);
             }
         }

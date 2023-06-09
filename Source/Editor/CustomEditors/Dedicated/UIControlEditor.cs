@@ -410,7 +410,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private bool _anchorDropDownClosed = true;
         private Button _pivotRelativeButton;
 
-
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
@@ -486,9 +485,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             horDown.CustomControl.Height = TextBoxBase.DefaultHeight;
 
             GetAnchorEquality(out _cachedXEq, out _cachedYEq, valueTypes);
-
             BuildLocationSizeOffsets(horUp, horDown, _cachedXEq, _cachedYEq, valueTypes);
-
             BuildExtraButtons(group);
 
             main.Space(10);
@@ -497,35 +494,36 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void BuildExtraButtons(VerticalPanelElement group)
         {
-            (Values[0] as Control).PivotRelative = Editor.Instance.Windows.PropertiesWin.PivotRelativeSize;
-
-            var current = Editor.Instance.Windows.PropertiesWin.PivotRelativeSize;
+            var control = (Control)Values[0];
+            var pivotRelative = Editor.Instance.Windows.PropertiesWin.UIPivotRelative;
+            control.PivotRelative = pivotRelative;
 
             var panel = group.CustomContainer<Panel>();
             panel.CustomControl.Height = TextBoxBase.DefaultHeight;
             panel.CustomControl.ClipChildren = false;
             panel.CustomControl.Parent = group.ContainerControl;
 
-            _pivotRelativeButton = new Button()
+            _pivotRelativeButton = new Button
             {
+                TooltipText = "Toggles UI control resizing based on where the pivot is rather than just the top-left.",
+                Size = new Float2(18),
                 Parent = panel.ContainerControl,
-                Width = 18,
-                Height = 18,
                 BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Scale32),
                 AnchorPreset = AnchorPresets.TopRight,
                 X = 77,
             };
 
-            SetStyle(current);
+            SetStyle(pivotRelative);
             _pivotRelativeButton.Clicked += PivotRelativeClicked;
         }
 
         private void PivotRelativeClicked()
         {
-            var current = (Values[0] as Control).PivotRelative;
-            (Values[0] as Control).PivotRelative = !current;
-            Editor.Instance.Windows.PropertiesWin.PivotRelativeSize = !current;
-            SetStyle((Values[0] as Control).PivotRelative);
+            var control = (Control)Values[0];
+            var pivotRelative = control.PivotRelative;
+            control.PivotRelative = !pivotRelative;
+            Editor.Instance.Windows.PropertiesWin.UIPivotRelative = !pivotRelative;
+            SetStyle(control.PivotRelative);
         }
 
         private void SetStyle(bool current)

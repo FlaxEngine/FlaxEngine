@@ -31,9 +31,9 @@ namespace FlaxEditor.Windows
         public bool ScaleLinked = false;
 
         /// <summary>
-        /// Indictation of if UI elements should size relative to the pivot point
+        /// Indication of if UI elements should size relative to the pivot point.
         /// </summary>
-        public bool PivotRelativeSize = true;
+        public bool UIPivotRelative = true;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PropertiesWindow"/> class.
@@ -71,13 +71,16 @@ namespace FlaxEditor.Windows
         public override void OnLayoutSerialize(XmlWriter writer)
         {
             writer.WriteAttributeString("ScaleLinked", ScaleLinked.ToString());
+            writer.WriteAttributeString("UIPivotRelative", UIPivotRelative.ToString());
         }
-        
+
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
             if (bool.TryParse(node.GetAttribute("ScaleLinked"), out bool value1))
                 ScaleLinked = value1;
+            if (bool.TryParse(node.GetAttribute("UIPivotRelative"), out value1))
+                UIPivotRelative = value1;
         }
     }
 }

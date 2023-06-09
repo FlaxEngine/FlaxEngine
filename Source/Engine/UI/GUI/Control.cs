@@ -61,6 +61,7 @@ namespace FlaxEngine.GUI
         private bool _isVisible = true;
         private bool _isEnabled = true;
         private bool _autoFocus = true;
+        private bool _pivotRelativeSizing = false;
         private List<int> _touchOvers;
         private RootControl.UpdateDelegate _tooltipUpdate;
 
@@ -76,7 +77,6 @@ namespace FlaxEngine.GUI
         private float _rotation;
         internal Matrix3x3 _cachedTransform;
         internal Matrix3x3 _cachedTransformInv;
-        private bool _pivotRelativeSizing = false;
 
         // Style
 
