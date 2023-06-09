@@ -38,7 +38,7 @@ PrefabManagerService PrefabManagerServiceInstance;
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab)
 {
-    Actor* parent = Level::Scenes.Count() != 0 ? Level::Scenes[0] : nullptr;
+    Actor* parent = Level::Scenes.Count() != 0 ? Level::Scenes.Get()[0] : nullptr;
     return SpawnPrefab(prefab, parent, nullptr);
 }
 
@@ -46,9 +46,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Vector3& position)
 {
     auto instance = SpawnPrefab(prefab);
     if (instance)
-    {
         instance->SetPosition(position);
-    }
     return instance;
 }
 
@@ -56,12 +54,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Vector3& position, const
 {
     auto instance = SpawnPrefab(prefab);
     if (instance)
-    {
-        auto transform = instance->GetTransform();
-        transform.Translation = position;
-        transform.Orientation = rotation;
-        instance->SetTransform(transform);
-    }
+        instance->SetTransform(Transform(position, rotation, instance->GetScale()));
     return instance;
 }
 
@@ -69,13 +62,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Vector3& position, const
 {
     auto instance = SpawnPrefab(prefab);
     if (instance)
-    {
-        Transform transform;
-        transform.Translation = position;
-        transform.Orientation = rotation;
-        transform.Scale = scale;
-        instance->SetTransform(transform);
-    }
+        instance->SetTransform(Transform(position, rotation, scale));
     return instance;
 }
 
@@ -83,17 +70,13 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform)
 {
     auto instance = SpawnPrefab(prefab);
     if (instance)
-    {
         instance->SetTransform(transform);
-    }
     return instance;
 }
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid, const void*>* objectsCache, bool withSynchronization)
 {
     PROFILE_CPU_NAMED("Prefab.Spawn");
-
-    // Validate input
     if (prefab == nullptr)
     {
         Log::ArgumentNullException();
@@ -110,11 +93,10 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
         LOG(Warning, "Prefab has no objects. {0}", prefab->ToString());
         return nullptr;
     }
+    const Guid prefabId = prefab->GetID();
 
     // Note: we need to generate unique Ids for the deserialized objects (actors and scripts) to prevent Ids collisions
     // Prefab asset during loading caches the object Ids stored inside the file
-
-    const Guid prefabId = prefab->GetID();
 
     // Prepare
     CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache sceneObjects = ActorsCache::SceneObjectsListCache.Get();
@@ -255,11 +237,11 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
         if (!obj)
             continue;
 
-        const auto prefabObjectId = JsonTools::GetGuid(stream, "ID");
-
+        const Guid prefabObjectId = JsonTools::GetGuid(stream, "ID");
         if (objectsCache)
             objectsCache->Add(prefabObjectId, obj);
-        obj->LinkPrefab(prefabId, prefabObjectId);
+        obj->_prefabID = prefabId;
+        obj->_prefabObjectID = prefabObjectId;
     }
 
     // Update transformations

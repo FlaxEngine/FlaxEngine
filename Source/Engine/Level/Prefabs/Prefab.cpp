@@ -105,7 +105,6 @@ Asset::LoadResult Prefab::loadAsset()
 
     // Allocate memory for objects
     ObjectsIds.EnsureCapacity(objectsCount * 2);
-    NestedPrefabs.EnsureCapacity(objectsCount);
     ObjectsDataCache.EnsureCapacity(objectsCount * 3);
 
     // Find serialized object ids (actors and scripts), they are used later for IDs mapping on prefab spawning via PrefabManager
@@ -122,7 +121,6 @@ Asset::LoadResult Prefab::loadAsset()
         }
 
         ObjectsIds.Add(objectId);
-        ASSERT(!ObjectsDataCache.ContainsKey(objectId));
         ObjectsDataCache.Add(objectId, &objData);
         ObjectsCount++;
 
