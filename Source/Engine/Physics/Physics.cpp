@@ -223,12 +223,12 @@ bool Physics::LineCast(const Vector3& start, const Vector3& end, uint32 layerMas
     return DefaultScene->LineCast(start, end, layerMask, hitTriggers);
 }
 
-bool Physics::LineCast(const Vector3& start, const Vector3& end, API_PARAM(Out)RayCastHit& hitInfo, uint32 layerMask, bool hitTriggers)
+bool Physics::LineCast(const Vector3& start, const Vector3& end, RayCastHit& hitInfo, uint32 layerMask, bool hitTriggers)
 {
     return DefaultScene->LineCast(start, end, hitInfo, layerMask, hitTriggers);
 }
 
-bool Physics::LineCastAll(const Vector3& start, const Vector3& end, API_PARAM(Out)Array<RayCastHit, HeapAllocation>& results, uint32 layerMask, bool hitTriggers)
+bool Physics::LineCastAll(const Vector3& start, const Vector3& end, Array<RayCastHit>& results, uint32 layerMask, bool hitTriggers)
 {
     return DefaultScene->LineCastAll(start, end, results, layerMask, hitTriggers);
 }
@@ -467,22 +467,28 @@ void PhysicsScene::CollectResults()
 
 bool PhysicsScene::LineCast(const Vector3& start, const Vector3& end, uint32 layerMask, bool hitTriggers)
 {
-    float distanceToEnd = Vector3::Distance(start, end);
-    Vector3 directionToEnd = (end - start).GetNormalized();
+    Vector3 directionToEnd = end - start;
+    const float distanceToEnd = directionToEnd.Length();
+    if (distanceToEnd >= ZeroTolerance)
+        directionToEnd /= distanceToEnd;
     return PhysicsBackend::RayCast(_scene, start, directionToEnd, distanceToEnd, layerMask, hitTriggers);
 }
 
-bool PhysicsScene::LineCast(const Vector3& start, const Vector3& end, API_PARAM(Out)RayCastHit& hitInfo, uint32 layerMask, bool hitTriggers)
+bool PhysicsScene::LineCast(const Vector3& start, const Vector3& end, RayCastHit& hitInfo, uint32 layerMask, bool hitTriggers)
 {
-    float distanceToEnd = Vector3::Distance(start, end);
-    Vector3 directionToEnd = (end - start).GetNormalized();
+    Vector3 directionToEnd = end - start;
+    const float distanceToEnd = directionToEnd.Length();
+    if (distanceToEnd >= ZeroTolerance)
+        directionToEnd /= distanceToEnd;
     return PhysicsBackend::RayCast(_scene, start, directionToEnd, hitInfo, distanceToEnd, layerMask, hitTriggers);
 }
 
-bool PhysicsScene::LineCastAll(const Vector3& start, const Vector3& end, API_PARAM(Out)Array<RayCastHit, HeapAllocation>& results, uint32 layerMask, bool hitTriggers)
+bool PhysicsScene::LineCastAll(const Vector3& start, const Vector3& end, Array<RayCastHit>& results, uint32 layerMask, bool hitTriggers)
 {
-    float distanceToEnd = Vector3::Distance(start, end);
-    Vector3 directionToEnd = (end - start).GetNormalized();
+    Vector3 directionToEnd = end - start;
+    const float distanceToEnd = directionToEnd.Length();
+    if (distanceToEnd >= ZeroTolerance)
+        directionToEnd /= distanceToEnd;
     return PhysicsBackend::RayCastAll(_scene, start, directionToEnd, results, distanceToEnd, layerMask, hitTriggers);
 }
 
