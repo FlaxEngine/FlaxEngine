@@ -189,26 +189,26 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
         // Check for missing parent (eg. parent object has been deleted)
         if (obj->GetParent() == nullptr)
         {
-            sceneObjects->At(i) = nullptr;
             LOG(Warning, "Scene object {0} {1} has missing parent object after load. Removing it.", obj->GetID(), obj->ToString());
+            sceneObjects->At(i) = nullptr;
             obj->DeleteObject();
             continue;
         }
 
-#if USE_EDITOR && !BUILD_RELEASE
+#if (USE_EDITOR && !BUILD_RELEASE) || FLAX_TESTS
         // Check for not being added to the parent (eg. invalid setup events fault on registration)
         auto actor = dynamic_cast<Actor*>(obj);
         auto script = dynamic_cast<Script*>(obj);
         if (obj->GetParent() == obj || (actor && !actor->GetParent()->Children.Contains(actor)) || (script && !script->GetParent()->Scripts.Contains(script)))
         {
-            sceneObjects->At(i) = nullptr;
             LOG(Warning, "Scene object {0} {1} has invalid parent object linkage after load. Removing it.", obj->GetID(), obj->ToString());
+            sceneObjects->At(i) = nullptr;
             obj->DeleteObject();
             continue;
         }
 #endif
 
-#if USE_EDITOR && BUILD_DEBUG
+#if (USE_EDITOR && BUILD_DEBUG) || FLAX_TESTS
         // Check for being added to parent not from spawned prefab (eg. invalid parentId linkage fault)
         bool hasParentInInstance = false;
         for (int32 j = 0; j < sceneObjects->Count(); j++)
@@ -221,11 +221,22 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
         }
         if (!hasParentInInstance)
         {
-            sceneObjects->At(i) = nullptr;
             LOG(Warning, "Scene object {0} {1} has invalid parent object after load. Removing it.", obj->GetID(), obj->ToString());
+            sceneObjects->At(i) = nullptr;
             obj->DeleteObject();
             continue;
         }
+
+#if FLAX_TESTS
+        // Perform extensive validation of the prefab instance structure
+        if (actor && actor->HasActorInHierarchy(actor))
+        {
+            LOG(Warning, "Scene object {0} {1} has invalid hierarchy after load. Removing it.", obj->GetID(), obj->ToString());
+            sceneObjects->At(i) = nullptr;
+            obj->DeleteObject();
+            continue;
+        }
+#endif
 #endif
     }
 

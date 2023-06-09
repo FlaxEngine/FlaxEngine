@@ -304,7 +304,7 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
         auto storage = ContentStorageManager::GetStorage(path);
         if (storage)
         {
-#if BUILD_DEBUG
+#if BUILD_DEBUG || FLAX_TESTS
             ASSERT(storage->GetPath() == path);
 #endif
 
@@ -904,7 +904,7 @@ bool Content::IsAssetTypeIdInvalid(const ScriptingTypeHandle& type, const Script
     if (!type || !assetType)
         return false;
 
-#if BUILD_DEBUG
+#if BUILD_DEBUG || FLAX_TESTS
     // Peek types for debugging
     const auto& typeObj = type.GetType();
     const auto& assetTypeObj = assetType.GetType();
