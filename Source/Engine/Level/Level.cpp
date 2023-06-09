@@ -787,12 +787,12 @@ void FindActorsRecursiveByParentTags(Actor* node, const Array<Tag>& tags, Array<
 {
     for (Tag tag : tags)
     {
-        if (node->HasTag(tag)) {
+        if (node->HasTag(tag))
+        {
             result.Add(node);
             break;
         }
     }
-
     for (Actor* child : node->Children)
         FindActorsRecursiveByParentTags(child, tags, result);
 }
@@ -836,7 +836,7 @@ Array<Actor*> Level::FindActors(const Tag& tag, Actor* root)
     return result;
 }
 
-API_FUNCTION()Array<Actor*> Level::FindActorsByParentTag(const Tag& parentTag, Actor* root)
+Array<Actor*> Level::FindActorsByParentTag(const Tag& parentTag, Actor* root)
 {
     PROFILE_CPU();
     Array<Actor*> result;
@@ -846,7 +846,6 @@ API_FUNCTION()Array<Actor*> Level::FindActorsByParentTag(const Tag& parentTag, A
     {
         return result;
     }
-
     if (subTags.Count() == 1)
     {
         result = FindActors(subTags[0], root);

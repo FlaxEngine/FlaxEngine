@@ -397,7 +397,6 @@ public:
     /// <returns>Found actors list.</returns>
     API_FUNCTION() static Array<Actor*> GetActors(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type);
 
-
     /// <summary>
     /// Finds all the scripts of the given type in all the loaded scenes.
     /// </summary>
