@@ -830,6 +830,7 @@ Array<Actor*> Level::FindActors(const Tag& tag, Actor* root)
     }
     else
     {
+        ScopeLock lock(ScenesLock);
         for (Scene* scene : Scenes)
             FindActorsRecursive(scene, tag, result);
     }
@@ -858,6 +859,7 @@ Array<Actor*> Level::FindActorsByParentTag(const Tag& parentTag, Actor* root)
     }
     else
     {
+        ScopeLock lock(ScenesLock);
         for (Scene* scene : Scenes)
             FindActorsRecursiveByParentTags(scene, subTags, result);
     }
