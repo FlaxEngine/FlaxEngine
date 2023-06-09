@@ -1524,6 +1524,16 @@ Actor* Level::FindActor(const MClass* type)
     return result;
 }
 
+Actor* Level::FindActor(const MClass* type, const StringView& name)
+{
+    CHECK_RETURN(type, nullptr);
+    Actor* result = nullptr;
+    ScopeLock lock(ScenesLock);
+    for (int32 i = 0; result == nullptr && i < Scenes.Count(); i++)
+        result = Scenes[i]->FindActor(type, name);
+    return result;
+}
+
 Script* Level::FindScript(const MClass* type)
 {
     CHECK_RETURN(type, nullptr);

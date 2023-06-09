@@ -1323,6 +1323,20 @@ Actor* Actor::FindActor(const MClass* type) const
     return nullptr;
 }
 
+Actor* Actor::FindActor(const MClass* type, const StringView& name) const
+{
+    CHECK_RETURN(type, nullptr);
+    if (GetClass()->IsSubClassOf(type) && StringUtils::Compare(*_name, *name) == 0)
+        return const_cast<Actor*>(this);
+    for (auto child : Children)
+    {
+        const auto actor = child->FindActor(type, name);
+        if (actor)
+            return actor;
+    }
+    return nullptr;
+}
+
 Script* Actor::FindScript(const MClass* type) const
 {
     CHECK_RETURN(type, nullptr);
