@@ -479,6 +479,14 @@ public:
     /// <returns>Found actors or empty if none.</returns>
     API_FUNCTION() static Array<Actor*> FindActors(const Tag& tag, Actor* root = nullptr);
 
+    /// <summary>
+    /// Search actors using a parent parentTag.
+    /// </summary>
+    /// <param name="parentTag">The tag to search actors with subtags belonging to this tag</param>
+    /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
+    /// <returns>Returns all actors that have subtags belonging to the given parent parentTag</returns>
+    API_FUNCTION() static Array<Actor*> FindActorsByParentTag(const Tag& parentTag, Actor* root = nullptr);
+
 private:
     // Actor API
     enum class ActorEventType
