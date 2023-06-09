@@ -31,6 +31,11 @@ namespace FlaxEditor.Windows
         public bool ScaleLinked = false;
 
         /// <summary>
+        /// Indictation of if UI elements should size relative to the pivot point
+        /// </summary>
+        public bool PivotRelativeSize = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PropertiesWindow"/> class.
         /// </summary>
         /// <param name="editor">The editor.</param>

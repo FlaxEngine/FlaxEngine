@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Runtime.Remoting.Messaging;
 
 namespace FlaxEngine.GUI
 {
@@ -170,6 +171,16 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Whether to resize the UI Control based on where the pivot is rather than just the top-left.
+        /// </summary>
+        [NoSerialize, HideInEditor]
+        public bool PivotRelative
+        {
+            get => _pivotRelativeSizing;
+            set => _pivotRelativeSizing = value;
+        }
+
+        /// <summary>
         /// Gets or sets width of the control.
         /// </summary>
         [NoSerialize, HideInEditor]
@@ -180,7 +191,13 @@ namespace FlaxEngine.GUI
             {
                 if (Mathf.NearEqual(_bounds.Size.X, value))
                     return;
-                var bounds = new Rectangle(_bounds.Location, value, _bounds.Size.Y);
+                var rectLocation = _bounds.Location;
+                if (PivotRelative)
+                {
+                    var delta = _bounds.Size.X - value;
+                    rectLocation.X += delta * Pivot.X;
+                }
+                var bounds = new Rectangle(rectLocation, value, _bounds.Size.Y);
                 SetBounds(ref bounds);
             }
         }
@@ -196,7 +213,13 @@ namespace FlaxEngine.GUI
             {
                 if (Mathf.NearEqual(_bounds.Size.Y, value))
                     return;
-                var bounds = new Rectangle(_bounds.Location, _bounds.Size.X, value);
+                var rectLocation = _bounds.Location;
+                if (PivotRelative)
+                {
+                    var delta = _bounds.Size.Y - value;
+                    rectLocation.Y += delta * Pivot.Y;
+                }
+                var bounds = new Rectangle(rectLocation, _bounds.Size.X, value);
                 SetBounds(ref bounds);
             }
         }
