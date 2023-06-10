@@ -46,7 +46,7 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     };
 
     /// <summary>
-    /// The app developer name - App Store Team ID.
+    /// The app developer name - App Store Team ID. For example: 'VG6K6HT8B'.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(10), EditorDisplay(\"General\")")
     String AppTeamId;
