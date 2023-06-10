@@ -23,7 +23,10 @@ public:
     static bool Init();
     static void LogInfo();
     static void Tick();
+    static BatteryInfo GetBatteryInfo();
     static int32 GetDpi();
+    static NetworkConnectionType GetNetworkConnectionType();
+    static ScreenOrientationType GetScreenOrientationType();
 	static Guid GetUniqueDeviceId();
     static String GetComputerName();
     static Float2 GetDesktopSize();

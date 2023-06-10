@@ -16,6 +16,7 @@
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Platform/Window.h"
 #include "Engine/Platform/WindowsManager.h"
+#include "Engine/Platform/BatteryInfo.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Input/Input.h"
@@ -24,7 +25,10 @@
 #include <UIKit/UIKit.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <QuartzCore/CAMetalLayer.h>
+#include <SystemConfiguration/SystemConfiguration.h>
 #include <sys/utsname.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 int32 Dpi = 96;
 Guid DeviceId;
@@ -353,9 +357,81 @@ void iOSPlatform::Tick()
     ApplePlatform::Tick();
 }
 
+BatteryInfo iOSPlatform::GetBatteryInfo()
+{
+    BatteryInfo result;
+    UIDevice* uiDevice = [UIDevice currentDevice];
+    if (uiDevice)
+    {
+        uiDevice.batteryMonitoringEnabled = YES;
+        result.BatteryLifePercent = Math::Saturate([uiDevice batteryLevel]);
+        switch ([uiDevice batteryState])
+        {
+        case UIDeviceBatteryStateUnknown:
+            result.BatteryLifePercent = 1.0f;
+            break;
+        case UIDeviceBatteryStateUnplugged:
+            result.State = BatteryInfo::States::BatteryDischarging;
+            break;
+        case UIDeviceBatteryStateCharging:
+            result.State = BatteryInfo::States::BatteryCharging;
+            break;
+        case UIDeviceBatteryStateFull:
+            result.State = BatteryInfo::States::Connected;
+            break;
+        }
+    }
+    return result;
+}
+
 int32 iOSPlatform::GetDpi()
 {
     return Dpi;
+}
+
+NetworkConnectionType iOSPlatform::GetNetworkConnectionType()
+{
+    struct sockaddr_in emptyAddr;
+    Platform::MemoryClear(&emptyAddr, sizeof(emptyAddr));
+    emptyAddr.sin_len = sizeof(emptyAddr);
+    emptyAddr.sin_family = AF_INET;
+    SCNetworkReachabilityRef reachability = SCNetworkReachabilityCreateWithAddress(kCFAllocatorDefault, (const struct sockaddr*)&emptyAddr);
+    SCNetworkReachabilityFlags reachabilityFlags;
+    bool connected = SCNetworkReachabilityGetFlags(reachability, &reachabilityFlags);
+    CFRelease(reachability);
+    if (connected)
+    {
+        if (reachabilityFlags == 0)
+            return NetworkConnectionType::AirplaneMode;
+        if ((reachabilityFlags & kSCNetworkReachabilityFlagsReachable) != 0 && 
+            (reachabilityFlags & kSCNetworkReachabilityFlagsConnectionRequired) == 0 && 
+            (reachabilityFlags & kSCNetworkReachabilityFlagsInterventionRequired) == 0)
+        {
+            if ((reachabilityFlags & kSCNetworkReachabilityFlagsIsWWAN) == 0)
+                return NetworkConnectionType::WiFi;
+            return NetworkConnectionType::Cell;
+        }
+    }
+    return NetworkConnectionType::None;
+}
+
+ScreenOrientationType iOSPlatform::GetScreenOrientationType()
+{
+    UIInterfaceOrientation orientation = UIInterfaceOrientationUnknown;
+	Function<void()> func = [&orientation]()
+	{
+		orientation = [[[[[UIApplication sharedApplication] delegate] window] windowScene] interfaceOrientation];
+	};
+	iOSPlatform::RunOnUIThread(func, true);
+    switch (orientation)
+    {
+    case UIInterfaceOrientationPortrait: return ScreenOrientationType::Portrait;
+    case UIInterfaceOrientationPortraitUpsideDown: return ScreenOrientationType::PortraitUpsideDown;
+    case UIInterfaceOrientationLandscapeLeft: return ScreenOrientationType::LandscapeLeft;
+    case UIInterfaceOrientationLandscapeRight: return ScreenOrientationType::LandscapeRight;
+    case UIInterfaceOrientationUnknown: 
+    default: return ScreenOrientationType::Unknown;
+    }
 }
 
 Guid iOSPlatform::GetUniqueDeviceId()
