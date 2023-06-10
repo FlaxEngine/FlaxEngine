@@ -20,6 +20,7 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Input/Input.h"
+#include "Engine/Input/InputDevice.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/Globals.h"
 #include <UIKit/UIKit.h>
@@ -30,11 +31,47 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+class iOSTouchScreen : public InputDevice
+{
+private:
+    CriticalSection _locker;
+
+public:
+    explicit iOSTouchScreen()
+        : InputDevice(SpawnParams(Guid::New(), TypeInitializer), TEXT("iOS Touch Screen"))
+    {
+    }
+
+    void ResetState() override
+    {
+        ScopeLock lock(_locker);
+        InputDevice::ResetState();
+    }
+
+    bool Update(EventQueue& queue) override
+    {
+        ScopeLock lock(_locker);
+        return InputDevice::Update(queue);
+    }
+
+    void OnTouch(EventType type, float x, float y, int32 pointerId)
+    {
+        ScopeLock lock(_locker);
+        Event& e = _queue.AddOne();
+        e.Type = type;
+        e.Target = nullptr;
+        e.TouchData.Position.X = x;
+        e.TouchData.Position.Y = y;
+        e.TouchData.PointerId = pointerId;
+    }
+};
+
 int32 Dpi = 96;
 Guid DeviceId;
 FlaxView* MainView = nullptr;
 FlaxViewController* MainViewController = nullptr;
 iOSWindow* MainWindow = nullptr;
+iOSTouchScreen* TouchScreen;
 
 struct MessagePipeline
 {
@@ -72,9 +109,19 @@ struct MessagePipeline
 MessagePipeline UIThreadPipeline;
 MessagePipeline MainThreadPipeline;
 
+#define PLATFORM_IOS_MAX_TOUCHES 8
+
+@interface FlaxView()
+
+{
+    UITouch* activeTouches[PLATFORM_IOS_MAX_TOUCHES];
+}
+
+@end
+
 @implementation FlaxView
 
-+(Class) layerClass { return [CAMetalLayer class]; }
++ (Class)layerClass { return [CAMetalLayer class]; }
 
 - (void)setFrame:(CGRect)frame
 {
@@ -85,6 +132,74 @@ MessagePipeline MainThreadPipeline;
     float width = (float)frame.size.width * scale;
     float height = (float)frame.size.height * scale;
     iOSPlatform::RunOnMainThread([width, height]() { MainWindow->CheckForResize(width, height); });
+}
+
+- (void)Init
+{
+    self.multipleTouchEnabled = YES;
+    Platform::MemoryClear(activeTouches, sizeof(activeTouches));
+}
+
+- (void)OnTouchEvent:(NSSet*)touches ofType:(InputDevice::EventType)eventType
+{
+	float scale = [[UIScreen mainScreen] scale];
+    for (UITouch* touch in touches)
+    {
+        // Get touch location
+        CGPoint location = [touch locationInView:self];
+        location.x *= scale;
+        location.y *= scale;
+
+        // Get touch index (use list of activly tracked touches)
+        int32 touchIndex = 0;
+        for (; touchIndex < PLATFORM_IOS_MAX_TOUCHES; touchIndex++)
+        {
+            if (activeTouches[touchIndex] == touch)
+                break;
+        }
+        if (touchIndex == PLATFORM_IOS_MAX_TOUCHES && eventType == InputDevice::EventType::TouchDown)
+        {
+            // Find free slot for a new touches
+            touchIndex = 0;
+            for (; touchIndex < PLATFORM_IOS_MAX_TOUCHES; touchIndex++)
+            {
+                if (activeTouches[touchIndex] == nil)
+                {
+                    activeTouches[touchIndex] = touch;
+                    break;
+                }
+            }
+        }
+        if (touchIndex == PLATFORM_IOS_MAX_TOUCHES)
+            continue;
+
+        // Send event to the input device
+        TouchScreen->OnTouch(eventType, location.x, location.y, touchIndex);
+
+        // Remove ended touches
+        if (eventType == InputDevice::EventType::TouchUp)
+            activeTouches[touchIndex] = nil;
+    }
+}
+
+- (void)touchesBegan:(NSSet*)touches withEvent:(UIEvent*)event 
+{
+    [self OnTouchEvent:touches ofType:InputDevice::EventType::TouchDown];
+}
+
+- (void)touchesMoved:(NSSet*)touches withEvent:(UIEvent*)event
+{
+    [self OnTouchEvent:touches ofType:InputDevice::EventType::TouchMove];
+}
+
+- (void)touchesEnded:(NSSet*)touches withEvent:(UIEvent*)event
+{
+    [self OnTouchEvent:touches ofType:InputDevice::EventType::TouchUp];
+}
+
+- (void)touchesCancelled:(NSSet*)touches withEvent:(UIEvent*)event
+{
+    [self OnTouchEvent:touches ofType:InputDevice::EventType::TouchUp];
 }
 
 @end
@@ -101,7 +216,7 @@ MessagePipeline MainThreadPipeline;
     return YES;
 }
 
--(UIStatusBarAnimation)preferredStatusBarUpdateAnimation
+- (UIStatusBarAnimation)preferredStatusBarUpdateAnimation
 {
     return UIStatusBarAnimationSlide;
 }
@@ -116,13 +231,13 @@ MessagePipeline MainThreadPipeline;
 
 @implementation FlaxAppDelegate
 
--(void)MainThreadMain:(NSDictionary*)launchOptions
+- (void)MainThreadMain:(NSDictionary*)launchOptions
 {
     // Run engine on a separate game thread
     Engine::Main(TEXT(""));
 }
 
--(void)UIThreadMain
+- (void)UIThreadMain
 {
     // Invoke callbacks
     UIThreadPipeline.Run();
@@ -140,6 +255,7 @@ MessagePipeline MainThreadPipeline;
 	[self.view setNeedsDisplay];
 	[self.view setHidden:NO];
 	[self.view setOpaque:YES];
+    [self.view Init];
 	self.view.backgroundColor = [UIColor clearColor];
     MainView = self.view;
 
@@ -335,7 +451,9 @@ bool iOSPlatform::Init()
     String uuidStr = AppleUtils::ToString((CFStringRef)uuid);
     Guid::Parse(uuidStr, DeviceId);
 
+    // Setup native platform input devices
     // TODO: add Gamepad for vibrations usability
+    Input::CustomDevices.Add(TouchScreen = New<iOSTouchScreen>());
 
     return false;
 }
