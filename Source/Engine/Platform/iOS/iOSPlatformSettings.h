@@ -14,6 +14,21 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     DECLARE_SCRIPTING_TYPE_MINIMAL(ApplePlatformSettings);
 
     /// <summary>
+    /// The app export destination methods.
+    /// </summary>
+    API_ENUM() enum class ExportMethods
+    {
+        // Distribute using TestFlight or through the App Store.
+        AppStore,
+        // Distribute to a limited number of devices you register in App Store Connect.
+        Development,
+        // Distribute to a limited number of devices you register in App Store Connect.
+        AdHoc,
+        // Distribute to members of your organization if you’re a part of the Apple Developer Enterprise Program and are ready to release your app to users in your organization.
+        Enterprise,
+    };
+
+    /// <summary>
     /// The display orientation modes. Can be combined as flags.
     /// </summary>
     API_ENUM(Attributes="Flags") enum class UIInterfaceOrientations
@@ -43,6 +58,12 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     String AppVersion = TEXT("1");
 
     /// <summary>
+    /// The app export mode (if automatic packaging is not disabled via Build Settings, otherwise export app manually via XCode project).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(50), EditorDisplay(\"General\")")
+    ExportMethods ExportMethod = ExportMethods::Development;
+
+    /// <summary>
     /// The UI interface orientation modes supported on iPhone devices.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(200), EditorDisplay(\"UI\", \"Supported Interface Orientations (iPhone)\")")
@@ -65,6 +86,7 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
         ApplePlatformSettings::Deserialize(stream, modifier);
         DESERIALIZE(AppTeamId);
         DESERIALIZE(AppVersion);
+        DESERIALIZE(ExportMethod);
         DESERIALIZE(SupportedInterfaceOrientationsiPhone);
         DESERIALIZE(SupportedInterfaceOrientationsiPad);
     }

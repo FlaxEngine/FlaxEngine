@@ -34,6 +34,7 @@ void PrecompileAssembliesStep::OnBuildStarted(CookingData& data)
         File::ReadAllText(aotModeCacheFilePath, cachedData);
         if (cachedData != aotModeCacheValue)
         {
+            LOG(Info, "AOT cache invalidation");
             FileSystem::DeleteDirectory(data.ManagedCodeOutputPath);
         }
     }

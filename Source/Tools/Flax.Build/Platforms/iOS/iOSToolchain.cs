@@ -51,9 +51,6 @@ namespace Flax.Build.Platforms
             options.LinkEnv.InputLibraries.Add("IOKit.framework");
             options.LinkEnv.InputLibraries.Add("UIKit.framework");
             options.LinkEnv.InputLibraries.Add("QuartzCore.framework");
-            //options.LinkEnv.InputLibraries.Add("QuartzCore.framework");
-            //options.LinkEnv.InputLibraries.Add("AudioToolbox.framework");
-            //options.LinkEnv.InputLibraries.Add("AudioUnit.framework");
         }
 
         protected override void AddArgsCommon(BuildOptions options, List<string> args)
@@ -123,6 +120,11 @@ namespace Flax.Build.Platforms
                 // Clean intermediate results
                 File.Delete(inputFileAsm);
                 File.Delete(inputFileObj);
+
+                // Fix rpath id
+                result = Utilities.Run("install_name_tool", $"-id \"@rpath/{Path.GetFileName(outputFileDylib)}\" \"{outputFileDylib}\"", null, inputFileFolder, Utilities.RunOptions.ConsoleLogOutput, envVars);
+                if (result != 0)
+                    return true;
 
                 return false;
             }

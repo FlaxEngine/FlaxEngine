@@ -34,6 +34,18 @@ namespace
         return productName;
     }
 
+    const Char* GetExportMethod(iOSPlatformSettings::ExportMethods method)
+    {
+        switch (method)
+        {
+        case iOSPlatformSettings::ExportMethods::AppStore: return TEXT("app-store");
+        case iOSPlatformSettings::ExportMethods::Development: return TEXT("development");
+        case iOSPlatformSettings::ExportMethods::AdHoc: return TEXT("ad-hoc");
+        case iOSPlatformSettings::ExportMethods::Enterprise: return TEXT("enterprise");
+        default: return TEXT("");
+        }
+    }
+
     String GetUIInterfaceOrientation(iOSPlatformSettings::UIInterfaceOrientations orientations)
     {
         String result;
@@ -196,6 +208,7 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
     configReplaceMap[TEXT("${ProjectName}")] = gameSettings->ProductName;
     configReplaceMap[TEXT("${ProjectVersion}")] = projectVersion;
     configReplaceMap[TEXT("${HeaderSearchPaths}")] = Globals::StartupFolder;
+    configReplaceMap[TEXT("${ExportMethod}")] = GetExportMethod(platformSettings->ExportMethod);
     configReplaceMap[TEXT("${UISupportedInterfaceOrientations_iPhone}")] = GetUIInterfaceOrientation(platformSettings->SupportedInterfaceOrientationsiPhone);
     configReplaceMap[TEXT("${UISupportedInterfaceOrientations_iPad}")] = GetUIInterfaceOrientation(platformSettings->SupportedInterfaceOrientationsiPad);
     {
@@ -232,13 +245,6 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
             configReplaceMap[TEXT("${PBXFileReference}")] += String::Format(TEXT("\t\t{0} /* {1} */ = {{isa = PBXFileReference; lastKnownFileType = \"compiled.mach-o.dylib\"; name = \"{1}\"; path = \"FlaxGame/Data/{2}\"; sourceTree = \"<group>\"; }};\n"), fileId, name, projectPath);
             configReplaceMap[TEXT("${PBXFrameworksBuildPhase}")] += String::Format(TEXT("\t\t\t\t{0} /* {1} in Frameworks */,\n"), frameworkId, name);
             configReplaceMap[TEXT("${PBXFrameworksGroup}")] += String::Format(TEXT("\t\t\t\t{0} /* {1} */,\n"), fileId, name);
-
-            // Fix rpath id
-            // TODO: run this only for dylibs during AOT process (other libs are fine)
-            CreateProcessSettings proc;
-            proc.FileName = TEXT("install_name_tool");
-            proc.Arguments = String::Format(TEXT("-id \"@rpath/{0}\" \"{1}\""), name, file);
-            Platform::CreateProcess(proc);
         }
         else
         {
@@ -251,6 +257,7 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
     }
     bool failed = false;
     failed |= EditorUtilities::ReplaceInFile(data.OriginalOutputPath / TEXT("FlaxGame.xcodeproj/project.pbxproj"), configReplaceMap);
+    failed |= EditorUtilities::ReplaceInFile(data.OriginalOutputPath / TEXT("ExportOptions.plist"), configReplaceMap);
     if (failed)
     {
         LOG(Error, "Failed to format XCode project");
@@ -275,19 +282,26 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
     if (buildSettings->SkipPackaging)
         return false;
     GameCooker::PackageFiles();
-    LOG(Info, "Building app package...");
-    // TODO: run XCode archive and export
-#if 0
-    const String ipaPath = data.OriginalOutputPath / appName + TEXT(".ipa");
-    const String ipaCommand = String::Format(TEXT("zip -r -X {0}.ipa Payload iTunesArtwork"), appName);
-    const int32 result = Platform::RunProcess(ipaCommand, data.OriginalOutputPath);
-    if (result != 0)
     {
-        data.Error(String::Format(TEXT("Failed to package app (result code: {0}). See log for more info."), result));
-        return true;
+        LOG(Info, "Building app package...");
+        const Char* configuration = data.Configuration == BuildConfiguration::Release ? TEXT("Release") : TEXT("Debug");
+        String command = String::Format(TEXT("xcodebuild -project FlaxGame.xcodeproj -configuration {} -scheme FlaxGame -archivePath FlaxGame.xcarchive archive"), configuration);
+        int32 result = Platform::RunProcess(command, data.OriginalOutputPath);
+        if (result != 0)
+        {
+            data.Error(String::Format(TEXT("Failed to package app (result code: {0}). See log for more info."), result));
+            return true;
+        }
+        command = TEXT("xcodebuild -exportArchive -archivePath FlaxGame.xcarchive -allowProvisioningUpdates -exportPath . -exportOptionsPlist ExportOptions.plist");
+        result = Platform::RunProcess(command, data.OriginalOutputPath);
+        if (result != 0)
+        {
+            data.Error(String::Format(TEXT("Failed to package app (result code: {0}). See log for more info."), result));
+            return true;
+        }
+        const String ipaPath = data.OriginalOutputPath / TEXT("FlaxGame.ipa");
+        LOG(Info, "Output application package: {0} (size: {1} MB)", ipaPath, FileSystem::GetFileSize(ipaPath) / 1024 / 1024);
     }
-    LOG(Info, "Output application package: {0} (size: {1} MB)", ipaPath, FileSystem::GetFileSize(ipaPath) / 1024 / 1024);
-#endif
 
     return false;
 }
