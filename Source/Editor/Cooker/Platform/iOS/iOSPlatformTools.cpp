@@ -257,9 +257,18 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
         return true;
     }
 
-    // TODO: update splash screen images
-
-    // TODO: update game icon
+    // Export images
+    // TODO: provide per-device icons (eg. iPad 1x, iPad 2x) instead of a single icon size
+    TextureData iconData;
+    if (!EditorUtilities::GetApplicationImage(platformSettings->OverrideIcon, iconData))
+    {
+        String outputPath = data.OriginalOutputPath / TEXT("FlaxGame/Assets.xcassets/AppIcon.appiconset/ios_store_icon.png");
+        if (EditorUtilities::ExportApplicationImage(iconData, 1024, 1024, PixelFormat::R8G8B8A8_UNorm, outputPath))
+        {
+            LOG(Error, "Failed to export application icon.");
+            return true;
+        }
+    }
 
     // Package application
     const auto buildSettings = BuildSettings::Get();
