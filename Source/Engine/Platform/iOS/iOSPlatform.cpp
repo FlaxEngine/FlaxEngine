@@ -157,7 +157,7 @@ MessagePipeline MainThreadPipeline;
 
     // Create UI thread update callback
     self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(UIThreadMain)];
-    self.displayLink.preferredFramesPerSecond = 30;
+    self.displayLink.preferredFramesPerSecond = 60;
     [self.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
 
     // Run engine on a separate main thread
@@ -325,9 +325,10 @@ bool iOSPlatform::Init()
     if (ApplePlatform::Init())
         return true;
 
+    // Setup screen scaling
     ScreenScale = [[UIScreen mainScreen] scale];
     CustomDpiScale *= ScreenScale;
-    Dpi = 72; // TODO: calculate screen dpi (probably hardcoded map for iPhone model)
+    Dpi = Math::TruncToInt(163 * ScreenScale);
 
 	// Get device identifier
     NSString* uuid = [UIDevice currentDevice].identifierForVendor.UUIDString;
