@@ -29,6 +29,8 @@ public:
     static ScreenOrientationType GetScreenOrientationType();
 	static Guid GetUniqueDeviceId();
     static String GetComputerName();
+    static bool GetHasFocus();
+    static bool GetIsPaused();
     static Float2 GetDesktopSize();
 	static String GetMainDirectory();
     static Window* CreateWindow(const CreateWindowSettings& settings);
