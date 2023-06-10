@@ -752,48 +752,6 @@ bool EditorUtilities::GenerateCertificate(const String& name, const String& outp
     return false;
 }
 
-#if PLATFORM_MAC
-
-bool EditorUtilities::CodeSignApple(const String& appFolder, PlatformType platform, const ApplePlatformSettings& settings)
-{
-    switch(settings.CodeSigning)
-    {
-    case ApplePlatformSettings::CodeSigningMode::None:
-        break;
-    case ApplePlatformSettings::CodeSigningMode::WithProvisionFile:
-    {
-        LOG(Info, "Code signing with privision file '{0}'", settings.ProvisionFile);
-
-        // Embed privision profile file
-        String profileLocation = platform == PlatformType::Mac ? TEXT("Contents/embedded.provisionprofile") : TEXT("embedded.mobileprovision");
-        String dstPath = appFolder / profileLocation;
-        if (FileSystem::CopyFile(dstPath, settings.ProvisionFile))
-        {
-            LOG(Error, "Failed to copy privision file from '{}' to '{}'", settings.ProvisionFile, dstPath);
-            return true;
-        }
-
-        // Run codesign tool
-        CreateProcessSettings procSettings;
-        procSettings.FileName = TEXT("codesign");
-        procSettings.Arguments = String::Format(TEXT("-f -s \"{0}\" ."), settings.SignIdenity);
-        procSettings.HiddenWindow = true;
-        procSettings.LogOutput = true;
-        procSettings.WaitForEnd = true;
-        procSettings.WorkingDirectory = appFolder;
-        if (Platform::CreateProcess(procSettings) != 0)
-        {
-            LOG(Error, "Failed to sign code.'");
-            return true;
-        }
-        break;
-    }
-    }
-    return false;
-}
-
-#endif
-
 bool EditorUtilities::IsInvalidPathChar(Char c)
 {
     char illegalChars[] =

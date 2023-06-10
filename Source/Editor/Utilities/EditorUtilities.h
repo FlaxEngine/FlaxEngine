@@ -53,9 +53,6 @@ public:
     static bool FindWDKBin(String& outputWdkBinPath);
     static bool GenerateCertificate(const String& name, const String& outputPfxFilePath);
     static bool GenerateCertificate(const String& name, const String& outputPfxFilePath, const String& outputCerFilePath, const String& outputPvkFilePath);
-#if PLATFORM_MAC
-    static bool CodeSignApple(const String& appFolder, PlatformType platform, const class ApplePlatformSettings& settings);
-#endif
 
 public:
 
