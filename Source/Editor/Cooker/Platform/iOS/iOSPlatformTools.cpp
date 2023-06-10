@@ -19,8 +19,6 @@
 #include "Editor/ProjectInfo.h"
 #include "Editor/Cooker/GameCooker.h"
 #include "Editor/Utilities/EditorUtilities.h"
-#include <ThirdParty/pugixml/pugixml.hpp>
-using namespace pugi;
 
 IMPLEMENT_SETTINGS_GETTER(iOSPlatformSettings, iOSPlatform);
 
@@ -34,6 +32,21 @@ namespace
         productName.Replace(TEXT("."), TEXT(""));
         productName.Replace(TEXT("-"), TEXT(""));
         return productName;
+    }
+
+    String GetUIInterfaceOrientation(iOSPlatformSettings::UIInterfaceOrientations orientations)
+    {
+        String result;
+        if (EnumHasAnyFlags(orientations, iOSPlatformSettings::UIInterfaceOrientations::Portrait))
+            result += TEXT("UIInterfaceOrientationPortrait ");
+        if (EnumHasAnyFlags(orientations, iOSPlatformSettings::UIInterfaceOrientations::PortraitUpsideDown))
+            result += TEXT("UIInterfaceOrientationPortraitUpsideDown ");
+        if (EnumHasAnyFlags(orientations, iOSPlatformSettings::UIInterfaceOrientations::LandscapeLeft))
+            result += TEXT("UIInterfaceOrientationLandscapeLeft ");
+        if (EnumHasAnyFlags(orientations, iOSPlatformSettings::UIInterfaceOrientations::LandscapeRight))
+            result += TEXT("UIInterfaceOrientationLandscapeRight ");
+        result = result.TrimTrailing();
+        return result;
     }
 }
 
@@ -179,11 +192,12 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
     configReplaceMap[TEXT("${AppName}")] = appName;
     configReplaceMap[TEXT("${AppIdentifier}")] = appIdentifier;
     configReplaceMap[TEXT("${AppTeamId}")] = platformSettings->AppTeamId;
-    configReplaceMap[TEXT("${AppVersion}")] = TEXT("1"); // TODO: expose to iOS platform settings (matches CURRENT_PROJECT_VERSION in XCode)
+    configReplaceMap[TEXT("${AppVersion}")] = platformSettings->AppVersion;
     configReplaceMap[TEXT("${ProjectName}")] = gameSettings->ProductName;
     configReplaceMap[TEXT("${ProjectVersion}")] = projectVersion;
     configReplaceMap[TEXT("${HeaderSearchPaths}")] = Globals::StartupFolder;
-    // TODO: screen rotation settings in XCode project from iOS Platform Settings
+    configReplaceMap[TEXT("${UISupportedInterfaceOrientations_iPhone}")] = GetUIInterfaceOrientation(platformSettings->SupportedInterfaceOrientationsiPhone);
+    configReplaceMap[TEXT("${UISupportedInterfaceOrientations_iPad}")] = GetUIInterfaceOrientation(platformSettings->SupportedInterfaceOrientationsiPad);
     {
         // Initialize auto-generated areas as empty
         configReplaceMap[TEXT("${PBXBuildFile}")] = String::Empty;
