@@ -408,6 +408,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
     {
         private Type _cachedType;
         private bool _anchorDropDownClosed = true;
+        private Button _pivotRelativeButton;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
@@ -484,11 +485,52 @@ namespace FlaxEditor.CustomEditors.Dedicated
             horDown.CustomControl.Height = TextBoxBase.DefaultHeight;
 
             GetAnchorEquality(out _cachedXEq, out _cachedYEq, valueTypes);
-
             BuildLocationSizeOffsets(horUp, horDown, _cachedXEq, _cachedYEq, valueTypes);
+            BuildExtraButtons(group);
 
             main.Space(10);
             BuildAnchorsDropper(main, valueTypes);
+        }
+
+        private void BuildExtraButtons(VerticalPanelElement group)
+        {
+            var control = (Control)Values[0];
+            var pivotRelative = Editor.Instance.Windows.PropertiesWin.UIPivotRelative;
+            control.PivotRelative = pivotRelative;
+
+            var panel = group.CustomContainer<Panel>();
+            panel.CustomControl.Height = TextBoxBase.DefaultHeight;
+            panel.CustomControl.ClipChildren = false;
+            panel.CustomControl.Parent = group.ContainerControl;
+
+            _pivotRelativeButton = new Button
+            {
+                TooltipText = "Toggles UI control resizing based on where the pivot is rather than just the top-left.",
+                Size = new Float2(18),
+                Parent = panel.ContainerControl,
+                BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Scale32),
+                AnchorPreset = AnchorPresets.TopRight,
+                X = 77,
+            };
+
+            SetStyle(pivotRelative);
+            _pivotRelativeButton.Clicked += PivotRelativeClicked;
+        }
+
+        private void PivotRelativeClicked()
+        {
+            var control = (Control)Values[0];
+            var pivotRelative = control.PivotRelative;
+            control.PivotRelative = !pivotRelative;
+            Editor.Instance.Windows.PropertiesWin.UIPivotRelative = !pivotRelative;
+            SetStyle(control.PivotRelative);
+        }
+
+        private void SetStyle(bool current)
+        {
+            var style = FlaxEngine.GUI.Style.Current;
+            var backgroundColor = current ? style.Foreground : style.ForegroundDisabled;
+            _pivotRelativeButton.SetColors(backgroundColor);
         }
 
         private void BuildAnchorsDropper(LayoutElementsContainer main, ScriptType[] valueTypes)

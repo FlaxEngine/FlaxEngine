@@ -748,6 +748,20 @@ void FindActorsRecursive(Actor* node, const Tag& tag, Array<Actor*>& result)
         FindActorsRecursive(child, tag, result);
 }
 
+void FindActorsRecursiveByParentTags(Actor* node, const Array<Tag>& tags, Array<Actor*>& result)
+{
+    for (Tag tag : tags)
+    {
+        if (node->HasTag(tag))
+        {
+            result.Add(node);
+            break;
+        }
+    }
+    for (Actor* child : node->Children)
+        FindActorsRecursiveByParentTags(child, tags, result);
+}
+
 Actor* Level::FindActor(const Tag& tag, Actor* root)
 {
     PROFILE_CPU();
@@ -781,9 +795,40 @@ Array<Actor*> Level::FindActors(const Tag& tag, Actor* root)
     }
     else
     {
+        ScopeLock lock(ScenesLock);
         for (Scene* scene : Scenes)
             FindActorsRecursive(scene, tag, result);
     }
+    return result;
+}
+
+Array<Actor*> Level::FindActorsByParentTag(const Tag& parentTag, Actor* root)
+{
+    PROFILE_CPU();
+    Array<Actor*> result;
+    const Array<Tag> subTags = Tags::GetSubTags(parentTag);
+
+    if (subTags.Count() == 0)
+    {
+        return result;
+    }
+    if (subTags.Count() == 1)
+    {
+        result = FindActors(subTags[0], root);
+        return result;
+    }
+
+    if (root)
+    {
+        FindActorsRecursiveByParentTags(root, subTags, result);
+    }
+    else
+    {
+        ScopeLock lock(ScenesLock);
+        for (Scene* scene : Scenes)
+            FindActorsRecursiveByParentTags(scene, subTags, result);
+    }
+
     return result;
 }
 
@@ -1266,7 +1311,7 @@ bool Level::SaveSceneToBytes(Scene* scene, rapidjson_flax::StringBuffer& outData
     }
 
     // Info
-    LOG(Info, "Scene saved! Time {0} ms", Math::CeilToInt(static_cast<float>((DateTime::NowUTC()- startTime).GetTotalMilliseconds())));
+    LOG(Info, "Scene saved! Time {0} ms", Math::CeilToInt(static_cast<float>((DateTime::NowUTC() - startTime).GetTotalMilliseconds())));
 
     // Fire event
     CallSceneEvent(SceneEventType::OnSceneSaved, scene, scene->GetID());
@@ -1443,6 +1488,16 @@ Actor* Level::FindActor(const MClass* type)
     ScopeLock lock(ScenesLock);
     for (int32 i = 0; result == nullptr && i < Scenes.Count(); i++)
         result = Scenes[i]->FindActor(type);
+    return result;
+}
+
+Actor* Level::FindActor(const MClass* type, const StringView& name)
+{
+    CHECK_RETURN(type, nullptr);
+    Actor* result = nullptr;
+    ScopeLock lock(ScenesLock);
+    for (int32 i = 0; result == nullptr && i < Scenes.Count(); i++)
+        result = Scenes[i]->FindActor(type, name);
     return result;
 }
 

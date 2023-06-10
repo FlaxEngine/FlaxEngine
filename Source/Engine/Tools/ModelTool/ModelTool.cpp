@@ -1380,7 +1380,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
     }
 
     // Automatic LOD generation
-    if (options.GenerateLODs && data.LODs.HasItems() && options.TriangleReduction < 1.0f - ZeroTolerance)
+    if (options.GenerateLODs && options.LODCount > 1 && data.LODs.HasItems() && options.TriangleReduction < 1.0f - ZeroTolerance)
     {
         auto lodStartTime = DateTime::NowUTC();
         meshopt_setAllocator(MeshOptAllocate, MeshOptDeallocate);

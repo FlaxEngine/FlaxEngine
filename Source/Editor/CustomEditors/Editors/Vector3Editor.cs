@@ -129,25 +129,39 @@ namespace FlaxEditor.CustomEditors.Editors
 
             if (LinkValues)
             {
-                var valueChange = 0.0f;
+                var valueRatio = 0.0f;
                 switch (_valueChanged)
                 {
                 case ValueChanged.X:
-                    valueChange = xValue - ((Float3)Values[0]).X;
-                    yValue += valueChange;
-                    zValue += valueChange;
+                    valueRatio = GetRatio(xValue, ((Float3)Values[0]).X);
+                    if (Mathf.NearEqual(valueRatio, 0))
+                    {
+                        XElement.ValueBox.Enabled = false;
+                        valueRatio = 1;
+                    }
+                    yValue = NewLinkedValue(yValue, valueRatio);
+                    zValue = NewLinkedValue(zValue, valueRatio);
                     break;
                 case ValueChanged.Y:
-                    valueChange = yValue - ((Float3)Values[0]).Y;
-                    xValue += valueChange;
-                    zValue += valueChange;
+                    valueRatio = GetRatio(yValue, ((Float3)Values[0]).Y);
+                    if (Mathf.NearEqual(valueRatio, 0))
+                    {
+                        YElement.ValueBox.Enabled = false;
+                        valueRatio = 1;
+                    }
+                    xValue = NewLinkedValue(xValue, valueRatio);
+                    zValue = NewLinkedValue(zValue, valueRatio);
                     break;
                 case ValueChanged.Z:
-                    valueChange = zValue - ((Float3)Values[0]).Z;
-                    xValue += valueChange;
-                    yValue += valueChange;
+                    valueRatio = GetRatio(zValue, ((Float3)Values[0]).Z);
+                    if (Mathf.NearEqual(valueRatio, 0))
+                    {
+                        ZElement.ValueBox.Enabled = false;
+                        valueRatio = 1;
+                    }
+                    xValue = NewLinkedValue(xValue, valueRatio);
+                    yValue = NewLinkedValue(yValue, valueRatio);
                     break;
-                default: break;
                 }
             }
 
@@ -162,6 +176,16 @@ namespace FlaxEditor.CustomEditors.Editors
             else if (v is Double3)
                 v = (Double3)value;
             SetValue(v, token);
+        }
+
+        private float GetRatio(float value, float initialValue)
+        {
+            return Mathf.NearEqual(initialValue, 0) ? 0 : value / initialValue;
+        }
+
+        private float NewLinkedValue(float value, float valueRatio)
+        {
+            return Mathf.NearEqual(value, 0) ? value : value * valueRatio;
         }
 
         /// <inheritdoc />

@@ -66,72 +66,66 @@ API_CLASS(Static) class FLAXENGINE_API Input
     static Array<InputDevice*, InlinedAllocation<16>> CustomDevices;
 
 public:
-    typedef Delegate<Char> CharDelegate;
-    typedef Delegate<KeyboardKeys> KeyboardDelegate;
-    typedef Delegate<const Float2&> MouseDelegate;
-    typedef Delegate<const Float2&, MouseButton> MouseButtonDelegate;
-    typedef Delegate<const Float2&, float> MouseWheelDelegate;
-    typedef Delegate<const Float2&, int32> TouchDelegate;
 
     /// <summary>
     /// Event fired on character input.
     /// </summary>
-    static CharDelegate CharInput;
+    API_EVENT() static Delegate<Char> CharInput;
 
     /// <summary>
     /// Event fired on key pressed.
     /// </summary>
-    static KeyboardDelegate KeyDown;
+    API_EVENT() static Delegate<KeyboardKeys> KeyDown;
 
     /// <summary>
     /// Event fired on key released.
     /// </summary>
-    static KeyboardDelegate KeyUp;
+    API_EVENT() static Delegate<KeyboardKeys> KeyUp;
 
     /// <summary>
     /// Event fired when mouse button goes down.
     /// </summary>
-    static MouseButtonDelegate MouseDown;
+    API_EVENT() static Delegate<const Float2&, MouseButton> MouseDown;
 
     /// <summary>
     /// Event fired when mouse button goes up.
     /// </summary>
-    static MouseButtonDelegate MouseUp;
+    API_EVENT() static Delegate<const Float2&, MouseButton> MouseUp;
 
     /// <summary>
     /// Event fired when mouse button double clicks.
     /// </summary>
-    static MouseButtonDelegate MouseDoubleClick;
+    API_EVENT() static Delegate<const Float2&, MouseButton> MouseDoubleClick;
 
     /// <summary>
     /// Event fired when mouse wheel is scrolling (wheel delta is normalized).
     /// </summary>
-    static MouseWheelDelegate MouseWheel;
+    API_EVENT() static Delegate<const Float2&, float> MouseWheel;
 
     /// <summary>
     /// Event fired when mouse moves.
     /// </summary>
-    static MouseDelegate MouseMove;
+    API_EVENT() static Delegate<const Float2&> MouseMove;
 
     /// <summary>
     /// Event fired when mouse leaves window.
     /// </summary>
-    static Action MouseLeave;
+    API_EVENT() static Action MouseLeave;
 
     /// <summary>
     /// Event fired when touch action begins.
     /// </summary>
-    static TouchDelegate TouchDown;
+    API_EVENT() static Delegate<const Float2&, int32> TouchDown;
 
     /// <summary>
     /// Event fired when touch action moves.
     /// </summary>
-    static TouchDelegate TouchMove;
+    API_EVENT() static Delegate<const Float2&, int32> TouchMove;
 
     /// <summary>
     /// Event fired when touch action ends.
     /// </summary>
-    static TouchDelegate TouchUp;
+    API_EVENT() static Delegate<const Float2&, int32> TouchUp;
 
 public:
     /// <summary>
