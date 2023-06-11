@@ -524,7 +524,6 @@ namespace FlaxEngine.Interop
                         }
                     }
                 }
-
                 throw new NativeInteropException($"Invalid field {field.Name} to marshal for type {typeof(T).Name}");
             }
 
@@ -624,7 +623,11 @@ namespace FlaxEngine.Interop
                         fieldOffset += (fieldPtr - startPtr).ToInt32();
                     }
 
+#if USE_AOT
+                    TField fieldValueRef = (TField)field.GetValue(fieldOwner);
+#else
                     ref TField fieldValueRef = ref GetFieldReference<TField>(field, ref fieldOwner);
+#endif
                     MarshalHelperValueType<TField>.ToNative(ref fieldValueRef, fieldPtr);
                 }
             }
