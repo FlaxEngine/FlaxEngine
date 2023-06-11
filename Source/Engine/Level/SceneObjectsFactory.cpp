@@ -31,7 +31,7 @@ void SceneObjectsFactory::Context::SetupIdsMapping(const SceneObject* obj)
     }
 }
 
-SceneObject* SceneObjectsFactory::Spawn(Context& context, ISerializable::DeserializeStream& stream)
+SceneObject* SceneObjectsFactory::Spawn(Context& context, const ISerializable::DeserializeStream& stream)
 {
     // Get object id
     Guid id = JsonTools::GetGuid(stream, "ID");
@@ -81,7 +81,7 @@ SceneObject* SceneObjectsFactory::Spawn(Context& context, ISerializable::Deseria
         context.Modifier->IdsMapping[prefabObjectId] = id;
 
         // Create prefab instance (recursive prefab loading to support nested prefabs)
-        obj = Spawn(context, *(ISerializable::DeserializeStream*)prefabData);
+        obj = Spawn(context, *prefabData);
     }
     else
     {
@@ -584,7 +584,7 @@ void SceneObjectsFactory::SynchronizeNewPrefabInstance(Context& context, PrefabS
     data.Modifier->IdsMapping[prefabObjectId] = id;
 
     // Create prefab instance (recursive prefab loading to support nested prefabs)
-    auto child = Spawn(context, *(ISerializable::DeserializeStream*)prefabData);
+    auto child = Spawn(context, *prefabData);
     if (!child)
     {
         LOG(Warning, "Failed to create object {1} from prefab {0}.", prefab->ToString(), prefabObjectId);

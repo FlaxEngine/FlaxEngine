@@ -35,7 +35,7 @@ public:
     /// </summary>
     /// <param name="context">The serialization context.</param>
     /// <param name="stream">The serialized data stream.</param>
-    static SceneObject* Spawn(Context& context, ISerializable::DeserializeStream& stream);
+    static SceneObject* Spawn(Context& context, const ISerializable::DeserializeStream& stream);
 
     /// <summary>
     /// Deserializes the scene object from the specified data value.

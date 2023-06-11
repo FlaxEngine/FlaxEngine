@@ -63,9 +63,7 @@ Asset::LoadResult LocalizedStringTable::loadAsset()
         return result;
 
     JsonTools::GetString(Locale, *Data, "Locale");
-    Guid fallbackTable = Guid::Empty;
-    JsonTools::GetGuid(fallbackTable, *Data, "FallbackTable");
-    FallbackTable = fallbackTable;
+    JsonTools::GetReference(FallbackTable, *Data, "FallbackTable");
     const auto entriesMember = SERIALIZE_FIND_MEMBER((*Data), "Entries");
     if (entriesMember != Data->MemberEnd() && entriesMember->value.IsObject())
     {

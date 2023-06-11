@@ -336,7 +336,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
                 continue;
             }
 
-            SceneObject* obj = SceneObjectsFactory::Spawn(context, *(ISerializable::DeserializeStream*)data);
+            SceneObject* obj = SceneObjectsFactory::Spawn(context, *data);
             if (!obj)
                 continue;
             obj->RegisterObject();

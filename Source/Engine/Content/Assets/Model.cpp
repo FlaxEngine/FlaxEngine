@@ -1012,7 +1012,7 @@ Asset::LoadResult Model::load()
         }
     }
 
-#if BUILD_DEBUG || BUILD_DEVELOPMENT
+#if !BUILD_RELEASE
     // Validate LODs
     for (int32 lodIndex = 1; lodIndex < LODs.Count(); lodIndex++)
     {

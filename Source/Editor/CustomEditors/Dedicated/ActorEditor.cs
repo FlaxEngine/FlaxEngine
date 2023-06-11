@@ -207,7 +207,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 node.Text = Utilities.Utils.GetPropertyNameUI(sceneObject.GetType().Name);
             }
             // Array Item
-            else if (editor.ParentEditor?.Values?.Type.IsArray ?? false)
+            else if (editor.ParentEditor is CollectionEditor)
             {
                 node.Text = "Element " + editor.ParentEditor.ChildrenEditors.IndexOf(editor);
             }
@@ -250,16 +250,14 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
 
             // Skip if no change detected
-            if (!editor.Values.IsReferenceValueModified && skipIfNotModified)
+            var isRefEdited = editor.Values.IsReferenceValueModified;
+            if (!isRefEdited && skipIfNotModified)
                 return null;
 
             TreeNode result = null;
-
-            if (editor.ChildrenEditors.Count == 0)
+            if (editor.ChildrenEditors.Count == 0 || (isRefEdited && editor is CollectionEditor))
                 result = CreateDiffNode(editor);
-
             bool isScriptEditorWithRefValue = editor is ScriptsEditor && editor.Values.HasReferenceValue;
-
             for (int i = 0; i < editor.ChildrenEditors.Count; i++)
             {
                 var child = ProcessDiff(editor.ChildrenEditors[i], !isScriptEditorWithRefValue);
@@ -267,7 +265,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     if (result == null)
                         result = CreateDiffNode(editor);
-
                     result.AddChild(child);
                 }
             }

@@ -15,7 +15,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Scripting.h"
 
-#define NETWORK_PROTOCOL_VERSION 1
+#define NETWORK_PROTOCOL_VERSION 2
 
 float NetworkManager::NetworkFPS = 60.0f;
 NetworkPeer* NetworkManager::Peer = nullptr;

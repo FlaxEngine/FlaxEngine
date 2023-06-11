@@ -50,11 +50,7 @@ public:
     /// <summary>
     /// Gets the root object identifier (prefab object ID). Asset must be loaded.
     /// </summary>
-    Guid GetRootObjectId() const
-    {
-        ASSERT(IsLoaded());
-        return ObjectsIds[0];
-    }
+    Guid GetRootObjectId() const;
 
     /// <summary>
     /// Requests the default prefab object instance. Deserializes the prefab objects from the asset. Skips if already done.
