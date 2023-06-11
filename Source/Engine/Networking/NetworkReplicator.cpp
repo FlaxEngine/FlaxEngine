@@ -95,6 +95,8 @@ PACK_STRUCT(struct NetworkMessageObjectRpc
     {
     NetworkMessageIDs ID = NetworkMessageIDs::ObjectRpc;
     Guid ObjectId;
+    Guid ParentId;
+    char ObjectTypeName[128]; // TODO: introduce networked-name to synchronize unique names as ushort (less data over network)
     char RpcTypeName[128]; // TODO: introduce networked-name to synchronize unique names as ushort (less data over network)
     char RpcName[128]; // TODO: introduce networked-name to synchronize unique names as ushort (less data over network)
     uint16 ArgsSize;
@@ -1546,11 +1548,14 @@ void NetworkInternal::NetworkReplicatorUpdate()
             //NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Rpc {}::{} object ID={}", e.Name.First.ToString(), String(e.Name.Second), item.ToString());
             NetworkMessageObjectRpc msgData;
             msgData.ObjectId = item.ObjectId;
+            msgData.ParentId = item.ParentId;
             if (isClient)
             {
                 // Remap local client object ids into server ids
                 IdsRemappingTable.KeyOf(msgData.ObjectId, &msgData.ObjectId);
+                IdsRemappingTable.KeyOf(msgData.ParentId, &msgData.ParentId);
             }
+            GetNetworkName(msgData.ObjectTypeName, obj->GetType().Fullname);
             GetNetworkName(msgData.RpcTypeName, e.Name.First.GetType().Fullname);
             GetNetworkName(msgData.RpcName, e.Name.Second);
             msgData.ArgsSize = (uint16)e.ArgsData.Length();
@@ -1949,7 +1954,7 @@ void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClie
     NetworkMessageObjectRpc msgData;
     event.Message.ReadStructure(msgData);
     ScopeLock lock(ObjectsLock);
-    NetworkReplicatedObject* e = ResolveObject(msgData.ObjectId);
+    NetworkReplicatedObject* e = ResolveObject(msgData.ObjectId, msgData.ParentId, msgData.ObjectTypeName);
     if (e)
     {
         auto& item = *e;
