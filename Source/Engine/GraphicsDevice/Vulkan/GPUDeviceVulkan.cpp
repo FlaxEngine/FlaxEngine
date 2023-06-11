@@ -527,8 +527,9 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
 #if PLATFORM_ANDROID
         attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; // TODO: Adreno 640 has glitches when blend is disabled and rt data not loaded 
 #elif PLATFORM_MAC || PLATFORM_IOS
-        attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; // MoltenVK seams to have glitches 
+        attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; // MoltenVK seams to have glitches (tiled arch of gpu)
 #else
+        // TODO: we need render passes into high-level rendering api to perform more optimal rendering (esp. for tiled gpus)
         attachment.loadOp = layout.BlendEnable ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 #endif
         attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;

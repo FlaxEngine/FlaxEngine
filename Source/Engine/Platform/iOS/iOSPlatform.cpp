@@ -9,6 +9,7 @@
 #include "iOSApp.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Delegate.h"
+#include "Engine/Core/Utilities.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Platform/Apple/AppleUtils.h"
@@ -23,6 +24,7 @@
 #include "Engine/Input/InputDevice.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/Globals.h"
+#include "Engine/Content/Storage/ContentStorageManager.h"
 #include <UIKit/UIKit.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <QuartzCore/CAMetalLayer.h>
@@ -30,6 +32,7 @@
 #include <sys/utsname.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <os/proc.h>
 
 class iOSTouchScreen : public InputDevice
 {
@@ -327,16 +330,26 @@ MessagePipeline MainThreadPipeline;
         MainWindow->OnGotFocus();
 }
 
+- (void)applicationDidReceiveMemoryWarning:(UIApplication*)application
+{
+    LOG(Warning, "[iOS] applicationDidReceiveMemoryWarning");
+    LOG(Warning, "os_proc_available_memory: {}", Utilities::BytesToText(os_proc_available_memory()));
+}
+
 @end
 
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
 {
 	NSString* title = (NSString*)AppleUtils::ToString(caption);
 	NSString* message = (NSString*)AppleUtils::ToString(text);
-	UIAlertController* alert = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
-	UIAlertAction* button = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:^(id){ }];
-	[alert addAction:button];
-    [MainViewController presentViewController:alert animated:YES completion:nil];
+    Function<void()> func = [&title, &message]()
+    {
+        UIAlertController* alert = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertAction* button = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:^(id){ }];
+        [alert addAction:button];
+        [MainViewController presentViewController:alert animated:YES completion:nil];
+    };
+    iOSPlatform::RunOnUIThread(func, true);
     return DialogResult::OK;
 }
 
@@ -472,6 +485,9 @@ bool iOSPlatform::Init()
     // TODO: add Gamepad for vibrations usability
     Input::CustomDevices.Add(TouchScreen = New<iOSTouchScreen>());
 
+    // Use more aggressive content buffers freeing to reduce peek memory
+    ContentStorageManager::UnusedDataChunksLifetime = TimeSpan::FromMilliseconds(30);
+
     return false;
 }
 
@@ -483,6 +499,7 @@ void iOSPlatform::LogInfo()
 	uname(&systemInfo);
     NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
     LOG(Info, "{3}, iOS {0}.{1}.{2}", version.majorVersion, version.minorVersion, version.patchVersion, String(systemInfo.machine));
+    LOG(Info, "os_proc_available_memory: {}", Utilities::BytesToText(os_proc_available_memory()));
 }
 
 void iOSPlatform::Tick()
