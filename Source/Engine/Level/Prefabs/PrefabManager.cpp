@@ -121,7 +121,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
     for (int32 i = 0; i < objectsCount; i++)
     {
         auto& stream = data[i];
-        auto obj = SceneObjectsFactory::Spawn(context, stream);
+        SceneObject* obj = SceneObjectsFactory::Spawn(context, stream);
         sceneObjects->At(i) = obj;
         if (obj)
             obj->RegisterObject();
@@ -146,16 +146,25 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
     }
     Scripting::ObjectsLookupIdMapping.Set(prevIdMapping);
 
-    // Assume that prefab has always only one root actor that is serialized first
-    if (sceneObjects.Value->IsEmpty())
+    // Pick prefab root object
+    if (sceneObjects->IsEmpty())
     {
         LOG(Warning, "No valid objects in prefab.");
         return nullptr;
     }
-    auto root = (Actor*)sceneObjects.Value->At(0);
+    Actor* root = nullptr;
+    const Guid prefabRootObjectId = prefab->GetRootObjectId();
+    for (int32 i = 0; i < objectsCount; i++)
+    {
+        if (JsonTools::GetGuid(data[i], "ID") == prefabRootObjectId)
+        {
+            root = dynamic_cast<Actor*>(sceneObjects->At(i));
+            break;
+        }
+    }
     if (!root)
     {
-        LOG(Warning, "Failed to load prefab root object.");
+        LOG(Warning, "Missing prefab root object.");
         return nullptr;
     }
 
@@ -167,6 +176,8 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
     }
 
     // Prepare parent linkage for prefab root actor
+    if (root->_parent)
+        root->_parent->Children.Remove(root);
     root->_parent = parent;
     if (parent)
         parent->Children.Add(root);
@@ -174,16 +185,16 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
     // Link actors hierarchy
     for (int32 i = 0; i < sceneObjects->Count(); i++)
     {
-        auto obj = sceneObjects->At(i);
+        SceneObject* obj = sceneObjects->At(i);
         if (obj)
             obj->Initialize();
     }
 
     // Delete objects without parent or with invalid linkage to the prefab
-    for (int32 i = 1; i < sceneObjects->Count(); i++)
+    for (int32 i = 0; i < sceneObjects->Count(); i++)
     {
         SceneObject* obj = sceneObjects->At(i);
-        if (!obj)
+        if (!obj || obj == root)
             continue;
 
         // Check for missing parent (eg. parent object has been deleted)
@@ -251,8 +262,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
         const Guid prefabObjectId = JsonTools::GetGuid(stream, "ID");
         if (objectsCache)
             objectsCache->Add(prefabObjectId, obj);
-        obj->_prefabID = prefabId;
-        obj->_prefabObjectID = prefabObjectId;
+        obj->LinkPrefab(prefabId, prefabObjectId);
     }
 
     // Update transformations
@@ -317,7 +327,7 @@ bool PrefabManager::CreatePrefab(Actor* targetActor, const StringView& outputPat
         writer.StartArray();
         for (int32 i = 0; i < sceneObjects->Count(); i++)
         {
-            SceneObject* obj = sceneObjects.Value->At(i);
+            SceneObject* obj = sceneObjects->At(i);
             writer.SceneObject(obj);
         }
         writer.EndArray();
@@ -335,7 +345,7 @@ bool PrefabManager::CreatePrefab(Actor* targetActor, const StringView& outputPat
     for (int32 i = 0; i < sceneObjects->Count(); i++)
     {
         // Generate new IDs for the prefab objects (other than reference instance used to create prefab)
-        const SceneObject* obj = sceneObjects.Value->At(i);
+        const SceneObject* obj = sceneObjects->At(i);
         objectInstanceIdToPrefabObjectId.Add(obj->GetSceneObjectId(), Guid::New());
     }
     {
@@ -382,7 +392,7 @@ bool PrefabManager::CreatePrefab(Actor* targetActor, const StringView& outputPat
 
         for (int32 i = 0; i < sceneObjects->Count(); i++)
         {
-            SceneObject* obj = sceneObjects.Value->At(i);
+            SceneObject* obj = sceneObjects->At(i);
             Guid prefabObjectId;
 
             if (objectInstanceIdToPrefabObjectId.TryGet(obj->GetSceneObjectId(), prefabObjectId))
