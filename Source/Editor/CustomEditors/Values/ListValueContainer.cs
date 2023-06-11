@@ -51,7 +51,7 @@ namespace FlaxEditor.CustomEditors
 
             if (values.HasReferenceValue)
             {
-                if (values.ReferenceValue is IList v && values.Count == v.Count && v.Count > index)
+                if (values.ReferenceValue is IList v && v.Count > index)
                 {
                     _referenceValue = v[index];
                     _hasReferenceValue = true;
