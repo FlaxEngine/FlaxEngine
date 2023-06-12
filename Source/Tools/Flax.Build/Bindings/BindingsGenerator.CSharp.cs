@@ -377,7 +377,15 @@ namespace Flax.Build.Bindings
             var typeName = typeInfo.Type.Replace("::", ".");
             if (apiType != null)
             {
+                // Add reference to the namespace
                 CSharpUsedNamespaces.Add(apiType.Namespace);
+                var apiTypeParent = apiType.Parent;
+                while (apiTypeParent != null)
+                {
+                    CSharpUsedNamespaces.Add(apiTypeParent.Namespace);
+                    apiTypeParent = apiTypeParent.Parent;
+                }
+
                 if (apiType.IsScriptingObject || apiType.IsInterface)
                     return typeName;
                 if (typeInfo.IsPtr && apiType.IsPod)
@@ -403,6 +411,15 @@ namespace Flax.Build.Bindings
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
             if (apiType != null)
             {
+                // Add reference to the namespace
+                CSharpUsedNamespaces.Add(apiType.Namespace);
+                var apiTypeParent = apiType.Parent;
+                while (apiTypeParent != null)
+                {
+                    CSharpUsedNamespaces.Add(apiTypeParent.Namespace);
+                    apiTypeParent = apiTypeParent.Parent;
+                }
+
                 if (apiType.IsScriptingObject || apiType.IsInterface)
                     return "IntPtr";
             }
@@ -1401,7 +1418,6 @@ namespace Flax.Build.Bindings
                 {
                     // Native struct begin
                     // TODO: skip using this utility structure if the auto-generated C# struct is already the same as XXXInternal here below
-                    GenerateCSharpAttributes(buildData, contents, indent, structureInfo, true);
                     if (buildData.Target != null & buildData.Target.IsEditor)
                         contents.Append(indent).AppendLine("[HideInEditor]");
                     contents.Append(indent).AppendLine("[StructLayout(LayoutKind.Sequential)]");
@@ -1565,8 +1581,8 @@ namespace Flax.Build.Bindings
                                 // Marshal blittable array elements back to original non-blittable elements
                                 string originalElementTypeMarshaller = originalElementType + "Marshaller";
                                 string internalElementType = $"{originalElementTypeMarshaller}.{originalElementType}Internal";
-                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.NativeArrayToManagedArray<{originalElementType}, {internalElementType}>((Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target)).ToSpan<{internalElementType}>(), {originalElementTypeMarshaller}.ToManaged) : null");
-                                toNativeContent.Append($"ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(managed.{fieldInfo.Name}), GCHandleType.Weak)");
+                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.ConvertArray((Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target)).ToSpan<{internalElementType}>(), {originalElementTypeMarshaller}.ToManaged) : null");
+                                toNativeContent.Append($"managed.{fieldInfo.Name}?.Length > 0 ? ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(NativeInterop.ConvertArray(managed.{fieldInfo.Name}, {originalElementTypeMarshaller}.ToNative)), GCHandleType.Weak) : IntPtr.Zero");
                                 freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
                                 freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
                             }

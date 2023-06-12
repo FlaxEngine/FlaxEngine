@@ -21,7 +21,7 @@ namespace FlaxEngine.Interop
 #endif
     public unsafe class ManagedArray
     {
-        private ManagedHandle _pinnedArrayHandle;
+        private ManagedHandle _managedHandle;
         private IntPtr _unmanagedData;
         private int _unmanagedAllocationSize;
         private Type _arrayType;
@@ -78,7 +78,9 @@ namespace FlaxEngine.Interop
         {
             if (_unmanagedData != IntPtr.Zero)
                 NativeInterop.NativeFree(_unmanagedData.ToPointer());
-            _pinnedArrayHandle = ManagedHandle.Alloc(arr, GCHandleType.Pinned);
+            if (_managedHandle.IsAllocated)
+                _managedHandle.Free();
+            _managedHandle = ManagedHandle.Alloc(arr, GCHandleType.Pinned);
             _unmanagedData = Marshal.UnsafeAddrOfPinnedArrayElement(arr, 0);
             _unmanagedAllocationSize = 0;
             _length = arr.Length;
@@ -127,9 +129,9 @@ namespace FlaxEngine.Interop
         public void Free()
         {
             GC.SuppressFinalize(this);
-            if (_pinnedArrayHandle.IsAllocated)
+            if (_managedHandle.IsAllocated)
             {
-                _pinnedArrayHandle.Free();
+                _managedHandle.Free();
                 _unmanagedData = IntPtr.Zero;
             }
             if (_unmanagedData != IntPtr.Zero)
@@ -142,9 +144,9 @@ namespace FlaxEngine.Interop
 
         public void FreePooled()
         {
-            if (_pinnedArrayHandle.IsAllocated)
+            if (_managedHandle.IsAllocated)
             {
-                _pinnedArrayHandle.Free();
+                _managedHandle.Free();
                 _unmanagedData = IntPtr.Zero;
             }
             ManagedArrayPool.Put(this);

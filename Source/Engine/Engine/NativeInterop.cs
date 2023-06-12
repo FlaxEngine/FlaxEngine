@@ -182,12 +182,20 @@ namespace FlaxEngine.Interop
             return ManagedArray.WrapNewArray(pointerArray, array.GetType());
         }
 
-        internal static T[] NativeArrayToManagedArray<T, U>(Span<U> nativeSpan, Func<U, T> toManagedFunc)
+        internal static TDst[] ConvertArray<TSrc, TDst>(Span<TSrc> src, Func<TSrc, TDst> convertFunc)
         {
-            T[] managedArray = new T[nativeSpan.Length];
-            for (int i = 0; i < nativeSpan.Length; i++)
-                managedArray[i] = toManagedFunc(nativeSpan[i]);
-            return managedArray;
+            TDst[] dst = new TDst[src.Length];
+            for (int i = 0; i < src.Length; i++)
+                dst[i] = convertFunc(src[i]);
+            return dst;
+        }
+
+        internal static TDst[] ConvertArray<TSrc, TDst>(TSrc[] src, Func<TSrc, TDst> convertFunc)
+        {
+            TDst[] dst = new TDst[src.Length];
+            for (int i = 0; i < src.Length; i++)
+                dst[i] = convertFunc(src[i]);
+            return dst;
         }
 
         private static Type FindType(string typeName)
@@ -995,6 +1003,7 @@ namespace FlaxEngine.Interop
         internal static class ValueTypeUnboxer
         {
             private delegate IntPtr UnboxerDelegate(object value);
+
             private static ConcurrentDictionary<Type, UnboxerDelegate> unboxers = new ConcurrentDictionary<Type, UnboxerDelegate>(1, 3);
             private static MethodInfo unboxerMethod = typeof(ValueTypeUnboxer).GetMethod(nameof(ValueTypeUnboxer.UnboxPointer), BindingFlags.Static | BindingFlags.NonPublic);
             private static MethodInfo unboxerToNativeMethod = typeof(ValueTypeUnboxer).GetMethod(nameof(ValueTypeUnboxer.UnboxPointerWithConverter), BindingFlags.Static | BindingFlags.NonPublic);

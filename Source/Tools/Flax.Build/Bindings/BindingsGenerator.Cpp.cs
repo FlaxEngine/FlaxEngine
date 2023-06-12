@@ -431,6 +431,17 @@ namespace Flax.Build.Bindings
             return $"{GenerateCppGetMClass(buildData, typeInfo, caller, null)}->GetType()";
         }
 
+        private static string GenerateCppManagedWrapperName(ApiTypeInfo type)
+        {
+            var result = type.NativeName + "Managed";
+            while (type.Parent is ClassStructInfo)
+            {
+                result = type.Parent.NativeName + '_' + result;
+                type = type.Parent;
+            }
+            return result;
+        }
+
         private static string GenerateCppWrapperNativeToManaged(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, out string type, FunctionInfo functionInfo)
         {
             // Use dynamic array as wrapper container for fixed-size native arrays
@@ -587,10 +598,9 @@ namespace Flax.Build.Bindings
                         // Use wrapper structure that represents the memory layout of the managed data
                         if (!CppUsedNonPodTypes.Contains(apiType))
                             CppUsedNonPodTypes.Add(apiType);
+                        type = GenerateCppManagedWrapperName(apiType);
                         if (functionInfo != null)
-                            type = apiType.Name + "Managed*";
-                        else
-                            type = apiType.Name + "Managed";
+                            type += '*';
                         return "ToManaged({0})";
                     }
 
@@ -794,7 +804,7 @@ namespace Flax.Build.Bindings
                         needLocalVariable = true;
                         if (!CppUsedNonPodTypes.Contains(apiType))
                             CppUsedNonPodTypes.Add(apiType);
-                        type = apiType.Name + "Managed";
+                        type = GenerateCppManagedWrapperName(apiType);
                         if (functionInfo != null)
                             return "ToNative(*{0})";
                         return "ToNative({0})";
@@ -2372,7 +2382,7 @@ namespace Flax.Build.Bindings
                 if (structureInfo.IsPod)
                     contents.AppendLine($"        Platform::MemoryCopy(ptr, MCore::Object::Unbox(managed), sizeof({structureTypeNameNative}));");
                 else
-                    contents.AppendLine($"        *({structureTypeNameNative}*)ptr = ToNative(*({structureInfo.NativeName}Managed*)MCore::Object::Unbox(managed));");
+                    contents.AppendLine($"        *({structureTypeNameNative}*)ptr = ToNative(*({GenerateCppManagedWrapperName(structureInfo)}*)MCore::Object::Unbox(managed));");
                 contents.AppendLine("    }").AppendLine();
             }
             else
@@ -2811,6 +2821,7 @@ namespace Flax.Build.Bindings
                 foreach (var apiType in CppUsedNonPodTypesList)
                 {
                     header.AppendLine();
+                    var wrapperName = GenerateCppManagedWrapperName(apiType);
                     var structureInfo = apiType as StructureInfo;
                     var classInfo = apiType as ClassInfo;
                     List<FieldInfo> fields;
@@ -2828,7 +2839,7 @@ namespace Flax.Build.Bindings
                     if (structureInfo != null)
                     {
                         // Generate managed type memory layout
-                        header.Append("struct ").Append(apiType.Name).Append("Managed").AppendLine();
+                        header.Append("struct ").Append(wrapperName).AppendLine();
                         header.Append('{').AppendLine();
                         if (classInfo != null)
                             header.AppendLine("    MObject obj;");
@@ -2857,8 +2868,8 @@ namespace Flax.Build.Bindings
                         // Generate forward declarations of structure converting functions
                         header.AppendLine();
                         header.AppendLine("namespace {");
-                        header.AppendFormat("{0}Managed ToManaged(const {1}& value);", apiType.Name, fullName).AppendLine();
-                        header.AppendFormat("{1} ToNative(const {0}Managed& value);", apiType.Name, fullName).AppendLine();
+                        header.AppendFormat("{0} ToManaged(const {1}& value);", wrapperName, fullName).AppendLine();
+                        header.AppendFormat("{1} ToNative(const {0}& value);", wrapperName, fullName).AppendLine();
                         header.AppendLine("}");
 
                         // Generate MConverter for a structure
@@ -2872,12 +2883,12 @@ namespace Flax.Build.Bindings
                         header.Append("    }").AppendLine();
                         header.AppendFormat("    void Unbox({0}& result, MObject* data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
-                        header.AppendFormat("        result = ToNative(*reinterpret_cast<{0}Managed*>(MCore::Object::Unbox(data)));", apiType.Name).AppendLine();
+                        header.AppendFormat("        result = ToNative(*reinterpret_cast<{0}*>(MCore::Object::Unbox(data)));", wrapperName).AppendLine();
                         header.Append("    }").AppendLine();
                         header.AppendFormat("    void ToManagedArray(MArray* result, const Span<{0}>& data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
                         header.AppendFormat("        MClass* klass = {0}::TypeInitializer.GetClass();", fullName).AppendLine();
-                        header.AppendFormat("        {0}Managed* resultPtr = ({0}Managed*)MCore::Array::GetAddress(result);", apiType.Name).AppendLine();
+                        header.AppendFormat("        {0}* resultPtr = ({0}*)MCore::Array::GetAddress(result);", wrapperName).AppendLine();
                         header.Append("        for (int32 i = 0; i < data.Length(); i++)").AppendLine();
                         header.Append("        {").AppendLine();
                         header.Append("        	auto managed = ToManaged(data[i]);").AppendLine();
@@ -2886,7 +2897,7 @@ namespace Flax.Build.Bindings
                         header.Append("    }").AppendLine();
                         header.AppendFormat("    void ToNativeArray(Span<{0}>& result, const MArray* data)", fullName).AppendLine();
                         header.Append("    {").AppendLine();
-                        header.AppendFormat("        {0}Managed* dataPtr = ({0}Managed*)MCore::Array::GetAddress(data);", apiType.Name).AppendLine();
+                        header.AppendFormat("        {0}* dataPtr = ({0}*)MCore::Array::GetAddress(data);", wrapperName).AppendLine();
                         header.Append("        for (int32 i = 0; i < result.Length(); i++)").AppendLine();
                         header.Append("    	    result[i] = ToNative(dataPtr[i]);").AppendLine();
                         header.Append("    }").AppendLine();
@@ -2895,9 +2906,9 @@ namespace Flax.Build.Bindings
                         // Generate converting function native -> managed
                         header.AppendLine();
                         header.AppendLine("namespace {");
-                        header.AppendFormat("{0}Managed ToManaged(const {1}& value)", apiType.Name, fullName).AppendLine();
+                        header.AppendFormat("{0} ToManaged(const {1}& value)", wrapperName, fullName).AppendLine();
                         header.Append('{').AppendLine();
-                        header.AppendFormat("    {0}Managed result;", apiType.Name).AppendLine();
+                        header.AppendFormat("    {0} result;", wrapperName).AppendLine();
                         for (var i = 0; i < fields.Count; i++)
                         {
                             var fieldInfo = fields[i];
@@ -2927,7 +2938,7 @@ namespace Flax.Build.Bindings
 
                         // Generate converting function managed -> native
                         header.AppendLine();
-                        header.AppendFormat("{1} ToNative(const {0}Managed& value)", apiType.Name, fullName).AppendLine();
+                        header.AppendFormat("{1} ToNative(const {0}& value)", wrapperName, fullName).AppendLine();
                         header.Append('{').AppendLine();
                         header.AppendFormat("    {0} result;", fullName).AppendLine();
                         for (var i = 0; i < fields.Count; i++)
