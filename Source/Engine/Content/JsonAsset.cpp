@@ -420,7 +420,9 @@ void JsonAsset::DeleteInstance()
     MClass* klass = GetClass();
     if (object && klass)
     {
-        klass->GetField("_instance")->SetValue(object, nullptr);
+        const MField* field = klass->GetField("_instance");
+        if (field)
+            field->SetValue(object, nullptr);
     }
 
     // C++ instance
