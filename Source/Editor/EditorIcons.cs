@@ -137,11 +137,13 @@ namespace FlaxEditor
         public SpriteHandle PS4Icon128;
         public SpriteHandle PS5Icon128;
         public SpriteHandle MacOSIcon128;
+        public SpriteHandle IOSIcon128;
         public SpriteHandle FlaxLogo128;
         public SpriteHandle SwitchIcon128;
         public SpriteHandle SwitchSettings128;
         public SpriteHandle LocalizationSettings128;
         public SpriteHandle Json128;
+        public SpriteHandle AppleSettings128;
 
         internal void LoadIcons()
         {
