@@ -1,9 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "ImportTexture.h"
-
 #if COMPILE_WITH_ASSETS_IMPORTER
-
 #include "Engine/Core/Log.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Serialization/JsonWriters.h"
@@ -28,11 +26,8 @@ bool IsSpriteAtlasOrTexture(const String& typeName)
 bool ImportTexture::TryGetImportOptions(const StringView& path, Options& options)
 {
 #if IMPORT_TEXTURE_CACHE_OPTIONS
-
-    // Check if target asset texture exists
     if (FileSystem::FileExists(path))
     {
-        // Try to load asset file and asset info (also check for Sprite Atlas or Texture assets)
         auto tmpFile = ContentStorageManager::GetStorage(path);
         AssetInitData data;
         if (tmpFile
@@ -48,12 +43,11 @@ bool ImportTexture::TryGetImportOptions(const StringView& path, Options& options
                 if (chunk15 != nullptr && !tmpFile->LoadAssetChunk(chunk15) && chunk15->Data.IsValid())
                 {
                     MemoryReadStream stream(chunk15->Data.Get(), chunk15->Data.Length());
-
-                    // Load tiles data
                     int32 tilesVersion, tilesCount;
                     stream.ReadInt32(&tilesVersion);
                     if (tilesVersion == 1)
                     {
+                        options.Sprites.Clear();
                         stream.ReadInt32(&tilesCount);
                         for (int32 i = 0; i < tilesCount; i++)
                         {
@@ -72,15 +66,12 @@ bool ImportTexture::TryGetImportOptions(const StringView& path, Options& options
             metadata.Parse((const char*)data.Metadata.Get(), data.Metadata.Length());
             if (metadata.HasParseError() == false)
             {
-                // Success
                 options.Deserialize(metadata, nullptr);
                 return true;
             }
         }
     }
-
 #endif
-
     return false;
 }
 

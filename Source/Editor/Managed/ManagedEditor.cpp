@@ -241,6 +241,13 @@ void ManagedEditor::Init()
     }
 }
 
+void ManagedEditor::BeforeRun()
+{
+    // If during last lightmaps baking engine crashed we could try to restore the progress
+    if (ShadowsOfMordor::Builder::Instance()->RestoreState())
+        GetClass()->GetMethod("Internal_StartLightingBake")->Invoke(GetOrCreateManagedInstance(), nullptr, nullptr);
+}
+
 void ManagedEditor::Update()
 {
     // Skip if managed object is missing

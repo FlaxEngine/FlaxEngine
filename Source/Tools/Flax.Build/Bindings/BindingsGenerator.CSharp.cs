@@ -1416,12 +1416,11 @@ namespace Flax.Build.Bindings
                     toManagedContent.Append($"return new {structureInfo.Name}() {{ ");
 
                     bool useSeparator = false;
+                    contents.AppendLine();
                     foreach (var fieldInfo in structureInfo.Fields)
                     {
                         if (fieldInfo.IsStatic || fieldInfo.IsConstexpr)
                             continue;
-
-                        contents.AppendLine();
 
                         string type, originalType;
                         if (fieldInfo.Type.IsArray && (fieldInfo.NoArray || structureInfo.IsPod))

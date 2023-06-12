@@ -14,120 +14,90 @@ class JsonWriter;
 /// <summary>
 /// Textures importing, processing and exporting utilities.
 /// </summary>
-class FLAXENGINE_API TextureTool
+API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
 {
-public:
+    DECLARE_SCRIPTING_TYPE_MINIMAL(TextureTool);
 
     /// <summary>
-    /// Importing texture options
+    /// Texture import options.
     /// </summary>
-    struct Options : public ISerializable
+    API_STRUCT(Attributes="HideInEditor") struct FLAXENGINE_API Options : public ISerializable
     {
-        /// <summary>
-        /// Texture format type
-        /// </summary>
-        TextureFormatType Type;
+        DECLARE_SCRIPTING_TYPE_MINIMAL(Options);
 
-        /// <summary>
-        /// True if texture should be imported as a texture atlas resource
-        /// </summary>
-        bool IsAtlas;
+        // Texture format type.
+        API_FIELD(Attributes="EditorOrder(0)")
+        TextureFormatType Type = TextureFormatType::ColorRGB;
 
-        /// <summary>
-        /// True if disable dynamic texture streaming
-        /// </summary>
-        bool NeverStream;
+        // True if texture should be imported as a texture atlas (with sprites).
+        API_FIELD(Attributes="EditorOrder(10)")
+        bool IsAtlas = false;
 
-        /// <summary>
-        /// Enables/disables texture data compression.
-        /// </summary>
-        bool Compress;
+        // True if disable dynamic texture streaming.
+        API_FIELD(Attributes="EditorOrder(20)")
+        bool NeverStream = false;
 
-        /// <summary>
-        /// True if texture channels have independent data
-        /// </summary>
-        bool IndependentChannels;
+        // True if disable dynamic texture streaming.
+        API_FIELD(Attributes="EditorOrder(30)")
+        bool Compress = true;
 
-        /// <summary>
-        /// True if use sRGB format for texture data. Recommended for color maps and diffuse color textures.
-        /// </summary>
-        bool sRGB;
+        // True if texture channels have independent data (for compression methods).
+        API_FIELD(Attributes="EditorOrder(40)")
+        bool IndependentChannels = false;
 
-        /// <summary>
-        /// True if generate mip maps chain for the texture.
-        /// </summary>
-        bool GenerateMipMaps;
+        // True if use sRGB format for texture data. Recommended for color maps and diffuse color textures.
+        API_FIELD(Attributes="EditorOrder(50), EditorDisplay(null, \"sRGB\")")
+        bool sRGB = false;
 
-        /// <summary>
-        /// True if flip Y coordinate of the texture.
-        /// </summary>
-        bool FlipY;
+        // True if generate mip maps chain for the texture.
+        API_FIELD(Attributes="EditorOrder(60)")
+        bool GenerateMipMaps = true;
 
-        /// <summary>
-        /// True if resize the texture.
-        /// </summary>
-        bool Resize;
+        // True if flip Y coordinate of the texture.
+        API_FIELD(Attributes="EditorOrder(70)")
+        bool FlipY = false;
 
-        /// <summary>
-        /// True if preserve alpha coverage in generated mips for alpha test reference. Scales mipmap alpha values to preserve alpha coverage based on an alpha test reference value.
-        /// </summary>
-        bool PreserveAlphaCoverage;
+        // Texture size scale. Default is 1.
+        API_FIELD(Attributes="EditorOrder(80), Limit(0.0001f, 1000.0f, 0.01f)")
+        float Scale = 1.0f;
 
-        /// <summary>
-        /// The reference value for the alpha coverage preserving.
-        /// </summary>
-        float PreserveAlphaCoverageReference;
+        // Maximum size of the texture (for both width and height). Higher resolution textures will be resized during importing process.
+        API_FIELD(Attributes="HideInEditor")
+        int32 MaxSize = 8192;
 
-        /// <summary>
-        /// Texture group for streaming (negative if unused). See Streaming Settings.
-        /// </summary>
-        int32 TextureGroup;
+        // True if resize texture on import. Use SizeX/SizeY properties to define texture width and height. Texture scale property will be ignored.
+        API_FIELD(Attributes="EditorOrder(100)")
+        bool Resize = false;
 
-        /// <summary>
-        /// The import texture scale.
-        /// </summary>
-        float Scale;
+        // The width of the imported texture. If Resize property is set to true then texture will be resized during the import to this value. Otherwise it will be ignored.
+        API_FIELD(Attributes="HideInEditor")
+        int32 SizeX = 1024;
 
-        /// <summary>
-        /// Custom texture size X, use only if Resize texture flag is set.
-        /// </summary>
-        int32 SizeX;
+        // The height of the imported texture. If Resize property is set to true then texture will be resized during the import to this value. Otherwise it will be ignored.
+        API_FIELD(Attributes="HideInEditor")
+        int32 SizeY = 1024;
 
-        /// <summary>
-        /// Custom texture size Y, use only if Resize texture flag is set.
-        /// </summary>
-        int32 SizeY;
+        // Check to preserve alpha coverage in generated mips for alpha test reference. Scales mipmap alpha values to preserve alpha coverage based on an alpha test reference value.
+        API_FIELD(Attributes="EditorOrder(200)")
+        bool PreserveAlphaCoverage = false;
 
-        /// <summary>
-        /// Maximum size of the texture (for both width and height).
-        /// Higher resolution textures will be resized during importing process.
-        /// </summary>
-        int32 MaxSize;
+        // The reference value for the alpha coverage preserving.
+        API_FIELD(Attributes="EditorOrder(210), VisibleIf(\"PreserveAlphaCoverage\")")
+        float PreserveAlphaCoverageReference = 0.5f;
 
-        /// <summary>
-        /// Function used for fast importing textures used by internal parts of the engine
-        /// </summary>
-        Function<bool(TextureData&)> InternalLoad;
+        // Texture group for streaming (negative if unused). See Streaming Settings.
+        API_FIELD(Attributes="EditorOrder(300), CustomEditor(typeof(FlaxEditor.CustomEditors.Dedicated.TextureGroupEditor))")
+        int32 TextureGroup = -1;
 
-        /// <summary>
-        /// The sprites for the sprite sheet import mode.
-        /// </summary>
+        // The sprites for the sprite sheet import mode.
+        API_FIELD(Attributes="HideInEditor")
         Array<Sprite> Sprites;
 
+        // Function used for fast importing textures used by internal parts of the engine
+        Function<bool(TextureData&)> InternalLoad;
+
     public:
-
-        /// <summary>
-        /// Init
-        /// </summary>
-        Options();
-
-        /// <summary>
-        /// Gets string that contains information about options
-        /// </summary>
-        /// <returns>String</returns>
         String ToString() const;
-
-    public:
 
         // [ISerializable]
         void Serialize(SerializeStream& stream, const void* otherObj) override;
@@ -135,7 +105,6 @@ public:
     };
 
 public:
-
 #if USE_EDITOR
 
     /// <summary>
@@ -193,7 +162,6 @@ public:
     static bool Resize(TextureData& dst, const TextureData& src, int32 dstWidth, int32 dstHeight);
 
 public:
-
     typedef Color (*ReadPixel)(const void*);
     typedef void (*WritePixel)(const void*, const Color&);
 
@@ -269,7 +237,6 @@ public:
     static Color SampleLinear(const PixelFormatSampler* sampler, const Float2& uv, const void* data, const Int2& size, int32 rowPitch);
 
 private:
-
     enum class ImageType
     {
         DDS,

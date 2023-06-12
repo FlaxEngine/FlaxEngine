@@ -11,6 +11,7 @@ using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Tools;
 using FlaxEngine.Utilities;
 using Object = FlaxEngine.Object;
 
@@ -196,12 +197,12 @@ namespace FlaxEditor.Windows.Assets
                             group.Label("No SDF");
                         }
 
-                        var resolution = group.FloatValue("Resolution Scale", proxy.Window.Editor.CodeDocs.GetTooltip(typeof(ModelImportSettings), nameof(ModelImportSettings.SDFResolution)));
+                        var resolution = group.FloatValue("Resolution Scale", proxy.Window.Editor.CodeDocs.GetTooltip(typeof(ModelTool.Options), nameof(ModelImportSettings.Settings.SDFResolution)));
                         resolution.ValueBox.MinValue = 0.0001f;
                         resolution.ValueBox.MaxValue = 100.0f;
                         resolution.ValueBox.Value = sdf.Texture != null ? sdf.ResolutionScale : 1.0f;
-                        resolution.ValueBox.BoxValueChanged += b => { proxy.Window._importSettings.SDFResolution = b.Value; };
-                        proxy.Window._importSettings.SDFResolution = sdf.ResolutionScale;
+                        resolution.ValueBox.BoxValueChanged += b => { proxy.Window._importSettings.Settings.SDFResolution = b.Value; };
+                        proxy.Window._importSettings.Settings.SDFResolution = sdf.ResolutionScale;
 
                         var backfacesThreshold = group.FloatValue("Backfaces Threshold", "Custom threshold (in range 0-1) for adjusting mesh internals detection based on the percentage of test rays hit triangle backfaces. Use lower value for more dense mesh.");
                         backfacesThreshold.ValueBox.MinValue = 0.001f;
@@ -293,7 +294,7 @@ namespace FlaxEditor.Windows.Assets
                 private void OnRebuildSDF()
                 {
                     var proxy = (MeshesPropertiesProxy)Values[0];
-                    proxy.Asset.GenerateSDF(proxy.Window._importSettings.SDFResolution, _sdfModelLodIndex.Value, true, proxy.Window._backfacesThreshold);
+                    proxy.Asset.GenerateSDF(proxy.Window._importSettings.Settings.SDFResolution, _sdfModelLodIndex.Value, true, proxy.Window._backfacesThreshold);
                     proxy.Window.MarkAsEdited();
                     Presenter.BuildLayoutOnUpdate();
                 }
@@ -919,7 +920,7 @@ namespace FlaxEditor.Windows.Assets
         {
             _refreshOnLODsLoaded = true;
             _preview.ViewportCamera.SetArcBallView(Asset.GetBox());
-            ModelImportSettings.TryRestore(ref _importSettings, Item.Path);
+            Editor.TryRestoreImportOptions(ref _importSettings.Settings, Item.Path);
             UpdateEffectsOnAsset();
 
             // TODO: disable streaming for this model

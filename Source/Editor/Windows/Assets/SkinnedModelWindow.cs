@@ -986,7 +986,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 base.OnLoad(window);
 
-                ModelImportSettings.TryRestore(ref ImportSettings, window.Item.Path);
+                Editor.TryRestoreImportOptions(ref ImportSettings.Settings, window.Item.Path);
             }
 
             public void Reimport()

@@ -671,9 +671,7 @@ bool Editor::Init()
 
 void Editor::BeforeRun()
 {
-    // If during last lightmaps baking engine crashed we could try to restore the progress
-    if (ShadowsOfMordor::Builder::Instance()->RestoreState())
-        Managed->GetClass()->GetMethod("Internal_StartLightingBake")->Invoke(Managed->GetOrCreateManagedInstance(), nullptr, nullptr);
+    Managed->BeforeRun();
 }
 
 void Editor::BeforeExit()

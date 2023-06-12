@@ -12,6 +12,7 @@
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Serialization/JsonWriter.h"
 #include "Engine/Serialization/JsonTools.h"
+#include "Engine/Scripting/Enums.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 
@@ -23,30 +24,10 @@ namespace
 }
 #endif
 
-TextureTool::Options::Options()
-{
-    Type = TextureFormatType::ColorRGB;
-    IsAtlas = false;
-    NeverStream = false;
-    Compress = true;
-    IndependentChannels = false;
-    sRGB = false;
-    GenerateMipMaps = true;
-    FlipY = false;
-    Resize = false;
-    PreserveAlphaCoverage = false;
-    PreserveAlphaCoverageReference = 0.5f;
-    TextureGroup = -1;
-    Scale = 1.0f;
-    SizeX = 1024;
-    SizeY = 1024;
-    MaxSize = GPU_MAX_TEXTURE_SIZE;
-}
-
 String TextureTool::Options::ToString() const
 {
     return String::Format(TEXT("Type: {}, IsAtlas: {}, NeverStream: {}, IndependentChannels: {}, sRGB: {}, GenerateMipMaps: {}, FlipY: {}, Scale: {}, MaxSize: {}, Resize: {}, PreserveAlphaCoverage: {}, PreserveAlphaCoverageReference: {}, SizeX: {}, SizeY: {}"),
-                          ::ToString(Type),
+                          ScriptingEnum::ToString(Type),
                           IsAtlas,
                           NeverStream,
                           IndependentChannels,

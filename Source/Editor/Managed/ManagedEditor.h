@@ -5,6 +5,8 @@
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Platform/Window.h"
 #include "Engine/ShadowsOfMordor/Types.h"
+#include "Engine/Tools/TextureTool/TextureTool.h"
+#include "Engine/Tools/ModelTool/ModelTool.h"
 
 namespace CSG
 {
@@ -12,14 +14,11 @@ namespace CSG
 }
 
 /// <summary>
-/// Managed Editor root object
+/// The main managed editor class. Editor root object.
 /// </summary>
-class ManagedEditor : public ScriptingObject
+API_CLASS(Namespace="FlaxEditor", Name="Editor", NoSpawn, NoConstructor) class ManagedEditor : private ScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(ManagedEditor);
-
-public:
-
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(ManagedEditor);
     static Guid ObjectID;
 
     struct InternalOptions
@@ -36,7 +35,6 @@ public:
     static InternalOptions ManagedEditorOptions;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ManagedEditor"/> class.
     /// </summary>
@@ -48,11 +46,12 @@ public:
     ~ManagedEditor();
 
 public:
-
     /// <summary>
     /// Initializes managed editor.
     /// </summary>
     void Init();
+
+    void BeforeRun();
 
     /// <summary>
     /// Updates managed editor.
@@ -94,7 +93,6 @@ public:
     bool CanAutoBuildNavMesh();
 
 public:
-
     /// <summary>
     /// Checks whenever the game viewport is focused by the user (eg. can receive input).
     /// </summary>
@@ -144,12 +142,58 @@ public:
     /// </summary>
     void RequestStartPlayOnEditMode();
 
-private:
+public:
+    /// <summary>
+    /// Imports the asset file to the target location.
+    /// </summary>
+    /// <param name="inputPath">The source file path.</param>
+    /// <param name="outputPath">The result asset file path.</param>
+    /// <param name="arg">The custom argument 9native data).</param>
+    /// <returns>True if importing failed, otherwise false.</returns>
+    API_FUNCTION() static bool Import(String inputPath, String outputPath, void* arg = nullptr);
 
+#if COMPILE_WITH_TEXTURE_TOOL
+    /// <summary>
+    /// Imports the texture asset file to the target location.
+    /// </summary>
+    /// <param name="inputPath">The source file path.</param>
+    /// <param name="outputPath">The result asset file path.</param>
+    /// <param name="options">The import settings.</param>
+    /// <returns>True if importing failed, otherwise false.</returns>
+    API_FUNCTION() static bool Import(const String& inputPath, const String& outputPath, const TextureTool::Options& options);
+
+    /// <summary>
+    /// Tries the restore the asset import options from the target resource file.
+    /// </summary>
+    /// <param name="options">The options.</param>
+    /// <param name="assetPath">The asset path.</param>
+    /// <returns>True settings has been restored, otherwise false.</returns>
+    API_FUNCTION() static bool TryRestoreImportOptions(API_PARAM(Ref) TextureTool::Options& options, String assetPath);
+#endif
+
+#if COMPILE_WITH_MODEL_TOOL
+    /// <summary>
+    /// Imports the model asset file to the target location.
+    /// </summary>
+    /// <param name="inputPath">The source file path.</param>
+    /// <param name="outputPath">The result asset file path.</param>
+    /// <param name="options">The import settings.</param>
+    /// <returns>True if importing failed, otherwise false.</returns>
+    API_FUNCTION() static bool Import(const String& inputPath, const String& outputPath, const ModelTool::Options& options);
+
+    /// <summary>
+    /// Tries the restore the asset import options from the target resource file.
+    /// </summary>
+    /// <param name="options">The options.</param>
+    /// <param name="assetPath">The asset path.</param>
+    /// <returns>True settings has been restored, otherwise false.</returns>
+    API_FUNCTION() static bool TryRestoreImportOptions(API_PARAM(Ref) ModelTool::Options& options, String assetPath);
+#endif
+
+private:
     void OnEditorAssemblyLoaded(MAssembly* assembly);
 
 public:
-
     // [ScriptingObject]
     void DestroyManaged() override;
 };

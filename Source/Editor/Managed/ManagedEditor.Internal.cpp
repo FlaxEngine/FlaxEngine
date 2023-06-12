@@ -56,240 +56,6 @@ Guid ManagedEditor::ObjectID(0x91970b4e, 0x99634f61, 0x84723632, 0x54c776af);
 #pragma warning( disable : 4800)
 #endif
 
-struct InternalTextureOptions
-{
-    TextureFormatType Type;
-    byte IsAtlas;
-    byte NeverStream;
-    byte Compress;
-    byte IndependentChannels;
-    byte sRGB;
-    byte GenerateMipMaps;
-    byte FlipY;
-    byte Resize;
-    byte PreserveAlphaCoverage;
-    float PreserveAlphaCoverageReference;
-    float Scale;
-    int32 MaxSize;
-    int32 TextureGroup;
-    int32 SizeX;
-    int32 SizeY;
-    MArray* SpriteAreas;
-    MArray* SpriteNames;
-
-    static void Convert(InternalTextureOptions* from, ImportTexture::Options* to)
-    {
-        to->Type = from->Type;
-        to->IsAtlas = from->IsAtlas;
-        to->NeverStream = from->NeverStream;
-        to->Compress = from->Compress;
-        to->IndependentChannels = from->IndependentChannels;
-        to->sRGB = from->sRGB;
-        to->GenerateMipMaps = from->GenerateMipMaps;
-        to->FlipY = from->FlipY;
-        to->Scale = from->Scale;
-        to->Resize = from->Resize;
-        to->PreserveAlphaCoverage = from->PreserveAlphaCoverage;
-        to->PreserveAlphaCoverageReference = from->PreserveAlphaCoverageReference;
-        to->MaxSize = from->MaxSize;
-        to->TextureGroup = from->TextureGroup;
-        to->SizeX = from->SizeX;
-        to->SizeY = from->SizeY;
-        to->Sprites.Clear();
-        if (from->SpriteNames != nullptr)
-        {
-            int32 count = MCore::Array::GetLength(from->SpriteNames);
-            ASSERT(count == MCore::Array::GetLength(from->SpriteAreas));
-            to->Sprites.Resize(count);
-            MString** spriteNamesPtr = MCore::Array::GetAddress<MString*>(from->SpriteNames);
-            Rectangle* spriteAreasPtr = MCore::Array::GetAddress<Rectangle>(from->SpriteAreas);
-            for (int32 i = 0; i < count; i++)
-            {
-                Sprite& sprite = to->Sprites[i];
-                sprite.Area = spriteAreasPtr[i];
-                sprite.Name = MUtils::ToString(spriteNamesPtr[i]);
-            }
-        }
-    }
-
-    static void Convert(ImportTexture::Options* from, InternalTextureOptions* to)
-    {
-        to->Type = from->Type;
-        to->IsAtlas = from->IsAtlas;
-        to->NeverStream = from->NeverStream;
-        to->Compress = from->Compress;
-        to->IndependentChannels = from->IndependentChannels;
-        to->sRGB = from->sRGB;
-        to->GenerateMipMaps = from->GenerateMipMaps;
-        to->FlipY = from->FlipY;
-        to->Resize = from->Resize;
-        to->PreserveAlphaCoverage = from->PreserveAlphaCoverage;
-        to->PreserveAlphaCoverageReference = from->PreserveAlphaCoverageReference;
-        to->Scale = from->Scale;
-        to->MaxSize = from->MaxSize;
-        to->TextureGroup = from->TextureGroup;
-        to->SizeX = from->SizeX;
-        to->SizeY = from->SizeY;
-        if (from->Sprites.HasItems())
-        {
-            const int32 count = from->Sprites.Count();
-            to->SpriteAreas = MCore::Array::New(Rectangle::TypeInitializer.GetClass(), count);
-            to->SpriteNames = MCore::Array::New( MCore::TypeCache::String, count);
-            Rectangle* spriteAreasPtr = MCore::Array::GetAddress<Rectangle>(to->SpriteAreas);
-            for (int32 i = 0; i < count; i++)
-            {
-                spriteAreasPtr[i] = from->Sprites[i].Area;
-                MCore::GC::WriteArrayRef(to->SpriteNames, (MObject*)MUtils::ToString(from->Sprites[i].Name), i);
-            }
-        }
-        else
-        {
-            to->SpriteAreas = nullptr;
-            to->SpriteNames = nullptr;
-        }
-    }
-};
-
-struct InternalModelOptions
-{
-    ModelTool::ModelType Type;
-
-    // Geometry
-    byte CalculateNormals;
-    float SmoothingNormalsAngle;
-    byte FlipNormals;
-    float SmoothingTangentsAngle;
-    byte CalculateTangents;
-    byte OptimizeMeshes;
-    byte MergeMeshes;
-    byte ImportLODs;
-    byte ImportVertexColors;
-    byte ImportBlendShapes;
-    ModelLightmapUVsSource LightmapUVsSource;
-    MString* CollisionMeshesPrefix;
-
-    // Transform
-    float Scale;
-    Quaternion Rotation;
-    Float3 Translation;
-    byte CenterGeometry;
-
-    // Animation
-    ModelTool::AnimationDuration Duration;
-    float FramesRangeStart;
-    float FramesRangeEnd;
-    float DefaultFrameRate;
-    float SamplingRate;
-    byte SkipEmptyCurves;
-    byte OptimizeKeyframes;
-    byte ImportScaleTracks;
-    byte EnableRootMotion;
-    MString* RootNodeName;
-
-    // Level Of Detail
-    byte GenerateLODs;
-    int32 BaseLOD;
-    int32 LODCount;
-    float TriangleReduction;
-
-    // Misc
-    byte ImportMaterials;
-    byte ImportTextures;
-    byte RestoreMaterialsOnReimport;
-
-    // SDF
-    byte GenerateSDF;
-    float SDFResolution;
-
-    // Splitting
-    byte SplitObjects;
-    int32 ObjectIndex;
-
-    static void Convert(InternalModelOptions* from, ImportModelFile::Options* to)
-    {
-        to->Type = from->Type;
-        to->CalculateNormals = from->CalculateNormals;
-        to->SmoothingNormalsAngle = from->SmoothingNormalsAngle;
-        to->FlipNormals = from->FlipNormals;
-        to->SmoothingTangentsAngle = from->SmoothingTangentsAngle;
-        to->CalculateTangents = from->CalculateTangents;
-        to->OptimizeMeshes = from->OptimizeMeshes;
-        to->MergeMeshes = from->MergeMeshes;
-        to->ImportLODs = from->ImportLODs;
-        to->ImportVertexColors = from->ImportVertexColors;
-        to->ImportBlendShapes = from->ImportBlendShapes;
-        to->LightmapUVsSource = from->LightmapUVsSource;
-        to->CollisionMeshesPrefix = MUtils::ToString(from->CollisionMeshesPrefix);
-        to->Scale = from->Scale;
-        to->Rotation = from->Rotation;
-        to->Translation = from->Translation;
-        to->CenterGeometry = from->CenterGeometry;
-        to->Duration = from->Duration;
-        to->FramesRange.X = from->FramesRangeStart;
-        to->FramesRange.Y = from->FramesRangeEnd;
-        to->DefaultFrameRate = from->DefaultFrameRate;
-        to->SamplingRate = from->SamplingRate;
-        to->SkipEmptyCurves = from->SkipEmptyCurves;
-        to->OptimizeKeyframes = from->OptimizeKeyframes;
-        to->ImportScaleTracks = from->ImportScaleTracks;
-        to->EnableRootMotion = from->EnableRootMotion;
-        to->RootNodeName = MUtils::ToString(from->RootNodeName);
-        to->GenerateLODs = from->GenerateLODs;
-        to->BaseLOD = from->BaseLOD;
-        to->LODCount = from->LODCount;
-        to->TriangleReduction = from->TriangleReduction;
-        to->ImportMaterials = from->ImportMaterials;
-        to->ImportTextures = from->ImportTextures;
-        to->RestoreMaterialsOnReimport = from->RestoreMaterialsOnReimport;
-        to->GenerateSDF = from->GenerateSDF;
-        to->SDFResolution = from->SDFResolution;
-        to->SplitObjects = from->SplitObjects;
-        to->ObjectIndex = from->ObjectIndex;
-    }
-
-    static void Convert(ImportModelFile::Options* from, InternalModelOptions* to)
-    {
-        to->Type = from->Type;
-        to->CalculateNormals = from->CalculateNormals;
-        to->SmoothingNormalsAngle = from->SmoothingNormalsAngle;
-        to->FlipNormals = from->FlipNormals;
-        to->SmoothingTangentsAngle = from->SmoothingTangentsAngle;
-        to->CalculateTangents = from->CalculateTangents;
-        to->OptimizeMeshes = from->OptimizeMeshes;
-        to->MergeMeshes = from->MergeMeshes;
-        to->ImportLODs = from->ImportLODs;
-        to->ImportVertexColors = from->ImportVertexColors;
-        to->ImportBlendShapes = from->ImportBlendShapes;
-        to->LightmapUVsSource = from->LightmapUVsSource;
-        to->CollisionMeshesPrefix = MUtils::ToString(from->CollisionMeshesPrefix);
-        to->Scale = from->Scale;
-        to->Rotation = from->Rotation;
-        to->Translation = from->Translation;
-        to->CenterGeometry = from->CenterGeometry;
-        to->Duration = from->Duration;
-        to->FramesRangeStart = from->FramesRange.X;
-        to->FramesRangeEnd = from->FramesRange.Y;
-        to->DefaultFrameRate = from->DefaultFrameRate;
-        to->SamplingRate = from->SamplingRate;
-        to->SkipEmptyCurves = from->SkipEmptyCurves;
-        to->OptimizeKeyframes = from->OptimizeKeyframes;
-        to->ImportScaleTracks = from->ImportScaleTracks;
-        to->EnableRootMotion = from->EnableRootMotion;
-        to->RootNodeName = MUtils::ToString(from->RootNodeName);
-        to->GenerateLODs = from->GenerateLODs;
-        to->BaseLOD = from->BaseLOD;
-        to->LODCount = from->LODCount;
-        to->TriangleReduction = from->TriangleReduction;
-        to->ImportMaterials = from->ImportMaterials;
-        to->ImportTextures = from->ImportTextures;
-        to->RestoreMaterialsOnReimport = from->RestoreMaterialsOnReimport;
-        to->GenerateSDF = from->GenerateSDF;
-        to->SDFResolution = from->SDFResolution;
-        to->SplitObjects = from->SplitObjects;
-        to->ObjectIndex = from->ObjectIndex;
-    }
-};
-
 struct InternalAudioOptions
 {
     AudioFormat Format;
@@ -529,35 +295,14 @@ DEFINE_INTERNAL_CALL(MString*) EditorInternal_CanImport(MString* extensionObj)
     return importer ? MUtils::ToString(importer->ResultExtension) : nullptr;
 }
 
-DEFINE_INTERNAL_CALL(bool) EditorInternal_Import(MString* inputPathObj, MString* outputPathObj, void* arg)
-{
-    String inputPath, outputPath;
-    MUtils::ToString(inputPathObj, inputPath);
-    MUtils::ToString(outputPathObj, outputPath);
-    FileSystem::NormalizePath(inputPath);
-    FileSystem::NormalizePath(outputPath);
-    return AssetsImportingManager::Import(inputPath, outputPath, arg);
-}
-
-DEFINE_INTERNAL_CALL(bool) EditorInternal_ImportTexture(MString* inputPathObj, MString* outputPathObj, InternalTextureOptions* optionsObj)
-{
-    ImportTexture::Options options;
-    InternalTextureOptions::Convert(optionsObj, &options);
-    return EditorInternal_Import(inputPathObj, outputPathObj, &options);
-}
-
-DEFINE_INTERNAL_CALL(bool) EditorInternal_ImportModel(MString* inputPathObj, MString* outputPathObj, InternalModelOptions* optionsObj)
-{
-    ImportModelFile::Options options;
-    InternalModelOptions::Convert(optionsObj, &options);
-    return EditorInternal_Import(inputPathObj, outputPathObj, &options);
-}
-
 DEFINE_INTERNAL_CALL(bool) EditorInternal_ImportAudio(MString* inputPathObj, MString* outputPathObj, InternalAudioOptions* optionsObj)
 {
     ImportAudio::Options options;
     InternalAudioOptions::Convert(optionsObj, &options);
-    return EditorInternal_Import(inputPathObj, outputPathObj, &options);
+    String inputPath, outputPath;
+    MUtils::ToString(inputPathObj, inputPath);
+    MUtils::ToString(outputPathObj, outputPath);
+    return ManagedEditor::Import(inputPath, outputPath, &options);
 }
 
 DEFINE_INTERNAL_CALL(void) EditorInternal_GetAudioClipMetadata(AudioClip* clip, int32* originalSize, int32* importedSize)
@@ -1020,40 +765,6 @@ DEFINE_INTERNAL_CALL(MTypeObject*) CustomEditorsUtilInternal_GetCustomEditor(MTy
     return CustomEditorsUtil::GetCustomEditor(targetType);
 }
 
-DEFINE_INTERNAL_CALL(bool) TextureImportEntryInternal_GetTextureImportOptions(MString* pathObj, InternalTextureOptions* result)
-{
-    String path;
-    MUtils::ToString(pathObj, path);
-    FileSystem::NormalizePath(path);
-    ImportTexture::Options options;
-    if (ImportTexture::TryGetImportOptions(path, options))
-    {
-        // Convert into managed storage
-        InternalTextureOptions::Convert(&options, result);
-        return true;
-    }
-    return false;
-}
-
-DEFINE_INTERNAL_CALL(void) ModelImportEntryInternal_GetModelImportOptions(MString* pathObj, InternalModelOptions* result)
-{
-    // Initialize defaults   
-    ImportModelFile::Options options;
-    if (const auto* graphicsSettings = GraphicsSettings::Get())
-    {
-        options.GenerateSDF = graphicsSettings->GenerateSDFOnModelImport;
-    }
-
-    // Get options from model
-    String path;
-    MUtils::ToString(pathObj, path);
-    FileSystem::NormalizePath(path);
-    ImportModelFile::TryGetImportOptions(path, options);
-
-    // Convert into managed storage
-    InternalModelOptions::Convert(&options, result);
-}
-
 DEFINE_INTERNAL_CALL(bool) AudioImportEntryInternal_GetAudioImportOptions(MString* pathObj, InternalAudioOptions* result)
 {
     String path;
@@ -1084,58 +795,38 @@ DEFINE_INTERNAL_CALL(void) GameSettingsInternal_Apply()
     GameSettings::Load();
 }
 
-class ManagedEditorInternal
+bool ManagedEditor::Import(String inputPath, String outputPath, void* arg)
 {
-public:
-    static void InitRuntime()
-    {
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::IsDevInstance", &EditorInternal_IsDevInstance);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::IsOfficialBuild", &EditorInternal_IsOfficialBuild);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_IsPlayMode", &EditorInternal_IsPlayMode);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_ReadOutputLogs", &EditorInternal_ReadOutputLogs);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_SetPlayMode", &EditorInternal_SetPlayMode);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetProjectPath", &EditorInternal_GetProjectPath);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_Import", &EditorInternal_Import);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_ImportTexture", &EditorInternal_ImportTexture);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_ImportModel", &EditorInternal_ImportModel);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_ImportAudio", &EditorInternal_ImportAudio);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetAudioClipMetadata", &EditorInternal_GetAudioClipMetadata);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_SaveJsonAsset", &EditorInternal_SaveJsonAsset);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CopyCache", &EditorInternal_CopyCache);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CloneAssetFile", &EditorInternal_CloneAssetFile);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_BakeLightmaps", &EditorInternal_BakeLightmaps);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetShaderAssetSourceCode", &EditorInternal_GetShaderAssetSourceCode);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CookMeshCollision", &EditorInternal_CookMeshCollision);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetCollisionWires", &EditorInternal_GetCollisionWires);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetEditorBoxWithChildren", &EditorInternal_GetEditorBoxWithChildren);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_SetOptions", &EditorInternal_SetOptions);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_DrawNavMesh", &EditorInternal_DrawNavMesh);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CloseSplashScreen", &EditorInternal_CloseSplashScreen);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CreateAsset", &EditorInternal_CreateAsset);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CreateVisualScript", &EditorInternal_CreateVisualScript);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CanImport", &EditorInternal_CanImport);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CanExport", &EditorInternal_CanExport);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_Export", &EditorInternal_Export);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetIsEveryAssemblyLoaded", &EditorInternal_GetIsEveryAssemblyLoaded);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetLastProjectOpenedEngineBuild", &EditorInternal_GetLastProjectOpenedEngineBuild);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetIsCSGActive", &EditorInternal_GetIsCSGActive);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_RunVisualScriptBreakpointLoopTick", &EditorInternal_RunVisualScriptBreakpointLoopTick);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetVisualScriptLocals", &EditorInternal_GetVisualScriptLocals);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetVisualScriptStackFrames", &EditorInternal_GetVisualScriptStackFrames);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetVisualScriptPreviousScopeFrame", &EditorInternal_GetVisualScriptPreviousScopeFrame);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_EvaluateVisualScriptLocal", &EditorInternal_EvaluateVisualScriptLocal);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_DeserializeSceneObject", &EditorInternal_DeserializeSceneObject);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_LoadAsset", &EditorInternal_LoadAsset);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_CanSetToRoot", &EditorInternal_CanSetToRoot);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_GetAnimationTime", &EditorInternal_GetAnimationTime);
-        ADD_INTERNAL_CALL("FlaxEditor.Editor::Internal_SetAnimationTime", &EditorInternal_SetAnimationTime);
-        ADD_INTERNAL_CALL("FlaxEditor.CustomEditors.CustomEditorsUtil::Internal_GetCustomEditor", &CustomEditorsUtilInternal_GetCustomEditor);
-        ADD_INTERNAL_CALL("FlaxEditor.Content.Import.TextureImportEntry::Internal_GetTextureImportOptions", &TextureImportEntryInternal_GetTextureImportOptions);
-        ADD_INTERNAL_CALL("FlaxEditor.Content.Import.ModelImportEntry::Internal_GetModelImportOptions", &ModelImportEntryInternal_GetModelImportOptions);
-        ADD_INTERNAL_CALL("FlaxEditor.Content.Import.AudioImportEntry::Internal_GetAudioImportOptions", &AudioImportEntryInternal_GetAudioImportOptions);
-        ADD_INTERNAL_CALL("FlaxEditor.Content.Settings.LayersAndTagsSettings::GetCurrentLayers", &LayersAndTagsSettingsInternal_GetCurrentLayers);
-        ADD_INTERNAL_CALL("FlaxEditor.Content.Settings.GameSettings::Apply", &GameSettingsInternal_Apply);
-    }
-};
+    FileSystem::NormalizePath(inputPath);
+    FileSystem::NormalizePath(outputPath);
+    return AssetsImportingManager::Import(inputPath, outputPath, arg);
+}
 
-IMPLEMENT_SCRIPTING_TYPE_NO_SPAWN_WITH_BASE(ManagedEditor, ScriptingObject, FlaxEngine, "FlaxEditor.Editor", nullptr, nullptr);
+bool ManagedEditor::Import(const String& inputPath, const String& outputPath, const TextureTool::Options& options)
+{
+    return Import(inputPath, outputPath, (void*)&options);
+}
+
+bool ManagedEditor::TryRestoreImportOptions(TextureTool::Options& options, String assetPath)
+{
+    FileSystem::NormalizePath(assetPath);
+    return ImportTexture::TryGetImportOptions(assetPath, options);
+}
+
+bool ManagedEditor::Import(const String& inputPath, const String& outputPath, const ModelTool::Options& options)
+{
+    return Import(inputPath, outputPath, (void*)&options);
+}
+
+bool ManagedEditor::TryRestoreImportOptions(ModelTool::Options& options, String assetPath)
+{
+    // Initialize defaults   
+    if (const auto* graphicsSettings = GraphicsSettings::Get())
+    {
+        options.GenerateSDF = graphicsSettings->GenerateSDFOnModelImport;
+    }
+
+    // Get options from model
+    FileSystem::NormalizePath(assetPath);
+    return ImportModelFile::TryGetImportOptions(assetPath, options);
+}

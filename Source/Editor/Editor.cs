@@ -934,47 +934,6 @@ namespace FlaxEditor
         }
 
         /// <summary>
-        /// Imports the asset file to the target location.
-        /// </summary>
-        /// <param name="inputPath">The source file path.</param>
-        /// <param name="outputPath">The result asset file path.</param>
-        /// <returns>True if importing failed, otherwise false.</returns>
-        public static bool Import(string inputPath, string outputPath)
-        {
-            return Internal_Import(inputPath, outputPath, IntPtr.Zero);
-        }
-
-        /// <summary>
-        /// Imports the texture asset file to the target location.
-        /// </summary>
-        /// <param name="inputPath">The source file path.</param>
-        /// <param name="outputPath">The result asset file path.</param>
-        /// <param name="settings">The settings.</param>
-        /// <returns>True if importing failed, otherwise false.</returns>
-        public static bool Import(string inputPath, string outputPath, TextureImportSettings settings)
-        {
-            if (settings == null)
-                throw new ArgumentNullException();
-            settings.ToInternal(out var internalOptions);
-            return Internal_ImportTexture(inputPath, outputPath, ref internalOptions);
-        }
-
-        /// <summary>
-        /// Imports the model asset file to the target location.
-        /// </summary>
-        /// <param name="inputPath">The source file path.</param>
-        /// <param name="outputPath">The result asset file path.</param>
-        /// <param name="settings">The settings.</param>
-        /// <returns>True if importing failed, otherwise false.</returns>
-        public static bool Import(string inputPath, string outputPath, ModelImportSettings settings)
-        {
-            if (settings == null)
-                throw new ArgumentNullException();
-            settings.ToInternal(out var internalOptions);
-            return Internal_ImportModel(inputPath, outputPath, ref internalOptions);
-        }
-
-        /// <summary>
         /// Imports the audio asset file to the target location.
         /// </summary>
         /// <param name="inputPath">The source file path.</param>
@@ -1642,18 +1601,6 @@ namespace FlaxEditor
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CloneAssetFile", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_CloneAssetFile(string dstPath, string srcPath, ref Guid dstId);
-
-        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_Import", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
-        [return: MarshalAs(UnmanagedType.U1)]
-        internal static partial bool Internal_Import(string inputPath, string outputPath, IntPtr arg);
-
-        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_ImportTexture", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
-        [return: MarshalAs(UnmanagedType.U1)]
-        internal static partial bool Internal_ImportTexture(string inputPath, string outputPath, ref TextureImportSettings.InternalOptions options);
-
-        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_ImportModel", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
-        [return: MarshalAs(UnmanagedType.U1)]
-        internal static partial bool Internal_ImportModel(string inputPath, string outputPath, ref ModelImportSettings.InternalOptions options);
 
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_ImportAudio", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]

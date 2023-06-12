@@ -144,7 +144,7 @@ namespace FlaxEditor.Windows.Assets
                 Asset = window.Asset;
 
                 // Try to restore target asset import options (useful for fast reimport)
-                ModelImportSettings.TryRestore(ref ImportSettings, window.Item.Path);
+                Editor.TryRestoreImportOptions(ref ImportSettings.Settings, window.Item.Path);
             }
 
             public void OnClean()

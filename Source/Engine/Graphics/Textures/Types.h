@@ -2,14 +2,30 @@
 
 #pragma once
 
-#include "Engine/Core/Enums.h"
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Graphics/PixelFormat.h"
 
 /// <summary>
 /// Describes texture compression format type
 /// </summary>
-DECLARE_ENUM_EX_7(TextureFormatType, byte, 0, Unknown, ColorRGB, ColorRGBA, NormalMap, GrayScale, HdrRGBA, HdrRGB);
+API_ENUM() enum class TextureFormatType : byte
+{
+    // Invalid value.
+    API_ENUM(Attributes="HideInEditor")
+    Unknown = 0,
+    // The color with RGB channels.
+    ColorRGB,
+    // The color with RGBA channels.
+    ColorRGBA,
+    // Normal map data (packed and compressed).
+    NormalMap,
+    // The gray scale (R channel).
+    GrayScale,
+    // The HDR color (RGBA channels).
+    HdrRGBA,
+    // The HDR color (RGB channels).
+    HdrRGB,
+};
 
 /// <summary>
 /// Old texture header structure (was not fully initialized to zero).
