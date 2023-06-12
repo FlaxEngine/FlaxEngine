@@ -97,6 +97,7 @@ public class Platform : EngineModule
             options.SourceFiles.Add(Path.Combine(FolderPath, "Linux", "LinuxPlatformSettings.h"));
             options.SourceFiles.Add(Path.Combine(FolderPath, "Android", "AndroidPlatformSettings.h"));
             options.SourceFiles.Add(Path.Combine(FolderPath, "GDK", "GDKPlatformSettings.h"));
+            options.SourceFiles.Add(Path.Combine(FolderPath, "Apple", "ApplePlatformSettings.h"));
             options.SourceFiles.Add(Path.Combine(FolderPath, "Mac", "MacPlatformSettings.h"));
             options.SourceFiles.Add(Path.Combine(FolderPath, "iOS", "iOSPlatformSettings.h"));
             AddSourceFileIfExists(options, Path.Combine(Globals.EngineRoot, "Source", "Platforms", "XboxOne", "Engine", "Platform", "XboxOnePlatformSettings.h"));

@@ -13,7 +13,7 @@ class Texture;
 /// <summary>
 /// Apple platform settings.
 /// </summary>
-API_CLASS(abstract, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API ApplePlatformSettings : public SettingsBase
+API_CLASS(Abstract, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API ApplePlatformSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(ApplePlatformSettings);
 

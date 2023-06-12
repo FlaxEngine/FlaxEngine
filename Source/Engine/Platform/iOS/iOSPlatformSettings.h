@@ -9,7 +9,7 @@
 /// <summary>
 /// iOS platform settings.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API iOSPlatformSettings : public ApplePlatformSettings
+API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API iOSPlatformSettings : public ApplePlatformSettings
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(ApplePlatformSettings);
 
