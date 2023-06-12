@@ -102,6 +102,16 @@ namespace FlaxEditor.Utilities
             return str;
         }
 
+        internal static void GetActorsTree(List<Actor> list, Actor a)
+        {
+            list.Add(a);
+            int cnt = a.ChildrenCount;
+            for (int i = 0; i < cnt; i++)
+            {
+                GetActorsTree(list, a.GetChild(i));
+            }
+        }
+
         /// <summary>
         /// The colors for the keyframes used by the curve editor.
         /// </summary>

@@ -27,16 +27,6 @@ namespace FlaxEditor.CustomEditors.Editors
             element.ComboBox.SelectedIndexChanged += OnSelectedIndexChanged;
         }
 
-        private void GetActorsTree(List<Actor> list, Actor a)
-        {
-            list.Add(a);
-            int cnt = a.ChildrenCount;
-            for (int i = 0; i < cnt; i++)
-            {
-                GetActorsTree(list, a.GetChild(i));
-            }
-        }
-
         private void OnSelectedIndexChanged(ComboBox comboBox)
         {
             int value = comboBox.SelectedIndex;
@@ -60,7 +50,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     // Note: this possibly breaks the design a little bit
                     // But it's the easiest way to set value for selected actor and its children with one undo action
                     List<Actor> actors = new List<Actor>(32);
-                    GetActorsTree(actors, actor);
+                    Utilities.Utils.GetActorsTree(actors, actor);
                     if (Presenter.Undo != null)
                     {
                         using (new UndoMultiBlock(Presenter.Undo, actors.ToArray(), "Change layer"))

@@ -629,7 +629,7 @@ namespace FlaxEditor.SceneGraph.GUI
                     {
                         // Set all Actors static flags to match parents
                         List<Actor> childActors = new List<Actor>();
-                        GetActorsTree(childActors, actor);
+                        Utilities.Utils.GetActorsTree(childActors, actor);
                         foreach (var child in childActors)
                         {
                             child.StaticFlags = spawnParent.StaticFlags;
@@ -678,16 +678,6 @@ namespace FlaxEditor.SceneGraph.GUI
             }
 
             return result;
-        }
-        
-        private void GetActorsTree(List<Actor> list, Actor a)
-        {
-            list.Add(a);
-            int cnt = a.ChildrenCount;
-            for (int i = 0; i < cnt; i++)
-            {
-                GetActorsTree(list, a.GetChild(i));
-            }
         }
 
         private bool ValidateDragActor(ActorNode actorNode)
