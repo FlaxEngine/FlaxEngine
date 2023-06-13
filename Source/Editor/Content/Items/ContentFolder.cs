@@ -118,9 +118,8 @@ namespace FlaxEditor.Content
             get
             {
                 var hasParentFolder = ParentFolder != null;
-                var isContentFolder = IsFolder && Path == Editor.Instance.GameProject.ContentFolderPath;
-                var isSourceFolder = IsFolder && Path == Editor.Instance.GameProject.SourceFolderPath;
-                return hasParentFolder && !isContentFolder && !isSourceFolder;
+                var isContentFolder = Node is MainContentTreeNode;
+                return hasParentFolder && !isContentFolder;
             }
         }
 
