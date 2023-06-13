@@ -24,6 +24,11 @@ namespace FlaxEditor.Content
         public string TypeName { get; }
 
         /// <summary>
+        /// Returns true if asset is now loaded.
+        /// </summary>
+        public bool IsLoaded => FlaxEngine.Content.GetAsset(ID)?.IsLoaded ?? false;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="AssetItem"/> class.
         /// </summary>
         /// <param name="path">The asset path.</param>
@@ -89,7 +94,19 @@ namespace FlaxEditor.Content
         /// <returns>The asset object.</returns>
         public Asset LoadAsync()
         {
-            return FlaxEngine.Content.LoadAsync<BinaryAsset>(ID);
+            return FlaxEngine.Content.LoadAsync<Asset>(ID);
+        }
+
+        /// <summary>
+        /// Reloads the asset (if it's loaded).
+        /// </summary>
+        public void Reload()
+        {
+            var asset = FlaxEngine.Content.GetAsset(ID);
+            if (asset != null && asset.IsLoaded)
+            {
+                asset.Reload();
+            }
         }
 
         /// <summary>

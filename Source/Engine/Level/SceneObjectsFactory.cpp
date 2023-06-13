@@ -204,7 +204,10 @@ void SceneObjectsFactory::Deserialize(Context& context, SceneObject* obj, ISeria
         }
 
         // Deserialize prefab data (recursive prefab loading to support nested prefabs)
+        const auto prevVersion = context.Modifier->EngineBuild;
+        context.Modifier->EngineBuild = prefab->DataEngineBuild;
         Deserialize(context, obj, *(ISerializable::DeserializeStream*)prefabData);
+        context.Modifier->EngineBuild = prevVersion;
     }
 
     int32 instanceIndex;

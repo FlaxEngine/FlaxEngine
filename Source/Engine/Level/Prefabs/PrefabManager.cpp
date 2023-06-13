@@ -102,6 +102,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
     CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache sceneObjects = ActorsCache::SceneObjectsListCache.Get();
     sceneObjects->Resize(objectsCount);
     CollectionPoolCache<ISerializeModifier, Cache::ISerializeModifierClearCallback>::ScopeCache modifier = Cache::ISerializeModifier.Get();
+    modifier->EngineBuild = prefab->DataEngineBuild;
     modifier->IdsMapping.EnsureCapacity(prefab->ObjectsIds.Count() * 4);
     for (int32 i = 0; i < prefab->ObjectsIds.Count(); i++)
     {
