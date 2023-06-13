@@ -30,6 +30,7 @@ public:
     /// <returns>True if fails, otherwise false.</returns>
     static bool UpdateExeIcon(const String& path, const TextureData& icon);
 
+    static bool FormatAppPackageName(String& packageName);
     static bool GetApplicationImage(const Guid& imageId, TextureData& imageData, ApplicationImageType type = ApplicationImageType::Icon);
     static bool GetTexture(const Guid& textureId, TextureData& textureData);
     static bool ExportApplicationImage(const Guid& iconId, int32 width, int32 height, PixelFormat format, const String& path, ApplicationImageType type = ApplicationImageType::Icon);

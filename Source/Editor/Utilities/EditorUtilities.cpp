@@ -507,6 +507,37 @@ bool EditorUtilities::UpdateExeIcon(const String& path, const TextureData& icon)
     return false;
 }
 
+bool EditorUtilities::FormatAppPackageName(String& packageName)
+{
+    const auto gameSettings = GameSettings::Get();
+    String productName = gameSettings->ProductName;
+    productName.Replace(TEXT(" "), TEXT(""));
+    productName.Replace(TEXT("."), TEXT(""));
+    productName.Replace(TEXT("-"), TEXT(""));
+    String companyName = gameSettings->CompanyName;
+    companyName.Replace(TEXT(" "), TEXT(""));
+    companyName.Replace(TEXT("."), TEXT(""));
+    companyName.Replace(TEXT("-"), TEXT(""));
+    packageName.Replace(TEXT("${PROJECT_NAME}"), *productName, StringSearchCase::IgnoreCase);
+    packageName.Replace(TEXT("${COMPANY_NAME}"), *companyName, StringSearchCase::IgnoreCase);
+    packageName = packageName.ToLower();
+    for (int32 i = 0; i < packageName.Length(); i++)
+    {
+        const auto c = packageName[i];
+        if (c != '_' && c != '.' && !StringUtils::IsAlnum(c))
+        {
+            LOG(Error, "App identifier \'{0}\' contains invalid character. Only letters, numbers, dots and underscore characters are allowed.", packageName);
+            return true;
+        }
+    }
+    if (packageName.IsEmpty())
+    {
+        LOG(Error, "App identifier is empty.", packageName);
+        return true;
+    }
+    return false;
+}
+
 bool EditorUtilities::GetApplicationImage(const Guid& imageId, TextureData& imageData, ApplicationImageType type)
 {
     AssetReference<Texture> icon = Content::LoadAsync<Texture>(imageId);

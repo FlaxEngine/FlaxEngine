@@ -164,33 +164,8 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
 
     // Setup package name (eg. com.company.project)
     String appIdentifier = platformSettings->AppIdentifier;
-    {
-        String productName = gameSettings->ProductName;
-        productName.Replace(TEXT(" "), TEXT(""));
-        productName.Replace(TEXT("."), TEXT(""));
-        productName.Replace(TEXT("-"), TEXT(""));
-        String companyName = gameSettings->CompanyName;
-        companyName.Replace(TEXT(" "), TEXT(""));
-        companyName.Replace(TEXT("."), TEXT(""));
-        companyName.Replace(TEXT("-"), TEXT(""));
-        appIdentifier.Replace(TEXT("${PROJECT_NAME}"), *productName, StringSearchCase::IgnoreCase);
-        appIdentifier.Replace(TEXT("${COMPANY_NAME}"), *companyName, StringSearchCase::IgnoreCase);
-        appIdentifier = appIdentifier.ToLower();
-        for (int32 i = 0; i < appIdentifier.Length(); i++)
-        {
-            const auto c = appIdentifier[i];
-            if (c != '_' && c != '.' && !StringUtils::IsAlnum(c))
-            {
-                LOG(Error, "Apple app identifier \'{0}\' contains invalid character. Only letters, numbers, dots and underscore characters are allowed.", appIdentifier);
-                return true;
-            }
-        }
-        if (appIdentifier.IsEmpty())
-        {
-            LOG(Error, "Apple app identifier is empty.", appIdentifier);
-            return true;
-        }
-    }
+    if (EditorUtilities::FormatAppPackageName(packageName))
+        return true;
 
     // Copy fresh Gradle project template
     if (FileSystem::CopyDirectory(data.OriginalOutputPath, platformDataPath / TEXT("Project"), true))

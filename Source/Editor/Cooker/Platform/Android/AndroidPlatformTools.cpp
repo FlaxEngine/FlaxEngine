@@ -139,33 +139,8 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
 
     // Setup package name (eg. com.company.project)
     String packageName = platformSettings->PackageName;
-    {
-        String productName = gameSettings->ProductName;
-        productName.Replace(TEXT(" "), TEXT(""));
-        productName.Replace(TEXT("."), TEXT(""));
-        productName.Replace(TEXT("-"), TEXT(""));
-        String companyName = gameSettings->CompanyName;
-        companyName.Replace(TEXT(" "), TEXT(""));
-        companyName.Replace(TEXT("."), TEXT(""));
-        companyName.Replace(TEXT("-"), TEXT(""));
-        packageName.Replace(TEXT("${PROJECT_NAME}"), *productName, StringSearchCase::IgnoreCase);
-        packageName.Replace(TEXT("${COMPANY_NAME}"), *companyName, StringSearchCase::IgnoreCase);
-        packageName = packageName.ToLower();
-        for (int32 i = 0; i < packageName.Length(); i++)
-        {
-            const auto c = packageName[i];
-            if (c != '_' && c != '.' && !StringUtils::IsAlnum(c))
-            {
-                LOG(Error, "Android Package Name \'{0}\' contains invalid character. Only letters, numbers, dots and underscore characters are allowed.", packageName);
-                return true;
-            }
-        }
-        if (packageName.IsEmpty())
-        {
-            LOG(Error, "Android Package Name is empty.", packageName);
-            return true;
-        }
-    }
+    if (EditorUtilities::FormatAppPackageName(packageName))
+        return true;
 
     // Setup Android application permissions
     HashSet<String> permissionsList;
