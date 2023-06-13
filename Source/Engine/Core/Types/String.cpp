@@ -34,22 +34,26 @@ String::String(const StringAnsiView& str)
 
 void String::Set(const Char* chars, int32 length)
 {
-    if (length != _length)
+    ASSERT(length >= 0);
+    if (length == _length)
     {
-        ASSERT(length >= 0);
-        Platform::Free(_data);
+        if (_data == chars)
+            return;
+        Platform::MemoryCopy(_data, chars, length * sizeof(Char));
+    }
+    else
+    {
+        Char* alloc = nullptr;
         if (length != 0)
         {
-            _data = (Char*)Platform::Allocate((length + 1) * sizeof(Char), 16);
-            _data[length] = 0;
+            alloc = (Char*)Platform::Allocate((length + 1) * sizeof(Char), 16);
+            alloc[length] = 0;
+            Platform::MemoryCopy(alloc, chars, length * sizeof(Char));
         }
-        else
-        {
-            _data = nullptr;
-        }
+        Platform::Free(_data);
+        _data = alloc;
         _length = length;
     }
-    Platform::MemoryCopy(_data, chars, length * sizeof(Char));
 }
 
 void String::Set(const char* chars, int32 length)
