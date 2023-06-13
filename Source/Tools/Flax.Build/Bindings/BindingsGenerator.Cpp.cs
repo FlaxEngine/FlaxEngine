@@ -609,10 +609,7 @@ namespace Flax.Build.Bindings
                     {
                         // Use wrapper that box the data into managed object
                         if (!CppUsedNonPodTypes.Contains(apiType))
-                        {
                             CppUsedNonPodTypes.Add(apiType);
-                            CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
-                        }
                         type = "MObject*";
                         return "MConverter<" + apiType.Name + ">::Box({0})";
                     }
@@ -815,10 +812,7 @@ namespace Flax.Build.Bindings
                     {
                         // Use wrapper that unboxes the data into managed object
                         if (!CppUsedNonPodTypes.Contains(apiType))
-                        {
                             CppUsedNonPodTypes.Add(apiType);
-                            CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
-                        }
                         type = "MObject*";
                         return "MConverter<" + apiType.Name + ">::Unbox({0})";
                     }
@@ -2655,6 +2649,8 @@ namespace Flax.Build.Bindings
 
         private static void GenerateCppCppUsedNonPodTypes(BuildData buildData, ApiTypeInfo apiType)
         {
+            if (CppUsedNonPodTypesList.Contains(apiType))
+                return;
             if (apiType is StructureInfo structureInfo)
             {
                 // Check all fields (if one of them is also non-POD structure then we need to generate wrappers for them too)
@@ -2663,11 +2659,17 @@ namespace Flax.Build.Bindings
                     var fieldInfo = structureInfo.Fields[i];
                     if (fieldInfo.IsStatic || fieldInfo.IsConstexpr)
                         continue;
-                    var fieldType = fieldInfo.Type;
-                    var fieldApiType = FindApiTypeInfo(buildData, fieldType, structureInfo);
+                    var fieldApiType = FindApiTypeInfo(buildData, fieldInfo.Type, structureInfo);
                     if (fieldApiType != null && fieldApiType.IsStruct && !fieldApiType.IsPod)
-                    {
                         GenerateCppCppUsedNonPodTypes(buildData, fieldApiType);
+                    if (fieldInfo.Type.GenericArgs != null)
+                    {
+                        foreach (var fieldTypeArg in fieldInfo.Type.GenericArgs)
+                        {
+                            fieldApiType = FindApiTypeInfo(buildData, fieldTypeArg, structureInfo);
+                            if (fieldApiType != null && fieldApiType.IsStruct && !fieldApiType.IsPod)
+                                GenerateCppCppUsedNonPodTypes(buildData, fieldApiType);
+                        }
                     }
                 }
             }
@@ -2676,8 +2678,7 @@ namespace Flax.Build.Bindings
                 if (classStructInfo.IsTemplate)
                     throw new Exception($"Cannot use template type '{classStructInfo}' as non-POD type for cross-language bindings.");
             }
-            if (!CppUsedNonPodTypesList.Contains(apiType))
-                CppUsedNonPodTypesList.Add(apiType);
+            CppUsedNonPodTypesList.Add(apiType);
         }
 
         private static void GenerateCpp(BuildData buildData, ModuleInfo moduleInfo, ref BindingsResult bindings)
