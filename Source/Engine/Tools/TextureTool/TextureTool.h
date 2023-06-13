@@ -86,7 +86,7 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         float PreserveAlphaCoverageReference = 0.5f;
 
         // Texture group for streaming (negative if unused). See Streaming Settings.
-        API_FIELD(Attributes="EditorOrder(300), CustomEditor(typeof(FlaxEditor.CustomEditors.Dedicated.TextureGroupEditor))")
+        API_FIELD(Attributes="EditorOrder(300), CustomEditorAlias(\"FlaxEditor.CustomEditors.Dedicated.TextureGroupEditor\")")
         int32 TextureGroup = -1;
 
         // The sprites for the sprite sheet import mode.
