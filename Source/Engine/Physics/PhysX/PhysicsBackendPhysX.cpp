@@ -477,7 +477,7 @@ void InitVehicleSDK()
     {
         VehicleSDKInitialized = true;
         PxInitVehicleSDK(*PhysX);
-        PxVehicleSetBasisVectors(PxVec3(0, 1, 0), PxVec3(1, 0, 0));
+        PxVehicleSetBasisVectors(PxVec3(0, 1, 0), PxVec3(0, 0, 1));
         PxVehicleSetUpdateMode(PxVehicleUpdateMode::eVELOCITY_CHANGE);
     }
 }
@@ -1018,7 +1018,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
 		            5.0f,  // fall rate eANALOG_INPUT_STEER_RIGHT
 	            }
             };
-            PxVehicleKeySmoothingData keySmoothing =
+            static constexpr PxVehicleKeySmoothingData keySmoothing =
             {
                 {
                     3.0f,  // rise rate eANALOG_INPUT_ACCEL
@@ -1216,7 +1216,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                 // Update wheel collider transformation
                 auto localPose = shape->getLocalPose();
                 Transform t = wheelData.Collider->GetLocalTransform();
-                t.Orientation = Quaternion::Euler(0, state.SteerAngle, state.RotationAngle) * wheelData.LocalOrientation;
+                t.Orientation = Quaternion::Euler(-state.RotationAngle, state.SteerAngle, 0) * wheelData.LocalOrientation;
                 t.Translation = P2C(localPose.p) / wheelVehicle->GetScale() - t.Orientation * wheelData.Collider->GetCenter();
                 wheelData.Collider->SetLocalTransform(t);
             }
@@ -2592,6 +2592,7 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
     }
     PxF32 sprungMasses[PX_MAX_NB_WHEELS];
     const float mass = actorPhysX->getMass();
+    // TODO: get gravityDirection from scenePhysX->Scene->getGravity()
     PxVehicleComputeSprungMasses(wheels.Count(), offsets, centerOfMassOffset.p, mass, 1, sprungMasses);
     PxVehicleWheelsSimData* wheelsSimData = PxVehicleWheelsSimData::allocate(wheels.Count());
     for (int32 i = 0; i < wheels.Count(); i++)
@@ -2742,9 +2743,9 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
 
         // Ackermann steer accuracy
         PxVehicleAckermannGeometryData ackermann;
-        ackermann.mAxleSeparation = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_LEFT).x - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_LEFT).x);
-        ackermann.mFrontWidth = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_RIGHT).z - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_LEFT).z);
-        ackermann.mRearWidth = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_RIGHT).z - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_LEFT).z);
+        ackermann.mAxleSeparation = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_LEFT).z - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_LEFT).z);
+        ackermann.mFrontWidth = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_RIGHT).x - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_LEFT).x);
+        ackermann.mRearWidth = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_RIGHT).x - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_LEFT).x);
         driveSimData.setAckermannGeometryData(ackermann);
 
         // Create vehicle drive

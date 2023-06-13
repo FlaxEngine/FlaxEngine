@@ -212,7 +212,7 @@ void WheeledVehicle::Setup()
 void WheeledVehicle::DrawPhysicsDebug(RenderView& view)
 {
     // Wheels shapes
-    for (auto& data : _wheelsData)
+    for (const auto& data : _wheelsData)
     {
         int32 wheelIndex = 0;
         for (; wheelIndex < _wheels.Count(); wheelIndex++)
@@ -222,7 +222,7 @@ void WheeledVehicle::DrawPhysicsDebug(RenderView& view)
         }
         if (wheelIndex == _wheels.Count())
             break;
-        auto& wheel = _wheels[wheelIndex];
+        const auto& wheel = _wheels[wheelIndex];
         if (wheel.Collider && wheel.Collider->GetParent() == this && !wheel.Collider->GetIsTrigger())
         {
             const Vector3 currentPos = wheel.Collider->GetPosition();
@@ -242,7 +242,7 @@ void WheeledVehicle::DrawPhysicsDebug(RenderView& view)
 void WheeledVehicle::OnDebugDrawSelected()
 {
     // Wheels shapes
-    for (auto& data : _wheelsData)
+    for (const auto& data : _wheelsData)
     {
         int32 wheelIndex = 0;
         for (; wheelIndex < _wheels.Count(); wheelIndex++)
@@ -252,7 +252,7 @@ void WheeledVehicle::OnDebugDrawSelected()
         }
         if (wheelIndex == _wheels.Count())
             break;
-        auto& wheel = _wheels[wheelIndex];
+        const auto& wheel = _wheels[wheelIndex];
         if (wheel.Collider && wheel.Collider->GetParent() == this && !wheel.Collider->GetIsTrigger())
         {
             const Vector3 currentPos = wheel.Collider->GetPosition();
@@ -311,6 +311,9 @@ void WheeledVehicle::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     DESERIALIZE_MEMBER(Engine, _engine);
     DESERIALIZE_MEMBER(Differential, _differential);
     DESERIALIZE_MEMBER(Gearbox, _gearbox);
+
+    // [Deprecated on 13.06.2023, expires on 13.06.2025]
+    _fixInvalidForwardDir |= modifier->EngineBuild < 6341;
 }
 
 void WheeledVehicle::OnColliderChanged(Collider* c)
@@ -329,6 +332,41 @@ void WheeledVehicle::OnPhysicsSceneChanged(PhysicsScene* previous)
     PhysicsBackend::RemoveVehicle(previous->GetPhysicsScene(), this);
     PhysicsBackend::AddVehicle(GetPhysicsScene()->GetPhysicsScene(), this);
 #endif
+}
+
+void WheeledVehicle::OnTransformChanged()
+{
+    RigidBody::OnTransformChanged();
+
+    // Initially vehicles were using X axis as forward which was kind of bad idea as engine uses Z as forward
+    // [Deprecated on 13.06.2023, expires on 13.06.2025]
+    if (_fixInvalidForwardDir)
+    {
+        _fixInvalidForwardDir = false;
+
+        // Transform all vehicle children around the vehicle origin to fix the vehicle facing direction
+        const Quaternion rotationDelta(0.0f, -0.7071068f, 0.0f, 0.7071068f);
+        const Vector3 origin = GetPosition();
+        for (Actor* child : Children)
+        {
+            Transform trans = child->GetTransform();;
+            const Vector3 pivotOffset = trans.Translation - origin;
+            if (pivotOffset.IsZero())
+            {
+                trans.Orientation *= Quaternion::Invert(trans.Orientation) * rotationDelta * trans.Orientation;
+            }
+            else
+            {
+                Matrix transWorld, deltaWorld;
+                Matrix::RotationQuaternion(trans.Orientation, transWorld);
+                Matrix::RotationQuaternion(rotationDelta, deltaWorld);
+                Matrix world = transWorld * Matrix::Translation(pivotOffset) * deltaWorld * Matrix::Translation(-pivotOffset);
+                trans.SetRotation(world);
+                trans.Translation += world.GetTranslation();
+            }
+            child->SetTransform(trans);
+        }
+    }
 }
 
 void WheeledVehicle::BeginPlay(SceneBeginData* data)
