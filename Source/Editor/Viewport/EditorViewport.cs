@@ -272,6 +272,11 @@ namespace FlaxEditor.Viewport
         }
 
         /// <summary>
+        /// Gets or sets the view plane;
+        /// </summary>
+        public ViewPlaneAxis ViewPlane { get; set; }
+
+        /// <summary>
         /// Gets or sets the yaw angle (in degrees).
         /// </summary>
         public float Yaw
@@ -390,7 +395,26 @@ namespace FlaxEditor.Viewport
         public bool UseOrthographicProjection
         {
             get => _isOrtho;
-            set => _isOrtho = value;
+            set
+            {
+                if (!value)
+                    UseTwoDimentionalProjection = false;
+                else
+                    _isOrtho = true;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the camera 2D mode (otherwise 3D mode).
+        /// </summary>
+        public bool UseTwoDimentionalProjection
+        {
+            get => _isTwoDimentional;
+            set
+            {
+                ViewPlane = ViewPlaneAxis.XZ;
+                _isOrtho = _isTwoDimentional = value;
+            }
         }
 
         /// <summary>
@@ -425,6 +449,7 @@ namespace FlaxEditor.Viewport
 
             AnchorPreset = AnchorPresets.StretchAll;
             Offsets = Margin.Zero;
+            ViewPlane = ViewPlaneAxis.XZ;
 
             // Setup options
             {
@@ -463,13 +488,37 @@ namespace FlaxEditor.Viewport
 
                 // View mode widget
                 var viewMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperLeft);
+
                 ViewWidgetButtonMenu = new ContextMenu();
                 var viewModeButton = new ViewportWidgetButton("View", SpriteHandle.Invalid, ViewWidgetButtonMenu)
                 {
                     TooltipText = "View properties",
                     Parent = viewMode
                 };
+                var twoDimentionalViewButton = new ViewportWidgetButton("3D", SpriteHandle.Invalid, null, true)
+                {
+                    TooltipText = "2D Projection",
+                    Parent = viewMode,
+                };
                 viewMode.Parent = this;
+
+                // Toogle to 2D
+                {
+                    twoDimentionalViewButton.Toggled += button =>
+                    {
+                        UseTwoDimentionalProjection = button.Checked;
+                        if (_isOrtho)
+                        {
+                            button.Text = "2D";
+                            OrientViewport(Quaternion.Identity);
+                        }
+                        else
+                        {
+                            button.Text = "3D";
+                            OrientViewport(ViewOrientation);
+                        }
+                    };
+                }
 
                 // Show
                 {
@@ -548,7 +597,7 @@ namespace FlaxEditor.Viewport
                     {
                         if (checkBox.Checked != _isOrtho)
                         {
-                            _isOrtho = checkBox.Checked;
+                            UseOrthographicProjection = checkBox.Checked;
                             ViewWidgetButtonMenu.Hide();
                             if (_isOrtho)
                             {
@@ -567,12 +616,16 @@ namespace FlaxEditor.Viewport
                     {
                         var co = EditorViewportCameraViewpointValues[i];
                         var button = cameraView.AddButton(co.Name);
-                        button.Tag = co.Orientation;
+                        button.Tag = co;
                     }
                     cameraView.ButtonClicked += button =>
                     {
+<<<<<<< HEAD
+                        OrientViewport((CameraViewpoint)button.Tag);
+=======
                         var orient = Quaternion.Euler((Float3)button.Tag);
                         OrientViewport(ref orient);
+>>>>>>> master
                     };
                 }
 
@@ -678,12 +731,12 @@ namespace FlaxEditor.Viewport
                 }
             }
 
-            InputActions.Add(options => options.ViewpointTop, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Top").Orientation)));
-            InputActions.Add(options => options.ViewpointBottom, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Bottom").Orientation)));
-            InputActions.Add(options => options.ViewpointFront, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Front").Orientation)));
-            InputActions.Add(options => options.ViewpointBack, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Back").Orientation)));
-            InputActions.Add(options => options.ViewpointRight, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Right").Orientation)));
-            InputActions.Add(options => options.ViewpointLeft, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Left").Orientation)));
+            InputActions.Add(options => options.ViewpointTop, () => OrientViewport(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Top")));
+            InputActions.Add(options => options.ViewpointBottom, () => OrientViewport(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Bottom")));
+            InputActions.Add(options => options.ViewpointFront, () => OrientViewport(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Front")));
+            InputActions.Add(options => options.ViewpointBack, () => OrientViewport(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Back")));
+            InputActions.Add(options => options.ViewpointRight, () => OrientViewport(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Right")));
+            InputActions.Add(options => options.ViewpointLeft, () => OrientViewport(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Left")));
 
             // Link for task event
             task.Begin += OnRenderBegin;
@@ -694,14 +747,24 @@ namespace FlaxEditor.Viewport
         /// </summary>
         protected virtual bool IsControllingMouse => false;
 
+        private void OrientViewport(CameraViewpoint viewpoint)
+        {
+            OrientViewport(ref viewpoint);
+        }
+
+        private void OrientViewport(ref CameraViewpoint viewpoint)
+        {
+            ViewPlane = viewpoint.ViewPlane;
+            OrientViewport(Quaternion.Euler(viewpoint.Orientation));
+        }
+
         /// <summary>
         /// Orients the viewport.
         /// </summary>
         /// <param name="orientation">The orientation.</param>
         protected void OrientViewport(Quaternion orientation)
         {
-            var quat = orientation;
-            OrientViewport(ref quat);
+            OrientViewport(ref orientation);
         }
 
         /// <summary>
@@ -763,6 +826,7 @@ namespace FlaxEditor.Viewport
 
         private FpsCounter _fpsCounter;
         private ContextMenuButton _showFpsButon;
+        private bool _isTwoDimentional;
 
         /// <summary>
         /// Gets or sets a value indicating whether show or hide FPS counter.
@@ -1206,6 +1270,12 @@ namespace FlaxEditor.Viewport
                 // Update
                 moveDelta *= dt * (60.0f * 4.0f);
                 mouseDelta *= 200.0f * MouseSpeed * _mouseSensitivity;
+                if (_isTwoDimentional)
+                {
+                    moveDelta.X -= mouseDelta.X;
+                    moveDelta.Y -= mouseDelta.Y;
+                    mouseDelta = Vector2.Zero;
+                }
                 UpdateView(dt, ref moveDelta, ref mouseDelta, out var centerMouse);
 
                 // Move mouse back to the root position
@@ -1369,23 +1439,38 @@ namespace FlaxEditor.Viewport
         private struct CameraViewpoint
         {
             public readonly string Name;
+<<<<<<< HEAD
+            public readonly Vector3 Orientation;
+            public readonly ViewPlaneAxis ViewPlane;
+=======
             public readonly Float3 Orientation;
+>>>>>>> master
 
-            public CameraViewpoint(string name, Vector3 orientation)
+            public CameraViewpoint(string name, Vector3 orientation, ViewPlaneAxis viewPlane)
             {
                 Name = name;
                 Orientation = orientation;
+                ViewPlane = viewPlane;
             }
         }
 
         private readonly CameraViewpoint[] EditorViewportCameraViewpointValues =
         {
+<<<<<<< HEAD
+            new CameraViewpoint("Front", new Vector3(0, 180, 0), ViewPlaneAxis.XY),
+            new CameraViewpoint("Back", new Vector3(0, 0, 0), ViewPlaneAxis.XY),
+            new CameraViewpoint("Left", new Vector3(0, 90, 0), ViewPlaneAxis.YZ),
+            new CameraViewpoint("Right", new Vector3(0, -90, 0), ViewPlaneAxis.YZ),
+            new CameraViewpoint("Top", new Vector3(90, 0, 0), ViewPlaneAxis.XZ),
+            new CameraViewpoint("Bottom", new Vector3(-90, 0, 0), ViewPlaneAxis.XZ)
+=======
             new CameraViewpoint("Front", new Float3(0, 180, 0)),
             new CameraViewpoint("Back", new Float3(0, 0, 0)),
             new CameraViewpoint("Left", new Float3(0, 90, 0)),
             new CameraViewpoint("Right", new Float3(0, -90, 0)),
             new CameraViewpoint("Top", new Float3(90, 0, 0)),
             new CameraViewpoint("Bottom", new Float3(-90, 0, 0))
+>>>>>>> master
         };
 
         private readonly float[] EditorViewportCameraSpeedValues =

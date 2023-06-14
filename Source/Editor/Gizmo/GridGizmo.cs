@@ -2,6 +2,7 @@
 
 using System;
 using FlaxEngine;
+using FlaxEditor.Viewport;
 
 namespace FlaxEditor.Gizmo
 {
@@ -49,7 +50,9 @@ namespace FlaxEditor.Gizmo
         {
             if (!Enabled)
                 return;
-
+            var viewPlane = Owner.ViewPlane;
+            if (viewPlane == ViewPlaneAxis.None)
+                return;
             var viewPos = Owner.ViewPosition;
             var plane = new Plane(Vector3.Zero, Vector3.UnitY);
             var dst = CollisionsHelper.DistancePlanePoint(ref plane, ref viewPos);
@@ -73,24 +76,76 @@ namespace FlaxEditor.Gizmo
 
             Color color = Color.Gray * 0.7f;
             int count = (int)(size / space);
+            Vector3 start;
+            Vector3 end;
 
-            Vector3 start = new Vector3(0, 0, size * -0.5f);
-            Vector3 end = new Vector3(0, 0, size * 0.5f);
+            // NOTE: This is mess, but I dont have idea currently how to refactor it ~~Crawcik
+            // XZ Grid
+            if (viewPlane == ViewPlaneAxis.XZ || !Owner.UseTwoDimentionalProjection)
+            {
+                start = new Vector3(0, 0, size * -0.5f);
+                end = new Vector3(0, 0, size * 0.5f);
+
+                for (int i = 0; i <= count; i++)
+                {
+                    start.X = end.X = i * space + start.Z;
+                    DebugDraw.DrawLine(start, end, color);
+                }
+
+                start = new Vector3(size * -0.5f, 0, 0);
+                end = new Vector3(size * 0.5f, 0, 0);
+
+                for (int i = 0; i <= count; i++)
+                {
+                    start.Z = end.Z = i * space + start.X;
+                    DebugDraw.DrawLine(start, end, color);
+                }
+                return;
+            }
+
+            // XY & YZ Grid
+            start = default;
+            end = default;
+            bool isXY = viewPlane == ViewPlaneAxis.XY;
+            if (isXY)
+                start.X -= end.X = size * 0.5f;
+            else
+                start.Z -= end.Z = size * 0.5f;
+            float startPoint = isXY ? start.X : start.Z;
 
             for (int i = 0; i <= count; i++)
             {
-                start.X = end.X = i * space + start.Z;
+                start.Y = end.Y = i * space + startPoint;
                 DebugDraw.DrawLine(start, end, color);
             }
 
-            start = new Vector3(size * -0.5f, 0, 0);
-            end = new Vector3(size * 0.5f, 0, 0);
+            start = new Vector3(0, size * -0.5f, 0);
+            end = new Vector3(0, size * 0.5f, 0);
 
             for (int i = 0; i <= count; i++)
             {
-                start.Z = end.Z = i * space + start.X;
+                float point = i * space + start.Y;
+                if (isXY)
+                    start.X = end.X = point;
+                else
+                    start.Z = end.Z = point;
                 DebugDraw.DrawLine(start, end, color);
             }
+
+        }
+
+        private static Vector3 GetPlaneUnit(ViewPlaneAxis viewPlane)
+        {
+            switch(viewPlane)
+            {
+                case ViewPlaneAxis.XY:
+                    return Vector3.UnitZ;
+                case ViewPlaneAxis.XZ:
+                    return Vector3.UnitY;
+                case ViewPlaneAxis.YZ:
+                    return Vector3.UnitX;
+            }
+            return Vector3.UnitY;
         }
     }
 }

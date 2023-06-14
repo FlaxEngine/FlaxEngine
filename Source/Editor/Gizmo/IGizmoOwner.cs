@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
+using FlaxEditor.Viewport;
 
 namespace FlaxEditor.Gizmo
 {
@@ -74,6 +75,22 @@ namespace FlaxEditor.Gizmo
         /// Gets the mouse movement delta.
         /// </summary>
         Float2 MouseDelta { get; }
+
+
+        /// <summary>
+        /// Gets the mouse movement delta.
+        /// </summary>
+        ViewPlaneAxis ViewPlane { get; }
+
+        /// <summary>
+        /// Gets or sets the camera orthographic mode (otherwise uses perspective projection).
+        /// </summary>
+        bool UseOrthographicProjection { get; }
+
+        /// <summary>
+        /// Gets or sets the camera 2D mode (otherwise uses 3D mode).
+        /// </summary>
+        bool UseTwoDimentionalProjection { get; }
 
         /// <summary>
         /// Gets a value indicating whether use grid snapping during gizmo operations.
