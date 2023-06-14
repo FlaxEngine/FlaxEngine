@@ -92,7 +92,7 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
 
     // Setup package name (eg. com.company.project)
     String appIdentifier = platformSettings->AppIdentifier;
-    if (EditorUtilities::FormatAppPackageName(packageName))
+    if (EditorUtilities::FormatAppPackageName(appIdentifier))
         return true;
 
     // Find executable

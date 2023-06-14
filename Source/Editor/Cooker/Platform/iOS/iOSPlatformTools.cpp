@@ -164,7 +164,7 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
 
     // Setup package name (eg. com.company.project)
     String appIdentifier = platformSettings->AppIdentifier;
-    if (EditorUtilities::FormatAppPackageName(packageName))
+    if (EditorUtilities::FormatAppPackageName(appIdentifier))
         return true;
 
     // Copy fresh Gradle project template
