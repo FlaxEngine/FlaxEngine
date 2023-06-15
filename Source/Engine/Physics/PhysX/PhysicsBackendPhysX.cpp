@@ -85,7 +85,7 @@ class AllocatorPhysX : public PxAllocatorCallback
 {
     void* allocate(size_t size, const char* typeName, const char* filename, int line) override
     {
-        ASSERT(size < 1024 * 1024 * 32); // Prevent invalid allocation size
+        ASSERT(size < 1024 * 1024 * 1024); // Prevent invalid allocation size
         return Allocator::Allocate(size, 16);
     }
 
