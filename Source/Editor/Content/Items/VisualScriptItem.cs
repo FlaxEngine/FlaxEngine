@@ -311,7 +311,10 @@ namespace FlaxEditor.Content
 
         internal void Dispose()
         {
-            OnAssetReloading(_asset);
+            if (_parameters != null)
+            {
+                OnAssetReloading(_asset);
+            }
             _asset = null;
         }
 
