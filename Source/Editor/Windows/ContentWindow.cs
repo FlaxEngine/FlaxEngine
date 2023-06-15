@@ -27,6 +27,7 @@ namespace FlaxEditor.Windows
     {
         private const string ProjectDataLastViewedFolder = "LastViewedFolder";
         private bool _isWorkspaceDirty;
+        private string _workspaceRebuildLocation;
         private SplitPanel _split;
         private Panel _contentViewPanel;
         private Panel _contentTreePanel;
@@ -75,7 +76,23 @@ namespace FlaxEditor.Windows
 
             // Content database events
             editor.ContentDatabase.WorkspaceModified += () => _isWorkspaceDirty = true;
-            editor.ContentDatabase.ItemRemoved += ContentDatabaseOnItemRemoved;
+            editor.ContentDatabase.ItemRemoved += OnContentDatabaseItemRemoved;
+            editor.ContentDatabase.WorkspaceRebuilding += () => { _workspaceRebuildLocation = SelectedNode?.Path; };
+            editor.ContentDatabase.WorkspaceRebuilt += () =>
+            {
+                var selected = Editor.ContentDatabase.Find(_workspaceRebuildLocation);
+                if (selected is ContentFolder selectedFolder)
+                {
+                    _navigationUnlocked = false;
+                    RefreshView(selectedFolder.Node);
+                    _tree.Select(selectedFolder.Node);
+                    UpdateItemsSearch();
+                    _navigationUnlocked = true;
+                    UpdateUI();
+                }
+                else
+                    ShowRoot();
+            };
 
             var options = Editor.Options;
             options.OptionsChanged += OnOptionsChanged;
@@ -737,7 +754,7 @@ namespace FlaxEditor.Windows
             }
         }
 
-        private void ContentDatabaseOnItemRemoved(ContentItem contentItem)
+        private void OnContentDatabaseItemRemoved(ContentItem contentItem)
         {
             if (contentItem is ContentFolder folder)
             {
