@@ -556,6 +556,7 @@ bool TextureBase::Init(InitData* initData)
     if (!IsVirtual())
     {
         LOG(Error, "Texture must be virtual.");
+        Delete(initData);
         return true;
     }
     if (initData->Format == PixelFormat::Unknown ||
@@ -565,6 +566,7 @@ bool TextureBase::Init(InitData* initData)
         Math::IsNotInRange(initData->Mips.Count(), 1, GPU_MAX_TEXTURE_MIP_LEVELS))
     {
         Log::ArgumentOutOfRangeException();
+        Delete(initData);
         return true;
     }
     ScopeLock lock(Locker);
@@ -579,11 +581,11 @@ bool TextureBase::Init(InitData* initData)
 
     // Create texture
     TextureHeader textureHeader;
-    textureHeader.Format = initData->Format;
-    textureHeader.Width = initData->Width;
-    textureHeader.Height = initData->Height;
-    textureHeader.IsCubeMap = initData->ArraySize == 6;
-    textureHeader.MipLevels = initData->Mips.Count();
+    textureHeader.Format = _customData->Format;
+    textureHeader.Width = _customData->Width;
+    textureHeader.Height = _customData->Height;
+    textureHeader.IsCubeMap = _customData->ArraySize == 6;
+    textureHeader.MipLevels = _customData->Mips.Count();
     textureHeader.Type = TextureFormatType::ColorRGBA;
     textureHeader.NeverStream = true;
     if (_texture.Create(textureHeader))
@@ -595,7 +597,9 @@ bool TextureBase::Init(InitData* initData)
     return false;
 }
 
-bool TextureBase::Init(void* ptr)
+#if !COMPILE_WITHOUT_CSHARP
+
+bool TextureBase::InitCSharp(void* ptr)
 {
     PROFILE_CPU_NAMED("Texture.Init");
     struct InternalInitData
@@ -636,6 +640,8 @@ bool TextureBase::Init(void* ptr)
 
     return Init(initData);
 }
+
+#endif
 
 uint64 TextureBase::GetMemoryUsage() const
 {
@@ -762,6 +768,22 @@ Asset::LoadResult TextureBase::load()
 {
     // Loading textures is very fast xD
     return LoadResult::Ok;
+}
+
+TextureBase::InitData::MipData::MipData(MipData&& other) noexcept
+    : Data(MoveTemp(other.Data))
+    , RowPitch(other.RowPitch)
+    , SlicePitch(other.SlicePitch)
+{
+}
+
+TextureBase::InitData::InitData(InitData&& other) noexcept
+    : Format(other.Format)
+    , Width(other.Width)
+    , Height(other.Height)
+    , ArraySize(other.ArraySize)
+    , Mips(MoveTemp(other.Mips))
+{
 }
 
 bool TextureBase::InitData::GenerateMip(int32 mipIndex, bool linear)

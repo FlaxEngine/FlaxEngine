@@ -27,6 +27,9 @@ API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API TextureBase : public BinaryAss
             BytesContainer Data;
             uint32 RowPitch;
             uint32 SlicePitch;
+
+            MipData() = default;
+            MipData(MipData&& other) noexcept;
         };
 
         PixelFormat Format;
@@ -34,6 +37,16 @@ API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API TextureBase : public BinaryAss
         int32 Height;
         int32 ArraySize;
         Array<MipData, FixedAllocation<14>> Mips;
+
+        InitData() = default;
+        InitData(InitData&& other) noexcept;
+
+        InitData& operator=(InitData&& other)
+        {
+            if (this != &other)
+                *this = MoveTemp(other);
+            return *this;
+        }
 
         /// <summary>
         /// Generates the mip map data.
@@ -208,16 +221,28 @@ public:
     /// <summary>
     /// Initializes the texture with specified initialize data source (asset must be virtual).
     /// </summary>
-    /// <param name="initData">The initialize data (allocated by the called, will be used and released by the asset internal layer).</param>
+    /// <param name="initData">The initializer data allocated by the caller with New. It will be owned and released by the asset internal layer.</param>
     /// <returns>True if failed, otherwise false.</returns>
     bool Init(InitData* initData);
+
+    /// <summary>
+    /// Initializes the texture with specified initialize data source (asset must be virtual).
+    /// </summary>
+    /// <param name="initData">The initializer data. It will be used and released by the asset internal layer (memory allocation will be swapped).</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    bool Init(InitData&& initData)
+    {
+        return Init(New<InitData>(MoveTemp(initData)));
+    }
 
 protected:
     virtual int32 CalculateChunkIndex(int32 mipIndex) const;
 
 private:
+#if !COMPILE_WITHOUT_CSHARP
     // Internal bindings
-    API_FUNCTION(NoProxy) bool Init(void* ptr);
+    API_FUNCTION(NoProxy) bool InitCSharp(void* ptr);
+#endif
 
 public:
     // [BinaryAsset]
