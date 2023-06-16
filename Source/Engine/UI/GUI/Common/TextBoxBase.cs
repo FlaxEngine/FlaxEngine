@@ -1385,6 +1385,8 @@ namespace FlaxEngine.GUI
                     // End editing
                     RemoveFocus();
                 }
+                else
+                    return false;
                 return true;
             case KeyboardKeys.Home:
                 if (shiftDown)
