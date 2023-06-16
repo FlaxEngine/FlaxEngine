@@ -31,6 +31,7 @@
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/ContentImporters/CreateMaterial.h"
 #include "Engine/ContentImporters/CreateCollisionData.h"
+#include "Engine/Serialization/Serialization.h"
 #include "Editor/Utilities/EditorUtilities.h"
 #include <ThirdParty/meshoptimizer/meshoptimizer.h>
 #endif
@@ -327,6 +328,116 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
 }
 
 #if USE_EDITOR
+
+BoundingBox ImportedModelData::LOD::GetBox() const
+{
+    if (Meshes.IsEmpty())
+        return BoundingBox::Empty;
+
+    BoundingBox box;
+    Meshes[0]->CalculateBox(box);
+    for (int32 i = 1; i < Meshes.Count(); i++)
+    {
+        if (Meshes[i]->Positions.HasItems())
+        {
+            BoundingBox t;
+            Meshes[i]->CalculateBox(t);
+            BoundingBox::Merge(box, t, box);
+        }
+    }
+
+    return box;
+}
+
+void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj)
+{
+    SERIALIZE_GET_OTHER_OBJ(ModelTool::Options);
+
+    SERIALIZE(Type);
+    SERIALIZE(CalculateNormals);
+    SERIALIZE(SmoothingNormalsAngle);
+    SERIALIZE(FlipNormals);
+    SERIALIZE(CalculateTangents);
+    SERIALIZE(SmoothingTangentsAngle);
+    SERIALIZE(OptimizeMeshes);
+    SERIALIZE(MergeMeshes);
+    SERIALIZE(ImportLODs);
+    SERIALIZE(ImportVertexColors);
+    SERIALIZE(ImportBlendShapes);
+    SERIALIZE(LightmapUVsSource);
+    SERIALIZE(CollisionMeshesPrefix);
+    SERIALIZE(Scale);
+    SERIALIZE(Rotation);
+    SERIALIZE(Translation);
+    SERIALIZE(CenterGeometry);
+    SERIALIZE(Duration);
+    SERIALIZE(FramesRange);
+    SERIALIZE(DefaultFrameRate);
+    SERIALIZE(SamplingRate);
+    SERIALIZE(SkipEmptyCurves);
+    SERIALIZE(OptimizeKeyframes);
+    SERIALIZE(ImportScaleTracks);
+    SERIALIZE(EnableRootMotion);
+    SERIALIZE(RootNodeName);
+    SERIALIZE(GenerateLODs);
+    SERIALIZE(BaseLOD);
+    SERIALIZE(LODCount);
+    SERIALIZE(TriangleReduction);
+    SERIALIZE(ImportMaterials);
+    SERIALIZE(ImportTextures);
+    SERIALIZE(RestoreMaterialsOnReimport);
+    SERIALIZE(GenerateSDF);
+    SERIALIZE(SDFResolution);
+    SERIALIZE(SplitObjects);
+    SERIALIZE(ObjectIndex);
+}
+
+void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
+{
+    DESERIALIZE(Type);
+    DESERIALIZE(CalculateNormals);
+    DESERIALIZE(SmoothingNormalsAngle);
+    DESERIALIZE(FlipNormals);
+    DESERIALIZE(CalculateTangents);
+    DESERIALIZE(SmoothingTangentsAngle);
+    DESERIALIZE(OptimizeMeshes);
+    DESERIALIZE(MergeMeshes);
+    DESERIALIZE(ImportLODs);
+    DESERIALIZE(ImportVertexColors);
+    DESERIALIZE(ImportBlendShapes);
+    DESERIALIZE(LightmapUVsSource);
+    DESERIALIZE(CollisionMeshesPrefix);
+    DESERIALIZE(Scale);
+    DESERIALIZE(Rotation);
+    DESERIALIZE(Translation);
+    DESERIALIZE(CenterGeometry);
+    DESERIALIZE(Duration);
+    DESERIALIZE(FramesRange);
+    DESERIALIZE(DefaultFrameRate);
+    DESERIALIZE(SamplingRate);
+    DESERIALIZE(SkipEmptyCurves);
+    DESERIALIZE(OptimizeKeyframes);
+    DESERIALIZE(ImportScaleTracks);
+    DESERIALIZE(EnableRootMotion);
+    DESERIALIZE(RootNodeName);
+    DESERIALIZE(GenerateLODs);
+    DESERIALIZE(BaseLOD);
+    DESERIALIZE(LODCount);
+    DESERIALIZE(TriangleReduction);
+    DESERIALIZE(ImportMaterials);
+    DESERIALIZE(ImportTextures);
+    DESERIALIZE(RestoreMaterialsOnReimport);
+    DESERIALIZE(GenerateSDF);
+    DESERIALIZE(SDFResolution);
+    DESERIALIZE(SplitObjects);
+    DESERIALIZE(ObjectIndex);
+
+    // [Deprecated on 23.11.2021, expires on 21.11.2023]
+    int32 AnimationIndex = -1;
+    DESERIALIZE(AnimationIndex);
+    if (AnimationIndex != -1)
+        ObjectIndex = AnimationIndex;
+}
 
 void RemoveNamespace(String& name)
 {
@@ -673,6 +784,15 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
     }
     case ModelType::SkinnedModel:
     {
+        // Add single node if imported skeleton is empty
+        if (data.Skeleton.Nodes.IsEmpty())
+        {
+            data.Skeleton.Nodes.Resize(1);
+            data.Skeleton.Nodes[0].Name = TEXT("Root");
+            data.Skeleton.Nodes[0].LocalTransform = Transform::Identity;
+            data.Skeleton.Nodes[0].ParentIndex = -1;
+        }
+
         // Special case if imported model has no bones but has valid skeleton and meshes.
         // We assume that every mesh uses a single bone. Copy nodes to bones.
         if (data.Skeleton.Bones.IsEmpty() && Math::IsInRange(data.Skeleton.Nodes.Count(), 1, MAX_BONES_PER_MODEL))
@@ -700,16 +820,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         }
 
         // Validate
-        if (data.LODs.IsEmpty() || data.LODs[0].Meshes.IsEmpty())
-        {
-            errorMsg = TEXT("Imported model has no valid geometry.");
-            return true;
-        }
-        if (data.Skeleton.Nodes.IsEmpty() || data.Skeleton.Bones.IsEmpty())
-        {
-            errorMsg = TEXT("Imported model has no skeleton.");
-            return true;
-        }
         if (data.Skeleton.Bones.Count() > MAX_BONES_PER_MODEL)
         {
             errorMsg = String::Format(TEXT("Imported model skeleton has too many bones. Imported: {0}, maximum supported: {1}. Please optimize your asset."), data.Skeleton.Bones.Count(), MAX_BONES_PER_MODEL);
@@ -720,7 +830,8 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             LOG(Warning, "Imported skinned model has more than one LOD. Removing the lower LODs. Only single one is supported.");
             data.LODs.Resize(1);
         }
-        for (int32 i = 0; i < data.LODs[0].Meshes.Count(); i++)
+        const int32 meshesCount = data.LODs.Count() != 0 ? data.LODs[0].Meshes.Count() : 0;
+        for (int32 i = 0; i < meshesCount; i++)
         {
             const auto mesh = data.LODs[0].Meshes[i];
             if (mesh->BlendIndices.IsEmpty() || mesh->BlendWeights.IsEmpty())
@@ -771,7 +882,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
 #endif
         }
 
-        LOG(Info, "Imported skeleton has {0} bones, {3} nodes, {1} meshes and {2} material", data.Skeleton.Bones.Count(), data.LODs[0].Meshes.Count(), data.Materials.Count(), data.Nodes.Count());
+        LOG(Info, "Imported skeleton has {0} bones, {3} nodes, {1} meshes and {2} material", data.Skeleton.Bones.Count(), meshesCount, data.Materials.Count(), data.Nodes.Count());
         break;
     }
     case ModelType::Animation:

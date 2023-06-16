@@ -24,7 +24,7 @@ namespace Log
         /// <summary>
         /// Creates default exception with additional data
         /// </summary>
-        /// <param name="message">Additional information that help describe error</param>
+        /// <param name="additionalInfo">Additional information that help describe error</param>
         OverflowException(const String& additionalInfo)
             : Exception(TEXT("Arithmetic, casting, or conversion operation results in an overflow."), additionalInfo)
         {

@@ -2,6 +2,7 @@
 
 using System;
 using FlaxEngine;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Content
 {
@@ -42,7 +43,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override AssetItem ConstructItem(string path, string typeName, ref Guid id)
         {
-            var type = Scripting.TypeUtils.GetType(typeName).Type;
+            var type = TypeUtils.GetType(typeName).Type;
 
             if (typeof(TextureBase).IsAssignableFrom(type))
                 return new TextureAssetItem(path, ref id, typeName, type);

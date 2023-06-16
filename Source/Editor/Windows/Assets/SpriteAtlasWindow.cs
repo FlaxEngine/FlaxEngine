@@ -103,7 +103,7 @@ namespace FlaxEditor.Windows.Assets
             public SpriteEntry[] Sprites;
 
             [EditorOrder(1000), EditorDisplay("Import Settings", EditorDisplayAttribute.InlineStyle)]
-            public TextureImportSettings ImportSettings = new TextureImportSettings();
+            public FlaxEngine.Tools.TextureTool.Options ImportSettings = new();
 
             public sealed class ProxyEditor : GenericEditor
             {
@@ -183,11 +183,7 @@ namespace FlaxEditor.Windows.Assets
                 UpdateSprites();
 
                 // Try to restore target asset texture import options (useful for fast reimport)
-                if (TextureImportEntry.Internal_GetTextureImportOptions(win.Item.Path, out TextureImportSettings.InternalOptions options))
-                {
-                    // Restore settings
-                    ImportSettings.FromInternal(ref options);
-                }
+                Editor.TryRestoreImportOptions(ref ImportSettings, win.Item.Path);
 
                 // Prepare restore data
                 PeekState();
@@ -269,7 +265,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 var sprite = new Sprite
                 {
-                    Name = StringUtils.IncrementNameNumber("New Sprite", name => Asset.Sprites.All(s => s.Name != name)),
+                    Name = Utilities.Utils.IncrementNameNumber("New Sprite", name => Asset.Sprites.All(s => s.Name != name)),
                     Area = new Rectangle(Float2.Zero, Float2.One),
                 };
                 Asset.AddSprite(sprite);
@@ -366,14 +362,13 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutSerialize(XmlWriter writer)
         {
-            writer.WriteAttributeString("Split", _split.SplitterValue.ToString());
+            LayoutSerializeSplitter(writer, "Split", _split);
         }
 
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            if (float.TryParse(node.GetAttribute("Split"), out float value1))
-                _split.SplitterValue = value1;
+            LayoutDeserializeSplitter(node, "Split", _split);
         }
 
         /// <inheritdoc />

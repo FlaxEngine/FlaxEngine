@@ -36,6 +36,10 @@ namespace FlaxEditor.Windows.Assets
                 Asset = window.Asset;
             }
 
+            public virtual void OnSave()
+            {
+            }
+
             public virtual void OnClean()
             {
                 Window = null;
@@ -109,7 +113,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = new Margin(0, 0, _toolstrip.Bottom, 0),
-                SplitterValue = 0.65f,
+                SplitterValue = 0.59f,
                 Parent = this
             };
 
@@ -139,9 +143,7 @@ namespace FlaxEditor.Windows.Assets
             foreach (var child in _tabs.Children)
             {
                 if (child is Tab tab && tab.Proxy.Window != null)
-                {
                     tab.Proxy.OnClean();
-                }
             }
 
             base.UnlinkItem();
@@ -187,20 +189,19 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutSerialize(XmlWriter writer)
         {
-            writer.WriteAttributeString("Split", _split.SplitterValue.ToString());
+            LayoutSerializeSplitter(writer, "Split", _split);
         }
 
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            if (float.TryParse(node.GetAttribute("Split"), out float value1))
-                _split.SplitterValue = value1;
+            LayoutDeserializeSplitter(node, "Split", _split);
         }
 
         /// <inheritdoc />
         public override void OnLayoutDeserialize()
         {
-            _split.SplitterValue = 0.65f;
+            _split.SplitterValue = 0.59f;
         }
     }
 }

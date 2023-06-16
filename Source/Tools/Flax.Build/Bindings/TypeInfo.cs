@@ -33,6 +33,15 @@ namespace Flax.Build.Bindings
         /// </summary>
         public bool IsConstRef => IsRef && IsConst;
 
+        /// <summary>
+        /// Gets a value indicating whether this type is a reference to another object.
+        /// </summary>
+        public bool IsObjectRef => (Type == "ScriptingObjectReference" ||
+                                    Type == "AssetReference" ||
+                                    Type == "WeakAssetReference" ||
+                                    Type == "SoftAssetReference" ||
+                                    Type == "SoftObjectReference") && GenericArgs != null;
+
         public TypeInfo()
         {
         }
@@ -140,6 +149,10 @@ namespace Flax.Build.Bindings
             var type = BindingsGenerator.FindApiTypeInfo(buildData, this, caller);
             if (type == null)
                 return ToString();
+
+            // Optimization for simple type
+            if (!IsConst && GenericArgs == null && !IsPtr && !IsRef)
+                return type.FullNameNative;
 
             var sb = new StringBuilder(64);
             if (IsConst)

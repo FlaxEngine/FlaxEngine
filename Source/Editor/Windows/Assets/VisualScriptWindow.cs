@@ -16,6 +16,7 @@ using FlaxEditor.Surface;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
+using FlaxEngine.Utilities;
 using FlaxEngine.Windows.Search;
 
 #pragma warning disable 649
@@ -818,7 +819,7 @@ namespace FlaxEditor.Windows.Assets
             var state = (BreakpointHangState)Editor.Instance.Simulation.BreakpointHangTag;
             if (state.Locals == null)
             {
-                state.Locals = Editor.Internal_GetVisualScriptLocals();
+                state.Locals = Editor.Internal_GetVisualScriptLocals(out var _);
                 Editor.Instance.Simulation.BreakpointHangTag = state;
             }
             return state;
@@ -829,7 +830,7 @@ namespace FlaxEditor.Windows.Assets
             var state = (BreakpointHangState)Editor.Instance.Simulation.BreakpointHangTag;
             if (state.StackFrames == null)
             {
-                state.StackFrames = Editor.Internal_GetVisualScriptStackFrames();
+                state.StackFrames = Editor.Internal_GetVisualScriptStackFrames(out var _);
                 Editor.Instance.Simulation.BreakpointHangTag = state;
             }
             return state;
@@ -1370,14 +1371,13 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutSerialize(XmlWriter writer)
         {
-            writer.WriteAttributeString("Split", _split.SplitterValue.ToString());
+            LayoutSerializeSplitter(writer, "Split", _split);
         }
 
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            if (float.TryParse(node.GetAttribute("Split"), out float value1))
-                _split.SplitterValue = value1;
+            LayoutDeserializeSplitter(node, "Split", _split);
         }
 
         /// <inheritdoc />

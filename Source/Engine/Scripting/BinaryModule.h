@@ -9,7 +9,6 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/ISerializable.h"
-#include "ManagedCLR/MAssemblyOptions.h"
 
 /// <summary>
 /// The scripting type method metadata for code reflection.
@@ -269,8 +268,7 @@ public:
     /// Initializes a new instance of the <see cref="ManagedBinaryModule" /> class.
     /// </summary>
     /// <param name="name">The module name.</param>
-    /// <param name="options">The assembly options.</param>
-    ManagedBinaryModule(const StringAnsiView& name, const MAssemblyOptions& options);
+    ManagedBinaryModule(const StringAnsiView& name);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ManagedBinaryModule" /> class.
@@ -290,18 +288,18 @@ public:
     /// </summary>
     MAssembly* Assembly;
 
-#if !COMPILE_WITHOUT_CSHARP
+#if USE_CSHARP
     /// <summary>
     /// The scripting types cache that maps the managed class to the scripting type index. Build after assembly is loaded and scripting types get the managed classes information.
     /// </summary>
-    Dictionary<MonoClass*, int32, HeapAllocation> ClassToTypeIndex;
+    Dictionary<MClass*, int32, HeapAllocation> ClassToTypeIndex;
 #endif
 
     static ScriptingObject* ManagedObjectSpawn(const ScriptingObjectSpawnParams& params);
     static MMethod* FindMethod(MClass* mclass, const ScriptingTypeMethodSignature& signature);
-#if USE_MONO
-    static ManagedBinaryModule* FindModule(MonoClass* klass);
-    static ScriptingTypeHandle FindType(MonoClass* klass);
+#if USE_CSHARP
+    static ManagedBinaryModule* FindModule(const MClass* klass);
+    static ScriptingTypeHandle FindType(const MClass* klass);
 #endif
 
 private:
@@ -339,8 +337,7 @@ public:
     /// Initializes a new instance of the <see cref="NativeBinaryModule" /> class.
     /// </summary>
     /// <param name="name">The module name.</param>
-    /// <param name="options">The assembly options.</param>
-    NativeBinaryModule(const StringAnsiView& name, const MAssemblyOptions& options);
+    NativeBinaryModule(const StringAnsiView& name);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="NativeBinaryModule" /> class.

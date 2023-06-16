@@ -24,7 +24,7 @@ namespace Log
         /// <summary>
         /// Creates default exception with additional data
         /// </summary>
-        /// <param name="message">Additional information that help describe error</param>
+        /// <param name="additionalInfo">Additional information that help describe error</param>
         ArgumentNullException(const String& additionalInfo)
             : Exception(TEXT("One or more of provided arguments is null"), additionalInfo)
         {
@@ -33,7 +33,8 @@ namespace Log
         /// <summary>
         /// Creates default exception with additional data
         /// </summary>
-        /// <param name="message">Additional information that help describe error</param>
+        /// <param name="argumentName">Argument name</param>
+        /// <param name="additionalInfo">Additional information that help describe error</param>
         ArgumentNullException(const String& argumentName, const String& additionalInfo)
             : Exception(String::Format(TEXT("Provided argument {0} is null."), argumentName), additionalInfo)
         {

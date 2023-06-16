@@ -98,6 +98,9 @@ public:
     static void AddSceneActor(void* scene, void* actor);
     static void RemoveSceneActor(void* scene, void* actor);
     static void AddSceneActorAction(void* scene, void* actor, ActionType action);
+#if COMPILE_WITH_PROFILER
+    static void GetSceneStatistics(void* scene, PhysicsStatistics& result);
+#endif
 
     // Scene Queries
     static bool RayCast(void* scene, const Vector3& origin, const Vector3& direction, float maxDistance, uint32 layerMask, bool hitTriggers);

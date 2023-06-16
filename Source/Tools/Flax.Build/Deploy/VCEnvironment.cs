@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Flax Engine. All rights reserved.
+// Copyright (c) 2012-2023 Flax Engine. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -8,6 +8,8 @@ using Flax.Build;
 using Flax.Build.Platforms;
 using Flax.Build.Projects.VisualStudio;
 using Microsoft.Win32;
+
+#pragma warning disable CA1416
 
 namespace Flax.Deploy
 {
@@ -53,6 +55,13 @@ namespace Flax.Deploy
             case TargetPlatform.Linux:
             case TargetPlatform.Mac:
             {
+                // Use msbuild for .NET
+                toolPath = UnixPlatform.Which("dotnet");
+                if (toolPath != null)
+                {
+                    return toolPath + " msbuild";
+                }
+
                 // Use msbuild from Mono
                 toolPath = UnixPlatform.Which("msbuild");
                 if (toolPath != null)
@@ -206,7 +215,7 @@ namespace Flax.Deploy
                 throw new Exception(string.Format("Project {0} does not exist!", project));
             }
 
-            string cmdLine = string.Format("\"{0}\" /m /t:Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" {3} /nologo", project, buildConfig, buildPlatform, Verbosity);
+            string cmdLine = string.Format("\"{0}\" /m /t:Restore,Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" {3} /nologo", project, buildConfig, buildPlatform, Verbosity);
             int result = Utilities.Run(msBuild, cmdLine);
             if (result != 0)
             {
@@ -221,9 +230,11 @@ namespace Flax.Deploy
         /// <param name="buildConfig">Configuration to build.</param>
         /// <param name="buildPlatform">Platform to build.</param>
         /// <param name="props">Custom build properties mapping (property=value).</param>
-        public static void BuildSolution(string solutionFile, string buildConfig, string buildPlatform, Dictionary<string, string> props = null)
+        /// <param name="msBuild">Custom MSBuild executable path.</param>
+        public static void BuildSolution(string solutionFile, string buildConfig, string buildPlatform, Dictionary<string, string> props = null, string msBuild = null)
         {
-            var msBuild = MSBuildPath;
+            if (msBuild == null)
+                msBuild = MSBuildPath;
             if (string.IsNullOrEmpty(msBuild))
             {
                 throw new Exception(string.Format("Unable to find msbuild.exe at: \"{0}\"", msBuild));
@@ -234,7 +245,7 @@ namespace Flax.Deploy
                 throw new Exception(string.Format("Unable to build solution {0}. Solution file not found.", solutionFile));
             }
 
-            string cmdLine = string.Format("\"{0}\" /m /t:Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" {3} /nologo", solutionFile, buildConfig, buildPlatform, Verbosity);
+            string cmdLine = string.Format("\"{0}\" /m /t:Restore,Build /p:Configuration=\"{1}\" /p:Platform=\"{2}\" {3} /nologo", solutionFile, buildConfig, buildPlatform, Verbosity);
             if (props != null)
             {
                 foreach (var e in props)
@@ -286,3 +297,5 @@ namespace Flax.Deploy
         }
     }
 }
+
+#pragma warning restore CA1416

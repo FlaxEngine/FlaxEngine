@@ -543,22 +543,17 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutSerialize(XmlWriter writer)
         {
-            writer.WriteAttributeString("Split1", _split1.SplitterValue.ToString());
-            writer.WriteAttributeString("Split2", _split2.SplitterValue.ToString());
-            writer.WriteAttributeString("Split3", _timeline.Splitter.SplitterValue.ToString());
+            LayoutSerializeSplitter(writer, "Split1", _split1);
+            LayoutSerializeSplitter(writer, "Split2", _split2);
+            LayoutSerializeSplitter(writer, "Split3", _timeline.Splitter);
         }
 
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            if (float.TryParse(node.GetAttribute("Split1"), out float value1))
-                _split1.SplitterValue = value1;
-
-            if (float.TryParse(node.GetAttribute("Split2"), out value1))
-                _split2.SplitterValue = value1;
-
-            if (float.TryParse(node.GetAttribute("Split3"), out value1))
-                _timeline.Splitter.SplitterValue = value1;
+            LayoutDeserializeSplitter(node, "Split1", _split1);
+            LayoutDeserializeSplitter(node, "Split2", _split2);
+            LayoutDeserializeSplitter(node, "Split3", _timeline.Splitter);
         }
 
         /// <inheritdoc />

@@ -454,7 +454,12 @@ inline void DrawText3D(const DebugText3D& t, const RenderContext& renderContext,
 {
     Matrix w, fw, m;
     if (t.FaceCamera)
-        Matrix::CreateWorld(t.Transform.Translation, renderContext.View.Direction, viewUp, w);
+    {
+        Matrix s, ss;
+        Matrix::Scaling(t.Transform.Scale.X, s);
+        Matrix::CreateWorld(t.Transform.Translation, renderContext.View.Direction, viewUp, ss);
+        Matrix::Multiply(s, ss, w);
+    }
     else
         t.Transform.GetWorld(w);
     Matrix::Multiply(f, w, fw);
@@ -1995,7 +2000,7 @@ void DebugDraw::DrawText(const StringView& text, const Float2& position, const C
     t.TimeLeft = duration;
 }
 
-void DebugDraw::DrawText(const StringView& text, const Vector3& position, const Color& color, int32 size, float duration)
+void DebugDraw::DrawText(const StringView& text, const Vector3& position, const Color& color, int32 size, float duration, float scale)
 {
     if (text.Length() == 0 || size < 4)
         return;
@@ -2005,6 +2010,7 @@ void DebugDraw::DrawText(const StringView& text, const Vector3& position, const 
     Platform::MemoryCopy(t.Text.Get(), text.Get(), text.Length() * sizeof(Char));
     t.Text[text.Length()] = 0;
     t.Transform = position - Context->Origin;
+    t.Transform.Scale.X = scale;
     t.FaceCamera = true;
     t.Size = size;
     t.Color = color;

@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,24 +22,25 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_COLLISION_NXTRIANGLEMESHDESC
-#define PX_COLLISION_NXTRIANGLEMESHDESC
+#ifndef PX_TRIANGLE_MESH_DESC_H
+#define PX_TRIANGLE_MESH_DESC_H
 /** \addtogroup cooking
 @{
 */
 
 #include "PxPhysXConfig.h"
 #include "geometry/PxSimpleTriangleMesh.h"
+#include "PxSDFDesc.h"
 
 #if !PX_DOXYGEN
 namespace physx
 {
 #endif
+
 
 /**
 \brief Descriptor class for #PxTriangleMesh.
@@ -74,9 +74,16 @@ public:
 	PxTypedStridedData<PxMaterialTableIndex> materialIndices;
 
 	/**
+	\brief SDF descriptor. When this descriptor is set, signed distance field is calculated for this convex mesh.
+
+	<b>Default:</b> NULL
+	*/
+	PxSDFDesc* sdfDesc;
+
+	/**
 	\brief Constructor sets to default.
 	*/
-	PX_INLINE PxTriangleMeshDesc();	
+	PX_INLINE PxTriangleMeshDesc();
 
 	/**
 	\brief (re)sets the structure to the default.	
@@ -90,9 +97,11 @@ public:
 	PX_INLINE bool isValid() const;
 };
 
+
 PX_INLINE PxTriangleMeshDesc::PxTriangleMeshDesc()	//constructor sets to default
 {
-	PxSimpleTriangleMesh::setToDefault();	
+	PxSimpleTriangleMesh::setToDefault();
+	sdfDesc = NULL;
 }
 
 PX_INLINE void PxTriangleMeshDesc::setToDefault()
@@ -109,8 +118,13 @@ PX_INLINE bool PxTriangleMeshDesc::isValid() const
 	//add more validity checks here
 	if (materialIndices.data && materialIndices.stride < sizeof(PxMaterialTableIndex))
 		return false;
+
+	if (sdfDesc && !sdfDesc->isValid())
+			return false;
+	
 	return PxSimpleTriangleMesh::isValid();
 }
+
 
 #if !PX_DOXYGEN
 } // namespace physx

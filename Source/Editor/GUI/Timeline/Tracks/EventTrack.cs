@@ -10,6 +10,7 @@ using System.Text;
 using FlaxEditor.GUI.Timeline.Undo;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.GUI.Timeline.Tracks
 {
@@ -51,7 +52,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             {
                 e.EventParamsSizes[i] = stream.ReadInt32();
                 var paramTypeName = LoadName(stream);
-                e.EventParamsTypes[i] = Scripting.TypeUtils.GetManagedType(paramTypeName);
+                e.EventParamsTypes[i] = TypeUtils.GetManagedType(paramTypeName);
                 if (e.EventParamsTypes[i] == null)
                     isInvalid = true;
             }

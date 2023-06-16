@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.GUI.Timeline.Tracks
 {
@@ -51,7 +52,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 throw new Exception("Invalid track data.");
 
             var keyframes = new KeyframesEditor.Keyframe[keyframesCount];
-            var propertyType = Scripting.TypeUtils.GetType(e.MemberTypeName);
+            var propertyType = TypeUtils.GetType(e.MemberTypeName);
             if (!propertyType)
             {
                 e.Keyframes.ResetKeyframes();

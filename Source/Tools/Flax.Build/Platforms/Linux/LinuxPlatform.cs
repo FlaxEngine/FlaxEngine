@@ -40,7 +40,7 @@ namespace Flax.Build.Platforms
             if (Platform.BuildTargetPlatform == TargetPlatform.Linux)
             {
                 // Pick the newest compiler (overriden by specified in command line)
-                if (Which(Compiler) != null)
+                if (Which(Configuration.Compiler) != null)
                     Compiler = Configuration.Compiler;
                 else
                 {

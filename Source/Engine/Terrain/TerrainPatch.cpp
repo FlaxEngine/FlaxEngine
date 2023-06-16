@@ -892,7 +892,7 @@ bool TerrainPatch::SetupHeightMap(int32 heightMapLength, const float* heightMap,
         collisionData = &tmpData;
     }
 
-    // Generate PhysX height field data for the runtime
+    // Generate physics backend height field data for the runtime
     if (CookCollision(info, initData, _terrain->_collisionLod, collisionData))
     {
         return true;
@@ -1853,7 +1853,7 @@ void TerrainPatch::SaveHeightData()
         return;
     }
 
-    // Generate PhysX height field data for the runtime
+    // Generate physics backend height field data for the runtime
     if (_heightfield->WaitForLoaded())
     {
         LOG(Error, "Failed to load patch heightfield data.");

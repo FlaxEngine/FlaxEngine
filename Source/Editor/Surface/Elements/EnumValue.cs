@@ -2,6 +2,7 @@
 
 using System;
 using FlaxEditor.GUI;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Surface.Elements
 {
@@ -26,7 +27,7 @@ namespace FlaxEditor.Surface.Elements
 
         /// <inheritdoc />
         public EnumValue(SurfaceNode parentNode, NodeElementArchetype archetype)
-        : base(Scripting.TypeUtils.GetType(archetype.Text).Type)
+        : base(TypeUtils.GetType(archetype.Text).Type)
         {
             X = archetype.ActualPositionX;
             Y = archetype.ActualPositionY;

@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "SystemDefaultCodeEditor.h"
-#include "Engine/Core/Types/StringView.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 
 CodeEditorTypes SystemDefaultCodeEditor::GetType() const
 {
@@ -15,7 +15,13 @@ String SystemDefaultCodeEditor::GetName() const
 
 void SystemDefaultCodeEditor::OpenFile(const String& path, int32 line)
 {
-    Platform::StartProcess(path, StringView::Empty, StringView::Empty);
+    CreateProcessSettings procSettings;
+    procSettings.FileName = path;
+    procSettings.HiddenWindow = false;
+    procSettings.WaitForEnd = false;
+    procSettings.LogOutput = false;
+    procSettings.ShellExecute = true;
+    Platform::CreateProcess(procSettings);
 }
 
 void SystemDefaultCodeEditor::OpenSolution()

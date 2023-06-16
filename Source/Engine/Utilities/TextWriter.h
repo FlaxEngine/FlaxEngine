@@ -22,7 +22,7 @@ public:
     /// Init with default capacity
     /// </summary>
     /// <param name="capacity">Initial capacity in bytes</param>
-    TextWriter(uint32 capacity)
+    TextWriter(uint32 capacity = 1024)
         : _buffer(capacity)
     {
     }
@@ -36,19 +36,17 @@ public:
 
 public:
     /// <summary>
-    /// Gets writer private buffer
+    /// Gets writer private buffer.
     /// </summary>
-    /// <returns>Buffer</returns>
     FORCE_INLINE MemoryWriteStream* GetBuffer()
     {
         return &_buffer;
     }
 
     /// <summary>
-    /// Gets writer private buffer
+    /// Gets writer private buffer.
     /// </summary>
-    /// <returns>Buffer</returns>
-    const FORCE_INLINE MemoryWriteStream* GetBuffer() const
+    FORCE_INLINE const MemoryWriteStream* GetBuffer() const
     {
         return &_buffer;
     }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Flax Engine. All rights reserved.
+// Copyright (c) 2012-2023 Flax Engine. All rights reserved.
 
 using System;
 using System.IO;
@@ -20,7 +20,7 @@ namespace Flax.Deploy
 
                 Log.Verbose("Deploy file " + filename);
 
-                File.Copy(files[i], Path.Combine(dst, filename));
+                File.Copy(files[i], Path.Combine(dst, filename), true);
             }
         }
 

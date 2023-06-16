@@ -26,10 +26,10 @@ public:
     {
         static const Upgrader upgraders[] =
         {
-            { 24, 25, &Upgrade_With_Repack },
-            { 23, 24, &Upgrade_22OrNewer_To_Newest },
-            { 22, 24, &Upgrade_22OrNewer_To_Newest },
-            { 1, 24, &Upgrade_Old_To_Newest },
+            { 24, 25, &Upgrade_With_Repack }, // [Deprecated on 28.04.2023, expires on 01.01.2024]
+            { 23, 24, &Upgrade_22OrNewer_To_Newest }, // [Deprecated on 28.04.2023, expires on 01.01.2024]
+            { 22, 24, &Upgrade_22OrNewer_To_Newest }, // [Deprecated on 28.04.2023, expires on 01.01.2024]
+            { 1, 24, &Upgrade_Old_To_Newest }, // [Deprecated on 28.04.2023, expires on 01.01.2024]
         };
         setup(upgraders, ARRAY_COUNT(upgraders));
     }

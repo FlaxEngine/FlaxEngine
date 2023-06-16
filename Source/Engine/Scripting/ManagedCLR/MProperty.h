@@ -14,27 +14,27 @@ class FLAXENGINE_API MProperty
     friend MClass;
 
 protected:
-
 #if USE_MONO
     MonoProperty* _monoProperty;
 #endif
 
-    MMethod* _getMethod;
-    MMethod* _setMethod;
+    mutable MMethod* _getMethod;
+    mutable MMethod* _setMethod;
     MClass* _parentClass;
 
-    MString _name;
+    StringAnsi _name;
 
-    int32 _hasCachedAttributes : 1;
-    int32 _hasSetMethod : 1;
-    int32 _hasGetMethod : 1;
+    mutable int32 _hasCachedAttributes : 1;
+    mutable int32 _hasSetMethod : 1;
+    mutable int32 _hasGetMethod : 1;
 
-    Array<MObject*> _attributes;
+    mutable Array<MObject*> _attributes;
 
 public:
-
 #if USE_MONO
     explicit MProperty(MonoProperty* monoProperty, const char* name, MClass* parentClass);
+#elif USE_NETCORE
+    MProperty(MClass* parentClass, const char* name, void* getterHandle, void* setterHandle, MMethodAttributes getterAttributes, MMethodAttributes setterAttributes);
 #endif
 
     /// <summary>
@@ -43,11 +43,10 @@ public:
     ~MProperty();
 
 public:
-
     /// <summary>
     /// Gets the property name.
     /// </summary>
-    FORCE_INLINE const MString& GetName() const
+    FORCE_INLINE const StringAnsi& GetName() const
     {
         return _name;
     }
@@ -63,30 +62,29 @@ public:
     /// <summary>
     /// Gets property type class.
     /// </summary>
-    MType GetType();
+    MType* GetType() const;
 
     /// <summary>
     /// Gets property get method.
     /// </summary>
-    MMethod* GetGetMethod();
+    MMethod* GetGetMethod() const;
 
     /// <summary>
     /// Gets property set method.
     /// </summary>
-    MMethod* GetSetMethod();
+    MMethod* GetSetMethod() const;
 
     /// <summary>
     /// Gets property visibility in the class.
     /// </summary>
-    MVisibility GetVisibility();
+    MVisibility GetVisibility() const;
 
     /// <summary>
     /// Returns true if property is static.
     /// </summary>
-    bool IsStatic();
+    bool IsStatic() const;
 
 public:
-
     /// <summary>
     /// Retrieves value currently set in the property on the specified object instance. If property is static object instance can be null.
     /// </summary>
@@ -96,7 +94,7 @@ public:
     /// <param name="instance">The object of given type to get value from.</param>
     /// <param name="exception">An optional pointer to the exception value to store exception object reference.</param>
     /// <returns>The returned boxed value object.</returns>
-    MObject* GetValue(MObject* instance, MObject** exception);
+    MObject* GetValue(MObject* instance, MObject** exception) const;
 
     /// <summary>
     /// Sets a value for the property on the specified object instance. If property is static object instance can be null.
@@ -107,11 +105,9 @@ public:
     /// <param name="instance">Object of given type to set value to.</param>
     /// <param name="exception">An optional pointer to the exception value to store exception object reference.</param>
     /// <param name="value">The value to set of undefined type.</param>
-    void SetValue(MObject* instance, void* value, MObject** exception);
-
+    void SetValue(MObject* instance, void* value, MObject** exception) const;
 
 public:
-
     /// <summary>
     /// Checks if property has an attribute of the specified type.
     /// </summary>
@@ -136,5 +132,5 @@ public:
     /// Returns an instance of all attributes connected with given property. Returns null if the property doesn't have any attributes.
     /// </summary>
     /// <returns>The array of attribute objects.</returns>
-    const Array<MObject*>& GetAttributes();
+    const Array<MObject*>& GetAttributes() const;
 };

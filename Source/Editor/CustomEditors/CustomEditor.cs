@@ -7,6 +7,7 @@ using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 using Newtonsoft.Json;
 using JsonSerializer = FlaxEngine.Json.JsonSerializer;
 
@@ -625,9 +626,7 @@ namespace FlaxEditor.CustomEditors
                         JsonSerializer.Deserialize(obj, text);
                     }
                 }
-#pragma warning disable 618
-                else if (Newtonsoft.Json.Schema.JsonSchema.Parse(text) == null)
-#pragma warning restore 618
+                else if (!text.StartsWith("{") || !text.EndsWith("}"))
                 {
                     return false;
                 }
@@ -650,7 +649,14 @@ namespace FlaxEditor.CustomEditors
             else
             {
                 // Default
-                obj = JsonConvert.DeserializeObject(text, TypeUtils.GetType(Values.Type), JsonSerializer.Settings);
+                try
+                {
+                    obj = JsonConvert.DeserializeObject(text, TypeUtils.GetType(Values.Type), JsonSerializer.Settings);
+                }
+                catch
+                {
+                    obj = null;
+                }
             }
 
             if (obj == null || Values.Type.IsInstanceOfType(obj))
@@ -817,6 +823,8 @@ namespace FlaxEditor.CustomEditors
         /// <returns>True if allow to handle this event, otherwise false.</returns>
         protected virtual bool OnDirty(CustomEditor editor, object value, object token = null)
         {
+            if (ParentEditor == null)
+                return false;
             return ParentEditor.OnDirty(editor, value, token);
         }
 

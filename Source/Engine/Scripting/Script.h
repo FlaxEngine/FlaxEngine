@@ -19,6 +19,7 @@ protected:
     int32 _tickFixedUpdate : 1;
     int32 _tickUpdate : 1;
     int32 _tickLateUpdate : 1;
+    int32 _tickLateFixedUpdate : 1;
     int32 _wasStartCalled : 1;
     int32 _wasEnableCalled : 1;
 #if USE_EDITOR
@@ -105,6 +106,13 @@ public:
     /// Called every fixed framerate frame if object is enabled.
     /// </summary>
     API_FUNCTION(Attributes="NoAnimate") virtual void OnFixedUpdate()
+    {
+    }
+
+    /// <summary>
+    /// Called every fixed framerate frame (after FixedUpdate) if object is enabled.
+    /// </summary>
+    API_FUNCTION(Attributes = "NoAnimate") virtual void OnLateFixedUpdate()
     {
     }
 

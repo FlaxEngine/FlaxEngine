@@ -210,7 +210,7 @@ void CharacterController::CreateController()
     _controller = PhysicsBackend::CreateController(GetPhysicsScene()->GetPhysicsScene(), this, this, _contactOffset, position, _slopeLimit, (int32)_nonWalkableMode, Material.Get(), Math::Abs(_radius) * scaling, Math::Abs(_height) * scaling, _stepOffset, _shape);
 
     // Setup
-    PhysicsBackend::SetControllerUpDirection(_shape, _upDirection);
+    PhysicsBackend::SetControllerUpDirection(_controller, _upDirection);
     PhysicsBackend::SetShapeLocalPose(_shape, _center, Quaternion::Identity);
     UpdateLayerBits();
     UpdateBounds();

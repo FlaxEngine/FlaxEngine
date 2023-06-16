@@ -24,9 +24,8 @@ namespace Flax.Build
             options.PublicDependencies.Add("Scripting");
 
             // Setup scripting API environment
-            var engineVersion = EngineTarget.EngineVersion;
-            AddEngineVersionDefines(engineVersion, options.ScriptingAPI.Defines);
-            AddEngineVersionDefines(engineVersion, options.CompileEnv.PreprocessorDefinitions);
+            EngineTarget.AddVersionDefines(options.ScriptingAPI.Defines);
+            EngineTarget.AddVersionDefines(options.CompileEnv.PreprocessorDefinitions);
             options.ScriptingAPI.Defines.Add("FLAX");
             options.ScriptingAPI.Defines.Add("FLAX_ASSERTIONS");
             if (options.Target.IsEditor)
@@ -37,14 +36,6 @@ namespace Flax.Build
             {
                 options.ScriptingAPI.Defines.Add("FLAX_GAME");
             }
-        }
-
-        private void AddEngineVersionDefines(Version engineVersion, HashSet<string> defines)
-        {
-            defines.Add(string.Format("FLAX_{0}", engineVersion.Major));
-            defines.Add(string.Format("FLAX_{0}_{1}", engineVersion.Major, engineVersion.Minor));
-            for (int minor = 1; minor <= engineVersion.Minor; minor++)
-                defines.Add(string.Format("FLAX_{0}_{1}_OR_NEWER", engineVersion.Major, minor));
         }
     }
 

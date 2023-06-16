@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Flax.Build;
@@ -36,9 +37,13 @@ public class Editor : EditorModule
     {
         base.Setup(options);
 
+        options.ScriptingAPI.SystemReferences.Add("System.Private.Xml");
+        options.ScriptingAPI.SystemReferences.Add("System.Text.RegularExpressions");
+        options.ScriptingAPI.SystemReferences.Add("System.ComponentModel.TypeConverter");
+
         options.PublicDependencies.Add("Engine");
         options.PrivateDependencies.Add("pugixml");
-        options.PrivateDependencies.Add("UniversalAnalytics");
+        options.PrivateDependencies.Add("curl");
         options.PrivateDependencies.Add("ContentImporters");
         options.PrivateDependencies.Add("ContentExporters");
         options.PrivateDependencies.Add("ShadowsOfMordor");
@@ -72,12 +77,15 @@ public class Editor : EditorModule
         {
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Mac", "PLATFORM_TOOLS_MAC");
             AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "Android", "PLATFORM_TOOLS_ANDROID");
+            AddPlatformTools(options, platformToolsRoot, platformToolsRootExternal, "iOS", "PLATFORM_TOOLS_IOS");
         }
 
         // Visual Studio integration
         if (options.Platform.Target == TargetPlatform.Windows && Flax.Build.Platform.BuildTargetPlatform == TargetPlatform.Windows)
         {
+#pragma warning disable CA1416
             var path = Registry.GetValue("HKEY_CLASSES_ROOT\\TypeLib\\{80CC9F66-E7D8-4DDD-85B6-D9E6CD0E93E2}\\8.0\\0\\win32", null, null) as string;
+#pragma warning restore CA1416
             if (path != null && File.Exists(path))
                 options.PrivateDefinitions.Add("USE_VISUAL_STUDIO_DTE");
         }

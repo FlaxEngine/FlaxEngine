@@ -12,9 +12,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/MainThreadTask.h"
 #include "Engine/Threading/ConcurrentTaskQueue.h"
-#if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/mono-gc.h>
-#endif
+#include "Engine/Scripting/ManagedCLR/MCore.h"
 
 AssetReferenceBase::~AssetReferenceBase()
 {
@@ -269,9 +267,7 @@ void Asset::OnManagedInstanceDeleted()
     // Cleanup
     if (_gcHandle)
     {
-#if USE_MONO
-        mono_gchandle_free(_gcHandle);
-#endif
+        MCore::GCHandle::Free(_gcHandle);
         _gcHandle = 0;
     }
 
@@ -398,6 +394,11 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
 
         return false;
     }
+
+    // Check if loading failed
+    Platform::MemoryBarrier();
+    if (LastLoadFailed())
+        return true;
 
     // Check if has missing loading task
     Platform::MemoryBarrier();

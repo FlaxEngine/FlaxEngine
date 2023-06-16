@@ -32,7 +32,7 @@ bool MultiThreadStepper::advance(PxScene* scene, PxReal dt, void* scratchBlock, 
     mScratchBlockSize = scratchBlockSize;
 
     if (!mSync)
-        mSync = New<shdfnd::Sync>();
+        mSync = New<PxSync>();
 
     substepStrategy(dt, mNbSubSteps, mSubStepSize);
 

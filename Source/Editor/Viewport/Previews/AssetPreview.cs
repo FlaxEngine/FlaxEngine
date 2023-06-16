@@ -129,6 +129,18 @@ namespace FlaxEditor.Viewport.Previews
         public EditorPrimitives EditorPrimitives => _editorPrimitives;
 
         /// <summary>
+        /// Custom debug drawing event (via <see cref="FlaxEngine.DebugDraw"/>).
+        /// </summary>
+        public event CustomDebugDrawDelegate CustomDebugDraw;
+
+        /// <summary>
+        /// Debug shapes drawing delegate.
+        /// </summary>
+        /// <param name="context">The GPU context.</param>
+        /// <param name="renderContext">The render context.</param>
+        public delegate void CustomDebugDrawDelegate(GPUContext context, ref RenderContext renderContext);
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="AssetPreview"/> class.
         /// </summary>
         /// <param name="useWidgets">If set to <c>true</c> use widgets for viewport, otherwise hide them.</param>
@@ -249,6 +261,7 @@ namespace FlaxEditor.Viewport.Previews
             {
                 DebugDraw.SetContext(_debugDrawContext);
                 DebugDraw.UpdateContext(_debugDrawContext, 1.0f / Mathf.Max(Engine.FramesPerSecond, 1));
+                CustomDebugDraw?.Invoke(context, ref renderContext);
                 OnDebugDraw(context, ref renderContext);
                 DebugDraw.Draw(ref renderContext, target.View(), targetDepth.View(), true);
                 DebugDraw.SetContext(IntPtr.Zero);

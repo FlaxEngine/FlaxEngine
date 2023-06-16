@@ -3,7 +3,7 @@
 #include "Script.h"
 #include "Engine/Core/Log.h"
 #if USE_EDITOR
-#include "StdTypesContainer.h"
+#include "Internal/StdTypesContainer.h"
 #include "ManagedCLR/MClass.h"
 #include "Editor/Editor.h"
 #endif
@@ -26,6 +26,7 @@ Script::Script(const SpawnParams& params)
     , _tickFixedUpdate(false)
     , _tickUpdate(false)
     , _tickLateUpdate(false)
+    , _tickLateFixedUpdate(false)
     , _wasStartCalled(false)
     , _wasEnableCalled(false)
 {
@@ -181,6 +182,7 @@ void Script::SetupType()
             _tickUpdate |= type.Script.ScriptVTable[8] != nullptr;
             _tickLateUpdate |= type.Script.ScriptVTable[9] != nullptr;
             _tickFixedUpdate |= type.Script.ScriptVTable[10] != nullptr;
+            _tickLateFixedUpdate |= type.Script.ScriptVTable[11] != nullptr;
         }
         typeHandle = type.GetBaseType();
     }

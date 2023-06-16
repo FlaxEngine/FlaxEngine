@@ -28,7 +28,7 @@ public:
     /// <param name="path">The asset path.</param>
     /// <param name="options">The options.</param>
     /// <returns>True if success, otherwise false.</returns>
-    static bool TryGetImportOptions(String path, Options& options);
+    static bool TryGetImportOptions(const StringView& path, Options& options);
 
     /// <summary>
     /// Imports the model file.

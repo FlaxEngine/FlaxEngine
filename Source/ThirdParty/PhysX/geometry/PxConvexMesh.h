@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,13 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.
 
-
-#ifndef PX_PHYSICS_GEOMUTILS_NX_CONVEXMESH
-#define PX_PHYSICS_GEOMUTILS_NX_CONVEXMESH
+#ifndef PX_CONVEX_MESH_H
+#define PX_CONVEX_MESH_H
 /** \addtogroup geomutils
   @{
 */
@@ -81,7 +79,7 @@ once you have released all of its #PxShape instances.
 
 @see PxConvexMeshDesc PxPhysics.createConvexMesh()
 */
-class PxConvexMesh	: public PxBase
+class PxConvexMesh : public PxRefCounted
 {
 public:
 
@@ -90,28 +88,28 @@ public:
 	\return	Number of vertices.
 	@see getVertices()
 	*/
-	PX_PHYSX_COMMON_API virtual	PxU32				getNbVertices()									const	= 0;
+	virtual	PxU32	getNbVertices()	const	= 0;
 
 	/**
 	\brief Returns the vertices.
 	\return	Array of vertices.
 	@see getNbVertices()
 	*/
-	PX_PHYSX_COMMON_API virtual	const PxVec3*		getVertices()									const	= 0;
+	virtual	const PxVec3*	getVertices()	const	= 0;
 
 	/**
 	\brief Returns the index buffer.
 	\return	Index buffer.
 	@see getNbPolygons() getPolygonData()
 	*/
-	PX_PHYSX_COMMON_API virtual	const PxU8*			getIndexBuffer()								const	= 0;
+	virtual	const PxU8*		getIndexBuffer()	const	= 0;
 
 	/**
 	\brief Returns the number of polygons.
 	\return	Number of polygons.
 	@see getIndexBuffer() getPolygonData()
 	*/
-	PX_PHYSX_COMMON_API virtual	PxU32				getNbPolygons()									const	= 0;
+	virtual	PxU32	getNbPolygons()	const	= 0;
 
 	/**
 	\brief Returns the polygon data.
@@ -120,31 +118,14 @@ public:
 	\return	True if success.
 	@see getIndexBuffer() getNbPolygons()
 	*/
-	PX_PHYSX_COMMON_API virtual	bool				getPolygonData(PxU32 index, PxHullPolygon& data)	const	= 0;
+	virtual	bool	getPolygonData(PxU32 index, PxHullPolygon& data)	const	= 0;
 
 	/**
 	\brief Decrements the reference count of a convex mesh and releases it if the new reference count is zero.	
 	
 	@see PxPhysics.createConvexMesh() PxConvexMeshGeometry PxShape
 	*/
-	PX_PHYSX_COMMON_API virtual	void				release()													= 0;
-
-	/**
-	\brief Returns the reference count of a convex mesh.
-
-	At creation, the reference count of the convex mesh is 1. Every shape referencing this convex mesh increments the
-	count by 1.	When the reference count reaches 0, and only then, the convex mesh gets destroyed automatically.
-
-	\return the current reference count.
-	*/
-	PX_PHYSX_COMMON_API virtual PxU32				getReferenceCount()									const	= 0;
-
-	/**
-	\brief Acquires a counted reference to a convex mesh.
-
-	This method increases the reference count of the convex mesh by 1. Decrement the reference count by calling release()
-	*/
-	PX_PHYSX_COMMON_API virtual void				acquireReference()											= 0;
+	virtual	void	release()	= 0;
 
 	/**
 	\brief Returns the mass properties of the mesh assuming unit density.
@@ -162,16 +143,23 @@ public:
 	\param[out] localInertia The inertia tensor in mesh local space assuming unit density.
 	\param[out] localCenterOfMass Position of center of mass (or centroid) in mesh local space.
 	*/
-	PX_PHYSX_COMMON_API virtual void				getMassInformation(PxReal& mass, PxMat33& localInertia, PxVec3& localCenterOfMass)		const	= 0;
+	virtual void	getMassInformation(PxReal& mass, PxMat33& localInertia, PxVec3& localCenterOfMass)	const	= 0;
 
 	/**
 	\brief Returns the local-space (vertex space) AABB from the convex mesh.
 
 	\return	local-space bounds
 	*/
-	PX_PHYSX_COMMON_API virtual	PxBounds3			getLocalBounds()	const	= 0;
+	virtual	PxBounds3	getLocalBounds()	const	= 0;
 
-	PX_PHYSX_COMMON_API virtual	const char*			getConcreteTypeName() const	{ return "PxConvexMesh"; }
+	/**
+	\brief Returns the local-space Signed Distance Field for this mesh if it has one.
+	\return local-space SDF.
+	*/
+	virtual const PxReal* getSDF() const = 0;
+
+
+	virtual	const char*	getConcreteTypeName() const	{ return "PxConvexMesh"; }
 
 	/**
 	\brief This method decides whether a convex mesh is gpu compatible. If the total number of vertices are more than 64 or any number of vertices in a polygon is more than 32, or
@@ -180,13 +168,14 @@ public:
 
 	\return True if the convex hull is gpu compatible
 	*/
-	PX_PHYSX_COMMON_API virtual bool				isGpuCompatible() const = 0;
+	virtual bool		isGpuCompatible() const = 0;
+
 
 protected:
-						PX_INLINE					PxConvexMesh(PxType concreteType, PxBaseFlags baseFlags) : PxBase(concreteType, baseFlags) {}
-						PX_INLINE					PxConvexMesh(PxBaseFlags baseFlags) : PxBase(baseFlags) {}
-	PX_PHYSX_COMMON_API virtual						~PxConvexMesh() {}
-	PX_PHYSX_COMMON_API virtual	bool				isKindOf(const char* name) const { return !::strcmp("PxConvexMesh", name) || PxBase::isKindOf(name); }
+	PX_INLINE			PxConvexMesh(PxType concreteType, PxBaseFlags baseFlags) : PxRefCounted(concreteType, baseFlags) {}
+	PX_INLINE			PxConvexMesh(PxBaseFlags baseFlags) : PxRefCounted(baseFlags) {}
+	virtual				~PxConvexMesh() {}
+	virtual	bool		isKindOf(const char* name) const { return !::strcmp("PxConvexMesh", name) || PxRefCounted::isKindOf(name); }
 };
 
 #if !PX_DOXYGEN

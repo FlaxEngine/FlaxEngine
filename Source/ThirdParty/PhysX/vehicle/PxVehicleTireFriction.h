@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,17 +22,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
 #ifndef PX_VEHICLE_TIREFRICTION_H
 #define PX_VEHICLE_TIREFRICTION_H
-/** \addtogroup vehicle
-  @{
-*/
 
 #include "foundation/PxSimpleTypes.h"
+#include "common/PxSerialFramework.h"
 
 #if !PX_DOXYGEN
 namespace physx
@@ -41,12 +38,14 @@ namespace physx
 #endif
 
 class PxMaterial;
+class PxCollection;
+class PxOutputStream;
 
 /**
 \brief Driving surface type. Each PxMaterial is associated with a corresponding PxVehicleDrivableSurfaceType.
 @see PxMaterial, PxVehicleDrivableSurfaceToTireFrictionPairs
 */	
-struct PxVehicleDrivableSurfaceType
+struct PX_DEPRECATED PxVehicleDrivableSurfaceType
 {
 	enum
 	{
@@ -59,7 +58,7 @@ struct PxVehicleDrivableSurfaceType
 \brief Friction for each combination of driving surface type and tire type.
 @see PxVehicleDrivableSurfaceType, PxVehicleTireData::mType
 */
-class PxVehicleDrivableSurfaceToTireFrictionPairs
+class PX_DEPRECATED PxVehicleDrivableSurfaceToTireFrictionPairs
 {
 public:
 
@@ -116,28 +115,83 @@ public:
 	*/
 	void setTypePairFriction(const PxU32 surfaceType, const PxU32 tireType, const PxReal value);
 
+
+	/**
+	\brief Compute the surface type associated with a specified PxMaterial instance.
+	\param[in] surfaceMaterial is the material to be queried for its associated surface type.
+	\note The surface type may be used to query the friction of a surface type/tire type pair using getTypePairFriction()
+	\return The surface type associated with a specified PxMaterial instance.  
+	If surfaceMaterial is not referenced by the PxVehicleDrivableSurfaceToTireFrictionPairs a value of 0 will be returned.
+	@see setup
+	@see getTypePairFriction
+	*/
+	PxU32 getSurfaceType(const PxMaterial& surfaceMaterial) const;
+
 	/**
 	\brief Return the friction for a specified combination of surface type and tire type.
 	\return The friction for a specified combination of surface type and tire type.
 	\note The final friction value used by the tire model is the value returned by getTypePairFriction
 	multiplied by the value computed from PxVehicleTireData::mFrictionVsSlipGraph
+	\note The surface type is associated with a PxMaterial.  The mapping between the two may be queried using getSurfaceType().
 	@see PxVehicleTireData::mFrictionVsSlipGraph
+	@see getSurfaceType
 	*/
 	PxReal getTypePairFriction(const PxU32 surfaceType, const PxU32 tireType) const;
+
+	/**
+	\brief Return the friction for a specified combination of PxMaterial and tire type.
+	\return The friction for a specified combination of PxMaterial and tire type.
+	\note The final friction value used by the tire model is the value returned by getTypePairFriction
+	multiplied by the value computed from PxVehicleTireData::mFrictionVsSlipGraph
+	\note If surfaceMaterial is not referenced by the PxVehicleDrivableSurfaceToTireFrictionPairs 
+	a surfaceType of value 0 will be assumed and the corresponding friction value will be returned.
+	@see PxVehicleTireData::mFrictionVsSlipGraph
+	*/
+	PxReal getTypePairFriction(const PxMaterial& surfaceMaterial, const PxU32 tireType) const;
 
 	/**
 	\brief Return the maximum number of surface types
 	\return The maximum number of surface types
 	@see allocate
 	*/
-	PxU32 getMaxNbSurfaceTypes() const {return mMaxNbSurfaceTypes;}
+	PX_FORCE_INLINE PxU32 getMaxNbSurfaceTypes() const {return mMaxNbSurfaceTypes;}
 
 	/**
 	\brief Return the maximum number of tire types
 	\return The maximum number of tire types
 	@see allocate
 	*/
-	PxU32 getMaxNbTireTypes() const {return mMaxNbTireTypes;}
+	PX_FORCE_INLINE PxU32 getMaxNbTireTypes() const {return mMaxNbTireTypes;}
+
+	/**
+	\brief Binary serialization of a PxVehicleDrivableSurfaceToTireFrictionPairs instance.  
+	The PxVehicleDrivableSurfaceToTireFrictionPairs instance is serialized to a PxOutputStream.  
+	The materials referenced by the PxVehicleDrivableSurfaceToTireFrictionPairs instance are
+	serialized to a PxCollection. 
+	\param[in] frictionTable is the PxVehicleDrivableSurfaceToTireFrictionPairs instance to be serialized.
+	\param[in] materialIds are unique ids that will be used to add the materials to the collection.
+	\param[in] nbMaterialIds is the length of the materialIds array. It must be sufficient to cover all materials. 
+	\param[out] collection is the PxCollection instance that is to be used to serialize the PxMaterial instances referenced by the 
+	PxVehicleDrivableSurfaceToTireFrictionPairs instance.
+	\param[out] stream contains the memory block for the binary serialized friction table.
+	\note If a material has already been added to the collection with a PxSerialObjectId, it will not be added again.
+	\note If all materials have already been added to the collection with a PxSerialObjectId, it is legal to pass a NULL ptr for the materialIds array. 
+	\note frictionTable references PxMaterial instances, which are serialized using PxCollection. 
+	The PxCollection instance may be used to serialize an entire scene that also references some or none of those material instances 
+	or particular objects in a scene or nothing at all.  The complementary deserialize() function requires the same collection instance 
+	or more typically a deserialized copy of the collection to be passed as a function argument. 
+	@see deserializeFromBinary
+	*/
+	static void serializeToBinary(const PxVehicleDrivableSurfaceToTireFrictionPairs& frictionTable, const PxSerialObjectId* materialIds, const PxU32 nbMaterialIds, PxCollection* collection, PxOutputStream& stream);
+
+	/**
+	\brief Deserialize from a memory block to create a PxVehicleDrivableSurfaceToTireFrictionPairs instance.
+	\param[in] collection contains the PxMaterial instances that will be referenced by the friction table.
+	\param[in] memBlock is a binary array that may be retrieved or copied from the stream in the complementary serializeToBinary function.
+	\return A PxVehicleDrivableSurfaceToTireFrictionPairs instance whose base address is equal to the memBlock ptr.
+	@see serializeToBinary
+	*/
+	static PxVehicleDrivableSurfaceToTireFrictionPairs* deserializeFromBinary(const PxCollection& collection, void* memBlock);
 
 private:
 
@@ -174,6 +228,11 @@ private:
 	PxVehicleDrivableSurfaceType* mDrivableSurfaceTypes;
 
 	/**
+	\brief A PxSerialObjectId per surface type used internally for serialization.
+	*/
+	PxSerialObjectId* mMaterialSerialIds;
+
+	/**
 	\brief Number of different driving surface types.
 	
 	\note mDrivableSurfaceMaterials and mDrivableSurfaceTypes are both 1d arrays of length mMaxNbSurfaceTypes.
@@ -203,13 +262,6 @@ private:
 	*/	
 	PxU32 mMaxNbTireTypes;			
 
-
-#if !PX_P64_FAMILY
-	PxU32 mPad[1];
-#else
-	PxU32 mPad[2];
-#endif
-
 	PxVehicleDrivableSurfaceToTireFrictionPairs(){}
 	~PxVehicleDrivableSurfaceToTireFrictionPairs(){}
 };
@@ -219,5 +271,4 @@ PX_COMPILE_TIME_ASSERT(0==(sizeof(PxVehicleDrivableSurfaceToTireFrictionPairs) &
 } // namespace physx
 #endif
 
-/** @} */
-#endif //PX_VEHICLE_TIREFRICTION_H
+#endif

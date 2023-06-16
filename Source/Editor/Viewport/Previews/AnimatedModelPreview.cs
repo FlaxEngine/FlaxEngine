@@ -15,8 +15,8 @@ namespace FlaxEditor.Viewport.Previews
     /// <seealso cref="AssetPreview" />
     public class AnimatedModelPreview : AssetPreview
     {
-        private ContextMenuButton _showNodesButton, _showBoundsButton, _showFloorButton;
-        private bool _showNodes, _showBounds, _showFloor, _showCurrentLOD;
+        private ContextMenuButton _showNodesButton, _showBoundsButton, _showFloorButton, _showNodesNamesButton;
+        private bool _showNodes, _showBounds, _showFloor, _showCurrentLOD, _showNodesNames;
         private AnimatedModel _previewModel;
         private StaticModel _floorModel;
         private ContextMenuButton _showCurrentLODButton;
@@ -95,6 +95,24 @@ namespace FlaxEditor.Viewport.Previews
                     ShowDebugDraw = true;
                 if (_showNodesButton != null)
                     _showNodesButton.Checked = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether show animated model skeleton nodes names debug view.
+        /// </summary>
+        public bool ShowNodesNames
+        {
+            get => _showNodesNames;
+            set
+            {
+                if (_showNodesNames == value)
+                    return;
+                _showNodesNames = value;
+                if (value)
+                    ShowDebugDraw = true;
+                if (_showNodesNamesButton != null)
+                    _showNodesNamesButton.Checked = value;
             }
         }
 
@@ -183,6 +201,9 @@ namespace FlaxEditor.Viewport.Previews
                 // Show Skeleton
                 _showNodesButton = ViewWidgetShowMenu.AddButton("Skeleton", () => ShowNodes = !ShowNodes);
 
+                // Show Skeleton Names
+                _showNodesNamesButton = ViewWidgetShowMenu.AddButton("Skeleton Names", () => ShowNodesNames = !ShowNodesNames);
+
                 // Show Floor
                 _showFloorButton = ViewWidgetShowMenu.AddButton("Floor", button => ShowFloor = !ShowFloor);
                 _showFloorButton.IndexInParent = 1;
@@ -252,6 +273,41 @@ namespace FlaxEditor.Viewport.Previews
             _playAnimationOnce = true;
         }
 
+        /// <summary>
+        /// Gets the skinned model bounds. Handles skeleton-only assets.
+        /// </summary>
+        /// <returns>The local bounds.</returns>
+        public BoundingBox GetBounds()
+        {
+            var box = BoundingBox.Zero;
+            var skinnedModel = SkinnedModel;
+            if (skinnedModel && skinnedModel.IsLoaded)
+            {
+                if (skinnedModel.LODs.Length != 0)
+                {
+                    // Use model geometry bounds
+                    box = skinnedModel.GetBox();
+                }
+                else
+                {
+                    // Use skeleton bounds
+                    _previewModel.GetCurrentPose(out var pose);
+                    if (pose != null && pose.Length != 0)
+                    {
+                        var point = pose[0].TranslationVector;
+                        box = new BoundingBox(point, point);
+                        for (int i = 1; i < pose.Length; i++)
+                        {
+                            point = pose[i].TranslationVector;
+                            box.Minimum = Vector3.Min(box.Minimum, point);
+                            box.Maximum = Vector3.Max(box.Maximum, point);
+                        }
+                    }
+                }
+            }
+            return box;
+        }
+
         private void OnBegin(RenderTask task, GPUContext context)
         {
             if (!ScaleToFit)
@@ -269,7 +325,7 @@ namespace FlaxEditor.Viewport.Previews
             if (skinnedModel && skinnedModel.IsLoaded)
             {
                 float targetSize = 50.0f;
-                BoundingBox box = skinnedModel.GetBox();
+                BoundingBox box = GetBounds();
                 float maxSize = Mathf.Max(0.001f, (float)box.Size.MaxValue);
                 float scale = targetSize / maxSize;
                 _previewModel.Scale = new Vector3(scale);
@@ -327,37 +383,51 @@ namespace FlaxEditor.Viewport.Previews
             base.OnDebugDraw(context, ref renderContext);
 
             // Draw skeleton nodes
-            if (_showNodes)
+            if (_showNodes || _showNodesNames)
             {
                 _previewModel.GetCurrentPose(out var pose, true);
                 var nodes = _previewModel.SkinnedModel?.Nodes;
                 if (pose != null && pose.Length != 0 && nodes != null)
                 {
-                    // Draw bounding box at the node locations
                     var nodesMask = NodesMask != null && NodesMask.Length == nodes.Length ? NodesMask : null;
-                    var localBox = new OrientedBoundingBox(new Vector3(-1.0f), new Vector3(1.0f));
-                    for (int nodeIndex = 0; nodeIndex < pose.Length; nodeIndex++)
+                    if (_showNodes)
                     {
-                        if (nodesMask != null && !nodesMask[nodeIndex])
-                            continue;
-                        var transform = pose[nodeIndex];
-                        transform.Decompose(out var scale, out Matrix _, out _);
-                        transform = Matrix.Invert(Matrix.Scaling(scale)) * transform;
-                        var box = localBox * transform;
-                        DebugDraw.DrawWireBox(box, Color.Green, 0, false);
-                    }
-
-                    // Nodes connections
-                    for (int nodeIndex = 0; nodeIndex < nodes.Length; nodeIndex++)
-                    {
-                        int parentIndex = nodes[nodeIndex].ParentIndex;
-                        if (parentIndex != -1)
+                        // Draw bounding box at the node locations
+                        var localBox = new OrientedBoundingBox(new Vector3(-1.0f), new Vector3(1.0f));
+                        for (int nodeIndex = 0; nodeIndex < pose.Length; nodeIndex++)
                         {
-                            if (nodesMask != null && (!nodesMask[nodeIndex] || !nodesMask[parentIndex]))
+                            if (nodesMask != null && !nodesMask[nodeIndex])
                                 continue;
-                            var parentPos = pose[parentIndex].TranslationVector;
-                            var bonePos = pose[nodeIndex].TranslationVector;
-                            DebugDraw.DrawLine(parentPos, bonePos, Color.Green, 0, false);
+                            var transform = pose[nodeIndex];
+                            transform.Decompose(out var scale, out Matrix _, out _);
+                            transform = Matrix.Invert(Matrix.Scaling(scale)) * transform;
+                            var box = localBox * transform;
+                            DebugDraw.DrawWireBox(box, Color.Green, 0, false);
+                        }
+
+                        // Nodes connections
+                        for (int nodeIndex = 0; nodeIndex < nodes.Length; nodeIndex++)
+                        {
+                            int parentIndex = nodes[nodeIndex].ParentIndex;
+                            if (parentIndex != -1)
+                            {
+                                if (nodesMask != null && (!nodesMask[nodeIndex] || !nodesMask[parentIndex]))
+                                    continue;
+                                var parentPos = pose[parentIndex].TranslationVector;
+                                var bonePos = pose[nodeIndex].TranslationVector;
+                                DebugDraw.DrawLine(parentPos, bonePos, Color.Green, 0, false);
+                            }
+                        }
+                    }
+                    if (_showNodesNames)
+                    {
+                        // Nodes names
+                        for (int nodeIndex = 0; nodeIndex < nodes.Length; nodeIndex++)
+                        {
+                            if (nodesMask != null && !nodesMask[nodeIndex])
+                                continue;
+                            //var t = new Transform(pose[nodeIndex].TranslationVector, Quaternion.Identity, new Float3(0.1f));
+                            DebugDraw.DrawText(nodes[nodeIndex].Name, pose[nodeIndex].TranslationVector, Color.White, 20, 0.0f, 0.1f);
                         }
                     }
                 }
@@ -376,13 +446,21 @@ namespace FlaxEditor.Viewport.Previews
             base.Draw();
 
             var skinnedModel = _previewModel.SkinnedModel;
-            if (_showCurrentLOD && skinnedModel)
+            if (skinnedModel == null || !skinnedModel.IsLoaded)
+                return;
+            var lods = skinnedModel.LODs;
+            if (lods.Length == 0)
+            {
+                // Force show skeleton for models without geometry
+                ShowNodes = true;
+                return;
+            }
+            if (_showCurrentLOD)
             {
                 var lodIndex = ComputeLODIndex(skinnedModel);
                 string text = string.Format("Current LOD: {0}", lodIndex);
                 if (lodIndex != -1)
                 {
-                    var lods = skinnedModel.LODs;
                     lodIndex = Mathf.Clamp(lodIndex + PreviewActor.LODBias, 0, lods.Length - 1);
                     var lod = lods[lodIndex];
                     int triangleCount = 0, vertexCount = 0;
@@ -448,6 +526,7 @@ namespace FlaxEditor.Viewport.Previews
             _showBoundsButton = null;
             _showFloorButton = null;
             _showCurrentLODButton = null;
+            _showNodesNamesButton = null;
 
             base.OnDestroy();
         }

@@ -1,11 +1,10 @@
-﻿// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Net;
-using System.Threading;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Flax.Build;
 
 namespace Flax.Deps
@@ -15,137 +14,112 @@ namespace Flax.Deps
     /// </summary>
     static class Downloader
     {
-        /*
-        private static void DownloadFile(string fileUrl, string fileTmp)
-        {
-            HttpWebRequest webRequest = WebRequest.CreateHttp(fileUrl);
-            webRequest.Method = "GET";
-            webRequest.Timeout = 3000;
-            using (WebResponse webResponse = webRequest.GetResponse())
-            {
-                using (Stream remoteStream = webResponse.GetResponseStream())
-                {
-                    DownloadFile(remoteStream, webResponse.ContentLength, fileTmp);
-                }
-            }
-        }
-
-        private static void DownloadFile(Stream remoteStream, long length, string fileTmp)
-        {
-            long bytesProcessed = 0;
-            byte[] buffer = new byte[1024];
-
-            using (var localStream = new FileStream(fileTmp, FileMode.Create, FileAccess.Write, FileShare.Read))
-            {
-                using (var display = new ProgressDisplay(length))
-                {
-                    int bytesRead;
-                    do
-                    {
-                        bytesRead = remoteStream.Read(buffer, 0, buffer.Length);
-                        localStream.Write(buffer, 0, bytesRead);
-                        bytesProcessed += bytesRead;
-                        display.Progress = bytesProcessed;
-                    } while (bytesRead > 0);
-                }
-            }
-        }
-        */
-
         private const string GoogleDriveDomain = "drive.google.com";
         private const string GoogleDriveDomain2 = "https://drive.google.com";
 
         // Normal example: FileDownloader.DownloadFileFromURLToPath( "http://example.com/file/download/link", @"C:\file.txt" );
         // Drive example: FileDownloader.DownloadFileFromURLToPath( "http://drive.google.com/file/d/FILEID/view?usp=sharing", @"C:\file.txt" );
-
         public static FileInfo DownloadFileFromUrlToPath(string url, string path)
         {
-            Log.Verbose(string.Format("Downloading {0} to {1}", url, path));
+            Log.Info(string.Format("Downloading {0} to {1}", url, path));
             if (File.Exists(path))
                 File.Delete(path);
-
             if (url.StartsWith(GoogleDriveDomain) || url.StartsWith(GoogleDriveDomain2))
                 return DownloadGoogleDriveFileFromUrlToPath(url, path);
             return DownloadFileFromUrlToPath(url, path, null);
         }
 
-        private static FileInfo DownloadFileFromUrlToPathRaw(string url, string path, WebClient webClient)
+        private static FileInfo DownloadFileFromUrlToPathRaw(string url, string path, HttpClient httpClient)
         {
             if (ProgressDisplay.CanUseConsole)
             {
-                using (var display = new ProgressDisplay(0))
+                using (var progress = new ProgressDisplay(0))
                 {
-                    DownloadProgressChangedEventHandler downloadProgress = (sender, e) => { display.Update(e.BytesReceived, e.TotalBytesToReceive); };
-                    AsyncCompletedEventHandler downloadCompleted = (sender, e) =>
-                    {
-                        lock (e.UserState)
-                        {
-                            Monitor.Pulse(e.UserState);
-                        }
-                    };
-
-                    var syncObj = new object();
-                    lock (syncObj)
-                    {
-                        webClient.DownloadProgressChanged += downloadProgress;
-                        webClient.DownloadFileCompleted += downloadCompleted;
-
-                        webClient.DownloadFileAsync(new Uri(url), path, syncObj);
-                        Monitor.Wait(syncObj);
-
-                        webClient.DownloadProgressChanged -= downloadProgress;
-                        webClient.DownloadFileCompleted -= downloadCompleted;
-                    }
+                    var task = DownloadFileFromUrlToPathAsync(url, path, httpClient, progress);
+                    task.Wait();
                 }
             }
             else
             {
-                AsyncCompletedEventHandler downloadCompleted = (sender, e) =>
-                {
-                    lock (e.UserState)
-                    {
-                        if (e.Error != null)
-                        {
-                            Log.Error("Download failed.");
-                            Log.Exception(e.Error);
-                        }
-
-                        Monitor.Pulse(e.UserState);
-                    }
-                };
-
-                var syncObj = new object();
-                lock (syncObj)
-                {
-                    webClient.DownloadFileCompleted += downloadCompleted;
-
-                    webClient.DownloadFileAsync(new Uri(url), path, syncObj);
-                    Monitor.Wait(syncObj);
-
-                    webClient.DownloadFileCompleted -= downloadCompleted;
-                }
+                var task = DownloadFileFromUrlToPathAsync(url, path, httpClient);
+                task.Wait();
             }
 
             return new FileInfo(path);
         }
 
-        private static FileInfo DownloadFileFromUrlToPath(string url, string path, WebClient webClient)
+        private static FileInfo DownloadFileFromUrlToPath(string url, string path, HttpClient httpClient)
         {
             try
             {
-                if (webClient == null)
+                if (httpClient == null)
                 {
-                    using (webClient = new WebClient())
+                    using (httpClient = new HttpClient())
                     {
-                        return DownloadFileFromUrlToPathRaw(url, path, webClient);
+                        return DownloadFileFromUrlToPathRaw(url, path, httpClient);
                     }
                 }
-
-                return DownloadFileFromUrlToPathRaw(url, path, webClient);
+                return DownloadFileFromUrlToPathRaw(url, path, httpClient);
             }
             catch (WebException)
             {
                 return null;
+            }
+        }
+
+        private static async Task DownloadFileFromUrlToPathAsync(string url, string path, HttpClient httpClient, ProgressDisplay progress = null)
+        {
+            if (progress != null)
+            {
+                using (var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
+                {
+                    response.EnsureSuccessStatusCode();
+
+                    var totalBytes = response.Content.Headers.ContentLength;
+                    using (var contentStream = await response.Content.ReadAsStreamAsync())
+                    {
+                        var totalBytesRead = 0L;
+                        var readCount = 0L;
+                        var buffer = new byte[8192];
+                        var hasMoreToRead = true;
+                        using (var fileStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
+                        {
+                            do
+                            {
+                                var bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length);
+                                if (bytesRead == 0)
+                                {
+                                    hasMoreToRead = false;
+                                    if (totalBytes.HasValue)
+                                        progress.Update(totalBytesRead, totalBytes.Value);
+                                    continue;
+                                }
+
+                                await fileStream.WriteAsync(buffer, 0, bytesRead);
+
+                                totalBytesRead += bytesRead;
+                                readCount += 1;
+
+                                if (readCount % 10 == 0)
+                                {
+                                    if (totalBytes.HasValue)
+                                        progress.Update(totalBytesRead, totalBytes.Value);
+                                }
+                            }
+                            while (hasMoreToRead);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                using (var httpStream = await httpClient.GetStreamAsync(url))
+                {
+                    using (var fileStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
+                    {
+                        await httpStream.CopyToAsync(fileStream);
+                    }
+                }
             }
         }
 
@@ -157,8 +131,7 @@ namespace Flax.Deps
             // You can comment the statement below if the provided url is guaranteed to be in the following format:
             // https://drive.google.com/uc?id=FILEID&export=download
             url = GetGoogleDriveDownloadLinkFromUrl(url);
-
-            using (CookieAwareWebClient webClient = new CookieAwareWebClient())
+            using (var httpClient = new HttpClient())
             {
                 FileInfo downloadedFile;
 
@@ -166,7 +139,7 @@ namespace Flax.Deps
                 // but works in the second attempt
                 for (int i = 0; i < 2; i++)
                 {
-                    downloadedFile = DownloadFileFromUrlToPath(url, path, webClient);
+                    downloadedFile = DownloadFileFromUrlToPath(url, path, httpClient);
                     if (downloadedFile == null)
                         return null;
 
@@ -199,8 +172,7 @@ namespace Flax.Deps
                     url = "https://drive.google.com" + content.Substring(linkIndex, linkEnd - linkIndex).Replace("&amp;", "&");
                 }
 
-                downloadedFile = DownloadFileFromUrlToPath(url, path, webClient);
-
+                downloadedFile = DownloadFileFromUrlToPath(url, path, httpClient);
                 return downloadedFile;
             }
         }
@@ -225,7 +197,6 @@ namespace Flax.Deps
                 index = url.IndexOf("file/d/", StringComparison.Ordinal);
                 if (index < 0) // url is not in any of the supported forms
                     return string.Empty;
-
                 index += 7;
 
                 closingIndex = url.IndexOf('/', index);
@@ -238,129 +209,6 @@ namespace Flax.Deps
             }
 
             return string.Format("https://drive.google.com/uc?id={0}&export=download", url.Substring(index, closingIndex - index));
-        }
-    }
-
-    /// <summary>
-    /// A <see cref="WebClient"/> with exposed Response property.
-    /// </summary>
-    /// <seealso cref="System.Net.WebClient" />
-    public class WebClientWithResponse : WebClient
-    {
-        /// <summary>
-        /// Gets the response.
-        /// </summary>
-        public byte[] Response { get; private set; }
-
-        /// <inheritdoc />
-        protected override WebResponse GetWebResponse(WebRequest request)
-        {
-            var response = base.GetWebResponse(request);
-
-            if (response is HttpWebResponse httpResponse)
-            {
-                using (var stream = httpResponse.GetResponseStream())
-                {
-                    using (var ms = new MemoryStream())
-                    {
-                        stream.CopyTo(ms);
-                        Response = ms.ToArray();
-                    }
-                }
-            }
-
-            return response;
-        }
-    }
-
-    /// <summary>
-    /// Web client used for Google Drive
-    /// </summary>
-    /// <seealso cref="System.Net.WebClient" />
-    public class CookieAwareWebClient : WebClient
-    {
-        private class CookieContainer
-        {
-            private readonly Dictionary<string, string> _cookies;
-
-            public string this[Uri url]
-            {
-                get
-                {
-                    string cookie;
-                    if (_cookies.TryGetValue(url.Host, out cookie))
-                        return cookie;
-
-                    return null;
-                }
-                set { _cookies[url.Host] = value; }
-            }
-
-            public CookieContainer()
-            {
-                _cookies = new Dictionary<string, string>();
-            }
-        }
-
-        private readonly CookieContainer _cookies;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CookieAwareWebClient"/> class.
-        /// </summary>
-        public CookieAwareWebClient()
-        {
-            _cookies = new CookieContainer();
-        }
-
-        /// <inheritdoc />
-        protected override WebRequest GetWebRequest(Uri address)
-        {
-            WebRequest request = base.GetWebRequest(address);
-
-            if (request is HttpWebRequest)
-            {
-                string cookie = _cookies[address];
-                if (cookie != null)
-                    ((HttpWebRequest)request).Headers.Set("cookie", cookie);
-            }
-
-            return request;
-        }
-
-        /// <inheritdoc />
-        protected override WebResponse GetWebResponse(WebRequest request, IAsyncResult result)
-        {
-            WebResponse response = base.GetWebResponse(request, result);
-
-            string[] cookies = response.Headers.GetValues("Set-Cookie");
-            if (cookies != null && cookies.Length > 0)
-            {
-                string cookie = "";
-                foreach (string c in cookies)
-                    cookie += c;
-
-                _cookies[response.ResponseUri] = cookie;
-            }
-
-            return response;
-        }
-
-        /// <inheritdoc />
-        protected override WebResponse GetWebResponse(WebRequest request)
-        {
-            WebResponse response = base.GetWebResponse(request);
-
-            string[] cookies = response.Headers.GetValues("Set-Cookie");
-            if (cookies != null && cookies.Length > 0)
-            {
-                string cookie = "";
-                foreach (string c in cookies)
-                    cookie += c;
-
-                _cookies[response.ResponseUri] = cookie;
-            }
-
-            return response;
         }
     }
 }

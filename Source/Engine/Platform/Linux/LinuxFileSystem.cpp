@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2019 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_LINUX
 
@@ -346,14 +346,14 @@ bool LinuxFileSystem::DeleteFile(const StringView& path)
 uint64 LinuxFileSystem::GetFileSize(const StringView& path)
 {
     struct stat fileInfo;
-    fileInfo.st_size = -1;
+    fileInfo.st_size = 0;
     const StringAsANSI<> pathANSI(*path, path.Length());
     if (stat(pathANSI.Get(), &fileInfo) != -1)
     {
         // Check for directories
         if (S_ISDIR(fileInfo.st_mode))
         {
-            fileInfo.st_size = -1;
+            fileInfo.st_size = 0;
         }
     }
     return fileInfo.st_size;

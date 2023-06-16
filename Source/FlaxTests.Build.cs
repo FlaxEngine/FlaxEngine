@@ -2,6 +2,7 @@
 
 using System;
 using System.Linq;
+using System.IO;
 using Flax.Build;
 using Flax.Build.NativeCpp;
 
@@ -19,7 +20,7 @@ public class FlaxTestsTarget : FlaxEditor
         OutputName = "FlaxTests";
         ConfigurationName = "Tests";
         IsPreBuilt = false;
-        UseSymbolsExports = false;
+        UseSymbolsExports = true;
         Platforms = new[]
         {
             TargetPlatform.Windows,
@@ -45,7 +46,11 @@ public class FlaxTestsTarget : FlaxEditor
     {
         base.SetupTargetEnvironment(options);
 
+        // Setup C# scripts environment
+        options.ScriptingAPI.IgnoreMissingDocumentationWarnings = true;
         options.ScriptingAPI.Defines.Add("FLAX_TESTS");
+        var nunitFramework = Path.Combine(Globals.EngineRoot, "Source/Platforms/DotNet/NUnit/framework/nunit.framework.dll");
+        options.ScriptingAPI.FileReferences.Add(nunitFramework);
 
         // Produce console program
         options.LinkEnv.LinkAsConsoleProgram = true;

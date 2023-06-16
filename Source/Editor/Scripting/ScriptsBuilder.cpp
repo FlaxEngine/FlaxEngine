@@ -10,18 +10,18 @@
 #include "Engine/Debug/Exceptions/FileNotFoundException.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/Globals.h"
+#include "Engine/Engine/EngineService.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/FileSystemWatcher.h"
-#include "Engine/Threading/ThreadPool.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Threading/Threading.h"
-#include "Engine/Scripting/MainThreadManagedInvokeAction.h"
+#include "Engine/Scripting/Internal/MainThreadManagedInvokeAction.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/Script.h"
-#include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Level/Level.h"
 #include "FlaxEngine.Gen.h"
@@ -77,7 +77,7 @@ namespace ScriptsBuilderImpl
     void onScriptsReloadEnd();
     void onScriptsLoaded();
 
-    void GetClassName(const MString& fullname, MString& className);
+    void GetClassName(const StringAnsi& fullname, StringAnsi& className);
 
     void onCodeEditorAsyncOpenBegin()
     {
@@ -132,6 +132,15 @@ int32 ScriptsBuilder::GetCompilationsCount()
 {
     Platform::MemoryBarrier();
     return _compilationsCount;
+}
+
+String ScriptsBuilder::GetBuildToolPath()
+{
+#if USE_NETCORE && (PLATFORM_LINUX || PLATFORM_MAC)
+    return Globals::StartupFolder / TEXT("Binaries/Tools/Flax.Build");
+#else
+    return Globals::StartupFolder / TEXT("Binaries/Tools/Flax.Build.exe");
+#endif
 }
 
 bool ScriptsBuilder::LastCompilationFailed()
@@ -221,7 +230,7 @@ void ScriptsBuilder::Compile()
 bool ScriptsBuilder::RunBuildTool(const StringView& args, const StringView& workingDir)
 {
     PROFILE_CPU();
-    const String buildToolPath = Globals::StartupFolder / TEXT("Binaries/Tools/Flax.Build.exe");
+    const String buildToolPath = GetBuildToolPath();
     if (!FileSystem::FileExists(buildToolPath))
     {
         Log::FileNotFoundException(buildToolPath).SetLevel(LogType::Fatal);
@@ -230,7 +239,7 @@ bool ScriptsBuilder::RunBuildTool(const StringView& args, const StringView& work
 
     // Prepare build options
     StringBuilder cmdLine(args.Length() + buildToolPath.Length() + 200);
-#if PLATFORM_LINUX || PLATFORM_MAC
+#if !USE_NETCORE && (PLATFORM_LINUX || PLATFORM_MAC)
     const String monoPath = Globals::MonoPath / TEXT("bin/mono");
     if (!FileSystem::FileExists(monoPath))
     {
@@ -241,15 +250,20 @@ bool ScriptsBuilder::RunBuildTool(const StringView& args, const StringView& work
     cmdLine.Append(TEXT("\""));
     cmdLine.Append(monoPath);
     cmdLine.Append(TEXT("\" "));
+    // TODO: Set env var for the mono MONO_GC_PARAMS=nursery-size64m to boost build performance -> profile it
 #endif
     cmdLine.Append(TEXT("\""));
     cmdLine.Append(buildToolPath);
     cmdLine.Append(TEXT("\" "));
     cmdLine.Append(args.Get(), args.Length());
-    // TODO: Set env var for the mono MONO_GC_PARAMS=nursery-size64m to boost build performance -> profile it
 
     // Call build tool
-    const int32 result = Platform::RunProcess(StringView(*cmdLine, cmdLine.Length()), workingDir);
+    CreateProcessSettings procSettings;
+    procSettings.FileName = StringView(*cmdLine, cmdLine.Length());
+    procSettings.WorkingDirectory = workingDir;
+    const int32 result = Platform::CreateProcess(procSettings);
+    if (result != 0)
+        LOG(Error, "Failed to run build tool, result: {0:x}", (uint32)result);
     return result != 0;
 }
 
@@ -261,7 +275,7 @@ bool ScriptsBuilder::GenerateProject(const StringView& customArgs)
     return RunBuildTool(args);
 }
 
-void ScriptsBuilderImpl::GetClassName(const MString& fullname, MString& className)
+void ScriptsBuilderImpl::GetClassName(const StringAnsi& fullname, StringAnsi& className)
 {
     const auto lastDotIndex = fullname.FindLast('.');
     if (lastDotIndex != -1)
@@ -278,7 +292,7 @@ void ScriptsBuilderImpl::GetClassName(const MString& fullname, MString& classNam
 MClass* ScriptsBuilder::FindScript(const StringView& scriptName)
 {
     PROFILE_CPU();
-    const MString scriptNameStd = scriptName.ToStringAnsi();
+    const StringAnsi scriptNameStd = scriptName.ToStringAnsi();
 
     const ScriptingTypeHandle scriptingType = Scripting::FindScriptingType(scriptNameStd);
     if (scriptingType)
@@ -292,7 +306,7 @@ MClass* ScriptsBuilder::FindScript(const StringView& scriptName)
 
     // Check all assemblies (ignoring the typename namespace)
     auto& modules = BinaryModule::GetModules();
-    MString className;
+    StringAnsi className;
     GetClassName(scriptNameStd, className);
     MClass* scriptClass = Script::GetStaticClass();
     for (int32 j = 0; j < modules.Count(); j++)
@@ -309,7 +323,7 @@ MClass* ScriptsBuilder::FindScript(const StringView& scriptName)
             // Managed scripts
             if (mclass->IsSubClassOf(scriptClass) && !mclass->IsStatic() && !mclass->IsAbstract() && !mclass->IsInterface())
             {
-                MString mclassName;
+                StringAnsi mclassName;
                 GetClassName(mclass->GetFullName(), mclassName);
                 if (className == mclassName)
                 {
@@ -381,6 +395,10 @@ void ScriptsBuilder::GetBinariesConfiguration(const Char*& target, const Char*& 
     architecture = TEXT("x64");
 #elif PLATFORM_ARCH_X86
     architecture = TEXT("x86");
+#elif PLATFORM_ARCH_ARM
+    architecture = TEXT("arm");
+#elif PLATFORM_ARCH_ARM64
+    architecture = TEXT("arm64");
 #else
 #error "Unknown architecture"
 #endif

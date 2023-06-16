@@ -6,6 +6,8 @@
 #include "Win32/Win32File.h"
 #elif PLATFORM_LINUX || PLATFORM_PS4 || PLATFORM_PS5 || PLATFORM_MAC
 #include "Unix/UnixFile.h"
+#elif PLATFORM_IOS
+#include "iOS/iOSFile.h"
 #elif PLATFORM_ANDROID
 #include "Android/AndroidFile.h"
 #elif PLATFORM_SWITCH

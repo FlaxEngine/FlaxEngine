@@ -8,6 +8,7 @@ using FlaxEditor.GUI.Input;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Surface.ContextMenu
 {
@@ -135,7 +136,6 @@ namespace FlaxEditor.Surface.ContextMenu
                 Width = Width - 4,
                 X = 2,
                 Y = 1,
-                BackgroundColor = Style.Current.BackgroundNormal,
             };
 
             // Title bar

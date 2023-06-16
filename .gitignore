@@ -25,6 +25,7 @@ PackagePlatforms_Cert.bat
 *.opendb
 *.DS_Store
 *.xcodeproj
+launchSettings.json
 
 # NUNIT
 *.VisualState.xml

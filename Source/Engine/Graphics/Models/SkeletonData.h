@@ -88,7 +88,6 @@ public:
     /// <summary>
     /// Gets the root node reference.
     /// </summary>
-    /// <returns>The root node.</returns>
     FORCE_INLINE SkeletonNode& RootNode()
     {
         ASSERT(Nodes.HasItems());
@@ -98,7 +97,6 @@ public:
     /// <summary>
     /// Gets the root node reference.
     /// </summary>
-    /// <returns>The root node.</returns>
     FORCE_INLINE const SkeletonNode& RootNode() const
     {
         ASSERT(Nodes.HasItems());
@@ -108,14 +106,13 @@ public:
     /// <summary>
     /// Swaps the contents of object with the other object without copy operation. Performs fast internal data exchange.
     /// </summary>
-    /// <param name="other">The other object.</param>
     void Swap(SkeletonData& other)
     {
         Nodes.Swap(other.Nodes);
         Bones.Swap(other.Bones);
     }
 
-    int32 FindNode(const StringView& name)
+    int32 FindNode(const StringView& name) const
     {
         for (int32 i = 0; i < Nodes.Count(); i++)
         {
@@ -125,7 +122,7 @@ public:
         return -1;
     }
 
-    int32 FindBone(int32 nodeIndex)
+    int32 FindBone(int32 nodeIndex) const
     {
         for (int32 i = 0; i < Bones.Count(); i++)
         {
@@ -133,6 +130,14 @@ public:
                 return i;
         }
         return -1;
+    }
+
+    uint64 GetMemoryUsage() const
+    {
+        uint64 result = Nodes.Capacity() * sizeof(SkeletonNode) + Bones.Capacity() * sizeof(SkeletonBone);
+        for (const auto& e : Nodes)
+            result += (e.Name.Length() + 1) * sizeof(Char);
+        return result;
     }
 
     /// <summary>

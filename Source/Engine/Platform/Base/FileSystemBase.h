@@ -134,6 +134,7 @@ public:
 
     static bool CopyFile(const String& dst, const String& src);
     static bool CopyDirectory(const String& dst, const String& src, bool withSubDirectories);
+    static uint64 GetDirectorySize(const StringView& path);
 
 public:
 

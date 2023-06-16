@@ -130,15 +130,18 @@ namespace Flax.Deps.Dependencies
                     };
 
                     // Build for Mac
-                    RunCmake(root, platform, TargetArchitecture.x64, cmakeArgs);
-                    Utilities.Run("cmake", string.Format("--build . --config {0} --target install", configuration), null, buildDir, Utilities.RunOptions.None);
-                    Utilities.Run("make", null, null, root, Utilities.RunOptions.None);
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    foreach (var file in outputFiles)
+                    foreach (var architecture in new []{ TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
-                        var dst = Path.Combine(depsFolder, Path.GetFileName(file));
-                        Utilities.FileCopy(file, dst);
-                        Utilities.Run("strip", string.Format("\"{0}\"", dst), null, null, Utilities.RunOptions.None);
+                        RunCmake(root, platform, architecture, cmakeArgs);
+                        Utilities.Run("cmake", string.Format("--build . --config {0} --target install", configuration), null, buildDir, Utilities.RunOptions.None);
+                        Utilities.Run("make", null, null, root, Utilities.RunOptions.None);
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        foreach (var file in outputFiles)
+                        {
+                            var dst = Path.Combine(depsFolder, Path.GetFileName(file));
+                            Utilities.FileCopy(file, dst);
+                            Utilities.Run("strip", string.Format("\"{0}\"", dst), null, null, Utilities.RunOptions.None);
+                        }
                     }
                     break;
                 }

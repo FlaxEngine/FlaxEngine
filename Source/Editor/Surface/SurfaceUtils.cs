@@ -10,6 +10,7 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.Scripting;
 using FlaxEditor.Utilities;
+using FlaxEngine.Utilities;
 using FlaxEngine;
 
 namespace FlaxEditor.Surface
@@ -405,7 +406,9 @@ namespace FlaxEditor.Surface
 
         internal static bool IsValidVisualScriptType(ScriptType scriptType)
         {
-            if (!scriptType.IsPublic || scriptType.HasAttribute(typeof(HideInEditorAttribute), true))
+            if (!scriptType.IsPublic || 
+                scriptType.HasAttribute(typeof(HideInEditorAttribute), true) || 
+                scriptType.HasAttribute(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute), false))
                 return false;
             if (scriptType.IsGenericType)
             {

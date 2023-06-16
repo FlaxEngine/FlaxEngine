@@ -4,10 +4,12 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Security;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace FlaxEngine
 {
-    internal sealed class DebugLogHandler : ILogHandler
+    internal partial class DebugLogHandler : ILogHandler
     {
         /// <summary>
         /// Occurs on sending a log message.
@@ -64,14 +66,14 @@ namespace FlaxEngine
             Debug.Logger.LogException(exception);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_LogWrite(LogType level, string msg);
+        [LibraryImport("FlaxEngine", EntryPoint = "DebugLogHandlerInternal_LogWrite", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial void Internal_LogWrite(LogType level, string msg);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_Log(LogType level, string msg, IntPtr obj, string stackTrace);
+        [LibraryImport("FlaxEngine", EntryPoint = "DebugLogHandlerInternal_Log", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial void Internal_Log(LogType level, string msg, IntPtr obj, string stackTrace);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_LogException(Exception exception, IntPtr obj);
+        [LibraryImport("FlaxEngine", EntryPoint = "DebugLogHandlerInternal_LogException", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial void Internal_LogException([MarshalUsing(typeof(Interop.ExceptionMarshaller))] Exception exception, IntPtr obj);
 
         [SecuritySafeCritical]
         public static string Internal_GetStackTrace()

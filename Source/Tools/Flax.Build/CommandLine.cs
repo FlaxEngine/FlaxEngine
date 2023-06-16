@@ -14,6 +14,8 @@ namespace Flax.Build
     /// </summary>
     public class CommandLine
     {
+        internal static List<MethodInfo> ConsoleCommands;
+
         /// <summary>
         /// The command line option data.
         /// </summary>
@@ -425,6 +427,14 @@ namespace Flax.Build
                     else if (member is PropertyInfo property)
                     {
                         type = property.PropertyType;
+                    }
+                    else if (member is MethodInfo method)
+                    {
+                        // Add console command to be invoked by build tool
+                        if (ConsoleCommands == null)
+                            ConsoleCommands = new List<MethodInfo>();
+                        ConsoleCommands.Add(method);
+                        continue;
                     }
                     else
                     {

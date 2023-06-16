@@ -701,7 +701,7 @@ void NetworkReplicator::AddRPC(const ScriptingTypeHandle& typeHandle, const Stri
     NetworkRpcInfo::RPCsTable[rpcName] = rpcInfo;
 }
 
-void NetworkReplicator::CSharpEndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, MonoArray* targetIds)
+void NetworkReplicator::CSharpEndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, MArray* targetIds)
 {
     EndInvokeRPC(obj, type, GetCSharpCachedName(name), argsStream, MUtils::ToSpan<uint32>(targetIds));
 }
@@ -1544,7 +1544,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 continue;
             auto& item = it->Item;
 
-            // Send despawn message
+            // Send RPC message
             //NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Rpc {}::{} object ID={}", e.Name.First.ToString(), String(e.Name.Second), item.ToString());
             NetworkMessageObjectRpc msgData;
             msgData.ObjectId = item.ObjectId;

@@ -1,49 +1,103 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "EditorAnalytics.h"
-#include "EditorAnalyticsController.h"
+#include "Editor/Editor.h"
+#include "Editor/ProjectInfo.h"
+#include "Editor/Cooker/GameCooker.h"
+#include "Engine/Threading/Task.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/MemoryStats.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/TimeSpan.h"
-#include "Editor/Editor.h"
-#include "Editor/ProjectInfo.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Utilities/StringConverter.h"
+#include "Engine/Utilities/TextWriter.h"
+#include "Engine/ShadowsOfMordor/Builder.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "FlaxEngine.Gen.h"
-#include <ThirdParty/UniversalAnalytics/universal-analytics.h>
+#include <ThirdParty/UniversalAnalytics/http.h>
 
-#define FLAX_EDITOR_GOOGLE_ID "UA-88357703-3"
+// Docs:
+// https://developers.google.com/analytics/devguides/collection/ga4
+// https://developers.google.com/analytics/devguides/collection/protocol/ga4
 
-// Helper doc: https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters
+// [GA4] Flax Editor
+#define GA_MEASUREMENT_ID "G-2SNY6RW6VX"
+#define GA_API_SECRET "wFlau4khTPGFRnx-AIZ1zg"
+#define GA_DEBUG 0
+#if GA_DEBUG
+#define GA_URL "https://www.google-analytics.com/debug/mp/collect"
+#else
+#define GA_URL "https://www.google-analytics.com/mp/collect"
+#endif
 
-namespace EditorAnalyticsImpl
+namespace
 {
-    UATracker Tracker = nullptr;
-
+    StringAnsi Url;
     StringAnsi ClientId;
-    StringAnsi ProjectName;
-    StringAnsi ScreenResolution;
-    StringAnsi UserLanguage;
-    StringAnsi GPU;
     DateTime SessionStartTime;
-
     CriticalSection Locker;
     bool IsSessionActive = false;
-    EditorAnalyticsController Controller;
-    Array<char> TmpBuffer;
+    TextWriterANSI JsonBuffer;
+    curl_slist* CurlHttpHeadersList = nullptr;
 }
 
-using namespace EditorAnalyticsImpl;
+size_t curl_null_data_handler(char* ptr, size_t size, size_t nmemb, void* userdata)
+{
+    return nmemb * size;
+}
+
+void RegisterGameCookingStart(GameCooker::EventType type)
+{
+    if (type == GameCooker::EventType::BuildStarted)
+    {
+        auto& data = *GameCooker::GetCurrentData();
+        StringAnsi name = "Build " + StringAnsi(ToString(data.Platform));
+        const Pair<const char*, const char*> params[1] = { { "GameCooker", name.Get() } };
+        EditorAnalytics::SendEvent("Actions", ToSpan(params, ARRAY_COUNT(params)));
+    }
+}
+
+void RegisterLightmapsBuildingStart()
+{
+    const Pair<const char*, const char*> params[1] = { { "ShadowsOfMordor", "Build" }, };
+    EditorAnalytics::SendEvent("Actions", ToSpan(params, ARRAY_COUNT(params)));
+}
+
+void RegisterError(LogType type, const StringView& msg)
+{
+    if (type == LogType::Error && false)
+    {
+        StringAnsi value(msg);
+        const int32 MaxLength = 300;
+        if (msg.Length() > MaxLength)
+            value = value.Substring(0, MaxLength);
+        value.Replace('\n', ' ');
+        value.Replace('\r', ' ');
+        const Pair<const char*, const char*> params[1] = { { "Error", value.Get() }, };
+        EditorAnalytics::SendEvent("Errors", ToSpan(params, ARRAY_COUNT(params)));
+    }
+    else if (type == LogType::Fatal)
+    {
+        StringAnsi value(msg);
+        const int32 MaxLength = 300;
+        if (msg.Length() > MaxLength)
+            value = value.Substring(0, MaxLength);
+        value.Replace('\n', ' ');
+        value.Replace('\r', ' ');
+        const Pair<const char*, const char*> params[1] = { { "Fatal", value.Get() }, };
+        EditorAnalytics::SendEvent("Errors", ToSpan(params, ARRAY_COUNT(params)));
+    }
+}
 
 class EditorAnalyticsService : public EngineService
 {
 public:
-
     EditorAnalyticsService()
         : EngineService(TEXT("Editor Analytics"))
     {
@@ -57,192 +111,141 @@ EditorAnalyticsService EditorAnalyticsServiceInstance;
 
 bool EditorAnalytics::IsSessionActive()
 {
-    return EditorAnalyticsImpl::IsSessionActive;
+    return ::IsSessionActive;
 }
 
 void EditorAnalytics::StartSession()
 {
     ScopeLock lock(Locker);
-
-    if (EditorAnalyticsImpl::IsSessionActive)
+    if (::IsSessionActive)
         return;
+    PROFILE_CPU();
 
     // Prepare client metadata
-    if (ClientId.IsEmpty())
-    {
-        ClientId = Platform::GetUniqueDeviceId().ToString(Guid::FormatType::N).ToStringAnsi();
-    }
-    if (ScreenResolution.IsEmpty())
-    {
-        const auto desktopSize = Platform::GetDesktopSize();
-        ScreenResolution = StringAnsi(StringUtils::ToString((int32)desktopSize.X)) + "x" + StringAnsi(StringUtils::ToString((int32)desktopSize.Y));
-    }
-    if (UserLanguage.IsEmpty())
-    {
-        UserLanguage = Platform::GetUserLocaleName().ToStringAnsi();
-    }
-    if (GPU.IsEmpty())
-    {
-        const auto gpu = GPUDevice::Instance;
-        if (gpu && gpu->GetState() == GPUDevice::DeviceState::Ready)
-            GPU = StringAsANSI<>(gpu->GetAdapter()->GetDescription().GetText()).Get();
-    }
-    if (ProjectName.IsEmpty())
-    {
-        ProjectName = Editor::Project->Name.ToStringAnsi();
-    }
+    ClientId = Platform::GetUniqueDeviceId().ToString(Guid::FormatType::N).ToStringAnsi();
+    StringAnsi ProjectName = Editor::Project->Name.ToStringAnsi();
+    const auto desktopSize = Platform::GetDesktopSize();
+    StringAnsi ScreenResolution = StringAnsi::Format("{0}x{1}", (int32)desktopSize.X, (int32)desktopSize.Y);
+    const auto memoryStats = Platform::GetMemoryStats();
+    StringAnsi Memory = StringAnsi::Format("{0} GB", (int32)(memoryStats.TotalPhysicalMemory / 1024 / 1024 / 1000));
+    StringAnsi UserLocale = Platform::GetUserLocaleName().ToStringAnsi();
+    StringAnsi GPU;
+    if (GPUDevice::Instance && GPUDevice::Instance->GetState() == GPUDevice::DeviceState::Ready)
+        GPU = StringAsANSI<>(GPUDevice::Instance->GetAdapter()->GetDescription().GetText()).Get();
     SessionStartTime = DateTime::Now();
-
-    // Initialize the analytics tracker
-    Tracker = createTracker(FLAX_EDITOR_GOOGLE_ID, ClientId.Get(), nullptr);
-    Tracker->user_agent = "Flax Editor";
-
-    // Store these options permanently (for the lifetime of the tracker)
-    setTrackerOption(Tracker, UA_OPTION_QUEUE, 1);
-    UASettings GlobalSettings =
-    {
-        {
-            { UA_DOCUMENT_PATH, 0, "Flax Editor" },
-            { UA_DOCUMENT_TITLE, 0, "Flax Editor" },
+    StringAnsiView EngineVersion = FLAXENGINE_VERSION_TEXT;
 #if PLATFORM_WINDOWS
-            { UA_USER_AGENT, 0, "Windows " FLAXENGINE_VERSION_TEXT },
+    StringAnsiView PlatformName = "Windows";
 #elif PLATFORM_LINUX
-            { UA_USER_AGENT, 0, "Linux " FLAXENGINE_VERSION_TEXT },
+    StringAnsiView PlatformName = "Linux";
 #elif PLATFORM_MAC
-            { UA_USER_AGENT, 0, "Mac " FLAXENGINE_VERSION_TEXT },
+    StringAnsiView PlatformName = "Mac";
 #else
 #error "Unknown platform"
 #endif
-            { UA_ANONYMIZE_IP, 0, "0" },
-            { UA_APP_ID, 0, "Flax Editor " FLAXENGINE_VERSION_TEXT },
-            { UA_APP_INSTALLER_ID, 0, "Flax Editor" },
-            { UA_APP_NAME, 0, "Flax Editor" },
-            { UA_APP_VERSION, 0, FLAXENGINE_VERSION_TEXT },
-            { UA_SCREEN_NAME, 0, "Flax Editor " FLAXENGINE_VERSION_TEXT },
-            { UA_SCREEN_RESOLUTION, 0, ScreenResolution.Get() },
-            { UA_USER_LANGUAGE, 0, UserLanguage.Get() },
-        }
-    };
-    setParameters(Tracker, &GlobalSettings);
 
-    // Send the initial session event
-    UAOptions sessionViewOptions =
+    // Initialize HTTP
+    Url = StringAnsi::Format("{0}?measurement_id={1}&api_secret={2}", GA_URL, GA_MEASUREMENT_ID, GA_API_SECRET);
+    curl_global_init(CURL_GLOBAL_ALL);
+    CurlHttpHeadersList = curl_slist_append(nullptr, "Content-Type: application/json");
+    ::IsSessionActive = true;
+
+    // Start session
     {
-        {
-            { UA_EVENT_CATEGORY, 0, "Session" },
-            { UA_EVENT_ACTION, 0, "Start Editor" },
-            { UA_EVENT_LABEL, 0, "Start Editor" },
-            { UA_SESSION_CONTROL, 0, "start" },
-            { UA_DOCUMENT_TITLE, 0, ProjectName.Get() },
-        }
-    };
-    sendTracking(Tracker, UA_SCREENVIEW, &sessionViewOptions);
-
-    EditorAnalyticsImpl::IsSessionActive = true;
-
-    Controller.Init();
-
-    // Report GPU model
-    if (GPU.HasChars())
-    {
-        SendEvent("Telemetry", "GPU.Model", GPU.Get());
+        const Pair<const char*, const char*> params[1] = { { "Project", ProjectName.Get() }, };
+        SendEvent("Session", ToSpan(params, ARRAY_COUNT(params)));
     }
+
+    // Report telemetry stats
+#define SEND_TELEMETRY(name, value) \
+    if (value.HasChars()) \
+    { \
+        const Pair<const char*, const char*> params[1] = { { name, value.Get() } }; \
+        SendEvent("Telemetry", ToSpan(params, ARRAY_COUNT(params))); \
+    }
+    SEND_TELEMETRY("Platform", PlatformName);
+    SEND_TELEMETRY("GPU", GPU);
+    SEND_TELEMETRY("Memory", Memory);
+    SEND_TELEMETRY("Locale", UserLocale);
+    SEND_TELEMETRY("Screen", ScreenResolution);
+    SEND_TELEMETRY("Version", EngineVersion);
+#undef SEND_TELEMETRY
+
+    // Bind events
+    GameCooker::OnEvent.Bind<RegisterGameCookingStart>();
+    ShadowsOfMordor::Builder::Instance()->OnBuildStarted.Bind<RegisterLightmapsBuildingStart>();
+    Log::Logger::OnError.Bind<RegisterError>();
 }
 
 void EditorAnalytics::EndSession()
 {
     ScopeLock lock(Locker);
-
-    if (!EditorAnalyticsImpl::IsSessionActive)
+    if (!::IsSessionActive)
         return;
+    PROFILE_CPU();
 
-    Controller.Cleanup();
+    // Unbind events
+    GameCooker::OnEvent.Unbind<RegisterGameCookingStart>();
+    ShadowsOfMordor::Builder::Instance()->OnBuildStarted.Unbind<RegisterLightmapsBuildingStart>();
+    Log::Logger::OnError.Unbind<RegisterError>();
 
-    StringAnsi sessionLength = StringAnsi::Format("{0}", (int32)(DateTime::Now() - SessionStartTime).GetTotalSeconds());
-
-    // Send the end session event
-    UAOptions sessionEventOptions =
+    // End session
     {
+        StringAnsi sessionLength = StringAnsi::Format("{}", (int32)(DateTime::Now() - SessionStartTime).GetTotalSeconds());
+        const Pair<const char*, const char*> params[1] =
         {
-            { UA_EVENT_CATEGORY, 0, "Session" },
-            { UA_EVENT_ACTION, 0, "Session Length" },
-            { UA_EVENT_LABEL, 0, "Session Length" },
-            { UA_EVENT_VALUE, 0, sessionLength.Get() },
-            { UA_CUSTOM_DIMENSION, 1, "Session Length" },
-            { UA_CUSTOM_METRIC, 1, sessionLength.Get() },
-        }
-    };
-    sendTracking(Tracker, UA_EVENT, &sessionEventOptions);
-
-    // Send the end session event
-    UAOptions sessionViewOptions =
-    {
-        {
-            { UA_EVENT_CATEGORY, 0, "Session" },
-            { UA_EVENT_ACTION, 0, "End Editor" },
-            { UA_EVENT_LABEL, 0, "End Editor" },
-            { UA_EVENT_VALUE, 0, sessionLength.Get() },
-            { UA_SESSION_CONTROL, 0, "end" },
-        }
-    };
-    sendTracking(Tracker, UA_SCREENVIEW, &sessionViewOptions);
+            { "Duration", sessionLength.Get() },
+        };
+        SendEvent("Session", ToSpan(params, ARRAY_COUNT(params)));
+    }
 
     // Cleanup
-    removeTracker(Tracker);
-    Tracker = nullptr;
-
-    EditorAnalyticsImpl::IsSessionActive = false;
+    curl_slist_free_all(CurlHttpHeadersList);
+    CurlHttpHeadersList = nullptr;
+    curl_global_cleanup();
+    ::IsSessionActive = false;
 }
 
-void EditorAnalytics::SendEvent(const char* category, const char* name, const char* label)
+void EditorAnalytics::SendEvent(const char* name, Span<Pair<const char*, const char*>> parameters)
 {
     ScopeLock lock(Locker);
-
-    if (!EditorAnalyticsImpl::IsSessionActive)
+    if (!::IsSessionActive)
         return;
+    PROFILE_CPU();
 
-    UAOptions opts =
+    // Create Json request contents
+    JsonBuffer.Clear();
+    JsonBuffer.Write("{ \"client_id\": \"");
+    JsonBuffer.Write(ClientId);
+    JsonBuffer.Write("\", \"events\": [ { \"name\": \"");
+    JsonBuffer.Write(name);
+    JsonBuffer.Write("\", \"params\": {");
+    for (int32 i = 0; i < parameters.Length(); i++)
     {
-        {
-            { UA_EVENT_CATEGORY, 0, (char*)category },
-            { UA_EVENT_ACTION, 0, (char*)name },
-            { UA_EVENT_LABEL, 0, (char*)label },
-        }
-    };
+        if (i != 0)
+            JsonBuffer.Write(",");
+        const auto& e = parameters[i];
+        JsonBuffer.Write("\"");
+        JsonBuffer.Write(e.First);
+        JsonBuffer.Write("\":\"");
+        JsonBuffer.Write(e.Second);
+        JsonBuffer.Write("\"");
+    }
+    JsonBuffer.Write("}}]}");
+    const StringAnsiView json((const char*)JsonBuffer.GetBuffer()->GetHandle(), (int32)JsonBuffer.GetBuffer()->GetPosition());
 
-    sendTracking(Tracker, UA_EVENT, &opts);
-}
-
-void EditorAnalytics::SendEvent(const char* category, const char* name, const StringView& label)
-{
-    SendEvent(category, name, label.Get());
-}
-
-void EditorAnalytics::SendEvent(const char* category, const char* name, const Char* label)
-{
-    ScopeLock lock(Locker);
-
-    if (!EditorAnalyticsImpl::IsSessionActive)
-        return;
-
-    ASSERT(category && name && label);
-
-    const int32 labelLength = StringUtils::Length(label);
-    TmpBuffer.Clear();
-    TmpBuffer.Resize(labelLength + 1);
-    StringUtils::ConvertUTF162ANSI(label, TmpBuffer.Get(), labelLength);
-    TmpBuffer[labelLength] = 0;
-
-    UAOptions opts =
-    {
-        {
-            { UA_EVENT_CATEGORY, 0, (char*)category },
-            { UA_EVENT_ACTION, 0, (char*)name },
-            { UA_EVENT_LABEL, 0, (char*)TmpBuffer.Get() },
-        }
-    };
-
-    sendTracking(Tracker, UA_EVENT, &opts);
+    // Send HTTP request
+    CURL* curl = curl_easy_init();
+    curl_easy_setopt(curl, CURLOPT_POST, 1);
+    curl_easy_setopt(curl, CURLOPT_URL, Url.Get());
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, CurlHttpHeadersList);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json.Get());
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, json.Length());
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, "Flax Editor");
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, curl);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_null_data_handler);
+    CURLcode res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
 }
 
 bool EditorAnalyticsService::Init()
@@ -265,8 +268,7 @@ bool EditorAnalyticsService::Init()
     }
 
     LOG(Info, "Editor analytics service is enabled. Curl version: {0}", TEXT(LIBCURL_VERSION));
-
-    EditorAnalytics::StartSession();
+    Task::StartNew(EditorAnalytics::StartSession);
 
     return false;
 }

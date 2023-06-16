@@ -13,34 +13,36 @@ class FLAXENGINE_API MField
     friend MClass;
 
 protected:
-
 #if USE_MONO
     MonoClassField* _monoField;
     MonoType* _monoType;
+#elif USE_NETCORE
+    void* _handle;
+    void* _type;
 #endif
 
     MClass* _parentClass;
-    MString _name;
+    StringAnsi _name;
 
     MVisibility _visibility;
 
-    int32 _hasCachedAttributes : 1;
+    mutable int32 _hasCachedAttributes : 1;
     int32 _isStatic : 1;
 
-    Array<MObject*> _attributes;
+    mutable Array<MObject*> _attributes;
 
 public:
-
 #if USE_MONO
     explicit MField(MonoClassField* monoField, const char* name, MClass* parentClass);
+#elif USE_NETCORE
+    MField(MClass* parentClass, void* handle, const char* name, void* type, MFieldAttributes attributes);
 #endif
 
 public:
-
     /// <summary>
     /// Gets field name.
     /// </summary>
-    FORCE_INLINE const MString& GetName() const
+    FORCE_INLINE const StringAnsi& GetName() const
     {
         return _name;
     }
@@ -56,7 +58,7 @@ public:
     /// <summary>
     /// Gets field type class.
     /// </summary>
-    MType GetType() const;
+    MType* GetType() const;
 
     /// <summary>
     /// Gets the field offset (in bytes) from the start of the parent object.
@@ -90,7 +92,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Retrieves value currently set in the field on the specified object instance. If field is static object instance can be null.
     /// </summary>
@@ -119,7 +120,6 @@ public:
     void SetValue(MObject* instance, void* value) const;
 
 public:
-
     /// <summary>
     /// Checks if field has an attribute of the specified type.
     /// </summary>
@@ -144,5 +144,5 @@ public:
     /// Returns an instance of all attributes connected with given field. Returns null if the field doesn't have any attributes.
     /// </summary>
     /// <returns>The array of attribute objects.</returns>
-    const Array<MObject*>& GetAttributes();
+    const Array<MObject*>& GetAttributes() const;
 };

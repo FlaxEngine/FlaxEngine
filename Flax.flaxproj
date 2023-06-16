@@ -2,8 +2,8 @@
   "Name": "Flax",
   "Version": {
     "Major": 1,
-    "Minor": 5,
-    "Build": 6341
+    "Minor": 6,
+    "Build": 6342
   },
   "Company": "Flax",
   "Copyright": "Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.",
@@ -11,6 +11,7 @@
   "EditorTarget": "FlaxEditor",
   "Configuration": {
     "UseCSharp": true,
-    "UseLargeWorlds": false
+    "UseLargeWorlds": false,
+    "UseDotNet": true
   }
 }

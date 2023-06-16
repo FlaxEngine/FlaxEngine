@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace FlaxEngine
 {
@@ -16,7 +17,11 @@ namespace FlaxEngine
         [Unmanaged]
         public static void DrawSceneDepth(GPUContext context, SceneRenderTask task, GPUTexture output, List<Actor> customActors)
         {
-            Internal_DrawSceneDepth(FlaxEngine.Object.GetUnmanagedPtr(context), FlaxEngine.Object.GetUnmanagedPtr(task), FlaxEngine.Object.GetUnmanagedPtr(output), Utils.ExtractArrayFromList(customActors));
+            if (customActors.Count == 0)
+                return;
+            var temp = CollectionsMarshal.AsSpan(customActors).ToArray(); // FIXME
+            var tempCount = temp.Length;
+            Internal_DrawSceneDepth(FlaxEngine.Object.GetUnmanagedPtr(context), FlaxEngine.Object.GetUnmanagedPtr(task), FlaxEngine.Object.GetUnmanagedPtr(output), temp, ref tempCount);
         }
 
         /// <summary>
@@ -27,7 +32,7 @@ namespace FlaxEngine
         [Unmanaged]
         public static void DrawActors(ref RenderContext renderContext, List<Actor> customActors)
         {
-            Internal_DrawActors(ref renderContext, Utils.ExtractArrayFromList(customActors));
+            DrawActors(ref renderContext, Utils.ExtractArrayFromList(customActors));
         }
     }
 }

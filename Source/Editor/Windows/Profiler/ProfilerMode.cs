@@ -25,6 +25,11 @@ namespace FlaxEditor.Windows.Profiler
             public ProfilingTools.MainStats Stats;
 
             /// <summary>
+            /// The additional managed memory allocation size during this update. Given value is in bytes.
+            /// </summary>
+            public int ManagedMemoryAllocation;
+
+            /// <summary>
             /// Gets the collected CPU events by the profiler from local or remote session.
             /// </summary>
             /// <returns>Buffer with events per thread.</returns>

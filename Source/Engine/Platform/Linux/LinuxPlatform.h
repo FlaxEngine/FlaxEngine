@@ -139,9 +139,7 @@ public:
     static void GetEnvironmentVariables(Dictionary<String, String, HeapAllocation>& result);
     static bool GetEnvironmentVariable(const String& name, String& value);
     static bool SetEnvironmentVariable(const String& name, const String& value);
-    static int32 StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow = false, bool waitForEnd = false);
-    static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow = true);
-    static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String, HeapAllocation>& environment, bool hiddenWindow = true);
+    static int32 CreateProcess(CreateProcessSettings& settings);
     static void* LoadLibrary(const Char* filename);
     static void FreeLibrary(void* handle);
     static void* GetProcAddress(void* handle, const char* symbol);

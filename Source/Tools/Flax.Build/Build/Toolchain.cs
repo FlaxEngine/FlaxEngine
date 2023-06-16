@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using System.IO;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
 
@@ -133,5 +134,53 @@ namespace Flax.Build
         /// <param name="options">The build options with linking environment.</param>
         /// <param name="outputFilePath">The output file path (result linked file).</param>
         public abstract void LinkFiles(TaskGraph graph, BuildOptions options, string outputFilePath);
+
+        /// <summary>
+        /// C# compilation options container.
+        /// </summary>
+        public struct CSharpOptions
+        {
+            public enum ActionTypes
+            {
+                MonoCompile,
+                MonoLink,
+                GetOutputFiles,
+                GetPlatformTools,
+            };
+
+            public ActionTypes Action;
+            public List<string> InputFiles;
+            public List<string> OutputFiles;
+            public string AssembliesPath;
+            public string ClassLibraryPath;
+            public string PlatformToolsPath;
+            public bool EnableDebugSymbols;
+            public bool EnableToolDebug;
+        }
+
+        /// <summary>
+        /// Compiles the C# assembly with AOT cross-compiler.
+        /// </summary>
+        /// <param name="options">The options.</param>
+        /// <returns>True if failed, or not supported.</returns>
+        public virtual bool CompileCSharp(ref CSharpOptions options)
+        {
+            switch (options.Action)
+            {
+            case CSharpOptions.ActionTypes.GetOutputFiles:
+                foreach (var inputFile in options.InputFiles)
+                {
+                    if (Configuration.AOTMode == DotNetAOTModes.MonoAOTDynamic)
+                        options.OutputFiles.Add(inputFile + Platform.SharedLibraryFileExtension);
+                    else
+                        options.OutputFiles.Add(Path.Combine(Path.GetDirectoryName(inputFile), Platform.StaticLibraryFilePrefix + Path.GetFileName(inputFile) + Platform.StaticLibraryFileExtension));
+                }
+                return false;
+            case CSharpOptions.ActionTypes.GetPlatformTools:
+                options.PlatformToolsPath = Path.Combine(Globals.EngineRoot, "Source/Platforms", Platform.Target.ToString(), "Binaries/Tools");
+                return false;
+            }
+            return true;
+        }
     }
 }

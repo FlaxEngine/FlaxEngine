@@ -10,15 +10,12 @@
 #include "Engine/Platform/IGuiData.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Profiler/ProfilerCPU.h"
-#include "Engine/Scripting/MException.h"
+#include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
-#if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
-#endif
 
-#if USE_MONO
+#if USE_CSHARP
 // Helper macros for calling C# events
 #define BEGIN_INVOKE_EVENT(name, paramsCount) \
 	auto managedInstance = GetManagedInstance(); \
@@ -68,10 +65,11 @@
 		isText = false; data->GetAsFiles(&outputData); \
 	} \
 	params[1] = (void*)&isText; \
-	MonoArray* outputDataMono = mono_array_new(mono_domain_get(), mono_get_string_class(), outputData.Count()); \
+	MArray* outputDataManaged = MCore::Array::New(MCore::TypeCache::String, outputData.Count()); \
+    MString** outputDataManagedPtr = MCore::Array::GetAddress<MString*>(outputDataManaged); \
 	for (int32 i = 0; i < outputData.Count(); i++) \
-		*(MonoString**)mono_array_addr_with_size(outputDataMono, sizeof(MonoString*), i) = MUtils::ToString(outputData[i]); \
-	params[2] = outputDataMono; \
+        outputDataManagedPtr[i] = MUtils::ToString(outputData[i]); \
+	params[2] = outputDataManaged; \
 	MObject* exception = nullptr; \
 	auto resultObj = _method_##name->Invoke(GetManagedInstance(), params, &exception); \
     if (resultObj) \

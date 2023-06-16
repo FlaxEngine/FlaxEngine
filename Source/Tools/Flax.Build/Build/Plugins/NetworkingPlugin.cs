@@ -520,7 +520,7 @@ namespace Flax.Build.Plugins
             if (!binaryModule.Any(module => module.Tags.ContainsKey(Network)))
                 return;
 
-            // Generate netoworking code inside assembly after it's being compiled
+            // Generate networking code inside assembly after it's being compiled
             var assemblyPath = buildTask.ProducedFiles[0];
             var task = graph.Add<Task>();
             task.ProducedFiles.Add(assemblyPath);
@@ -743,7 +743,7 @@ namespace Flax.Build.Plugins
                 }
                 else if (isNetworkReplicated)
                 {
-                    // Generate serializization methods
+                    // Generate serialization methods
                     GenerateSerializer(ref context, type, true, Thunk1);
                     GenerateSerializer(ref context, type, false, Thunk2);
                     context.Modified = true;
@@ -751,7 +751,7 @@ namespace Flax.Build.Plugins
             }
             else if (!isINetworkSerializable && isNetworkReplicated)
             {
-                // Generate serializization methods
+                // Generate serialization methods
                 var addSerializer = new TypeSerializer();
                 addSerializer.Type = type;
                 addSerializer.Serialize = GenerateNativeSerializer(ref context, type, true, Thunk1);
@@ -1552,7 +1552,7 @@ namespace Flax.Build.Plugins
 
             // Generate static method to execute RPC locally
             {
-                var m = new MethodDefinition(method.Name + "_Execute", MethodAttributes.Static | MethodAttributes.Private | MethodAttributes.HideBySig, voidType);
+                var m = new MethodDefinition(method.Name + "_Execute", MethodAttributes.Static | MethodAttributes.Assembly | MethodAttributes.HideBySig, voidType);
                 m.Parameters.Add(new ParameterDefinition("instancePtr", ParameterAttributes.None, intPtrType));
                 m.Parameters.Add(new ParameterDefinition("streamPtr", ParameterAttributes.None, module.ImportReference(intPtrType)));
                 ILProcessor il = m.Body.GetILProcessor();

@@ -115,9 +115,19 @@ API_ENUM() enum class BuildPlatform
     /// </summary>
     API_ENUM(Attributes="EditorDisplay(null, \"Mac x64\")")
     MacOSx64 = 12,
-};
 
-extern FLAXENGINE_API const Char* ToString(const BuildPlatform platform);
+    /// <summary>
+    /// MacOS (ARM64 Apple Silicon)
+    /// </summary>
+    API_ENUM(Attributes="EditorDisplay(null, \"Mac ARM64\")")
+    MacOSARM64 = 13,
+
+    /// <summary>
+    /// iOS (ARM64)
+    /// </summary>
+    API_ENUM(Attributes="EditorDisplay(null, \"iOS ARM64\")")
+    iOSARM64 = 14,
+};
 
 /// <summary>
 /// Game build configuration modes.
@@ -140,7 +150,35 @@ API_ENUM() enum class BuildConfiguration
     Release = 2,
 };
 
+/// <summary>
+/// .NET Ahead of Time Compilation (AOT) modes.
+/// </summary>
+enum class DotNetAOTModes
+{
+    /// <summary>
+    /// AOT is not used.
+    /// </summary>
+    None,
+
+    /// <summary>
+    /// Use .NET Native IL Compiler (shorten as ILC) to convert all C# assemblies in native platform executable binary.
+    /// </summary>
+    ILC,
+
+    /// <summary>
+    /// Use Mono AOT to cross-compile all used C# assemblies into native platform shared libraries.
+    /// </summary>
+    MonoAOTDynamic,
+
+    /// <summary>
+    /// Use Mono AOT to cross-compile all used C# assemblies into native platform static libraries which can be linked into a single shared library.
+    /// </summary>
+    MonoAOTStatic,
+};
+
+extern FLAXENGINE_API const Char* ToString(const BuildPlatform platform);
 extern FLAXENGINE_API const Char* ToString(const BuildConfiguration configuration);
+extern FLAXENGINE_API const Char* ToString(const DotNetAOTModes mode);
 
 #define BUILD_STEP_CANCEL_CHECK if (GameCooker::IsCancelRequested()) return true
 
@@ -188,7 +226,7 @@ public:
     API_FIELD(ReadOnly) String OriginalOutputPath;
 
     /// <summary>
-    /// The output path for data files (Content, Mono, etc.).
+    /// The output path for data files (Content, Dotnet, Mono, etc.).
     /// </summary>
     API_FIELD(ReadOnly) String DataOutputPath;
 
@@ -300,14 +338,17 @@ public:
     /// <summary>
     /// Gets the absolute path to the Platform Data folder that contains the binary files used by the current build configuration.
     /// </summary>
-    /// <returns>The platform data folder path.</returns>
     String GetGameBinariesPath() const;
 
     /// <summary>
     /// Gets the absolute path to the platform folder that contains the dependency files used by the current build configuration.
     /// </summary>
-    /// <returns>The platform deps folder path.</returns>
     String GetPlatformBinariesRoot() const;
+
+    /// <summary>
+    /// Gets the name of the platform and architecture for the current BuildPlatform.
+    /// </summary>
+    void GetBuildPlatformName(const Char*& platform, const Char*& architecture) const;
 
 public:
 
@@ -368,17 +409,15 @@ public:
 
 public:
 
-    void Error(const String& msg);
+    void Error(const StringView& msg);
+
+    void Error(const String& msg)
+    {
+        Error(StringView(msg));
+    }
 
     void Error(const Char* msg)
     {
-        Error(String(msg));
-    }
-
-    template<typename... Args>
-    void Error(const Char* format, const Args& ... args)
-    {
-        const String msg = String::Format(format, args...);
-        Error(msg);
+        Error(StringView(msg));
     }
 };

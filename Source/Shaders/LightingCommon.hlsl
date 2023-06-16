@@ -63,10 +63,9 @@ void GetRadialLightAttenuation(
     float3 toLight,
     float3 L,
     inout float NoL,
-    inout float distanceAttenuation,
-    inout float lightRadiusMask,
-    inout float spotAttenuation)
+    inout float attenuation)
 {
+    // Distance attenuation
     if (lightData.InverseSquared)
     {
         BRANCH
@@ -77,29 +76,31 @@ void GetRadialLightAttenuation(
             float3 l1 = toLight + 0.5 * l01;
             float lengthL0 = length(l0);
             float lengthL1 = length(l1);
-            distanceAttenuation = rcp((lengthL0 * lengthL1 + dot(l0, l1)) * 0.5 + distanceBiasSqr);
+            attenuation = rcp((lengthL0 * lengthL1 + dot(l0, l1)) * 0.5 + distanceBiasSqr);
             NoL = saturate(0.5 * (dot(N, l0) / lengthL0 + dot(N, l1) / lengthL1));
         }
         else
         {
-            distanceAttenuation = rcp(distanceSqr + distanceBiasSqr);
+            attenuation = rcp(distanceSqr + distanceBiasSqr);
             NoL = saturate(dot(N, L));
         }
-        lightRadiusMask = Square(saturate(1 - Square(distanceSqr * Square(lightData.RadiusInv))));
+        attenuation *= Square(saturate(1 - Square(distanceSqr * Square(lightData.RadiusInv))));
     }
     else
     {
-        distanceAttenuation = 1;
+        attenuation = 1;
         NoL = saturate(dot(N, L));
         float3 worldLightVector = toLight * lightData.RadiusInv;
         float t = dot(worldLightVector, worldLightVector);
-        lightRadiusMask = pow(1.0f - saturate(t), lightData.FalloffExponent);
+        attenuation *= pow(1.0f - saturate(t), lightData.FalloffExponent);
     }
 
+    // Spot mask attenuation
     if (isSpotLight)
     {
-        // SpotAngles.x is CosOuterCone, SpotAngles.y is InvCosConeDifference
-        spotAttenuation = Square(saturate((dot(normalize(-L), lightData.Direction) - lightData.SpotAngles.x) * lightData.SpotAngles.y));
+        float cosOuterCone = lightData.SpotAngles.x;
+        float invCosConeDifference = lightData.SpotAngles.y;
+        attenuation *= Square(saturate((dot(normalize(-L), lightData.Direction) - cosOuterCone) * invCosConeDifference));
     }
 }
 
@@ -107,7 +108,6 @@ void GetRadialLightAttenuation(
 float AreaLightSpecular(LightData lightData, float roughness, inout float3 toLight, inout float3 L, float3 V, half3 N)
 {
     float energy = 1;
-
     float m = roughness * roughness;
     float3 r = reflect(-V, N);
     float invDistToLight = rsqrt(dot(toLight, toLight));
@@ -137,7 +137,6 @@ float AreaLightSpecular(LightData lightData, float roughness, inout float3 toLig
     }
 
     L = normalize(toLight);
-
     return energy;
 }
 

@@ -986,6 +986,19 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, "Init", true, typeof(Float4), 1),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 34,
+                Create = (id, context, arch, groupArch) => new StateMachineAny(id, context, arch, groupArch),
+                Title = "Any",
+                Description = "The generic animation states machine state with source transitions from any other state",
+                Flags = NodeFlags.AnimGraph | NodeFlags.NoSpawnViaGUI | NodeFlags.NoSpawnViaPaste,
+                Size = new Float2(100, 0),
+                DefaultValues = new object[]
+                {
+                    Utils.GetEmptyArray<byte>(),
+                },
+            },
         };
     }
 }

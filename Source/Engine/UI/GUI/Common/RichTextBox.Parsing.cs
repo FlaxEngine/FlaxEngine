@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using FlaxEngine.Utilities;
 
 namespace FlaxEngine.GUI
@@ -224,7 +225,7 @@ namespace FlaxEngine.GUI
         private void OnLineAdded(ref ParsingContext context, int lineEnd)
         {
             // Calculate size of the line
-            var textBlocks = Utils.ExtractArrayFromList(_textBlocks);
+            var textBlocks = CollectionsMarshal.AsSpan(_textBlocks);
             var lineOrigin = textBlocks[context.LineStartTextBlockIndex].Bounds.Location;
             var lineSize = Float2.Zero;
             var lineAscender = 0.0f;

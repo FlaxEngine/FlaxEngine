@@ -219,6 +219,16 @@ namespace FlaxEditor.Options
         }
 
         /// <inheritdoc />
+        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        {
+            if (destinationType == typeof(string))
+            {
+                return false;
+            }
+            return base.CanConvertTo(context, destinationType);
+        }
+
+        /// <inheritdoc />
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
             if (value is string str)

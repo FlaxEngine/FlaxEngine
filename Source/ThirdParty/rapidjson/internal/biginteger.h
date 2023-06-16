@@ -34,7 +34,7 @@ public:
     typedef uint64_t Type;
 
     BigInteger(const BigInteger& rhs) : count_(rhs.count_) {
-        std::memcpy(digits_, rhs.digits_, count_ * sizeof(Type));
+        ::memcpy(digits_, rhs.digits_, count_ * sizeof(Type));
     }
 
     explicit BigInteger(uint64_t u) : count_(1) {
@@ -60,7 +60,7 @@ public:
     {
         if (this != &rhs) {
             count_ = rhs.count_;
-            std::memcpy(digits_, rhs.digits_, count_ * sizeof(Type));
+            ::memcpy(digits_, rhs.digits_, count_ * sizeof(Type));
         }
         return *this;
     }

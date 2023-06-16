@@ -24,6 +24,8 @@
 #include "Platforms/Switch/Engine/Engine/SwitchGame.h"
 #elif PLATFORM_MAC
 #include "Mac/MacGame.h"
+#elif PLATFORM_IOS
+#include "iOS/iOSGame.h"
 #else
 #error Missing Game implementation!
 #endif

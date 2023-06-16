@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,13 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_PHYSICS_NX_GEOMETRY
-#define PX_PHYSICS_NX_GEOMETRY
+#ifndef PX_GEOMETRY_H
+#define PX_GEOMETRY_H
 /** \addtogroup geomutils
 @{
 */
@@ -57,8 +55,13 @@ struct PxGeometryType
 		eCAPSULE,
 		eBOX,
 		eCONVEXMESH,
+		ePARTICLESYSTEM,
+		eTETRAHEDRONMESH,
 		eTRIANGLEMESH,
 		eHEIGHTFIELD,
+		eHAIRSYSTEM,
+		eCUSTOM,
+		
 		eGEOMETRY_COUNT,	//!< internal use only!
 		eINVALID = -1		//!< internal use only!
 	};
@@ -72,8 +75,8 @@ about its placement in the world.
 
 \note This is an abstract class.  You cannot create instances directly.  Create an instance of one of the derived classes instead.
 */
-class PxGeometry 
-{ 
+class PxGeometry
+{
 public:
 	/**
 	\brief Returns the type of the geometry.
@@ -81,9 +84,22 @@ public:
 	*/
 	PX_CUDA_CALLABLE PX_FORCE_INLINE PxGeometryType::Enum getType() const	{ return mType; }	
 
+	/**
+	\brief Assignment operator
+	*/
+	PX_INLINE void operator=(const PxGeometry& that)
+	{
+		mType = that.mType;
+	}
+
 protected:
-	PX_CUDA_CALLABLE PX_FORCE_INLINE PxGeometry(PxGeometryType::Enum type) : mType(type) {}
-	PxGeometryType::Enum mType; 
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxGeometry(PxGeometryType::Enum type) : mType(type)	{}
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxGeometry(const PxGeometry& that) : mType(that.mType)	{}
+
+	PxGeometryType::Enum mType;
+
+public:
+	float	mTypePadding;	// PT: padding bytes on x64, used internally
 };
 
 #if !PX_DOXYGEN

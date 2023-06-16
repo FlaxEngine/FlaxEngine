@@ -22,14 +22,20 @@ struct RenderView;
 /// <summary>
 /// Importing model lightmap UVs source
 /// </summary>
-enum class ModelLightmapUVsSource
+API_ENUM(Attributes="HideInEditor") enum class ModelLightmapUVsSource
 {
+    // No lightmap UVs.
     Disable = 0,
+    // Generate lightmap UVs from model geometry.
     Generate,
+    /// The texcoords channel 0.
     Channel0,
+    // The texcoords channel 1.
     Channel1,
+    // The texcoords channel 2.
     Channel2,
-    Channel3
+    // The texcoords channel 3.
+    Channel3,
 };
 
 /// <summary>

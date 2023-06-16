@@ -233,7 +233,7 @@ namespace FlaxEditor.Windows.Assets
                 }
                 if (!materialInstance.IsLoaded || (materialInstance.BaseMaterial && !materialInstance.BaseMaterial.IsLoaded))
                 {
-                    layout.Label("Loading...");
+                    layout.Label("Loading...", TextAlignment.Center);
                     return;
                 }
                 var parameters = materialInstance.Parameters;
@@ -548,14 +548,13 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutSerialize(XmlWriter writer)
         {
-            writer.WriteAttributeString("Split", _split.SplitterValue.ToString());
+            LayoutSerializeSplitter(writer, "Split", _split);
         }
 
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            if (float.TryParse(node.GetAttribute("Split"), out float value1))
-                _split.SplitterValue = value1;
+            LayoutDeserializeSplitter(node, "Split", _split);
         }
 
         /// <inheritdoc />

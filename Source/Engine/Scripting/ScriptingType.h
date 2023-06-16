@@ -65,8 +65,8 @@ struct FLAXENGINE_API ScriptingTypeHandle
     String ToString(bool withAssembly = false) const;
 
     const ScriptingType& GetType() const;
-#if USE_MONO
-    MonoClass* GetMonoClass() const;
+#if USE_CSHARP
+    MClass* GetClass() const;
 #endif
     bool IsSubclassOf(ScriptingTypeHandle c) const;
     bool IsAssignableFrom(ScriptingTypeHandle c) const;

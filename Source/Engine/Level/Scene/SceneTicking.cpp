@@ -121,6 +121,19 @@ void SceneTicking::LateUpdateTickData::TickScripts(const Array<Script*>& scripts
     }
 }
 
+SceneTicking::LateFixedUpdateTickData::LateFixedUpdateTickData()
+    : TickData(64)
+{
+}
+
+void SceneTicking::LateFixedUpdateTickData::TickScripts(const Array<Script*>& scripts)
+{
+    for (auto* script : scripts)
+    {
+        script->OnLateFixedUpdate();
+    }
+}
+
 void SceneTicking::AddScript(Script* obj)
 {
     ASSERT_LOW_LAYER(obj && obj->GetParent() && obj->GetParent()->GetScene());
@@ -130,6 +143,8 @@ void SceneTicking::AddScript(Script* obj)
         Update.AddScript(obj);
     if (obj->_tickLateUpdate)
         LateUpdate.AddScript(obj);
+    if (obj->_tickLateFixedUpdate)
+        LateFixedUpdate.AddScript(obj);
 }
 
 void SceneTicking::RemoveScript(Script* obj)
@@ -141,6 +156,8 @@ void SceneTicking::RemoveScript(Script* obj)
         Update.RemoveScript(obj);
     if (obj->_tickLateUpdate)
         LateUpdate.RemoveScript(obj);
+    if (obj->_tickLateFixedUpdate)
+        LateFixedUpdate.RemoveScript(obj);
 }
 
 void SceneTicking::Clear()
@@ -148,4 +165,5 @@ void SceneTicking::Clear()
     FixedUpdate.Clear();
     Update.Clear();
     LateUpdate.Clear();
+    LateFixedUpdate.Clear();
 }

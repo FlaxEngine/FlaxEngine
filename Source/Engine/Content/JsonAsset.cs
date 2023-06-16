@@ -40,7 +40,7 @@ namespace FlaxEngine
                 Debug.LogError(string.Format("Missing typename of data in Json asset '{0}'.", Path), this);
                 return null;
             }
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var assemblies = Utils.GetAssemblies();
             for (int i = 0; i < assemblies.Length; i++)
             {
                 var assembly = assemblies[i];

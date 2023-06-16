@@ -21,6 +21,7 @@ namespace Flax.Build.Graph
 
         private readonly List<BuildResultCache> _prevBuildCache = new List<BuildResultCache>();
         private readonly List<string> _prevBuildCacheFiles = new List<string>();
+        private readonly Dictionary<string, int> _prevBuildCacheFileIndices = new Dictionary<string, int>();
 
         /// <summary>
         /// The workspace folder of the task graph.
@@ -87,7 +88,7 @@ namespace Flax.Build.Graph
             else
             {
                 task.CommandPath = "cp";
-                task.CommandArguments = string.Format("\'{0}\' \'{1}\'", srcFile, outputPath);
+                task.CommandArguments = string.Format("\"{0}\" \"{1}\"", srcFile, outputPath);
             }
 
             Tasks.Add(task);
@@ -297,9 +298,10 @@ namespace Flax.Build.Graph
                 var lastWrite = new DateTime(reader.ReadInt64());
 
                 var isValid = true;
-                if (File.Exists(file))
+                var cacheFile = true;
+                if (FileCache.Exists(file))
                 {
-                    if (File.GetLastWriteTime(file) > lastWrite)
+                    if (FileCache.GetLastWriteTime(file) > lastWrite)
                     {
                         isValid = false;
                     }
@@ -308,10 +310,16 @@ namespace Flax.Build.Graph
                 {
                     isValid = false;
                 }
+                else
+                    cacheFile = false;
 
                 filesDates[i] = lastWrite;
                 filesValid[i] = isValid;
                 _prevBuildCacheFiles.Add(file);
+                _prevBuildCacheFileIndices.Add(file, i);
+
+                if (!isValid || !cacheFile)
+                    FileCache.FileRemoveFromCache(file);
             }
 
             int taskCount = reader.ReadInt32();
@@ -468,14 +476,20 @@ namespace Flax.Build.Graph
                 fileIndices.Clear();
                 foreach (var file in files)
                 {
-                    int fileIndex = _prevBuildCacheFiles.IndexOf(file);
-                    if (fileIndex == -1)
+                    if (!_prevBuildCacheFileIndices.TryGetValue(file, out int fileIndex))
                     {
                         fileIndex = _prevBuildCacheFiles.Count;
                         _prevBuildCacheFiles.Add(file);
+                        _prevBuildCacheFileIndices.Add(file, fileIndex);
                     }
 
                     fileIndices.Add(fileIndex);
+                }
+
+                if (!task.HasValidCachedResults)
+                {
+                    foreach (var file in task.ProducedFiles)
+                        FileCache.FileRemoveFromCache(file);
                 }
 
                 _prevBuildCache.Add(new BuildResultCache
@@ -501,8 +515,8 @@ namespace Flax.Build.Graph
 
                     // Last File Write
                     DateTime lastWrite;
-                    if (File.Exists(file))
-                        lastWrite = File.GetLastWriteTime(file);
+                    if (FileCache.Exists(file))
+                        lastWrite = FileCache.GetLastWriteTime(file);
                     else
                         lastWrite = DateTime.MinValue;
                     writer.Write(lastWrite.Ticks);

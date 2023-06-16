@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Flax.Build.NativeCpp;
@@ -58,6 +59,26 @@ namespace Flax.Build.Bindings
         public static event ParseMemberTagDelegate ParseMemberTag;
         public static event ParseFunctionParameterTagDelegate ParseFunctionParameterTag;
         public static ModuleInfo CurrentModule;
+
+        private static List<StringBuilder> _strignBuilderCache;
+
+        public static StringBuilder GetStringBuilder()
+        {
+            if (_strignBuilderCache == null || _strignBuilderCache.Count == 0)
+                return new StringBuilder();
+            var idx = _strignBuilderCache.Count - 1;
+            var result = _strignBuilderCache[idx];
+            _strignBuilderCache.RemoveAt(idx);
+            result.Clear();
+            return result;
+        }
+
+        public static void PutStringBuilder(StringBuilder value)
+        {
+            if (_strignBuilderCache == null)
+                _strignBuilderCache = new List<StringBuilder>();
+            _strignBuilderCache.Add(value);
+        }
 
         public static ModuleInfo ParseModule(BuildData buildData, Module module, BuildOptions moduleOptions = null)
         {

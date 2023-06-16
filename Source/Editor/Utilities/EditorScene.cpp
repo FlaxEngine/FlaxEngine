@@ -20,4 +20,6 @@ void EditorScene::Update()
         e.Call();
     for (auto& e : Ticking.FixedUpdate.Ticks)
         e.Call();
+    for (auto& e : Ticking.LateFixedUpdate.Ticks)
+        e.Call();
 }

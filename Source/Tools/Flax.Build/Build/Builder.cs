@@ -340,6 +340,7 @@ namespace Flax.Build
                                             BuildTargetNativeCppBindingsOnly(rules, graph, target, buildContext, platform, architecture, configuration);
                                             break;
                                         case TargetType.DotNet:
+                                        case TargetType.DotNetCore:
                                             BuildTargetDotNet(rules, graph, target, platform, configuration);
                                             break;
                                         default: throw new ArgumentOutOfRangeException();
@@ -360,6 +361,7 @@ namespace Flax.Build
                                         BuildTargetNativeCpp(rules, graph, target, buildContext, toolchain, configuration);
                                         break;
                                     case TargetType.DotNet:
+                                    case TargetType.DotNetCore:
                                         BuildTargetDotNet(rules, graph, target, toolchain.Platform, configuration);
                                         break;
                                     default: throw new ArgumentOutOfRangeException();

@@ -54,8 +54,6 @@ class AudioListener;
 class AnimatedModel;
 class BoneSocket;
 class Decal;
-class UICanvas;
-class UIControl;
 
 // Default extension for JSON scene files
 #define DEFAULT_SCENE_EXTENSION TEXT("scene")

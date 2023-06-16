@@ -12,9 +12,10 @@
 #include "Engine/Core/Cache.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
-#include "Engine/Scripting/ManagedSerialization.h"
+#include "Engine/Scripting/Internal/ManagedSerialization.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingObject.h"
+#include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 
@@ -359,22 +360,22 @@ void ReadStream::Read(Variant& data)
             // Json
             StringAnsi json;
             ReadStringAnsi(&json, -71);
-#if USE_MONO
-            MCore::AttachThread();
-            MonoClass* klass = MUtils::GetClass(data.Type);
+#if USE_CSHARP
+            MCore::Thread::Attach();
+            MClass* klass = MUtils::GetClass(data.Type);
             if (!klass)
             {
                 LOG(Error, "Invalid variant type {0}", data.Type);
                 return;
             }
-            MonoObject* obj = mono_object_new(mono_domain_get(), klass);
+            MObject* obj = MCore::Object::New(klass);
             if (!obj)
             {
                 LOG(Error, "Failed to managed instance of the variant type {0}", data.Type);
                 return;
             }
-            if (!mono_class_is_valuetype(klass))
-                mono_runtime_object_init(obj);
+            if (!klass->IsValueType())
+                MCore::Object::Init(obj);
             ManagedSerialization::Deserialize(json, obj);
             if (data.Type.Type == VariantType::ManagedObject)
                 data.SetManagedObject(obj);
@@ -900,18 +901,18 @@ void WriteStream::Write(const Variant& data)
     case VariantType::ManagedObject:
     case VariantType::Structure:
     {
-#if USE_MONO
-        MonoObject* obj;
+#if USE_CSHARP
+        MObject* obj;
         if (data.Type.Type == VariantType::Structure)
             obj = MUtils::BoxVariant(data);
         else
-            obj = (MonoObject*)data;
+            obj = (MObject*)data;
         if (obj)
         {
             WriteByte(1);
             rapidjson_flax::StringBuffer json;
             CompactJsonWriter writerObj(json);
-            MCore::AttachThread();
+            MCore::Thread::Attach();
             ManagedSerialization::Serialize(writerObj, obj);
             WriteStringAnsi(StringAnsiView(json.GetString(), (int32)json.GetSize()), -71);
         }

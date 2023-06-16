@@ -63,9 +63,10 @@ namespace Flax.Deps.Dependencies
                 Downloader.DownloadFileFromUrlToPath("https://curl.haxx.se/download/curl-7.64.1.zip", packagePath);
             using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
             {
-                if (!Directory.Exists(root))
+                var newRoot = Path.Combine(root, archive.Entries.First().FullName);
+                if (!Directory.Exists(newRoot))
                     archive.ExtractToDirectory(root);
-                root = Path.Combine(root, archive.Entries.First().FullName);
+                root = newRoot;
             }
 
             foreach (var platform in options.Platforms)
@@ -114,7 +115,7 @@ namespace Flax.Deps.Dependencies
                     var buildDir = Path.Combine(root, "build");
                     SetupDirectory(buildDir, true);
                     Utilities.Run("chmod", "+x configure", null, root, Utilities.RunOptions.ThrowExceptionOnError);
-                    Utilities.Run(Path.Combine(root, "configure"), string.Join(" ", settings) + " --prefix=\"" + buildDir + "\"", null, root, Utilities.RunOptions.None, envVars);
+                    Utilities.Run(Path.Combine(root, "configure"), string.Join(" ", settings) + " --prefix=\"" + buildDir + "\"", null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
                     Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError);
                     Utilities.Run("make", "install", null, root, Utilities.RunOptions.ThrowExceptionOnError);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
@@ -136,28 +137,35 @@ namespace Flax.Deps.Dependencies
                         "--enable-static",
                         "-disable-ldap --disable-sspi --disable-ftp --disable-file --disable-dict --disable-telnet --disable-tftp --disable-rtsp --disable-pop3 --disable-imap --disable-smtp --disable-gopher --disable-smb",
                     };
-                    var arch = "x86_64";
-                    var archName = arch + "-apple-darwin18";
-                    var compilerFlags = string.Format("-mmacosx-version-min={0} -arch {1}", Configuration.MacOSXMinVer, arch);
-                    var envVars = new Dictionary<string, string>
+                    foreach (var architecture in new []{ TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
-                        { "CFLAGS", compilerFlags },
-                        { "CXXFLAGS", compilerFlags },
-                        { "CPPFLAGS", compilerFlags },
-                        { "ARCH", arch },
-                        { "SDK", "macosx" },
-                        { "DEPLOYMENT_TARGET", Configuration.MacOSXMinVer },
-                    };
-                    var buildDir = Path.Combine(root, "build");
-                    SetupDirectory(buildDir, true);
-                    Utilities.Run("chmod", "+x configure", null, root, Utilities.RunOptions.ThrowExceptionOnError);
-                    Utilities.Run("chmod", "+x install-sh", null, root, Utilities.RunOptions.ThrowExceptionOnError);
-                    Utilities.Run(Path.Combine(root, "configure"), string.Join(" ", settings) + " --host=" + archName + " --prefix=\"" + buildDir + "\"", null, root, Utilities.RunOptions.None, envVars);
-                    Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError);
-                    Utilities.Run("make", "install", null, root, Utilities.RunOptions.ThrowExceptionOnError);
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    var filename = "libcurl.a";
-                    Utilities.FileCopy(Path.Combine(buildDir, "lib", filename), Path.Combine(depsFolder, filename));
+                        var arch = GetAppleArchName(architecture);
+                        var archName = arch + "-apple-darwin19";
+                        if (architecture == TargetArchitecture.ARM64)
+                            archName = "arm-apple-darwin19"; // for configure
+                        var compilerFlags = string.Format("-mmacosx-version-min={0} -arch {1}", Configuration.MacOSXMinVer, arch);
+                        var envVars = new Dictionary<string, string>
+                        {
+                            { "CC", "clang" }, 
+                            { "CXX", "clang" },
+                            { "CFLAGS", compilerFlags },
+                            { "CXXFLAGS", compilerFlags },
+                            { "CPPFLAGS", compilerFlags },
+                            { "ARCH", arch },
+                            { "SDK", "macosx" },
+                            { "DEPLOYMENT_TARGET", Configuration.MacOSXMinVer },
+                        };
+                        var buildDir = Path.Combine(root, "build");
+                        SetupDirectory(buildDir, true);
+                        Utilities.Run("chmod", "+x configure", null, root, Utilities.RunOptions.ThrowExceptionOnError);
+                        Utilities.Run("chmod", "+x install-sh", null, root, Utilities.RunOptions.ThrowExceptionOnError);
+                        Utilities.Run(Path.Combine(root, "configure"), string.Join(" ", settings) + " --host=" + archName + " --prefix=\"" + buildDir + "\"", null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
+                        Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError);
+                        Utilities.Run("make", "install", null, root, Utilities.RunOptions.ThrowExceptionOnError);
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        var filename = "libcurl.a";
+                        Utilities.FileCopy(Path.Combine(buildDir, "lib", filename), Path.Combine(depsFolder, filename));
+                    }
                     break;
                 }
                 }

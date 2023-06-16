@@ -26,7 +26,7 @@
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MDomain.h"
-#include "Engine/Scripting/MException.h"
+#include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Serialization/JsonTools.h"
@@ -138,6 +138,7 @@ public:
     void Update() override;
     void LateUpdate() override;
     void FixedUpdate() override;
+    void LateFixedUpdate() override;
     void Dispose() override;
 };
 
@@ -242,95 +243,59 @@ void LayersAndTagsSettings::Apply()
     }
 }
 
-void LevelService::Update()
-{
-    PROFILE_CPU_NAMED("Level::Update");
-
-    ScopeLock lock(Level::ScenesLock);
-    auto& scenes = Level::Scenes;
-
-    // Update all actors
-    if (!Time::GetGamePaused() && Level::TickEnabled)
-    {
-        for (int32 i = 0; i < scenes.Count(); i++)
-        {
-            if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.Update.Tick();
-        }
+#define TICK_LEVEL(tickingStage, name) \
+    PROFILE_CPU_NAMED(name); \
+    ScopeLock lock(Level::ScenesLock); \
+    auto& scenes = Level::Scenes; \
+    if (!Time::GetGamePaused() && Level::TickEnabled) \
+    { \
+        for (int32 i = 0; i < scenes.Count(); i++) \
+        { \
+            if (scenes[i]->GetIsActive()) \
+                scenes[i]->Ticking.tickingStage.Tick(); \
+        } \
     }
 #if USE_EDITOR
-    else if (!Editor::IsPlayMode)
-    {
-        // Run event for script executed in editor
-        for (int32 i = 0; i < scenes.Count(); i++)
-        {
-            if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.Update.TickExecuteInEditor();
-        }
+#define TICK_LEVEL_EDITOR(tickingStage) \
+    else if (!Editor::IsPlayMode) \
+    { \
+        for (int32 i = 0; i < scenes.Count(); i++) \
+        { \
+            if (scenes[i]->GetIsActive()) \
+                scenes[i]->Ticking.tickingStage.TickExecuteInEditor(); \
+        } \
     }
+#else
+#define TICK_LEVEL_EDITOR(tickingStage)
 #endif
+
+void LevelService::Update()
+{
+    TICK_LEVEL(Update, "Level::Update")
+    TICK_LEVEL_EDITOR(Update)
 }
 
 void LevelService::LateUpdate()
 {
-    PROFILE_CPU_NAMED("Level::LateUpdate");
-
-    ScopeLock lock(Level::ScenesLock);
-    auto& scenes = Level::Scenes;
-
-    // Update all actors
-    if (!Time::GetGamePaused() && Level::TickEnabled)
-    {
-        for (int32 i = 0; i < scenes.Count(); i++)
-        {
-            if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.LateUpdate.Tick();
-        }
-    }
-#if USE_EDITOR
-    else if (!Editor::IsPlayMode)
-    {
-        // Run event for script executed in editor
-        for (int32 i = 0; i < scenes.Count(); i++)
-        {
-            if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.LateUpdate.TickExecuteInEditor();
-        }
-    }
-#endif
-
-    // Flush actions
+    TICK_LEVEL(LateUpdate, "Level::LateUpdate")
+    TICK_LEVEL_EDITOR(LateUpdate)
     flushActions();
 }
 
 void LevelService::FixedUpdate()
 {
-    PROFILE_CPU_NAMED("Level::FixedUpdate");
-
-    ScopeLock lock(Level::ScenesLock);
-    auto& scenes = Level::Scenes;
-
-    // Update all actors
-    if (!Time::GetGamePaused() && Level::TickEnabled)
-    {
-        for (int32 i = 0; i < scenes.Count(); i++)
-        {
-            if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.FixedUpdate.Tick();
-        }
-    }
-#if USE_EDITOR
-    else if (!Editor::IsPlayMode)
-    {
-        // Run event for script executed in editor
-        for (int32 i = 0; i < scenes.Count(); i++)
-        {
-            if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.FixedUpdate.TickExecuteInEditor();
-        }
-    }
-#endif
+    TICK_LEVEL(FixedUpdate, "Level::FixedUpdate")
+    TICK_LEVEL_EDITOR(FixedUpdate)
 }
+
+void LevelService::LateFixedUpdate()
+{
+    TICK_LEVEL(LateFixedUpdate, "Level::LateFixedUpdate")
+    TICK_LEVEL_EDITOR(LateFixedUpdate)
+}
+
+#undef TICK_LEVEL
+#undef TICK_LEVEL_EDITOR
 
 void LevelService::Dispose()
 {

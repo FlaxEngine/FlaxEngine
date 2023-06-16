@@ -22,6 +22,8 @@
 #include "Platforms/Switch/Engine/Platform/SwitchFileSystem.h"
 #elif PLATFORM_MAC
 #include "Mac/MacFileSystem.h"
+#elif PLATFORM_IOS
+#include "iOS/iOSFileSystem.h"
 #else
 #error Missing File System implementation!
 #endif

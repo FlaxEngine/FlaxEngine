@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -366,7 +367,7 @@ namespace FlaxEditor.Windows
                         // Try to add the line for multi-line logs
                         if (_entries.Count != 0 && !line.StartsWith("======"))
                         {
-                            ref var last = ref Utils.ExtractArrayFromList(_entries)[_entries.Count - 1];
+                            ref var last = ref CollectionsMarshal.AsSpan(_entries)[_entries.Count - 1];
                             last.Message += '\n';
                             last.Message += line;
                         }
@@ -445,7 +446,7 @@ namespace FlaxEditor.Windows
             int logCount;
             do
             {
-                logCount = Editor.Internal_ReadOutputLogs(_outMessages, _outLogTypes, _outLogTimes);
+                logCount = Editor.Internal_ReadOutputLogs(ref _outMessages, ref _outLogTypes, ref _outLogTimes, OutCapacity);
 
                 for (int i = 0; i < logCount; i++)
                 {
@@ -471,7 +472,7 @@ namespace FlaxEditor.Windows
                 _output.ErrorStyle.Font.GetFont();
 
                 // Generate the output log
-                var entries = Utils.ExtractArrayFromList(_entries);
+                Span<Entry> entries = CollectionsMarshal.AsSpan(_entries);
                 var searchQuery = _searchBox.Text;
                 for (int i = _textBufferCount; i < _entries.Count; i++)
                 {

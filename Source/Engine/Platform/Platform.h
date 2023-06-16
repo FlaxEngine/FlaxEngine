@@ -28,6 +28,8 @@
 #include "Platforms/Switch/Engine/Platform/SwitchPlatform.h"
 #elif PLATFORM_MAC
 #include "Mac/MacPlatform.h"
+#elif PLATFORM_IOS
+#include "iOS/iOSPlatform.h"
 #else
 #error Missing Platform implementation!
 #endif

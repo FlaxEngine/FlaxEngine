@@ -71,6 +71,8 @@ IMPLEMENT_ENGINE_SETTINGS_GETTER(AndroidPlatformSettings, AndroidPlatform);
 IMPLEMENT_ENGINE_SETTINGS_GETTER(SwitchPlatformSettings, SwitchPlatform);
 #elif PLATFORM_MAC
 IMPLEMENT_ENGINE_SETTINGS_GETTER(MacPlatformSettings, MacPlatform);
+#elif PLATFORM_IOS
+IMPLEMENT_ENGINE_SETTINGS_GETTER(iOSPlatformSettings, iOSPlatform);
 #else
 #error Unknown platform
 #endif
@@ -254,6 +256,7 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(SwitchPlatform);
     DESERIALIZE(PS5Platform);
     DESERIALIZE(MacPlatform);
+    DESERIALIZE(iOSPlatform);
 }
 
 void LayersAndTagsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)

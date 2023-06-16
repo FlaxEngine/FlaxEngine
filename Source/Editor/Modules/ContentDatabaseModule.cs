@@ -8,6 +8,7 @@ using FlaxEditor.Content;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.Scripting;
 using FlaxEngine;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Modules
 {
@@ -19,6 +20,7 @@ namespace FlaxEditor.Modules
     {
         private bool _enableEvents;
         private bool _isDuringFastSetup;
+        private bool _rebuildFlag;
         private int _itemsCreated;
         private int _itemsDeleted;
         private readonly HashSet<MainContentTreeNode> _dirtyNodes = new HashSet<MainContentTreeNode>();
@@ -39,9 +41,9 @@ namespace FlaxEditor.Modules
         public readonly List<ProjectTreeNode> Projects = new List<ProjectTreeNode>();
 
         /// <summary>
-        /// The list with all content items proxy objects.
+        /// The list with all content items proxy objects. Use <see cref="AddProxy"/> and <see cref="RemoveProxy"/> to modify this or <see cref="Rebuild"/> to refresh database when adding new item proxy types.
         /// </summary>
-        public readonly List<ContentProxy> Proxy = new List<ContentProxy>(64);
+        public readonly List<ContentProxy> Proxy = new List<ContentProxy>(128);
 
         /// <summary>
         /// Occurs when new items is added to the workspace content database.
@@ -57,6 +59,16 @@ namespace FlaxEditor.Modules
         /// Occurs when workspace has been modified.
         /// </summary>
         public event Action WorkspaceModified;
+
+        /// <summary>
+        /// Occurs when workspace has will be rebuilt.
+        /// </summary>
+        public event Action WorkspaceRebuilding;
+
+        /// <summary>
+        /// Occurs when workspace has been rebuilt.
+        /// </summary>
+        public event Action WorkspaceRebuilt;
 
         /// <summary>
         /// Gets the amount of created items.
@@ -707,6 +719,100 @@ namespace FlaxEditor.Modules
                 WorkspaceModified?.Invoke();
         }
 
+        /// <summary>
+        /// Adds the proxy.
+        /// </summary>
+        /// <param name="proxy">The proxy type.</param>
+        public void AddProxy(ContentProxy proxy)
+        {
+            Proxy.Insert(0, proxy);
+            Rebuild();
+        }
+
+        /// <summary>
+        /// Removes the proxy.
+        /// </summary>
+        /// <param name="proxy">The proxy type.</param>
+        public void RemoveProxy(ContentProxy proxy)
+        {
+            Proxy.Remove(proxy);
+            Rebuild();
+        }
+
+        /// <summary>
+        /// Rebuilds the whole database (eg. when adding custom item types from plugin).
+        /// </summary>
+        /// <param name="immediate">True if rebuild num, otherwise will be scheduled for the next editor update (eg. to batch multiple rebuilds within a frame).</param>
+        public void Rebuild(bool immediate = false)
+        {
+            _rebuildFlag = true;
+            if (immediate)
+                RebuildInternal();
+        }
+
+        private void RebuildInternal()
+        {
+            var enableEvents = _enableEvents;
+            if (enableEvents)
+            {
+                WorkspaceRebuilding?.Invoke();
+            }
+
+            Profiler.BeginEvent("ContentDatabase.Rebuild");
+            var startTime = Platform.TimeSeconds;
+            _rebuildFlag = false;
+            _enableEvents = false;
+
+            // Load all folders
+            // TODO: we should create async task for gathering content and whole workspace contents if it takes too long
+            // TODO: create progress bar in content window and after end we should enable events and update it
+            _isDuringFastSetup = true;
+            var startItems = _itemsCreated;
+            foreach (var project in Projects)
+            {
+                if (project.Content != null)
+                    LoadFolder(project.Content, true);
+                if (project.Source != null)
+                    LoadFolder(project.Source, true);
+            }
+            _isDuringFastSetup = false;
+
+            _enableEvents = enableEvents;
+            var endTime = Platform.TimeSeconds;
+            Editor.Log(string.Format("Project database created in {0} ms. Items count: {1}", (int)((endTime - startTime) * 1000.0), _itemsCreated - startItems));
+            Profiler.EndEvent();
+
+            if (enableEvents)
+            {
+                WorkspaceModified?.Invoke();
+                WorkspaceRebuilt?.Invoke();
+            }
+        }
+
+        private void Dispose(ContentItem item)
+        {
+            if (_enableEvents)
+                ItemRemoved?.Invoke(item);
+
+            if (item is ContentFolder folder)
+            {
+                if (folder.Children.Count > 0)
+                {
+                    var children = folder.Children.ToArray();
+                    for (int i = 0; i < children.Length; i++)
+                        Dispose(children[i]);
+                }
+                
+                item.ParentFolder = null;
+                folder.Node.Dispose();
+            }
+            else
+            {
+                item.ParentFolder = null;
+                item.Dispose();
+            }
+        }
+
         private void LoadFolder(ContentTreeNode node, bool checkSubDirs)
         {
             if (node == null)
@@ -716,9 +822,18 @@ namespace FlaxEditor.Modules
             var folder = node.Folder;
             var path = folder.Path;
 
-            // Check for missing files/folders (skip it during fast tree setup)
-            if (!_isDuringFastSetup)
+            if (_isDuringFastSetup)
             {
+                // Remove any spawned children
+                for (int i = 0; i < folder.Children.Count; i++)
+                {
+                    Dispose(folder.Children[i]);
+                    i--;
+                }
+            }
+            else
+            {
+                // Check for missing files/folders (skip it during fast tree setup)
                 for (int i = 0; i < folder.Children.Count; i++)
                 {
                     var child = folder.Children[i];
@@ -946,7 +1061,8 @@ namespace FlaxEditor.Modules
             Proxy.Add(new SettingsProxy(typeof(UWPPlatformSettings), Editor.Instance.Icons.UWPSettings128));
             Proxy.Add(new SettingsProxy(typeof(LinuxPlatformSettings), Editor.Instance.Icons.LinuxSettings128));
             Proxy.Add(new SettingsProxy(typeof(AndroidPlatformSettings), Editor.Instance.Icons.AndroidSettings128));
-            Proxy.Add(new SettingsProxy(typeof(MacPlatformSettings), Editor.Instance.Icons.Document128));
+            Proxy.Add(new SettingsProxy(typeof(MacPlatformSettings), Editor.Instance.Icons.AppleSettings128));
+            Proxy.Add(new SettingsProxy(typeof(iOSPlatformSettings), Editor.Instance.Icons.AppleSettings128));
 
             var typePS4PlatformSettings = TypeUtils.GetManagedType(GameSettings.PS4PlatformSettingsTypename);
             if (typePS4PlatformSettings != null)
@@ -972,7 +1088,6 @@ namespace FlaxEditor.Modules
             Proxy.Add(new GenericJsonAssetProxy());
 
             // Create content folders nodes
-            var startTime = Platform.TimeSeconds;
             Engine = new ProjectTreeNode(Editor.EngineProject)
             {
                 Content = new MainContentTreeNode(Engine, ContentFolderType.Content, Globals.EngineContentFolder),
@@ -996,25 +1111,10 @@ namespace FlaxEditor.Modules
                 LoadProjects(Game.Project);
             }
 
-            // Load all folders
-            // TODO: we should create async task for gathering content and whole workspace contents if it takes too long
-            // TODO: create progress bar in content window and after end we should enable events and update it
-            _isDuringFastSetup = true;
-            foreach (var project in Projects)
-            {
-                if (project.Content != null)
-                    LoadFolder(project.Content, true);
-                if (project.Source != null)
-                    LoadFolder(project.Source, true);
-            }
-            _isDuringFastSetup = false;
+            RebuildInternal();
 
-            // Enable events
-            _enableEvents = true;
             Editor.ContentImporting.ImportFileEnd += ContentImporting_ImportFileDone;
-            var endTime = Platform.TimeSeconds;
-
-            Editor.Log(string.Format("Project database created in {0} ms. Items count: {1}", (int)((endTime - startTime) * 1000.0), _itemsCreated));
+            _enableEvents = true;
         }
 
         private void ContentImporting_ImportFileDone(IFileEntryAction obj, bool failed)
@@ -1100,6 +1200,10 @@ namespace FlaxEditor.Modules
                 }
                 _dirtyNodes.Clear();
             }
+
+            // Lazy-rebuilds
+            if (_rebuildFlag)
+                RebuildInternal();
         }
 
         /// <inheritdoc />

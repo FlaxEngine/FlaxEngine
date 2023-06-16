@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,13 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_PHYSICS_NX_AGGREGATE
-#define PX_PHYSICS_NX_AGGREGATE
+#ifndef PX_AGGREGATE_H
+#define PX_AGGREGATE_H
 
 /** \addtogroup physics
 @{
@@ -38,14 +36,44 @@
 #include "PxPhysXConfig.h"
 #include "common/PxBase.h"
 
-
 #if !PX_DOXYGEN
 namespace physx
 {
 #endif
 
 class PxActor;
-class PxBVHStructure;
+class PxBVH;
+class PxScene;
+
+	struct PxAggregateType
+	{
+		enum Enum
+		{
+			eGENERIC	= 0,	//!< Aggregate will contain various actors of unspecified types
+			eSTATIC		= 1,	//!< Aggregate will only contain static actors
+			eKINEMATIC	= 2		//!< Aggregate will only contain kinematic actors
+		};
+	};
+
+	// PxAggregateFilterHint is used for more efficient filtering of aggregates outside of the broadphase.
+	// It is a combination of a PxAggregateType and a self-collision bit.
+	typedef PxU32	PxAggregateFilterHint;
+
+	PX_CUDA_CALLABLE PX_FORCE_INLINE	PxAggregateFilterHint	PxGetAggregateFilterHint(PxAggregateType::Enum type, bool enableSelfCollision)
+	{
+		const PxU32 selfCollisionBit = enableSelfCollision ? 1 : 0;
+		return PxAggregateFilterHint((PxU32(type)<<1)|selfCollisionBit);
+	}
+
+	PX_CUDA_CALLABLE PX_FORCE_INLINE	PxU32					PxGetAggregateSelfCollisionBit(PxAggregateFilterHint hint)
+	{
+		return hint & 1;
+	}
+
+	PX_CUDA_CALLABLE PX_FORCE_INLINE	PxAggregateType::Enum	PxGetAggregateType(PxAggregateFilterHint hint)
+	{
+		return PxAggregateType::Enum(hint>>1);
+	}
 
 /**
 \brief Class to aggregate actors into a single broad-phase entry.
@@ -66,7 +94,6 @@ large number of attached shapes).
 
 @see PxActor, PxPhysics.createAggregate
 */
-
 class PxAggregate : public PxBase
 {
 public:
@@ -79,7 +106,7 @@ public:
 	to delete both the PxAggregate and its actors, it is best to release the actors first, then release
 	the PxAggregate when it is empty.
 	*/
-	virtual	void		release()				= 0;
+	virtual	void	release()	= 0;
 
 	/**
 	\brief Adds an actor to the aggregate object.
@@ -92,17 +119,16 @@ public:
 	If the actor already belongs to a scene, a warning is output and the call is ignored. You need to remove
 	the actor from the scene first, before adding it to the aggregate.
 
-	\note When BVHStructure is provided the actor shapes are grouped together. 
+	\note When a BVH is provided the actor shapes are grouped together. 
 	The scene query pruning structure inside PhysX SDK will store/update one
 	bound per actor. The scene queries against such an actor will query actor
-	bounds and then make a local space query against the provided BVH structure, which is in
-	actor's local space.
+	bounds and then make a local space query against the provided BVH, which is in actor's local space.
 
-	\param	[in] actor The actor that should be added to the aggregate
-	\param	[in] bvhStructure BVHStructure for actor shapes.
+	\param	[in] actor	The actor that should be added to the aggregate
+	\param	[in] bvh	BVH for actor shapes.
 	return	true if success
 	*/
-	virtual	bool		addActor(PxActor& actor, const PxBVHStructure* bvhStructure = NULL)		= 0;
+	virtual	bool	addActor(PxActor& actor, const PxBVH* bvh = NULL)	= 0;
 
 	/**
 	\brief Removes an actor from the aggregate object.
@@ -115,7 +141,7 @@ public:
 	\param	[in] actor The actor that should be removed from the aggregate
 	return	true if success
 	*/
-	virtual	bool		removeActor(PxActor& actor)		= 0;
+	virtual	bool	removeActor(PxActor& actor)		= 0;
 
 	/**
 	\brief Adds an articulation to the aggregate object.
@@ -131,20 +157,20 @@ public:
 	\param	[in] articulation The articulation that should be added to the aggregate
 	return	true if success
 	*/
-	virtual	bool		addArticulation(PxArticulationBase& articulation) = 0;
+	virtual	bool	addArticulation(PxArticulationReducedCoordinate& articulation) = 0;
 
 	/**
 	\brief Removes an articulation from the aggregate object.
 
 	A warning is output if the incoming articulation does not belong to the aggregate. Otherwise the articulation is
 	removed from the aggregate. If the aggregate belongs to a scene, the articulation is reinserted in that
-	scene. If you intend to delete the articulation, it is best to call #PxArticulation::release() directly. That way
+	scene. If you intend to delete the articulation, it is best to call #PxArticulationReducedCoordinate::release() directly. That way
 	the articulation will be automatically removed from its aggregate (if any) and not reinserted in a scene.
 
 	\param	[in] articulation The articulation that should be removed from the aggregate
 	return	true if success
 	*/
-	virtual	bool		removeArticulation(PxArticulationBase& articulation) = 0;
+	virtual	bool	removeArticulation(PxArticulationReducedCoordinate& articulation) = 0;
 
 	/**
 	\brief Returns the number of actors contained in the aggregate.
@@ -155,16 +181,29 @@ public:
 
 	@see PxActor getActors()
 	*/
-	virtual PxU32		getNbActors() const = 0;
+	virtual PxU32	getNbActors() const = 0;
 
 	/**
 	\brief Retrieves max amount of actors that can be contained in the aggregate.
 
-	\return Max aggregate size. 
+	\note PxAggregate now supports an arbitrary number of actors. This method return PX_MAX_U32 and will be
+	removed in a future release.
+
+	\return Max actor size. 
+
+	@see PxPhysics::createAggregate()
+	@deprecated
+	*/
+	PX_DEPRECATED virtual	PxU32	getMaxNbActors() const = 0;
+
+	/**
+	\brief Retrieves max amount of shapes that can be contained in the aggregate.
+
+	\return Max shape size.
 
 	@see PxPhysics::createAggregate()
 	*/
-	virtual	PxU32		getMaxNbActors() const = 0;
+	virtual	PxU32	getMaxNbShapes() const = 0;
 
 	/**
 	\brief Retrieve all actors contained in the aggregate.
@@ -178,7 +217,7 @@ public:
 
 	@see PxShape getNbShapes()
 	*/
-	virtual PxU32		getActors(PxActor** userBuffer, PxU32 bufferSize, PxU32 startIndex=0) const = 0;
+	virtual PxU32	getActors(PxActor** userBuffer, PxU32 bufferSize, PxU32 startIndex=0) const = 0;
 
 	/**
 	\brief Retrieves the scene which this aggregate belongs to.
@@ -198,8 +237,10 @@ public:
 
 	virtual	const char*	getConcreteTypeName() const	{ return "PxAggregate"; }
 
+			void*		userData;	//!< user can assign this to whatever, usually to create a 1:1 relationship with a user object.
+
 protected:
-	PX_INLINE			PxAggregate(PxType concreteType, PxBaseFlags baseFlags) : PxBase(concreteType, baseFlags) {}
+	PX_INLINE			PxAggregate(PxType concreteType, PxBaseFlags baseFlags) : PxBase(concreteType, baseFlags), userData(NULL)  {}
 	PX_INLINE			PxAggregate(PxBaseFlags baseFlags) : PxBase(baseFlags) {}
 	virtual				~PxAggregate() {}
 	virtual	bool		isKindOf(const char* name) const { return !::strcmp("PxAggregate", name) || PxBase::isKindOf(name); }

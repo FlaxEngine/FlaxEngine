@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using FlaxEditor.Scripting;
 using FlaxEngine;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Modules.SourceCodeEditing
 {

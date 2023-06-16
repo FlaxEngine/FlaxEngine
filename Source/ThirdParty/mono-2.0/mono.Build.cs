@@ -28,6 +28,7 @@ public class mono : DepsModule
         base.Setup(options);
 
         var depsRoot = options.DepsFolder;
+        options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, @"Source\ThirdParty\mono-2.0"));
 
         switch (options.Platform.Target)
         {
@@ -97,9 +98,6 @@ public class mono : DepsModule
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
-
-        // TODO: remove hardcoded include path for all modules and use this public thing to pass include only to modules that use it
-        //options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, @"Source\ThirdParty\mono-2.0"));
     }
 
     /// <inheritdoc />

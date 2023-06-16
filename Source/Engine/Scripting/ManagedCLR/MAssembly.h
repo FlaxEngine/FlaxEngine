@@ -3,7 +3,6 @@
 #pragma once
 
 #include "MTypes.h"
-#include "MAssemblyOptions.h"
 #include "Engine/Core/Delegate.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Collections/Array.h"
@@ -16,44 +15,41 @@
 class FLAXENGINE_API MAssembly
 {
     friend MDomain;
-public:
+    friend Scripting;
 
-    typedef Dictionary<MString, MClass*> ClassesDictionary;
+public:
+    typedef Dictionary<StringAnsi, MClass*> ClassesDictionary;
 
 private:
-
 #if USE_MONO
     MonoAssembly* _monoAssembly = nullptr;
     MonoImage* _monoImage = nullptr;
+#elif USE_NETCORE
+    StringAnsi _fullname;
+    void* _handle = nullptr;
 #endif
     MDomain* _domain;
 
     int32 _isLoaded : 1;
     int32 _isLoading : 1;
-    int32 _isDependency : 1;
-    int32 _isFileLocked : 1;
     mutable int32 _hasCachedClasses : 1;
 
     mutable ClassesDictionary _classes;
     CriticalSection _locker;
 
     int32 _reloadCount;
-    MString _name;
+    StringAnsi _name;
     String _assemblyPath;
 
     Array<byte> _debugData;
 
-    const MAssemblyOptions _options;
-
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="MAssembly"/> class.
     /// </summary>
     /// <param name="domain">The assembly domain.</param>
     /// <param name="name">The assembly name.</param>
-    /// <param name="options">The assembly options.</param>
-    MAssembly(MDomain* domain, const StringAnsiView& name, const MAssemblyOptions& options);
+    MAssembly(MDomain* domain, const StringAnsiView& name);
 
     /// <summary>
     /// Finalizes an instance of the <see cref="MAssembly"/> class.
@@ -61,7 +57,6 @@ public:
     ~MAssembly();
 
 public:
-
     /// <summary>
     /// Managed assembly actions delegate type.
     /// </summary>
@@ -93,7 +88,6 @@ public:
     AssemblyDelegate Unloaded;
 
 public:
-
     /// <summary>
     /// Returns true if assembly is during loading state.
     /// </summary>
@@ -113,7 +107,7 @@ public:
     /// <summary>
     /// Gets the assembly name.
     /// </summary>
-    FORCE_INLINE const MString& GetName() const
+    FORCE_INLINE const StringAnsi& GetName() const
     {
         return _name;
     }
@@ -143,39 +137,30 @@ public:
     }
 
 #if USE_MONO
-    /// <summary>
-    /// Gets the Mono assembly.
-    /// </summary>
     FORCE_INLINE MonoAssembly* GetMonoAssembly() const
     {
         return _monoAssembly;
     }
 
-    /// <summary>
-    /// Gets the Mono image.
-    /// </summary>
     FORCE_INLINE MonoImage* GetMonoImage() const
     {
         return _monoImage;
     }
+#elif USE_NETCORE
+    FORCE_INLINE void* GetHandle() const
+    {
+        return _handle;
+    }
 #endif
 
-    /// <summary>
-    /// Gets the options that assembly was created with.
-    /// </summary>
-    FORCE_INLINE const MAssemblyOptions& GetOptions() const
-    {
-        return _options;
-    }
-
 public:
-
     /// <summary>
     /// Loads assembly for domain.
     /// </summary>
     /// <param name="assemblyPath">The assembly path.</param>
+    /// <param name="nativePath">The optional path to the native code assembly (eg. if C# assembly contains bindings).</param>
     /// <returns>True if cannot load, otherwise false</returns>
-    bool Load(const String& assemblyPath);
+    bool Load(const String& assemblyPath, const StringView& nativePath = StringView::Empty);
 
 #if USE_MONO
     /// <summary>
@@ -193,7 +178,6 @@ public:
     void Unload(bool isReloading = false);
 
 public:
-
     /// <summary>
     /// Attempts to find a managed class with the specified namespace and name in this assembly. Returns null if one cannot be found.
     /// </summary>
@@ -212,31 +196,20 @@ public:
     /// <summary>
     /// Gets the native of the assembly (for the current domain). Can be used to pass to the scripting backend as a parameter.
     /// </summary>
-    /// <returns>The native assembly object.</returns>
     MonoReflectionAssembly* GetNative() const;
 #endif
 
     /// <summary>
     /// Gets the classes lookup cache. Performs full initialization if not cached. The result cache contains all classes from the assembly.
     /// </summary>
-    /// <returns>The cache.</returns>
     const ClassesDictionary& GetClasses() const;
 
 private:
-
-    /// <summary>
-    /// Loads the assembly for domain.
-    /// </summary>
-    /// <returns>True if failed, otherwise false.</returns>
-    bool LoadDefault(const String& assemblyPath);
-
-    /// <summary>
-    /// Loads the assembly for domain from non-blocking image.
-    /// </summary>
-    /// <returns>True if failed, otherwise false.</returns>
-    bool LoadWithImage(const String& assemblyPath);
-
+    bool LoadCorlib();
+    bool LoadImage(const String& assemblyPath, const StringView& nativePath);
+    bool UnloadImage(bool isReloading);
     void OnLoading();
     void OnLoaded(const struct DateTime& startTime);
     void OnLoadFailed();
+    bool ResolveMissingFile(String& assemblyPath) const;
 };

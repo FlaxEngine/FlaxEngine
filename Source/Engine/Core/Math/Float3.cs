@@ -50,7 +50,6 @@
 */
 
 using System;
-using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -58,7 +57,9 @@ using System.Runtime.InteropServices;
 namespace FlaxEngine
 {
     [Serializable]
-    [TypeConverter(typeof(TypeConverters.Float3Converter))]
+#if FLAX_EDITOR
+    [System.ComponentModel.TypeConverter(typeof(TypeConverters.Float3Converter))]
+#endif
     partial struct Float3 : IEquatable<Float3>, IFormattable
     {
         private static readonly string _formatString = "X:{0:F2} Y:{1:F2} Z:{2:F2}";

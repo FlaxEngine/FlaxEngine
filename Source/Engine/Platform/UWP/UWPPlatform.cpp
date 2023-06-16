@@ -148,33 +148,11 @@ bool UWPPlatform::GetHasFocus()
     return true;
 }
 
-bool UWPPlatform::CanOpenUrl(const StringView& url)
-{
-    return false;
-}
-
-void UWPPlatform::OpenUrl(const StringView& url)
-{
-    // TODO: add support for OpenUrl on UWP
-}
-
 Float2 UWPPlatform::GetDesktopSize()
 {
     Float2 result;
     CUWPPlatform->GetDisplaySize(&result.X, &result.Y);
     return result;
-}
-
-Rectangle UWPPlatform::GetMonitorBounds(const Float2& screenPos)
-{
-    // TODO: do it in a proper way
-    return Rectangle(Float2::Zero, GetDesktopSize());
-}
-
-Rectangle UWPPlatform::GetVirtualDesktopBounds()
-{
-    // TODO: do it in a proper way
-    return Rectangle(Float2::Zero, GetDesktopSize());
 }
 
 Window* UWPPlatform::CreateWindow(const CreateWindowSettings& settings)

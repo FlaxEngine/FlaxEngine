@@ -33,4 +33,6 @@
 #define PLATFORM_TYPE PlatformType::Android
 #define PLATFORM_CACHE_LINE_SIZE 64
 
+#define USE_MONO_AOT_MODE MONO_AOT_MODE_NONE
+
 #endif

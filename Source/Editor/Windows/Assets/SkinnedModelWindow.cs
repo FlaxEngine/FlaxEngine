@@ -2,6 +2,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +13,8 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Tree;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Previews;
@@ -173,7 +177,7 @@ namespace FlaxEditor.Windows.Assets
                     var proxy = (MeshesPropertiesProxy)Values[0];
                     if (proxy.Asset == null || !proxy.Asset.IsLoaded)
                     {
-                        layout.Label("Loading...");
+                        layout.Label("Loading...", TextAlignment.Center);
                         return;
                     }
                     proxy._materialSlotComboBoxes.Clear();
@@ -276,6 +280,8 @@ namespace FlaxEditor.Windows.Assets
         [CustomEditor(typeof(ProxyEditor))]
         private sealed class SkeletonPropertiesProxy : PropertiesProxyBase
         {
+            internal Tree NodesTree;
+
             private class ProxyEditor : ProxyEditorBase
             {
                 public override void Initialize(LayoutElementsContainer layout)
@@ -283,7 +289,7 @@ namespace FlaxEditor.Windows.Assets
                     var proxy = (SkeletonPropertiesProxy)Values[0];
                     if (proxy.Asset == null || !proxy.Asset.IsLoaded)
                     {
-                        layout.Label("Loading...");
+                        layout.Label("Loading...", TextAlignment.Center);
                         return;
                     }
                     var lods = proxy.Asset.LODs;
@@ -294,8 +300,10 @@ namespace FlaxEditor.Windows.Assets
                     // Skeleton Bones
                     {
                         var group = layout.Group("Skeleton Bones");
+                        group.Panel.Close();
 
                         var tree = group.Tree();
+                        tree.TreeControl.RightClick += OnTreeNodeRightClick;
                         for (int i = 0; i < bones.Length; i++)
                         {
                             if (bones[i].ParentIndex == -1)
@@ -312,6 +320,7 @@ namespace FlaxEditor.Windows.Assets
                         var group = layout.Group("Skeleton Nodes");
 
                         var tree = group.Tree();
+                        tree.TreeControl.RightClick += OnTreeNodeRightClick;
                         for (int i = 0; i < nodes.Length; i++)
                         {
                             if (nodes[i].ParentIndex == -1)
@@ -321,6 +330,7 @@ namespace FlaxEditor.Windows.Assets
                                 node.TreeNode.ExpandAll(true);
                             }
                         }
+                        proxy.NodesTree = tree.TreeControl;
                     }
 
                     // Blend Shapes
@@ -344,6 +354,22 @@ namespace FlaxEditor.Windows.Assets
                             editor.ValueBox.ValueChanged += () => { proxy.Window._preview.SetBlendShapeWeight(blendShape, editor.ValueBox.Value); };
                         }
                     }
+                }
+
+                private void OnTreeNodeRightClick(TreeNode node, Float2 location)
+                {
+                    var menu = new ContextMenu();
+
+                    var b = menu.AddButton("Copy name");
+                    b.Tag = node.Text;
+                    b.ButtonClicked += OnTreeNodeCopyName;
+
+                    menu.Show(node, location);
+                }
+
+                private void OnTreeNodeCopyName(ContextMenuButton b)
+                {
+                    Clipboard.Text = (string)b.Tag;
                 }
 
                 private void BuildSkeletonBonesTree(SkeletonNode[] nodes, SkeletonBone[] bones, TreeNodeElement layout, int boneIndex)
@@ -466,7 +492,7 @@ namespace FlaxEditor.Windows.Assets
                     var proxy = (MaterialsPropertiesProxy)Values[0];
                     if (proxy.Asset == null || !proxy.Asset.IsLoaded)
                     {
-                        layout.Label("Loading...");
+                        layout.Label("Loading...", TextAlignment.Center);
                         return;
                     }
 
@@ -527,7 +553,7 @@ namespace FlaxEditor.Windows.Assets
                     var proxy = (UVsPropertiesProxy)Values[0];
                     if (proxy.Asset == null || !proxy.Asset.IsLoaded)
                     {
-                        layout.Label("Loading...");
+                        layout.Label("Loading...", TextAlignment.Center);
                         return;
                     }
 
@@ -686,21 +712,24 @@ namespace FlaxEditor.Windows.Assets
                     Render2D.PushClip(new Rectangle(Float2.Zero, size));
 
                     var meshDatas = Proxy.Window._meshDatas;
-                    var lodIndex = Mathf.Clamp(_lod, 0, meshDatas.Length - 1);
-                    var lod = meshDatas[lodIndex];
-                    var mesh = Mathf.Clamp(_mesh, -1, lod.Length - 1);
-                    if (mesh == -1)
+                    if (meshDatas.Length != 0)
                     {
-                        for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
+                        var lodIndex = Mathf.Clamp(_lod, 0, meshDatas.Length - 1);
+                        var lod = meshDatas[lodIndex];
+                        var mesh = Mathf.Clamp(_mesh, -1, lod.Length - 1);
+                        if (mesh == -1)
                         {
-                            if (_isolateIndex != -1 && _isolateIndex != meshIndex)
-                                continue;
-                            DrawMeshUVs(meshIndex, lod[meshIndex]);
+                            for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
+                            {
+                                if (_isolateIndex != -1 && _isolateIndex != meshIndex)
+                                    continue;
+                                DrawMeshUVs(meshIndex, lod[meshIndex]);
+                            }
                         }
-                    }
-                    else
-                    {
-                        DrawMeshUVs(mesh, lod[mesh]);
+                        else
+                        {
+                            DrawMeshUVs(mesh, lod[mesh]);
+                        }
                     }
 
                     Render2D.PopClip();
@@ -724,6 +753,230 @@ namespace FlaxEditor.Windows.Assets
         }
 
         [CustomEditor(typeof(ProxyEditor))]
+        private sealed class RetargetPropertiesProxy : PropertiesProxyBase
+        {
+            internal class SetupProxy
+            {
+                public SkinnedModel Skeleton;
+                public Dictionary<string, string> NodesMapping;
+            }
+
+            internal Dictionary<Asset, SetupProxy> Setups;
+
+            public override void OnSave()
+            {
+                base.OnSave();
+
+                if (Setups != null)
+                {
+                    var retargetSetups = new SkinnedModel.SkeletonRetarget[Setups.Count];
+                    int i = 0;
+                    foreach (var setup in Setups)
+                    {
+                        retargetSetups[i++] = new SkinnedModel.SkeletonRetarget
+                        {
+                            SourceAsset = setup.Key?.ID ?? Guid.Empty,
+                            SkeletonAsset = setup.Value.Skeleton?.ID ?? Guid.Empty,
+                            NodesMapping = setup.Value.NodesMapping,
+                        };
+                    }
+                    Window.Asset.SkeletonRetargets = retargetSetups;
+                }
+            }
+
+            private class ProxyEditor : ProxyEditorBase
+            {
+                public override void Initialize(LayoutElementsContainer layout)
+                {
+                    var proxy = (RetargetPropertiesProxy)Values[0];
+                    if (proxy.Asset == null || !proxy.Asset.IsLoaded)
+                    {
+                        layout.Label("Loading...", TextAlignment.Center);
+                        return;
+                    }
+                    if (proxy.Setups == null)
+                    {
+                        proxy.Setups = new Dictionary<Asset, SetupProxy>();
+                        var retargetSetups = proxy.Asset.SkeletonRetargets;
+                        foreach (var retargetSetup in retargetSetups)
+                        {
+                            var sourceAsset = FlaxEngine.Content.LoadAsync(retargetSetup.SourceAsset);
+                            if (sourceAsset)
+                            {
+                                proxy.Setups.Add(sourceAsset, new SetupProxy
+                                {
+                                    Skeleton = FlaxEngine.Content.LoadAsync<SkinnedModel>(retargetSetup.SkeletonAsset),
+                                    NodesMapping = retargetSetup.NodesMapping,
+                                });
+                            }
+                        }
+                    }
+                    var targetNodes = proxy.Asset.Nodes;
+
+                    layout.Space(10.0f);
+                    var infoLabel = layout.Label("Each retarget setup defines how to convert animated skeleton pose from a source asset to this skinned model skeleton. It allows to play animation from different skeleton on this skeleton. See documentation to learn more.").Label;
+                    infoLabel.Wrapping = TextWrapping.WrapWords;
+                    infoLabel.AutoHeight = true;
+                    layout.Space(10.0f);
+
+                    // New setup
+                    {
+                        var setupGroup = layout.Group("New setup");
+                        infoLabel = setupGroup.Label("Select model or animation asset to add new retarget source", TextAlignment.Center).Label;
+                        infoLabel.Wrapping = TextWrapping.WrapWords;
+                        infoLabel.AutoHeight = true;
+                        var sourceAssetPicker = setupGroup.AddPropertyItem("Source Asset").Custom<AssetPicker>().CustomControl;
+                        sourceAssetPicker.Height = 48;
+                        sourceAssetPicker.CheckValid = CheckSourceAssetValid;
+                        sourceAssetPicker.SelectedItemChanged += () =>
+                        {
+                            proxy.Setups.Add(sourceAssetPicker.SelectedAsset, new SetupProxy());
+                            proxy.Window.MarkAsEdited();
+                            RebuildLayout();
+                        };
+                    }
+
+                    // Setups
+                    foreach (var setup in proxy.Setups)
+                    {
+                        var sourceAsset = setup.Key;
+                        if (sourceAsset == null)
+                            continue;
+                        var setupGroup = layout.Group(Path.GetFileNameWithoutExtension(sourceAsset.Path));
+                        var settingsButton = setupGroup.AddSettingsButton();
+                        settingsButton.Tag = sourceAsset;
+                        settingsButton.Clicked += OnShowSetupSettings;
+
+                        // Source asset picker
+                        var sourceAssetPicker = setupGroup.AddPropertyItem("Source Asset").Custom<AssetPicker>().CustomControl;
+                        sourceAssetPicker.SelectedAsset = sourceAsset;
+                        sourceAssetPicker.CanEdit = false;
+                        sourceAssetPicker.Height = 48;
+
+                        if (sourceAsset is SkinnedModel sourceModel)
+                        {
+                            // Initialize nodes mapping structure
+                            if (sourceModel.WaitForLoaded())
+                                continue;
+                            var sourceNodes = sourceModel.Nodes;
+                            if (setup.Value.NodesMapping == null)
+                                setup.Value.NodesMapping = new Dictionary<string, string>();
+                            var nodesMapping = setup.Value.NodesMapping;
+                            foreach (var targetNode in targetNodes)
+                            {
+                                if (!nodesMapping.ContainsKey(targetNode.Name))
+                                {
+                                    var node = string.Empty;
+                                    foreach (var sourceNode in sourceNodes)
+                                    {
+                                        if (string.Equals(targetNode.Name, sourceNode.Name, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            node = sourceNode.Name;
+                                            break;
+                                        }
+                                    }
+                                    nodesMapping.Add(targetNode.Name, node);
+                                }
+                            }
+
+                            // Build source skeleton nodes list (with hierarchy indentation)
+                            var items = new string[sourceNodes.Length + 1];
+                            items[0] = string.Empty;
+                            for (int i = 0; i < sourceNodes.Length; i++)
+                                items[i + 1] = sourceNodes[i].Name;
+
+                            // Show combo boxes with this skeleton nodes to retarget from
+                            foreach (var targetNode in targetNodes)
+                            {
+                                var nodeName = targetNode.Name;
+                                var propertyName = nodeName;
+                                var tmp = targetNode.ParentIndex;
+                                while (tmp != -1)
+                                {
+                                    tmp = targetNodes[tmp].ParentIndex;
+                                    propertyName = " " + propertyName;
+                                }
+                                var comboBox = setupGroup.AddPropertyItem(propertyName).Custom<ComboBox>().CustomControl;
+                                comboBox.AddItems(items);
+                                comboBox.Tag = new KeyValuePair<string, Asset>(nodeName, sourceAsset);
+                                comboBox.SelectedItem = nodesMapping[nodeName];
+                                if (comboBox.SelectedIndex == -1)
+                                    comboBox.SelectedIndex = 0; // Auto-select empty node
+                                comboBox.SelectedIndexChanged += OnSelectedNodeChanged;
+                            }
+                        }
+                        else if (sourceAsset is Animation sourceAnimation)
+                        {
+                            // Show skeleton asset picker
+                            var sourceSkeletonPicker = setupGroup.AddPropertyItem("Skeleton", "Skinned model that contains a skeleton for this animation retargeting.").Custom<AssetPicker>().CustomControl;
+                            sourceSkeletonPicker.AssetType = new ScriptType(typeof(SkinnedModel));
+                            sourceSkeletonPicker.SelectedAsset = setup.Value.Skeleton;
+                            sourceSkeletonPicker.Height = 48;
+                            sourceSkeletonPicker.SelectedItemChanged += () =>
+                            {
+                                setup.Value.Skeleton = (SkinnedModel)sourceSkeletonPicker.SelectedAsset;
+                                proxy.Window.MarkAsEdited();
+                            };
+                        }
+                    }
+                }
+
+                private void OnSelectedNodeChanged(ComboBox comboBox)
+                {
+                    var proxy = (RetargetPropertiesProxy)Values[0];
+                    var sourceAsset = ((KeyValuePair<string, Asset>)comboBox.Tag).Value;
+                    var nodeMappingKey = ((KeyValuePair<string, Asset>)comboBox.Tag).Key;
+                    var nodeMappingValue = comboBox.SelectedItem;
+                    // TODO: check for recursion in setup
+                    proxy.Setups[sourceAsset].NodesMapping[nodeMappingKey] = nodeMappingValue;
+                    proxy.Window.MarkAsEdited();
+                }
+
+                private void OnShowSetupSettings(Image settingsButton, MouseButton button)
+                {
+                    if (button == MouseButton.Left)
+                    {
+                        var sourceAsset = (Asset)settingsButton.Tag;
+                        var menu = new ContextMenu { Tag = sourceAsset };
+                        menu.AddButton("Clear", OnClearSetup);
+                        menu.AddButton("Remove", OnRemoveSetup).Icon = Editor.Instance.Icons.Cross12;
+                        menu.Show(settingsButton, new Float2(0, settingsButton.Height));
+                    }
+                }
+
+                private void OnClearSetup(ContextMenuButton button)
+                {
+                    var proxy = (RetargetPropertiesProxy)Values[0];
+                    var sourceAsset = (Asset)button.ParentContextMenu.Tag;
+                    var setup = proxy.Setups[sourceAsset];
+                    setup.Skeleton = null;
+                    foreach (var e in setup.NodesMapping.Keys.ToArray())
+                        setup.NodesMapping[e] = string.Empty;
+                    proxy.Window.MarkAsEdited();
+                    RebuildLayout();
+                }
+
+                private void OnRemoveSetup(ContextMenuButton button)
+                {
+                    var proxy = (RetargetPropertiesProxy)Values[0];
+                    var sourceAsset = (Asset)button.ParentContextMenu.Tag;
+                    proxy.Setups.Remove(sourceAsset);
+                    proxy.Window.MarkAsEdited();
+                    RebuildLayout();
+                }
+
+                private bool CheckSourceAssetValid(ContentItem item)
+                {
+                    var proxy = (RetargetPropertiesProxy)Values[0];
+                    return item is BinaryAssetItem binaryItem &&
+                           (binaryItem.Type == typeof(SkinnedModel) || binaryItem.Type == typeof(Animation)) &&
+                           item != proxy.Window.Item &&
+                           !proxy.Setups.ContainsKey(binaryItem.LoadAsync());
+                }
+            }
+        }
+
+        [CustomEditor(typeof(ProxyEditor))]
         private sealed class ImportPropertiesProxy : PropertiesProxyBase
         {
             private ModelImportSettings ImportSettings = new ModelImportSettings();
@@ -733,7 +986,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 base.OnLoad(window);
 
-                ModelImportSettings.TryRestore(ref ImportSettings, window.Item.Path);
+                Editor.TryRestoreImportOptions(ref ImportSettings.Settings, window.Item.Path);
             }
 
             public void Reimport()
@@ -748,7 +1001,7 @@ namespace FlaxEditor.Windows.Assets
                     var proxy = (ImportPropertiesProxy)Values[0];
                     if (proxy.Asset == null || !proxy.Asset.IsLoaded)
                     {
-                        layout.Label("Loading...");
+                        layout.Label("Loading...", TextAlignment.Center);
                         return;
                     }
 
@@ -785,6 +1038,21 @@ namespace FlaxEditor.Windows.Assets
             {
                 Proxy = new SkeletonPropertiesProxy();
                 Presenter.Select(Proxy);
+                window._preview.CustomDebugDraw += OnDebugDraw;
+            }
+
+            private void OnDebugDraw(GPUContext context, ref RenderContext renderContext)
+            {
+                var proxy = (SkeletonPropertiesProxy)Proxy;
+                if (proxy.NodesTree != null)
+                {
+                    // Draw selected skeleton nodes
+                    foreach (var node in proxy.NodesTree.Selection)
+                    {
+                        proxy.Window._preview.PreviewActor.GetNodeTransformation(node.Text, out var nodeTransformation, true);
+                        DebugDraw.DrawWireSphere(new BoundingSphere(nodeTransformation.TranslationVector, 4.0f), Color.Red, 0.0f, false);
+                    }
+                }
             }
         }
 
@@ -804,6 +1072,16 @@ namespace FlaxEditor.Windows.Assets
             : base("UVs", window, false)
             {
                 Proxy = new UVsPropertiesProxy();
+                Presenter.Select(Proxy);
+            }
+        }
+
+        private class RetargetTab : Tab
+        {
+            public RetargetTab(SkinnedModelWindow window)
+            : base("Retarget", window)
+            {
+                Proxy = new RetargetPropertiesProxy();
                 Presenter.Select(Proxy);
             }
         }
@@ -855,6 +1133,7 @@ namespace FlaxEditor.Windows.Assets
             _tabs.AddTab(new SkeletonTab(this));
             _tabs.AddTab(new MaterialsTab(this));
             _tabs.AddTab(new UVsTab(this));
+            _tabs.AddTab(new RetargetTab(this));
             _tabs.AddTab(new ImportTab(this));
 
             // Highlight actor (used to highlight selected material slot, see UpdateEffectsOnAsset)
@@ -996,6 +1275,14 @@ namespace FlaxEditor.Windows.Assets
         {
             if (!IsEdited)
                 return;
+            if (_asset.WaitForLoaded())
+                return;
+
+            foreach (var child in _tabs.Children)
+            {
+                if (child is Tab tab && tab.Proxy.Window != null)
+                    tab.Proxy.OnSave();
+            }
 
             if (_asset.Save())
             {
@@ -1030,7 +1317,7 @@ namespace FlaxEditor.Windows.Assets
         protected override void OnAssetLoaded()
         {
             _refreshOnLODsLoaded = true;
-            _preview.ViewportCamera.SetArcBallView(Asset.GetBox());
+            _preview.ViewportCamera.SetArcBallView(_preview.GetBounds());
             UpdateEffectsOnAsset();
 
             // TODO: disable streaming for this model

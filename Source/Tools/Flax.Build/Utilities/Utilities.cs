@@ -41,7 +41,11 @@ namespace Flax.Build
         /// <returns>The empty array object.</returns>
         public static T[] GetEmptyArray<T>()
         {
+#if USE_NETCORE
+            return Array.Empty<T>();
+#else
             return Enumerable.Empty<T>() as T[];
+#endif
         }
 
         /// <summary>
@@ -311,20 +315,25 @@ namespace Flax.Build
             ThrowExceptionOnError = 1 << 6,
 
             /// <summary>
+            /// Logs program output to the console, otherwise only when using verbose log.
+            /// </summary>
+            ConsoleLogOutput = 1 << 7,
+
+            /// <summary>
             /// The default options.
             /// </summary>
             Default = AppMustExist,
         }
 
-        private static void StdOut(object sender, DataReceivedEventArgs e)
+        private static void StdLogInfo(object sender, DataReceivedEventArgs e)
         {
             if (e.Data != null)
             {
-                Log.Verbose(e.Data);
+                Log.Info(e.Data);
             }
         }
 
-        private static void StdErr(object sender, DataReceivedEventArgs e)
+        private static void StdLogVerbose(object sender, DataReceivedEventArgs e)
         {
             if (e.Data != null)
             {
@@ -375,7 +384,11 @@ namespace Flax.Build
             Stopwatch stopwatch = Stopwatch.StartNew();
             if (!options.HasFlag(RunOptions.NoLoggingOfRunCommand))
             {
-                Log.Verbose("Running: " + app + (string.IsNullOrEmpty(commandLine) ? "" : " " + commandLine));
+                var msg = "Running: " + app + (string.IsNullOrEmpty(commandLine) ? "" : " " + commandLine);
+                if (options.HasFlag(RunOptions.ConsoleLogOutput))
+                    Log.Info(msg);
+                else
+                    Log.Verbose(msg);
             }
 
             bool redirectStdOut = (options & RunOptions.NoStdOutRedirect) != RunOptions.NoStdOutRedirect;
@@ -396,8 +409,16 @@ namespace Flax.Build
             {
                 proc.StartInfo.RedirectStandardOutput = true;
                 proc.StartInfo.RedirectStandardError = true;
-                proc.OutputDataReceived += StdOut;
-                proc.ErrorDataReceived += StdErr;
+                if (options.HasFlag(RunOptions.ConsoleLogOutput))
+                {
+                    proc.OutputDataReceived += StdLogInfo;
+                    proc.ErrorDataReceived += StdLogInfo;
+                }
+                else
+                {
+                    proc.OutputDataReceived += StdLogVerbose;
+                    proc.ErrorDataReceived += StdLogVerbose;
+                }
             }
 
             if (envVars != null)
@@ -610,10 +631,15 @@ namespace Flax.Build
                     if (stack.Count != 0)
                     {
                         var popped = stack.Pop();
+                        var windowsDriveStart = popped.IndexOf('\\');
                         if (popped == "..")
                         {
                             stack.Push(popped);
                             stack.Push(bit);
+                        }
+                        else if (windowsDriveStart != -1)
+                        {
+                            stack.Push(popped.Substring(windowsDriveStart + 1));
                         }
                     }
                     else

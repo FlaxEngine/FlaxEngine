@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
@@ -34,6 +35,19 @@ namespace Flax.Build
                 }
                 return _engineVersion;
             }
+        }
+
+        /// <summary>
+        /// Adds the version defines for the preprocessor (eg. FLAX_1_6_OR_NEWER).
+        /// </summary>
+        /// <param name="defines">Output list.</param>
+        public static void AddVersionDefines(ICollection<string> defines)
+        {
+            var engineVersion = EngineVersion;
+            defines.Add(string.Format("FLAX_{0}", engineVersion.Major));
+            defines.Add(string.Format("FLAX_{0}_{1}", engineVersion.Major, engineVersion.Minor));
+            for (int minor = 1; minor <= engineVersion.Minor; minor++)
+                defines.Add(string.Format("FLAX_{0}_{1}_OR_NEWER", engineVersion.Major, minor));
         }
 
         /// <inheritdoc />
@@ -104,26 +118,12 @@ namespace Flax.Build
                 // Restore state from PreBuild
                 Modules.Add("Main");
             }
-
-            // Mono on Linux is using dynamic linking and needs additional link files
-            if (buildOptions.Platform.Target == TargetPlatform.Linux && Platform.BuildTargetPlatform == TargetPlatform.Linux && !IsPreBuilt)
-            {
-                var task = graph.Add<Task>();
-                task.PrerequisiteFiles.Add(Path.Combine(buildOptions.OutputFolder, "libmonosgen-2.0.so"));
-                task.ProducedFiles.Add(Path.Combine(buildOptions.OutputFolder, "libmonosgen-2.0.so.1"));
-                task.WorkingDirectory = buildOptions.OutputFolder;
-                task.CommandPath = "ln";
-                task.CommandArguments = "-s -f libmonosgen-2.0.so libmonosgen-2.0.so.1";
-                task = graph.Add<Task>();
-                task.PrerequisiteFiles.Add(Path.Combine(buildOptions.OutputFolder, "libmonosgen-2.0.so"));
-                task.ProducedFiles.Add(Path.Combine(buildOptions.OutputFolder, "libmonosgen-2.0.so.1.0.0"));
-                task.WorkingDirectory = buildOptions.OutputFolder;
-                task.CommandPath = "ln";
-                task.CommandArguments = "-s -f libmonosgen-2.0.so libmonosgen-2.0.so.1.0.0";
-            }
         }
 
-        private bool UseSeparateMainExecutable(BuildOptions buildOptions)
+        /// <summary>
+        /// Returns true if this build target should use separate (aka main-only) executable file and separate runtime (in shared library). Used on platforms that don't support linking again executable file but only shared library (see HasExecutableFileReferenceSupport).
+        /// </summary>
+        public bool UseSeparateMainExecutable(BuildOptions buildOptions)
         {
             return UseSymbolsExports && OutputType == TargetOutputType.Executable && !buildOptions.Platform.HasExecutableFileReferenceSupport && !Configuration.BuildBindingsOnly;
         }
@@ -166,6 +166,7 @@ namespace Flax.Build
                 OutputFolder = mainModuleOutputPath,
                 WorkingDirectory = exeBuildOptions.WorkingDirectory,
                 HotReloadPostfix = exeBuildOptions.HotReloadPostfix,
+                Flags = exeBuildOptions.Flags,
             };
             mainModuleOptions.SourcePaths.Add(mainModule.FolderPath);
             mainModule.Setup(mainModuleOptions);

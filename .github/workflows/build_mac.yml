@@ -1,6 +1,10 @@
 name: Build macOS
 on: [push, pull_request]
 
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: false
+
 jobs:
 
   # Editor
@@ -12,13 +16,21 @@ jobs:
       uses: actions/checkout@v3
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+    - name: Print .NET info
+      run: |
+        dotnet --info
+        dotnet workload --info
     - name: Checkout LFS
       run: |
         git lfs version
         git lfs pull
     - name: Build
       run: |
-        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -arch=x64 -platform=Mac -configuration=Development -buildtargets=FlaxEditor
+        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -printSDKs -arch=x64 -platform=Mac -configuration=Development -buildtargets=FlaxEditor
 
   # Game
   game-mac:
@@ -29,10 +41,18 @@ jobs:
       uses: actions/checkout@v3
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+    - name: Print .NET info
+      run: |
+        dotnet --info
+        dotnet workload --info
     - name: Checkout LFS
       run: |
         git lfs version
         git lfs pull
     - name: Build
       run: |
-        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -arch=x64 -platform=Mac -configuration=Release -buildtargets=FlaxGame
+        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -printSDKs -arch=x64 -platform=Mac -configuration=Release -buildtargets=FlaxGame

@@ -14,73 +14,47 @@
 
 FMT_BEGIN_NAMESPACE
 
-template <typename CHar> class basic_printf_parse_context;
 template <typename OutputIt, typename Char> class basic_printf_context;
 
-namespace internal {
+namespace detail {
 
-template <class Char> class formatbuf : public std::basic_streambuf<Char> {
- private:
-  using int_type = typename std::basic_streambuf<Char>::int_type;
-  using traits_type = typename std::basic_streambuf<Char>::traits_type;
-
-  buffer<Char>& buffer_;
-
- public:
-  formatbuf(buffer<Char>& buf) : buffer_(buf) {}
-
- protected:
-  // The put-area is actually always empty. This makes the implementation
-  // simpler and has the advantage that the streambuf and the buffer are always
-  // in sync and sputc never writes into uninitialized memory. The obvious
-  // disadvantage is that each call to sputc always results in a (virtual) call
-  // to overflow. There is no disadvantage here for sputn since this always
-  // results in a call to xsputn.
-
-  int_type overflow(int_type ch = traits_type::eof()) FMT_OVERRIDE {
-    if (!traits_type::eq_int_type(ch, traits_type::eof()))
-      buffer_.push_back(static_cast<Char>(ch));
-    return ch;
-  }
-
-  std::streamsize xsputn(const Char* s, std::streamsize count) FMT_OVERRIDE {
-    buffer_.append(s, s + count);
-    return count;
-  }
-};
-
-template <typename Char> struct test_stream : std::basic_ostream<Char> {
- private:
-  // Hide all operator<< from std::basic_ostream<Char>.
-  void_t<> operator<<(null<>);
-  void_t<> operator<<(const Char*);
-
-  template <typename T, FMT_ENABLE_IF(std::is_convertible<T, int>::value &&
-                                      !std::is_enum<T>::value)>
-  void_t<> operator<<(T);
-};
-
-// Checks if T has a user-defined operator<< (e.g. not a member of
-// std::ostream).
-template <typename T, typename Char> class is_streamable {
+// Checks if T has a user-defined operator<<.
+template <typename T, typename Char, typename Enable = void>
+class is_streamable {
  private:
   template <typename U>
-  static bool_constant<!std::is_same<decltype(std::declval<test_stream<Char>&>()
-                                              << std::declval<U>()),
-                                     void_t<>>::value>
-  test(int);
+  static auto test(int)
+      -> bool_constant<sizeof(std::declval<std::basic_ostream<Char>&>()
+                              << std::declval<U>()) != 0>;
 
-  template <typename> static std::false_type test(...);
+  template <typename> static auto test(...) -> std::false_type;
 
   using result = decltype(test<T>(0));
 
  public:
+  is_streamable() = default;
+
   static const bool value = result::value;
 };
 
+// Formatting of built-in types and arrays is intentionally disabled because
+// it's handled by standard (non-ostream) formatters.
+template <typename T, typename Char>
+struct is_streamable<
+    T, Char,
+    enable_if_t<
+        std::is_arithmetic<T>::value || std::is_array<T>::value ||
+        std::is_pointer<T>::value || std::is_same<T, char8_type>::value ||
+        std::is_convertible<T, fmt::basic_string_view<Char>>::value ||
+        std::is_same<T, std_string_view<Char>>::value ||
+        (std::is_convertible<T, int>::value && !std::is_enum<T>::value)>>
+    : std::false_type {};
+
+
 // Write the content of buf to os.
+// It is a separate function rather than a part of vprint to simplify testing.
 template <typename Char>
-void write(std::basic_ostream<Char>& os, buffer<Char>& buf) {
+void write_buffer(std::basic_ostream<Char>& os, buffer<Char>& buf) {
   const Char* buf_data = buf.data();
   using unsigned_streamsize = std::make_unsigned<std::streamsize>::type;
   unsigned_streamsize size = buf.size();
@@ -96,55 +70,61 @@ void write(std::basic_ostream<Char>& os, buffer<Char>& buf) {
 template <typename Char, typename T>
 void format_value(buffer<Char>& buf, const T& value,
                   locale_ref loc = locale_ref()) {
-  formatbuf<Char> format_buf(buf);
-  std::basic_ostream<Char> output(&format_buf);
+  auto&& format_buf = formatbuf<std::basic_streambuf<Char>>(buf);
+  auto&& output = std::basic_ostream<Char>(&format_buf);
 #if !defined(FMT_STATIC_THOUSANDS_SEPARATOR)
   if (loc) output.imbue(loc.get<std::locale>());
 #endif
-  output.exceptions(std::ios_base::failbit | std::ios_base::badbit);
   output << value;
-  buf.resize(buf.size());
+  output.exceptions(std::ios_base::failbit | std::ios_base::badbit);
 }
+
+template <typename T> struct streamed_view { const T& value; };
+
+}  // namespace detail
 
 // Formats an object of type T that has an overloaded ostream operator<<.
-template <typename T, typename Char>
-struct fallback_formatter<T, Char, enable_if_t<is_streamable<T, Char>::value>>
-    : private formatter<basic_string_view<Char>, Char> {
-  auto parse(basic_format_parse_context<Char>& ctx) -> decltype(ctx.begin()) {
-    return formatter<basic_string_view<Char>, Char>::parse(ctx);
-  }
-  template <typename ParseCtx,
-            FMT_ENABLE_IF(std::is_same<
-                          ParseCtx, basic_printf_parse_context<Char>>::value)>
-  auto parse(ParseCtx& ctx) -> decltype(ctx.begin()) {
-    return ctx.begin();
-  }
+template <typename Char>
+struct basic_ostream_formatter : formatter<basic_string_view<Char>, Char> {
+  void set_debug_format() = delete;
 
-  template <typename OutputIt>
-  auto format(const T& value, basic_format_context<OutputIt, Char>& ctx)
+  template <typename T, typename OutputIt>
+  auto format(const T& value, basic_format_context<OutputIt, Char>& ctx) const
       -> OutputIt {
-    basic_memory_buffer<Char> buffer;
+    auto buffer = basic_memory_buffer<Char>();
     format_value(buffer, value, ctx.locale());
-    basic_string_view<Char> str(buffer.data(), buffer.size());
-    return formatter<basic_string_view<Char>, Char>::format(str, ctx);
-  }
-  template <typename OutputIt>
-  auto format(const T& value, basic_printf_context<OutputIt, Char>& ctx)
-      -> OutputIt {
-    basic_memory_buffer<Char> buffer;
-    format_value(buffer, value, ctx.locale());
-    return std::copy(buffer.begin(), buffer.end(), ctx.out());
+    return formatter<basic_string_view<Char>, Char>::format(
+        {buffer.data(), buffer.size()}, ctx);
   }
 };
-}  // namespace internal
 
-template <typename Char>
-void vprint(std::basic_ostream<Char>& os, basic_string_view<Char> format_str,
-            basic_format_args<buffer_context<type_identity_t<Char>>> args) {
-  basic_memory_buffer<Char> buffer;
-  internal::vformat_to(buffer, format_str, args);
-  internal::write(os, buffer);
+using ostream_formatter = basic_ostream_formatter<char>;
+
+template <typename T, typename Char>
+struct formatter<detail::streamed_view<T>, Char>
+    : basic_ostream_formatter<Char> {
+  template <typename OutputIt>
+  auto format(detail::streamed_view<T> view,
+              basic_format_context<OutputIt, Char>& ctx) const -> OutputIt {
+    return basic_ostream_formatter<Char>::format(view.value, ctx);
+  }
+};
+
+/**
+  \rst
+  Returns a view that formats `value` via an ostream ``operator<<``.
+
+  **Example**::
+
+    fmt::print("Current thread id: {}\n",
+               fmt::streamed(std::this_thread::get_id()));
+  \endrst
+ */
+template <typename T>
+auto streamed(const T& value) -> detail::streamed_view<T> {
+  return {value};
 }
+
 FMT_END_NAMESPACE
 
 #endif  // FMT_OSTREAM_H_

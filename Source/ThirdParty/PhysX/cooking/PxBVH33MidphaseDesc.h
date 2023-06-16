@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,10 +22,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.
-
 
 #ifndef PX_BVH_33_MIDPHASE_DESC_H
 #define PX_BVH_33_MIDPHASE_DESC_H
@@ -42,8 +40,11 @@ namespace physx
 {
 #endif
 
-/** \brief Enumeration for mesh cooking hints. */
-struct PxMeshCookingHint
+/** 
+ * \brief Enumeration for mesh cooking hints. 
+ * @deprecated
+ */
+struct PX_DEPRECATED PxMeshCookingHint
 {
 	enum Enum
 	{
@@ -57,8 +58,9 @@ struct PxMeshCookingHint
 \brief Structure describing parameters affecting BVH33 midphase mesh structure.
 
 @see PxCookingParams, PxMidphaseDesc
+@deprecated
 */
-struct PxBVH33MidphaseDesc
+struct PX_DEPRECATED PxBVH33MidphaseDesc
 {
 	/**
 	\brief Controls the trade-off between mesh size and runtime performance.
@@ -107,4 +109,5 @@ struct PxBVH33MidphaseDesc
 
 
   /** @} */
-#endif // PX_BVH_33_MIDPHASE_DESC_H
+#endif
+

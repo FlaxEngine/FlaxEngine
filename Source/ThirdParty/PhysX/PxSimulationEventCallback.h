@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,13 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_SIMULATION_EVENT_CALLBACK
-#define PX_SIMULATION_EVENT_CALLBACK
+#ifndef PX_SIMULATION_EVENT_CALLBACK_H
+#define PX_SIMULATION_EVENT_CALLBACK_H
 /** \addtogroup physics
 @{
 */
@@ -137,7 +135,7 @@ public:
 
 If CCD with multiple passes is enabled, then a fast moving object might bounce on and off the same
 object multiple times. Also, different shapes of the same actor might gain and lose contact with an other
-object over multiple passes. This marker allows to seperate the extra data items for each collision case, as well as
+object over multiple passes. This marker allows to separate the extra data items for each collision case, as well as
 distinguish the shape pair reports of different CCD passes.
 
 Example:
@@ -360,7 +358,7 @@ struct PxContactPairHeader
 
 	@see PxActor
 	*/
-	PxRigidActor*				actors[2];
+	PxActor*				actors[2];
 
 	/**
 	\brief Stream containing extra data as requested in the PxPairFlag flags of the simulation filter.
@@ -748,9 +746,9 @@ struct PxTriggerPair
 	PX_INLINE PxTriggerPair() {}
 
 	PxShape*				triggerShape;	//!< The shape that has been marked as a trigger.
-	PxRigidActor*			triggerActor;	//!< The actor to which triggerShape is attached
+	PxActor*				triggerActor;	//!< The actor to which triggerShape is attached
 	PxShape*				otherShape;		//!< The shape causing the trigger event. \deprecated (see #PxSimulationEventCallback::onTrigger()) If collision between trigger shapes is enabled, then this member might point to a trigger shape as well.
-	PxRigidActor*			otherActor;		//!< The actor to which otherShape is attached
+	PxActor*				otherActor;		//!< The actor to which otherShape is attached
 	PxPairFlag::Enum		status;			//!< Type of trigger event (eNOTIFY_TOUCH_FOUND or eNOTIFY_TOUCH_LOST). eNOTIFY_TOUCH_PERSISTS events are not supported.
 	PxTriggerPairFlags		flags;			//!< Additional information on the pair (see #PxTriggerPairFlag)
 };
@@ -779,7 +777,7 @@ struct PxConstraintInfo
 
 With the exception of onAdvance(), the events get sent during the call to either #PxScene::fetchResults() or 
 #PxScene::flushSimulation() with sendPendingReports=true. onAdvance() gets called while the simulation
-is running (that is between PxScene::simulate(), onAdvance() and PxScene::fetchResults()).
+is running (that is between PxScene::simulate() or PxScene::advance() and PxScene::fetchResults()).
 
 \note SDK state should not be modified from within the callbacks. In particular objects should not
 be created or destroyed. If state modification is needed then the changes should be stored to a buffer
@@ -885,10 +883,6 @@ class PxSimulationEventCallback
 	
 	\note The provided buffers are valid and can be read until the next call to #PxScene::simulate() or #PxScene::collide().
 	
-	\note Buffered user changes to the rigid body pose will not yet be reflected in the provided data. More important,
-	the provided data might contain bodies that have been deleted while the simulation was running. It is the user's
-	responsibility to detect and avoid dereferencing such bodies.
-
 	\note This callback gets triggered while the simulation is running. If the provided rigid body references are used to
 	read properties of the object, then the callback has to guarantee no other thread is writing to the same body at the same
 	time.

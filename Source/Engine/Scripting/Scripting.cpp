@@ -2,7 +2,6 @@
 
 #include "BinaryModule.h"
 #include "Scripting.h"
-#include "StdTypesContainer.h"
 #include "ScriptingType.h"
 #include "FlaxEngine.Gen.h"
 #include "Engine/Threading/Threading.h"
@@ -20,7 +19,8 @@
 #include "ManagedCLR/MMethod.h"
 #include "ManagedCLR/MDomain.h"
 #include "ManagedCLR/MCore.h"
-#include "MException.h"
+#include "ManagedCLR/MException.h"
+#include "Internal/StdTypesContainer.h"
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -29,11 +29,8 @@
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Platform/MemoryStats.h"
 #include "Engine/Serialization/JsonTools.h"
-#if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/mono-debug.h>
-#include <ThirdParty/mono-2.0/mono/metadata/object.h>
-#endif
 
 extern void registerFlaxEngineInternalCalls();
 
@@ -49,6 +46,7 @@ public:
     void Update() override;
     void LateUpdate() override;
     void FixedUpdate() override;
+    void LateFixedUpdate() override;
     void Draw() override;
     void BeforeExit() override;
     void Dispose() override;
@@ -103,6 +101,7 @@ namespace
     MMethod* _method_Update = nullptr;
     MMethod* _method_LateUpdate = nullptr;
     MMethod* _method_FixedUpdate = nullptr;
+    MMethod* _method_LateFixedUpdate = nullptr;
     MMethod* _method_Draw = nullptr;
     MMethod* _method_Exit = nullptr;
     Array<BinaryModule*, InlinedAllocation<64>> _nonNativeModules;
@@ -137,7 +136,7 @@ bool ScriptingService::Init()
     // Initialize managed runtime
     if (MCore::LoadEngine())
     {
-        LOG(Fatal, "Mono initialization failed.");
+        LOG(Fatal, "C# runtime initialization failed.");
         return true;
     }
 
@@ -198,35 +197,36 @@ bool ScriptingService::Init()
 void ScriptingService::Update()
 {
     PROFILE_CPU_NAMED("Scripting::Update");
-
     INVOKE_EVENT(Update);
 }
 
 void ScriptingService::LateUpdate()
 {
     PROFILE_CPU_NAMED("Scripting::LateUpdate");
-
     INVOKE_EVENT(LateUpdate);
 }
 
 void ScriptingService::FixedUpdate()
 {
     PROFILE_CPU_NAMED("Scripting::FixedUpdate");
-
     INVOKE_EVENT(FixedUpdate);
+}
+
+void ScriptingService::LateFixedUpdate()
+{
+    PROFILE_CPU_NAMED("Scripting::LateFixedUpdate");
+    INVOKE_EVENT(LateFixedUpdate);
 }
 
 void ScriptingService::Draw()
 {
     PROFILE_CPU_NAMED("Scripting::Draw");
-
     INVOKE_EVENT(Draw);
 }
 
 void ScriptingService::BeforeExit()
 {
     PROFILE_CPU_NAMED("Scripting::BeforeExit");
-
     INVOKE_EVENT(Exit);
 }
 
@@ -353,10 +353,18 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
                     {
                         // Load library
                         const auto startTime = DateTime::NowUTC();
-#if PLATFORM_ANDROID
-                        // On Android all native binaries are side-by-side with the app
-                        nativePath = StringUtils::GetDirectoryName(Platform::GetExecutableFilePath());
-                        nativePath /= StringUtils::GetFileName(nativePath);
+#if PLATFORM_ANDROID || PLATFORM_MAC
+                        // On some platforms all native binaries are side-by-side with the app in a different folder
+                        if (!FileSystem::FileExists(nativePath))
+                        {
+                            nativePath = String(StringUtils::GetDirectoryName(Platform::GetExecutableFilePath())) / StringUtils::GetFileName(nativePath);
+                        }
+#elif PLATFORM_IOS
+                        // iOS uses Frameworks folder with native binaries
+                        if (!FileSystem::FileExists(nativePath))
+                        {
+                            nativePath = Globals::ProjectFolder / TEXT("Frameworks") / StringUtils::GetFileName(nativePath);
+                        }
 #endif
                         auto library = Platform::LoadLibrary(nativePath.Get());
                         if (!library)
@@ -394,7 +402,7 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
                 else
                 {
                     // Create module if native library is not used
-                    module = New<ManagedBinaryModule>(nameAnsi, MAssemblyOptions());
+                    module = New<ManagedBinaryModule>(nameAnsi);
                     _nonNativeModules.Add(module);
                 }
             }
@@ -403,7 +411,7 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
             // C#
             if (managedPath.HasChars() && !((ManagedBinaryModule*)module)->Assembly->IsLoaded())
             {
-                if (((ManagedBinaryModule*)module)->Assembly->Load(managedPath))
+                if (((ManagedBinaryModule*)module)->Assembly->Load(managedPath, nativePath))
                 {
                     LOG(Error, "Failed to load C# assembly '{0}' for binary module {1}.", managedPath, name);
                     return true;
@@ -424,12 +432,45 @@ bool Scripting::Load()
     // Note: this action can be called from main thread (due to Mono problems with assemblies actions from other threads)
     ASSERT(IsInMainThread());
 
-#if !COMPILE_WITHOUT_CSHARP
+#if USE_CSHARP
     // Load C# core assembly
-    if (GetBinaryModuleCorlib()->Assembly->Load(mono_get_corlib()))
+    ManagedBinaryModule* corlib = GetBinaryModuleCorlib();
+    if (corlib->Assembly->LoadCorlib())
     {
         LOG(Error, "Failed to load corlib C# assembly.");
         return true;
+    }
+
+    // Initialize C# corelib types
+    {
+        const auto& corlibClasses = corlib->Assembly->GetClasses();
+        bool gotAll = true;
+#define CACHE_CORLIB_CLASS(var, name) gotAll &= corlibClasses.TryGet(StringAnsiView(name), MCore::TypeCache::var)
+        CACHE_CORLIB_CLASS(Void, "System.Void");
+        CACHE_CORLIB_CLASS(Object, "System.Object");
+        CACHE_CORLIB_CLASS(Byte, "System.Byte");
+        CACHE_CORLIB_CLASS(Boolean, "System.Boolean");
+        CACHE_CORLIB_CLASS(SByte, "System.SByte");
+        CACHE_CORLIB_CLASS(Char, "System.Char");
+        CACHE_CORLIB_CLASS(Int16, "System.Int16");
+        CACHE_CORLIB_CLASS(UInt16, "System.UInt16");
+        CACHE_CORLIB_CLASS(Int32, "System.Int32");
+        CACHE_CORLIB_CLASS(UInt32, "System.UInt32");
+        CACHE_CORLIB_CLASS(Int64, "System.Int64");
+        CACHE_CORLIB_CLASS(UInt64, "System.UInt64");
+        CACHE_CORLIB_CLASS(IntPtr, "System.IntPtr");
+        CACHE_CORLIB_CLASS(UIntPtr, "System.UIntPtr");
+        CACHE_CORLIB_CLASS(Single, "System.Single");
+        CACHE_CORLIB_CLASS(Double, "System.Double");
+        CACHE_CORLIB_CLASS(String, "System.String");
+#undef CACHE_CORLIB_CLASS
+        if (!gotAll)
+        {
+            LOG(Error, "Failed to load corlib C# assembly.");
+            for (const auto& e : corlibClasses)
+                LOG(Info, "Class: {0}", String(e.Value->GetFullName()));
+            return true;
+        }
     }
 #endif
 
@@ -630,6 +671,7 @@ void Scripting::Reload(bool canTriggerSceneReload)
     modules.Clear();
     _nonNativeModules.ClearDelete();
     _hasGameModulesLoaded = false;
+    MCore::OnMidHotReload();
 
     // Give GC a try to cleanup old user objects and the other mess
     MCore::GC::Collect();
@@ -665,48 +707,6 @@ MClass* Scripting::FindClass(const StringAnsiView& fullname)
     }
     return nullptr;
 }
-
-#if USE_MONO
-
-MClass* Scripting::FindClass(MonoClass* monoClass)
-{
-    if (monoClass == nullptr)
-        return nullptr;
-    PROFILE_CPU();
-    auto& modules = BinaryModule::GetModules();
-    for (auto module : modules)
-    {
-        auto managedModule = dynamic_cast<ManagedBinaryModule*>(module);
-        if (managedModule && managedModule->Assembly->IsLoaded())
-        {
-            MClass* result = managedModule->Assembly->GetClass(monoClass);
-            if (result != nullptr)
-                return result;
-        }
-    }
-    return nullptr;
-}
-
-MonoClass* Scripting::FindClassNative(const StringAnsiView& fullname)
-{
-    if (fullname.IsEmpty())
-        return nullptr;
-    PROFILE_CPU();
-    auto& modules = BinaryModule::GetModules();
-    for (auto module : modules)
-    {
-        auto managedModule = dynamic_cast<ManagedBinaryModule*>(module);
-        if (managedModule && managedModule->Assembly->IsLoaded())
-        {
-            MClass* result = managedModule->Assembly->GetClass(fullname);
-            if (result != nullptr)
-                return result->GetNative();
-        }
-    }
-    return nullptr;
-}
-
-#endif
 
 ScriptingTypeHandle Scripting::FindScriptingType(const StringAnsiView& fullname)
 {
@@ -749,21 +749,20 @@ ScriptingObject* Scripting::NewObject(const MClass* type)
         LOG(Error, "Invalid type.");
         return nullptr;
     }
-#if USE_MONO
+#if USE_CSHARP
     // Get the assembly with that class
-    MonoClass* typeClass = type->GetNative();
-    auto module = ManagedBinaryModule::FindModule(typeClass);
+    auto module = ManagedBinaryModule::FindModule(type);
     if (module == nullptr)
     {
-        LOG(Error, "Cannot find scripting assembly for type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
+        LOG(Error, "Cannot find scripting assembly for type \'{0}\'.", String(type->GetFullName()));
         return nullptr;
     }
 
     // Try to find the scripting type for this class
     int32 typeIndex;
-    if (!module->ClassToTypeIndex.TryGet(typeClass, typeIndex))
+    if (!module->ClassToTypeIndex.TryGet(type, typeIndex))
     {
-        LOG(Error, "Cannot spawn objects of type \'{0}.{1}\'.", String(mono_class_get_namespace(typeClass)), String(mono_class_get_name(typeClass)));
+        LOG(Error, "Cannot spawn objects of type \'{0}\'.", String(type->GetFullName()));
         return nullptr;
     }
     const ScriptingType& scriptingType = module->Types[typeIndex];

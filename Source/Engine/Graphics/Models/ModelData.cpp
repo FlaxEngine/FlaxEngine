@@ -766,21 +766,14 @@ bool ModelData::Pack2SkinnedModelHeader(WriteStream* stream) const
         return true;
     }
     const int32 lodCount = GetLODsCount();
-    if (lodCount == 0 || lodCount > MODEL_MAX_LODS)
+    if (lodCount > MODEL_MAX_LODS)
     {
         Log::ArgumentOutOfRangeException();
         return true;
     }
-    if (Materials.IsEmpty())
-    {
-        Log::ArgumentOutOfRangeException(TEXT("MaterialSlots"), TEXT("Material slots collection cannot be empty."));
-        return true;
-    }
-    if (!HasSkeleton())
-    {
-        Log::InvalidOperationException(TEXT("Missing skeleton."));
-        return true;
-    }
+
+    // Version
+    stream->WriteByte(1);
 
     // Min Screen Size
     stream->WriteFloat(MinScreenSize);
@@ -792,7 +785,6 @@ bool ModelData::Pack2SkinnedModelHeader(WriteStream* stream) const
     for (int32 materialSlotIndex = 0; materialSlotIndex < Materials.Count(); materialSlotIndex++)
     {
         auto& slot = Materials[materialSlotIndex];
-
         stream->Write(slot.AssetID);
         stream->WriteByte(static_cast<byte>(slot.ShadowsMode));
         stream->WriteString(slot.Name, 11);
@@ -876,6 +868,11 @@ bool ModelData::Pack2SkinnedModelHeader(WriteStream* stream) const
             stream->WriteTransform(bone.LocalTransform);
             stream->Write(bone.OffsetMatrix);
         }
+    }
+
+    // Retargeting
+    {
+        stream->WriteInt32(0);
     }
 
     return false;

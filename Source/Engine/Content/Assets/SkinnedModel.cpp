@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "SkinnedModel.h"
+#include "Animation.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Serialization/MemoryReadStream.h"
@@ -11,10 +12,12 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
 #include "Engine/Graphics/Models/Config.h"
+#include "Engine/Content/Content.h"
 #include "Engine/Content/WeakAssetReference.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Content/Upgraders/SkinnedModelAssetUpgrader.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/DrawCall.h"
 
 #define CHECK_INVALID_BUFFER(model, buffer) \
@@ -116,6 +119,7 @@ SkinnedModel::SkinnedModel(const SpawnParams& params, const AssetInfo* info)
 SkinnedModel::~SkinnedModel()
 {
     ASSERT(_streamingTask == nullptr);
+    ASSERT(_skeletonMappingCache.Count() == 0);
 }
 
 bool SkinnedModel::HasAnyLODInitialized() const
@@ -152,23 +156,165 @@ void SkinnedModel::GetLODData(int32 lodIndex, BytesContainer& data) const
     GetChunkData(chunkIndex, data);
 }
 
+SkinnedModel::SkeletonMapping SkinnedModel::GetSkeletonMapping(Asset* source)
+{
+    SkeletonMapping mapping;
+    mapping.TargetSkeleton = this;
+    if (WaitForLoaded() || !source || source->WaitForLoaded())
+        return mapping;
+    ScopeLock lock(Locker);
+    SkeletonMappingData mappingData;
+    if (!_skeletonMappingCache.TryGet(source, mappingData))
+    {
+        PROFILE_CPU();
+
+        // Initialize the mapping
+        const int32 nodesCount = Skeleton.Nodes.Count();
+        mappingData.NodesMapping = Span<int32>((int32*)Allocator::Allocate(nodesCount * sizeof(int32)), nodesCount);
+        for (int32 i = 0; i < nodesCount; i++)
+            mappingData.NodesMapping[i] = -1;
+        SkeletonRetarget* retarget = nullptr;
+        const Guid sourceId = source->GetID();
+        for (auto& e : _skeletonRetargets)
+        {
+            if (e.SourceAsset == sourceId)
+            {
+                retarget = &e;
+                break;
+            }
+        }
+        if (const auto* sourceAnim = Cast<Animation>(source))
+        {
+            const auto& channels = sourceAnim->Data.Channels;
+            if (retarget && retarget->SkeletonAsset)
+            {
+                // Map retarget skeleton nodes from animation channels
+                if (auto* skeleton = Content::Load<SkinnedModel>(retarget->SkeletonAsset))
+                {
+                    const SkeletonMapping skeletonMapping = GetSkeletonMapping(skeleton);
+                    mappingData.SourceSkeleton = skeleton;
+                    if (skeletonMapping.NodesMapping.Length() == nodesCount)
+                    {
+                        const auto& nodes = skeleton->Skeleton.Nodes;
+                        for (int32 j = 0; j < nodesCount; j++)
+                        {
+                            if (skeletonMapping.NodesMapping[j] != -1)
+                            {
+                                const Char* nodeName = nodes[skeletonMapping.NodesMapping[j]].Name.GetText();
+                                for (int32 i = 0; i < channels.Count(); i++)
+                                {
+                                    if (StringUtils::CompareIgnoreCase(nodeName, channels[i].NodeName.GetText()) == 0)
+                                    {
+                                        mappingData.NodesMapping[j] = i;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+    #if !BUILD_RELEASE
+                    LOG(Error, "Missing asset {0} to use for skeleton mapping of {1}", retarget->SkeletonAsset, ToString());
+    #endif
+                    return mapping;
+                }
+            }
+            else
+            {
+                // Map animation channels to the skeleton nodes (by name)
+                for (int32 i = 0; i < channels.Count(); i++)
+                {
+                    const NodeAnimationData& nodeAnim = channels[i];
+                    for (int32 j = 0; j < nodesCount; j++)
+                    {
+                        if (StringUtils::CompareIgnoreCase(Skeleton.Nodes[j].Name.GetText(), nodeAnim.NodeName.GetText()) == 0)
+                        {
+                            mappingData.NodesMapping[j] = i;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        else if (const auto* sourceModel = Cast<SkinnedModel>(source))
+        {
+            if (retarget)
+            {
+                // Use nodes retargeting
+                for (const auto& e : retarget->NodesMapping)
+                {
+                    const int32 dstIndex = Skeleton.FindNode(e.Key);
+                    const int32 srcIndex = sourceModel->Skeleton.FindNode(e.Value);
+                    if (dstIndex != -1 && srcIndex != -1)
+                    {
+                        mappingData.NodesMapping[dstIndex] = srcIndex;
+                    }
+                }
+            }
+            else
+            {
+                // Map source skeleton nodes to the target skeleton nodes (by name)
+                const auto& nodes = sourceModel->Skeleton.Nodes;
+                for (int32 i = 0; i < nodes.Count(); i++)
+                {
+                    const SkeletonNode& node = nodes[i];
+                    for (int32 j = 0; j < nodesCount; j++)
+                    {
+                        if (StringUtils::CompareIgnoreCase(Skeleton.Nodes[j].Name.GetText(), node.Name.GetText()) == 0)
+                        {
+                            mappingData.NodesMapping[j] = i;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+#if !BUILD_RELEASE
+            LOG(Error, "Invalid asset type {0} to use for skeleton mapping of {1}", source->GetTypeName(), ToString());
+#endif
+        }
+
+        // Add to cache
+        _skeletonMappingCache.Add(source, mappingData);
+        source->OnUnloaded.Bind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+#if USE_EDITOR
+        source->OnReloading.Bind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+#endif
+    }
+    mapping.SourceSkeleton = mappingData.SourceSkeleton;
+    mapping.NodesMapping = mappingData.NodesMapping;
+    return mapping;
+}
+
 bool SkinnedModel::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex)
 {
+    if (LODs.Count() == 0)
+        return false;
     return LODs[lodIndex].Intersects(ray, world, distance, normal, mesh);
 }
 
 bool SkinnedModel::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, SkinnedMesh** mesh, int32 lodIndex)
 {
+    if (LODs.Count() == 0)
+        return false;
     return LODs[lodIndex].Intersects(ray, transform, distance, normal, mesh);
 }
 
 BoundingBox SkinnedModel::GetBox(const Matrix& world, int32 lodIndex) const
 {
+    if (LODs.Count() == 0)
+        return BoundingBox::Zero;
     return LODs[lodIndex].GetBox(world);
 }
 
 BoundingBox SkinnedModel::GetBox(int32 lodIndex) const
 {
+    if (LODs.Count() == 0)
+        return BoundingBox::Zero;
     return LODs[lodIndex].GetBox();
 }
 
@@ -305,10 +451,8 @@ bool SkinnedModel::SetupSkeleton(const Array<SkeletonNode>& nodes)
 
     ScopeLock lock(model->Locker);
 
-    // Setup nodes
+    // Setup
     model->Skeleton.Nodes = nodes;
-
-    // Setup bones
     model->Skeleton.Bones.Resize(nodes.Count());
     for (int32 i = 0; i < nodes.Count(); i++)
     {
@@ -317,6 +461,7 @@ bool SkinnedModel::SetupSkeleton(const Array<SkeletonNode>& nodes)
         model->Skeleton.Bones[i].LocalTransform = node.LocalTransform;
         model->Skeleton.Bones[i].NodeIndex = i;
     }
+    ClearSkeletonMapping();
 
     // Calculate offset matrix (inverse bind pose transform) for every bone manually
     for (int32 i = 0; i < model->Skeleton.Bones.Count(); i++)
@@ -351,11 +496,10 @@ bool SkinnedModel::SetupSkeleton(const Array<SkeletonNode>& nodes, const Array<S
 
     ScopeLock lock(model->Locker);
 
-    // Setup nodes
+    // Setup
     model->Skeleton.Nodes = nodes;
-
-    // Setup bones
     model->Skeleton.Bones = bones;
+    ClearSkeletonMapping();
 
     // Calculate offset matrix (inverse bind pose transform) for every bone manually
     if (autoCalculateOffsetMatrix)
@@ -412,6 +556,9 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
     MemoryWriteStream headerStream(1024);
     MemoryWriteStream* stream = &headerStream;
     {
+        // Header Version
+        stream->WriteByte(1);
+
         // Min Screen Size
         stream->WriteFloat(MinScreenSize);
 
@@ -499,6 +646,17 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
                 stream->Write(bone.OffsetMatrix);
             }
         }
+
+        // Retargeting
+        {
+            stream->WriteInt32(_skeletonRetargets.Count());
+            for (const auto& retarget : _skeletonRetargets)
+            {
+                stream->Write(retarget.SourceAsset);
+                stream->Write(retarget.SkeletonAsset);
+                stream->Write(retarget.NodesMapping);
+            }
+        }
     }
 
     // Use a temporary chunks for data storage for virtual assets
@@ -552,8 +710,6 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
                 task->Start();
                 tasks.Add(task);
             }
-
-            // Wait for all
             if (Task::WaitAll(tasks))
                 return true;
             tasks.Clear();
@@ -562,12 +718,10 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
             {
                 int32 dataSize = meshesCount * (2 * sizeof(uint32) + sizeof(bool));
                 for (int32 meshIndex = 0; meshIndex < meshesCount; meshIndex++)
-                {
                     dataSize += meshesData[meshIndex].DataSize();
-                }
+                MemoryWriteStream meshesStream(Math::RoundUpToPowerOf2(dataSize));
 
-                MemoryWriteStream meshesStream(dataSize);
-
+                meshesStream.WriteByte(1);
                 for (int32 meshIndex = 0; meshIndex < meshesCount; meshIndex++)
                 {
                     const auto& mesh = lod.Meshes[meshIndex];
@@ -597,10 +751,10 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
                         return true;
                     }
 
+                    // #MODEL_DATA_FORMAT_USAGE
                     meshesStream.WriteUint32(vertices);
                     meshesStream.WriteUint32(triangles);
                     meshesStream.WriteUint16(mesh.BlendShapes.Count());
-
                     for (const auto& blendShape : mesh.BlendShapes)
                     {
                         meshesStream.WriteBool(blendShape.UseNormals);
@@ -609,9 +763,7 @@ bool SkinnedModel::Save(bool withMeshDataFromGpu, const StringView& path)
                         meshesStream.WriteUint32(blendShape.Vertices.Count());
                         meshesStream.WriteBytes(blendShape.Vertices.Get(), blendShape.Vertices.Count() * sizeof(BlendShapeVertex));
                     }
-
                     meshesStream.WriteBytes(meshData.VB0.Get(), vb0Size);
-
                     if (shouldUse16BitIndexBuffer == use16BitIndexBuffer)
                     {
                         meshesStream.WriteBytes(meshData.IB.Get(), ibSize);
@@ -690,11 +842,10 @@ bool SkinnedModel::Init(const Span<int32>& meshesCountPerLod)
     // Setup
     MaterialSlots.Resize(1);
     MinScreenSize = 0.0f;
-
-    // Setup LODs
     for (int32 lodIndex = 0; lodIndex < LODs.Count(); lodIndex++)
         LODs[lodIndex].Dispose();
     LODs.Resize(meshesCountPerLod.Length());
+    _initialized = true;
 
     // Setup meshes
     for (int32 lodIndex = 0; lodIndex < meshesCountPerLod.Length(); lodIndex++)
@@ -718,6 +869,49 @@ bool SkinnedModel::Init(const Span<int32>& meshesCountPerLod)
     ResidencyChanged();
 
     return false;
+}
+
+void SkinnedModel::ClearSkeletonMapping()
+{
+    for (auto& e : _skeletonMappingCache)
+    {
+        e.Key->OnUnloaded.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+#if USE_EDITOR
+        e.Key->OnReloading.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+#endif
+        Allocator::Free(e.Value.NodesMapping.Get());
+    }
+    _skeletonMappingCache.Clear();
+}
+
+void SkinnedModel::OnSkeletonMappingSourceAssetUnloaded(Asset* obj)
+{
+    ScopeLock lock(Locker);
+    auto i = _skeletonMappingCache.Find(obj);
+    ASSERT(i != _skeletonMappingCache.End());
+
+    // Unlink event
+    obj->OnUnloaded.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+#if USE_EDITOR
+    obj->OnReloading.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+#endif
+
+    // Clear cache
+    Allocator::Free(i->Value.NodesMapping.Get());
+    _skeletonMappingCache.Remove(i);
+}
+
+uint64 SkinnedModel::GetMemoryUsage() const
+{
+    Locker.Lock();
+    uint64 result = BinaryAsset::GetMemoryUsage();
+    result += sizeof(SkinnedModel) - sizeof(BinaryAsset);
+    result += Skeleton.GetMemoryUsage();
+    result += _skeletonMappingCache.Capacity() * sizeof(Dictionary<Asset*, Span<int32>>::Bucket);
+    for (const auto& e : _skeletonMappingCache)
+        result += e.Value.NodesMapping.Length();
+    Locker.Unlock();
+    return result;
 }
 
 void SkinnedModel::SetupMaterialSlots(int32 slotsCount)
@@ -754,6 +948,7 @@ void SkinnedModel::InitAsVirtual()
     // Init with one mesh and single bone
     int32 meshesCount = 1;
     Init(ToSpan(&meshesCount, 1));
+    ClearSkeletonMapping();
     Skeleton.Dispose();
     //
     Skeleton.Nodes.Resize(1);
@@ -874,13 +1069,16 @@ Asset::LoadResult SkinnedModel::load()
     MemoryReadStream headerStream(chunk0->Get(), chunk0->Size());
     ReadStream* stream = &headerStream;
 
+    // Header Version
+    byte version = stream->ReadByte();
+
     // Min Screen Size
     stream->ReadFloat(&MinScreenSize);
 
     // Amount of material slots
     int32 materialSlotsCount;
     stream->ReadInt32(&materialSlotsCount);
-    if (materialSlotsCount <= 0 || materialSlotsCount > 4096)
+    if (materialSlotsCount < 0 || materialSlotsCount > 4096)
         return LoadResult::InvalidData;
     MaterialSlots.Resize(materialSlotsCount, false);
 
@@ -904,9 +1102,10 @@ Asset::LoadResult SkinnedModel::load()
     // Amount of LODs
     byte lods;
     stream->ReadByte(&lods);
-    if (lods == 0 || lods > MODEL_MAX_LODS)
+    if (lods > MODEL_MAX_LODS)
         return LoadResult::InvalidData;
     LODs.Resize(lods);
+    _initialized = true;
 
     // For each LOD
     for (int32 lodIndex = 0; lodIndex < lods; lodIndex++)
@@ -972,12 +1171,9 @@ Asset::LoadResult SkinnedModel::load()
         if (nodesCount <= 0)
             return LoadResult::InvalidData;
         Skeleton.Nodes.Resize(nodesCount, false);
-
-        // For each node
         for (int32 nodeIndex = 0; nodeIndex < nodesCount; nodeIndex++)
         {
-            auto& node = Skeleton.Nodes[nodeIndex];
-
+            auto& node = Skeleton.Nodes.Get()[nodeIndex];
             stream->Read(node.ParentIndex);
             stream->ReadTransform(&node.LocalTransform);
             stream->ReadString(&node.Name, 71);
@@ -988,16 +1184,27 @@ Asset::LoadResult SkinnedModel::load()
         if (bonesCount <= 0)
             return LoadResult::InvalidData;
         Skeleton.Bones.Resize(bonesCount, false);
-
-        // For each bone
         for (int32 boneIndex = 0; boneIndex < bonesCount; boneIndex++)
         {
-            auto& bone = Skeleton.Bones[boneIndex];
-
+            auto& bone = Skeleton.Bones.Get()[boneIndex];
             stream->Read(bone.ParentIndex);
             stream->Read(bone.NodeIndex);
             stream->ReadTransform(&bone.LocalTransform);
             stream->Read(bone.OffsetMatrix);
+        }
+    }
+
+    // Retargeting
+    {
+        int32 entriesCount;
+        stream->ReadInt32(&entriesCount);
+        _skeletonRetargets.Resize(entriesCount);
+        for (int32 entryIndex = 0; entryIndex < entriesCount; entryIndex++)
+        {
+            auto& retarget = _skeletonRetargets[entryIndex];
+            stream->Read(retarget.SourceAsset);
+            stream->Read(retarget.SkeletonAsset);
+            stream->Read(retarget.NodesMapping);
         }
     }
 
@@ -1023,7 +1230,10 @@ void SkinnedModel::unload(bool isReloading)
         LODs[i].Dispose();
     LODs.Clear();
     Skeleton.Dispose();
+    _initialized = false;
     _loadedLODs = 0;
+    _skeletonRetargets.Clear();
+    ClearSkeletonMapping();
 }
 
 bool SkinnedModel::init(AssetInitData& initData)

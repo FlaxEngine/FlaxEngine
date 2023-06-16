@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2019 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_TOOLS_MAC
 
@@ -59,6 +59,11 @@ ArchitectureType MacPlatformTools::GetArchitecture() const
     return _arch;
 }
 
+bool MacPlatformTools::UseSystemDotnet() const
+{
+    return true;
+}
+
 bool MacPlatformTools::IsNativeCodeFile(CookingData& data, const String& file)
 {
     String extension = FileSystem::GetExtension(file);
@@ -87,33 +92,8 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
 
     // Setup package name (eg. com.company.project)
     String appIdentifier = platformSettings->AppIdentifier;
-    {
-        String productName = gameSettings->ProductName;
-        productName.Replace(TEXT(" "), TEXT(""));
-        productName.Replace(TEXT("."), TEXT(""));
-        productName.Replace(TEXT("-"), TEXT(""));
-        String companyName = gameSettings->CompanyName;
-        companyName.Replace(TEXT(" "), TEXT(""));
-        companyName.Replace(TEXT("."), TEXT(""));
-        companyName.Replace(TEXT("-"), TEXT(""));
-        appIdentifier.Replace(TEXT("${PROJECT_NAME}"), *productName, StringSearchCase::IgnoreCase);
-        appIdentifier.Replace(TEXT("${COMPANY_NAME}"), *companyName, StringSearchCase::IgnoreCase);
-        appIdentifier = appIdentifier.ToLower();
-        for (int32 i = 0; i < appIdentifier.Length(); i++)
-        {
-            const auto c = appIdentifier[i];
-            if (c != '_' && c != '.' && !StringUtils::IsAlnum(c))
-            {
-                LOG(Error, "Apple app identifier \'{0}\' contains invalid character. Only letters, numbers, dots and underscore characters are allowed.", appIdentifier);
-                return true;
-            }
-        }
-        if (appIdentifier.IsEmpty())
-        {
-            LOG(Error, "Apple app identifier is empty.", appIdentifier);
-            return true;
-        }
-    }
+    if (EditorUtilities::FormatAppPackageName(appIdentifier))
+        return true;
 
     // Find executable
     String executableName;
@@ -187,7 +167,7 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
         ADD_ENTRY("CFBundlePackageType", "APPL");
         ADD_ENTRY("NSPrincipalClass", "NSApplication");
         ADD_ENTRY("LSApplicationCategoryType", "public.app-category.games");
-        ADD_ENTRY("LSMinimumSystemVersion", "10.14");
+        ADD_ENTRY("LSMinimumSystemVersion", "10.15");
         ADD_ENTRY("CFBundleIconFile", "icon.icns");
         ADD_ENTRY_STR("CFBundleExecutable", executableName);
         ADD_ENTRY_STR("CFBundleIdentifier", appIdentifier);
@@ -201,10 +181,19 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
 
         dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("LSMinimumSystemVersionByArchitecture"));
         xml_node LSMinimumSystemVersionByArchitecture = dict.append_child(PUGIXML_TEXT("dict"));
-        LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("x86_64"));
-        LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("10.14"));
+        switch (_arch)
+        {
+        case ArchitectureType::x64:
+            LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("x86_64"));
+            break;
+        case ArchitectureType::ARM64:
+            LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("arm64"));
+            break;
+        }
+        LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("10.15"));
         
 #undef ADD_ENTRY
+#undef ADD_ENTRY_STR
 
         if (!doc.save_file(*StringAnsi(plistPath)))
         {
@@ -215,8 +204,6 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
 
     // TODO: sign binaries
 
-    // TODO: expose event to inject custom post-processing before app packaging (eg. third-party plugins)
-    
     // Package application
     const auto buildSettings = BuildSettings::Get();
     if (buildSettings->SkipPackaging)
@@ -228,7 +215,7 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
     const int32 result = Platform::RunProcess(dmgCommand, data.OriginalOutputPath);
     if (result != 0)
     {
-        data.Error(TEXT("Failed to package app (result code: {0}). See log for more info."), result);
+        data.Error(String::Format(TEXT("Failed to package app (result code: {0}). See log for more info."), result));
         return true;
     }
     // TODO: sign dmg

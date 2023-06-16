@@ -86,22 +86,6 @@ public:
     /// <returns>The MClass object or null if missing.</returns>
     static MClass* FindClass(const StringAnsiView& fullname);
 
-#if USE_MONO
-    /// <summary>
-    /// Finds the class from the given Mono class object within whole assembly.
-    /// </summary>
-    /// <param name="monoClass">The Mono class.</param>
-    /// <returns>The MClass object or null if missing.</returns>
-    static MClass* FindClass(MonoClass* monoClass);
-
-    /// <summary>
-    /// Finds the native class with given fully qualified name within whole assembly.
-    /// </summary>
-    /// <param name="fullname">The full name of the type eg: System.Int64.</param>
-    /// <returns>The MClass object or null if missing.</returns>
-    static MonoClass* FindClassNative(const StringAnsiView& fullname);
-#endif
-
     /// <summary>
     /// Finds the scripting type of the given fullname by searching loaded scripting assemblies.
     /// </summary>

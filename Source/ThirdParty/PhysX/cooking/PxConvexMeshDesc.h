@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,13 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_COLLISION_NXCONVEXMESHDESC
-#define PX_COLLISION_NXCONVEXMESHDESC
+#ifndef PX_CONVEX_MESH_DESC_H
+#define PX_CONVEX_MESH_DESC_H
 /** \addtogroup cooking
 @{
 */
@@ -38,12 +36,12 @@
 #include "foundation/PxFlags.h"
 #include "common/PxCoreUtilityTypes.h"
 #include "geometry/PxConvexMesh.h"
+#include "PxSDFDesc.h"
 
 #if !PX_DOXYGEN
 namespace physx
 {
 #endif
-
 /**
 \brief Flags which describe the format and behavior of a convex mesh.
 */
@@ -121,8 +119,8 @@ struct PxConvexFlag
 		eFAST_INERTIA_COMPUTATION = (1 << 6),
 
 		/**
-		\brief Convex hulls are created with respect to GPU simulation limitations. Vertex limit is set to 64 and
-		vertex limit per face is internally set to 32.
+		\brief Convex hulls are created with respect to GPU simulation limitations. Vertex limit and polygon limit
+		is set to 64 and vertex limit per face is internally set to 32.
 		\note Can be used only with eCOMPUTE_CONVEX flag.
 		*/
 		eGPU_COMPATIBLE = (1 << 7),
@@ -148,6 +146,8 @@ PX_FLAGS_OPERATORS(PxConvexFlag::Enum,PxU16)
 /**
 \brief Descriptor class for #PxConvexMesh.
 \note The number of vertices and the number of convex polygons in a cooked convex mesh is limited to 256.
+\note The number of vertices and the number of convex polygons in a GPU compatible convex mesh is limited to 64,
+and the number of faces per vertex is limited to 32.
 
 @see PxConvexMesh PxConvexMeshGeometry PxShape PxPhysics.createConvexMesh()
 
@@ -193,19 +193,31 @@ public:
 	PxConvexFlags flags;
 
 	/**
-	\brief Limits the number of vertices of the result convex mesh. Hard maximum limit is 256
+	\brief Limits the number of vertices of the result convex mesh. Hard maximum limit is 255
 	and minimum limit is 4 if PxConvexFlag::ePLANE_SHIFTING is used, otherwise the minimum
 	limit is 8.
 
 	\note Vertex limit is only used when PxConvexFlag::eCOMPUTE_CONVEX is specified.
 	\note The please see PxConvexFlag::ePLANE_SHIFTING for algorithm explanation
+	\note The maximum limit for GPU compatible convex meshes is 64.
 
 	@see PxConvexFlag::ePLANE_SHIFTING
 
 	<b>Range:</b> [4, 255]<br>
 	<b>Default:</b> 255
 	*/
-	PxU16 vertexLimit;	
+	PxU16 vertexLimit;
+	
+	/**
+	\brief Limits the number of polygons of the result convex mesh. Hard maximum limit is 255
+	and minimum limit is 4.
+
+	\note The maximum limit for GPU compatible convex meshes is 64.
+
+	<b>Range:</b> [4, 255]<br>
+	<b>Default:</b> 255
+	 */
+	PxU16 polygonLimit;
 
 	/**
 	\brief Maximum number of vertices after quantization. The quantization is done during the vertex cleaning phase. 
@@ -219,6 +231,13 @@ public:
 	PxU16 quantizedCount;
 
 	/**
+	\brief SDF descriptor. When this descriptor is set, signed distance field is calculated for this convex mesh.
+
+	<b>Default:</b> NULL
+	*/
+	PxSDFDesc* sdfDesc;
+
+	/**
 	\brief constructor sets to default.
 	*/
 	PX_INLINE PxConvexMeshDesc();
@@ -226,6 +245,8 @@ public:
 	\brief (re)sets the structure to the default.	
 	*/
 	PX_INLINE void setToDefault();
+
+	
 	/**
 	\brief Returns true if the descriptor is valid.
 
@@ -235,8 +256,9 @@ public:
 };
 
 PX_INLINE PxConvexMeshDesc::PxConvexMeshDesc()	//constructor sets to default
-: vertexLimit(255), quantizedCount(255)
+: vertexLimit(255), polygonLimit(255), quantizedCount(255), sdfDesc(NULL)
 {
+
 }
 
 PX_INLINE void PxConvexMeshDesc::setToDefault()
@@ -292,10 +314,26 @@ PX_INLINE bool PxConvexMeshDesc::isValid() const
 		return false;
 	}
 
-	if(vertexLimit > 256)
+	if(vertexLimit > 255)
 	{
 		return false;
 	}
+
+	if (polygonLimit < 4)
+	{
+		return false;
+	}
+
+	if (polygonLimit > 255)
+	{
+		return false;
+	}
+
+	if (sdfDesc && !sdfDesc->isValid())
+	{
+		return false;
+	}
+
 	return true;
 }
 

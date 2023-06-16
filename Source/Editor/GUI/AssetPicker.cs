@@ -7,6 +7,7 @@ using FlaxEditor.GUI.Drag;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.GUI
 {
@@ -206,6 +207,11 @@ namespace FlaxEditor.GUI
         public event Action SelectedItemChanged;
 
         /// <summary>
+        /// The custom callback for assets validation. Cane be used to implement a rule for assets to pick.
+        /// </summary>
+        public Func<ContentItem, bool> CheckValid;
+
+        /// <summary>
         /// False if changing selected item is disabled.
         /// </summary>
         public bool CanEdit = true;
@@ -213,6 +219,8 @@ namespace FlaxEditor.GUI
         private bool IsValid(ContentItem item)
         {
             if (_fileExtension != null && !item.Path.EndsWith(_fileExtension))
+                return false;
+            if (CheckValid != null && !CheckValid(item))
                 return false;
             if (_type == ScriptType.Null)
                 return true;

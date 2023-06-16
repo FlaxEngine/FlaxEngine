@@ -17,6 +17,7 @@ using FlaxEditor.GUI.Input;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 using Newtonsoft.Json;
 using JsonSerializer = FlaxEngine.Json.JsonSerializer;
 

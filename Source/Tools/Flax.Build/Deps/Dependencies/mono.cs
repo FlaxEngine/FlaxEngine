@@ -452,7 +452,7 @@ namespace Flax.Deps.Dependencies
             }
 
             // Update source file with exported symbols
-            var mCorePath = Path.Combine(Globals.EngineRoot, "Source", "Engine", "Scripting", "ManagedCLR", "MCore.Mono.cpp");
+            var mCorePath = Path.Combine(Globals.EngineRoot, "Source", "Engine", "Scripting", "Runtime", "Mono.cpp");
             var contents = File.ReadAllText(mCorePath);
             var startPos = contents.IndexOf("#pragma comment(linker,");
             var endPos = contents.LastIndexOf("#pragma comment(linker,");
@@ -758,7 +758,7 @@ namespace Flax.Deps.Dependencies
 
                     // Build mono
                     SetupDirectory(buildDir, true);
-                    var archName = "x86_64-apple-darwin18";
+                    var archName = "x86_64-apple-darwin19";
                     Utilities.Run(Path.Combine(root, "autogen.sh"), string.Format("--host={0} --prefix={1} {2}", archName, buildDir, string.Join(" ", monoOptions)), null, root, Utilities.RunOptions.None, envVars);
                     Utilities.Run("make", null, null, root, Utilities.RunOptions.None, envVars);
                     Utilities.Run("make", "install", null, root, Utilities.RunOptions.None, envVars);

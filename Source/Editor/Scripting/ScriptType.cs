@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using FlaxEditor.Content;
 using FlaxEngine;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Scripting
 {
@@ -831,7 +832,7 @@ namespace FlaxEditor.Scripting
             get
             {
                 if (_managed != null)
-                    return _managed.GetConstructor(Type.EmptyTypes) != null;
+                    return _managed.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null) != null;
                 return _custom?.CanCreateInstance ?? false;
             }
         }
@@ -891,7 +892,12 @@ namespace FlaxEditor.Scripting
         public object CreateInstance()
         {
             if (_managed != null)
-                return Activator.CreateInstance(_managed);
+            {
+                var ctor = _managed.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null);
+                object value = RuntimeHelpers.GetUninitializedObject(_managed);
+                ctor.Invoke(value, null);
+                return value;
+            }
             return _custom.CreateInstance();
         }
 

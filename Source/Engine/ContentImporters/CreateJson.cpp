@@ -30,7 +30,7 @@ bool CreateJson::Create(const StringView& path, rapidjson_flax::StringBuffer& da
     return Create(path, data1, data2);
 }
 
-bool CreateJson::Create(const StringView& path, StringAnsiView& data, StringAnsiView& dataTypename)
+bool CreateJson::Create(const StringView& path, const StringAnsiView& data, const StringAnsiView& dataTypename)
 {
     Guid id = Guid::New();
 

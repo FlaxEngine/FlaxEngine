@@ -31,6 +31,7 @@ namespace Flax.Build.Projects.VisualStudio
                 {
                 case TargetType.NativeCpp: return VisualStudioProjectGenerator.ProjectTypeGuids.WindowsVisualCpp;
                 case TargetType.DotNet: return VisualStudioProjectGenerator.ProjectTypeGuids.WindowsCSharp;
+                case TargetType.DotNetCore: return VisualStudioProjectGenerator.ProjectTypeGuids.WindowsCSharp;
                 default: throw new ArgumentOutOfRangeException();
                 }
             }

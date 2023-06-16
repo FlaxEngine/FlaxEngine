@@ -5,6 +5,7 @@ using System.Linq;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.Scripting;
 using FlaxEngine;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.CustomEditors.Editors
 {

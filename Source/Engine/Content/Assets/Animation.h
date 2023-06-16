@@ -98,17 +98,6 @@ public:
     /// </summary>
     Array<Pair<String, NestedAnimData>> NestedAnims;
 
-    /// <summary>
-    /// Contains the mapping for every skeleton node to the animation data channels.
-    /// Can be used for a simple lookup or to check if a given node is animated (unused nodes are using -1 index).
-    /// </summary>
-    typedef Array<int32> NodeToChannel;
-
-    /// <summary>
-    /// The skeleton nodes to animation channel indices mapping cache. Use it as read-only. It's being maintained internally by the asset.
-    /// </summary>
-    Dictionary<SkinnedModel*, NodeToChannel> MappingCache;
-
 public:
     /// <summary>
     /// Gets the length of the animation (in seconds).
@@ -139,18 +128,6 @@ public:
     /// </summary>
     API_PROPERTY() InfoData GetInfo() const;
 
-    /// <summary>
-    /// Clears the skeleton mapping cache.
-    /// </summary>
-    void ClearCache();
-
-    /// <summary>
-    /// Clears the skeleton mapping cache.
-    /// </summary>
-    /// <param name="obj">The target skinned model to get mapping to its skeleton.</param>
-    /// <returns>The cached node-to-channel mapping for the fast animation sampling for the skinned model skeleton nodes.</returns>
-    const NodeToChannel* GetMapping(SkinnedModel* obj);
-
 #if USE_EDITOR
     /// <summary>
     /// Gets the animation as serialized timeline data. Used to show it in Editor.
@@ -173,9 +150,6 @@ public:
     /// <returns><c>true</c> failed to save data; otherwise, <c>false</c>.</returns>
     bool Save(const StringView& path = StringView::Empty);
 #endif
-
-private:
-    void OnSkinnedModelUnloaded(Asset* obj);
 
 public:
     // [BinaryAsset]

@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,12 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-#ifndef PX_DISTANCEJOINT_H
-#define PX_DISTANCEJOINT_H
+#ifndef PX_DISTANCE_JOINT_H
+#define PX_DISTANCE_JOINT_H
 /** \addtogroup extensions
   @{
 */
@@ -203,6 +202,34 @@ public:
 	@see PxDistanceJointFlag::eSPRING_ENABLED setDamping()
 	*/
 	virtual PxReal					getDamping()	const	= 0;
+
+	/**
+	\brief Set the contact distance for the min & max distance limits.
+
+	This is similar to the PxJointLimitParameters::contactDistance parameter for regular limits.
+
+	The two most common values are 0 and infinite. Infinite means the internal constraints are
+	always created, resulting in the best simulation quality but slower performance. Zero means
+	the internal constraints are only created when the limits are violated, resulting in best
+	performance but worse simulation quality.
+
+	<b>Default</b> 0.0f
+	<b>Range</b> [0, PX_MAX_F32)
+
+	\param[in] contactDistance	The contact distance
+
+	@see PxJointLimitParameters::contactDistance getContactDistance()
+	*/
+	virtual void					setContactDistance(PxReal contactDistance)	= 0;
+
+	/**
+	\brief Get the contact distance.
+
+	\return the contact distance
+
+	@see PxJointLimitParameters::contactDistance setContactDistance()
+	*/
+	virtual PxReal					getContactDistance()	const	= 0;
 
 	/**
 	\brief Set the flags specific to the Distance Joint.

@@ -9,6 +9,7 @@
 #include "Editor/Utilities/EditorUtilities.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Platform/Android/AndroidPlatformSettings.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/Textures/TextureData.h"
@@ -115,8 +116,6 @@ void AndroidPlatformTools::OnBuildStarted(CookingData& data)
     data.DataOutputPath /= TEXT("app/assets");
     data.NativeCodeOutputPath /= TEXT("app/assets");
     data.ManagedCodeOutputPath /= TEXT("app/assets");
-
-    PlatformTools::OnBuildStarted(data);
 }
 
 bool AndroidPlatformTools::OnPostProcess(CookingData& data)
@@ -140,33 +139,8 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
 
     // Setup package name (eg. com.company.project)
     String packageName = platformSettings->PackageName;
-    {
-        String productName = gameSettings->ProductName;
-        productName.Replace(TEXT(" "), TEXT(""));
-        productName.Replace(TEXT("."), TEXT(""));
-        productName.Replace(TEXT("-"), TEXT(""));
-        String companyName = gameSettings->CompanyName;
-        companyName.Replace(TEXT(" "), TEXT(""));
-        companyName.Replace(TEXT("."), TEXT(""));
-        companyName.Replace(TEXT("-"), TEXT(""));
-        packageName.Replace(TEXT("${PROJECT_NAME}"), *productName, StringSearchCase::IgnoreCase);
-        packageName.Replace(TEXT("${COMPANY_NAME}"), *companyName, StringSearchCase::IgnoreCase);
-        packageName = packageName.ToLower();
-        for (int32 i = 0; i < packageName.Length(); i++)
-        {
-            const auto c = packageName[i];
-            if (c != '_' && c != '.' && !StringUtils::IsAlnum(c))
-            {
-                LOG(Error, "Android Package Name \'{0}\' contains invalid character. Only letters, numbers, dots and underscore characters are allowed.", packageName);
-                return true;
-            }
-        }
-        if (packageName.IsEmpty())
-        {
-            LOG(Error, "Android Package Name is empty.", packageName);
-            return true;
-        }
-    }
+    if (EditorUtilities::FormatAppPackageName(packageName))
+        return true;
 
     // Setup Android application permissions
     HashSet<String> permissionsList;
@@ -267,7 +241,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
         }
     }
 
-    // Generate Mono files hash id used to skip deploying Mono files if already extracted on device (Mono cannot access files packed into .apk via unix file access)
+    // Generate Dotnet files hash id used to skip deploying Dotnet files if already extracted on device (Dotnet cannot access files packed into .apk via unix file access)
     File::WriteAllText(assetsPath / TEXT("hash.txt"), Guid::New().ToString(), Encoding::ANSI);
 
     // TODO: expose event to inject custom gradle and manifest options or custom binaries into app
@@ -309,11 +283,13 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
     Platform::RunProcess(String::Format(TEXT("chmod +x \"{0}/gradlew\""), data.OriginalOutputPath), data.OriginalOutputPath, Dictionary<String, String>(), true);
 #endif
     const bool distributionPackage = buildSettings->ForDistribution;
-    const String gradleCommand = String::Format(TEXT("\"{0}\" {1}"), data.OriginalOutputPath / gradlew, distributionPackage ? TEXT("assemble") : TEXT("assembleDebug"));
-    const int32 result = Platform::RunProcess(gradleCommand, data.OriginalOutputPath, Dictionary<String, String>(), true);
+    CreateProcessSettings procSettings;
+    procSettings.FileName = String::Format(TEXT("\"{0}\" {1}"), data.OriginalOutputPath / gradlew, distributionPackage ? TEXT("assemble") : TEXT("assembleDebug"));
+    procSettings.WorkingDirectory = data.OriginalOutputPath;
+    const int32 result = Platform::CreateProcess(procSettings);
     if (result != 0)
     {
-        data.Error(TEXT("Failed to build Gradle project into package (result code: {0}). See log for more info."), result);
+        data.Error(String::Format(TEXT("Failed to build Gradle project into package (result code: {0}). See log for more info."), result));
         return true;
     }
 

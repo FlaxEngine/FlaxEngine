@@ -526,7 +526,10 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
         attachment.samples = (VkSampleCountFlagBits)layout.MSAA;
 #if PLATFORM_ANDROID
         attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; // TODO: Adreno 640 has glitches when blend is disabled and rt data not loaded 
+#elif PLATFORM_MAC || PLATFORM_IOS
+        attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; // MoltenVK seams to have glitches (tiled arch of gpu)
 #else
+        // TODO: we need render passes into high-level rendering api to perform more optimal rendering (esp. for tiled gpus)
         attachment.loadOp = layout.BlendEnable ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 #endif
         attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -1683,8 +1686,12 @@ bool GPUDeviceVulkan::Init()
 
         auto& limits = Limits;
         limits.HasCompute = GetShaderProfile() == ShaderProfile::Vulkan_SM5 && PhysicalDeviceLimits.maxComputeWorkGroupCount[0] >= GPU_MAX_CS_DISPATCH_THREAD_GROUPS && PhysicalDeviceLimits.maxComputeWorkGroupCount[1] >= GPU_MAX_CS_DISPATCH_THREAD_GROUPS;
+#if PLATFORM_MAC || PLATFORM_IOS
+        limits.HasTessellation = false; // MoltenVK has artifacts when using tess
+#else
         limits.HasTessellation = !!PhysicalDeviceFeatures.tessellationShader && PhysicalDeviceLimits.maxBoundDescriptorSets > (uint32_t)DescriptorSet::Domain;
-#if PLATFORM_ANDROID
+#endif
+#if PLATFORM_ANDROID || PLATFORM_IOS
         limits.HasGeometryShaders = false; // Don't even try GS on mobile
 #else
         limits.HasGeometryShaders = !!PhysicalDeviceFeatures.geometryShader;
@@ -1904,13 +1911,14 @@ bool GPUDeviceVulkan::Init()
                 {
                     dataPtr++;
                     const int32 version = *dataPtr++;
-                    if (version == VK_PIPELINE_CACHE_HEADER_VERSION_ONE)
+                    const int32 versionExpected = VK_PIPELINE_CACHE_HEADER_VERSION_ONE;
+                    if (version == versionExpected)
                     {
                         dataPtr += VK_UUID_SIZE / sizeof(int32);
                     }
                     else
                     {
-                        LOG(Warning, "Bad validation cache file, version: {0}, expected: {1}", version, VK_PIPELINE_CACHE_HEADER_VERSION_ONE);
+                        LOG(Warning, "Bad validation cache file, version: {0}, expected: {1}", version, versionExpected);
                         data.Clear();
                     }
                 }

@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,12 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-#ifndef PX_PHYSICS_CCT_CONTROLLER
-#define PX_PHYSICS_CCT_CONTROLLER
+#ifndef PX_CONTROLLER_H
+#define PX_CONTROLLER_H
 /** \addtogroup character
   @{
 */
@@ -119,14 +118,14 @@ PX_FLAGS_OPERATORS(PxControllerCollisionFlag::Enum, PxU8)
 */
 struct PxControllerState
 {
-	PxVec3			deltaXP;				//!< delta position vector for the object the CCT is standing/riding on. Not always match the CCT delta when variable timesteps are used.
-	PxShape*		touchedShape;			//!< Shape on which the CCT is standing
-	PxRigidActor*	touchedActor;			//!< Actor owning 'touchedShape'
-	ObstacleHandle	touchedObstacleHandle;	// Obstacle on which the CCT is standing
-	PxU32			collisionFlags;			//!< Last known collision flags (PxControllerCollisionFlag)
-	bool			standOnAnotherCCT;		//!< Are we standing on another CCT?
-	bool			standOnObstacle;		//!< Are we standing on a user-defined obstacle?
-	bool			isMovingUp;				//!< is CCT moving up or not? (i.e. explicit jumping)
+	PxVec3				deltaXP;				//!< delta position vector for the object the CCT is standing/riding on. Not always match the CCT delta when variable timesteps are used.
+	PxShape*			touchedShape;			//!< Shape on which the CCT is standing
+	PxRigidActor*		touchedActor;			//!< Actor owning 'touchedShape'
+	PxObstacleHandle	touchedObstacleHandle;	// Obstacle on which the CCT is standing
+	PxU32				collisionFlags;			//!< Last known collision flags (PxControllerCollisionFlag)
+	bool				standOnAnotherCCT;		//!< Are we standing on another CCT?
+	bool				standOnObstacle;		//!< Are we standing on a user-defined obstacle?
+	bool				isMovingUp;				//!< is CCT moving up or not? (i.e. explicit jumping)
 };
 
 /**
@@ -507,6 +506,15 @@ public:
 	bool								registerDeletionListener;
 
 	/**
+	\brief Client ID for associated actor.
+
+	@see PxClientID PxActor::setOwnerClient
+
+	<b>Default:</b> PX_DEFAULT_CLIENT
+	*/
+	PxClientID							clientID;
+
+	/**
 	\brief User specified data associated with the controller.
 
 	<b>Default:</b> NULL
@@ -535,26 +543,26 @@ protected:
 	PX_INLINE void						copy(const PxControllerDesc&);
 };
 
-PX_INLINE PxControllerDesc::PxControllerDesc(PxControllerShapeType::Enum t) : mType(t)
+PX_INLINE PxControllerDesc::PxControllerDesc(PxControllerShapeType::Enum t) :
+	position					(PxExtended(0.0), PxExtended(0.0), PxExtended(0.0)),
+	upDirection					(0.0f, 1.0f, 0.0f),
+	slopeLimit					(0.707f),
+	invisibleWallHeight			(0.0f),
+	maxJumpHeight				(0.0f),
+	contactOffset				(0.1f),
+	stepOffset					(0.5f),
+	density						(10.0f),
+	scaleCoeff					(0.8f),
+	volumeGrowth				(1.5f),
+	reportCallback				(NULL),
+	behaviorCallback			(NULL),
+	nonWalkableMode				(PxControllerNonWalkableMode::ePREVENT_CLIMBING),
+	material					(NULL),
+	registerDeletionListener	(true),
+	clientID					(PX_DEFAULT_CLIENT),
+	userData					(NULL),
+	mType						(t)
 {
-	upDirection					= PxVec3(0.0f, 1.0f, 0.0f);
-	slopeLimit					= 0.707f;
-	contactOffset				= 0.1f;
-	stepOffset					= 0.5f;
-	density						= 10.0f;
-	scaleCoeff					= 0.8f;
-	volumeGrowth				= 1.5f;
-	reportCallback				= NULL;
-	behaviorCallback			= NULL;
-	userData					= NULL;
-	nonWalkableMode				= PxControllerNonWalkableMode::ePREVENT_CLIMBING;
-	position.x					= PxExtended(0.0);
-	position.y					= PxExtended(0.0);
-	position.z					= PxExtended(0.0);
-	material					= NULL;
-	invisibleWallHeight			= 0.0f;
-	maxJumpHeight				= 0.0f;
-	registerDeletionListener	= true;
 }
 
 PX_INLINE PxControllerDesc::PxControllerDesc(const PxControllerDesc& other) : mType(other.mType)
@@ -588,6 +596,7 @@ PX_INLINE void PxControllerDesc::copy(const PxControllerDesc& other)
 	invisibleWallHeight			= other.invisibleWallHeight;
 	maxJumpHeight				= other.maxJumpHeight;
 	registerDeletionListener	= other.registerDeletionListener;
+	clientID					= other.clientID;
 }
 
 PX_INLINE PxControllerDesc::~PxControllerDesc()
@@ -760,7 +769,7 @@ public:
 
 	\param[in] flag The new value of the non-walkable mode.
 
-	\see PxControllerNonWalkableMode
+	@see PxControllerNonWalkableMode
 	*/
 	virtual		void						setNonWalkableMode(PxControllerNonWalkableMode::Enum flag)	= 0;
 
@@ -769,7 +778,7 @@ public:
 
 	\return The current non-walkable mode.
 
-	\see PxControllerNonWalkableMode
+	@see PxControllerNonWalkableMode
 	*/
 	virtual		PxControllerNonWalkableMode::Enum	getNonWalkableMode()				const		= 0;
 

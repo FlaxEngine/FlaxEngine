@@ -20,6 +20,7 @@
 #include "Engine/Threading/MainThreadTask.h"
 #include "Engine/Threading/ThreadRegistry.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
@@ -39,7 +40,7 @@
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
-#include "Engine/Scripting/MException.h"
+#include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Core/Config/PlatformSettings.h"
 #endif
 
@@ -65,6 +66,7 @@ Action Engine::FixedUpdate;
 Action Engine::Update;
 TaskGraph* Engine::UpdateGraph = nullptr;
 Action Engine::LateUpdate;
+Action Engine::LateFixedUpdate;
 Action Engine::Draw;
 Action Engine::Pause;
 Action Engine::Unpause;
@@ -198,6 +200,7 @@ int32 Engine::Main(const Char* cmdLine)
         if (Time::OnBeginPhysics())
         {
             OnFixedUpdate();
+            OnLateFixedUpdate();
             Time::OnEndPhysics();
         }
 
@@ -273,6 +276,17 @@ void Engine::OnFixedUpdate()
     }
 }
 
+void Engine::OnLateFixedUpdate()
+{
+    PROFILE_CPU_NAMED("Late Fixed Update");
+
+    // Call event
+    LateFixedUpdate();
+
+    // Update services
+    EngineService::OnLateFixedUpdate();
+}
+
 void Engine::OnUpdate()
 {
     PROFILE_CPU_NAMED("Update");
@@ -309,6 +323,14 @@ void Engine::OnUpdate()
 
     // Update services
     EngineService::OnUpdate();
+
+#ifdef USE_NETCORE
+    // Force GC to run in background periodically to avoid large blocking collections causing hitches
+    if (Time::Update.TicksCount % 60 == 0)
+    {
+        MCore::GC::Collect(MCore::GC::MaxGeneration(), MGCCollectionMode::Forced, false, false);
+    }
+#endif
 }
 
 void Engine::OnLateUpdate()
@@ -547,6 +569,7 @@ void EngineImpl::InitPaths()
 #endif
 #if USE_EDITOR
     Globals::EngineContentFolder = Globals::StartupFolder / TEXT("Content");
+#if USE_MONO
 #if PLATFORM_WINDOWS
     Globals::MonoPath = Globals::StartupFolder / TEXT("Source/Platforms/Editor/Windows/Mono");
 #elif PLATFORM_LINUX
@@ -556,8 +579,11 @@ void EngineImpl::InitPaths()
 #else
     #error "Please specify the Mono data location for Editor on this platform."
 #endif
+#endif
 #else
+#if USE_MONO
     Globals::MonoPath = Globals::StartupFolder / TEXT("Mono");
+#endif
 #endif
     Globals::ProjectContentFolder = Globals::ProjectFolder / TEXT("Content");
 #if USE_EDITOR

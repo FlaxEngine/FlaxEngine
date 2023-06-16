@@ -9,6 +9,7 @@ using System.Text;
 using FlaxEditor.GUI.Timeline.Undo;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.GUI.Timeline.Tracks
 {
@@ -56,7 +57,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
             var keyframes = new KeyframesEditor.Keyframe[keyframesCount];
             var dataBuffer = new byte[e.ValueSize];
-            var propertyType = Scripting.TypeUtils.GetManagedType(e.MemberTypeName);
+            var propertyType = TypeUtils.GetManagedType(e.MemberTypeName);
             if (propertyType == null)
             {
                 e.Keyframes.ResetKeyframes();

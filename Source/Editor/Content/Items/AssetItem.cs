@@ -89,6 +89,15 @@ namespace FlaxEditor.Content
         }
 
         /// <summary>
+        /// Loads the asset.
+        /// </summary>
+        /// <returns>The asset object.</returns>
+        public Asset LoadAsync()
+        {
+            return FlaxEngine.Content.LoadAsync<Asset>(ID);
+        }
+
+        /// <summary>
         /// Reloads the asset (if it's loaded).
         /// </summary>
         public void Reload()

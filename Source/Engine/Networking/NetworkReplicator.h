@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -201,7 +201,7 @@ private:
 #if !COMPILE_WITHOUT_CSHARP
     API_FUNCTION(NoProxy) static void AddSerializer(const ScriptingTypeHandle& typeHandle, const Function<void(void*, void*)>& serialize, const Function<void(void*, void*)>& deserialize);
     API_FUNCTION(NoProxy) static void AddRPC(const ScriptingTypeHandle& typeHandle, const StringAnsiView& name, const Function<void(void*, void*)>& execute, bool isServer, bool isClient, NetworkChannelType channel);
-    API_FUNCTION(NoProxy) static void CSharpEndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, MonoArray* targetIds);
+    API_FUNCTION(NoProxy) static void CSharpEndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, MArray* targetIds);
     static StringAnsiView GetCSharpCachedName(const StringAnsiView& name);
 #endif
 };

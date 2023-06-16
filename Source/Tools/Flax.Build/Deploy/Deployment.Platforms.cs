@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Flax Engine. All rights reserved.
+// Copyright (c) 2012-2023 Flax Engine. All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
@@ -69,7 +69,7 @@ namespace Flax.Deploy
 
                     var packageZipPath = Path.Combine(Deployer.PackageOutputPath, platformName + ".zip");
                     Utilities.FileDelete(packageZipPath);
-#if true
+#if false
                     using (var zip = new Ionic.Zip.ZipFile())
                     {
                         zip.AddDirectory(dst);

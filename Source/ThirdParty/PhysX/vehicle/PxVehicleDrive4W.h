@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,15 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
 #ifndef PX_VEHICLE_4WDRIVE_H
 #define PX_VEHICLE_4WDRIVE_H
-/** \addtogroup vehicle
-  @{
-*/
 
 #include "vehicle/PxVehicleDrive.h"
 #include "vehicle/PxVehicleWheels.h"
@@ -56,7 +52,7 @@ class PxRigidDynamic;
 The drive model incorporates engine, clutch, gears, autobox, differential, and Ackermann steer correction.
 @see PxVehicleDriveSimData
 */
-class PxVehicleDriveSimData4W : public PxVehicleDriveSimData
+class PX_DEPRECATED PxVehicleDriveSimData4W : public PxVehicleDriveSimData
 {
 //= ATTENTION! =====================================================================================
 // Changing the data layout of this class breaks the binary serialization format.  See comments for 
@@ -140,7 +136,7 @@ PX_COMPILE_TIME_ASSERT(0==(sizeof(PxVehicleDriveSimData4W) & 15));
 @see PxVehicleWheelsSimData, PxVehicleWheelsDynData
 */
 
-struct PxVehicleDrive4WWheelOrder
+struct PX_DEPRECATED PxVehicleDrive4WWheelOrder
 {
 	enum Enum
 	{
@@ -157,7 +153,7 @@ struct PxVehicleDrive4WWheelOrder
 @see PxVehicleDriveDynData::setAnalogInput, PxVehicleDriveDynData::getAnalogInput
 */
 
-struct PxVehicleDrive4WControl
+struct PX_DEPRECATED PxVehicleDrive4WControl
 {
 	enum Enum
 	{
@@ -173,7 +169,7 @@ struct PxVehicleDrive4WControl
 /**
 \brief Data structure with instanced dynamics data and configuration data of a vehicle with up to 4 driven wheels and up to 16 non-driven wheels.
 */
-class PxVehicleDrive4W : public PxVehicleDrive
+class PX_DEPRECATED PxVehicleDrive4W : public PxVehicleDrive
 {
 //= ATTENTION! =====================================================================================
 // Changing the data layout of this class breaks the binary serialization format.  See comments for 
@@ -274,5 +270,4 @@ PX_COMPILE_TIME_ASSERT(0==(sizeof(PxVehicleDrive4W) & 15));
 } // namespace physx
 #endif
 
-/** @} */
-#endif //PX_VEHICLE_4WDRIVE_H
+#endif

@@ -95,8 +95,8 @@ bool CompileScriptsStep::DeployBinaries(CookingData& data, const String& path, c
             Scripting::ProcessBuildInfoPath(e.NativePath, projectFolderPath);
             Scripting::ProcessBuildInfoPath(e.ManagedPath, projectFolderPath);
 
-            e.NativePath = StringUtils::GetFileName(e.NativePath);
-            e.ManagedPath = StringUtils::GetFileName(e.ManagedPath);
+            e.NativePath = String(StringUtils::GetFileName(e.NativePath));
+            e.ManagedPath = String(StringUtils::GetFileName(e.ManagedPath));
 
             LOG(Info, "Collecting binary module {0}", e.Name);
         }
@@ -129,7 +129,7 @@ bool CompileScriptsStep::DeployBinaries(CookingData& data, const String& path, c
             continue;
         if (FileSystem::CopyFile(dst, file))
         {
-            data.Error(TEXT("Failed to copy file from {0} to {1}."), file, dst);
+            data.Error(String::Format(TEXT("Failed to copy file from {0} to {1}."), file, dst));
             return true;
         }
 
@@ -154,60 +154,7 @@ bool CompileScriptsStep::Perform(CookingData& data)
     String target = project->GameTarget;
     StringView workingDir;
     const Char *platform, *architecture, *configuration = ::ToString(data.Configuration);
-    switch (data.Platform)
-    {
-    case BuildPlatform::Windows32:
-        platform = TEXT("Windows");
-        architecture = TEXT("x86");
-        break;
-    case BuildPlatform::Windows64:
-        platform = TEXT("Windows");
-        architecture = TEXT("x64");
-        break;
-    case BuildPlatform::UWPx86:
-        platform = TEXT("UWP");
-        architecture = TEXT("x86");
-        break;
-    case BuildPlatform::UWPx64:
-        platform = TEXT("UWP");
-        architecture = TEXT("x64");
-        break;
-    case BuildPlatform::XboxOne:
-        platform = TEXT("XboxOne");
-        architecture = TEXT("x64");
-        break;
-    case BuildPlatform::LinuxX64:
-        platform = TEXT("Linux");
-        architecture = TEXT("x64");
-        break;
-    case BuildPlatform::PS4:
-        platform = TEXT("PS4");
-        architecture = TEXT("x64");
-        break;
-    case BuildPlatform::XboxScarlett:
-        platform = TEXT("XboxScarlett");
-        architecture = TEXT("x64");
-        break;
-    case BuildPlatform::AndroidARM64:
-        platform = TEXT("Android");
-        architecture = TEXT("ARM64");
-        break;
-    case BuildPlatform::Switch:
-        platform = TEXT("Switch");
-        architecture = TEXT("ARM64");
-        break;
-    case BuildPlatform::PS5:
-        platform = TEXT("PS5");
-        architecture = TEXT("x64");
-        break;
-    case BuildPlatform::MacOSx64:
-        platform = TEXT("Mac");
-        architecture = TEXT("x64");
-        break;
-    default:
-        LOG(Error, "Unknown or unsupported build platform.");
-        return true;
-    }
+    data.GetBuildPlatformName(platform, architecture);
     String targetBuildInfo = project->ProjectFolderPath / TEXT("Binaries") / target / platform / architecture / configuration / target + TEXT(".Build.json");
     if (target.IsEmpty())
     {
@@ -241,8 +188,8 @@ bool CompileScriptsStep::Perform(CookingData& data)
     LOG(Info, "Starting scripts compilation for game...");
     const String logFile = data.CacheDirectory / TEXT("CompileLog.txt");
     auto args = String::Format(
-        TEXT("-log -logfile=\"{4}\" -build -mutex -buildtargets={0} -platform={1} -arch={2} -configuration={3}"),
-        target, platform, architecture, configuration, logFile);
+        TEXT("-log -logfile=\"{4}\" -build -mutex -buildtargets={0} -platform={1} -arch={2} -configuration={3} -aotMode={5}"),
+        target, platform, architecture, configuration, logFile, ToString(data.Tools->UseAOT()));
 #if PLATFORM_WINDOWS
     if (data.Platform == BuildPlatform::LinuxX64)
 #elif PLATFORM_LINUX
@@ -257,7 +204,7 @@ bool CompileScriptsStep::Perform(CookingData& data)
         // Assume FlaxGame was prebuilt for target platform
         args += TEXT(" -SkipTargets=FlaxGame");
     }
-    for (auto& define : data.CustomDefines)
+    for (const String& define : data.CustomDefines)
     {
         args += TEXT(" -D");
         args += define;

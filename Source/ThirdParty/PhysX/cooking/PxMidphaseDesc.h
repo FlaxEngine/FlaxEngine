@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,10 +22,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.
-
 
 #ifndef PX_MIDPHASE_DESC_H
 #define PX_MIDPHASE_DESC_H
@@ -52,7 +50,7 @@ namespace physx
 class PxMidphaseDesc
 {
 public:
-	PX_FORCE_INLINE PxMidphaseDesc()	{ setToDefault(PxMeshMidPhase::eBVH33);	}
+	PX_FORCE_INLINE PxMidphaseDesc()	{ setToDefault(PxMeshMidPhase::eBVH34);	}
 
 	/**
 	\brief	Returns type of midphase mesh structure.
@@ -100,7 +98,11 @@ public:
 		return false;
 	}
 
-	PX_FORCE_INLINE PxMidphaseDesc&		operator=(PxMeshMidPhase::Enum descType) 
+	/**
+	\brief Assignment operator
+	\return this
+	*/
+	PX_FORCE_INLINE PxMidphaseDesc&	operator=(PxMeshMidPhase::Enum descType) 
 	{ 
 		setToDefault(descType);
 		return *this; 
@@ -116,4 +118,5 @@ protected:
 
 
   /** @} */
-#endif // PX_MIDPHASE_DESC_UNION_H
+#endif
+

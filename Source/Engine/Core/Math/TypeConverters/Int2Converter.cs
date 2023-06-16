@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+#if FLAX_EDITOR
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -19,12 +20,22 @@ namespace FlaxEngine.TypeConverters
         }
 
         /// <inheritdoc />
+        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        {
+            if (destinationType == typeof(string))
+            {
+                return false;
+            }
+            return base.CanConvertTo(context, destinationType);
+        }
+
+        /// <inheritdoc />
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
             if (value is string str)
             {
                 string[] v = str.Split(',');
-                return new Int2(int.Parse(v[0]), int.Parse(v[1]));
+                return new Int2(int.Parse(v[0], culture), int.Parse(v[1], culture));
             }
             return base.ConvertFrom(context, culture, value);
         }
@@ -35,9 +46,10 @@ namespace FlaxEngine.TypeConverters
             if (destinationType == typeof(string))
             {
                 var v = (Int2)value;
-                return v.X + "," + v.Y;
+                return v.X.ToString(culture) + "," + v.Y.ToString(culture);
             }
             return base.ConvertTo(context, culture, value, destinationType);
         }
     }
 }
+#endif

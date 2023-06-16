@@ -63,11 +63,15 @@ public:
     API_FIELD() TestStruct SimpleStruct;
 
     // Test event
-    API_EVENT() Delegate<int32, Float3, const String&, String&, const Array<TestStruct>&, Array<TestStruct>&> SimpleEvent;
+    API_EVENT() Delegate<int32, Float3, const String&, String&, TestStruct&, const Array<TestStruct>&, Array<TestStruct>&> SimpleEvent;
 
     // Test virtual method
-    API_FUNCTION() virtual int32 TestMethod(const String& str, API_PARAM(Ref) TestStructPOD& pod, const Array<TestStruct>& struct1, API_PARAM(Ref) Array<TestStruct>& struct2, API_PARAM(Out) Array<ScriptingObject*>& objects)
+    API_FUNCTION() virtual int32 TestMethod(const String& str, API_PARAM(Ref) TestStructPOD& pod, API_PARAM(Ref) TestStruct& nonPod, const Array<TestStruct>& struct1, API_PARAM(Ref) Array<TestStruct>& struct2, API_PARAM(Out) Array<ScriptingObject*>& objects)
     {
+        if (nonPod.Vector != Float3::One)
+            return -1;
+        nonPod.Object = this;
+        nonPod.Vector = Float3::UnitY;
         return str.Length();
     }
 

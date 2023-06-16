@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
-using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -9,7 +8,9 @@ using System.Runtime.InteropServices;
 namespace FlaxEngine
 {
     [Serializable]
-    [TypeConverter(typeof(TypeConverters.ColorConverter))]
+#if FLAX_EDITOR
+    [System.ComponentModel.TypeConverter(typeof(TypeConverters.ColorConverter))]
+#endif
     partial struct Color
     {
         /// <summary>

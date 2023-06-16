@@ -6,7 +6,9 @@ using System.Linq;
 using FlaxEditor.Options;
 using FlaxEditor.SceneGraph.Actors;
 using FlaxEngine;
+using FlaxEditor.Utilities;
 using FlaxEngine.Utilities;
+using Utils = FlaxEngine.Utils;
 
 namespace FlaxEditor.States
 {

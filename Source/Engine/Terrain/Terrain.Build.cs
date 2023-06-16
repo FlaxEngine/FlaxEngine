@@ -14,7 +14,6 @@ public class Terrain : EngineModule
         base.Setup(options);
 
         options.PrivateDependencies.Add("Physics");
-        options.PrivateDependencies.Add("PhysX");
 
         if (options.Target.IsEditor)
         {

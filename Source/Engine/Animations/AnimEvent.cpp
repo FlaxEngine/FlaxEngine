@@ -2,7 +2,7 @@
 
 #include "AnimEvent.h"
 #include "Engine/Scripting/BinaryModule.h"
-#include "Engine/Scripting/ManagedSerialization.h"
+#include "Engine/Scripting/Internal/ManagedSerialization.h"
 #include "Engine/Serialization/SerializationFwd.h"
 #include "Engine/Serialization/Serialization.h"
 

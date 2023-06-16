@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,12 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.
 
-#ifndef PXFOUNDATION_PXBOUNDS3_H
-#define PXFOUNDATION_PXBOUNDS3_H
+#ifndef PX_BOUNDS3_H
+#define PX_BOUNDS3_H
 
 /** \addtogroup foundation
 @{
@@ -71,6 +70,18 @@ class PxBounds3
 	*/
 	PX_CUDA_CALLABLE PX_FORCE_INLINE PxBounds3(const PxVec3& minimum, const PxVec3& maximum);
 
+	PX_CUDA_CALLABLE PX_FORCE_INLINE void operator=(const PxBounds3& other)
+	{
+		minimum = other.minimum;
+		maximum = other.maximum;
+	}
+
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxBounds3(const PxBounds3& other)
+	{
+		minimum = other.minimum;
+		maximum = other.maximum;
+	}
+
 	/**
 	\brief Return empty bounds.
 	*/
@@ -93,8 +104,7 @@ class PxBounds3
 	/**
 	\brief Construct from center, extent, and (not necessarily orthogonal) basis
 	*/
-	static PX_CUDA_CALLABLE PX_INLINE PxBounds3
-	basisExtent(const PxVec3& center, const PxMat33& basis, const PxVec3& extent);
+	static PX_CUDA_CALLABLE PX_INLINE PxBounds3 basisExtent(const PxVec3& center, const PxMat33& basis, const PxVec3& extent);
 
 	/**
 	\brief Construct from pose and extent
@@ -257,6 +267,12 @@ class PxBounds3
 	*/
 	PX_CUDA_CALLABLE PX_FORCE_INLINE bool isValid() const;
 
+	/**
+	Finds the closest point in the box to the point p. If p is contained, this will be p, otherwise it 
+	will be the closest point on the surface of the box.
+	*/
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxVec3 closestPoint(const PxVec3& p) const;
+
 	PxVec3 minimum, maximum;
 };
 
@@ -289,15 +305,14 @@ PX_CUDA_CALLABLE PX_INLINE PxBounds3
 PxBounds3::basisExtent(const PxVec3& center, const PxMat33& basis, const PxVec3& extent)
 {
 	// extended basis vectors
-	PxVec3 c0 = basis.column0 * extent.x;
-	PxVec3 c1 = basis.column1 * extent.y;
-	PxVec3 c2 = basis.column2 * extent.z;
+	const PxVec3 c0 = basis.column0 * extent.x;
+	const PxVec3 c1 = basis.column1 * extent.y;
+	const PxVec3 c2 = basis.column2 * extent.z;
 
-	PxVec3 w;
 	// find combination of base vectors that produces max. distance for each component = sum of abs()
-	w.x = PxAbs(c0.x) + PxAbs(c1.x) + PxAbs(c2.x);
-	w.y = PxAbs(c0.y) + PxAbs(c1.y) + PxAbs(c2.y);
-	w.z = PxAbs(c0.z) + PxAbs(c1.z) + PxAbs(c2.z);
+	const PxVec3 w(	PxAbs(c0.x) + PxAbs(c1.x) + PxAbs(c2.x),
+					PxAbs(c0.y) + PxAbs(c1.y) + PxAbs(c2.y),
+					PxAbs(c0.z) + PxAbs(c1.z) + PxAbs(c2.z));
 
 	return PxBounds3(center - w, center + w);
 }
@@ -321,40 +336,40 @@ PX_CUDA_CALLABLE PX_FORCE_INLINE void PxBounds3::setMaximal()
 
 PX_CUDA_CALLABLE PX_FORCE_INLINE void PxBounds3::include(const PxVec3& v)
 {
-	PX_SHARED_ASSERT(isValid());
+	PX_ASSERT(isValid());
 	minimum = minimum.minimum(v);
 	maximum = maximum.maximum(v);
 }
 
 PX_CUDA_CALLABLE PX_FORCE_INLINE void PxBounds3::include(const PxBounds3& b)
 {
-	PX_SHARED_ASSERT(isValid());
+	PX_ASSERT(isValid());
 	minimum = minimum.minimum(b.minimum);
 	maximum = maximum.maximum(b.maximum);
 }
 
 PX_CUDA_CALLABLE PX_FORCE_INLINE bool PxBounds3::isEmpty() const
 {
-	PX_SHARED_ASSERT(isValid());
+	PX_ASSERT(isValid());
 	return minimum.x > maximum.x;
 }
 
 PX_CUDA_CALLABLE PX_FORCE_INLINE bool PxBounds3::intersects(const PxBounds3& b) const
 {
-	PX_SHARED_ASSERT(isValid() && b.isValid());
+	PX_ASSERT(isValid() && b.isValid());
 	return !(b.minimum.x > maximum.x || minimum.x > b.maximum.x || b.minimum.y > maximum.y || minimum.y > b.maximum.y ||
 	         b.minimum.z > maximum.z || minimum.z > b.maximum.z);
 }
 
 PX_CUDA_CALLABLE PX_FORCE_INLINE bool PxBounds3::intersects1D(const PxBounds3& a, uint32_t axis) const
 {
-	PX_SHARED_ASSERT(isValid() && a.isValid());
+	PX_ASSERT(isValid() && a.isValid());
 	return maximum[axis] >= a.minimum[axis] && a.maximum[axis] >= minimum[axis];
 }
 
 PX_CUDA_CALLABLE PX_FORCE_INLINE bool PxBounds3::contains(const PxVec3& v) const
 {
-	PX_SHARED_ASSERT(isValid());
+	PX_ASSERT(isValid());
 
 	return !(v.x < minimum.x || v.x > maximum.x || v.y < minimum.y || v.y > maximum.y || v.z < minimum.z ||
 	         v.z > maximum.z);
@@ -362,7 +377,7 @@ PX_CUDA_CALLABLE PX_FORCE_INLINE bool PxBounds3::contains(const PxVec3& v) const
 
 PX_CUDA_CALLABLE PX_FORCE_INLINE bool PxBounds3::isInside(const PxBounds3& box) const
 {
-	PX_SHARED_ASSERT(isValid() && box.isValid());
+	PX_ASSERT(isValid() && box.isValid());
 	if(box.minimum.x > minimum.x)
 		return false;
 	if(box.minimum.y > minimum.y)
@@ -380,57 +395,57 @@ PX_CUDA_CALLABLE PX_FORCE_INLINE bool PxBounds3::isInside(const PxBounds3& box) 
 
 PX_CUDA_CALLABLE PX_FORCE_INLINE PxVec3 PxBounds3::getCenter() const
 {
-	PX_SHARED_ASSERT(isValid());
+	PX_ASSERT(isValid());
 	return (minimum + maximum) * 0.5f;
 }
 
 PX_CUDA_CALLABLE PX_FORCE_INLINE float PxBounds3::getCenter(uint32_t axis) const
 {
-	PX_SHARED_ASSERT(isValid());
+	PX_ASSERT(isValid());
 	return (minimum[axis] + maximum[axis]) * 0.5f;
 }
 
 PX_CUDA_CALLABLE PX_FORCE_INLINE float PxBounds3::getExtents(uint32_t axis) const
 {
-	PX_SHARED_ASSERT(isValid());
+	PX_ASSERT(isValid());
 	return (maximum[axis] - minimum[axis]) * 0.5f;
 }
 
 PX_CUDA_CALLABLE PX_FORCE_INLINE PxVec3 PxBounds3::getDimensions() const
 {
-	PX_SHARED_ASSERT(isValid());
+	PX_ASSERT(isValid());
 	return maximum - minimum;
 }
 
 PX_CUDA_CALLABLE PX_FORCE_INLINE PxVec3 PxBounds3::getExtents() const
 {
-	PX_SHARED_ASSERT(isValid());
+	PX_ASSERT(isValid());
 	return getDimensions() * 0.5f;
 }
 
 PX_CUDA_CALLABLE PX_FORCE_INLINE void PxBounds3::scaleSafe(float scale)
 {
-	PX_SHARED_ASSERT(isValid());
+	PX_ASSERT(isValid());
 	if(!isEmpty())
 		scaleFast(scale);
 }
 
 PX_CUDA_CALLABLE PX_FORCE_INLINE void PxBounds3::scaleFast(float scale)
 {
-	PX_SHARED_ASSERT(isValid());
+	PX_ASSERT(isValid());
 	*this = centerExtents(getCenter(), getExtents() * scale);
 }
 
 PX_CUDA_CALLABLE PX_FORCE_INLINE void PxBounds3::fattenSafe(float distance)
 {
-	PX_SHARED_ASSERT(isValid());
+	PX_ASSERT(isValid());
 	if(!isEmpty())
 		fattenFast(distance);
 }
 
 PX_CUDA_CALLABLE PX_FORCE_INLINE void PxBounds3::fattenFast(float distance)
 {
-	PX_SHARED_ASSERT(isValid());
+	PX_ASSERT(isValid());
 	minimum.x -= distance;
 	minimum.y -= distance;
 	minimum.z -= distance;
@@ -442,25 +457,25 @@ PX_CUDA_CALLABLE PX_FORCE_INLINE void PxBounds3::fattenFast(float distance)
 
 PX_CUDA_CALLABLE PX_INLINE PxBounds3 PxBounds3::transformSafe(const PxMat33& matrix, const PxBounds3& bounds)
 {
-	PX_SHARED_ASSERT(bounds.isValid());
+	PX_ASSERT(bounds.isValid());
 	return !bounds.isEmpty() ? transformFast(matrix, bounds) : bounds;
 }
 
 PX_CUDA_CALLABLE PX_INLINE PxBounds3 PxBounds3::transformFast(const PxMat33& matrix, const PxBounds3& bounds)
 {
-	PX_SHARED_ASSERT(bounds.isValid());
+	PX_ASSERT(bounds.isValid());
 	return PxBounds3::basisExtent(matrix * bounds.getCenter(), matrix, bounds.getExtents());
 }
 
 PX_CUDA_CALLABLE PX_INLINE PxBounds3 PxBounds3::transformSafe(const PxTransform& transform, const PxBounds3& bounds)
 {
-	PX_SHARED_ASSERT(bounds.isValid());
+	PX_ASSERT(bounds.isValid());
 	return !bounds.isEmpty() ? transformFast(transform, bounds) : bounds;
 }
 
 PX_CUDA_CALLABLE PX_INLINE PxBounds3 PxBounds3::transformFast(const PxTransform& transform, const PxBounds3& bounds)
 {
-	PX_SHARED_ASSERT(bounds.isValid());
+	PX_ASSERT(bounds.isValid());
 	return PxBounds3::basisExtent(transform.transform(bounds.getCenter()), PxMat33(transform.q), bounds.getExtents());
 }
 
@@ -472,9 +487,15 @@ PX_CUDA_CALLABLE PX_FORCE_INLINE bool PxBounds3::isValid() const
 	                        (maximum.y == -PX_MAX_BOUNDS_EXTENTS) && (maximum.z == -PX_MAX_BOUNDS_EXTENTS))));
 }
 
+PX_CUDA_CALLABLE PX_FORCE_INLINE PxVec3 PxBounds3::closestPoint(const PxVec3& p) const
+{
+	return minimum.maximum(maximum.minimum(p));
+}
+
 #if !PX_DOXYGEN
 } // namespace physx
 #endif
 
 /** @} */
-#endif // #ifndef PXFOUNDATION_PXBOUNDS3_H
+#endif
+

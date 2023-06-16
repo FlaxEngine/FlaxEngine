@@ -150,7 +150,7 @@ private:
 
 public:
 
-    // [Window]
+    // [WindowBase]
     void* GetNativePtr() const override
     {
         return _impl->GetHandle();

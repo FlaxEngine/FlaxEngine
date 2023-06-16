@@ -259,13 +259,13 @@ bool Editor::CheckProjectUpgrade()
 
         LOG(Warning, "Project layout upgraded!");
     }
-        // Check if last version was the same
+    // Check if last version was the same
     else if (lastMajor == FLAXENGINE_VERSION_MAJOR && lastMinor == FLAXENGINE_VERSION_MINOR)
     {
         // Do nothing
         IsOldProjectOpened = false;
     }
-        // Check if last version was older
+    // Check if last version was older
     else if (lastMajor < FLAXENGINE_VERSION_MAJOR || (lastMajor == FLAXENGINE_VERSION_MAJOR && lastMinor < FLAXENGINE_VERSION_MINOR))
     {
         LOG(Warning, "The project was opened with the older editor version last time");
@@ -288,7 +288,7 @@ bool Editor::CheckProjectUpgrade()
             return true;
         }
     }
-        // Check if last version was newer
+    // Check if last version was newer
     else if (lastMajor > FLAXENGINE_VERSION_MAJOR || (lastMajor == FLAXENGINE_VERSION_MAJOR && lastMinor > FLAXENGINE_VERSION_MINOR))
     {
         LOG(Warning, "The project was opened with the newer editor version last time");
@@ -312,6 +312,14 @@ bool Editor::CheckProjectUpgrade()
         }
     }
 
+    // When changing between major/minor version clear some caches to prevent possible issues
+    if (lastMajor != FLAXENGINE_VERSION_MAJOR || lastMinor != FLAXENGINE_VERSION_MINOR)
+    {
+        LOG(Info, "Cleaning cache files from different engine version");
+        FileSystem::DeleteDirectory(Globals::ProjectFolder / TEXT("Cache/Cooker"));
+        FileSystem::DeleteDirectory(Globals::ProjectFolder / TEXT("Cache/Intermediate"));
+    }
+
     // Upgrade old 0.7 projects
     // [Deprecated: 01.11.2020, expires 01.11.2021]
     if (lastMajor == 0 && lastMinor == 7 && lastBuild <= 6197)
@@ -330,12 +338,11 @@ bool Editor::CheckProjectUpgrade()
             file->WriteInt32(FLAXENGINE_VERSION_MAJOR);
             file->WriteInt32(FLAXENGINE_VERSION_MINOR);
             file->WriteInt32(FLAXENGINE_VERSION_BUILD);
-
             Delete(file);
         }
         else
         {
-            LOG(Warning, "Failed to create version cache file");
+            LOG(Error, "Failed to create version cache file");
         }
     }
 
@@ -664,9 +671,7 @@ bool Editor::Init()
 
 void Editor::BeforeRun()
 {
-    // If during last lightmaps baking engine crashed we could try to restore the progress
-    if (ShadowsOfMordor::Builder::Instance()->RestoreState())
-        Managed->GetClass()->GetMethod("Internal_StartLightingBake")->Invoke(Managed->GetOrCreateManagedInstance(), nullptr, nullptr);
+    Managed->BeforeRun();
 }
 
 void Editor::BeforeExit()
@@ -695,12 +700,6 @@ void EditorImpl::OnUpdate()
     {
         // Boost our priority back to normal
         Platform::SetThreadPriority(ThreadPriority::Normal);
-    }
-    if (!hasFocus)
-    {
-        // Sleep for a bit to not eat up all CPU time
-        PROFILE_CPU_NAMED("Sleep");
-        Platform::Sleep(5);
     }
     HasFocus = hasFocus;
 }

@@ -2,6 +2,8 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 // ReSharper disable UnassignedReadonlyField
 // ReSharper disable InconsistentNaming
@@ -13,7 +15,8 @@ namespace FlaxEngine
     /// Base class for all objects Flax can reference. Every object has unique identifier.
     /// </summary>
     [Serializable]
-    public abstract class Object
+    [NativeMarshalling(typeof(Interop.ObjectMarshaller))]
+    public abstract partial class Object
     {
         /// <summary>
         /// The pointer to the unmanaged object (native C++ instance).
@@ -273,8 +276,8 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="ptr">The pointer to the unmanaged (native) object.</param>
         /// <returns>The object.</returns>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern Object FromUnmanagedPtr(IntPtr ptr);
+        [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_FromUnmanagedPtr", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        public static partial Object FromUnmanagedPtr(IntPtr ptr);
 
         /// <inheritdoc />
         public override int GetHashCode()
@@ -284,35 +287,35 @@ namespace FlaxEngine
 
         #region Internal Calls
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Object Internal_Create1(Type type);
+        [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_Create1", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial Object Internal_Create1([MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Object Internal_Create2(string typeName);
+        [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_Create2", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial Object Internal_Create2(string typeName);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_ManagedInstanceCreated(Object managedInstance);
+        [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_ManagedInstanceCreated", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial void Internal_ManagedInstanceCreated(Object managedInstance);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_ManagedInstanceDeleted(IntPtr nativeInstance);
+        [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_ManagedInstanceDeleted", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial void Internal_ManagedInstanceDeleted(IntPtr nativeInstance);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_Destroy(IntPtr obj, float timeLeft);
+        [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_Destroy", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial void Internal_Destroy(IntPtr obj, float timeLeft);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern string Internal_GetTypeName(IntPtr obj);
+        [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_GetTypeName", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial string Internal_GetTypeName(IntPtr obj);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Object Internal_FindObject(ref Guid id, Type type);
+        [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_FindObject", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial Object Internal_FindObject(ref Guid id, [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Object Internal_TryFindObject(ref Guid id, Type type);
+        [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_TryFindObject", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial Object Internal_TryFindObject(ref Guid id, [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_ChangeID(IntPtr obj, ref Guid id);
+        [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_ChangeID", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial void Internal_ChangeID(IntPtr obj, ref Guid id);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr Internal_GetUnmanagedInterface(IntPtr obj, Type type);
+        [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_GetUnmanagedInterface", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial IntPtr Internal_GetUnmanagedInterface(IntPtr obj, [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);
 
         #endregion
     }

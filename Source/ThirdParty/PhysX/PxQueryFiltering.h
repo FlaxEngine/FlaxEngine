@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,13 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.
 
-
-#ifndef PX_PHYSICS_NX_SCENE_QUERY_FILTERING
-#define PX_PHYSICS_NX_SCENE_QUERY_FILTERING
+#ifndef PX_QUERY_FILTERING_H
+#define PX_QUERY_FILTERING_H
 /** \addtogroup scenequery
 @{
 */
@@ -48,7 +46,6 @@ class PxShape;
 class PxRigidActor;
 struct PxQueryHit;
 
-
 /**
 \brief Filtering flags for scene queries.
 
@@ -58,25 +55,33 @@ struct PxQueryFlag
 {
 	enum Enum
 	{
-		eSTATIC				= (1<<0),	//!< Traverse static shapes
+		eSTATIC							= (1<<0),	//!< Traverse static shapes
 
-		eDYNAMIC			= (1<<1),	//!< Traverse dynamic shapes
+		eDYNAMIC						= (1<<1),	//!< Traverse dynamic shapes
 
-		ePREFILTER			= (1<<2),	//!< Run the pre-intersection-test filter (see #PxQueryFilterCallback::preFilter())
+		ePREFILTER						= (1<<2),	//!< Run the pre-intersection-test filter (see #PxQueryFilterCallback::preFilter())
 
-		ePOSTFILTER			= (1<<3),	//!< Run the post-intersection-test filter (see #PxQueryFilterCallback::postFilter())
+		ePOSTFILTER						= (1<<3),	//!< Run the post-intersection-test filter (see #PxQueryFilterCallback::postFilter())
 
-		eANY_HIT			= (1<<4),	//!< Abort traversal as soon as any hit is found and return it via callback.block.
-										//!< Helps query performance. Both eTOUCH and eBLOCK hitTypes are considered hits with this flag.
+		eANY_HIT						= (1<<4),	//!< Abort traversal as soon as any hit is found and return it via callback.block.
+													//!< Helps query performance. Both eTOUCH and eBLOCK hitTypes are considered hits with this flag.
 
-		eNO_BLOCK			= (1<<5),	//!< All hits are reported as touching. Overrides eBLOCK returned from user filters with eTOUCH.
-										//!< This is also an optimization hint that may improve query performance.
+		eNO_BLOCK						= (1<<5),	//!< All hits are reported as touching. Overrides eBLOCK returned from user filters with eTOUCH.
+													//!< This is also an optimization hint that may improve query performance.
+		
+		eBATCH_QUERY_LEGACY_BEHAVIOUR	= (1<<6),	//!< Run with legacy batch query filter behavior. Raising this flag ensures that
+													//!< the hardcoded filter equation is neglected. This guarantees that any provided PxQueryFilterCallback
+													//!< will be utilised, as specified by the ePREFILTER  and ePOSTFILTER flags.
 
-		eRESERVED			= (1<<15)	//!< Reserved for internal use
+		eDISABLE_HARDCODED_FILTER		= (1<<6),	//!< Same as eBATCH_QUERY_LEGACY_BEHAVIOUR, more explicit name making it clearer that this can also be used
+													//!< with regular/non-batched queries if needed.
+
+		eRESERVED						= (1<<15)	//!< Reserved for internal use
 	};
 };
 PX_COMPILE_TIME_ASSERT(PxQueryFlag::eSTATIC==(1<<0));
 PX_COMPILE_TIME_ASSERT(PxQueryFlag::eDYNAMIC==(1<<1));
+PX_COMPILE_TIME_ASSERT(PxQueryFlag::eBATCH_QUERY_LEGACY_BEHAVIOUR==PxQueryFlag::eDISABLE_HARDCODED_FILTER);
 
 /**
 \brief Flags typedef for the set of bits defined in PxQueryFlag.
@@ -127,7 +132,7 @@ queryFilterData is zero, the shape is skipped
 to type #PxQueryHitType::eBLOCK when the value of PxHitCallback::nbTouches provided with the query is zero and to type
 #PxQueryHitType::eTOUCH when PxHitCallback::nbTouches is positive.
 
-@see PxScene.raycast PxScene.sweep PxScene.overlap PxBatchQuery.raycast PxBatchQuery.sweep PxBatchQuery.overlap PxQueryFlag::eANY_HIT
+@see PxScene.raycast PxScene.sweep PxScene.overlap PxQueryFlag::eANY_HIT
 */
 struct PxQueryFilterData
 {
@@ -173,10 +178,10 @@ public:
 	/**
 	\brief This filter callback is executed before the exact intersection test if PxQueryFlag::ePREFILTER flag was set.
 
-	\param[in] filterData custom filter data specified as the query's filterData.data parameter.
-	\param[in] shape A shape that has not yet passed the exact intersection test.
-	\param[in] actor The shape's actor.
-	\param[in,out] queryFlags scene query flags from the query's function call (only flags from PxHitFlag::eMODIFIABLE_FLAGS bitmask can be modified)
+	\param[in] filterData		custom filter data specified as the query's filterData.data parameter.
+	\param[in] shape			A shape that has not yet passed the exact intersection test.
+	\param[in] actor			The shape's actor.
+	\param[in,out] queryFlags	scene query flags from the query's function call (only flags from PxHitFlag::eMODIFIABLE_FLAGS bitmask can be modified)
 	\return the updated type for this hit  (see #PxQueryHitType)
 	*/
 	virtual PxQueryHitType::Enum preFilter(
@@ -185,11 +190,33 @@ public:
 	/**
 	\brief This filter callback is executed if the exact intersection test returned true and PxQueryFlag::ePOSTFILTER flag was set.
 
-	\param[in] filterData custom filter data of the query
-	\param[in] hit Scene query hit information. faceIndex member is not valid for overlap queries. For sweep and raycast queries the hit information can be cast to #PxSweepHit and #PxRaycastHit respectively.
+	\param[in] filterData	custom filter data of the query
+	\param[in] hit			Scene query hit information. faceIndex member is not valid for overlap queries. For sweep and raycast queries the hit information can be cast to #PxSweepHit and #PxRaycastHit respectively.
+	\return the updated hit type for this hit  (see #PxQueryHitType)
+	@deprecated
+	*/
+	PX_DEPRECATED virtual PxQueryHitType::Enum postFilter(const PxFilterData& filterData, const PxQueryHit& hit)
+	{
+		PX_UNUSED(filterData);
+		PX_UNUSED(hit);
+		return PxQueryHitType::eBLOCK;
+	}
+
+	/**
+	\brief This filter callback is executed if the exact intersection test returned true and PxQueryFlag::ePOSTFILTER flag was set.
+
+	\param[in] filterData	custom filter data of the query
+	\param[in] hit			Scene query hit information. faceIndex member is not valid for overlap queries. For sweep and raycast queries the hit information can be cast to #PxSweepHit and #PxRaycastHit respectively.
+	\param[in] shape		Hit shape
+	\param[in] actor		Hit actor
 	\return the updated hit type for this hit  (see #PxQueryHitType)
 	*/
-	virtual PxQueryHitType::Enum postFilter(const PxFilterData& filterData, const PxQueryHit& hit) = 0;
+	virtual PxQueryHitType::Enum postFilter(const PxFilterData& filterData, const PxQueryHit& hit, const PxShape* shape, const PxRigidActor* actor)
+	{
+		PX_UNUSED(shape);
+		PX_UNUSED(actor);
+		return postFilter(filterData, hit);
+	}
 
 	/**
 	\brief virtual destructor
@@ -197,76 +224,6 @@ public:
 	virtual ~PxQueryFilterCallback() {}
 };
 
-/**
-\brief Batched query pre-filter shader.
-
-Custom filtering logic for batched query intersection candidates. If an intersection candidate object passes the data based filter (see #PxQueryFilterData),
-filtering shader runs if specified in filtering flags (see #PxQueryFilterData.flags)
-
-\li If #PxQueryFlag::ePREFILTER is set, the preFilter shader runs before exact intersection tests.
-If the shader returns #PxQueryHitType::eTOUCH or #PxQueryHitType::eBLOCK, exact testing is performed to
-determine the intersection location.
-
-The preFilter shader may overwrite the copy of queryFlags it receives as an argument to specify any of #PxHitFlag::eMODIFIABLE_FLAGS
-on a per-shape basis. Changes apply only to the shape being filtered, and changes to other flags are ignored.
-
-\li If #PxQueryFlag::ePREFILTER is not set, precise intersection testing is performed using the original query's filterData.flags.
-
-Filtering calls are not guaranteed to be sorted along the ray or sweep direction.
-
-\deprecated The batched query feature has been deprecated in PhysX version 3.4
-
-@see PxBatchQueryDesc.preFilterShader PxQueryFilterCallback.preFilter PxBatchQueryPostFilterShader
-
-*/
-
-/**
-\param[in] queryFilterData Query filter data
-\param[in] objectFilterData Object filter data
-\param[in] constantBlock Global constant filter data (see #PxBatchQuery)
-\param[in] constantBlockSize Size of global filter data (see #PxBatchQuery)
-\param[in,out] hitFlags Per-object modifiable hit flags (only flags from PxHitFlag::eMODIFIABLE_FLAGS mask can be modified)
-\return the updated hit type for this hit (see #PxQueryHitType)
-
-@see PxBatchQueryPostFilterShader
-*/
-typedef PX_DEPRECATED PxQueryHitType::Enum (*PxBatchQueryPreFilterShader)(
-	PxFilterData queryFilterData, PxFilterData objectFilterData,
-	const void* constantBlock, PxU32 constantBlockSize,
-	PxHitFlags& hitFlags);
-
-/**
-\brief Batched query post-filter shader.
-
-Custom filtering logic for batched query intersection candidates. If an intersection candidate object passes the data based filter (see #PxQueryFilterData),
-the filtering shader run on request (see #PxQueryFilterData.flags)
-
-\li If #PxQueryFlag::ePOSTFILTER is set, the postFilter shader is called for each intersection to determine the touch/block status.
-This overrides any touch/block status previously returned from the preFilter function for this shape.
-
-Filtering shaders are not in order along the query direction, rather they are processed in the order in which
-candidate shapes for testing are found by PhysX' scene traversal algorithms.
-
-\deprecated The batched query feature has been deprecated in PhysX version 3.4
-
-@see PxBatchQueryDesc.postFilterShader PxQueryFilterCallback.postFilter PxBatchQueryPreFilterShader
-*/
-
-/**
-\param[in] queryFilterData Query filter data
-\param[in] objectFilterData Object filter data
-\param[in] constantBlock Global constant filter data (see #PxBatchQuery)
-\param[in] constantBlockSize Size of global filter data (see #PxBatchQuery)
-\param[in] hit Hit data from the prior exact intersection test.
-\return the new hit type for this hit (see #PxQueryHitType)
-
-@see PxBatchQueryPreFilterShader
-*/
-
-typedef PX_DEPRECATED PxQueryHitType::Enum (*PxBatchQueryPostFilterShader)(
-	PxFilterData queryFilterData, PxFilterData objectFilterData,
-	const void* constantBlock, PxU32 constantBlockSize,
-	const PxQueryHit& hit);
 
 #if !PX_DOXYGEN
 } // namespace physx

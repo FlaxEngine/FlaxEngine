@@ -236,7 +236,7 @@ namespace FlaxEditor.Windows.Assets
                 _collisionWiresModel = FlaxEngine.Content.CreateVirtualAsset<Model>();
                 _collisionWiresModel.SetupLODs(new[] { 1 });
             }
-            Editor.Internal_GetCollisionWires(FlaxEngine.Object.GetUnmanagedPtr(Asset), out var triangles, out var indices);
+            Editor.Internal_GetCollisionWires(FlaxEngine.Object.GetUnmanagedPtr(Asset), out var triangles, out var indices, out var _, out var _);
             if (triangles != null && indices != null)
                 _collisionWiresModel.LODs[0].Meshes[0].UpdateMesh(triangles, indices);
             else
@@ -317,14 +317,13 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutSerialize(XmlWriter writer)
         {
-            writer.WriteAttributeString("Split", _split.SplitterValue.ToString());
+            LayoutSerializeSplitter(writer, "Split", _split);
         }
 
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            if (float.TryParse(node.GetAttribute("Split"), out float value1))
-                _split.SplitterValue = value1;
+            LayoutDeserializeSplitter(node, "Split", _split);
         }
 
         /// <inheritdoc />

@@ -3,7 +3,6 @@
 #include "Animation.h"
 #include "SkinnedModel.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Animations/CurveSerialization.h"
 #include "Engine/Animations/AnimEvent.h"
@@ -30,9 +29,7 @@ void Animation::OnScriptsReloadStart()
     for (auto& e : Events)
     {
         for (auto& k : e.Second.GetKeyframes())
-        {
             Level::ScriptsReloadRegisterObject((ScriptingObject*&)k.Value.Instance);
-        }
     }
 }
 
@@ -67,70 +64,9 @@ Animation::InfoData Animation::GetInfo() const
     }
     info.MemoryUsage += Events.Capacity() * sizeof(Pair<String, StepCurve<AnimEventData>>);
     info.MemoryUsage += NestedAnims.Capacity() * sizeof(Pair<String, NestedAnimData>);
-    info.MemoryUsage += MappingCache.Capacity() * (sizeof(void*) + sizeof(NodeToChannel) + 1);
     for (auto& e : Events)
         info.MemoryUsage += e.Second.GetKeyframes().Capacity() * sizeof(StepCurve<AnimEventData>);
-    for (auto& e : MappingCache)
-        info.MemoryUsage += e.Value.Capacity() * sizeof(int32);
     return info;
-}
-
-void Animation::ClearCache()
-{
-    ScopeLock lock(Locker);
-
-    // Unlink events
-    for (auto i = MappingCache.Begin(); i.IsNotEnd(); ++i)
-    {
-        i->Key->OnUnloaded.Unbind<Animation, &Animation::OnSkinnedModelUnloaded>(this);
-        i->Key->OnReloading.Unbind<Animation, &Animation::OnSkinnedModelUnloaded>(this);
-    }
-
-    // Free memory
-    MappingCache.Clear();
-    MappingCache.SetCapacity(0);
-}
-
-const Animation::NodeToChannel* Animation::GetMapping(SkinnedModel* obj)
-{
-    ASSERT(obj && obj->IsLoaded() && IsLoaded());
-
-    ScopeLock lock(Locker);
-
-    // Try quick lookup
-    NodeToChannel* result = MappingCache.TryGet(obj);
-    if (result == nullptr)
-    {
-        PROFILE_CPU();
-
-        // Add to cache
-        NodeToChannel tmp;
-        auto bucket = MappingCache.Add(obj, tmp);
-        result = &bucket->Value;
-        obj->OnUnloaded.Bind<Animation, &Animation::OnSkinnedModelUnloaded>(this);
-        obj->OnReloading.Bind<Animation, &Animation::OnSkinnedModelUnloaded>(this);
-
-        // Initialize the mapping
-        const auto& skeleton = obj->Skeleton;
-        const int32 nodesCount = skeleton.Nodes.Count();
-        result->Resize(nodesCount, false);
-        result->SetAll(-1);
-        for (int32 i = 0; i < Data.Channels.Count(); i++)
-        {
-            auto& nodeAnim = Data.Channels[i];
-
-            for (int32 j = 0; j < nodesCount; j++)
-            {
-                if (skeleton.Nodes[j].Name == nodeAnim.NodeName)
-                {
-                    result->At(j) = i;
-                    break;
-                }
-            }
-        }
-    }
-
-    return result;
 }
 
 #if USE_EDITOR
@@ -552,23 +488,6 @@ bool Animation::Save(const StringView& path)
 
 #endif
 
-void Animation::OnSkinnedModelUnloaded(Asset* obj)
-{
-    ScopeLock lock(Locker);
-
-    const auto key = static_cast<SkinnedModel*>(obj);
-    auto i = MappingCache.Find(key);
-    ASSERT(i != MappingCache.End());
-
-    // Unlink event
-    key->OnUnloaded.Unbind<Animation, &Animation::OnSkinnedModelUnloaded>(this);
-    key->OnReloading.Unbind<Animation, &Animation::OnSkinnedModelUnloaded>(this);
-
-    // Clear cache
-    i->Value.Resize(0, false);
-    MappingCache.Remove(i);
-}
-
 uint64 Animation::GetMemoryUsage() const
 {
     Locker.Lock();
@@ -579,9 +498,6 @@ uint64 Animation::GetMemoryUsage() const
     for (const auto& e : Events)
         result += e.First.Length() * sizeof(Char) + e.Second.GetMemoryUsage();
     result += NestedAnims.Capacity() * sizeof(Pair<String, NestedAnimData>);
-    result += MappingCache.Capacity() * sizeof(Pair<String, StepCurve<AnimEventData>>);
-    for (const auto& e : MappingCache)
-        result += e.Value.Capacity() * sizeof(int32);
     Locker.Unlock();
     return result;
 }
@@ -738,7 +654,6 @@ void Animation::unload(bool isReloading)
         Level::ScriptsReloadStart.Unbind<Animation, &Animation::OnScriptsReloadStart>(this);
     }
 #endif
-    ClearCache();
     Data.Dispose();
     for (const auto& e : Events)
     {

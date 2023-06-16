@@ -422,7 +422,7 @@ namespace FlaxEditor.Viewport
             var actor = new Camera
             {
                 StaticFlags = StaticFlags.None,
-                Name = StringUtils.IncrementNameNumber("Camera", x => parent.GetChild(x) == null),
+                Name = Utilities.Utils.IncrementNameNumber("Camera", x => parent.GetChild(x) == null),
                 Transform = ViewTransform,
                 NearPlane = NearPlane,
                 FarPlane = FarPlane,
@@ -998,7 +998,7 @@ namespace FlaxEditor.Viewport
         {
             actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
             var parent = actor.Parent ?? Level.GetScene(0);
-            actor.Name = StringUtils.IncrementNameNumber(actor.Name, x => parent.GetChild(x) == null);
+            actor.Name = Utilities.Utils.IncrementNameNumber(actor.Name, x => parent.GetChild(x) == null);
             Editor.Instance.SceneEditing.Spawn(actor);
             Focus();
         }

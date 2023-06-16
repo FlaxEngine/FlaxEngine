@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System.Xml;
+using System.Globalization;
 using FlaxEngine;
 using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
@@ -421,6 +422,29 @@ namespace FlaxEditor.GUI.Docking
         /// </summary>
         public virtual void OnLayoutDeserialize()
         {
+        }
+
+        /// <summary>
+        /// Serializes splitter panel value into the saved layout.
+        /// </summary>
+        /// <param name="writer">The Xml writer.</param>
+        /// <param name="name">The Xml attribute name to use for value.</param>
+        /// <param name="splitter">The splitter panel.</param>
+        protected void LayoutSerializeSplitter(XmlWriter writer, string name, SplitPanel splitter)
+        {
+            writer.WriteAttributeString(name, splitter.SplitterValue.ToString(CultureInfo.InvariantCulture));
+        }
+
+        /// <summary>
+        /// Deserializes splitter panel value from the saved layout.
+        /// </summary>
+        /// <param name="node">The Xml document node.</param>
+        /// <param name="name">The Xml attribute name to use for value.</param>
+        /// <param name="splitter">The splitter panel.</param>
+        protected void LayoutDeserializeSplitter(XmlElement node, string name, SplitPanel splitter)
+        {
+            if (float.TryParse(node.GetAttribute(name), CultureInfo.InvariantCulture, out float value) && value > 0.01f && value < 0.99f)
+                splitter.SplitterValue = value;
         }
 
         /// <inheritdoc />

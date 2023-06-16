@@ -197,8 +197,8 @@ void PlatformBase::OnMemoryAlloc(void* ptr, uint64 size)
 
 #if TRACY_ENABLE_MEMORY
     // Track memory allocation in Tracy
-    //tracy::Profiler::MemAlloc(ptr, size, false);
-    tracy::Profiler::MemAllocCallstack(ptr, size, 12, false);
+    //tracy::Profiler::MemAlloc(ptr, (size_t)size, false);
+    tracy::Profiler::MemAllocCallstack(ptr, (size_t)size, 12, false);
 #endif
 
     // Register allocation during the current CPU event
@@ -521,6 +521,15 @@ void PlatformBase::CreateGuid(Guid& result)
     result = Guid(dateThingHigh, randomThing | (sequentialThing << 16), cyclesThing, dateThingLow);
 }
 
+bool PlatformBase::CanOpenUrl(const StringView& url)
+{
+    return false;
+}
+
+void PlatformBase::OpenUrl(const StringView& url)
+{
+}
+
 Float2 PlatformBase::GetMousePosition()
 {
     const Window* win = Engine::MainWindow;
@@ -534,6 +543,16 @@ void PlatformBase::SetMousePosition(const Float2& position)
     const Window* win = Engine::MainWindow;
     if (win)
         win->SetMousePosition(win->ScreenToClient(position));
+}
+
+Rectangle PlatformBase::GetMonitorBounds(const Float2& screenPos)
+{
+    return Rectangle(Float2::Zero, Platform::GetDesktopSize());
+}
+
+Rectangle PlatformBase::GetVirtualDesktopBounds()
+{
+    return Rectangle(Float2::Zero, Platform::GetDesktopSize());
 }
 
 Float2 PlatformBase::GetVirtualDesktopSize()
@@ -558,22 +577,49 @@ bool PlatformBase::SetEnvironmentVariable(const String& name, const String& valu
     return true;
 }
 
-int32 PlatformBase::StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow, bool waitForEnd)
+int32 PlatformBase::CreateProcess(CreateProcessSettings& settings)
 {
     // Not supported
     return -1;
+}
+
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
+#include "Engine/Platform/CreateProcessSettings.h"
+
+int32 PlatformBase::StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow, bool waitForEnd)
+{
+    CreateProcessSettings procSettings;
+    procSettings.FileName = filename;
+    procSettings.Arguments = args;
+    procSettings.WorkingDirectory = workingDir;
+    procSettings.HiddenWindow = hiddenWindow;
+    procSettings.WaitForEnd = waitForEnd;
+    procSettings.LogOutput = waitForEnd;
+    procSettings.ShellExecute = true;
+    return Platform::CreateProcess(procSettings);
 }
 
 int32 PlatformBase::RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow)
 {
-    return Platform::RunProcess(cmdLine, workingDir, Dictionary<String, String>(), hiddenWindow);
+    CreateProcessSettings procSettings;
+    procSettings.FileName = cmdLine;
+    procSettings.WorkingDirectory = workingDir;
+    procSettings.HiddenWindow = hiddenWindow;
+    return Platform::CreateProcess(procSettings);
 }
 
 int32 PlatformBase::RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool hiddenWindow)
 {
-    // Not supported
-    return -1;
+    CreateProcessSettings procSettings;
+    procSettings.FileName = cmdLine;
+    procSettings.WorkingDirectory = workingDir;
+    procSettings.Environment = environment;
+    procSettings.HiddenWindow = hiddenWindow;
+    return Platform::CreateProcess(procSettings);
 }
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 Array<PlatformBase::StackFrame> PlatformBase::GetStackFrames(int32 skipCount, int32 maxDepth, void* context)
 {
@@ -632,6 +678,8 @@ const Char* ToString(PlatformType type)
         return TEXT("PlayStation 5");
     case PlatformType::Mac:
         return TEXT("Mac");
+    case PlatformType::iOS:
+        return TEXT("iOS");
     default:
         return TEXT("");
     }

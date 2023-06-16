@@ -11,9 +11,9 @@
 #include <string>
 #endif
 
-const char DirectorySeparatorChar = '\\';
-const char AltDirectorySeparatorChar = '/';
-const char VolumeSeparatorChar = ':';
+constexpr char DirectorySeparatorChar = '\\';
+constexpr char AltDirectorySeparatorChar = '/';
+constexpr char VolumeSeparatorChar = ':';
 
 const Char* StringUtils::FindIgnoreCase(const Char* str, const Char* toFind)
 {
@@ -337,17 +337,22 @@ void StringUtils::PathRemoveRelativeParts(String& path)
     path.Split(TEXT('/'), components);
 
     Array<String, InlinedAllocation<16>> stack;
-    for (auto& bit : components)
+    for (String& bit : components)
     {
         if (bit == TEXT(".."))
         {
             if (stack.HasItems())
             {
-                auto popped = stack.Pop();
+                String popped = stack.Pop();
+                const int32 windowsDriveStart = popped.Find('\\');
                 if (popped == TEXT(".."))
                 {
                     stack.Push(popped);
                     stack.Push(bit);
+                }
+                else if (windowsDriveStart != -1)
+                {
+                    stack.Add(MoveTemp(popped.Left(windowsDriveStart + 1)));
                 }
             }
             else
@@ -361,32 +366,29 @@ void StringUtils::PathRemoveRelativeParts(String& path)
         }
         else
         {
-            stack.Push(bit);
+            stack.Add(MoveTemp(bit));
         }
     }
 
     const bool isRooted = path.StartsWith(TEXT('/')) || (path.Length() >= 2 && path[0] == '.' && path[1] == '/');
     path.Clear();
-    for (auto& e : stack)
+    for (const String& e : stack)
         path /= e;
     if (isRooted && path.HasChars() && path[0] != '/')
         path.Insert(0, TEXT("/"));
 }
 
-const char DigitPairs[201] = {
-    "00010203040506070809"
-    "10111213141516171819"
-    "20212223242526272829"
-    "30313233343536373839"
-    "40414243444546474849"
-    "50515253545556575859"
-    "60616263646566676869"
-    "70717273747576777879"
-    "80818283848586878889"
-    "90919293949596979899"
-};
-
-#define STRING_UTILS_ITOSTR_BUFFER_SIZE 15
+int32 StringUtils::HexDigit(Char c)
+{
+    int32 result = 0;
+    if (c >= '0' && c <= '9')
+        result = c - '0';
+    else if (c >= 'a' && c <= 'f')
+        result = c + 10 - 'a';
+    else if (c >= 'A' && c <= 'F')
+        result = c + 10 - 'A';
+    return result;
+}
 
 bool StringUtils::Parse(const Char* str, float* result)
 {
@@ -414,108 +416,22 @@ bool StringUtils::Parse(const char* str, float* result)
 
 String StringUtils::ToString(int32 value)
 {
-    char buf[STRING_UTILS_ITOSTR_BUFFER_SIZE];
-    char* it = &buf[STRING_UTILS_ITOSTR_BUFFER_SIZE - 2];
-    int32 div = value / 100;
-    if (value >= 0)
-    {
-        while (div)
-        {
-            Platform::MemoryCopy(it, &DigitPairs[2 * (value - div * 100)], 2);
-            value = div;
-            it -= 2;
-            div = value / 100;
-        }
-        Platform::MemoryCopy(it, &DigitPairs[2 * value], 2);
-        if (value < 10)
-            it++;
-    }
-    else
-    {
-        while (div)
-        {
-            Platform::MemoryCopy(it, &DigitPairs[-2 * (value - div * 100)], 2);
-            value = div;
-            it -= 2;
-            div = value / 100;
-        }
-        Platform::MemoryCopy(it, &DigitPairs[-2 * value], 2);
-        if (value <= -10)
-            it--;
-        *it = '-';
-    }
-    return String(it, (int32)(&buf[STRING_UTILS_ITOSTR_BUFFER_SIZE] - it));
+    return String::Format(TEXT("{}"), value);
 }
 
 String StringUtils::ToString(int64 value)
 {
-    char buf[STRING_UTILS_ITOSTR_BUFFER_SIZE];
-    char* it = &buf[STRING_UTILS_ITOSTR_BUFFER_SIZE - 2];
-    int64 div = value / 100;
-    if (value >= 0)
-    {
-        while (div)
-        {
-            Platform::MemoryCopy(it, &DigitPairs[2 * (value - div * 100)], 2);
-            value = div;
-            it -= 2;
-            div = value / 100;
-        }
-        Platform::MemoryCopy(it, &DigitPairs[2 * value], 2);
-        if (value < 10)
-            it++;
-    }
-    else
-    {
-        while (div)
-        {
-            Platform::MemoryCopy(it, &DigitPairs[-2 * (value - div * 100)], 2);
-            value = div;
-            it -= 2;
-            div = value / 100;
-        }
-        Platform::MemoryCopy(it, &DigitPairs[-2 * value], 2);
-        if (value <= -10)
-            it--;
-        *it = '-';
-    }
-    return String(it, (int32)(&buf[STRING_UTILS_ITOSTR_BUFFER_SIZE] - it));
+    return String::Format(TEXT("{}"), value);
 }
 
 String StringUtils::ToString(uint32 value)
 {
-    char buf[STRING_UTILS_ITOSTR_BUFFER_SIZE];
-    char* it = &buf[STRING_UTILS_ITOSTR_BUFFER_SIZE - 2];
-    int32 div = value / 100;
-    while (div)
-    {
-        Platform::MemoryCopy(it, &DigitPairs[2 * (value - div * 100)], 2);
-        value = div;
-        it -= 2;
-        div = value / 100;
-    }
-    Platform::MemoryCopy(it, &DigitPairs[2 * value], 2);
-    if (value < 10)
-        it++;
-    return String((char*)it, (int32)((char*)&buf[STRING_UTILS_ITOSTR_BUFFER_SIZE] - (char*)it));
+    return String::Format(TEXT("{}"), value);
 }
 
 String StringUtils::ToString(uint64 value)
 {
-    char buf[STRING_UTILS_ITOSTR_BUFFER_SIZE];
-    char* it = &buf[STRING_UTILS_ITOSTR_BUFFER_SIZE - 2];
-    int64 div = value / 100;
-    while (div)
-    {
-        Platform::MemoryCopy(it, &DigitPairs[2 * (value - div * 100)], 2);
-        value = div;
-        it -= 2;
-        div = value / 100;
-    }
-    Platform::MemoryCopy(it, &DigitPairs[2 * value], 2);
-    if (value < 10)
-        it++;
-    return String((char*)it, (int32)((char*)&buf[STRING_UTILS_ITOSTR_BUFFER_SIZE] - (char*)it));
+    return String::Format(TEXT("{}"), value);
 }
 
 String StringUtils::ToString(float value)
@@ -539,5 +455,3 @@ String StringUtils::GetZZString(const Char* str)
     }
     return String(str, (int32)(end - str));
 }
-
-#undef STRING_UTILS_ITOSTR_BUFFER_SIZE

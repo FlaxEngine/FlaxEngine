@@ -9,7 +9,6 @@
 #include "Engine/Engine/GameplayGlobals.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Level/Actor.h"
-#include "Engine/Scripting/ManagedCLR/MType.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MField.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
@@ -693,14 +692,14 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeNameAnsiView);
         if (!typeHandle)
         {
-#if !COMPILE_WITHOUT_CSHARP
+#if USE_CSHARP
             const auto mclass = Scripting::FindClass(typeNameAnsiView);
             if (mclass)
             {
                 // Fallback to C#-only types
-                auto instance = (MonoObject*)structureValue;
+                auto instance = (MObject*)structureValue;
                 CHECK(instance);
-                if (structureValue.Type.Type != VariantType::ManagedObject || mono_object_get_class(instance) != mclass->GetNative())
+                if (structureValue.Type.Type != VariantType::ManagedObject || MCore::Object::GetClass(instance) != mclass)
                 {
                     OnError(node, box, String::Format(TEXT("Cannot unpack value of type {0} to structure of type {1}"), String(MUtils::GetClassFullname(instance)), typeName));
                     return;
@@ -982,6 +981,9 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
             break;
         case PlatformType::Mac:
             boxId = 11;
+            break;
+        case PlatformType::iOS:
+            boxId = 12;
             break;
         default: ;
         }

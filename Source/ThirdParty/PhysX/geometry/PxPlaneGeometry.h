@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,18 +22,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_PHYSICS_NX_PLANE_GEOMETRY
-#define PX_PHYSICS_NX_PLANE_GEOMETRY
+#ifndef PX_PLANE_GEOMETRY_H
+#define PX_PLANE_GEOMETRY_H
 /** \addtogroup geomutils
 @{
 */
-#include "foundation/PxPlane.h"
-#include "foundation/PxTransform.h"
 #include "geometry/PxGeometry.h"
 #include "foundation/PxFoundationConfig.h"
 
@@ -59,7 +55,25 @@ To generate a PxTransform from a PxPlane, use PxTransformFromPlaneEquation.
 class PxPlaneGeometry : public PxGeometry 
 {
 public:
-	PX_INLINE PxPlaneGeometry() :	PxGeometry(PxGeometryType::ePLANE) {}
+	/**
+	\brief Constructor.
+	*/
+	PX_INLINE PxPlaneGeometry() : PxGeometry(PxGeometryType::ePLANE) {}
+
+	/**
+	\brief Copy constructor.
+
+	\param[in] that		Other object
+	*/
+	PX_INLINE PxPlaneGeometry(const PxPlaneGeometry& that) : PxGeometry(that) {}
+
+	/**
+	\brief Assignment operator
+	*/
+	PX_INLINE void operator=(const PxPlaneGeometry& that)
+	{
+		mType = that.mType;
+	}
 
 	/**
 	\brief Returns true if the geometry is valid.
@@ -69,36 +83,13 @@ public:
 	PX_INLINE bool isValid() const;
 };
 
-
 PX_INLINE bool PxPlaneGeometry::isValid() const
 {
-	if (mType != PxGeometryType::ePLANE)
+	if(mType != PxGeometryType::ePLANE)
 		return false;
 
 	return true;
 }
-
-
-/** \brief creates a transform from a plane equation, suitable for an actor transform for a PxPlaneGeometry
-
-\param[in] plane the desired plane equation
-\return a PxTransform which will transform the plane PxPlane(1,0,0,0) to the specified plane
-*/
-
-PX_FOUNDATION_API PxTransform PxTransformFromPlaneEquation(const PxPlane& plane);
-
-/** \brief creates a plane equation from a transform, such as the actor transform for a PxPlaneGeometry
-
-\param[in] transform the transform
-\return the plane
-*/
-
-
-PX_INLINE PxPlane PxPlaneEquationFromTransform(const PxTransform& transform)
-{
-	return transform.transform(PxPlane(1.f,0.f,0.f,0.f));
-}
-
 
 #if !PX_DOXYGEN
 } // namespace physx

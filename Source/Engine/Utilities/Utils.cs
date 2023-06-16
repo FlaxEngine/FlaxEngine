@@ -5,14 +5,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using FlaxEngine.Interop;
 
 namespace FlaxEngine
 {
     /// <summary>
     /// Class with helper functions.
     /// </summary>
-    public static class Utils
+    public static partial class Utils
     {
         /// <summary>
         /// Copies data from one memory location to another using an unmanaged memory pointers.
@@ -35,8 +37,8 @@ namespace FlaxEngine
         /// <param name="source">The source location.</param>
         /// <param name="destination">The destination location.</param>
         /// <param name="length">The length (amount of bytes to copy).</param>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void MemoryCopy(IntPtr destination, IntPtr source, ulong length);
+        [LibraryImport("FlaxEngine", EntryPoint = "PlatformInternal_MemoryCopy")]
+        public static partial void MemoryCopy(IntPtr destination, IntPtr source, ulong length);
 
         /// <summary>
         /// Clears the memory region with zeros.
@@ -44,8 +46,8 @@ namespace FlaxEngine
         /// <remarks>Uses low-level platform impl.</remarks>
         /// <param name="dst">Destination memory address</param>
         /// <param name="size">Size of the memory to clear in bytes</param>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void MemoryClear(IntPtr dst, ulong size);
+        [LibraryImport("FlaxEngine", EntryPoint = "PlatformInternal_MemoryClear")]
+        public static partial void MemoryClear(IntPtr dst, ulong size);
 
         /// <summary>
         /// Compares two blocks of the memory.
@@ -54,8 +56,8 @@ namespace FlaxEngine
         /// <param name="buf1">The first buffer address.</param>
         /// <param name="buf2">The second buffer address.</param>
         /// <param name="size">Size of the memory to compare in bytes.</param>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int MemoryCompare(IntPtr buf1, IntPtr buf2, ulong size);
+        [LibraryImport("FlaxEngine", EntryPoint = "PlatformInternal_MemoryCompare")]
+        public static partial int MemoryCompare(IntPtr buf1, IntPtr buf2, ulong size);
 
         /// <summary>
         /// Rounds the floating point value up to 1 decimal place.
@@ -94,7 +96,11 @@ namespace FlaxEngine
         /// <returns>The empty array object.</returns>
         public static T[] GetEmptyArray<T>()
         {
+#if USE_NETCORE
+            return Array.Empty<T>();
+#else
             return Enumerable.Empty<T>() as T[];
+#endif
         }
 
         /// <summary>
@@ -179,13 +185,26 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets all currently loaded assemblies in the runtime.
+        /// </summary>
+        /// <returns>List of assemblies</returns>
+        public static Assembly[] GetAssemblies()
+        {
+#if USE_NETCORE
+            return AssemblyLoadContext.Default.Assemblies.Concat(NativeInterop.scriptingAssemblyLoadContext.Assemblies).ToArray();
+#else
+            return AppDomain.CurrentDomain.GetAssemblies();
+#endif
+        }
+
+        /// <summary>
         /// Gets the assembly with the given name.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <returns>The assembly or null if not found.</returns>
         public static Assembly GetAssemblyByName(string name)
         {
-            return GetAssemblyByName(name, AppDomain.CurrentDomain.GetAssemblies());
+            return GetAssemblyByName(name, GetAssemblies());
         }
 
         /// <summary>
@@ -209,10 +228,49 @@ namespace FlaxEngine
             return result;
         }
 
+        /// <summary>
+        /// Gets the location of the assembly.
+        /// </summary>
+        /// <param name="assembly">The assembly.</param>
+        /// <returns>Path in the filesystem</returns>
+        public static string GetAssemblyLocation(Assembly assembly)
+        {
+#if USE_NETCORE
+            var location = assembly.Location;
+            if (!string.IsNullOrEmpty(location))
+                return location;
+            if (Interop.NativeInterop.AssemblyLocations.TryGetValue(assembly.FullName, out location))
+                return location;
+            return null;
+#else
+            return assembly.Location;
+#endif
+        }
+
+#if USE_MONO
         internal static T[] ExtractArrayFromList<T>(List<T> list)
         {
             return list != null ? (T[])Internal_ExtractArrayFromList(list) : null;
         }
+#else
+        private class ExtractArrayFromListContext<T>
+        {
+            public static FieldInfo? itemsField;
+        }
+        internal static T[] ExtractArrayFromList<T>(List<T> list)
+        {
+            if (list == null)
+                return null;
+
+            if (ExtractArrayFromListContext<T>.itemsField == null)
+            {
+                Type listType = typeof(List<T>);
+                ExtractArrayFromListContext<T>.itemsField = listType.GetField("_items", BindingFlags.NonPublic | BindingFlags.Instance);
+            }
+
+            return (T[])ExtractArrayFromListContext<T>.itemsField.GetValue(list); // boxing is slower;
+        }
+#endif
 
         internal static Float2[] ConvertCollection(Vector2[] v)
         {
@@ -295,8 +353,12 @@ namespace FlaxEngine
             return result;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Array Internal_ExtractArrayFromList(object list);
+#if USE_NETCORE
+#else
+        [LibraryImport("FlaxEngine", EntryPoint = "UtilsInternal_ExtractArrayFromList")]
+        [return: MarshalUsing(typeof(FlaxEngine.SystemArrayMarshaller))]
+        internal static partial Array Internal_ExtractArrayFromList([MarshalUsing(typeof(FlaxEngine.GCHandleMarshaller))] object list);
+#endif
 
         /// <summary>
         /// Reads the color from the binary stream.
@@ -955,6 +1017,26 @@ namespace FlaxEngine
                     field.SetValue(obj, fieldValue);
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets the array of method parameter types.
+        /// </summary>
+        /// <param name="method">The method to get it's parameters.</param>
+        /// <returns>Method parameters array.</returns>
+        public static Type[] GetParameterTypes(this MethodBase method)
+        {
+            Type[] parameterTypes;
+            var parameters = method.GetParameters();
+            if (parameters.Length != 0)
+            {
+                parameterTypes = new Type[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++)
+                    parameterTypes[i] = parameters[i].ParameterType;
+            }
+            else
+                parameterTypes = Array.Empty<Type>();
+            return parameterTypes;
         }
     }
 }

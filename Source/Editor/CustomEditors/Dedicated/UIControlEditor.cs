@@ -698,7 +698,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 string newName = controlType.Name + uiControl.Name.Substring(previousName.Length);
                 if (uiControl.Parent != null)
-                    newName = StringUtils.IncrementNameNumber(newName, x => uiControl.Parent.GetChild(x) == null);
+                    newName = Utilities.Utils.IncrementNameNumber(newName, x => uiControl.Parent.GetChild(x) == null);
                 uiControl.Name = newName;
             }
         }

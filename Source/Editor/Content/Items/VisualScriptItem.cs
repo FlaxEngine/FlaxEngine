@@ -8,6 +8,7 @@ using System.Reflection;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.Json;
+using FlaxEngine.Utilities;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Content
@@ -134,7 +135,7 @@ namespace FlaxEditor.Content
             _index = index;
             type.Asset.GetMethodSignature(index, out _name, out _flags, out var returnTypeName, out var paramNames, out var paramTypeNames, out var paramOuts);
             _returnType = TypeUtils.GetType(returnTypeName);
-            if (paramNames.Length != 0)
+            if (paramNames != null && paramNames.Length != 0)
             {
                 _parameters = new ScriptMemberInfo.Parameter[paramNames.Length];
                 for (int i = 0; i < _parameters.Length; i++)
@@ -310,7 +311,10 @@ namespace FlaxEditor.Content
 
         internal void Dispose()
         {
-            OnAssetReloading(_asset);
+            if (_parameters != null)
+            {
+                OnAssetReloading(_asset);
+            }
             _asset = null;
         }
 

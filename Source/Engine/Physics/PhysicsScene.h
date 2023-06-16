@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -99,6 +99,13 @@ public:
     /// Sets the current scene origin that defines the center of the simulation (in world). Can be used to run physics simulation relative to the camera.
     /// </summary>
     API_PROPERTY() void SetOrigin(const Vector3& value);
+
+#if COMPILE_WITH_PROFILER
+    /// <summary>
+    /// Gets the physics simulation statistics for the scene.
+    /// </summary>
+    API_PROPERTY() PhysicsStatistics GetStatistics() const;
+#endif
 
 public:
     /// <summary>

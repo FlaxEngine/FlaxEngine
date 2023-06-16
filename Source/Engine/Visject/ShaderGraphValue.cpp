@@ -40,11 +40,11 @@ ShaderGraphValue::ShaderGraphValue(const Variant& v)
         break;
     case VariantType::Float:
         Type = VariantType::Types::Float;
-        Value = String::Format(TEXT("{0}"), v.AsFloat);
+        Value = String::Format(TEXT("{}"), v.AsFloat);
         break;
     case VariantType::Double:
         Type = VariantType::Types::Float;
-        Value = String::Format(TEXT("{0}"), (float)v.AsDouble);
+        Value = String::Format(TEXT("{}"), (float)v.AsDouble);
         break;
     case VariantType::Float2:
     {
@@ -412,7 +412,7 @@ ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::
         case VariantType::Types::Float4:
         case VariantType::Types::Double4:
         case VariantType::Types::Quaternion:
-            format = TEXT("{0}");
+            format = TEXT("{}");
             break;
         }
         break;
@@ -422,7 +422,7 @@ ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::
         case VariantType::Types::Color:
         case VariantType::Types::Float4:
         case VariantType::Types::Double4:
-            format = TEXT("{0}");
+            format = TEXT("{}");
             break;
         }
         break;

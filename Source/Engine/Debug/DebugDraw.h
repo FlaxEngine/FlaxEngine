@@ -590,7 +590,8 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="color">The color.</param>
     /// <param name="size">The font size.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
-    API_FUNCTION() static void DrawText(const StringView& text, const Vector3& position, const Color& color, int32 size = 32, float duration = 0.0f);
+    /// <param name="scale">The text scale.</param>
+    API_FUNCTION() static void DrawText(const StringView& text, const Vector3& position, const Color& color, int32 size = 32, float duration = 0.0f, float scale = 1.0f);
 
     /// <summary>
     /// Draws the text (3D).

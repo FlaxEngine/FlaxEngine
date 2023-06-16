@@ -147,13 +147,8 @@ namespace FlaxEngine.Json
         /// <returns>True if both objects are equal, otherwise false.</returns>
         public static bool ValueEquals(object objA, object objB)
         {
-            // If referenced object has the same linkage to the prefab object as the default value used in SerializeDiff, then mark it as equal
-            /*if (objA is ISceneObject sceneObjA && objB is ISceneObject sceneObjB && (sceneObjA.HasPrefabLink || sceneObjB.HasPrefabLink))
-            {
-                return sceneObjA.PrefabObjectID == sceneObjB.PrefabObjectID;
-            }*/
-
-            return Newtonsoft.Json.Utilities.MiscellaneousUtils.DefaultValueEquals(objA, objB);
+            // Use default value comparision used by C# json serialization library
+            return Newtonsoft.Json.Utilities.MiscellaneousUtils.ValueEquals(objA, objB);
         }
 
         /// <summary>

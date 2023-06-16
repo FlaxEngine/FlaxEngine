@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,13 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_PHYSICS_NX_RIGIDDYNAMIC
-#define PX_PHYSICS_NX_RIGIDDYNAMIC
+#ifndef PX_RIGID_DYNAMIC_H
+#define PX_RIGID_DYNAMIC_H
 /** \addtogroup physics
 @{
 */
@@ -155,11 +153,13 @@ public:
 	If an actor is asleep after the call to PxScene::fetchResults() returns, it is guaranteed that the pose of the actor 
 	was not changed. You can use this information to avoid updating the transforms of associated objects.
 
-	\note A kinematic actor is asleep unless a target pose has been set (in which case it will stay awake until the end of the next 
-	simulation step where no target pose has been set anymore). The wake counter will get set to zero or to the reset value 
+	\note A kinematic actor is asleep unless a target pose has been set (in which case it will stay awake until two consecutive 
+	simulation steps without a target pose being set have passed). The wake counter will get set to zero or to the reset value 
 	#PxSceneDesc::wakeCounterResetValue in the case where a target pose has been set to be consistent with the definitions above.
 
 	\note It is invalid to use this method if the actor has not been added to a scene already.
+
+	\note It is not allowed to use this method while the simulation is running.
 
 	\return True if the actor is sleeping.
 
@@ -244,8 +244,72 @@ public:
 	virtual		void				setRigidDynamicLockFlag(PxRigidDynamicLockFlag::Enum flag, bool value) = 0;
 	virtual		void				setRigidDynamicLockFlags(PxRigidDynamicLockFlags flags) = 0;
 	
+	/**
+	\brief Retrieves the linear velocity of an actor.
 
+	\note It is not allowed to use this method while the simulation is running (except during PxScene::collide(),
+	in PxContactModifyCallback or in contact report callbacks).
 
+	\return The linear velocity of the actor.
+
+	@see PxRigidDynamic.setLinearVelocity() getAngularVelocity()
+	*/
+	virtual		PxVec3			getLinearVelocity()		const = 0;
+
+	/**
+	\brief Sets the linear velocity of the actor.
+
+	Note that if you continuously set the velocity of an actor yourself,
+	forces such as gravity or friction will not be able to manifest themselves, because forces directly
+	influence only the velocity/momentum of an actor.
+
+	<b>Default:</b> (0.0, 0.0, 0.0)
+
+	<b>Sleeping:</b> This call wakes the actor if it is sleeping, and the autowake parameter is true (default) or the
+	new velocity is non-zero.
+
+	\note It is invalid to use this method if PxActorFlag::eDISABLE_SIMULATION is set.
+
+	\param[in] linVel New linear velocity of actor. <b>Range:</b> velocity vector
+	\param[in] autowake Whether to wake the object up if it is asleep. If true and the current wake counter value is
+	smaller than #PxSceneDesc::wakeCounterResetValue it will get increased to the reset value.
+
+	@see getLinearVelocity() setAngularVelocity()
+	*/
+	virtual		void			setLinearVelocity(const PxVec3& linVel, bool autowake = true) = 0;
+
+	/**
+	\brief Retrieves the angular velocity of the actor.
+
+	\note It is not allowed to use this method while the simulation is running (except during PxScene::collide(),
+	in PxContactModifyCallback or in contact report callbacks).
+
+	\return The angular velocity of the actor.
+
+	@see PxRigidDynamic.setAngularVelocity() getLinearVelocity()
+	*/
+	virtual		PxVec3			getAngularVelocity()	const = 0;
+
+	/**
+	\brief Sets the angular velocity of the actor.
+
+	Note that if you continuously set the angular velocity of an actor yourself,
+	forces such as friction will not be able to rotate the actor, because forces directly influence only the velocity/momentum.
+
+	<b>Default:</b> (0.0, 0.0, 0.0)
+
+	<b>Sleeping:</b> This call wakes the actor if it is sleeping, and the autowake parameter is true (default) or the
+	new velocity is non-zero.
+
+	\note It is invalid to use this method if PxActorFlag::eDISABLE_SIMULATION is set.
+
+	\param[in] angVel New angular velocity of actor. <b>Range:</b> angular velocity vector
+	\param[in] autowake Whether to wake the object up if it is asleep. If true and the current wake counter value is
+	smaller than #PxSceneDesc::wakeCounterResetValue it will get increased to the reset value.
+
+	@see getAngularVelocity() setLinearVelocity()
+	*/
+	virtual		void			setAngularVelocity(const PxVec3& angVel, bool autowake = true) = 0;
 	/**
 	\brief Sets the wake counter for the actor.
 
@@ -270,6 +334,8 @@ public:
 
 	/**
 	\brief Returns the wake counter of the actor.
+
+	\note It is not allowed to use this method while the simulation is running.
 
 	\return The wake counter of the actor.
 
@@ -325,7 +391,7 @@ public:
 	<b>Default:</b> 4 position iterations, 1 velocity iteration
 
 	\param[in] minPositionIters Number of position iterations the solver should perform for this body. <b>Range:</b> [1,255]
-	\param[in] minVelocityIters Number of velocity iterations the solver should perform for this body. <b>Range:</b> [1,255]
+	\param[in] minVelocityIters Number of velocity iterations the solver should perform for this body. <b>Range:</b> [0,255]
 
 	@see getSolverIterationCounts()
 	*/
@@ -373,7 +439,7 @@ public:
 	virtual		const char*			getConcreteTypeName() const { return "PxRigidDynamic"; }
 
 protected:
-	PX_INLINE						PxRigidDynamic(PxType concreteType, PxBaseFlags baseFlags) : PxRigidBody(concreteType, baseFlags) {}
+	PX_INLINE						PxRigidDynamic(PxType concreteType, PxBaseFlags baseFlags) : PxRigidBody(concreteType, baseFlags) { }
 	PX_INLINE						PxRigidDynamic(PxBaseFlags baseFlags) : PxRigidBody(baseFlags) {}
 	virtual							~PxRigidDynamic() {}
 	virtual		bool				isKindOf(const char* name) const { return !::strcmp("PxRigidDynamic", name) || PxRigidBody::isKindOf(name); }
