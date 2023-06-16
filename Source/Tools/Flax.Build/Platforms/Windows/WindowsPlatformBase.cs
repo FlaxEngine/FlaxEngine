@@ -200,7 +200,6 @@ namespace Flax.Build.Platforms
                 value = null;
                 return false;
             }
-
             return true;
         }
 
@@ -214,25 +213,13 @@ namespace Flax.Build.Platforms
         public static bool TryReadInstallDirRegistryKey32(string keySuffix, string valueName, out string dir)
         {
             if (TryReadDirRegistryKey("HKEY_CURRENT_USER\\SOFTWARE\\" + keySuffix, valueName, out dir))
-            {
                 return true;
-            }
-
             if (TryReadDirRegistryKey("HKEY_LOCAL_MACHINE\\SOFTWARE\\" + keySuffix, valueName, out dir))
-            {
                 return true;
-            }
-
             if (TryReadDirRegistryKey("HKEY_CURRENT_USER\\SOFTWARE\\Wow6432Node\\" + keySuffix, valueName, out dir))
-            {
                 return true;
-            }
-
             if (TryReadDirRegistryKey("HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\" + keySuffix, valueName, out dir))
-            {
                 return true;
-            }
-
             return false;
         }
 
@@ -358,7 +345,6 @@ namespace Flax.Build.Platforms
                 {
                     sdk10Roots.Add(rootDir);
                 }
-
                 if (TryReadInstallDirRegistryKey32("Microsoft\\Microsoft SDKs\\Windows\\v10.0", "InstallationFolder", out rootDir))
                 {
                     sdk10Roots.Add(rootDir);

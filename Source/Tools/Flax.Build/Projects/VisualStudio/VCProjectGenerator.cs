@@ -203,7 +203,6 @@ namespace Flax.Build.Projects.VisualStudio
             {
                 foreach (var folder in project.SourceDirectories)
                 {
-                    // TODO: optimize it? make source files searching faster?
                     files.AddRange(Directory.GetFiles(folder, "*", SearchOption.AllDirectories));
                 }
             }

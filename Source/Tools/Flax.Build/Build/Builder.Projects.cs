@@ -13,6 +13,22 @@ namespace Flax.Build
 {
     partial class Builder
     {
+        private class ProjectTargetsGroup
+        {
+            public string ProjectName;
+            public ProjectInfo Project;
+            public TargetType Type;
+            public List<Target> Targets;
+            public HashSet<ProjectInfo> ProjectDependencies;
+
+            public override string ToString()
+            {
+                if (Project != null)
+                    return $"{ProjectName}: {Project.ProjectPath}";
+                return ProjectName;
+            }
+        }
+
         private static void SetupProjectConfigurations(Project project, ProjectInfo projectInfo)
         {
             project.Configurations.Clear();
@@ -195,7 +211,6 @@ namespace Flax.Build
                 if (rootProject == null)
                     throw new Exception("Missing project.");
                 var projectFiles = rootProject.GetAllProjects();
-                var targetGroups = rules.Targets.GroupBy(x => x.ProjectName);
                 var workspaceRoot = rootProject.ProjectFolderPath;
                 var projectsRoot = Path.Combine(workspaceRoot, "Cache", "Projects");
                 var projects = new List<Project>();
@@ -205,22 +220,57 @@ namespace Flax.Build
                 Project mainSolutionProject = null;
                 ProjectGenerator nativeProjectGenerator = ProjectGenerator.Create(projectFormat, TargetType.NativeCpp);
 
+                // Group targets by project name and sort groups based on the project (ensures that referenced plugin source projects are generated firstly before main source projects)
+                var targetGroups = new List<ProjectTargetsGroup>();
+                foreach (var target in rules.Targets)
+                {
+                    int i = 0;
+                    for (; i < targetGroups.Count; i++)
+                    {
+                        if (targetGroups[i].ProjectName == target.ProjectName)
+                            break;
+                    }
+                    if (i == targetGroups.Count)
+                    {
+                        targetGroups.Add(new ProjectTargetsGroup
+                        {
+                            ProjectName = target.ProjectName,
+                            Type = target.Type,
+                            Targets = new List<Target>(),
+                        });
+                    }
+                    var targetGroup = targetGroups[i];
+                    if (targetGroup.Type != target.Type)
+                        Log.Error(string.Format($"Invalid targets group. Project {target.ProjectName} uses type {target.Type} from target {targetGroup.Targets[0].Name} but target {target.Name} is type of {target.Type}"));
+                    if (targetGroup.Project == null && target is ProjectTarget projectTarget)
+                        targetGroup.Project = projectTarget.Project;
+                    targetGroup.Targets.Add(target);
+                }
+                foreach (var targetGroup in targetGroups)
+                {
+                    if (targetGroup.Project == null)
+                    {
+                        targetGroup.Project = projectFiles.First(x => targetGroup.Targets[0].FolderPath.Contains(x.ProjectFolderPath));
+                        if (targetGroup.Project == null)
+                        {
+                            Log.Error(string.Format($"Invalid target {targetGroup.ProjectName} has no project to link."));
+                            return;
+                        }
+                    }
+                    targetGroup.ProjectDependencies = targetGroup.Project.GetAllProjects();
+                    targetGroup.ProjectDependencies.Remove(targetGroup.Project);
+                }
+                targetGroups.Sort((a, b) => a.ProjectDependencies.Count - b.ProjectDependencies.Count);
+
                 // Setup projects for target groups (before actual generation to handle cross-project references like)
                 foreach (var e in targetGroups)
                 {
-                    var projectName = e.Key;
+                    var projectName = e.ProjectName;
                     using (new ProfileEventScope(projectName))
                     {
-                        var targets = e.ToArray();
-                        if (targets.Length == 0)
-                            throw new Exception("No targets in a group " + projectName);
-                        TargetType type = targets[0].Type;
-                        for (int i = 1; i < targets.Length; i++)
-                        {
-                            if (targets[i].Type != type)
-                                Log.Error(string.Format($"Invalid targets group. Project {projectName} uses type {type} from target {targets[0].Name} but target {targets[i].Name} is type of {targets[i].Type}"));
-                        }
-                        var projectInfo = targets[0] is ProjectTarget projectTarget ? projectTarget.Project : projectFiles.First(x => targets[0].FolderPath.Contains(x.ProjectFolderPath));
+                        var targets = e.Targets.ToArray();
+                        var type = e.Type;
+                        var projectInfo = e.Project;
 
                         // Create project
                         Project mainProject;
@@ -234,7 +284,7 @@ namespace Flax.Build
                                 project.Type = TargetType.NativeCpp;
                             project.Name = project.BaseName = projectName;
                             project.Targets = targets;
-                            project.SearchPaths = new string[0];
+                            project.SearchPaths = Array.Empty<string>();
                             project.WorkspaceRootPath = projectInfo.ProjectFolderPath;
                             if (targets[0].CustomExternalProjectFilePath == null)
                                 project.Path = Path.Combine(projectsRoot, project.Name + '.' + generator.ProjectFileExtension);
@@ -381,7 +431,7 @@ namespace Flax.Build
                                     project.Name += ".CSharp"; // Prevent overlapping name with native code project
                                 project.OutputType = TargetOutputType.Library;
                                 project.Targets = targets;
-                                project.SearchPaths = new string[0];
+                                project.SearchPaths = Array.Empty<string>();
                                 project.WorkspaceRootPath = mainProject.WorkspaceRootPath;
                                 project.GroupName = mainProject.GroupName;
                                 if (project.WorkspaceRootPath.StartsWith(workspaceRoot))
@@ -491,7 +541,7 @@ namespace Flax.Build
                         project.Type = TargetType.DotNetCore;
                         project.Name = project.BaseName = rulesProjectName;
                         project.Targets = new[] { target };
-                        project.SearchPaths = new string[0];
+                        project.SearchPaths = Array.Empty<string>();
                         project.WorkspaceRootPath = workspaceRoot;
                         project.Path = Path.Combine(projectsRoot, project.Name + '.' + dotNetProjectGenerator.ProjectFileExtension);
                         project.CSharp.OutputPath = Path.Combine(Environment.CurrentDirectory, "Cache", "Intermediate", "Unused");
