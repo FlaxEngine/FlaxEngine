@@ -151,10 +151,12 @@ void FontTextureAtlas::CopyDataIntoSlot(const FontTextureAtlasSlot* slot, const 
 byte* FontTextureAtlas::GetSlotData(const FontTextureAtlasSlot* slot, uint32& width, uint32& height, uint32& stride)
 {
     const uint32 padding = GetPaddingAmount();
+    uint32 x = slot->X + padding;
+    uint32 y = slot->Y + padding;
     width = slot->Width - padding * 2;
     height = slot->Height - padding * 2;
     stride = _width * _bytesPerPixel;
-    return &_data[slot->Y * _width * _bytesPerPixel + slot->X * _bytesPerPixel];
+    return &_data[y * _width * _bytesPerPixel + x * _bytesPerPixel];
 }
 
 void FontTextureAtlas::copyRow(const RowData& copyRowData) const
