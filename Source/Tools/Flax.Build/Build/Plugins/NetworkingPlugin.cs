@@ -794,7 +794,7 @@ namespace Flax.Build.Plugins
             {
                 if (!f.HasAttribute(NetworkReplicatedAttribute))
                     continue;
-                GenerateSerializerType(ref context, type, serialize, f.FieldType, il, new DotnetValueContext(f));
+                GenerateSerialization(ref context, type, serialize, f.FieldType, il, new DotnetValueContext(f));
             }
 
             // Serialize all type properties marked with NetworkReplicated attribute
@@ -802,7 +802,7 @@ namespace Flax.Build.Plugins
             {
                 if (!p.HasAttribute(NetworkReplicatedAttribute))
                     continue;
-                GenerateSerializerType(ref context, type, serialize, p.PropertyType, il, new DotnetValueContext(p));
+                GenerateSerialization(ref context, type, serialize, p.PropertyType, il, new DotnetValueContext(p));
             }
 
             if (serialize)
@@ -1007,7 +1007,7 @@ namespace Flax.Build.Plugins
             }
         }
 
-        private static void GenerateSerializerType(ref DotnetContext context, TypeDefinition type, bool serialize, TypeReference valueType, ILProcessor il, DotnetValueContext valueContext)
+        private static void GenerateSerialization(ref DotnetContext context, TypeDefinition type, bool serialize, TypeReference valueType, ILProcessor il, DotnetValueContext valueContext)
         {
             if (valueContext.Property != null)
             {
@@ -1139,7 +1139,7 @@ namespace Flax.Build.Plugins
 
                         // Serialize item value
                         il.Emit(OpCodes.Nop);
-                        GenerateSerializerType(ref context, type, serialize, elementType, il, new DotnetValueContext(varStart + 2));
+                        GenerateSerialization(ref context, type, serialize, elementType, il, new DotnetValueContext(varStart + 2));
 
                         // idx++
                         il.Emit(OpCodes.Nop);
@@ -1225,7 +1225,7 @@ namespace Flax.Build.Plugins
                         // Deserialize item value
                         Instruction jmp4 = il.Create(OpCodes.Nop);
                         il.Append(jmp4);
-                        GenerateSerializerType(ref context, type, serialize, elementType, il, new DotnetValueContext(varStart + 2));
+                        GenerateSerialization(ref context, type, serialize, elementType, il, new DotnetValueContext(varStart + 2));
 
                         // array[idx] = element
                         il.Emit(OpCodes.Nop);
@@ -1268,7 +1268,6 @@ namespace Flax.Build.Plugins
                     il.Emit(OpCodes.Ldarg_1);
                     m = networkStreamType.GetMethod(serializer.ReadMethod);
                 }
-
                 il.Emit(OpCodes.Callvirt, module.ImportReference(m));
                 if (!serialize)
                 {
@@ -1370,7 +1369,7 @@ namespace Flax.Build.Plugins
             // Ensure to have valid serialization already generated for that value type
             GenerateTypeSerialization(ref context, valueTypeDef);
 
-            if (type.IsArray)
+            if (valueType.IsArray)
             {
                 // TODO: refactor network stream read/write to share code between replication and rpcs
                 Log.Error($"Not supported type '{valueType.FullName}' for RPC parameter in {type.FullName}.");
@@ -1418,15 +1417,15 @@ namespace Flax.Build.Plugins
                 }
                 else
                 {
-                    var m = networkStreamType.GetMethod("ReadGuid");
-                    module.GetType("System.Type", out var typeType);
-                    il.Emit(OpCodes.Ldloc_1);
-                    il.Emit(OpCodes.Callvirt, module.ImportReference(m));
                     var varStart = il.Body.Variables.Count;
                     var reference = module.ImportReference(guidType);
                     reference.IsValueType = true; // Fix locals init to have valuetype for Guid instead of class
                     il.Body.Variables.Add(new VariableDefinition(reference));
                     il.Body.InitLocals = true;
+                    var m = networkStreamType.GetMethod("ReadGuid");
+                    module.GetType("System.Type", out var typeType);
+                    il.Emit(OpCodes.Ldloc_1);
+                    il.Emit(OpCodes.Callvirt, module.ImportReference(m));
                     il.Emit(OpCodes.Stloc_S, (byte)varStart);
                     il.Emit(OpCodes.Ldloca_S, (byte)varStart);
                     il.Emit(OpCodes.Ldtoken, valueType);
@@ -1459,7 +1458,6 @@ namespace Flax.Build.Plugins
             else if (valueType.IsValueType)
             {
                 // Invoke structure generated serializer
-                // TODO: check if this type has generated serialization code
                 if (serialize)
                 {
                     il.InsertBefore(ilStart, il.Create(OpCodes.Nop));
