@@ -73,8 +73,11 @@ namespace Flax.Deploy
                         BuildPlatform(TargetPlatform.Linux, TargetArchitecture.x64);
                         BuildPlatform(TargetPlatform.Windows, TargetArchitecture.x64);
                         BuildPlatform(TargetPlatform.Android, TargetArchitecture.ARM64);
-                        BuildPlatform(TargetPlatform.Mac, TargetArchitecture.x64, TargetArchitecture.ARM64);
-                        BuildPlatform(TargetPlatform.iOS, TargetArchitecture.ARM64);
+                        if (Platform.BuildTargetPlatform == TargetPlatform.Mac)
+                        {
+                            BuildPlatform(TargetPlatform.Mac, Platform.BuildTargetArchitecture);
+                            BuildPlatform(TargetPlatform.iOS, TargetArchitecture.ARM64);
+                        }
                     }
                     else
                     {
