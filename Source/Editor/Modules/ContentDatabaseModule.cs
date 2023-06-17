@@ -723,10 +723,12 @@ namespace FlaxEditor.Modules
         /// Adds the proxy.
         /// </summary>
         /// <param name="proxy">The proxy type.</param>
-        public void AddProxy(ContentProxy proxy)
+        /// <param name="rebuild">Should rebuild entire database after addition.</param>
+        public void AddProxy(ContentProxy proxy, bool rebuild = false)
         {
             Proxy.Insert(0, proxy);
-            Rebuild();
+            if(rebuild)
+                Rebuild();
         }
 
         /// <summary>
