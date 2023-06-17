@@ -724,10 +724,10 @@ namespace FlaxEditor.Modules
         /// </summary>
         /// <param name="proxy">The proxy type.</param>
         /// <param name="rebuild">Should rebuild entire database after addition.</param>
-        public void AddProxy(ContentProxy proxy, bool rebuild = false)
+        public void AddProxy(ContentProxy proxy, bool rebuild = true)
         {
             Proxy.Insert(0, proxy);
-            if(rebuild)
+            if (rebuild)
                 Rebuild();
         }
 
@@ -735,16 +735,18 @@ namespace FlaxEditor.Modules
         /// Removes the proxy.
         /// </summary>
         /// <param name="proxy">The proxy type.</param>
-        public void RemoveProxy(ContentProxy proxy)
+        /// <param name="rebuild">Should rebuild entire database after removal.</param>
+        public void RemoveProxy(ContentProxy proxy, bool rebuild = true)
         {
             Proxy.Remove(proxy);
-            Rebuild();
+            if (rebuild)
+                Rebuild();
         }
 
         /// <summary>
         /// Rebuilds the whole database (eg. when adding custom item types from plugin).
         /// </summary>
-        /// <param name="immediate">True if rebuild num, otherwise will be scheduled for the next editor update (eg. to batch multiple rebuilds within a frame).</param>
+        /// <param name="immediate">True if rebuild now, otherwise will be scheduled for the next editor update (eg. to batch multiple rebuilds within a frame).</param>
         public void Rebuild(bool immediate = false)
         {
             _rebuildFlag = true;
@@ -804,7 +806,7 @@ namespace FlaxEditor.Modules
                     for (int i = 0; i < children.Length; i++)
                         Dispose(children[i]);
                 }
-                
+
                 item.ParentFolder = null;
                 folder.Node.Dispose();
             }
