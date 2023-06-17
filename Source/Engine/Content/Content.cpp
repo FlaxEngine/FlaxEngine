@@ -20,9 +20,7 @@
 #include "Engine/Level/Types.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
-#include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Scripting/Scripting.h"
-#include "Engine/Utilities/StringConverter.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
@@ -1007,7 +1005,6 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
     }
 
 #if ASSETS_LOADING_EXTRA_VERIFICATION
-    // Check if file exists
     if (!FileSystem::FileExists(assetInfo.Path))
     {
         LOG(Error, "Cannot find file '{0}'", assetInfo.Path);
@@ -1032,26 +1029,19 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
     }
 
 #if ASSETS_LOADING_EXTRA_VERIFICATION
-
-    // Validate type
     if (IsAssetTypeIdInvalid(type, result->GetTypeHandle()) && !result->Is(type))
     {
         LOG(Error, "Different loaded asset type! Asset: '{0}'. Expected type: {1}", assetInfo.ToString(), type.ToString());
         result->DeleteObject();
         return nullptr;
     }
-
 #endif
 
     // Register asset
     ASSERT(result->GetID() == id);
     AssetsLocker.Lock();
 #if ASSETS_LOADING_EXTRA_VERIFICATION
-    // Asset id has to be unique
-    if (Assets.ContainsKey(id))
-    {
-        CRASH;
-    }
+    ASSERT(!Assets.ContainsKey(id));
 #endif
     Assets.Add(id, result);
     AssetsLocker.Unlock();

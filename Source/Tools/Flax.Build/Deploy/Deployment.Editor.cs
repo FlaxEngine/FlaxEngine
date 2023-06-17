@@ -60,7 +60,6 @@ namespace Flax.Deploy
                     DeployFile(src, dst, "Flax.Build.deps.json");
                     DeployFile(src, dst, "Flax.Build.runtimeconfig.json");
                     DeployFile(src, dst, "Ionic.Zip.Reduced.dll");
-                    DeployFile(src, dst, "Newtonsoft.Json.dll");
                     DeployFile(src, dst, "Mono.Cecil.dll");
                     DeployFile(src, dst, "Microsoft.CodeAnalysis.dll");
                     DeployFile(src, dst, "Microsoft.CodeAnalysis.CSharp.dll");
