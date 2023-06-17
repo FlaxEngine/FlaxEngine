@@ -152,7 +152,7 @@ namespace Flax.Deploy
             var targetPlatform = Platform.BuildPlatform.Target;
             foreach (var configuration in Configurations)
             {
-                var arch = targetPlatform == TargetPlatform.Mac ? TargetArchitecture.ARM64 : TargetArchitecture.x64;
+                var arch = targetPlatform == TargetPlatform.Mac ? Platform.BuildTargetArchitecture : TargetArchitecture.x64;
                 FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", targetPlatform, arch, configuration);
             }
         }
