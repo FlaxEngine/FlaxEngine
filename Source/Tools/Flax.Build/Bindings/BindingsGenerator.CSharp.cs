@@ -380,7 +380,7 @@ namespace Flax.Build.Bindings
                 // Add reference to the namespace
                 CSharpUsedNamespaces.Add(apiType.Namespace);
                 var apiTypeParent = apiType.Parent;
-                while (apiTypeParent != null)
+                while (apiTypeParent != null && !(apiTypeParent is FileInfo))
                 {
                     CSharpUsedNamespaces.Add(apiTypeParent.Namespace);
                     apiTypeParent = apiTypeParent.Parent;
@@ -414,7 +414,7 @@ namespace Flax.Build.Bindings
                 // Add reference to the namespace
                 CSharpUsedNamespaces.Add(apiType.Namespace);
                 var apiTypeParent = apiType.Parent;
-                while (apiTypeParent != null)
+                while (apiTypeParent != null && !(apiTypeParent is FileInfo))
                 {
                     CSharpUsedNamespaces.Add(apiTypeParent.Namespace);
                     apiTypeParent = apiTypeParent.Parent;
