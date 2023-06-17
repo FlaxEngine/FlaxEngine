@@ -724,7 +724,7 @@ namespace FlaxEditor.Modules
         /// </summary>
         /// <param name="proxy">The proxy type.</param>
         /// <param name="rebuild">Should rebuild entire database after addition.</param>
-        public void AddProxy(ContentProxy proxy, bool rebuild = true)
+        public void AddProxy(ContentProxy proxy, bool rebuild = false)
         {
             Proxy.Insert(0, proxy);
             if (rebuild)
@@ -736,7 +736,7 @@ namespace FlaxEditor.Modules
         /// </summary>
         /// <param name="proxy">The proxy type.</param>
         /// <param name="rebuild">Should rebuild entire database after removal.</param>
-        public void RemoveProxy(ContentProxy proxy, bool rebuild = true)
+        public void RemoveProxy(ContentProxy proxy, bool rebuild = false)
         {
             Proxy.Remove(proxy);
             if (rebuild)
