@@ -1460,12 +1460,13 @@ namespace Flax.Build.Plugins
                 // Replicate ScriptingObject as Guid ID
                 module.GetType("System.Guid", out var guidType);
                 module.GetType("FlaxEngine.Object", out var scriptingObjectType);
+                var varStart = il.Variables.Count;
+                var reference = module.ImportReference(guidType);
+                reference.IsValueType = true; // Fix locals init to have valuetype for Guid instead of class
+                il.Variables.Add(new VariableDefinition(reference));
+                il.InitLocals = true;
                 if (serialize)
                 {
-                    if (il.IsRPC)
-                        il.Emit(OpCodes.Ldloc, il.StreamLocalIndex);
-                    else
-                        il.Emit(OpCodes.Ldarg_1);
                     valueContext.Load(ref il);
                     il.Emit(OpCodes.Dup);
                     Instruction jmp1 = il.Create(OpCodes.Nop);
@@ -1477,15 +1478,18 @@ namespace Flax.Build.Plugins
                     il.Emit(jmp1);
                     il.Emit(OpCodes.Call, module.ImportReference(scriptingObjectType.Resolve().GetMethod("get_ID")));
                     il.Emit(jmp2);
+                    il.Emit(OpCodes.Stloc, varStart);
+                    il.Emit(OpCodes.Ldloca_S, (byte)varStart);
+                    il.Emit(OpCodes.Call, module.ImportReference(scriptingObjectType.Resolve().GetMethod("RemapObjectID", 1)));
+                    if (il.IsRPC)
+                        il.Emit(OpCodes.Ldloc, il.StreamLocalIndex);
+                    else
+                        il.Emit(OpCodes.Ldarg_1);
+                    il.Emit(OpCodes.Ldloc, varStart);
                     il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod("WriteGuid")));
                 }
                 else
                 {
-                    var varStart = il.Variables.Count;
-                    var reference = module.ImportReference(guidType);
-                    reference.IsValueType = true; // Fix locals init to have valuetype for Guid instead of class
-                    il.Variables.Add(new VariableDefinition(reference));
-                    il.InitLocals = true;
                     module.GetType("System.Type", out var typeType);
                     if (il.IsRPC)
                         il.Emit(OpCodes.Ldloc_1);
@@ -1493,6 +1497,8 @@ namespace Flax.Build.Plugins
                         il.Emit(OpCodes.Ldarg_1);
                     il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod("ReadGuid")));
                     il.Emit(OpCodes.Stloc_S, (byte)varStart);
+                    if (valueContext.Field != null)
+                        il.Emit(OpCodes.Ldarg_0);
                     il.Emit(OpCodes.Ldloca_S, (byte)varStart);
                     il.Emit(OpCodes.Ldtoken, valueContext.ValueType);
                     il.Emit(OpCodes.Call, module.ImportReference(typeType.Resolve().GetMethod("GetTypeFromHandle")));

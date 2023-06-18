@@ -687,8 +687,6 @@ void NetworkReplicator::AddRPC(const ScriptingTypeHandle& typeHandle, const Stri
     if (!typeHandle)
         return;
 
-    const NetworkRpcName rpcName(typeHandle, GetCSharpCachedName(name));
-
     NetworkRpcInfo rpcInfo;
     rpcInfo.Server = isServer;
     rpcInfo.Client = isClient;
@@ -698,6 +696,7 @@ void NetworkReplicator::AddRPC(const ScriptingTypeHandle& typeHandle, const Stri
     rpcInfo.Tag = (void*)*(SerializeFunc*)&execute;
 
     // Add to the global RPCs table
+    const NetworkRpcName rpcName(typeHandle, GetCSharpCachedName(name));
     NetworkRpcInfo::RPCsTable[rpcName] = rpcInfo;
 }
 
@@ -1110,11 +1109,13 @@ NetworkStream* NetworkReplicator::BeginInvokeRPC()
         CachedWriteStream = New<NetworkStream>();
     CachedWriteStream->Initialize();
     CachedWriteStream->SenderId = NetworkManager::LocalClientId;
+    Scripting::ObjectsLookupIdMapping.Set(&IdsRemappingTable);
     return CachedWriteStream;
 }
 
 void NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, Span<uint32> targetIds)
 {
+    Scripting::ObjectsLookupIdMapping.Set(nullptr);
     const NetworkRpcInfo* info = NetworkRpcInfo::RPCsTable.TryGet(NetworkRpcName(type, name));
     if (!info || !obj || NetworkManager::IsOffline())
         return;

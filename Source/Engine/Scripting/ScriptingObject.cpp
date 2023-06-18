@@ -9,6 +9,7 @@
 #include "Engine/Content/Asset.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Threading/ThreadLocal.h"
 #include "ManagedCLR/MAssembly.h"
 #include "ManagedCLR/MClass.h"
 #include "ManagedCLR/MUtils.h"
@@ -750,6 +751,20 @@ DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FromUnmanagedPtr(ScriptingObject* 
         result = obj->GetOrCreateManagedInstance();
     return result;
 }
+
+DEFINE_INTERNAL_CALL(void) ObjectInternal_MapObjectID(Guid* id)
+{
+    const auto idsMapping = Scripting::ObjectsLookupIdMapping.Get();
+    if (idsMapping && id->IsValid())
+        idsMapping->TryGet(*id, *id);
+}
+
+DEFINE_INTERNAL_CALL(void) ObjectInternal_RemapObjectID(Guid* id)
+{
+    const auto idsMapping = Scripting::ObjectsLookupIdMapping.Get();
+    if (idsMapping && id->IsValid())
+        idsMapping->KeyOf(*id, id);
+}
 #endif
 
 class ScriptingObjectInternal
@@ -768,6 +783,8 @@ public:
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_ChangeID", &ObjectInternal_ChangeID);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_GetUnmanagedInterface", &ObjectInternal_GetUnmanagedInterface);
         ADD_INTERNAL_CALL("FlaxEngine.Object::FromUnmanagedPtr", &ObjectInternal_FromUnmanagedPtr);
+        ADD_INTERNAL_CALL("FlaxEngine.Object::MapObjectID", &ObjectInternal_MapObjectID);
+        ADD_INTERNAL_CALL("FlaxEngine.Object::RemapObjectID", &ObjectInternal_RemapObjectID);
     }
 
     static ScriptingObject* Spawn(const ScriptingObjectSpawnParams& params)

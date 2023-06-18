@@ -279,6 +279,20 @@ namespace FlaxEngine
         [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_FromUnmanagedPtr", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         public static partial Object FromUnmanagedPtr(IntPtr ptr);
 
+        /// <summary>
+        /// Maps the object ID using the current Scripting::ObjectsLookupIdMapping (key to value). Used to map prefab object IDs into prefab instance object IDs, or when using network replication IDs table.
+        /// </summary>
+        /// <param name="id">Inout object identifier mapped as a result or unchanged if not mapped.</param>
+        [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_MapObjectID")]
+        public static partial void MapObjectID(ref Guid id);
+
+        /// <summary>
+        /// Remaps the object ID using the current Scripting::ObjectsLookupIdMapping (value to key). Used to remap prefab instance IDs into prefab object IDs, or when using network replication IDs table.
+        /// </summary>
+        /// <param name="id">Inout object identifier mapped as a result or unchanged if not mapped.</param>
+        [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_RemapObjectID")]
+        public static partial void RemapObjectID(ref Guid id);
+
         /// <inheritdoc />
         public override int GetHashCode()
         {
