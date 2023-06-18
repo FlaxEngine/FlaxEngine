@@ -367,8 +367,24 @@ namespace Flax.Build.Plugins
 
         private static bool IsRawPOD(TypeReference type)
         {
-            // TODO: 
-            return type.IsValueType;
+            if (type.FullName == "System.ValueType")
+                return true;
+            if (type.IsValueType)
+            {
+                var typeDef = type.Resolve();
+                if (typeDef.IsEnum)
+                    return true;
+                var baseType = typeDef.BaseType;
+                if (baseType != null && !IsRawPOD(baseType))
+                    return false;
+                foreach (var field in typeDef.Fields)
+                {
+                    if (!field.IsStatic && field.FieldType != type && !IsRawPOD(field.FieldType))
+                        return false;
+                }
+                return true;
+            }
+            return false;
         }
 
         private void OnGenerateCppTypeSerializeData(Builder.BuildData buildData, ApiTypeInfo caller, StringBuilder contents, TypeInfo type, string name, bool serialize)

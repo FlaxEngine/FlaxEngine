@@ -32,7 +32,7 @@ namespace Flax.Build.Bindings
                 return;
             }
 
-            // Structure is POD (plain old data) only if all of it's fields are (and has no base type ro base type is also POD)
+            // Structure is POD (plain old data) only if all of it's fields are (and has no base type or base type is also POD)
             _isPod = BaseType == null || (BaseType?.IsPod ?? false);
             for (int i = 0; _isPod && i < Fields.Count; i++)
             {
