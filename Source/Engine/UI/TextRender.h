@@ -38,7 +38,7 @@ private:
     LocalizedString _text;
     Color _color;
     TextLayoutOptions _layoutOptions;
-    int32 _size;
+    float _size;
     int32 _sceneRenderingKey = -1;
 
     BoundingBox _localBox;
@@ -91,12 +91,12 @@ public:
     /// Gets the font characters size.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(40), DefaultValue(32), Limit(1, 1000), EditorDisplay(\"Text\")")
-    int32 GetFontSize() const;
+    float GetFontSize() const;
 
     /// <summary>
     /// Sets the font characters size.
     /// </summary>
-    API_PROPERTY() void SetFontSize(int32 value);
+    API_PROPERTY() void SetFontSize(float value);
 
     /// <summary>
     /// The draw passes to use for rendering this object.

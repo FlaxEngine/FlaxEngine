@@ -228,7 +228,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Font);
 private:
 
     FontAsset* _asset;
-    int32 _size;
+    float _size;
     int32 _height;
     int32 _ascender;
     int32 _descender;
@@ -244,7 +244,7 @@ public:
     /// </summary>
     /// <param name="parentAsset">The parent asset.</param>
     /// <param name="size">The size.</param>
-    Font(FontAsset* parentAsset, int32 size);
+    Font(FontAsset* parentAsset, float size);
 
     /// <summary>
     /// Finalizes an instance of the <see cref="Font"/> class.
@@ -264,7 +264,7 @@ public:
     /// <summary>
     /// Gets font size.
     /// </summary>
-    API_PROPERTY() FORCE_INLINE int32 GetSize() const
+    API_PROPERTY() FORCE_INLINE float GetSize() const
     {
         return _size;
     }
