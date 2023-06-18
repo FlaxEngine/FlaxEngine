@@ -1239,7 +1239,7 @@ namespace Flax.Build.Bindings
                             throw new Exception($"Class {classInfo.Name} cannot implement interface {interfaceInfo.Name} because it requires ScriptingObject as a base class.");
 
                         contents.AppendLine();
-                        if (functionInfo.Comment.Length != 0)
+                        if (functionInfo.Comment != null && functionInfo.Comment.Length != 0)
                             contents.Append(indent).AppendLine("/// <inheritdoc />");
                         GenerateCSharpAttributes(buildData, contents, indent, classInfo, functionInfo.Attributes, null, false, useUnmanaged);
                         contents.Append(indent).Append(GenerateCSharpAccessLevel(functionInfo.Access));
