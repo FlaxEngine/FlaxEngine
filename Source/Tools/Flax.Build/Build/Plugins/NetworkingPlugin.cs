@@ -760,8 +760,8 @@ namespace Flax.Build.Plugins
                 else if (isNetworkReplicated)
                 {
                     // Generate serialization methods
-                    GenerateSerializer(ref context, type, true, Thunk1);
-                    GenerateSerializer(ref context, type, false, Thunk2);
+                    GenerateDotnetSerializer(ref context, type, true, Thunk1);
+                    GenerateDotnetSerializer(ref context, type, false, Thunk2);
                     context.Modified = true;
                 }
             }
@@ -791,7 +791,7 @@ namespace Flax.Build.Plugins
             type.Methods.Add(m);
         }
 
-        private static MethodDefinition GenerateSerializer(ref DotnetContext context, TypeDefinition type, bool serialize, string name)
+        private static MethodDefinition GenerateDotnetSerializer(ref DotnetContext context, TypeDefinition type, bool serialize, string name)
         {
             ModuleDefinition module = type.Module;
             var m = new MethodDefinition(name, MethodAttributes.Public | MethodAttributes.HideBySig, context.VoidType);
@@ -805,12 +805,14 @@ namespace Flax.Build.Plugins
                 GenerateSerializeCallback(module, il, type.BaseType.Resolve(), serialize);
             }
 
+            var ildContext = new DotnetIlContext(il);
+
             // Serialize all type fields marked with NetworkReplicated attribute
             foreach (FieldDefinition f in type.Fields)
             {
                 if (!f.HasAttribute(NetworkReplicatedAttribute))
                     continue;
-                GenerateSerialization(ref context, type, serialize, f.FieldType, il, new DotnetValueContext(f));
+                GenerateDotnetSerialization(ref context, serialize, ref ildContext, new DotnetValueContext(type, f));
             }
 
             // Serialize all type properties marked with NetworkReplicated attribute
@@ -818,7 +820,7 @@ namespace Flax.Build.Plugins
             {
                 if (!p.HasAttribute(NetworkReplicatedAttribute))
                     continue;
-                GenerateSerialization(ref context, type, serialize, p.PropertyType, il, new DotnetValueContext(p));
+                GenerateDotnetSerialization(ref context, serialize, ref ildContext, new DotnetValueContext(type, p));
             }
 
             if (serialize)
@@ -858,7 +860,7 @@ namespace Flax.Build.Plugins
             il.Emit(OpCodes.Stloc_1);
 
             // Generate normal serializer
-            var serializer = GenerateSerializer(ref context, type, serialize, name);
+            var serializer = GenerateDotnetSerializer(ref context, type, serialize, name);
 
             // Call serializer
             il.Emit(OpCodes.Ldloc_0);
@@ -898,11 +900,132 @@ namespace Flax.Build.Plugins
             }
         }
 
+        private struct DotnetIlContext
+        {
+            public ILProcessor Il;
+            public MethodDefinition RPC;
+            public Instruction IlStart;
+            public int StreamLocalIndex;
+
+            public bool IsRPC => RPC != null;
+            public Mono.Collections.Generic.Collection<VariableDefinition> Variables => Il.Body.Variables;
+
+            public bool InitLocals
+            {
+                get => Il.Body.InitLocals;
+                set => Il.Body.InitLocals = value;
+            }
+
+            public DotnetIlContext(ILProcessor il, MethodDefinition rpc = null, Instruction ilStart = null)
+            {
+                Il = il;
+                RPC = rpc;
+                IlStart = ilStart;
+                StreamLocalIndex = -1;
+            }
+
+            public Instruction Create(OpCode opcode)
+            {
+                return Il.Create(opcode);
+            }
+
+            public void Emit(Instruction instruction)
+            {
+                if (IlStart != null)
+                    Il.InsertBefore(IlStart, instruction);
+                else
+                    Il.Append(instruction);
+            }
+
+            public void Emit(OpCode opcode)
+            {
+                Emit(Il.Create(opcode));
+            }
+
+            public void Emit(OpCode opcode, TypeReference type)
+            {
+                Emit(Il.Create(opcode, type));
+            }
+
+            public void Emit(OpCode opcode, MethodReference method)
+            {
+                Emit(Il.Create(opcode, method));
+            }
+
+            public void Emit(OpCode opcode, CallSite site)
+            {
+                Emit(Il.Create(opcode, site));
+            }
+
+            public void Emit(OpCode opcode, FieldReference field)
+            {
+                Emit(Il.Create(opcode, field));
+            }
+
+            public void Emit(OpCode opcode, string value)
+            {
+                Emit(Il.Create(opcode, value));
+            }
+
+            public void Emit(OpCode opcode, byte value)
+            {
+                Emit(Il.Create(opcode, value));
+            }
+
+            public void Emit(OpCode opcode, sbyte value)
+            {
+                Emit(Il.Create(opcode, value));
+            }
+
+            public void Emit(OpCode opcode, int value)
+            {
+                Emit(Il.Create(opcode, value));
+            }
+
+            public void Emit(OpCode opcode, long value)
+            {
+                Emit(Il.Create(opcode, value));
+            }
+
+            public void Emit(OpCode opcode, float value)
+            {
+                Emit(Il.Create(opcode, value));
+            }
+
+            public void Emit(OpCode opcode, double value)
+            {
+                Emit(Il.Create(opcode, value));
+            }
+
+            public void Emit(OpCode opcode, Instruction target)
+            {
+                Emit(Il.Create(opcode, target));
+            }
+
+            public void Emit(OpCode opcode, Instruction[] targets)
+            {
+                Emit(Il.Create(opcode, targets));
+            }
+
+            public void Emit(OpCode opcode, VariableDefinition variable)
+            {
+                Emit(Il.Create(opcode, variable));
+            }
+
+            public void Emit(OpCode opcode, ParameterDefinition parameter)
+            {
+                Emit(Il.Create(opcode, parameter));
+            }
+        }
+
         private struct DotnetValueContext
         {
+            public TypeReference Type;
+            public TypeReference ValueType;
             public FieldReference Field;
             public PropertyDefinition Property;
             public int LocalVarIndex;
+            public int ArgIndex;
 
             public OpCode PropertyGetOpCode
             {
@@ -926,28 +1049,55 @@ namespace Flax.Build.Plugins
                 }
             }
 
-            public DotnetValueContext(FieldDefinition field)
+            public DotnetValueContext(TypeReference type, FieldDefinition field)
             {
+                Type = type;
+                ValueType = field.FieldType;
                 Field = field;
                 Property = null;
                 LocalVarIndex = -1;
+                ArgIndex = -1;
             }
 
-            public DotnetValueContext(PropertyDefinition property)
+            public DotnetValueContext(TypeReference type, PropertyDefinition property)
             {
+                Type = type;
+                ValueType = property.PropertyType;
                 Field = null;
                 Property = property;
                 LocalVarIndex = -1;
+                ArgIndex = -1;
             }
 
-            public DotnetValueContext(int localVarIndex)
+            public DotnetValueContext(TypeReference type, int localVarIndex, TypeReference valueType)
             {
+                Type = type;
+                ValueType = valueType;
                 Field = null;
                 Property = null;
                 LocalVarIndex = localVarIndex;
+                ArgIndex = -1;
             }
 
-            public void GetProperty(ILProcessor il, int propertyVar)
+            public bool Validate()
+            {
+                if (Property != null)
+                {
+                    if (Property.GetMethod == null)
+                    {
+                        MonoCecil.CompilationError($"Missing getter method for property '{Property.Name}' of type {ValueType.FullName} in {Type.FullName} for automatic replication.", Property);
+                        return true;
+                    }
+                    if (Property.SetMethod == null)
+                    {
+                        MonoCecil.CompilationError($"Missing setter method for property '{Property.Name}' of type {ValueType.FullName} in {Type.FullName} for automatic replication.", Property);
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            public void GetProperty(ref DotnetIlContext il, int propertyVar)
             {
                 if (Property != null)
                 {
@@ -959,7 +1109,7 @@ namespace Flax.Build.Plugins
                 }
             }
 
-            public void SetProperty(ILProcessor il)
+            public void SetProperty(ref DotnetIlContext il)
             {
                 if (Property != null)
                 {
@@ -970,9 +1120,13 @@ namespace Flax.Build.Plugins
                 }
             }
 
-            public void Load(ILProcessor il)
+            public void Load(ref DotnetIlContext il)
             {
-                if (Field != null)
+                if (ArgIndex != -1)
+                {
+                    il.Emit(OpCodes.Ldarg, ArgIndex);
+                }
+                else if (Field != null)
                 {
                     il.Emit(OpCodes.Ldarg_0);
                     il.Emit(OpCodes.Ldfld, Field);
@@ -988,9 +1142,13 @@ namespace Flax.Build.Plugins
                 }
             }
 
-            public void LoadAddress(ILProcessor il)
+            public void LoadAddress(ref DotnetIlContext il)
             {
-                if (Field != null)
+                if (ArgIndex != -1)
+                {
+                    il.Emit(OpCodes.Ldarga, ArgIndex);
+                }
+                else if (Field != null)
                 {
                     il.Emit(OpCodes.Ldarg_0);
                     il.Emit(OpCodes.Ldflda, Field);
@@ -1006,9 +1164,13 @@ namespace Flax.Build.Plugins
                 }
             }
 
-            public void Store(ILProcessor il)
+            public void Store(ref DotnetIlContext il)
             {
-                if (Field != null)
+                if (ArgIndex != -1)
+                {
+                    il.Emit(OpCodes.Starg, ArgIndex);
+                }
+                else if (Field != null)
                 {
                     il.Emit(OpCodes.Stfld, Field);
                 }
@@ -1023,59 +1185,47 @@ namespace Flax.Build.Plugins
             }
         }
 
-        private static void GenerateSerialization(ref DotnetContext context, TypeDefinition type, bool serialize, TypeReference valueType, ILProcessor il, DotnetValueContext valueContext)
+        private static void GenerateDotnetSerialization(ref DotnetContext context, bool serialize, ref DotnetIlContext il, DotnetValueContext valueContext)
         {
-            if (valueContext.Property != null)
+            if (valueContext.Validate())
             {
-                if (valueContext.Property.GetMethod == null)
-                {
-                    MonoCecil.CompilationError($"Missing getter method for property '{valueContext.Property.Name}' of type {valueType.FullName} in {type.FullName} for automatic replication.", valueContext.Property);
-                    context.Failed = true;
-                    return;
-                }
-
-                if (valueContext.Property.SetMethod == null)
-                {
-                    MonoCecil.CompilationError($"Missing setter method for property '{valueContext.Property.Name}' of type {valueType.FullName} in {type.FullName} for automatic replication.", valueContext.Property);
-                    context.Failed = true;
-                    return;
-                }
+                context.Failed = true;
+                return;
             }
-
-            ModuleDefinition module = type.Module;
-            TypeDefinition valueTypeDef = valueType.Resolve();
+            ModuleDefinition module = valueContext.Type.Module;
+            TypeDefinition valueTypeDef = valueContext.ValueType.Resolve();
             TypeDefinition networkStreamType = context.NetworkStreamType.Resolve();
 
             // Ensure to have valid serialization already generated for that value type (eg. when using custom structure field serialization)
             GenerateTypeSerialization(ref context, valueTypeDef);
 
-            if (valueType.IsArray)
+            if (valueContext.ValueType.IsArray)
             {
-                var elementType = valueType.GetElementType();
+                var elementType = valueContext.ValueType.GetElementType();
                 var isRawPod = IsRawPOD(elementType); // Whether to use raw memory copy (eg. int, enum, Vector2)
-                var varStart = il.Body.Variables.Count;
+                var varStart = il.Variables.Count;
                 module.GetType("System.Int32", out var intType);
-                il.Body.Variables.Add(new VariableDefinition(intType)); // [0] int length
+                il.Variables.Add(new VariableDefinition(intType)); // [0] int length
                 if (isRawPod)
                 {
-                    il.Body.Variables.Add(new VariableDefinition(new PointerType(elementType))); // [1] <elementType>*
-                    il.Body.Variables.Add(new VariableDefinition(new PinnedType(valueType))); // [2] <elementType>[] pinned
+                    il.Variables.Add(new VariableDefinition(new PointerType(elementType))); // [1] <elementType>*
+                    il.Variables.Add(new VariableDefinition(new PinnedType(valueContext.ValueType))); // [2] <elementType>[] pinned
                 }
                 else
                 {
-                    il.Body.Variables.Add(new VariableDefinition(intType)); // [1] int idx
-                    il.Body.Variables.Add(new VariableDefinition(elementType)); // [2] <elementType>
+                    il.Variables.Add(new VariableDefinition(intType)); // [1] int idx
+                    il.Variables.Add(new VariableDefinition(elementType)); // [2] <elementType>
                 }
 
                 if (valueContext.Property != null)
-                    il.Body.Variables.Add(new VariableDefinition(valueType)); // [3] <elementType>[]
-                il.Body.InitLocals = true;
-                valueContext.GetProperty(il, varStart + 3);
+                    il.Variables.Add(new VariableDefinition(valueContext.ValueType)); // [3] <elementType>[]
+                il.InitLocals = true;
+                valueContext.GetProperty(ref il, varStart + 3);
                 if (serialize)
                 {
                     // <elementType>[] array = Array;
                     il.Emit(OpCodes.Nop);
-                    valueContext.Load(il);
+                    valueContext.Load(ref il);
 
                     // int length = ((array != null) ? array.Length : 0);
                     il.Emit(OpCodes.Dup);
@@ -1085,33 +1235,35 @@ namespace Flax.Build.Plugins
                     il.Emit(OpCodes.Ldc_I4_0);
                     Instruction jmp2 = il.Create(OpCodes.Nop);
                     il.Emit(OpCodes.Br_S, jmp2);
-                    il.Append(jmp1);
+                    il.Emit(jmp1);
                     il.Emit(OpCodes.Ldlen);
                     il.Emit(OpCodes.Conv_I4);
-                    il.Append(jmp2);
+                    il.Emit(jmp2);
                     il.Emit(OpCodes.Stloc, varStart + 0);
 
                     // stream.WriteInt32(length);
-                    il.Emit(OpCodes.Ldarg_1);
+                    if (il.IsRPC)
+                        il.Emit(OpCodes.Ldloc, il.StreamLocalIndex);
+                    else
+                        il.Emit(OpCodes.Ldarg_1);
                     il.Emit(OpCodes.Ldloc, varStart + 0);
-                    var m = networkStreamType.GetMethod("WriteInt32");
-                    il.Emit(OpCodes.Callvirt, module.ImportReference(m));
+                    il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod("WriteInt32")));
 
                     il.Emit(OpCodes.Nop);
                     if (isRawPod)
                     {
                         // fixed (<elementType>* bytes2 = Array)
-                        valueContext.Load(il);
+                        valueContext.Load(ref il);
                         il.Emit(OpCodes.Dup);
                         il.Emit(OpCodes.Stloc, varStart + 2);
                         Instruction jmp3 = il.Create(OpCodes.Nop);
                         il.Emit(OpCodes.Brfalse_S, jmp3);
-                        il.Emit(OpCodes.Ldloc_2);
+                        il.Emit(OpCodes.Ldloc, varStart + 2);
                         il.Emit(OpCodes.Ldlen);
                         il.Emit(OpCodes.Conv_I4);
                         Instruction jmp4 = il.Create(OpCodes.Nop);
                         il.Emit(OpCodes.Brtrue_S, jmp4);
-                        il.Append(jmp3);
+                        il.Emit(jmp3);
                         il.Emit(OpCodes.Ldc_I4_0);
                         il.Emit(OpCodes.Conv_U);
                         il.Emit(OpCodes.Stloc, varStart + 1); // <elementType>*
@@ -1119,20 +1271,22 @@ namespace Flax.Build.Plugins
                         il.Emit(OpCodes.Br_S, jmp5);
 
                         // stream.WriteBytes((byte*)bytes, length * sizeof(<elementType>)));
-                        il.Append(jmp4);
+                        il.Emit(jmp4);
                         il.Emit(OpCodes.Ldloc, varStart + 2);
                         il.Emit(OpCodes.Ldc_I4_0);
                         il.Emit(OpCodes.Ldelema, elementType);
                         il.Emit(OpCodes.Conv_U);
                         il.Emit(OpCodes.Stloc, varStart + 1); // <elementType>*
-                        il.Append(jmp5);
-                        il.Emit(OpCodes.Ldarg_1);
+                        il.Emit(jmp5);
+                        if (il.IsRPC)
+                            il.Emit(OpCodes.Ldloc, il.StreamLocalIndex);
+                        else
+                            il.Emit(OpCodes.Ldarg_1);
                         il.Emit(OpCodes.Ldloc, varStart + 1); // <elementType>*
                         il.Emit(OpCodes.Ldloc, varStart + 0);
                         il.Emit(OpCodes.Sizeof, elementType);
                         il.Emit(OpCodes.Mul);
-                        m = networkStreamType.GetMethod("WriteBytes", 2);
-                        il.Emit(OpCodes.Callvirt, module.ImportReference(m));
+                        il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod("WriteBytes", 2)));
                         il.Emit(OpCodes.Nop);
                         il.Emit(OpCodes.Ldnull);
                         il.Emit(OpCodes.Stloc, varStart + 2);
@@ -1147,15 +1301,15 @@ namespace Flax.Build.Plugins
 
                         // <elementType> element = array[idx]
                         Instruction jmp4 = il.Create(OpCodes.Nop);
-                        il.Append(jmp4);
-                        valueContext.Load(il);
+                        il.Emit(jmp4);
+                        valueContext.Load(ref il);
                         il.Emit(OpCodes.Ldloc, varStart + 1); // idx
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Stloc, varStart + 2); // <elementType>
 
                         // Serialize item value
                         il.Emit(OpCodes.Nop);
-                        GenerateSerialization(ref context, type, serialize, elementType, il, new DotnetValueContext(varStart + 2));
+                        GenerateDotnetSerialization(ref context, serialize, ref il, new DotnetValueContext(valueContext.Type, varStart + 2, elementType));
 
                         // idx++
                         il.Emit(OpCodes.Nop);
@@ -1165,7 +1319,7 @@ namespace Flax.Build.Plugins
                         il.Emit(OpCodes.Stloc, varStart + 1); // idx
 
                         // idx < length
-                        il.Append(jmp3);
+                        il.Emit(jmp3);
                         il.Emit(OpCodes.Ldloc, varStart + 1); // idx
                         il.Emit(OpCodes.Ldloc, varStart + 0); // length
                         il.Emit(OpCodes.Clt);
@@ -1176,25 +1330,26 @@ namespace Flax.Build.Plugins
                 {
                     // int length = stream.ReadInt32();
                     il.Emit(OpCodes.Nop);
-                    il.Emit(OpCodes.Ldarg_1);
-                    var m = networkStreamType.GetMethod("ReadInt32");
-                    il.Emit(OpCodes.Callvirt, module.ImportReference(m));
+                    if (il.IsRPC)
+                        il.Emit(OpCodes.Ldloc_1);
+                    else
+                        il.Emit(OpCodes.Ldarg_1);
+                    il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod("ReadInt32")));
                     il.Emit(OpCodes.Stloc, varStart + 0); // length
 
                     // System.Array.Resize(ref Array, length);
-                    valueContext.LoadAddress(il);
+                    valueContext.LoadAddress(ref il);
                     il.Emit(OpCodes.Ldloc, varStart + 0); // length
                     module.TryGetTypeReference("System.Array", out var arrayType);
                     if (arrayType == null)
                         module.GetType("System.Array", out arrayType);
-                    m = arrayType.Resolve().GetMethod("Resize", 2);
-                    il.Emit(OpCodes.Call, module.ImportReference(m.InflateGeneric(elementType)));
+                    il.Emit(OpCodes.Call, module.ImportReference(arrayType.Resolve().GetMethod("Resize", 2).InflateGeneric(elementType)));
 
                     il.Emit(OpCodes.Nop);
                     if (isRawPod)
                     {
                         // fixed (<elementType>* buffer = Array)
-                        valueContext.Load(il);
+                        valueContext.Load(ref il);
                         il.Emit(OpCodes.Dup);
                         il.Emit(OpCodes.Stloc, varStart + 2);
                         Instruction jmp1 = il.Create(OpCodes.Nop);
@@ -1204,7 +1359,7 @@ namespace Flax.Build.Plugins
                         il.Emit(OpCodes.Conv_I4);
                         Instruction jmp2 = il.Create(OpCodes.Nop);
                         il.Emit(OpCodes.Brtrue_S, jmp2);
-                        il.Append(jmp1);
+                        il.Emit(jmp1);
                         il.Emit(OpCodes.Ldc_I4_0);
                         il.Emit(OpCodes.Conv_U);
                         il.Emit(OpCodes.Stloc, varStart + 1); // <elementType>* buffer
@@ -1212,20 +1367,22 @@ namespace Flax.Build.Plugins
                         il.Emit(OpCodes.Br_S, jmp3);
 
                         // stream.ReadBytes((byte*)buffer, length * sizeof(<elementType>));
-                        il.Append(jmp2);
+                        il.Emit(jmp2);
                         il.Emit(OpCodes.Ldloc, varStart + 2);
                         il.Emit(OpCodes.Ldc_I4_0);
                         il.Emit(OpCodes.Ldelema, elementType);
                         il.Emit(OpCodes.Conv_U);
                         il.Emit(OpCodes.Stloc, varStart + 1); // <elementType>* buffer
-                        il.Append(jmp3);
-                        il.Emit(OpCodes.Ldarg_1);
+                        il.Emit(jmp3);
+                        if (il.IsRPC)
+                            il.Emit(OpCodes.Ldloc_1);
+                        else
+                            il.Emit(OpCodes.Ldarg_1);
                         il.Emit(OpCodes.Ldloc, varStart + 1); // <elementType>* buffer
                         il.Emit(OpCodes.Ldloc, varStart + 0); // length
                         il.Emit(OpCodes.Sizeof, elementType);
                         il.Emit(OpCodes.Mul);
-                        m = networkStreamType.GetMethod("ReadBytes", 2);
-                        il.Emit(OpCodes.Callvirt, module.ImportReference(m));
+                        il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod("ReadBytes", 2)));
                         il.Emit(OpCodes.Nop);
                         il.Emit(OpCodes.Ldnull);
                         il.Emit(OpCodes.Stloc, varStart + 2);
@@ -1240,12 +1397,12 @@ namespace Flax.Build.Plugins
 
                         // Deserialize item value
                         Instruction jmp4 = il.Create(OpCodes.Nop);
-                        il.Append(jmp4);
-                        GenerateSerialization(ref context, type, serialize, elementType, il, new DotnetValueContext(varStart + 2));
+                        il.Emit(jmp4);
+                        GenerateDotnetSerialization(ref context, serialize, ref il, new DotnetValueContext(valueContext.Type, varStart + 2, elementType));
 
                         // array[idx] = element
                         il.Emit(OpCodes.Nop);
-                        valueContext.Load(il);
+                        valueContext.Load(ref il);
                         il.Emit(OpCodes.Ldloc, varStart + 1); // idx
                         il.Emit(OpCodes.Ldloc, varStart + 2); // <elementType>
                         il.Emit(OpCodes.Stelem_Ref);
@@ -1258,82 +1415,87 @@ namespace Flax.Build.Plugins
                         il.Emit(OpCodes.Stloc, varStart + 1); // idx
 
                         // idx < length
-                        il.Append(jmp3);
+                        il.Emit(jmp3);
                         il.Emit(OpCodes.Ldloc, varStart + 1); // idx
                         il.Emit(OpCodes.Ldloc, varStart + 0); // length
                         il.Emit(OpCodes.Clt);
                         il.Emit(OpCodes.Brtrue_S, jmp4);
                     }
 
-                    valueContext.SetProperty(il);
+                    valueContext.SetProperty(ref il);
                 }
             }
-            else if (_inBuildSerializers.TryGetValue(valueType.FullName, out var serializer))
+            else if (_inBuildSerializers.TryGetValue(valueContext.ValueType.FullName, out var serializer))
             {
                 // Call NetworkStream method to write/read data
-                MethodDefinition m;
                 if (serialize)
                 {
-                    il.Emit(OpCodes.Ldarg_1);
-                    valueContext.Load(il);
-                    m = networkStreamType.GetMethod(serializer.WriteMethod);
+                    if (il.IsRPC)
+                        il.Emit(OpCodes.Ldloc, il.StreamLocalIndex);
+                    else
+                        il.Emit(OpCodes.Ldarg_1);
+                    valueContext.Load(ref il);
+                    il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod(serializer.WriteMethod)));
                 }
                 else
                 {
-                    il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldarg_1);
-                    m = networkStreamType.GetMethod(serializer.ReadMethod);
-                }
-                il.Emit(OpCodes.Callvirt, module.ImportReference(m));
-                if (!serialize)
-                {
-                    valueContext.Store(il);
+                    if (il.IsRPC)
+                    {
+                        il.Emit(OpCodes.Ldloc_1);
+                    }
+                    else
+                    {
+                        il.Emit(OpCodes.Ldarg_0);
+                        il.Emit(OpCodes.Ldarg_1);
+                    }
+                    il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod(serializer.ReadMethod)));
+                    valueContext.Store(ref il);
                 }
             }
-            else if (valueType.IsScriptingObject())
+            else if (valueContext.ValueType.IsScriptingObject())
             {
                 // Replicate ScriptingObject as Guid ID
                 module.GetType("System.Guid", out var guidType);
                 module.GetType("FlaxEngine.Object", out var scriptingObjectType);
                 if (serialize)
                 {
-                    il.Emit(OpCodes.Ldarg_1);
-                    valueContext.Load(il);
+                    if (il.IsRPC)
+                        il.Emit(OpCodes.Ldloc, il.StreamLocalIndex);
+                    else
+                        il.Emit(OpCodes.Ldarg_1);
+                    valueContext.Load(ref il);
                     il.Emit(OpCodes.Dup);
                     Instruction jmp1 = il.Create(OpCodes.Nop);
                     il.Emit(OpCodes.Brtrue_S, jmp1);
                     il.Emit(OpCodes.Pop);
-                    var guidEmpty = guidType.Resolve().GetField("Empty");
-                    il.Emit(OpCodes.Ldsfld, module.ImportReference(guidEmpty));
+                    il.Emit(OpCodes.Ldsfld, module.ImportReference(guidType.Resolve().GetField("Empty")));
                     Instruction jmp2 = il.Create(OpCodes.Nop);
                     il.Emit(OpCodes.Br_S, jmp2);
-                    il.Append(jmp1);
-                    var getID = scriptingObjectType.Resolve().GetMethod("get_ID");
-                    il.Emit(OpCodes.Call, module.ImportReference(getID));
-                    il.Append(jmp2);
-                    var writeGuid = networkStreamType.GetMethod("WriteGuid");
-                    il.Emit(OpCodes.Callvirt, module.ImportReference(writeGuid));
+                    il.Emit(jmp1);
+                    il.Emit(OpCodes.Call, module.ImportReference(scriptingObjectType.Resolve().GetMethod("get_ID")));
+                    il.Emit(jmp2);
+                    il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod("WriteGuid")));
                 }
                 else
                 {
-                    var varStart = il.Body.Variables.Count;
+                    var varStart = il.Variables.Count;
                     var reference = module.ImportReference(guidType);
                     reference.IsValueType = true; // Fix locals init to have valuetype for Guid instead of class
-                    il.Body.Variables.Add(new VariableDefinition(reference));
-                    il.Body.InitLocals = true;
-                    var m = networkStreamType.GetMethod("ReadGuid");
+                    il.Variables.Add(new VariableDefinition(reference));
+                    il.InitLocals = true;
                     module.GetType("System.Type", out var typeType);
-                    il.Emit(OpCodes.Ldarg_1);
-                    il.Emit(OpCodes.Callvirt, module.ImportReference(m));
+                    if (il.IsRPC)
+                        il.Emit(OpCodes.Ldloc_1);
+                    else
+                        il.Emit(OpCodes.Ldarg_1);
+                    il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod("ReadGuid")));
                     il.Emit(OpCodes.Stloc_S, (byte)varStart);
                     il.Emit(OpCodes.Ldloca_S, (byte)varStart);
-                    il.Emit(OpCodes.Ldtoken, valueType);
-                    var getTypeFromHandle = typeType.Resolve().GetMethod("GetTypeFromHandle");
-                    il.Emit(OpCodes.Call, module.ImportReference(getTypeFromHandle));
-                    var tryFind = scriptingObjectType.Resolve().GetMethod("TryFind", 2);
-                    il.Emit(OpCodes.Call, module.ImportReference(tryFind));
-                    il.Emit(OpCodes.Castclass, valueType);
-                    valueContext.Store(il);
+                    il.Emit(OpCodes.Ldtoken, valueContext.ValueType);
+                    il.Emit(OpCodes.Call, module.ImportReference(typeType.Resolve().GetMethod("GetTypeFromHandle")));
+                    il.Emit(OpCodes.Call, module.ImportReference(scriptingObjectType.Resolve().GetMethod("TryFind", 2)));
+                    il.Emit(OpCodes.Castclass, valueContext.ValueType);
+                    valueContext.Store(ref il);
                 }
             }
             else if (valueTypeDef.IsEnum)
@@ -1342,45 +1504,71 @@ namespace Flax.Build.Plugins
                 // TODO: use smaller uint depending on enum values range
                 if (serialize)
                 {
-                    il.Emit(OpCodes.Ldarg_1);
-                    valueContext.Load(il);
-                    var m = networkStreamType.GetMethod("WriteUInt32");
-                    il.Emit(OpCodes.Callvirt, module.ImportReference(m));
+                    if (il.IsRPC)
+                        il.Emit(OpCodes.Ldloc, il.StreamLocalIndex);
+                    else
+                        il.Emit(OpCodes.Ldarg_1);
+                    valueContext.Load(ref il);
+                    il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod("WriteUInt32")));
                 }
                 else
                 {
-                    il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldarg_1);
-                    var m = networkStreamType.GetMethod("ReadUInt32");
-                    il.Emit(OpCodes.Callvirt, module.ImportReference(m));
-                    valueContext.Store(il);
+                    if (il.IsRPC)
+                    {
+                        il.Emit(OpCodes.Ldloc_1);
+                    }
+                    else
+                    {
+                        il.Emit(OpCodes.Ldarg_0);
+                        il.Emit(OpCodes.Ldarg_1);
+                    }
+                    il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod("ReadUInt32")));
+                    valueContext.Store(ref il);
                 }
             }
-            else if (valueType.IsValueType)
+            else if (valueContext.ValueType.IsValueType)
             {
                 // Invoke structure generated serializer
-                valueContext.LoadAddress(il);
-                il.Emit(OpCodes.Ldarg_1);
-                var m = valueTypeDef.GetMethod(serialize ? Thunk1 : Thunk2);
-                il.Emit(OpCodes.Call, module.ImportReference(m));
+                valueContext.LoadAddress(ref il);
+                if (il.IsRPC)
+                {
+                    if (serialize)
+                    {
+                        il.Emit(OpCodes.Ldloc, il.StreamLocalIndex);
+                    }
+                    else
+                    {
+                        il.Emit(OpCodes.Initobj, valueContext.ValueType);
+                        valueContext.LoadAddress(ref il);
+                        il.Emit(OpCodes.Ldloc_1);
+                    }
+                }
+                else
+                {
+                    il.Emit(OpCodes.Ldarg_1);
+                }
+                il.Emit(OpCodes.Call, module.ImportReference(valueTypeDef.GetMethod(serialize ? Thunk1 : Thunk2)));
             }
             else
             {
                 // Unknown type
                 if (valueContext.Property != null)
-                    MonoCecil.CompilationError($"Not supported type '{valueType.FullName}' on {valueContext.Property.Name} in {type.FullName} for automatic replication.", valueContext.Property);
+                    MonoCecil.CompilationError($"Not supported type '{valueContext.ValueType.FullName}' on {valueContext.Property.Name} in {valueContext.Type.FullName} for automatic replication.", valueContext.Property);
                 else if (valueContext.Field != null)
-                    MonoCecil.CompilationError($"Not supported type '{valueType.FullName}' on {valueContext.Field.Name} in {type.FullName} for automatic replication.", valueContext.Field.Resolve());
+                    MonoCecil.CompilationError($"Not supported type '{valueContext.ValueType.FullName}' on {valueContext.Field.Name} in {valueContext.Type.FullName} for automatic replication.", valueContext.Field.Resolve());
+                else if (il.IsRPC)
+                    MonoCecil.CompilationError($"Not supported parameter type '{valueContext.ValueType.FullName}' on RPC method {il.RPC.Name} in {valueContext.Type.FullName} for automatic replication.", il.RPC);
                 else
-                    MonoCecil.CompilationError($"Not supported type '{valueType.FullName}' for automatic replication.");
+                    MonoCecil.CompilationError($"Not supported type '{valueContext.ValueType.FullName}' for automatic replication.");
                 context.Failed = true;
             }
         }
 
-        private static void GenerateDotNetRPCSerializerType(ref DotnetContext context, TypeDefinition type, bool serialize, int localIndex, TypeReference valueType, ILProcessor il, TypeDefinition networkStreamType, int streamLocalIndex, Instruction ilStart)
+        private static void GenerateDotNetRPCSerializerType(ref DotnetContext context, TypeDefinition type, int localIndex, TypeReference valueType, ref DotnetIlContext il, TypeDefinition networkStreamType, int streamLocalIndex)
         {
             ModuleDefinition module = type.Module;
             TypeDefinition valueTypeDef = valueType.Resolve();
+            bool serialize = true;
 
             // Ensure to have valid serialization already generated for that value type
             GenerateTypeSerialization(ref context, valueTypeDef);
@@ -1388,23 +1576,17 @@ namespace Flax.Build.Plugins
             if (valueType.IsArray)
             {
                 // TODO: refactor network stream read/write to share code between replication and rpcs
-                Log.Error($"Not supported type '{valueType.FullName}' for RPC parameter in {type.FullName}.");
-                context.Failed = true;
+                //Log.Error($"Not supported type '{valueType.FullName}' for RPC parameter in {type.FullName}.");
+                //context.Failed = true;
             }
             else if (_inBuildSerializers.TryGetValue(valueType.FullName, out var serializer))
             {
                 // Call NetworkStream method to write/read data
                 if (serialize)
                 {
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, streamLocalIndex));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldarg, localIndex));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod(serializer.WriteMethod))));
-                }
-                else
-                {
-                    il.Emit(OpCodes.Ldloc_1);
-                    il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod(serializer.ReadMethod)));
-                    il.Emit(OpCodes.Stloc, localIndex);
+                    il.Emit(OpCodes.Ldloc, streamLocalIndex);
+                    il.Emit(OpCodes.Ldarg, localIndex);
+                    il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod(serializer.WriteMethod)));
                 }
             }
             else if (valueType.IsScriptingObject())
@@ -1414,43 +1596,19 @@ namespace Flax.Build.Plugins
                 module.GetType("FlaxEngine.Object", out var scriptingObjectType);
                 if (serialize)
                 {
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Nop));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, streamLocalIndex));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldarg, localIndex));
+                    il.Emit(OpCodes.Nop);
+                    il.Emit(OpCodes.Ldloc, streamLocalIndex);
+                    il.Emit(OpCodes.Ldarg, localIndex);
                     Instruction jmp1 = il.Create(OpCodes.Nop);
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Brtrue_S, jmp1));
-                    var guidEmpty = guidType.Resolve().GetField("Empty");
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldsfld, module.ImportReference(guidEmpty)));
+                    il.Emit(OpCodes.Brtrue_S, jmp1);
+                    il.Emit(OpCodes.Ldsfld, module.ImportReference(guidType.Resolve().GetField("Empty")));
                     Instruction jmp2 = il.Create(OpCodes.Nop);
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Br_S, jmp2));
-                    il.InsertBefore(ilStart, jmp1);
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldarg, localIndex));
-                    var getID = scriptingObjectType.Resolve().GetMethod("get_ID");
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Call, module.ImportReference(getID)));
-                    il.InsertBefore(ilStart, jmp2);
-                    var writeGuid = networkStreamType.GetMethod("WriteGuid");
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Callvirt, module.ImportReference(writeGuid)));
-                }
-                else
-                {
-                    var varStart = il.Body.Variables.Count;
-                    var reference = module.ImportReference(guidType);
-                    reference.IsValueType = true; // Fix locals init to have valuetype for Guid instead of class
-                    il.Body.Variables.Add(new VariableDefinition(reference));
-                    il.Body.InitLocals = true;
-                    var m = networkStreamType.GetMethod("ReadGuid");
-                    module.GetType("System.Type", out var typeType);
-                    il.Emit(OpCodes.Ldloc_1);
-                    il.Emit(OpCodes.Callvirt, module.ImportReference(m));
-                    il.Emit(OpCodes.Stloc_S, (byte)varStart);
-                    il.Emit(OpCodes.Ldloca_S, (byte)varStart);
-                    il.Emit(OpCodes.Ldtoken, valueType);
-                    var getTypeFromHandle = typeType.Resolve().GetMethod("GetTypeFromHandle");
-                    il.Emit(OpCodes.Call, module.ImportReference(getTypeFromHandle));
-                    var tryFind = scriptingObjectType.Resolve().GetMethod("TryFind", 2);
-                    il.Emit(OpCodes.Call, module.ImportReference(tryFind));
-                    il.Emit(OpCodes.Castclass, valueType);
-                    il.Emit(OpCodes.Stloc, localIndex);
+                    il.Emit(OpCodes.Br_S, jmp2);
+                    il.Emit( jmp1);
+                    il.Emit(OpCodes.Ldarg, localIndex);
+                    il.Emit(OpCodes.Call, module.ImportReference(scriptingObjectType.Resolve().GetMethod("get_ID")));
+                    il.Emit( jmp2);
+                    il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod("WriteGuid")));
                 }
             }
             else if (valueTypeDef.IsEnum)
@@ -1459,16 +1617,9 @@ namespace Flax.Build.Plugins
                 // TODO: use smaller uint depending on enum values range
                 if (serialize)
                 {
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, streamLocalIndex));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldarg, localIndex));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod("WriteUInt32"))));
-                }
-                else
-                {
-                    il.Emit(OpCodes.Ldloc_1);
-                    var m = networkStreamType.GetMethod("ReadUInt32");
-                    il.Emit(OpCodes.Callvirt, module.ImportReference(m));
-                    il.Emit(OpCodes.Stloc, localIndex);
+                    il.Emit(OpCodes.Ldloc, streamLocalIndex);
+                    il.Emit(OpCodes.Ldarg, localIndex);
+                    il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod("WriteUInt32")));
                 }
             }
             else if (valueType.IsValueType)
@@ -1476,18 +1627,10 @@ namespace Flax.Build.Plugins
                 // Invoke structure generated serializer
                 if (serialize)
                 {
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Nop));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldarga, localIndex));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, streamLocalIndex));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Call, module.ImportReference(valueTypeDef.GetMethod(Thunk1))));
-                }
-                else
-                {
-                    il.Emit(OpCodes.Ldloca_S, (byte)localIndex);
-                    il.Emit(OpCodes.Initobj, valueType);
-                    il.Emit(OpCodes.Ldloca_S, (byte)localIndex);
-                    il.Emit(OpCodes.Ldloc_1);
-                    il.Emit(OpCodes.Call, module.ImportReference(valueTypeDef.GetMethod(Thunk2)));
+                    il.Emit(OpCodes.Nop);
+                    il.Emit(OpCodes.Ldarga, localIndex);
+                    il.Emit(OpCodes.Ldloc, streamLocalIndex);
+                    il.Emit( OpCodes.Call, module.ImportReference(valueTypeDef.GetMethod(Thunk1)));
                 }
             }
             else
@@ -1569,26 +1712,27 @@ namespace Flax.Build.Plugins
                 var m = new MethodDefinition(method.Name + "_Execute", MethodAttributes.Static | MethodAttributes.Assembly | MethodAttributes.HideBySig, voidType);
                 m.Parameters.Add(new ParameterDefinition("instancePtr", ParameterAttributes.None, intPtrType));
                 m.Parameters.Add(new ParameterDefinition("streamPtr", ParameterAttributes.None, module.ImportReference(intPtrType)));
-                ILProcessor il = m.Body.GetILProcessor();
+                ILProcessor ilp = m.Body.GetILProcessor();
+                var il = new DotnetIlContext(ilp, method);
                 il.Emit(OpCodes.Nop);
-                il.Body.InitLocals = true;
+                il.InitLocals = true;
 
                 // <type> instance = (<type>)FlaxEngine.Object.FromUnmanagedPtr(instancePtr)
-                il.Body.Variables.Add(new VariableDefinition(type));
+                il.Variables.Add(new VariableDefinition(type));
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Call, module.ImportReference(fromUnmanagedPtr));
                 il.Emit(OpCodes.Castclass, type);
                 il.Emit(OpCodes.Stloc_0);
 
                 // NetworkStream stream = (NetworkStream)FlaxEngine.Object.FromUnmanagedPtr(streamPtr)
-                il.Body.Variables.Add(new VariableDefinition(networkStream));
+                il.Variables.Add(new VariableDefinition(networkStream));
                 il.Emit(OpCodes.Ldarg_1);
                 il.Emit(OpCodes.Call, module.ImportReference(fromUnmanagedPtr));
                 il.Emit(OpCodes.Castclass, networkStream);
                 il.Emit(OpCodes.Stloc_1);
 
                 // Add locals for each RPC parameter
-                var argsStart = il.Body.Variables.Count;
+                var argsStart = il.Variables.Count;
                 for (int i = 0; i < method.Parameters.Count; i++)
                 {
                     var parameter = method.Parameters[i];
@@ -1600,7 +1744,7 @@ namespace Flax.Build.Plugins
                     }
 
                     var parameterType = parameter.ParameterType;
-                    il.Body.Variables.Add(new VariableDefinition(parameterType));
+                    il.Variables.Add(new VariableDefinition(parameterType));
                 }
 
                 // Deserialize parameters from the stream
@@ -1624,7 +1768,7 @@ namespace Flax.Build.Plugins
                         continue;
                     }
 
-                    GenerateDotNetRPCSerializerType(ref context, type, false, argsStart + i, parameterType, il, networkStream.Resolve(), 1, null);
+                    GenerateDotnetSerialization(ref context, false, ref il, new DotnetValueContext(type, argsStart + i, parameterType));
                 }
 
                 // Call RPC method body
@@ -1644,59 +1788,61 @@ namespace Flax.Build.Plugins
 
             // Inject custom code before RPC method body to invoke it
             {
-                ILProcessor il = method.Body.GetILProcessor();
-                Instruction ilStart = il.Body.Instructions[0];
+                ILProcessor ilp = method.Body.GetILProcessor();
+                Instruction ilStart = ilp.Body.Instructions[0];
+                var il = new DotnetIlContext(ilp, method, ilStart);
                 module.GetType("System.Boolean", out var boolType);
                 module.GetType("FlaxEngine.Networking.NetworkManagerMode", out var networkManagerModeType);
                 module.GetType("FlaxEngine.Networking.NetworkManager", out var networkManagerType);
                 var networkManagerGetMode = networkManagerType.Resolve().GetMethod("get_Mode", 0);
-                il.Body.InitLocals = true;
-                var varsStart = il.Body.Variables.Count;
+                il.InitLocals = true;
+                var varsStart = il.Variables.Count;
 
-                il.InsertBefore(ilStart, il.Create(OpCodes.Nop));
+                il.Emit(OpCodes.Nop);
 
                 // Is Server/Is Client boolean constants
-                il.Body.Variables.Add(new VariableDefinition(module.ImportReference(boolType))); // [0]
-                il.Body.Variables.Add(new VariableDefinition(module.ImportReference(boolType))); // [1]
-                il.InsertBefore(ilStart, il.Create(OpCodes.Ldc_I4, methodRPC.IsServer ? 1 : 0));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Stloc, varsStart + 0)); // isServer loc=0
-                il.InsertBefore(ilStart, il.Create(OpCodes.Ldc_I4, methodRPC.IsClient ? 1 : 0));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Stloc, varsStart + 1)); // isClient loc=1
+                il.Variables.Add(new VariableDefinition(module.ImportReference(boolType))); // [0]
+                il.Variables.Add(new VariableDefinition(module.ImportReference(boolType))); // [1]
+                il.Emit(OpCodes.Ldc_I4, methodRPC.IsServer ? 1 : 0);
+                il.Emit(OpCodes.Stloc, varsStart + 0); // isServer loc=0
+                il.Emit(OpCodes.Ldc_I4, methodRPC.IsClient ? 1 : 0);
+                il.Emit(OpCodes.Stloc, varsStart + 1); // isClient loc=1
 
                 // NetworkManagerMode mode = NetworkManager.Mode;
-                il.Body.Variables.Add(new VariableDefinition(module.ImportReference(networkManagerModeType))); // [2]
-                il.InsertBefore(ilStart, il.Create(OpCodes.Call, module.ImportReference(networkManagerGetMode)));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Stloc, varsStart + 2)); // mode loc=2
+                il.Variables.Add(new VariableDefinition(module.ImportReference(networkManagerModeType))); // [2]
+                il.Emit(OpCodes.Call, module.ImportReference(networkManagerGetMode));
+                il.Emit(OpCodes.Stloc, varsStart + 2); // mode loc=2
 
                 // if ((server && networkMode == NetworkManagerMode.Client) || (client && networkMode != NetworkManagerMode.Client))
-                var jumpIfBodyStart = il.Create(OpCodes.Nop); // if block body
-                var jumpIf2Start = il.Create(OpCodes.Nop); // 2nd part of the if
-                var jumpBodyStart = il.Create(OpCodes.Nop); // original method body start
-                var jumpBodyEnd = il.Body.Instructions.Last(x => x.OpCode == OpCodes.Ret && x.Previous != null);
+                var jumpIfBodyStart = ilp.Create(OpCodes.Nop); // if block body
+                var jumpIf2Start = ilp.Create(OpCodes.Nop); // 2nd part of the if
+                var jumpBodyStart = ilp.Create(OpCodes.Nop); // original method body start
+                var jumpBodyEnd = ilp.Body.Instructions.Last(x => x.OpCode == OpCodes.Ret && x.Previous != null);
                 if (jumpBodyEnd == null)
                     throw new Exception("Missing IL Return op code in method " + method.Name);
-                il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, varsStart + 0));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Brfalse_S, jumpIf2Start));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, varsStart + 2));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Ldc_I4_2));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Beq_S, jumpIfBodyStart));
+                il.Emit(OpCodes.Ldloc, varsStart + 0);
+                il.Emit(OpCodes.Brfalse_S, jumpIf2Start);
+                il.Emit(OpCodes.Ldloc, varsStart + 2);
+                il.Emit(OpCodes.Ldc_I4_2);
+                il.Emit(OpCodes.Beq_S, jumpIfBodyStart);
                 // ||
-                il.InsertBefore(ilStart, jumpIf2Start);
-                il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, varsStart + 1));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Brfalse, jumpBodyStart));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, varsStart + 2));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Ldc_I4_2));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Beq, jumpBodyStart));
+                il.Emit(jumpIf2Start);
+                il.Emit(OpCodes.Ldloc, varsStart + 1);
+                il.Emit(OpCodes.Brfalse, jumpBodyStart);
+                il.Emit(OpCodes.Ldloc, varsStart + 2);
+                il.Emit(OpCodes.Ldc_I4_2);
+                il.Emit(OpCodes.Beq, jumpBodyStart);
                 // {
-                il.InsertBefore(ilStart, jumpIfBodyStart);
+                il.Emit(jumpIfBodyStart);
 
                 // NetworkStream stream = NetworkReplicator.BeginInvokeRPC();
-                il.Body.Variables.Add(new VariableDefinition(module.ImportReference(networkStream))); // [3]
+                il.Variables.Add(new VariableDefinition(module.ImportReference(networkStream))); // [3]
                 var streamLocalIndex = varsStart + 3;
+                il.StreamLocalIndex = streamLocalIndex;
                 module.GetType("FlaxEngine.Networking.NetworkReplicator", out var networkReplicatorType);
                 var beginInvokeRPC = networkReplicatorType.Resolve().GetMethod("BeginInvokeRPC", 0);
-                il.InsertBefore(ilStart, il.Create(OpCodes.Call, module.ImportReference(beginInvokeRPC)));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Stloc, streamLocalIndex)); // stream loc=3
+                il.Emit(OpCodes.Call, module.ImportReference(beginInvokeRPC));
+                il.Emit(OpCodes.Stloc, streamLocalIndex); // stream loc=3
 
                 // Serialize all RPC parameters
                 var targetIdsArgIndex = -1;
@@ -1714,58 +1860,58 @@ namespace Flax.Build.Plugins
                         continue;
                     }
 
-                    GenerateDotNetRPCSerializerType(ref context, type, true, i + 1, parameterType, il, networkStream.Resolve(), streamLocalIndex, ilStart);
+                    GenerateDotnetSerialization(ref context, true, ref il, new DotnetValueContext(type, -1, parameterType) { ArgIndex = i + 1 });
                 }
 
                 // NetworkReplicator.EndInvokeRPC(this, typeof(<type>), "<name>", stream, targetIds);
-                il.InsertBefore(ilStart, il.Create(OpCodes.Nop));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Ldarg_0));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Ldtoken, type));
+                il.Emit(OpCodes.Nop);
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldtoken, type);
                 module.GetType("System.Type", out var typeType);
                 var getTypeFromHandle = typeType.Resolve().GetMethod("GetTypeFromHandle");
-                il.InsertBefore(ilStart, il.Create(OpCodes.Call, module.ImportReference(getTypeFromHandle)));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Ldstr, method.Name));
-                il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, streamLocalIndex));
+                il.Emit(OpCodes.Call, module.ImportReference(getTypeFromHandle));
+                il.Emit(OpCodes.Ldstr, method.Name);
+                il.Emit(OpCodes.Ldloc, streamLocalIndex);
                 if (targetIdsArgIndex != -1)
                 {
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldarg, targetIdsArgIndex));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldfld, module.ImportReference(targetIdsField)));
+                    il.Emit(OpCodes.Ldarg, targetIdsArgIndex);
+                    il.Emit(OpCodes.Ldfld, module.ImportReference(targetIdsField));
                 }
                 else
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldnull));
+                    il.Emit(OpCodes.Ldnull);
                 var endInvokeRPC = networkReplicatorType.Resolve().GetMethod("EndInvokeRPC", 5);
-                il.InsertBefore(ilStart, il.Create(OpCodes.Call, module.ImportReference(endInvokeRPC)));
+                il.Emit(OpCodes.Call, module.ImportReference(endInvokeRPC));
 
                 // if (server && networkMode == NetworkManagerMode.Client) return;
                 if (methodRPC.IsServer)
                 {
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Nop));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, varsStart + 2));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldc_I4_2));
-                    var tmp = il.Create(OpCodes.Nop);
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Beq_S, tmp));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Br, jumpBodyStart));
-                    il.InsertBefore(ilStart, tmp);
-                    //il.InsertBefore(ilStart, il.Create(OpCodes.Ret));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Br, jumpBodyEnd));
+                    il.Emit(OpCodes.Nop);
+                    il.Emit(OpCodes.Ldloc, varsStart + 2);
+                    il.Emit(OpCodes.Ldc_I4_2);
+                    var tmp = ilp.Create(OpCodes.Nop);
+                    il.Emit(OpCodes.Beq_S, tmp);
+                    il.Emit(OpCodes.Br, jumpBodyStart);
+                    il.Emit(tmp);
+                    //il.Emit(OpCodes.Ret);
+                    il.Emit(OpCodes.Br, jumpBodyEnd);
                 }
 
                 // if (client && networkMode == NetworkManagerMode.Server) return;
                 if (methodRPC.IsClient)
                 {
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Nop));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldloc, varsStart + 2));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Ldc_I4_1));
-                    var tmp = il.Create(OpCodes.Nop);
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Beq_S, tmp));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Br, jumpBodyStart));
-                    il.InsertBefore(ilStart, tmp);
-                    //il.InsertBefore(ilStart, il.Create(OpCodes.Ret));
-                    il.InsertBefore(ilStart, il.Create(OpCodes.Br, jumpBodyEnd));
+                    il.Emit(OpCodes.Nop);
+                    il.Emit(OpCodes.Ldloc, varsStart + 2);
+                    il.Emit(OpCodes.Ldc_I4_1);
+                    var tmp = ilp.Create(OpCodes.Nop);
+                    il.Emit(OpCodes.Beq_S, tmp);
+                    il.Emit(OpCodes.Br, jumpBodyStart);
+                    il.Emit(tmp);
+                    //il.Emit(OpCodes.Ret);
+                    il.Emit(OpCodes.Br, jumpBodyEnd);
                 }
 
                 // Continue to original method body
-                il.InsertBefore(ilStart, jumpBodyStart);
+                il.Emit(jumpBodyStart);
             }
 
             context.MethodRPCs.Add(methodRPC);
