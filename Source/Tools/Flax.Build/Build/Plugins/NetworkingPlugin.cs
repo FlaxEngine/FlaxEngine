@@ -1405,7 +1405,10 @@ namespace Flax.Build.Plugins
                         valueContext.Load(ref il);
                         il.Emit(OpCodes.Ldloc, varStart + 1); // idx
                         il.Emit(OpCodes.Ldloc, varStart + 2); // <elementType>
-                        il.Emit(OpCodes.Stelem_Ref);
+                        if (elementType.IsValueType)
+                            il.Emit(OpCodes.Stelem_Any, elementType);
+                        else
+                            il.Emit(OpCodes.Stelem_Ref);
 
                         // idx++
                         il.Emit(OpCodes.Nop);
@@ -1560,83 +1563,6 @@ namespace Flax.Build.Plugins
                     MonoCecil.CompilationError($"Not supported parameter type '{valueContext.ValueType.FullName}' on RPC method {il.RPC.Name} in {valueContext.Type.FullName} for automatic replication.", il.RPC);
                 else
                     MonoCecil.CompilationError($"Not supported type '{valueContext.ValueType.FullName}' for automatic replication.");
-                context.Failed = true;
-            }
-        }
-
-        private static void GenerateDotNetRPCSerializerType(ref DotnetContext context, TypeDefinition type, int localIndex, TypeReference valueType, ref DotnetIlContext il, TypeDefinition networkStreamType, int streamLocalIndex)
-        {
-            ModuleDefinition module = type.Module;
-            TypeDefinition valueTypeDef = valueType.Resolve();
-            bool serialize = true;
-
-            // Ensure to have valid serialization already generated for that value type
-            GenerateTypeSerialization(ref context, valueTypeDef);
-
-            if (valueType.IsArray)
-            {
-                // TODO: refactor network stream read/write to share code between replication and rpcs
-                //Log.Error($"Not supported type '{valueType.FullName}' for RPC parameter in {type.FullName}.");
-                //context.Failed = true;
-            }
-            else if (_inBuildSerializers.TryGetValue(valueType.FullName, out var serializer))
-            {
-                // Call NetworkStream method to write/read data
-                if (serialize)
-                {
-                    il.Emit(OpCodes.Ldloc, streamLocalIndex);
-                    il.Emit(OpCodes.Ldarg, localIndex);
-                    il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod(serializer.WriteMethod)));
-                }
-            }
-            else if (valueType.IsScriptingObject())
-            {
-                // Replicate ScriptingObject as Guid ID
-                module.GetType("System.Guid", out var guidType);
-                module.GetType("FlaxEngine.Object", out var scriptingObjectType);
-                if (serialize)
-                {
-                    il.Emit(OpCodes.Nop);
-                    il.Emit(OpCodes.Ldloc, streamLocalIndex);
-                    il.Emit(OpCodes.Ldarg, localIndex);
-                    Instruction jmp1 = il.Create(OpCodes.Nop);
-                    il.Emit(OpCodes.Brtrue_S, jmp1);
-                    il.Emit(OpCodes.Ldsfld, module.ImportReference(guidType.Resolve().GetField("Empty")));
-                    Instruction jmp2 = il.Create(OpCodes.Nop);
-                    il.Emit(OpCodes.Br_S, jmp2);
-                    il.Emit( jmp1);
-                    il.Emit(OpCodes.Ldarg, localIndex);
-                    il.Emit(OpCodes.Call, module.ImportReference(scriptingObjectType.Resolve().GetMethod("get_ID")));
-                    il.Emit( jmp2);
-                    il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod("WriteGuid")));
-                }
-            }
-            else if (valueTypeDef.IsEnum)
-            {
-                // Replicate enum as bits
-                // TODO: use smaller uint depending on enum values range
-                if (serialize)
-                {
-                    il.Emit(OpCodes.Ldloc, streamLocalIndex);
-                    il.Emit(OpCodes.Ldarg, localIndex);
-                    il.Emit(OpCodes.Callvirt, module.ImportReference(networkStreamType.GetMethod("WriteUInt32")));
-                }
-            }
-            else if (valueType.IsValueType)
-            {
-                // Invoke structure generated serializer
-                if (serialize)
-                {
-                    il.Emit(OpCodes.Nop);
-                    il.Emit(OpCodes.Ldarga, localIndex);
-                    il.Emit(OpCodes.Ldloc, streamLocalIndex);
-                    il.Emit( OpCodes.Call, module.ImportReference(valueTypeDef.GetMethod(Thunk1)));
-                }
-            }
-            else
-            {
-                // Unknown type
-                Log.Error($"Not supported type '{valueType.FullName}' for RPC parameter in {type.FullName}.");
                 context.Failed = true;
             }
         }
