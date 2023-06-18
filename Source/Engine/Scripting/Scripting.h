@@ -138,6 +138,7 @@ public:
     /// <summary>
     /// Tries to find the object by the given class.
     /// </summary>
+    /// <param name="type">The type of the object to find.</param>
     /// <returns>The found object or null if missing.</returns>
     static ScriptingObject* TryFindObject(MClass* type);
 

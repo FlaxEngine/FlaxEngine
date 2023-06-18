@@ -874,15 +874,15 @@ ScriptingObject* Scripting::TryFindObject(Guid id, MClass* type)
     return result;
 }
 
-ScriptingObject* Scripting::TryFindObject(MClass* mclass)
+ScriptingObject* Scripting::TryFindObject(MClass* type)
 {
-    if (mclass == nullptr)
+    if (type == nullptr)
         return nullptr;
     ScopeLock lock(_objectsLocker);
     for (auto i = _objectsDictionary.Begin(); i.IsNotEnd(); ++i)
     {
         const auto obj = i->Value;
-        if (obj->GetClass() == mclass)
+        if (obj->GetClass() == type)
             return obj;
     }
     return nullptr;
