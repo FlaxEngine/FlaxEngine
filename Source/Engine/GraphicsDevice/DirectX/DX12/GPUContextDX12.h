@@ -48,6 +48,7 @@ private:
     uint32 _srMaskDirtyGraphics;
     uint32 _srMaskDirtyCompute;
     uint32 _stencilRef;
+    D3D_PRIMITIVE_TOPOLOGY _primitiveTopology;
 
     int32 _isCompute : 1;
     int32 _rtDirtyFlag : 1;

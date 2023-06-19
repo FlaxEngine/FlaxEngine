@@ -239,7 +239,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
 
     // Input Assembly
     RenderToolsVulkan::ZeroStruct(_descInputAssembly, VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);;
-    switch (desc.PrimitiveTopologyType)
+    switch (desc.PrimitiveTopology)
     {
     case PrimitiveTopologyType::Point:
         _descInputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;

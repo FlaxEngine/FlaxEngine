@@ -72,7 +72,7 @@ public:
         /// <summary>
         /// Input primitives topology
         /// </summary>
-        API_FIELD() PrimitiveTopologyType PrimitiveTopologyType;
+        API_FIELD() PrimitiveTopologyType PrimitiveTopology;
 
         /// <summary>
         /// True if use wireframe rendering, otherwise false

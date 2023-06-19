@@ -223,6 +223,7 @@ void GPUContextDX12::Reset()
     _srMaskDirtyGraphics = 0;
     _srMaskDirtyCompute = 0;
     _stencilRef = 0;
+    _primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
     _psDirtyFlag = false;
     _isCompute = false;
     _currentCompute = nullptr;
@@ -545,7 +546,11 @@ void GPUContextDX12::flushPS()
         // Change state
         ASSERT(_currentState->IsValid());
         _commandList->SetPipelineState(_currentState->GetState(_rtDepth, _rtCount, _rtHandles));
-        _commandList->IASetPrimitiveTopology(_currentState->PrimitiveTopologyType);
+        if (_primitiveTopology != _currentState->PrimitiveTopology)
+        {
+            _primitiveTopology = _currentState->PrimitiveTopology;
+            _commandList->IASetPrimitiveTopology(_primitiveTopology);
+        }
 
         RENDER_STAT_PS_STATE_CHANGE();
     }

@@ -157,12 +157,12 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
         D3D_PRIMITIVE_TOPOLOGY_LINELIST,
         D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
     };
-    psDesc.PrimitiveTopologyType = primTypes1[(int32)desc.PrimitiveTopologyType];
-    PrimitiveTopologyType = primTypes2[(int32)desc.PrimitiveTopologyType];
+    psDesc.PrimitiveTopologyType = primTypes1[(int32)desc.PrimitiveTopology];
+    PrimitiveTopology = primTypes2[(int32)desc.PrimitiveTopology];
     if (desc.HS)
     {
         psDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
-        PrimitiveTopologyType = (D3D_PRIMITIVE_TOPOLOGY)((int32)D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + (desc.HS->GetControlPointsCount() - 1));
+        PrimitiveTopology = (D3D_PRIMITIVE_TOPOLOGY)((int32)D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + (desc.HS->GetControlPointsCount() - 1));
     }
 
     // Depth State
