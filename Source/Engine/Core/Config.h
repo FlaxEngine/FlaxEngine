@@ -36,7 +36,7 @@
 #define CRASH_LOG_ENABLE (!BUILD_RELEASE)
 
 // Enable/disable assertion
-#define ENABLE_ASSERTION 1
+#define ENABLE_ASSERTION (!BUILD_RELEASE)
 
 // Enable/disable assertion for Engine low layers
 #define ENABLE_ASSERTION_LOW_LAYERS ENABLE_ASSERTION && (BUILD_DEBUG || FLAX_TESTS)

@@ -1468,7 +1468,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
 
             // Send object to clients
             const uint32 size = stream->GetPosition();
-            ASSERT(size <= MAX_uint16)
+            ASSERT(size <= MAX_uint16);
             NetworkMessageObjectReplicate msgData;
             msgData.OwnerFrame = NetworkManager::Frame;
             msgData.ObjectId = item.ObjectId;
@@ -1497,7 +1497,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
             }
             else
                 dataStart += size;
-            ASSERT(partsCount <= MAX_uint8)
+            ASSERT(partsCount <= MAX_uint8);
             msgData.PartsCount = partsCount;
             NetworkMessage msg = peer->BeginSendMessage();
             msg.WriteStructure(msgData);
