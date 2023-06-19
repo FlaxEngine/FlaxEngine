@@ -304,6 +304,6 @@ void SplashScreen::OnFontLoaded(Asset* asset)
 
     // Create fonts
     const float s = _dpiScale;
-    _titleFont = font->CreateFont((uint32)(35 * s));
-    _subtitleFont = font->CreateFont((uint32)(9 * s));
+    _titleFont = font->CreateFont(35 * s);
+    _subtitleFont = font->CreateFont(9 * s);
 }

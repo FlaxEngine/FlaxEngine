@@ -13,7 +13,7 @@ namespace FlaxEngine
         private FontAsset _font;
 
         [NoSerialize]
-        private int _size;
+        private float _size;
 
         [NoSerialize]
         private Font _cachedFont;
@@ -33,7 +33,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="font">The font.</param>
         /// <param name="size">The font size.</param>
-        public FontReference(FontAsset font, int size)
+        public FontReference(FontAsset font, float size)
         {
             _font = font;
             _size = size;
@@ -91,7 +91,7 @@ namespace FlaxEngine
         /// The size of the font characters.
         /// </summary>
         [EditorOrder(10), Limit(1, 500, 0.1f), Tooltip("The size of the font characters.")]
-        public int Size
+        public float Size
         {
             get => _size;
             set
@@ -187,7 +187,7 @@ namespace FlaxEngine
             unchecked
             {
                 int hashCode = _font ? _font.GetHashCode() : 0;
-                hashCode = (hashCode * 397) ^ _size;
+                hashCode = (hashCode * 397) ^ _size.GetHashCode();
                 return hashCode;
             }
         }
