@@ -9,6 +9,31 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 
+static VkStencilOp ToVulkanStencilOp(const StencilOperation value)
+{
+    switch (value)
+    {
+    case StencilOperation::Keep:
+        return VK_STENCIL_OP_KEEP;
+    case StencilOperation::Zero:
+        return VK_STENCIL_OP_ZERO;
+    case StencilOperation::Replace:
+        return VK_STENCIL_OP_REPLACE;
+    case StencilOperation::IncrementSaturated:
+        return VK_STENCIL_OP_INCREMENT_AND_CLAMP;
+    case StencilOperation::DecrementSaturated:
+        return VK_STENCIL_OP_DECREMENT_AND_CLAMP;
+    case StencilOperation::Invert:
+        return VK_STENCIL_OP_INVERT;
+    case StencilOperation::Increment:
+        return VK_STENCIL_OP_INCREMENT_AND_WRAP;
+    case StencilOperation::Decrement:
+        return VK_STENCIL_OP_DECREMENT_AND_WRAP;
+    default:
+        return VK_STENCIL_OP_KEEP;
+    }
+}
+
 GPUShaderProgramCSVulkan::~GPUShaderProgramCSVulkan()
 {
     if (_pipelineState)
@@ -289,6 +314,14 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _descDepthStencil.depthTestEnable = desc.DepthEnable;
     _descDepthStencil.depthWriteEnable = desc.DepthWriteEnable;
     _descDepthStencil.depthCompareOp = RenderToolsVulkan::ToVulkanCompareOp(desc.DepthFunc);
+    _descDepthStencil.stencilTestEnable = desc.StencilEnable;
+    _descDepthStencil.front.compareMask = desc.StencilReadMask;
+    _descDepthStencil.front.writeMask = desc.StencilWriteMask;
+    _descDepthStencil.front.compareOp = RenderToolsVulkan::ToVulkanCompareOp(desc.StencilFunc);
+    _descDepthStencil.front.failOp = ToVulkanStencilOp(desc.StencilFailOp);
+    _descDepthStencil.front.depthFailOp = ToVulkanStencilOp(desc.StencilDepthFailOp);
+    _descDepthStencil.front.passOp = ToVulkanStencilOp(desc.StencilPassOp);
+    _descDepthStencil.front = _descDepthStencil.back;
     _desc.pDepthStencilState = &_descDepthStencil;
 
     // Rasterization

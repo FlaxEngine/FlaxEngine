@@ -9,6 +9,31 @@
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 
+static D3D12_STENCIL_OP ToStencilOp(StencilOperation value)
+{
+    switch (value)
+    {
+    case StencilOperation::Keep:
+        return D3D12_STENCIL_OP_KEEP;
+    case StencilOperation::Zero:
+        return D3D12_STENCIL_OP_ZERO;
+    case StencilOperation::Replace:
+        return D3D12_STENCIL_OP_REPLACE;
+    case StencilOperation::IncrementSaturated:
+        return D3D12_STENCIL_OP_INCR_SAT;
+    case StencilOperation::DecrementSaturated:
+        return D3D12_STENCIL_OP_DECR_SAT;
+    case StencilOperation::Invert:
+        return D3D12_STENCIL_OP_INVERT;
+    case StencilOperation::Increment:
+        return D3D12_STENCIL_OP_INCR;
+    case StencilOperation::Decrement:
+        return D3D12_STENCIL_OP_DECR;
+    default:
+        return D3D12_STENCIL_OP_KEEP;
+    };
+}
+
 GPUPipelineStateDX12::GPUPipelineStateDX12(GPUDeviceDX12* device)
     : GPUResourceDX12(device, StringView::Empty)
     , _states(16)
@@ -169,12 +194,14 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
     psDesc.DepthStencilState.DepthEnable = !!desc.DepthEnable;
     psDesc.DepthStencilState.DepthWriteMask = desc.DepthWriteEnable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
     psDesc.DepthStencilState.DepthFunc = static_cast<D3D12_COMPARISON_FUNC>(desc.DepthFunc);
-    psDesc.DepthStencilState.StencilEnable = FALSE;
-    psDesc.DepthStencilState.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
-    psDesc.DepthStencilState.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
-    const D3D12_DEPTH_STENCILOP_DESC defaultStencilOp = { D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
-    psDesc.DepthStencilState.FrontFace = defaultStencilOp;
-    psDesc.DepthStencilState.BackFace = defaultStencilOp;
+    psDesc.DepthStencilState.StencilEnable = !!desc.StencilEnable;
+    psDesc.DepthStencilState.StencilReadMask = desc.StencilReadMask;
+    psDesc.DepthStencilState.StencilWriteMask = desc.StencilWriteMask;
+    psDesc.DepthStencilState.FrontFace.StencilFailOp = ToStencilOp(desc.StencilFailOp);
+    psDesc.DepthStencilState.FrontFace.StencilDepthFailOp = ToStencilOp(desc.StencilDepthFailOp);
+    psDesc.DepthStencilState.FrontFace.StencilPassOp = ToStencilOp(desc.StencilPassOp);
+    psDesc.DepthStencilState.FrontFace.StencilFunc = static_cast<D3D12_COMPARISON_FUNC>(desc.StencilFunc);
+    psDesc.DepthStencilState.BackFace = psDesc.DepthStencilState.FrontFace;
 
     // Rasterizer State
     psDesc.RasterizerState.FillMode = desc.Wireframe ? D3D12_FILL_MODE_WIREFRAME : D3D12_FILL_MODE_SOLID;
