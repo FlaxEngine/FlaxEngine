@@ -832,7 +832,7 @@ namespace FlaxEditor.Scripting
             get
             {
                 if (_managed != null)
-                    return _managed.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null) != null;
+                    return _managed.IsValueType || _managed.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null) != null;
                 return _custom?.CanCreateInstance ?? false;
             }
         }
@@ -893,9 +893,16 @@ namespace FlaxEditor.Scripting
         {
             if (_managed != null)
             {
-                var ctor = _managed.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null);
                 object value = RuntimeHelpers.GetUninitializedObject(_managed);
-                ctor.Invoke(value, null);
+                if (!_managed.IsValueType)
+                {
+                    var ctor = _managed.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null);
+#if !BUILD_RELEASE
+                    if (ctor == null)
+                        throw new Exception($"Missing empty constructor for type {_managed.FullName}.");
+#endif
+                    ctor.Invoke(value, null);
+                }
                 return value;
             }
             return _custom.CreateInstance();
