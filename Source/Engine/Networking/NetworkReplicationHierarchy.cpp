@@ -80,7 +80,11 @@ void NetworkReplicationNode::Update(NetworkReplicationHierarchyUpdateResult* res
     const float networkFPS = NetworkManager::NetworkFPS / result->ReplicationScale;
     for (NetworkReplicationHierarchyObject& obj : Objects)
     {
-        if (obj.ReplicationFPS <= 0.0f)
+        if (obj.ReplicationFPS < 0.0f)
+        {
+            continue;
+        }
+        else if (obj.ReplicationFPS == 0.0f)
         {
             // Always relevant
             result->AddObject(obj.Object);
