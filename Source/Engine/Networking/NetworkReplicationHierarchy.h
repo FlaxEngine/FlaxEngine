@@ -20,7 +20,7 @@ API_STRUCT(NoDefault, Namespace = "FlaxEngine.Networking") struct FLAXENGINE_API
 
     // The object to replicate.
     API_FIELD() ScriptingObjectReference<ScriptingObject> Object;
-    // The target amount of the replication updates per second (frequency of the replication). Constrained by NetworkManager::NetworkFPS. Use 0 for 'always relevant' object and < 0 for 'never relevant' objects that would only get synched on client join once.
+    // The target amount of the replication updates per second (frequency of the replication). Constrained by NetworkManager::NetworkFPS. Use 0 for 'always relevant' object and less than 0 (eg. -1) for 'never relevant' objects that would only get synched on client join once.
     API_FIELD() float ReplicationFPS = 60;
     // The minimum distance from the player to the object at which it can process replication. For example, players further away won't receive object data. Use 0 if unused.
     API_FIELD() float CullDistance = 15000;
