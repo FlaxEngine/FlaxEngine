@@ -92,7 +92,7 @@ void FontAsset::SetOptions(const FontOptions& value)
     _options = value;
 }
 
-Font* FontAsset::CreateFont(int32 size)
+Font* FontAsset::CreateFont(float size)
 {
     PROFILE_CPU();
 
