@@ -65,42 +65,36 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     if (FAILED(result))
         return nullptr;
 #if GPU_ENABLE_RESOURCE_NAMING && BUILD_DEBUG
-    char name[200];
-    int32 nameLen = 0;
+    Array<char, InlinedAllocation<200>> name;
     if (DebugDesc.VS)
     {
-        Platform::MemoryCopy(name + nameLen, *DebugDesc.VS->GetName(), DebugDesc.VS->GetName().Length());
-        nameLen += DebugDesc.VS->GetName().Length();
-        name[nameLen++] = '+';
+        name.Add(*DebugDesc.VS->GetName(), DebugDesc.VS->GetName().Length());
+        name.Add('+');
     }
     if (DebugDesc.HS)
     {
-        Platform::MemoryCopy(name + nameLen, *DebugDesc.HS->GetName(), DebugDesc.HS->GetName().Length());
-        nameLen += DebugDesc.HS->GetName().Length();
-        name[nameLen++] = '+';
+        name.Add(*DebugDesc.HS->GetName(), DebugDesc.HS->GetName().Length());
+        name.Add('+');
     }
     if (DebugDesc.DS)
     {
-        Platform::MemoryCopy(name + nameLen, *DebugDesc.DS->GetName(), DebugDesc.DS->GetName().Length());
-        nameLen += DebugDesc.DS->GetName().Length();
-        name[nameLen++] = '+';
+        name.Add(*DebugDesc.DS->GetName(), DebugDesc.DS->GetName().Length());
+        name.Add('+');
     }
     if (DebugDesc.GS)
     {
-        Platform::MemoryCopy(name + nameLen, *DebugDesc.GS->GetName(), DebugDesc.GS->GetName().Length());
-        nameLen += DebugDesc.GS->GetName().Length();
-        name[nameLen++] = '+';
+        name.Add(*DebugDesc.GS->GetName(), DebugDesc.GS->GetName().Length());
+        name.Add('+');
     }
     if (DebugDesc.PS)
     {
-        Platform::MemoryCopy(name + nameLen, *DebugDesc.PS->GetName(), DebugDesc.PS->GetName().Length());
-        nameLen += DebugDesc.PS->GetName().Length();
-        name[nameLen++] = '+';
+        name.Add(*DebugDesc.PS->GetName(), DebugDesc.PS->GetName().Length());
+        name.Add('+');
     }
-    if (nameLen && name[nameLen - 1] == '+')
-        nameLen--;
-    name[nameLen] = '\0';
-    SetDebugObjectName(state, name);
+    if (name.Count() != 0 && name[name.Count() - 1] == '+')
+        name.RemoveLast();
+    name.Add('\0');
+    SetDebugObjectName(state, name.Get(), name.Count() - 1);
 #endif
 
     // Cache it
