@@ -222,6 +222,7 @@ void GPUContextDX12::Reset()
     _rtDepth = nullptr;
     _srMaskDirtyGraphics = 0;
     _srMaskDirtyCompute = 0;
+    _stencilRef = 0;
     _psDirtyFlag = false;
     _isCompute = false;
     _currentCompute = nullptr;
@@ -848,6 +849,15 @@ void GPUContextDX12::SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPU
 void GPUContextDX12::SetBlendFactor(const Float4& value)
 {
     _commandList->OMSetBlendFactor(value.Raw);
+}
+
+void GPUContextDX12::SetStencilRef(uint32 value)
+{
+    if (_stencilRef != value)
+    {
+        _stencilRef = value;
+        _commandList->OMSetStencilRef(value);
+    }
 }
 
 void GPUContextDX12::ResetSR()

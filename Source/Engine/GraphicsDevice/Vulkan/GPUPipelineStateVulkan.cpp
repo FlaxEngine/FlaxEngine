@@ -274,7 +274,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _descDynamic.pDynamicStates = _dynamicStates;
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_VIEWPORT;
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_SCISSOR;
-    //_dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
+    _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
     static_assert(ARRAY_COUNT(_dynamicStates) <= 3, "Invalid dynamic states array.");
     _desc.pDynamicState = &_descDynamic;
 

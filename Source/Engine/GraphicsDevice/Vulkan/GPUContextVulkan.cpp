@@ -727,6 +727,7 @@ void GPUContextVulkan::FrameBegin()
     _cbDirtyFlag = 0;
     _rtCount = 0;
     _vbCount = 0;
+    _stencilRef = 0;
     _renderPass = nullptr;
     _currentState = nullptr;
     _rtDepth = nullptr;
@@ -970,6 +971,16 @@ void GPUContextVulkan::SetBlendFactor(const Float4& value)
 {
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     vkCmdSetBlendConstants(cmdBuffer->GetHandle(), value.Raw);
+}
+
+void GPUContextVulkan::SetStencilRef(uint32 value)
+{
+    if (_stencilRef != value)
+    {
+        _stencilRef = value;
+        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+        vkCmdSetStencilReference(cmdBuffer->GetHandle(), VK_STENCIL_FRONT_AND_BACK, _stencilRef);
+    }
 }
 
 void GPUContextVulkan::ResetSR()
