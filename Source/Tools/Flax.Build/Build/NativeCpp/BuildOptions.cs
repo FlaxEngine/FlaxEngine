@@ -24,6 +24,32 @@ namespace Flax.Build.NativeCpp
     }
 
     /// <summary>
+    /// The nullable context type used with reference types (C#).
+    /// </summary>
+    public enum CSharpNullableReferences
+    {
+        /// <summary>
+        /// The code is nullable oblivious, nullable warnings and language analysis features are disabled.
+        /// </summary>
+        Disable,
+
+        /// <summary>
+        /// The compiler enables all null reference analysis and all language features.
+        /// </summary>
+        Enable,
+
+        /// <summary>
+        /// The compiler performs all null analysis and emits warnings when code might dereference null.
+        /// </summary>
+        Warnings,
+
+        /// <summary>
+        /// The compiler doesn't perform null analysis or emit warnings when code might dereference null.
+        /// </summary>
+        Annotations,
+    }
+
+    /// <summary>
     /// The native C++ module build settings container.
     /// </summary>
     public sealed class BuildOptions
@@ -187,6 +213,15 @@ namespace Flax.Build.NativeCpp
             /// True if ignore compilation warnings due to missing code documentation comments.
             /// </summary>
             public bool IgnoreMissingDocumentationWarnings;
+
+            /// <summary>
+            /// The nullable context used in C# project.
+            /// </summary>
+            public CSharpNullableReferences CSharpNullableReferences = CSharpNullableReferences.Disable;
+
+            public ScriptingAPIOptions()
+            {
+            }
 
             /// <summary>
             /// Adds the other options into this.

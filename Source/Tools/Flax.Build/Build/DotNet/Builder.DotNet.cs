@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Flax.Build.Graph;
+using Flax.Build.NativeCpp;
 using Flax.Deploy;
 
 namespace Flax.Build
@@ -242,7 +243,9 @@ namespace Flax.Build
             args.Add("/filealign:512");
 #if USE_NETCORE
             args.Add("/langversion:11.0");
-            args.Add("-nowarn:8632"); // Nullable
+            args.Add(string.Format("/nullable:{0}", buildOptions.ScriptingAPI.CSharpNullableReferences.ToString().ToLowerInvariant()));
+            if (buildOptions.ScriptingAPI.CSharpNullableReferences == CSharpNullableReferences.Disable)
+                args.Add("-nowarn:8632"); // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
 #else
             args.Add("/langversion:7.3");
 #endif
