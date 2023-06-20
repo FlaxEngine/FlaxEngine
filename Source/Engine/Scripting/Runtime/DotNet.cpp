@@ -712,7 +712,8 @@ bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePa
     // Provide new path of hot-reloaded native library path for managed DllImport
     if (nativePath.HasChars())
     {
-        RegisterNativeLibrary(assemblyPathAnsi.Get(), StringAnsi(nativePath).Get());
+        StringAnsi nativeName = _name.EndsWith(".CSharp") ? StringAnsi(_name.Get(), _name.Length() - 7) : StringAnsi(_name);
+        RegisterNativeLibrary(nativeName.Get(), StringAnsi(nativePath).Get());
     }
 
     _hasCachedClasses = false;
