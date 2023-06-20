@@ -26,7 +26,7 @@ typedef Function<ExportAssetResult(ExportAssetContext&)> ExportAssetFunction;
 /// <summary>
 /// Exporting asset context structure
 /// </summary>
-class ExportAssetContext : public NonCopyable
+class FLAXENGINE_API ExportAssetContext : public NonCopyable
 {
 public:
     /// <summary>
