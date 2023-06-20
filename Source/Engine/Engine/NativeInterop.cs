@@ -58,19 +58,8 @@ namespace FlaxEngine.Interop
             if (!loadedNativeLibraries.TryGetValue(libraryName, out IntPtr nativeLibrary))
             {
                 if (!nativeLibraryPaths.TryGetValue(libraryName, out var nativeLibraryPath))
-                {
                     nativeLibraryPath = libraryName;
 
-                    // Check if any of the loaded assemblies has matching native module filename
-                    foreach (var e in nativeLibraryPaths)
-                    {
-                        if (string.Equals(Path.GetFileNameWithoutExtension(e.Value), libraryName, StringComparison.Ordinal))
-                        {
-                            nativeLibraryPath = e.Value;
-                            break;
-                        }
-                    }
-                }
                 nativeLibrary = NativeLibrary.Load(nativeLibraryPath, assembly, dllImportSearchPath);
                 loadedNativeLibraries.Add(libraryName, nativeLibrary);
                 assemblyOwnedNativeLibraries.Add(assembly, libraryName);
