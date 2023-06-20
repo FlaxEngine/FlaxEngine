@@ -9,7 +9,7 @@
 /// <summary>
 /// Assets Importing service allows to import or create new assets
 /// </summary>
-class AssetsImportingManager
+class FLAXENGINE_API AssetsImportingManager
 {
 public:
     /// <summary>
