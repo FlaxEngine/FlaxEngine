@@ -466,7 +466,7 @@ inline void DrawText3D(const DebugText3D& t, const RenderContext& renderContext,
     Matrix::Multiply(fw, vp, m);
     Render2D::Begin(context, target, depthBuffer, viewport, m);
     const StringView text(t.Text.Get(), t.Text.Count() - 1);
-    Render2D::DrawText(DebugDrawFont->CreateFont(t.Size), text, t.Color, Vector2::Zero);
+    Render2D::DrawText(DebugDrawFont->CreateFont((float)t.Size), text, t.Color, Vector2::Zero);
     Render2D::End();
 }
 
@@ -777,7 +777,7 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
             context->BindSR(0, renderContext.Buffers->DepthBuffer);
         const bool enableDepthWrite = data.EnableDepthTest;
 
-        context->SetRenderTarget(depthBuffer ? depthBuffer : *renderContext.Buffers->DepthBuffer, target);
+        context->SetRenderTarget(depthBuffer ? depthBuffer : (data.EnableDepthTest ? nullptr : renderContext.Buffers->DepthBuffer->View()), target);
 
         // Lines
         if (depthTestLines.VertexCount)
@@ -859,12 +859,12 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
                 for (auto& t : Context->DebugDrawDefault.DefaultText2D)
                 {
                     const StringView text(t.Text.Get(), t.Text.Count() - 1);
-                    Render2D::DrawText(DebugDrawFont->CreateFont(t.Size), text, t.Color, t.Position);
+                    Render2D::DrawText(DebugDrawFont->CreateFont((float)t.Size), text, t.Color, t.Position);
                 }
                 for (auto& t : Context->DebugDrawDefault.OneFrameText2D)
                 {
                     const StringView text(t.Text.Get(), t.Text.Count() - 1);
-                    Render2D::DrawText(DebugDrawFont->CreateFont(t.Size), text, t.Color, t.Position);
+                    Render2D::DrawText(DebugDrawFont->CreateFont((float)t.Size), text, t.Color, t.Position);
                 }
                 Render2D::End();
             }
