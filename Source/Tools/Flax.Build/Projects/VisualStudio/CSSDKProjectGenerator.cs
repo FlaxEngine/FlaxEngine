@@ -88,7 +88,7 @@ namespace Flax.Build.Projects.VisualStudio
 
             csProjectFileContent.AppendLine("    <TargetFramework>net7.0</TargetFramework>");
             csProjectFileContent.AppendLine("    <ImplicitUsings>disable</ImplicitUsings>");
-            csProjectFileContent.AppendLine("    <Nullable>annotations</Nullable>");
+            csProjectFileContent.AppendLine(string.Format("    <Nullable>{0}</Nullable>", baseConfiguration.TargetBuildOptions.ScriptingAPI.CSharpNullableReferences.ToString().ToLowerInvariant()));
             csProjectFileContent.AppendLine("    <IsPackable>false</IsPackable>");
             csProjectFileContent.AppendLine("    <EnableDefaultItems>false</EnableDefaultItems>");
             csProjectFileContent.AppendLine("    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>");
