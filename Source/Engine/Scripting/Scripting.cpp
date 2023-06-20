@@ -640,9 +640,9 @@ void Scripting::Reload(bool canTriggerSceneReload)
     MCore::GC::WaitForPendingFinalizers();
 
     // Destroy objects from game assemblies (eg. not released objects that might crash if persist in memory after reload)
+    const auto flaxModule = GetBinaryModuleFlaxEngine();
     _objectsLocker.Lock();
     {
-        const auto flaxModule = GetBinaryModuleFlaxEngine();
         for (auto i = _objectsDictionary.Begin(); i.IsNotEnd(); ++i)
         {
             auto obj = i->Value;
@@ -656,6 +656,15 @@ void Scripting::Reload(bool canTriggerSceneReload)
         }
     }
     _objectsLocker.Unlock();
+
+    // Release assets sourced from game assemblies
+    for (auto asset : Content::GetAssets())
+    {
+        if (asset->GetTypeHandle().Module == flaxModule)
+            continue;
+
+        asset->DeleteObjectNow();
+    }
 
     // Unload all game modules
     LOG(Info, "Unloading game binary modules");
