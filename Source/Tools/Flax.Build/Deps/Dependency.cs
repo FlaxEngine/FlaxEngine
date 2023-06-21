@@ -259,20 +259,20 @@ namespace Flax.Deps
                 switch (architecture)
                 {
                 case TargetArchitecture.x86:
-                    arch = string.Empty;
+                    arch = "Win32";
                     break;
                 case TargetArchitecture.x64:
-                    arch = " Win64";
+                    arch = "x64";
                     break;
                 case TargetArchitecture.ARM:
-                    arch = " ARM";
+                    arch = "ARM";
                     break;
                 case TargetArchitecture.ARM64:
-                    arch = " ARM64";
+                    arch = "ARM64";
                     break;
                 default: throw new InvalidArchitectureException(architecture);
                 }
-                cmdLine = string.Format("CMakeLists.txt -G \"Visual Studio 14 2015{0}\"", arch);
+                cmdLine = string.Format("CMakeLists.txt -G \"Visual Studio 17 2022\" -A {0}", arch);
                 break;
             }
             case TargetPlatform.Linux:
