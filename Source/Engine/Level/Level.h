@@ -494,9 +494,10 @@ public:
     /// Tries to find the actors with the given tag (returns all found).
     /// </summary>
     /// <param name="tag">The tag of the actor to search for.</param>
+    /// <param name="activeOnly">Find only active actors.</param>
     /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
     /// <returns>Found actors or empty if none.</returns>
-    API_FUNCTION() static Array<Actor*> FindActors(const Tag& tag, Actor* root = nullptr);
+    API_FUNCTION() static Array<Actor*> FindActors(const Tag& tag, const bool activeOnly = false, Actor* root = nullptr);
 
     /// <summary>
     /// Search actors using a parent parentTag.

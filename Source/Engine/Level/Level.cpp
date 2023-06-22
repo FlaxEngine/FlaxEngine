@@ -740,12 +740,14 @@ Actor* FindActorRecursive(Actor* node, const Tag& tag)
     return result;
 }
 
-void FindActorsRecursive(Actor* node, const Tag& tag, Array<Actor*>& result)
+void FindActorsRecursive(Actor* node, const Tag& tag, const bool activeOnly, Array<Actor*>& result)
 {
+    if (activeOnly && !node->GetIsActive())
+        return;
     if (node->HasTag(tag))
         result.Add(node);
     for (Actor* child : node->Children)
-        FindActorsRecursive(child, tag, result);
+        FindActorsRecursive(child, tag, activeOnly, result);
 }
 
 void FindActorsRecursiveByParentTags(Actor* node, const Array<Tag>& tags, Array<Actor*>& result)
@@ -785,19 +787,19 @@ void FindActorRecursive(Actor* node, const Tag& tag, Array<Actor*>& result)
         FindActorRecursive(child, tag, result);
 }
 
-Array<Actor*> Level::FindActors(const Tag& tag, Actor* root)
+Array<Actor*> Level::FindActors(const Tag& tag, const bool activeOnly, Actor* root)
 {
     PROFILE_CPU();
     Array<Actor*> result;
     if (root)
     {
-        FindActorsRecursive(root, tag, result);
+        FindActorsRecursive(root, tag, activeOnly, result);
     }
     else
     {
         ScopeLock lock(ScenesLock);
         for (Scene* scene : Scenes)
-            FindActorsRecursive(scene, tag, result);
+            FindActorsRecursive(scene, tag, activeOnly,  result);
     }
     return result;
 }
