@@ -314,7 +314,7 @@ bool FileBase::WriteAllText(const StringView& path, const Char* data, int32 leng
         Array<byte> tmp;
         tmp.SetCapacity(length);
 
-        for (int i=0; i<length; ++i)
+        for (int32 i = 0; i < length; i++)
         {
             Char c = data[i];
             if (c < 0x0080)

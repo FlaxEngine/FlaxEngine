@@ -125,6 +125,9 @@ namespace FlaxEditor.Gizmo
             owner.RenderTask.AddCustomPostFx(_renderer);
         }
 
+        /// <summary>
+        /// Destructor.
+        /// </summary>
         ~GridGizmo()
         {
             FlaxEngine.Object.Destroy(ref _renderer);
