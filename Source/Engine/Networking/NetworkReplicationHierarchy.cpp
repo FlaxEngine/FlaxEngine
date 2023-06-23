@@ -49,7 +49,7 @@ bool NetworkReplicationHierarchyUpdateResult::GetClientLocation(int32 clientInde
 
 void NetworkReplicationNode::AddObject(NetworkReplicationHierarchyObject obj)
 {
-    if (obj.ReplicationFPS > 0.0f)
+    if (obj.ReplicationFPS > ZeroTolerance) // > 0
     {
         // Randomize initial replication update to spread rep rates more evenly for large scenes that register all objects within the same frame
         obj.ReplicationUpdatesLeft = NetworkReplicationNodeObjectCounter++ % Math::Clamp(Math::RoundToInt(NetworkManager::NetworkFPS / obj.ReplicationFPS), 1, 60);
