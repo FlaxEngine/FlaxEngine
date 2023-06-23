@@ -203,6 +203,60 @@ class CharacterControllerFilterPhysX : public PxControllerFilterCallback
     }
 };
 
+class CharacterControllerHitReportPhysX : public PxUserControllerHitReport
+{
+    void onHit(const PxControllerHit& hit, Collision& c)
+    {
+        ASSERT_LOW_LAYER(c.ThisActor && c.OtherActor);
+        c.Impulse = Vector3::Zero;
+        c.ThisVelocity = P2C(hit.dir) * hit.length;
+        c.OtherVelocity = Vector3::Zero;
+        c.ContactsCount = 1;
+        ContactPoint& contact = c.Contacts[0];
+        contact.Point = P2C(hit.worldPos);
+        contact.Normal = P2C(hit.worldNormal);
+        contact.Separation = 0.0f;
+
+        //auto simulationEventCallback = static_cast<SimulationEventCallback*>(hit.controller->getScene()->getSimulationEventCallback());
+        //simulationEventCallback->Collisions[SimulationEventCallback::CollidersPair(c.ThisActor, c.OtherActor)] = c;
+        // TODO: build additional list for hit-only events to properly send enter/exit pairs instead of spamming every frame whether controller executes move
+
+        // Single-hit collision
+        c.ThisActor->OnCollisionEnter(c);
+        c.SwapObjects();
+        c.ThisActor->OnCollisionEnter(c);
+        c.SwapObjects();
+        c.ThisActor->OnCollisionExit(c);
+        c.SwapObjects();
+        c.ThisActor->OnCollisionExit(c);
+    }
+
+    void onShapeHit(const PxControllerShapeHit& hit) override
+    {
+        Collision c;
+        PxShape* controllerShape;
+        hit.controller->getActor()->getShapes(&controllerShape, 1);
+        c.ThisActor = static_cast<PhysicsColliderActor*>(controllerShape->userData);
+        c.OtherActor = static_cast<PhysicsColliderActor*>(hit.shape->userData);
+        onHit(hit, c);
+    }
+
+    void onControllerHit(const PxControllersHit& hit) override
+    {
+        Collision c;
+        PxShape* controllerShape;
+        hit.controller->getActor()->getShapes(&controllerShape, 1);
+        c.ThisActor = static_cast<PhysicsColliderActor*>(controllerShape->userData);
+        hit.other->getActor()->getShapes(&controllerShape, 1);
+        c.OtherActor = static_cast<PhysicsColliderActor*>(controllerShape->userData);
+        onHit(hit, c);
+    }
+
+    void onObstacleHit(const PxControllerObstacleHit& hit) override
+    {
+    }
+};
+
 #if WITH_VEHICLE
 
 class WheelFilterPhysX : public PxQueryFilterCallback
@@ -383,6 +437,7 @@ namespace
     QueryFilterPhysX QueryFilter;
     CharacterQueryFilterPhysX CharacterQueryFilter;
     CharacterControllerFilterPhysX CharacterControllerFilter;
+    CharacterControllerHitReportPhysX CharacterControllerHitReport;
     Dictionary<PxScene*, Vector3, InlinedAllocation<32>> SceneOrigins;
 
     CriticalSection FlushLocker;
@@ -2475,6 +2530,7 @@ void* PhysicsBackend::CreateController(void* scene, IPhysicsActor* actor, Physic
     const Vector3 sceneOrigin = SceneOrigins[scenePhysX->Scene];
     PxCapsuleControllerDesc desc;
     desc.userData = actor;
+    desc.reportCallback = &CharacterControllerHitReport;
     desc.contactOffset = Math::Max(contactOffset, ZeroTolerance);
     desc.position = PxExtendedVec3(position.X - sceneOrigin.X, position.Y - sceneOrigin.Y, position.Z - sceneOrigin.Z);
     desc.slopeLimit = Math::Cos(slopeLimit * DegreesToRadians);
