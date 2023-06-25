@@ -249,7 +249,7 @@ namespace Flax.Build
 
         public static void GetType(this ModuleDefinition module, string fullName, out TypeReference type)
         {
-            if (!module.TryGetTypeReference(fullName, out type))
+            //if (!module.TryGetTypeReference(fullName, out type)) // TODO: this seams to return 'FlaxEngine.Networking.NetworkManagerMode' as a Class instead of Enum
             {
                 // Do manual search
                 foreach (var a in module.AssemblyReferences)
