@@ -63,6 +63,17 @@ bool NetworkReplicationNode::RemoveObject(ScriptingObject* obj)
     return !Objects.Remove(obj);
 }
 
+bool NetworkReplicationNode::GetObject(ScriptingObject* obj, NetworkReplicationHierarchyObject& result)
+{
+    const int32 index = Objects.Find(obj);
+    if (index != -1)
+    {
+        result = Objects[index];
+        return true;
+    }
+    return false;
+}
+
 bool NetworkReplicationNode::DirtyObject(ScriptingObject* obj)
 {
     const int32 index = Objects.Find(obj);
