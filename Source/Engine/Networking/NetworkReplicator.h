@@ -43,6 +43,12 @@ public:
 #endif
 
     /// <summary>
+    /// Requests current Client Id that for which INetworkObject::OnNetworkSync just got fired.
+    /// </summary>
+    /// <returns>The Client Id.</returns>
+    API_FUNCTION() static uint32 GetSyncClientId();
+
+    /// <summary>
     /// Gets the network replication hierarchy.
     /// </summary>
     API_PROPERTY() static NetworkReplicationHierarchy* GetHierarchy();

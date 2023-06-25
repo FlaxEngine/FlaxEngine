@@ -206,6 +206,7 @@ namespace
     NetworkStream* CachedReadStream = nullptr;
     NetworkReplicationHierarchyUpdateResult* CachedReplicationResult = nullptr;
     NetworkReplicationHierarchy* Hierarchy = nullptr;
+    uint32 SynchedClientId = 0;
     Array<NetworkClient*> NewClients;
     Array<NetworkConnection> CachedTargets;
     Dictionary<ScriptingTypeHandle, Serializer> SerializersTable;
@@ -646,6 +647,7 @@ void InvokeObjectReplication(NetworkReplicatedObject& item, uint32 ownerFrame, b
         if (!item.Synced)
         {
             item.Synced = true;
+            SynchedClientId = senderClientId;
             item.AsNetworkObject->OnNetworkSync();
         }
     }
@@ -718,6 +720,11 @@ StringAnsiView NetworkReplicator::GetCSharpCachedName(const StringAnsiView& name
 }
 
 #endif
+
+uint32 NetworkReplicator::GetSyncClientId()
+{
+    return SynchedClientId;
+}
 
 NetworkReplicationHierarchy* NetworkReplicator::GetHierarchy()
 {
