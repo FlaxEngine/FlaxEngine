@@ -116,6 +116,48 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Check if this box is visible on some camera view.
+        /// </summary>
+        /// <param name="camera">The camera that observe this box.</param>
+        /// <returns></returns>
+        public bool IsOnView(Camera camera)
+        {
+            Vector3 cameraPosition = camera.Position;
+            Vector3 cameraForward = camera.Transform.Forward;
+            Ray ray = new Ray(cameraPosition, cameraForward);
+
+            // check if the camera is inside of box
+            if (CollisionsHelper.BoxContainsPoint(ref this, ref cameraPosition) == ContainmentType.Contains)
+            {
+                return true;
+            }
+
+            // check the box is on front of camera view
+            if (CollisionsHelper.RayIntersectsBox(ref ray, ref this, out Vector3 point))
+            {
+                if (Camera.MainCamera.IsPointOnView(point));
+                {
+                    return true;
+                }
+            }
+
+            // check if any point from box is on camera view
+            for (int i = 0; i < GetCorners().Length; i++)
+            {
+                ray = new Ray(camera.Position, (GetCorners()[i] - cameraPosition).Normalized);
+                if (CollisionsHelper.RayIntersectsBox(ref ray, ref this, out point))
+                {
+                    if (Camera.MainCamera.IsPointOnView(point))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Retrieves the eight corners of the bounding box.
         /// </summary>
         /// <returns>An array of points representing the eight corners of the bounding box.</returns>
