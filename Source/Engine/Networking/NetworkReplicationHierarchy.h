@@ -246,6 +246,7 @@ private:
     };
 
     Dictionary<Int3, Cell> _children;
+    Dictionary<ScriptingObject*, Int3> _objectToCell;
 
 public:
     /// <summary>
