@@ -206,7 +206,7 @@ API_CLASS(Abstract, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API Ne
     /// <param name="obj">The object to get.</param>
     /// <param name="result">The hierarchy object to retrieve.</param>
     /// <returns>True on successful retrieval, otherwise false.</returns>
-    API_FUNCTION() bool GetObject(ScriptingObject* obj, NetworkReplicationHierarchyObject& result);
+    API_FUNCTION() virtual bool GetObject(ScriptingObject* obj, NetworkReplicationHierarchyObject& result);
 
     /// <summary>
     /// Force replicates the object during the next update. Resets any internal tracking state to force the synchronization.
@@ -255,6 +255,7 @@ public:
 
     void AddObject(NetworkReplicationHierarchyObject obj) override;
     bool RemoveObject(ScriptingObject* obj) override;
+    bool GetObject(ScriptingObject* obj, NetworkReplicationHierarchyObject& result) override;
     void Update(NetworkReplicationHierarchyUpdateResult* result) override;
 };
 

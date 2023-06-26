@@ -186,6 +186,18 @@ bool NetworkReplicationGridNode::RemoveObject(ScriptingObject* obj)
     return false;
 }
 
+bool NetworkReplicationGridNode::GetObject(ScriptingObject* obj, NetworkReplicationHierarchyObject& result)
+{
+    for (const auto& e : _children)
+    {
+        if (e.Value.Node->GetObject(obj, result))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void NetworkReplicationGridNode::Update(NetworkReplicationHierarchyUpdateResult* result)
 {
     CHECK(result);
