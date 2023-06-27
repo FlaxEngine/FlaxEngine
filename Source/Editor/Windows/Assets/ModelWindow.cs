@@ -779,12 +779,18 @@ namespace FlaxEditor.Windows.Assets
         private MeshDataCache _meshData;
         private ModelImportSettings _importSettings = new ModelImportSettings();
         private float _backfacesThreshold = 0.6f;
+        private ToolStripButton _showCurrentLODButton;
 
         /// <inheritdoc />
         public ModelWindow(Editor editor, AssetItem item)
         : base(editor, item)
         {
             // Toolstrip
+            _toolstrip.AddSeparator();
+            _showCurrentLODButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Info64, () => _preview.ShowCurrentLOD = !_preview.ShowCurrentLOD).LinkTooltip("Show LOD statistics");
+
+            _toolstrip.AddButton(editor.Icons.CenterView64, () => _preview.CallSetArcBallView()).LinkTooltip("Show whole model");
+
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/graphics/models/index.html")).LinkTooltip("See documentation to learn more");
 
@@ -869,6 +875,8 @@ namespace FlaxEditor.Windows.Assets
                 }
             }
 
+            _showCurrentLODButton.Checked = _preview.ShowCurrentLOD;
+
             base.Update(deltaTime);
         }
 
@@ -946,6 +954,7 @@ namespace FlaxEditor.Windows.Assets
             base.OnDestroy();
 
             Object.Destroy(ref _highlightActor);
+            _showCurrentLODButton = null;
         }
     }
 }

@@ -56,25 +56,14 @@ namespace FlaxEditor.Viewport.Previews
             // Link actors for rendering
             Task.AddCustomActor(StaticModel);
             Task.AddCustomActor(AnimatedModel);
+        }
 
-            if (useWidgets)
-            {
-                // Preview LOD
-                {
-                    var previewLOD = ViewWidgetButtonMenu.AddButton("Preview LOD");
-                    previewLOD.CloseMenuOnClick = false;
-                    var previewLODValue = new IntValueBox(-1, 90, 2, 70.0f, -1, 10, 0.02f)
-                    {
-                        Parent = previewLOD
-                    };
-                    previewLODValue.ValueChanged += () =>
-                    {
-                        StaticModel.ForcedLOD = previewLODValue.Value;
-                        AnimatedModel.ForcedLOD = previewLODValue.Value;
-                    };
-                    ViewWidgetButtonMenu.VisibleChanged += control => previewLODValue.Value = StaticModel.ForcedLOD;
-                }
-            }
+        /// <summary>
+        /// Calls SetArcBallView from ViewportCamera
+        /// </summary>
+        public void CallSetArcBallView()
+        {
+            ViewportCamera.SetArcBallView(StaticModel.Model != null ? StaticModel.Box : AnimatedModel.Box);
         }
 
         private void OnBegin(RenderTask task, GPUContext context)
@@ -104,7 +93,7 @@ namespace FlaxEditor.Viewport.Previews
             {
             case KeyboardKeys.F:
                 // Pay respect..
-                ViewportCamera.SetArcBallView(StaticModel.Model != null ? StaticModel.Box : AnimatedModel.Box);
+                CallSetArcBallView();
                 break;
             }
             return base.OnKeyDown(key);
