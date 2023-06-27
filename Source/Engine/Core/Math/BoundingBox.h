@@ -25,7 +25,6 @@ public:
     /// A <see cref="BoundingBox"/> located at zero point with zero size.
     /// </summary>
     static const BoundingBox Zero;
-
 public:
     /// <summary>
     /// The minimum point of the box.
