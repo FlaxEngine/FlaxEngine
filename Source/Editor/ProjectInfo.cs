@@ -56,16 +56,6 @@ namespace FlaxEditor
         public string ProjectFolderPath;
 
         /// <summary>
-        /// The content assets folder
-        /// </summary>
-        public string ContentFolderPath;
-
-        /// <summary>
-        /// The source files folder path
-        /// </summary>
-        public string SourceFolderPath;
-
-        /// <summary>
         /// The project version.
         /// </summary>
         public Version Version;
@@ -167,8 +157,6 @@ namespace FlaxEditor
                 var project = JsonConvert.DeserializeObject<ProjectInfo>(contents);
                 project.ProjectPath = path;
                 project.ProjectFolderPath = StringUtils.NormalizePath(Path.GetDirectoryName(path));
-                project.ContentFolderPath = StringUtils.NormalizePath(project.ProjectFolderPath + "/Content");
-                project.SourceFolderPath = StringUtils.NormalizePath(project.ProjectFolderPath + "/Source");
 
                 // Process project data
                 if (string.IsNullOrEmpty(project.Name))
