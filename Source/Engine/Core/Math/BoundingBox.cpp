@@ -5,6 +5,7 @@
 #include "Matrix.h"
 #include "Transform.h"
 #include "../Types/String.h"
+#include "../../Level/Actors/Camera.h"
 
 const BoundingBox BoundingBox::Empty(Vector3(MAX_float), Vector3(MIN_float));
 const BoundingBox BoundingBox::Zero(Vector3(0.0f));
@@ -12,6 +13,56 @@ const BoundingBox BoundingBox::Zero(Vector3(0.0f));
 String BoundingBox::ToString() const
 {
     return String::Format(TEXT("{}"), *this);
+}
+
+ bool BoundingBox::IsOnView(Camera* camera)
+{
+     if (&camera == nullptr)
+     {
+         return false;
+     }
+
+    Vector3 cameraPosition = camera->GetPosition();
+    Vector3 cameraForward = camera->GetTransform().GetForward();
+
+    // check if the camera is inside of box
+    if (CollisionsHelper::BoxContainsPoint(*this, cameraPosition) == ContainmentType::Contains)
+    {
+        return true;
+    }
+
+    Vector3 point;
+    Ray ray = Ray(cameraPosition, cameraForward);
+
+    // check the box is on front of camera view
+    if (CollisionsHelper::RayIntersectsBox(ray, *this, point))
+    {
+        if (camera->IsPointOnView(point))
+        {
+            return true;
+        }
+    }
+
+    // verify all box points to check if is on field of view
+    Vector3* corners = new Vector3[8];
+    GetCorners(corners);
+    for (int i = 0; i < corners->Length(); i++)
+    {
+        // even if the corner isn't on screen return true if the box is on front of camera
+        // and on field on screen
+
+        float distanceOfCorner = Vector3::Distance(cameraPosition, corners[i]);
+        Vector3 endCameraForward = cameraPosition + (cameraForward * distanceOfCorner);
+
+        CollisionsHelper::ClosestPointBoxPoint(*this, endCameraForward, endCameraForward);
+
+        if (camera->IsPointOnView(endCameraForward))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void BoundingBox::GetCorners(Float3 corners[8]) const

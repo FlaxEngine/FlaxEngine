@@ -6,12 +6,15 @@
 #include "Vector3.h"
 #include "CollisionsHelper.h"
 
+class Camera;
+
 /// <summary>
 /// Represents an axis-aligned bounding box in three dimensional space.
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API BoundingBox
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(BoundingBox);
+
 public:
     /// <summary>
     /// A <see cref="BoundingBox"/> which represents an empty space.
@@ -67,6 +70,13 @@ public:
     String ToString() const;
 
 public:
+    /// <summary>
+    /// Check if this box is visible on some camera view.
+    /// </summary>
+    /// <param name="camera">The camera that observe this box.</param>
+    /// <returns></returns>
+    bool IsOnView(Camera* camera);
+
     /// <summary>
     /// Gets the eight corners of the bounding box.
     /// </summary>

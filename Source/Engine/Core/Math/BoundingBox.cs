@@ -122,6 +122,11 @@ namespace FlaxEngine
         /// <returns></returns>
         public bool IsOnView(Camera camera)
         {
+            if (!camera)
+            {
+                return false;
+            }
+
             Vector3 cameraPosition = camera.Position;
             Vector3 cameraForward = camera.Transform.Forward;
 
@@ -135,7 +140,7 @@ namespace FlaxEngine
             Ray ray = new Ray(cameraPosition, cameraForward);
             if (CollisionsHelper.RayIntersectsBox(ref ray, ref this, out Vector3 point))
             {
-                if (Camera.MainCamera.IsPointOnView(point))
+                if (camera.IsPointOnView(point))
                 {
                     return true;
                 }
