@@ -14,7 +14,6 @@ class Camera;
 API_STRUCT() struct FLAXENGINE_API BoundingBox
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(BoundingBox);
-
 public:
     /// <summary>
     /// A <see cref="BoundingBox"/> which represents an empty space.
@@ -25,6 +24,7 @@ public:
     /// A <see cref="BoundingBox"/> located at zero point with zero size.
     /// </summary>
     static const BoundingBox Zero;
+
 public:
     /// <summary>
     /// The minimum point of the box.
