@@ -559,6 +559,16 @@ void Scripting::Release()
     }
     _objectsLocker.Unlock();
 
+    // Release assets sourced from game assemblies
+    const auto flaxModule = GetBinaryModuleFlaxEngine();
+    for (auto asset : Content::GetAssets())
+    {
+        if (asset->GetTypeHandle().Module == flaxModule)
+            continue;
+
+        asset->DeleteObjectNow();
+    }
+
     // Unload assemblies (from back to front)
     {
         LOG(Info, "Unloading binary modules");
