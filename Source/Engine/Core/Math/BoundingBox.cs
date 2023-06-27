@@ -124,7 +124,6 @@ namespace FlaxEngine
         {
             Vector3 cameraPosition = camera.Position;
             Vector3 cameraForward = camera.Transform.Forward;
-            Ray ray = new Ray(cameraPosition, cameraForward);
 
             // check if the camera is inside of box
             if (CollisionsHelper.BoxContainsPoint(ref this, ref cameraPosition) == ContainmentType.Contains)
@@ -133,24 +132,29 @@ namespace FlaxEngine
             }
 
             // check the box is on front of camera view
+            Ray ray = new Ray(cameraPosition, cameraForward);
             if (CollisionsHelper.RayIntersectsBox(ref ray, ref this, out Vector3 point))
             {
-                if (Camera.MainCamera.IsPointOnView(point));
+                if (Camera.MainCamera.IsPointOnView(point))
                 {
                     return true;
                 }
             }
 
-            // check if any point from box is on camera view
+            // verify all box points to check if is on field of view
             for (int i = 0; i < GetCorners().Length; i++)
             {
-                ray = new Ray(camera.Position, (GetCorners()[i] - cameraPosition).Normalized);
-                if (CollisionsHelper.RayIntersectsBox(ref ray, ref this, out point))
+                // even if the corner isn't on screen return true if the box is on front of camera
+                // and on field on screen
+
+                float distanceOfCorner = Vector3.Distance(cameraPosition, GetCorners()[i]);
+                Vector3 endCameraForward = cameraPosition + (cameraForward * distanceOfCorner);
+
+                CollisionsHelper.ClosestPointBoxPoint(ref this, ref endCameraForward, out endCameraForward);
+
+                if (camera.IsPointOnView(endCameraForward))
                 {
-                    if (Camera.MainCamera.IsPointOnView(point))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
 
