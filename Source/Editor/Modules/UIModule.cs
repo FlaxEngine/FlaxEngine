@@ -486,6 +486,14 @@ namespace FlaxEditor.Modules
                 options.Interface.NumberOfGameClientsToLaunch = value;
                 Editor.Options.Apply(options);
             };
+
+            Editor.Options.OptionsChanged += (options) =>
+            {
+                if (options.Interface.NumberOfGameClientsToLaunch != _numberOfClientsGroup.activeItem.value)
+                {
+                    _numberOfClientsGroup.SetItemAsActive(options.Interface.NumberOfGameClientsToLaunch);
+                }
+            };
         }
 
         private void InitMainMenu(RootControl mainWindow)
@@ -682,9 +690,16 @@ namespace FlaxEditor.Modules
             playActionGroup.SetItemAsActive(Editor.Options.Options.Interface.PlayButtonAction);
             // important to add the handler after setting the initial item as active above or the editor will crash
             playActionGroup.OnSelectionChanged = SetPlayAction;
-            // TODO: there are some holes in the syncing of these values
+            // TODO: there is a hole in the syncing of these values:
             // - when changing in the editor, the options will be updated, but the options UI in-editor will not
-            // - when updating the value in the options UI, the value in the tool strip will not update (adding an options changed event handler results in a crash)
+
+            Editor.Options.OptionsChanged += (options) =>
+            {
+                if (options.Interface.PlayButtonAction != playActionGroup.activeItem.value)
+                {
+                    playActionGroup.SetItemAsActive(options.Interface.PlayButtonAction);
+                }
+            };
 
             _toolStripPause = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Pause64, Editor.Simulation.RequestResumeOrPause).LinkTooltip($"Pause/Resume game({inputOptions.Pause.ToString()})");
             _toolStripStep = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Skip64, Editor.Simulation.RequestPlayOneFrame).LinkTooltip("Step one frame in game");

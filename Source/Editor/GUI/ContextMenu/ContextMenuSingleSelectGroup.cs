@@ -92,6 +92,7 @@ namespace FlaxEditor.GUI.ContextMenu
         private void SetItemAsActive(SingleSelectGroupItem<T> item)
         {
             DeselectAll();
+            activeItem = item;
 
             var index = _items.IndexOf(item);
             OnSelectionChanged?.Invoke(item.value);
@@ -101,8 +102,6 @@ namespace FlaxEditor.GUI.ContextMenu
             {
                 btn.Checked = true;
             }
-
-            activeItem = item;
         }
     }
 }
