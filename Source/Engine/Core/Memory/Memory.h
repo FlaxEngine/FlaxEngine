@@ -44,7 +44,7 @@ namespace AllocatorExt
     /// <param name="newSize">The size of the new allocation (in bytes).</param>
     /// <param name="alignment">The memory alignment (in bytes). Must be an integer power of 2.</param>
     /// <returns>The pointer to the allocated chunk of the memory. The pointer is a multiple of alignment.</returns>
-    inline void* ReallocWithAlignment(void* ptr, uint64 newSize, uint64 alignment)
+    inline void* ReallocAligned(void* ptr, uint64 newSize, uint64 alignment)
     {
         if (newSize == 0)
         {
