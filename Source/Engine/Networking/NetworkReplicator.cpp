@@ -1151,6 +1151,7 @@ void NetworkInternal::NetworkReplicatorClientConnected(NetworkClient* client)
 {
     ScopeLock lock(ObjectsLock);
     NewClients.Add(client);
+    ASSERT(sizeof(NetworkClientsMask) * 8 >= (uint32)NetworkManager::Clients.Count()); // Ensure that clients mask can hold all of clients
 }
 
 void NetworkInternal::NetworkReplicatorClientDisconnected(NetworkClient* client)
