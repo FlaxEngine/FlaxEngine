@@ -230,10 +230,11 @@ void WheeledVehicle::DrawPhysicsDebug(RenderView& view)
         {
             const Vector3 currentPos = wheel.Collider->GetPosition();
             const Vector3 basePos = currentPos - Vector3(0, data.State.SuspensionOffset, 0);
+            const Quaternion wheelDebugOrientation = wheel.Collider->GetOrientation() * Quaternion::Euler(90, 0, 90);
             DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(basePos, wheel.Radius * 0.07f), Color::Blue * 0.3f, 0, true);
             DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(currentPos, wheel.Radius * 0.08f), Color::Blue * 0.8f, 0, true);
             DEBUG_DRAW_LINE(basePos, currentPos, Color::Blue, 0, true);
-            DEBUG_DRAW_WIRE_CYLINDER(currentPos, wheel.Collider->GetOrientation(), wheel.Radius, wheel.Width, Color::Red * 0.8f, 0, true);
+            DEBUG_DRAW_WIRE_CYLINDER(currentPos, wheelDebugOrientation, wheel.Radius, wheel.Width, Color::Red * 0.8f, 0, true);
             if (!data.State.IsInAir)
             {
                 DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(data.State.TireContactPoint, 5.0f), Color::Green, 0, true);
@@ -260,6 +261,7 @@ void WheeledVehicle::OnDebugDrawSelected()
         {
             const Vector3 currentPos = wheel.Collider->GetPosition();
             const Vector3 basePos = currentPos - Vector3(0, data.State.SuspensionOffset, 0);
+            const Quaternion wheelDebugOrientation = wheel.Collider->GetOrientation() * Quaternion::Euler(90, 0, 90);
             Transform actorPose = Transform::Identity, shapePose = Transform::Identity;
             PhysicsBackend::GetRigidActorPose(_actor, actorPose.Translation, actorPose.Orientation);
             PhysicsBackend::GetShapeLocalPose(wheel.Collider->GetPhysicsShape(), shapePose.Translation, shapePose.Orientation);
@@ -267,7 +269,7 @@ void WheeledVehicle::OnDebugDrawSelected()
             DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(currentPos, wheel.Radius * 0.08f), Color::Blue * 0.8f, 0, false);
             DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(actorPose.LocalToWorld(shapePose.Translation), wheel.Radius * 0.11f), Color::OrangeRed * 0.8f, 0, false);
             DEBUG_DRAW_LINE(basePos, currentPos, Color::Blue, 0, false);
-            DEBUG_DRAW_WIRE_CYLINDER(currentPos, wheel.Collider->GetOrientation(), wheel.Radius, wheel.Width, Color::Red * 0.4f, 0, false);
+            DEBUG_DRAW_WIRE_CYLINDER(currentPos, wheelDebugOrientation, wheel.Radius, wheel.Width, Color::Red * 0.4f, 0, false);
             if (!data.State.SuspensionTraceStart.IsZero())
             {
                 DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(data.State.SuspensionTraceStart, 5.0f), Color::AliceBlue, 0, false);
