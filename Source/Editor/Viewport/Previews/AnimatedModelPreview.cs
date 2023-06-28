@@ -3,8 +3,6 @@
 using System;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
-using FlaxEditor.GUI.Input;
-using FlaxEngine.GUI;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport.Previews
@@ -15,11 +13,10 @@ namespace FlaxEditor.Viewport.Previews
     /// <seealso cref="AssetPreview" />
     public class AnimatedModelPreview : AssetPreview
     {
+        public AnimatedModel _previewModel;
         private ContextMenuButton _showNodesButton, _showBoundsButton, _showFloorButton, _showNodesNamesButton;
-        private bool _showNodes, _showBounds, _showFloor, _showCurrentLOD, _showNodesNames;
-        private AnimatedModel _previewModel;
+        private bool _showNodes, _showBounds, _showFloor, _showNodesNames;
         private StaticModel _floorModel;
-        private ContextMenuButton _showCurrentLODButton;
         private bool _playAnimation, _playAnimationOnce;
         private float _playSpeed = 1.0f;
 
@@ -207,26 +204,6 @@ namespace FlaxEditor.Viewport.Previews
                 // Show Floor
                 _showFloorButton = ViewWidgetShowMenu.AddButton("Floor", button => ShowFloor = !ShowFloor);
                 _showFloorButton.IndexInParent = 1;
-
-                // Show Current LOD
-                _showCurrentLODButton = ViewWidgetShowMenu.AddButton("Current LOD", button =>
-                {
-                    _showCurrentLOD = !_showCurrentLOD;
-                    _showCurrentLODButton.Icon = _showCurrentLOD ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
-                });
-                _showCurrentLODButton.IndexInParent = 2;
-
-                // Preview LOD
-                {
-                    var previewLOD = ViewWidgetButtonMenu.AddButton("Preview LOD");
-                    previewLOD.CloseMenuOnClick = false;
-                    var previewLODValue = new IntValueBox(-1, 90, 2, 70.0f, -1, 10, 0.02f)
-                    {
-                        Parent = previewLOD
-                    };
-                    previewLODValue.ValueChanged += () => _previewModel.ForcedLOD = previewLODValue.Value;
-                    ViewWidgetButtonMenu.VisibleChanged += control => previewLODValue.Value = _previewModel.ForcedLOD;
-                }
             }
 
             // Enable shadows
@@ -339,44 +316,6 @@ namespace FlaxEditor.Viewport.Previews
             _previewModel.ResetAnimation();
         }
 
-        private int ComputeLODIndex(SkinnedModel model)
-        {
-            if (PreviewActor.ForcedLOD != -1)
-                return PreviewActor.ForcedLOD;
-
-            // Based on RenderTools::ComputeModelLOD
-            CreateProjectionMatrix(out var projectionMatrix);
-            float screenMultiple = 0.5f * Mathf.Max(projectionMatrix.M11, projectionMatrix.M22);
-            var sphere = PreviewActor.Sphere;
-            var viewOrigin = ViewPosition;
-            var distSqr = Vector3.DistanceSquared(ref sphere.Center, ref viewOrigin);
-            var screenRadiusSquared = Mathf.Square(screenMultiple * sphere.Radius) / Mathf.Max(1.0f, distSqr);
-
-            // Check if model is being culled
-            if (Mathf.Square(model.MinScreenSize * 0.5f) > screenRadiusSquared)
-                return -1;
-
-            // Skip if no need to calculate LOD
-            if (model.LoadedLODs == 0)
-                return -1;
-            var lods = model.LODs;
-            if (lods.Length == 0)
-                return -1;
-            if (lods.Length == 1)
-                return 0;
-
-            // Iterate backwards and return the first matching LOD
-            for (int lodIndex = lods.Length - 1; lodIndex >= 0; lodIndex--)
-            {
-                if (Mathf.Square(lods[lodIndex].ScreenSize * 0.5f) >= screenRadiusSquared)
-                {
-                    return lodIndex + PreviewActor.LODBias;
-                }
-            }
-
-            return 0;
-        }
-
         /// <inheritdoc />
         protected override void OnDebugDraw(GPUContext context, ref RenderContext renderContext)
         {
@@ -441,45 +380,6 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <inheritdoc />
-        public override void Draw()
-        {
-            base.Draw();
-
-            var skinnedModel = _previewModel.SkinnedModel;
-            if (skinnedModel == null || !skinnedModel.IsLoaded)
-                return;
-            var lods = skinnedModel.LODs;
-            if (lods.Length == 0)
-            {
-                // Force show skeleton for models without geometry
-                ShowNodes = true;
-                return;
-            }
-            if (_showCurrentLOD)
-            {
-                var lodIndex = ComputeLODIndex(skinnedModel);
-                string text = string.Format("Current LOD: {0}", lodIndex);
-                if (lodIndex != -1)
-                {
-                    lodIndex = Mathf.Clamp(lodIndex + PreviewActor.LODBias, 0, lods.Length - 1);
-                    var lod = lods[lodIndex];
-                    int triangleCount = 0, vertexCount = 0;
-                    for (int meshIndex = 0; meshIndex < lod.Meshes.Length; meshIndex++)
-                    {
-                        var mesh = lod.Meshes[meshIndex];
-                        triangleCount += mesh.TriangleCount;
-                        vertexCount += mesh.VertexCount;
-                    }
-                    text += string.Format("\nTriangles: {0:N0}\nVertices: {1:N0}", triangleCount, vertexCount);
-                }
-                var font = Style.Current.FontMedium;
-                var pos = new Float2(10, 50);
-                Render2D.DrawText(font, text, new Rectangle(pos + Float2.One, Size), Color.Black);
-                Render2D.DrawText(font, text, new Rectangle(pos, Size), Color.White);
-            }
-        }
-
-        /// <inheritdoc />
         public override void Update(float deltaTime)
         {
             base.Update(deltaTime);
@@ -498,14 +398,21 @@ namespace FlaxEditor.Viewport.Previews
             }
         }
 
+        /// <summary>
+        /// Resets the camera to focus on a object.
+        /// </summary>
+        public void ResetCamera()
+        {
+            ViewportCamera.SetArcBallView(_previewModel.Box);
+        }
+
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
             switch (key)
             {
             case KeyboardKeys.F:
-                // Pay respect..
-                ViewportCamera.SetArcBallView(_previewModel.Box);
+                ResetCamera();
                 return true;
             case KeyboardKeys.Spacebar:
                 PlayAnimation = !PlayAnimation;
@@ -525,7 +432,6 @@ namespace FlaxEditor.Viewport.Previews
             _showNodesButton = null;
             _showBoundsButton = null;
             _showFloorButton = null;
-            _showCurrentLODButton = null;
             _showNodesNamesButton = null;
 
             base.OnDestroy();

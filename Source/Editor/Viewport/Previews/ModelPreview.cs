@@ -1,10 +1,10 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI.ContextMenu;
-using FlaxEditor.GUI.Input;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
+using FlaxEditor.Viewport.Widgets;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport.Previews
@@ -16,9 +16,26 @@ namespace FlaxEditor.Viewport.Previews
     public class ModelPreview : AssetPreview
     {
         private ContextMenuButton _showBoundsButton, _showCurrentLODButton, _showNormalsButton, _showTangentsButton, _showBitangentsButton, _showFloorButton;
+        private ContextMenu _previewLODsWidgetButtonMenu;
         private StaticModel _previewModel, _floorModel;
         private bool _showBounds, _showCurrentLOD, _showNormals, _showTangents, _showBitangents, _showFloor;
         private MeshDataCache _meshDatas;
+
+        /// <summary>
+        /// Gets or sets a value that shows LOD statistics
+        /// </summary>
+        public bool ShowCurrentLOD
+        {
+            get => _showCurrentLOD;
+            set
+            {
+                if (_showCurrentLOD == value)
+                    return;
+                _showCurrentLOD = value;
+                if (_showCurrentLODButton != null)
+                    _showCurrentLODButton.Checked = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the model asset to preview.
@@ -198,17 +215,36 @@ namespace FlaxEditor.Viewport.Previews
                 });
                 _showCurrentLODButton.IndexInParent = 2;
 
-                // Preview LOD
+                // Preview LODs mode widget
+                var PreviewLODsMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
+                _previewLODsWidgetButtonMenu = new ContextMenu();
+                _previewLODsWidgetButtonMenu.VisibleChanged += control =>
                 {
-                    var previewLOD = ViewWidgetButtonMenu.AddButton("Preview LOD");
-                    previewLOD.CloseMenuOnClick = false;
-                    var previewLODValue = new IntValueBox(-1, 90, 2, 70.0f, -1, 10, 0.02f)
+                    if (!control.Visible)
+                        return;
+                    var model = _previewModel.Model;
+                    if (model && !model.WaitForLoaded())
                     {
-                        Parent = previewLOD
-                    };
-                    previewLODValue.ValueChanged += () => _previewModel.ForcedLOD = previewLODValue.Value;
-                    ViewWidgetButtonMenu.VisibleChanged += control => previewLODValue.Value = _previewModel.ForcedLOD;
-                }
+                        _previewLODsWidgetButtonMenu.ItemsContainer.DisposeChildren();
+                        var lods = model.LODs.Length;
+                        for (int i = -1; i < lods; i++)
+                        {
+                            var index = i;
+                            var button = _previewLODsWidgetButtonMenu.AddButton("LOD " + (index == -1 ? "Auto" : index));
+                            button.ButtonClicked += _ => _previewModel.ForcedLOD = index;
+                            button.Checked = _previewModel.ForcedLOD == index;
+                            button.Tag = index;
+                            if (lods <= 1)
+                                break;
+                        }
+                    }
+                };
+                new ViewportWidgetButton("Preview LOD", SpriteHandle.Invalid, _previewLODsWidgetButtonMenu)
+                {
+                    TooltipText = "Preview LOD properties",
+                    Parent = PreviewLODsMode,
+                };
+                PreviewLODsMode.Parent = this;
             }
         }
 
@@ -312,7 +348,7 @@ namespace FlaxEditor.Viewport.Previews
             var distSqr = Vector3.DistanceSquared(ref sphere.Center, ref viewOrigin);
             var screenRadiusSquared = Mathf.Square(screenMultiple * sphere.Radius) / Mathf.Max(1.0f, distSqr);
             screenSize = Mathf.Sqrt((float)screenRadiusSquared) * 2.0f;
-            
+
             // Check if model is being culled
             if (Mathf.Square(model.MinScreenSize * 0.5f) > screenRadiusSquared)
                 return -1;
@@ -346,8 +382,11 @@ namespace FlaxEditor.Viewport.Previews
             if (_showCurrentLOD)
             {
                 var asset = Model;
-                var lodIndex = ComputeLODIndex(asset, out  var screenSize);
-                string text = string.Format("Current LOD: {0}\nScreen Size: {1:F2}", lodIndex, screenSize);
+                var lodIndex = ComputeLODIndex(asset, out var screenSize);
+                var auto = _previewModel.ForcedLOD == -1;
+                string text = auto ? "LOD Automatic" : "";
+                text += auto ? string.Format("\nScreen Size: {0:F2}", screenSize) : "";
+                text += string.Format("\nCurrent LOD: {0}", lodIndex);
                 if (lodIndex != -1)
                 {
                     var lods = asset.LODs;
@@ -369,14 +408,21 @@ namespace FlaxEditor.Viewport.Previews
             }
         }
 
+        /// <summary>
+        /// Resets the camera to focus on a object.
+        /// </summary>
+        public void ResetCamera()
+        {
+            ViewportCamera.SetArcBallView(_previewModel.Box);
+        }
+
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
             switch (key)
             {
             case KeyboardKeys.F:
-                // Pay respect..
-                ViewportCamera.SetArcBallView(_previewModel.Box);
+                ResetCamera();
                 break;
             }
             return base.OnKeyDown(key);
@@ -389,6 +435,7 @@ namespace FlaxEditor.Viewport.Previews
             Object.Destroy(ref _previewModel);
             _showBoundsButton = null;
             _showCurrentLODButton = null;
+            _previewLODsWidgetButtonMenu = null;
             _showNormalsButton = null;
             _showTangentsButton = null;
             _showBitangentsButton = null;
