@@ -230,7 +230,7 @@ void WheeledVehicle::DrawPhysicsDebug(RenderView& view)
         {
             const Vector3 currentPos = wheel.Collider->GetPosition();
             const Vector3 basePos = currentPos - Vector3(0, data.State.SuspensionOffset, 0);
-            const Quaternion wheelDebugOrientation = wheel.Collider->GetOrientation() * Quaternion::Euler(90, 0, 90);
+            const Quaternion wheelDebugOrientation = GetOrientation() * Quaternion::Euler(-data.State.RotationAngle, data.State.SteerAngle, 0) * Quaternion::Euler(90, 0, 90);
             DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(basePos, wheel.Radius * 0.07f), Color::Blue * 0.3f, 0, true);
             DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(currentPos, wheel.Radius * 0.08f), Color::Blue * 0.8f, 0, true);
             DEBUG_DRAW_LINE(basePos, currentPos, Color::Blue, 0, true);
@@ -261,7 +261,7 @@ void WheeledVehicle::OnDebugDrawSelected()
         {
             const Vector3 currentPos = wheel.Collider->GetPosition();
             const Vector3 basePos = currentPos - Vector3(0, data.State.SuspensionOffset, 0);
-            const Quaternion wheelDebugOrientation = wheel.Collider->GetOrientation() * Quaternion::Euler(90, 0, 90);
+            const Quaternion wheelDebugOrientation = GetOrientation() * Quaternion::Euler(-data.State.RotationAngle, data.State.SteerAngle, 0) * Quaternion::Euler(90, 0, 90);
             Transform actorPose = Transform::Identity, shapePose = Transform::Identity;
             PhysicsBackend::GetRigidActorPose(_actor, actorPose.Translation, actorPose.Orientation);
             PhysicsBackend::GetShapeLocalPose(wheel.Collider->GetPhysicsShape(), shapePose.Translation, shapePose.Orientation);
