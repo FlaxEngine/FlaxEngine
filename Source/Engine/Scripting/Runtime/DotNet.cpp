@@ -846,7 +846,7 @@ bool MClass::IsSubClassOf(const MClass* klass, bool checkInterfaces) const
 bool MClass::HasInterface(const MClass* klass) const
 {
     static void* TypeIsAssignableFrom = GetStaticMethodPointer(TEXT("TypeIsAssignableFrom"));
-    return klass && CallStaticMethod<bool, void*, void*>(TypeIsAssignableFrom, _handle, klass->_handle);
+    return klass && CallStaticMethod<bool, void*, void*>(TypeIsAssignableFrom, klass->_handle, _handle);
 }
 
 bool MClass::IsInstanceOfType(MObject* object) const
