@@ -151,8 +151,8 @@ namespace FlaxEngine
             {
                 // even if the corner isn't on screen return true if the box is on front of camera
                 // and on field on screen
-
-                float distanceOfCorner = Vector3.Distance(cameraPosition, GetCorners()[i]);
+                
+                Real distanceOfCorner = Vector3.Distance(cameraPosition, GetCorners()[i]);
                 Vector3 endCameraForward = cameraPosition + (cameraForward * distanceOfCorner);
 
                 CollisionsHelper.ClosestPointBoxPoint(ref this, ref endCameraForward, out endCameraForward);
