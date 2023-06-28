@@ -357,8 +357,8 @@ public:
     {
         for (Iterator i = Begin(); i.IsNotEnd(); ++i)
         {
-            if (i->Value)
-                ::Delete(i->Value);
+            if (i->Item)
+                ::Delete(i->Item);
         }
         Clear();
     }
