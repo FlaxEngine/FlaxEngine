@@ -114,3 +114,14 @@ inline Span<T> ToSpan(const T* ptr, int32 length)
 {
     return Span<T>(ptr, length);
 }
+
+template<typename T>
+inline bool SpanContains(const Span<T> span, const T& value)
+{
+    for (int32 i = 0; i < span.Length(); i++)
+    {
+        if (span.Get()[i] == value)
+            return true;
+    }
+    return false;
+}

@@ -254,7 +254,7 @@ namespace Flax.Build.Plugins
 
                     // Generated method thunk to invoke RPC to network
                     {
-                        contents.Append("    static void ").Append(functionInfo.Name).AppendLine("_Invoke(ScriptingObject* obj, void** args)");
+                        contents.Append("    static bool ").Append(functionInfo.Name).AppendLine("_Invoke(ScriptingObject* obj, void** args)");
                         contents.AppendLine("    {");
                         contents.AppendLine("        NetworkStream* stream = NetworkReplicator::BeginInvokeRPC();");
                         contents.AppendLine("        Span<uint32> targetIds;");
@@ -274,7 +274,7 @@ namespace Flax.Build.Plugins
                         }
 
                         // Invoke RPC
-                        contents.AppendLine($"        NetworkReplicator::EndInvokeRPC(obj, {typeInfo.NativeName}::TypeInitializer, StringAnsiView(\"{functionInfo.Name}\", {functionInfo.Name.Length}), stream, targetIds);");
+                        contents.AppendLine($"        return NetworkReplicator::EndInvokeRPC(obj, {typeInfo.NativeName}::TypeInitializer, StringAnsiView(\"{functionInfo.Name}\", {functionInfo.Name.Length}), stream, targetIds);");
                         contents.AppendLine("    }");
                     }
                     contents.AppendLine();
@@ -1753,10 +1753,10 @@ namespace Flax.Build.Plugins
                 if (jumpBodyEnd == null)
                     throw new Exception("Missing IL Return op code in method " + method.Name);
                 il.Emit(OpCodes.Ldloc, varsStart + 0);
-                il.Emit(OpCodes.Brfalse_S, jumpIf2Start);
+                il.Emit(OpCodes.Brfalse, jumpIf2Start);
                 il.Emit(OpCodes.Ldloc, varsStart + 2);
                 il.Emit(OpCodes.Ldc_I4_2);
-                il.Emit(OpCodes.Beq_S, jumpIfBodyStart);
+                il.Emit(OpCodes.Beq, jumpIfBodyStart);
                 // ||
                 il.Emit(jumpIf2Start);
                 il.Emit(OpCodes.Ldloc, varsStart + 1);
@@ -1812,35 +1812,12 @@ namespace Flax.Build.Plugins
                 else
                     il.Emit(OpCodes.Ldnull);
                 var endInvokeRPC = networkReplicatorType.Resolve().GetMethod("EndInvokeRPC", 5);
+                if (endInvokeRPC.ReturnType.FullName != boolType.FullName)
+                    throw new Exception("Invalid EndInvokeRPC return type. Remove any 'Binaries' folders to force project recompile.");
                 il.Emit(OpCodes.Call, module.ImportReference(endInvokeRPC));
 
-                // if (server && networkMode == NetworkManagerMode.Client) return;
-                if (methodRPC.IsServer)
-                {
-                    il.Emit(OpCodes.Nop);
-                    il.Emit(OpCodes.Ldloc, varsStart + 2);
-                    il.Emit(OpCodes.Ldc_I4_2);
-                    var tmp = ilp.Create(OpCodes.Nop);
-                    il.Emit(OpCodes.Beq_S, tmp);
-                    il.Emit(OpCodes.Br, jumpBodyStart);
-                    il.Emit(tmp);
-                    //il.Emit(OpCodes.Ret);
-                    il.Emit(OpCodes.Br, jumpBodyEnd);
-                }
-
-                // if (client && networkMode == NetworkManagerMode.Server) return;
-                if (methodRPC.IsClient)
-                {
-                    il.Emit(OpCodes.Nop);
-                    il.Emit(OpCodes.Ldloc, varsStart + 2);
-                    il.Emit(OpCodes.Ldc_I4_1);
-                    var tmp = ilp.Create(OpCodes.Nop);
-                    il.Emit(OpCodes.Beq_S, tmp);
-                    il.Emit(OpCodes.Br, jumpBodyStart);
-                    il.Emit(tmp);
-                    //il.Emit(OpCodes.Ret);
-                    il.Emit(OpCodes.Br, jumpBodyEnd);
-                }
+                // if (EndInvokeRPC) return
+                il.Emit(OpCodes.Brtrue, jumpBodyEnd);
 
                 // Continue to original method body
                 il.Emit(jumpBodyStart);
