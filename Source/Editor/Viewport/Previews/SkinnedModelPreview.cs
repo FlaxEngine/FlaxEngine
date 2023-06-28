@@ -57,7 +57,7 @@ namespace FlaxEditor.Viewport.Previews
                 {
                     if (!control.Visible)
                         return;
-                    var skinned = _previewModel.SkinnedModel;
+                    var skinned = PreviewActor.SkinnedModel;
                     if (skinned && !skinned.WaitForLoaded())
                     {
                         _previewLODsWidgetButtonMenu.ItemsContainer.DisposeChildren();
@@ -66,8 +66,8 @@ namespace FlaxEditor.Viewport.Previews
                         {
                             var index = i;
                             var button = _previewLODsWidgetButtonMenu.AddButton("LOD " + (index == -1 ? "Auto" : index));
-                            button.ButtonClicked += (button) => _previewModel.ForcedLOD = index;
-                            button.Checked = _previewModel.ForcedLOD == index;
+                            button.ButtonClicked += (button) => PreviewActor.ForcedLOD = index;
+                            button.Checked = PreviewActor.ForcedLOD == index;
                             button.Tag = index;
                             if (lods <= 1)
                                 break;
@@ -128,7 +128,7 @@ namespace FlaxEditor.Viewport.Previews
         {
             base.Draw();
 
-            var skinnedModel = _previewModel.SkinnedModel;
+            var skinnedModel = PreviewActor.SkinnedModel;
             if (skinnedModel == null || !skinnedModel.IsLoaded)
                 return;
             var lods = skinnedModel.LODs;
@@ -141,7 +141,7 @@ namespace FlaxEditor.Viewport.Previews
             if (_showCurrentLOD)
             {
                 var lodIndex = ComputeLODIndex(skinnedModel, out var screenSize);
-                var auto = _previewModel.ForcedLOD == -1;
+                var auto = PreviewActor.ForcedLOD == -1;
                 string text = auto ? "LOD Automatic" : "";
                 text += auto ? string.Format("\nScreen Size: {0:F2}", screenSize) : "";
                 text += string.Format("\nCurrent LOD: {0}", lodIndex);

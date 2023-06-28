@@ -13,7 +13,7 @@ namespace FlaxEditor.Viewport.Previews
     /// <seealso cref="AssetPreview" />
     public class AnimatedModelPreview : AssetPreview
     {
-        public AnimatedModel _previewModel;
+        private AnimatedModel _previewModel;
         private ContextMenuButton _showNodesButton, _showBoundsButton, _showFloorButton, _showNodesNamesButton;
         private bool _showNodes, _showBounds, _showFloor, _showNodesNames;
         private StaticModel _floorModel;
