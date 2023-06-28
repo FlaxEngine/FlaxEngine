@@ -939,7 +939,6 @@ bool CollisionsHelper::RayIntersectsSphere(const Ray& ray, const BoundingSphere&
         normal = Vector3::Up;
         return false;
     }
-
     const Vector3 point = ray.Position + ray.Direction * distance;
     normal = Vector3::Normalize(point - sphere.Center);
     return true;
@@ -953,22 +952,17 @@ bool CollisionsHelper::RayIntersectsSphere(const Ray& ray, const BoundingSphere&
         point = Vector3::Zero;
         return false;
     }
-
     point = ray.Position + ray.Direction * distance;
     return true;
 }
 
 PlaneIntersectionType CollisionsHelper::PlaneIntersectsPoint(const Plane& plane, const Vector3& point)
 {
-    Real distance = Vector3::Dot(plane.Normal, point);
-    distance += plane.D;
-
+    const Real distance = Vector3::Dot(plane.Normal, point) + plane.D;
     if (distance > Plane::DistanceEpsilon)
         return PlaneIntersectionType::Front;
-
     if (distance < Plane::DistanceEpsilon)
         return PlaneIntersectionType::Back;
-
     return PlaneIntersectionType::Intersecting;
 }
 
@@ -1169,7 +1163,6 @@ ContainmentType CollisionsHelper::SphereContainsPoint(const BoundingSphere& sphe
 {
     if (Vector3::DistanceSquared(point, sphere.Center) <= sphere.Radius * sphere.Radius)
         return ContainmentType::Contains;
-
     return ContainmentType::Disjoint;
 }
 
@@ -1254,13 +1247,10 @@ ContainmentType CollisionsHelper::SphereContainsBox(const BoundingSphere& sphere
 ContainmentType CollisionsHelper::SphereContainsSphere(const BoundingSphere& sphere1, const BoundingSphere& sphere2)
 {
     const Real distance = Vector3::Distance(sphere1.Center, sphere2.Center);
-
     if (sphere1.Radius + sphere2.Radius < distance)
         return ContainmentType::Disjoint;
-
     if (sphere1.Radius - sphere2.Radius < distance)
         return ContainmentType::Intersects;
-
     return ContainmentType::Contains;
 }
 
@@ -1274,7 +1264,8 @@ ContainmentType CollisionsHelper::FrustumContainsBox(const BoundingFrustum& frus
     auto result = ContainmentType::Contains;
     for (int32 i = 0; i < 6; i++)
     {
-        Plane plane = frustum.GetPlane(i);
+        Plane plane = frustum._planes[i];
+
         Vector3 p = box.Minimum;
         if (plane.Normal.X >= 0)
             p.X = box.Maximum.X;
@@ -1282,7 +1273,7 @@ ContainmentType CollisionsHelper::FrustumContainsBox(const BoundingFrustum& frus
             p.Y = box.Maximum.Y;
         if (plane.Normal.Z >= 0)
             p.Z = box.Maximum.Z;
-        if (PlaneIntersectsPoint(plane, p) == PlaneIntersectionType::Back)
+        if (Vector3::Dot(plane.Normal, p) + plane.D < Plane::DistanceEpsilon)
             return ContainmentType::Disjoint;
 
         p = box.Maximum;
@@ -1292,7 +1283,7 @@ ContainmentType CollisionsHelper::FrustumContainsBox(const BoundingFrustum& frus
             p.Y = box.Minimum.Y;
         if (plane.Normal.Z >= 0)
             p.Z = box.Minimum.Z;
-        if (PlaneIntersectsPoint(plane, p) == PlaneIntersectionType::Back)
+        if (Vector3::Dot(plane.Normal, p) + plane.D < Plane::DistanceEpsilon)
             result = ContainmentType::Intersects;
     }
     return result;
