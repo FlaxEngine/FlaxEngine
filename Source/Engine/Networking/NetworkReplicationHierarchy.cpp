@@ -23,7 +23,7 @@ void NetworkReplicationHierarchyUpdateResult::Init()
 {
     _clientsHaveLocation = false;
     _clients.Resize(NetworkManager::Clients.Count());
-    _clientsMask = NetworkClientsMask();
+    _clientsMask = NetworkManager::Mode == NetworkManagerMode::Client ? NetworkClientsMask::All : NetworkClientsMask();
     for (int32 i = 0; i < _clients.Count(); i++)
         _clientsMask.SetBit(i);
     _entries.Clear();
