@@ -241,7 +241,7 @@ namespace Flax.Build.Plugins
 
                             // Deserialize arguments
                             argNames += arg.Name;
-                            contents.AppendLine($"        {arg.Type.Type} {arg.Name};");
+                            contents.AppendLine($"        {arg.Type.GetFullNameNative(buildData, typeInfo, false, false)} {arg.Name};");
                             contents.AppendLine($"        stream->Read({arg.Name});");
                         }
 
@@ -270,7 +270,7 @@ namespace Flax.Build.Plugins
                             }
 
                             // Serialize arguments
-                            contents.AppendLine($"        stream->Write(*({arg.Type.Type}*)args[{i}]);");
+                            contents.AppendLine($"        stream->Write(*(const {arg.Type.GetFullNameNative(buildData, typeInfo, false, false)}*)args[{i}]);");
                         }
 
                         // Invoke RPC
