@@ -201,6 +201,14 @@ API_CLASS(Abstract, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API Ne
     API_FUNCTION() virtual bool RemoveObject(ScriptingObject* obj);
 
     /// <summary>
+    /// Gets object from the hierarchy.
+    /// </summary>
+    /// <param name="obj">The object to get.</param>
+    /// <param name="result">The hierarchy object to retrieve.</param>
+    /// <returns>True on successful retrieval, otherwise false.</returns>
+    API_FUNCTION() virtual bool GetObject(ScriptingObject* obj, NetworkReplicationHierarchyObject& result);
+
+    /// <summary>
     /// Force replicates the object during the next update. Resets any internal tracking state to force the synchronization.
     /// </summary>
     /// <param name="obj">The object to update.</param>
@@ -238,6 +246,7 @@ private:
     };
 
     Dictionary<Int3, Cell> _children;
+    Dictionary<ScriptingObject*, Int3> _objectToCell;
 
 public:
     /// <summary>
@@ -247,6 +256,7 @@ public:
 
     void AddObject(NetworkReplicationHierarchyObject obj) override;
     bool RemoveObject(ScriptingObject* obj) override;
+    bool GetObject(ScriptingObject* obj, NetworkReplicationHierarchyObject& result) override;
     void Update(NetworkReplicationHierarchyUpdateResult* result) override;
 };
 

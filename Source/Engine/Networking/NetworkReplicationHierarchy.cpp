@@ -63,6 +63,17 @@ bool NetworkReplicationNode::RemoveObject(ScriptingObject* obj)
     return !Objects.Remove(obj);
 }
 
+bool NetworkReplicationNode::GetObject(ScriptingObject* obj, NetworkReplicationHierarchyObject& result)
+{
+    const int32 index = Objects.Find(obj);
+    if (index != -1)
+    {
+        result = Objects[index];
+        return true;
+    }
+    return false;
+}
+
 bool NetworkReplicationNode::DirtyObject(ScriptingObject* obj)
 {
     const int32 index = Objects.Find(obj);
@@ -156,6 +167,7 @@ void NetworkReplicationGridNode::AddObject(NetworkReplicationHierarchyObject obj
         cell->MinCullDistance = obj.CullDistance;
     }
     cell->Node->AddObject(obj);
+    _objectToCell[obj.Object] = coord;
 
     // Cache minimum culling distance for a whole cell to skip it at once
     cell->MinCullDistance = Math::Min(cell->MinCullDistance, obj.CullDistance);
@@ -163,14 +175,35 @@ void NetworkReplicationGridNode::AddObject(NetworkReplicationHierarchyObject obj
 
 bool NetworkReplicationGridNode::RemoveObject(ScriptingObject* obj)
 {
-    for (const auto& e : _children)
+    Int3 coord;
+
+    if (!_objectToCell.TryGet(obj, coord))
     {
-        if (e.Value.Node->RemoveObject(obj))
-        {
-            // TODO: remove empty cells?
-            // TODO: update MinCullDistance for cell?
-            return true;
-        }
+        return false;
+    }
+
+    if (_children[coord].Node->RemoveObject(obj))
+    {
+        _objectToCell.Remove(obj);
+        // TODO: remove empty cells?
+        // TODO: update MinCullDistance for cell?
+        return true;
+    }
+    return false;
+}
+
+bool NetworkReplicationGridNode::GetObject(ScriptingObject* obj, NetworkReplicationHierarchyObject& result)
+{
+    Int3 coord;
+
+    if (!_objectToCell.TryGet(obj, coord))
+    {
+        return false;
+    }
+
+    if (_children[coord].Node->GetObject(obj, result))
+    {
+        return true;
     }
     return false;
 }
