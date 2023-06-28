@@ -143,6 +143,16 @@ namespace Flax.Build
                                 {
                                     Log.Info("Removing: " + targetBuildOptions.IntermediateFolder);
                                     CleanDirectory(intermediateFolder);
+                                    intermediateFolder.Create();
+                                }
+
+                                // Delete all output files
+                                var outputFolder = new DirectoryInfo(targetBuildOptions.OutputFolder);
+                                if (outputFolder.Exists)
+                                {
+                                    Log.Info("Removing: " + targetBuildOptions.OutputFolder);
+                                    CleanDirectory(outputFolder);
+                                    outputFolder.Create();
                                 }
                             }
                         }
