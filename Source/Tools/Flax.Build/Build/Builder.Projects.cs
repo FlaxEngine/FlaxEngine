@@ -330,7 +330,7 @@ namespace Flax.Build
                                             var referenceBuildOptions = GetBuildOptions(referenceTarget, configurationData.TargetBuildOptions.Platform, configurationData.TargetBuildOptions.Toolchain, configurationData.Architecture, configurationData.Configuration, reference.Project.ProjectFolderPath);
                                             referenceBuildOptions.Flags |= BuildFlags.GenerateProject;
                                             var referenceModules = CollectModules(rules, referenceBuildOptions.Platform, referenceTarget, referenceBuildOptions, referenceBuildOptions.Toolchain, referenceBuildOptions.Architecture, referenceBuildOptions.Configuration);
-                                            var referenceBinaryModules = GetBinaryModules(projectInfo, referenceTarget, referenceModules);
+                                            var referenceBinaryModules = referenceModules.Keys.GroupBy(x => x.BinaryModuleName).ToArray();
                                             foreach (var binaryModule in referenceBinaryModules)
                                             {
                                                 project.Defines.Add(binaryModule.Key.ToUpperInvariant() + "_API=");
