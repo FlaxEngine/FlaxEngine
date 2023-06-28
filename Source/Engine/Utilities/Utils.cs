@@ -255,7 +255,7 @@ namespace FlaxEngine
 #else
         private class ExtractArrayFromListContext<T>
         {
-            public static FieldInfo? itemsField;
+            public static FieldInfo itemsField;
         }
         internal static T[] ExtractArrayFromList<T>(List<T> list)
         {
