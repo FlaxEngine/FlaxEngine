@@ -17,7 +17,7 @@ String BoundingBox::ToString() const
 
  bool BoundingBox::IsOnView(Camera* camera)
 {
-     if (&camera == nullptr)
+     if (camera == nullptr)
      {
          return false;
      }
