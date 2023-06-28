@@ -3,8 +3,6 @@
 using System;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
-using FlaxEditor.GUI.Input;
-using FlaxEngine.GUI;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport.Previews
@@ -15,13 +13,10 @@ namespace FlaxEditor.Viewport.Previews
     /// <seealso cref="AssetPreview" />
     public class AnimatedModelPreview : AssetPreview
     {
-        /// <inheritdoc />
         public AnimatedModel _previewModel;
-
         private ContextMenuButton _showNodesButton, _showBoundsButton, _showFloorButton, _showNodesNamesButton;
         private bool _showNodes, _showBounds, _showFloor, _showNodesNames;
         private StaticModel _floorModel;
-        
         private bool _playAnimation, _playAnimationOnce;
         private float _playSpeed = 1.0f;
 
@@ -404,9 +399,9 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <summary>
-        /// Calls SetArcBallView from ViewportCamera
+        /// Resets the camera to focus on a object.
         /// </summary>
-        public void CallSetArcBallView()
+        public void ResetCamera()
         {
             ViewportCamera.SetArcBallView(_previewModel.Box);
         }
@@ -417,8 +412,7 @@ namespace FlaxEditor.Viewport.Previews
             switch (key)
             {
             case KeyboardKeys.F:
-                // Pay respect..
-                CallSetArcBallView();
+                ResetCamera();
                 return true;
             case KeyboardKeys.Spacebar:
                 PlayAnimation = !PlayAnimation;

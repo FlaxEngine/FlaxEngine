@@ -1,4 +1,5 @@
-using System;
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -14,11 +15,7 @@ namespace FlaxEditor.Viewport.Previews
     {
         private bool _showCurrentLOD;
         private ContextMenuButton _showCurrentLODButton;
-
-        /// <summary>
-        /// The "PreviewLODS" widget button context menu.
-        /// </summary>
-        private ContextMenu previewLODSWidgetButtonMenu;
+        private ContextMenu _previewLODsWidgetButtonMenu;
 
         /// <summary>
         /// Gets or sets a value that shows LOD statistics
@@ -31,8 +28,6 @@ namespace FlaxEditor.Viewport.Previews
                 if (_showCurrentLOD == value)
                     return;
                 _showCurrentLOD = value;
-                if (value)
-                    ShowDebugDraw = true;
                 if (_showCurrentLODButton != null)
                     _showCurrentLODButton.Checked = value;
             }
@@ -57,9 +52,29 @@ namespace FlaxEditor.Viewport.Previews
 
                 // PreviewLODS mode widget
                 var PreviewLODSMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-                previewLODSWidgetButtonMenu = new ContextMenu();
-                previewLODSWidgetButtonMenu.VisibleChanged += PreviewLODSWidgetMenuOnVisibleChanged;
-                var previewLODSModeButton = new ViewportWidgetButton("Preview LOD", SpriteHandle.Invalid, previewLODSWidgetButtonMenu)
+                _previewLODsWidgetButtonMenu = new ContextMenu();
+                _previewLODsWidgetButtonMenu.VisibleChanged += control =>
+                {
+                    if (!control.Visible)
+                        return;
+                    var skinned = _previewModel.SkinnedModel;
+                    if (skinned && !skinned.WaitForLoaded())
+                    {
+                        _previewLODsWidgetButtonMenu.ItemsContainer.DisposeChildren();
+                        var lods = skinned.LODs.Length;
+                        for (int i = -1; i < lods; i++)
+                        {
+                            var index = i;
+                            var button = _previewLODsWidgetButtonMenu.AddButton("LOD " + (index == -1 ? "Auto" : index));
+                            button.ButtonClicked += (button) => _previewModel.ForcedLOD = index;
+                            button.Checked = _previewModel.ForcedLOD == index;
+                            button.Tag = index;
+                            if (lods <= 1)
+                                break;
+                        }
+                    }
+                };
+                new ViewportWidgetButton("Preview LOD", SpriteHandle.Invalid, _previewLODsWidgetButtonMenu)
                 {
                     TooltipText = "Preview LOD properties",
                     Parent = PreviewLODSMode,
@@ -68,33 +83,6 @@ namespace FlaxEditor.Viewport.Previews
             }
         }
 
-        /// <summary>
-        /// Fill out all SkinnedModel LODS
-        /// </summary>
-        /// <param name="control"></param>
-        private void PreviewLODSWidgetMenuOnVisibleChanged(Control control)
-        {
-            if (!control.Visible)
-                return;
-
-            var skinned = _previewModel.SkinnedModel;
-            if (skinned && !skinned.WaitForLoaded() && skinned.IsLoaded)
-            {
-                previewLODSWidgetButtonMenu.ItemsContainer.DisposeChildren();
-                var lods = skinned.LODs.Length;
-                for (int i = -1; i < lods; i++)
-                {
-                    var index = i;
-                    var button = previewLODSWidgetButtonMenu.AddButton("LOD " + (index == -1 ? "Auto" : index));
-                    button.ButtonClicked += (button) => _previewModel.ForcedLOD = index;
-                    button.Checked = _previewModel.ForcedLOD == index;
-                    button.Tag = index;
-                    if (lods <= 1) return;
-                }
-            }
-        }
-
-        /// <inheritdoc />
         private int ComputeLODIndex(SkinnedModel model, out float screenSize)
         {
             screenSize = 1.0f;
@@ -181,6 +169,7 @@ namespace FlaxEditor.Viewport.Previews
         public override void OnDestroy()
         {
             _showCurrentLODButton = null;
+            _previewLODsWidgetButtonMenu = null;
 
             base.OnDestroy();
         }

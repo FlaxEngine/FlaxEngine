@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
-using FlaxEditor.GUI.Input;
 using FlaxEngine;
 using Object = FlaxEngine.Object;
 
@@ -59,9 +58,9 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <summary>
-        /// Calls SetArcBallView from ViewportCamera
+        /// Resets the camera to focus on a object.
         /// </summary>
-        public void CallSetArcBallView()
+        public void ResetCamera()
         {
             ViewportCamera.SetArcBallView(StaticModel.Model != null ? StaticModel.Box : AnimatedModel.Box);
         }
@@ -92,8 +91,7 @@ namespace FlaxEditor.Viewport.Previews
             switch (key)
             {
             case KeyboardKeys.F:
-                // Pay respect..
-                CallSetArcBallView();
+                ResetCamera();
                 break;
             }
             return base.OnKeyDown(key);

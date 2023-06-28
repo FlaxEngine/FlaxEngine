@@ -48,6 +48,7 @@ namespace FlaxEditor.Viewport.Previews
         private int _selectedModelIndex;
         private Image _guiMaterialControl;
         private readonly MaterialBase[] _postFxMaterialsCache = new MaterialBase[1];
+        private ContextMenu _modelWidgetButtonMenu;
 
         /// <summary>
         /// Gets or sets the material asset to preview. It can be <see cref="FlaxEngine.Material"/> or <see cref="FlaxEngine.MaterialInstance"/>.
@@ -66,11 +67,6 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <summary>
-        /// The "Model" widget button context menu.
-        /// </summary>
-        private ContextMenu modelWidgetButtonMenu;
-
-        /// <summary>
         /// Gets or sets the selected preview model index.
         /// </summary>
         public int SelectedModelIndex
@@ -84,27 +80,6 @@ namespace FlaxEditor.Viewport.Previews
                 _selectedModelIndex = value;
                 _previewModel.Model = FlaxEngine.Content.LoadAsyncInternal<Model>("Editor/Primitives/" + Models[value]);
                 _previewModel.Transform = Transforms[value];
-            }
-        }
-
-        /// <summary>
-        /// Fill out all models
-        /// </summary>
-        /// <param name="control"></param>
-        private void ModelWidgetMenuOnVisibleChanged(Control control)
-        {
-            if (!control.Visible) return;
-
-            modelWidgetButtonMenu.ItemsContainer.DisposeChildren();
-
-            // Fill out all models
-            for (int i = 0; i < Models.Length; i++)
-            {
-                var index = i;
-                var button = modelWidgetButtonMenu.AddButton(Models[index]);
-                button.ButtonClicked += (button) => SelectedModelIndex = index;
-                button.Checked = SelectedModelIndex == index;
-                button.Tag = index;
             }
         }
 
@@ -127,9 +102,24 @@ namespace FlaxEditor.Viewport.Previews
             {
                 // Model mode widget
                 var modelMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-                modelWidgetButtonMenu = new ContextMenu();
-                modelWidgetButtonMenu.VisibleChanged += ModelWidgetMenuOnVisibleChanged;
-                var previewLODSModeButton = new ViewportWidgetButton("Model", SpriteHandle.Invalid, modelWidgetButtonMenu)
+                _modelWidgetButtonMenu = new ContextMenu();
+                _modelWidgetButtonMenu.VisibleChanged += control =>
+                {
+                    if (!control.Visible)
+                        return;
+                    _modelWidgetButtonMenu.ItemsContainer.DisposeChildren();
+
+                    // Fill out all models
+                    for (int i = 0; i < Models.Length; i++)
+                    {
+                        var index = i;
+                        var button = _modelWidgetButtonMenu.AddButton(Models[index]);
+                        button.ButtonClicked += _ => SelectedModelIndex = index;
+                        button.Checked = SelectedModelIndex == index;
+                        button.Tag = index;
+                    }
+                };
+                new ViewportWidgetButton("Model", SpriteHandle.Invalid, _modelWidgetButtonMenu)
                 {
                     TooltipText = "Change material model",
                     Parent = modelMode,

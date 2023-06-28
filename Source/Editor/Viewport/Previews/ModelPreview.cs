@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI.ContextMenu;
-using FlaxEditor.GUI.Input;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -17,14 +16,10 @@ namespace FlaxEditor.Viewport.Previews
     public class ModelPreview : AssetPreview
     {
         private ContextMenuButton _showBoundsButton, _showCurrentLODButton, _showNormalsButton, _showTangentsButton, _showBitangentsButton, _showFloorButton;
+        private ContextMenu _previewLODsWidgetButtonMenu;
         private StaticModel _previewModel, _floorModel;
         private bool _showBounds, _showCurrentLOD, _showNormals, _showTangents, _showBitangents, _showFloor;
         private MeshDataCache _meshDatas;
-
-        /// <summary>
-        /// The "PreviewLODS" widget button context menu.
-        /// </summary>
-        private ContextMenu previewLODSWidgetButtonMenu;
 
         /// <summary>
         /// Gets or sets a value that shows LOD statistics
@@ -37,8 +32,6 @@ namespace FlaxEditor.Viewport.Previews
                 if (_showCurrentLOD == value)
                     return;
                 _showCurrentLOD = value;
-                if (value)
-                    ShowDebugDraw = true;
                 if (_showCurrentLODButton != null)
                     _showCurrentLODButton.Checked = value;
             }
@@ -222,42 +215,36 @@ namespace FlaxEditor.Viewport.Previews
                 });
                 _showCurrentLODButton.IndexInParent = 2;
 
-                // PreviewLODS mode widget
-                var PreviewLODSMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-                previewLODSWidgetButtonMenu = new ContextMenu();
-                previewLODSWidgetButtonMenu.VisibleChanged += PreviewLODSWidgetMenuOnVisibleChanged;
-                var previewLODSModeButton = new ViewportWidgetButton("Preview LOD", SpriteHandle.Invalid, previewLODSWidgetButtonMenu)
+                // Preview LODs mode widget
+                var PreviewLODsMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
+                _previewLODsWidgetButtonMenu = new ContextMenu();
+                _previewLODsWidgetButtonMenu.VisibleChanged += control =>
+                {
+                    if (!control.Visible)
+                        return;
+                    var model = _previewModel.Model;
+                    if (model && !model.WaitForLoaded())
+                    {
+                        _previewLODsWidgetButtonMenu.ItemsContainer.DisposeChildren();
+                        var lods = model.LODs.Length;
+                        for (int i = -1; i < lods; i++)
+                        {
+                            var index = i;
+                            var button = _previewLODsWidgetButtonMenu.AddButton("LOD " + (index == -1 ? "Auto" : index));
+                            button.ButtonClicked += _ => _previewModel.ForcedLOD = index;
+                            button.Checked = _previewModel.ForcedLOD == index;
+                            button.Tag = index;
+                            if (lods <= 1)
+                                break;
+                        }
+                    }
+                };
+                new ViewportWidgetButton("Preview LOD", SpriteHandle.Invalid, _previewLODsWidgetButtonMenu)
                 {
                     TooltipText = "Preview LOD properties",
-                    Parent = PreviewLODSMode,
+                    Parent = PreviewLODsMode,
                 };
-                PreviewLODSMode.Parent = this;
-            }
-        }
-
-        /// <summary>
-        /// Fill out all Model LODS
-        /// </summary>
-        /// <param name="control"></param>
-        private void PreviewLODSWidgetMenuOnVisibleChanged(Control control)
-        {
-            if (!control.Visible)
-                return;
-
-            var model = _previewModel.Model;
-            if (model && !model.WaitForLoaded() && model.IsLoaded)
-            {
-                previewLODSWidgetButtonMenu.ItemsContainer.DisposeChildren();
-                var lods = model.LODs.Length;
-                for (int i = -1; i < lods; i++)
-                {
-                    var index = i;
-                    var button = previewLODSWidgetButtonMenu.AddButton("LOD " + (index == -1 ? "Auto" : index));
-                    button.ButtonClicked += (button) => _previewModel.ForcedLOD = index;
-                    button.Checked = _previewModel.ForcedLOD == index;
-                    button.Tag = index;
-                    if (lods <= 1) return;
-                }
+                PreviewLODsMode.Parent = this;
             }
         }
 
@@ -361,7 +348,7 @@ namespace FlaxEditor.Viewport.Previews
             var distSqr = Vector3.DistanceSquared(ref sphere.Center, ref viewOrigin);
             var screenRadiusSquared = Mathf.Square(screenMultiple * sphere.Radius) / Mathf.Max(1.0f, distSqr);
             screenSize = Mathf.Sqrt((float)screenRadiusSquared) * 2.0f;
-            
+
             // Check if model is being culled
             if (Mathf.Square(model.MinScreenSize * 0.5f) > screenRadiusSquared)
                 return -1;
@@ -422,9 +409,9 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <summary>
-        /// Calls SetArcBallView from ViewportCamera
+        /// Resets the camera to focus on a object.
         /// </summary>
-        public void CallSetArcBallView()
+        public void ResetCamera()
         {
             ViewportCamera.SetArcBallView(_previewModel.Box);
         }
@@ -435,8 +422,7 @@ namespace FlaxEditor.Viewport.Previews
             switch (key)
             {
             case KeyboardKeys.F:
-                // Pay respect..
-                CallSetArcBallView();
+                ResetCamera();
                 break;
             }
             return base.OnKeyDown(key);
@@ -449,6 +435,7 @@ namespace FlaxEditor.Viewport.Previews
             Object.Destroy(ref _previewModel);
             _showBoundsButton = null;
             _showCurrentLODButton = null;
+            _previewLODsWidgetButtonMenu = null;
             _showNormalsButton = null;
             _showTangentsButton = null;
             _showBitangentsButton = null;
