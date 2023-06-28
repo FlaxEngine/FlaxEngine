@@ -23,9 +23,14 @@ namespace FlaxEditor.GUI
         public const int DefaultMarginH = 2;
 
         /// <summary>
-        /// Event fired when button gets clicked.
+        /// Event fired when button gets clicked with the primary mouse button.
         /// </summary>
-        public Action<ToolStripButton> ButtonClicked;
+        public Action<ToolStripButton> ButtonPrimaryClicked;
+
+        /// <summary>
+        /// Event fired when button gets clicked with the secondary mouse button.
+        /// </summary>
+        public Action<ToolStripButton> ButtonSecondaryClicked;
 
         /// <summary>
         /// Tries to get the last button.
@@ -91,7 +96,7 @@ namespace FlaxEditor.GUI
                 Parent = this,
             };
             if (onClick != null)
-                button.Clicked += onClick;
+                button.PrimaryClicked += onClick;
             return button;
         }
 
@@ -110,7 +115,7 @@ namespace FlaxEditor.GUI
                 Parent = this,
             };
             if (onClick != null)
-                button.Clicked += onClick;
+                button.PrimaryClicked += onClick;
             return button;
         }
 
@@ -128,7 +133,7 @@ namespace FlaxEditor.GUI
                 Parent = this,
             };
             if (onClick != null)
-                button.Clicked += onClick;
+                button.PrimaryClicked += onClick;
             return button;
         }
 
@@ -141,9 +146,14 @@ namespace FlaxEditor.GUI
             return AddChild(new ToolStripSeparator(ItemsHeight));
         }
 
-        internal void OnButtonClicked(ToolStripButton button)
+        internal void OnButtonPrimaryClicked(ToolStripButton button)
         {
-            ButtonClicked?.Invoke(button);
+            ButtonPrimaryClicked?.Invoke(button);
+        }
+
+        internal void OnButtonSecondaryClicked(ToolStripButton button)
+        {
+            ButtonSecondaryClicked?.Invoke(button);
         }
 
         /// <inheritdoc />

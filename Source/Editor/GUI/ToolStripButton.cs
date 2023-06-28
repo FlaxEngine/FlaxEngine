@@ -11,8 +11,12 @@ namespace FlaxEditor.GUI
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.Control" />
     [HideInEditor]
-    public class ToolStripButton : Control
+    public partial class ToolStripButton : Control
     {
+        // TODO: abstracted for potential future in-editor input configuration (ex. for left handed mouse users)
+        private const MouseButton PRIMARY_MOUSE_BUTTON = MouseButton.Left;
+        private const MouseButton SECONDARY_MOUSE_BUTTON = MouseButton.Right;
+
         /// <summary>
         /// The default margin for button parts (icon, text, etc.).
         /// </summary>
@@ -20,12 +24,18 @@ namespace FlaxEditor.GUI
 
         private SpriteHandle _icon;
         private string _text;
-        private bool _mouseDown;
+        private bool _primaryMouseDown;
+        private bool _secondaryMouseDown;
 
         /// <summary>
         /// Event fired when user clicks the button.
         /// </summary>
-        public Action Clicked;
+        public Action PrimaryClicked;
+
+        /// <summary>
+        /// Event fired when user clicks the button.
+        /// </summary>
+        public Action SecondaryClicked;
 
         /// <summary>
         /// The checked state.
@@ -62,6 +72,11 @@ namespace FlaxEditor.GUI
                 PerformLayout();
             }
         }
+
+        /// <summary>
+        /// A reference to a context menu to raise when the secondary mouse button is pressed.
+        /// </summary>
+        public ContextMenu.ContextMenu ContextMenu;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ToolStripButton"/> class.
@@ -108,10 +123,11 @@ namespace FlaxEditor.GUI
             var iconRect = new Rectangle(DefaultMargin, DefaultMargin, iconSize, iconSize);
             var textRect = new Rectangle(DefaultMargin, 0, 0, Height);
             bool enabled = EnabledInHierarchy;
+            bool mouseButtonDown = _primaryMouseDown || _secondaryMouseDown;
 
             // Draw background
             if (enabled && (IsMouseOver || IsNavFocused || Checked))
-                Render2D.FillRectangle(clientRect, Checked ? style.BackgroundSelected : _mouseDown ? style.BackgroundHighlighted : (style.LightBackground * 1.3f));
+                Render2D.FillRectangle(clientRect, Checked ? style.BackgroundSelected : mouseButtonDown ? style.BackgroundHighlighted : (style.LightBackground * 1.3f));
 
             // Draw icon
             if (_icon.IsValid)
@@ -153,10 +169,18 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button == MouseButton.Left)
+            if (button == PRIMARY_MOUSE_BUTTON)
             {
                 // Set flag
-                _mouseDown = true;
+                _primaryMouseDown = true;
+
+                Focus();
+                return true;
+            }
+            else if (button == SECONDARY_MOUSE_BUTTON)
+            {
+                // Set flag
+                _secondaryMouseDown = true;
 
                 Focus();
                 return true;
@@ -168,16 +192,28 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button == MouseButton.Left && _mouseDown)
+            if (button == PRIMARY_MOUSE_BUTTON && _primaryMouseDown)
             {
                 // Clear flag
-                _mouseDown = false;
+                _primaryMouseDown = false;
 
                 // Fire events
                 if (AutoCheck)
                     Checked = !Checked;
-                Clicked?.Invoke();
-                (Parent as ToolStrip)?.OnButtonClicked(this);
+                PrimaryClicked?.Invoke();
+                (Parent as ToolStrip)?.OnButtonPrimaryClicked(this);
+
+                return true;
+            }
+            else if (button == SECONDARY_MOUSE_BUTTON && _secondaryMouseDown)
+            {
+                // Clear flag
+                _secondaryMouseDown = false;
+
+                SecondaryClicked?.Invoke();
+                (Parent as ToolStrip)?.OnButtonSecondaryClicked(this);
+
+                ContextMenu?.Show(this, new Float2(0, Height));
 
                 return true;
             }
@@ -189,7 +225,8 @@ namespace FlaxEditor.GUI
         public override void OnMouseLeave()
         {
             // Clear flag
-            _mouseDown = false;
+            _primaryMouseDown = false;
+            _secondaryMouseDown = false;
 
             base.OnMouseLeave();
         }
@@ -198,7 +235,8 @@ namespace FlaxEditor.GUI
         public override void OnLostFocus()
         {
             // Clear flag
-            _mouseDown = false;
+            _primaryMouseDown = false;
+            _secondaryMouseDown = false;
 
             base.OnLostFocus();
         }
