@@ -945,6 +945,18 @@ bool AnimatedModel::IntersectsEntry(const Ray& ray, Real& distance, Vector3& nor
     return result;
 }
 
+bool AnimatedModel::GetMeshData(const MeshReference& mesh, MeshBufferType type, BytesContainer& result, int32& count) const
+{
+    count = 0;
+    if (mesh.LODIndex < 0 || mesh.MeshIndex < 0)
+        return true;
+    const auto model = SkinnedModel.Get();
+    if (!model || model->WaitForLoaded())
+        return true;
+    auto& lod = model->LODs[Math::Min(mesh.LODIndex, model->LODs.Count() - 1)];
+    return lod.Meshes[Math::Min(mesh.MeshIndex, lod.Meshes.Count() - 1)].DownloadDataCPU(type, result, count);
+}
+
 void AnimatedModel::OnDeleteObject()
 {
     // Ensure this object is no longer referenced for anim update

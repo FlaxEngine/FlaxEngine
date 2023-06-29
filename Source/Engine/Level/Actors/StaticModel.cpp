@@ -588,6 +588,18 @@ bool StaticModel::IntersectsEntry(const Ray& ray, Real& distance, Vector3& norma
     return result;
 }
 
+bool StaticModel::GetMeshData(const MeshReference& mesh, MeshBufferType type, BytesContainer& result, int32& count) const
+{
+    count = 0;
+    if (mesh.LODIndex < 0 || mesh.MeshIndex < 0)
+        return true;
+    const auto model = Model.Get();
+    if (!model || model->WaitForLoaded())
+        return true;
+    auto& lod = model->LODs[Math::Min(mesh.LODIndex, model->LODs.Count() - 1)];
+    return lod.Meshes[Math::Min(mesh.MeshIndex, lod.Meshes.Count() - 1)].DownloadDataCPU(type, result, count);
+}
+
 void StaticModel::OnTransformChanged()
 {
     // Base

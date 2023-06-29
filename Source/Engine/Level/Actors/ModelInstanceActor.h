@@ -12,6 +12,23 @@
 API_CLASS(Abstract) class FLAXENGINE_API ModelInstanceActor : public Actor
 {
     DECLARE_SCENE_OBJECT_ABSTRACT(ModelInstanceActor);
+
+    /// <summary>
+    /// Utility container to reference a single mesh within <see cref="ModelInstanceActor"/>.
+    /// </summary>
+    API_STRUCT(NoDefault) struct MeshReference : ISerializable
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(MeshReference);
+        API_AUTO_SERIALIZATION();
+
+        // Owning actor.
+        API_FIELD() ScriptingObjectReference<ModelInstanceActor> Actor;
+        // Index of the LOD (Level Of Detail).
+        API_FIELD() int32 LODIndex = 0;
+        // Index of the mesh (within the LOD).
+        API_FIELD() int32 MeshIndex = 0;
+    };
+
 protected:
     int32 _sceneRenderingKey = -1; // Uses SceneRendering::DrawCategory::SceneDrawAsync
 
@@ -24,8 +41,8 @@ public:
     /// <summary>
     /// Gets the model entries collection. Each entry contains data how to render meshes using this entry (transformation, material, shadows casting, etc.).
     /// </summary>
-    API_PROPERTY(Attributes="Serialize, EditorOrder(1000), EditorDisplay(\"Entries\", EditorDisplayAttribute.InlineStyle), Collection(CanReorderItems = false, NotNullItems = true, ReadOnly = true, Spacing = 10)")
-    FORCE_INLINE Array<ModelInstanceEntry> GetEntries() const
+    API_PROPERTY(Attributes="Serialize, EditorOrder(1000), EditorDisplay(\"Entries\", EditorDisplayAttribute.InlineStyle), Collection(CanReorderItems=false, NotNullItems=true, ReadOnly=true, Spacing=10)")
+    FORCE_INLINE const Array<ModelInstanceEntry>& GetEntries() const
     {
         return Entries;
     }
@@ -79,6 +96,19 @@ public:
     API_FUNCTION() virtual bool IntersectsEntry(API_PARAM(Ref) const Ray& ray, API_PARAM(Out) Real& distance, API_PARAM(Out) Vector3& normal, API_PARAM(Out) int32& entryIndex)
     {
         return false;
+    }
+    
+    /// <summary>
+    /// Extracts mesh buffer data from CPU. Might be cached internally (eg. by Model/SkinnedModel).
+    /// </summary>
+    /// <param name="mesh">Mesh reference.</param>
+    /// <param name="type">Buffer type</param>
+    /// <param name="result">The result data</param>
+    /// <param name="count">The amount of items inside the result buffer.</param>
+    /// <returns>True if failed, otherwise false</returns>
+    virtual bool GetMeshData(const MeshReference& mesh, MeshBufferType type, BytesContainer& result, int32& count) const
+    {
+        return true;
     }
 
 protected:
