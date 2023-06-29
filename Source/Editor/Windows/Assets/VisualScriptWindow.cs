@@ -993,11 +993,7 @@ namespace FlaxEditor.Windows.Assets
                     }
                 }
                 if (vsWindow == null)
-                {
-                    var item = Editor.Instance.ContentDatabase.FindAsset(frame.Script.ID);
-                    if (item != null)
-                        vsWindow = Editor.Instance.ContentEditing.Open(item) as VisualScriptWindow;
-                }
+                    vsWindow = Editor.Instance.ContentEditing.Open(frame.Script) as VisualScriptWindow;
                 var node = vsWindow?.Surface.FindNode(frame.NodeId);
                 _debugStepOutNodesIds.Add(new KeyValuePair<VisualScript, uint>(frame.Script, frame.NodeId));
                 if (node != null)
