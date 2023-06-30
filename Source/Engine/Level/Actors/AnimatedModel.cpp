@@ -603,7 +603,13 @@ void AnimatedModel::OnAnimationUpdated_Sync()
     // Update synchronous stuff
     UpdateSockets();
     ApplyRootMotion(GraphInstance.RootMotion);
-    AnimationUpdated();
+    if (!_isDuringUpdateEvent)
+    {
+        // Prevent stack-overflow when gameplay modifies the pose within the event
+        _isDuringUpdateEvent = true;
+        AnimationUpdated();
+        _isDuringUpdateEvent = false;
+    }
 }
 
 void AnimatedModel::OnAnimationUpdated()

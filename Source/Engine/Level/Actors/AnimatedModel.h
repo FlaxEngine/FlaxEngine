@@ -60,6 +60,7 @@ private:
     AnimationUpdateMode _actualMode;
     uint32 _counter;
     Real _lastMinDstSqr;
+    bool _isDuringUpdateEvent = false;
     uint64 _lastUpdateFrame;
     BlendShapesInstance _blendShapes;
     ScriptingObjectReference<AnimatedModel> _masterPose;
