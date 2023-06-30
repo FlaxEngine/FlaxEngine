@@ -780,7 +780,7 @@ namespace Flax.Build.Plugins
         private static void GenerateCallINetworkSerializable(ref DotnetContext context, TypeDefinition type, string name, MethodDefinition method)
         {
             var m = new MethodDefinition(name, MethodAttributes.Public | MethodAttributes.HideBySig, context.VoidType);
-            m.Parameters.Add(new ParameterDefinition("stream", ParameterAttributes.None, context.NetworkStreamType));
+            m.Parameters.Add(new ParameterDefinition("stream", ParameterAttributes.None, type.Module.ImportReference(context.NetworkStreamType)));
             ILProcessor il = m.Body.GetILProcessor();
             il.Emit(OpCodes.Nop);
             il.Emit(OpCodes.Ldarg_0);
@@ -1304,7 +1304,10 @@ namespace Flax.Build.Plugins
                         il.Emit(jmp4);
                         valueContext.Load(ref il);
                         il.Emit(OpCodes.Ldloc, varStart + 1); // idx
-                        il.Emit(OpCodes.Ldelem_Ref);
+                        if (elementType.IsValueType)
+                            il.Emit(OpCodes.Ldelem_Any, elementType);
+                        else
+                            il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Stloc, varStart + 2); // <elementType>
 
                         // Serialize item value
