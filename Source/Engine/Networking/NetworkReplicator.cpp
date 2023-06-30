@@ -1204,6 +1204,7 @@ void NetworkInternal::NetworkReplicatorClear()
             Objects.Remove(it);
         }
     }
+    Objects.Clear();
     RpcQueue.Clear();
     SpawnQueue.Clear();
     DespawnQueue.Clear();
