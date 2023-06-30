@@ -127,7 +127,7 @@ void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worl
         Matrix world;
         _transform.GetWorld(world);
         for (auto& m : nodesTransformation)
-            m = world * m;
+            m = m * world;
     }
 }
 
@@ -144,7 +144,7 @@ void AnimatedModel::SetCurrentPose(const Array<Matrix>& nodesTransformation, boo
         Matrix invWorld;
         Matrix::Invert(world, invWorld);
         for (auto& m : GraphInstance.NodesPose)
-            m = invWorld * m;
+            m = m * invWorld;
     }
     OnAnimationUpdated();
 }
