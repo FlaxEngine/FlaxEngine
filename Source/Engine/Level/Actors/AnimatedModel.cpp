@@ -127,7 +127,7 @@ void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worl
         Matrix world;
         _transform.GetWorld(world);
         for (auto& m : nodesTransformation)
-            m = m * world;
+            m = world * m;
     }
 }
 
