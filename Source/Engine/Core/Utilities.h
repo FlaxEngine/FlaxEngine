@@ -5,6 +5,7 @@
 #include "Types/BaseTypes.h"
 #include "Types/String.h"
 #include "Types/Span.h"
+#include "Engine/Level/Actor.h"
 #if _MSC_VER && PLATFORM_SIMD_SSE4_2
 #include <intrin.h>
 #endif
@@ -89,5 +90,18 @@ namespace Utilities
         x = (x + (x >> 4)) & 0x0F0F0F0F;
         return (x * 0x01010101) >> 24;
 #endif  
+    }
+
+    /// <summary>
+    /// Gets the whole actor children tree including the initial actor.
+    /// </summary>
+    static inline void GetActorsTree(Array<Actor*>& list, Actor* a)
+    {
+        list.Add(a);
+        int cnt = a->Children.Count();
+        for (int i = 0; i < cnt; i++)
+        {
+            GetActorsTree(list, a->Children[i]);
+        }
     }
 }

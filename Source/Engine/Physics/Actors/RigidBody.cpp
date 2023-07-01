@@ -2,6 +2,7 @@
 
 #include "RigidBody.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Utilities.h"
 #include "Engine/Physics/Colliders/Collider.h"
 #include "Engine/Physics/PhysicsBackend.h"
 #include "Engine/Physics/PhysicsScene.h"
@@ -445,10 +446,13 @@ void RigidBody::BeginPlay(SceneBeginData* data)
     PhysicsBackend::SetRigidDynamicActorMaxAngularVelocity(_actor, _maxAngularVelocity);
     PhysicsBackend::SetRigidDynamicActorConstraints(_actor, _constraints);
 
+    Array<Actor*> allChildren;
+    Utilities::GetActorsTree(allChildren, this);
+    
     // Find colliders to attach
-    for (int32 i = 0; i < Children.Count(); i++)
+    for (int32 i = 0; i < allChildren.Count(); i++)
     {
-        auto collider = dynamic_cast<Collider*>(Children[i]);
+        auto collider = dynamic_cast<Collider*>(allChildren[i]);
         if (collider && collider->CanAttach(this))
         {
             collider->Attach(this);
