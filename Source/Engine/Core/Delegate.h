@@ -12,14 +12,12 @@ class Function<ReturnType(Params ...)>
 {
     friend Delegate<Params...>;
 public:
-
     /// <summary>
     /// Signature of the function to call.
     /// </summary>
     typedef ReturnType (*Signature)(Params ...);
 
 private:
-
     typedef ReturnType (*StubSignature)(void*, Params ...);
 
     template<ReturnType(*Method)(Params ...)>
@@ -68,7 +66,6 @@ private:
         }
     }
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="Function"/> class.
     /// </summary>
@@ -123,7 +120,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Binds a static function.
     /// </summary>
@@ -194,7 +190,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Returns true if any function has been binded.
     /// </summary>
@@ -257,7 +252,6 @@ template<typename... Params>
 class Delegate
 {
 public:
-
     /// <summary>
     /// Signature of the function to call.
     /// </summary>
@@ -269,17 +263,37 @@ public:
     using FunctionType = Function<void(Params ...)>;
 
 protected:
-
     // Single allocation for list of binded functions. Thread-safe access via atomic operations. Removing binded function simply clears the entry to handle function unregister during invocation.
     intptr volatile _ptr = 0;
     intptr volatile _size = 0;
     typedef void (*StubSignature)(void*, Params ...);
 
 public:
-    NON_COPYABLE(Delegate);
-
     Delegate()
     {
+    }
+
+    Delegate(const Delegate& other)
+    {
+        const intptr newSize = other._size;
+        auto newBindings = (FunctionType*)Allocator::Allocate(newSize * sizeof(FunctionType));
+        Platform::MemoryCopy((void*)newBindings, (const void*)other._ptr, newSize * sizeof(FunctionType));
+        for (intptr i = 0; i < newSize; i++)
+        {
+            FunctionType& f = newBindings[i];
+            if (f._function && f._lambda)
+                f.LambdaCtor();
+        }
+        _ptr = (intptr)newBindings;
+        _size = newSize;
+    }
+
+    Delegate(Delegate&& other) noexcept
+    {
+        _ptr = other._ptr;
+        _size = other._size;
+        other._ptr = 0;
+        other._size = 0;
     }
 
     ~Delegate()
@@ -297,8 +311,32 @@ public:
         }
     }
 
-public:
+    Delegate& operator=(const Delegate& other)
+    {
+        if (this != &other)
+        {
+            UnbindAll();
+            const intptr size = Platform::AtomicRead((intptr volatile*)&other._size);
+            FunctionType* bindings = (FunctionType*)Platform::AtomicRead((intptr volatile*)&other._ptr);
+            for (intptr i = 0; i < size; i++)
+                Bind(bindings[i]);
+        }
+        return *this;
+    }
 
+    Delegate& operator=(Delegate&& other) noexcept
+    {
+        if (this != &other)
+        {
+            _ptr = other._ptr;
+            _size = other._size;
+            other._ptr = 0;
+            other._size = 0;
+        }
+        return *this;
+    }
+
+public:
     /// <summary>
     /// Binds a static function.
     /// </summary>
@@ -484,7 +522,7 @@ public:
     /// Unbinds the specified function.
     /// </summary>
     /// <param name="f">The function to unbind.</param>
-    void Unbind(FunctionType& f)
+    void Unbind(const FunctionType& f)
     {
         // Find slot with that function
         const intptr size = Platform::AtomicRead(&_size);
