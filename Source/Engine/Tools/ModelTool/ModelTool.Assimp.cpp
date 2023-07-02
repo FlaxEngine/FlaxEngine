@@ -6,6 +6,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/DeleteMe.h"
 #include "Engine/Core/Math/Matrix.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 

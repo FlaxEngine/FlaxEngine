@@ -151,7 +151,7 @@ public:
     /// </summary>
     /// <param name="other">The other property.</param>
     ScriptingObjectReference(const ScriptingObjectReference& other)
-        : ScriptingObjectReferenceBase(other.Get())
+        : ScriptingObjectReferenceBase(other._object)
     {
     }
 
@@ -188,12 +188,12 @@ public:
     }
     ScriptingObjectReference& operator=(const ScriptingObjectReference& other)
     {
-        OnSet(other.Get());
+        OnSet(other._object);
         return *this;
     }
     FORCE_INLINE ScriptingObjectReference& operator=(const Guid& id)
     {
-        OnSet(static_cast<T*>(FindObject(id, T::GetStaticClass())));
+        OnSet(static_cast<ScriptingObject*>(FindObject(id, T::GetStaticClass())));
         return *this;
     }
 
