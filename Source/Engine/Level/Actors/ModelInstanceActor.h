@@ -97,7 +97,7 @@ public:
     {
         return false;
     }
-    
+
     /// <summary>
     /// Extracts mesh buffer data from CPU. Might be cached internally (eg. by Model/SkinnedModel).
     /// </summary>
@@ -105,11 +105,25 @@ public:
     /// <param name="type">Buffer type</param>
     /// <param name="result">The result data</param>
     /// <param name="count">The amount of items inside the result buffer.</param>
-    /// <returns>True if failed, otherwise false</returns>
+    /// <returns>True if failed, otherwise false.</returns>
     virtual bool GetMeshData(const MeshReference& mesh, MeshBufferType type, BytesContainer& result, int32& count) const
     {
         return true;
     }
+
+    /// <summary>
+    /// Gets the mesh deformation utility for this model instance (optional).
+    /// </summary>
+    /// <returns>Model deformation utility or null if not supported.</returns>
+    virtual MeshDeformation* GetMeshDeformation() const
+    {
+        return nullptr;
+    }
+
+    /// <summary>
+    /// Updates the model bounds (eg. when mesh has applied significant deformation).
+    /// </summary>
+    virtual void UpdateBounds() = 0;
 
 protected:
     virtual void WaitForModelLoad();
@@ -117,6 +131,7 @@ protected:
 public:
     // [Actor]
     void OnLayerChanged() override;
+    void OnTransformChanged() override;
 
 protected:
     // [Actor]

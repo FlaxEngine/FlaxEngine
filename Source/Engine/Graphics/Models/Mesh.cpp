@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "Mesh.h"
+#include "MeshDeformation.h"
 #include "ModelInstanceEntry.h"
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Assets/Model.h"
@@ -480,6 +481,11 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.Geometry.VertexBuffersOffsets[0] = 0;
     drawCall.Geometry.VertexBuffersOffsets[1] = 0;
     drawCall.Geometry.VertexBuffersOffsets[2] = 0;
+    if (info.Deformation)
+    {
+        info.Deformation->RunDeformers(this, MeshBufferType::Vertex0, drawCall.Geometry.VertexBuffers[0]);
+        info.Deformation->RunDeformers(this, MeshBufferType::Vertex1, drawCall.Geometry.VertexBuffers[1]);
+    }
     if (info.VertexColors && info.VertexColors[_lodIndex])
     {
         // TODO: cache vertexOffset within the model LOD per-mesh
@@ -540,6 +546,11 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.Geometry.VertexBuffersOffsets[0] = 0;
     drawCall.Geometry.VertexBuffersOffsets[1] = 0;
     drawCall.Geometry.VertexBuffersOffsets[2] = 0;
+    if (info.Deformation)
+    {
+        info.Deformation->RunDeformers(this, MeshBufferType::Vertex0, drawCall.Geometry.VertexBuffers[0]);
+        info.Deformation->RunDeformers(this, MeshBufferType::Vertex1, drawCall.Geometry.VertexBuffers[1]);
+    }
     if (info.VertexColors && info.VertexColors[_lodIndex])
     {
         // TODO: cache vertexOffset within the model LOD per-mesh

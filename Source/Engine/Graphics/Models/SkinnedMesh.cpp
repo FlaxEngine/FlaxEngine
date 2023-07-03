@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "SkinnedMesh.h"
+#include "MeshDeformation.h"
 #include "ModelInstanceEntry.h"
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
@@ -172,26 +173,14 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
     // Setup draw call
     DrawCall drawCall;
     drawCall.Geometry.IndexBuffer = _indexBuffer;
-    BlendShapesInstance::MeshInstance* blendShapeMeshInstance;
-    if (info.BlendShapes && info.BlendShapes->Meshes.TryGet(this, blendShapeMeshInstance) && blendShapeMeshInstance->IsUsed)
-    {
-        // Use modified vertex buffer from the blend shapes
-        if (blendShapeMeshInstance->IsDirty)
-        {
-            blendShapeMeshInstance->VertexBuffer.Flush();
-            blendShapeMeshInstance->IsDirty = false;
-        }
-        drawCall.Geometry.VertexBuffers[0] = blendShapeMeshInstance->VertexBuffer.GetBuffer();
-    }
-    else
-    {
-        drawCall.Geometry.VertexBuffers[0] = _vertexBuffer;
-    }
+    drawCall.Geometry.VertexBuffers[0] = _vertexBuffer;
     drawCall.Geometry.VertexBuffers[1] = nullptr;
     drawCall.Geometry.VertexBuffers[2] = nullptr;
     drawCall.Geometry.VertexBuffersOffsets[0] = 0;
     drawCall.Geometry.VertexBuffersOffsets[1] = 0;
     drawCall.Geometry.VertexBuffersOffsets[2] = 0;
+    if (info.Deformation)
+        info.Deformation->RunDeformers(this, MeshBufferType::Vertex0, drawCall.Geometry.VertexBuffers[0]);
     drawCall.Draw.StartIndex = 0;
     drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;
@@ -232,26 +221,14 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
     // Setup draw call
     DrawCall drawCall;
     drawCall.Geometry.IndexBuffer = _indexBuffer;
-    BlendShapesInstance::MeshInstance* blendShapeMeshInstance;
-    if (info.BlendShapes && info.BlendShapes->Meshes.TryGet(this, blendShapeMeshInstance) && blendShapeMeshInstance->IsUsed)
-    {
-        // Use modified vertex buffer from the blend shapes
-        if (blendShapeMeshInstance->IsDirty)
-        {
-            blendShapeMeshInstance->VertexBuffer.Flush();
-            blendShapeMeshInstance->IsDirty = false;
-        }
-        drawCall.Geometry.VertexBuffers[0] = blendShapeMeshInstance->VertexBuffer.GetBuffer();
-    }
-    else
-    {
-        drawCall.Geometry.VertexBuffers[0] = _vertexBuffer;
-    }
+    drawCall.Geometry.VertexBuffers[0] = _vertexBuffer;
     drawCall.Geometry.VertexBuffers[1] = nullptr;
     drawCall.Geometry.VertexBuffers[2] = nullptr;
     drawCall.Geometry.VertexBuffersOffsets[0] = 0;
     drawCall.Geometry.VertexBuffersOffsets[1] = 0;
     drawCall.Geometry.VertexBuffersOffsets[2] = 0;
+    if (info.Deformation)
+        info.Deformation->RunDeformers(this, MeshBufferType::Vertex0, drawCall.Geometry.VertexBuffers[0]);
     drawCall.Draw.StartIndex = 0;
     drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;

@@ -59,6 +59,14 @@ void ModelInstanceActor::OnLayerChanged()
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
+void ModelInstanceActor::OnTransformChanged()
+{
+    // Base
+    Actor::OnTransformChanged();
+
+    UpdateBounds();
+}
+
 void ModelInstanceActor::OnEnable()
 {
     GetSceneRendering()->AddActor(this, _sceneRenderingKey);

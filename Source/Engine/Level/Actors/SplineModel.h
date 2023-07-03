@@ -115,9 +115,9 @@ public:
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     void OnParentChanged() override;
+    void UpdateBounds() override;
 
 protected:
     // [ModelInstanceActor]
-    void OnTransformChanged() override;
     void OnActiveInTreeChanged() override;
 };
