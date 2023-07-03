@@ -1417,6 +1417,9 @@ namespace Flax.Build.Bindings
             context.Tokenizer.SkipUntil(TokenType.Comma, out desc.Lang);
             desc.Code = context.Tokenizer.ExpectToken(TokenType.String).Value.Replace("\\\"", "\"");
             desc.Code = desc.Code.Substring(1, desc.Code.Length - 2);
+            desc.Code = desc.Code.Replace("\\\n", "\n");
+            desc.Code = desc.Code.Replace("\\\r\n", "\n");
+            desc.Code = desc.Code.Replace("\t", "    ");
             context.Tokenizer.ExpectToken(TokenType.RightParent);
             return desc;
         }
