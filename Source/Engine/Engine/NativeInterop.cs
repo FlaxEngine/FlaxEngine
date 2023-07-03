@@ -46,6 +46,7 @@ namespace FlaxEngine.Interop
 #endif
         private static Dictionary<object, ManagedHandle> classAttributesCacheCollectible = new();
         private static Dictionary<Assembly, ManagedHandle> assemblyHandles = new();
+        private static Dictionary<Type, int> _typeSizeCache = new();
 
         private static Dictionary<string, IntPtr> loadedNativeLibraries = new();
         internal static Dictionary<string, string> nativeLibraryPaths = new();
@@ -584,7 +585,7 @@ namespace FlaxEngine.Interop
                     else if (fieldType.IsClass || fieldType.IsPointer)
                         fieldAlignment = IntPtr.Size;
                     else
-                        fieldAlignment = Marshal.SizeOf(fieldType);
+                        fieldAlignment = GetTypeSize(fieldType);
                 }
 
                 internal static void ToManagedField(FieldInfo field, ref T fieldOwner, IntPtr fieldPtr, out int fieldOffset)
@@ -1086,6 +1087,26 @@ namespace FlaxEngine.Interop
             }
 
             return handle;
+        }
+
+        internal static int GetTypeSize(Type type)
+        {
+            if (!_typeSizeCache.TryGetValue(type, out var size))
+            {
+                try
+                {
+                    size = Marshal.SizeOf(type);
+                }
+                catch
+                {
+                    // Workaround the issue where structure defined within generic type instance (eg. MyType<int>.MyStruct) fails to get size
+                    // https://github.com/dotnet/runtime/issues/46426
+                    var obj = Activator.CreateInstance(type);
+                    size = Marshal.SizeOf(obj);
+                }
+                _typeSizeCache.Add(type, size);
+            }
+            return size;
         }
 
         private static class DelegateHelpers

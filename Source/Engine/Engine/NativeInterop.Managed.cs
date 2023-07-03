@@ -50,13 +50,13 @@ namespace FlaxEngine.Interop
         /// <remarks>The resources must be released by calling FreePooled() instead of Free()-method.</remarks>
         public static ManagedArray WrapPooledArray(Array arr, Type arrayType)
         {
-            ManagedArray managedArray = ManagedArrayPool.Get(arr.Length * Marshal.SizeOf(arr.GetType().GetElementType()));
+            ManagedArray managedArray = ManagedArrayPool.Get(arr.Length * NativeInterop.GetTypeSize(arr.GetType().GetElementType()));
             managedArray.WrapArray(arr, arrayType);
             return managedArray;
         }
 
         internal static ManagedArray AllocateNewArray(int length, Type arrayType, Type elementType)
-            => new ManagedArray((IntPtr)NativeInterop.NativeAlloc(length, Marshal.SizeOf(elementType)), length, arrayType, elementType);
+            => new ManagedArray((IntPtr)NativeInterop.NativeAlloc(length, NativeInterop.GetTypeSize(elementType)), length, arrayType, elementType);
 
         internal static ManagedArray AllocateNewArray(IntPtr ptr, int length, Type arrayType, Type elementType)
             => new ManagedArray(ptr, length, arrayType, elementType);
@@ -86,7 +86,7 @@ namespace FlaxEngine.Interop
             _length = arr.Length;
             _arrayType = arrayType;
             _elementType = arr.GetType().GetElementType();
-            _elementSize = Marshal.SizeOf(_elementType);
+            _elementSize = NativeInterop.GetTypeSize(_elementType);
         }
 
         internal void Allocate<T>(int length) where T : unmanaged
@@ -117,7 +117,7 @@ namespace FlaxEngine.Interop
             _length = length;
             _arrayType = arrayType;
             _elementType = elementType;
-            _elementSize = Marshal.SizeOf(elementType);
+            _elementSize = NativeInterop.GetTypeSize(_elementType);
         }
 
         ~ManagedArray()
