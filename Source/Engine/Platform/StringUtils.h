@@ -179,7 +179,7 @@ public:
 
 public:
     // Converts characters from ANSI to UTF-16
-    static void ConvertANSI2UTF16(const char* from, Char* to, int32 len);
+    static void ConvertANSI2UTF16(const char* from, Char* to, int32 fromLength, int32& toLength);
 
     // Converts characters from UTF-16 to ANSI
     static void ConvertUTF162ANSI(const Char* from, char* to, int32 len);

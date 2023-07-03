@@ -145,7 +145,7 @@ bool GPUShader::Create(MemoryReadStream& stream)
 
             // Create CB
 #if GPU_ENABLE_RESOURCE_NAMING
-            String name = ToString() + TEXT(".CB") + i;
+            String name = String::Format(TEXT("{}.CB{}"), ToString(), i);
 #else
 			String name;
 #endif

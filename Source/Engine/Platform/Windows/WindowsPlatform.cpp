@@ -992,7 +992,8 @@ void ReadPipe(HANDLE pipe, Array<char>& rawData, Array<Char>& logData, LogType l
             // Log contents
             logData.Clear();
             logData.Resize(rawData.Count() + 1);
-            StringUtils::ConvertANSI2UTF16(rawData.Get(), logData.Get(), rawData.Count());
+            int32 tmp;
+            StringUtils::ConvertANSI2UTF16(rawData.Get(), logData.Get(), rawData.Count(), tmp);
             logData.Last() = '\0';
             if (settings.LogOutput)
                 Log::Logger::Write(logType, StringView(logData.Get(), rawData.Count()));
