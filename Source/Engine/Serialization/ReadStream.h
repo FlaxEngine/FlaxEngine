@@ -159,6 +159,34 @@ public:
         Read(ptr);
         v = ptr;
     }
+    template<typename T>
+    FORCE_INLINE void Read(SoftObjectReference<T>& v)
+    {
+        uint32 id[4];
+        ReadBytes(id, sizeof(id));
+        v.Set(*(Guid*)id);
+    }
+    template<typename T>
+    FORCE_INLINE void Read(AssetReference<T>& v)
+    {
+        uint32 id[4];
+        ReadBytes(id, sizeof(id));
+        v = (T*)::LoadAsset(*(Guid*)id, T::TypeInitializer);
+    }
+    template<typename T>
+    FORCE_INLINE void Read(WeakAssetReference<T>& v)
+    {
+        uint32 id[4];
+        ReadBytes(id, sizeof(id));
+        v = (T*)::LoadAsset(*(Guid*)id, T::TypeInitializer);
+    }
+    template<typename T>
+    FORCE_INLINE void Read(SoftAssetReference<T>& v)
+    {
+        uint32 id[4];
+        ReadBytes(id, sizeof(id));
+        v.Set(*(Guid*)id);
+    }
 
     /// <summary>
     /// Read data array
