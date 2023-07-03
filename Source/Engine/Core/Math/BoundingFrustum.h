@@ -12,6 +12,7 @@
 /// </summary>
 API_STRUCT(InBuild) struct FLAXENGINE_API BoundingFrustum
 {
+    friend CollisionsHelper;
 private:
     Matrix _matrix;
 

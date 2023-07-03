@@ -46,6 +46,7 @@ namespace FlaxEngine.Interop
 #endif
         private static Dictionary<object, ManagedHandle> classAttributesCacheCollectible = new();
         private static Dictionary<Assembly, ManagedHandle> assemblyHandles = new();
+        private static Dictionary<Type, int> _typeSizeCache = new();
 
         private static Dictionary<string, IntPtr> loadedNativeLibraries = new();
         internal static Dictionary<string, string> nativeLibraryPaths = new();
@@ -58,19 +59,8 @@ namespace FlaxEngine.Interop
             if (!loadedNativeLibraries.TryGetValue(libraryName, out IntPtr nativeLibrary))
             {
                 if (!nativeLibraryPaths.TryGetValue(libraryName, out var nativeLibraryPath))
-                {
                     nativeLibraryPath = libraryName;
 
-                    // Check if any of the loaded assemblies has matching native module filename
-                    foreach (var e in nativeLibraryPaths)
-                    {
-                        if (string.Equals(Path.GetFileNameWithoutExtension(e.Value), libraryName, StringComparison.Ordinal))
-                        {
-                            nativeLibraryPath = e.Value;
-                            break;
-                        }
-                    }
-                }
                 nativeLibrary = NativeLibrary.Load(nativeLibraryPath, assembly, dllImportSearchPath);
                 loadedNativeLibraries.Add(libraryName, nativeLibrary);
                 assemblyOwnedNativeLibraries.Add(assembly, libraryName);
@@ -107,14 +97,17 @@ namespace FlaxEngine.Interop
         }
 
 #if FLAX_EDITOR
-        private static Assembly? OnScriptingAssemblyLoadContextResolving(AssemblyLoadContext assemblyLoadContext, AssemblyName assemblyName)
+        private static Assembly OnScriptingAssemblyLoadContextResolving(AssemblyLoadContext assemblyLoadContext, AssemblyName assemblyName)
         {
             // FIXME: There should be a better way to resolve the path to EditorTargetPath where the dependencies are stored
-            string editorTargetPath = Path.GetDirectoryName(nativeLibraryPaths.Keys.First(x => x != "FlaxEngine"));
+            foreach (string nativeLibraryPath in nativeLibraryPaths.Values)
+            {
+                string editorTargetPath = Path.GetDirectoryName(nativeLibraryPath);
 
-            var assemblyPath = Path.Combine(editorTargetPath, assemblyName.Name + ".dll");
-            if (File.Exists(assemblyPath))
-                return assemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
+                var assemblyPath = Path.Combine(editorTargetPath, assemblyName.Name + ".dll");
+                if (File.Exists(assemblyPath))
+                    return assemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
+            }
             return null;
         }
 #endif
@@ -592,7 +585,7 @@ namespace FlaxEngine.Interop
                     else if (fieldType.IsClass || fieldType.IsPointer)
                         fieldAlignment = IntPtr.Size;
                     else
-                        fieldAlignment = Marshal.SizeOf(fieldType);
+                        fieldAlignment = GetTypeSize(fieldType);
                 }
 
                 internal static void ToManagedField(FieldInfo field, ref T fieldOwner, IntPtr fieldPtr, out int fieldOffset)
@@ -1094,6 +1087,26 @@ namespace FlaxEngine.Interop
             }
 
             return handle;
+        }
+
+        internal static int GetTypeSize(Type type)
+        {
+            if (!_typeSizeCache.TryGetValue(type, out var size))
+            {
+                try
+                {
+                    size = Marshal.SizeOf(type);
+                }
+                catch
+                {
+                    // Workaround the issue where structure defined within generic type instance (eg. MyType<int>.MyStruct) fails to get size
+                    // https://github.com/dotnet/runtime/issues/46426
+                    var obj = Activator.CreateInstance(type);
+                    size = Marshal.SizeOf(obj);
+                }
+                _typeSizeCache.Add(type, size);
+            }
+            return size;
         }
 
         private static class DelegateHelpers

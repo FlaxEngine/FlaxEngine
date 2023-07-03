@@ -350,14 +350,14 @@ namespace FlaxEngine.Interop
 #endif
         public static class NativeToManaged
         {
-            public static T[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
+            public static T[] AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
             {
                 if (unmanaged is null)
                     return null;
                 return new T[numElements];
             }
 
-            public static Span<T> GetManagedValuesDestination(T[]? managed) => managed;
+            public static Span<T> GetManagedValuesDestination(T[] managed) => managed;
 
             public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged, int numElements)
             {
@@ -390,7 +390,7 @@ namespace FlaxEngine.Interop
 #endif
         public static class ManagedToNative
         {
-            public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
+            public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[] managed, out int numElements)
             {
                 if (managed is null)
                 {
@@ -402,7 +402,7 @@ namespace FlaxEngine.Interop
                 return (TUnmanagedElement*)ManagedHandle.ToIntPtr(managedArray, GCHandleType.Weak);
             }
 
-            public static ReadOnlySpan<T> GetManagedValuesSource(T[]? managed) => managed;
+            public static ReadOnlySpan<T> GetManagedValuesSource(T[] managed) => managed;
 
             public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
             {
@@ -431,7 +431,7 @@ namespace FlaxEngine.Interop
             ManagedArray unmanagedArray;
             ManagedHandle handle;
 
-            public void FromManaged(T[]? managed)
+            public void FromManaged(T[] managed)
             {
                 if (managed == null)
                     return;
@@ -476,7 +476,7 @@ namespace FlaxEngine.Interop
             }
         }
 
-        public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
+        public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[] managed, out int numElements)
         {
             if (managed is null)
             {
@@ -489,7 +489,7 @@ namespace FlaxEngine.Interop
             return (TUnmanagedElement*)handle;
         }
 
-        public static ReadOnlySpan<T> GetManagedValuesSource(T[]? managed) => managed;
+        public static ReadOnlySpan<T> GetManagedValuesSource(T[] managed) => managed;
 
         public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
         {
@@ -499,9 +499,9 @@ namespace FlaxEngine.Interop
             return unmanagedArray.ToSpan<TUnmanagedElement>();
         }
 
-        public static T[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements) => unmanaged is null ? null : new T[numElements];
+        public static T[] AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements) => unmanaged is null ? null : new T[numElements];
 
-        public static Span<T> GetManagedValuesDestination(T[]? managed) => managed;
+        public static Span<T> GetManagedValuesDestination(T[] managed) => managed;
 
         public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged, int numElements)
         {

@@ -144,7 +144,7 @@ namespace Flax.Build.Bindings
             GenericArgs = BindingsGenerator.Read(reader, GenericArgs);
         }
 
-        public string GetFullNameNative(Builder.BuildData buildData, ApiTypeInfo caller)
+        public string GetFullNameNative(Builder.BuildData buildData, ApiTypeInfo caller, bool canRef = true, bool canConst = true)
         {
             var type = BindingsGenerator.FindApiTypeInfo(buildData, this, caller);
             if (type == null)
@@ -155,7 +155,7 @@ namespace Flax.Build.Bindings
                 return type.FullNameNative;
 
             var sb = new StringBuilder(64);
-            if (IsConst)
+            if (IsConst && canConst)
                 sb.Append("const ");
             sb.Append(type.FullNameNative);
             if (GenericArgs != null)
@@ -171,7 +171,7 @@ namespace Flax.Build.Bindings
             }
             if (IsPtr)
                 sb.Append('*');
-            if (IsRef)
+            if (IsRef && canRef)
                 sb.Append('&');
             return sb.ToString();
         }

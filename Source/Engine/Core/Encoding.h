@@ -4,4 +4,4 @@
 
 #include "Enums.h"
 
-DECLARE_ENUM_3(Encoding, ANSI, Unicode, UnicodeBigEndian);
+DECLARE_ENUM_4(Encoding, ANSI, Unicode, UnicodeBigEndian, UTF8);

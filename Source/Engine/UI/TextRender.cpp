@@ -73,14 +73,14 @@ void TextRender::SetColor(const Color& value)
     }
 }
 
-int32 TextRender::GetFontSize() const
+float TextRender::GetFontSize() const
 {
     return _size;
 }
 
-void TextRender::SetFontSize(int32 value)
+void TextRender::SetFontSize(float value)
 {
-    value = Math::Clamp(value, 1, 1024);
+    value = Math::Clamp(value, 1.0f, 1024.0f);
     if (_size != value)
     {
         _size = value;

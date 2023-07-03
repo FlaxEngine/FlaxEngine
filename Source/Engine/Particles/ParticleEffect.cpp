@@ -299,17 +299,19 @@ void ParticleEffect::Stop()
 void ParticleEffect::UpdateBounds()
 {
     BoundingBox bounds = BoundingBox::Empty;
-    if (ParticleSystem && Instance.LastUpdateTime >= 0)
+    const auto particleSystem = ParticleSystem.Get();
+    if (particleSystem && Instance.LastUpdateTime >= 0)
     {
-        for (int32 j = 0; j < ParticleSystem->Tracks.Count(); j++)
+        for (int32 j = 0; j < particleSystem->Tracks.Count(); j++)
         {
-            const auto& track = ParticleSystem->Tracks[j];
+            const auto& track = particleSystem->Tracks[j];
             if (track.Type != ParticleSystem::Track::Types::Emitter || track.Disabled)
                 continue;
-            auto& emitter = ParticleSystem->Emitters[track.AsEmitter.Index];
-            auto& data = Instance.Emitters[track.AsEmitter.Index];
-            if (!emitter || emitter->Capacity == 0 || emitter->Graph.Layout.Size == 0)
+            const int32 emitterIndex = track.AsEmitter.Index;
+            ParticleEmitter* emitter = particleSystem->Emitters[emitterIndex].Get();
+            if (!emitter || emitter->Capacity == 0 || emitter->Graph.Layout.Size == 0 || Instance.Emitters.Count() <= emitterIndex)
                 continue;
+            auto& data = Instance.Emitters[emitterIndex];
 
             BoundingBox emitterBounds;
             if (emitter->GraphExecutorCPU.ComputeBounds(emitter, this, data, emitterBounds))

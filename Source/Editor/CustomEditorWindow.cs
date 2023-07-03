@@ -3,7 +3,6 @@
 using FlaxEditor.CustomEditors;
 using FlaxEditor.Windows;
 using FlaxEngine.GUI;
-using FlaxEngine;
 using DockState = FlaxEditor.GUI.Docking.DockState;
 
 namespace FlaxEditor
@@ -86,8 +85,12 @@ namespace FlaxEditor
             if (!FlaxEngine.Scripting.IsTypeFromGameScripts(type))
                 return;
 
-            Editor.Instance.Windows.AddToRestore(this);
+            if (!Window.IsHidden)
+            {
+                Editor.Instance.Windows.AddToRestore(this);
+            }
             Window.Close();
+            Window.Dispose();
         }
 
         /// <summary>

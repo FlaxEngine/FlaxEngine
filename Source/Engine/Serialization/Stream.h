@@ -17,6 +17,14 @@ class ISerializable;
 class ScriptingObject;
 template<typename T>
 class ScriptingObjectReference;
+template<typename T>
+class SoftObjectReference;
+template<typename T>
+class AssetReference;
+template<typename T>
+class WeakAssetReference;
+template<typename T>
+class SoftAssetReference;
 
 /// <summary>
 /// Base class for all data streams (memory streams, file streams etc.)

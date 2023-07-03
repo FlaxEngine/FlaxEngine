@@ -24,6 +24,32 @@ namespace Flax.Build.NativeCpp
     }
 
     /// <summary>
+    /// The nullable context type used with reference types (C#).
+    /// </summary>
+    public enum CSharpNullableReferences
+    {
+        /// <summary>
+        /// The code is nullable oblivious, nullable warnings and language analysis features are disabled.
+        /// </summary>
+        Disable,
+
+        /// <summary>
+        /// The compiler enables all null reference analysis and all language features.
+        /// </summary>
+        Enable,
+
+        /// <summary>
+        /// The compiler performs all null analysis and emits warnings when code might dereference null.
+        /// </summary>
+        Warnings,
+
+        /// <summary>
+        /// The compiler doesn't perform null analysis or emit warnings when code might dereference null.
+        /// </summary>
+        Annotations,
+    }
+
+    /// <summary>
     /// The native C++ module build settings container.
     /// </summary>
     public sealed class BuildOptions
@@ -189,6 +215,15 @@ namespace Flax.Build.NativeCpp
             public bool IgnoreMissingDocumentationWarnings;
 
             /// <summary>
+            /// The nullable context used in C# project.
+            /// </summary>
+            public CSharpNullableReferences CSharpNullableReferences = CSharpNullableReferences.Disable;
+
+            public ScriptingAPIOptions()
+            {
+            }
+
+            /// <summary>
             /// Adds the other options into this.
             /// </summary>
             /// <param name="other">The other.</param>
@@ -209,6 +244,8 @@ namespace Flax.Build.NativeCpp
             Defines = new HashSet<string>(),
             SystemReferences = new HashSet<string>
             {
+                "mscorlib",
+                "netstandard",
                 "Microsoft.CSharp",
                 "System",
 
@@ -223,25 +260,32 @@ namespace Flax.Build.NativeCpp
                 //"System.ComponentModel.TypeConverter",
                 "System.Console",
                 "System.Core",
+                "System.Diagnostics.StackTrace",
                 "System.Globalization",
                 "System.IO",
                 "System.IO.Compression",
                 "System.IO.FileSystem.Watcher",
                 "System.Linq",
                 "System.Linq.Expressions",
+                "System.Memory",
+                "System.Net",
                 "System.Net.Http",
                 "System.Net.Primitives",
                 "System.ObjectModel",
-                "System.Private.CoreLib",
-                "System.Private.Uri",
-                //"System.Private.Xml",
+                "System.ValueTuple",
 
-                "System.Reflection",
                 "System.Runtime",
+                "System.Runtime.Extensions",
+                "System.Runtime.Handles",
+                "System.Runtime.Intrinsics",
+                "System.Runtime.Numerics",
+                "System.Runtime.Loader",
                 "System.Runtime.CompilerServices.Unsafe",
                 "System.Runtime.InteropServices",
                 "System.Runtime.InteropServices.RuntimeInformation",
-                "System.Runtime.Serialization.Formatters", // BinaryFormatter
+                "System.Runtime.Serialization",
+                "System.Runtime.Serialization.Formatters",
+
                 "System.Security.Cryptography",
                 "System.Security.Cryptography.Algorithms",
                 "System.Security.Cryptography.Primitives",
@@ -249,8 +293,11 @@ namespace Flax.Build.NativeCpp
                 "System.Threading.Tasks.Parallel",
                 //"System.Xml",
 
+                "System.Threading",
+                "System.Threading.Thread",
+
+                "System.Reflection",
                 //"System.Reflection.Metadata",
-                "netstandard",
             },
             SystemAnalyzers = new HashSet<string>
             {

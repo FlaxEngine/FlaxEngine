@@ -311,14 +311,14 @@ static inline uint32 Utf8ToUtf32Codepoint(const char* src, int32 length)
     }
 }
 
-void StringUtils::ConvertANSI2UTF16(const char* from, Char* to, int32 len)
+void StringUtils::ConvertANSI2UTF16(const char* from, Char* to, int32 fromLength, int32& toLength)
 {
-    const char* const u8end = from + len;
+    const char* const u8end = from + fromLength;
     const char* u8cur = from;
     char16_t* u16cur = to;
     while (u8cur < u8end)
     {
-        len = Utf8CodepointLength(*u8cur);
+        int32 len = Utf8CodepointLength(*u8cur);
         uint32 codepoint = Utf8ToUtf32Codepoint(u8cur, len);
 
         // Convert the UTF32 codepoint to one or more UTF16 codepoints
@@ -336,6 +336,7 @@ void StringUtils::ConvertANSI2UTF16(const char* from, Char* to, int32 len)
         }
         u8cur += len;
     }
+    toLength = (int32)(u16cur - to);
 }
 
 static const char32_t kByteMask = 0x000000BF;

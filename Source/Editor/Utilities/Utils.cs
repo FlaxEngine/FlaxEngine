@@ -1125,7 +1125,9 @@ namespace FlaxEditor.Utilities
         public static string GetAssetNamePathWithExt(string path)
         {
             var projectFolder = Globals.ProjectFolder;
-            if (path.StartsWith(projectFolder))
+            if (path == projectFolder)
+                path = string.Empty;
+            else if (path.StartsWith(projectFolder))
                 path = path.Substring(projectFolder.Length + 1);
             return path;
         }

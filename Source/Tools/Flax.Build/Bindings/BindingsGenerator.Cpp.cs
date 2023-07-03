@@ -1204,7 +1204,7 @@ namespace Flax.Build.Bindings
                     if (apiType != null)
                     {
                         if (parameterInfo.IsOut)
-                            contents.Append(indent).AppendFormat("{1} {0}Temp;", parameterInfo.Name, new TypeInfo(parameterInfo.Type) { IsRef = false }.GetFullNameNative(buildData, caller)).AppendLine();
+                            contents.Append(indent).AppendFormat("{1} {0}Temp;", parameterInfo.Name, parameterInfo.Type.GetFullNameNative(buildData, caller, false)).AppendLine();
                         else
                             contents.Append(indent).AppendFormat("auto {0}Temp = {1};", parameterInfo.Name, param).AppendLine();
                         if (parameterInfo.Type.IsPtr && !parameterInfo.Type.IsRef)

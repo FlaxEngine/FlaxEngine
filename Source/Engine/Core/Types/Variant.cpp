@@ -660,7 +660,8 @@ Variant::Variant(const StringAnsiView& v)
         const int32 length = v.Length() * sizeof(Char) + 2;
         AsBlob.Data = Allocator::Allocate(length);
         AsBlob.Length = length;
-        StringUtils::ConvertANSI2UTF16(v.Get(), (Char*)AsBlob.Data, v.Length());
+        int32 tmp;
+        StringUtils::ConvertANSI2UTF16(v.Get(), (Char*)AsBlob.Data, v.Length(), tmp);
         ((Char*)AsBlob.Data)[v.Length()] = 0;
     }
     else
@@ -2578,7 +2579,8 @@ void Variant::SetString(const StringAnsiView& str)
         AsBlob.Data = Allocator::Allocate(length);
         AsBlob.Length = length;
     }
-    StringUtils::ConvertANSI2UTF16(str.Get(), (Char*)AsBlob.Data, str.Length());
+    int32 tmp;
+    StringUtils::ConvertANSI2UTF16(str.Get(), (Char*)AsBlob.Data, str.Length(), tmp);
     ((Char*)AsBlob.Data)[str.Length()] = 0;
 }
 

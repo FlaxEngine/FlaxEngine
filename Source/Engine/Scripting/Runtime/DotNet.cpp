@@ -712,7 +712,8 @@ bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePa
     // Provide new path of hot-reloaded native library path for managed DllImport
     if (nativePath.HasChars())
     {
-        RegisterNativeLibrary(assemblyPathAnsi.Get(), StringAnsi(nativePath).Get());
+        StringAnsi nativeName = _name.EndsWith(".CSharp") ? StringAnsi(_name.Get(), _name.Length() - 7) : StringAnsi(_name);
+        RegisterNativeLibrary(nativeName.Get(), StringAnsi(nativePath).Get());
     }
 
     _hasCachedClasses = false;
@@ -845,7 +846,7 @@ bool MClass::IsSubClassOf(const MClass* klass, bool checkInterfaces) const
 bool MClass::HasInterface(const MClass* klass) const
 {
     static void* TypeIsAssignableFrom = GetStaticMethodPointer(TEXT("TypeIsAssignableFrom"));
-    return klass && CallStaticMethod<bool, void*, void*>(TypeIsAssignableFrom, _handle, klass->_handle);
+    return klass && CallStaticMethod<bool, void*, void*>(TypeIsAssignableFrom, klass->_handle, _handle);
 }
 
 bool MClass::IsInstanceOfType(MObject* object) const

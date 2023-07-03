@@ -112,6 +112,7 @@ public:
     {
         Version = ::Version(1, 0);
         DefaultSceneSpawn = Ray(Vector3::Zero, Vector3::Forward);
+        DefaultScene = Guid::Empty;
     }
 
     /// <summary>

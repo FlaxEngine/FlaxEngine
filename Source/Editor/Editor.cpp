@@ -184,7 +184,7 @@ bool Editor::CheckProjectUpgrade()
                                "        BuildNativeCode = false;\n"
                                "    }}\n"
                                "}}\n"
-                           ), codeName), Encoding::Unicode);
+                           ), codeName), Encoding::UTF8);
         if (useEditorModule)
         {
             File::WriteAllText(gameEditorModuleFolder / String::Format(TEXT("{0}Editor.Build.cs"), codeName), String::Format(TEXT(
@@ -211,7 +211,7 @@ bool Editor::CheckProjectUpgrade()
                                    "        BuildNativeCode = false;\n"
                                    "    }}\n"
                                    "}}\n"
-                               ), codeName), Encoding::Unicode);
+                               ), codeName), Encoding::UTF8);
         }
 
         // Generate target files
@@ -229,7 +229,7 @@ bool Editor::CheckProjectUpgrade()
                                "        Modules.Add(\"{0}\");\n"
                                "    }}\n"
                                "}}\n"
-                           ), codeName), Encoding::Unicode);
+                           ), codeName), Encoding::UTF8);
         const String editorTargetGameEditorModule = useEditorModule ? String::Format(TEXT("        Modules.Add(\"{0}Editor\");\n"), codeName) : String::Empty;
         File::WriteAllText(sourceFolder / String::Format(TEXT("{0}EditorTarget.Build.cs"), codeName), String::Format(TEXT(
                                "using Flax.Build;\n"
@@ -246,7 +246,7 @@ bool Editor::CheckProjectUpgrade()
                                "{1}"
                                "    }}\n"
                                "}}\n"
-                           ), codeName, editorTargetGameEditorModule), Encoding::Unicode);
+                           ), codeName, editorTargetGameEditorModule), Encoding::UTF8);
 
         // Generate new project file
         Project->ProjectPath = root / String::Format(TEXT("{0}.flaxproj"), codeName);
@@ -454,7 +454,7 @@ int32 Editor::LoadProduct()
                                              "        // Reference the modules for game\n"
                                              "        Modules.Add(\"Game\");\n"
                                              "    }\n"
-                                             "}\n"), Encoding::Unicode);
+                                             "}\n"), Encoding::UTF8);
         failed |= File::WriteAllText(projectPath / TEXT("Source/GameEditorTarget.Build.cs"),TEXT(
                                          "using Flax.Build;\n"
                                          "\n"
@@ -468,7 +468,7 @@ int32 Editor::LoadProduct()
                                          "        // Reference the modules for editor\n"
                                          "        Modules.Add(\"Game\");\n"
                                          "    }\n"
-                                         "}\n"), Encoding::Unicode);
+                                         "}\n"), Encoding::UTF8);
         failed |= File::WriteAllText(projectPath / TEXT("Source/Game/Game.Build.cs"),TEXT(
                                          "using Flax.Build;\n"
                                          "using Flax.Build.NativeCpp;\n"
@@ -496,7 +496,7 @@ int32 Editor::LoadProduct()
                                          "        // To add C++ define use: options.PublicDefinitions.Add(\"COMPILE_WITH_FLAX\");\n"
                                          "        // To learn more see scripting documentation.\n"
                                          "    }\n"
-                                         "}\n"), Encoding::Unicode);
+                                         "}\n"), Encoding::UTF8);
         if (failed)
             return 12;
     }

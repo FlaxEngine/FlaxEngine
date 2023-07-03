@@ -41,7 +41,7 @@ struct FLAXENGINE_API NetworkRpcInfo
     uint8 Client : 1;
     uint8 Channel : 4;
     void (*Execute)(ScriptingObject* obj, NetworkStream* stream, void* tag);
-    void (*Invoke)(ScriptingObject* obj, void** args);
+    bool (*Invoke)(ScriptingObject* obj, void** args);
     void* Tag;
 
     /// <summary>
@@ -83,10 +83,7 @@ FORCE_INLINE void NetworkRpcInitArg(Array<void*, FixedAllocation<16>>& args, con
     { \
         Array<void*, FixedAllocation<16>> args; \
         NetworkRpcInitArg(args, __VA_ARGS__); \
-        rpcInfo.Invoke(this, args.Get()); \
-        if (rpcInfo.Server && networkMode == NetworkManagerMode::Client) \
-            return; \
-        if (rpcInfo.Client && networkMode == NetworkManagerMode::Server) \
+        if (rpcInfo.Invoke(this, args.Get())) \
             return; \
     } \
     }

@@ -23,7 +23,7 @@ void NetworkReplicationHierarchyUpdateResult::Init()
 {
     _clientsHaveLocation = false;
     _clients.Resize(NetworkManager::Clients.Count());
-    _clientsMask = NetworkClientsMask();
+    _clientsMask = NetworkManager::Mode == NetworkManagerMode::Client ? NetworkClientsMask::All : NetworkClientsMask();
     for (int32 i = 0; i < _clients.Count(); i++)
         _clientsMask.SetBit(i);
     _entries.Clear();
@@ -49,7 +49,7 @@ bool NetworkReplicationHierarchyUpdateResult::GetClientLocation(int32 clientInde
 
 void NetworkReplicationNode::AddObject(NetworkReplicationHierarchyObject obj)
 {
-    if (obj.ReplicationFPS > 0.0f)
+    if (obj.ReplicationFPS > ZeroTolerance) // > 0
     {
         // Randomize initial replication update to spread rep rates more evenly for large scenes that register all objects within the same frame
         obj.ReplicationUpdatesLeft = NetworkReplicationNodeObjectCounter++ % Math::Clamp(Math::RoundToInt(NetworkManager::NetworkFPS / obj.ReplicationFPS), 1, 60);
@@ -61,6 +61,17 @@ void NetworkReplicationNode::AddObject(NetworkReplicationHierarchyObject obj)
 bool NetworkReplicationNode::RemoveObject(ScriptingObject* obj)
 {
     return !Objects.Remove(obj);
+}
+
+bool NetworkReplicationNode::GetObject(ScriptingObject* obj, NetworkReplicationHierarchyObject& result)
+{
+    const int32 index = Objects.Find(obj);
+    if (index != -1)
+    {
+        result = Objects[index];
+        return true;
+    }
+    return false;
 }
 
 bool NetworkReplicationNode::DirtyObject(ScriptingObject* obj)
@@ -80,7 +91,11 @@ void NetworkReplicationNode::Update(NetworkReplicationHierarchyUpdateResult* res
     const float networkFPS = NetworkManager::NetworkFPS / result->ReplicationScale;
     for (NetworkReplicationHierarchyObject& obj : Objects)
     {
-        if (obj.ReplicationFPS <= 0.0f)
+        if (obj.ReplicationFPS < -ZeroTolerance) // < 0
+        {
+            continue;
+        }
+        else if (obj.ReplicationFPS < ZeroTolerance) // == 0
         {
             // Always relevant
             result->AddObject(obj.Object);
@@ -152,6 +167,7 @@ void NetworkReplicationGridNode::AddObject(NetworkReplicationHierarchyObject obj
         cell->MinCullDistance = obj.CullDistance;
     }
     cell->Node->AddObject(obj);
+    _objectToCell[obj.Object] = coord;
 
     // Cache minimum culling distance for a whole cell to skip it at once
     cell->MinCullDistance = Math::Min(cell->MinCullDistance, obj.CullDistance);
@@ -159,14 +175,35 @@ void NetworkReplicationGridNode::AddObject(NetworkReplicationHierarchyObject obj
 
 bool NetworkReplicationGridNode::RemoveObject(ScriptingObject* obj)
 {
-    for (const auto& e : _children)
+    Int3 coord;
+
+    if (!_objectToCell.TryGet(obj, coord))
     {
-        if (e.Value.Node->RemoveObject(obj))
-        {
-            // TODO: remove empty cells?
-            // TODO: update MinCullDistance for cell?
-            return true;
-        }
+        return false;
+    }
+
+    if (_children[coord].Node->RemoveObject(obj))
+    {
+        _objectToCell.Remove(obj);
+        // TODO: remove empty cells?
+        // TODO: update MinCullDistance for cell?
+        return true;
+    }
+    return false;
+}
+
+bool NetworkReplicationGridNode::GetObject(ScriptingObject* obj, NetworkReplicationHierarchyObject& result)
+{
+    Int3 coord;
+
+    if (!_objectToCell.TryGet(obj, coord))
+    {
+        return false;
+    }
+
+    if (_children[coord].Node->GetObject(obj, result))
+    {
+        return true;
     }
     return false;
 }

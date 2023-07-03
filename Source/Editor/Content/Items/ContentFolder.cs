@@ -113,7 +113,15 @@ namespace FlaxEditor.Content
         public override ContentItemSearchFilter SearchFilter => ContentItemSearchFilter.Other;
 
         /// <inheritdoc />
-        public override bool CanRename => ParentFolder != null; // Deny rename action for root folders
+        public override bool CanRename
+        {
+            get
+            {
+                var hasParentFolder = ParentFolder != null;
+                var isContentFolder = Node is MainContentTreeNode;
+                return hasParentFolder && !isContentFolder;
+            }
+        }
 
         /// <inheritdoc />
         public override bool CanDrag => ParentFolder != null; // Deny rename action for root folders

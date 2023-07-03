@@ -885,6 +885,7 @@ namespace FlaxEngine.Interop
                 handle.Free();
             fieldHandleCacheCollectible.Clear();
 #endif
+            _typeSizeCache.Clear();
 
             foreach (var pair in classAttributesCacheCollectible)
                 pair.Value.Free();

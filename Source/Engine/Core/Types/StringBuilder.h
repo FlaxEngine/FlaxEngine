@@ -125,7 +125,8 @@ public:
         const int32 length = str && *str ? StringUtils::Length(str) : 0;
         const int32 prevCnt = _data.Count();
         _data.AddDefault(length);
-        StringUtils::ConvertANSI2UTF16(str, _data.Get() + prevCnt, length);
+        int32 tmp;
+        StringUtils::ConvertANSI2UTF16(str, _data.Get() + prevCnt, length, tmp);
         return *this;
     }
 

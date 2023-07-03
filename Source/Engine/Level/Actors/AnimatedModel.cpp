@@ -146,7 +146,7 @@ void AnimatedModel::SetCurrentPose(const Array<Matrix>& nodesTransformation, boo
         Matrix invWorld;
         Matrix::Invert(world, invWorld);
         for (auto& m : GraphInstance.NodesPose)
-            m = invWorld * m;
+            m = m * invWorld;
     }
     OnAnimationUpdated();
 }
@@ -774,7 +774,13 @@ void AnimatedModel::OnAnimationUpdated_Sync()
     // Update synchronous stuff
     UpdateSockets();
     ApplyRootMotion(GraphInstance.RootMotion);
-    AnimationUpdated();
+    if (!_isDuringUpdateEvent)
+    {
+        // Prevent stack-overflow when gameplay modifies the pose within the event
+        _isDuringUpdateEvent = true;
+        AnimationUpdated();
+        _isDuringUpdateEvent = false;
+    }
 }
 
 void AnimatedModel::OnAnimationUpdated()

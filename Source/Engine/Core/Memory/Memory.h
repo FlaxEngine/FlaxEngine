@@ -41,6 +41,32 @@ namespace AllocatorExt
     /// </summary>
     /// </summary>
     /// <param name="ptr">A pointer to the memory block to reallocate.</param>
+    /// <param name="newSize">The size of the new allocation (in bytes).</param>
+    /// <param name="alignment">The memory alignment (in bytes). Must be an integer power of 2.</param>
+    /// <returns>The pointer to the allocated chunk of the memory. The pointer is a multiple of alignment.</returns>
+    inline void* ReallocAligned(void* ptr, uint64 newSize, uint64 alignment)
+    {
+        if (newSize == 0)
+        {
+            Allocator::Free(ptr);
+            return nullptr;
+        }
+        if (!ptr)
+            return Allocator::Allocate(newSize, alignment);
+        void* result = Allocator::Allocate(newSize, alignment);
+        if (result)
+        {
+            Platform::MemoryCopy(result, ptr, newSize);
+            Allocator::Free(ptr);
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Reallocates block of the memory.
+    /// </summary>
+    /// </summary>
+    /// <param name="ptr">A pointer to the memory block to reallocate.</param>
     /// <param name="oldSize">The size of the old allocation (in bytes).</param>
     /// <param name="newSize">The size of the new allocation (in bytes).</param>
     /// <returns>The pointer to the allocated chunk of the memory. The pointer is a multiple of alignment.</returns>

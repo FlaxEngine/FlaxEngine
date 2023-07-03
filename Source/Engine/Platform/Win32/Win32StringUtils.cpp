@@ -179,10 +179,12 @@ const char* StringUtils::Find(const char* str, const char* toFind)
     return strstr(str, toFind);
 }
 
-void StringUtils::ConvertANSI2UTF16(const char* from, Char* to, int32 len)
+void StringUtils::ConvertANSI2UTF16(const char* from, Char* to, int32 fromLength, int32& toLength)
 {
-    if (len)
-        mbstowcs(to, from, len);
+    if (fromLength)
+        toLength = mbstowcs(to, from, fromLength);
+    else
+        toLength = 0;
 }
 
 void StringUtils::ConvertUTF162ANSI(const Char* from, char* to, int32 len)
