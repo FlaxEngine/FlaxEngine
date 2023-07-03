@@ -22,8 +22,9 @@ enum class D6JointDriveType;
 class IPhysicsActor;
 class PhysicalMaterial;
 class JsonAsset;
+class JsonAsset;
 
-struct FLAXENGINE_API PhysicsJointDesc
+struct PhysicsJointDesc
 {
     Joint* Joint;
     void* Actor0;
@@ -32,6 +33,17 @@ struct FLAXENGINE_API PhysicsJointDesc
     Quaternion Rot1;
     Vector3 Pos0;
     Vector3 Pos1;
+};
+
+struct PhysicsClothDesc
+{
+    class Cloth* Actor;
+    void* VerticesData;
+    void* IndicesData;
+    uint32 VerticesCount;
+    uint32 VerticesStride;
+    uint32 IndicesCount;
+    uint32 IndicesStride;
 };
 
 /// <summary>
@@ -255,6 +267,23 @@ public:
     static float GetVehicleEngineRotationSpeed(void* vehicle);
     static void AddVehicle(void* scene, WheeledVehicle* actor);
     static void RemoveVehicle(void* scene, WheeledVehicle* actor);
+#endif
+    
+#if WITH_CLOTH
+    // Cloth
+    static void* CreateCloth(const PhysicsClothDesc& desc);
+    static void DestroyCloth(void* cloth);
+    static void SetClothForceSettings(void* cloth, const void* settingsPtr);
+    static void SetClothCollisionSettings(void* cloth, const void* settingsPtr);
+    static void SetClothSimulationSettings(void* cloth, const void* settingsPtr);
+    static void SetClothFabricSettings(void* cloth, const void* settingsPtr);
+    static void SetClothTransform(void* cloth, const Transform& transform, bool teleport);
+    static void ClearClothInertia(void* cloth);
+    static void LockClothParticles(void* cloth);
+    static void UnlockClothParticles(void* cloth);
+    static Span<const Float4> GetClothCurrentParticles(void* cloth);
+    static void AddCloth(void* scene, void* cloth);
+    static void RemoveCloth(void* scene, void* cloth);
 #endif
 
     // Resources

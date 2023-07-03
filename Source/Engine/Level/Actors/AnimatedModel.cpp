@@ -690,12 +690,12 @@ void AnimatedModel::OnActiveInTreeChanged()
 
 void AnimatedModel::UpdateBounds()
 {
-    auto model = SkinnedModel.Get();
+    const auto model = SkinnedModel.Get();
     if (CustomBounds.GetSize().LengthSquared() > 0.01f)
     {
         BoundingBox::Transform(CustomBounds, _transform, _box);
     }
-    else if (model && model->IsLoaded())
+    else if (model && model->IsLoaded() && model->LODs.Count() != 0)
     {
         BoundingBox box = model->LODs[0].GetBox(_transform, _deformation);
         if (GraphInstance.NodesPose.Count() != 0)

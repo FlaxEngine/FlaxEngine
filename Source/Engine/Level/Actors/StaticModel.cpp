@@ -270,8 +270,8 @@ void StaticModel::OnModelResidencyChanged()
 
 void StaticModel::UpdateBounds()
 {
-    auto model = Model.Get();
-    if (model && model->IsLoaded())
+    const auto model = Model.Get();
+    if (model && model->IsLoaded() && model->LODs.Count() != 0)
     {
         Transform transform = _transform;
         transform.Scale *= _boundsScale;
