@@ -164,6 +164,8 @@ namespace Flax.Build
             if (!dotnetSdk.IsValid)
                 throw new Exception("Cannot compile C# without .NET SDK");
             string dotnetPath = "dotnet", referenceAnalyzers;
+            string[] runtimeVersionNameParts = dotnetSdk.RuntimeVersionName.Split('.');
+            string runtimeVersionShort = runtimeVersionNameParts[0] + '.' + runtimeVersionNameParts[1];
 #else
             string monoRoot, monoPath;
 #endif
@@ -174,7 +176,7 @@ namespace Flax.Build
 #if USE_NETCORE
                 dotnetPath = Path.Combine(dotnetSdk.RootPath, "dotnet.exe");
                 cscPath = Path.Combine(dotnetSdk.RootPath, @$"sdk\{dotnetSdk.VersionName}\Roslyn\bincore\csc.dll");
-                referenceAssemblies = Path.Combine(dotnetSdk.RootPath, @$"shared\Microsoft.NETCore.App\{dotnetSdk.RuntimeVersionName}\");
+                referenceAssemblies = Path.Combine(dotnetSdk.RootPath, @$"packs\Microsoft.NETCore.App.Ref\{dotnetSdk.RuntimeVersionName}\ref\net{runtimeVersionShort}\");
                 referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, @$"packs\Microsoft.NETCore.App.Ref\{dotnetSdk.RuntimeVersionName}\analyzers\dotnet\cs\");
 #else
                 monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Windows", "Mono");
@@ -190,7 +192,7 @@ namespace Flax.Build
             {
 #if USE_NETCORE
                 cscPath = Path.Combine(dotnetSdk.RootPath, $"sdk/{dotnetSdk.VersionName}/Roslyn/bincore/csc.dll");
-                referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"shared/Microsoft.NETCore.App/{dotnetSdk.RuntimeVersionName}/");
+                referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/ref/net{runtimeVersionShort}/");
                 referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/analyzers/dotnet/cs/");
 #else
                 monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Linux", "Mono");
@@ -204,7 +206,7 @@ namespace Flax.Build
             {
 #if USE_NETCORE
                 cscPath = Path.Combine(dotnetSdk.RootPath, $"sdk/{dotnetSdk.VersionName}/Roslyn/bincore/csc.dll");
-                referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"shared/Microsoft.NETCore.App/{dotnetSdk.RuntimeVersionName}/");
+                referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/ref/net{runtimeVersionShort}/");
                 referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/analyzers/dotnet/cs/");
 #else
                 monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Mac", "Mono");
@@ -256,6 +258,7 @@ namespace Flax.Build
             args.Add(buildData.Configuration == TargetConfiguration.Release ? "/optimize+" : "/optimize-");
 #else
             args.Add(buildData.Configuration == TargetConfiguration.Debug ? "/optimize-" : "/optimize+");
+            args.Add(string.Format("/reference:\"{0}mscorlib.dll\"", referenceAssemblies));
 #endif
             args.Add(string.Format("/out:\"{0}\"", outputFile));
             args.Add(string.Format("/doc:\"{0}\"", outputDocFile));
@@ -263,7 +266,6 @@ namespace Flax.Build
                 args.Add("/define:" + string.Join(";", buildOptions.ScriptingAPI.Defines));
             if (buildData.Configuration == TargetConfiguration.Debug)
                 args.Add("/define:DEBUG");
-            args.Add(string.Format("/reference:\"{0}mscorlib.dll\"", referenceAssemblies));
             foreach (var reference in buildOptions.ScriptingAPI.SystemReferences)
                 args.Add(string.Format("/reference:\"{0}{1}.dll\"", referenceAssemblies, reference));
             foreach (var reference in fileReferences)
