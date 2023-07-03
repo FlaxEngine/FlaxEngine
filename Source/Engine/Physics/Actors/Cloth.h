@@ -101,6 +101,11 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Cloth\"), ActorToolbox(\"Ph
         API_FIELD() bool ContinuousCollisionDetection = false;
 
         /// <summary>
+        /// Additional thickness of the simulated cloth to prevent intersections with nearby colliders.
+        /// </summary>
+        API_FIELD(Attributes="Limit(0)") float CollisionThickness = 1.0f;
+
+        /// <summary>
         /// The minimum distance that the colliding cloth particles must maintain from each other in meters. 0: self collision disabled.
         /// </summary>
         API_FIELD(Attributes="Limit(0)") float SelfCollisionDistance = 0.0f;

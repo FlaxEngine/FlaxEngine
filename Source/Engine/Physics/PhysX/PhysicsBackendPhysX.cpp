@@ -152,6 +152,7 @@ struct ClothSettings
 {
     bool SceneCollisions = false;
     float GravityScale = 1.0f;
+    float CollisionThickness = 0.0f;
     Cloth* Actor;
 
     void UpdateBounds(const nv::cloth::Cloth* clothPhysX) const
@@ -1400,6 +1401,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                     DynamicHitBuffer<PxOverlapHit> buffer;
                     if (scenePhysX->Scene->overlap(overlapGeo, overlapPose, buffer, filterData, &QueryFilter))
                     {
+                        const float collisionThickness = clothSettings.CollisionThickness;
                         for (uint32 j = 0; j < buffer.getNbTouches(); j++)
                         {
                             const auto& hit = buffer.getTouch(j);
@@ -1413,7 +1415,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                                 case PxGeometryType::eSPHERE:
                                 {
                                     const PxSphereGeometry& geoSphere = (const PxSphereGeometry&)geo;
-                                    const PxVec4 packedSphere(shapeToCloth.p, geoSphere.radius);
+                                    const PxVec4 packedSphere(shapeToCloth.p, geoSphere.radius + collisionThickness);
                                     const nv::cloth::Range<const PxVec4> sphereRange(&packedSphere, &packedSphere + 1);
                                     const uint32_t spheresCount = clothPhysX->getNumSpheres();
                                     if (spheresCount + 1 > MAX_CLOTH_SPHERE_COUNT)
@@ -1425,8 +1427,8 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                                 {
                                     const PxCapsuleGeometry& geomCapsule = (const PxCapsuleGeometry&)geo;
                                     const PxVec4 packedSpheres[2] = {
-                                        PxVec4(shapeToCloth.transform(PxVec3(+geomCapsule.halfHeight, 0, 0)), geomCapsule.radius),
-                                        PxVec4(shapeToCloth.transform(PxVec3(-geomCapsule.halfHeight, 0, 0)), geomCapsule.radius)
+                                        PxVec4(shapeToCloth.transform(PxVec3(+geomCapsule.halfHeight, 0, 0)), geomCapsule.radius + collisionThickness),
+                                        PxVec4(shapeToCloth.transform(PxVec3(-geomCapsule.halfHeight, 0, 0)), geomCapsule.radius + collisionThickness)
                                     };
                                     const nv::cloth::Range<const PxVec4> sphereRange(packedSpheres, packedSpheres + 2);
                                     const uint32_t spheresCount = clothPhysX->getNumSpheres();
@@ -1445,12 +1447,12 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                                     if (planesCount + 6 > MAX_CLOTH_PLANE_COUNT)
                                         break;
                                     const PxPlane packedPlanes[6] = {
-                                        PxPlane(PxVec3(1, 0, 0), -geomBox.halfExtents.x).transform(shapeToCloth),
-                                        PxPlane(PxVec3(-1, 0, 0), -geomBox.halfExtents.x).transform(shapeToCloth),
-                                        PxPlane(PxVec3(0, 1, 0), -geomBox.halfExtents.y).transform(shapeToCloth),
-                                        PxPlane(PxVec3(0, -1, 0), -geomBox.halfExtents.y).transform(shapeToCloth),
-                                        PxPlane(PxVec3(0, 0, 1), -geomBox.halfExtents.z).transform(shapeToCloth),
-                                        PxPlane(PxVec3(0, 0, -1), -geomBox.halfExtents.z).transform(shapeToCloth)
+                                        PxPlane(PxVec3(1, 0, 0), -geomBox.halfExtents.x - collisionThickness).transform(shapeToCloth),
+                                        PxPlane(PxVec3(-1, 0, 0), -geomBox.halfExtents.x - collisionThickness).transform(shapeToCloth),
+                                        PxPlane(PxVec3(0, 1, 0), -geomBox.halfExtents.y - collisionThickness).transform(shapeToCloth),
+                                        PxPlane(PxVec3(0, -1, 0), -geomBox.halfExtents.y - collisionThickness).transform(shapeToCloth),
+                                        PxPlane(PxVec3(0, 0, 1), -geomBox.halfExtents.z - collisionThickness).transform(shapeToCloth),
+                                        PxPlane(PxVec3(0, 0, -1), -geomBox.halfExtents.z - collisionThickness).transform(shapeToCloth)
                                     };
                                     clothPhysX->setPlanes(nv::cloth::Range<const PxVec4>((const PxVec4*)packedPlanes, (const PxVec4*)packedPlanes + 6), planesCount, planesCount);
                                     const PxU32 convexMask = PxU32(0x3f << planesCount);
@@ -1472,6 +1474,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                                     {
                                         PxHullPolygon polygon;
                                         geomConvexMesh.convexMesh->getPolygonData(k, polygon);
+                                        polygon.mPlane[3] -= collisionThickness;
                                         planes[k] = transform(reinterpret_cast<const PxPlane&>(polygon.mPlane), convexToShapeInv).transform(shapeToCloth);
                                     }
                                     clothPhysX->setPlanes(nv::cloth::Range<const PxVec4>((const PxVec4*)planes, (const PxVec4*)planes + convexPlanesCount), planesCount, planesCount);
@@ -3371,6 +3374,7 @@ void PhysicsBackend::SetClothCollisionSettings(void* cloth, const void* settings
         clothPhysX->setTriangles(nv::cloth::Range<const PxVec3>(), 0, clothPhysX->getNumTriangles());
     }
     clothSettings.SceneCollisions = settings.SceneCollisions;
+    clothSettings.CollisionThickness = settings.CollisionThickness;
 }
 
 void PhysicsBackend::SetClothSimulationSettings(void* cloth, const void* settingsPtr)
