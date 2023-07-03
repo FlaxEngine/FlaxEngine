@@ -99,11 +99,14 @@ namespace FlaxEngine.Interop
         private static Assembly OnScriptingAssemblyLoadContextResolving(AssemblyLoadContext assemblyLoadContext, AssemblyName assemblyName)
         {
             // FIXME: There should be a better way to resolve the path to EditorTargetPath where the dependencies are stored
-            string editorTargetPath = Path.GetDirectoryName(nativeLibraryPaths.Keys.First(x => x != "FlaxEngine"));
+            foreach (string nativeLibraryPath in nativeLibraryPaths.Values)
+            {
+                string editorTargetPath = Path.GetDirectoryName(nativeLibraryPath);
 
-            var assemblyPath = Path.Combine(editorTargetPath, assemblyName.Name + ".dll");
-            if (File.Exists(assemblyPath))
-                return assemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
+                var assemblyPath = Path.Combine(editorTargetPath, assemblyName.Name + ".dll");
+                if (File.Exists(assemblyPath))
+                    return assemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
+            }
             return null;
         }
 #endif
