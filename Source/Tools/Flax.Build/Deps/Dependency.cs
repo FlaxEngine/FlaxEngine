@@ -275,18 +275,18 @@ namespace Flax.Deps
                 cmdLine = string.Format("CMakeLists.txt -G \"Visual Studio 17 2022\" -A {0}", arch);
                 break;
             }
-            case TargetPlatform.Linux:
             case TargetPlatform.PS4:
+                cmdLine = "CMakeLists.txt -DCMAKE_GENERATOR_PLATFORM=ORBIS -G \"Visual Studio 15 2017\"";
+                break;
             case TargetPlatform.PS5:
-            {
+                cmdLine = "CMakeLists.txt -DCMAKE_GENERATOR_PLATFORM=PROSPERO -G \"Visual Studio 16 2019\"";
+                break;
+            case TargetPlatform.Linux:
                 cmdLine = "CMakeLists.txt";
                 break;
-            }
             case TargetPlatform.Switch:
-            {
                 cmdLine = string.Format("-DCMAKE_TOOLCHAIN_FILE=\"{1}\\Source\\Platforms\\Switch\\Binaries\\Data\\Switch.cmake\" -G \"NMake Makefiles\" -DCMAKE_MAKE_PROGRAM=\"{0}..\\..\\VC\\bin\\nmake.exe\"", Environment.GetEnvironmentVariable("VS140COMNTOOLS"), Globals.EngineRoot);
                 break;
-            }
             case TargetPlatform.Android:
             {
                 var ndk = AndroidNdk.Instance.RootPath;
