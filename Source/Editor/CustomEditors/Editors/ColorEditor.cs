@@ -44,6 +44,8 @@ namespace FlaxEditor.CustomEditors.Editors
                 var value = Values[0];
                 if (value is Color asColor)
                     element.CustomControl.Value = asColor;
+                else if (value is Color32 asColor32)
+                    element.CustomControl.Value = asColor32;
                 else if (value is Float4 asFloat4)
                     element.CustomControl.Value = asFloat4;
                 else if (value is Double4 asDouble4)
