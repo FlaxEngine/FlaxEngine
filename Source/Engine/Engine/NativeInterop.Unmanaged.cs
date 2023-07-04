@@ -771,11 +771,27 @@ namespace FlaxEngine.Interop
         }
 
         [UnmanagedCallersOnly]
+        internal static int FieldGetOffset(ManagedHandle fieldHandle)
+        {
+            FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
+            return (int)Marshal.OffsetOf(field.field.DeclaringType, field.field.Name);
+        }
+
+        [UnmanagedCallersOnly]
         internal static void FieldGetValue(ManagedHandle fieldOwnerHandle, ManagedHandle fieldHandle, IntPtr valuePtr)
         {
             object fieldOwner = fieldOwnerHandle.Target;
             FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
             field.toNativeMarshaller(field.field, fieldOwner, valuePtr, out int fieldOffset);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static IntPtr FieldGetValueBoxed(ManagedHandle fieldOwnerHandle, ManagedHandle fieldHandle)
+        {
+            object fieldOwner = fieldOwnerHandle.Target;
+            FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
+            object fieldValue = field.field.GetValue(fieldOwner);
+            return Invoker.MarshalReturnValueGeneric(field.field.FieldType, fieldValue);
         }
 
         [UnmanagedCallersOnly]
@@ -924,7 +940,7 @@ namespace FlaxEngine.Interop
             if (nativeType.IsClass)
                 size = sizeof(IntPtr);
             else
-                size = Marshal.SizeOf(nativeType);
+                size = GetTypeSize(type);
             return size;
         }
 
