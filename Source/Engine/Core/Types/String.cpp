@@ -113,6 +113,7 @@ void String::Append(const char* chars, int32 count)
 
     Platform::MemoryCopy(_data, oldData, oldLength * sizeof(Char));
     StringUtils::ConvertANSI2UTF16(chars, _data + oldLength, count, _length);
+    _length += oldLength;
     _data[_length] = 0;
 
     Platform::Free(oldData);
