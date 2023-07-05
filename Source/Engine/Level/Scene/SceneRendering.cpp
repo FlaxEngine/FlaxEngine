@@ -157,7 +157,7 @@ void SceneRendering::UpdateActor(Actor* a, int32& key)
     const int32 category = a->_drawCategory;
     ScopeLock lock(Locker);
     auto& list = Actors[category];
-    if (list.Count() > key) // Ignore invalid key softly
+    if (list.Count() <= key) // Ignore invalid key softly
         return;
     auto& e = list[key];
     if (e.Actor == a)
