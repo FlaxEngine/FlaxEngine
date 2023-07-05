@@ -940,7 +940,7 @@ namespace FlaxEngine.Interop
             if (nativeType.IsClass)
                 size = sizeof(IntPtr);
             else
-                size = GetTypeSize(type);
+                size = GetTypeSize(nativeType);
             return size;
         }
 
