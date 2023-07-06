@@ -390,7 +390,6 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 if (addTagDropPanel.IsClosed)
                 {
-                    Debug.Log("Hit");
                     nameTextBox.BorderColor = Color.Transparent;
                     nameTextBox.BorderSelectedColor = FlaxEngine.GUI.Style.Current.BackgroundSelected;
                     return;
