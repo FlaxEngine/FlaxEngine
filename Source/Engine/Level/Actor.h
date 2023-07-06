@@ -740,6 +740,14 @@ public:
     API_FUNCTION() Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, const StringView& name) const;
 
     /// <summary>
+    /// Tries to find the actor of the given type and tag in this actor hierarchy.
+    /// </summary>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="tag">The tag of the actor to search for.</param>
+    /// <returns>Actor instance if found, null otherwise.</returns>
+    API_FUNCTION() Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, const Tag& tag) const;
+
+    /// <summary>
     /// Tries to find the actor of the given type in this actor hierarchy (checks this actor and all children hierarchy).
     /// </summary>
     /// <returns>Actor instance if found, null otherwise.</returns>
@@ -758,6 +766,17 @@ public:
     FORCE_INLINE T* FindActor(const StringView& name) const
     {
         return (T*)FindActor(T::GetStaticClass(), name);
+    }
+    
+    /// <summary>
+    /// Tries to find the actor of the given type and tag in this actor hierarchy (checks this actor and all children hierarchy).
+    /// </summary>
+    /// <param name="tag">The tag of the actor to search for.</param>
+    /// <returns>Actor instance if found, null otherwise.</returns>
+    template<typename T>
+    FORCE_INLINE T* FindActor(const Tag& tag) const
+    {
+        return (T*)FindActor(T::GetStaticClass(), tag);
     }
 
     /// <summary>
