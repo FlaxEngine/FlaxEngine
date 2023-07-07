@@ -95,6 +95,7 @@ public:
 #if USE_EDITOR
     void OnDebugDraw() override;
     void OnDebugDrawSelected() override;
+    void DrawLightsDebug(RenderView& view) override;
 #endif
     void OnLayerChanged() override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;

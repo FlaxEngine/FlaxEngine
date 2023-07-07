@@ -203,6 +203,11 @@ void SpotLight::OnDebugDrawSelected()
     DEBUG_DRAW_LINE(position, position + forward * radius + right * discRadius, color, 0, true);
     DEBUG_DRAW_LINE(position, position + forward * radius - right * discRadius, color, 0, true);
 
+    DEBUG_DRAW_LINE(position, position + forward * radius + up * falloffDiscRadius, color * 0.6f, 0, true);
+    DEBUG_DRAW_LINE(position, position + forward * radius - up * falloffDiscRadius, color * 0.6f, 0, true);
+    DEBUG_DRAW_LINE(position, position + forward * radius + right * falloffDiscRadius, color * 0.6f, 0, true);
+    DEBUG_DRAW_LINE(position, position + forward * radius - right * falloffDiscRadius, color * 0.6f, 0, true);
+
     DEBUG_DRAW_CIRCLE(position + forward * radius, forward, discRadius, color, 0, true);
     DEBUG_DRAW_CIRCLE(position + forward * radius, forward, falloffDiscRadius, color * 0.6f, 0, true);
 
@@ -210,6 +215,34 @@ void SpotLight::OnDebugDrawSelected()
     LightWithShadow::OnDebugDrawSelected();
 }
 
+void SpotLight::DrawLightsDebug(RenderView& view)
+{
+    const BoundingSphere sphere(_sphere.Center - view.Origin, _sphere.Radius);
+    if (!view.CullingFrustum.Intersects(sphere))
+        return;
+    
+    const auto color = Color::Yellow;
+    Vector3 right = _transform.GetRight();
+    Vector3 up = _transform.GetUp();
+    Vector3 forward = GetDirection();
+    float radius = GetScaledRadius();
+    float discRadius = radius * Math::Tan(_outerConeAngle * DegreesToRadians);
+    float falloffDiscRadius = radius * Math::Tan(_innerConeAngle * DegreesToRadians);
+    Vector3 position = GetPosition();
+
+    DEBUG_DRAW_LINE(position, position + forward * radius + up * discRadius, color, 0, true);
+    DEBUG_DRAW_LINE(position, position + forward * radius - up * discRadius, color, 0, true);
+    DEBUG_DRAW_LINE(position, position + forward * radius + right * discRadius, color, 0, true);
+    DEBUG_DRAW_LINE(position, position + forward * radius - right * discRadius, color, 0, true);
+
+    DEBUG_DRAW_LINE(position, position + forward * radius + up * falloffDiscRadius, color * 0.6f, 0, true);
+    DEBUG_DRAW_LINE(position, position + forward * radius - up * falloffDiscRadius, color * 0.6f, 0, true);
+    DEBUG_DRAW_LINE(position, position + forward * radius + right * falloffDiscRadius, color * 0.6f, 0, true);
+    DEBUG_DRAW_LINE(position, position + forward * radius - right * falloffDiscRadius, color * 0.6f, 0, true);
+
+    DEBUG_DRAW_CIRCLE(position + forward * radius, forward, discRadius, color, 0, true);
+    DEBUG_DRAW_CIRCLE(position + forward * radius, forward, falloffDiscRadius, color * 0.6f, 0, true);
+}
 #endif
 
 void SpotLight::Serialize(SerializeStream& stream, const void* otherObj)
