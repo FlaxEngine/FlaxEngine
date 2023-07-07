@@ -203,6 +203,11 @@ void SpotLight::OnDebugDrawSelected()
     DEBUG_DRAW_LINE(position, position + forward * radius + right * discRadius, color, 0, true);
     DEBUG_DRAW_LINE(position, position + forward * radius - right * discRadius, color, 0, true);
 
+    DEBUG_DRAW_LINE(position, position + forward * radius + up * falloffDiscRadius, color * 0.6f, 0, true);
+    DEBUG_DRAW_LINE(position, position + forward * radius - up * falloffDiscRadius, color * 0.6f, 0, true);
+    DEBUG_DRAW_LINE(position, position + forward * radius + right * falloffDiscRadius, color * 0.6f, 0, true);
+    DEBUG_DRAW_LINE(position, position + forward * radius - right * falloffDiscRadius, color * 0.6f, 0, true);
+
     DEBUG_DRAW_CIRCLE(position + forward * radius, forward, discRadius, color, 0, true);
     DEBUG_DRAW_CIRCLE(position + forward * radius, forward, falloffDiscRadius, color * 0.6f, 0, true);
 
