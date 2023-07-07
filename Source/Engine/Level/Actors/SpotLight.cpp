@@ -218,7 +218,7 @@ void SpotLight::OnDebugDrawSelected()
 void SpotLight::DrawLightsDebug(RenderView& view)
 {
     const BoundingSphere sphere(_sphere.Center - view.Origin, _sphere.Radius);
-    if (!view.CullingFrustum.Intersects(sphere))
+    if (!view.CullingFrustum.Intersects(sphere) || !EnumHasAnyFlags(view.Flags, ViewFlags::SpotLights))
         return;
     
     const auto color = Color::Yellow;
