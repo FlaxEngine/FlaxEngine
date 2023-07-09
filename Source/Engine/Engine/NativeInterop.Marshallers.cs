@@ -399,7 +399,7 @@ namespace FlaxEngine.Interop
                 }
                 numElements = managed.Length;
                 ManagedArray managedArray = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
-                return (TUnmanagedElement*)ManagedHandle.ToIntPtr(managedArray, GCHandleType.Weak);
+                return (TUnmanagedElement*)ManagedHandle.ToIntPtr(managedArray, GCHandleType.Normal);
             }
 
             public static ReadOnlySpan<T> GetManagedValuesSource(T[] managed) => managed;

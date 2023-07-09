@@ -269,6 +269,17 @@ namespace FlaxEngine
         {
             return FindActor(typeof(T), name) as T;
         }
+        
+        /// <summary>
+        /// Tries to find actor of the given type and tag in this actor hierarchy (checks this actor and all children hierarchy).
+        /// </summary>
+        /// <param name="tag">A tag on the object.</param>
+        /// <typeparam name="T">Type of the object.</typeparam>
+        /// <returns>Actor instance if found, null otherwise.</returns>
+        public T FindActor<T>(Tag tag) where T : Actor
+        {
+            return FindActor(typeof(T), tag) as T;
+        }
 
         /// <summary>
         /// Searches for all actors of a specific type in this actor children list.

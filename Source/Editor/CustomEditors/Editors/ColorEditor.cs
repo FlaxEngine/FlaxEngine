@@ -41,7 +41,17 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             else
             {
-                element.CustomControl.Value = (Color)Values[0];
+                var value = Values[0];
+                if (value is Color asColor)
+                    element.CustomControl.Value = asColor;
+                else if (value is Color32 asColor32)
+                    element.CustomControl.Value = asColor32;
+                else if (value is Float4 asFloat4)
+                    element.CustomControl.Value = asFloat4;
+                else if (value is Double4 asDouble4)
+                    element.CustomControl.Value = (Float4)asDouble4;
+                else if (value is Vector4 asVector4)
+                    element.CustomControl.Value = asVector4;
             }
         }
     }

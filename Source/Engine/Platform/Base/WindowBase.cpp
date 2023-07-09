@@ -125,6 +125,7 @@ WindowBase::~WindowBase()
 {
     ASSERT(!RenderTask);
     ASSERT(!_swapChain);
+    WindowsManager::Unregister((Window*)this);
 }
 
 bool WindowBase::IsMain() const

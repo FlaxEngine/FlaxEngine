@@ -77,6 +77,18 @@ namespace FlaxEngine
         {
             return FindActor(typeof(T), name) as T;
         }
+        
+        /// <summary>
+        /// Tries to find actor of the given type and tag in a root actor or all loaded scenes.
+        /// </summary>
+        /// <param name="tag">A tag on the object.</param>
+        /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
+        /// <typeparam name="T">Type of the object.</typeparam>
+        /// <returns>Found actor or null.</returns>
+        public static T FindActor<T>(Tag tag, Actor root = null) where T : Actor
+        {
+            return FindActor(typeof(T), tag, root) as T;
+        }
 
         /// <summary>
         /// Tries to find actor with the given ID in all loaded scenes. It's very fast O(1) lookup.

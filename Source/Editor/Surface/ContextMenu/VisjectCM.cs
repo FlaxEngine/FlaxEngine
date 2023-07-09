@@ -363,7 +363,6 @@ namespace FlaxEditor.Surface.ContextMenu
                     Profiler.BeginEvent("VisjectCM.RemoveGroup");
                     if (group.Archetypes.Count == 0)
                     {
-                        Debug.Log("Remove");
                         _groups.RemoveAt(i);
                         group.Dispose();
                     }

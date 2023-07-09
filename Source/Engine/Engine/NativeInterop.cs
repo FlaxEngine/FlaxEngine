@@ -1095,7 +1095,10 @@ namespace FlaxEngine.Interop
             {
                 try
                 {
-                    size = Marshal.SizeOf(type);
+                    var marshalType = type;
+                    if (type.IsEnum)
+                        marshalType = type.GetEnumUnderlyingType();
+                    size = Marshal.SizeOf(marshalType);
                 }
                 catch
                 {

@@ -182,7 +182,7 @@ const char* StringUtils::Find(const char* str, const char* toFind)
 void StringUtils::ConvertANSI2UTF16(const char* from, Char* to, int32 fromLength, int32& toLength)
 {
     if (fromLength)
-        toLength = mbstowcs(to, from, fromLength);
+        toLength = (int32)mbstowcs(to, from, fromLength);
     else
         toLength = 0;
 }

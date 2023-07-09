@@ -157,14 +157,16 @@ void SceneRendering::UpdateActor(Actor* a, int32& key)
     const int32 category = a->_drawCategory;
     ScopeLock lock(Locker);
     auto& list = Actors[category];
-    if (list.IsEmpty())
+    if (list.Count() <= key) // Ignore invalid key softly
         return;
     auto& e = list[key];
-    ASSERT_LOW_LAYER(a == e.Actor);
-    for (auto* listener : _listeners)
-        listener->OnSceneRenderingUpdateActor(a, e.Bounds);
-    e.LayerMask = a->GetLayerMask();
-    e.Bounds = a->GetSphere();
+    if (e.Actor == a)
+    {
+        for (auto* listener : _listeners)
+            listener->OnSceneRenderingUpdateActor(a, e.Bounds);
+        e.LayerMask = a->GetLayerMask();
+        e.Bounds = a->GetSphere();
+    }
 }
 
 void SceneRendering::RemoveActor(Actor* a, int32& key)
@@ -172,14 +174,16 @@ void SceneRendering::RemoveActor(Actor* a, int32& key)
     const int32 category = a->_drawCategory;
     ScopeLock lock(Locker);
     auto& list = Actors[category];
-    if (list.HasItems())
+    if (list.Count() > key) // Ignore invalid key softly (eg. list after batch clear during scene unload)
     {
-        auto& e = list[key];
-        ASSERT_LOW_LAYER(a == e.Actor);
-        for (auto* listener : _listeners)
-            listener->OnSceneRenderingRemoveActor(a);
-        e.Actor = nullptr;
-        e.LayerMask = 0;
+        auto& e = list.Get()[key];
+        if (e.Actor == a)
+        {
+            for (auto* listener : _listeners)
+                listener->OnSceneRenderingRemoveActor(a);
+            e.Actor = nullptr;
+            e.LayerMask = 0;
+        }
     }
     key = -1;
 }
