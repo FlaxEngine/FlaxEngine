@@ -65,6 +65,7 @@ class FLAXENGINE_API SceneRendering
 {
 #if USE_EDITOR
     typedef Function<void(RenderView&)> PhysicsDebugCallback;
+    typedef Function<void(RenderView&)> LightsDebugCallback;
     friend class ViewportIconsRendererService;
 #endif
 public:
@@ -95,6 +96,7 @@ public:
 private:
 #if USE_EDITOR
     Array<PhysicsDebugCallback> PhysicsDebug;
+    Array<LightsDebugCallback> LightsDebug;
     Array<Actor*> ViewportIcons;
 #endif
 
@@ -151,6 +153,22 @@ public:
         PhysicsDebugCallback f;
         f.Bind<T, Method>(obj);
         PhysicsDebug.Remove(f);
+    }
+
+    template<class T, void(T::*Method)(RenderView&)>
+    FORCE_INLINE void AddLightsDebug(T* obj)
+    {
+        LightsDebugCallback f;
+        f.Bind<T, Method>(obj);
+        LightsDebug.Add(f);
+    }
+
+    template<class T, void(T::*Method)(RenderView&)>
+    void RemoveLightsDebug(T* obj)
+    {
+        LightsDebugCallback f;
+        f.Bind<T, Method>(obj);
+        LightsDebug.Remove(f);
     }
 
     FORCE_INLINE void AddViewportIcon(Actor* obj)
