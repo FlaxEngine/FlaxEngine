@@ -96,6 +96,16 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
                 physicsDebugData[i](view);
             }
         }
+
+        // Draw light shapes
+        if (EnumHasAnyFlags(view.Flags, ViewFlags::LightsDebug))
+        {
+            const LightsDebugCallback* lightsDebugData = LightsDebug.Get();
+            for (int32 i = 0; i < LightsDebug.Count(); i++)
+            {
+                lightsDebugData[i](view);
+            }
+        }
     }
 #endif
 }

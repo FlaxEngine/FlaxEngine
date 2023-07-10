@@ -26,6 +26,7 @@ void Light::OnEnable()
     GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
+    GetSceneRendering()->AddLightsDebug<Light, &Light::DrawLightsDebug>(this);
 #endif
 
     // Base
@@ -36,12 +37,19 @@ void Light::OnDisable()
 {
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
+    GetSceneRendering()->RemoveLightsDebug<Light, &Light::DrawLightsDebug>(this);
 #endif
     GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 
     // Base
     Actor::OnDisable();
 }
+
+#if USE_EDITOR
+void Light::DrawLightsDebug(RenderView& view)
+{
+}
+#endif
 
 void Light::Serialize(SerializeStream& stream, const void* otherObj)
 {
