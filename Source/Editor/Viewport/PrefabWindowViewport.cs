@@ -84,6 +84,7 @@ namespace FlaxEditor.Viewport
             _dragAssets = new DragAssets(ValidateDragItem);
             ShowDebugDraw = true;
             ShowEditorPrimitives = true;
+            Gizmos = new GizmosCollection(this);
 
             // Prepare rendering task
             Task.ActorsSource = ActorsSources.CustomActors;
@@ -305,7 +306,7 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
-        public GizmosCollection Gizmos { get; } = new GizmosCollection();
+        public GizmosCollection Gizmos { get; }
 
         /// <inheritdoc />
         public SceneRenderTask RenderTask => Task;

@@ -244,9 +244,9 @@ namespace FlaxEditor.Tools
                 {
                     Tab = this,
                 };
-                _editor.Windows.EditWin.Viewport.AddMode(_gizmoMode);
+                _editor.Windows.EditWin.Viewport.Gizmos.AddMode(_gizmoMode);
             }
-            _editor.Windows.EditWin.Viewport.SetActiveMode(_gizmoMode);
+            _editor.Windows.EditWin.Viewport.Gizmos.ActiveMode = _gizmoMode;
         }
 
         /// <inheritdoc />
@@ -317,7 +317,7 @@ namespace FlaxEditor.Tools
         public Color PaintColor = Color.White;
         public VertexColorsMask PaintMask = VertexColorsMask.RGB;
 
-        public override void Init(MainEditorGizmoViewport viewport)
+        public override void Init(IGizmoOwner viewport)
         {
             base.Init(viewport);
 
@@ -328,7 +328,7 @@ namespace FlaxEditor.Tools
         {
             base.OnActivated();
 
-            Viewport.Gizmos.Active = Gizmo;
+            Owner.Gizmos.Active = Gizmo;
         }
     }
 

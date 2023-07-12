@@ -27,6 +27,7 @@ namespace FlaxEditor.Viewport
         {
             Undo = undo;
             SceneGraphRoot = sceneGraphRoot;
+            Gizmos = new GizmosCollection(this);
 
             SetUpdate(ref _update, OnUpdate);
         }
@@ -40,7 +41,7 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
-        public GizmosCollection Gizmos { get; } = new GizmosCollection();
+        public GizmosCollection Gizmos { get; }
 
         /// <inheritdoc />
         public SceneRenderTask RenderTask => Task;
@@ -95,6 +96,17 @@ namespace FlaxEditor.Viewport
             base.RemoveUpdateCallbacks(root);
 
             root.UpdateCallbacksToRemove.Add(_update);
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            if (IsDisposing)
+                return;
+
+            Gizmos.Clear();
+
+            base.OnDestroy();
         }
     }
 }
