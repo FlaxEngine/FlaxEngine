@@ -66,6 +66,8 @@ public:
         const Vector3 size(50);
         return BoundingBox(_transform.Translation - size, _transform.Translation + size);
     }
+    
+    virtual void DrawLightsDebug(RenderView& view);
 #endif
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
