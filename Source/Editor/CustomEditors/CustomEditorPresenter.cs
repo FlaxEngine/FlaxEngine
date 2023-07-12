@@ -38,6 +38,23 @@ namespace FlaxEditor.CustomEditors
     }
 
     /// <summary>
+    /// The interface for Editor context that owns the presenter. Can be <see cref="FlaxEditor.Windows.PropertiesWindow"/> or <see cref="FlaxEditor.Windows.Assets.PrefabWindow"/> or other window/panel - custom editor scan use it for more specific features.
+    /// </summary>
+    public interface IPresenterOwner
+    {
+        /// <summary>
+        /// Gets the viewport linked with properties presenter (optional, null if unused).
+        /// </summary>
+        public Viewport.EditorViewport PresenterViewport { get; }
+
+        /// <summary>
+        /// Selects the scene objects.
+        /// </summary>
+        /// <param name="nodes">The nodes to select</param>
+        public void Select(List<SceneGraph.SceneGraphNode> nodes);
+    }
+
+    /// <summary>
     /// Main class for Custom Editors used to present selected objects properties and allow to modify them.
     /// </summary>
     /// <seealso cref="FlaxEditor.CustomEditors.LayoutElementsContainer" />
@@ -254,7 +271,7 @@ namespace FlaxEditor.CustomEditors
         /// <summary>
         /// The Editor context that owns this presenter. Can be <see cref="FlaxEditor.Windows.PropertiesWindow"/> or <see cref="FlaxEditor.Windows.Assets.PrefabWindow"/> or other window/panel - custom editor scan use it for more specific features.
         /// </summary>
-        public object Owner;
+        public IPresenterOwner Owner;
 
         /// <summary>
         /// Gets or sets the text to show when no object is selected.
@@ -278,7 +295,7 @@ namespace FlaxEditor.CustomEditors
         /// <param name="undo">The undo. It's optional.</param>
         /// <param name="noSelectionText">The custom text to display when no object is selected. Default is No selection.</param>
         /// <param name="owner">The owner of the presenter.</param>
-        public CustomEditorPresenter(Undo undo, string noSelectionText = null, object owner = null)
+        public CustomEditorPresenter(Undo undo, string noSelectionText = null, IPresenterOwner owner = null)
         {
             Undo = undo;
             Owner = owner;

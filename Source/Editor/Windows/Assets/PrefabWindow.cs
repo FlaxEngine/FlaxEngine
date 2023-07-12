@@ -19,7 +19,7 @@ namespace FlaxEditor.Windows.Assets
     /// </summary>
     /// <seealso cref="Prefab" />
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
-    public sealed partial class PrefabWindow : AssetEditorWindowBase<Prefab>
+    public sealed partial class PrefabWindow : AssetEditorWindowBase<Prefab>, IPresenterOwner
     {
         private readonly SplitPanel _split1;
         private readonly SplitPanel _split2;
@@ -520,5 +520,8 @@ namespace FlaxEditor.Windows.Assets
 
             base.OnDestroy();
         }
+
+        /// <inheritdoc />
+        public EditorViewport PresenterViewport => _viewport;
     }
 }
