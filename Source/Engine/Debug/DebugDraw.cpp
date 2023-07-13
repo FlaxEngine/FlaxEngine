@@ -938,6 +938,26 @@ void DebugDraw::DrawLine(const Vector3& start, const Vector3& end, const Color& 
     }
 }
 
+void DebugDraw::DrawLine(const Vector3& start, const Vector3& end, const Color& startColor, const Color& endColor, float duration, bool depthTest)
+{
+    const Float3 startF = start - Context->Origin, endF = end - Context->Origin;
+    auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
+    if (duration > 0)
+    {
+        // TODO: separate start/end colors for persistent lines
+        DebugLine l = { startF, endF, Color32(startColor), duration };
+        debugDrawData.DefaultLines.Add(l);
+    }
+    else
+    {
+        Vertex l = { startF, Color32(startColor) };
+        debugDrawData.OneFrameLines.Add(l);
+        l.Position = endF;
+        l.Color = Color32(endColor);
+        debugDrawData.OneFrameLines.Add(l);
+    }
+}
+
 void DebugDraw::DrawLines(const Span<Float3>& lines, const Matrix& transform, const Color& color, float duration, bool depthTest)
 {
     if (lines.Length() == 0)
