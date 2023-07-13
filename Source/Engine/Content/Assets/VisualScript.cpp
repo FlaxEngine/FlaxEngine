@@ -2209,14 +2209,14 @@ void VisualScript::GetMethodSignature(int32 index, String& name, byte& flags, St
 Span<byte> VisualScript::GetMetaData(int32 typeID)
 {
     auto meta = Graph.Meta.GetEntry(typeID);
-    return meta ? ToSpan(meta->Data.Get(), meta->Data.Count()) : Span<byte>(nullptr, 0);
+    return meta ? ToSpan(meta->Data) : Span<byte>(nullptr, 0);
 }
 
 Span<byte> VisualScript::GetMethodMetaData(int32 index, int32 typeID)
 {
     auto& method = _methods[index];
     auto meta = method.Node->Meta.GetEntry(typeID);
-    return meta ? ToSpan(meta->Data.Get(), meta->Data.Count()) : Span<byte>(nullptr, 0);
+    return meta ? ToSpan(meta->Data) : Span<byte>(nullptr, 0);
 }
 
 #endif

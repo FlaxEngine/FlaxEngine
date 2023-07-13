@@ -1,6 +1,8 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using FlaxEditor.Gizmo;
+using FlaxEditor.SceneGraph;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -12,7 +14,7 @@ namespace FlaxEditor.Viewport
     /// </summary>
     /// <seealso cref="FlaxEditor.Viewport.EditorViewport" />
     /// <seealso cref="IGizmoOwner" />
-    public class EditorGizmoViewport : EditorViewport, IGizmoOwner
+    public abstract class EditorGizmoViewport : EditorViewport, IGizmoOwner
     {
         private UpdateDelegate _update;
 
@@ -78,6 +80,9 @@ namespace FlaxEditor.Viewport
 
         /// <inheritdoc />
         public SceneGraph.RootNode SceneGraphRoot { get; }
+
+        /// <inheritdoc />
+        public abstract void Select(List<SceneGraphNode> nodes);
 
         /// <inheritdoc />
         protected override bool IsControllingMouse => Gizmos.Active?.IsControllingMouse ?? false;

@@ -40,10 +40,14 @@ struct PhysicsClothDesc
     class Cloth* Actor;
     void* VerticesData;
     void* IndicesData;
+    float* InvMassesData;
+    float* MaxDistancesData;
     uint32 VerticesCount;
     uint32 VerticesStride;
     uint32 IndicesCount;
     uint32 IndicesStride;
+    uint32 InvMassesStride;
+    uint32 MaxDistancesStride;
 };
 
 /// <summary>
@@ -281,7 +285,9 @@ public:
     static void ClearClothInertia(void* cloth);
     static void LockClothParticles(void* cloth);
     static void UnlockClothParticles(void* cloth);
-    static Span<const Float4> GetClothCurrentParticles(void* cloth);
+    static Span<const Float4> GetClothParticles(void* cloth);
+    static void SetClothParticles(void* cloth, Span<const Float4> value, Span<const Float3> positions, Span<const float> invMasses);
+    static void SetClothPaint(void* cloth, Span<const float> value);
     static void AddCloth(void* scene, void* cloth);
     static void RemoveCloth(void* scene, void* cloth);
 #endif

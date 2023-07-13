@@ -130,6 +130,11 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Cloth\"), ActorToolbox(\"Ph
         API_FIELD() float SolverFrequency = 300.0f;
 
         /// <summary>
+        /// The maximum distance cloth particles can move from the original location (within local-space of the actor). Scaled by painted per-particle value (0-1) to restrict movement of certain particles.
+        /// </summary>
+        API_FIELD() float MaxDistance = 1000.0f;
+
+        /// <summary>
         /// Wind velocity vector (direction and magnitude) in world coordinates. A greater magnitude applies a stronger wind force. Ensure that Air Drag and Air Lift coefficients are non-zero in order to apply wind force.
         /// </summary>
         API_FIELD() Vector3 WindVelocity = Vector3::Zero;
@@ -202,6 +207,7 @@ private:
     Vector3 _cachedPosition = Vector3::Zero;
     ModelInstanceActor::MeshReference _mesh;
     MeshDeformation* _meshDeformation = nullptr;
+    Array<float> _paint;
 
 public:
     /// <summary>
@@ -283,8 +289,29 @@ public:
     /// </summary>
     API_FUNCTION() void ClearInteria();
 
+    /// <summary>
+    /// Gets the cloth particles data with per-particle XYZ position (in local cloth-space).
+    /// </summary>
+    API_FUNCTION() Array<Float3> GetParticles() const;
+
+    /// <summary>
+    /// Sets the cloth particles data with per-particle XYZ position (in local cloth-space). The size of the input data had to match the cloth size.
+    /// </summary>
+    API_FUNCTION() void SetParticles(Span<const Float3> value);
+
+    /// <summary>
+    /// Gets the cloth particles paint data with per-particle max distance (normalized 0-1, 0 makes particle immovable). Returned value is empty if cloth was not initialized or doesn't use paint feature.
+    /// </summary>
+    API_FUNCTION() Span<float> GetPaint() const;
+
+    /// <summary>
+    /// Sets the cloth particles paint data with per-particle max distance (normalized 0-1, 0 makes particle immovable). The size of the input data had to match the cloth size. Set to empty to remove paint.
+    /// </summary>
+    API_FUNCTION() void SetPaint(Span<const float> value);
+
 public:
     // [Actor]
+    bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
@@ -307,6 +334,7 @@ private:
 #endif
     bool CreateCloth();
     void DestroyCloth();
+    void CalculateInvMasses(Array<float>& invMasses);
     void OnUpdated();
     void RunClothDeformer(const MeshBase* mesh, struct MeshDeformationData& deformation);
 };

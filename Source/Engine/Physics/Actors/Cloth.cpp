@@ -2,6 +2,7 @@
 
 #include "Cloth.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Ray.h"
 #include "Engine/Graphics/Models/MeshBase.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Physics/PhysicsBackend.h"
@@ -109,6 +110,160 @@ void Cloth::ClearInteria()
 #endif
 }
 
+Array<Float3> Cloth::GetParticles() const
+{
+    Array<Float3> result;
+#if WITH_CLOTH
+    if (_cloth)
+    {
+        PROFILE_CPU();
+        PhysicsBackend::LockClothParticles(_cloth);
+        const Span<const Float4> particles = PhysicsBackend::GetClothParticles(_cloth);
+        result.Resize(particles.Length());
+        const Float4* src = particles.Get();
+        Float3* dst = result.Get();
+        for (int32 i = 0; i < particles.Length(); i++)
+            dst[i] = Float3(src[i]);
+        PhysicsBackend::UnlockClothParticles(_cloth);
+    }
+#endif
+    return result;
+}
+
+void Cloth::SetParticles(Span<const Float3> value)
+{
+    PROFILE_CPU();
+#if !BUILD_RELEASE
+    {
+        // Sanity check
+        const Float3* src = value.Get();
+        bool allValid = true;
+        for (int32 i = 0; i < value.Length(); i++)
+            allValid &= !src[i].IsNanOrInfinity();
+        ASSERT(allValid);
+    }
+#endif
+#if WITH_CLOTH
+    if (_cloth)
+    {
+        // Update cloth particles
+        PhysicsBackend::LockClothParticles(_cloth);
+        PhysicsBackend::SetClothParticles(_cloth, Span<const Float4>(), value, Span<const float>());
+        PhysicsBackend::UnlockClothParticles(_cloth);
+    }
+#endif
+}
+
+Span<float> Cloth::GetPaint() const
+{
+    return ToSpan(_paint);
+}
+
+void Cloth::SetPaint(Span<const float> value)
+{
+    PROFILE_CPU();
+    if (value.IsInvalid())
+    {
+        // Remove paint when set to empty
+        _paint.SetCapacity(0);
+#if WITH_CLOTH
+        if (_cloth)
+        {
+            PhysicsBackend::SetClothPaint(_cloth, value);
+        }
+#endif
+        return;
+    }
+#if !BUILD_RELEASE
+    {
+        // Sanity check
+        const float* src = value.Get();
+        bool allValid = true;
+        for (int32 i = 0; i < value.Length(); i++)
+            allValid &= !isnan(src[i]) && !isinf(src[i]);
+        ASSERT(allValid);
+    }
+#endif
+    _paint.Set(value.Get(), value.Length());
+#if WITH_CLOTH
+    if (_cloth)
+    {
+        // Update cloth particles
+        Array<float> invMasses;
+        CalculateInvMasses(invMasses);
+        PhysicsBackend::LockClothParticles(_cloth);
+        PhysicsBackend::SetClothParticles(_cloth, Span<const Float4>(), Span<const Float3>(), ToSpan<float, const float>(invMasses));
+        PhysicsBackend::UnlockClothParticles(_cloth);
+        PhysicsBackend::SetClothPaint(_cloth, value);
+    }
+#endif
+}
+
+bool Cloth::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
+{
+#if USE_PRECISE_MESH_INTERSECTS
+    if (!Actor::IntersectsItself(ray, distance, normal))
+        return false;
+#if WITH_CLOTH
+    if (_cloth)
+    {
+        // Precise per-triangle intersection
+        const ModelInstanceActor::MeshReference mesh = GetMesh();
+        if (mesh.Actor == nullptr)
+            return false;
+        BytesContainer indicesData;
+        int32 indicesCount;
+        if (mesh.Actor->GetMeshData(mesh, MeshBufferType::Index, indicesData, indicesCount))
+            return false;
+        PhysicsBackend::LockClothParticles(_cloth);
+        const Span<const Float4> particles = PhysicsBackend::GetClothParticles(_cloth);
+        const Transform transform = GetTransform();
+        const bool indices16bit = indicesData.Length() / indicesCount == sizeof(uint16);
+        const int32 trianglesCount = indicesCount / 3;
+        bool result = false;
+        distance = MAX_Real;
+        for (int32 triangleIndex = 0; triangleIndex < trianglesCount; triangleIndex++)
+        {
+            const int32 index = triangleIndex * 3;
+            int32 i0, i1, i2;
+            if (indices16bit)
+            {
+                i0 = indicesData.Get<uint16>()[index];
+                i1 = indicesData.Get<uint16>()[index + 1];
+                i2 = indicesData.Get<uint16>()[index + 2];
+            }
+            else
+            {
+                i0 = indicesData.Get<uint32>()[index];
+                i1 = indicesData.Get<uint32>()[index + 1];
+                i2 = indicesData.Get<uint32>()[index + 2];
+            }
+            const Vector3 v0 = transform.LocalToWorld(Vector3(particles[i0]));
+            const Vector3 v1 = transform.LocalToWorld(Vector3(particles[i1]));
+            const Vector3 v2 = transform.LocalToWorld(Vector3(particles[i2]));
+            Real d;
+            if (CollisionsHelper::RayIntersectsTriangle(ray, v0, v1, v2, d) && d < distance)
+            {
+                result = true;
+                normal = Vector3::Normalize((v1 - v0) ^ (v2 - v0));
+                distance = d;
+
+                // Flip normal if needed as cloth is two-sided
+                const Vector3 hitPos = ray.GetPoint(d);
+                if (Vector3::DistanceSquared(hitPos + normal, ray.Position) > Math::Square(d))
+                    normal = -normal;
+            }
+        }
+        PhysicsBackend::UnlockClothParticles(_cloth);
+        return result;
+    }
+#endif
+    return false;
+#else
+    return Actor::IntersectsItself(ray, distance, normal);
+#endif
+}
+
 void Cloth::Serialize(SerializeStream& stream, const void* otherObj)
 {
     Actor::Serialize(stream, otherObj);
@@ -120,6 +275,12 @@ void Cloth::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(Collision, _collisionSettings);
     SERIALIZE_MEMBER(Simulation, _simulationSettings);
     SERIALIZE_MEMBER(Fabric, _fabricSettings);
+    if (Serialization::ShouldSerialize(_paint, other ? &other->_paint : nullptr))
+    {
+        // Serialize as Base64
+        stream.JKEY("Paint");
+        stream.Blob(_paint.Get(), _paint.Count() * sizeof(float));
+    }
 }
 
 void Cloth::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -132,24 +293,29 @@ void Cloth::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     DESERIALIZE_MEMBER(Collision, _collisionSettings);
     DESERIALIZE_MEMBER(Simulation, _simulationSettings);
     DESERIALIZE_MEMBER(Fabric, _fabricSettings);
+    DESERIALIZE_MEMBER(Paint, _paint);
+
+    // Refresh cloth when settings were changed
+    if (IsDuringPlay())
+        Rebuild();
 }
 
 #if USE_EDITOR
 
 void Cloth::DrawPhysicsDebug(RenderView& view)
 {
-#if WITH_CLOTH
+#if WITH_CLOTH && COMPILE_WITH_DEBUG_DRAW
     if (_cloth)
     {
         const ModelInstanceActor::MeshReference mesh = GetMesh();
         if (mesh.Actor == nullptr)
             return;
         BytesContainer indicesData;
-        int32 indicesCount = 0;
+        int32 indicesCount;
         if (mesh.Actor->GetMeshData(mesh, MeshBufferType::Index, indicesData, indicesCount))
             return;
         PhysicsBackend::LockClothParticles(_cloth);
-        const Span<const Float4> particles = PhysicsBackend::GetClothCurrentParticles(_cloth);
+        const Span<const Float4> particles = PhysicsBackend::GetClothParticles(_cloth);
         const Transform transform = GetTransform();
         const bool indices16bit = indicesData.Length() / indicesCount == sizeof(uint16);
         const int32 trianglesCount = indicesCount / 3;
@@ -172,7 +338,6 @@ void Cloth::DrawPhysicsDebug(RenderView& view)
             const Vector3 v0 = transform.LocalToWorld(Vector3(particles[i0]));
             const Vector3 v1 = transform.LocalToWorld(Vector3(particles[i1]));
             const Vector3 v2 = transform.LocalToWorld(Vector3(particles[i2]));
-            // TODO: highlight immovable cloth particles with a different color
             DEBUG_DRAW_TRIANGLE(v0, v1, v2, Color::Pink, 0, true);
         }
         PhysicsBackend::UnlockClothParticles(_cloth);
@@ -182,7 +347,7 @@ void Cloth::DrawPhysicsDebug(RenderView& view)
 
 void Cloth::OnDebugDrawSelected()
 {
-#if WITH_CLOTH
+#if WITH_CLOTH && COMPILE_WITH_DEBUG_DRAW
     if (_cloth)
     {
         DEBUG_DRAW_WIRE_BOX(_box, Color::Violet.RGBMultiplied(0.8f), 0, true);
@@ -190,11 +355,11 @@ void Cloth::OnDebugDrawSelected()
         if (mesh.Actor == nullptr)
             return;
         BytesContainer indicesData;
-        int32 indicesCount = 0;
+        int32 indicesCount;
         if (mesh.Actor->GetMeshData(mesh, MeshBufferType::Index, indicesData, indicesCount))
             return;
         PhysicsBackend::LockClothParticles(_cloth);
-        const Span<const Float4> particles = PhysicsBackend::GetClothCurrentParticles(_cloth);
+        const Span<const Float4> particles = PhysicsBackend::GetClothParticles(_cloth);
         const Transform transform = GetTransform();
         const bool indices16bit = indicesData.Length() / indicesCount == sizeof(uint16);
         const int32 trianglesCount = indicesCount / 3;
@@ -217,10 +382,16 @@ void Cloth::OnDebugDrawSelected()
             const Vector3 v0 = transform.LocalToWorld(Vector3(particles[i0]));
             const Vector3 v1 = transform.LocalToWorld(Vector3(particles[i1]));
             const Vector3 v2 = transform.LocalToWorld(Vector3(particles[i2]));
-            // TODO: highlight immovable cloth particles with a different color
-            DEBUG_DRAW_LINE(v0, v1, Color::White, 0, false);
-            DEBUG_DRAW_LINE(v1, v2, Color::White, 0, false);
-            DEBUG_DRAW_LINE(v2, v0, Color::White, 0, false);
+            Color c0 = Color::White, c1 = Color::White, c2 = Color::White;
+            if (_paint.Count() == particles.Length())
+            {
+                c0 = Color::Lerp(Color::Red, Color::White, _paint[i0]);
+                c1 = Color::Lerp(Color::Red, Color::White, _paint[i1]);
+                c2 = Color::Lerp(Color::Red, Color::White, _paint[i2]);
+            }
+            DebugDraw::DrawLine(v0, v1, c0, c1, 0, false);
+            DebugDraw::DrawLine(v1, v2, c1, c2, 0, false);
+            DebugDraw::DrawLine(v2, v0, c2, c0, 0, false);
         }
         PhysicsBackend::UnlockClothParticles(_cloth);
     }
@@ -233,10 +404,11 @@ void Cloth::OnDebugDrawSelected()
 
 void Cloth::BeginPlay(SceneBeginData* data)
 {
+#if WITH_CLOTH
     if (CreateCloth())
-    {
         LOG(Error, "Failed to create cloth '{0}'", GetNamePath());
-    }
+
+#endif
 
     Actor::BeginPlay(data);
 }
@@ -245,10 +417,10 @@ void Cloth::EndPlay()
 {
     Actor::EndPlay();
 
+#if WITH_CLOTH
     if (_cloth)
-    {
         DestroyCloth();
-    }
+#endif
 }
 
 void Cloth::OnEnable()
@@ -258,9 +430,7 @@ void Cloth::OnEnable()
 #endif
 #if WITH_CLOTH
     if (_cloth)
-    {
         PhysicsBackend::AddCloth(GetPhysicsScene()->GetPhysicsScene(), _cloth);
-    }
 #endif
 
     Actor::OnEnable();
@@ -272,9 +442,7 @@ void Cloth::OnDisable()
 
 #if WITH_CLOTH
     if (_cloth)
-    {
         PhysicsBackend::RemoveCloth(GetPhysicsScene()->GetPhysicsScene(), _cloth);
-    }
 #endif
 #if USE_EDITOR
     GetSceneRendering()->RemovePhysicsDebug<Cloth, &Cloth::DrawPhysicsDebug>(this);
@@ -347,6 +515,12 @@ bool Cloth::CreateCloth()
     desc.IndicesData = data.Get();
     desc.IndicesCount = count;
     desc.IndicesStride = data.Length() / count;
+    Array<float> invMasses;
+    CalculateInvMasses(invMasses);
+    desc.InvMassesData = invMasses.Count() == desc.VerticesCount ? invMasses.Get() : nullptr;
+    desc.InvMassesStride = sizeof(float);
+    desc.MaxDistancesData = _paint.Count() == desc.VerticesCount ? _paint.Get() : nullptr;
+    desc.MaxDistancesStride = sizeof(float);
 
     // Create cloth
     ASSERT(_cloth == nullptr);
@@ -389,6 +563,95 @@ void Cloth::DestroyCloth()
 #endif
 }
 
+void Cloth::CalculateInvMasses(Array<float>& invMasses)
+{
+    // Use per-particle max distance to evaluate which particles are immovable
+#if WITH_CLOTH
+    if (_paint.IsEmpty())
+        return;
+
+    // Get mesh data
+    const ModelInstanceActor::MeshReference mesh = GetMesh();
+    if (mesh.Actor == nullptr)
+        return;
+    BytesContainer verticesData;
+    int32 verticesCount;
+    if (mesh.Actor->GetMeshData(mesh, MeshBufferType::Vertex0, verticesData, verticesCount))
+        return;
+    BytesContainer indicesData;
+    int32 indicesCount;
+    if (mesh.Actor->GetMeshData(mesh, MeshBufferType::Index, indicesData, indicesCount))
+        return;
+    const int32 verticesStride = verticesData.Length() / verticesCount;
+    const bool indices16bit = indicesData.Length() / indicesCount == sizeof(uint16);
+    const int32 trianglesCount = indicesCount / 3;
+
+    // Sum triangle area for each influenced particle
+    invMasses.Resize(verticesCount);
+    for (int32 triangleIndex = 0; triangleIndex < trianglesCount; triangleIndex++)
+    {
+        const int32 index = triangleIndex * 3;
+        int32 i0, i1, i2;
+        if (indices16bit)
+        {
+            i0 = indicesData.Get<uint16>()[index];
+            i1 = indicesData.Get<uint16>()[index + 1];
+            i2 = indicesData.Get<uint16>()[index + 2];
+        }
+        else
+        {
+            i0 = indicesData.Get<uint32>()[index];
+            i1 = indicesData.Get<uint32>()[index + 1];
+            i2 = indicesData.Get<uint32>()[index + 2];
+        }
+#define GET_POS(i) *(Float3*)((byte*)verticesData.Get() + i * verticesStride)
+        const Float3 v0(GET_POS(i0));
+        const Float3 v1(GET_POS(i1));
+        const Float3 v2(GET_POS(i2));
+#undef GET_POS
+        const float area = Float3::TriangleArea(v0, v1, v2);
+        invMasses.Get()[i0] += area;
+        invMasses.Get()[i1] += area;
+        invMasses.Get()[i2] += area;
+    }
+
+    // Count fixed vertices which max movement distance is zero
+    int32 fixedCount = 0;
+    float massSum = 0;
+    for (int32 i = 0; i < verticesCount; i++)
+    {
+        float& mass = invMasses[i];
+        const float maxDistance = _paint[i];
+        if (maxDistance < 0.01f)
+        {
+            // Fixed
+            fixedCount++;
+            mass = 0.0f;
+        }
+        else
+        {
+            // Kinetic so include it's mass contribution
+            massSum += mass;
+        }
+    }
+
+    if (massSum > ZeroTolerance)
+    {
+        // Normalize and inverse particles mass
+        const float massScale = (float)(verticesCount - fixedCount) / massSum;
+        for (int32 i = 0; i < verticesCount; i++)
+        {
+            float& mass = invMasses[i];
+            if (mass > 0.0f)
+            {
+                mass *= massScale;
+                mass = 1.0f / mass;
+            }
+        }
+    }
+#endif
+}
+
 void Cloth::OnUpdated()
 {
     if (_meshDeformation)
@@ -410,7 +673,7 @@ void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformat
 #if WITH_CLOTH
     PROFILE_CPU_NAMED("Cloth");
     PhysicsBackend::LockClothParticles(_cloth);
-    const Span<const Float4> particles = PhysicsBackend::GetClothCurrentParticles(_cloth);
+    const Span<const Float4> particles = PhysicsBackend::GetClothParticles(_cloth);
 
     // Update mesh vertices based on the cloth particles positions
     auto vbData = deformation.VertexBuffer.Data.Get();
@@ -478,7 +741,7 @@ void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformat
     {
         for (uint32 i = 0; i < vbCount; i++)
         {
-            *((Float3*)vbData) = *(Float3*)&particles.Get()[i];
+            *(Float3*)vbData = *(Float3*)&particles.Get()[i];
             vbData += vbStride;
         }
     }

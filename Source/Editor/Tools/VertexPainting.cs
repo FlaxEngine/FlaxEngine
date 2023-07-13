@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using FlaxEditor.CustomEditors;
@@ -596,18 +597,12 @@ namespace FlaxEditor.Tools
         /// <inheritdoc />
         public override void Pick()
         {
-            // Get mouse ray and try to hit any object
             var ray = Owner.MouseRay;
             var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
             var rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.SkipColliders | SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives;
-            var hit = Editor.Instance.Scene.Root.RayCast(ref ray, ref view, out _, rayCastFlags);
-
-            // Update selection
-            var sceneEditing = Editor.Instance.SceneEditing;
+            var hit = Owner.SceneGraphRoot.RayCast(ref ray, ref view, out _, rayCastFlags);
             if (hit != null && hit is ActorNode actorNode && actorNode.Actor is StaticModel model)
-            {
-                sceneEditing.Select(hit);
-            }
+                Owner.Select(new List<SceneGraphNode> { hit });
         }
 
         /// <inheritdoc />

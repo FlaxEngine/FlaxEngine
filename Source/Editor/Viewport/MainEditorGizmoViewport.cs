@@ -1151,6 +1151,12 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
+        public override void Select(List<SceneGraphNode> nodes)
+        {
+            _editor.SceneEditing.Select(nodes);
+        }
+
+        /// <inheritdoc />
         public override void OnDestroy()
         {
             if (IsDisposing)

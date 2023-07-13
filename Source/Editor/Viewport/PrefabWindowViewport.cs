@@ -301,7 +301,7 @@ namespace FlaxEditor.Viewport
         /// </summary>
         public void ShowSelectedActors()
         {
-            var orient = Viewport.ViewOrientation;
+            var orient = ViewOrientation;
             ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orient);
         }
 
@@ -345,7 +345,10 @@ namespace FlaxEditor.Viewport
         public RootNode SceneGraphRoot => _window.Graph.Root;
 
         /// <inheritdoc />
-        public EditorViewport Viewport => this;
+        public void Select(List<SceneGraphNode> nodes)
+        {
+            _window.Select(nodes);
+        }
 
         /// <inheritdoc />
         protected override bool IsControllingMouse => Gizmos.Active?.IsControllingMouse ?? false;

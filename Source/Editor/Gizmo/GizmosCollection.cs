@@ -75,6 +75,10 @@ namespace FlaxEditor.Gizmo
         /// </summary>
         public event Action<EditorGizmoMode> ActiveModeChanged;
 
+        /// <summary>
+        /// Init.
+        /// </summary>
+        /// <param name="owner">The gizmos owner interface.</param>
         public GizmosCollection(IGizmoOwner owner)
         {
             _owner = owner;

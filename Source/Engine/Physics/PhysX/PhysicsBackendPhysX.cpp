@@ -129,7 +129,7 @@ public:
     }
 };
 
-class ProfilerPhysX : public physx::PxProfilerCallback
+class ProfilerPhysX : public PxProfilerCallback
 {
 public:
     void* zoneStart(const char* eventName, bool detached, uint64_t contextId) override
@@ -162,6 +162,7 @@ struct ClothSettings
         const PxVec3& clothBoundsSize = clothPhysX->getBoundingBoxScale();
         BoundingBox localBounds;
         BoundingBox::FromPoints(P2C(clothBoundsPos - clothBoundsSize), P2C(clothBoundsPos + clothBoundsSize), localBounds);
+        CHECK(!localBounds.Minimum.IsNanOrInfinity() && !localBounds.Maximum.IsNanOrInfinity());
 
         // Transform local-space bounds into world-space
         const PxTransform clothPose(clothPhysX->getTranslation(), clothPhysX->getRotation());
@@ -3340,12 +3341,14 @@ void* PhysicsBackend::CreateCloth(const PhysicsClothDesc& desc)
     meshDesc.points.data = desc.VerticesData;
     meshDesc.points.stride = desc.VerticesStride;
     meshDesc.points.count = desc.VerticesCount;
+    meshDesc.invMasses.data = desc.InvMassesData;
+    meshDesc.invMasses.stride = desc.InvMassesStride;
+    meshDesc.invMasses.count = desc.InvMassesData ? desc.VerticesCount : 0;
     meshDesc.triangles.data = desc.IndicesData;
     meshDesc.triangles.stride = desc.IndicesStride * 3;
     meshDesc.triangles.count = desc.IndicesCount / 3;
     if (desc.IndicesStride == sizeof(uint16))
         meshDesc.flags |= nv::cloth::MeshFlag::e16_BIT_INDICES;
-    // TODO: provide invMasses data
     const Float3 gravity(PhysicsSettings::Get()->DefaultGravity);
     nv::cloth::Vector<int32_t>::Type phaseTypeInfo;
     // TODO: automatically reuse fabric from existing cloths (simply check for input data used for computations to improve perf when duplicating cloths or with prefab)
@@ -3359,10 +3362,17 @@ void* PhysicsBackend::CreateCloth(const PhysicsClothDesc& desc)
     // Create cloth object
     static_assert(sizeof(Float4) == sizeof(PxVec4), "Size mismatch");
     Array<Float4> initialState;
-    // TODO: provide initial state for cloth from the owner (eg. current skinned mesh position)
     initialState.Resize((int32)desc.VerticesCount);
-    for (uint32 i = 0; i < desc.VerticesCount; i++)
-        initialState.Get()[i] = Float4(*(Float3*)((byte*)desc.VerticesData + i * desc.VerticesStride), 1.0f); // TODO: set .w to invMass of that vertex
+    if (desc.InvMassesData)
+    {
+        for (uint32 i = 0; i < desc.VerticesCount; i++)
+            initialState.Get()[i] = Float4(*(Float3*)((byte*)desc.VerticesData + i * desc.VerticesStride), *(float*)((byte*)desc.InvMassesData + i * desc.InvMassesStride));
+    }
+    else
+    {
+        for (uint32 i = 0; i < desc.VerticesCount; i++)
+            initialState.Get()[i] = Float4(*(Float3*)((byte*)desc.VerticesData + i * desc.VerticesStride), 1.0f);
+    }
     const nv::cloth::Range<PxVec4> initialParticlesRange((PxVec4*)initialState.Get(), (PxVec4*)initialState.Get() + initialState.Count());
     nv::cloth::Cloth* clothPhysX = ClothFactory->createCloth(initialParticlesRange, *fabric);
     fabric->decRefCount();
@@ -3371,6 +3381,14 @@ void* PhysicsBackend::CreateCloth(const PhysicsClothDesc& desc)
         LOG(Error, "createCloth failed");
         return nullptr;
     }
+    if (desc.MaxDistancesData)
+    {
+        nv::cloth::Range<PxVec4> motionConstraints = clothPhysX->getMotionConstraints();
+        ASSERT(motionConstraints.size() == desc.VerticesCount);
+        for (uint32 i = 0; i < desc.VerticesCount; i++)
+            motionConstraints.begin()[i] = PxVec4(*(PxVec3*)((byte*)desc.VerticesData + i * desc.VerticesStride), *(float*)((byte*)desc.MaxDistancesData + i * desc.MaxDistancesStride));
+    }
+    clothPhysX->setUserData(desc.Actor);
 
     // Setup settings
     FabricSettings fabricSettings;
@@ -3438,6 +3456,7 @@ void PhysicsBackend::SetClothSimulationSettings(void* cloth, const void* setting
     auto clothPhysX = (nv::cloth::Cloth*)cloth;
     const auto& settings = *(const Cloth::SimulationSettings*)settingsPtr;
     clothPhysX->setSolverFrequency(settings.SolverFrequency);
+    clothPhysX->setMotionConstraintScaleBias(settings.MaxDistance, 0.0f);
     clothPhysX->setWindVelocity(C2P(settings.WindVelocity));
 }
 
@@ -3510,11 +3529,63 @@ void PhysicsBackend::UnlockClothParticles(void* cloth)
     clothPhysX->unlockParticles();
 }
 
-Span<const Float4> PhysicsBackend::GetClothCurrentParticles(void* cloth)
+Span<const Float4> PhysicsBackend::GetClothParticles(void* cloth)
 {
     auto clothPhysX = (const nv::cloth::Cloth*)cloth;
     const nv::cloth::MappedRange<const PxVec4> range = clothPhysX->getCurrentParticles();
     return Span<const Float4>((const Float4*)range.begin(), (int32)range.size());
+}
+
+void PhysicsBackend::SetClothParticles(void* cloth, Span<const Float4> value, Span<const Float3> positions, Span<const float> invMasses)
+{
+    auto clothPhysX = (nv::cloth::Cloth*)cloth;
+    nv::cloth::MappedRange<PxVec4> range = clothPhysX->getCurrentParticles();
+    const uint32_t size = range.size();
+    PxVec4* dst = range.begin();
+    if (value.IsValid())
+    {
+        // Set XYZW
+        CHECK((uint32_t)value.Length() >= size);
+        Platform::MemoryCopy(dst, value.Get(), size * sizeof(Float4));
+    }
+    if (positions.IsValid())
+    {
+        // Set XYZ
+        CHECK((uint32_t)positions.Length() >= size);
+        const Float3* src = positions.Get();
+        for (uint32 i = 0; i < size; i++)
+            dst[i] = PxVec4(C2P(src[i]), dst[i].w);
+    }
+    if (invMasses.IsValid())
+    {
+        // Set W
+        CHECK((uint32_t)invMasses.Length() >= size);
+        const float* src = invMasses.Get();
+        for (uint32 i = 0; i < size; i++)
+            dst[i].w = src[i];
+
+        // Apply previous particles too
+        nv::cloth::MappedRange<PxVec4> range2 = clothPhysX->getPreviousParticles();
+        for (uint32 i = 0; i < size; i++)
+            range2.begin()[i].w = src[i];
+    }
+}
+
+void PhysicsBackend::SetClothPaint(void* cloth, Span<const float> value)
+{
+    auto clothPhysX = (nv::cloth::Cloth*)cloth;
+    if (value.IsValid())
+    {
+        const nv::cloth::MappedRange<const PxVec4> range = ((const nv::cloth::Cloth*)clothPhysX)->getCurrentParticles();
+        nv::cloth::Range<PxVec4> motionConstraints = clothPhysX->getMotionConstraints();
+        ASSERT(motionConstraints.size() <= (uint32)value.Length());
+        for (int32 i = 0; i < value.Length(); i++)
+            motionConstraints.begin()[i] = PxVec4(range[i].getXYZ(), value[i]);
+    }
+    else
+    {
+        clothPhysX->clearMotionConstraints();
+    }
 }
 
 void PhysicsBackend::AddCloth(void* scene, void* cloth)
