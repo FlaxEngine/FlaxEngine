@@ -133,7 +133,7 @@ Array<Float3> Cloth::GetParticles() const
 void Cloth::SetParticles(Span<const Float3> value)
 {
     PROFILE_CPU();
-#if !BUILD_RELEASE
+#if USE_CLOTH_SANITY_CHECKS
     {
         // Sanity check
         const Float3* src = value.Get();
@@ -162,6 +162,16 @@ Span<float> Cloth::GetPaint() const
 void Cloth::SetPaint(Span<const float> value)
 {
     PROFILE_CPU();
+#if USE_CLOTH_SANITY_CHECKS
+    {
+        // Sanity check
+        const float* src = value.Get();
+        bool allValid = true;
+        for (int32 i = 0; i < value.Length(); i++)
+            allValid &= !isnan(src[i]) && !isinf(src[i]);
+        ASSERT(allValid);
+    }
+#endif
     if (value.IsInvalid())
     {
         // Remove paint when set to empty
@@ -174,16 +184,6 @@ void Cloth::SetPaint(Span<const float> value)
 #endif
         return;
     }
-#if !BUILD_RELEASE
-    {
-        // Sanity check
-        const float* src = value.Get();
-        bool allValid = true;
-        for (int32 i = 0; i < value.Length(); i++)
-            allValid &= !isnan(src[i]) && !isinf(src[i]);
-        ASSERT(allValid);
-    }
-#endif
     _paint.Set(value.Get(), value.Length());
 #if WITH_CLOTH
     if (_cloth)
@@ -294,6 +294,17 @@ void Cloth::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     DESERIALIZE_MEMBER(Simulation, _simulationSettings);
     DESERIALIZE_MEMBER(Fabric, _fabricSettings);
     DESERIALIZE_MEMBER(Paint, _paint);
+
+#if USE_CLOTH_SANITY_CHECKS
+    {
+        // Sanity check
+        const float* data = _paint.Get();
+        bool allValid = true;
+        for (int32 i = 0; i < _paint.Count(); i++)
+            allValid &= !isnan(data[i]) && !isinf(data[i]);
+        ASSERT(allValid);
+    }
+#endif
 
     // Refresh cloth when settings were changed
     if (IsDuringPlay())
@@ -588,6 +599,7 @@ void Cloth::CalculateInvMasses(Array<float>& invMasses)
 
     // Sum triangle area for each influenced particle
     invMasses.Resize(verticesCount);
+    invMasses.SetAll(0.0f);
     for (int32 triangleIndex = 0; triangleIndex < trianglesCount; triangleIndex++)
     {
         const int32 index = triangleIndex * 3;
@@ -621,6 +633,10 @@ void Cloth::CalculateInvMasses(Array<float>& invMasses)
     for (int32 i = 0; i < verticesCount; i++)
     {
         float& mass = invMasses[i];
+#if USE_CLOTH_SANITY_CHECKS
+        // Sanity check
+        ASSERT(!isnan(mass) && !isinf(mass) && mass >= 0.0f);
+#endif
         const float maxDistance = _paint[i];
         if (maxDistance < 0.01f)
         {
@@ -649,6 +665,17 @@ void Cloth::CalculateInvMasses(Array<float>& invMasses)
             }
         }
     }
+
+#if USE_CLOTH_SANITY_CHECKS
+    {
+        // Sanity check
+        const float* data = invMasses.Get();
+        bool allValid = true;
+        for (int32 i = 0; i < invMasses.Count(); i++)
+            allValid &= !isnan(data[i]) && !isinf(data[i]);
+        ASSERT(allValid);
+    }
+#endif
 #endif
 }
 

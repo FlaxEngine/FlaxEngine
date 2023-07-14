@@ -3328,6 +3328,32 @@ void PhysicsBackend::RemoveVehicle(void* scene, WheeledVehicle* actor)
 
 void* PhysicsBackend::CreateCloth(const PhysicsClothDesc& desc)
 {
+#if USE_CLOTH_SANITY_CHECKS
+    {
+        // Sanity check
+        bool allValid = true;
+        for (int32 i = 0; i < desc.VerticesCount; i++)
+            allValid &= !(*(Float3*)((byte*)desc.VerticesData + i * desc.VerticesStride)).IsNanOrInfinity();
+        if (desc.InvMassesData)
+        {
+            for (int32 i = 0; i < desc.VerticesCount; i++)
+            {
+                float v = *(float*)((byte*)desc.InvMassesData + i * desc.InvMassesStride);
+                allValid &= !isnan(v) && !isinf(v);
+            }
+        }
+        if (desc.MaxDistancesData)
+        {
+            for (int32 i = 0; i < desc.VerticesCount; i++)
+            {
+                float v = *(float*)((byte*)desc.MaxDistancesData + i * desc.MaxDistancesStride);
+                allValid &= !isnan(v) && !isinf(v);
+            }
+        }
+        ASSERT(allValid);
+    }
+#endif
+
     // Lazy-init NvCloth
     if (ClothFactory == nullptr)
     {
