@@ -847,6 +847,9 @@ namespace Flax.Build.Bindings
                 case "hidden":
                     desc.IsHidden = true;
                     break;
+                case "sealed":
+                    desc.IsVirtual = false;
+                    break;
                 case "tag":
                     ParseTag(ref desc.Tags, tag);
                     break;
