@@ -222,6 +222,16 @@ namespace FlaxEngine.Tools
             {
                 // Cursor hit other object or nothing
                 PaintEnd();
+
+                if (Owner.IsLeftMouseButtonDown)
+                {
+                    // Select something else
+                    var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
+                    var rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.SkipColliders | SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives;
+                    var hit = Owner.SceneGraphRoot.RayCast(ref ray, ref view, out _, rayCastFlags);
+                    if (hit != null && hit is ActorNode)
+                        Owner.Select(new List<SceneGraphNode> { hit });
+                }
                 return;
             }
 
@@ -232,16 +242,6 @@ namespace FlaxEngine.Tools
                 PaintEnd();
             if (IsPainting)
                 PaintUpdate();
-        }
-
-        public override void Pick()
-        {
-            var ray = Owner.MouseRay;
-            var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
-            var rayCastFlags = SceneGraphNode.RayCastData.FlagTypes.SkipColliders | SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives;
-            var hit = Owner.SceneGraphRoot.RayCast(ref ray, ref view, out _, rayCastFlags);
-            if (hit != null && hit is ActorNode)
-                Owner.Select(new List<SceneGraphNode> { hit });
         }
 
         public override void Draw(ref RenderContext renderContext)
