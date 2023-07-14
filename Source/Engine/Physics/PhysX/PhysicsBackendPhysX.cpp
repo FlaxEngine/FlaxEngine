@@ -3332,21 +3332,21 @@ void* PhysicsBackend::CreateCloth(const PhysicsClothDesc& desc)
     {
         // Sanity check
         bool allValid = true;
-        for (int32 i = 0; i < desc.VerticesCount; i++)
+        for (uint32 i = 0; i < desc.VerticesCount; i++)
             allValid &= !(*(Float3*)((byte*)desc.VerticesData + i * desc.VerticesStride)).IsNanOrInfinity();
         if (desc.InvMassesData)
         {
-            for (int32 i = 0; i < desc.VerticesCount; i++)
+            for (uint32 i = 0; i < desc.VerticesCount; i++)
             {
-                float v = *(float*)((byte*)desc.InvMassesData + i * desc.InvMassesStride);
+                const float v = *(float*)((byte*)desc.InvMassesData + i * desc.InvMassesStride);
                 allValid &= !isnan(v) && !isinf(v);
             }
         }
         if (desc.MaxDistancesData)
         {
-            for (int32 i = 0; i < desc.VerticesCount; i++)
+            for (uint32 i = 0; i < desc.VerticesCount; i++)
             {
-                float v = *(float*)((byte*)desc.MaxDistancesData + i * desc.MaxDistancesStride);
+                const float v = *(float*)((byte*)desc.MaxDistancesData + i * desc.MaxDistancesStride);
                 allValid &= !isnan(v) && !isinf(v);
             }
         }

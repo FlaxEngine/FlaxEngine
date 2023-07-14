@@ -507,6 +507,16 @@ bool Cloth::CreateCloth()
 #if WITH_CLOTH
     PROFILE_CPU();
 
+    // Skip if all vertices are fixed so cloth sim doesn't make sense
+    if (_paint.HasItems())
+    {
+        bool allZero = true;
+        for (int32 i = 0; i < _paint.Count() && allZero; i++)
+            allZero = _paint[i] <= ZeroTolerance;
+        if (allZero)
+            return false;
+    }
+
     // Get mesh data
     // TODO: consider making it via async task so physics can wait on the cloth setup from mesh data just before next fixed update which gives more time when loading scene
     const ModelInstanceActor::MeshReference mesh = GetMesh();
