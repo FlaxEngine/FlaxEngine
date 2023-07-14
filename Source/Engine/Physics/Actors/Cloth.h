@@ -62,12 +62,12 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Cloth\"), ActorToolbox(\"Ph
         /// <summary>
         /// Defines how much drag air applies to the cloth particles. Set to 0 to disable wind.
         /// </summary>
-        API_FIELD(Attributes="Limit(0, 1)") float AirDragCoefficient = 0.0f;
+        API_FIELD(Attributes="Limit(0, 1)") float AirDragCoefficient = 0.02f;
 
         /// <summary>
         /// Defines how much lift air applies to the cloth particles. Set to 0 to disable wind.
         /// </summary>
-        API_FIELD(Attributes="Limit(0, 1)") float AirLiftCoefficient = 0.0f;
+        API_FIELD(Attributes="Limit(0, 1)") float AirLiftCoefficient = 0.02f;
 
         /// <summary>
         /// Defines fluid density of air used for drag and lift calculations.

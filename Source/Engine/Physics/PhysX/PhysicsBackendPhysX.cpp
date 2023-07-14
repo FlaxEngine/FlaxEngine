@@ -3450,8 +3450,8 @@ void PhysicsBackend::SetClothForceSettings(void* cloth, const void* settingsPtr)
     clothPhysX->setLinearInertia(PxVec3(settings.LinearInertia));
     clothPhysX->setAngularInertia(PxVec3(settings.AngularInertia));
     clothPhysX->setCentrifugalInertia(PxVec3(settings.CentrifugalInertia));
-    clothPhysX->setDragCoefficient(Math::Saturate(settings.AirDragCoefficient));
-    clothPhysX->setLiftCoefficient(Math::Saturate(settings.AirLiftCoefficient));
+    clothPhysX->setDragCoefficient(Math::Saturate(settings.AirDragCoefficient) * 0.01f);
+    clothPhysX->setLiftCoefficient(Math::Saturate(settings.AirLiftCoefficient) * 0.01f);
     clothPhysX->setFluidDensity(Math::Max(settings.AirDensity, ZeroTolerance));
     auto& clothSettings = Cloths[clothPhysX];
     clothSettings.GravityScale = settings.GravityScale;
