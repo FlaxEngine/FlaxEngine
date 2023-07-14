@@ -121,7 +121,7 @@ public:
     /// <param name="meshIndex">The zero-based mesh index.</param>
     /// <param name="lodIndex">The LOD index.</param>
     /// <returns>Material or null if not assigned.</returns>
-    API_FUNCTION() MaterialBase* GetMaterial(int32 meshIndex, int32 lodIndex = 0) const;
+    API_FUNCTION() MaterialBase* GetMaterial(int32 meshIndex, int32 lodIndex) const;
 
     /// <summary>
     /// Gets the color of the painter vertex (this model instance).
@@ -166,6 +166,7 @@ public:
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
+    MaterialBase* GetMaterial(int32 entryIndex) override;
     bool IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal) override;
     bool IntersectsEntry(const Ray& ray, Real& distance, Vector3& normal, int32& entryIndex) override;
 

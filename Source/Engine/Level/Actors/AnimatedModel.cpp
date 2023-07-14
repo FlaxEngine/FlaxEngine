@@ -898,6 +898,23 @@ void AnimatedModel::Deserialize(DeserializeStream& stream, ISerializeModifier* m
         DrawModes |= DrawPass::GlobalSurfaceAtlas;
 }
 
+MaterialBase* AnimatedModel::GetMaterial(int32 entryIndex)
+{
+    if (SkinnedModel)
+        SkinnedModel->WaitForLoaded();
+    else
+        return nullptr;
+    CHECK_RETURN(entryIndex >= 0 && entryIndex < Entries.Count(), nullptr);
+    MaterialBase* material = Entries[entryIndex].Material.Get();
+    if (!material)
+    {
+        material = SkinnedModel->MaterialSlots[entryIndex].Material.Get();
+        if (!material)
+            material = GPUDevice::Instance->GetDefaultMaterial();
+    }
+    return material;
+}
+
 bool AnimatedModel::IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal)
 {
     auto model = SkinnedModel.Get();
