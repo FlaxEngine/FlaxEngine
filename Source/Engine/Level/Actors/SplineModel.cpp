@@ -341,6 +341,23 @@ void SplineModel::OnParentChanged()
     OnSplineUpdated();
 }
 
+MaterialBase* SplineModel::GetMaterial(int32 entryIndex)
+{
+    if (Model)
+        Model->WaitForLoaded();
+    else
+        return nullptr;
+    CHECK_RETURN(entryIndex >= 0 && entryIndex < Entries.Count(), nullptr);
+    MaterialBase* material = Entries[entryIndex].Material.Get();
+    if (!material)
+    {
+        material = Model->MaterialSlots[entryIndex].Material.Get();
+        if (!material)
+            material = GPUDevice::Instance->GetDefaultDeformableMaterial();
+    }
+    return material;
+}
+
 void SplineModel::UpdateBounds()
 {
     OnSplineUpdated();

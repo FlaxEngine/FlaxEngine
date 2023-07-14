@@ -217,6 +217,7 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
     const float animPrevPos = GetAnimSamplePos(length, anim, prevPos, speed);
 
     // Evaluate nested animations
+    bool hasNested = false;
     if (anim->NestedAnims.Count() != 0)
     {
         for (auto& e : anim->NestedAnims)
@@ -239,6 +240,7 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
                 GetAnimSamplePos(nestedAnim.Loop, nestedAnimLength, nestedAnim.StartTime, nestedAnimPrevPos, nestedAnimPos, nestedAnimPos, nestedAnimPrevPos);
 
                 ProcessAnimation(nodes, node, true, nestedAnimLength, nestedAnimPos, nestedAnimPrevPos, nestedAnim.Anim, 1.0f, weight, mode);
+                hasNested = true;
             }
         }
     }
@@ -291,7 +293,7 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
             dstNode.Scale = srcNode.Scale * weight;
             dstNode.Orientation = srcNode.Orientation * weight;
         }
-        else
+        else if (!hasNested)
         {
             dstNode = srcNode;
         }
