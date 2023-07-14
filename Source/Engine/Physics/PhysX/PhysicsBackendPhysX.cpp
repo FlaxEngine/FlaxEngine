@@ -1436,6 +1436,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
             {
                 auto clothPhysX = (nv::cloth::Cloth*)cloths[i];
                 const auto& clothSettings = Cloths[clothPhysX];
+                clothSettings.Actor->OnPreUpdate();
 
                 // Setup automatic scene collisions with colliders around the cloth
                 if (clothSettings.SceneCollisions)
@@ -1609,7 +1610,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                 auto clothPhysX = (nv::cloth::Cloth*)cloths[i];
                 const auto& clothSettings = Cloths[clothPhysX];
                 clothSettings.UpdateBounds(clothPhysX);
-                clothSettings.Actor->OnUpdated();
+                clothSettings.Actor->OnPostUpdate();
             }
         }
     }
@@ -3572,7 +3573,16 @@ void PhysicsBackend::SetClothParticles(void* cloth, Span<const Float4> value, Sp
     {
         // Set XYZW
         CHECK((uint32_t)value.Length() >= size);
-        Platform::MemoryCopy(dst, value.Get(), size * sizeof(Float4));
+        const Float4* src = value.Get();
+        Platform::MemoryCopy(dst, src, size * sizeof(Float4));
+
+        // Apply previous particles too for immovable particles
+        nv::cloth::MappedRange<PxVec4> range2 = clothPhysX->getPreviousParticles();
+        for (uint32 i = 0; i < size; i++)
+        {
+            if (src[i].W <= ZeroTolerance)
+                range2.begin()[i] = (PxVec4&)src[i];
+        }
     }
     if (positions.IsValid())
     {

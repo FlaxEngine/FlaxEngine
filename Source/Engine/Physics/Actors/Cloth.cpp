@@ -193,8 +193,8 @@ void Cloth::SetPaint(Span<const float> value)
         CalculateInvMasses(invMasses);
         PhysicsBackend::LockClothParticles(_cloth);
         PhysicsBackend::SetClothParticles(_cloth, Span<const Float4>(), Span<const Float3>(), ToSpan<float, const float>(invMasses));
-        PhysicsBackend::UnlockClothParticles(_cloth);
         PhysicsBackend::SetClothPaint(_cloth, value);
+        PhysicsBackend::UnlockClothParticles(_cloth);
     }
 #endif
 }
@@ -345,6 +345,11 @@ void Cloth::DrawPhysicsDebug(RenderView& view)
                 i0 = indicesData.Get<uint32>()[index];
                 i1 = indicesData.Get<uint32>()[index + 1];
                 i2 = indicesData.Get<uint32>()[index + 2];
+            }
+            if (_paint.Count() == particles.Length())
+            {
+                if (Math::Max(_paint[i0], _paint[i1], _paint[i2]) < ZeroTolerance)
+                    continue;
             }
             const Vector3 v0 = transform.LocalToWorld(Vector3(particles[i0]));
             const Vector3 v1 = transform.LocalToWorld(Vector3(particles[i1]));
@@ -609,7 +614,7 @@ void Cloth::CalculateInvMasses(Array<float>& invMasses)
 
     // Sum triangle area for each influenced particle
     invMasses.Resize(verticesCount);
-    invMasses.SetAll(0.0f);
+    Platform::MemoryClear(invMasses.Get(), verticesCount * sizeof(float));
     for (int32 triangleIndex = 0; triangleIndex < trianglesCount; triangleIndex++)
     {
         const int32 index = triangleIndex * 3;
@@ -689,7 +694,92 @@ void Cloth::CalculateInvMasses(Array<float>& invMasses)
 #endif
 }
 
-void Cloth::OnUpdated()
+void Cloth::OnPreUpdate()
+{
+    // Get current skinned mesh pose for the simulation of the non-kinematic vertices
+    if (auto* animatedModel = Cast<AnimatedModel>(GetParent()))
+    {
+        if (animatedModel->GraphInstance.NodesPose.IsEmpty() || _paint.IsEmpty())
+            return;
+        const ModelInstanceActor::MeshReference mesh = GetMesh();
+        if (mesh.Actor == nullptr)
+            return;
+        BytesContainer verticesData;
+        int32 verticesCount;
+        if (mesh.Actor->GetMeshData(mesh, MeshBufferType::Vertex0, verticesData, verticesCount))
+            return;
+        auto vbStride = (uint32)verticesData.Length() / verticesCount;
+        ASSERT(vbStride == sizeof(VB0SkinnedElementType));
+        PhysicsBackend::LockClothParticles(_cloth);
+        const Span<const Float4> particles = PhysicsBackend::GetClothParticles(_cloth);
+        // TODO: optimize memory allocs (eg. write directly to nvCloth mapped range or use shared allocator)
+        Array<Float4> particlesSkinned;
+        particlesSkinned.Set(particles.Get(), particles.Length());
+
+        // TODO: optimize memory allocs (eg. get pose as Span<Matrix> for readonly)
+        Array<Matrix> pose;
+        animatedModel->GetCurrentPose(pose);
+        const SkeletonData& skeleton = animatedModel->SkinnedModel->Skeleton;
+
+        // Animated model uses skinning thus requires to set vertex position inverse to skeleton bones
+        const float* paint = _paint.Get();
+        bool anyFixed = false;
+        for (int32 i = 0; i < verticesCount; i++)
+        {
+            if (paint[i] > ZeroTolerance)
+                continue;
+            VB0SkinnedElementType& vb0 = verticesData.Get<VB0SkinnedElementType>()[i];
+
+            // Calculate skinned vertex matrix from bones blending
+            const Float4 blendWeights = vb0.BlendWeights.ToFloat4();
+            // TODO: optimize this or use _skinningData from AnimatedModel to access current mesh bones data directly
+            Matrix matrix;
+            const SkeletonBone& bone0 = skeleton.Bones[vb0.BlendIndices.R];
+            Matrix::Multiply(bone0.OffsetMatrix, pose[bone0.NodeIndex], matrix);
+            Matrix boneMatrix = matrix * blendWeights.X;
+            if (blendWeights.Y > 0.0f)
+            {
+                const SkeletonBone& bone1 = skeleton.Bones[vb0.BlendIndices.G];
+                Matrix::Multiply(bone1.OffsetMatrix, pose[bone1.NodeIndex], matrix);
+                boneMatrix += matrix * blendWeights.Y;
+            }
+            if (blendWeights.Z > 0.0f)
+            {
+                const SkeletonBone& bone2 = skeleton.Bones[vb0.BlendIndices.B];
+                Matrix::Multiply(bone2.OffsetMatrix, pose[bone2.NodeIndex], matrix);
+                boneMatrix += matrix * blendWeights.Z;
+            }
+            if (blendWeights.W > 0.0f)
+            {
+                const SkeletonBone& bone3 = skeleton.Bones[vb0.BlendIndices.A];
+                Matrix::Multiply(bone3.OffsetMatrix, pose[bone3.NodeIndex], matrix);
+                boneMatrix += matrix * blendWeights.W;
+            }
+
+            // Skin vertex position (similar to GPU vertex shader)
+            Float3 pos = Float3::Transform(vb0.Position, boneMatrix);
+
+            // Transform back to the cloth space
+            // TODO: skip when using identity?
+            pos = _localTransform.WorldToLocal(pos);
+
+            // Override fixed particle position
+            particlesSkinned[i] = Float4(pos, 0.0f);
+            anyFixed = true;
+        }
+
+        if (anyFixed)
+        {
+            // Update particles
+            PhysicsBackend::SetClothParticles(_cloth, ToSpan<Float4, const Float4>(particlesSkinned), Span<const Float3>(), Span<const float>());
+            PhysicsBackend::SetClothPaint(_cloth, ToSpan<float, const float>(_paint));
+        }
+
+        PhysicsBackend::UnlockClothParticles(_cloth);
+    }
+}
+
+void Cloth::OnPostUpdate()
 {
     if (_meshDeformation)
     {
@@ -722,7 +812,7 @@ void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformat
     {
         if (animatedModel->GraphInstance.NodesPose.IsEmpty())
         {
-            // Delay unit skinning data is ready
+            // Delay until skinning data is ready
             PhysicsBackend::UnlockClothParticles(_cloth);
             _meshDeformation->Dirty(_mesh.LODIndex, _mesh.MeshIndex, MeshBufferType::Vertex0);
             return;
@@ -735,9 +825,15 @@ void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformat
 
         // Animated model uses skinning thus requires to set vertex position inverse to skeleton bones
         ASSERT(vbStride == sizeof(VB0SkinnedElementType));
+        const float* paint = _paint.Count() >= particles.Length() ? _paint.Get() : nullptr;
         for (uint32 i = 0; i < vbCount; i++)
         {
             VB0SkinnedElementType& vb0 = *(VB0SkinnedElementType*)vbData;
+            vbData += vbStride;
+
+            // Skip fixed vertices
+            if (paint && paint[i] < ZeroTolerance)
+                continue;
 
             // Calculate skinned vertex matrix from bones blending
             const Float4 blendWeights = vb0.BlendWeights.ToFloat4();
@@ -770,14 +866,13 @@ void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformat
             Matrix::Invert(boneMatrix, boneMatrixInv);
             Float3 pos = *(Float3*)&particles.Get()[i];
             vb0.Position = Float3::Transform(pos, boneMatrixInv);
-
-            vbData += vbStride;
         }
     }
     else
     {
         for (uint32 i = 0; i < vbCount; i++)
         {
+            // Copy particle positions to the mesh data
             *(Float3*)vbData = *(Float3*)&particles.Get()[i];
             vbData += vbStride;
         }

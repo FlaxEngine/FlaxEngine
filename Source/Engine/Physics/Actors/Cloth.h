@@ -338,6 +338,7 @@ private:
     bool CreateCloth();
     void DestroyCloth();
     void CalculateInvMasses(Array<float>& invMasses);
-    void OnUpdated();
+    void OnPreUpdate();
+    void OnPostUpdate();
     void RunClothDeformer(const MeshBase* mesh, struct MeshDeformationData& deformation);
 };
