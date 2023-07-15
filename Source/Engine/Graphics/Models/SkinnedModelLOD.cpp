@@ -3,6 +3,7 @@
 #include "SkinnedModelLOD.h"
 #include "MeshDeformation.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Transform.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Serialization/MemoryReadStream.h"
