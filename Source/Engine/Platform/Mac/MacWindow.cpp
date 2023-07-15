@@ -643,7 +643,6 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     // TODO: impl StartPosition for MacWindow
     // TODO: impl Fullscreen for MacWindow
     // TODO: impl ShowInTaskbar for MacWindow
-    // TODO: impl AllowInput for MacWindow
     // TODO: impl IsTopmost for MacWindow
 }
 

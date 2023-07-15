@@ -301,15 +301,16 @@ Float2 MacPlatform::GetMousePosition()
     CGEventRef event = CGEventCreate(nullptr);
     CGPoint cursor = CGEventGetLocation(event);
     CFRelease(event);
-    return Float2((float)cursor.x, (float)cursor.y);
+    return Float2((float)cursor.x, (float)cursor.y) * MacPlatform::ScreenScale;
 }
 
 void MacPlatform::SetMousePosition(const Float2& pos)
 {
     CGPoint cursor;
-    cursor.x = (CGFloat)pos.X;
-    cursor.y = (CGFloat)pos.Y;
+    cursor.x = (CGFloat)(pos.X / MacPlatform::ScreenScale);
+    cursor.y = (CGFloat)(pos.Y / MacPlatform::ScreenScale);
     CGWarpMouseCursorPosition(cursor);
+    CGAssociateMouseAndMouseCursorPosition(true);
 }
 
 Float2 MacPlatform::GetDesktopSize()
