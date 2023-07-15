@@ -72,7 +72,7 @@ KeyboardKeys GetKey(NSEvent* event)
     case 0x30: return KeyboardKeys::Tab;
     case 0x31: return KeyboardKeys::Spacebar;
     case 0x32: return KeyboardKeys::BackQuote;
-    case 0x33: return KeyboardKeys::Delete;
+    case 0x33: return KeyboardKeys::Backspace;
     //case 0x34:
     case 0x35: return KeyboardKeys::Escape;
     case 0x36: return KeyboardKeys::Control; // Command (right)
@@ -378,7 +378,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 {
     KeyboardKeys key = GetKey(event);
     if (key != KeyboardKeys::None)
-	    Input::Keyboard->OnKeyDown(key);
+	    Input::Keyboard->OnKeyDown(key, Window);
 
 	// Send a text input event
     switch (key)
@@ -400,7 +400,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
         if (length >= 16)
             length = 15;
         [text getCharacters:buffer range:NSMakeRange(0, length)];
-        Input::Keyboard->OnCharInput((Char)buffer[0]);
+        Input::Keyboard->OnCharInput((Char)buffer[0], Window);
     }
 }
 
@@ -408,7 +408,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 {
     KeyboardKeys key = GetKey(event);
     if (key != KeyboardKeys::None)
-	    Input::Keyboard->OnKeyUp(key);
+	    Input::Keyboard->OnKeyUp(key, Window);
 }
 
 - (void)flagsChanged:(NSEvent*)event
@@ -430,9 +430,9 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     {
         int32 modifierFlags = [event modifierFlags];
         if ((modifierFlags & modMask) == modMask)
-	        Input::Keyboard->OnKeyDown(key);
+	        Input::Keyboard->OnKeyDown(key, Window);
         else
-	        Input::Keyboard->OnKeyUp(key);
+	        Input::Keyboard->OnKeyUp(key, Window);
     }
 }
 
