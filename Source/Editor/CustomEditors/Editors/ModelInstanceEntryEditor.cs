@@ -40,7 +40,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 var matContainer = new CustomValueContainer(new ScriptType(typeof(MaterialBase)), _material, (instance, index) => _material, (instance, index, value) => _material = value as MaterialBase);
                 var materialEditor = (_group.Property(materiaLabel, matContainer)) as AssetRefEditor;
-                materialEditor.Values.SetDefaultValue(staticModel.Model.MaterialSlots[entryIndex].Material);
+                materialEditor.Values.SetDefaultValue((staticModel.Model.MaterialSlots[entryIndex].Material) ? staticModel.Model.MaterialSlots[entryIndex].Material : GPUDevice.Instance.DefaultMaterial);
                 materialEditor.RefreshDefaultValue();
                 materialEditor.Picker.SelectedItemChanged += () =>
                 {
@@ -51,6 +51,10 @@ namespace FlaxEditor.CustomEditors.Editors
                         materialEditor.Picker.SelectedAsset = GPUDevice.Instance.DefaultMaterial;
                     }
                     else if (material == staticModel.Model.MaterialSlots[entryIndex].Material)
+                    {
+                        staticModel.SetMaterial(entryIndex, null);
+                    }
+                    else if (material == GPUDevice.Instance.DefaultMaterial && !staticModel.Model.MaterialSlots[entryIndex].Material)
                     {
                         staticModel.SetMaterial(entryIndex, null);
                     }
@@ -69,12 +73,9 @@ namespace FlaxEditor.CustomEditors.Editors
                 }
                 _material = animatedModel.GetMaterial(entryIndex);
                 
-                var matContainer = new CustomValueContainer(new ScriptType(typeof(MaterialBase)), _material, (instance, index) => _material, (instance, index, value) =>
-                {
-                    _material = value as MaterialBase;
-                });
+                var matContainer = new CustomValueContainer(new ScriptType(typeof(MaterialBase)), _material, (instance, index) => _material, (instance, index, value) => _material = value as MaterialBase);
                 var materialEditor = (_group.Property(materiaLabel, matContainer)) as AssetRefEditor;
-                materialEditor.Values.SetDefaultValue(animatedModel.SkinnedModel.MaterialSlots[entryIndex].Material);
+                materialEditor.Values.SetDefaultValue((animatedModel.SkinnedModel.MaterialSlots[entryIndex].Material) ? animatedModel.SkinnedModel.MaterialSlots[entryIndex].Material : GPUDevice.Instance.DefaultMaterial);
                 materialEditor.RefreshDefaultValue();
                 materialEditor.Picker.SelectedItemChanged += () =>
                 {
@@ -85,6 +86,10 @@ namespace FlaxEditor.CustomEditors.Editors
                         materialEditor.Picker.SelectedAsset = GPUDevice.Instance.DefaultMaterial;
                     }
                     else if (material == animatedModel.SkinnedModel.MaterialSlots[entryIndex].Material)
+                    {
+                        animatedModel.SetMaterial(entryIndex, null);
+                    }
+                    else if (material == GPUDevice.Instance.DefaultMaterial && !animatedModel.SkinnedModel.MaterialSlots[entryIndex].Material)
                     {
                         animatedModel.SetMaterial(entryIndex, null);
                     }
