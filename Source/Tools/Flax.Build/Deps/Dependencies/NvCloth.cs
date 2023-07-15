@@ -82,6 +82,10 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.Android:
                     Build(options, platform, TargetArchitecture.ARM64);
                     break;
+                case TargetPlatform.Mac:
+                    Build(options, platform, TargetArchitecture.x64);
+                    Build(options, platform, TargetArchitecture.ARM64);
+                    break;
                 }
             }
 
@@ -139,6 +143,11 @@ namespace Flax.Deps.Dependencies
                     envVars.Add("ANDROID_NDK_HOME", AndroidNdk.Instance.RootPath);
                     envVars.Add("PM_ANDROIDNDK_PATH", AndroidNdk.Instance.RootPath);
                 }
+                break;
+            case TargetPlatform.Mac:
+                cmakeArgs += " -DTARGET_BUILD_PLATFORM=mac";
+                cmakeName = "mac";
+                binariesPrefix = "lib";
                 break;
             default: throw new InvalidPlatformException(platform);
             }
