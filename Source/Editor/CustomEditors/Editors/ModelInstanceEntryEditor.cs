@@ -50,7 +50,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         staticModel.SetMaterial(entryIndex, GPUDevice.Instance.DefaultMaterial);
                         materialEditor.Picker.SelectedAsset = GPUDevice.Instance.DefaultMaterial;
                     }
-                    else if (material == staticModel.Model.MaterialSlots[entryIndex])
+                    else if (material == staticModel.Model.MaterialSlots[entryIndex].Material)
                     {
                         staticModel.SetMaterial(entryIndex, null);
                     }
@@ -84,7 +84,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         animatedModel.SetMaterial(entryIndex, GPUDevice.Instance.DefaultMaterial);
                         materialEditor.Picker.SelectedAsset = GPUDevice.Instance.DefaultMaterial;
                     }
-                    else if (material == animatedModel.SkinnedModel.MaterialSlots[entryIndex])
+                    else if (material == animatedModel.SkinnedModel.MaterialSlots[entryIndex].Material)
                     {
                         animatedModel.SetMaterial(entryIndex, null);
                     }
@@ -112,6 +112,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Refresh()
         {
+            Debug.Log("Hit");
             if (_updateName &&
                 _group != null &&
                 ParentEditor?.ParentEditor != null &&
