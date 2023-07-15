@@ -80,6 +80,7 @@ namespace FlaxEditor.Windows
             public LogGroup Group;
             public LogEntryDescription Desc;
             public SpriteHandle Icon;
+            public int LogCount = 1;
 
             public LogEntry(DebugLogWindow window, ref LogEntryDescription desc)
             : base(0, 0, 120, DefaultHeight)
@@ -137,7 +138,12 @@ namespace FlaxEditor.Windows
                 // Title
                 var textRect = new Rectangle(38, 2, clientRect.Width - 40, clientRect.Height - 10);
                 Render2D.PushClip(ref clientRect);
-                Render2D.DrawText(style.FontMedium, Desc.Title, textRect, style.Foreground);
+                string countText = string.Empty;
+                if (LogCount > 1)
+                {
+                    countText = $" ({LogCount})";
+                }
+                Render2D.DrawText(style.FontMedium, Desc.Title + countText, textRect, style.Foreground);
                 Render2D.PopClip();
             }
 
@@ -289,6 +295,7 @@ namespace FlaxEditor.Windows
         private readonly List<LogEntry> _pendingEntries = new List<LogEntry>(32);
 
         private readonly ToolStripButton _clearOnPlayButton;
+        private readonly ToolStripButton _collapseLogsButton;
         private readonly ToolStripButton _pauseOnErrorButton;
         private readonly ToolStripButton[] _groupButtons = new ToolStripButton[3];
 
@@ -316,6 +323,7 @@ namespace FlaxEditor.Windows
             };
             toolstrip.AddButton("Clear", Clear).LinkTooltip("Clears all log entries");
             _clearOnPlayButton = (ToolStripButton)toolstrip.AddButton("Clear on Play").SetAutoCheck(true).SetChecked(true).LinkTooltip("Clears all log entries on enter playmode");
+            _collapseLogsButton = (ToolStripButton)toolstrip.AddButton("Collapse").SetAutoCheck(true).SetChecked(true).LinkTooltip("Collapses similar logs.");
             _pauseOnErrorButton = (ToolStripButton)toolstrip.AddButton("Pause on Error").SetAutoCheck(true).LinkTooltip("Performs auto pause on error");
             toolstrip.AddSeparator();
             _groupButtons[0] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Error32, () => UpdateLogTypeVisibility(LogGroup.Error, _groupButtons[0].Checked)).SetAutoCheck(true).SetChecked(true).LinkTooltip("Shows/hides error messages");
@@ -612,6 +620,30 @@ namespace FlaxEditor.Windows
                     var top = _entriesPanel.Children.Count != 0 ? _entriesPanel.Children[_entriesPanel.Children.Count - 1].Bottom + spacing : margin.Top;
                     for (int i = 0; i < _pendingEntries.Count; i++)
                     {
+                        if (_collapseLogsButton.Checked)
+                        {
+                            bool logExists = false;
+                            foreach (var child in _entriesPanel.Children)
+                            {
+                                if (child is LogEntry entry)
+                                {
+                                    var pendingEntry = _pendingEntries[i];
+                                    if (string.Equals(entry.Desc.Title, pendingEntry.Desc.Title) &&
+                                        string.Equals(entry.Desc.LocationFile, pendingEntry.Desc.LocationFile) &&
+                                        entry.Desc.Level == pendingEntry.Desc.Level &&
+                                        string.Equals(entry.Desc.Description, pendingEntry.Desc.Description) &&
+                                        entry.Desc.LocationLine == pendingEntry.Desc.LocationLine)
+                                    {
+                                        entry.LogCount += 1;
+                                        newEntry = entry;
+                                        logExists = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (logExists)
+                                continue;
+                        }
                         newEntry = _pendingEntries[i];
                         newEntry.Visible = _groupButtons[(int)newEntry.Group].Checked;
                         anyVisible |= newEntry.Visible;
