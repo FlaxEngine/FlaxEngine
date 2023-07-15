@@ -75,8 +75,8 @@ KeyboardKeys GetKey(NSEvent* event)
     case 0x33: return KeyboardKeys::Delete;
     //case 0x34:
     case 0x35: return KeyboardKeys::Escape;
-    //case 0x36:
-    //case 0x37: Command
+    case 0x36: return KeyboardKeys::Control; // Command (right)
+    case 0x37: return KeyboardKeys::Control; // Command (left)
     case 0x38: return KeyboardKeys::Shift;
     case 0x39: return KeyboardKeys::Capital;
     case 0x3A: return KeyboardKeys::Alt;
@@ -409,6 +409,31 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     KeyboardKeys key = GetKey(event);
     if (key != KeyboardKeys::None)
 	    Input::Keyboard->OnKeyUp(key);
+}
+
+- (void)flagsChanged:(NSEvent*)event
+{
+    int32 modMask;
+    int32 keyCode = [event keyCode];
+    if (keyCode == 0x36 || keyCode == 0x37)
+		modMask = NSEventModifierFlagCommand;
+	else if (keyCode == 0x38 || keyCode == 0x3c)
+		modMask = NSEventModifierFlagShift;
+	else if (keyCode == 0x3a || keyCode == 0x3d)
+	    modMask = NSEventModifierFlagOption;
+	else if (keyCode == 0x3b || keyCode == 0x3e)
+        modMask = NSEventModifierFlagControl;
+	else
+        return;
+    KeyboardKeys key = GetKey(event);
+    if (key != KeyboardKeys::None)
+    {
+        int32 modifierFlags = [event modifierFlags];
+        if ((modifierFlags & modMask) == modMask)
+	        Input::Keyboard->OnKeyDown(key);
+        else
+	        Input::Keyboard->OnKeyUp(key);
+    }
 }
 
 - (void)scrollWheel:(NSEvent*)event
