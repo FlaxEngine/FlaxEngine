@@ -108,16 +108,13 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             // Skip material member as it is overridden
             if (item.Info.Name == "Material")
-            {
                 return;
-            }
             base.SpawnProperty(itemLayout, itemValues, item);
         }
 
         /// <inheritdoc />
         public override void Refresh()
         {
-            Debug.Log("Hit");
             if (_updateName &&
                 _group != null &&
                 ParentEditor?.ParentEditor != null &&
