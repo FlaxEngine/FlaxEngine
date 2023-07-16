@@ -40,6 +40,7 @@
 #endif
 #if WITH_CLOTH
 #include "Engine/Physics/Actors/Cloth.h"
+#include "Engine/Threading/JobSystem.h"
 #include <ThirdParty/NvCloth/Callbacks.h>
 #include <ThirdParty/NvCloth/Factory.h>
 #include <ThirdParty/NvCloth/Cloth.h>
@@ -93,6 +94,14 @@ struct ScenePhysX
 #endif
 #if WITH_CLOTH
     nv::cloth::Solver* ClothSolver = nullptr;
+#endif
+
+#if WITH_CLOTH
+    void SimulateCloth(int32 i)
+    {
+        PROFILE_CPU();
+        ClothSolver->simulateChunk(i);
+    }
 #endif
 };
 
@@ -1606,11 +1615,9 @@ void PhysicsBackend::EndSimulateScene(void* scene)
             PROFILE_CPU_NAMED("Simulation");
             if (clothSolver->beginSimulation(scenePhysX->LastDeltaTime))
             {
-                const int32 count = clothSolver->getSimulationChunkCount();
-                for (int32 i = 0; i < count; i++)
-                {
-                    clothSolver->simulateChunk(i);
-                }
+                Function<void(int32)> job;
+                job.Bind<ScenePhysX, &ScenePhysX::SimulateCloth>(scenePhysX);
+                JobSystem::Execute(job, clothSolver->getSimulationChunkCount());
                 clothSolver->endSimulation();
             }
         }
@@ -3548,7 +3555,7 @@ void PhysicsBackend::SetClothTransform(void* cloth, const Transform& transform, 
         clothPhysX->setTranslation(C2P(transform.Translation));
         clothPhysX->setRotation(C2P(transform.Orientation));
     }
-    const auto& clothSettings = Cloths[clothPhysX];
+    auto& clothSettings = Cloths[clothPhysX];
     clothSettings.CollisionsUpdateFramesLeft = 0;
     clothSettings.UpdateBounds(clothPhysX);
 }
