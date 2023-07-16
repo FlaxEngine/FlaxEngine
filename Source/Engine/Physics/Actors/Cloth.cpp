@@ -610,6 +610,7 @@ void Cloth::CalculateInvMasses(Array<float>& invMasses)
 #if WITH_CLOTH
     if (_paint.IsEmpty())
         return;
+    PROFILE_CPU();
 
     // Get mesh data
     const ModelInstanceActor::MeshReference mesh = GetMesh();
@@ -630,31 +631,43 @@ void Cloth::CalculateInvMasses(Array<float>& invMasses)
     // Sum triangle area for each influenced particle
     invMasses.Resize(verticesCount);
     Platform::MemoryClear(invMasses.Get(), verticesCount * sizeof(float));
-    for (int32 triangleIndex = 0; triangleIndex < trianglesCount; triangleIndex++)
+    if (indices16bit)
     {
-        const int32 index = triangleIndex * 3;
-        int32 i0, i1, i2;
-        if (indices16bit)
+        for (int32 triangleIndex = 0; triangleIndex < trianglesCount; triangleIndex++)
         {
-            i0 = indicesData.Get<uint16>()[index];
-            i1 = indicesData.Get<uint16>()[index + 1];
-            i2 = indicesData.Get<uint16>()[index + 2];
-        }
-        else
-        {
-            i0 = indicesData.Get<uint32>()[index];
-            i1 = indicesData.Get<uint32>()[index + 1];
-            i2 = indicesData.Get<uint32>()[index + 2];
-        }
+            const int32 index = triangleIndex * 3;
+            const int32 i0 = indicesData.Get<uint16>()[index];
+            const int32 i1 = indicesData.Get<uint16>()[index + 1];
+            const int32 i2 = indicesData.Get<uint16>()[index + 2];
 #define GET_POS(i) *(Float3*)((byte*)verticesData.Get() + i * verticesStride)
-        const Float3 v0(GET_POS(i0));
-        const Float3 v1(GET_POS(i1));
-        const Float3 v2(GET_POS(i2));
+            const Float3 v0(GET_POS(i0));
+            const Float3 v1(GET_POS(i1));
+            const Float3 v2(GET_POS(i2));
 #undef GET_POS
-        const float area = Float3::TriangleArea(v0, v1, v2);
-        invMasses.Get()[i0] += area;
-        invMasses.Get()[i1] += area;
-        invMasses.Get()[i2] += area;
+            const float area = Float3::TriangleArea(v0, v1, v2);
+            invMasses.Get()[i0] += area;
+            invMasses.Get()[i1] += area;
+            invMasses.Get()[i2] += area;
+        }
+    }
+    else
+    {
+        for (int32 triangleIndex = 0; triangleIndex < trianglesCount; triangleIndex++)
+        {
+            const int32 index = triangleIndex * 3;
+            const int32 i0 = indicesData.Get<uint32>()[index];
+            const int32 i1 = indicesData.Get<uint32>()[index + 1];
+            const int32 i2 = indicesData.Get<uint32>()[index + 2];
+#define GET_POS(i) *(Float3*)((byte*)verticesData.Get() + i * verticesStride)
+            const Float3 v0(GET_POS(i0));
+            const Float3 v1(GET_POS(i1));
+            const Float3 v2(GET_POS(i2));
+#undef GET_POS
+            const float area = Float3::TriangleArea(v0, v1, v2);
+            invMasses.Get()[i0] += area;
+            invMasses.Get()[i1] += area;
+            invMasses.Get()[i2] += area;
+        }
     }
 
     // Count fixed vertices which max movement distance is zero

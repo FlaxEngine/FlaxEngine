@@ -156,6 +156,29 @@ struct FabricSettings
 {
     int32 Refs;
     nv::cloth::Vector<int32_t>::Type PhraseTypes;
+    PhysicsClothDesc Desc;
+    Array<byte> InvMasses;
+
+    bool MatchesDesc(const PhysicsClothDesc& r) const
+    {
+        if (Desc.VerticesData == r.VerticesData &&
+            Desc.VerticesStride == r.VerticesStride &&
+            Desc.VerticesCount == r.VerticesCount &&
+            Desc.IndicesData == r.IndicesData &&
+            Desc.IndicesStride == r.IndicesStride &&
+            Desc.IndicesCount == r.IndicesCount &&
+            Desc.InvMassesStride == r.InvMassesStride)
+        {
+            if (Desc.InvMassesData && r.InvMassesData)
+            {
+                bool matches = Platform::MemoryCompare(InvMasses.Get(), r.InvMassesData, r.VerticesCount * r.InvMassesStride) == 0;
+                return matches;
+            }
+            bool matches =  !Desc.InvMassesData && !r.InvMassesData;
+                return matches;
+        }
+        return false;
+    }
 };
 
 struct ClothSettings
@@ -1434,7 +1457,6 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         PROFILE_CPU_NAMED("Physics.Cloth");
         const int32 clothsCount = scenePhysX->ClothSolver->getNumCloths();
         nv::cloth::Cloth* const* cloths = scenePhysX->ClothSolver->getClothList();
-        // TODO: jobify to run in async (eg. with vehicles update and events setup)
 
         {
             PROFILE_CPU_NAMED("Pre");
@@ -3384,26 +3406,51 @@ void* PhysicsBackend::CreateCloth(const PhysicsClothDesc& desc)
     }
 
     // Cook fabric from the mesh data
-    nv::cloth::ClothMeshDesc meshDesc;
-    meshDesc.points.data = desc.VerticesData;
-    meshDesc.points.stride = desc.VerticesStride;
-    meshDesc.points.count = desc.VerticesCount;
-    meshDesc.invMasses.data = desc.InvMassesData;
-    meshDesc.invMasses.stride = desc.InvMassesStride;
-    meshDesc.invMasses.count = desc.InvMassesData ? desc.VerticesCount : 0;
-    meshDesc.triangles.data = desc.IndicesData;
-    meshDesc.triangles.stride = desc.IndicesStride * 3;
-    meshDesc.triangles.count = desc.IndicesCount / 3;
-    if (desc.IndicesStride == sizeof(uint16))
-        meshDesc.flags |= nv::cloth::MeshFlag::e16_BIT_INDICES;
-    const Float3 gravity(PhysicsSettings::Get()->DefaultGravity);
-    nv::cloth::Vector<int32_t>::Type phaseTypeInfo;
-    // TODO: automatically reuse fabric from existing cloths (simply check for input data used for computations to improve perf when duplicating cloths or with prefab)
-    nv::cloth::Fabric* fabric = NvClothCookFabricFromMesh(ClothFactory, meshDesc, gravity.Raw, &phaseTypeInfo);
-    if (!fabric)
+    nv::cloth::Fabric* fabric = nullptr;
     {
-        LOG(Error, "NvClothCookFabricFromMesh failed");
-        return nullptr;
+        for (auto& e : Fabrics)
+        {
+            if (e.Value.MatchesDesc(desc))
+            {
+                fabric = e.Key;
+                break;
+            }
+        }
+        if (fabric)
+        {
+            Fabrics[fabric].Refs++;
+        }
+        else
+        {
+            PROFILE_CPU_NAMED("CookFabric");
+            nv::cloth::ClothMeshDesc meshDesc;
+            meshDesc.points.data = desc.VerticesData;
+            meshDesc.points.stride = desc.VerticesStride;
+            meshDesc.points.count = desc.VerticesCount;
+            meshDesc.invMasses.data = desc.InvMassesData;
+            meshDesc.invMasses.stride = desc.InvMassesStride;
+            meshDesc.invMasses.count = desc.InvMassesData ? desc.VerticesCount : 0;
+            meshDesc.triangles.data = desc.IndicesData;
+            meshDesc.triangles.stride = desc.IndicesStride * 3;
+            meshDesc.triangles.count = desc.IndicesCount / 3;
+            if (desc.IndicesStride == sizeof(uint16))
+                meshDesc.flags |= nv::cloth::MeshFlag::e16_BIT_INDICES;
+            const Float3 gravity(PhysicsSettings::Get()->DefaultGravity);
+            nv::cloth::Vector<int32_t>::Type phaseTypeInfo;
+            fabric = NvClothCookFabricFromMesh(ClothFactory, meshDesc, gravity.Raw, &phaseTypeInfo);
+            if (!fabric)
+            {
+                LOG(Error, "NvClothCookFabricFromMesh failed");
+                return nullptr;
+            }
+            FabricSettings fabricSettings;
+            fabricSettings.Refs = 1;
+            fabricSettings.PhraseTypes.swap(phaseTypeInfo);
+            fabricSettings.Desc = desc;
+            if (desc.InvMassesData)
+                fabricSettings.InvMasses.Set((byte*)desc.InvMassesData, desc.VerticesCount * desc.InvMassesStride);
+            Fabrics.Add(fabric, MoveTemp(fabricSettings));
+        }
     }
 
     // Create cloth object
@@ -3438,10 +3485,6 @@ void* PhysicsBackend::CreateCloth(const PhysicsClothDesc& desc)
     clothPhysX->setUserData(desc.Actor);
 
     // Setup settings
-    FabricSettings fabricSettings;
-    fabricSettings.Refs = 1;
-    fabricSettings.PhraseTypes.swap(phaseTypeInfo);
-    Fabrics.Add(fabric, fabricSettings);
     ClothSettings clothSettings;
     clothSettings.Actor = desc.Actor;
     clothSettings.UpdateBounds(clothPhysX);
