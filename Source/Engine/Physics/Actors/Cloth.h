@@ -13,7 +13,6 @@
 /// </summary>
 API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Cloth\"), ActorToolbox(\"Physics\")") class FLAXENGINE_API Cloth : public Actor
 {
-    friend class PhysicsBackend;
     DECLARE_SCENE_OBJECT(Cloth);
 
     /// <summary>
@@ -317,6 +316,9 @@ public:
     /// </summary>
     API_FUNCTION() void SetPaint(Span<const float> value);
 
+    void OnPreUpdate();
+    void OnPostUpdate();
+
 public:
     // [Actor]
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
@@ -344,7 +346,5 @@ private:
     bool CreateCloth();
     void DestroyCloth();
     void CalculateInvMasses(Array<float>& invMasses);
-    void OnPreUpdate();
-    void OnPostUpdate();
     void RunClothDeformer(const MeshBase* mesh, struct MeshDeformationData& deformation);
 };

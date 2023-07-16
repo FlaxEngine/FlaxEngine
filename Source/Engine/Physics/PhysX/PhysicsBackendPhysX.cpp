@@ -97,6 +97,7 @@ struct ScenePhysX
 #endif
 
 #if WITH_CLOTH
+    void PreSimulateCloth(int32 i);
     void SimulateCloth(int32 i)
     {
         PROFILE_CPU();
@@ -698,6 +699,185 @@ void InitVehicleSDK()
         PxVehicleSetBasisVectors(PxVec3(0, 1, 0), PxVec3(0, 0, 1));
         PxVehicleSetUpdateMode(PxVehicleUpdateMode::eVELOCITY_CHANGE);
     }
+}
+
+#endif
+
+#if WITH_CLOTH
+
+void ScenePhysX::PreSimulateCloth(int32 i)
+{
+    PROFILE_CPU();
+    auto clothPhysX = (nv::cloth::Cloth*)ClothSolver->getClothList()[i];
+    auto& clothSettings = Cloths[clothPhysX];
+    
+    clothSettings.Actor->OnPreUpdate();
+
+    // Setup automatic scene collisions with colliders around the cloth
+    if (clothSettings.SceneCollisions && clothSettings.CollisionsUpdateFramesLeft == 0)
+    {
+        PROFILE_CPU_NAMED("Collisions");
+        clothSettings.CollisionsUpdateFramesLeft = CLOTH_COLLISIONS_UPDATE_RATE;
+        if (clothSettings.CollisionsUpdateFramesRandomize)
+        {
+            clothSettings.CollisionsUpdateFramesRandomize = false;
+            clothSettings.CollisionsUpdateFramesLeft = i % CLOTH_COLLISIONS_UPDATE_RATE;
+        }
+
+        // Reset existing colliders
+        clothPhysX->setSpheres(nv::cloth::Range<const PxVec4>(), 0, clothPhysX->getNumSpheres());
+        clothPhysX->setPlanes(nv::cloth::Range<const PxVec4>(), 0, clothPhysX->getNumPlanes());
+        clothPhysX->setTriangles(nv::cloth::Range<const PxVec3>(), 0, clothPhysX->getNumTriangles());
+
+        // Setup environment query
+        const bool hitTriggers = false;
+        const bool blockSingle = false;
+        PxQueryFilterData filterData;
+        filterData.flags |= PxQueryFlag::ePREFILTER;
+        filterData.data.word1 = blockSingle ? 1 : 0;
+        filterData.data.word2 = hitTriggers ? 1 : 0;
+        filterData.data.word0 = Physics::LayerMasks[clothSettings.Actor->GetLayer()];
+        const PxTransform clothPose(clothPhysX->getTranslation(), clothPhysX->getRotation());
+        const PxVec3 clothBoundsPos = clothPhysX->getBoundingBoxCenter();
+        const PxVec3 clothBoundsSize = clothPhysX->getBoundingBoxScale();
+        const PxTransform overlapPose(clothPose.transform(clothBoundsPos), clothPose.q);
+        const float boundsMargin = 1.6f; // Pick nearby objects
+        const PxSphereGeometry overlapGeo(clothBoundsSize.magnitude() * boundsMargin);
+
+        // Find any colliders around the cloth
+        DynamicHitBuffer<PxOverlapHit> buffer;
+        if (Scene->overlap(overlapGeo, overlapPose, buffer, filterData, &QueryFilter))
+        {
+            const float collisionThickness = clothSettings.CollisionThickness;
+            for (uint32 j = 0; j < buffer.getNbTouches(); j++)
+            {
+                const auto& hit = buffer.getTouch(j);
+                if (hit.shape)
+                {
+                    const PxGeometry& geo = hit.shape->getGeometry();
+                    const PxTransform shapeToCloth = clothPose.transformInv(hit.actor->getGlobalPose().transform(hit.shape->getLocalPose()));
+                    // TODO: maybe use shared spheres/planes buffers for batched assigning?
+                    switch (geo.getType())
+                    {
+                    case PxGeometryType::eSPHERE:
+                    {
+                        const PxSphereGeometry& geoSphere = (const PxSphereGeometry&)geo;
+                        const PxVec4 packedSphere(shapeToCloth.p, geoSphere.radius + collisionThickness);
+                        const nv::cloth::Range<const PxVec4> sphereRange(&packedSphere, &packedSphere + 1);
+                        const uint32_t spheresCount = clothPhysX->getNumSpheres();
+                        if (spheresCount + 1 > MAX_CLOTH_SPHERE_COUNT)
+                            break;
+                        clothPhysX->setSpheres(sphereRange, spheresCount, spheresCount);
+                        break;
+                    }
+                    case PxGeometryType::eCAPSULE:
+                    {
+                        const PxCapsuleGeometry& geomCapsule = (const PxCapsuleGeometry&)geo;
+                        const PxVec4 packedSpheres[2] = {
+                            PxVec4(shapeToCloth.transform(PxVec3(+geomCapsule.halfHeight, 0, 0)), geomCapsule.radius + collisionThickness),
+                            PxVec4(shapeToCloth.transform(PxVec3(-geomCapsule.halfHeight, 0, 0)), geomCapsule.radius + collisionThickness)
+                        };
+                        const nv::cloth::Range<const PxVec4> sphereRange(packedSpheres, packedSpheres + 2);
+                        const uint32_t spheresCount = clothPhysX->getNumSpheres();
+                        if (spheresCount + 2 > MAX_CLOTH_SPHERE_COUNT)
+                            break;
+                        clothPhysX->setSpheres(sphereRange, spheresCount, spheresCount);
+                        const uint32_t packedCapsules[2] = { spheresCount, spheresCount + 1 };
+                        const int32 capsulesCount = clothPhysX->getNumCapsules();
+                        clothPhysX->setCapsules(nv::cloth::Range<const uint32_t>(packedCapsules, packedCapsules + 2), capsulesCount, capsulesCount);
+                        break;
+                    }
+                    case PxGeometryType::eBOX:
+                    {
+                        const PxBoxGeometry& geomBox = (const PxBoxGeometry&)geo;
+                        const uint32_t planesCount = clothPhysX->getNumPlanes();
+                        if (planesCount + 6 > MAX_CLOTH_PLANE_COUNT)
+                            break;
+                        const PxPlane packedPlanes[6] = {
+                            PxPlane(PxVec3(1, 0, 0), -geomBox.halfExtents.x - collisionThickness).transform(shapeToCloth),
+                            PxPlane(PxVec3(-1, 0, 0), -geomBox.halfExtents.x - collisionThickness).transform(shapeToCloth),
+                            PxPlane(PxVec3(0, 1, 0), -geomBox.halfExtents.y - collisionThickness).transform(shapeToCloth),
+                            PxPlane(PxVec3(0, -1, 0), -geomBox.halfExtents.y - collisionThickness).transform(shapeToCloth),
+                            PxPlane(PxVec3(0, 0, 1), -geomBox.halfExtents.z - collisionThickness).transform(shapeToCloth),
+                            PxPlane(PxVec3(0, 0, -1), -geomBox.halfExtents.z - collisionThickness).transform(shapeToCloth)
+                        };
+                        clothPhysX->setPlanes(nv::cloth::Range<const PxVec4>((const PxVec4*)packedPlanes, (const PxVec4*)packedPlanes + 6), planesCount, planesCount);
+                        const PxU32 convexMask = PxU32(0x3f << planesCount);
+                        const uint32_t convexesCount = clothPhysX->getNumConvexes();
+                        clothPhysX->setConvexes(nv::cloth::Range<const PxU32>(&convexMask, &convexMask + 1), convexesCount, convexesCount);
+                        break;
+                    }
+                    case PxGeometryType::eCONVEXMESH:
+                    {
+                        const PxConvexMeshGeometry& geomConvexMesh = (const PxConvexMeshGeometry&)geo;
+                        const PxU32 convexPlanesCount = geomConvexMesh.convexMesh->getNbPolygons();
+                        const uint32_t planesCount = clothPhysX->getNumPlanes();
+                        if (planesCount + convexPlanesCount > MAX_CLOTH_PLANE_COUNT)
+                            break;
+                        const PxMat33 convexToShapeInv = geomConvexMesh.scale.toMat33().getInverse();
+                        // TODO: merge convexToShapeInv with shapeToCloth to have a single matrix multiplication
+                        PxPlane planes[MAX_CLOTH_PLANE_COUNT];
+                        for (PxU32 k = 0; k < convexPlanesCount; k++)
+                        {
+                            PxHullPolygon polygon;
+                            geomConvexMesh.convexMesh->getPolygonData(k, polygon);
+                            polygon.mPlane[3] -= collisionThickness;
+                            planes[k] = transform(reinterpret_cast<const PxPlane&>(polygon.mPlane), convexToShapeInv).transform(shapeToCloth);
+                        }
+                        clothPhysX->setPlanes(nv::cloth::Range<const PxVec4>((const PxVec4*)planes, (const PxVec4*)planes + convexPlanesCount), planesCount, planesCount);
+                        const PxU32 convexMask = PxU32(((1 << convexPlanesCount) - 1) << planesCount);
+                        const uint32_t convexesCount = clothPhysX->getNumConvexes();
+                        clothPhysX->setConvexes(nv::cloth::Range<const PxU32>(&convexMask, &convexMask + 1), convexesCount, convexesCount);
+                        break;
+                    }
+                    // Cloth vs Triangle collisions are too slow for real-time use
+ #if 0
+                    case PxGeometryType::eTRIANGLEMESH:
+                    {
+                        const PxTriangleMeshGeometry& geomTriangleMesh = (const PxTriangleMeshGeometry&)geo;
+                        if (geomTriangleMesh.triangleMesh->getNbTriangles() >= 1024)
+                            break; // Ignore too-tessellated meshes due to poor solver performance
+                        // TODO: use shared memory allocators maybe? maybe per-frame stack allocator?
+                        Array<PxVec3> vertices;
+                        vertices.Add(geomTriangleMesh.triangleMesh->getVertices(), geomTriangleMesh.triangleMesh->getNbVertices());
+                        const PxMat33 triangleMeshToShape = geomTriangleMesh.scale.toMat33();
+                        // TODO: merge triangleMeshToShape with shapeToCloth to have a single matrix multiplication
+                        for (int32 k = 0; k < vertices.Count(); k++)
+                        {
+                            PxVec3& v = vertices.Get()[k];
+                            v = shapeToCloth.transform(triangleMeshToShape.transform(v));
+                        }
+                        Array<PxVec3> triangles;
+                        triangles.Resize(geomTriangleMesh.triangleMesh->getNbTriangles() * 3);
+                        if (geomTriangleMesh.triangleMesh->getTriangleMeshFlags() & PxTriangleMeshFlag::e16_BIT_INDICES)
+                        {
+                            auto indices = (const uint16*)geomTriangleMesh.triangleMesh->getTriangles();
+                            for (int32 k = 0; k < triangles.Count(); k++)
+                                triangles.Get()[k] = vertices.Get()[indices[k]];
+                        }
+                        else
+                        {
+                            auto indices = (const uint32*)geomTriangleMesh.triangleMesh->getTriangles();
+                            for (int32 k = 0; k < triangles.Count(); k++)
+                                triangles.Get()[k] = vertices.Get()[indices[k]];
+                        }
+                        const uint32_t trianglesCount = clothPhysX->getNumTriangles();
+	                    clothPhysX->setTriangles(nv::cloth::Range<const PxVec3>(triangles.begin(), triangles.end()), trianglesCount, trianglesCount);
+                        break;
+                    }
+                    case PxGeometryType::eHEIGHTFIELD:
+                    {
+                        const PxHeightFieldGeometry& geomHeightField = (const PxHeightFieldGeometry&)geo;
+                        // TODO: heightfield collisions (gather triangles only nearby cloth to not blow sim perf)
+                        break;
+                    }
+#endif
+                    }
+                }
+            }
+        }
+    }
+    clothSettings.CollisionsUpdateFramesLeft--;
 }
 
 #endif
@@ -1460,177 +1640,9 @@ void PhysicsBackend::EndSimulateScene(void* scene)
 
         {
             PROFILE_CPU_NAMED("Pre");
-            const bool hitTriggers = false;
-            const bool blockSingle = false;
-            PxQueryFilterData filterData;
-            filterData.flags |= PxQueryFlag::ePREFILTER;
-            filterData.data.word1 = blockSingle ? 1 : 0;
-            filterData.data.word2 = hitTriggers ? 1 : 0;
-            for (int32 i = 0; i < clothsCount; i++)
-            {
-                auto clothPhysX = (nv::cloth::Cloth*)cloths[i];
-                auto& clothSettings = Cloths[clothPhysX];
-                clothSettings.Actor->OnPreUpdate();
-
-                // Setup automatic scene collisions with colliders around the cloth
-                if (clothSettings.SceneCollisions && clothSettings.CollisionsUpdateFramesLeft == 0)
-                {
-                    PROFILE_CPU_NAMED("Collisions");
-                    clothSettings.CollisionsUpdateFramesLeft = CLOTH_COLLISIONS_UPDATE_RATE;
-                    if (clothSettings.CollisionsUpdateFramesRandomize)
-                    {
-                        clothSettings.CollisionsUpdateFramesRandomize = false;
-                        clothSettings.CollisionsUpdateFramesLeft = i % CLOTH_COLLISIONS_UPDATE_RATE;
-                    }
-
-                    // Reset existing colliders
-                    clothPhysX->setSpheres(nv::cloth::Range<const PxVec4>(), 0, clothPhysX->getNumSpheres());
-                    clothPhysX->setPlanes(nv::cloth::Range<const PxVec4>(), 0, clothPhysX->getNumPlanes());
-                    clothPhysX->setTriangles(nv::cloth::Range<const PxVec3>(), 0, clothPhysX->getNumTriangles());
-
-                    filterData.data.word0 = Physics::LayerMasks[clothSettings.Actor->GetLayer()];
-                    const PxTransform clothPose(clothPhysX->getTranslation(), clothPhysX->getRotation());
-                    const PxVec3 clothBoundsPos = clothPhysX->getBoundingBoxCenter();
-                    const PxVec3 clothBoundsSize = clothPhysX->getBoundingBoxScale();
-                    const PxTransform overlapPose(clothPose.transform(clothBoundsPos), clothPose.q);
-                    const float boundsMargin = 1.6f;
-                    const PxSphereGeometry overlapGeo(clothBoundsSize.magnitude() * boundsMargin);
-
-                    // Find any colliders around the cloth
-                    DynamicHitBuffer<PxOverlapHit> buffer;
-                    if (scenePhysX->Scene->overlap(overlapGeo, overlapPose, buffer, filterData, &QueryFilter))
-                    {
-                        const float collisionThickness = clothSettings.CollisionThickness;
-                        for (uint32 j = 0; j < buffer.getNbTouches(); j++)
-                        {
-                            const auto& hit = buffer.getTouch(j);
-                            if (hit.shape)
-                            {
-                                const PxGeometry& geo = hit.shape->getGeometry();
-                                const PxTransform shapeToCloth = clothPose.transformInv(hit.actor->getGlobalPose().transform(hit.shape->getLocalPose()));
-                                // TODO: maybe use shared spheres/planes buffers for batched assigning?
-                                switch (geo.getType())
-                                {
-                                case PxGeometryType::eSPHERE:
-                                {
-                                    const PxSphereGeometry& geoSphere = (const PxSphereGeometry&)geo;
-                                    const PxVec4 packedSphere(shapeToCloth.p, geoSphere.radius + collisionThickness);
-                                    const nv::cloth::Range<const PxVec4> sphereRange(&packedSphere, &packedSphere + 1);
-                                    const uint32_t spheresCount = clothPhysX->getNumSpheres();
-                                    if (spheresCount + 1 > MAX_CLOTH_SPHERE_COUNT)
-                                        break;
-                                    clothPhysX->setSpheres(sphereRange, spheresCount, spheresCount);
-                                    break;
-                                }
-                                case PxGeometryType::eCAPSULE:
-                                {
-                                    const PxCapsuleGeometry& geomCapsule = (const PxCapsuleGeometry&)geo;
-                                    const PxVec4 packedSpheres[2] = {
-                                        PxVec4(shapeToCloth.transform(PxVec3(+geomCapsule.halfHeight, 0, 0)), geomCapsule.radius + collisionThickness),
-                                        PxVec4(shapeToCloth.transform(PxVec3(-geomCapsule.halfHeight, 0, 0)), geomCapsule.radius + collisionThickness)
-                                    };
-                                    const nv::cloth::Range<const PxVec4> sphereRange(packedSpheres, packedSpheres + 2);
-                                    const uint32_t spheresCount = clothPhysX->getNumSpheres();
-                                    if (spheresCount + 2 > MAX_CLOTH_SPHERE_COUNT)
-                                        break;
-                                    clothPhysX->setSpheres(sphereRange, spheresCount, spheresCount);
-                                    const uint32_t packedCapsules[2] = { spheresCount, spheresCount + 1 };
-                                    const int32 capsulesCount = clothPhysX->getNumCapsules();
-                                    clothPhysX->setCapsules(nv::cloth::Range<const uint32_t>(packedCapsules, packedCapsules + 2), capsulesCount, capsulesCount);
-                                    break;
-                                }
-                                case PxGeometryType::eBOX:
-                                {
-                                    const PxBoxGeometry& geomBox = (const PxBoxGeometry&)geo;
-                                    const uint32_t planesCount = clothPhysX->getNumPlanes();
-                                    if (planesCount + 6 > MAX_CLOTH_PLANE_COUNT)
-                                        break;
-                                    const PxPlane packedPlanes[6] = {
-                                        PxPlane(PxVec3(1, 0, 0), -geomBox.halfExtents.x - collisionThickness).transform(shapeToCloth),
-                                        PxPlane(PxVec3(-1, 0, 0), -geomBox.halfExtents.x - collisionThickness).transform(shapeToCloth),
-                                        PxPlane(PxVec3(0, 1, 0), -geomBox.halfExtents.y - collisionThickness).transform(shapeToCloth),
-                                        PxPlane(PxVec3(0, -1, 0), -geomBox.halfExtents.y - collisionThickness).transform(shapeToCloth),
-                                        PxPlane(PxVec3(0, 0, 1), -geomBox.halfExtents.z - collisionThickness).transform(shapeToCloth),
-                                        PxPlane(PxVec3(0, 0, -1), -geomBox.halfExtents.z - collisionThickness).transform(shapeToCloth)
-                                    };
-                                    clothPhysX->setPlanes(nv::cloth::Range<const PxVec4>((const PxVec4*)packedPlanes, (const PxVec4*)packedPlanes + 6), planesCount, planesCount);
-                                    const PxU32 convexMask = PxU32(0x3f << planesCount);
-                                    const uint32_t convexesCount = clothPhysX->getNumConvexes();
-                                    clothPhysX->setConvexes(nv::cloth::Range<const PxU32>(&convexMask, &convexMask + 1), convexesCount, convexesCount);
-                                    break;
-                                }
-                                case PxGeometryType::eCONVEXMESH:
-                                {
-                                    const PxConvexMeshGeometry& geomConvexMesh = (const PxConvexMeshGeometry&)geo;
-                                    const PxU32 convexPlanesCount = geomConvexMesh.convexMesh->getNbPolygons();
-                                    const uint32_t planesCount = clothPhysX->getNumPlanes();
-                                    if (planesCount + convexPlanesCount > MAX_CLOTH_PLANE_COUNT)
-                                        break;
-                                    const PxMat33 convexToShapeInv = geomConvexMesh.scale.toMat33().getInverse();
-                                    // TODO: merge convexToShapeInv with shapeToCloth to have a single matrix multiplication
-                                    PxPlane planes[MAX_CLOTH_PLANE_COUNT];
-                                    for (PxU32 k = 0; k < convexPlanesCount; k++)
-                                    {
-                                        PxHullPolygon polygon;
-                                        geomConvexMesh.convexMesh->getPolygonData(k, polygon);
-                                        polygon.mPlane[3] -= collisionThickness;
-                                        planes[k] = transform(reinterpret_cast<const PxPlane&>(polygon.mPlane), convexToShapeInv).transform(shapeToCloth);
-                                    }
-                                    clothPhysX->setPlanes(nv::cloth::Range<const PxVec4>((const PxVec4*)planes, (const PxVec4*)planes + convexPlanesCount), planesCount, planesCount);
-                                    const PxU32 convexMask = PxU32(((1 << convexPlanesCount) - 1) << planesCount);
-                                    const uint32_t convexesCount = clothPhysX->getNumConvexes();
-                                    clothPhysX->setConvexes(nv::cloth::Range<const PxU32>(&convexMask, &convexMask + 1), convexesCount, convexesCount);
-                                    break;
-                                }
-                                // Cloth vs Triangle collisions are too slow for real-time use
-#if 0
-                                case PxGeometryType::eTRIANGLEMESH:
-                                {
-                                    const PxTriangleMeshGeometry& geomTriangleMesh = (const PxTriangleMeshGeometry&)geo;
-                                    if (geomTriangleMesh.triangleMesh->getNbTriangles() >= 1024)
-                                        break; // Ignore too-tessellated meshes due to poor solver performance
-                                    // TODO: use shared memory allocators maybe? maybe per-frame stack allocator?
-                                    Array<PxVec3> vertices;
-                                    vertices.Add(geomTriangleMesh.triangleMesh->getVertices(), geomTriangleMesh.triangleMesh->getNbVertices());
-                                    const PxMat33 triangleMeshToShape = geomTriangleMesh.scale.toMat33();
-                                    // TODO: merge triangleMeshToShape with shapeToCloth to have a single matrix multiplication
-                                    for (int32 k = 0; k < vertices.Count(); k++)
-                                    {
-                                        PxVec3& v = vertices.Get()[k];
-                                        v = shapeToCloth.transform(triangleMeshToShape.transform(v));
-                                    }
-                                    Array<PxVec3> triangles;
-                                    triangles.Resize(geomTriangleMesh.triangleMesh->getNbTriangles() * 3);
-                                    if (geomTriangleMesh.triangleMesh->getTriangleMeshFlags() & PxTriangleMeshFlag::e16_BIT_INDICES)
-                                    {
-                                        auto indices = (const uint16*)geomTriangleMesh.triangleMesh->getTriangles();
-                                        for (int32 k = 0; k < triangles.Count(); k++)
-                                            triangles.Get()[k] = vertices.Get()[indices[k]];
-                                    }
-                                    else
-                                    {
-                                        auto indices = (const uint32*)geomTriangleMesh.triangleMesh->getTriangles();
-                                        for (int32 k = 0; k < triangles.Count(); k++)
-                                            triangles.Get()[k] = vertices.Get()[indices[k]];
-                                    }
-                                    const uint32_t trianglesCount = clothPhysX->getNumTriangles();
-	                                clothPhysX->setTriangles(nv::cloth::Range<const PxVec3>(triangles.begin(), triangles.end()), trianglesCount, trianglesCount);
-                                    break;
-                                }
-                                case PxGeometryType::eHEIGHTFIELD:
-                                {
-                                    const PxHeightFieldGeometry& geomHeightField = (const PxHeightFieldGeometry&)geo;
-                                    // TODO: heightfield collisions (gather triangles only nearby cloth to not blow sim perf)
-                                    break;
-                                }
-#endif
-                                }
-                            }
-                        }
-                    }
-                }
-                clothSettings.CollisionsUpdateFramesLeft--;
-            }
+            Function<void(int32)> job;
+            job.Bind<ScenePhysX, &ScenePhysX::PreSimulateCloth>(scenePhysX);
+            JobSystem::Execute(job, clothsCount);
         }
 
         {
