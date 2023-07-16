@@ -723,6 +723,7 @@ void Cloth::OnPreUpdate()
         int32 verticesCount;
         if (mesh.Actor->GetMeshData(mesh, MeshBufferType::Vertex0, verticesData, verticesCount))
             return;
+        PROFILE_CPU_NAMED("Skinned Pose");
         auto vbStride = (uint32)verticesData.Length() / verticesCount;
         ASSERT(vbStride == sizeof(VB0SkinnedElementType));
         PhysicsBackend::LockClothParticles(_cloth);
@@ -835,6 +836,7 @@ void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformat
     if ((_simulationSettings.ComputeNormals || deformation.Type == MeshBufferType::Vertex1) &&
         meshRef.Actor && !meshRef.Actor->GetMeshData(meshRef, MeshBufferType::Index, indicesData, indicesCount))
     {
+        PROFILE_CPU_NAMED("Normals");
         // TODO: optimize memory allocs (eg. use shared allocator)
         normals.Resize(vbCount);
         Platform::MemoryClear(normals.Get(), vbCount * sizeof(Float3));

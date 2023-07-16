@@ -48,6 +48,7 @@
 #include <ThirdParty/NvCloth/NvClothExt/ClothFabricCooker.h>
 #define MAX_CLOTH_SPHERE_COUNT 32
 #define MAX_CLOTH_PLANE_COUNT 32
+#define CLOTH_COLLISIONS_UPDATE_RATE 10 // Frames between cloth collisions updates
 #endif
 #if WITH_PVD
 #include <ThirdParty/PhysX/pvd/PxPvd.h>
@@ -151,6 +152,8 @@ struct FabricSettings
 struct ClothSettings
 {
     bool SceneCollisions = false;
+    byte CollisionsUpdateFramesLeft = 0;
+    bool CollisionsUpdateFramesRandomize = true;
     float GravityScale = 1.0f;
     float CollisionThickness = 0.0f;
     Cloth* Actor;
@@ -1425,7 +1428,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         // TODO: jobify to run in async (eg. with vehicles update and events setup)
 
         {
-            PROFILE_CPU_NAMED("Collisions");
+            PROFILE_CPU_NAMED("Pre");
             const bool hitTriggers = false;
             const bool blockSingle = false;
             PxQueryFilterData filterData;
@@ -1435,12 +1438,20 @@ void PhysicsBackend::EndSimulateScene(void* scene)
             for (int32 i = 0; i < clothsCount; i++)
             {
                 auto clothPhysX = (nv::cloth::Cloth*)cloths[i];
-                const auto& clothSettings = Cloths[clothPhysX];
+                auto& clothSettings = Cloths[clothPhysX];
                 clothSettings.Actor->OnPreUpdate();
 
                 // Setup automatic scene collisions with colliders around the cloth
-                if (clothSettings.SceneCollisions)
+                if (clothSettings.SceneCollisions && clothSettings.CollisionsUpdateFramesLeft == 0)
                 {
+                    PROFILE_CPU_NAMED("Collisions");
+                    clothSettings.CollisionsUpdateFramesLeft = CLOTH_COLLISIONS_UPDATE_RATE;
+                    if (clothSettings.CollisionsUpdateFramesRandomize)
+                    {
+                        clothSettings.CollisionsUpdateFramesRandomize = false;
+                        clothSettings.CollisionsUpdateFramesLeft = i % CLOTH_COLLISIONS_UPDATE_RATE;
+                    }
+
                     // Reset existing colliders
                     clothPhysX->setSpheres(nv::cloth::Range<const PxVec4>(), 0, clothPhysX->getNumSpheres());
                     clothPhysX->setPlanes(nv::cloth::Range<const PxVec4>(), 0, clothPhysX->getNumPlanes());
@@ -1587,6 +1598,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                         }
                     }
                 }
+                clothSettings.CollisionsUpdateFramesLeft--;
             }
         }
 
@@ -3475,6 +3487,7 @@ void PhysicsBackend::SetClothCollisionSettings(void* cloth, const void* settings
         clothPhysX->setPlanes(nv::cloth::Range<const PxVec4>(), 0, clothPhysX->getNumPlanes());
         clothPhysX->setTriangles(nv::cloth::Range<const PxVec3>(), 0, clothPhysX->getNumTriangles());
     }
+    clothSettings.CollisionsUpdateFramesLeft = 0;
     clothSettings.SceneCollisions = settings.SceneCollisions;
     clothSettings.CollisionThickness = settings.CollisionThickness;
 }
@@ -3536,6 +3549,7 @@ void PhysicsBackend::SetClothTransform(void* cloth, const Transform& transform, 
         clothPhysX->setRotation(C2P(transform.Orientation));
     }
     const auto& clothSettings = Cloths[clothPhysX];
+    clothSettings.CollisionsUpdateFramesLeft = 0;
     clothSettings.UpdateBounds(clothPhysX);
 }
 

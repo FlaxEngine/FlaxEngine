@@ -6,7 +6,7 @@
 #include "Engine/Level/Actors/ModelInstanceActor.h"
 
 // Used internally to validate cloth data against invalid nan/inf values
-#define USE_CLOTH_SANITY_CHECKS (BUILD_DEBUG)
+#define USE_CLOTH_SANITY_CHECKS 0
 
 /// <summary>
 /// Physical simulation actor for cloth objects made of vertices that are simulated as cloth particles with physical properties, forces, and constraints to affect cloth behavior. 
