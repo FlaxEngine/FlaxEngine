@@ -54,6 +54,13 @@ namespace FlaxEngine.Tools
 
             Owner.Gizmos.Active = Gizmo;
         }
+
+        public override void Dispose()
+        {
+            Owner.Gizmos.Remove(Gizmo);
+
+            base.Dispose();
+        }
     }
 
     sealed class ClothPaintingGizmo : GizmoBase
@@ -85,9 +92,19 @@ namespace FlaxEngine.Tools
                 return;
             PaintEnd();
             _cloth = cloth;
-            _clothParticles = cloth?.GetParticles();
+            _clothParticles = null;
             _clothPaint = null;
             _hasHit = false;
+            if (cloth != null)
+            {
+                _clothParticles = cloth.GetParticles();
+                if (_clothParticles == null || _clothParticles.Length == 0)
+                {
+                    // Setup cloth to get proper particles (eg. if cloth is not on a scene like in Prefab Window)
+                    cloth.Rebuild();
+                    _clothParticles = cloth.GetParticles();
+                }
+            }
         }
 
         public void Fill()

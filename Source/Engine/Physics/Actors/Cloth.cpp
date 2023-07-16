@@ -46,7 +46,10 @@ void Cloth::SetMesh(const ModelInstanceActor::MeshReference& value)
 
     _mesh = value;
     _mesh.Actor = nullptr; // Don't store this reference
-    Rebuild();
+#if WITH_CLOTH
+    if (_cloth)
+        Rebuild();
+#endif
 }
 
 void Cloth::SetForce(const ForceSettings& value)
@@ -88,18 +91,15 @@ void Cloth::SetFabric(const FabricSettings& value)
 void Cloth::Rebuild()
 {
 #if WITH_CLOTH
-    if (_cloth)
-    {
-        // Remove old
-        if (IsDuringPlay())
-            PhysicsBackend::RemoveCloth(GetPhysicsScene()->GetPhysicsScene(), _cloth);
-        DestroyCloth();
+    // Remove old
+    if (IsDuringPlay())
+        PhysicsBackend::RemoveCloth(GetPhysicsScene()->GetPhysicsScene(), _cloth);
+    DestroyCloth();
 
-        // Create new
-        CreateCloth();
-        if (IsDuringPlay())
-            PhysicsBackend::AddCloth(GetPhysicsScene()->GetPhysicsScene(), _cloth);
-    }
+    // Create new
+    CreateCloth();
+    if (IsDuringPlay())
+        PhysicsBackend::AddCloth(GetPhysicsScene()->GetPhysicsScene(), _cloth);
 #endif
 }
 
@@ -308,8 +308,10 @@ void Cloth::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 #endif
 
     // Refresh cloth when settings were changed
-    if (IsDuringPlay())
+#if WITH_CLOTH
+    if (_cloth)
         Rebuild();
+#endif
 }
 
 #if USE_EDITOR
@@ -424,7 +426,6 @@ void Cloth::BeginPlay(SceneBeginData* data)
 #if WITH_CLOTH
     if (CreateCloth())
         LOG(Error, "Failed to create cloth '{0}'", GetNamePath());
-
 #endif
 
     Actor::BeginPlay(data);
@@ -434,10 +435,7 @@ void Cloth::EndPlay()
 {
     Actor::EndPlay();
 
-#if WITH_CLOTH
-    if (_cloth)
-        DestroyCloth();
-#endif
+    DestroyCloth();
 }
 
 void Cloth::OnEnable()
@@ -466,11 +464,21 @@ void Cloth::OnDisable()
 #endif
 }
 
+void Cloth::OnDeleteObject()
+{
+    DestroyCloth();
+
+    Actor::OnDeleteObject();
+}
+
 void Cloth::OnParentChanged()
 {
     Actor::OnParentChanged();
 
-    Rebuild();
+#if WITH_CLOTH
+    if (_cloth)
+        Rebuild();
+#endif
 }
 
 void Cloth::OnTransformChanged()
@@ -588,8 +596,11 @@ void Cloth::DestroyCloth()
         _meshDeformation->RemoveDeformer(_mesh.LODIndex, _mesh.MeshIndex, MeshBufferType::Vertex1, deformer);
         _meshDeformation = nullptr;
     }
-    PhysicsBackend::DestroyCloth(_cloth);
-    _cloth = nullptr;
+    if (_cloth)
+    {
+        PhysicsBackend::DestroyCloth(_cloth);
+        _cloth = nullptr;
+    }
 #endif
 }
 

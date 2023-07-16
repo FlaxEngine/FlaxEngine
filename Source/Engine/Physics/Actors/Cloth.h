@@ -288,7 +288,7 @@ public:
 
 public:
     /// <summary>
-    /// Recreates the cloth by removing current instance data and creating a new physical cloth object. Does nothing if cloth was not created (eg. no parent mesh).
+    /// Recreates the cloth by removing current instance data and creating a new physical cloth object.
     /// </summary>
     API_FUNCTION() void Rebuild();
 
@@ -332,6 +332,7 @@ protected:
     void EndPlay() override;
     void OnEnable() override;
     void OnDisable() override;
+    void OnDeleteObject() override;
     void OnParentChanged() override;
     void OnTransformChanged() override;
     void OnPhysicsSceneChanged(PhysicsScene* previous) override;
