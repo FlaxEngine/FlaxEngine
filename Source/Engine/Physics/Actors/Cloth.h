@@ -138,6 +138,11 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Cloth\"), ActorToolbox(\"Ph
         API_FIELD() float MaxDistance = 1000.0f;
 
         /// <summary>
+        /// Enables automatic normal vectors computing for the cloth mesh, otherwise original mesh normals will be used.
+        /// </summary>
+        API_FIELD() bool ComputeNormals = true;
+
+        /// <summary>
         /// Wind velocity vector (direction and magnitude) in world coordinates. A greater magnitude applies a stronger wind force. Ensure that Air Drag and Air Lift coefficients are non-zero in order to apply wind force.
         /// </summary>
         API_FIELD() Vector3 WindVelocity = Vector3::Zero;

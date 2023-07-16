@@ -3,6 +3,7 @@
 #include "Cloth.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Ray.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Models/MeshBase.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Physics/PhysicsBackend.h"
@@ -567,6 +568,8 @@ bool Cloth::CreateCloth()
         Function<void(const MeshBase*, MeshDeformationData&)> deformer;
         deformer.Bind<Cloth, &Cloth::RunClothDeformer>(this);
         deformation->AddDeformer(mesh.LODIndex, mesh.MeshIndex, MeshBufferType::Vertex0, deformer);
+        if (_simulationSettings.ComputeNormals)
+            deformation->AddDeformer(mesh.LODIndex, mesh.MeshIndex, MeshBufferType::Vertex1, deformer);
         _meshDeformation = deformation;
     }
 #endif
@@ -582,6 +585,7 @@ void Cloth::DestroyCloth()
         Function<void(const MeshBase*, MeshDeformationData&)> deformer;
         deformer.Bind<Cloth, &Cloth::RunClothDeformer>(this);
         _meshDeformation->RemoveDeformer(_mesh.LODIndex, _mesh.MeshIndex, MeshBufferType::Vertex0, deformer);
+        _meshDeformation->RemoveDeformer(_mesh.LODIndex, _mesh.MeshIndex, MeshBufferType::Vertex1, deformer);
         _meshDeformation = nullptr;
     }
     PhysicsBackend::DestroyCloth(_cloth);
@@ -788,6 +792,8 @@ void Cloth::OnPostUpdate()
         BoundingBox localBounds;
         BoundingBox::Transform(_box, invWorld, localBounds);
         _meshDeformation->Dirty(_mesh.LODIndex, _mesh.MeshIndex, MeshBufferType::Vertex0, localBounds);
+        if (_simulationSettings.ComputeNormals)
+            _meshDeformation->Dirty(_mesh.LODIndex, _mesh.MeshIndex, MeshBufferType::Vertex1, localBounds);
 
         // Update bounds (for mesh culling)
         auto* actor = (ModelInstanceActor*)GetParent();
@@ -797,17 +803,69 @@ void Cloth::OnPostUpdate()
 
 void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformation)
 {
+    if (!_simulationSettings.ComputeNormals && deformation.Type != MeshBufferType::Vertex0)
+        return;
 #if WITH_CLOTH
     PROFILE_CPU_NAMED("Cloth");
     PhysicsBackend::LockClothParticles(_cloth);
     const Span<const Float4> particles = PhysicsBackend::GetClothParticles(_cloth);
 
-    // Update mesh vertices based on the cloth particles positions
     auto vbData = deformation.VertexBuffer.Data.Get();
     auto vbCount = (uint32)mesh->GetVertexCount();
     auto vbStride = (uint32)deformation.VertexBuffer.Data.Count() / vbCount;
     // TODO: add support for mesh vertex data layout descriptor instead hardcoded position data at the beginning of VB0
     ASSERT((uint32)particles.Length() >= vbCount);
+
+    // Calculate normals
+    Array<Float3> normals;
+    const ModelInstanceActor::MeshReference meshRef = GetMesh();
+    BytesContainer indicesData;
+    int32 indicesCount;
+    if ((_simulationSettings.ComputeNormals || deformation.Type == MeshBufferType::Vertex1) &&
+        meshRef.Actor && !meshRef.Actor->GetMeshData(meshRef, MeshBufferType::Index, indicesData, indicesCount))
+    {
+        // TODO: optimize memory allocs (eg. use shared allocator)
+        normals.Resize(vbCount);
+        Platform::MemoryClear(normals.Get(), vbCount * sizeof(Float3));
+        const bool indices16bit = indicesData.Length() / indicesCount == sizeof(uint16);
+        const int32 trianglesCount = indicesCount / 3;
+        if (indices16bit)
+        {
+            for (int32 triangleIndex = 0; triangleIndex < trianglesCount; triangleIndex++)
+            {
+                const int32 index = triangleIndex * 3;
+                const int32 i0 = indicesData.Get<uint16>()[index];
+                const int32 i1 = indicesData.Get<uint16>()[index + 1];
+                const int32 i2 = indicesData.Get<uint16>()[index + 2];
+                const Float3 v0(particles.Get()[i0]);
+                const Float3 v1(particles.Get()[i1]);
+                const Float3 v2(particles.Get()[i2]);
+                const Float3 normal = Float3::Cross(v1 - v0, v2 - v0);
+                normals.Get()[i0] += normal;
+                normals.Get()[i1] += normal;
+                normals.Get()[i2] += normal;
+            }
+        }
+        else
+        {
+            for (int32 triangleIndex = 0; triangleIndex < trianglesCount; triangleIndex++)
+            {
+                const int32 index = triangleIndex * 3;
+                const int32 i0 = indicesData.Get<uint32>()[index];
+                const int32 i1 = indicesData.Get<uint32>()[index + 1];
+                const int32 i2 = indicesData.Get<uint32>()[index + 2];
+                const Float3 v0(particles.Get()[i0]);
+                const Float3 v1(particles.Get()[i1]);
+                const Float3 v2(particles.Get()[i2]);
+                const Float3 normal = Float3::Cross(v1 - v0, v2 - v0);
+                normals.Get()[i0] += normal;
+                normals.Get()[i1] += normal;
+                normals.Get()[i2] += normal;
+            }
+        }
+    }
+
+    // Update mesh vertices based on the cloth particles positions
     if (auto* animatedModel = Cast<AnimatedModel>(GetParent()))
     {
         if (animatedModel->GraphInstance.NodesPose.IsEmpty())
@@ -828,7 +886,7 @@ void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformat
         const float* paint = _paint.Count() >= particles.Length() ? _paint.Get() : nullptr;
         for (uint32 i = 0; i < vbCount; i++)
         {
-            VB0SkinnedElementType& vb0 = *(VB0SkinnedElementType*)vbData;
+            VB0SkinnedElementType& vb = *(VB0SkinnedElementType*)vbData;
             vbData += vbStride;
 
             // Skip fixed vertices
@@ -836,27 +894,27 @@ void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformat
                 continue;
 
             // Calculate skinned vertex matrix from bones blending
-            const Float4 blendWeights = vb0.BlendWeights.ToFloat4();
+            const Float4 blendWeights = vb.BlendWeights.ToFloat4();
             // TODO: optimize this or use _skinningData from AnimatedModel to access current mesh bones data directly
             Matrix matrix;
-            const SkeletonBone& bone0 = skeleton.Bones[vb0.BlendIndices.R];
+            const SkeletonBone& bone0 = skeleton.Bones[vb.BlendIndices.R];
             Matrix::Multiply(bone0.OffsetMatrix, pose[bone0.NodeIndex], matrix);
             Matrix boneMatrix = matrix * blendWeights.X;
             if (blendWeights.Y > 0.0f)
             {
-                const SkeletonBone& bone1 = skeleton.Bones[vb0.BlendIndices.G];
+                const SkeletonBone& bone1 = skeleton.Bones[vb.BlendIndices.G];
                 Matrix::Multiply(bone1.OffsetMatrix, pose[bone1.NodeIndex], matrix);
                 boneMatrix += matrix * blendWeights.Y;
             }
             if (blendWeights.Z > 0.0f)
             {
-                const SkeletonBone& bone2 = skeleton.Bones[vb0.BlendIndices.B];
+                const SkeletonBone& bone2 = skeleton.Bones[vb.BlendIndices.B];
                 Matrix::Multiply(bone2.OffsetMatrix, pose[bone2.NodeIndex], matrix);
                 boneMatrix += matrix * blendWeights.Z;
             }
             if (blendWeights.W > 0.0f)
             {
-                const SkeletonBone& bone3 = skeleton.Bones[vb0.BlendIndices.A];
+                const SkeletonBone& bone3 = skeleton.Bones[vb.BlendIndices.A];
                 Matrix::Multiply(bone3.OffsetMatrix, pose[bone3.NodeIndex], matrix);
                 boneMatrix += matrix * blendWeights.W;
             }
@@ -865,16 +923,43 @@ void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformat
             Matrix boneMatrixInv;
             Matrix::Invert(boneMatrix, boneMatrixInv);
             Float3 pos = *(Float3*)&particles.Get()[i];
-            vb0.Position = Float3::Transform(pos, boneMatrixInv);
+            vb.Position = Float3::Transform(pos, boneMatrixInv);
+        }
+
+        if (_simulationSettings.ComputeNormals)
+        {
+            // Write normals
+            for (uint32 i = 0; i < vbCount; i++)
+            {
+                Float3 normal = normals.Get()[i];
+                normal.Normalize();
+                VB0SkinnedElementType& vb = *(VB0SkinnedElementType*)vbData;
+                vbData += vbStride;
+                RenderTools::CalculateTangentFrame(vb.Normal, vb.Tangent, normal);
+            }
+        }
+    }
+    else if (deformation.Type == MeshBufferType::Vertex0)
+    {
+        // Copy particle positions to the mesh data
+        ASSERT(vbStride == sizeof(VB0ElementType));
+        for (uint32 i = 0; i < vbCount; i++)
+        {
+            *(Float3*)vbData = *(Float3*)&particles.Get()[i];
+            vbData += vbStride;
         }
     }
     else
     {
+        // Write normals for the modified vertices by the cloth
+        ASSERT(vbStride == sizeof(VB1ElementType));
         for (uint32 i = 0; i < vbCount; i++)
         {
-            // Copy particle positions to the mesh data
-            *(Float3*)vbData = *(Float3*)&particles.Get()[i];
+            Float3 normal = normals.Get()[i];
+            normal.Normalize();
+            VB1ElementType& vb = *(VB1ElementType*)vbData;
             vbData += vbStride;
+            RenderTools::CalculateTangentFrame(vb.Normal, vb.Tangent, normal);
         }
     }
 

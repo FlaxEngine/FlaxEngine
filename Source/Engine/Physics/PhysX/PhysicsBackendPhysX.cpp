@@ -3329,6 +3329,7 @@ void PhysicsBackend::RemoveVehicle(void* scene, WheeledVehicle* actor)
 
 void* PhysicsBackend::CreateCloth(const PhysicsClothDesc& desc)
 {
+    PROFILE_CPU();
 #if USE_CLOTH_SANITY_CHECKS
     {
         // Sanity check
@@ -3565,6 +3566,7 @@ Span<const Float4> PhysicsBackend::GetClothParticles(void* cloth)
 
 void PhysicsBackend::SetClothParticles(void* cloth, Span<const Float4> value, Span<const Float3> positions, Span<const float> invMasses)
 {
+    PROFILE_CPU();
     auto clothPhysX = (nv::cloth::Cloth*)cloth;
     nv::cloth::MappedRange<PxVec4> range = clothPhysX->getCurrentParticles();
     const uint32_t size = range.size();
@@ -3609,6 +3611,7 @@ void PhysicsBackend::SetClothParticles(void* cloth, Span<const Float4> value, Sp
 
 void PhysicsBackend::SetClothPaint(void* cloth, Span<const float> value)
 {
+    PROFILE_CPU();
     auto clothPhysX = (nv::cloth::Cloth*)cloth;
     if (value.IsValid())
     {

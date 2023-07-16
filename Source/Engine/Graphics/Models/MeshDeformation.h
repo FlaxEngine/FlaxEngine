@@ -13,14 +13,16 @@
 struct MeshDeformationData
 {
     uint64 Key;
+    MeshBufferType Type;
     uint32 DirtyMinIndex = 0;
     uint32 DirtyMaxIndex = MAX_uint32 - 1;
     bool Dirty = true;
     BoundingBox Bounds;
     DynamicVertexBuffer VertexBuffer;
 
-    MeshDeformationData(uint64 key, uint32 stride)
+    MeshDeformationData(uint64 key, MeshBufferType type, uint32 stride)
         : Key(key)
+        , Type(type)
         , VertexBuffer(0, stride, TEXT("MeshDeformation"))
     {
     }
