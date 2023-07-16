@@ -10,6 +10,7 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
@@ -41,14 +42,8 @@ namespace
                 {
                     const Float3 normal = normals[i];
                     const Float3 tangent = tangents[i];
-
-                    // Calculate bitangent sign
-                    Float3 bitangent = Float3::Normalize(Float3::Cross(normal, tangent));
-                    byte sign = static_cast<byte>(Float3::Dot(Float3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
-
-                    // Set tangent frame
-                    vb1[i].Tangent = Float1010102(tangent * 0.5f + 0.5f, sign);
-                    vb1[i].Normal = Float1010102(normal * 0.5f + 0.5f, 0);
+                    auto& v = vb1.Get()[i];
+                    RenderTools::CalculateTangentFrame(v.Normal, v.Tangent, normal, tangent);
                 }
             }
             else
@@ -56,23 +51,8 @@ namespace
                 for (uint32 i = 0; i < vertexCount; i++)
                 {
                     const Float3 normal = normals[i];
-
-                    // Calculate tangent
-                    Float3 c1 = Float3::Cross(normal, Float3::UnitZ);
-                    Float3 c2 = Float3::Cross(normal, Float3::UnitY);
-                    Float3 tangent;
-                    if (c1.LengthSquared() > c2.LengthSquared())
-                        tangent = c1;
-                    else
-                        tangent = c2;
-
-                    // Calculate bitangent sign
-                    Float3 bitangent = Float3::Normalize(Float3::Cross(normal, tangent));
-                    byte sign = static_cast<byte>(Float3::Dot(Float3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
-
-                    // Set tangent frame
-                    vb1[i].Tangent = Float1010102(tangent * 0.5f + 0.5f, sign);
-                    vb1[i].Normal = Float1010102(normal * 0.5f + 0.5f, 0);
+                    auto& v = vb1.Get()[i];
+                    RenderTools::CalculateTangentFrame(v.Normal, v.Tangent, normal);
                 }
             }
         }
