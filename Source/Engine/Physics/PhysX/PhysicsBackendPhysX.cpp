@@ -186,14 +186,17 @@ struct ClothSettings
     float CollisionThickness = 0.0f;
     Cloth* Actor;
 
-    void UpdateBounds(const nv::cloth::Cloth* clothPhysX) const
+    bool UpdateBounds(const nv::cloth::Cloth* clothPhysX) const
     {
         // Get cloth particles bounds (in local-space)
         const PxVec3& clothBoundsPos = clothPhysX->getBoundingBoxCenter();
         const PxVec3& clothBoundsSize = clothPhysX->getBoundingBoxScale();
         BoundingBox localBounds;
         BoundingBox::FromPoints(P2C(clothBoundsPos - clothBoundsSize), P2C(clothBoundsPos + clothBoundsSize), localBounds);
-        CHECK(!localBounds.Minimum.IsNanOrInfinity() && !localBounds.Maximum.IsNanOrInfinity());
+
+        // Automatic cloth reset when simulation fails (eg. ends with NaN)
+        if (localBounds.Minimum.IsNanOrInfinity() || localBounds.Maximum.IsNanOrInfinity())
+            return true;
 
         // Transform local-space bounds into world-space
         const PxTransform clothPose(clothPhysX->getTranslation(), clothPhysX->getRotation());
@@ -206,6 +209,7 @@ struct ClothSettings
         // Setup bounds
         BoundingBox::FromPoints(boundsCorners, 8, const_cast<BoundingBox&>(Actor->GetBox()));
         BoundingSphere::FromBox(Actor->GetBox(), const_cast<BoundingSphere&>(Actor->GetSphere()));
+        return false;
     }
 };
 
@@ -1677,14 +1681,18 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         {
             PROFILE_CPU_NAMED("Post");
             ScopeLock lock(ClothLocker);
+            Array<Cloth*> brokenCloths;
             for (auto clothPhysX : scenePhysX->ClothsList)
             {
                 const auto& clothSettings = Cloths[clothPhysX];
                 if (clothSettings.Culled)
                     continue;
-                clothSettings.UpdateBounds(clothPhysX);
+                if (clothSettings.UpdateBounds(clothPhysX))
+                    brokenCloths.Add(clothSettings.Actor);
                 clothSettings.Actor->OnPostUpdate();
             }
+            for (auto cloth : brokenCloths)
+                cloth->Rebuild();
         }
     }
 
