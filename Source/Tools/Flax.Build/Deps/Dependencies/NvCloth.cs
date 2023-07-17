@@ -89,6 +89,9 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.iOS:
                     Build(options, platform, TargetArchitecture.ARM64);
                     break;
+                case TargetPlatform.Linux:
+                    Build(options, platform, TargetArchitecture.x64);
+                    break;
                 }
             }
 
@@ -155,6 +158,11 @@ namespace Flax.Deps.Dependencies
             case TargetPlatform.iOS:
                 cmakeArgs += " -DTARGET_BUILD_PLATFORM=ios";
                 cmakeName = "ios";
+                binariesPrefix = "lib";
+                break;
+            case TargetPlatform.Linux:
+                cmakeArgs += " -DTARGET_BUILD_PLATFORM=linux";
+                cmakeName = "linux";
                 binariesPrefix = "lib";
                 break;
             default: throw new InvalidPlatformException(platform);

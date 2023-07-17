@@ -37,6 +37,7 @@ public class NvCloth : DepsModule
         case TargetPlatform.Android:
         case TargetPlatform.Mac:
         case TargetPlatform.iOS:
+        case TargetPlatform.Linux:
             libName = "NvCloth";
             break;
         case TargetPlatform.Switch:

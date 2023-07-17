@@ -724,6 +724,7 @@ void Cloth::CalculateInvMasses(Array<float>& invMasses)
 
 void Cloth::OnPreUpdate()
 {
+#if WITH_CLOTH
     // Get current skinned mesh pose for the simulation of the non-kinematic vertices
     if (auto* animatedModel = Cast<AnimatedModel>(GetParent()))
     {
@@ -806,6 +807,7 @@ void Cloth::OnPreUpdate()
 
         PhysicsBackend::UnlockClothParticles(_cloth);
     }
+#endif
 }
 
 void Cloth::OnPostUpdate()
