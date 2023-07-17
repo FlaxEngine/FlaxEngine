@@ -1692,7 +1692,16 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                 clothSettings.Actor->OnPostUpdate();
             }
             for (auto cloth : brokenCloths)
+            {
+                // Rebuild cloth object but keep fabric ref to prevent fabric recook
+                auto fabric = &((nv::cloth::Cloth*)cloth->_cloth)->getFabric();
+                Fabrics[fabric].Refs++;
+                fabric->incRefCount();
                 cloth->Rebuild();
+                fabric->decRefCount();
+                if (--Fabrics[fabric].Refs == 0)
+                    Fabrics.Remove(fabric);
+            }
         }
     }
 
@@ -3460,6 +3469,7 @@ void* PhysicsBackend::CreateCloth(const PhysicsClothDesc& desc)
         if (fabric)
         {
             Fabrics[fabric].Refs++;
+            fabric->incRefCount();
         }
         else
         {
