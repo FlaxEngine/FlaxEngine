@@ -733,6 +733,7 @@ void Cloth::CalculateInvMasses(Array<float>& invMasses)
 
 bool Cloth::OnPreUpdate()
 {
+#if WITH_CLOTH
     if (!IsActiveInHierarchy())
         return true;
     if (!_simulationSettings.UpdateWhenOffscreen && _simulationSettings.CullDistance > 0)
@@ -834,7 +835,7 @@ bool Cloth::OnPreUpdate()
 
         PhysicsBackend::UnlockClothParticles(_cloth);
     }
-
+#endif
     return false;
 }
 
