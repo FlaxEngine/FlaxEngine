@@ -13,6 +13,7 @@
 /// </summary>
 API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Cloth\"), ActorToolbox(\"Physics\")") class FLAXENGINE_API Cloth : public Actor
 {
+    friend class PhysicsBackend;
     DECLARE_SCENE_OBJECT(Cloth);
 
     /// <summary>
@@ -129,12 +130,22 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Cloth\"), ActorToolbox(\"Ph
         /// <summary>
         /// Target cloth solver iterations per second. The executed number of iterations per second may vary dependent on many performance factors. However, at least one iteration per frame is solved regardless of the value set.
         /// </summary>
-        API_FIELD() float SolverFrequency = 300.0f;
+        API_FIELD() float SolverFrequency = 200.0f;
+
+        /// <summary>
+        /// The maximum distance from the camera at which to run cloth simulation. Used to improve performance and skip updating too far clothes. The physics system might reduce the update rate for clothes far enough (eg. half this distance). 0 to disable any culling.
+        /// </summary>
+        API_FIELD() float CullDistance = 5000.0f;
+
+        /// <summary>
+        /// If true, the cloth will be updated even when an actor cannot be seen by any camera. Otherwise, the cloth simulation will stop running when the actor is off-screen.
+        /// </summary>
+        API_FIELD() bool UpdateWhenOffscreen = false;
 
         /// <summary>
         /// The maximum distance cloth particles can move from the original location (within local-space of the actor). Scaled by painted per-particle value (0-1) to restrict movement of certain particles.
         /// </summary>
-        API_FIELD() float MaxDistance = 1000.0f;
+        API_FIELD() float MaxParticleDistance = 1000.0f;
 
         /// <summary>
         /// Enables automatic normal vectors computing for the cloth mesh, otherwise original mesh normals will be used.
@@ -207,6 +218,9 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Cloth\"), ActorToolbox(\"Ph
 
 private:
     void* _cloth = nullptr;
+    Real _lastMinDstSqr = MAX_Real;
+    uint32 _frameCounter = 0;
+    int32 _sceneRenderingKey = -1;
     ForceSettings _forceSettings;
     CollisionSettings _collisionSettings;
     SimulationSettings _simulationSettings;
@@ -220,7 +234,6 @@ public:
     /// <summary>
     /// Gets the mesh to use for the cloth simulation (single mesh from specific LOD).
     /// </summary>
-    /// <remarks></remarks>
     API_PROPERTY(Attributes="EditorOrder(0), EditorDisplay(\"Cloth\")")
     ModelInstanceActor::MeshReference GetMesh() const;
 
@@ -316,11 +329,13 @@ public:
     /// </summary>
     API_FUNCTION() void SetPaint(Span<const float> value);
 
-    void OnPreUpdate();
+    bool OnPreUpdate();
     void OnPostUpdate();
 
 public:
     // [Actor]
+    void Draw(RenderContext& renderContext) override;
+    void Draw(RenderContextBatch& renderContextBatch) override;
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

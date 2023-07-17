@@ -41,6 +41,7 @@
 #if WITH_CLOTH
 #include "Engine/Physics/Actors/Cloth.h"
 #include "Engine/Threading/JobSystem.h"
+#include "Engine/Threading/Threading.h"
 #include <ThirdParty/NvCloth/Callbacks.h>
 #include <ThirdParty/NvCloth/Factory.h>
 #include <ThirdParty/NvCloth/Cloth.h>
@@ -94,15 +95,12 @@ struct ScenePhysX
 #endif
 #if WITH_CLOTH
     nv::cloth::Solver* ClothSolver = nullptr;
+    Array<nv::cloth::Cloth*> ClothsList;
 #endif
 
 #if WITH_CLOTH
     void PreSimulateCloth(int32 i);
-    void SimulateCloth(int32 i)
-    {
-        PROFILE_CPU();
-        ClothSolver->simulateChunk(i);
-    }
+    void SimulateCloth(int32 i);
 #endif
 };
 
@@ -171,12 +169,8 @@ struct FabricSettings
             Desc.InvMassesStride == r.InvMassesStride)
         {
             if (Desc.InvMassesData && r.InvMassesData)
-            {
-                bool matches = Platform::MemoryCompare(InvMasses.Get(), r.InvMassesData, r.VerticesCount * r.InvMassesStride) == 0;
-                return matches;
-            }
-            bool matches =  !Desc.InvMassesData && !r.InvMassesData;
-                return matches;
+                return Platform::MemoryCompare(InvMasses.Get(), r.InvMassesData, r.VerticesCount * r.InvMassesStride) == 0;
+            return !Desc.InvMassesData && !r.InvMassesData;
         }
         return false;
     }
@@ -184,9 +178,10 @@ struct FabricSettings
 
 struct ClothSettings
 {
+    bool Culled = false;
     bool SceneCollisions = false;
-    byte CollisionsUpdateFramesLeft = 0;
     bool CollisionsUpdateFramesRandomize = true;
+    byte CollisionsUpdateFramesLeft = 0;
     float GravityScale = 1.0f;
     float CollisionThickness = 0.0f;
     Cloth* Actor;
@@ -576,6 +571,7 @@ namespace
 #endif
 
 #if WITH_CLOTH
+    CriticalSection ClothLocker;
     nv::cloth::Factory* ClothFactory = nullptr;
     Dictionary<nv::cloth::Fabric*, FabricSettings> Fabrics;
     Dictionary<nv::cloth::Cloth*, ClothSettings> Cloths;
@@ -708,10 +704,28 @@ void InitVehicleSDK()
 void ScenePhysX::PreSimulateCloth(int32 i)
 {
     PROFILE_CPU();
-    auto clothPhysX = (nv::cloth::Cloth*)ClothSolver->getClothList()[i];
+    auto clothPhysX = ClothsList[i];
     auto& clothSettings = Cloths[clothPhysX];
-    
-    clothSettings.Actor->OnPreUpdate();
+
+    if (clothSettings.Actor->OnPreUpdate())
+    {
+        // Cull simulation based on distance
+        if (!clothSettings.Culled)
+        {
+            clothSettings.Culled = true;
+            ClothLocker.Lock();
+            ClothSolver->removeCloth(clothPhysX);
+            ClothLocker.Unlock();
+        }
+        return;
+    }
+    if (clothSettings.Culled)
+    {
+        clothSettings.Culled = false;
+        ClothLocker.Lock();
+        ClothSolver->addCloth(clothPhysX);
+        ClothLocker.Unlock();
+    }
 
     // Setup automatic scene collisions with colliders around the cloth
     if (clothSettings.SceneCollisions && clothSettings.CollisionsUpdateFramesLeft == 0)
@@ -831,7 +845,7 @@ void ScenePhysX::PreSimulateCloth(int32 i)
                         break;
                     }
                     // Cloth vs Triangle collisions are too slow for real-time use
- #if 0
+#if 0
                     case PxGeometryType::eTRIANGLEMESH:
                     {
                         const PxTriangleMeshGeometry& geomTriangleMesh = (const PxTriangleMeshGeometry&)geo;
@@ -878,6 +892,12 @@ void ScenePhysX::PreSimulateCloth(int32 i)
         }
     }
     clothSettings.CollisionsUpdateFramesLeft--;
+}
+
+void ScenePhysX::SimulateCloth(int32 i)
+{
+    PROFILE_CPU();
+    ClothSolver->simulateChunk(i);
 }
 
 #endif
@@ -1632,17 +1652,15 @@ void PhysicsBackend::EndSimulateScene(void* scene)
 
 #if WITH_CLOTH
     nv::cloth::Solver* clothSolver = scenePhysX->ClothSolver;
-    if (clothSolver && clothSolver->getNumCloths() != 0)
+    if (clothSolver && scenePhysX->ClothsList.Count() != 0)
     {
         PROFILE_CPU_NAMED("Physics.Cloth");
-        const int32 clothsCount = scenePhysX->ClothSolver->getNumCloths();
-        nv::cloth::Cloth* const* cloths = scenePhysX->ClothSolver->getClothList();
 
         {
             PROFILE_CPU_NAMED("Pre");
             Function<void(int32)> job;
             job.Bind<ScenePhysX, &ScenePhysX::PreSimulateCloth>(scenePhysX);
-            JobSystem::Execute(job, clothsCount);
+            JobSystem::Execute(job, scenePhysX->ClothsList.Count());
         }
 
         {
@@ -1658,10 +1676,12 @@ void PhysicsBackend::EndSimulateScene(void* scene)
 
         {
             PROFILE_CPU_NAMED("Post");
-            for (int32 i = 0; i < clothsCount; i++)
+            ScopeLock lock(ClothLocker);
+            for (auto clothPhysX : scenePhysX->ClothsList)
             {
-                auto clothPhysX = (nv::cloth::Cloth*)cloths[i];
                 const auto& clothSettings = Cloths[clothPhysX];
+                if (clothSettings.Culled)
+                    continue;
                 clothSettings.UpdateBounds(clothPhysX);
                 clothSettings.Actor->OnPostUpdate();
             }
@@ -3410,6 +3430,7 @@ void* PhysicsBackend::CreateCloth(const PhysicsClothDesc& desc)
 #endif
 
     // Lazy-init NvCloth
+    ScopeLock lock(ClothLocker);
     if (ClothFactory == nullptr)
     {
         nv::cloth::InitializeNvCloth(&AllocatorCallback, &ErrorCallback, &AssertCallback, &ProfilerCallback);
@@ -3507,6 +3528,7 @@ void* PhysicsBackend::CreateCloth(const PhysicsClothDesc& desc)
 
 void PhysicsBackend::DestroyCloth(void* cloth)
 {
+    ScopeLock lock(ClothLocker);
     auto clothPhysX = (nv::cloth::Cloth*)cloth;
     if (--Fabrics[&clothPhysX->getFabric()].Refs == 0)
         Fabrics.Remove(&clothPhysX->getFabric());
@@ -3559,7 +3581,7 @@ void PhysicsBackend::SetClothSimulationSettings(void* cloth, const void* setting
     auto clothPhysX = (nv::cloth::Cloth*)cloth;
     const auto& settings = *(const Cloth::SimulationSettings*)settingsPtr;
     clothPhysX->setSolverFrequency(settings.SolverFrequency);
-    clothPhysX->setMotionConstraintScaleBias(settings.MaxDistance, 0.0f);
+    clothPhysX->setMotionConstraintScaleBias(settings.MaxParticleDistance, 0.0f);
     clothPhysX->setWindVelocity(C2P(settings.WindVelocity));
 }
 
@@ -3705,6 +3727,7 @@ void PhysicsBackend::SetClothPaint(void* cloth, Span<const float> value)
 
 void PhysicsBackend::AddCloth(void* scene, void* cloth)
 {
+    ScopeLock lock(ClothLocker);
     auto scenePhysX = (ScenePhysX*)scene;
     auto clothPhysX = (nv::cloth::Cloth*)cloth;
     if (scenePhysX->ClothSolver == nullptr)
@@ -3713,13 +3736,20 @@ void PhysicsBackend::AddCloth(void* scene, void* cloth)
         ASSERT(scenePhysX->ClothSolver);
     }
     scenePhysX->ClothSolver->addCloth(clothPhysX);
+    scenePhysX->ClothsList.Add(clothPhysX);
 }
 
 void PhysicsBackend::RemoveCloth(void* scene, void* cloth)
 {
+    ScopeLock lock(ClothLocker);
     auto scenePhysX = (ScenePhysX*)scene;
     auto clothPhysX = (nv::cloth::Cloth*)cloth;
-    scenePhysX->ClothSolver->removeCloth(clothPhysX);
+    auto& clothSettings = Cloths[clothPhysX];
+    if (clothSettings.Culled)
+        clothSettings.Culled = false;
+    else
+        scenePhysX->ClothSolver->removeCloth(clothPhysX);
+    scenePhysX->ClothsList.Remove(clothPhysX);
 }
 
 #endif

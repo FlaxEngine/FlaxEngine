@@ -3,6 +3,7 @@
 #include "Cloth.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Ray.h"
+#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Models/MeshBase.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
@@ -21,6 +22,9 @@ Cloth::Cloth(const SpawnParams& params)
 {
     // Use the first mesh by default
     _mesh.LODIndex = _mesh.MeshIndex = 0;
+
+    // Register for drawing to handle culling and distance LOD
+    _drawCategory = SceneRendering::SceneDrawAsync;
 }
 
 ModelInstanceActor::MeshReference Cloth::GetMesh() const
@@ -441,6 +445,7 @@ void Cloth::EndPlay()
 void Cloth::OnEnable()
 {
 #if USE_EDITOR
+    GetSceneRendering()->AddActor(this, _sceneRenderingKey);
     GetSceneRendering()->AddPhysicsDebug<Cloth, &Cloth::DrawPhysicsDebug>(this);
 #endif
 #if WITH_CLOTH
@@ -461,6 +466,7 @@ void Cloth::OnDisable()
 #endif
 #if USE_EDITOR
     GetSceneRendering()->RemovePhysicsDebug<Cloth, &Cloth::DrawPhysicsDebug>(this);
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 #endif
 }
 
@@ -580,6 +586,8 @@ bool Cloth::CreateCloth()
             deformation->AddDeformer(mesh.LODIndex, mesh.MeshIndex, MeshBufferType::Vertex1, deformer);
         _meshDeformation = deformation;
     }
+
+    _lastMinDstSqr = MAX_Real;
 #endif
 
     return false;
@@ -588,6 +596,7 @@ bool Cloth::CreateCloth()
 void Cloth::DestroyCloth()
 {
 #if WITH_CLOTH
+    _lastMinDstSqr = MAX_Real;
     if (_meshDeformation)
     {
         Function<void(const MeshBase*, MeshDeformationData&)> deformer;
@@ -722,20 +731,38 @@ void Cloth::CalculateInvMasses(Array<float>& invMasses)
 #endif
 }
 
-void Cloth::OnPreUpdate()
+bool Cloth::OnPreUpdate()
 {
+    if (!IsActiveInHierarchy())
+        return true;
+    if (!_simulationSettings.UpdateWhenOffscreen && _simulationSettings.CullDistance > 0)
+    {
+        // Cull based on distance
+        bool cull = false;
+        if (_lastMinDstSqr >= Math::Square(_simulationSettings.CullDistance))
+            cull = true; // Cull
+        else if (_lastMinDstSqr >= Math::Square(_simulationSettings.CullDistance * 0.8f))
+            cull = _frameCounter % 4 == 0; // Update once every 4 frames
+        else if (_lastMinDstSqr >= Math::Square(_simulationSettings.CullDistance * 0.5f))
+            cull = _frameCounter % 2 == 0; // Update once every 2 frames
+        _lastMinDstSqr = MAX_Real;
+        _frameCounter++;
+        if (cull)
+            return true;
+    }
+
     // Get current skinned mesh pose for the simulation of the non-kinematic vertices
     if (auto* animatedModel = Cast<AnimatedModel>(GetParent()))
     {
         if (animatedModel->GraphInstance.NodesPose.IsEmpty() || _paint.IsEmpty())
-            return;
+            return false;
         const ModelInstanceActor::MeshReference mesh = GetMesh();
         if (mesh.Actor == nullptr)
-            return;
+            return false;
         BytesContainer verticesData;
         int32 verticesCount;
         if (mesh.Actor->GetMeshData(mesh, MeshBufferType::Vertex0, verticesData, verticesCount))
-            return;
+            return false;
         PROFILE_CPU_NAMED("Skinned Pose");
         auto vbStride = (uint32)verticesData.Length() / verticesCount;
         ASSERT(vbStride == sizeof(VB0SkinnedElementType));
@@ -749,6 +776,7 @@ void Cloth::OnPreUpdate()
         Array<Matrix> pose;
         animatedModel->GetCurrentPose(pose);
         const SkeletonData& skeleton = animatedModel->SkinnedModel->Skeleton;
+        const SkeletonBone* bones = skeleton.Bones.Get();
 
         // Animated model uses skinning thus requires to set vertex position inverse to skeleton bones
         const float* paint = _paint.Get();
@@ -763,24 +791,24 @@ void Cloth::OnPreUpdate()
             const Float4 blendWeights = vb0.BlendWeights.ToFloat4();
             // TODO: optimize this or use _skinningData from AnimatedModel to access current mesh bones data directly
             Matrix matrix;
-            const SkeletonBone& bone0 = skeleton.Bones[vb0.BlendIndices.R];
+            const SkeletonBone& bone0 = bones[vb0.BlendIndices.R];
             Matrix::Multiply(bone0.OffsetMatrix, pose[bone0.NodeIndex], matrix);
             Matrix boneMatrix = matrix * blendWeights.X;
             if (blendWeights.Y > 0.0f)
             {
-                const SkeletonBone& bone1 = skeleton.Bones[vb0.BlendIndices.G];
+                const SkeletonBone& bone1 = bones[vb0.BlendIndices.G];
                 Matrix::Multiply(bone1.OffsetMatrix, pose[bone1.NodeIndex], matrix);
                 boneMatrix += matrix * blendWeights.Y;
             }
             if (blendWeights.Z > 0.0f)
             {
-                const SkeletonBone& bone2 = skeleton.Bones[vb0.BlendIndices.B];
+                const SkeletonBone& bone2 = bones[vb0.BlendIndices.B];
                 Matrix::Multiply(bone2.OffsetMatrix, pose[bone2.NodeIndex], matrix);
                 boneMatrix += matrix * blendWeights.Z;
             }
             if (blendWeights.W > 0.0f)
             {
-                const SkeletonBone& bone3 = skeleton.Bones[vb0.BlendIndices.A];
+                const SkeletonBone& bone3 = bones[vb0.BlendIndices.A];
                 Matrix::Multiply(bone3.OffsetMatrix, pose[bone3.NodeIndex], matrix);
                 boneMatrix += matrix * blendWeights.W;
             }
@@ -806,6 +834,8 @@ void Cloth::OnPreUpdate()
 
         PhysicsBackend::UnlockClothParticles(_cloth);
     }
+
+    return false;
 }
 
 void Cloth::OnPostUpdate()
@@ -823,11 +853,28 @@ void Cloth::OnPostUpdate()
         // Update bounds (for mesh culling)
         auto* actor = (ModelInstanceActor*)GetParent();
         actor->UpdateBounds();
+        if (_sceneRenderingKey != -1)
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
     }
+}
+
+void Cloth::Draw(RenderContext& renderContext)
+{
+    // Update min draw distance for the next simulation tick
+    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));
+}
+
+void Cloth::Draw(RenderContextBatch& renderContextBatch)
+{
+    // Update min draw distance for the next simulation tick
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
+    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));
 }
 
 void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformation)
 {
+    if (!IsActiveInHierarchy())
+        return;
     if (!_simulationSettings.ComputeNormals && deformation.Type != MeshBufferType::Vertex0)
         return;
 #if WITH_CLOTH

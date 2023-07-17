@@ -881,7 +881,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
     Matrix::Transformation(_transform.Scale, _transform.Orientation, translation, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
-    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.Position + renderContext.View.Origin));
+    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));
     if (_skinningData.IsReady())
     {
         // Flush skinning data with GPU
@@ -924,7 +924,7 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
     Matrix::Transformation(_transform.Scale, _transform.Orientation, translation, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
-    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.Position + renderContext.View.Origin));
+    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));
     if (_skinningData.IsReady())
     {
         // Flush skinning data with GPU
