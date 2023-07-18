@@ -21,7 +21,7 @@ namespace FlaxEditor.SceneGraph.Actors
     [HideInEditor]
     public sealed class SplineNode : ActorNode
     {
-        private sealed class SplinePointNode : ActorChildNode<SplineNode>
+        public sealed class SplinePointNode : ActorChildNode<SplineNode>
         {
             public unsafe SplinePointNode(SplineNode node, Guid id, int index)
             : base(node, id, index)
@@ -219,7 +219,7 @@ namespace FlaxEditor.SceneGraph.Actors
             }
         }
 
-        private sealed class SplinePointTangentNode : ActorChildNode
+        public sealed class SplinePointTangentNode : ActorChildNode
         {
             private SplineNode _node;
             private int _index;
