@@ -238,7 +238,7 @@ public:
     /// <summary>
     /// Gets the default material.
     /// </summary>
-    MaterialBase* GetDefaultMaterial() const;
+    API_PROPERTY() MaterialBase* GetDefaultMaterial() const;
 
     /// <summary>
     /// Gets the default material (Deformable domain).
