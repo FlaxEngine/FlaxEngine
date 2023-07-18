@@ -16,7 +16,6 @@ namespace FlaxEditor.CustomEditors.Editors
         private GroupElement _group;
         private bool _updateName;
         private MaterialBase _material;
-        private ModelInstanceEntry _entry;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
@@ -24,82 +23,59 @@ namespace FlaxEditor.CustomEditors.Editors
             _updateName = true;
             var group = layout.Group("Entry");
             _group = group;
-            
-            _entry = (ModelInstanceEntry)Values[0];
+
+            if (ParentEditor == null)
+                return;
+            var entry = (ModelInstanceEntry)Values[0];
             var entryIndex = ParentEditor.ChildrenEditors.IndexOf(this);
-            var materiaLabel = new PropertyNameLabel("Material");
-            materiaLabel.TooltipText = "The mesh surface material used for the rendering.";
-            if (ParentEditor.ParentEditor.Values[0] is StaticModel staticModel)
+            var materialLabel = new PropertyNameLabel("Material");
+            materialLabel.TooltipText = "The mesh surface material used for the rendering.";
+            if (ParentEditor.ParentEditor?.Values[0] is ModelInstanceActor modelInstance)
             {
                 // Ensure that entry with default material set is set back to null
-                if (_entry.Material == staticModel.Model.MaterialSlots[entryIndex].Material)
+                var defaultValue = GPUDevice.Instance.DefaultMaterial;
                 {
-                    staticModel.SetMaterial(entryIndex, null);
+                    var slots = modelInstance.MaterialSlots;
+                    if (entry.Material == slots[entryIndex].Material)
+                    {
+                        modelInstance.SetMaterial(entryIndex, null);
+                    }
+                    _material = modelInstance.GetMaterial(entryIndex);
+                    if (slots[entryIndex].Material)
+                    {
+                        defaultValue = slots[entryIndex].Material;
+                    }
                 }
-                _material = staticModel.GetMaterial(entryIndex);
 
                 var matContainer = new CustomValueContainer(new ScriptType(typeof(MaterialBase)), _material, (instance, index) => _material, (instance, index, value) => _material = value as MaterialBase);
-                var materialEditor = (_group.Property(materiaLabel, matContainer)) as AssetRefEditor;
-                materialEditor.Values.SetDefaultValue((staticModel.Model.MaterialSlots[entryIndex].Material) ? staticModel.Model.MaterialSlots[entryIndex].Material : GPUDevice.Instance.DefaultMaterial);
+                var materialEditor = (AssetRefEditor)_group.Property(materialLabel, matContainer);
+                materialEditor.Values.SetDefaultValue(defaultValue);
                 materialEditor.RefreshDefaultValue();
                 materialEditor.Picker.SelectedItemChanged += () =>
                 {
+                    var slots = modelInstance.MaterialSlots;
                     var material = materialEditor.Picker.SelectedAsset as MaterialBase;
+                    var defaultMaterial = GPUDevice.Instance.DefaultMaterial;
                     if (!material)
                     {
-                        staticModel.SetMaterial(entryIndex, GPUDevice.Instance.DefaultMaterial);
-                        materialEditor.Picker.SelectedAsset = GPUDevice.Instance.DefaultMaterial;
+                        modelInstance.SetMaterial(entryIndex, defaultMaterial);
+                        materialEditor.Picker.SelectedAsset = defaultMaterial;
                     }
-                    else if (material == staticModel.Model.MaterialSlots[entryIndex].Material)
+                    else if (material == slots[entryIndex].Material)
                     {
-                        staticModel.SetMaterial(entryIndex, null);
+                        modelInstance.SetMaterial(entryIndex, null);
                     }
-                    else if (material == GPUDevice.Instance.DefaultMaterial && !staticModel.Model.MaterialSlots[entryIndex].Material)
+                    else if (material == defaultMaterial && !slots[entryIndex].Material)
                     {
-                        staticModel.SetMaterial(entryIndex, null);
+                        modelInstance.SetMaterial(entryIndex, null);
                     }
                     else
                     {
-                        staticModel.SetMaterial(entryIndex, material);
+                        modelInstance.SetMaterial(entryIndex, material);
                     }
                 };
             }
-            else if (ParentEditor.ParentEditor.Values[0] is AnimatedModel animatedModel)
-            {
-                // Ensure that entry with default material set is set back to null
-                if (_entry.Material == animatedModel.SkinnedModel.MaterialSlots[entryIndex].Material)
-                {
-                    animatedModel.SetMaterial(entryIndex, null);
-                }
-                _material = animatedModel.GetMaterial(entryIndex);
-                
-                var matContainer = new CustomValueContainer(new ScriptType(typeof(MaterialBase)), _material, (instance, index) => _material, (instance, index, value) => _material = value as MaterialBase);
-                var materialEditor = (_group.Property(materiaLabel, matContainer)) as AssetRefEditor;
-                materialEditor.Values.SetDefaultValue((animatedModel.SkinnedModel.MaterialSlots[entryIndex].Material) ? animatedModel.SkinnedModel.MaterialSlots[entryIndex].Material : GPUDevice.Instance.DefaultMaterial);
-                materialEditor.RefreshDefaultValue();
-                materialEditor.Picker.SelectedItemChanged += () =>
-                {
-                    var material = materialEditor.Picker.SelectedAsset as MaterialBase;
-                    if (!material)
-                    {
-                        animatedModel.SetMaterial(entryIndex, GPUDevice.Instance.DefaultMaterial);
-                        materialEditor.Picker.SelectedAsset = GPUDevice.Instance.DefaultMaterial;
-                    }
-                    else if (material == animatedModel.SkinnedModel.MaterialSlots[entryIndex].Material)
-                    {
-                        animatedModel.SetMaterial(entryIndex, null);
-                    }
-                    else if (material == GPUDevice.Instance.DefaultMaterial && !animatedModel.SkinnedModel.MaterialSlots[entryIndex].Material)
-                    {
-                        animatedModel.SetMaterial(entryIndex, null);
-                    }
-                    else
-                    {
-                        animatedModel.SetMaterial(entryIndex, material);
-                    }
-                };
-            }
-            
+
             base.Initialize(group);
         }
 
@@ -121,30 +97,13 @@ namespace FlaxEditor.CustomEditors.Editors
                 ParentEditor.ParentEditor.Values.Count > 0)
             {
                 var entryIndex = ParentEditor.ChildrenEditors.IndexOf(this);
-                if (ParentEditor.ParentEditor.Values[0] is StaticModel staticModel)
+                if (ParentEditor.ParentEditor.Values[0] is ModelInstanceActor modelInstance)
                 {
-                    var model = staticModel.Model;
-                    if (model && model.IsLoaded)
+                    var slots = modelInstance.MaterialSlots;
+                    if (slots != null && slots.Length > entryIndex)
                     {
-                        var slots = model.MaterialSlots;
-                        if (slots != null && slots.Length > entryIndex)
-                        {
-                            _group.Panel.HeaderText = "Entry " + slots[entryIndex].Name;
-                            _updateName = false;
-                        }
-                    }
-                }
-                else if (ParentEditor.ParentEditor.Values[0] is AnimatedModel animatedModel)
-                {
-                    var model = animatedModel.SkinnedModel;
-                    if (model && model.IsLoaded)
-                    {
-                        var slots = model.MaterialSlots;
-                        if (slots != null && slots.Length > entryIndex)
-                        {
-                            _group.Panel.HeaderText = "Entry " + slots[entryIndex].Name;
-                            _updateName = false;
-                        }
+                        _group.Panel.HeaderText = "Entry " + slots[entryIndex].Name;
+                        _updateName = false;
                     }
                 }
             }

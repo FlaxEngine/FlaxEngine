@@ -37,6 +37,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// The asset picker used to get a reference to an asset.
         /// </summary>
         public AssetPicker Picker;
+
         private ScriptType _valueType;
 
         /// <inheritdoc />
