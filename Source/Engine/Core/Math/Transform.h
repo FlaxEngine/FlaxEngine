@@ -40,9 +40,7 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Transform()
-    {
-    }
+    Transform() = default;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Transform"/> struct.

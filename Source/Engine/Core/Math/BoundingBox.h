@@ -38,9 +38,7 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    BoundingBox()
-    {
-    }
+    BoundingBox() = default;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BoundingBox"/> struct.

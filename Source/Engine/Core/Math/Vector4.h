@@ -76,9 +76,7 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Vector4Base()
-    {
-    }
+    Vector4Base() = default;
 
     FORCE_INLINE Vector4Base(T xyzw)
         : X(xyzw)

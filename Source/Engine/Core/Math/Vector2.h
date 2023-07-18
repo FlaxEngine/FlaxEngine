@@ -60,9 +60,7 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Vector2Base()
-    {
-    }
+    Vector2Base() = default;
 
     FORCE_INLINE Vector2Base(T xy)
         : X(xy)

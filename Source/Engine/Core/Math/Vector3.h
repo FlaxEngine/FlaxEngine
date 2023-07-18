@@ -89,9 +89,7 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Vector3Base()
-    {
-    }
+    Vector3Base() = default;
 
     FORCE_INLINE Vector3Base(T xyz)
         : X(xyz)
