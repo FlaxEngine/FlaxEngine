@@ -63,9 +63,7 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Matrix3x3()
-    {
-    }
+    Matrix3x3() = default;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Matrix3x3"/> struct.

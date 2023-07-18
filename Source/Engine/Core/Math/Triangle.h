@@ -30,9 +30,7 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Triangle()
-    {
-    }
+    Triangle() = default;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Triangle"/> struct.

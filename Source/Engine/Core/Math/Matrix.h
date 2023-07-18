@@ -83,9 +83,7 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Matrix()
-    {
-    }
+    Matrix() = default;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Matrix"/> struct.

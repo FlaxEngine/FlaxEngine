@@ -52,9 +52,7 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Viewport()
-    {
-    }
+    Viewport() = default;
 
     // Init
     // @param x The x coordinate of the upper-left corner of the viewport in pixels
