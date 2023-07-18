@@ -898,6 +898,14 @@ void AnimatedModel::Deserialize(DeserializeStream& stream, ISerializeModifier* m
         DrawModes |= DrawPass::GlobalSurfaceAtlas;
 }
 
+const Span<MaterialSlot> AnimatedModel::GetMaterialSlots() const
+{
+    const auto model = SkinnedModel.Get();
+    if (model && !model->WaitForLoaded())
+        return ToSpan(model->MaterialSlots);
+    return Span<MaterialSlot>();
+}
+
 MaterialBase* AnimatedModel::GetMaterial(int32 entryIndex)
 {
     if (SkinnedModel)
