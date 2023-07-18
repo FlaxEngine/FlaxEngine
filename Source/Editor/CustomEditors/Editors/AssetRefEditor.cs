@@ -38,6 +38,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// </summary>
         public AssetPicker Picker;
 
+        private bool _isRefreshing;
         private ScriptType _valueType;
 
         /// <inheritdoc />
@@ -89,6 +90,8 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private void OnSelectedItemChanged()
         {
+            if (_isRefreshing)
+                return;
             if (typeof(AssetItem).IsAssignableFrom(_valueType.Type))
                 SetValue(Picker.SelectedItem);
             else if (_valueType.Type == typeof(Guid))
@@ -108,6 +111,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
             if (!HasDifferentValues)
             {
+                _isRefreshing = true;
                 if (Values[0] is AssetItem assetItem)
                     Picker.SelectedItem = assetItem;
                 else if (Values[0] is Guid guid)
@@ -118,6 +122,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     Picker.SelectedPath = path;
                 else
                     Picker.SelectedAsset = Values[0] as Asset;
+                _isRefreshing = false;
             }
         }
     }
