@@ -543,6 +543,14 @@ void StaticModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     }
 }
 
+const Span<MaterialSlot> StaticModel::GetMaterialSlots() const
+{
+    const auto model = Model.Get();
+    if (model && !model->WaitForLoaded())
+        return ToSpan(model->MaterialSlots);
+    return Span<MaterialSlot>();
+}
+
 MaterialBase* StaticModel::GetMaterial(int32 entryIndex)
 {
     if (Model)

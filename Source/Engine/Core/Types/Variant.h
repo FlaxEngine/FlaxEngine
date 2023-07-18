@@ -359,6 +359,9 @@ public:
     void SetAsset(Asset* asset);
     String ToString() const;
 
+    // Inlines potential value type into in-built format (eg. Vector3 stored as Structure, or String stored as ManagedObject).
+    void Inline();
+
     FORCE_INLINE Variant Cast(const VariantType& to) const
     {
         return Cast(*this, to);
