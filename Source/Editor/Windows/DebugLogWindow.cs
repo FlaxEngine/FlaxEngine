@@ -138,12 +138,14 @@ namespace FlaxEditor.Windows
                 // Title
                 var textRect = new Rectangle(38, 2, clientRect.Width - 40, clientRect.Height - 10);
                 Render2D.PushClip(ref clientRect);
-                string countText = string.Empty;
-                if (LogCount > 1)
+                if (LogCount == 1)
                 {
-                    countText = $" ({LogCount})";
+                    Render2D.DrawText(style.FontMedium, Desc.Title, textRect, style.Foreground);
                 }
-                Render2D.DrawText(style.FontMedium, Desc.Title + countText, textRect, style.Foreground);
+                else if (LogCount > 1)
+                {
+                    Render2D.DrawText(style.FontMedium, $"{Desc.Title} ({LogCount})", textRect, style.Foreground);
+                }
                 Render2D.PopClip();
             }
 
@@ -628,10 +630,10 @@ namespace FlaxEditor.Windows
                                 if (child is LogEntry entry)
                                 {
                                     var pendingEntry = _pendingEntries[i];
-                                    if (string.Equals(entry.Desc.Title, pendingEntry.Desc.Title) &&
-                                        string.Equals(entry.Desc.LocationFile, pendingEntry.Desc.LocationFile) &&
+                                    if (string.Equals(entry.Desc.Title, pendingEntry.Desc.Title, StringComparison.Ordinal) &&
+                                        string.Equals(entry.Desc.LocationFile, pendingEntry.Desc.LocationFile, StringComparison.Ordinal) &&
                                         entry.Desc.Level == pendingEntry.Desc.Level &&
-                                        string.Equals(entry.Desc.Description, pendingEntry.Desc.Description) &&
+                                        string.Equals(entry.Desc.Description, pendingEntry.Desc.Description, StringComparison.Ordinal) &&
                                         entry.Desc.LocationLine == pendingEntry.Desc.LocationLine)
                                     {
                                         entry.LogCount += 1;
