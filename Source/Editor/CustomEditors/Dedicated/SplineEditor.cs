@@ -20,7 +20,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <summary>
         /// Basis for creating tangent manipulation types for bezier curves.
         /// </summary>
-        private abstract class TangentModeBase
+        private abstract class EditTangentOptionBase
         {
             /// <summary>
             /// Called when user set selected tangent mode.
@@ -61,7 +61,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <summary>
         /// Edit curve options manipulate the curve as free mode
         /// </summary>
-        private sealed class FreeTangentMode : TangentModeBase
+        private sealed class FreeTangentMode : EditTangentOptionBase
         {
             /// <inheritdoc/>
             public override void OnMoveTangentIn(Spline spline, int index) { }
@@ -82,7 +82,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <summary>
         /// Edit curve options to set tangents to linear
         /// </summary>
-        private sealed class LinearTangentMode : TangentModeBase
+        private sealed class LinearTangentMode : EditTangentOptionBase
         {
             /// <inheritdoc/>
             public override void OnMoveTangentIn(Spline spline, int index) { }
@@ -125,7 +125,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <summary>
         /// Edit curve options to align tangents of selected spline
         /// </summary>
-        private sealed class AlignedTangentMode : TangentModeBase
+        private sealed class AlignedTangentMode : EditTangentOptionBase
         {
             /// <inheritdoc/>
             public override void OnSetMode(Spline spline, int index)
@@ -207,7 +207,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
         }
 
-        private TangentModeBase _currentTangentMode;
+        private EditTangentOptionBase _currentTangentMode;
 
         private ButtonElement _freeTangentButton;
         private ButtonElement _linearTangentButton;
