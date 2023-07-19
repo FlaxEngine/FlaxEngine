@@ -155,7 +155,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             private void SmoothIfNotAligned(Spline spline, int index)
             {
                 var keyframe = spline.GetSplineKeyframe(index);
-                var isAligned = Vector3.Dot(keyframe.TangentIn.Translation.Normalized, keyframe.TangentOut.Translation.Normalized) == 1f;
+                var angle = Vector3.Dot(keyframe.TangentIn.Translation.Normalized, keyframe.TangentOut.Translation.Normalized);
+                var isAligned = angle <= -0.99f;
 
                 if (!isAligned)
                 {
