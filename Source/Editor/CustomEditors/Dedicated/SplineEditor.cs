@@ -226,6 +226,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// </summary>
         public Spline SelectedSpline => !Values.HasDifferentValues && Values[0] is Spline ? (Spline)Values[0] : null;
 
+        private bool HasTangentsSelected => _selectedTangentIn != null || _selectedTangentOut != null;
+
+        private bool HasPointSelected => _lastPointSelected != null;
+
+        private bool CanSetTangentMode => HasPointSelected || HasTangentsSelected;
+
         /// <summary>
         /// Create a Spline editor
         /// </summary>
@@ -272,6 +278,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             UpdateSelectedPoint();
             UpdateSelectedTangent();
+
+            _freeTangentButton.Button.Enabled = CanSetTangentMode;
+            _linearTangentButton.Button.Enabled = CanSetTangentMode;
+            _alignedTangentButton.Button.Enabled = CanSetTangentMode;
+
+            if (_lastPointSelected == null)
+            {
+                return;
+            }
 
             var index = _lastPointSelected.Index;
             var currentTangentInPosition = SelectedSpline.GetSplineLocalTangent(index, true).Translation;
@@ -365,6 +380,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             _selectedTangentIn = null;
             _selectedTangentOut = null;
         }
+
+
 
         private void OnSetTangentsLinear()
         {
