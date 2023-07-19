@@ -154,11 +154,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             private void SmoothIfNotAligned(Spline spline, int index)
             {
-                var keyframe = spline.GetSplineKeyframe(index);
-                var angle = Vector3.Dot(keyframe.TangentIn.Translation.Normalized, keyframe.TangentOut.Translation.Normalized);
-                var isAligned = angle <= -0.99f;
-
-                if (!isAligned)
+                if (!IsAlignedTangentMode(spline, index))
                 {
                     SetPointSmooth(spline, index);
                 }
@@ -342,43 +338,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
             _currentTangentMode.OnSetMode(SelectedSpline, _lastPointSelected.Index);
         }
 
-        private bool IsFreeTangentMode(Spline spline, int index)
-        {
-            if (IsLinearTangentMode(spline, index) || IsAlignedTangentMode(spline, index))
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        private bool IsLinearTangentMode(Spline spline, int index)
-        {
-            var keyframe = spline.GetSplineKeyframe(index);
-            return keyframe.TangentIn.Translation.Length == 0 && keyframe.TangentOut.Translation.Length == 0;
-        }
-
-        private bool IsAlignedTangentMode(Spline spline, int index)
-        {
-            var keyframe = spline.GetSplineKeyframe(index);
-            var tangentIn = keyframe.TangentIn.Translation;
-            var tangentOut = keyframe.TangentOut.Translation;
-
-            if (tangentIn.Length == 0 || tangentOut.Length == 0)
-            {
-                return false;
-            }
-
-            var angleBetweenTwoTangents = Vector3.Dot(tangentIn.Normalized,tangentOut.Normalized);
-
-            if (angleBetweenTwoTangents < -0.99f)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         private void UpdateSelectedPoint()
         {
             // works only if select one spline
@@ -483,6 +442,43 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     Editor.Instance.Scene.MarkSceneEdited(spline.Scene);
                 }
             }
+        }
+
+        private static bool IsFreeTangentMode(Spline spline, int index)
+        {
+            if (IsLinearTangentMode(spline, index) || IsAlignedTangentMode(spline, index))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsLinearTangentMode(Spline spline, int index)
+        {
+            var keyframe = spline.GetSplineKeyframe(index);
+            return keyframe.TangentIn.Translation.Length == 0 && keyframe.TangentOut.Translation.Length == 0;
+        }
+
+        private static bool IsAlignedTangentMode(Spline spline, int index)
+        {
+            var keyframe = spline.GetSplineKeyframe(index);
+            var tangentIn = keyframe.TangentIn.Translation;
+            var tangentOut = keyframe.TangentOut.Translation;
+
+            if (tangentIn.Length == 0 || tangentOut.Length == 0)
+            {
+                return false;
+            }
+
+            var angleBetweenTwoTangents = Vector3.Dot(tangentIn.Normalized, tangentOut.Normalized);
+
+            if (angleBetweenTwoTangents < -0.99f)
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }
