@@ -235,12 +235,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private Color NormalButtonColor => FlaxEngine.GUI.Style.Current.BackgroundNormal;
 
-        private bool IsFreeTangentMode => _currentTangentMode is FreeTangentMode;
-
-        private bool IsLinearTangentMode => _currentTangentMode is LinearTangentMode;
-
-        private bool IsAlignedTangentMode => _currentTangentMode is AlignedTangentMode;
-
         /// <summary>
         /// Create a Spline editor
         /// </summary>
@@ -348,6 +342,43 @@ namespace FlaxEditor.CustomEditors.Dedicated
             _currentTangentMode.OnSetMode(SelectedSpline, _lastPointSelected.Index);
         }
 
+        private bool IsFreeTangentMode(Spline spline, int index)
+        {
+            if (IsLinearTangentMode(spline, index) || IsAlignedTangentMode(spline, index))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool IsLinearTangentMode(Spline spline, int index)
+        {
+            var keyframe = spline.GetSplineKeyframe(index);
+            return keyframe.TangentIn.Translation.Length == 0 && keyframe.TangentOut.Translation.Length == 0;
+        }
+
+        private bool IsAlignedTangentMode(Spline spline, int index)
+        {
+            var keyframe = spline.GetSplineKeyframe(index);
+            var tangentIn = keyframe.TangentIn.Translation;
+            var tangentOut = keyframe.TangentOut.Translation;
+
+            if (tangentIn.Length == 0 || tangentOut.Length == 0)
+            {
+                return false;
+            }
+
+            var angleBetweenTwoTangents = Vector3.Dot(tangentIn.Normalized,tangentOut.Normalized);
+
+            if (angleBetweenTwoTangents < -0.99f)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         private void UpdateSelectedPoint()
         {
             // works only if select one spline
@@ -360,6 +391,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             _lastPointSelected = currentSelected as SplineNode.SplinePointNode;
             var index = _lastPointSelected.Index;
+
+            SetSelectedTangentTypeAsCurrent();
+            UpdateButtonsColors();
+
             _currentTangentMode.OnSelectKeyframe(SelectedSpline, index);
         }
 
@@ -396,9 +431,24 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void UpdateButtonsColors()
         {
-            _linearTangentButton.Button.BackgroundColor = IsLinearTangentMode ? SelectedButtonColor : NormalButtonColor;
-            _freeTangentButton.Button.BackgroundColor = IsFreeTangentMode ? SelectedButtonColor : NormalButtonColor;
-            _alignedTangentButton.Button.BackgroundColor = IsAlignedTangentMode ? SelectedButtonColor : NormalButtonColor;
+            var isFree = IsFreeTangentMode(SelectedSpline, _lastPointSelected.Index);
+            var isLinear = IsLinearTangentMode(SelectedSpline, _lastPointSelected.Index);
+            var isAligned = IsAlignedTangentMode(SelectedSpline, _lastPointSelected.Index);
+
+            _linearTangentButton.Button.BackgroundColor = isLinear ? SelectedButtonColor : NormalButtonColor;
+            _freeTangentButton.Button.BackgroundColor = isFree ? SelectedButtonColor : NormalButtonColor;
+            _alignedTangentButton.Button.BackgroundColor = isAligned ? SelectedButtonColor : NormalButtonColor;
+        }
+
+        private void SetSelectedTangentTypeAsCurrent()
+        {
+            var isFree = IsFreeTangentMode(SelectedSpline, _lastPointSelected.Index);
+            var isLinear = IsLinearTangentMode(SelectedSpline, _lastPointSelected.Index);
+            var isAligned = IsAlignedTangentMode(SelectedSpline, _lastPointSelected.Index);
+
+            if (isFree) SetModeFree();
+            else if (isLinear) SetModeLinear();
+            else if (isAligned) SetModeAligned();
         }
 
         private void OnSetTangentsLinear()
