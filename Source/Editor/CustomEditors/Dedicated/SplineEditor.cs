@@ -6,6 +6,7 @@ using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEditor.CustomEditors.Elements;
 using System;
+using FlaxEditor.SceneGraph;
 
 namespace FlaxEditor.CustomEditors.Dedicated
 {
@@ -99,6 +100,14 @@ namespace FlaxEditor.CustomEditors.Dedicated
             public override void OnSetMode(Spline spline, int index)
             {
                 SetKeyframeLinear(spline, index);
+
+                // if has a tangent selected, change the selection to tangent parent (a spline point / keyframe)
+                var currentSelection = Editor.Instance.SceneEditing.Selection;
+                if (currentSelection.Count == 1 && currentSelection[0] is SplineNode.SplinePointTangentNode)
+                {
+                    var selectedTangentNode = currentSelection[0] as SplineNode.SplinePointTangentNode;
+                    Editor.Instance.SceneEditing.Select(selectedTangentNode.ParentNode);
+                }
             }
 
             private void SetKeyframeLinear(Spline spline, int index)
