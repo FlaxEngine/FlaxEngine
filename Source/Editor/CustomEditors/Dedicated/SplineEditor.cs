@@ -1,12 +1,10 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
-using FlaxEditor.Actions;
-using FlaxEditor.SceneGraph.Actors;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEditor.Actions;
+using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.CustomEditors.Elements;
-using System;
-using FlaxEditor.SceneGraph;
 
 namespace FlaxEditor.CustomEditors.Dedicated
 {
@@ -232,6 +230,16 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private bool CanSetTangentMode => HasPointSelected || HasTangentsSelected;
 
+        private Color SelectedButtonColor => FlaxEngine.GUI.Style.Current.BackgroundSelected;
+
+        private Color NormalButtonColor => FlaxEngine.GUI.Style.Current.BackgroundNormal;
+
+        private bool IsFreeTangentMode => _currentTangentMode is FreeTangentMode;
+
+        private bool IsLinearTangentMode => _currentTangentMode is LinearTangentMode;
+
+        private bool IsAlignedTangentMode => _currentTangentMode is AlignedTangentMode;
+
         /// <summary>
         /// Create a Spline editor
         /// </summary>
@@ -261,6 +269,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 _linearTangentButton.Button.Clicked += SetModeLinear;
                 _freeTangentButton.Button.Clicked += SetModeFree;
                 _alignedTangentButton.Button.Clicked += SetModeAligned;
+
+                _linearTangentButton.Button.Clicked += UpdateButtonsColors;
+                _freeTangentButton.Button.Clicked += UpdateButtonsColors;
+                _alignedTangentButton.Button.Clicked += UpdateButtonsColors;
 
                 layout.Header("All spline points");
                 var grid = layout.CustomContainer<UniformGridPanel>();
@@ -381,7 +393,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
             _selectedTangentOut = null;
         }
 
-
+        private void UpdateButtonsColors()
+        {
+            _linearTangentButton.Button.BackgroundColor = IsLinearTangentMode ? SelectedButtonColor : NormalButtonColor;
+            _freeTangentButton.Button.BackgroundColor = IsFreeTangentMode ? SelectedButtonColor : NormalButtonColor;
+            _alignedTangentButton.Button.BackgroundColor = IsAlignedTangentMode ? SelectedButtonColor : NormalButtonColor;
+        }
 
         private void OnSetTangentsLinear()
         {
