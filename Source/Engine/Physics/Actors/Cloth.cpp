@@ -12,8 +12,8 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Actors/AnimatedModel.h"
-#if USE_EDITOR
 #include "Engine/Level/Scene/SceneRendering.h"
+#if USE_EDITOR
 #include "Engine/Debug/DebugDraw.h"
 #endif
 

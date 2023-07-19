@@ -44,6 +44,7 @@ public class NvCloth : DepsModule
             libName = "NvCloth";
             options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, "Source/Platforms/Switch/Binaries/Data/PhysX/physx/include"));
             options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, "Source/Platforms/Switch/Binaries/Data/PhysX/physx/include/foundation"));
+            options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, "Source/Platforms/Switch/Binaries/Data/NvCloth/NvCloth/include/NvCloth/ps"));
             break;
         }
         AddLib(options, options.DepsFolder, libName);
