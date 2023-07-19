@@ -19,7 +19,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <summary>
         /// Basis for creating tangent manipulation types for bezier curves.
         /// </summary>
-        public abstract class TangentModeBase
+        private abstract class TangentModeBase
         {
             /// <summary>
             /// Called when user set selected tangent mode.
@@ -60,7 +60,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <summary>
         /// Edit curve options manipulate the curve as free mode
         /// </summary>
-        public sealed class FreeTangentMode : TangentModeBase
+        private sealed class FreeTangentMode : TangentModeBase
         {
             /// <inheritdoc/>
             public override void OnMoveTangentIn(Spline spline, int index) { }
@@ -81,7 +81,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <summary>
         /// Edit curve options to set tangents to linear
         /// </summary>
-        public sealed class LinearTangentMode : TangentModeBase
+        private sealed class LinearTangentMode : TangentModeBase
         {
             /// <inheritdoc/>
             public override void OnMoveTangentIn(Spline spline, int index) { }
@@ -116,7 +116,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <summary>
         /// Edit curve options to align tangents of selected spline
         /// </summary>
-        public sealed class AlignedTangentMode : TangentModeBase
+        private sealed class AlignedTangentMode : TangentModeBase
         {
             /// <inheritdoc/>
             public override void OnSetMode(Spline spline, int index)
@@ -167,18 +167,19 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var isLastKeyframe = index >= spline.SplinePointsCount - 1;
                 var isFirstKeyframe = index <= 0;
 
-                if (!isLastKeyframe && !isFirstKeyframe)
-                {
-                    var nextKeyframe = spline.GetSplineKeyframe(++index);
-                    var previousKeyframe = spline.GetSplineKeyframe(--index);
+                // force smooth it's linear point
+                if (tangentInSize == 0f && !isFirstKeyframe) tangentInSize = 100;
+                if (tangentOutSize == 0f && !isLastKeyframe) tangentOutSize = 100;
 
-                    // calc form from Spline.cpp -> SetTangentsSmooth
-                    var slop = (keyframe.Value.Translation - previousKeyframe.Value.Translation + nextKeyframe.Value.Translation - keyframe.Value.Translation).Normalized;
+                var nextKeyframe = !isLastKeyframe ? spline.GetSplineKeyframe(index + 1) : keyframe;
+                var previousKeyframe = !isFirstKeyframe ? spline.GetSplineKeyframe(index - 1) : keyframe;
 
-                    keyframe.TangentIn.Translation = -slop * tangentInSize;
-                    keyframe.TangentOut.Translation = slop * tangentOutSize;
-                    spline.SetSplineKeyframe(index, keyframe);
-                }
+                // calc form from Spline.cpp -> SetTangentsSmooth
+                var slop = (keyframe.Value.Translation - previousKeyframe.Value.Translation + nextKeyframe.Value.Translation - keyframe.Value.Translation).Normalized;
+
+                keyframe.TangentIn.Translation = -slop * tangentInSize;
+                keyframe.TangentOut.Translation = slop * tangentOutSize;
+                spline.SetSplineKeyframe(index, keyframe);
             }
 
             private void SetPointAligned(Spline spline, int index, bool isIn)
