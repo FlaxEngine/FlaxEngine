@@ -278,6 +278,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private bool _tanOutChanged;
         private Vector3 _lastTanInPos;
         private Vector3 _lastTanOutPos;
+        private SplineNode.SplinePointNode _selectedPoint;
         private SplineNode.SplinePointNode _lastPointSelected;
         private SplineNode.SplinePointTangentNode _selectedTangentIn;
         private SplineNode.SplinePointTangentNode _selectedTangentOut;
@@ -289,7 +290,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private bool HasTangentsSelected => _selectedTangentIn != null || _selectedTangentOut != null;
 
-        private bool HasPointSelected => _lastPointSelected != null;
+        private bool HasPointSelected => _selectedPoint != null;
 
         private bool CanSetTangentMode => HasPointSelected || HasTangentsSelected;
 
@@ -362,7 +363,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             _smoothInTangentButton.Button.Enabled = CanSetTangentMode;
             _smoothOutTangentButton.Button.Enabled = CanSetTangentMode;
 
-            if (_lastPointSelected == null)
+            if (!CanSetTangentMode)
             {
                 return;
             }
@@ -429,30 +430,54 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private void UpdateSelectedPoint()
         {
             // works only if select one spline
-            if (Editor.Instance.SceneEditing.SelectionCount != 1) return;
+            if (Editor.Instance.SceneEditing.SelectionCount != 1)
+            {
+                _selectedPoint = null;
+                UpdateButtonsColors();
+                return;
+            }
 
             var currentSelected = Editor.Instance.SceneEditing.Selection[0];
 
-            if (currentSelected == _lastPointSelected) return;
-            if (currentSelected is not SplineNode.SplinePointNode) return;
+            if (currentSelected == _selectedPoint) return;
+            if (currentSelected is SplineNode.SplinePointNode)
+            {
+                _selectedPoint = currentSelected as SplineNode.SplinePointNode;
+                _lastPointSelected = _selectedPoint;
 
-            _lastPointSelected = currentSelected as SplineNode.SplinePointNode;
-            var index = _lastPointSelected.Index;
+                var index = _lastPointSelected.Index;
 
-            SetSelectedTangentTypeAsCurrent();
-            UpdateButtonsColors();
+                SetSelectedTangentTypeAsCurrent();
+                UpdateButtonsColors();
 
-            _currentTangentMode.OnSelectKeyframe(SelectedSpline, index);
+                _currentTangentMode.OnSelectKeyframe(SelectedSpline, index);
+            }
+            else
+            {
+                _selectedPoint = null;
+                UpdateButtonsColors();
+            }
         }
 
         private void UpdateSelectedTangent()
         {
             // works only if select one spline
-            if (_lastPointSelected == null || Editor.Instance.SceneEditing.SelectionCount != 1) return;
+            if (_lastPointSelected == null || Editor.Instance.SceneEditing.SelectionCount != 1)
+            {
+                _selectedTangentIn = null;
+                _selectedTangentOut = null;
+                return;
+            }
 
             var currentSelected = Editor.Instance.SceneEditing.Selection[0];
 
-            if (currentSelected is not SplineNode.SplinePointTangentNode) return;
+            if (currentSelected is not SplineNode.SplinePointTangentNode)
+            {
+                _selectedTangentIn = null;
+                _selectedTangentOut = null;
+                return;
+            }
+
             if (currentSelected == _selectedTangentIn) return;
             if (currentSelected == _selectedTangentOut) return;
 
@@ -461,13 +486,16 @@ namespace FlaxEditor.CustomEditors.Dedicated
             if (currentSelected.Transform == SelectedSpline.GetSplineTangent(index, true))
             {
                 _selectedTangentIn = currentSelected as SplineNode.SplinePointTangentNode;
+                _selectedTangentOut = null;
                 _currentTangentMode.OnSelectTangent(SelectedSpline, index);
+                
                 return;
             }
 
             if (currentSelected.Transform == SelectedSpline.GetSplineTangent(index, false))
             {
                 _selectedTangentOut = currentSelected as SplineNode.SplinePointTangentNode;
+                _selectedTangentIn = null;
                 _currentTangentMode.OnSelectTangent(SelectedSpline, index);
                 return;
             }
@@ -478,6 +506,16 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void UpdateButtonsColors()
         {
+            if (!CanSetTangentMode)
+            {
+                _linearTangentButton.Button.BackgroundColor = NormalButtonColor;
+                _freeTangentButton.Button.BackgroundColor = NormalButtonColor;
+                _alignedTangentButton.Button.BackgroundColor = NormalButtonColor;
+                _smoothInTangentButton.Button.BackgroundColor = NormalButtonColor;
+                _smoothOutTangentButton.Button.BackgroundColor = NormalButtonColor;
+                return;
+            }
+
             var isFree = _currentTangentMode is FreeTangentMode;
             var isLinear = _currentTangentMode is LinearTangentMode;
             var isAligned = _currentTangentMode is AlignedTangentMode;
