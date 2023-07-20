@@ -182,11 +182,100 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
         }
 
+        /// <summary>
+        /// Edit curve options manipulate the curve setting selected point 
+        /// tangent in as smoothed but tangent out as linear
+        /// </summary>
+        private sealed class SmoothInTangentMode : EditTangentOptionBase
+        {
+            /// <inheritdoc/>
+            public override void OnSetMode(Spline spline, int index)
+            {
+                var keyframe = spline.GetSplineKeyframe(index);
+
+                // auto smooth tangent if's linear
+                if (keyframe.TangentIn.Translation.Length == 0)
+                {
+                    var isLastKeyframe = index == spline.SplinePointsCount - 1;
+                    var isFirstKeyframe = index == 0;
+
+                    if (!isLastKeyframe)
+                    {
+                        var nexKeyframe = spline.GetSplineKeyframe(index + 1);
+                        var directionToNextKeyframe = keyframe.Value.WorldToLocalVector(keyframe.Value.Translation - nexKeyframe.Value.Translation);
+                        directionToNextKeyframe = directionToNextKeyframe.Normalized * 100f;
+                        keyframe.TangentIn.Translation = directionToNextKeyframe;
+                    }
+                }
+
+                keyframe.TangentOut.Translation = Vector3.Zero;
+
+                spline.SetSplineKeyframe(index, keyframe);
+            }
+
+            /// <inheritdoc/>
+            public override void OnMoveTangentIn(Spline spline, int index) { }
+
+            /// <inheritdoc/>
+            public override void OnMoveTangentOut(Spline spline, int index) { }
+
+            /// <inheritdoc/>
+            public override void OnSelectKeyframe(Spline spline, int index) { }
+
+            /// <inheritdoc/>
+            public override void OnSelectTangent(Spline spline, int index) { }
+        }
+
+        /// <summary>
+        /// Edit curve options manipulate the curve setting selected point 
+        /// tangent in as linear but tangent out as smoothed
+        /// </summary>
+        private sealed class SmoothOutTangentMode : EditTangentOptionBase
+        {
+            /// <inheritdoc/>
+            public override void OnSetMode(Spline spline, int index)
+            {
+                var keyframe = spline.GetSplineKeyframe(index);
+
+                // auto smooth tangent if's linear
+                if (keyframe.TangentOut.Translation.Length == 0)
+                {
+                    var isFirstKeyframe = index == 0;
+
+                    if (!isFirstKeyframe)
+                    {
+                        var previousKeyframe = spline.GetSplineKeyframe(index - 1);
+                        var directionToPreviousKeyframe = keyframe.Value.WorldToLocalVector(keyframe.Value.Translation - previousKeyframe.Value.Translation);
+                        directionToPreviousKeyframe = directionToPreviousKeyframe.Normalized * 100f;
+                        keyframe.TangentOut.Translation = directionToPreviousKeyframe;
+                    }
+                }
+
+                keyframe.TangentIn.Translation = Vector3.Zero;
+
+                spline.SetSplineKeyframe(index, keyframe);
+            }
+
+            /// <inheritdoc/>
+            public override void OnMoveTangentIn(Spline spline, int index) { }
+
+            /// <inheritdoc/>
+            public override void OnMoveTangentOut(Spline spline, int index) { }
+
+            /// <inheritdoc/>
+            public override void OnSelectKeyframe(Spline spline, int index) { }
+
+            /// <inheritdoc/>
+            public override void OnSelectTangent(Spline spline, int index) { }
+        }
+
         private EditTangentOptionBase _currentTangentMode;
 
         private ButtonElement _freeTangentButton;
         private ButtonElement _linearTangentButton;
         private ButtonElement _alignedTangentButton;
+        private ButtonElement _smoothInTangentButton;
+        private ButtonElement _smoothOutTangentButton;
 
         private bool _tanInChanged;
         private bool _tanOutChanged;
@@ -231,19 +320,25 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 layout.Header("Selected spline point");
                 var selectedPointsGrid = layout.CustomContainer<UniformGridPanel>();
                 selectedPointsGrid.CustomControl.SlotsHorizontally = 3;
-                selectedPointsGrid.CustomControl.SlotsVertically = 1;
+                selectedPointsGrid.CustomControl.SlotsVertically = 2;
 
                 _linearTangentButton = selectedPointsGrid.Button("Linear");
                 _freeTangentButton = selectedPointsGrid.Button("Free");
                 _alignedTangentButton = selectedPointsGrid.Button("Aligned");
+                _smoothInTangentButton = selectedPointsGrid.Button("Smooth In");
+                _smoothOutTangentButton = selectedPointsGrid.Button("Smooth Out");
 
                 _linearTangentButton.Button.Clicked += SetModeLinear;
                 _freeTangentButton.Button.Clicked += SetModeFree;
                 _alignedTangentButton.Button.Clicked += SetModeAligned;
+                _smoothInTangentButton.Button.Clicked += SetModeSmoothIn;
+                _smoothOutTangentButton.Button.Clicked += SetModeSmoothOut;
 
                 _linearTangentButton.Button.Clicked += UpdateButtonsColors;
                 _freeTangentButton.Button.Clicked += UpdateButtonsColors;
                 _alignedTangentButton.Button.Clicked += UpdateButtonsColors;
+                _smoothInTangentButton.Button.Clicked += UpdateButtonsColors;
+                _smoothOutTangentButton.Button.Clicked += UpdateButtonsColors;
 
                 layout.Header("All spline points");
                 var grid = layout.CustomContainer<UniformGridPanel>();
@@ -265,6 +360,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             _freeTangentButton.Button.Enabled = CanSetTangentMode;
             _linearTangentButton.Button.Enabled = CanSetTangentMode;
             _alignedTangentButton.Button.Enabled = CanSetTangentMode;
+            _smoothInTangentButton.Button.Enabled = CanSetTangentMode;
+            _smoothOutTangentButton.Button.Enabled = CanSetTangentMode;
 
             if (_lastPointSelected == null)
             {
@@ -315,6 +412,18 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private void SetModeAligned()
         {
             _currentTangentMode = new AlignedTangentMode();
+            _currentTangentMode.OnSetMode(SelectedSpline, _lastPointSelected.Index);
+        }
+
+        private void SetModeSmoothIn()
+        {
+            _currentTangentMode = new SmoothInTangentMode();
+            _currentTangentMode.OnSetMode(SelectedSpline, _lastPointSelected.Index);
+        }
+
+        private void SetModeSmoothOut()
+        {
+            _currentTangentMode = new SmoothOutTangentMode();
             _currentTangentMode.OnSetMode(SelectedSpline, _lastPointSelected.Index);
         }
 
@@ -373,10 +482,14 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var isFree = _currentTangentMode is FreeTangentMode;
             var isLinear = _currentTangentMode is LinearTangentMode;
             var isAligned = _currentTangentMode is AlignedTangentMode;
+            var isSmoothIn = _currentTangentMode is SmoothInTangentMode;
+            var isSmoothOut = _currentTangentMode is SmoothOutTangentMode;
 
             _linearTangentButton.Button.BackgroundColor = isLinear ? SelectedButtonColor : NormalButtonColor;
             _freeTangentButton.Button.BackgroundColor = isFree ? SelectedButtonColor : NormalButtonColor;
             _alignedTangentButton.Button.BackgroundColor = isAligned ? SelectedButtonColor : NormalButtonColor;
+            _smoothInTangentButton.Button.BackgroundColor = isSmoothIn ? SelectedButtonColor : NormalButtonColor;
+            _smoothOutTangentButton.Button.BackgroundColor = isSmoothOut ? SelectedButtonColor : NormalButtonColor;
         }
 
         private void SetSelectedTangentTypeAsCurrent()
@@ -384,10 +497,14 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var isFree = IsFreeTangentMode(SelectedSpline, _lastPointSelected.Index);
             var isLinear = IsLinearTangentMode(SelectedSpline, _lastPointSelected.Index);
             var isAligned = IsAlignedTangentMode(SelectedSpline, _lastPointSelected.Index);
+            var isSmoothIn = IsSmoothInTangentMode(SelectedSpline, _lastPointSelected.Index);
+            var isSmoothOut = IsSmoothOutTangentMode(SelectedSpline, _lastPointSelected.Index);
 
             if (isFree) SetModeFree();
             else if (isLinear) SetModeLinear();
             else if (isAligned) SetModeAligned();
+            else if (isSmoothIn) SetModeSmoothIn();
+            else if (isSmoothOut) SetModeSmoothIn();
         }
 
         private void OnSetTangentsLinear()
@@ -426,7 +543,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private static bool IsFreeTangentMode(Spline spline, int index)
         {
-            if (IsLinearTangentMode(spline, index) || IsAlignedTangentMode(spline, index))
+            if (IsLinearTangentMode(spline, index) || 
+                IsAlignedTangentMode(spline, index) ||
+                IsSmoothInTangentMode(spline, index) ||
+                IsSmoothOutTangentMode(spline, index))
             {
                 return false;
             }
@@ -459,6 +579,18 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
 
             return false;
+        }
+
+        private static bool IsSmoothInTangentMode(Spline spline, int index)
+        {
+            var keyframe = spline.GetSplineKeyframe(index);
+            return keyframe.TangentIn.Translation.Length > 0 && keyframe.TangentOut.Translation.Length == 0;
+        }
+
+        private static bool IsSmoothOutTangentMode(Spline spline, int index)
+        {
+            var keyframe = spline.GetSplineKeyframe(index);
+            return keyframe.TangentOut.Translation.Length > 0 && keyframe.TangentIn.Translation.Length == 0;
         }
 
         private static void SetPointSmooth(Spline spline, int index)
