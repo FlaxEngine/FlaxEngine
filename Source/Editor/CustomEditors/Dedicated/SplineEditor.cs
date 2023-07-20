@@ -62,6 +62,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private sealed class FreeTangentMode : EditTangentOptionBase
         {
             /// <inheritdoc/>
+            public override void OnSetMode(Spline spline, int index)
+            {
+                if (IsLinearTangentMode(spline, index))
+                {
+                    SetPointSmooth(spline, index);
+                }
+            }
+
+            /// <inheritdoc/>
             public override void OnMoveTangentIn(Spline spline, int index) { }
 
             /// <inheritdoc/>
@@ -72,9 +81,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             /// <inheritdoc/>
             public override void OnSelectTangent(Spline spline, int index) { }
-
-            /// <inheritdoc/>
-            public override void OnSetMode(Spline spline, int index) { }
         }
 
         /// <summary>
@@ -82,18 +88,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// </summary>
         private sealed class LinearTangentMode : EditTangentOptionBase
         {
-            /// <inheritdoc/>
-            public override void OnMoveTangentIn(Spline spline, int index) { }
-
-            /// <inheritdoc/>
-            public override void OnMoveTangentOut(Spline spline, int index) { }
-
-            /// <inheritdoc/>
-            public override void OnSelectKeyframe(Spline spline, int index) { }
-
-            /// <inheritdoc/>
-            public override void OnSelectTangent(Spline spline, int index) { }
-
             /// <inheritdoc/>
             public override void OnSetMode(Spline spline, int index)
             {
@@ -107,6 +101,18 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     Editor.Instance.SceneEditing.Select(selectedTangentNode.ParentNode);
                 }
             }
+
+            /// <inheritdoc/>
+            public override void OnMoveTangentIn(Spline spline, int index) { }
+
+            /// <inheritdoc/>
+            public override void OnMoveTangentOut(Spline spline, int index) { }
+
+            /// <inheritdoc/>
+            public override void OnSelectKeyframe(Spline spline, int index) { }
+
+            /// <inheritdoc/>
+            public override void OnSelectTangent(Spline spline, int index) { }
 
             private void SetKeyframeLinear(Spline spline, int index)
             {
@@ -158,32 +164,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     SetPointSmooth(spline, index);
                 }
-            }
-
-            private void SetPointSmooth(Spline spline, int index)
-            {
-                var keyframe = spline.GetSplineKeyframe(index);
-                var tangentIn = keyframe.TangentIn;
-                var tangentOut = keyframe.TangentOut;
-                var tangentInSize = tangentIn.Translation.Length;
-                var tangentOutSize = tangentOut.Translation.Length;
-
-                var isLastKeyframe = index >= spline.SplinePointsCount - 1;
-                var isFirstKeyframe = index <= 0;
-
-                // force smooth it's linear point
-                if (tangentInSize == 0f && !isFirstKeyframe) tangentInSize = 100;
-                if (tangentOutSize == 0f && !isLastKeyframe) tangentOutSize = 100;
-
-                var nextKeyframe = !isLastKeyframe ? spline.GetSplineKeyframe(index + 1) : keyframe;
-                var previousKeyframe = !isFirstKeyframe ? spline.GetSplineKeyframe(index - 1) : keyframe;
-
-                // calc form from Spline.cpp -> SetTangentsSmooth
-                var slop = (keyframe.Value.Translation - previousKeyframe.Value.Translation + nextKeyframe.Value.Translation - keyframe.Value.Translation).Normalized;
-
-                keyframe.TangentIn.Translation = -slop * tangentInSize;
-                keyframe.TangentOut.Translation = slop * tangentOutSize;
-                spline.SetSplineKeyframe(index, keyframe);
             }
 
             private void SetPointAligned(Spline spline, int index, bool isIn)
@@ -479,6 +459,32 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
 
             return false;
+        }
+
+        private static void SetPointSmooth(Spline spline, int index)
+        {
+            var keyframe = spline.GetSplineKeyframe(index);
+            var tangentIn = keyframe.TangentIn;
+            var tangentOut = keyframe.TangentOut;
+            var tangentInSize = tangentIn.Translation.Length;
+            var tangentOutSize = tangentOut.Translation.Length;
+
+            var isLastKeyframe = index >= spline.SplinePointsCount - 1;
+            var isFirstKeyframe = index <= 0;
+
+            // force smooth it's linear point
+            if (tangentInSize == 0f && !isFirstKeyframe) tangentInSize = 100;
+            if (tangentOutSize == 0f && !isLastKeyframe) tangentOutSize = 100;
+
+            var nextKeyframe = !isLastKeyframe ? spline.GetSplineKeyframe(index + 1) : keyframe;
+            var previousKeyframe = !isFirstKeyframe ? spline.GetSplineKeyframe(index - 1) : keyframe;
+
+            // calc form from Spline.cpp -> SetTangentsSmooth
+            var slop = (keyframe.Value.Translation - previousKeyframe.Value.Translation + nextKeyframe.Value.Translation - keyframe.Value.Translation).Normalized;
+
+            keyframe.TangentIn.Translation = -slop * tangentInSize;
+            keyframe.TangentOut.Translation = slop * tangentOutSize;
+            spline.SetSplineKeyframe(index, keyframe);
         }
     }
 }
