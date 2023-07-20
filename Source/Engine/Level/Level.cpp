@@ -726,116 +726,6 @@ int32 Level::GetLayerIndex(const StringView& layer)
     return result;
 }
 
-Actor* FindActorRecursive(Actor* node, const Tag& tag)
-{
-    if (node->HasTag(tag))
-        return node;
-    Actor* result = nullptr;
-    for (Actor* child : node->Children)
-    {
-        result = FindActorRecursive(child, tag);
-        if (result)
-            break;
-    }
-    return result;
-}
-
-void FindActorsRecursive(Actor* node, const Tag& tag, const bool activeOnly, Array<Actor*>& result)
-{
-    if (activeOnly && !node->GetIsActive())
-        return;
-    if (node->HasTag(tag))
-        result.Add(node);
-    for (Actor* child : node->Children)
-        FindActorsRecursive(child, tag, activeOnly, result);
-}
-
-void FindActorsRecursiveByParentTags(Actor* node, const Array<Tag>& tags, const bool activeOnly, Array<Actor*>& result)
-{
-    if (activeOnly && !node->GetIsActive())
-        return;
-    for (Tag tag : tags)
-    {
-        if (node->HasTag(tag))
-        {
-            result.Add(node);
-            break;
-        }
-    }
-    for (Actor* child : node->Children)
-        FindActorsRecursiveByParentTags(child, tags, activeOnly, result);
-}
-
-Actor* Level::FindActor(const Tag& tag, Actor* root)
-{
-    PROFILE_CPU();
-    if (root)
-        return FindActorRecursive(root, tag);
-    Actor* result = nullptr;
-    for (Scene* scene : Scenes)
-    {
-        result = FindActorRecursive(scene, tag);
-        if (result)
-            break;
-    }
-    return result;
-}
-
-void FindActorRecursive(Actor* node, const Tag& tag, Array<Actor*>& result)
-{
-    if (node->HasTag(tag))
-        result.Add(node);
-    for (Actor* child : node->Children)
-        FindActorRecursive(child, tag, result);
-}
-
-Array<Actor*> Level::FindActors(const Tag& tag, const bool activeOnly, Actor* root)
-{
-    PROFILE_CPU();
-    Array<Actor*> result;
-    if (root)
-    {
-        FindActorsRecursive(root, tag, activeOnly, result);
-    }
-    else
-    {
-        ScopeLock lock(ScenesLock);
-        for (Scene* scene : Scenes)
-            FindActorsRecursive(scene, tag, activeOnly,  result);
-    }
-    return result;
-}
-
-Array<Actor*> Level::FindActorsByParentTag(const Tag& parentTag, const bool activeOnly, Actor* root)
-{
-    PROFILE_CPU();
-    Array<Actor*> result;
-    const Array<Tag> subTags = Tags::GetSubTags(parentTag);
-
-    if (subTags.Count() == 0)
-    {
-        return result;
-    }
-    if (subTags.Count() == 1)
-    {
-        result = FindActors(subTags[0], activeOnly, root);
-        return result;
-    }
-
-    if (root)
-    {
-        FindActorsRecursiveByParentTags(root, subTags, activeOnly, result);
-    }
-    else
-    {
-        ScopeLock lock(ScenesLock);
-        for (Scene* scene : Scenes)
-            FindActorsRecursiveByParentTags(scene, subTags, activeOnly, result);
-    }
-
-    return result;
-}
-
 void Level::callActorEvent(ActorEventType eventType, Actor* a, Actor* b)
 {
     PROFILE_CPU();
@@ -1502,6 +1392,143 @@ Actor* Level::FindActor(const MClass* type, const StringView& name)
     ScopeLock lock(ScenesLock);
     for (int32 i = 0; result == nullptr && i < Scenes.Count(); i++)
         result = Scenes[i]->FindActor(type, name);
+    return result;
+}
+
+Actor* FindActorRecursive(Actor* node, const Tag& tag)
+{
+    if (node->HasTag(tag))
+        return node;
+    Actor* result = nullptr;
+    for (Actor* child : node->Children)
+    {
+        result = FindActorRecursive(child, tag);
+        if (result)
+            break;
+    }
+    return result;
+}
+
+Actor* FindActorRecursiveByType(Actor* node, const MClass* type, const Tag& tag)
+{
+    CHECK_RETURN(type, nullptr);
+    if (node->HasTag(tag) && node->GetClass()->IsSubClassOf(type))
+        return node;
+    Actor* result = nullptr;
+    for (Actor* child : node->Children)
+    {
+        result = FindActorRecursiveByType(child, type, tag);
+        if (result)
+            break;
+    }
+    return result;
+}
+
+void FindActorsRecursive(Actor* node, const Tag& tag, const bool activeOnly, Array<Actor*>& result)
+{
+    if (activeOnly && !node->GetIsActive())
+        return;
+    if (node->HasTag(tag))
+        result.Add(node);
+    for (Actor* child : node->Children)
+        FindActorsRecursive(child, tag, activeOnly, result);
+}
+
+void FindActorsRecursiveByParentTags(Actor* node, const Array<Tag>& tags, const bool activeOnly, Array<Actor*>& result)
+{
+    if (activeOnly && !node->GetIsActive())
+        return;
+    for (Tag tag : tags)
+    {
+        if (node->HasTag(tag))
+        {
+            result.Add(node);
+            break;
+        }
+    }
+    for (Actor* child : node->Children)
+        FindActorsRecursiveByParentTags(child, tags, activeOnly, result);
+}
+
+Actor* Level::FindActor(const Tag& tag, Actor* root)
+{
+    PROFILE_CPU();
+    if (root)
+        return FindActorRecursive(root, tag);
+    Actor* result = nullptr;
+    for (Scene* scene : Scenes)
+    {
+        result = FindActorRecursive(scene, tag);
+        if (result)
+            break;
+    }
+    return result;
+}
+
+Actor* Level::FindActor(const MClass* type, const Tag& tag, Actor* root)
+{
+    CHECK_RETURN(type, nullptr);
+    if (root)
+        return FindActorRecursiveByType(root, type, tag);
+    Actor* result = nullptr;
+    ScopeLock lock(ScenesLock);
+    for (int32 i = 0; result == nullptr && i < Scenes.Count(); i++)
+        result = Scenes[i]->FindActor(type, tag);
+    return result;
+}
+
+void FindActorRecursive(Actor* node, const Tag& tag, Array<Actor*>& result)
+{
+    if (node->HasTag(tag))
+        result.Add(node);
+    for (Actor* child : node->Children)
+        FindActorRecursive(child, tag, result);
+}
+
+Array<Actor*> Level::FindActors(const Tag& tag, const bool activeOnly, Actor* root)
+{
+    PROFILE_CPU();
+    Array<Actor*> result;
+    if (root)
+    {
+        FindActorsRecursive(root, tag, activeOnly, result);
+    }
+    else
+    {
+        ScopeLock lock(ScenesLock);
+        for (Scene* scene : Scenes)
+            FindActorsRecursive(scene, tag, activeOnly,  result);
+    }
+    return result;
+}
+
+Array<Actor*> Level::FindActorsByParentTag(const Tag& parentTag, const bool activeOnly, Actor* root)
+{
+    PROFILE_CPU();
+    Array<Actor*> result;
+    const Array<Tag> subTags = Tags::GetSubTags(parentTag);
+
+    if (subTags.Count() == 0)
+    {
+        return result;
+    }
+    if (subTags.Count() == 1)
+    {
+        result = FindActors(subTags[0], activeOnly, root);
+        return result;
+    }
+
+    if (root)
+    {
+        FindActorsRecursiveByParentTags(root, subTags, activeOnly, result);
+    }
+    else
+    {
+        ScopeLock lock(ScenesLock);
+        for (Scene* scene : Scenes)
+            FindActorsRecursiveByParentTags(scene, subTags, activeOnly, result);
+    }
+
     return result;
 }
 

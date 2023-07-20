@@ -846,7 +846,7 @@ bool MClass::IsSubClassOf(const MClass* klass, bool checkInterfaces) const
 bool MClass::HasInterface(const MClass* klass) const
 {
     static void* TypeIsAssignableFrom = GetStaticMethodPointer(TEXT("TypeIsAssignableFrom"));
-    return klass && CallStaticMethod<bool, void*, void*>(TypeIsAssignableFrom, _handle, klass->_handle);
+    return klass && CallStaticMethod<bool, void*, void*>(TypeIsAssignableFrom, klass->_handle, _handle);
 }
 
 bool MClass::IsInstanceOfType(MObject* object) const
@@ -1163,8 +1163,8 @@ MType* MField::GetType() const
 
 int32 MField::GetOffset() const
 {
-    MISSING_CODE("TODO: MField::GetOffset"); // TODO: MField::GetOffset
-    return 0;
+    static void* FieldGetOffsetPtr = GetStaticMethodPointer(TEXT("FieldGetOffset"));
+    return CallStaticMethod<int32, void*>(FieldGetOffsetPtr, _handle);
 }
 
 void MField::GetValue(MObject* instance, void* result) const
@@ -1175,8 +1175,8 @@ void MField::GetValue(MObject* instance, void* result) const
 
 MObject* MField::GetValueBoxed(MObject* instance) const
 {
-    MISSING_CODE("TODO: MField::GetValueBoxed"); // TODO: MField::GetValueBoxed
-    return nullptr;
+    static void* FieldGetValueBoxedPtr = GetStaticMethodPointer(TEXT("FieldGetValueBoxed"));
+    return CallStaticMethod<MObject*, void*, void*>(FieldGetValueBoxedPtr, instance, _handle);
 }
 
 void MField::SetValue(MObject* instance, void* value) const

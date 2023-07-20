@@ -547,6 +547,7 @@ namespace Flax.Build.Projects.VisualStudio
                     if (project.Type == TargetType.DotNetCore)
                     {
                         var path = Path.Combine(Path.GetDirectoryName(project.Path), "Properties/launchSettings.json");
+                        path = Utilities.NormalizePath(path);
                         if (profiles.ContainsKey(path))
                             profile.AppendLine(",");
                         profile.AppendLine($"    \"{project.BaseName}\": {{");
@@ -568,6 +569,7 @@ namespace Flax.Build.Projects.VisualStudio
                     var folder = Path.GetDirectoryName(e.Key);
                     if (!Directory.Exists(folder))
                         Directory.CreateDirectory(folder);
+                    profile.Clear();
                     profile.AppendLine("{");
                     profile.AppendLine("  \"profiles\": {");
                     profile.AppendLine(e.Value);

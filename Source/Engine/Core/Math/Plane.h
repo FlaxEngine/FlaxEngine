@@ -30,9 +30,7 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Plane()
-    {
-    }
+    Plane() = default;
 
     /// <summary>
     /// Init

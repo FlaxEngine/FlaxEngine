@@ -341,6 +341,31 @@ void SplineModel::OnParentChanged()
     OnSplineUpdated();
 }
 
+const Span<MaterialSlot> SplineModel::GetMaterialSlots() const
+{
+    const auto model = Model.Get();
+    if (model && !model->WaitForLoaded())
+        return ToSpan(model->MaterialSlots);
+    return Span<MaterialSlot>();
+}
+
+MaterialBase* SplineModel::GetMaterial(int32 entryIndex)
+{
+    if (Model)
+        Model->WaitForLoaded();
+    else
+        return nullptr;
+    CHECK_RETURN(entryIndex >= 0 && entryIndex < Entries.Count(), nullptr);
+    MaterialBase* material = Entries[entryIndex].Material.Get();
+    if (!material)
+    {
+        material = Model->MaterialSlots[entryIndex].Material.Get();
+        if (!material)
+            material = GPUDevice::Instance->GetDefaultDeformableMaterial();
+    }
+    return material;
+}
+
 bool SplineModel::HasContentLoaded() const
 {
     return (Model == nullptr || Model->IsLoaded()) && Entries.HasContentLoaded();

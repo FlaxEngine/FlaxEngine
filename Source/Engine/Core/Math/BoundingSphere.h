@@ -34,9 +34,7 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    BoundingSphere()
-    {
-    }
+    BoundingSphere() = default;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BoundingSphere"/> struct.

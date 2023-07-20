@@ -1032,6 +1032,11 @@ API_ENUM(Attributes="Flags") enum class ViewFlags : uint64
     Sky = 1 << 26,
 
     /// <summary>
+    /// Shows/hides light debug shapes.
+    /// </summary>
+    LightsDebug = 1 << 27,
+
+    /// <summary>
     /// Default flags for Game.
     /// </summary>
     DefaultGame = Reflections | DepthOfField | Fog | Decals | MotionBlur | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows | GlobalSDF | Sky,

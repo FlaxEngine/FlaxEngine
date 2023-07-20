@@ -127,6 +127,7 @@ public:
 #if USE_EDITOR
     void OnDebugDraw() override;
     void OnDebugDrawSelected() override;
+    void DrawLightsDebug(RenderView& view) override;
 #endif
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

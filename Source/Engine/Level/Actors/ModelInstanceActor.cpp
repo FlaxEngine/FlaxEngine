@@ -39,10 +39,9 @@ void ModelInstanceActor::SetMaterial(int32 entryIndex, MaterialBase* material)
 MaterialInstance* ModelInstanceActor::CreateAndSetVirtualMaterialInstance(int32 entryIndex)
 {
     WaitForModelLoad();
-    CHECK_RETURN(entryIndex >= 0 && entryIndex < Entries.Count(), nullptr);
-    auto material = Entries[entryIndex].Material.Get();
+    MaterialBase* material = GetMaterial(entryIndex);
     CHECK_RETURN(material && !material->WaitForLoaded(), nullptr);
-    const auto result = material->CreateVirtualInstance();
+    MaterialInstance* result = material->CreateVirtualInstance();
     Entries[entryIndex].Material = result;
     if (_sceneRenderingKey != -1)
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);

@@ -120,10 +120,11 @@ namespace FlaxEngine.Networking
         /// <param name="name">The RPC name.</param>
         /// <param name="argsStream">The RPC serialized arguments stream returned from BeginInvokeRPC.</param>
         /// <param name="targetIds">Optional list with network client IDs that should receive RPC. Empty to send on all clients. Ignored by Server RPCs.</param>
+        /// <returns>True if RPC cannot be executed locally, false if execute it locally too (checks RPC mode and target client ids).</returns>
         [Unmanaged]
-        public static void EndInvokeRPC(Object obj, Type type, string name, NetworkStream argsStream, uint[] targetIds = null)
+        public static bool EndInvokeRPC(Object obj, Type type, string name, NetworkStream argsStream, uint[] targetIds = null)
         {
-            Internal_CSharpEndInvokeRPC(FlaxEngine.Object.GetUnmanagedPtr(obj), type, name, FlaxEngine.Object.GetUnmanagedPtr(argsStream), targetIds);
+            return Internal_CSharpEndInvokeRPC(FlaxEngine.Object.GetUnmanagedPtr(obj), type, name, FlaxEngine.Object.GetUnmanagedPtr(argsStream), targetIds);
         }
 
         /// <summary>

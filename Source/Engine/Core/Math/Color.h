@@ -50,9 +50,7 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Color()
-    {
-    }
+    Color() = default;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Color"/> struct.

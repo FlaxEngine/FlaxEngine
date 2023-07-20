@@ -618,7 +618,7 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
     // Return
     case 5:
     {
-        auto& scope = ThreadStacks.Get().Stack->Scope;
+        auto scope = ThreadStacks.Get().Stack->Scope;
         scope->FunctionReturn = tryGetValue(node->GetBox(1), Value::Zero);
         break;
     }
@@ -634,7 +634,7 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
         else
         {
             // Evaluate method parameter value from the current scope
-            auto& scope = ThreadStacks.Get().Stack->Scope;
+            auto scope = ThreadStacks.Get().Stack->Scope;
             int32 index = boxBase->ID - 1;
             if (index < scope->Parameters.Length())
                 value = scope->Parameters.Get()[index];
@@ -1138,7 +1138,7 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
                 break;
         }
         int32 arrayIndex = 0;
-        for (; iteratorIndex < scope->ReturnedValues.Count(); arrayIndex++)
+        for (; arrayIndex < scope->ReturnedValues.Count(); arrayIndex++)
         {
             const auto& e = scope->ReturnedValues[arrayIndex];
             if (e.NodeId == node->ID && e.BoxId == 1)

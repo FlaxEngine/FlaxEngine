@@ -613,6 +613,28 @@ bool ScriptsBuilderService::Init()
         const String targetOutput = Globals::ProjectFolder / TEXT("Binaries") / target / platform / architecture / configuration;
         Array<String> files;
         FileSystem::DirectoryGetFiles(files, targetOutput, TEXT("*.HotReload.*"), DirectorySearchOption::TopDirectoryOnly);
+
+        for (const auto& reference : Editor::Project->References)
+        {
+            if (reference.Project->Name == TEXT("Flax"))
+                continue;
+
+            String referenceTarget;
+            if (reference.Project->EditorTarget.HasChars())
+            {
+                referenceTarget = reference.Project->EditorTarget.Get();
+            }
+            else if (reference.Project->GameTarget.HasChars())
+            {
+                referenceTarget = reference.Project->GameTarget.Get();
+            }
+            if (referenceTarget.IsEmpty())
+                continue;
+
+            const String referenceTargetOutput = reference.Project->ProjectFolderPath / TEXT("Binaries") / referenceTarget / platform / architecture / configuration;
+            FileSystem::DirectoryGetFiles(files, referenceTargetOutput, TEXT("*.HotReload.*"), DirectorySearchOption::TopDirectoryOnly);
+        }
+
         if (files.HasItems())
             LOG(Info, "Removing {0} files from previous Editor run hot-reloads", files.Count());
         for (auto& file : files)

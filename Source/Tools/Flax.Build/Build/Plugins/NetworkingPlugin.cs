@@ -241,7 +241,7 @@ namespace Flax.Build.Plugins
 
                             // Deserialize arguments
                             argNames += arg.Name;
-                            contents.AppendLine($"        {arg.Type.Type} {arg.Name};");
+                            contents.AppendLine($"        {arg.Type.GetFullNameNative(buildData, typeInfo, false, false)} {arg.Name};");
                             contents.AppendLine($"        stream->Read({arg.Name});");
                         }
 
@@ -254,7 +254,7 @@ namespace Flax.Build.Plugins
 
                     // Generated method thunk to invoke RPC to network
                     {
-                        contents.Append("    static void ").Append(functionInfo.Name).AppendLine("_Invoke(ScriptingObject* obj, void** args)");
+                        contents.Append("    static bool ").Append(functionInfo.Name).AppendLine("_Invoke(ScriptingObject* obj, void** args)");
                         contents.AppendLine("    {");
                         contents.AppendLine("        NetworkStream* stream = NetworkReplicator::BeginInvokeRPC();");
                         contents.AppendLine("        Span<uint32> targetIds;");
@@ -270,11 +270,11 @@ namespace Flax.Build.Plugins
                             }
 
                             // Serialize arguments
-                            contents.AppendLine($"        stream->Write(*({arg.Type.Type}*)args[{i}]);");
+                            contents.AppendLine($"        stream->Write(*(const {arg.Type.GetFullNameNative(buildData, typeInfo, false, false)}*)args[{i}]);");
                         }
 
                         // Invoke RPC
-                        contents.AppendLine($"        NetworkReplicator::EndInvokeRPC(obj, {typeInfo.NativeName}::TypeInitializer, StringAnsiView(\"{functionInfo.Name}\", {functionInfo.Name.Length}), stream, targetIds);");
+                        contents.AppendLine($"        return NetworkReplicator::EndInvokeRPC(obj, {typeInfo.NativeName}::TypeInitializer, StringAnsiView(\"{functionInfo.Name}\", {functionInfo.Name.Length}), stream, targetIds);");
                         contents.AppendLine("    }");
                     }
                     contents.AppendLine();
@@ -780,7 +780,7 @@ namespace Flax.Build.Plugins
         private static void GenerateCallINetworkSerializable(ref DotnetContext context, TypeDefinition type, string name, MethodDefinition method)
         {
             var m = new MethodDefinition(name, MethodAttributes.Public | MethodAttributes.HideBySig, context.VoidType);
-            m.Parameters.Add(new ParameterDefinition("stream", ParameterAttributes.None, context.NetworkStreamType));
+            m.Parameters.Add(new ParameterDefinition("stream", ParameterAttributes.None, type.Module.ImportReference(context.NetworkStreamType)));
             ILProcessor il = m.Body.GetILProcessor();
             il.Emit(OpCodes.Nop);
             il.Emit(OpCodes.Ldarg_0);
@@ -1304,7 +1304,10 @@ namespace Flax.Build.Plugins
                         il.Emit(jmp4);
                         valueContext.Load(ref il);
                         il.Emit(OpCodes.Ldloc, varStart + 1); // idx
-                        il.Emit(OpCodes.Ldelem_Ref);
+                        if (elementType.IsValueType)
+                            il.Emit(OpCodes.Ldelem_Any, elementType);
+                        else
+                            il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Stloc, varStart + 2); // <elementType>
 
                         // Serialize item value
@@ -1753,10 +1756,10 @@ namespace Flax.Build.Plugins
                 if (jumpBodyEnd == null)
                     throw new Exception("Missing IL Return op code in method " + method.Name);
                 il.Emit(OpCodes.Ldloc, varsStart + 0);
-                il.Emit(OpCodes.Brfalse_S, jumpIf2Start);
+                il.Emit(OpCodes.Brfalse, jumpIf2Start);
                 il.Emit(OpCodes.Ldloc, varsStart + 2);
                 il.Emit(OpCodes.Ldc_I4_2);
-                il.Emit(OpCodes.Beq_S, jumpIfBodyStart);
+                il.Emit(OpCodes.Beq, jumpIfBodyStart);
                 // ||
                 il.Emit(jumpIf2Start);
                 il.Emit(OpCodes.Ldloc, varsStart + 1);
@@ -1812,35 +1815,12 @@ namespace Flax.Build.Plugins
                 else
                     il.Emit(OpCodes.Ldnull);
                 var endInvokeRPC = networkReplicatorType.Resolve().GetMethod("EndInvokeRPC", 5);
+                if (endInvokeRPC.ReturnType.FullName != boolType.FullName)
+                    throw new Exception("Invalid EndInvokeRPC return type. Remove any 'Binaries' folders to force project recompile.");
                 il.Emit(OpCodes.Call, module.ImportReference(endInvokeRPC));
 
-                // if (server && networkMode == NetworkManagerMode.Client) return;
-                if (methodRPC.IsServer)
-                {
-                    il.Emit(OpCodes.Nop);
-                    il.Emit(OpCodes.Ldloc, varsStart + 2);
-                    il.Emit(OpCodes.Ldc_I4_2);
-                    var tmp = ilp.Create(OpCodes.Nop);
-                    il.Emit(OpCodes.Beq_S, tmp);
-                    il.Emit(OpCodes.Br, jumpBodyStart);
-                    il.Emit(tmp);
-                    //il.Emit(OpCodes.Ret);
-                    il.Emit(OpCodes.Br, jumpBodyEnd);
-                }
-
-                // if (client && networkMode == NetworkManagerMode.Server) return;
-                if (methodRPC.IsClient)
-                {
-                    il.Emit(OpCodes.Nop);
-                    il.Emit(OpCodes.Ldloc, varsStart + 2);
-                    il.Emit(OpCodes.Ldc_I4_1);
-                    var tmp = ilp.Create(OpCodes.Nop);
-                    il.Emit(OpCodes.Beq_S, tmp);
-                    il.Emit(OpCodes.Br, jumpBodyStart);
-                    il.Emit(tmp);
-                    //il.Emit(OpCodes.Ret);
-                    il.Emit(OpCodes.Br, jumpBodyEnd);
-                }
+                // if (EndInvokeRPC) return
+                il.Emit(OpCodes.Brtrue, jumpBodyEnd);
 
                 // Continue to original method body
                 il.Emit(jumpBodyStart);

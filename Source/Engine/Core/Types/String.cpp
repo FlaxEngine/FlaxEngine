@@ -73,7 +73,7 @@ void String::Set(const char* chars, int32 length)
         _length = length;
     }
     if (chars)
-        StringUtils::ConvertANSI2UTF16(chars, _data, length);
+        StringUtils::ConvertANSI2UTF16(chars, _data, length, _length);
 }
 
 void String::SetUTF8(const char* chars, int32 length)
@@ -112,7 +112,8 @@ void String::Append(const char* chars, int32 count)
     _data = (Char*)Platform::Allocate((_length + 1) * sizeof(Char), 16);
 
     Platform::MemoryCopy(_data, oldData, oldLength * sizeof(Char));
-    StringUtils::ConvertANSI2UTF16(chars, _data + oldLength, count * sizeof(Char));
+    StringUtils::ConvertANSI2UTF16(chars, _data + oldLength, count, _length);
+    _length += oldLength;
     _data[_length] = 0;
 
     Platform::Free(oldData);

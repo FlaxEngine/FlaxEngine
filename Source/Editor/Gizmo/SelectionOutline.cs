@@ -178,6 +178,8 @@ namespace FlaxEditor.Gizmo
                 if (selection[i] is ActorNode actorNode && actorNode.Actor != null)
                     CollectActors(actorNode.Actor);
             }
+            if (_actors.Count == 0)
+                return;
 
             // Render selected objects depth
             Renderer.DrawSceneDepth(context, task, customDepth, _actors);

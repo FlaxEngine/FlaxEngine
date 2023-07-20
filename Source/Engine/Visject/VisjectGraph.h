@@ -246,6 +246,7 @@ public:
     void ProcessGroupCollections(Box* box, Node* node, Value& value);
 
 protected:
+    void InlineVariantStruct(Variant& v);
     virtual Value eatBox(Node* caller, Box* box) = 0;
     virtual Graph* GetCurrentGraph() const = 0;
 

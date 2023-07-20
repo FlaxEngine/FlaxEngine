@@ -121,9 +121,7 @@ public:
     /// <summary>
     /// Default constructor
     /// </summary>
-    Half2()
-    {
-    }
+    Half2() = default;
 
     /// <summary>
     /// Init
@@ -185,9 +183,7 @@ public:
     Half Z;
 
 public:
-    Half3()
-    {
-    }
+    Half3() = default;
 
     Half3(Half x, Half y, Half z)
         : X(x)
@@ -242,9 +238,7 @@ public:
     Half W;
 
 public:
-    Half4()
-    {
-    }
+    Half4() = default;
 
     Half4(Half x, Half y, Half z, Half w)
         : X(x)

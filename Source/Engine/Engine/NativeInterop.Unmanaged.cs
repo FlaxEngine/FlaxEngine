@@ -244,7 +244,25 @@ namespace FlaxEngine.Interop
                 @namespace = NativeAllocStringAnsi(type.Namespace ?? ""),
                 typeAttributes = (uint)type.Attributes,
             };
-            *assemblyHandle = GetAssemblyHandle(type.Assembly);
+
+            Assembly assembly = null;
+            if (type.IsGenericType && !type.Assembly.IsCollectible)
+            {
+                // The owning assembly of a generic type with type arguments referencing
+                // collectible assemblies must be one of the collectible assemblies.
+                foreach (var genericType in type.GetGenericArguments())
+                {
+                    if (genericType.Assembly.IsCollectible)
+                    {
+                        assembly = genericType.Assembly;
+                        break;
+                    }
+                }
+            }
+            if (assembly == null)
+                assembly = type.Assembly;
+
+            *assemblyHandle = GetAssemblyHandle(assembly);
         }
 
         [UnmanagedCallersOnly]
@@ -771,11 +789,27 @@ namespace FlaxEngine.Interop
         }
 
         [UnmanagedCallersOnly]
+        internal static int FieldGetOffset(ManagedHandle fieldHandle)
+        {
+            FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
+            return (int)Marshal.OffsetOf(field.field.DeclaringType, field.field.Name);
+        }
+
+        [UnmanagedCallersOnly]
         internal static void FieldGetValue(ManagedHandle fieldOwnerHandle, ManagedHandle fieldHandle, IntPtr valuePtr)
         {
             object fieldOwner = fieldOwnerHandle.Target;
             FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
             field.toNativeMarshaller(field.field, fieldOwner, valuePtr, out int fieldOffset);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static IntPtr FieldGetValueBoxed(ManagedHandle fieldOwnerHandle, ManagedHandle fieldHandle)
+        {
+            object fieldOwner = fieldOwnerHandle.Target;
+            FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
+            object fieldValue = field.field.GetValue(fieldOwner);
+            return Invoker.MarshalReturnValueGeneric(field.field.FieldType, fieldValue);
         }
 
         [UnmanagedCallersOnly]
@@ -885,6 +919,7 @@ namespace FlaxEngine.Interop
                 handle.Free();
             fieldHandleCacheCollectible.Clear();
 #endif
+            _typeSizeCache.Clear();
 
             foreach (var pair in classAttributesCacheCollectible)
                 pair.Value.Free();
@@ -923,7 +958,7 @@ namespace FlaxEngine.Interop
             if (nativeType.IsClass)
                 size = sizeof(IntPtr);
             else
-                size = Marshal.SizeOf(nativeType);
+                size = GetTypeSize(nativeType);
             return size;
         }
 

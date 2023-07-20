@@ -195,13 +195,14 @@ public:
     /// <param name="name">The RPC name.</param>
     /// <param name="argsStream">The RPC serialized arguments stream returned from BeginInvokeRPC.</param>
     /// <param name="targetIds">Optional list with network client IDs that should receive RPC. Empty to send on all clients. Ignored by Server RPCs.</param>
-    static void EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, Span<uint32> targetIds = Span<uint32>());
+    /// <returns>True if RPC cannot be executed locally, false if execute it locally too (checks RPC mode and target client ids).</returns>
+    static bool EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, Span<uint32> targetIds = Span<uint32>());
 
 private:
 #if !COMPILE_WITHOUT_CSHARP
     API_FUNCTION(NoProxy) static void AddSerializer(const ScriptingTypeHandle& typeHandle, const Function<void(void*, void*)>& serialize, const Function<void(void*, void*)>& deserialize);
     API_FUNCTION(NoProxy) static void AddRPC(const ScriptingTypeHandle& typeHandle, const StringAnsiView& name, const Function<void(void*, void*)>& execute, bool isServer, bool isClient, NetworkChannelType channel);
-    API_FUNCTION(NoProxy) static void CSharpEndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, MArray* targetIds);
+    API_FUNCTION(NoProxy) static bool CSharpEndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, MArray* targetIds);
     static StringAnsiView GetCSharpCachedName(const StringAnsiView& name);
 #endif
 };

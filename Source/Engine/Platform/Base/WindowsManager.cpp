@@ -25,7 +25,6 @@ WindowsManagerService WindowsManagerServiceInstance;
 Window* WindowsManager::GetByNativePtr(void* handle)
 {
     Window* result = nullptr;
-
     WindowsLocker.Lock();
     for (int32 i = 0; i < Windows.Count(); i++)
     {
@@ -36,7 +35,6 @@ Window* WindowsManager::GetByNativePtr(void* handle)
         }
     }
     WindowsLocker.Unlock();
-
     return result;
 }
 
@@ -61,7 +59,7 @@ void WindowsManagerService::Update()
     // Update windows
     const float deltaTime = Time::Update.UnscaledDeltaTime.GetTotalSeconds();
     WindowsManager::WindowsLocker.Lock();
-    for (auto& win : WindowsManager::Windows)
+    for (Window* win : WindowsManager::Windows)
     {
         if (win && win->IsVisible())
             win->OnUpdate(deltaTime);
@@ -74,7 +72,7 @@ void WindowsManagerService::Dispose()
     // Close remaining windows
     WindowsManager::WindowsLocker.Lock();
     auto windows = WindowsManager::Windows;
-    for (auto& win : windows)
+    for (Window* win : windows)
     {
         win->Close(ClosingReason::EngineExit);
     }

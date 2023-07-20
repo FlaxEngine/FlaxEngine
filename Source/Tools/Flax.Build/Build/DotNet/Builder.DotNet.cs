@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
 using Flax.Deploy;
@@ -12,7 +13,7 @@ namespace Flax.Build
 {
     static partial class Builder
     {
-        public static event Action<TaskGraph, BuildData, NativeCpp.BuildOptions, Task, IGrouping<string, Module>> BuildDotNetAssembly;
+        public static event Action<TaskGraph, BuildData, BuildOptions, Task, IGrouping<string, Module>> BuildDotNetAssembly;
 
         private static void BuildTargetDotNet(RulesAssembly rules, TaskGraph graph, Target target, Platform platform, TargetConfiguration configuration)
         {
@@ -151,7 +152,7 @@ namespace Flax.Build
             }
         }
 
-        private static void BuildDotNet(TaskGraph graph, BuildData buildData, NativeCpp.BuildOptions buildOptions, string name, List<string> sourceFiles, HashSet<string> fileReferences = null, IGrouping<string, Module> binaryModule = null)
+        private static void BuildDotNet(TaskGraph graph, BuildData buildData, BuildOptions buildOptions, string name, List<string> sourceFiles, HashSet<string> fileReferences = null, IGrouping<string, Module> binaryModule = null)
         {
             // Setup build options
             var buildPlatform = Platform.BuildTargetPlatform;
@@ -164,6 +165,8 @@ namespace Flax.Build
             if (!dotnetSdk.IsValid)
                 throw new Exception("Cannot compile C# without .NET SDK");
             string dotnetPath = "dotnet", referenceAnalyzers;
+            string[] runtimeVersionNameParts = dotnetSdk.RuntimeVersionName.Split('.');
+            string runtimeVersionShort = runtimeVersionNameParts[0] + '.' + runtimeVersionNameParts[1];
 #else
             string monoRoot, monoPath;
 #endif
@@ -174,7 +177,7 @@ namespace Flax.Build
 #if USE_NETCORE
                 dotnetPath = Path.Combine(dotnetSdk.RootPath, "dotnet.exe");
                 cscPath = Path.Combine(dotnetSdk.RootPath, @$"sdk\{dotnetSdk.VersionName}\Roslyn\bincore\csc.dll");
-                referenceAssemblies = Path.Combine(dotnetSdk.RootPath, @$"shared\Microsoft.NETCore.App\{dotnetSdk.RuntimeVersionName}\");
+                referenceAssemblies = Path.Combine(dotnetSdk.RootPath, @$"packs\Microsoft.NETCore.App.Ref\{dotnetSdk.RuntimeVersionName}\ref\net{runtimeVersionShort}\");
                 referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, @$"packs\Microsoft.NETCore.App.Ref\{dotnetSdk.RuntimeVersionName}\analyzers\dotnet\cs\");
 #else
                 monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Windows", "Mono");
@@ -190,7 +193,7 @@ namespace Flax.Build
             {
 #if USE_NETCORE
                 cscPath = Path.Combine(dotnetSdk.RootPath, $"sdk/{dotnetSdk.VersionName}/Roslyn/bincore/csc.dll");
-                referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"shared/Microsoft.NETCore.App/{dotnetSdk.RuntimeVersionName}/");
+                referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/ref/net{runtimeVersionShort}/");
                 referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/analyzers/dotnet/cs/");
 #else
                 monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Linux", "Mono");
@@ -204,7 +207,7 @@ namespace Flax.Build
             {
 #if USE_NETCORE
                 cscPath = Path.Combine(dotnetSdk.RootPath, $"sdk/{dotnetSdk.VersionName}/Roslyn/bincore/csc.dll");
-                referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"shared/Microsoft.NETCore.App/{dotnetSdk.RuntimeVersionName}/");
+                referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/ref/net{runtimeVersionShort}/");
                 referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/analyzers/dotnet/cs/");
 #else
                 monoRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Editor", "Mac", "Mono");
@@ -256,6 +259,7 @@ namespace Flax.Build
             args.Add(buildData.Configuration == TargetConfiguration.Release ? "/optimize+" : "/optimize-");
 #else
             args.Add(buildData.Configuration == TargetConfiguration.Debug ? "/optimize-" : "/optimize+");
+            args.Add(string.Format("/reference:\"{0}mscorlib.dll\"", referenceAssemblies));
 #endif
             args.Add(string.Format("/out:\"{0}\"", outputFile));
             args.Add(string.Format("/doc:\"{0}\"", outputDocFile));
@@ -263,7 +267,6 @@ namespace Flax.Build
                 args.Add("/define:" + string.Join(";", buildOptions.ScriptingAPI.Defines));
             if (buildData.Configuration == TargetConfiguration.Debug)
                 args.Add("/define:DEBUG");
-            args.Add(string.Format("/reference:\"{0}mscorlib.dll\"", referenceAssemblies));
             foreach (var reference in buildOptions.ScriptingAPI.SystemReferences)
                 args.Add(string.Format("/reference:\"{0}{1}.dll\"", referenceAssemblies, reference));
             foreach (var reference in fileReferences)
@@ -274,6 +277,13 @@ namespace Flax.Build
 #endif
             foreach (var sourceFile in sourceFiles)
                 args.Add("\"" + sourceFile + "\"");
+
+#if USE_NETCORE
+            // Inject some assembly metadata (similar to msbuild in Visual Studio)
+            var assemblyAttributesPath = Path.Combine(buildOptions.IntermediateFolder, name + ".AssemblyAttributes.cs");
+            File.WriteAllText(assemblyAttributesPath, $"[assembly: global::System.Runtime.Versioning.TargetFrameworkAttribute(\".NETCoreApp,Version=v{runtimeVersionShort}\", FrameworkDisplayName = \".NET {runtimeVersionShort}\")]\n", Encoding.UTF8);
+            args.Add("\"" + assemblyAttributesPath + "\"");
+#endif
 
             // Generate response file with source files paths and compilation arguments
             string responseFile = Path.Combine(buildOptions.IntermediateFolder, name + ".response");

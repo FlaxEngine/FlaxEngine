@@ -114,3 +114,20 @@ inline Span<T> ToSpan(const T* ptr, int32 length)
 {
     return Span<T>(ptr, length);
 }
+
+template<typename T, typename U = T, typename AllocationType = HeapAllocation>
+inline Span<U> ToSpan(const Array<T, AllocationType>& data)
+{
+    return Span<U>((U*)data.Get(), data.Count());
+}
+
+template<typename T>
+inline bool SpanContains(const Span<T> span, const T& value)
+{
+    for (int32 i = 0; i < span.Length(); i++)
+    {
+        if (span.Get()[i] == value)
+            return true;
+    }
+    return false;
+}

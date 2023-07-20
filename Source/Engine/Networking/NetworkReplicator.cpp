@@ -700,9 +700,9 @@ void NetworkReplicator::AddRPC(const ScriptingTypeHandle& typeHandle, const Stri
     NetworkRpcInfo::RPCsTable[rpcName] = rpcInfo;
 }
 
-void NetworkReplicator::CSharpEndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, MArray* targetIds)
+bool NetworkReplicator::CSharpEndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, MArray* targetIds)
 {
-    EndInvokeRPC(obj, type, GetCSharpCachedName(name), argsStream, MUtils::ToSpan<uint32>(targetIds));
+    return EndInvokeRPC(obj, type, GetCSharpCachedName(name), argsStream, MUtils::ToSpan<uint32>(targetIds));
 }
 
 StringAnsiView NetworkReplicator::GetCSharpCachedName(const StringAnsiView& name)
@@ -1113,12 +1113,12 @@ NetworkStream* NetworkReplicator::BeginInvokeRPC()
     return CachedWriteStream;
 }
 
-void NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, Span<uint32> targetIds)
+bool NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, Span<uint32> targetIds)
 {
     Scripting::ObjectsLookupIdMapping.Set(nullptr);
     const NetworkRpcInfo* info = NetworkRpcInfo::RPCsTable.TryGet(NetworkRpcName(type, name));
     if (!info || !obj || NetworkManager::IsOffline())
-        return;
+        return false;
     ObjectsLock.Lock();
     auto& rpc = RpcQueue.AddOne();
     rpc.Object = obj;
@@ -1135,12 +1135,23 @@ void NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHa
     }
 #endif
     ObjectsLock.Unlock();
+
+    // Check if skip local execution (eg. server rpc called from client or client rpc with specific targets)
+    const NetworkManagerMode networkMode = NetworkManager::Mode;
+    if (info->Server && networkMode == NetworkManagerMode::Client)
+        return true;
+    if (info->Client && networkMode == NetworkManagerMode::Server)
+        return true;
+    if (info->Client && networkMode == NetworkManagerMode::Host && targetIds.IsValid() && !SpanContains(targetIds, NetworkManager::LocalClientId))
+        return true;
+    return false;
 }
 
 void NetworkInternal::NetworkReplicatorClientConnected(NetworkClient* client)
 {
     ScopeLock lock(ObjectsLock);
     NewClients.Add(client);
+    ASSERT(sizeof(NetworkClientsMask) * 8 >= (uint32)NetworkManager::Clients.Count()); // Ensure that clients mask can hold all of clients
 }
 
 void NetworkInternal::NetworkReplicatorClientDisconnected(NetworkClient* client)
@@ -1193,6 +1204,7 @@ void NetworkInternal::NetworkReplicatorClear()
             Objects.Remove(it);
         }
     }
+    Objects.Clear();
     RpcQueue.Clear();
     SpawnQueue.Clear();
     DespawnQueue.Clear();

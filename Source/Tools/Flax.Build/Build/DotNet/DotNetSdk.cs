@@ -199,7 +199,11 @@ namespace Flax.Build
                 if (rid == ridFallback)
                     ridFallback = "";
                 if (string.IsNullOrEmpty(dotnetPath))
-                    dotnetPath = "/usr/share/dotnet/";
+                {
+                    dotnetPath = "/usr/lib/dotnet/";
+                    if (!Directory.Exists(dotnetPath))
+                        dotnetPath = "/usr/share/dotnet/";
+                }
                 break;
             }
             case TargetPlatform.Mac:
