@@ -3,6 +3,7 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEditor.Actions;
+using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.CustomEditors.Elements;
 
@@ -93,13 +94,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 SetKeyframeLinear(spline, index);
 
-                // if has a tangent selected, change the selection to tangent parent (a spline point / keyframe)
-                var currentSelection = Editor.Instance.SceneEditing.Selection;
-                if (currentSelection.Count == 1 && currentSelection[0] is SplineNode.SplinePointTangentNode)
-                {
-                    var selectedTangentNode = currentSelection[0] as SplineNode.SplinePointTangentNode;
-                    Editor.Instance.SceneEditing.Select(selectedTangentNode.ParentNode);
-                }
+                // change the selection to tangent parent (a spline point / keyframe)
+                SetSelectSplinePointNode(spline, index);
             }
 
             /// <inheritdoc/>
@@ -197,7 +193,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 if (keyframe.TangentIn.Translation.Length == 0)
                 {
                     var isLastKeyframe = index == spline.SplinePointsCount - 1;
-                    var isFirstKeyframe = index == 0;
 
                     if (!isLastKeyframe)
                     {
@@ -211,6 +206,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 keyframe.TangentOut.Translation = Vector3.Zero;
 
                 spline.SetSplineKeyframe(index, keyframe);
+                SetSelectTangentIn(spline, index);
             }
 
             /// <inheritdoc/>
@@ -254,6 +250,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 keyframe.TangentIn.Translation = Vector3.Zero;
 
                 spline.SetSplineKeyframe(index, keyframe);
+                SetSelectTangentOut(spline, index);
             }
 
             /// <inheritdoc/>
@@ -617,6 +614,62 @@ namespace FlaxEditor.CustomEditors.Dedicated
             keyframe.TangentIn.Translation = -slop * tangentInSize;
             keyframe.TangentOut.Translation = slop * tangentOutSize;
             spline.SetSplineKeyframe(index, keyframe);
+        }
+
+        private static SplineNode.SplinePointNode GetSplinePointNode(Spline spline, int index)
+        {
+            return (SplineNode.SplinePointNode)SceneGraphFactory.FindNode(spline.ID).ChildNodes[index];
+        }
+
+        private static SplineNode.SplinePointTangentNode GetSplineTangentInNode(Spline spline, int index)
+        {
+            var point = GetSplinePointNode(spline, index);
+            var tangentIn = spline.GetSplineTangent(index, true);
+            var tangentNodes = point.ChildNodes;
+
+            // find tangent in node comparing all child nodes position
+            for (int i = 0; i < tangentNodes.Count; i++)
+            {
+                if (tangentNodes[i].Transform.Translation == tangentIn.Translation)
+                {
+                    return (SplineNode.SplinePointTangentNode)tangentNodes[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static SplineNode.SplinePointTangentNode GetSplineTangentOutNode(Spline spline, int index)
+        {
+            var point = GetSplinePointNode(spline, index);
+            var tangentOut = spline.GetSplineTangent(index, false);
+            var tangentNodes = point.ChildNodes;
+
+            // find tangent out node comparing all child nodes position
+            for (int i = 0; i < tangentNodes.Count; i++)
+            {
+                if (tangentNodes[i].Transform.Translation == tangentOut.Translation)
+                {
+                    return (SplineNode.SplinePointTangentNode)tangentNodes[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static void SetSelectSplinePointNode(Spline spline, int index)
+        {
+            Editor.Instance.SceneEditing.Select(GetSplinePointNode(spline, index));
+        }
+
+        private static void SetSelectTangentIn(Spline spline, int index)
+        {
+            Editor.Instance.SceneEditing.Select(GetSplineTangentInNode(spline, index));
+        }
+
+        private static void SetSelectTangentOut(Spline spline, int index)
+        {
+            Editor.Instance.SceneEditing.Select(GetSplineTangentOutNode(spline, index));
         }
     }
 }
