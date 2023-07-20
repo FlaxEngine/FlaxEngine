@@ -319,6 +319,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 selectedPointsGrid.CustomControl.SlotsHorizontally = 3;
                 selectedPointsGrid.CustomControl.SlotsVertically = 2;
 
+                selectedPointsGrid.Control.Size *= new Float2(1, 2);
+
                 _linearTangentButton = selectedPointsGrid.Button("Linear");
                 _freeTangentButton = selectedPointsGrid.Button("Free");
                 _alignedTangentButton = selectedPointsGrid.Button("Aligned");
