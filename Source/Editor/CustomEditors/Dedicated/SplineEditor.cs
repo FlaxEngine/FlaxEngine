@@ -390,9 +390,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void UpdateButtonsColors()
         {
-            var isFree = IsFreeTangentMode(SelectedSpline, _lastPointSelected.Index);
-            var isLinear = IsLinearTangentMode(SelectedSpline, _lastPointSelected.Index);
-            var isAligned = IsAlignedTangentMode(SelectedSpline, _lastPointSelected.Index);
+            var isFree = _currentTangentMode is FreeTangentMode;
+            var isLinear = _currentTangentMode is LinearTangentMode;
+            var isAligned = _currentTangentMode is AlignedTangentMode;
 
             _linearTangentButton.Button.BackgroundColor = isLinear ? SelectedButtonColor : NormalButtonColor;
             _freeTangentButton.Button.BackgroundColor = isFree ? SelectedButtonColor : NormalButtonColor;
