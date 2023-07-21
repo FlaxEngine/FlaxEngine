@@ -187,25 +187,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             /// <inheritdoc/>
             public override void OnSetMode(Spline spline, int index)
             {
-                var keyframe = spline.GetSplineKeyframe(index);
-
-                // auto smooth tangent if's linear
-                if (keyframe.TangentIn.Translation.Length == 0)
-                {
-                    var isLastKeyframe = index == spline.SplinePointsCount - 1;
-
-                    if (!isLastKeyframe)
-                    {
-                        var nexKeyframe = spline.GetSplineKeyframe(index + 1);
-                        var directionToNextKeyframe = keyframe.Value.WorldToLocalVector(keyframe.Value.Translation - nexKeyframe.Value.Translation);
-                        directionToNextKeyframe = directionToNextKeyframe.Normalized * 100f;
-                        keyframe.TangentIn.Translation = directionToNextKeyframe;
-                    }
-                }
-
-                keyframe.TangentOut.Translation = Vector3.Zero;
-
-                spline.SetSplineKeyframe(index, keyframe);
+                SetSelectTangentIn(spline, index);
                 SetSelectTangentIn(spline, index);
             }
 
@@ -231,25 +213,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             /// <inheritdoc/>
             public override void OnSetMode(Spline spline, int index)
             {
-                var keyframe = spline.GetSplineKeyframe(index);
-
-                // auto smooth tangent if's linear
-                if (keyframe.TangentOut.Translation.Length == 0)
-                {
-                    var isFirstKeyframe = index == 0;
-
-                    if (!isFirstKeyframe)
-                    {
-                        var previousKeyframe = spline.GetSplineKeyframe(index - 1);
-                        var directionToPreviousKeyframe = keyframe.Value.WorldToLocalVector(keyframe.Value.Translation - previousKeyframe.Value.Translation);
-                        directionToPreviousKeyframe = directionToPreviousKeyframe.Normalized * 100f;
-                        keyframe.TangentOut.Translation = directionToPreviousKeyframe;
-                    }
-                }
-
-                keyframe.TangentIn.Translation = Vector3.Zero;
-
-                spline.SetSplineKeyframe(index, keyframe);
+                SetTangentSmoothOut(spline, index);
                 SetSelectTangentOut(spline, index);
             }
 
@@ -628,6 +592,51 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             var keyframe = spline.GetSplineKeyframe(index);
             return keyframe.TangentOut.Translation.Length > 0 && keyframe.TangentIn.Translation.Length == 0;
+        }
+
+        private static void SetTangentSmoothIn(Spline spline, int index)
+        {
+            var keyframe = spline.GetSplineKeyframe(index);
+
+            // auto smooth tangent if's linear
+            if (keyframe.TangentIn.Translation.Length == 0)
+            {
+                var isLastKeyframe = index == spline.SplinePointsCount - 1;
+
+                if (!isLastKeyframe)
+                {
+                    var nexKeyframe = spline.GetSplineKeyframe(index + 1);
+                    var directionToNextKeyframe = keyframe.Value.WorldToLocalVector(keyframe.Value.Translation - nexKeyframe.Value.Translation);
+                    directionToNextKeyframe = directionToNextKeyframe.Normalized * 100f;
+                    keyframe.TangentIn.Translation = directionToNextKeyframe;
+                }
+            }
+
+            keyframe.TangentOut.Translation = Vector3.Zero;
+            spline.SetSplineKeyframe(index, keyframe);
+        }
+
+        private static void SetTangentSmoothOut(Spline spline, int index)
+        {
+            var keyframe = spline.GetSplineKeyframe(index);
+
+            // auto smooth tangent if's linear
+            if (keyframe.TangentOut.Translation.Length == 0)
+            {
+                var isFirstKeyframe = index == 0;
+
+                if (!isFirstKeyframe)
+                {
+                    var previousKeyframe = spline.GetSplineKeyframe(index - 1);
+                    var directionToPreviousKeyframe = keyframe.Value.WorldToLocalVector(keyframe.Value.Translation - previousKeyframe.Value.Translation);
+                    directionToPreviousKeyframe = directionToPreviousKeyframe.Normalized * 100f;
+                    keyframe.TangentOut.Translation = directionToPreviousKeyframe;
+                }
+            }
+
+            keyframe.TangentIn.Translation = Vector3.Zero;
+
+            spline.SetSplineKeyframe(index, keyframe);
         }
 
         private static void SetPointSmooth(Spline spline, int index)
