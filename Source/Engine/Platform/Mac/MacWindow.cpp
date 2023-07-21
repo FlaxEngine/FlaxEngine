@@ -202,8 +202,7 @@ void GetDragDropData(const MacWindow* window, id<NSDraggingInfo> sender, Float2&
 {
     NSRect frame = [(NSWindow*)window->GetNativePtr() frame];
     NSPoint point = [sender draggingLocation];
-    Float2 titleSize = GetWindowTitleSize(window);
-    mousePos = Float2(point.x, frame.size.height - point.y) - titleSize;
+    mousePos = Float2(point.x, frame.size.height - point.y) * MacPlatform::ScreenScale - GetWindowTitleSize(window);
     NSPasteboard* pasteboard = [sender draggingPasteboard];
     if ([[pasteboard types] containsObject:NSPasteboardTypeString])
     {
