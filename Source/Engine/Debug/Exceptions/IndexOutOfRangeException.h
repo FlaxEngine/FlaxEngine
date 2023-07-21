@@ -24,7 +24,7 @@ namespace Log
         /// <summary>
         /// Creates default exception with additional data
         /// </summary>
-        /// <param name="message">Additional information that help describe error</param>
+        /// <param name="additionalInfo">Additional information that help describe error</param>
         IndexOutOfRangeException(const String& additionalInfo)
             : Exception(TEXT("Index is out of range for items in array"), additionalInfo)
         {

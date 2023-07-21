@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Flax Engine. All rights reserved.
+// Copyright (c) 2012-2023 Flax Engine. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -135,6 +135,7 @@ namespace Flax.Build.Projects
                 {
                 case TargetType.NativeCpp: return new VCProjectGenerator(vsVersion);
                 case TargetType.DotNet: return new CSProjectGenerator(vsVersion);
+                case TargetType.DotNetCore: return new CSSDKProjectGenerator(vsVersion);
                 default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
                 }
             }

@@ -1,189 +1,57 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{C99AAF92-D4AD-4847-9EE0-B11E68E93E1E}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>Flax.Build</RootNamespace>
-    <AssemblyName>Flax.Build</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
-    <LangVersion>7.3</LangVersion>
-    <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <Prefer32Bit>false</Prefer32Bit>
-    <OutputPath>..\..\..\Binaries\Tools\</OutputPath>
-    <DocumentationFile>..\..\..\Binaries\Tools\Flax.Build.xml</DocumentationFile>
-    <IntermediateOutputPath>..\..\..\Cache\Intermediate\Flax.Build\Debug</IntermediateOutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <UseVSHostingProcess>true</UseVSHostingProcess>
+    <TargetFramework>net7.0</TargetFramework>
+    <LangVersion>11.0</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>annotations</Nullable>
+    <IsPackable>false</IsPackable>
+    <Configurations>Debug;Release</Configurations>
+    <BaseOutputPath>..\..\..\Binaries\Tools</BaseOutputPath>
+    <OutDir>..\..\..\Binaries\Tools</OutDir>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
+    <EnableDefaultCompileItems>False</EnableDefaultCompileItems>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <DefineConstants>USE_NETCORE</DefineConstants>
+    <DebugType>portable</DebugType>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <ErrorReport>none</ErrorReport>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>1591</NoWarn>
+    <NoWarn>1701;1702;8981</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <Prefer32Bit>false</Prefer32Bit>
-    <OutputPath>..\..\..\Binaries\Tools\</OutputPath>
-    <DocumentationFile>..\..\..\Binaries\Tools\Flax.Build.xml</DocumentationFile>
-    <IntermediateOutputPath>..\..\..\Cache\Intermediate\Flax.Build\Release</IntermediateOutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <UseVSHostingProcess>true</UseVSHostingProcess>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>1591</NoWarn>
-  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties" />
+    <Compile Include="**\*.cs" />
+    <Compile Remove="obj\**" />
+    <Compile Include="..\..\Platforms\XboxOne\Flax.Build\*.cs" />
+    <Compile Include="..\..\Platforms\XboxScarlett\Flax.Build\*.cs" />
+    <Compile Include="..\..\Platforms\Switch\Flax.Build\*.cs" />
+    <Compile Include="..\..\Platforms\PS4\Flax.Build\*.cs" />
+    <Compile Include="..\..\Platforms\PS5\Flax.Build\*.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <Reference Include="Ionic.Zip.Reduced">
       <HintPath>..\..\..\Source\Platforms\DotNet\Ionic.Zip.Reduced.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Text.Encoding.CodePages">
+      <HintPath>..\..\..\Source\Platforms\DotNet\System.Text.Encoding.CodePages.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Cecil">
       <HintPath>..\..\..\Source\Platforms\DotNet\Mono.Cecil.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.Setup.Configuration.Interop">
       <HintPath>..\..\..\Source\Platforms\DotNet\Microsoft.VisualStudio.Setup.Configuration.Interop.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Microsoft.CodeAnalysis.CSharp">
+      <HintPath>..\..\..\Source\Platforms\DotNet\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.IO.Compression.FileSystem" />
-    <Reference Include="System.Xml" />
+    <Reference Include="Microsoft.CodeAnalysis">
+      <HintPath>..\..\..\Source\Platforms\DotNet\Microsoft.CodeAnalysis.dll</HintPath>
+    </Reference>
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Bindings\ApiTypeInfo.cs" />
-    <Compile Include="Bindings\BindingsGenerator.Api.cs" />
-    <Compile Include="Bindings\BindingsGenerator.Cache.cs" />
-    <Compile Include="Bindings\BindingsGenerator.Cpp.cs" />
-    <Compile Include="Bindings\BindingsGenerator.cs" />
-    <Compile Include="Bindings\BindingsGenerator.CSharp.cs" />
-    <Compile Include="Bindings\BindingsGenerator.Parsing.cs" />
-    <Compile Include="Bindings\ClassInfo.cs" />
-    <Compile Include="Bindings\ClassStructInfo.cs" />
-    <Compile Include="Bindings\EnumInfo.cs" />
-    <Compile Include="Bindings\EventInfo.cs" />
-    <Compile Include="Bindings\FieldInfo.cs" />
-    <Compile Include="Bindings\FileInfo.cs" />
-    <Compile Include="Bindings\InheritanceInfo.cs" />
-    <Compile Include="Bindings\InjectCodeInfo.cs" />
-    <Compile Include="Bindings\InterfaceInfo.cs" />
-    <Compile Include="Bindings\LangType.cs" />
-    <Compile Include="Bindings\MemberInfo.cs" />
-    <Compile Include="Bindings\FunctionInfo.cs" />
-    <Compile Include="Bindings\ModuleInfo.cs" />
-    <Compile Include="Bindings\PropertyInfo.cs" />
-    <Compile Include="Bindings\StructureInfo.cs" />
-    <Compile Include="Bindings\TypedefInfo.cs" />
-    <Compile Include="Bindings\TypeInfo.cs" />
-    <Compile Include="Build\Assembler.cs" />
-    <Compile Include="Build\Builder.cs" />
-    <Compile Include="Build\Builder.Projects.cs" />
-    <Compile Include="Build\Builder.Rules.cs" />
-    <Compile Include="Build\DepsModule.cs" />
-    <Compile Include="Build\DotNet\Builder.DotNet.cs" />
-    <Compile Include="Build\EditorModule.cs" />
-    <Compile Include="Build\EngineModule.cs" />
-    <Compile Include="Build\EngineTarget.cs" />
-    <Compile Include="Build\GameModule.cs" />
-    <Compile Include="Build\GameTarget.cs" />
-    <Compile Include="Build\Graph\CompileTask.cs" />
-    <Compile Include="Build\Graph\LinkTask.cs" />
-    <Compile Include="Build\Graph\LocalExecutor.cs" />
-    <Compile Include="Build\Graph\Task.cs" />
-    <Compile Include="Build\Graph\TaskExecutor.cs" />
-    <Compile Include="Build\Graph\TaskGraph.cs" />
-    <Compile Include="Build\HeaderOnlyModule.cs" />
-    <Compile Include="Build\InvalidArchitectureException.cs" />
-    <Compile Include="Build\NativeCpp\Builder.NativeCpp.cs" />
-    <Compile Include="Build\Module.cs" />
-    <Compile Include="Build\NativeCpp\BuildOptions.cs" />
-    <Compile Include="Build\NativeCpp\CompileEnvironment.cs" />
-    <Compile Include="Build\NativeCpp\CompileOutput.cs" />
-    <Compile Include="Build\NativeCpp\IncludesCache.cs" />
-    <Compile Include="Build\NativeCpp\LinkEnvironment.cs" />
-    <Compile Include="Build\Plugin.cs" />
-    <Compile Include="Build\Plugins\NetworkingPlugin.cs" />
-    <Compile Include="Build\Plugins\VisualScriptingPlugin.cs" />
-    <Compile Include="Build\Profiling.cs" />
-    <Compile Include="Build\ProjectTarget.cs" />
-    <Compile Include="Build\Target.cs" />
-    <Compile Include="Build\ThirdPartyModule.cs" />
-    <Compile Include="Build\InvalidPlatformException.cs" />
-    <Compile Include="Build\Platform.cs" />
-    <Compile Include="Build\Sdk.cs" />
-    <Compile Include="Build\Toolchain.cs" />
-    <Compile Include="Build\TargetPlatform.cs" />
-    <Compile Include="Deploy\Configuration.cs" />
-    <Compile Include="Deploy\Deployer.cs" />
-    <Compile Include="Deploy\Deployment.Editor.cs" />
-    <Compile Include="Deploy\Deployment.Platforms.cs" />
-    <Compile Include="Deploy\Deployment.Utils.cs" />
-    <Compile Include="Deploy\FlaxBuild.cs" />
-    <Compile Include="Deploy\VCEnvironment.cs" />
-    <Compile Include="Deps\Configuration.cs" />
-    <Compile Include="Deps\Dependencies\*.cs" />
-    <Compile Include="Deps\Dependency.cs" />
-    <Compile Include="Deps\DepsBuilder.cs" />
-    <Compile Include="Deps\Downloader.cs" />
-    <Compile Include="Deps\ProgressDisplay.cs" />
-    <Compile Include="Platforms\Android\*.cs" />
-    <Compile Include="Platforms\Linux\*.cs" />
-    <Compile Include="..\..\Platforms\PS4\Flax.Build\*.cs" />
-    <Compile Include="..\..\Platforms\PS5\Flax.Build\*.cs" />
-    <Compile Include="Platforms\Mac\*.cs" />
-    <Compile Include="Platforms\Unix\*.cs" />
-    <Compile Include="Platforms\UWP\*.cs" />
-    <Compile Include="Platforms\Windows\*.cs" />
-    <Compile Include="Platforms\GDK\*.cs" />
-    <Compile Include="..\..\Platforms\XboxOne\Flax.Build\*.cs" />
-    <Compile Include="..\..\Platforms\XboxScarlett\Flax.Build\*.cs" />
-    <Compile Include="..\..\Platforms\Switch\Flax.Build\*.cs" />
-    <Compile Include="Projects\IProjectCustomizer.cs" />
-    <Compile Include="Projects\Project.cs" />
-    <Compile Include="Projects\ProjectFormat.cs" />
-    <Compile Include="Projects\ProjectGenerator.cs" />
-    <Compile Include="Projects\Solution.cs" />
-    <Compile Include="Projects\VisualStudioCode\VisualStudioCodeInstance.cs" />
-    <Compile Include="Projects\VisualStudioCode\VisualStudioCodeProjectGenerator.cs" />
-    <Compile Include="Projects\VisualStudio\CSProjectGenerator.cs" />
-    <Compile Include="Projects\VisualStudio\IVisualStudioProjectCustomizer.cs" />
-    <Compile Include="Projects\VisualStudio\VCProjectGenerator.cs" />
-    <Compile Include="Projects\VisualStudio\VisualStudioInstance.cs" />
-    <Compile Include="Projects\VisualStudio\VisualStudioProject.cs" />
-    <Compile Include="Projects\VisualStudio\VisualStudioProjectGenerator.cs" />
-    <Compile Include="Projects\VisualStudio\VisualStudioVersion.cs" />
-    <Compile Include="Projects\XCodeProjectGenerator.cs" />
-    <Compile Include="Utilities\MonoCecil.cs" />
-    <Compile Include="Utilities\StringWriterWithEncoding.cs" />
-    <Compile Include="Utilities\Tokenizer.cs" />
-    <Compile Include="Utilities\TwoWayEnumerator.cs" />
-    <Compile Include="Utilities\Utilities.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Globals.cs" />
-    <Compile Include="Log.cs" />
-    <Compile Include="LogIndentScope.cs" />
-    <Compile Include="CommandLine.cs" />
-    <Compile Include="CommandLineAttribute.cs" />
-    <Compile Include="Configuration.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="ProjectInfo.cs" />
-    <Compile Include="Utilities\WinAPI.cs" />
-  </ItemGroup>
-  <ItemGroup />
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

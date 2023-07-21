@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 namespace FlaxEngine.Json
 {
     /// <summary>
-    /// Serialize references to the FlaxEngine.Object as Guid.
+    /// Serialize references to the <see cref="FlaxEngine.Object"/> as Guid.
     /// </summary>
     /// <seealso cref="Newtonsoft.Json.JsonConverter" />
     internal class FlaxObjectConverter : JsonConverter
@@ -37,7 +37,7 @@ namespace FlaxEngine.Json
         {
             // Skip serialization as reference id for the root object serialization (eg. Script)
             var cache = JsonSerializer.Current.Value;
-            if (cache != null && cache.IsDuringSerialization && cache.SerializerWriter.SerializeStackSize == 0)
+            if (cache != null && cache.IsWriting && cache.SerializerWriter.SerializeStackSize == 0)
             {
                 return false;
             }
@@ -46,7 +46,7 @@ namespace FlaxEngine.Json
     }
 
     /// <summary>
-    /// Serialize SceneReference as Guid in internal format.
+    /// Serialize <see cref="SceneReference"/> as Guid in internal format.
     /// </summary>
     /// <seealso cref="Newtonsoft.Json.JsonConverter" />
     internal class SceneReferenceConverter : JsonConverter
@@ -79,7 +79,7 @@ namespace FlaxEngine.Json
     }
 
     /// <summary>
-    /// Serialize SoftObjectReference as Guid in internal format.
+    /// Serialize <see cref="SoftObjectReference"/> as Guid in internal format.
     /// </summary>
     /// <seealso cref="Newtonsoft.Json.JsonConverter" />
     internal class SoftObjectReferenceConverter : JsonConverter
@@ -111,7 +111,36 @@ namespace FlaxEngine.Json
     }
 
     /// <summary>
-    /// Serialize SoftObjectReference as Guid in internal format.
+    /// Serialize <see cref="SoftTypeReference"/> as typename string in internal format.
+    /// </summary>
+    /// <seealso cref="Newtonsoft.Json.JsonConverter" />
+    internal class SoftTypeReferenceConverter : JsonConverter
+    {
+        /// <inheritdoc />
+        public override void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            writer.WriteValue(((SoftTypeReference)value).TypeName);
+        }
+
+        /// <inheritdoc />
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            var result = new SoftTypeReference();
+            if (reader.TokenType == JsonToken.String)
+                result.TypeName = (string)reader.Value;
+
+            return result;
+        }
+
+        /// <inheritdoc />
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(SoftTypeReference);
+        }
+    }
+
+    /// <summary>
+    /// Serialize <see cref="Margin"/> as Guid in internal format.
     /// </summary>
     /// <seealso cref="Newtonsoft.Json.JsonConverter" />
     internal class MarginConverter : JsonConverter
@@ -237,7 +266,7 @@ namespace FlaxEngine.Json
     }
 
     /// <summary>
-    /// Serialize LocalizedString as inlined text is not using localization (Id member is empty).
+    /// Serialize <see cref="LocalizedString"/> as inlined text is not using localization (Id member is empty).
     /// </summary>
     /// <seealso cref="Newtonsoft.Json.JsonConverter" />
     internal class LocalizedStringConverter : JsonConverter

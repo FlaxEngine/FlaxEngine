@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,12 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.
 
-#ifndef PX_FOUNDATION_PX_ASSERT_H
-#define PX_FOUNDATION_PX_ASSERT_H
+#ifndef PX_ASSERT_H
+#define PX_ASSERT_H
 
 #include "foundation/PxFoundationConfig.h"
 #include "foundation/Px.h"
@@ -42,7 +41,10 @@ namespace physx
 {
 #endif
 
-/* Base class to handle assert failures */
+/**
+ * @brief  Base class to handle assert failures
+ * @deprecated  
+ */
 class PX_DEPRECATED PxAssertHandler
 {
   public:
@@ -52,8 +54,16 @@ class PX_DEPRECATED PxAssertHandler
 	virtual void operator()(const char* exp, const char* file, int line, bool& ignore) = 0;
 };
 
+/**
+ * @deprecated
+ */
 PX_FOUNDATION_API PX_DEPRECATED PxAssertHandler& PxGetAssertHandler();
+
+/**
+ * @deprecated
+ */
 PX_FOUNDATION_API PX_DEPRECATED void PxSetAssertHandler(PxAssertHandler& handler);
+
 
 #if !PX_ENABLE_ASSERTS
 	#define PX_ASSERT(exp) ((void)0)
@@ -95,4 +105,5 @@ PX_FOUNDATION_API PX_DEPRECATED void PxSetAssertHandler(PxAssertHandler& handler
 
 
 /** @} */
-#endif // PX_FOUNDATION_PX_ASSERT_H
+#endif
+

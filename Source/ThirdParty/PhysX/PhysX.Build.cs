@@ -6,7 +6,7 @@ using Flax.Build;
 using Flax.Build.NativeCpp;
 
 /// <summary>
-/// https://github.com/NVIDIAGameWorks/PhysX
+/// https://github.com/NVIDIA-Omniverse/PhysX
 /// </summary>
 public class PhysX : DepsModule
 {
@@ -27,7 +27,7 @@ public class PhysX : DepsModule
     {
         base.Setup(options);
 
-        // PhysX 4 configuration:
+        // PhysX configuration:
         // PX_BUILDSNIPPETS = False
         // PX_BUILDSAMPLES = False
         // PX_BUILDPUBLICSAMPLES = False
@@ -59,19 +59,31 @@ public class PhysX : DepsModule
         case TargetPlatform.XboxOne:
         case TargetPlatform.XboxScarlett:
         case TargetPlatform.Mac:
+        case TargetPlatform.Android:
+        case TargetPlatform.iOS:
             switch (options.Architecture)
             {
             case TargetArchitecture.x86:
+            case TargetArchitecture.ARM:
                 archPostFix = "_32";
                 break;
             case TargetArchitecture.x64:
+            case TargetArchitecture.ARM64:
                 archPostFix = "_64";
                 break;
+            default: throw new InvalidArchitectureException(options.Architecture);
             }
             break;
         }
 
         options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, "Source/ThirdParty/PhysX"));
+        switch (options.Platform.Target)
+        {
+        case TargetPlatform.Switch:
+            options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, "Source/Platforms", options.Platform.Target.ToString(), "Binaries/Data/PhysX/physx/include"));
+            options.PublicIncludePaths.Add(Path.Combine(Globals.EngineRoot, "Source/Platforms", options.Platform.Target.ToString(), "Binaries/Data/PhysX/physx/include/foundation"));
+            break;
+        }
 
         if (useDynamicLinking)
         {
@@ -100,6 +112,7 @@ public class PhysX : DepsModule
             if (useVehicle)
             {
                 AddLib(options, depsRoot, string.Format("PhysXVehicle_static{0}", archPostFix));
+                //AddLib(options, depsRoot, string.Format("PhysXVehicle2_static{0}", archPostFix));
             }
         }
     }

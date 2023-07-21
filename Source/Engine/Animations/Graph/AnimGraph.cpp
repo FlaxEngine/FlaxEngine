@@ -7,54 +7,9 @@
 #include "Engine/Graphics/Models/SkeletonData.h"
 #include "Engine/Scripting/Scripting.h"
 
+extern void RetargetSkeletonNode(const SkeletonData& sourceSkeleton, const SkeletonData& targetSkeleton, const SkinnedModel::SkeletonMapping& sourceMapping, Transform& node, int32 i);
+
 ThreadLocal<AnimGraphContext> AnimGraphExecutor::Context;
-
-RootMotionData RootMotionData::Identity = { Vector3(0.0f), Quaternion(0.0f, 0.0f, 0.0f, 1.0f) };
-
-RootMotionData& RootMotionData::operator+=(const RootMotionData& b)
-{
-    Translation += b.Translation;
-    Rotation *= b.Rotation;
-    return *this;
-}
-
-RootMotionData& RootMotionData::operator+=(const Transform& b)
-{
-    Translation += b.Translation;
-    Rotation *= b.Orientation;
-    return *this;
-}
-
-RootMotionData& RootMotionData::operator-=(const Transform& b)
-{
-    Translation -= b.Translation;
-    Quaternion invRotation = Rotation;
-    invRotation.Invert();
-    Quaternion::Multiply(invRotation, b.Orientation, Rotation);
-    return *this;
-}
-
-RootMotionData RootMotionData::operator+(const RootMotionData& b) const
-{
-    RootMotionData result;
-
-    result.Translation = Translation + b.Translation;
-    result.Rotation = Rotation * b.Rotation;
-
-    return result;
-}
-
-RootMotionData RootMotionData::operator-(const RootMotionData& b) const
-{
-    RootMotionData result;
-
-    result.Rotation = Rotation;
-    result.Rotation.Invert();
-    Vector3::Transform(b.Translation - Translation, result.Rotation, result.Translation);
-    Quaternion::Multiply(result.Rotation, b.Rotation, result.Rotation);
-
-    return result;
-}
 
 Transform AnimGraphImpulse::GetNodeModelTransformation(SkeletonData& skeleton, int32 nodeIndex) const
 {
@@ -87,7 +42,7 @@ void AnimGraphInstanceData::Clear()
     LastUpdateTime = -1;
     CurrentFrame = 0;
     RootTransform = Transform::Identity;
-    RootMotion = RootMotionData::Identity;
+    RootMotion = Transform::Identity;
     Parameters.Resize(0);
     State.Resize(0);
     NodesPose.Resize(0);
@@ -103,7 +58,7 @@ void AnimGraphInstanceData::ClearState()
     LastUpdateTime = -1;
     CurrentFrame = 0;
     RootTransform = Transform::Identity;
-    RootMotion = RootMotionData::Identity;
+    RootMotion = Transform::Identity;
     State.Resize(0);
     NodesPose.Resize(0);
     Slots.Clear();
@@ -257,15 +212,12 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
             e.Hit = false;
 
         // Init empty nodes data
-        context.EmptyNodes.RootMotion = RootMotionData::Identity;
+        context.EmptyNodes.RootMotion = Transform::Identity;
         context.EmptyNodes.Position = 0.0f;
         context.EmptyNodes.Length = 0.0f;
         context.EmptyNodes.Nodes.Resize(_skeletonNodesCount, false);
         for (int32 i = 0; i < _skeletonNodesCount; i++)
-        {
-            auto& node = skeleton.Nodes[i];
-            context.EmptyNodes.Nodes[i] = node.LocalTransform;
-        }
+            context.EmptyNodes.Nodes[i] = skeleton.Nodes[i].LocalTransform;
     }
 
     // Update the animation graph and gather skeleton nodes transformations in nodes local space
@@ -301,6 +253,44 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
             }
         }
     }
+    SkeletonData* animResultSkeleton = &skeleton;
+
+    // Retarget animation when using output pose from other skeleton
+    AnimGraphImpulse retargetNodes;
+    if (_graph.BaseModel != data.NodesSkeleton)
+    {
+        ANIM_GRAPH_PROFILE_EVENT("Retarget");
+
+        // Init nodes for the target skeleton
+        auto& targetSkeleton = data.NodesSkeleton->Skeleton;
+        retargetNodes = *animResult;
+        retargetNodes.Nodes.Resize(targetSkeleton.Nodes.Count());
+        Transform* targetNodes = retargetNodes.Nodes.Get();
+        for (int32 i = 0; i < retargetNodes.Nodes.Count(); i++)
+            targetNodes[i] = targetSkeleton.Nodes[i].LocalTransform;
+
+        // Use skeleton mapping
+        const SkinnedModel::SkeletonMapping mapping = data.NodesSkeleton->GetSkeletonMapping(_graph.BaseModel);
+        if (mapping.NodesMapping.IsValid())
+        {
+            const auto& sourceSkeleton = _graph.BaseModel->Skeleton;
+            Transform* sourceNodes = animResult->Nodes.Get();
+            for (int32 i = 0; i < retargetNodes.Nodes.Count(); i++)
+            {
+                const int32 nodeToNode = mapping.NodesMapping[i];
+                if (nodeToNode != -1)
+                {
+                    Transform node = sourceNodes[nodeToNode];
+                    RetargetSkeletonNode(sourceSkeleton, targetSkeleton, mapping, node, i);
+                    targetNodes[i] = node;
+                }
+
+            }
+        }
+
+        animResult = &retargetNodes;
+        animResultSkeleton = &targetSkeleton;
+    }
 
     // Allow for external override of the local pose (eg. by the ragdoll)
     data.LocalPoseOverride(animResult);
@@ -309,13 +299,14 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
     {
         ANIM_GRAPH_PROFILE_EVENT("Global Pose");
 
-        data.NodesPose.Resize(_skeletonNodesCount, false);
+        ASSERT(animResultSkeleton->Nodes.Count() == animResult->Nodes.Count());
+        data.NodesPose.Resize(animResultSkeleton->Nodes.Count(), false);
         Transform* nodesTransformations = animResult->Nodes.Get();
 
         // Note: this assumes that nodes are sorted (parents first)
-        for (int32 nodeIndex = 0; nodeIndex < _skeletonNodesCount; nodeIndex++)
+        for (int32 nodeIndex = 0; nodeIndex < animResultSkeleton->Nodes.Count(); nodeIndex++)
         {
-            const int32 parentIndex = skeleton.Nodes[nodeIndex].ParentIndex;
+            const int32 parentIndex = animResultSkeleton->Nodes[nodeIndex].ParentIndex;
             if (parentIndex != -1)
             {
                 nodesTransformations[parentIndex].LocalToWorld(nodesTransformations[nodeIndex], nodesTransformations[nodeIndex]);

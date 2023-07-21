@@ -40,8 +40,10 @@ namespace FlaxEditor.Progress.Handlers
 
         private void OnScriptsReload()
         {
+#if !USE_NETCORE
             // Clear types cache
             Newtonsoft.Json.JsonSerializer.ClearCache();
+#endif
         }
 
         private void OnCompilationFailed()

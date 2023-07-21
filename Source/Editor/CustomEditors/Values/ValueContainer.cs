@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Linq;
 using FlaxEditor.Scripting;
 using FlaxEngine;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.CustomEditors
 {
@@ -187,7 +188,7 @@ namespace FlaxEditor.CustomEditors
                     {
                         for (int i = 0; i < Count; i++)
                         {
-                            if (this[i] == referenceSceneObject)
+                            if ((SceneObject)this[i] == referenceSceneObject)
                                 continue;
 
                             if (this[i] == null || (this[i] is SceneObject valueSceneObject && valueSceneObject && valueSceneObject.PrefabObjectID != referenceSceneObject.PrefabObjectID))
@@ -242,7 +243,7 @@ namespace FlaxEditor.CustomEditors
             if (objA == null && objB is string objBStr && objBStr.Length == 0)
                 return true;
 
-            return Newtonsoft.Json.Utilities.MiscellaneousUtils.DefaultValueEquals(objA, objB);
+            return Newtonsoft.Json.Utilities.MiscellaneousUtils.ValueEquals(objA, objB);
         }
 
         /// <summary>

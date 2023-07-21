@@ -58,6 +58,7 @@ API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API SceneObject : public Scripting
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(SceneObject);
     friend PrefabInstanceData;
+    friend PrefabManager;
     friend Actor;
     friend Level;
     friend ScriptsFactory;

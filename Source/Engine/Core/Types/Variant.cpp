@@ -23,12 +23,10 @@
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
+#include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Utilities/Crc.h"
 #include "Engine/Utilities/StringConverter.h"
-#if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/object.h>
-#endif
 
 namespace
 {
@@ -108,15 +106,14 @@ VariantType::VariantType(Types type, const StringAnsiView& typeName)
     }
 }
 
-VariantType::VariantType(Types type, _MonoClass* klass)
+VariantType::VariantType(Types type, MClass* klass)
 {
     Type = type;
     TypeName = nullptr;
-#if USE_MONO
+#if USE_CSHARP
     if (klass)
     {
-        MString typeName;
-        MUtils::GetClassFullname(klass, typeName);
+        const StringAnsi& typeName = klass->GetFullName();
         const int32 length = typeName.Length();
         TypeName = static_cast<char*>(Allocator::Allocate(length + 1));
         Platform::MemoryCopy(TypeName, typeName.Get(), length);
@@ -166,7 +163,7 @@ VariantType::VariantType(const StringAnsiView& typeName)
     }
 
     // Try using managed class
-#if USE_MONO
+#if USE_CSHARP
     if (const auto mclass = Scripting::FindClass(typeName))
     {
         new(this) VariantType(ManagedObject, typeName);
@@ -615,17 +612,21 @@ Variant::Variant(Asset* v)
     }
 }
 
-#if USE_MONO
+#if USE_CSHARP
 
-Variant::Variant(_MonoObject* v)
-    : Type(VariantType::ManagedObject, v ? mono_object_get_class(v) : nullptr)
+Variant::Variant(MObject* v)
+    : Type(VariantType::ManagedObject, v ? MCore::Object::GetClass(v) : nullptr)
 {
-    AsUint = v ? mono_gchandle_new(v, true) : 0;
+#if USE_NETCORE
+    AsUint64 = v ? MCore::GCHandle::New(v) : 0;
+#else
+    AsUint = v ? MCore::GCHandle::New(v) : 0;
+#endif
 }
 
 #else
 
-Variant::Variant(_MonoObject* v)
+Variant::Variant(MObject* v)
     : Type(VariantType::ManagedObject, nullptr)
 {
     AsUint = 0;
@@ -659,7 +660,8 @@ Variant::Variant(const StringAnsiView& v)
         const int32 length = v.Length() * sizeof(Char) + 2;
         AsBlob.Data = Allocator::Allocate(length);
         AsBlob.Length = length;
-        StringUtils::ConvertANSI2UTF16(v.Get(), (Char*)AsBlob.Data, v.Length());
+        int32 tmp;
+        StringUtils::ConvertANSI2UTF16(v.Get(), (Char*)AsBlob.Data, v.Length(), tmp);
         ((Char*)AsBlob.Data)[v.Length()] = 0;
     }
     else
@@ -958,11 +960,14 @@ Variant::~Variant()
         Delete(AsDictionary);
         break;
     case VariantType::ManagedObject:
-#if USE_MONO
+#if USE_NETCORE
+        if (AsUint64)
+            MCore::GCHandle::Free(AsUint64);
+#elif USE_MONO
         if (AsUint)
-            mono_gchandle_free(AsUint);
-        break;
+            MCore::GCHandle::Free(AsUint);
 #endif
+        break;
     default: ;
     }
 }
@@ -1089,8 +1094,10 @@ Variant& Variant::operator=(const Variant& other)
             AsDictionary = New<Dictionary<Variant, Variant>>(*other.AsDictionary);
         break;
     case VariantType::ManagedObject:
-#if USE_MONO
-        AsUint = other.AsUint ? mono_gchandle_new(mono_gchandle_get_target(other.AsUint), true) : 0;
+#if USE_NETCORE
+        AsUint64 = other.AsUint64 ? MCore::GCHandle::New(MCore::GCHandle::GetTarget(other.AsUint64)) : 0;
+#elif USE_MONO
+        AsUint = other.AsUint ? MCore::GCHandle::New(MCore::GCHandle::GetTarget(other.AsUint)) : 0;
 #endif
         break;
     case VariantType::Null:
@@ -1216,9 +1223,13 @@ bool Variant::operator==(const Variant& other) const
                 return false;
             return AsBlob.Length == other.AsBlob.Length && StringUtils::Compare(static_cast<const char*>(AsBlob.Data), static_cast<const char*>(other.AsBlob.Data), AsBlob.Length - 1) == 0;
         case VariantType::ManagedObject:
-#if USE_MONO
+#if USE_NETCORE
             // TODO: invoke C# Equality logic?
-            return AsUint == other.AsUint || mono_gchandle_get_target(AsUint) == mono_gchandle_get_target(other.AsUint);
+            return AsUint64 == other.AsUint64 || MCore::GCHandle::GetTarget(AsUint64) == MCore::GCHandle::GetTarget(other.AsUint64);
+#elif USE_MONO
+            return AsUint == other.AsUint || MCore::GCHandle::GetTarget(AsUint) == MCore::GCHandle::GetTarget(other.AsUint);
+#else
+            return false;
 #endif
         default:
             return false;
@@ -1309,8 +1320,12 @@ Variant::operator bool() const
     case VariantType::Asset:
         return AsAsset != nullptr;
     case VariantType::ManagedObject:
-#if USE_MONO
-        return AsUint != 0 && mono_gchandle_get_target(AsUint) != nullptr;
+#if USE_NETCORE
+        return AsUint64 != 0 && MCore::GCHandle::GetTarget(AsUint64) != nullptr;
+#elif USE_MONO
+        return AsUint != 0 && MCore::GCHandle::GetTarget(AsUint) != nullptr;
+#else
+        return false;
 #endif
     default:
         return false;
@@ -1579,8 +1594,12 @@ Variant::operator void*() const
     case VariantType::Blob:
         return AsBlob.Data;
     case VariantType::ManagedObject:
-#if USE_MONO
-        return AsUint ? mono_gchandle_get_target(AsUint) : nullptr;
+#if USE_NETCORE
+        return AsUint64 ? MCore::GCHandle::GetTarget(AsUint64) : nullptr;
+#elif USE_MONO
+        return AsUint ? MCore::GCHandle::GetTarget(AsUint) : nullptr;
+#else
+        return nullptr;
 #endif
     default:
         return nullptr;
@@ -1622,10 +1641,12 @@ Variant::operator ScriptingObject*() const
     }
 }
 
-Variant::operator _MonoObject*() const
+Variant::operator MObject*() const
 {
-#if USE_MONO
-    return Type.Type == VariantType::ManagedObject && AsUint ? mono_gchandle_get_target(AsUint) : nullptr;
+#if USE_NETCORE
+    return Type.Type == VariantType::ManagedObject && AsUint64 ? MCore::GCHandle::GetTarget(AsUint64) : nullptr;
+#elif USE_MONO
+    return Type.Type == VariantType::ManagedObject && AsUint ? MCore::GCHandle::GetTarget(AsUint) : nullptr;
 #else
     return nullptr;
 #endif
@@ -2338,9 +2359,12 @@ void Variant::SetType(const VariantType& type)
             Delete(AsDictionary);
         break;
     case VariantType::ManagedObject:
-#if USE_MONO
+#if USE_NETCORE
+        if (AsUint64)
+            MCore::GCHandle::Free(AsUint64);
+#elif USE_MONO
         if (AsUint)
-            mono_gchandle_free(AsUint);
+            MCore::GCHandle::Free(AsUint);
 #endif
         break;
     default: ;
@@ -2448,9 +2472,12 @@ void Variant::SetType(VariantType&& type)
             Delete(AsDictionary);
         break;
     case VariantType::ManagedObject:
-#if USE_MONO
+#if USE_NETCORE
+        if (AsUint64)
+            MCore::GCHandle::Free(AsUint64);
+#elif USE_MONO
         if (AsUint)
-            mono_gchandle_free(AsUint);
+            MCore::GCHandle::Free(AsUint);
 #endif
         break;
     default: ;
@@ -2552,7 +2579,8 @@ void Variant::SetString(const StringAnsiView& str)
         AsBlob.Data = Allocator::Allocate(length);
         AsBlob.Length = length;
     }
-    StringUtils::ConvertANSI2UTF16(str.Get(), (Char*)AsBlob.Data, str.Length());
+    int32 tmp;
+    StringUtils::ConvertANSI2UTF16(str.Get(), (Char*)AsBlob.Data, str.Length(), tmp);
     ((Char*)AsBlob.Data)[str.Length()] = 0;
 }
 
@@ -2626,14 +2654,18 @@ void Variant::SetObject(ScriptingObject* object)
         object->Deleted.Bind<Variant, &Variant::OnObjectDeleted>(this);
 }
 
-void Variant::SetManagedObject(_MonoObject* object)
+void Variant::SetManagedObject(MObject* object)
 {
-#if USE_MONO
+#if USE_CSHARP
     if (object)
     {
         if (Type.Type != VariantType::ManagedObject)
-            SetType(VariantType(VariantType::ManagedObject, mono_object_get_class(object)));
-        AsUint = mono_gchandle_new(object, true);
+            SetType(VariantType(VariantType::ManagedObject, MCore::Object::GetClass(object)));
+#if USE_NETCORE
+        AsUint64 = MCore::GCHandle::New(object);
+#else
+        AsUint = MCore::GCHandle::New(object);
+#endif
     }
     else
     {
@@ -2752,11 +2784,131 @@ String Variant::ToString() const
     case VariantType::Typename:
         return String((const char*)AsBlob.Data, AsBlob.Length ? AsBlob.Length - 1 : 0);
     case VariantType::ManagedObject:
-#if USE_MONO
-        return AsUint ? String(MUtils::ToString(mono_object_to_string(mono_gchandle_get_target(AsUint), nullptr))) : TEXT("null");
+#if USE_NETCORE
+        return AsUint64 ? String(MUtils::ToString(MCore::Object::ToString(MCore::GCHandle::GetTarget(AsUint64)))) : TEXT("null");
+#elif USE_MONO
+        return AsUint ? String(MUtils::ToString(MCore::Object::ToString(MCore::GCHandle::GetTarget(AsUint)))) : TEXT("null");
+#else
+        return String::Empty;
 #endif
     default:
         return String::Empty;
+    }
+}
+
+void Variant::Inline()
+{
+    VariantType::Types type = VariantType::Null;
+    byte data[sizeof(Matrix)];
+    if (Type.Type == VariantType::Structure && AsBlob.Data && AsBlob.Length <= sizeof(Matrix))
+    {
+        for (int32 i = 2; i < VariantType::MAX; i++)
+        {
+            if (StringUtils::Compare(Type.TypeName, InBuiltTypesTypeNames[i]) == 0)
+            {
+                type = (VariantType::Types)i;
+                break;
+            }
+        }
+        if (type == VariantType::Null)
+        {
+            // Aliases
+            if (StringUtils::Compare(Type.TypeName, "FlaxEngine.Vector2") == 0)
+                type = VariantType::Types::Vector2;
+            else if (StringUtils::Compare(Type.TypeName, "FlaxEngine.Vector3") == 0)
+                type = VariantType::Types::Vector3;
+            else if (StringUtils::Compare(Type.TypeName, "FlaxEngine.Vector4") == 0)
+                type = VariantType::Types::Vector4;
+        }
+        if (type != VariantType::Null)
+            Platform::MemoryCopy(data, AsBlob.Data, AsBlob.Length);
+    }
+    if (type != VariantType::Null)
+    {
+        switch (type)
+        {
+        case VariantType::Bool:
+            *this = *(bool*)data;
+            break;
+        case VariantType::Int:
+            *this = *(int32*)data;
+            break;
+        case VariantType::Uint:
+            *this = *(uint32*)data;
+            break;
+        case VariantType::Int64:
+            *this = *(int64*)data;
+            break;
+        case VariantType::Uint64:
+            *this = *(uint64*)data;
+            break;
+        case VariantType::Float:
+            *this = *(float*)data;
+            break;
+        case VariantType::Double:
+            *this = *(double*)data;
+            break;
+        case VariantType::Float2:
+            *this = *(Float2*)data;
+            break;
+        case VariantType::Float3:
+            *this = *(Float3*)data;
+            break;
+        case VariantType::Float4:
+            *this = *(Float4*)data;
+            break;
+        case VariantType::Color:
+            *this = *(Color*)data;
+            break;
+        case VariantType::Guid:
+            *this = *(Guid*)data;
+            break;
+        case VariantType::BoundingBox:
+            *this = Variant(*(BoundingBox*)data);
+            break;
+        case VariantType::BoundingSphere:
+            *this = *(BoundingSphere*)data;
+            break;
+        case VariantType::Quaternion:
+            *this = *(Quaternion*)data;
+            break;
+        case VariantType::Transform:
+            *this = Variant(*(Transform*)data);
+            break;
+        case VariantType::Rectangle:
+            *this = *(Rectangle*)data;
+            break;
+        case VariantType::Ray:
+            *this = Variant(*(Ray*)data);
+            break;
+        case VariantType::Matrix:
+            *this = Variant(*(Matrix*)data);
+            break;
+        case VariantType::Int2:
+            *this = *(Int2*)data;
+            break;
+        case VariantType::Int3:
+            *this = *(Int3*)data;
+            break;
+        case VariantType::Int4:
+            *this = *(Int4*)data;
+            break;
+        case VariantType::Int16:
+            *this = *(int16*)data;
+            break;
+        case VariantType::Uint16:
+            *this = *(uint16*)data;
+            break;
+        case VariantType::Double2:
+            *this = *(Double2*)data;
+            break;
+        case VariantType::Double3:
+            *this = *(Double3*)data;
+            break;
+        case VariantType::Double4:
+            *this = *(Double4*)data;
+            break;
+        }
     }
 }
 
@@ -3646,6 +3798,7 @@ void Variant::AllocStructure()
         const ScriptingType& type = typeHandle.GetType();
         AsBlob.Length = type.Size;
         AsBlob.Data = Allocator::Allocate(AsBlob.Length);
+        Platform::MemoryClear(AsBlob.Data, AsBlob.Length);
         type.Struct.Ctor(AsBlob.Data);
     }
     else if (typeName == "System.Int16" || typeName == "System.UInt16")
@@ -3656,23 +3809,28 @@ void Variant::AllocStructure()
         AsBlob.Data = Allocator::Allocate(AsBlob.Length);
         *((int16*)AsBlob.Data) = 0;
     }
-#if USE_MONO
+#if USE_CSHARP
     else if (const auto mclass = Scripting::FindClass(typeName))
     {
         // Fallback to C#-only types
-        MCore::AttachThread();
-        auto instance = mclass->CreateInstance();
+        MCore::Thread::Attach();
+        MObject* instance = mclass->CreateInstance();
         if (instance)
         {
 #if 0
-            void* data = mono_object_unbox(instance);
-            int32 instanceSize = mono_class_instance_size(mclass->GetNative());
+            void* data = MCore::Object::Unbox(instance);
+            int32 instanceSize = mclass->GetInstanceSize();
             AsBlob.Length = instanceSize - (int32)((uintptr)data - (uintptr)instance);
             AsBlob.Data = Allocator::Allocate(AsBlob.Length);
             Platform::MemoryCopy(AsBlob.Data, data, AsBlob.Length);
 #else
             Type.Type = VariantType::ManagedObject;
-            AsUint = mono_gchandle_new(instance, true);
+
+#if USE_NETCORE
+            AsUint64 = MCore::GCHandle::New(instance);
+#else
+            AsUint = MCore::GCHandle::New(instance);
+#endif
 #endif
         }
         else
@@ -3764,8 +3922,12 @@ uint32 GetHash(const Variant& key)
     case VariantType::Typename:
         return GetHash((const char*)key.AsBlob.Data);
     case VariantType::ManagedObject:
-#if USE_MONO
-        return key.AsUint ? (uint32)mono_object_hash(mono_gchandle_get_target(key.AsUint)) : 0;
+#if USE_NETCORE
+        return key.AsUint64 ? (uint32)MCore::Object::GetHashCode(MCore::GCHandle::GetTarget(key.AsUint64)) : 0;
+#elif USE_MONO
+        return key.AsUint ? (uint32)MCore::Object::GetHashCode(MCore::GCHandle::GetTarget(key.AsUint)) : 0;
+#else
+        return 0;
 #endif
     default:
         return 0;

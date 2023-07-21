@@ -28,7 +28,6 @@ namespace Flax.Build
         public static readonly TargetPlatform[] AllPlatforms =
         {
             TargetPlatform.Windows,
-            TargetPlatform.UWP,
             TargetPlatform.XboxOne,
             TargetPlatform.Linux,
             TargetPlatform.PS4,
@@ -37,6 +36,7 @@ namespace Flax.Build
             TargetPlatform.Android,
             TargetPlatform.Switch,
             TargetPlatform.Mac,
+            TargetPlatform.iOS,
         };
 
         /// <summary>

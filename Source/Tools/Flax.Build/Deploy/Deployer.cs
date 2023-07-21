@@ -1,9 +1,45 @@
-// Copyright (c) 2012-2020 Flax Engine. All rights reserved.
+// Copyright (c) 2012-2023 Flax Engine. All rights reserved.
 
 using System;
 using System.IO;
 using System.Text;
 using Flax.Build;
+
+namespace Flax.Build
+{
+    public static partial class Configuration
+    {
+        /// <summary>
+        /// Package deployment output path.
+        /// </summary>
+        [CommandLine("deployOutput", "Package deployment output path.")]
+        public static string DeployOutput;
+
+        /// <summary>
+        /// Builds and packages the editor.
+        /// </summary>
+        [CommandLine("deployEditor", "Builds and packages the editor.")]
+        public static bool DeployEditor;
+
+        /// <summary>
+        /// Builds and packages the platforms data.
+        /// </summary>
+        [CommandLine("deployPlatforms", "Builds and packages the platforms data.")]
+        public static bool DeployPlatforms;
+
+        /// <summary>
+        /// Certificate file path for binaries signing.
+        /// </summary>
+        [CommandLine("deployCert", "Certificate file path for binaries signing.")]
+        public static string DeployCert;
+
+        /// <summary>
+        /// Certificate file password for binaries signing.
+        /// </summary>
+        [CommandLine("deployCertPass", "Certificate file password for binaries signing.")]
+        public static string DeployCertPass;
+    }
+}
 
 namespace Flax.Deploy
 {
@@ -35,10 +71,13 @@ namespace Flax.Deploy
                     if (Configuration.BuildPlatforms == null || Configuration.BuildPlatforms.Length == 0)
                     {
                         BuildPlatform(TargetPlatform.Linux, TargetArchitecture.x64);
-                        BuildPlatform(TargetPlatform.UWP, TargetArchitecture.x64);
                         BuildPlatform(TargetPlatform.Windows, TargetArchitecture.x64);
                         BuildPlatform(TargetPlatform.Android, TargetArchitecture.ARM64);
-                        BuildPlatform(TargetPlatform.Mac, TargetArchitecture.x64);
+                        if (Platform.BuildTargetPlatform == TargetPlatform.Mac)
+                        {
+                            BuildPlatform(TargetPlatform.Mac, Platform.BuildTargetArchitecture);
+                            BuildPlatform(TargetPlatform.iOS, TargetArchitecture.ARM64);
+                        }
                     }
                     else
                     {
@@ -113,7 +152,8 @@ namespace Flax.Deploy
             var targetPlatform = Platform.BuildPlatform.Target;
             foreach (var configuration in Configurations)
             {
-                FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", targetPlatform, TargetArchitecture.x64, configuration);
+                var arch = targetPlatform == TargetPlatform.Mac ? Platform.BuildTargetArchitecture : TargetArchitecture.x64;
+                FlaxBuild.Build(Globals.EngineRoot, "FlaxEditor", targetPlatform, arch, configuration);
             }
         }
 

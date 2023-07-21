@@ -2,6 +2,9 @@
 
 #include "TestScripting.h"
 #include "Engine/Scripting/Scripting.h"
+#include "Engine/Scripting/ManagedCLR/MClass.h"
+#include "Engine/Scripting/ManagedCLR/MMethod.h"
+#include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include <ThirdParty/catch2/catch.hpp>
 
 TestClassNative::TestClassNative(const SpawnParams& params)
@@ -11,6 +14,18 @@ TestClassNative::TestClassNative(const SpawnParams& params)
 
 TEST_CASE("Scripting")
 {
+    SECTION("Test Library Imports")
+    {
+        MClass* klass = Scripting::FindClass("FlaxEngine.Tests.TestScripting");
+        CHECK(klass);
+        MMethod* method = klass->GetMethod("TestLibraryImports");
+        CHECK(method);
+        MObject* result = method->Invoke(nullptr, nullptr, nullptr);
+        CHECK(result);
+        int32 resultValue = MUtils::Unbox<int32>(result);
+        CHECK(resultValue == 0);
+    }
+
     SECTION("Test Class")
     {
         // Test native class
@@ -23,12 +38,15 @@ TEST_CASE("Scripting")
         CHECK(testClass->SimpleField == 1);
         CHECK(testClass->SimpleStruct.Object == nullptr);
         CHECK(testClass->SimpleStruct.Vector == Float3::One);
+        TestStruct nonPod;
         Array<TestStruct> struct1 = { testClass->SimpleStruct };
         Array<TestStruct> struct2 = { testClass->SimpleStruct };
         Array<ScriptingObject*> objects;
         TestStructPOD pod;
-        int32 methodResult = testClass->TestMethod(TEXT("123"), pod, struct1, struct2, objects);
+        int32 methodResult = testClass->TestMethod(TEXT("123"), pod, nonPod, struct1, struct2, objects);
         CHECK(methodResult == 3);
+        CHECK(nonPod.Object == testClass);
+        CHECK(nonPod.Vector == Float3::UnitY);
         CHECK(objects.Count() == 0);
 
         // Test managed class
@@ -43,13 +61,16 @@ TEST_CASE("Scripting")
         CHECK(testClass->SimpleField == 2);
         CHECK(testClass->SimpleStruct.Object == testClass);
         CHECK(testClass->SimpleStruct.Vector == Float3::UnitX);
+        nonPod = TestStruct();
         struct1 = { testClass->SimpleStruct };
         struct2 = { testClass->SimpleStruct };
         objects.Clear();
         pod.Vector = Float3::One;
-        methodResult = testClass->TestMethod(TEXT("123"), pod, struct1, struct2, objects);
+        methodResult = testClass->TestMethod(TEXT("123"), pod, nonPod, struct1, struct2, objects);
         CHECK(methodResult == 6);
         CHECK(pod.Vector == Float3::Half);
+        CHECK(nonPod.Object == testClass);
+        CHECK(nonPod.Vector == Float3::UnitY);
         CHECK(struct2.Count() == 2);
         CHECK(struct2[0] == testClass->SimpleStruct);
         CHECK(struct2[1] == testClass->SimpleStruct);
@@ -68,11 +89,14 @@ TEST_CASE("Scripting")
         CHECK(testClass->SimpleField == 2);
         String str1 = TEXT("1");
         String str2 = TEXT("2");
+        TestStruct nonPod;
         Array<TestStruct> arr1 = { testClass->SimpleStruct };
         Array<TestStruct> arr2 = { testClass->SimpleStruct };
-        testClass->SimpleEvent(1, Float3::One, str1, str2, arr1, arr2);
+        testClass->SimpleEvent(1, Float3::One, str1, str2, nonPod, arr1, arr2);
         CHECK(testClass->SimpleField == 4);
         CHECK(str2 == TEXT("4"));
+        CHECK(nonPod.Object == testClass);
+        CHECK(nonPod.Vector == Float3::UnitY);
         CHECK(arr2.Count() == 2);
         CHECK(arr2[0].Vector == Float3::Half);
         CHECK(arr2[0].Object == nullptr);

@@ -4,24 +4,14 @@
 
 #if PLATFORM_MAC || USE_EDITOR
 
-#include "Engine/Core/Config/PlatformSettingsBase.h"
-#include "Engine/Core/Types/String.h"
-#include "Engine/Scripting/SoftObjectReference.h"
-
-class Texture;
+#include "../Apple/ApplePlatformSettings.h"
 
 /// <summary>
 /// Mac platform settings.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API MacPlatformSettings : public SettingsBase
+API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API MacPlatformSettings : public ApplePlatformSettings
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(MacPlatformSettings);
-
-    /// <summary>
-    /// The app identifier (reversed DNS, eg. com.company.product). Custom tokens: ${PROJECT_NAME}, ${COMPANY_NAME}.
-    /// </summary>
-    API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"General\")")
-    String AppIdentifier = TEXT("com.${COMPANY_NAME}.${PROJECT_NAME}");
 
     /// <summary>
     /// The default game window mode.
@@ -48,12 +38,6 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     bool ResizableWindow = false;
 
     /// <summary>
-    /// Custom icon texture to use for the application (overrides the default one).
-    /// </summary>
-    API_FIELD(Attributes="EditorOrder(1000), EditorDisplay(\"Other\")")
-    SoftObjectReference<Texture> OverrideIcon;
-
-    /// <summary>
     /// Enables game running when application window loses focus.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(1010), EditorDisplay(\"Other\", \"Run In Background\")")
@@ -68,12 +52,11 @@ public:
     // [SettingsBase]
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override
     {
-        DESERIALIZE(AppIdentifier);
+        ApplePlatformSettings::Deserialize(stream, modifier);
         DESERIALIZE(WindowMode);
         DESERIALIZE(ScreenWidth);
         DESERIALIZE(ScreenHeight);
         DESERIALIZE(ResizableWindow);
-        DESERIALIZE(OverrideIcon);
         DESERIALIZE(RunInBackground);
     }
 };

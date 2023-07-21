@@ -10,6 +10,7 @@
 #include "Engine/Physics/CollisionData.h"
 #include "Engine/Physics/PhysicalMaterial.h"
 #include "Engine/Physics/PhysicsScene.h"
+#include "Engine/Physics/PhysicsStatistics.h"
 #include "Engine/Physics/CollisionCooking.h"
 #include "Engine/Physics/Actors/IPhysicsActor.h"
 #include "Engine/Physics/Joints/Limits.h"
@@ -51,7 +52,7 @@
 #define PHYSX_DEBUG_NAMING 0
 
 // Temporary result buffer size
-#define PHYSX_HIT_BUFFER_SIZE	128
+#define PHYSX_HIT_BUFFER_SIZE 128
 
 struct ActionDataPhysX
 {
@@ -75,7 +76,8 @@ struct ScenePhysX
     Array<ActionDataPhysX> Actions;
 #if WITH_VEHICLE
     Array<WheeledVehicle*> WheelVehicles;
-    PxBatchQuery* WheelRaycastBatchQuery = nullptr;
+    PxBatchQueryExt* WheelRaycastBatchQuery = nullptr;
+    int32 WheelRaycastBatchQuerySize = 0;
 #endif
 };
 
@@ -83,6 +85,7 @@ class AllocatorPhysX : public PxAllocatorCallback
 {
     void* allocate(size_t size, const char* typeName, const char* filename, int line) override
     {
+        ASSERT(size < 1024 * 1024 * 1024); // Prevent invalid allocation size
         return Allocator::Allocate(size, 16);
     }
 
@@ -124,7 +127,7 @@ class QueryFilterPhysX : public PxQueryFilterCallback
         return blockSingle ? PxQueryHitType::eBLOCK : PxQueryHitType::eTOUCH;
     }
 
-    PxQueryHitType::Enum postFilter(const PxFilterData& filterData, const PxQueryHit& hit) override
+    PxQueryHitType::Enum postFilter(const PxFilterData& filterData, const PxQueryHit& hit, const PxShape* shape, const PxRigidActor* actor) override
     {
         // Not used
         return PxQueryHitType::eNONE;
@@ -151,7 +154,7 @@ class CharacterQueryFilterPhysX : public PxQueryFilterCallback
         return PxQueryHitType::eNONE;
     }
 
-    PxQueryHitType::Enum postFilter(const PxFilterData& filterData, const PxQueryHit& hit) override
+    PxQueryHitType::Enum postFilter(const PxFilterData& filterData, const PxQueryHit& hit, const PxShape* shape, const PxRigidActor* actor) override
     {
         // Not used
         return PxQueryHitType::eNONE;
@@ -199,6 +202,89 @@ class CharacterControllerFilterPhysX : public PxControllerFilterCallback
         return false;
     }
 };
+
+class CharacterControllerHitReportPhysX : public PxUserControllerHitReport
+{
+    void onHit(const PxControllerHit& hit, Collision& c)
+    {
+        ASSERT_LOW_LAYER(c.ThisActor && c.OtherActor);
+        c.Impulse = Vector3::Zero;
+        c.ThisVelocity = P2C(hit.dir) * hit.length;
+        c.OtherVelocity = Vector3::Zero;
+        c.ContactsCount = 1;
+        ContactPoint& contact = c.Contacts[0];
+        contact.Point = P2C(hit.worldPos);
+        contact.Normal = P2C(hit.worldNormal);
+        contact.Separation = 0.0f;
+
+        //auto simulationEventCallback = static_cast<SimulationEventCallback*>(hit.controller->getScene()->getSimulationEventCallback());
+        //simulationEventCallback->Collisions[SimulationEventCallback::CollidersPair(c.ThisActor, c.OtherActor)] = c;
+        // TODO: build additional list for hit-only events to properly send enter/exit pairs instead of spamming every frame whether controller executes move
+
+        // Single-hit collision
+        c.ThisActor->OnCollisionEnter(c);
+        c.SwapObjects();
+        c.ThisActor->OnCollisionEnter(c);
+        c.SwapObjects();
+        c.ThisActor->OnCollisionExit(c);
+        c.SwapObjects();
+        c.ThisActor->OnCollisionExit(c);
+    }
+
+    void onShapeHit(const PxControllerShapeHit& hit) override
+    {
+        Collision c;
+        PxShape* controllerShape;
+        hit.controller->getActor()->getShapes(&controllerShape, 1);
+        c.ThisActor = static_cast<PhysicsColliderActor*>(controllerShape->userData);
+        c.OtherActor = static_cast<PhysicsColliderActor*>(hit.shape->userData);
+        onHit(hit, c);
+    }
+
+    void onControllerHit(const PxControllersHit& hit) override
+    {
+        Collision c;
+        PxShape* controllerShape;
+        hit.controller->getActor()->getShapes(&controllerShape, 1);
+        c.ThisActor = static_cast<PhysicsColliderActor*>(controllerShape->userData);
+        hit.other->getActor()->getShapes(&controllerShape, 1);
+        c.OtherActor = static_cast<PhysicsColliderActor*>(controllerShape->userData);
+        onHit(hit, c);
+    }
+
+    void onObstacleHit(const PxControllerObstacleHit& hit) override
+    {
+    }
+};
+
+#if WITH_VEHICLE
+
+class WheelFilterPhysX : public PxQueryFilterCallback
+{
+public:
+    PxQueryHitType::Enum preFilter(const PxFilterData& filterData, const PxShape* shape, const PxRigidActor* actor, PxHitFlags& queryFlags) override
+    {
+        if (!shape)
+            return PxQueryHitType::eNONE;
+        const PxFilterData shapeFilter = shape->getQueryFilterData();
+
+        // Hardcoded id for vehicle shapes masking
+        if (filterData.word3 == shapeFilter.word3)
+        {
+            return PxQueryHitType::eNONE;
+        }
+
+        // Collide for pairs (A,B) where the filtermask of A contains the ID of B and vice versa
+        if ((filterData.word0 & shapeFilter.word1) && (shapeFilter.word0 & filterData.word1))
+        {
+            return PxQueryHitType::eBLOCK;
+        }
+
+        return PxQueryHitType::eNONE;
+    }
+};
+
+#endif
 
 class WriteStreamPhysX : public PxOutputStream
 {
@@ -351,6 +437,7 @@ namespace
     QueryFilterPhysX QueryFilter;
     CharacterQueryFilterPhysX CharacterQueryFilter;
     CharacterControllerFilterPhysX CharacterControllerFilter;
+    CharacterControllerHitReportPhysX CharacterControllerHitReport;
     Dictionary<PxScene*, Vector3, InlinedAllocation<32>> SceneOrigins;
 
     CriticalSection FlushLocker;
@@ -363,13 +450,12 @@ namespace
 #if WITH_VEHICLE
     bool VehicleSDKInitialized = false;
     Array<PxVehicleWheels*> WheelVehiclesCache;
-    Array<PxRaycastQueryResult> WheelQueryResults;
-    Array<PxRaycastHit> WheelHitResults;
     Array<PxWheelQueryResult> WheelVehiclesResultsPerWheel;
     Array<PxVehicleWheelQueryResult> WheelVehiclesResultsPerVehicle;
     PxVehicleDrivableSurfaceToTireFrictionPairs* WheelTireFrictions = nullptr;
     bool WheelTireFrictionsDirty = false;
     Array<float> WheelTireTypes;
+    WheelFilterPhysX WheelRaycastFilter;
 #endif
 }
 
@@ -477,26 +563,9 @@ void InitVehicleSDK()
     {
         VehicleSDKInitialized = true;
         PxInitVehicleSDK(*PhysX);
-        PxVehicleSetBasisVectors(PxVec3(0, 1, 0), PxVec3(1, 0, 0));
+        PxVehicleSetBasisVectors(PxVec3(0, 1, 0), PxVec3(0, 0, 1));
         PxVehicleSetUpdateMode(PxVehicleUpdateMode::eVELOCITY_CHANGE);
     }
-}
-
-PxQueryHitType::Enum WheelRaycastPreFilter(PxFilterData filterData0, PxFilterData filterData1, const void* constantBlock, PxU32 constantBlockSize, PxHitFlags& queryFlags)
-{
-    // Hardcoded id for vehicle shapes masking
-    if (filterData0.word3 == filterData1.word3)
-    {
-        return PxQueryHitType::eNONE;
-    }
-
-    // Collide for pairs (A,B) where the filtermask of A contains the ID of B and vice versa
-    if ((filterData0.word0 & filterData1.word1) && (filterData1.word0 & filterData0.word1))
-    {
-        return PxQueryHitType::eBLOCK;
-    }
-
-    return PxQueryHitType::eNONE;
 }
 
 #endif
@@ -586,7 +655,7 @@ bool CollisionCooking::CookConvexMesh(CookingInput& input, BytesContainer& outpu
     PxConvexMeshCookingResult::Enum result;
     if (!cooking->cookConvexMesh(desc, outputStream, &result))
     {
-        LOG(Warning, "Convex Mesh cooking failed. Error code: {0}, Input vertices count: {1}", result, input.VertexCount);
+        LOG(Warning, "Convex Mesh cooking failed. Error code: {0}, Input vertices count: {1}", (int32)result, input.VertexCount);
         return true;
     }
 
@@ -620,7 +689,7 @@ bool CollisionCooking::CookTriangleMesh(CookingInput& input, BytesContainer& out
     PxTriangleMeshCookingResult::Enum result;
     if (!cooking->cookTriangleMesh(desc, outputStream, &result))
     {
-        LOG(Warning, "Triangle Mesh cooking failed. Error code: {0}, Input vertices count: {1}, indices count: {2}", result, input.VertexCount, input.IndexCount);
+        LOG(Warning, "Triangle Mesh cooking failed. Error code: {0}, Input vertices count: {1}, indices count: {2}", (int32)result, input.VertexCount, input.IndexCount);
         return true;
     }
 
@@ -757,8 +826,6 @@ void PhysicsBackend::Shutdown()
     // Cleanup any resources
 #if WITH_VEHICLE
     RELEASE_PHYSX(WheelTireFrictions);
-    WheelQueryResults.Resize(0);
-    WheelHitResults.Resize(0);
     WheelVehiclesResultsPerWheel.Resize(0);
     WheelVehiclesResultsPerVehicle.Resize(0);
 #endif
@@ -794,7 +861,6 @@ void PhysicsBackend::ApplySettings(const PhysicsSettings& settings)
     _frictionCombineMode = settings.FrictionCombineMode;
     _restitutionCombineMode = settings.RestitutionCombineMode;
 
-    // TODO: setting eADAPTIVE_FORCE requires PxScene setup (physx docs: This flag is not mutable, and must be set in PxSceneDesc at scene creation.)
     // TODO: update all shapes filter data
     // TODO: update all shapes flags
 
@@ -824,11 +890,10 @@ void* PhysicsBackend::CreateScene(const PhysicsSettings& settings)
     sceneDesc.flags |= PxSceneFlag::eENABLE_ACTIVE_ACTORS;
     if (!settings.DisableCCD)
         sceneDesc.flags |= PxSceneFlag::eENABLE_CCD;
-    if (settings.EnableAdaptiveForce)
-        sceneDesc.flags |= PxSceneFlag::eADAPTIVE_FORCE;
     sceneDesc.simulationEventCallback = &scenePhysX->EventsCallback;
     sceneDesc.filterShader = FilterShader;
     sceneDesc.bounceThresholdVelocity = settings.BounceThresholdVelocity;
+    sceneDesc.solverType = PxSolverType::ePGS;
     if (sceneDesc.cpuDispatcher == nullptr)
     {
         scenePhysX->CpuDispatcher = PxDefaultCpuDispatcherCreate(Math::Clamp<uint32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 1, 4));
@@ -870,6 +935,7 @@ void PhysicsBackend::DestroyScene(void* scene)
     SceneOrigins.Remove(scenePhysX->Scene);
 #if WITH_VEHICLE
     RELEASE_PHYSX(scenePhysX->WheelRaycastBatchQuery);
+    scenePhysX->WheelRaycastBatchQuerySize = 0;
 #endif
     RELEASE_PHYSX(scenePhysX->ControllerManager);
     SAFE_DELETE(scenePhysX->CpuDispatcher);
@@ -1018,7 +1084,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
 		            5.0f,  // fall rate eANALOG_INPUT_STEER_RIGHT
 	            }
             };
-            PxVehicleKeySmoothingData keySmoothing =
+            static constexpr PxVehicleKeySmoothingData keySmoothing =
             {
                 {
                     3.0f,  // rise rate eANALOG_INPUT_ACCEL
@@ -1108,18 +1174,12 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         }
 
         // Update batches queries cache
-        if (wheelsCount > WheelQueryResults.Count())
+        if (wheelsCount > scenePhysX->WheelRaycastBatchQuerySize)
         {
             if (scenePhysX->WheelRaycastBatchQuery)
                 scenePhysX->WheelRaycastBatchQuery->release();
-            WheelQueryResults.Resize(wheelsCount, false);
-            WheelHitResults.Resize(wheelsCount, false);
-            PxBatchQueryDesc desc(wheelsCount, 0, 0);
-            desc.queryMemory.userRaycastResultBuffer = WheelQueryResults.Get();
-            desc.queryMemory.userRaycastTouchBuffer = WheelHitResults.Get();
-            desc.queryMemory.raycastTouchBufferSize = wheelsCount;
-            desc.preFilterShader = WheelRaycastPreFilter;
-            scenePhysX->WheelRaycastBatchQuery = scenePhysX->Scene->createBatchQuery(desc);
+            scenePhysX->WheelRaycastBatchQuerySize = wheelsCount;
+            scenePhysX->WheelRaycastBatchQuery = PxCreateBatchQueryExt(*scenePhysX->Scene, &WheelRaycastFilter, wheelsCount, wheelsCount, 0, 0, 0, 0);
         }
 
         // Update lookup table that maps wheel type into the surface friction
@@ -1169,7 +1229,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         // Update vehicles
         if (WheelVehiclesCache.Count() != 0)
         {
-            PxVehicleSuspensionRaycasts(scenePhysX->WheelRaycastBatchQuery, WheelVehiclesCache.Count(), WheelVehiclesCache.Get(), WheelQueryResults.Count(), WheelQueryResults.Get());
+            PxVehicleSuspensionRaycasts(scenePhysX->WheelRaycastBatchQuery, WheelVehiclesCache.Count(), WheelVehiclesCache.Get());
             PxVehicleUpdates(scenePhysX->LastDeltaTime, scenePhysX->Scene->getGravity(), *WheelTireFrictions, WheelVehiclesCache.Count(), WheelVehiclesCache.Get(), WheelVehiclesResultsPerVehicle.Get());
         }
 
@@ -1216,7 +1276,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                 // Update wheel collider transformation
                 auto localPose = shape->getLocalPose();
                 Transform t = wheelData.Collider->GetLocalTransform();
-                t.Orientation = Quaternion::Euler(0, state.SteerAngle, state.RotationAngle) * wheelData.LocalOrientation;
+                t.Orientation = Quaternion::Euler(-state.RotationAngle, state.SteerAngle, 0) * wheelData.LocalOrientation;
                 t.Translation = P2C(localPose.p) / wheelVehicle->GetScale() - t.Orientation * wheelData.Collider->GetCenter();
                 wheelData.Collider->SetLocalTransform(t);
             }
@@ -1335,6 +1395,30 @@ void PhysicsBackend::AddSceneActorAction(void* scene, void* actor, ActionType ac
     a.Type = action;
     FlushLocker.Unlock();
 }
+
+#if COMPILE_WITH_PROFILER
+
+void PhysicsBackend::GetSceneStatistics(void* scene, PhysicsStatistics& result)
+{
+    PROFILE_CPU_NAMED("Physics.Statistics");
+    auto scenePhysX = (ScenePhysX*)scene;
+
+    PxSimulationStatistics px;
+    scenePhysX->Scene->getSimulationStatistics(px);
+
+    result.ActiveDynamicBodies = px.nbActiveDynamicBodies;
+    result.ActiveKinematicBodies = px.nbActiveKinematicBodies;
+    result.ActiveJoints = px.nbActiveConstraints;
+    result.StaticBodies = px.nbStaticBodies;
+    result.DynamicBodies = px.nbDynamicBodies;
+    result.KinematicBodies = px.nbKinematicBodies;
+    result.NewPairs = px.nbNewPairs;
+    result.LostPairs = px.nbLostPairs;
+    result.NewTouches = px.nbNewTouches;
+    result.LostTouches = px.nbLostTouches;
+}
+
+#endif
 
 bool PhysicsBackend::RayCast(void* scene, const Vector3& origin, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
@@ -2045,7 +2129,7 @@ bool PhysicsBackend::ComputeShapesPenetration(void* shapeA, void* shapeB, const 
     const PxTransform poseA(C2P(positionA), C2P(orientationA));
     const PxTransform poseB(C2P(positionB), C2P(orientationB));
     PxVec3 dir = C2P(direction);
-    const bool result = PxGeometryQuery::computePenetration(dir, distance, shapeAPhysX->getGeometry().any(), poseA, shapeBPhysX->getGeometry().any(), poseB);
+    const bool result = PxGeometryQuery::computePenetration(dir, distance, shapeAPhysX->getGeometry(), poseA, shapeBPhysX->getGeometry(), poseB);
     direction = P2C(dir);
     return result;
 }
@@ -2054,7 +2138,7 @@ float PhysicsBackend::ComputeShapeSqrDistanceToPoint(void* shape, const Vector3&
 {
     auto shapePhysX = (PxShape*)shape;
     const PxTransform trans(C2P(position), C2P(orientation));
-    return PxGeometryQuery::pointDistance(C2P(point), shapePhysX->getGeometry().any(), trans, (PxVec3*)closestPoint);
+    return PxGeometryQuery::pointDistance(C2P(point), shapePhysX->getGeometry(), trans, (PxVec3*)closestPoint);
 }
 
 bool PhysicsBackend::RayCastShape(void* shape, const Vector3& position, const Quaternion& orientation, const Vector3& origin, const Vector3& direction, float& resultHitDistance, float maxDistance)
@@ -2064,7 +2148,7 @@ bool PhysicsBackend::RayCastShape(void* shape, const Vector3& position, const Qu
     const PxTransform trans(C2P(position - sceneOrigin), C2P(orientation));
     const PxHitFlags hitFlags = (PxHitFlags)0;
     PxRaycastHit hit;
-    if (PxGeometryQuery::raycast(C2P(origin - sceneOrigin), C2P(direction), shapePhysX->getGeometry().any(), trans, maxDistance, hitFlags, 1, &hit) != 0)
+    if (PxGeometryQuery::raycast(C2P(origin - sceneOrigin), C2P(direction), shapePhysX->getGeometry(), trans, maxDistance, hitFlags, 1, &hit) != 0)
     {
         resultHitDistance = hit.distance;
         return true;
@@ -2079,7 +2163,7 @@ bool PhysicsBackend::RayCastShape(void* shape, const Vector3& position, const Qu
     const PxTransform trans(C2P(position - sceneOrigin), C2P(orientation));
     const PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eFACE_INDEX | PxHitFlag::eUV;
     PxRaycastHit hit;
-    if (PxGeometryQuery::raycast(C2P(origin - sceneOrigin), C2P(direction), shapePhysX->getGeometry().any(), trans, maxDistance, hitFlags, 1, &hit) == 0)
+    if (PxGeometryQuery::raycast(C2P(origin - sceneOrigin), C2P(direction), shapePhysX->getGeometry(), trans, maxDistance, hitFlags, 1, &hit) == 0)
         return false;
     P2C(hit, hitInfo);
     hitInfo.Point += sceneOrigin;
@@ -2119,6 +2203,11 @@ void PhysicsBackend::GetJointForce(void* joint, Vector3& linear, Vector3& angula
         jointPhysX->getConstraint()->getForce(linearPhysX, angularPhysX);
         linear = P2C(linearPhysX);
         angular = P2C(angularPhysX);
+    }
+    else
+    {
+        linear = Vector3::Zero;
+        angular = Vector3::Zero;
     }
 }
 
@@ -2441,6 +2530,7 @@ void* PhysicsBackend::CreateController(void* scene, IPhysicsActor* actor, Physic
     const Vector3 sceneOrigin = SceneOrigins[scenePhysX->Scene];
     PxCapsuleControllerDesc desc;
     desc.userData = actor;
+    desc.reportCallback = &CharacterControllerHitReport;
     desc.contactOffset = Math::Max(contactOffset, ZeroTolerance);
     desc.position = PxExtendedVec3(position.X - sceneOrigin.X, position.Y - sceneOrigin.Y, position.Z - sceneOrigin.Z);
     desc.slopeLimit = Math::Cos(slopeLimit * DegreesToRadians);
@@ -2592,6 +2682,7 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
     }
     PxF32 sprungMasses[PX_MAX_NB_WHEELS];
     const float mass = actorPhysX->getMass();
+    // TODO: get gravityDirection from scenePhysX->Scene->getGravity()
     PxVehicleComputeSprungMasses(wheels.Count(), offsets, centerOfMassOffset.p, mass, 1, sprungMasses);
     PxVehicleWheelsSimData* wheelsSimData = PxVehicleWheelsSimData::allocate(wheels.Count());
     for (int32 i = 0; i < wheels.Count(); i++)
@@ -2742,9 +2833,9 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
 
         // Ackermann steer accuracy
         PxVehicleAckermannGeometryData ackermann;
-        ackermann.mAxleSeparation = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_LEFT).x - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_LEFT).x);
-        ackermann.mFrontWidth = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_RIGHT).z - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_LEFT).z);
-        ackermann.mRearWidth = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_RIGHT).z - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_LEFT).z);
+        ackermann.mAxleSeparation = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_LEFT).z - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_LEFT).z);
+        ackermann.mFrontWidth = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_RIGHT).x - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_LEFT).x);
+        ackermann.mRearWidth = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_RIGHT).x - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_LEFT).x);
         driveSimData.setAckermannGeometryData(ackermann);
 
         // Create vehicle drive
@@ -2900,7 +2991,8 @@ void* PhysicsBackend::CreateConvexMesh(byte* data, int32 dataSize, BoundingBox& 
 {
     PxDefaultMemoryInputData input(data, dataSize);
     PxConvexMesh* convexMesh = PhysX->createConvexMesh(input);
-    localBounds = P2C(convexMesh->getLocalBounds());
+    if (convexMesh)
+        localBounds = P2C(convexMesh->getLocalBounds());
     return convexMesh;
 }
 
@@ -2908,7 +3000,8 @@ void* PhysicsBackend::CreateTriangleMesh(byte* data, int32 dataSize, BoundingBox
 {
     PxDefaultMemoryInputData input(data, dataSize);
     PxTriangleMesh* triangleMesh = PhysX->createTriangleMesh(input);
-    localBounds = P2C(triangleMesh->getLocalBounds());
+    if (triangleMesh)
+        localBounds = P2C(triangleMesh->getLocalBounds());
     return triangleMesh;
 }
 

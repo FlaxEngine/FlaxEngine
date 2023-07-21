@@ -360,7 +360,7 @@ API_ENUM() enum class CullMode : byte
 /// <summary>
 /// Render target blending mode descriptor.
 /// </summary>
-API_STRUCT() struct BlendingMode
+API_STRUCT() struct FLAXENGINE_API BlendingMode
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(BlendingMode);
 
@@ -1030,6 +1030,11 @@ API_ENUM(Attributes="Flags") enum class ViewFlags : uint64
     /// Shows/hides the Sky/Skybox rendering.
     /// </summary>
     Sky = 1 << 26,
+
+    /// <summary>
+    /// Shows/hides light debug shapes.
+    /// </summary>
+    LightsDebug = 1 << 27,
 
     /// <summary>
     /// Default flags for Game.

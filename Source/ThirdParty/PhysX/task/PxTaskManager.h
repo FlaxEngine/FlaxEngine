@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,18 +22,18 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 
-#ifndef PXTASK_PXTASKMANAGER_H
-#define PXTASK_PXTASKMANAGER_H
+#ifndef PX_TASK_MANAGER_H
+#define PX_TASK_MANAGER_H
 
-#include "task/PxTaskDefine.h"
 #include "foundation/PxSimpleTypes.h"
 #include "foundation/PxErrorCallback.h"
 
+#if !PX_DOXYGEN
 namespace physx
 {
-PX_PUSH_PACK_DEFAULT
+#endif
 
 class PxBaseTask;
 class PxTask;
@@ -44,7 +43,7 @@ typedef unsigned int PxTaskID;
 /**
 \brief Identifies the type of each heavyweight PxTask object
 
-\note This enum type is only used by PxTask and GpuTask objects, LightCpuTasks do not use this enum.
+\note This enum type is only used by PxTask objects, PxLightCpuTasks do not use this enum.
 
 @see PxTask
 @see PxLightCpuTask
@@ -56,9 +55,12 @@ struct PxTaskType
 	 */
 	enum Enum
 	{
-		TT_CPU,				//!< PxTask will be run on the CPU
-		TT_NOT_PRESENT,		//!< Return code when attempting to find a task that does not exist
-		TT_COMPLETED		//!< PxTask execution has been completed
+		eCPU,				//!< PxTask will be run on the CPU
+		eNOT_PRESENT,		//!< Return code when attempting to find a task that does not exist
+		eCOMPLETED,			//!< PxTask execution has been completed
+		TT_CPU PX_DEPRECATED = eCPU,
+		TT_NOT_PRESENT PX_DEPRECATED = eNOT_PRESENT,
+		TT_COMPLETED PX_DEPRECATED = eCOMPLETED
 	};
 };
 
@@ -67,12 +69,12 @@ class PxCpuDispatcher;
 /** 
  \brief The PxTaskManager interface
  
- A PxTaskManager instance holds references to user-provided dispatcher objects, when tasks are
+ A PxTaskManager instance holds references to user-provided dispatcher objects. When tasks are
  submitted the PxTaskManager routes them to the appropriate dispatcher and handles task profiling if enabled. 
  Users should not implement the PxTaskManager interface, the SDK creates its own concrete PxTaskManager object
  per-scene which users can configure by passing dispatcher objects into the PxSceneDesc.
 
- @see CpuDispatcher
+ @see PxCpuDispatcher
  
 */
 class PxTaskManager
@@ -84,7 +86,7 @@ public:
 
 	\param[in] ref The dispatcher object.
 
-	@see CpuDispatcher
+	@see PxCpuDispatcher
 	*/
 	virtual void     setCpuDispatcher(PxCpuDispatcher& ref) = 0;
 
@@ -93,9 +95,9 @@ public:
 
 	\return The CPU dispatcher object.
 
-	@see CpuDispatcher
+	@see PxCpuDispatcher
 	*/
-	virtual PxCpuDispatcher*			getCpuDispatcher() const = 0;
+	virtual PxCpuDispatcher*	getCpuDispatcher() const = 0;
 
 	/**
 	\brief Reset any dependencies between Tasks
@@ -109,7 +111,7 @@ public:
 	/**
 	\brief Called by the owning scene to start the task graph.
 
-	\note All tasks with with ref count of 1 will be dispatched.
+	\note All tasks with ref count of 1 will be dispatched.
 
 	@see PxTask
 	*/
@@ -121,7 +123,7 @@ public:
 	virtual void	stopSimulation() = 0;
 
 	/**
-	\brief Called by the worker threads to inform the PxTaskManager that a task has completed processing
+	\brief Called by the worker threads to inform the PxTaskManager that a task has completed processing.
 
 	\param[in] task The task which has been completed
 	*/
@@ -131,7 +133,7 @@ public:
 	\brief Retrieve a task by name
 
 	\param[in] name The unique name of a task
-	\return The ID of the task with that name, or TT_NOT_PRESENT if not found
+	\return The ID of the task with that name, or eNOT_PRESENT if not found
 	*/
 	virtual PxTaskID  getNamedTask(const char* name) = 0;
 
@@ -140,20 +142,20 @@ public:
 
 	\param[in] task The task to be executed
 	\param[in] name The unique name of a task
-	\param[in] type The type of the task (default TT_CPU)
-	\return The ID of the task with that name, or TT_NOT_PRESENT if not found
+	\param[in] type The type of the task (default eCPU)
+	\return The ID of the task with that name, or eNOT_PRESENT if not found
 	*/
-	virtual PxTaskID  submitNamedTask(PxTask* task, const char* name, PxTaskType::Enum type = PxTaskType::TT_CPU) = 0;
+	virtual PxTaskID  submitNamedTask(PxTask* task, const char* name, PxTaskType::Enum type = PxTaskType::eCPU) = 0;
 
 	/**
 	\brief Submit an unnamed task.
 
 	\param[in] task The task to be executed
-	\param[in] type The type of the task (default TT_CPU)
+	\param[in] type The type of the task (default eCPU)
 
-	\return The ID of the task with that name, or TT_NOT_PRESENT if not found
+	\return The ID of the task with that name, or eNOT_PRESENT if not found
 	*/
-	virtual PxTaskID  submitUnnamedTask(PxTask& task, PxTaskType::Enum type = PxTaskType::TT_CPU) = 0;
+	virtual PxTaskID  submitUnnamedTask(PxTask& task, PxTaskType::Enum type = PxTaskType::eCPU) = 0;
 
 	/**
 	\brief Retrieve a task given a task ID
@@ -172,7 +174,7 @@ public:
 	/**
 	\brief Construct a new PxTaskManager instance with the given [optional] dispatchers
 	*/
-	static PxTaskManager* createTaskManager(PxErrorCallback& errorCallback, PxCpuDispatcher* = 0);
+	static PxTaskManager* createTaskManager(PxErrorCallback& errorCallback, PxCpuDispatcher* = NULL);
 	
 protected:
 	virtual ~PxTaskManager() {}
@@ -196,9 +198,9 @@ protected:
 	friend class PxLightCpuTask;
 };
 
-PX_POP_PACK
+#if !PX_DOXYGEN
+} // namespace physx
+#endif
 
-} // end physx namespace
 
-
-#endif // PXTASK_PXTASKMANAGER_H
+#endif

@@ -115,6 +115,8 @@ public:
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     void OnParentChanged() override;
+    const Span<MaterialSlot> GetMaterialSlots() const override;
+    MaterialBase* GetMaterial(int32 entryIndex) override;
 
 protected:
     // [ModelInstanceActor]

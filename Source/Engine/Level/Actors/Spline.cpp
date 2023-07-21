@@ -4,9 +4,7 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Animations/CurveSerialization.h"
 #include "Engine/Core/Math/Matrix.h"
-#if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/object.h>
-#endif
+#include "Engine/Scripting/ManagedCLR/MCore.h"
 
 Spline::Spline(const SpawnParams& params)
     : Actor(params)
@@ -441,16 +439,17 @@ void Spline::UpdateSpline()
 
 #if !COMPILE_WITHOUT_CSHARP
 
-void Spline::GetKeyframes(MonoArray* data)
+void Spline::GetKeyframes(MArray* data)
 {
-    Platform::MemoryCopy(mono_array_addr_with_size(data, sizeof(Keyframe), 0), Curve.GetKeyframes().Get(), sizeof(Keyframe) * Curve.GetKeyframes().Count());
+    ASSERT(MCore::Array::GetLength(data) >= Curve.GetKeyframes().Count());
+    Platform::MemoryCopy(MCore::Array::GetAddress(data), Curve.GetKeyframes().Get(), sizeof(Keyframe) * Curve.GetKeyframes().Count());
 }
 
-void Spline::SetKeyframes(MonoArray* data)
+void Spline::SetKeyframes(MArray* data)
 {
-    const auto count = (int32)mono_array_length(data);
+    const int32 count = MCore::Array::GetLength(data);
     Curve.GetKeyframes().Resize(count, false);
-    Platform::MemoryCopy(Curve.GetKeyframes().Get(), mono_array_addr_with_size(data, sizeof(Keyframe), 0), sizeof(Keyframe) * count);
+    Platform::MemoryCopy(Curve.GetKeyframes().Get(), MCore::Array::GetAddress(data), sizeof(Keyframe) * count);
     UpdateSpline();
 }
 

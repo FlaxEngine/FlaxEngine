@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
-using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -12,7 +11,9 @@ namespace FlaxEngine
     /// Represents a four dimensional mathematical vector (signed integers).
     /// </summary>
     [Serializable]
-    [TypeConverter(typeof(TypeConverters.Int4Converter))]
+#if FLAX_EDITOR
+    [System.ComponentModel.TypeConverter(typeof(TypeConverters.Int4Converter))]
+#endif
     partial struct Int4 : IEquatable<Int4>, IFormattable
     {
         private static readonly string _formatString = "X:{0} Y:{1} Z:{2} W:{3}";

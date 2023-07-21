@@ -14,19 +14,17 @@ API_CLASS(InBuild) class FLAXENGINE_API ScriptingObject : public Object
 {
     friend class Scripting;
     friend class BinaryModule;
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(ScriptingObject);
-public:
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(ScriptingObject);
 
+public:
     typedef ScriptingObjectSpawnParams SpawnParams;
 
 protected:
-
-    uint32 _gcHandle;
+    MGCHandle _gcHandle;
     ScriptingTypeHandle _type;
     Guid _id;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ScriptingObject"/> class.
     /// </summary>
@@ -39,14 +37,15 @@ public:
     virtual ~ScriptingObject();
 
 public:
-
     // Spawns a new objects of the given type.
     static ScriptingObject* NewObject(const ScriptingTypeHandle& typeHandle);
+
     template<typename T>
     static T* NewObject()
     {
         return (T*)NewObject(T::TypeInitializer);
     }
+
     template<typename T>
     static T* NewObject(const ScriptingTypeHandle& typeHandle)
     {
@@ -60,14 +59,12 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Event fired when object gets deleted.
     /// </summary>
     Delegate<ScriptingObject*> Deleted;
 
 public:
-
     /// <summary>
     /// Gets the managed instance object.
     /// </summary>
@@ -116,15 +113,17 @@ public:
     MClass* GetClass() const;
 
 public:
-
     // Tries to cast native interface object to scripting object instance. Returns null if fails.
     static ScriptingObject* FromInterface(void* interfaceObj, const ScriptingTypeHandle& interfaceType);
+
     template<typename T>
     static ScriptingObject* FromInterface(T* interfaceObj)
     {
         return FromInterface(interfaceObj, T::TypeInitializer);
     }
+
     static void* ToInterface(ScriptingObject* obj, const ScriptingTypeHandle& interfaceType);
+
     template<typename T>
     static T* ToInterface(ScriptingObject* obj)
     {
@@ -153,14 +152,11 @@ public:
     /// <param name="to">The destination class to the cast.</param>
     /// <returns>True if can, otherwise false.</returns>
     static bool CanCast(const MClass* from, const MClass* to);
-#if USE_MONO
-    static bool CanCast(const MClass* from, const MonoClass* to);
-#endif
 
     template<typename T>
     static T* Cast(ScriptingObject* obj)
     {
-        return obj && CanCast(obj->GetClass(), T::GetStaticClass()) ? (T*)obj : nullptr;
+        return obj && CanCast(obj->GetClass(), T::GetStaticClass()) ? static_cast<T*>(obj) : nullptr;
     }
 
     bool Is(const ScriptingTypeHandle& type) const;
@@ -170,13 +166,6 @@ public:
         return CanCast(GetClass(), type);
     }
 
-#if USE_MONO
-    bool Is(MonoClass* klass) const
-    {
-        return CanCast(GetClass(), klass);
-    }
-#endif
-
     template<typename T>
     bool Is() const
     {
@@ -184,7 +173,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Changes the object id (both managed and unmanaged). Warning! Use with caution as object ID is what it identifies it and change might cause issues.
     /// </summary>
@@ -192,7 +180,7 @@ public:
     virtual void ChangeID(const Guid& newId);
 
 public:
-
+    virtual void SetManagedInstance(MObject* instance);
     virtual void OnManagedInstanceDeleted();
     virtual void OnScriptingDispose();
 
@@ -200,7 +188,6 @@ public:
     virtual void DestroyManaged();
 
 public:
-
     /// <summary>
     /// Determines whether this object is registered or not (can be found by the queries and used in a game).
     /// </summary>
@@ -220,16 +207,14 @@ public:
     void UnregisterObject();
 
 protected:
-
-#if USE_MONO
+#if USE_CSHARP
     /// <summary>
     /// Create a new managed object.
     /// </summary>
-    MonoObject* CreateManagedInternal();
+    MObject* CreateManagedInternal();
 #endif
 
 public:
-
     // [Object]
     void OnDeleteObject() override;
     String ToString() const override;
@@ -243,7 +228,6 @@ public:
 API_CLASS(InBuild) class FLAXENGINE_API ManagedScriptingObject : public ScriptingObject
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ManagedScriptingObject"/> class.
     /// </summary>
@@ -251,8 +235,8 @@ public:
     explicit ManagedScriptingObject(const SpawnParams& params);
 
 public:
-
     // [ScriptingObject]
+    void SetManagedInstance(MObject* instance) override;
     void OnManagedInstanceDeleted() override;
     void OnScriptingDispose() override;
     bool CreateManaged() override;
@@ -267,3 +251,5 @@ API_CLASS(InBuild) class FLAXENGINE_API PersistentScriptingObject : public Scrip
 public:
     PersistentScriptingObject(const SpawnParams& params);
 };
+
+extern FLAXENGINE_API class ScriptingObject* FindObject(const Guid& id, class MClass* type);

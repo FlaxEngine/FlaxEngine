@@ -3,7 +3,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.Actions;
 using FlaxEditor.Content;
 using FlaxEditor.GUI;
@@ -12,6 +11,7 @@ using FlaxEditor.GUI.Drag;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.CustomEditors.Dedicated
@@ -462,20 +462,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var group = layout.Group("Missing script");
 
             // Add settings button to the group
-            const float settingsButtonSize = 14;
-            var settingsButton = new Image
-            {
-                TooltipText = "Settings",
-                AutoFocus = true,
-                AnchorPreset = AnchorPresets.TopRight,
-                Parent = group.Panel,
-                Bounds = new Rectangle(group.Panel.Width - settingsButtonSize, 0, settingsButtonSize, settingsButtonSize),
-                IsScrollable = false,
-                Color = FlaxEngine.GUI.Style.Current.ForegroundGrey,
-                Margin = new Margin(1),
-                Brush = new SpriteBrush(FlaxEngine.GUI.Style.Current.Settings),
-                Tag = index,
-            };
+            var settingsButton = group.AddSettingsButton();
+            settingsButton.Tag = index;
             settingsButton.Clicked += MissingSettingsButtonOnClicked;
         }
 
@@ -665,19 +653,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 };
 
                 // Add settings button to the group
-                var settingsButton = new Image
-                {
-                    TooltipText = "Settings",
-                    AutoFocus = true,
-                    AnchorPreset = AnchorPresets.TopRight,
-                    Parent = group.Panel,
-                    Bounds = new Rectangle(group.Panel.Width - headerHeight, 0, headerHeight, headerHeight),
-                    IsScrollable = false,
-                    Color = FlaxEngine.GUI.Style.Current.ForegroundGrey,
-                    Margin = new Margin(1),
-                    Brush = new SpriteBrush(FlaxEngine.GUI.Style.Current.Settings),
-                    Tag = script,
-                };
+                var settingsButton = group.AddSettingsButton();
+                settingsButton.Tag = script;
                 settingsButton.Clicked += OnSettingsButtonClicked;
 
                 group.Panel.HeaderTextMargin = new Margin(scriptDrag.Right - 12, 15, 2, 2);

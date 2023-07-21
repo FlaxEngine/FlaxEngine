@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,15 +22,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-#ifndef PX_VEHICLE_UTILSSETUP_H
-#define PX_VEHICLE_UTILSSETUP_H
-/** \addtogroup vehicle
-  @{
-*/
+#ifndef PX_VEHICLE_UTIL_SETUP_H
+#define PX_VEHICLE_UTIL_SETUP_H
+
 #include "foundation/PxSimpleTypes.h"
 #include "vehicle/PxVehicleSDK.h"
 
@@ -55,8 +52,10 @@ The suspension of the rear-right wheel is modified to support the entire mass of
 \param[in,out] wheelsSimData is the data describing the wheels/suspensions/tires of the vehicle.
 \param[in,out] wheelsDynData is the data describing the dynamic state of the wheels of the vehicle.
 \param[in,out] driveSimData is the data describing the drive model of the vehicle.
+\param[in] context the vehicle context to use for the setup.
 */
-void PxVehicle4WEnable3WTadpoleMode(PxVehicleWheelsSimData& wheelsSimData, PxVehicleWheelsDynData& wheelsDynData, PxVehicleDriveSimData4W& driveSimData);
+PX_DEPRECATED void PxVehicle4WEnable3WTadpoleMode(PxVehicleWheelsSimData& wheelsSimData, PxVehicleWheelsDynData& wheelsDynData, PxVehicleDriveSimData4W& driveSimData,
+	const PxVehicleContext& context = PxVehicleGetDefaultContext());
 
 /**
 \brief Reconfigure a PxVehicle4W instance as a three-wheeled car with delta config (1 front wheel, 2 rear wheels)
@@ -67,8 +66,10 @@ The suspension of the front-right wheel is modified to support the entire mass o
 \param[in,out] wheelsSimData is the data describing the wheels/suspensions/tires of the vehicle.
 \param[in,out] wheelsDynData is the data describing the dynamic state of the wheels of the vehicle.
 \param[in,out] driveSimData is the data describing the drive model of the vehicle.
+\param[in] context the vehicle context to use for the setup.
 */
-void PxVehicle4WEnable3WDeltaMode(PxVehicleWheelsSimData& wheelsSimData, PxVehicleWheelsDynData& wheelsDynData, PxVehicleDriveSimData4W& driveSimData);
+PX_DEPRECATED void PxVehicle4WEnable3WDeltaMode(PxVehicleWheelsSimData& wheelsSimData, PxVehicleWheelsDynData& wheelsDynData, PxVehicleDriveSimData4W& driveSimData,
+	const PxVehicleContext& context = PxVehicleGetDefaultContext());
 
 /**
 \brief Compute the sprung masses of the suspension springs given (i) the number of sprung masses, 
@@ -87,7 +88,7 @@ a value of 1 corresponds to (0,-1,0) and a value of 2 corresponds to (0,0,-1).
 nbSprungMasses or greater. Each element in the sprungMasses array corresponds to the suspension located at the same array element in sprungMassCoordinates.
 The center of mass of the masses in sprungMasses with the coordinates in sprungMassCoordinates satisfy the specified centerOfMass.
 */
-void PxVehicleComputeSprungMasses(const PxU32 nbSprungMasses, const PxVec3* sprungMassCoordinates, const PxVec3& centreOfMass, const PxReal totalMass, const PxU32 gravityDirection, PxReal* sprungMasses);
+PX_DEPRECATED void PxVehicleComputeSprungMasses(const PxU32 nbSprungMasses, const PxVec3* sprungMassCoordinates, const PxVec3& centreOfMass, const PxReal totalMass, const PxU32 gravityDirection, PxReal* sprungMasses);
 
 
 /**
@@ -106,13 +107,13 @@ a value of 1 corresponds to (0,-1,0) and a value of 2 corresponds to (0,0,-1).
 \note The suspension sprung masses are updated so that the natural frequency and damping ratio of the springs are preserved.  This involves altering the
 stiffness and damping rate of the suspension springs.
 */
-void PxVehicleUpdateCMassLocalPose(const PxTransform& oldCMassLocalPose, const PxTransform& newCMassLocalPose, const PxU32 gravityDirection, PxVehicleWheels* vehicle);
+PX_DEPRECATED void PxVehicleUpdateCMassLocalPose(const PxTransform& oldCMassLocalPose, const PxTransform& newCMassLocalPose, const PxU32 gravityDirection, PxVehicleWheels* vehicle);
 
 /**
 \brief Used by PxVehicleCopyDynamicsData
 @see PxVehicleCopyDynamicsData
 */
-class PxVehicleCopyDynamicsMap
+class PX_DEPRECATED PxVehicleCopyDynamicsMap
 {
 public:
 
@@ -149,12 +150,11 @@ speed of all enabled src wheels.
 
 \note src and trg must be the same vehicle type.
 */
-void PxVehicleCopyDynamicsData(const PxVehicleCopyDynamicsMap& wheelMap, const PxVehicleWheels& src, PxVehicleWheels* trg);
+PX_DEPRECATED void PxVehicleCopyDynamicsData(const PxVehicleCopyDynamicsMap& wheelMap, const PxVehicleWheels& src, PxVehicleWheels* trg);
 
 
 #if !PX_DOXYGEN
 } // namespace physx
 #endif
 
-/** @} */
-#endif //PX_VEHICLE_UTILSSETUP_H
+#endif

@@ -10,6 +10,9 @@
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Debug/DebugDraw.h"
 #endif
+#if !WITH_VEHICLE
+#include "Engine/Core/Log.h"
+#endif
 
 WheeledVehicle::WheeledVehicle(const SpawnParams& params)
     : RigidBody(params)
@@ -212,7 +215,7 @@ void WheeledVehicle::Setup()
 void WheeledVehicle::DrawPhysicsDebug(RenderView& view)
 {
     // Wheels shapes
-    for (auto& data : _wheelsData)
+    for (const auto& data : _wheelsData)
     {
         int32 wheelIndex = 0;
         for (; wheelIndex < _wheels.Count(); wheelIndex++)
@@ -222,15 +225,16 @@ void WheeledVehicle::DrawPhysicsDebug(RenderView& view)
         }
         if (wheelIndex == _wheels.Count())
             break;
-        auto& wheel = _wheels[wheelIndex];
+        const auto& wheel = _wheels[wheelIndex];
         if (wheel.Collider && wheel.Collider->GetParent() == this && !wheel.Collider->GetIsTrigger())
         {
             const Vector3 currentPos = wheel.Collider->GetPosition();
             const Vector3 basePos = currentPos - Vector3(0, data.State.SuspensionOffset, 0);
+            const Quaternion wheelDebugOrientation = GetOrientation() * Quaternion::Euler(-data.State.RotationAngle, data.State.SteerAngle, 0) * Quaternion::Euler(90, 0, 90);
             DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(basePos, wheel.Radius * 0.07f), Color::Blue * 0.3f, 0, true);
             DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(currentPos, wheel.Radius * 0.08f), Color::Blue * 0.8f, 0, true);
             DEBUG_DRAW_LINE(basePos, currentPos, Color::Blue, 0, true);
-            DEBUG_DRAW_WIRE_CYLINDER(currentPos, wheel.Collider->GetOrientation(), wheel.Radius, wheel.Width, Color::Red * 0.8f, 0, true);
+            DEBUG_DRAW_WIRE_CYLINDER(currentPos, wheelDebugOrientation, wheel.Radius, wheel.Width, Color::Red * 0.8f, 0, true);
             if (!data.State.IsInAir)
             {
                 DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(data.State.TireContactPoint, 5.0f), Color::Green, 0, true);
@@ -242,7 +246,7 @@ void WheeledVehicle::DrawPhysicsDebug(RenderView& view)
 void WheeledVehicle::OnDebugDrawSelected()
 {
     // Wheels shapes
-    for (auto& data : _wheelsData)
+    for (const auto& data : _wheelsData)
     {
         int32 wheelIndex = 0;
         for (; wheelIndex < _wheels.Count(); wheelIndex++)
@@ -252,11 +256,12 @@ void WheeledVehicle::OnDebugDrawSelected()
         }
         if (wheelIndex == _wheels.Count())
             break;
-        auto& wheel = _wheels[wheelIndex];
+        const auto& wheel = _wheels[wheelIndex];
         if (wheel.Collider && wheel.Collider->GetParent() == this && !wheel.Collider->GetIsTrigger())
         {
             const Vector3 currentPos = wheel.Collider->GetPosition();
             const Vector3 basePos = currentPos - Vector3(0, data.State.SuspensionOffset, 0);
+            const Quaternion wheelDebugOrientation = GetOrientation() * Quaternion::Euler(-data.State.RotationAngle, data.State.SteerAngle, 0) * Quaternion::Euler(90, 0, 90);
             Transform actorPose = Transform::Identity, shapePose = Transform::Identity;
             PhysicsBackend::GetRigidActorPose(_actor, actorPose.Translation, actorPose.Orientation);
             PhysicsBackend::GetShapeLocalPose(wheel.Collider->GetPhysicsShape(), shapePose.Translation, shapePose.Orientation);
@@ -264,7 +269,7 @@ void WheeledVehicle::OnDebugDrawSelected()
             DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(currentPos, wheel.Radius * 0.08f), Color::Blue * 0.8f, 0, false);
             DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(actorPose.LocalToWorld(shapePose.Translation), wheel.Radius * 0.11f), Color::OrangeRed * 0.8f, 0, false);
             DEBUG_DRAW_LINE(basePos, currentPos, Color::Blue, 0, false);
-            DEBUG_DRAW_WIRE_CYLINDER(currentPos, wheel.Collider->GetOrientation(), wheel.Radius, wheel.Width, Color::Red * 0.4f, 0, false);
+            DEBUG_DRAW_WIRE_CYLINDER(currentPos, wheelDebugOrientation, wheel.Radius, wheel.Width, Color::Red * 0.4f, 0, false);
             if (!data.State.SuspensionTraceStart.IsZero())
             {
                 DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(data.State.SuspensionTraceStart, 5.0f), Color::AliceBlue, 0, false);
@@ -311,6 +316,9 @@ void WheeledVehicle::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     DESERIALIZE_MEMBER(Engine, _engine);
     DESERIALIZE_MEMBER(Differential, _differential);
     DESERIALIZE_MEMBER(Gearbox, _gearbox);
+
+    // [Deprecated on 13.06.2023, expires on 13.06.2025]
+    _fixInvalidForwardDir |= modifier->EngineBuild < 6341;
 }
 
 void WheeledVehicle::OnColliderChanged(Collider* c)
@@ -329,6 +337,41 @@ void WheeledVehicle::OnPhysicsSceneChanged(PhysicsScene* previous)
     PhysicsBackend::RemoveVehicle(previous->GetPhysicsScene(), this);
     PhysicsBackend::AddVehicle(GetPhysicsScene()->GetPhysicsScene(), this);
 #endif
+}
+
+void WheeledVehicle::OnTransformChanged()
+{
+    RigidBody::OnTransformChanged();
+
+    // Initially vehicles were using X axis as forward which was kind of bad idea as engine uses Z as forward
+    // [Deprecated on 13.06.2023, expires on 13.06.2025]
+    if (_fixInvalidForwardDir)
+    {
+        _fixInvalidForwardDir = false;
+
+        // Transform all vehicle children around the vehicle origin to fix the vehicle facing direction
+        const Quaternion rotationDelta(0.0f, -0.7071068f, 0.0f, 0.7071068f);
+        const Vector3 origin = GetPosition();
+        for (Actor* child : Children)
+        {
+            Transform trans = child->GetTransform();;
+            const Vector3 pivotOffset = trans.Translation - origin;
+            if (pivotOffset.IsZero())
+            {
+                trans.Orientation *= Quaternion::Invert(trans.Orientation) * rotationDelta * trans.Orientation;
+            }
+            else
+            {
+                Matrix transWorld, deltaWorld;
+                Matrix::RotationQuaternion(trans.Orientation, transWorld);
+                Matrix::RotationQuaternion(rotationDelta, deltaWorld);
+                Matrix world = transWorld * Matrix::Translation(pivotOffset) * deltaWorld * Matrix::Translation(-pivotOffset);
+                trans.SetRotation(world);
+                trans.Translation += world.GetTranslation();
+            }
+            child->SetTransform(trans);
+        }
+    }
 }
 
 void WheeledVehicle::BeginPlay(SceneBeginData* data)

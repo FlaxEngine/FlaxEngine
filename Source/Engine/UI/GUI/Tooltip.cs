@@ -99,7 +99,7 @@ namespace FlaxEngine.GUI
             desc.SupportsTransparency = false;
             desc.ShowInTaskbar = false;
             desc.ActivateWhenFirstShown = false;
-            desc.AllowInput = true;
+            desc.AllowInput = false;
             desc.AllowMinimize = false;
             desc.AllowMaximize = false;
             desc.AllowDragAndDrop = false;

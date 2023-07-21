@@ -27,58 +27,6 @@ class SkinnedModel;
 class SkeletonData;
 
 /// <summary>
-/// The root motion data container. Supports displacement and rotation (no scale component).
-/// </summary>
-struct RootMotionData
-{
-    static RootMotionData Identity;
-
-    Vector3 Translation;
-    Quaternion Rotation;
-
-    RootMotionData()
-    {
-    }
-
-    RootMotionData(const Vector3& translation, const Quaternion& rotation)
-    {
-        Translation = translation;
-        Rotation = rotation;
-    }
-
-    RootMotionData(const RootMotionData& other)
-    {
-        Translation = other.Translation;
-        Rotation = other.Rotation;
-    }
-
-    explicit RootMotionData(const Transform& other)
-    {
-        Translation = other.Translation;
-        Rotation = other.Orientation;
-    }
-
-    RootMotionData& operator=(const Transform& other)
-    {
-        Translation = other.Translation;
-        Rotation = other.Orientation;
-        return *this;
-    }
-
-    RootMotionData& operator+=(const RootMotionData& b);
-    RootMotionData& operator+=(const Transform& b);
-    RootMotionData& operator-=(const Transform& b);
-    RootMotionData operator+(const RootMotionData& b) const;
-    RootMotionData operator-(const RootMotionData& b) const;
-
-    static void Lerp(const RootMotionData& t1, const RootMotionData& t2, float amount, RootMotionData& result)
-    {
-        Vector3::Lerp(t1.Translation, t2.Translation, amount, result.Translation);
-        Quaternion::Slerp(t1.Rotation, t2.Rotation, amount, result.Rotation);
-    }
-};
-
-/// <summary>
 /// The animation graph 'impulse' connections data container (the actual transfer is done via pointer as it gives better performance). 
 /// Container for skeleton nodes transformation hierarchy and any other required data. 
 /// Unified layout for both local and model transformation spaces.
@@ -93,7 +41,7 @@ struct FLAXENGINE_API AnimGraphImpulse
     /// <summary>
     /// The root motion extracted from the animation to apply on animated object.
     /// </summary>
-    RootMotionData RootMotion = RootMotionData::Identity;
+    Transform RootMotion = Transform::Identity;
 
     /// <summary>
     /// The animation time position (in seconds).
@@ -172,25 +120,12 @@ public:
     /// </summary>
     enum class FlagTypes
     {
-        /// <summary>
-        /// The none.
-        /// </summary>
         None = 0,
-
-        /// <summary>
-        /// The enabled flag.
-        /// </summary>
         Enabled = 1,
-
-        /// <summary>
-        /// The solo flag.
-        /// </summary>
         Solo = 2,
-
-        /// <summary>
-        /// The use default rule flag.
-        /// </summary>
         UseDefaultRule = 4,
+        InterruptionRuleRechecking = 8,
+        InterruptionInstant = 16,
     };
 
 public:
@@ -361,7 +296,7 @@ public:
     /// <summary>
     /// The current root motion delta to apply on a target object.
     /// </summary>
-    RootMotionData RootMotion = RootMotionData::Identity;
+    Transform RootMotion = Transform::Identity;
 
     /// <summary>
     /// The animation graph parameters collection (instanced, override the default values).
@@ -384,7 +319,12 @@ public:
     ScriptingObject* Object;
 
     /// <summary>
-    /// The custom event called after local pose evaluation.
+    /// The output nodes pose skeleton asset to use. Allows to remap evaluated animation pose for Base Model of the Anim Graph to the target Animated Model that plays it. Nodes Pose will match its skeleton. Use null if disable retargetting.
+    /// </summary>
+    SkinnedModel* NodesSkeleton = nullptr;
+
+    /// <summary>
+    /// The custom event called after local pose evaluation and retargetting.
     /// </summary>
     Delegate<AnimGraphImpulse*> LocalPoseOverride;
 
@@ -495,22 +435,29 @@ public:
         AnimSubGraph* Graph;
     };
 
-    struct StateData
+    struct StateBaseData
     {
         /// <summary>
         /// The invalid transition valid used in Transitions to indicate invalid transition linkage.
         /// </summary>
         const static uint16 InvalidTransitionIndex = MAX_uint16;
-
-        /// <summary>
-        /// The graph of the state. Contains the state animation evaluation graph. Its root node is the state output node with an input box for the state blend pose sampling.
-        /// </summary>
-        AnimSubGraph* Graph;
-
+        
         /// <summary>
         /// The outgoing transitions from this state to the other states. Each array item contains index of the transition data from the state node graph transitions cache. Value InvalidTransitionIndex is used for last transition to indicate the transitions amount.
         /// </summary>
         uint16 Transitions[ANIM_GRAPH_MAX_STATE_TRANSITIONS];
+    };
+
+    struct StateData : StateBaseData
+    {
+        /// <summary>
+        /// The graph of the state. Contains the state animation evaluation graph. Its root node is the state output node with an input box for the state blend pose sampling.
+        /// </summary>
+        AnimSubGraph* Graph;
+    };
+
+    struct AnyStateData : StateBaseData
+    {
     };
 
     struct CustomData
@@ -523,7 +470,7 @@ public:
         /// <summary>
         /// The GC handle to the managed instance of the node object.
         /// </summary>
-        uint32 Handle;
+        MGCHandle Handle;
     };
 
     struct CurveData
@@ -564,6 +511,7 @@ public:
             MultiBlend2DData MultiBlend2D;
             StateMachineData StateMachine;
             StateData State;
+            AnyStateData AnyState;
             CustomData Custom;
             CurveData Curve;
             AnimationGraphFunctionData AnimationGraphFunction;
@@ -681,6 +629,9 @@ public:
 protected:
     // [Graph]
     bool onNodeLoaded(Node* n) override;
+
+private:
+    void LoadStateTransitions(AnimGraphNode::StateBaseData& data, Value& transitionsData);
 };
 
 /// <summary>
@@ -762,13 +713,6 @@ public:
     /// Determines whether this graph is ready for the animation evaluation.
     /// </summary>
     bool IsReady() const;
-
-    /// <summary>
-    /// Determines whether this graph can be used with the specified skeleton.
-    /// </summary>
-    /// <param name="other">The other skinned model to check.</param>
-    /// <returns>True if can perform the update, otherwise false.</returns>
-    bool CanUseWithSkeleton(SkinnedModel* other) const;
 
 private:
     void ClearCustomNode(Node* node);
@@ -887,7 +831,6 @@ private:
     };
 
     int32 GetRootNodeIndex(Animation* anim);
-    void ExtractRootMotion(const Animation::NodeToChannel* mapping, int32 rootNodeIndex, Animation* anim, float pos, float prevPos, Transform& rootNode, RootMotionData& rootMotion);
     void ProcessAnimEvents(AnimGraphNode* node, bool loop, float length, float animPos, float animPrevPos, Animation* anim, float speed);
     void ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode* node, bool loop, float length, float pos, float prevPos, Animation* anim, float speed, float weight = 1.0f, ProcessAnimationMode mode = ProcessAnimationMode::Override);
     Variant SampleAnimation(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* anim, float speed);
@@ -895,4 +838,5 @@ private:
     Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* animA, Animation* animB, Animation* animC, float speedA, float speedB, float speedC, float alphaA, float alphaB, float alphaC);
     Variant Blend(AnimGraphNode* node, const Value& poseA, const Value& poseB, float alpha, AlphaBlendMode alphaMode);
     Variant SampleState(AnimGraphNode* state);
+    void UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, AnimGraphInstanceData::StateMachineBucket& stateMachineBucket, const AnimGraphNode::StateBaseData& stateData);
 };

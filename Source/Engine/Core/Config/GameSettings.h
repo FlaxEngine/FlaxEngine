@@ -84,6 +84,7 @@ public:
     Guid SwitchPlatform;
     Guid PS5Platform;
     Guid MacPlatform;
+    Guid iOSPlatform;
 
 public:
 

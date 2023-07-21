@@ -709,6 +709,12 @@ namespace FlaxEngine.GUI
                 Focus();
             }
 
+            // Disable layout
+            if (!_isLayoutLocked)
+            {
+                LockChildrenRecursive();
+            }
+
             base.OnDestroy();
 
             // Pass event further

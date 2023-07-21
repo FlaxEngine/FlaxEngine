@@ -309,6 +309,45 @@ bool FileBase::WriteAllText(const StringView& path, const Char* data, int32 leng
 
         return WriteAllBytes(path, tmp.Get(), tmp.Count());
     }
+    case Encoding::UTF8:
+    {
+        Array<byte> tmp;
+        tmp.SetCapacity(length);
+
+        for (int32 i = 0; i < length; i++)
+        {
+            Char c = data[i];
+            if (c < 0x0080)
+            {
+                tmp.Add((byte)c);
+            }
+            else if (c < 0x0800)
+            {
+                tmp.Add(0xC0 | (c >> 6));
+                tmp.Add(0x80 | (c & 0x3F));
+            }
+            else if (c < 0xD800 || c >= 0xE000)
+            {
+                tmp.Add(0xE0 | (c >> 12));
+                tmp.Add(0x80 | ((c >> 6) & 0x3F));
+                tmp.Add(0x80 | (c & 0x3F));
+            }
+            else // Surrogate pair
+            {
+                ++i;
+                if (i >= length)
+                    return true;
+
+                uint32 p = 0x10000 + (((c & 0x3FF) << 10) | (data[i] & 0x3FF));
+                tmp.Add(0xF0 | (p >> 18));
+                tmp.Add(0x80 | ((p >> 12) & 0x3F));
+                tmp.Add(0x80 | ((p >> 6) & 0x3F));
+                tmp.Add(0x80 | (p & 0x3F));
+            }
+        }
+
+        return WriteAllBytes(path, tmp.Get(), tmp.Count());
+    }
     default:
         return true;
     }

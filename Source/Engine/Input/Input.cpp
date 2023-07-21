@@ -29,11 +29,13 @@ struct ActionData
 {
     bool Active;
     uint64 FrameIndex;
+    InputActionState State;
 
     ActionData()
     {
         Active = false;
         FrameIndex = 0;
+        State = InputActionState::Waiting;
     }
 };
 
@@ -83,18 +85,18 @@ Keyboard* Input::Keyboard = nullptr;
 Array<Gamepad*, FixedAllocation<MAX_GAMEPADS>> Input::Gamepads;
 Action Input::GamepadsChanged;
 Array<InputDevice*, InlinedAllocation<16>> Input::CustomDevices;
-Input::CharDelegate Input::CharInput;
-Input::KeyboardDelegate Input::KeyDown;
-Input::KeyboardDelegate Input::KeyUp;
-Input::MouseButtonDelegate Input::MouseDown;
-Input::MouseButtonDelegate Input::MouseUp;
-Input::MouseButtonDelegate Input::MouseDoubleClick;
-Input::MouseWheelDelegate Input::MouseWheel;
-Input::MouseDelegate Input::MouseMove;
+Delegate<Char> Input::CharInput;
+Delegate<KeyboardKeys> Input::KeyDown;
+Delegate<KeyboardKeys> Input::KeyUp;
+Delegate<const Float2&, MouseButton> Input::MouseDown;
+Delegate<const Float2&, MouseButton> Input::MouseUp;
+Delegate<const Float2&, MouseButton> Input::MouseDoubleClick;
+Delegate<const Float2&, float> Input::MouseWheel;
+Delegate<const Float2&> Input::MouseMove;
 Action Input::MouseLeave;
-Input::TouchDelegate Input::TouchDown;
-Input::TouchDelegate Input::TouchMove;
-Input::TouchDelegate Input::TouchUp;
+Delegate<const Float2&, int32> Input::TouchDown;
+Delegate<const Float2&, int32> Input::TouchMove;
+Delegate<const Float2&, int32> Input::TouchUp;
 Delegate<StringView> Input::ActionTriggered;
 Array<ActionConfig> Input::ActionMappings;
 Array<AxisConfig> Input::AxisMappings;
@@ -597,6 +599,16 @@ bool Input::GetAction(const StringView& name)
     return e ? e->Active : false;
 }
 
+InputActionState Input::GetActionState(const StringView& name)
+{
+    const auto e = Actions.TryGet(name);
+    if (e != nullptr)
+    {
+        return e->State;
+    }
+    return InputActionState::None;
+}
+
 float Input::GetAxis(const StringView& name)
 {
     const auto e = Axes.TryGet(name);
@@ -806,6 +818,7 @@ void InputService::Update()
         ActionData& data = Actions[name];
 
         data.Active = false;
+        data.State = InputActionState::Waiting;
 
         // Mark as updated in this frame
         data.FrameIndex = frame;
@@ -828,6 +841,19 @@ void InputService::Update()
         else
         {
             isActive = Input::GetKeyUp(config.Key) || Input::GetMouseButtonUp(config.MouseButton) || Input::GetGamepadButtonUp(config.Gamepad, config.GamepadButton);
+        }
+
+        if (Input::GetKeyDown(config.Key) || Input::GetMouseButtonDown(config.MouseButton) || Input::GetGamepadButtonDown(config.Gamepad, config.GamepadButton))
+        {
+            data.State = InputActionState::Press;
+        }
+        else if (Input::GetKey(config.Key) || Input::GetMouseButton(config.MouseButton) || Input::GetGamepadButton(config.Gamepad, config.GamepadButton))
+        {
+            data.State = InputActionState::Pressing;
+        }
+        else if (Input::GetKeyUp(config.Key) || Input::GetMouseButtonUp(config.MouseButton) || Input::GetGamepadButtonUp(config.Gamepad, config.GamepadButton))
+        {
+            data.State = InputActionState::Release;
         }
 
         data.Active |= isActive;

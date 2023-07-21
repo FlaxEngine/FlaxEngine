@@ -11,6 +11,7 @@ using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Windows.Assets
 {
@@ -331,7 +332,7 @@ namespace FlaxEditor.Windows.Assets
                 {
                     Proxy = _proxy,
                     IsAdd = true,
-                    Name = StringUtils.IncrementNameNumber("New parameter", x => OnParameterRenameValidate(null, x)),
+                    Name = Utilities.Utils.IncrementNameNumber("New parameter", x => OnParameterRenameValidate(null, x)),
                     DefaultValue = TypeUtils.GetDefaultValue(new ScriptType(type)),
                 };
                 _proxy.Window.Undo.AddAction(action);

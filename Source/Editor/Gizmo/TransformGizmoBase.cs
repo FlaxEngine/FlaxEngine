@@ -81,6 +81,7 @@ namespace FlaxEditor.Gizmo
         : base(owner)
         {
             InitDrawing();
+            ModeChanged += ResetTranslationScale;
         }
 
         /// <summary>
@@ -324,6 +325,11 @@ namespace FlaxEditor.Gizmo
                 // Scale
                 _scaleDelta = delta;
             }
+        }
+
+        private void ResetTranslationScale()
+        {
+            _translationScaleSnapDelta.Normalize();
         }
 
         private void UpdateRotate(float dt)

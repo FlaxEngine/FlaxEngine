@@ -5,6 +5,7 @@
 #include "GDKPlatformTools.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Platform/GDK/GDKPlatformSettings.h"
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Core/Collections/Sorting.h"
@@ -36,24 +37,9 @@ GDKPlatformTools::GDKPlatformTools()
     }
 }
 
-bool GDKPlatformTools::UseAOT() const
+DotNetAOTModes GDKPlatformTools::UseAOT() const
 {
-    return true;
-}
-
-bool GDKPlatformTools::OnScriptsStepDone(CookingData& data)
-{
-    // Override Newtonsoft.Json.dll for some platforms (that don't support runtime code generation)
-    const String customBinPath = data.GetPlatformBinariesRoot() / TEXT("Newtonsoft.Json.dll");
-    const String assembliesPath = data.ManagedCodeOutputPath;
-    if (FileSystem::CopyFile(assembliesPath / TEXT("Newtonsoft.Json.dll"), customBinPath))
-    {
-        data.Error(TEXT("Failed to copy deloy custom assembly."));
-        return true;
-    }
-    FileSystem::DeleteFile(assembliesPath / TEXT("Newtonsoft.Json.pdb"));
-
-    return false;
+    return DotNetAOTModes::MonoAOTDynamic;
 }
 
 bool GDKPlatformTools::OnDeployBinaries(CookingData& data)
@@ -66,7 +52,7 @@ bool GDKPlatformTools::OnDeployBinaries(CookingData& data)
     files.Add(binPath / executableFilename);
     if (!FileSystem::FileExists(files[0]))
     {
-        data.Error(TEXT("Missing executable file ({0})."), files[0]);
+        data.Error(String::Format(TEXT("Missing executable file ({0})."), files[0]));
         return true;
     }
     FileSystem::DirectoryGetFiles(files, binPath, TEXT("*.dll"), DirectorySearchOption::TopDirectoryOnly);
@@ -74,88 +60,9 @@ bool GDKPlatformTools::OnDeployBinaries(CookingData& data)
     {
         if (FileSystem::CopyFile(data.NativeCodeOutputPath / StringUtils::GetFileName(files[i]), files[i]))
         {
-            data.Error(TEXT("Failed to setup output directory (file {0})."), files[i]);
+            data.Error(String::Format(TEXT("Failed to setup output directory (file {0})."), files[i]));
             return true;
         }
-    }
-
-    return false;
-}
-
-void GDKPlatformTools::OnConfigureAOT(CookingData& data, AotConfig& config)
-{
-    const auto platformDataPath = data.GetPlatformBinariesRoot();
-    const bool useInterpreter = true; // TODO: use Full AOT on GDK
-    const bool enableDebug = data.Configuration != BuildConfiguration::Release;
-    const Char* aotMode = useInterpreter ? TEXT("full,interp") : TEXT("full");
-    const Char* debugMode = enableDebug ? TEXT("soft-debug") : TEXT("nodebug");
-    config.AotCompilerArgs = String::Format(TEXT("--aot={0},verbose,stats,print-skipped,{1} -O=all"), aotMode, debugMode);
-    if (enableDebug)
-        config.AotCompilerArgs = TEXT("--debug ") + config.AotCompilerArgs;
-    config.AotCompilerPath = platformDataPath / TEXT("Tools/mono.exe");
-}
-
-bool GDKPlatformTools::OnPerformAOT(CookingData& data, AotConfig& config, const String& assemblyPath)
-{
-    // Skip .dll.dll which could be a false result from the previous AOT which could fail
-    if (assemblyPath.EndsWith(TEXT(".dll.dll")))
-    {
-        LOG(Warning, "Skip AOT for file '{0}' as it can be a result from the previous task", assemblyPath);
-        return false;
-    }
-
-    // Check if skip this assembly (could be already processed)
-    const String filename = StringUtils::GetFileName(assemblyPath);
-    const String outputPath = config.AotCachePath / filename + TEXT(".dll");
-    if (FileSystem::FileExists(outputPath) && FileSystem::GetFileLastEditTime(assemblyPath) < FileSystem::GetFileLastEditTime(outputPath))
-        return false;
-    LOG(Info, "Calling AOT tool for \"{0}\"", assemblyPath);
-
-    // Cleanup temporary results (fromm the previous AT that fail or sth)
-    const String resultPath = assemblyPath + TEXT(".dll");
-    const String resultPathExp = resultPath + TEXT(".exp");
-    const String resultPathLib = resultPath + TEXT(".lib");
-    const String resultPathPdb = resultPath + TEXT(".pdb");
-    if (FileSystem::FileExists(resultPath))
-        FileSystem::DeleteFile(resultPath);
-    if (FileSystem::FileExists(resultPathExp))
-        FileSystem::DeleteFile(resultPathExp);
-    if (FileSystem::FileExists(resultPathLib))
-        FileSystem::DeleteFile(resultPathLib);
-    if (FileSystem::FileExists(resultPathPdb))
-        FileSystem::DeleteFile(resultPathPdb);
-
-    // Call tool
-    const String workingDir = StringUtils::GetDirectoryName(config.AotCompilerPath);
-    const String command = String::Format(TEXT("\"{0}\" {1} \"{2}\""), config.AotCompilerPath, config.AotCompilerArgs, assemblyPath);
-    const int32 result = Platform::RunProcess(command, workingDir, config.EnvVars);
-    if (result != 0)
-    {
-        data.Error(TEXT("AOT tool execution failed with result code {1} for assembly \"{0}\". See log for more info."), assemblyPath, result);
-        return true;
-    }
-
-    // Copy result
-    if (FileSystem::CopyFile(outputPath, resultPath))
-    {
-        data.Error(TEXT("Failed to copy the AOT tool result file. It can be missing."));
-        return true;
-    }
-
-    // Copy pdb file if exists
-    if (data.Configuration != BuildConfiguration::Release && FileSystem::FileExists(resultPathPdb))
-    {
-        FileSystem::CopyFile(config.AotCachePath / StringUtils::GetFileName(resultPathPdb), resultPathPdb);
-    }
-
-    // Clean intermediate results
-    if (FileSystem::DeleteFile(resultPath)
-        || (FileSystem::FileExists(resultPathExp) && FileSystem::DeleteFile(resultPathExp))
-        || (FileSystem::FileExists(resultPathLib) && FileSystem::DeleteFile(resultPathLib))
-        || (FileSystem::FileExists(resultPathPdb) && FileSystem::DeleteFile(resultPathPdb))
-    )
-    {
-        LOG(Warning, "Failed to remove the AOT tool result file(s).");
     }
 
     return false;
@@ -275,8 +182,10 @@ bool GDKPlatformTools::OnPostProcess(CookingData& data, GDKPlatformSettings* pla
     data.StepProgress(TEXT("Generating package layout"), 0.3f);
     const String gdkBinPath = _gdkPath / TEXT("../bin");
     const String makePkgPath = gdkBinPath / TEXT("MakePkg.exe");
-    const String command = String::Format(TEXT("\"{0}\" genmap /f layout.xml /d \"{1}\""), makePkgPath, data.DataOutputPath);
-    const int32 result = Platform::RunProcess(command, data.DataOutputPath);
+    CreateProcessSettings procSettings;
+    procSettings.FileName = String::Format(TEXT("\"{0}\" genmap /f layout.xml /d \"{1}\""), makePkgPath, data.DataOutputPath);
+    procSettings.WorkingDirectory = data.DataOutputPath;
+    const int32 result = Platform::CreateProcess(procSettings);
     if (result != 0)
     {
         data.Error(TEXT("Failed to generate package layout."));

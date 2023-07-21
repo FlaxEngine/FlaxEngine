@@ -23,7 +23,7 @@ public:
 
 public:
 
-    // [Window]
+    // [WindowBase]
     void* GetNativePtr() const override;
     void Show() override;
     void Hide() override;

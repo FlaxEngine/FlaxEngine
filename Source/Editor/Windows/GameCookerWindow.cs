@@ -47,6 +47,7 @@ namespace FlaxEditor.Windows
                 { PlatformType.Switch, new Switch() },
                 { PlatformType.PS5, new PS5() },
                 { PlatformType.Mac, new Mac() },
+                { PlatformType.iOS, new iOS() },
             };
 
             public BuildTabProxy(GameCookerWindow win, PlatformSelector platformSelector)
@@ -64,6 +65,7 @@ namespace FlaxEditor.Windows
                 PerPlatformOptions[PlatformType.Switch].Init("Output/Switch", "Switch");
                 PerPlatformOptions[PlatformType.PS5].Init("Output/PS5", "PS5");
                 PerPlatformOptions[PlatformType.Mac].Init("Output/Mac", "Mac");
+                PerPlatformOptions[PlatformType.iOS].Init("Output/iOS", "iOS");
             }
 
             [HideInEditor]
@@ -109,6 +111,8 @@ namespace FlaxEditor.Windows
                     switch (BuildPlatform)
                     {
                     case BuildPlatform.MacOSx64:
+                    case BuildPlatform.MacOSARM64:
+                    case BuildPlatform.iOSARM64:
                         IsSupported = false;
                         break;
                     default:
@@ -130,6 +134,8 @@ namespace FlaxEditor.Windows
                     switch (BuildPlatform)
                     {
                     case BuildPlatform.MacOSx64:
+                    case BuildPlatform.MacOSARM64:
+                    case BuildPlatform.iOSARM64:
                     case BuildPlatform.AndroidARM64:
                         IsSupported = true;
                         break;
@@ -228,7 +234,22 @@ namespace FlaxEditor.Windows
 
             class Mac : Platform
             {
-                protected override BuildPlatform BuildPlatform => BuildPlatform.MacOSx64;
+                public enum Archs
+                {
+                    [EditorDisplay(null, "arm64")]
+                    ARM64,
+                    [EditorDisplay(null, "x64")]
+                    x64,
+                }
+
+                public Archs CPU = Archs.ARM64;
+
+                protected override BuildPlatform BuildPlatform => CPU == Archs.ARM64 ? BuildPlatform.MacOSARM64 : BuildPlatform.MacOSx64;
+            }
+
+            class iOS : Platform
+            {
+                protected override BuildPlatform BuildPlatform => BuildPlatform.iOSARM64;
             }
 
             class Editor : CustomEditor
@@ -259,7 +280,7 @@ namespace FlaxEditor.Windows
                             break;
                         case PlatformType.UWP:
                             name = "Windows Store";
-                            layout.Label("UWP (Windows Store) platform has been deprecated and soon will be removed!", TextAlignment.Center).Label.TextColor = Color.Red;
+                            layout.Label("UWP (Windows Store) platform has been deprecated and is no longer supported", TextAlignment.Center).Label.TextColor = Color.Red;
                             break;
                         case PlatformType.Linux:
                             name = "Linux";
@@ -281,6 +302,9 @@ namespace FlaxEditor.Windows
                             break;
                         case PlatformType.Mac:
                             name = "Mac";
+                            break;
+                        case PlatformType.iOS:
+                            name = "iOS";
                             break;
                         default:
                             name = Utilities.Utils.GetPropertyNameUI(_platform.ToString());
@@ -569,7 +593,13 @@ namespace FlaxEditor.Windows
             {
                 var tmpBat = StringUtils.CombinePaths(Globals.TemporaryFolder, Guid.NewGuid().ToString("N") + ".bat");
                 File.WriteAllText(tmpBat, command);
-                Platform.StartProcess(tmpBat, null, null, true, true);
+                var procSettings = new CreateProcessSettings
+                {
+                    FileName = tmpBat,
+                    HiddenWindow = true,
+                    WaitForEnd = true,
+                };
+                Platform.CreateProcess(ref procSettings);
                 File.Delete(tmpBat);
             }
             catch (Exception ex)

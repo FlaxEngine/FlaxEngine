@@ -29,6 +29,8 @@ protected:
     }
 
 public:
+    typedef T CharType;
+
     /// <summary>
     /// Gets the specific const character from this string.
     /// </summary>
@@ -381,7 +383,7 @@ namespace fmt
         template<typename FormatContext>
         auto format(const StringView& v, FormatContext& ctx) -> decltype(ctx.out())
         {
-            return fmt::internal::copy(v.Get(), v.Get() + v.Length(), ctx.out());
+            return fmt::detail::copy_str<Char>(v.Get(), v.Get() + v.Length(), ctx.out());
         }
     };
 }
@@ -551,7 +553,7 @@ namespace fmt
         template<typename FormatContext>
         auto format(const StringAnsiView& v, FormatContext& ctx) -> decltype(ctx.out())
         {
-            return fmt::internal::copy(v.Get(), v.Get() + v.Length(), ctx.out());
+            return fmt::detail::copy_str<char>(v.Get(), v.Get() + v.Length(), ctx.out());
         }
     };
 }

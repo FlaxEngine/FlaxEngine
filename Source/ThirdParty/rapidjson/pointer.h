@@ -212,7 +212,7 @@ public:
         GenericPointer r;
         r.allocator_ = allocator;
         Ch *p = r.CopyFromRaw(*this, 1, token.length + 1);
-        std::memcpy(p, token.name, (token.length + 1) * sizeof(Ch));
+        ::memcpy(p, token.name, (token.length + 1) * sizeof(Ch));
         r.tokens_[tokenCount_].name = p;
         r.tokens_[tokenCount_].length = token.length;
         r.tokens_[tokenCount_].index = token.index;
@@ -768,10 +768,10 @@ private:
         tokens_ = static_cast<Token *>(allocator_->Malloc(tokenCount_ * sizeof(Token) + (nameBufferSize + extraNameBufferSize) * sizeof(Ch)));
         nameBuffer_ = reinterpret_cast<Ch *>(tokens_ + tokenCount_);
         if (rhs.tokenCount_ > 0) {
-            std::memcpy(tokens_, rhs.tokens_, rhs.tokenCount_ * sizeof(Token));
+            ::memcpy(tokens_, rhs.tokens_, rhs.tokenCount_ * sizeof(Token));
         }
         if (nameBufferSize > 0) {
-            std::memcpy(nameBuffer_, rhs.nameBuffer_, nameBufferSize * sizeof(Ch));
+            ::memcpy(nameBuffer_, rhs.nameBuffer_, nameBufferSize * sizeof(Ch));
         }
 
         // Adjust pointers to name buffer

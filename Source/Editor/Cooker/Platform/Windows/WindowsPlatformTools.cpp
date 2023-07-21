@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2019 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_TOOLS_WINDOWS
 
@@ -31,6 +31,11 @@ PlatformType WindowsPlatformTools::GetPlatform() const
 ArchitectureType WindowsPlatformTools::GetArchitecture() const
 {
     return _arch;
+}
+
+bool WindowsPlatformTools::UseSystemDotnet() const
+{
+    return true;
 }
 
 bool WindowsPlatformTools::OnDeployBinaries(CookingData& data)

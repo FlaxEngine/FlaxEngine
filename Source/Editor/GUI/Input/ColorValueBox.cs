@@ -58,6 +58,11 @@ namespace FlaxEditor.GUI.Input
         protected Color _value;
 
         /// <summary>
+        /// Enables live preview of the selected value from the picker. Otherwise will update the value only when user confirms it on dialog closing.
+        /// </summary>
+        public bool UseDynamicEditing = true;
+
+        /// <summary>
         /// Occurs when value gets changed.
         /// </summary>
         public event Action ValueChanged;
@@ -143,7 +148,7 @@ namespace FlaxEditor.GUI.Input
             base.OnSubmit();
 
             // Show color picker dialog
-            _currentDialog = ShowPickColorDialog?.Invoke(this, _value, OnColorChanged, OnPickerClosed);
+            _currentDialog = ShowPickColorDialog?.Invoke(this, _value, OnColorChanged, OnPickerClosed, UseDynamicEditing);
         }
 
         private void OnColorChanged(Color color, bool sliding)

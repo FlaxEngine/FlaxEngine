@@ -27,7 +27,7 @@ API_ENUM(Namespace="FlaxEngine.Networking") enum class NetworkManagerMode
 /// <summary>
 /// The high-level network client connection data. Can be used to accept/deny new connection.
 /// </summary>
-API_STRUCT(Namespace="FlaxEngine.Networking") struct NetworkClientConnectionData
+API_STRUCT(Namespace="FlaxEngine.Networking", NoDefault) struct NetworkClientConnectionData
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkClientConnectionData);
     // The incoming client.

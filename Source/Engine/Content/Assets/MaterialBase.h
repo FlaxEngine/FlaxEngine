@@ -27,7 +27,6 @@ public:
     /// <summary>
     /// Returns true if material is an material instance.
     /// </summary>
-    /// <returns>True if it's a material instance, otherwise false.</returns>
     virtual bool IsMaterialInstance() const = 0;
 
 public:

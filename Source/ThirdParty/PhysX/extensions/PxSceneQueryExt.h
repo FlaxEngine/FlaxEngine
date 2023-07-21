@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,13 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_PHYSICS_EXTENSIONS_SCENE_QUERY_H
-#define PX_PHYSICS_EXTENSIONS_SCENE_QUERY_H
+#ifndef PX_SCENE_QUERY_EXT_H
+#define PX_SCENE_QUERY_EXT_H
 /** \addtogroup extensions
   @{
 */
@@ -300,6 +298,208 @@ public:
 							const PxSceneQueryFilterData& filterData = PxSceneQueryFilterData(),
 							PxSceneQueryFilterCallback* filterCall = NULL);
 };
+
+struct PxBatchQueryStatus
+{
+	enum Enum
+	{
+		/**
+		\brief This is the initial state before a query starts.
+		*/
+		ePENDING = 0,
+
+		/**
+		\brief The query is finished; results have been written into the result and hit buffers.
+		*/
+		eSUCCESS,
+
+		/**
+		\brief The query results were incomplete due to touch hit buffer overflow. Blocking hit is still correct.
+		*/
+		eOVERFLOW
+	};
+
+	static PX_FORCE_INLINE Enum getStatus(const PxRaycastBuffer& r) 
+	{
+		return (0xffffffff == r.nbTouches) ? ePENDING : (0xffffffff == r.maxNbTouches ? eOVERFLOW : eSUCCESS);
+	} 
+	static PX_FORCE_INLINE Enum getStatus(const PxSweepBuffer& r)
+	{
+		return (0xffffffff == r.nbTouches) ? ePENDING : (0xffffffff == r.maxNbTouches ? eOVERFLOW : eSUCCESS); 
+	}
+	static PX_FORCE_INLINE Enum getStatus(const PxOverlapBuffer& r)
+	{
+		return (0xffffffff == r.nbTouches) ? ePENDING : (0xffffffff == r.maxNbTouches ? eOVERFLOW : eSUCCESS);
+	}
+};
+
+class PxBatchQueryExt
+{
+public:
+
+	virtual void release() = 0;
+
+	/**
+	\brief Performs a raycast against objects in the scene.
+
+	\note	Touching hits are not ordered.
+	\note	Shooting a ray from within an object leads to different results depending on the shape type. Please check the details in article SceneQuery. User can ignore such objects by using one of the provided filter mechanisms.
+
+	\param[in] origin		Origin of the ray.
+	\param[in] unitDir		Normalized direction of the ray.
+	\param[in] distance		Length of the ray. Needs to be larger than 0.
+	\param[in] maxNbTouches	Maximum number of hits to record in the touch buffer for this query. Default=0 reports a single blocking hit. If maxTouchHits is set to 0 all hits are treated as blocking by default.
+	\param[in] hitFlags		Specifies which properties per hit should be computed and returned in hit array and blocking hit.
+	\param[in] filterData	Filtering data passed to the filter shader. See #PxQueryFilterData #PxQueryFilterCallback
+	\param[in] cache		Cached hit shape (optional). Query is tested against cached shape first. If no hit is found the ray gets queried against the scene.
+	Note: Filtering is not executed for a cached shape if supplied; instead, if a hit is found, it is assumed to be a blocking hit.
+	Note: Using past touching hits as cache will produce incorrect behavior since the cached hit will always be treated as blocking.
+
+	\note This query call writes to a list associated with the query object and is NOT thread safe (for performance reasons there is no lock
+	and overlapping writes from different threads may result in undefined behavior).
+
+	\return Returns a PxRaycastBuffer pointer that will store the result of the query after execute() is completed.
+	This will point either to an element of the buffer allocated on construction or to a user buffer passed to the constructor.
+	@see PxCreateBatchQueryExt
+
+	@see PxQueryFilterData PxQueryFilterCallback PxRaycastHit PxScene::raycast
+	*/
+	virtual PxRaycastBuffer* raycast(
+		const PxVec3& origin, const PxVec3& unitDir, const PxReal distance,
+		const PxU16 maxNbTouches = 0,
+		PxHitFlags hitFlags = PxHitFlags(PxHitFlag::eDEFAULT),
+		const PxQueryFilterData& filterData = PxQueryFilterData(),
+		const PxQueryCache* cache = NULL) = 0;
+
+	/**
+	\brief Performs a sweep test against objects in the scene.
+
+	\note	Touching hits are not ordered.
+	\note	If a shape from the scene is already overlapping with the query shape in its starting position,
+	the hit is returned unless eASSUME_NO_INITIAL_OVERLAP was specified.
+
+	\param[in] geometry		Geometry of object to sweep (supported types are: box, sphere, capsule, convex).
+	\param[in] pose			Pose of the sweep object.
+	\param[in] unitDir		Normalized direction of the sweep.
+	\param[in] distance		Sweep distance. Needs to be larger than 0. Will be clamped to PX_MAX_SWEEP_DISTANCE.
+	\param[in] maxNbTouches	Maximum number of hits to record in the touch buffer for this query. Default=0 reports a single blocking hit. If maxTouchHits is set to 0 all hits are treated as blocking by default.
+	\param[in] hitFlags		Specifies which properties per hit should be computed and returned in hit array and blocking hit.
+	\param[in] filterData	Filtering data and simple logic. See #PxQueryFilterData #PxQueryFilterCallback
+	\param[in] cache		Cached hit shape (optional). Query is tested against cached shape first. If no hit is found the ray gets queried against the scene.
+	Note: Filtering is not executed for a cached shape if supplied; instead, if a hit is found, it is assumed to be a blocking hit.
+	Note: Using past touching hits as cache will produce incorrect behavior since the cached hit will always be treated as blocking.
+	\param[in] inflation	This parameter creates a skin around the swept geometry which increases its extents for sweeping. The sweep will register a hit as soon as the skin touches a shape, and will return the corresponding distance and normal.
+	Note: ePRECISE_SWEEP doesn't support inflation. Therefore the sweep will be performed with zero inflation.
+
+	\note This query call writes to a list associated with the query object and is NOT thread safe (for performance reasons there is no lock
+	and overlapping writes from different threads may result in undefined behavior).
+
+	\return Returns a PxSweepBuffer pointer that will store the result of the query after execute() is completed.
+	This will point either to an element of the buffer allocated on construction or to a user buffer passed to the constructor.
+	@see PxCreateBatchQueryExt
+
+	@see PxHitFlags PxQueryFilterData PxBatchQueryPreFilterShader PxBatchQueryPostFilterShader PxSweepHit
+	*/
+	virtual PxSweepBuffer* sweep(
+		const PxGeometry& geometry, const PxTransform& pose, const PxVec3& unitDir, const PxReal distance,
+		const PxU16 maxNbTouches = 0,
+		PxHitFlags hitFlags = PxHitFlags(PxHitFlag::eDEFAULT),
+		const PxQueryFilterData& filterData = PxQueryFilterData(),
+		const PxQueryCache* cache = NULL,
+		const PxReal inflation = 0.0f) = 0;
+
+
+	/**
+	\brief Performs an overlap test of a given geometry against objects in the scene.
+
+	\note Filtering: returning eBLOCK from user filter for overlap queries will cause a warning (see #PxQueryHitType).
+
+	\param[in] geometry		Geometry of object to check for overlap (supported types are: box, sphere, capsule, convex).
+	\param[in] pose			Pose of the object.
+	\param[in] maxNbTouches	Maximum number of hits to record in the touch buffer for this query. Default=0 reports a single blocking hit. If maxTouchHits is set to 0 all hits are treated as blocking by default.
+	\param[in] filterData	Filtering data and simple logic. See #PxQueryFilterData #PxQueryFilterCallback
+	\param[in] cache		Cached hit shape (optional). Query is tested against cached shape first. If no hit is found the ray gets queried against the scene.
+	Note: Filtering is not executed for a cached shape if supplied; instead, if a hit is found, it is assumed to be a blocking hit.
+	Note: Using past touching hits as cache will produce incorrect behavior since the cached hit will always be treated as blocking.
+
+	\note eBLOCK should not be returned from user filters for overlap(). Doing so will result in undefined behavior, and a warning will be issued.
+	\note If the PxQueryFlag::eNO_BLOCK flag is set, the eBLOCK will instead be automatically converted to an eTOUCH and the warning suppressed.
+	\note This query call writes to a list associated with the query object and is NOT thread safe (for performance reasons there is no lock
+	and overlapping writes from different threads may result in undefined behavior).
+
+	\return Returns a PxOverlapBuffer pointer that will store the result of the query after execute() is completed.
+	This will point either to an element of the buffer allocated on construction or to a user buffer passed to the constructor. 
+	@see PxCreateBatchQueryExt
+
+	@see PxQueryFilterData PxQueryFilterCallback
+	*/
+	virtual PxOverlapBuffer* overlap(
+		const PxGeometry& geometry, const PxTransform& pose,
+		PxU16 maxNbTouches = 0,
+		const PxQueryFilterData& filterData = PxQueryFilterData(),
+		const PxQueryCache* cache = NULL) = 0;
+		
+	virtual void execute() = 0;
+
+protected:
+
+	virtual ~PxBatchQueryExt() {}
+};
+
+/**
+\brief Create a PxBatchQueryExt without the need for pre-allocated result or touch buffers. 
+
+\param[in] scene				Queries will be performed against objects in the specified PxScene
+\param[in] queryFilterCallback	Filtering for all queries is performed using queryFilterCallback.  A null pointer results in all shapes being considered.
+
+\param[in] maxNbRaycasts		A result buffer will be allocated that is large enough to accommodate maxNbRaycasts calls to PxBatchQueryExt::raycast() 
+\param[in] maxNbRaycastTouches	A touch buffer will be allocated that is large enough to accommodate maxNbRaycastTouches touches for all raycasts in the batch.
+
+\param[in] maxNbSweeps			A result buffer will be allocated that is large enough to accommodate maxNbSweeps calls to PxBatchQueryExt::sweep()
+\param[in] maxNbSweepTouches	A touch buffer will be allocated that is large enough to accommodate maxNbSweepTouches touches for all sweeps in the batch.
+
+\param[in] maxNbOverlaps		A result buffer will be allocated that is large enough to accommodate maxNbOverlaps calls to PxBatchQueryExt::overlap()
+\param[in] maxNbOverlapTouches	A touch buffer will be allocated that is large enough to accommodate maxNbOverlapTouches touches for all overlaps in the batch.
+
+\return Returns a PxBatchQueryExt instance. A NULL pointer will be returned if the subsequent allocations fail or if any of the arguments are illegal.   
+In the event that a NULL pointer is returned a corresponding error will be issued to the error stream. 
+*/
+PxBatchQueryExt* PxCreateBatchQueryExt(
+	const PxScene& scene, PxQueryFilterCallback* queryFilterCallback,
+	const PxU32 maxNbRaycasts, const PxU32 maxNbRaycastTouches,
+	const PxU32 maxNbSweeps, const PxU32 maxNbSweepTouches,
+	const PxU32 maxNbOverlaps, const PxU32 maxNbOverlapTouches);
+
+
+/**
+\brief Create a PxBatchQueryExt with user-supplied result and touch buffers.
+
+\param[in] scene				Queries will be performed against objects in the specified PxScene
+\param[in] queryFilterCallback	Filtering for all queries is performed using queryFilterCallback.  A null pointer results in all shapes being considered.
+
+\param[in] raycastBuffers		This is the array that will be used to store the results of each raycast in a batch. 
+\param[in] maxNbRaycasts		This is the length of the raycastBuffers array.
+\param[in] raycastTouches		This is the array that will be used to store the touches generated by all raycasts in a batch.
+\param[in] maxNbRaycastTouches	This is the length of the raycastTouches array.
+
+\param[in] sweepBuffers			This is the array that will be used to store the results of each sweep in a batch.
+\param[in] maxNbSweeps			This is the length of the sweepBuffers array.
+\param[in] sweepTouches			This is the array that will be used to store the touches generated by all sweeps in a batch.
+\param[in] maxNbSweepTouches	This is the length of the sweepTouches array.
+
+\param[in] overlapBuffers		This is the array that will be used to store the results of each overlap in a batch.
+\param[in] maxNbOverlaps		This is the length of the overlapBuffers array.
+\param[in] overlapTouches		This is the array that will be used to store the touches generated by all overlaps in a batch.
+\param[in] maxNbOverlapTouches	This is the length of the overlapTouches array.
+
+\return Returns a PxBatchQueryExt instance. A NULL pointer will be returned if the subsequent allocations fail or if any of the arguments are illegal.
+In the event that a NULL pointer is returned a corresponding error will be issued to the error stream.
+*/
+PxBatchQueryExt* PxCreateBatchQueryExt(
+	const PxScene& scene, PxQueryFilterCallback* queryFilterCallback,
+	PxRaycastBuffer* raycastBuffers, const PxU32 maxNbRaycasts, PxRaycastHit* raycastTouches, const PxU32 maxNbRaycastTouches,
+	PxSweepBuffer* sweepBuffers, const PxU32 maxNbSweeps, PxSweepHit* sweepTouches, const PxU32 maxNbSweepTouches,
+	PxOverlapBuffer* overlapBuffers, const PxU32 maxNbOverlaps, PxOverlapHit* overlapTouches, const PxU32 maxNbOverlapTouches);
 
 #if !PX_DOXYGEN
 } // namespace physx

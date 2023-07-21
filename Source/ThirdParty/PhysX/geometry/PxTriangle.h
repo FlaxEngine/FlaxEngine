@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,13 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_PHYSICS_GEOMUTILS_PX_TRIANGLE
-#define PX_PHYSICS_GEOMUTILS_PX_TRIANGLE
+#ifndef PX_TRIANGLE_H
+#define PX_TRIANGLE_H
 /** \addtogroup geomutils
   @{
 */
@@ -131,15 +129,25 @@ class PxTriangle
 	/**
 	\return Computes a point on the triangle from u and v barycentric coordinates.
 	*/
-	PxVec3 pointFromUV(PxReal u, PxReal v) const { return (1.0f-u-v)*verts[0] + u*verts[1] + v*verts[2]; }
+	PX_FORCE_INLINE	PxVec3 pointFromUV(PxReal u, PxReal v)	const
+	{
+		return (1.0f-u-v)*verts[0] + u*verts[1] + v*verts[2];
+	}
 
 	/**
 	\brief Array of Vertices.
 	*/
 	PxVec3		verts[3];
-
 };
 
+//! A padded version of PxTriangle, to safely load its data using SIMD
+class PxTrianglePadded : public PxTriangle
+{
+public:
+	PX_FORCE_INLINE PxTrianglePadded()	{}
+	PX_FORCE_INLINE ~PxTrianglePadded()	{}
+	PxU32	padding;
+};
 
 #if !PX_DOXYGEN
 }

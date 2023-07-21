@@ -92,7 +92,6 @@ public:
     }
 
 #if USE_PRECISE_MESH_INTERSECTS
-
     /// <summary>
     /// Gets the collision proxy used by the mesh.
     /// </summary>
@@ -100,7 +99,6 @@ public:
     {
         return _collisionProxy;
     }
-
 #endif
 
 public:
@@ -317,10 +315,10 @@ private:
     // Internal bindings
     API_FUNCTION(NoProxy) ScriptingObject* GetParentModel();
 #if !COMPILE_WITHOUT_CSHARP
-    API_FUNCTION(NoProxy) bool UpdateMeshUInt(int32 vertexCount, int32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj);
-    API_FUNCTION(NoProxy) bool UpdateMeshUShort(int32 vertexCount, int32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj);
-    API_FUNCTION(NoProxy) bool UpdateTrianglesUInt(int32 triangleCount, MonoArray* trianglesObj);
-    API_FUNCTION(NoProxy) bool UpdateTrianglesUShort(int32 triangleCount, MonoArray* trianglesObj);
-    API_FUNCTION(NoProxy) MonoArray* DownloadBuffer(bool forceGpu, MonoReflectionType* resultType, int32 typeI);
+    API_FUNCTION(NoProxy) bool UpdateMeshUInt(int32 vertexCount, int32 triangleCount, MArray* verticesObj, MArray* trianglesObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj, MArray* colorsObj);
+    API_FUNCTION(NoProxy) bool UpdateMeshUShort(int32 vertexCount, int32 triangleCount, MArray* verticesObj, MArray* trianglesObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj, MArray* colorsObj);
+    API_FUNCTION(NoProxy) bool UpdateTrianglesUInt(int32 triangleCount, MArray* trianglesObj);
+    API_FUNCTION(NoProxy) bool UpdateTrianglesUShort(int32 triangleCount, MArray* trianglesObj);
+    API_FUNCTION(NoProxy) MArray* DownloadBuffer(bool forceGpu, MTypeObject* resultType, int32 typeI);
 #endif
 };

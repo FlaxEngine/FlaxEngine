@@ -4,6 +4,7 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
@@ -14,6 +15,9 @@
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Content/Assets/Texture.h"
 #include "Engine/Utilities/StringConverter.h"
+#if PLATFORM_MAC
+#include "Engine/Platform/Apple/ApplePlatformSettings.h"
+#endif
 #include <fstream>
 
 #define MSDOS_SIGNATURE 0x5A4D
@@ -503,6 +507,37 @@ bool EditorUtilities::UpdateExeIcon(const String& path, const TextureData& icon)
     return false;
 }
 
+bool EditorUtilities::FormatAppPackageName(String& packageName)
+{
+    const auto gameSettings = GameSettings::Get();
+    String productName = gameSettings->ProductName;
+    productName.Replace(TEXT(" "), TEXT(""));
+    productName.Replace(TEXT("."), TEXT(""));
+    productName.Replace(TEXT("-"), TEXT(""));
+    String companyName = gameSettings->CompanyName;
+    companyName.Replace(TEXT(" "), TEXT(""));
+    companyName.Replace(TEXT("."), TEXT(""));
+    companyName.Replace(TEXT("-"), TEXT(""));
+    packageName.Replace(TEXT("${PROJECT_NAME}"), *productName, StringSearchCase::IgnoreCase);
+    packageName.Replace(TEXT("${COMPANY_NAME}"), *companyName, StringSearchCase::IgnoreCase);
+    packageName = packageName.ToLower();
+    for (int32 i = 0; i < packageName.Length(); i++)
+    {
+        const auto c = packageName[i];
+        if (c != '_' && c != '.' && !StringUtils::IsAlnum(c))
+        {
+            LOG(Error, "App identifier \'{0}\' contains invalid character. Only letters, numbers, dots and underscore characters are allowed.", packageName);
+            return true;
+        }
+    }
+    if (packageName.IsEmpty())
+    {
+        LOG(Error, "App identifier is empty.", packageName);
+        return true;
+    }
+    return false;
+}
+
 bool EditorUtilities::GetApplicationImage(const Guid& imageId, TextureData& imageData, ApplicationImageType type)
 {
     AssetReference<Texture> icon = Content::LoadAsync<Texture>(imageId);
@@ -726,8 +761,9 @@ bool EditorUtilities::GenerateCertificate(const String& name, const String& outp
 
     // MakeCert
     auto path = wdkPath / TEXT("makecert.exe");
-    auto args = String::Format(TEXT("\"{0}\" /r /h 0 /eku \"1.3.6.1.5.5.7.3.3,1.3.6.1.4.1.311.10.3.13\" /m 12 /len 2048 /n \"CN={1}\" -sv \"{2}\" \"{3}\""), path, name, outputPvkFilePath, outputCerFilePath);
-    int32 result = Platform::RunProcess(args, String::Empty);
+    CreateProcessSettings procSettings;
+    procSettings.FileName = String::Format(TEXT("\"{0}\" /r /h 0 /eku \"1.3.6.1.5.5.7.3.3,1.3.6.1.4.1.311.10.3.13\" /m 12 /len 2048 /n \"CN={1}\" -sv \"{2}\" \"{3}\""), path, name, outputPvkFilePath, outputCerFilePath);
+    int32 result = Platform::CreateProcess(procSettings);
     if (result != 0)
     {
         LOG(Warning, "MakeCert failed with result {0}.", result);
@@ -736,8 +772,8 @@ bool EditorUtilities::GenerateCertificate(const String& name, const String& outp
 
     // Pvk2Pfx
     path = wdkPath / TEXT("pvk2pfx.exe");
-    args = String::Format(TEXT("\"{0}\" -pvk \"{1}\" -spc \"{2}\" -pfx \"{3}\""), path, outputPvkFilePath, outputCerFilePath, outputPfxFilePath);
-    result = Platform::RunProcess(args, String::Empty);
+    procSettings.FileName = String::Format(TEXT("\"{0}\" -pvk \"{1}\" -spc \"{2}\" -pfx \"{3}\""), path, outputPvkFilePath, outputCerFilePath, outputPfxFilePath);
+    result = Platform::CreateProcess(procSettings);
     if (result != 0)
     {
         LOG(Warning, "MakeCert failed with result {0}.", result);
@@ -817,4 +853,60 @@ bool EditorUtilities::ReplaceInFile(const StringView& file, const StringView& fi
         return true;
     text.Replace(findWhat.Get(), findWhat.Length(), replaceWith.Get(), replaceWith.Length());
     return File::WriteAllText(file, text, Encoding::ANSI);
+}
+
+bool EditorUtilities::ReplaceInFile(const StringView& file, const Dictionary<String, String, HeapAllocation>& replaceMap)
+{
+    String text;
+    if (File::ReadAllText(file, text))
+        return true;
+    for (const auto& e : replaceMap)
+        text.Replace(e.Key.Get(), e.Key.Length(), e.Value.Get(), e.Value.Length());
+    return File::WriteAllText(file, text, Encoding::ANSI);
+}
+
+bool EditorUtilities::CopyFileIfNewer(const StringView& dst, const StringView& src)
+{
+    if (FileSystem::FileExists(dst) && 
+        FileSystem::GetFileLastEditTime(src) <= FileSystem::GetFileLastEditTime(dst) &&
+        FileSystem::GetFileSize(dst) == FileSystem::GetFileSize(src))
+        return false;
+    return FileSystem::CopyFile(dst, src);
+}
+
+bool EditorUtilities::CopyDirectoryIfNewer(const StringView& dst, const StringView& src, bool withSubDirectories)
+{
+    if (FileSystem::DirectoryExists(dst))
+    {
+        // Copy all files
+        Array<String> cache(32);
+        if (FileSystem::DirectoryGetFiles(cache, *src, TEXT("*"), DirectorySearchOption::TopDirectoryOnly))
+            return true;
+        for (int32 i = 0; i < cache.Count(); i++)
+        {
+            String dstFile = String(dst) / StringUtils::GetFileName(cache[i]);
+            if (CopyFileIfNewer(*dstFile, *cache[i]))
+                return true;
+        }
+
+        // Copy all subdirectories (if need to)
+        if (withSubDirectories)
+        {
+            cache.Clear();
+            if (FileSystem::GetChildDirectories(cache, src))
+                return true;
+            for (int32 i = 0; i < cache.Count(); i++)
+            {
+                String dstDir = String(dst) / StringUtils::GetFileName(cache[i]);
+                if (CopyDirectoryIfNewer(dstDir, cache[i], true))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+    else
+    {
+        return FileSystem::CopyDirectory(dst, src, withSubDirectories);
+    }
 }

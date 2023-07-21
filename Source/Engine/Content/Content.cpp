@@ -20,9 +20,7 @@
 #include "Engine/Level/Types.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
-#include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Scripting/Scripting.h"
-#include "Engine/Utilities/StringConverter.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
@@ -304,7 +302,7 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
         auto storage = ContentStorageManager::GetStorage(path);
         if (storage)
         {
-#if BUILD_DEBUG
+#if BUILD_DEBUG || FLAX_TESTS
             ASSERT(storage->GetPath() == path);
 #endif
 
@@ -760,9 +758,14 @@ bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPat
         // Change asset ID
         {
             auto storage = ContentStorageManager::GetStorage(tmpPath);
+            if (!storage)
+            {
+                LOG(Warning, "Cannot change asset ID.");
+                return true;
+            }
             FlaxStorage::Entry e;
             storage->GetEntry(0, e);
-            if (!storage || storage->ChangeAssetID(e, dstId))
+            if (storage->ChangeAssetID(e, dstId))
             {
                 LOG(Warning, "Cannot change asset ID.");
                 return true;
@@ -904,7 +907,7 @@ bool Content::IsAssetTypeIdInvalid(const ScriptingTypeHandle& type, const Script
     if (!type || !assetType)
         return false;
 
-#if BUILD_DEBUG
+#if BUILD_DEBUG || FLAX_TESTS
     // Peek types for debugging
     const auto& typeObj = type.GetType();
     const auto& assetTypeObj = assetType.GetType();
@@ -1002,17 +1005,11 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
     }
 
 #if ASSETS_LOADING_EXTRA_VERIFICATION
-
-    // Ensure we have valid asset info
-    ASSERT(assetInfo.TypeName.HasChars() && assetInfo.Path.HasChars());
-
-    // Check if file exists
     if (!FileSystem::FileExists(assetInfo.Path))
     {
         LOG(Error, "Cannot find file '{0}'", assetInfo.Path);
         return nullptr;
     }
-
 #endif
 
     // Find asset factory based in its type
@@ -1032,26 +1029,19 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
     }
 
 #if ASSETS_LOADING_EXTRA_VERIFICATION
-
-    // Validate type
     if (IsAssetTypeIdInvalid(type, result->GetTypeHandle()) && !result->Is(type))
     {
         LOG(Error, "Different loaded asset type! Asset: '{0}'. Expected type: {1}", assetInfo.ToString(), type.ToString());
         result->DeleteObject();
         return nullptr;
     }
-
 #endif
 
     // Register asset
     ASSERT(result->GetID() == id);
     AssetsLocker.Lock();
 #if ASSETS_LOADING_EXTRA_VERIFICATION
-    // Asset id has to be unique
-    if (Assets.ContainsKey(id))
-    {
-        CRASH;
-    }
+    ASSERT(!Assets.ContainsKey(id));
 #endif
     Assets.Add(id, result);
     AssetsLocker.Unlock();

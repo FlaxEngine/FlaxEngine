@@ -34,22 +34,26 @@ String::String(const StringAnsiView& str)
 
 void String::Set(const Char* chars, int32 length)
 {
-    if (length != _length)
+    ASSERT(length >= 0);
+    if (length == _length)
     {
-        ASSERT(length >= 0);
-        Platform::Free(_data);
+        if (_data == chars)
+            return;
+        Platform::MemoryCopy(_data, chars, length * sizeof(Char));
+    }
+    else
+    {
+        Char* data = nullptr;
         if (length != 0)
         {
-            _data = (Char*)Platform::Allocate((length + 1) * sizeof(Char), 16);
-            _data[length] = 0;
+            data = (Char*)Platform::Allocate((length + 1) * sizeof(Char), 16);
+            Platform::MemoryCopy(data, chars, length * sizeof(Char));
+            data[length] = 0;
         }
-        else
-        {
-            _data = nullptr;
-        }
+        Platform::Free(_data);
+        _data = data;
         _length = length;
     }
-    Platform::MemoryCopy(_data, chars, length * sizeof(Char));
 }
 
 void String::Set(const char* chars, int32 length)
@@ -69,7 +73,7 @@ void String::Set(const char* chars, int32 length)
         _length = length;
     }
     if (chars)
-        StringUtils::ConvertANSI2UTF16(chars, _data, length);
+        StringUtils::ConvertANSI2UTF16(chars, _data, length, _length);
 }
 
 void String::SetUTF8(const char* chars, int32 length)
@@ -108,7 +112,8 @@ void String::Append(const char* chars, int32 count)
     _data = (Char*)Platform::Allocate((_length + 1) * sizeof(Char), 16);
 
     Platform::MemoryCopy(_data, oldData, oldLength * sizeof(Char));
-    StringUtils::ConvertANSI2UTF16(chars, _data + oldLength, count * sizeof(Char));
+    StringUtils::ConvertANSI2UTF16(chars, _data + oldLength, count, _length);
+    _length += oldLength;
     _data[_length] = 0;
 
     Platform::Free(oldData);
@@ -359,23 +364,26 @@ StringAnsi::StringAnsi(const StringAnsiView& str)
 
 void StringAnsi::Set(const char* chars, int32 length)
 {
-    if (length != _length)
+    ASSERT(length >= 0);
+    if (length == _length)
     {
-        ASSERT(length >= 0);
-        Platform::Free(_data);
+        if (_data == chars)
+            return;
+        Platform::MemoryCopy(_data, chars, length * sizeof(char));
+    }
+    else
+    {
+        char* data = nullptr;
         if (length != 0)
         {
-            _data = (char*)Platform::Allocate((length + 1) * sizeof(char), 16);
-            _data[length] = 0;
+            data = (char*)Platform::Allocate((length + 1) * sizeof(char), 16);
+            Platform::MemoryCopy(data, chars, length * sizeof(char));
+            data[length] = 0;
         }
-        else
-        {
-            _data = nullptr;
-        }
+        Platform::Free(_data);
+        _data = data;
         _length = length;
     }
-
-    Platform::MemoryCopy(_data, chars, length * sizeof(char));
 }
 
 void StringAnsi::Set(const Char* chars, int32 length)

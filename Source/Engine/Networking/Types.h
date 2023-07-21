@@ -11,6 +11,7 @@ class INetworkSerializable;
 class NetworkPeer;
 class NetworkClient;
 class NetworkStream;
+class NetworkReplicationHierarchy;
 
 struct NetworkEvent;
 struct NetworkConnection;

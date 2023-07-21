@@ -61,6 +61,7 @@ namespace FlaxEngine.GUI
         private bool _isVisible = true;
         private bool _isEnabled = true;
         private bool _autoFocus = true;
+        private bool _pivotRelativeSizing = false;
         private List<int> _touchOvers;
         private RootControl.UpdateDelegate _tooltipUpdate;
 
@@ -166,7 +167,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets control background color (transparent color (alpha=0) means no background rendering)
         /// </summary>
-        [ExpandGroups, EditorDisplay("Style"), EditorOrder(2000), Tooltip("The control background color. Use transparent color (alpha=0) to hide background.")]
+        [ExpandGroups, EditorDisplay("Background Style"), EditorOrder(2000), Tooltip("The control background color. Use transparent color (alpha=0) to hide background.")]
         public Color BackgroundColor
         {
             get => _backgroundColor;

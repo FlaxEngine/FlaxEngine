@@ -3,9 +3,10 @@
 #include "GameCooker.h"
 #include "PlatformTools.h"
 #include "FlaxEngine.Gen.h"
-#include "Engine/Scripting/MainThreadManagedInvokeAction.h"
 #include "Engine/Scripting/ManagedCLR/MTypes.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
+#include "Engine/Scripting/ManagedCLR/MException.h"
+#include "Engine/Scripting/Internal/MainThreadManagedInvokeAction.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Scripting/BinaryModule.h"
@@ -23,12 +24,12 @@
 #include "Steps/CookAssetsStep.h"
 #include "Steps/PostProcessStep.h"
 #include "Engine/Platform/ConditionVariable.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Scripting/ManagedCLR/MDomain.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Content/JsonAsset.h"
 #include "Engine/Content/AssetReference.h"
-#include "Engine/Scripting/MException.h"
 #if PLATFORM_TOOLS_WINDOWS
 #include "Platform/Windows/WindowsPlatformTools.h"
 #include "Engine/Platform/Windows/WindowsPlatformSettings.h"
@@ -62,6 +63,10 @@
 #if PLATFORM_TOOLS_MAC
 #include "Platform/Mac/MacPlatformTools.h"
 #include "Engine/Platform/Mac/MacPlatformSettings.h"
+#endif
+#if PLATFORM_TOOLS_IOS
+#include "Platform/iOS/iOSPlatformTools.h"
+#include "Engine/Platform/iOS/iOSPlatformSettings.h"
 #endif
 
 namespace GameCookerImpl
@@ -139,8 +144,12 @@ const Char* ToString(const BuildPlatform platform)
         return TEXT("PlayStation 5");
     case BuildPlatform::MacOSx64:
         return TEXT("Mac x64");
+    case BuildPlatform::MacOSARM64:
+        return TEXT("Mac ARM64");
+    case BuildPlatform::iOSARM64:
+        return TEXT("iOS ARM64");
     default:
-        return TEXT("?");
+        return TEXT("");
     }
 }
 
@@ -155,8 +164,35 @@ const Char* ToString(const BuildConfiguration configuration)
     case BuildConfiguration::Release:
         return TEXT("Release");
     default:
-        return TEXT("?");
+        return TEXT("");
     }
+}
+
+const Char* ToString(const DotNetAOTModes mode)
+{
+    switch (mode)
+    {
+    case DotNetAOTModes::None:
+        return TEXT("None");
+    case DotNetAOTModes::ILC:
+        return TEXT("ILC");
+    case DotNetAOTModes::MonoAOTDynamic:
+        return TEXT("MonoAOTDynamic");
+    case DotNetAOTModes::MonoAOTStatic:
+        return TEXT("MonoAOTStatic");
+    default:
+        return TEXT("");
+    }
+}
+
+bool PlatformTools::IsNativeCodeFile(CookingData& data, const String& file)
+{
+    const String filename = StringUtils::GetFileName(file);
+    if (filename.Contains(TEXT(".CSharp")) ||
+        filename.Contains(TEXT("Newtonsoft.Json")))
+        return false;
+    // TODO: maybe use Mono.Cecil via Flax.Build to read assembly image metadata and check if it contains C#?
+    return true;
 }
 
 bool CookingData::AssetTypeStatistics::operator<(const AssetTypeStatistics& other) const
@@ -211,6 +247,71 @@ String CookingData::GetPlatformBinariesRoot() const
     return Globals::StartupFolder / TEXT("Source/Platforms") / Tools->GetName() / TEXT("Binaries");
 }
 
+void CookingData::GetBuildPlatformName(const Char*& platform, const Char*& architecture) const
+{
+    switch (Platform)
+    {
+    case BuildPlatform::Windows32:
+        platform = TEXT("Windows");
+        architecture = TEXT("x86");
+        break;
+    case BuildPlatform::Windows64:
+        platform = TEXT("Windows");
+        architecture = TEXT("x64");
+        break;
+    case BuildPlatform::UWPx86:
+        platform = TEXT("UWP");
+        architecture = TEXT("x86");
+        break;
+    case BuildPlatform::UWPx64:
+        platform = TEXT("UWP");
+        architecture = TEXT("x64");
+        break;
+    case BuildPlatform::XboxOne:
+        platform = TEXT("XboxOne");
+        architecture = TEXT("x64");
+        break;
+    case BuildPlatform::LinuxX64:
+        platform = TEXT("Linux");
+        architecture = TEXT("x64");
+        break;
+    case BuildPlatform::PS4:
+        platform = TEXT("PS4");
+        architecture = TEXT("x64");
+        break;
+    case BuildPlatform::XboxScarlett:
+        platform = TEXT("XboxScarlett");
+        architecture = TEXT("x64");
+        break;
+    case BuildPlatform::AndroidARM64:
+        platform = TEXT("Android");
+        architecture = TEXT("ARM64");
+        break;
+    case BuildPlatform::Switch:
+        platform = TEXT("Switch");
+        architecture = TEXT("ARM64");
+        break;
+    case BuildPlatform::PS5:
+        platform = TEXT("PS5");
+        architecture = TEXT("x64");
+        break;
+    case BuildPlatform::MacOSx64:
+        platform = TEXT("Mac");
+        architecture = TEXT("x64");
+        break;
+    case BuildPlatform::MacOSARM64:
+        platform = TEXT("Mac");
+        architecture = TEXT("ARM64");
+        break;
+    case BuildPlatform::iOSARM64:
+        platform = TEXT("iOS");
+        architecture = TEXT("ARM64");
+        break;
+    default:
+        LOG(Fatal, "Unknown or unsupported build platform.");
+    }
+}
+
 void CookingData::StepProgress(const String& info, const float stepProgress) const
 {
     const float singleStepProgress = 1.0f / (StepsCount + 1);
@@ -242,7 +343,7 @@ void CookingData::AddRootEngineAsset(const String& internalPath)
     }
 }
 
-void CookingData::Error(const String& msg)
+void CookingData::Error(const StringView& msg)
 {
     LOG_STR(Error, msg);
 }
@@ -339,6 +440,14 @@ PlatformTools* GameCooker::GetTools(BuildPlatform platform)
 #if PLATFORM_TOOLS_MAC
         case BuildPlatform::MacOSx64:
             result = New<MacPlatformTools>(ArchitectureType::x64);
+            break;
+        case BuildPlatform::MacOSARM64:
+            result = New<MacPlatformTools>(ArchitectureType::ARM64);
+            break;
+#endif
+#if PLATFORM_TOOLS_IOS
+        case BuildPlatform::iOSARM64:
+            result = New<iOSPlatformTools>();
             break;
 #endif
         }
@@ -470,7 +579,10 @@ void GameCooker::GetCurrentPlatform(PlatformType& platform, BuildPlatform& build
         buildPlatform = BuildPlatform::PS5;
         break;
     case PlatformType::Mac:
-        buildPlatform = BuildPlatform::MacOSx64;
+        buildPlatform = PLATFORM_ARCH_ARM || PLATFORM_ARCH_ARM64 ? BuildPlatform::MacOSARM64 : BuildPlatform::MacOSx64;
+        break;
+    case PlatformType::iOS:
+        buildPlatform = BuildPlatform::iOSARM64;
         break;
     default: ;
     }
@@ -511,9 +623,9 @@ void GameCookerImpl::OnCollectAssets(HashSet<Guid>& assets)
         ASSERT(GameCookerImpl::Internal_OnCollectAssets);
     }
 
-    MCore::AttachThread();
+    MCore::Thread::Attach();
     MObject* exception = nullptr;
-    auto list = (MonoArray*)Internal_OnCollectAssets->Invoke(nullptr, nullptr, &exception);
+    auto list = (MArray*)Internal_OnCollectAssets->Invoke(nullptr, nullptr, &exception);
     if (exception)
     {
         MException ex(exception);
@@ -547,13 +659,13 @@ bool GameCookerImpl::Build()
         Steps.Add(New<PostProcessStep>());
     }
 
-    MCore::AttachThread();
+    MCore::Thread::Attach();
 
     // Build Started
     CallEvent(GameCooker::EventType::BuildStarted);
+    data.Tools->OnBuildStarted(data);
     for (int32 stepIndex = 0; stepIndex < Steps.Count(); stepIndex++)
         Steps[stepIndex]->OnBuildStarted(data);
-    data.Tools->OnBuildStarted(data);
     data.InitProgress(Steps.Count());
 
     // Execute all steps in a sequence
@@ -602,7 +714,15 @@ bool GameCookerImpl::Build()
                 const String commandLine = commandLineFormat.HasChars() ? String::Format(*commandLineFormat, gameArgs) : gameArgs;
                 if (workingDir.IsEmpty())
                     workingDir = data.NativeCodeOutputPath;
-                Platform::StartProcess(executableFile, commandLine, workingDir);
+                CreateProcessSettings procSettings;
+                procSettings.FileName = executableFile;
+                procSettings.Arguments = commandLine;
+                procSettings.WorkingDirectory = workingDir;
+                procSettings.HiddenWindow = false;
+                procSettings.WaitForEnd = false;
+                procSettings.LogOutput = false;
+                procSettings.ShellExecute = true;
+                Platform::CreateProcess(procSettings);
             }
             else
             {
@@ -612,9 +732,9 @@ bool GameCookerImpl::Build()
     }
     IsRunning = false;
     CancelFlag = 0;
-    data.Tools->OnBuildEnded(data, failed);
     for (int32 stepIndex = 0; stepIndex < Steps.Count(); stepIndex++)
         Steps[stepIndex]->OnBuildEnded(data, failed);
+    data.Tools->OnBuildEnded(data, failed);
     CallEvent(failed ? GameCooker::EventType::BuildFailed : GameCooker::EventType::BuildDone);
     Delete(Data);
     Data = nullptr;
@@ -667,7 +787,7 @@ void GameCookerService::Update()
             }
 
             MainThreadManagedInvokeAction::ParamsBuilder params;
-            params.AddParam(ProgressMsg, Scripting::GetScriptsDomain()->GetNative());
+            params.AddParam(ProgressMsg, Scripting::GetScriptsDomain());
             params.AddParam(ProgressValue);
             MainThreadManagedInvokeAction::Invoke(Internal_OnProgress, params);
             GameCooker::OnProgress(ProgressMsg, ProgressValue);

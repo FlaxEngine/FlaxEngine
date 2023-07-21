@@ -12,6 +12,7 @@
 /// </summary>
 API_STRUCT(InBuild) struct FLAXENGINE_API BoundingFrustum
 {
+    friend CollisionsHelper;
 private:
     Matrix _matrix;
 
@@ -33,9 +34,7 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    BoundingFrustum()
-    {
-    }
+    BoundingFrustum() = default;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BoundingFrustum"/> struct.

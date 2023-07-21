@@ -4,12 +4,16 @@ on:
     - cron: '15 4 * * *'
   workflow_dispatch:
 
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: false
+
 jobs:
 
   # Windows
   package-windows-editor:
     name: Editor (Windows)
-    runs-on: "windows-2019"
+    runs-on: "windows-2022"
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
@@ -19,6 +23,14 @@ jobs:
         git lfs pull
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+    - name: Print .NET info
+      run: |
+        dotnet --info
+        dotnet workload --info
     - name: Build
       run: |
         .\PackageEditor.bat -arch=x64 -platform=Windows -deployOutput=Output
@@ -34,7 +46,7 @@ jobs:
         path: Output/EditorDebugSymbols.zip
   package-windows-game:
     name: Game (Windows)
-    runs-on: "windows-2019"
+    runs-on: "windows-2022"
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
@@ -44,6 +56,14 @@ jobs:
         git lfs pull
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+    - name: Print .NET info
+      run: |
+        dotnet --info
+        dotnet workload --info
     - name: Build
       run: |
         .\PackagePlatforms.bat -arch=x64 -platform=Windows -deployOutput=Output
@@ -72,6 +92,14 @@ jobs:
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+    - name: Print .NET info
+      run: |
+        dotnet --info
+        dotnet workload --info
     - name: Build
       run: |
         ./PackageEditor.sh -arch=x64 -platform=Linux -deployOutput=Output
@@ -98,6 +126,14 @@ jobs:
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+    - name: Print .NET info
+      run: |
+        dotnet --info
+        dotnet workload --info
     - name: Build
       run: |
         ./PackagePlatforms.sh -arch=x64 -platform=Linux -deployOutput=Output
@@ -120,6 +156,14 @@ jobs:
         git lfs pull
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+    - name: Print .NET info
+      run: |
+        dotnet --info
+        dotnet workload --info
     - name: Build
       run: |
         ./PackageEditor.command -arch=x64 -platform=Mac -deployOutput=Output
@@ -140,6 +184,14 @@ jobs:
         git lfs pull
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+    - name: Print .NET info
+      run: |
+        dotnet --info
+        dotnet workload --info
     - name: Build
       run: |
         ./PackagePlatforms.command -arch=x64 -platform=Mac -deployOutput=Output

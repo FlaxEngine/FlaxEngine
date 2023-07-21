@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,19 +22,20 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_PHYSICS_NX_SCENEQUERYREPORT
-#define PX_PHYSICS_NX_SCENEQUERYREPORT
+#ifndef PX_QUERY_REPORT_H
+#define PX_QUERY_REPORT_H
 /** \addtogroup scenequery
 @{
 */
 #include "foundation/PxVec3.h"
 #include "foundation/PxFlags.h"
 #include "foundation/PxAssert.h"
+#include "geometry/PxGeometryHit.h"
+#include "geometry/PxGeometryQueryContext.h"
 #include "PxPhysXConfig.h"
 
 #if !PX_DOXYGEN
@@ -45,54 +45,6 @@ namespace physx
 
 class PxShape;
 class PxRigidActor;
-
-/**
-\brief Scene query and geometry query behavior flags.
-
-PxHitFlags are used for 3 different purposes:
-
-1) To request hit fields to be filled in by scene queries (such as hit position, normal, face index or UVs).
-2) Once query is completed, to indicate which fields are valid (note that a query may produce more valid fields than requested).
-3) To specify additional options for the narrow phase and mid-phase intersection routines.
-
-All these flags apply to both scene queries and geometry queries (PxGeometryQuery).
-
-@see PxRaycastHit PxSweepHit PxOverlapHit PxScene.raycast PxScene.sweep PxScene.overlap PxGeometryQuery PxFindFaceIndex
-*/
-struct PxHitFlag
-{
-	enum Enum
-	{
-		ePOSITION					= (1<<0),	//!< "position" member of #PxQueryHit is valid
-		eNORMAL						= (1<<1),	//!< "normal" member of #PxQueryHit is valid
-		eUV							= (1<<3),	//!< "u" and "v" barycentric coordinates of #PxQueryHit are valid. Not applicable to sweep queries.
-		eASSUME_NO_INITIAL_OVERLAP	= (1<<4),	//!< Performance hint flag for sweeps when it is known upfront there's no initial overlap.
-												//!< NOTE: using this flag may cause undefined results if shapes are initially overlapping.
-		eMESH_MULTIPLE				= (1<<5),	//!< Report all hits for meshes rather than just the first. Not applicable to sweep queries.
-		eMESH_ANY					= (1<<6),	//!< Report any first hit for meshes. If neither eMESH_MULTIPLE nor eMESH_ANY is specified,
-												//!< a single closest hit will be reported for meshes.
-		eMESH_BOTH_SIDES			= (1<<7),	//!< Report hits with back faces of mesh triangles. Also report hits for raycast
-												//!< originating on mesh surface and facing away from the surface normal. Not applicable to sweep queries.
-												//!< Please refer to the user guide for heightfield-specific differences.
-		ePRECISE_SWEEP				= (1<<8),	//!< Use more accurate but slower narrow phase sweep tests.
-												//!< May provide better compatibility with PhysX 3.2 sweep behavior.
-		eMTD						= (1<<9),	//!< Report the minimum translation depth, normal and contact point.
-		eFACE_INDEX					= (1<<10),	//!< "face index" member of #PxQueryHit is valid
-
-		eDEFAULT					= ePOSITION|eNORMAL|eFACE_INDEX,
-
-		/** \brief Only this subset of flags can be modified by pre-filter. Other modifications will be discarded. */
-		eMODIFIABLE_FLAGS			= eMESH_MULTIPLE|eMESH_BOTH_SIDES|eASSUME_NO_INITIAL_OVERLAP|ePRECISE_SWEEP
-	};
-};
-
-
-/**
-\brief collection of set bits defined in PxHitFlag.
-
-@see PxHitFlag
-*/
-PX_FLAGS_TYPEDEF(PxHitFlag, PxU16)
 
 /**
 \brief Combines a shape pointer and the actor the shape belongs to into one memory location.
@@ -110,100 +62,10 @@ struct PxActorShape
 	PxShape*		shape;
 };
 
-
-/**
-\brief Scene query hit information.
-*/
-struct PxQueryHit : public PxActorShape
-{
-	PX_INLINE			PxQueryHit() : faceIndex(0xFFFFffff) {}
-
-	/**
-	Face index of touched triangle, for triangle meshes, convex meshes and height fields.
-
-	\note This index will default to 0xFFFFffff value for overlap queries.
-	\note Please refer to the user guide for more details for sweep queries.
-	\note This index is remapped by mesh cooking. Use #PxTriangleMesh::getTrianglesRemap() to convert to original mesh index.
-	\note For convex meshes use #PxConvexMesh::getPolygonData() to retrieve touched polygon data.
-	*/
-	PxU32				faceIndex;
-};
-
-/**
-\brief Scene query hit information for raycasts and sweeps returning hit position and normal information.
-
-::PxHitFlag flags can be passed to scene query functions, as an optimization, to cause the SDK to
-only generate specific members of this structure.
-*/
-struct PxLocationHit : public PxQueryHit
-{
-	PX_INLINE			PxLocationHit() : flags(0), position(PxVec3(0)), normal(PxVec3(0)), distance(PX_MAX_REAL)	{}
-
-	/**
-	\note For raycast hits: true for shapes overlapping with raycast origin.
-	\note For sweep hits: true for shapes overlapping at zero sweep distance.
-
-	@see PxRaycastHit PxSweepHit
-	*/
-	PX_INLINE bool		hadInitialOverlap() const { return (distance <= 0.0f); }
-
-	// the following fields are set in accordance with the #PxHitFlags
-	PxHitFlags			flags;		//!< Hit flags specifying which members contain valid values.
-	PxVec3				position;	//!< World-space hit position (flag: #PxHitFlag::ePOSITION)
-	PxVec3				normal;		//!< World-space hit normal (flag: #PxHitFlag::eNORMAL)
-
-	/**
-	\brief	Distance to hit.
-	\note	If the eMTD flag is used, distance will be a negative value if shapes are overlapping indicating the penetration depth.
-	\note	Otherwise, this value will be >= 0 */
-	PxF32				distance;
-};
-
-
-/**
-\brief Stores results of raycast queries.
-
-::PxHitFlag flags can be passed to raycast function, as an optimization, to cause the SDK to only compute specified members of this
-structure.
-
-Some members like barycentric coordinates are currently only computed for triangle meshes and height fields, but next versions
-might provide them in other cases. The client code should check #flags to make sure returned values are valid.
-
-@see PxScene.raycast PxBatchQuery.raycast
-*/
-struct PxRaycastHit : public PxLocationHit
-{
-	PX_INLINE			PxRaycastHit() : u(0.0f), v(0.0f)	{}
-
-	// the following fields are set in accordance with the #PxHitFlags
-
-	PxReal	u, v;			//!< barycentric coordinates of hit point, for triangle mesh and height field (flag: #PxHitFlag::eUV)
-#if !PX_P64_FAMILY
-	PxU32	padTo16Bytes[3];
-#endif
-};
-
-
-/**
-\brief Stores results of overlap queries.
-
-@see PxScene.overlap PxBatchQuery.overlap
-*/
-struct PxOverlapHit: public PxQueryHit { PxU32 padTo16Bytes; };
-
-
-/**
-\brief Stores results of sweep queries.
-
-@see PxScene.sweep PxBatchQuery.sweep
-*/
-struct PxSweepHit : public PxLocationHit
-{
-	PX_INLINE			PxSweepHit() {}
-
-	PxU32				padTo16Bytes;
-};
-
+// Extends geom hits with Px object pointers
+struct PxRaycastHit : PxGeomRaycastHit, PxActorShape	{};
+struct PxOverlapHit : PxGeomOverlapHit, PxActorShape	{};
+struct PxSweepHit : PxGeomSweepHit, PxActorShape		{};
 
 /**
 \brief Describes query behavior after returning a partial query result via a callback.
@@ -214,7 +76,6 @@ If callback returns false, traversal will stop, callback will not be issued agai
 @see PxHitCallback
 */
 typedef bool PxAgain;
-
 
 /**
 \brief	This callback class facilitates reporting scene query hits (intersections) to the user.
@@ -230,7 +91,7 @@ User overrides the virtual processTouches function to receive hits in (possibly 
 @see PxHitBuffer PxRaycastHit PxSweepHit PxOverlapHit PxRaycastCallback PxOverlapCallback PxSweepCallback
 */
 template<typename HitType>
-struct PxHitCallback
+struct PxHitCallback : PxQueryThreadContext
 {
 	HitType		block;			//!< Holds the closest blocking hit result for the query. Invalid if hasBlock is false.
 	bool		hasBlock;		//!< Set to true if there was a blocking hit during query.
@@ -293,7 +154,6 @@ struct PxHitCallback
 	PX_FORCE_INLINE bool hasAnyHits() { return (hasBlock || (nbTouches > 0)); }
 };
 
-
 /**
 \brief	Returns scene query hits (intersections) to the user in a preallocated buffer.
 
@@ -340,7 +200,6 @@ protected:
 	virtual PxAgain processTouches(const HitType* buffer, PxU32 nbHits) { PX_UNUSED(buffer); PX_UNUSED(nbHits); return false; }
 };
 
-
 /** \brief Raycast query callback. */
 typedef PxHitCallback<PxRaycastHit> PxRaycastCallback;
 
@@ -381,6 +240,41 @@ struct PxSweepBufferN : public PxHitBuffer<PxSweepHit>
 {
 	PxSweepHit hits[N];
 	PxSweepBufferN() : PxHitBuffer<PxSweepHit>(hits, N) {}
+};
+
+/**
+\brief single hit cache for scene queries.
+
+If a cache object is supplied to a scene query, the cached actor/shape pair is checked for intersection first.
+\note Filters are not executed for the cached shape.
+\note If intersection is found, the hit is treated as blocking.
+\note Typically actor and shape from the last PxHitCallback.block query result is used as a cached actor/shape pair.
+\note Using past touching hits as cache will produce incorrect behavior since the cached hit will always be treated as blocking.
+\note Cache is only used if no touch buffer was provided, for single nearest blocking hit queries and queries using eANY_HIT flag.
+\note if non-zero touch buffer was provided, cache will be ignored
+
+\note It is the user's responsibility to ensure that the shape and actor are valid, so care must be taken
+when deleting shapes to invalidate cached references.
+
+The faceIndex field is an additional hint for a mesh or height field which is not currently used.
+
+@see PxScene.raycast
+*/
+struct PxQueryCache
+{
+	/**
+	\brief constructor sets to default 
+	*/
+	PX_INLINE PxQueryCache() : shape(NULL), actor(NULL), faceIndex(0xffffffff) {}
+
+	/**
+	\brief constructor to set properties
+	*/
+	PX_INLINE PxQueryCache(PxShape* s, PxU32 findex) : shape(s), actor(NULL), faceIndex(findex) {}
+
+	PxShape*		shape;		//!< Shape to test for intersection first
+	PxRigidActor*	actor;		//!< Actor to which the shape belongs
+	PxU32			faceIndex;	//!< Triangle index to test first - NOT CURRENTLY SUPPORTED
 };
 
 #if !PX_DOXYGEN

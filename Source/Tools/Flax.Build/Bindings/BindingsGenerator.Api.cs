@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using BuildData = Flax.Build.Builder.BuildData;
 
 namespace Flax.Build.Bindings
@@ -90,15 +91,15 @@ namespace Flax.Build.Bindings
             },
             {
                 new TypeInfo("Char"),
-                new LangType("char")
+                new LangType("char", "Char")
             },
             {
                 new TypeInfo("char"),
-                new LangType("sbyte")
+                new LangType("sbyte", "char")
             },
             {
                 new TypeInfo("void*"),
-                new LangType("IntPtr")
+                new LangType("IntPtr", "void*")
             },
         };
 
@@ -218,6 +219,40 @@ namespace Flax.Build.Bindings
 
             return false;
         }
+
+#if USE_NETCORE
+        /// <summary>
+        /// Check if structure contains unblittable types that would require custom marshaller for the structure.
+        /// </summary>
+        public static bool UseCustomMarshalling(BuildData buildData, StructureInfo structureInfo, ApiTypeInfo caller)
+        {
+            if (structureInfo.Fields.Any(x => !x.IsStatic &&
+                                         (x.Type.IsObjectRef || x.Type.Type == "Dictionary" || x.Type.Type == "Version")
+                                         && x.Type.Type != "uint8" && x.Type.Type != "byte"))
+            {
+                return true;
+            }
+
+            foreach (var field in structureInfo.Fields)
+            {
+                if (field.Type.Type == structureInfo.FullNameNative)
+                    continue;
+                if (field.IsStatic)
+                    continue;
+
+                if (field.Type.Type == "String")
+                    return true;
+
+                var fieldApiType = FindApiTypeInfo(buildData, field.Type, caller);
+                if (fieldApiType is StructureInfo fieldStructureInfo && UseCustomMarshalling(buildData, fieldStructureInfo, caller))
+                    return true;
+                else if (fieldApiType is ClassInfo)
+                    return true;
+            }
+
+            return false;
+        }
+#endif
 
         /// <summary>
         /// Finds the API type information.

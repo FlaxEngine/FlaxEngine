@@ -8,6 +8,7 @@ using FlaxEditor.GUI.Input;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Surface.ContextMenu
 {
@@ -135,7 +136,6 @@ namespace FlaxEditor.Surface.ContextMenu
                 Width = Width - 4,
                 X = 2,
                 Y = 1,
-                BackgroundColor = Style.Current.BackgroundNormal,
             };
 
             // Title bar
@@ -363,7 +363,6 @@ namespace FlaxEditor.Surface.ContextMenu
                     Profiler.BeginEvent("VisjectCM.RemoveGroup");
                     if (group.Archetypes.Count == 0)
                     {
-                        Debug.Log("Remove");
                         _groups.RemoveAt(i);
                         group.Dispose();
                     }

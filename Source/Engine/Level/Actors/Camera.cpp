@@ -46,6 +46,11 @@ Camera::Camera(const SpawnParams& params)
 #endif
 }
 
+bool Camera::GetUsePerspective() const
+{
+    return _usePerspective;
+}
+
 void Camera::SetUsePerspective(bool value)
 {
     if (_usePerspective != value)
@@ -53,6 +58,11 @@ void Camera::SetUsePerspective(bool value)
         _usePerspective = value;
         UpdateCache();
     }
+}
+
+float Camera::GetFieldOfView() const
+{
+    return _fov;
 }
 
 void Camera::SetFieldOfView(float value)
@@ -65,14 +75,24 @@ void Camera::SetFieldOfView(float value)
     }
 }
 
+float Camera::GetCustomAspectRatio() const
+{
+    return _customAspectRatio;
+}
+
 void Camera::SetCustomAspectRatio(float value)
 {
     value = Math::Clamp(value, 0.0f, 100.0f);
-    if (_customAspectRatio != value)
+    if (Math::NotNearEqual(_customAspectRatio, value))
     {
         _customAspectRatio = value;
         UpdateCache();
     }
+}
+
+float Camera::GetNearPlane() const
+{
+    return _near;
 }
 
 void Camera::SetNearPlane(float value)
@@ -85,6 +105,11 @@ void Camera::SetNearPlane(float value)
     }
 }
 
+float Camera::GetFarPlane() const
+{
+    return _far;
+}
+
 void Camera::SetFarPlane(float value)
 {
     value = Math::Max(value, _near + 1.0f);
@@ -93,6 +118,11 @@ void Camera::SetFarPlane(float value)
         _far = value;
         UpdateCache();
     }
+}
+
+float Camera::GetOrthographicScale() const
+{
+    return _orthoScale;
 }
 
 void Camera::SetOrthographicScale(float value)
@@ -119,6 +149,20 @@ void Camera::ProjectPoint(const Vector3& worldSpaceLocation, Float2& cameraViewp
     Vector3::Transform(worldSpaceLocation, vp, clipSpaceLocation);
     viewport.Project(worldSpaceLocation, vp, clipSpaceLocation);
     cameraViewportSpaceLocation = Float2(clipSpaceLocation);
+}
+
+void Camera::UnprojectPoint(const Float2& gameWindowSpaceLocation, float depth, Vector3& worldSpaceLocation) const
+{
+    UnprojectPoint(gameWindowSpaceLocation, depth, worldSpaceLocation, GetViewport());
+}
+
+void Camera::UnprojectPoint(const Float2& cameraViewportSpaceLocation, float depth, Vector3& worldSpaceLocation, const Viewport& viewport) const
+{
+    Matrix v, p, ivp;
+    GetMatrices(v, p, viewport);
+    Matrix::Multiply(v, p, ivp);
+    ivp.Invert();
+    viewport.Unproject(Vector3(cameraViewportSpaceLocation, depth), ivp, worldSpaceLocation);
 }
 
 bool Camera::IsPointOnView(const Vector3& worldSpaceLocation) const
@@ -191,7 +235,7 @@ Viewport Camera::GetViewport() const
     if (Editor::Managed)
         result.Size = Editor::Managed->GetGameWindowSize();
 #else
-	// game
+	// Game
 	auto mainWin = Engine::MainWindow;
 	if (mainWin)
 	{
@@ -201,7 +245,7 @@ Viewport Camera::GetViewport() const
 #endif
 
     // Fallback to the default value
-    if (result.Width <= ZeroTolerance)
+    if (result.Size.MinValue() <= ZeroTolerance)
         result.Size = Float2(1280, 720);
 
     return result;

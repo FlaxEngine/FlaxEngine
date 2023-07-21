@@ -2,7 +2,8 @@
 
 #include "MUtils.h"
 #include "MClass.h"
-#include "MType.h"
+#include "MCore.h"
+#include "MDomain.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Core/Types/Version.h"
@@ -19,284 +20,233 @@
 #include "Engine/Core/Math/Ray.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingObject.h"
-#include "Engine/Scripting/StdTypesContainer.h"
-#include "Engine/Scripting/InternalCalls/ManagedDictionary.h"
+#include "Engine/Scripting/Internal/StdTypesContainer.h"
+#include "Engine/Scripting/Internal/ManagedDictionary.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Content/Asset.h"
 
-#if USE_MONO
-
-// Inlined mono private types to access MonoType internals
-
-typedef struct _MonoGenericClass MonoGenericClass;
-typedef struct _MonoGenericContext MonoGenericContext;
-
-struct _MonoGenericInst
-{
-    unsigned int id;
-    unsigned int type_argc : 22;
-    unsigned int is_open : 1;
-    MonoType* type_argv[MONO_ZERO_LEN_ARRAY];
-};
-
-struct _MonoGenericContext
-{
-    MonoGenericInst* class_inst;
-    MonoGenericInst* method_inst;
-};
-
-struct _MonoGenericClass
-{
-    MonoClass* container_class;
-    MonoGenericContext context;
-    unsigned int is_dynamic : 1;
-    unsigned int is_tb_open : 1;
-    unsigned int need_sync : 1;
-    MonoClass* cached_class;
-    class MonoImageSet* owner;
-};
-
-struct _MonoType
-{
-    union
-    {
-        MonoClass* klass;
-        MonoType* type;
-        MonoArrayType* array;
-        MonoMethodSignature* method;
-        MonoGenericParam* generic_param;
-        MonoGenericClass* generic_class;
-    } data;
-
-    unsigned int attrs : 16;
-    MonoTypeEnum type : 8;
-    unsigned int has_cmods : 1;
-    unsigned int byref : 1;
-    unsigned int pinned : 1;
-};
+#if USE_CSHARP
 
 namespace
 {
     // typeName in format System.Collections.Generic.Dictionary`2[KeyType,ValueType]
-    void GetDictionaryKeyValueTypes(const StringAnsiView& typeName, MonoClass*& keyClass, MonoClass*& valueClass)
+    void GetDictionaryKeyValueTypes(const StringAnsiView& typeName, MClass*& keyClass, MClass*& valueClass)
     {
         const int32 keyStart = typeName.Find('[');
         const int32 keyEnd = typeName.Find(',');
         const int32 valueEnd = typeName.Find(']');
         const StringAnsiView keyTypename(*typeName + keyStart + 1, keyEnd - keyStart - 1);
         const StringAnsiView valueTypename(*typeName + keyEnd + 1, valueEnd - keyEnd - 1);
-        keyClass = Scripting::FindClassNative(keyTypename);
-        valueClass = Scripting::FindClassNative(valueTypename);
+        keyClass = Scripting::FindClass(keyTypename);
+        valueClass = Scripting::FindClass(valueTypename);
     }
 }
 
-StringView MUtils::ToString(MonoString* str)
+StringView MUtils::ToString(MString* str)
 {
     if (str == nullptr)
         return StringView::Empty;
-    return StringView((const Char*)mono_string_chars(str), (int32)mono_string_length(str));
+    return MCore::String::GetChars(str);
 }
 
-StringAnsi MUtils::ToStringAnsi(MonoString* str)
+StringAnsi MUtils::ToStringAnsi(MString* str)
 {
     if (str == nullptr)
         return StringAnsi::Empty;
-    return StringAnsi((const Char*)mono_string_chars(str), (int32)mono_string_length(str));
+    return StringAnsi(MCore::String::GetChars(str));
 }
 
-void MUtils::ToString(MonoString* str, String& result)
+void MUtils::ToString(MString* str, String& result)
 {
     if (str)
-        result.Set((const Char*)mono_string_chars(str), (int32)mono_string_length(str));
+    {
+        const StringView chars = MCore::String::GetChars(str);
+        result.Set(chars.Get(), chars.Length());
+    }
     else
         result.Clear();
 }
 
-void MUtils::ToString(MonoString* str, StringView& result)
+void MUtils::ToString(MString* str, StringView& result)
 {
     if (str)
-    {
-        result = StringView((const Char*)mono_string_chars(str), (int32)mono_string_length(str));
-    }
+        result = MCore::String::GetChars(str);
     else
-    {
         result = StringView();
-    }
 }
 
-void MUtils::ToString(MonoString* str, Variant& result)
+void MUtils::ToString(MString* str, Variant& result)
 {
-    result.SetString(str ? StringView((const Char*)mono_string_chars(str), (int32)mono_string_length(str)) : StringView::Empty);
+    result.SetString(str ? MCore::String::GetChars(str) : StringView::Empty);
 }
 
-void MUtils::ToString(MonoString* str, MString& result)
+void MUtils::ToString(MString* str, StringAnsi& result)
 {
     if (str)
-        result.Set((const Char*)mono_string_chars(str), (int32)mono_string_length(str));
+    {
+        const StringView chars = MCore::String::GetChars(str);
+        result.Set(chars.Get(), chars.Length());
+    }
     else
         result.Clear();
 }
 
-MonoString* MUtils::ToString(const char* str)
+MString* MUtils::ToString(const char* str)
 {
     if (str == nullptr || *str == 0)
-        return mono_string_empty(mono_domain_get());
-    return mono_string_new(mono_domain_get(), str);
+        return MCore::String::GetEmpty();
+    return MCore::String::New(str, StringUtils::Length(str));
 }
 
-MonoString* MUtils::ToString(const StringAnsi& str)
+MString* MUtils::ToString(const StringAnsi& str)
 {
     if (str.IsEmpty())
-        return mono_string_empty(mono_domain_get());
-    return mono_string_new(mono_domain_get(), str.Get());
+        return MCore::String::GetEmpty();
+    return MCore::String::New(str.Get(), str.Length());
 }
 
-MonoString* MUtils::ToString(const String& str)
+MString* MUtils::ToString(const String& str)
 {
     if (str.IsEmpty())
-        return mono_string_empty(mono_domain_get());
-    return mono_string_new_utf16(mono_domain_get(), (const mono_unichar2*)*str, str.Length());
+        return MCore::String::GetEmpty();
+    return MCore::String::New(str.Get(), str.Length());
 }
 
-MonoString* MUtils::ToString(const String& str, MonoDomain* domain)
+MString* MUtils::ToString(const String& str, MDomain* domain)
 {
     if (str.IsEmpty())
-        return mono_string_empty(domain);
-    return mono_string_new_utf16(domain, (const mono_unichar2*)*str, str.Length());
+        return MCore::String::GetEmpty(domain);
+    return MCore::String::New(str.Get(), str.Length(), domain);
 }
 
-MonoString* MUtils::ToString(const StringAnsiView& str)
+MString* MUtils::ToString(const StringAnsiView& str)
 {
     if (str.IsEmpty())
-        return mono_string_empty(mono_domain_get());
-    return mono_string_new_len(mono_domain_get(), str.Get(), str.Length());
+        return MCore::String::GetEmpty();
+    return MCore::String::New(str.Get(), str.Length());
 }
 
-MonoString* MUtils::ToString(const StringView& str)
+MString* MUtils::ToString(const StringView& str)
 {
     if (str.IsEmpty())
-        return mono_string_empty(mono_domain_get());
-    return mono_string_new_utf16(mono_domain_get(), (const mono_unichar2*)*str, str.Length());
+        return MCore::String::GetEmpty();
+    return MCore::String::New(str.Get(), str.Length());
 }
 
-MonoString* MUtils::ToString(const StringView& str, MonoDomain* domain)
+MString* MUtils::ToString(const StringView& str, MDomain* domain)
 {
     if (str.IsEmpty())
-        return mono_string_empty(domain);
-    return mono_string_new_utf16(domain, (const mono_unichar2*)*str, str.Length());
+        return MCore::String::GetEmpty(domain);
+    return MCore::String::New(str.Get(), str.Length(), domain);
 }
 
-ScriptingTypeHandle MUtils::UnboxScriptingTypeHandle(MonoReflectionType* value)
+ScriptingTypeHandle MUtils::UnboxScriptingTypeHandle(MTypeObject* value)
 {
-    MonoClass* klass = GetClass(value);
+    MClass* klass = GetClass(value);
     if (!klass)
         return ScriptingTypeHandle();
-    const MString typeName = MUtils::GetClassFullname(klass);
+    const StringAnsi& typeName = klass->GetFullName();
     const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeName);
     if (!typeHandle)
         LOG(Warning, "Unknown scripting type {}", String(typeName));
     return typeHandle;
 }
 
-MonoReflectionType* MUtils::BoxScriptingTypeHandle(const ScriptingTypeHandle& value)
+MTypeObject* MUtils::BoxScriptingTypeHandle(const ScriptingTypeHandle& value)
 {
-    MonoReflectionType* result = nullptr;
+    MTypeObject* result = nullptr;
     if (value)
     {
-        MonoType* monoType = mono_class_get_type(value.GetType().ManagedClass->GetNative());
-        result = mono_type_get_object(mono_domain_get(), monoType);
+        MType* mType = value.GetType().ManagedClass->GetType();
+        result = INTERNAL_TYPE_GET_OBJECT(mType);
     }
     return result;
 }
 
-VariantType MUtils::UnboxVariantType(MonoReflectionType* value)
+VariantType MUtils::UnboxVariantType(MType* type)
 {
-    if (value == nullptr)
+    if (!type)
         return VariantType(VariantType::Null);
-    return MoveTemp(UnboxVariantType(mono_reflection_type_get_type(value)));
-}
-
-VariantType MUtils::UnboxVariantType(MonoType* monoType)
-{
     const auto& stdTypes = *StdTypesContainer::Instance();
-    const auto klass = mono_type_get_class(monoType);
+    MClass* klass = MCore::Type::GetClass(type);
+    MTypes types = MCore::Type::GetType(type);
 
     // Fast type detection for in-built types
-    switch (monoType->type)
+    switch (types)
     {
-    case MONO_TYPE_VOID:
+    case MTypes::Void:
         return VariantType(VariantType::Void);
-    case MONO_TYPE_BOOLEAN:
+    case MTypes::Boolean:
         return VariantType(VariantType::Bool);
-    case MONO_TYPE_I1:
-    case MONO_TYPE_I2:
+    case MTypes::I1:
+    case MTypes::I2:
         return VariantType(VariantType::Int16);
-    case MONO_TYPE_U1:
-    case MONO_TYPE_U2:
+    case MTypes::U1:
+    case MTypes::U2:
         return VariantType(VariantType::Uint16);
-    case MONO_TYPE_I4:
-    case MONO_TYPE_CHAR:
+    case MTypes::I4:
+    case MTypes::Char:
         return VariantType(VariantType::Int);
-    case MONO_TYPE_U4:
+    case MTypes::U4:
         return VariantType(VariantType::Uint);
-    case MONO_TYPE_I8:
+    case MTypes::I8:
         return VariantType(VariantType::Int64);
-    case MONO_TYPE_U8:
+    case MTypes::U8:
         return VariantType(VariantType::Uint64);
-    case MONO_TYPE_R4:
+    case MTypes::R4:
         return VariantType(VariantType::Float);
-    case MONO_TYPE_R8:
+    case MTypes::R8:
         return VariantType(VariantType::Double);
-    case MONO_TYPE_STRING:
+    case MTypes::String:
         return VariantType(VariantType::String);
-    case MONO_TYPE_PTR:
+    case MTypes::Ptr:
         return VariantType(VariantType::Pointer);
-    case MONO_TYPE_VALUETYPE:
-        if (klass == stdTypes.GuidClass->GetNative())
+    case MTypes::ValueType:
+        if (klass == stdTypes.GuidClass)
             return VariantType(VariantType::Guid);
-        if (klass == stdTypes.Vector2Class->GetNative())
+        if (klass == stdTypes.Vector2Class)
             return VariantType(VariantType::Vector2);
-        if (klass == stdTypes.Vector3Class->GetNative())
+        if (klass == stdTypes.Vector3Class)
             return VariantType(VariantType::Vector3);
-        if (klass == stdTypes.Vector4Class->GetNative())
+        if (klass == stdTypes.Vector4Class)
             return VariantType(VariantType::Vector4);
-        if (klass == Int2::TypeInitializer.GetMonoClass())
+        if (klass == Int2::TypeInitializer.GetClass())
             return VariantType(VariantType::Int2);
-        if (klass == Int3::TypeInitializer.GetMonoClass())
+        if (klass == Int3::TypeInitializer.GetClass())
             return VariantType(VariantType::Int3);
-        if (klass == Int4::TypeInitializer.GetMonoClass())
+        if (klass == Int4::TypeInitializer.GetClass())
             return VariantType(VariantType::Int4);
-        if (klass == Float2::TypeInitializer.GetMonoClass())
+        if (klass == Float2::TypeInitializer.GetClass())
             return VariantType(VariantType::Float2);
-        if (klass == Float3::TypeInitializer.GetMonoClass())
+        if (klass == Float3::TypeInitializer.GetClass())
             return VariantType(VariantType::Float3);
-        if (klass == Float4::TypeInitializer.GetMonoClass())
+        if (klass == Float4::TypeInitializer.GetClass())
             return VariantType(VariantType::Float4);
-        if (klass == Double2::TypeInitializer.GetMonoClass())
+        if (klass == Double2::TypeInitializer.GetClass())
             return VariantType(VariantType::Double2);
-        if (klass == Double3::TypeInitializer.GetMonoClass())
+        if (klass == Double3::TypeInitializer.GetClass())
             return VariantType(VariantType::Double3);
-        if (klass == Double4::TypeInitializer.GetMonoClass())
+        if (klass == Double4::TypeInitializer.GetClass())
             return VariantType(VariantType::Double4);
-        if (klass == stdTypes.ColorClass->GetNative())
+        if (klass == stdTypes.ColorClass)
             return VariantType(VariantType::Color);
-        if (klass == stdTypes.BoundingBoxClass->GetNative())
+        if (klass == stdTypes.BoundingBoxClass)
             return VariantType(VariantType::BoundingBox);
-        if (klass == stdTypes.QuaternionClass->GetNative())
+        if (klass == stdTypes.QuaternionClass)
             return VariantType(VariantType::Quaternion);
-        if (klass == stdTypes.TransformClass->GetNative())
+        if (klass == stdTypes.TransformClass)
             return VariantType(VariantType::Transform);
-        if (klass == stdTypes.BoundingSphereClass->GetNative())
+        if (klass == stdTypes.BoundingSphereClass)
             return VariantType(VariantType::BoundingSphere);
-        if (klass == stdTypes.RectangleClass->GetNative())
+        if (klass == stdTypes.RectangleClass)
             return VariantType(VariantType::Rectangle);
-        if (klass == stdTypes.MatrixClass->GetNative())
+        if (klass == stdTypes.MatrixClass)
             return VariantType(VariantType::Matrix);
         break;
-    case MONO_TYPE_OBJECT:
+    case MTypes::Object:
         return VariantType(VariantType::ManagedObject);
-    case MONO_TYPE_SZARRAY:
-        if (klass == mono_array_class_get(mono_get_byte_class(), 1))
+    case MTypes::SzArray:
+        if (klass == MCore::Array::GetClass(MCore::TypeCache::Byte))
             return VariantType(VariantType::Blob);
         break;
     }
@@ -304,29 +254,28 @@ VariantType MUtils::UnboxVariantType(MonoType* monoType)
     // Get actual typename for full type info
     if (!klass)
         return VariantType(VariantType::Null);
-    MString fullname;
-    GetClassFullname(klass, fullname);
-    switch (monoType->type)
+    const StringAnsiView fullname = klass->GetFullName();
+    switch (types)
     {
-    case MONO_TYPE_SZARRAY:
-    case MONO_TYPE_ARRAY:
+    case MTypes::SzArray:
+    case MTypes::Array:
         return VariantType(VariantType::Array, fullname);
-    case MONO_TYPE_ENUM:
+    case MTypes::Enum:
         return VariantType(VariantType::Enum, fullname);
-    case MONO_TYPE_VALUETYPE:
+    case MTypes::ValueType:
         return VariantType(VariantType::Structure, fullname);
     }
-    if (klass == stdTypes.TypeClass->GetNative())
+    if (klass == stdTypes.TypeClass)
         return VariantType(VariantType::Typename);
-    if (mono_class_is_subclass_of(klass, Asset::GetStaticClass()->GetNative(), false) != 0)
+    if (klass->IsSubClassOf(Asset::GetStaticClass()))
     {
-        if (klass == Asset::GetStaticClass()->GetNative())
+        if (klass == Asset::GetStaticClass())
             return VariantType(VariantType::Asset);
         return VariantType(VariantType::Asset, fullname);
     }
-    if (mono_class_is_subclass_of(klass, ScriptingObject::GetStaticClass()->GetNative(), false) != 0)
+    if (klass->IsSubClassOf(ScriptingObject::GetStaticClass()))
     {
-        if (klass == ScriptingObject::GetStaticClass()->GetNative())
+        if (klass == ScriptingObject::GetStaticClass())
             return VariantType(VariantType::Object);
         return VariantType(VariantType::Object, fullname);
     }
@@ -336,136 +285,137 @@ VariantType MUtils::UnboxVariantType(MonoType* monoType)
     return VariantType();
 }
 
-MonoReflectionType* MUtils::BoxVariantType(const VariantType& value)
+MTypeObject* MUtils::BoxVariantType(const VariantType& value)
 {
     if (value.Type == VariantType::Null)
         return nullptr;
-    MonoClass* klass = GetClass(value);
+    MClass* klass = GetClass(value);
     if (!klass)
     {
         LOG(Error, "Invalid native type to box {0}", value);
         return nullptr;
     }
-    MonoType* monoType = mono_class_get_type(klass);
-    return mono_type_get_object(mono_domain_get(), monoType);
+    MType* mType = klass->GetType();
+    return INTERNAL_TYPE_GET_OBJECT(mType);
 }
 
-Variant MUtils::UnboxVariant(MonoObject* value)
+Variant MUtils::UnboxVariant(MObject* value)
 {
     if (value == nullptr)
         return Variant::Null;
     const auto& stdTypes = *StdTypesContainer::Instance();
-    const auto klass = mono_object_get_class(value);
-    void* unboxed = (byte*)value + sizeof(MonoObject);
-    const MonoType* monoType = mono_class_get_type(klass);
+    MClass* klass = MCore::Object::GetClass(value);
+
+    MType* mType = klass->GetType();
+    const MTypes mTypes = MCore::Type::GetType(mType);
+    void* unboxed = MCore::Object::Unbox(value);
 
     // Fast type detection for in-built types
-    switch (monoType->type)
+    switch (mTypes)
     {
-    case MONO_TYPE_VOID:
+    case MTypes::Void:
         return Variant(VariantType(VariantType::Void));
-    case MONO_TYPE_BOOLEAN:
+    case MTypes::Boolean:
         return *static_cast<bool*>(unboxed);
-    case MONO_TYPE_I1:
+    case MTypes::I1:
         return *static_cast<int8*>(unboxed);
-    case MONO_TYPE_U1:
+    case MTypes::U1:
         return *static_cast<uint8*>(unboxed);
-    case MONO_TYPE_I2:
+    case MTypes::I2:
         return *static_cast<int16*>(unboxed);
-    case MONO_TYPE_U2:
+    case MTypes::U2:
         return *static_cast<uint16*>(unboxed);
-    case MONO_TYPE_CHAR:
+    case MTypes::Char:
         return *static_cast<Char*>(unboxed);
-    case MONO_TYPE_I4:
+    case MTypes::I4:
         return *static_cast<int32*>(unboxed);
-    case MONO_TYPE_U4:
+    case MTypes::U4:
         return *static_cast<uint32*>(unboxed);
-    case MONO_TYPE_I8:
+    case MTypes::I8:
         return *static_cast<int64*>(unboxed);
-    case MONO_TYPE_U8:
+    case MTypes::U8:
         return *static_cast<uint64*>(unboxed);
-    case MONO_TYPE_R4:
+    case MTypes::R4:
         return *static_cast<float*>(unboxed);
-    case MONO_TYPE_R8:
+    case MTypes::R8:
         return *static_cast<double*>(unboxed);
-    case MONO_TYPE_STRING:
-        return Variant(MUtils::ToString((MonoString*)value));
-    case MONO_TYPE_PTR:
+    case MTypes::String:
+        return Variant(MUtils::ToString((MString*)value));
+    case MTypes::Ptr:
         return *static_cast<void**>(unboxed);
-    case MONO_TYPE_VALUETYPE:
-        if (klass == stdTypes.GuidClass->GetNative())
+    case MTypes::ValueType:
+        if (klass == stdTypes.GuidClass)
             return Variant(*static_cast<Guid*>(unboxed));
-        if (klass == stdTypes.Vector2Class->GetNative())
+        if (klass == stdTypes.Vector2Class)
             return *static_cast<Vector2*>(unboxed);
-        if (klass == stdTypes.Vector3Class->GetNative())
+        if (klass == stdTypes.Vector3Class)
             return *static_cast<Vector3*>(unboxed);
-        if (klass == stdTypes.Vector4Class->GetNative())
+        if (klass == stdTypes.Vector4Class)
             return *static_cast<Vector4*>(unboxed);
-        if (klass == Int2::TypeInitializer.GetMonoClass())
+        if (klass == Int2::TypeInitializer.GetClass())
             return *static_cast<Int2*>(unboxed);
-        if (klass == Int3::TypeInitializer.GetMonoClass())
+        if (klass == Int3::TypeInitializer.GetClass())
             return *static_cast<Int3*>(unboxed);
-        if (klass == Int4::TypeInitializer.GetMonoClass())
+        if (klass == Int4::TypeInitializer.GetClass())
             return *static_cast<Int4*>(unboxed);
-        if (klass == Float2::TypeInitializer.GetMonoClass())
+        if (klass == Float2::TypeInitializer.GetClass())
             return *static_cast<Float2*>(unboxed);
-        if (klass == Float3::TypeInitializer.GetMonoClass())
+        if (klass == Float3::TypeInitializer.GetClass())
             return *static_cast<Float3*>(unboxed);
-        if (klass == Float4::TypeInitializer.GetMonoClass())
+        if (klass == Float4::TypeInitializer.GetClass())
             return *static_cast<Float4*>(unboxed);
-        if (klass == Double2::TypeInitializer.GetMonoClass())
+        if (klass == Double2::TypeInitializer.GetClass())
             return *static_cast<Double2*>(unboxed);
-        if (klass == Double3::TypeInitializer.GetMonoClass())
+        if (klass == Double3::TypeInitializer.GetClass())
             return *static_cast<Double3*>(unboxed);
-        if (klass == Double4::TypeInitializer.GetMonoClass())
+        if (klass == Double4::TypeInitializer.GetClass())
             return *static_cast<Double4*>(unboxed);
-        if (klass == stdTypes.ColorClass->GetNative())
+        if (klass == stdTypes.ColorClass)
             return *static_cast<Color*>(unboxed);
-        if (klass == stdTypes.BoundingBoxClass->GetNative())
+        if (klass == stdTypes.BoundingBoxClass)
             return Variant(*static_cast<BoundingBox*>(unboxed));
-        if (klass == stdTypes.QuaternionClass->GetNative())
+        if (klass == stdTypes.QuaternionClass)
             return *static_cast<Quaternion*>(unboxed);
-        if (klass == stdTypes.TransformClass->GetNative())
+        if (klass == stdTypes.TransformClass)
             return Variant(*static_cast<Transform*>(unboxed));
-        if (klass == stdTypes.BoundingSphereClass->GetNative())
+        if (klass == stdTypes.BoundingSphereClass)
             return *static_cast<BoundingSphere*>(unboxed);
-        if (klass == stdTypes.RectangleClass->GetNative())
+        if (klass == stdTypes.RectangleClass)
             return *static_cast<Rectangle*>(unboxed);
-        if (klass == stdTypes.MatrixClass->GetNative())
+        if (klass == stdTypes.MatrixClass)
             return Variant(*reinterpret_cast<Matrix*>(unboxed));
         break;
-    case MONO_TYPE_SZARRAY:
-    case MONO_TYPE_ARRAY:
+    case MTypes::SzArray:
+    case MTypes::Array:
     {
-        if (klass == mono_array_class_get(mono_get_byte_class(), 1))
+        void* ptr = MCore::Array::GetAddress((MArray*)value);
+        MClass* elementClass = klass->GetElementClass();
+        if (elementClass == MCore::TypeCache::Byte)
         {
             Variant v;
-            v.SetBlob(mono_array_addr((MonoArray*)value, byte, 0), (int32)mono_array_length((MonoArray*)value));
+            v.SetBlob(ptr, MCore::Array::GetLength((MArray*)value));
             return v;
         }
-        MString fullname;
-        GetClassFullname(klass, fullname);
+        const StringAnsiView fullname = klass->GetFullName();
         Variant v;
         v.SetType(MoveTemp(VariantType(VariantType::Array, fullname)));
         auto& array = v.AsArray();
-        array.Resize((int32)mono_array_length((MonoArray*)value));
+        array.Resize(MCore::Array::GetLength((MArray*)value));
         const StringAnsiView elementTypename(*fullname, fullname.Length() - 2);
-        MonoClass* elementClass = mono_class_get_element_class(klass);
-        uint32_t elementAlign;
-        const int32 elementSize = mono_class_value_size(elementClass, &elementAlign);
-        if (mono_class_is_enum(elementClass))
+        const int32 elementSize = elementClass->GetInstanceSize();
+        if (elementClass->IsEnum())
         {
             // Array of Enums
             for (int32 i = 0; i < array.Count(); i++)
             {
                 array[i].SetType(VariantType(VariantType::Enum, elementTypename));
-                Platform::MemoryCopy(&array[i].AsUint64, mono_array_addr_with_size((MonoArray*)value, elementSize, i), elementSize);
+                Platform::MemoryCopy(&array[i].AsUint64, (byte*)ptr + elementSize * i, elementSize);
             }
         }
-        else if (mono_class_is_valuetype(elementClass))
+        else if (elementClass->IsValueType())
         {
             // Array of Structures
-            VariantType elementType = UnboxVariantType(mono_class_get_type(elementClass));
+            VariantType elementType = UnboxVariantType(elementClass->GetType());
             switch (elementType.Type)
             {
             case VariantType::Bool:
@@ -499,7 +449,7 @@ Variant MUtils::UnboxVariant(MonoObject* value)
                 {
                     auto& a = array[i];
                     a.SetType(elementType);
-                    Platform::MemoryCopy(&a.AsData, mono_array_addr_with_size((MonoArray*)value, elementSize, i), elementSize);
+                    Platform::MemoryCopy(&a.AsData,(byte*)ptr + elementSize * i, elementSize);
                 }
                 break;
             case VariantType::Transform:
@@ -515,7 +465,7 @@ Variant MUtils::UnboxVariant(MonoObject* value)
                 {
                     auto& a = array[i];
                     a.SetType(elementType);
-                    Platform::MemoryCopy(a.AsBlob.Data, mono_array_addr_with_size((MonoArray*)value, elementSize, i), elementSize);
+                    Platform::MemoryCopy(a.AsBlob.Data, (byte*)ptr + elementSize * i, elementSize);
                 }
                 break;
             case VariantType::Structure:
@@ -531,10 +481,10 @@ Variant MUtils::UnboxVariant(MonoObject* value)
                     {
                         auto& a = array[i];
                         a.SetType(elementType);
-                        void* managed = mono_array_addr_with_size((MonoArray*)value, elementSize, i);
-                        // TODO: optimize structures unboxing to not require MonoObject* but raw managed value data to prevent additional boxing here
-                        MonoObject* boxed = mono_object_new(mono_domain_get(), elementClass);
-                        Platform::MemoryCopy(mono_object_unbox(boxed), managed, elementSize);
+                        void* managed = (byte*)ptr + elementSize * i;
+                        // TODO: optimize structures unboxing to not require MObject* but raw managed value data to prevent additional boxing here
+                        MObject* boxed = MCore::Object::New(elementClass);
+                        Platform::MemoryCopy(MCore::Object::Unbox(boxed), managed, elementSize);
                         type.Struct.Unbox(a.AsBlob.Data, boxed);
                     }
                     break;
@@ -551,54 +501,51 @@ Variant MUtils::UnboxVariant(MonoObject* value)
         {
             // Array of Objects
             for (int32 i = 0; i < array.Count(); i++)
-                array[i] = UnboxVariant(mono_array_get((MonoArray*)value, MonoObject*, i));
+                array[i] = UnboxVariant(((MObject**)ptr)[i]);
         }
         return v;
     }
-    case MONO_TYPE_GENERICINST:
+    case MTypes::GenericInst:
     {
-        if (StringUtils::Compare(mono_class_get_name(klass), "Dictionary`2") == 0 && StringUtils::Compare(mono_class_get_namespace(klass), "System.Collections.Generic") == 0)
+        if (klass->GetName() == "Dictionary`2" && klass->GetNamespace() == "System.Collections.Generic")
         {
             // Dictionary
             ManagedDictionary managed(value);
-            MonoArray* managedKeys = managed.GetKeys();
-            auto length = managedKeys ? (int32)mono_array_length(managedKeys) : 0;
+            MArray* managedKeys = managed.GetKeys();
+            int32 length = managedKeys ? MCore::Array::GetLength(managedKeys) : 0;
             Dictionary<Variant, Variant> native;
             native.EnsureCapacity(length);
+            MObject** managedKeysPtr = MCore::Array::GetAddress<MObject*>(managedKeys);
             for (int32 i = 0; i < length; i++)
             {
-                MonoObject* keyManaged = mono_array_get(managedKeys, MonoObject*, i);
-                MonoObject* valueManaged = managed.GetValue(keyManaged);
+                MObject* keyManaged = managedKeysPtr[i];
+                MObject* valueManaged = managed.GetValue(keyManaged);
                 native.Add(UnboxVariant(keyManaged), UnboxVariant(valueManaged));
             }
             Variant v(MoveTemp(native));
-            StringAnsi typeName;
-            GetClassFullname(klass, typeName);
-            v.Type.SetTypeName(typeName);
+            v.Type.SetTypeName(klass->GetFullName());
             return v;
         }
         break;
     }
     }
 
-    if (mono_class_is_subclass_of(klass, Asset::GetStaticClass()->GetNative(), false) != 0)
+    if (klass->IsSubClassOf(Asset::GetStaticClass()))
         return static_cast<Asset*>(ScriptingObject::ToNative(value));
-    if (mono_class_is_subclass_of(klass, ScriptingObject::GetStaticClass()->GetNative(), false) != 0)
+    if (klass->IsSubClassOf(ScriptingObject::GetStaticClass()))
         return ScriptingObject::ToNative(value);
-    if (mono_class_is_enum(klass))
+    if (klass->IsEnum())
     {
-        MString fullname;
-        GetClassFullname(klass, fullname);
+        const StringAnsiView fullname = klass->GetFullName();
         Variant v;
         v.Type = MoveTemp(VariantType(VariantType::Enum, fullname));
         // TODO: what about 64-bit enum? use enum size with memcpy
-        v.AsUint64 = *static_cast<uint32*>(mono_object_unbox(value));
+        v.AsUint64 = *static_cast<uint32*>(MCore::Object::Unbox(value));
         return v;
     }
-    if (mono_class_is_valuetype(klass))
+    if (klass->IsValueType())
     {
-        MString fullname;
-        GetClassFullname(klass, fullname);
+        const StringAnsiView fullname = klass->GetFullName();
         const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(fullname);
         if (typeHandle)
         {
@@ -617,7 +564,7 @@ Variant MUtils::UnboxVariant(MonoObject* value)
     return Variant(value);
 }
 
-MonoObject* MUtils::BoxVariant(const Variant& value)
+MObject* MUtils::BoxVariant(const Variant& value)
 {
     const auto& stdTypes = *StdTypesContainer::Instance();
     switch (value.Type.Type)
@@ -626,97 +573,102 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
     case VariantType::Void:
         return nullptr;
     case VariantType::Bool:
-        return mono_value_box(mono_domain_get(), mono_get_boolean_class(), (void*)&value.AsBool);
+        return MCore::Object::Box((void*)&value.AsBool, MCore::TypeCache::Boolean);
     case VariantType::Int16:
-        return mono_value_box(mono_domain_get(), mono_get_int16_class(), (void*)&value.AsInt16);
+        return MCore::Object::Box((void*)&value.AsInt16, MCore::TypeCache::Int16);
     case VariantType::Uint16:
-        return mono_value_box(mono_domain_get(), mono_get_uint16_class(), (void*)&value.AsUint16);
+        return MCore::Object::Box((void*)&value.AsUint16, MCore::TypeCache::UInt16);
     case VariantType::Int:
-        return mono_value_box(mono_domain_get(), mono_get_int32_class(), (void*)&value.AsInt);
+        return MCore::Object::Box((void*)&value.AsInt, MCore::TypeCache::Int32);
     case VariantType::Uint:
-        return mono_value_box(mono_domain_get(), mono_get_uint32_class(), (void*)&value.AsUint);
+        return MCore::Object::Box((void*)&value.AsUint, MCore::TypeCache::UInt32);
     case VariantType::Int64:
-        return mono_value_box(mono_domain_get(), mono_get_int64_class(), (void*)&value.AsInt64);
+        return MCore::Object::Box((void*)&value.AsInt64, MCore::TypeCache::Int64);
     case VariantType::Uint64:
-        return mono_value_box(mono_domain_get(), mono_get_uint64_class(), (void*)&value.AsUint64);
+        return MCore::Object::Box((void*)&value.AsUint64, MCore::TypeCache::UInt64);
     case VariantType::Float:
-        return mono_value_box(mono_domain_get(), mono_get_single_class(), (void*)&value.AsFloat);
+        return MCore::Object::Box((void*)&value.AsFloat, MCore::TypeCache::Single);
     case VariantType::Double:
-        return mono_value_box(mono_domain_get(), mono_get_double_class(), (void*)&value.AsDouble);
+        return MCore::Object::Box((void*)&value.AsDouble, MCore::TypeCache::Double);
     case VariantType::Float2:
-        return mono_value_box(mono_domain_get(), Float2::TypeInitializer.GetMonoClass(), (void*)&value.AsData);
+        return MCore::Object::Box((void*)&value.AsData, Float2::TypeInitializer.GetClass());
     case VariantType::Float3:
-        return mono_value_box(mono_domain_get(), Float3::TypeInitializer.GetMonoClass(), (void*)&value.AsData);
+        return MCore::Object::Box((void*)&value.AsData, Float3::TypeInitializer.GetClass());
     case VariantType::Float4:
-        return mono_value_box(mono_domain_get(), Float4::TypeInitializer.GetMonoClass(), (void*)&value.AsData);
+        return MCore::Object::Box((void*)&value.AsData, Float4::TypeInitializer.GetClass());
     case VariantType::Double2:
-        return mono_value_box(mono_domain_get(), Double2::TypeInitializer.GetMonoClass(), (void*)&value.AsData);
+        return MCore::Object::Box((void*)&value.AsData, Double2::TypeInitializer.GetClass());
     case VariantType::Double3:
-        return mono_value_box(mono_domain_get(), Double3::TypeInitializer.GetMonoClass(), (void*)&value.AsData);
+        return MCore::Object::Box((void*)&value.AsData, Double3::TypeInitializer.GetClass());
     case VariantType::Double4:
-        return mono_value_box(mono_domain_get(), Double4::TypeInitializer.GetMonoClass(), value.AsBlob.Data);
+        return MCore::Object::Box((void*)&value.AsData, Double4::TypeInitializer.GetClass());
     case VariantType::Color:
-        return mono_value_box(mono_domain_get(), stdTypes.ColorClass->GetNative(), (void*)&value.AsData);
+        return MCore::Object::Box((void*)&value.AsData, stdTypes.ColorClass);
     case VariantType::Guid:
-        return mono_value_box(mono_domain_get(), stdTypes.GuidClass->GetNative(), (void*)&value.AsData);
+        return MCore::Object::Box((void*)&value.AsData, stdTypes.GuidClass);
     case VariantType::String:
-        return (MonoObject*)MUtils::ToString((StringView)value);
+#if USE_NETCORE
+        return (MObject*)MUtils::ToString((StringView)value);
+#else
+        return (MObject*)MUtils::ToString((StringView)value);
+#endif
     case VariantType::Quaternion:
-        return mono_value_box(mono_domain_get(), stdTypes.QuaternionClass->GetNative(), (void*)&value.AsData);
+        return MCore::Object::Box((void*)&value.AsData, stdTypes.QuaternionClass);
     case VariantType::BoundingSphere:
-        return mono_value_box(mono_domain_get(), stdTypes.BoundingSphereClass->GetNative(), (void*)&value.AsBoundingSphere());
+        return MCore::Object::Box((void*)&value.AsBoundingSphere(), stdTypes.BoundingSphereClass);
     case VariantType::Rectangle:
-        return mono_value_box(mono_domain_get(), stdTypes.RectangleClass->GetNative(), (void*)&value.AsData);
+        return MCore::Object::Box((void*)&value.AsData, stdTypes.RectangleClass);
     case VariantType::Pointer:
-        return mono_value_box(mono_domain_get(), mono_get_intptr_class(), (void*)&value.AsPointer);
+        return MCore::Object::Box((void*)&value.AsPointer, MCore::TypeCache::IntPtr);
     case VariantType::Ray:
-        return mono_value_box(mono_domain_get(), stdTypes.RayClass->GetNative(), (void*)&value.AsRay());
+        return MCore::Object::Box((void*)&value.AsRay(), stdTypes.RayClass);
     case VariantType::BoundingBox:
-        return mono_value_box(mono_domain_get(), stdTypes.BoundingBoxClass->GetNative(), (void*)&value.AsBoundingBox());
+        return MCore::Object::Box((void*)&value.AsBoundingBox(), stdTypes.BoundingBoxClass);
     case VariantType::Transform:
-        return mono_value_box(mono_domain_get(), stdTypes.TransformClass->GetNative(), value.AsBlob.Data);
+        return MCore::Object::Box(value.AsBlob.Data, stdTypes.TransformClass);
     case VariantType::Matrix:
-        return mono_value_box(mono_domain_get(), stdTypes.MatrixClass->GetNative(), value.AsBlob.Data);
+        return MCore::Object::Box(value.AsBlob.Data, stdTypes.MatrixClass);
     case VariantType::Blob:
-        return (MonoObject*)ToArray(Span<byte>((const byte*)value.AsBlob.Data, value.AsBlob.Length));
+        return (MObject*)ToArray(Span<byte>((const byte*)value.AsBlob.Data, value.AsBlob.Length));
     case VariantType::Object:
         return value.AsObject ? value.AsObject->GetOrCreateManagedInstance() : nullptr;
     case VariantType::Asset:
         return value.AsAsset ? value.AsAsset->GetOrCreateManagedInstance() : nullptr;
     case VariantType::Array:
     {
-        MonoArray* managed;
+        MArray* managed;
         const auto& array = value.AsArray();
         if (value.Type.TypeName)
         {
             const StringAnsiView elementTypename(value.Type.TypeName, StringUtils::Length(value.Type.TypeName) - 2);
             const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(elementTypename);
-            MonoClass* elementClass;
+            MClass* elementClass;
             if (typeHandle && typeHandle.GetType().ManagedClass)
-                elementClass = typeHandle.GetType().ManagedClass->GetNative();
+                elementClass = typeHandle.GetType().ManagedClass;
             else
-                elementClass = Scripting::FindClassNative(elementTypename);
+                elementClass = Scripting::FindClass(elementTypename);
             if (!elementClass)
             {
                 LOG(Error, "Invalid type to box {0}", value.Type);
                 return nullptr;
             }
-            uint32_t elementAlign;
-            const int32 elementSize = mono_class_value_size(elementClass, &elementAlign);
-            managed = mono_array_new(mono_domain_get(), elementClass, array.Count());
-            if (mono_class_is_enum(elementClass))
+            const int32 elementSize = elementClass->GetInstanceSize();
+            managed = MCore::Array::New(elementClass, array.Count());
+            if (elementClass->IsEnum())
             {
                 // Array of Enums
+                byte* managedPtr = (byte*)MCore::Array::GetAddress(managed);
                 for (int32 i = 0; i < array.Count(); i++)
                 {
                     auto data = (uint64)array[i];
-                    Platform::MemoryCopy(mono_array_addr_with_size(managed, elementSize, i), &data, elementSize);
+                    Platform::MemoryCopy(managedPtr + elementSize * i, &data, elementSize);
                 }
             }
-            else if (mono_class_is_valuetype(elementClass))
+            else if (elementClass->IsValueType())
             {
                 // Array of Structures
-                const VariantType elementType = UnboxVariantType(mono_class_get_type(elementClass));
+                const VariantType elementType = UnboxVariantType(elementClass->GetType());
+                byte* managedPtr = (byte*)MCore::Array::GetAddress(managed);
                 switch (elementType.Type)
                 {
                 case VariantType::Bool:
@@ -747,7 +699,7 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
 #endif
                     // Optimized boxing of raw data type
                     for (int32 i = 0; i < array.Count(); i++)
-                        Platform::MemoryCopy(mono_array_addr_with_size(managed, elementSize, i), &array[i].AsData, elementSize);
+                        Platform::MemoryCopy(managedPtr + elementSize * i, &array[i].AsData, elementSize);
                     break;
                 case VariantType::Transform:
                 case VariantType::Matrix:
@@ -759,7 +711,7 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
 #endif
                     // Optimized boxing of raw data type
                     for (int32 i = 0; i < array.Count(); i++)
-                        Platform::MemoryCopy(mono_array_addr_with_size(managed, elementSize, i), array[i].AsBlob.Data, elementSize);
+                        Platform::MemoryCopy(managedPtr + elementSize * i, array[i].AsBlob.Data, elementSize);
                     break;
                 case VariantType::Structure:
                     if (typeHandle)
@@ -768,9 +720,9 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
                         ASSERT(type.Type == ScriptingTypes::Structure);
                         for (int32 i = 0; i < array.Count(); i++)
                         {
-                            // TODO: optimize structures boxing to not return MonoObject* but use raw managed object to prevent additional boxing here
-                            MonoObject* boxed = type.Struct.Box(array[i].AsBlob.Data);
-                            Platform::MemoryCopy(mono_array_addr_with_size(managed, elementSize, i), mono_object_unbox(boxed), elementSize);
+                            // TODO: optimize structures boxing to not return MObject* but use raw managed object to prevent additional boxing here
+                            MObject* boxed = type.Struct.Box(array[i].AsBlob.Data);
+                            Platform::MemoryCopy(managedPtr + elementSize * i, MCore::Object::Unbox(boxed), elementSize);
                         }
                         break;
                     }
@@ -785,22 +737,22 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
             {
                 // Array of Objects
                 for (int32 i = 0; i < array.Count(); i++)
-                    mono_array_setref(managed, i, BoxVariant(array[i]));
+                    MCore::GC::WriteArrayRef(managed, BoxVariant(array[i]), i);
             }
         }
         else
         {
             // object[]
-            managed = mono_array_new(mono_domain_get(), mono_get_object_class(), array.Count());
+            managed = MCore::Array::New(MCore::TypeCache::Object, array.Count());
             for (int32 i = 0; i < array.Count(); i++)
-                mono_array_setref(managed, i, BoxVariant(array[i]));
+                MCore::GC::WriteArrayRef(managed, BoxVariant(array[i]), i);
         }
-        return (MonoObject*)managed;
+        return (MObject*)managed;
     }
     case VariantType::Dictionary:
     {
         // Get dictionary key and value types
-        MonoClass *keyClass, *valueClass;
+        MClass *keyClass, *valueClass;
         GetDictionaryKeyValueTypes(value.Type.GetTypeName(), keyClass, valueClass);
         if (!keyClass || !valueClass)
         {
@@ -809,7 +761,7 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
         }
 
         // Allocate managed dictionary
-        ManagedDictionary managed = ManagedDictionary::New(mono_class_get_type(keyClass), mono_class_get_type(valueClass));
+        ManagedDictionary managed = ManagedDictionary::New(keyClass->GetType(), valueClass->GetType());
         if (!managed.Instance)
             return nullptr;
 
@@ -837,19 +789,23 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
     }
     case VariantType::Enum:
     {
-        const auto klass = Scripting::FindClassNative(StringAnsiView(value.Type.TypeName));
+        const auto klass = Scripting::FindClass(StringAnsiView(value.Type.TypeName));
         if (klass)
-            return mono_value_box(mono_domain_get(), klass, (void*)&value.AsUint64);
+            return MCore::Object::Box((void*)&value.AsUint64, klass);
         LOG(Error, "Invalid type to box {0}", value.Type);
         return nullptr;
     }
     case VariantType::ManagedObject:
-        return value.AsUint ? mono_gchandle_get_target(value.AsUint) : nullptr;
+#if USE_NETCORE
+        return value.AsUint64 ? MCore::GCHandle::GetTarget(value.AsUint64) : nullptr;
+#else
+        return value.AsUint ? MCore::GCHandle::GetTarget(value.AsUint) : nullptr;
+#endif
     case VariantType::Typename:
     {
-        const auto klass = Scripting::FindClassNative((StringAnsiView)value);
+        const auto klass = Scripting::FindClass((StringAnsiView)value);
         if (klass)
-            return (MonoObject*)GetType(klass);
+            return (MObject*)GetType(klass);
         LOG(Error, "Invalid type to box {0}", value);
         return nullptr;
     }
@@ -859,332 +815,283 @@ MonoObject* MUtils::BoxVariant(const Variant& value)
     }
 }
 
-void MUtils::GetClassFullname(MonoObject* obj, MString& fullname)
+const StringAnsi& MUtils::GetClassFullname(MObject* obj)
 {
-    if (obj == nullptr)
-        return;
-    MonoClass* monoClass = mono_object_get_class(obj);
-    GetClassFullname(monoClass, fullname);
-}
-
-void MUtils::GetClassFullname(MonoClass* monoClass, MString& fullname)
-{
-    static MString plusStr("+");
-    static MString dotStr(".");
-
-    // Name
-    fullname = mono_class_get_name(monoClass);
-
-    // Outer class for nested types
-    MonoClass* nestingClass = mono_class_get_nesting_type(monoClass);
-    MonoClass* lastClass = monoClass;
-    while (nestingClass)
+    if (obj)
     {
-        lastClass = nestingClass;
-        fullname = mono_class_get_name(nestingClass) + plusStr + fullname;
-        nestingClass = mono_class_get_nesting_type(nestingClass);
+        MClass* mClass = MCore::Object::GetClass(obj);
+        return mClass->GetFullName();
     }
-
-    // Namespace
-    const char* lastClassNamespace = mono_class_get_namespace(lastClass);
-    if (lastClassNamespace && *lastClassNamespace)
-        fullname = lastClassNamespace + dotStr + fullname;
-
-    // Generic instance arguments
-    const MonoType* monoType = mono_class_get_type(monoClass);
-    if (monoType && monoType->type == MONO_TYPE_GENERICINST)
-    {
-        fullname += '[';
-        MString tmp;
-        for (unsigned int i = 0; i < monoType->data.generic_class->context.class_inst->type_argc; i++)
-        {
-            if (i != 0)
-                fullname += ',';
-            MonoType* argType = monoType->data.generic_class->context.class_inst->type_argv[i];
-            GetClassFullname(mono_type_get_class(argType), tmp);
-            fullname += tmp;
-        }
-        fullname += ']';
-    }
+    return StringAnsi::Empty;
 }
 
-void MUtils::GetClassFullname(MonoReflectionType* type, MString& fullname)
+MClass* MUtils::GetClass(MTypeObject* type)
 {
-    if (!type)
-        return;
-    MonoType* monoType = mono_reflection_type_get_type(type);
-    MonoClass* monoClass = mono_class_from_mono_type(monoType);
-    GetClassFullname(monoClass, fullname);
-}
-
-MonoClass* MUtils::GetClass(MonoObject* object)
-{
-    return mono_object_get_class(object);
-}
-
-MonoClass* MUtils::GetClass(MonoReflectionType* type)
-{
-    if (!type)
+    if (type == nullptr)
         return nullptr;
-    MonoType* monoType = mono_reflection_type_get_type(type);
-    return mono_class_from_mono_type(monoType);
+    MType* mType = INTERNAL_TYPE_OBJECT_GET(type);
+    return MCore::Type::GetClass(mType);
 }
 
-MonoClass* MUtils::GetClass(const VariantType& value)
+MClass* MUtils::GetClass(const VariantType& value)
 {
-    const auto& stdTypes = *StdTypesContainer::Instance();
     auto mclass = Scripting::FindClass(StringAnsiView(value.TypeName));
     if (mclass)
-        return mclass->GetNative();
+        return mclass;
+    const auto& stdTypes = *StdTypesContainer::Instance();
     switch (value.Type)
     {
     case VariantType::Void:
-        return mono_get_void_class();
+        return MCore::TypeCache::Void;
     case VariantType::Bool:
-        return mono_get_boolean_class();
+        return MCore::TypeCache::Boolean;
     case VariantType::Int16:
-        return mono_get_int16_class();
+        return MCore::TypeCache::Int16;
     case VariantType::Uint16:
-        return mono_get_uint16_class();
+        return MCore::TypeCache::UInt16;
     case VariantType::Int:
-        return mono_get_int32_class();
+        return MCore::TypeCache::Int32;
     case VariantType::Uint:
-        return mono_get_uint32_class();
+        return MCore::TypeCache::UInt32;
     case VariantType::Int64:
-        return mono_get_int64_class();
+        return MCore::TypeCache::Int64;
     case VariantType::Uint64:
-        return mono_get_uint64_class();
+        return MCore::TypeCache::UInt64;
     case VariantType::Float:
-        return mono_get_single_class();
+        return MCore::TypeCache::Single;
     case VariantType::Double:
-        return mono_get_double_class();
+        return MCore::TypeCache::Double;
     case VariantType::Pointer:
-        return mono_get_intptr_class();
+        return MCore::TypeCache::IntPtr;
     case VariantType::String:
-        return mono_get_string_class();
+        return MCore::TypeCache::String;
     case VariantType::Object:
-        return ScriptingObject::GetStaticClass()->GetNative();
+        return ScriptingObject::GetStaticClass();
     case VariantType::Asset:
-        return Asset::GetStaticClass()->GetNative();
+        return Asset::GetStaticClass();
     case VariantType::Blob:
-        return mono_array_class_get(mono_get_byte_class(), 1);
+        return MCore::Array::GetClass(MCore::TypeCache::Byte);
     case VariantType::Float2:
-        return Double2::TypeInitializer.GetMonoClass();
+        return Double2::TypeInitializer.GetClass();
     case VariantType::Float3:
-        return Float3::TypeInitializer.GetMonoClass();
+        return Float3::TypeInitializer.GetClass();
     case VariantType::Float4:
-        return Float4::TypeInitializer.GetMonoClass();
+        return Float4::TypeInitializer.GetClass();
     case VariantType::Double2:
-        return Double2::TypeInitializer.GetMonoClass();
+        return Double2::TypeInitializer.GetClass();
     case VariantType::Double3:
-        return Double3::TypeInitializer.GetMonoClass();
+        return Double3::TypeInitializer.GetClass();
     case VariantType::Double4:
-        return Double4::TypeInitializer.GetMonoClass();
+        return Double4::TypeInitializer.GetClass();
     case VariantType::Color:
-        return stdTypes.ColorClass->GetNative();
+        return stdTypes.ColorClass;
     case VariantType::Guid:
-        return stdTypes.GuidClass->GetNative();
+        return stdTypes.GuidClass;
     case VariantType::Typename:
-        return stdTypes.TypeClass->GetNative();
+        return stdTypes.TypeClass;
     case VariantType::BoundingBox:
-        return stdTypes.BoundingBoxClass->GetNative();
+        return stdTypes.BoundingBoxClass;
     case VariantType::BoundingSphere:
-        return stdTypes.BoundingSphereClass->GetNative();
+        return stdTypes.BoundingSphereClass;
     case VariantType::Quaternion:
-        return stdTypes.QuaternionClass->GetNative();
+        return stdTypes.QuaternionClass;
     case VariantType::Transform:
-        return stdTypes.TransformClass->GetNative();
+        return stdTypes.TransformClass;
     case VariantType::Rectangle:
-        return stdTypes.RectangleClass->GetNative();
+        return stdTypes.RectangleClass;
     case VariantType::Ray:
-        return stdTypes.RayClass->GetNative();
+        return stdTypes.RayClass;
     case VariantType::Matrix:
-        return stdTypes.MatrixClass->GetNative();
+        return stdTypes.MatrixClass;
     case VariantType::Array:
         if (value.TypeName)
         {
             const StringAnsiView elementTypename(value.TypeName, StringUtils::Length(value.TypeName) - 2);
             mclass = Scripting::FindClass(elementTypename);
             if (mclass)
-                return mono_array_class_get(mclass->GetNative(), 1);
+                return MCore::Array::GetClass(mclass);
         }
-        return mono_array_class_get(mono_get_object_class(), 1);
+        return MCore::Array::GetClass(MCore::TypeCache::Object);
     case VariantType::Dictionary:
     {
-        MonoClass *keyClass, *valueClass;
+        MClass *keyClass, *valueClass;
         GetDictionaryKeyValueTypes(value.GetTypeName(), keyClass, valueClass);
         if (!keyClass || !valueClass)
         {
             LOG(Error, "Invalid type to box {0}", value.ToString());
             return nullptr;
         }
-        return GetClass(ManagedDictionary::GetClass(mono_class_get_type(keyClass), mono_class_get_type(valueClass)));
+        return GetClass(ManagedDictionary::GetClass(keyClass->GetType(), valueClass->GetType()));
     }
     case VariantType::ManagedObject:
-        return mono_get_object_class();
+        return MCore::TypeCache::Object;
     default: ;
     }
     return nullptr;
 }
 
-MonoClass* MUtils::GetClass(const Variant& value)
+MClass* MUtils::GetClass(const Variant& value)
 {
     const auto& stdTypes = *StdTypesContainer::Instance();
     switch (value.Type.Type)
     {
     case VariantType::Void:
-        return mono_get_void_class();
+        return MCore::TypeCache::Void;
     case VariantType::Bool:
-        return mono_get_boolean_class();
+        return MCore::TypeCache::Boolean;
     case VariantType::Int16:
-        return mono_get_int16_class();
+        return MCore::TypeCache::Int16;
     case VariantType::Uint16:
-        return mono_get_uint16_class();
+        return MCore::TypeCache::UInt16;
     case VariantType::Int:
-        return mono_get_int32_class();
+        return MCore::TypeCache::Int32;
     case VariantType::Uint:
-        return mono_get_uint32_class();
+        return MCore::TypeCache::UInt32;
     case VariantType::Int64:
-        return mono_get_int64_class();
+        return MCore::TypeCache::Int64;
     case VariantType::Uint64:
-        return mono_get_uint64_class();
+        return MCore::TypeCache::UInt64;
     case VariantType::Float:
-        return mono_get_single_class();
+        return MCore::TypeCache::Single;
     case VariantType::Double:
-        return mono_get_double_class();
+        return MCore::TypeCache::Double;
     case VariantType::Pointer:
-        return mono_get_intptr_class();
+        return MCore::TypeCache::IntPtr;
     case VariantType::String:
-        return mono_get_string_class();
+        return MCore::TypeCache::String;
     case VariantType::Blob:
-        return mono_array_class_get(mono_get_byte_class(), 1);
+        return MCore::Array::GetClass(MCore::TypeCache::Byte);
     case VariantType::Float2:
-        return Float2::TypeInitializer.GetMonoClass();
+        return Float2::TypeInitializer.GetClass();
     case VariantType::Float3:
-        return Float3::TypeInitializer.GetMonoClass();
+        return Float3::TypeInitializer.GetClass();
     case VariantType::Float4:
-        return Float4::TypeInitializer.GetMonoClass();
+        return Float4::TypeInitializer.GetClass();
     case VariantType::Double2:
-        return Double2::TypeInitializer.GetMonoClass();
+        return Double2::TypeInitializer.GetClass();
     case VariantType::Double3:
-        return Double3::TypeInitializer.GetMonoClass();
+        return Double3::TypeInitializer.GetClass();
     case VariantType::Double4:
-        return Double4::TypeInitializer.GetMonoClass();
+        return Double4::TypeInitializer.GetClass();
     case VariantType::Color:
-        return stdTypes.ColorClass->GetNative();
+        return stdTypes.ColorClass;
     case VariantType::Guid:
-        return stdTypes.GuidClass->GetNative();
+        return stdTypes.GuidClass;
     case VariantType::Typename:
-        return stdTypes.TypeClass->GetNative();
+        return stdTypes.TypeClass;
     case VariantType::BoundingBox:
-        return stdTypes.BoundingBoxClass->GetNative();
+        return stdTypes.BoundingBoxClass;
     case VariantType::BoundingSphere:
-        return stdTypes.BoundingSphereClass->GetNative();
+        return stdTypes.BoundingSphereClass;
     case VariantType::Quaternion:
-        return stdTypes.QuaternionClass->GetNative();
+        return stdTypes.QuaternionClass;
     case VariantType::Transform:
-        return stdTypes.TransformClass->GetNative();
+        return stdTypes.TransformClass;
     case VariantType::Rectangle:
-        return stdTypes.RectangleClass->GetNative();
+        return stdTypes.RectangleClass;
     case VariantType::Ray:
-        return stdTypes.RayClass->GetNative();
+        return stdTypes.RayClass;
     case VariantType::Matrix:
-        return stdTypes.MatrixClass->GetNative();
+        return stdTypes.MatrixClass;
     case VariantType::Array:
     case VariantType::Dictionary:
-        return GetClass(value.Type);
+        break;
     case VariantType::Object:
-        return value.AsObject ? value.AsObject->GetClass()->GetNative() : nullptr;
+        return value.AsObject ? value.AsObject->GetClass() : nullptr;
     case VariantType::Asset:
-        return value.AsAsset ? value.AsAsset->GetClass()->GetNative() : nullptr;
+        return value.AsAsset ? value.AsAsset->GetClass() : nullptr;
     case VariantType::Structure:
     case VariantType::Enum:
-        return Scripting::FindClassNative(StringAnsiView(value.Type.TypeName));
+        return Scripting::FindClass(StringAnsiView(value.Type.TypeName));
     case VariantType::ManagedObject:
-        return GetClass((MonoObject*)value);
+        {
+            MObject* obj = (MObject*)value;
+            if (obj)
+                return MCore::Object::GetClass(obj);
+        }
     default: ;
     }
-    return nullptr;
+    return GetClass(value.Type);
 }
 
-MonoReflectionType* MUtils::GetType(MonoObject* object)
+MTypeObject* MUtils::GetType(MObject* object)
 {
-    MonoClass* klass = GetClass(object);
+    if (!object)
+        return nullptr;
+    MClass* klass = MCore::Object::GetClass(object);
     return GetType(klass);
 }
 
-MonoReflectionType* MUtils::GetType(MonoClass* klass)
+MTypeObject* MUtils::GetType(MClass* klass)
 {
-    MonoType* monoType = mono_class_get_type(klass);
-    return mono_type_get_object(mono_domain_get(), monoType);
+    if (!klass)
+        return nullptr;
+    MType* type = klass->GetType();
+    return INTERNAL_TYPE_GET_OBJECT(type);
 }
 
-MonoReflectionType* MUtils::GetType(MClass* mclass)
-{
-    return mclass ? GetType(mclass->GetNative()) : nullptr;
-}
-
-BytesContainer MUtils::LinkArray(MonoArray* arrayObj)
+BytesContainer MUtils::LinkArray(MArray* arrayObj)
 {
     BytesContainer result;
-    const int32 length = arrayObj ? (int32)mono_array_length(arrayObj) : 0;
+    const int32 length = arrayObj ? MCore::Array::GetLength(arrayObj) : 0;
     if (length != 0)
     {
-        result.Link((byte*)mono_array_addr_with_size(arrayObj, sizeof(byte), 0), length);
+        result.Link((byte*)MCore::Array::GetAddress(arrayObj), length);
     }
     return result;
 }
 
-void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& failed)
+void* MUtils::VariantToManagedArgPtr(Variant& value, MType* type, bool& failed)
 {
     // Convert Variant into matching managed type and return pointer to data for the method invocation
-    switch (type.GetNative()->type)
+    MTypes mType = MCore::Type::GetType(type);
+    switch (mType)
     {
-    case MONO_TYPE_BOOLEAN:
+    case MTypes::Boolean:
         if (value.Type.Type != VariantType::Bool)
             value = (bool)value;
         return &value.AsBool;
-    case MONO_TYPE_CHAR:
-    case MONO_TYPE_I1:
-    case MONO_TYPE_I2:
+    case MTypes::Char:
+    case MTypes::I1:
+    case MTypes::I2:
         if (value.Type.Type != VariantType::Int16)
             value = (int16)value;
         return &value.AsInt16;
-    case MONO_TYPE_I4:
+    case MTypes::I4:
         if (value.Type.Type != VariantType::Int)
             value = (int32)value;
         return &value.AsInt;
-    case MONO_TYPE_U1:
-    case MONO_TYPE_U2:
+    case MTypes::U1:
+    case MTypes::U2:
         if (value.Type.Type != VariantType::Uint16)
             value = (uint16)value;
         return &value.AsUint16;
-    case MONO_TYPE_U4:
+    case MTypes::U4:
         if (value.Type.Type != VariantType::Uint)
             value = (uint32)value;
         return &value.AsUint;
-    case MONO_TYPE_I8:
+    case MTypes::I8:
         if (value.Type.Type != VariantType::Int64)
             value = (int64)value;
         return &value.AsInt64;
-    case MONO_TYPE_U8:
+    case MTypes::U8:
         if (value.Type.Type != VariantType::Uint64)
             value = (uint64)value;
         return &value.AsUint64;
-    case MONO_TYPE_R4:
+    case MTypes::R4:
         if (value.Type.Type != VariantType::Float)
             value = (float)value;
         return &value.AsFloat;
-    case MONO_TYPE_R8:
+    case MTypes::R8:
         if (value.Type.Type != VariantType::Double)
             value = (double)value;
         return &value.AsDouble;
-    case MONO_TYPE_STRING:
+    case MTypes::String:
         return MUtils::ToString((StringView)value);
-    case MONO_TYPE_VALUETYPE:
+    case MTypes::ValueType:
     {
-        MonoClass* klass = type.GetNative()->data.klass;
-        if (mono_class_is_enum(klass))
+        MClass* klass = MCore::Type::GetClass(type);
+        if (klass->IsEnum())
         {
             if (value.Type.Type != VariantType::Enum)
             {
@@ -1195,7 +1102,7 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
         }
         const auto stdTypes = StdTypesContainer::Instance();
 #define CASE_IN_BUILD_TYPE(type, access) \
-    if (klass == stdTypes->type##Class->GetNative()) \
+    if (klass == stdTypes->type##Class) \
     { \
         if (value.Type.Type != VariantType::type) \
             value = Variant((type)value); \
@@ -1209,7 +1116,7 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
         CASE_IN_BUILD_TYPE(Transform, AsBlob.Data);
 #undef CASE_IN_BUILD_TYPE
 #define CASE_IN_BUILD_TYPE(type, access) \
-    if (klass == stdTypes->type##Class->GetNative()) \
+    if (klass == stdTypes->type##Class) \
     { \
         if (value.Type.Type != VariantType::type) \
             value = Variant((type)value); \
@@ -1223,7 +1130,7 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
         CASE_IN_BUILD_TYPE(Ray, AsRay);
 #undef CASE_IN_BUILD_TYPE
 #define CASE_IN_BUILD_TYPE(type, access) \
-    if (klass == type::TypeInitializer.GetMonoClass()) \
+    if (klass == type::TypeInitializer.GetClass()) \
     { \
         if (value.Type.Type != VariantType::type) \
             value = Variant((type)value); \
@@ -1236,7 +1143,7 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
         CASE_IN_BUILD_TYPE(Double3, AsData);
         CASE_IN_BUILD_TYPE(Double4, AsBlob.Data);
 #undef CASE_IN_BUILD_TYPE
-        if (mono_class_is_valuetype(klass))
+        if (klass->IsValueType())
         {
             if (value.Type.Type == VariantType::Structure)
             {
@@ -1244,55 +1151,61 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
                 if (typeHandle && value.AsBlob.Data)
                 {
                     auto& valueType = typeHandle.GetType();
-                    if (valueType.ManagedClass->GetNative() == mono_type_get_class(type.GetNative()))
+                    if (valueType.ManagedClass == MCore::Type::GetClass(type))
                     {
-                        return mono_object_unbox(valueType.Struct.Box(value.AsBlob.Data));
+                        return MCore::Object::Unbox(valueType.Struct.Box(value.AsBlob.Data));
                     }
-                    LOG(Error, "Cannot marshal argument of type {0} as {1}", String(valueType.Fullname), type.ToString());
+                    LOG(Error, "Cannot marshal argument of type {0} as {1}", String(valueType.Fullname), MCore::Type::ToString(type));
                 }
             }
             else
             {
-                MString typeName;
-                GetClassFullname(klass, typeName);
-                const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeName);
+                const StringAnsiView fullname = klass->GetFullName();
+                const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(fullname);
                 if (typeHandle)
                 {
                     auto& valueType = typeHandle.GetType();
-                    value.SetType(VariantType(VariantType::Structure, typeName));
-                    return mono_object_unbox(valueType.Struct.Box(value.AsBlob.Data));
+                    value.SetType(VariantType(VariantType::Structure, fullname));
+                    return MCore::Object::Unbox(valueType.Struct.Box(value.AsBlob.Data));
                 }
             }
         }
     }
     break;
-    case MONO_TYPE_CLASS:
+    case MTypes::Enum:
+    {
+        if (value.Type.Type != VariantType::Enum)
+            return nullptr;
+        return &value.AsUint64;
+    }
+    case MTypes::Class:
     {
         if (value.Type.Type == VariantType::Null)
             return nullptr;
-        MonoObject* object = BoxVariant(value);
-        if (object && !mono_class_is_subclass_of(mono_object_get_class(object), type.GetNative()->data.klass, false))
+        MObject* object = BoxVariant(value);
+        if (object && !MCore::Object::GetClass(object)->IsSubClassOf(MCore::Type::GetClass(type)))
             object = nullptr;
         return object;
     }
-    case MONO_TYPE_OBJECT:
+    case MTypes::Object:
         return BoxVariant(value);
-    case MONO_TYPE_SZARRAY:
-    case MONO_TYPE_ARRAY:
+    case MTypes::SzArray:
+    case MTypes::Array:
     {
         if (value.Type.Type != VariantType::Array)
             return nullptr;
-        MonoObject* object = BoxVariant(value);
-        if (object && !mono_class_is_subclass_of(mono_object_get_class(object), mono_array_class_get(type.GetNative()->data.klass, 1), false))
+        MObject* object = BoxVariant(value);
+        auto typeStr = MCore::Type::ToString(type);
+        if (object && !MCore::Object::GetClass(object)->IsSubClassOf(MCore::Type::GetClass(type)))
             object = nullptr;
         return object;
     }
-    case MONO_TYPE_GENERICINST:
+    case MTypes::GenericInst:
     {
         if (value.Type.Type == VariantType::Null)
             return nullptr;
-        MonoObject* object = BoxVariant(value);
-        if (object && !mono_class_is_subclass_of(mono_object_get_class(object), mono_class_from_mono_type(type.GetNative()), false))
+        MObject* object = BoxVariant(value);
+        if (object && !MCore::Object::GetClass(object)->IsSubClassOf(MCore::Type::GetClass(type)))
             object = nullptr;
         return object;
     }
@@ -1303,17 +1216,53 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, const MType& type, bool& fa
     return nullptr;
 }
 
-MonoObject* MUtils::ToManaged(const Version& value)
+MObject* MUtils::ToManaged(const Version& value)
 {
-    auto obj = mono_object_new(mono_domain_get(), Scripting::FindClassNative("System.Version"));
-    Platform::MemoryCopy((byte*)obj + sizeof(MonoObject), &value, sizeof(Version));
+#if USE_NETCORE
+    auto scriptingClass = Scripting::GetStaticClass();
+    CHECK_RETURN(scriptingClass, nullptr);
+    auto versionToManaged = scriptingClass->GetMethod("VersionToManaged", 4);
+    CHECK_RETURN(versionToManaged, nullptr);
+
+    int major = value.Major();
+    int minor = value.Minor();
+    int build = value.Build();
+    int revision = value.Revision();
+
+    void* params[4];
+    params[0] = &major;
+    params[1] = &minor;
+    params[2] = &build;
+    params[3] = &revision;
+    auto obj = versionToManaged->Invoke(nullptr, params, nullptr);
+#else
+    auto obj = MCore::Object::New(Scripting::FindClass("System.Version"));
+    Platform::MemoryCopy(MCore::Object::Unbox(obj), &value, sizeof(Version));
+#endif
     return obj;
 }
 
-Version MUtils::ToNative(MonoObject* value)
+Version MUtils::ToNative(MObject* value)
 {
     if (value)
-        return *(Version*)((byte*)value + sizeof(MonoObject));
+#if USE_NETCORE
+    {
+        auto ver = Version();
+
+        auto scriptingClass = Scripting::GetStaticClass();
+        CHECK_RETURN(scriptingClass, ver);
+        auto versionToNative = scriptingClass->GetMethod("VersionToNative", 2);
+        CHECK_RETURN(versionToNative, ver);
+
+        void* params[2];
+        params[0] = value;
+        params[1] = &ver;
+        versionToNative->Invoke(nullptr, params, nullptr);
+        return ver;
+    }
+#else
+        return *(Version*)MCore::Object::Unbox(value);
+#endif
     return Version();
 }
 

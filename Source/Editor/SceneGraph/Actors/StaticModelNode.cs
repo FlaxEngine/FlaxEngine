@@ -43,7 +43,7 @@ namespace FlaxEditor.SceneGraph.Actors
                     StaticFlags = Actor.StaticFlags,
                     Transform = Actor.Transform,
                 };
-                Editor.Instance.SceneEditing.Spawn(actor, Actor);
+                Root.Spawn(actor, Actor);
                 return;
             }
             if (modelPath.EndsWith("/Primitives/Sphere.flax", StringComparison.Ordinal))
@@ -53,7 +53,7 @@ namespace FlaxEditor.SceneGraph.Actors
                     StaticFlags = Actor.StaticFlags,
                     Transform = Actor.Transform,
                 };
-                Editor.Instance.SceneEditing.Spawn(actor, Actor);
+                Root.Spawn(actor, Actor);
                 return;
             }
             if (modelPath.EndsWith("/Primitives/Plane.flax", StringComparison.Ordinal))
@@ -64,7 +64,7 @@ namespace FlaxEditor.SceneGraph.Actors
                     Transform = Actor.Transform,
                     Size = new Float3(100.0f, 100.0f, 1.0f),
                 };
-                Editor.Instance.SceneEditing.Spawn(actor, Actor);
+                Root.Spawn(actor, Actor);
                 return;
             }
             if (modelPath.EndsWith("/Primitives/Capsule.flax", StringComparison.Ordinal))
@@ -91,7 +91,7 @@ namespace FlaxEditor.SceneGraph.Actors
                     Transform = Actor.Transform,
                     CollisionData = collisionData,
                 };
-                Editor.Instance.SceneEditing.Spawn(actor, Actor);
+                Root.Spawn(actor, Actor);
             };
             var collisionDataProxy = (CollisionDataProxy)Editor.Instance.ContentDatabase.GetProxy<CollisionData>();
             collisionDataProxy.CreateCollisionDataFromModel(model, created);

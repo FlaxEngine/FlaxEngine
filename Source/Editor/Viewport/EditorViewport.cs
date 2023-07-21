@@ -1168,14 +1168,15 @@ namespace FlaxEditor.Viewport
                 {
                     offset = Float2.Zero;
                 }
-                offset.X = offset.X > 0 ? Mathf.Floor(offset.X) : Mathf.Ceil(offset.X);
-                offset.Y = offset.Y > 0 ? Mathf.Floor(offset.Y) : Mathf.Ceil(offset.Y);
-                _mouseDelta = offset / size;
-                _mouseDelta.Y *= size.Y / size.X;
 
                 var mouseDelta = Float2.Zero;
                 if (_useMouseFiltering)
                 {
+                    offset.X = offset.X > 0 ? Mathf.Floor(offset.X) : Mathf.Ceil(offset.X);
+                    offset.Y = offset.Y > 0 ? Mathf.Floor(offset.Y) : Mathf.Ceil(offset.Y);
+                    _mouseDelta = offset / size;
+                    _mouseDelta.Y *= size.Y / size.X;
+
                     // Update delta filtering buffer
                     _deltaFilteringBuffer[_deltaFilteringStep] = _mouseDelta;
                     _deltaFilteringStep++;
@@ -1192,6 +1193,8 @@ namespace FlaxEditor.Viewport
                 }
                 else
                 {
+                    _mouseDelta = offset / size;
+                    _mouseDelta.Y *= size.Y / size.X;
                     mouseDelta = _mouseDelta;
                 }
 
@@ -1535,6 +1538,7 @@ namespace FlaxEditor.Viewport
             new ViewFlagOptions(ViewFlags.MotionBlur, "Motion Blur"),
             new ViewFlagOptions(ViewFlags.ContactShadows, "Contact Shadows"),
             new ViewFlagOptions(ViewFlags.PhysicsDebug, "Physics Debug"),
+            new ViewFlagOptions(ViewFlags.LightsDebug, "Lights Debug"),
             new ViewFlagOptions(ViewFlags.DebugDraw, "Debug Draw"),
         };
 

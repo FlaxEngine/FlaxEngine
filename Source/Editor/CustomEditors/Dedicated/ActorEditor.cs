@@ -12,6 +12,7 @@ using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.CustomEditors.Dedicated
 {
@@ -20,7 +21,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
     /// </summary>
     /// <seealso cref="FlaxEditor.CustomEditors.Editors.GenericEditor" />
     [CustomEditor(typeof(Actor)), DefaultEditor]
-    public class ActorEditor : GenericEditor
+    public class ActorEditor : ScriptingObjectEditor
     {
         private Guid _linkedPrefabId;
 
@@ -94,19 +95,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     if (actor != null)
                         group.Panel.TooltipText = Surface.SurfaceUtils.GetVisualScriptTypeDescription(TypeUtils.GetObjectType(actor));
-                    float settingsButtonSize = group.Panel.HeaderHeight;
-                    var settingsButton = new Image
-                    {
-                        TooltipText = "Settings",
-                        AutoFocus = true,
-                        AnchorPreset = AnchorPresets.TopRight,
-                        Parent = group.Panel,
-                        Bounds = new Rectangle(group.Panel.Width - settingsButtonSize, 0, settingsButtonSize, settingsButtonSize),
-                        IsScrollable = false,
-                        Color = FlaxEngine.GUI.Style.Current.ForegroundGrey,
-                        Margin = new Margin(1),
-                        Brush = new SpriteBrush(FlaxEngine.GUI.Style.Current.Settings),
-                    };
+                    var settingsButton = group.AddSettingsButton();
                     settingsButton.Clicked += OnSettingsButtonClicked;
                     break;
                 }
@@ -218,7 +207,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 node.Text = Utilities.Utils.GetPropertyNameUI(sceneObject.GetType().Name);
             }
             // Array Item
-            else if (editor.ParentEditor?.Values?.Type.IsArray ?? false)
+            else if (editor.ParentEditor is CollectionEditor)
             {
                 node.Text = "Element " + editor.ParentEditor.ChildrenEditors.IndexOf(editor);
             }
@@ -261,16 +250,14 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
 
             // Skip if no change detected
-            if (!editor.Values.IsReferenceValueModified && skipIfNotModified)
+            var isRefEdited = editor.Values.IsReferenceValueModified;
+            if (!isRefEdited && skipIfNotModified)
                 return null;
 
             TreeNode result = null;
-
-            if (editor.ChildrenEditors.Count == 0)
+            if (editor.ChildrenEditors.Count == 0 || (isRefEdited && editor is CollectionEditor))
                 result = CreateDiffNode(editor);
-
             bool isScriptEditorWithRefValue = editor is ScriptsEditor && editor.Values.HasReferenceValue;
-
             for (int i = 0; i < editor.ChildrenEditors.Count; i++)
             {
                 var child = ProcessDiff(editor.ChildrenEditors[i], !isScriptEditorWithRefValue);
@@ -278,7 +265,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     if (result == null)
                         result = CreateDiffNode(editor);
-
                     result.AddChild(child);
                 }
             }

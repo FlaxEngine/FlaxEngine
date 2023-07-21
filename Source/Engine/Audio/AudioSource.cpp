@@ -45,6 +45,16 @@ void AudioSource::SetPitch(float value)
         AudioBackend::Source::PitchChanged(this);
 }
 
+void AudioSource::SetPan(float value)
+{
+    value = Math::Clamp(value, -1.0f, 1.0f);
+    if (Math::NearEqual(_pan, value))
+        return;
+    _pan = value;
+    if (SourceIDs.HasItems())
+        AudioBackend::Source::PanChanged(this);
+}
+
 void AudioSource::SetIsLooping(bool value)
 {
     if (_loop == value)
@@ -339,6 +349,7 @@ void AudioSource::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(Clip);
     SERIALIZE_MEMBER(Volume, _volume);
     SERIALIZE_MEMBER(Pitch, _pitch);
+    SERIALIZE_MEMBER(Pan, _pan);
     SERIALIZE_MEMBER(MinDistance, _minDistance);
     SERIALIZE_MEMBER(Attenuation, _attenuation);
     SERIALIZE_MEMBER(DopplerFactor, _dopplerFactor);
@@ -352,15 +363,16 @@ void AudioSource::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     // Base
     Actor::Deserialize(stream, modifier);
 
-    DESERIALIZE(Clip);
     DESERIALIZE_MEMBER(Volume, _volume);
     DESERIALIZE_MEMBER(Pitch, _pitch);
+    DESERIALIZE_MEMBER(Pan, _pan);
     DESERIALIZE_MEMBER(MinDistance, _minDistance);
     DESERIALIZE_MEMBER(Attenuation, _attenuation);
     DESERIALIZE_MEMBER(DopplerFactor, _dopplerFactor);
     DESERIALIZE_MEMBER(Loop, _loop);
     DESERIALIZE_MEMBER(PlayOnStart, _playOnStart);
     DESERIALIZE_MEMBER(AllowSpatialization, _allowSpatialization);
+    DESERIALIZE(Clip);
 }
 
 bool AudioSource::HasContentLoaded() const

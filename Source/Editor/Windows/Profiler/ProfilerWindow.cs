@@ -24,6 +24,8 @@ namespace FlaxEditor.Windows.Profiler
         private int _frameIndex = -1;
         private int _framesCount;
         private bool _showOnlyLastUpdateEvents = true;
+        private long _lastManagedMemory = 0;
+        private long _lastManagedMemoryProfiler = 0;
 
         /// <summary>
         /// Gets or sets a value indicating whether live events recording is enabled.
@@ -144,6 +146,7 @@ namespace FlaxEditor.Windows.Profiler
         {
             _frameIndex = -1;
             _framesCount = 0;
+            _lastManagedMemory = 0;
             for (int i = 0; i < _tabs.ChildrenCount; i++)
             {
                 if (_tabs.Children[i] is ProfilerMode mode)
@@ -198,6 +201,7 @@ namespace FlaxEditor.Windows.Profiler
             AddMode(new Memory());
             AddMode(new Assets());
             AddMode(new Network());
+            AddMode(new Physics());
 
             // Init view
             _frameIndex = -1;
@@ -219,8 +223,16 @@ namespace FlaxEditor.Windows.Profiler
             {
                 FlaxEngine.Profiler.BeginEvent("ProfilerWindow.OnUpdate");
 
+                // Get memory allocations during last frame
+                long managedMemory = GC.GetAllocatedBytesForCurrentThread();
+                if (_lastManagedMemory == 0)
+                    _lastManagedMemory = managedMemory;
+                var managedAllocs = managedMemory - _lastManagedMemory - _lastManagedMemoryProfiler;
+                _lastManagedMemory = managedMemory;
+
                 ProfilerMode.SharedUpdateData sharedData = new ProfilerMode.SharedUpdateData();
                 sharedData.Begin();
+                sharedData.ManagedMemoryAllocation = (int)managedAllocs;
                 for (int i = 0; i < _tabs.ChildrenCount; i++)
                 {
                     if (_tabs.Children[i] is ProfilerMode mode)
@@ -242,6 +254,10 @@ namespace FlaxEditor.Windows.Profiler
 
                 _framesCount = Mathf.Min(_framesCount + 1, ProfilerMode.MaxSamples);
                 UpdateButtons();
+
+                // Get memory allocations within profiler window update to exclude from stats
+                managedMemory = GC.GetAllocatedBytesForCurrentThread();
+                _lastManagedMemoryProfiler = managedMemory - _lastManagedMemory;
 
                 FlaxEngine.Profiler.EndEvent();
             }

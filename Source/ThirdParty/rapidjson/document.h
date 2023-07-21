@@ -1930,7 +1930,7 @@ private:
         if (count) {
             GenericValue* e = static_cast<GenericValue*>(allocator.Malloc(count * sizeof(GenericValue)));
             SetElementsPointer(e);
-            std::memcpy(e, values, count * sizeof(GenericValue));
+            ::memcpy(e, values, count * sizeof(GenericValue));
         }
         else
             SetElementsPointer(0);
@@ -1943,7 +1943,7 @@ private:
         if (count) {
             Member* m = static_cast<Member*>(allocator.Malloc(count * sizeof(Member)));
             SetMembersPointer(m);
-            std::memcpy(m, members, count * sizeof(Member));
+            ::memcpy(m, members, count * sizeof(Member));
         }
         else
             SetMembersPointer(0);
@@ -1970,7 +1970,7 @@ private:
             str = static_cast<Ch *>(allocator.Malloc((s.length + 1) * sizeof(Ch)));
             SetStringPointer(str);
         }
-        std::memcpy(str, s, s.length * sizeof(Ch));
+        ::memcpy(str, s, s.length * sizeof(Ch));
         str[s.length] = '\0';
     }
 
@@ -1994,7 +1994,7 @@ private:
         const Ch* const str2 = rhs.GetString();
         if(str1 == str2) { return true; } // fast path for constant string
 
-        return (std::memcmp(str1, str2, sizeof(Ch) * len1) == 0);
+        return (::memcmp(str1, str2, sizeof(Ch) * len1) == 0);
     }
 
     Data data_;

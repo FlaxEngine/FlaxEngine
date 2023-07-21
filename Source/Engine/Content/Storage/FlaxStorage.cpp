@@ -211,6 +211,12 @@ FlaxStorage::~FlaxStorage()
     CHECK(_chunksLock == 0);
     CHECK(_refCount == 0);
     ASSERT(_chunks.IsEmpty());
+
+#if USE_EDITOR
+    // Ensure to close any outstanding file handles to prevent file locking in case it failed to load
+    _file.DeleteAll();
+#endif
+
 }
 
 FlaxStorage::LockData FlaxStorage::LockSafe()

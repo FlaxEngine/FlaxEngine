@@ -10,7 +10,6 @@
 #include "Engine/Graphics/GPUResourceProperty.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUSwapChain.h"
-#include "Engine/Engine/Engine.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Engine/Globals.h"
 #if COMPILE_WITH_TEXTURE_TOOL

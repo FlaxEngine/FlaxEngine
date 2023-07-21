@@ -30,6 +30,17 @@ namespace FlaxEditor.GUI
             /// <summary>
             /// Initializes a new instance of the <see cref="TypeItemView"/> class.
             /// </summary>
+            public TypeItemView()
+            {
+                _type = ScriptType.Null;
+                Name = "<null>";
+                TooltipText = "Unset value.";
+                Tag = _type;
+            }
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="TypeItemView"/> class.
+            /// </summary>
             /// <param name="type">The type.</param>
             public TypeItemView(ScriptType type)
             : this(type, type.GetAttributes(false))
@@ -83,6 +94,7 @@ namespace FlaxEditor.GUI
 
             // TODO: use async thread to search types without UI stall
             var allTypes = Editor.Instance.CodeEditing.All.Get();
+            AddItem(new TypeItemView());
             for (int i = 0; i < allTypes.Count; i++)
             {
                 var type = allTypes[i];

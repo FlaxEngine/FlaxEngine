@@ -24,7 +24,7 @@ namespace FlaxEditor
 
             var type = plugin.GetType();
             var assembly = type.Assembly;
-            var assemblyPath = assembly.Location;
+            var assemblyPath = Utils.GetAssemblyLocation(assembly);
             var assemblyName = assembly.GetName().Name;
             var dotEditorPos = assemblyName.LastIndexOf(".Editor", StringComparison.OrdinalIgnoreCase);
             if (dotEditorPos != -1)
@@ -84,7 +84,7 @@ namespace FlaxEditor
             editorPlugin = null;
 
             // Cache data
-            var allAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var allAssemblies = Utils.GetAssemblies();
             var gameAssembly = Utils.GetAssemblyByName("Game", allAssemblies);
             var gameEditorAssembly = Utils.GetAssemblyByName("Game.Editor", allAssemblies);
             var gameAssemblyTypes = gameAssembly.GetTypes();

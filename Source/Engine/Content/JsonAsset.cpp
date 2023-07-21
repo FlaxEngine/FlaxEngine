@@ -416,9 +416,13 @@ void JsonAsset::DeleteInstance()
     ScopeLock lock(Locker);
 
     // C# instance
-    if (MObject* object = GetManagedInstance())
+    MObject* object = GetManagedInstance();
+    MClass* klass = GetClass();
+    if (object && klass)
     {
-        GetClass()->GetField("_instance")->SetValue(object, nullptr);
+        const MField* field = klass->GetField("_instance");
+        if (field)
+            field->SetValue(object, nullptr);
     }
 
     // C++ instance

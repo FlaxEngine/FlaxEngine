@@ -4,6 +4,8 @@ using System;
 using FlaxEditor.Surface;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEditor.Viewport.Widgets;
+using FlaxEditor.GUI.ContextMenu;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport.Previews
@@ -46,6 +48,7 @@ namespace FlaxEditor.Viewport.Previews
         private int _selectedModelIndex;
         private Image _guiMaterialControl;
         private readonly MaterialBase[] _postFxMaterialsCache = new MaterialBase[1];
+        private ContextMenu _modelWidgetButtonMenu;
 
         /// <summary>
         /// Gets or sets the material asset to preview. It can be <see cref="FlaxEngine.Material"/> or <see cref="FlaxEngine.MaterialInstance"/>.
@@ -95,20 +98,33 @@ namespace FlaxEditor.Viewport.Previews
             Task.AddCustomActor(_previewModel);
 
             // Create context menu for primitive switching
-            if (useWidgets && ViewWidgetButtonMenu != null)
+            if (useWidgets)
             {
-                ViewWidgetButtonMenu.AddSeparator();
-                var modelSelect = ViewWidgetButtonMenu.AddChildMenu("Model").ContextMenu;
-
-                // Fill out all models 
-                for (int i = 0; i < Models.Length; i++)
+                // Model mode widget
+                var modelMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
+                _modelWidgetButtonMenu = new ContextMenu();
+                _modelWidgetButtonMenu.VisibleChanged += control =>
                 {
-                    var button = modelSelect.AddButton(Models[i]);
-                    button.Tag = i;
-                }
+                    if (!control.Visible)
+                        return;
+                    _modelWidgetButtonMenu.ItemsContainer.DisposeChildren();
 
-                // Link the action
-                modelSelect.ButtonClicked += (button) => SelectedModelIndex = (int)button.Tag;
+                    // Fill out all models
+                    for (int i = 0; i < Models.Length; i++)
+                    {
+                        var index = i;
+                        var button = _modelWidgetButtonMenu.AddButton(Models[index]);
+                        button.ButtonClicked += _ => SelectedModelIndex = index;
+                        button.Checked = SelectedModelIndex == index;
+                        button.Tag = index;
+                    }
+                };
+                new ViewportWidgetButton("Model", SpriteHandle.Invalid, _modelWidgetButtonMenu)
+                {
+                    TooltipText = "Change material model",
+                    Parent = modelMode,
+                };
+                modelMode.Parent = this;
             }
         }
 

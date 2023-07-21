@@ -151,6 +151,7 @@ ExportAssetResult AssetExporters::ExportSkinnedModel(ExportAssetContext& context
     // Extract all meshes
     const auto& lod = asset->LODs[lodIndex];
     int32 vertexStart = 1; // OBJ counts vertices from 1 not from 0
+    byte version = stream.ReadByte();
     for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
     {
         auto& mesh = lod.Meshes[meshIndex];
@@ -160,6 +161,18 @@ ExportAssetResult AssetExporters::ExportSkinnedModel(ExportAssetContext& context
         stream.ReadUint32(&vertices);
         uint32 triangles;
         stream.ReadUint32(&triangles);
+        uint16 blendShapesCount;
+        stream.ReadUint16(&blendShapesCount);
+        for (int32 blendShapeIndex = 0; blendShapeIndex < blendShapesCount; blendShapeIndex++)
+        {
+            stream.ReadBool();
+            uint32 tmp;
+            stream.ReadUint32(&tmp);
+            stream.ReadUint32(&tmp);
+            uint32 blendShapeVertices;
+            stream.ReadUint32(&blendShapeVertices);
+            stream.Move(blendShapeVertices * sizeof(BlendShapeVertex));
+        }
         uint32 indicesCount = triangles * 3;
         bool use16BitIndexBuffer = indicesCount <= MAX_uint16;
         uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);

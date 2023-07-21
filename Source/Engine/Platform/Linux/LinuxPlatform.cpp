@@ -20,6 +20,7 @@
 #include "Engine/Platform/StringUtils.h"
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Platform/WindowsManager.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Platform/Clipboard.h"
 #include "Engine/Platform/IGuiData.h"
 #include "Engine/Platform/Base/PlatformUtils.h"
@@ -88,6 +89,7 @@ X11::Cursor Cursors[(int32)CursorType::MAX];
 X11::XcursorImage* CursorsImg[(int32)CursorType::MAX];
 Dictionary<StringAnsi, X11::KeyCode> KeyNameMap;
 Array<KeyboardKeys> KeyCodeMap;
+Delegate<void*> LinuxPlatform::xEventRecieved;
 
 // Message boxes configuration
 #define LINUX_DIALOG_MIN_BUTTON_WIDTH 64
@@ -2047,12 +2049,12 @@ bool LinuxPlatform::Init()
     // Get user locale string
     setlocale(LC_ALL, "");
     const char* locale = setlocale(LC_CTYPE, NULL);
-    if (strcmp(locale, "C") == 0)
-        locale = "";
     UserLocale = String(locale);
     if (UserLocale.FindLast('.') != -1)
         UserLocale = UserLocale.Left(UserLocale.Find('.'));
     UserLocale.Replace('_', '-');
+    if (UserLocale == TEXT("C"))
+        UserLocale = TEXT("en");
 
     // Get computer name string
     gethostname(buffer, UNIX_APP_BUFF_SIZE);
@@ -2231,9 +2233,11 @@ void LinuxPlatform::Tick()
 	{
 		X11::XEvent event;
 		X11::XNextEvent(xDisplay, &event);
-
 		if (X11::XFilterEvent(&event, 0))
 			continue;
+
+        // External event handling
+		xEventRecieved(&event);
 
 		LinuxWindow* window;
 		switch (event.type)
@@ -2639,10 +2643,8 @@ Float2 LinuxPlatform::GetMousePosition()
 {
     if (!xDisplay)
         return Float2::Zero;
-
-	int32 x, y;
+	int32 x = 0, y = 0;
 	uint32 screenCount = (uint32)X11::XScreenCount(xDisplay);
-
 	for (uint32 i = 0; i < screenCount; i++)
 	{
 		X11::Window outRoot, outChild;
@@ -2651,7 +2653,6 @@ Float2 LinuxPlatform::GetMousePosition()
 		if (X11::XQueryPointer(xDisplay, X11::XRootWindow(xDisplay, i), &outRoot, &outChild, &x, &y, &childX, &childY, &mask))
 			break;
 	}
-
 	return Float2((float)x, (float)y);
 }
 
@@ -2718,8 +2719,10 @@ Rectangle LinuxPlatform::GetVirtualDesktopBounds()
 String LinuxPlatform::GetMainDirectory()
 {
     char buffer[UNIX_APP_BUFF_SIZE];
-    readlink("/proc/self/exe", buffer, UNIX_APP_BUFF_SIZE);
-    const String str(buffer);
+    const int32 len = readlink("/proc/self/exe", buffer, UNIX_APP_BUFF_SIZE);
+	if (len <= 0)
+		return String::Empty;
+    const String str(buffer, len);
     int32 pos = str.FindLast(TEXT('/'));
     if (pos != -1 && ++pos < str.Length())
         return str.Left(pos);
@@ -2729,8 +2732,10 @@ String LinuxPlatform::GetMainDirectory()
 String LinuxPlatform::GetExecutableFilePath()
 {
     char buffer[UNIX_APP_BUFF_SIZE];
-    readlink("/proc/self/exe", buffer, UNIX_APP_BUFF_SIZE);
-    return String(buffer);
+    const int32 len = readlink("/proc/self/exe", buffer, UNIX_APP_BUFF_SIZE);
+	if (len <= 0)
+		return String::Empty;
+    return String(buffer, len);
 }
 
 Guid LinuxPlatform::GetUniqueDeviceId()
@@ -2795,11 +2800,19 @@ bool LinuxPlatform::SetEnvironmentVariable(const String& name, const String& val
     return setenv(StringAsANSI<>(*name).Get(), StringAsANSI<>(*value).Get(), true) != 0;
 }
 
-int32 LinuxProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool waitForEnd, bool logOutput)
+int32 LinuxPlatform::CreateProcess(CreateProcessSettings& settings)
 {
+    LOG(Info, "Command: {0} {1}", settings.FileName, settings.Arguments);
+    if (settings.WorkingDirectory.HasChars())
+    {
+        LOG(Info, "Working directory: {0}", settings.WorkingDirectory);
+    }
+    const bool captureStdOut = settings.LogOutput || settings.SaveOutput;
+    const String cmdLine = settings.FileName + TEXT(" ") + settings.Arguments;
+
 	int fildes[2];
 	int32 returnCode = 0;
-	if (logOutput && pipe(fildes) < 0)
+	if (captureStdOut && pipe(fildes) < 0)
     {
 		LOG(Warning, "Failed to create a pipe, errno={}", errno);
 	}
@@ -2817,16 +2830,16 @@ int32 LinuxProcess(const StringView& cmdLine, const StringView& workingDir, cons
 		const char* const cmd[] = { "sh", "-c", StringAnsi(cmdLine).GetText(), (char *)0 };
 		// we could use the execve and supply a list of variable assignments but as we would have to build
 		// and quote the values there is hardly any benefit over using setenv() calls
-        for (auto& e : environment)
+        for (auto& e : settings.Environment)
         {
             setenv(StringAnsi(e.Key).GetText(), StringAnsi(e.Value).GetText(), 1);
         }
 
-        if (workingDir.HasChars() && chdir(StringAnsi(workingDir).GetText()) != 0)
+        if (settings.WorkingDirectory.HasChars() && chdir(StringAnsi(settings.WorkingDirectory).GetText()) != 0)
         {
-            LOG(Warning, "Failed to set working directory to {}, errno={}", workingDir, errno);
+            LOG(Warning, "Failed to set working directory to {}, errno={}", settings.WorkingDirectory, errno);
         }
-		if (logOutput)
+		if (captureStdOut)
         {
 			close(fildes[0]); // close the reading end of the pipe
 			dup2(fildes[1], STDOUT_FILENO); // redirect stdout to pipe
@@ -2846,21 +2859,25 @@ int32 LinuxProcess(const StringView& cmdLine, const StringView& workingDir, cons
     {
 		// parent process
 		LOG(Info, "{} started, pid={}", cmdLine, pid);
-		if (waitForEnd)
+		if (settings.WaitForEnd)
         {
-			int stat_loc;
-			if (logOutput)
+			if (captureStdOut)
             {
 				char lineBuffer[1024];
 				close(fildes[1]); // close the writing end of the pipe
 				FILE* stdPipe = fdopen(fildes[0], "r");
 				while (fgets(lineBuffer, sizeof(lineBuffer), stdPipe) != NULL)
                 {
-					char *p = lineBuffer + strlen(lineBuffer)-1;
-					if (*p == '\n') *p=0;
-					Log::Logger::Write(LogType::Info, String(lineBuffer));
+					char *p = lineBuffer + strlen(lineBuffer) - 1;
+					if (*p == '\n') *p = 0;
+                    String line(lineBuffer);
+                    if (settings.SaveOutput)
+                        settings.Output.Add(line.Get(), line.Length());
+                    if (settings.LogOutput)
+                        Log::Logger::Write(LogType::Info, line);
 				}
 			}
+			int stat_loc;
 			if (waitpid(pid, &stat_loc, 0) < 0)
             {
 				LOG(Warning, "Waiting for pid {} failed, errno={}", pid, errno);
@@ -2893,24 +2910,6 @@ int32 LinuxProcess(const StringView& cmdLine, const StringView& workingDir, cons
 	}
 
 	return returnCode;
-}
-
-int32 LinuxPlatform::StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow, bool waitForEnd)
-{
-	// hiddenWindow has hardly any meaning on UNIX/Linux/OSX as the program that is called decides whether it has a GUI or not
-	String cmdLine(filename);
-	if (args.HasChars()) cmdLine = cmdLine + TEXT(" ") + args;
-	return LinuxProcess(cmdLine, workingDir, Dictionary<String, String>(), waitForEnd, false);
-}
-
-int32 LinuxPlatform::RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow)
-{
-    return LinuxProcess(cmdLine, workingDir, Dictionary<String, String>(), true, true);
-}
-
-int32 LinuxPlatform::RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String>& environment, bool hiddenWindow)
-{
-	return LinuxProcess(cmdLine, workingDir, environment, true, true);
 }
 
 void* LinuxPlatform::LoadLibrary(const Char* filename)

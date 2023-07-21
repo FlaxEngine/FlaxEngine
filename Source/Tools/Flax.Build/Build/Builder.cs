@@ -143,6 +143,16 @@ namespace Flax.Build
                                 {
                                     Log.Info("Removing: " + targetBuildOptions.IntermediateFolder);
                                     CleanDirectory(intermediateFolder);
+                                    intermediateFolder.Create();
+                                }
+
+                                // Delete all output files
+                                var outputFolder = new DirectoryInfo(targetBuildOptions.OutputFolder);
+                                if (outputFolder.Exists)
+                                {
+                                    Log.Info("Removing: " + targetBuildOptions.OutputFolder);
+                                    CleanDirectory(outputFolder);
+                                    outputFolder.Create();
                                 }
                             }
                         }
@@ -340,6 +350,7 @@ namespace Flax.Build
                                             BuildTargetNativeCppBindingsOnly(rules, graph, target, buildContext, platform, architecture, configuration);
                                             break;
                                         case TargetType.DotNet:
+                                        case TargetType.DotNetCore:
                                             BuildTargetDotNet(rules, graph, target, platform, configuration);
                                             break;
                                         default: throw new ArgumentOutOfRangeException();
@@ -360,6 +371,7 @@ namespace Flax.Build
                                         BuildTargetNativeCpp(rules, graph, target, buildContext, toolchain, configuration);
                                         break;
                                     case TargetType.DotNet:
+                                    case TargetType.DotNetCore:
                                         BuildTargetDotNet(rules, graph, target, toolchain.Platform, configuration);
                                         break;
                                     default: throw new ArgumentOutOfRangeException();

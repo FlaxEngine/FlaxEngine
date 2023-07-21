@@ -21,16 +21,44 @@
 
 namespace physx
 {
+    template<class Type>
+    class PxVec2T;
+    typedef PxVec2T<float> PxVec2;
+
+    template<class Type>
+    class PxVec3T;
+    typedef PxVec3T<float> PxVec3;
+
+    template<class Type>
+    class PxVec4T;
+    typedef PxVec4T<float> PxVec4;
+
+    template<class Type>
+    class PxQuatT;
+    typedef PxQuatT<float> PxQuat;
+
+    template<class Type>
+    class PxMat33T;
+    typedef PxMat33T<float> PxMat33;
+
+    template<class Type>
+    class PxMat34T;
+    typedef PxMat34T<float> PxMat34;
+
+    template<class Type>
+    class PxMat44T;
+    typedef PxMat44T<float> PxMat44;
+
+    template<class Type>
+    class PxTransformT;
+    typedef PxTransformT<float> PxTransform;
+
     class PxScene;
     class PxConvexMesh;
     class PxTriangleMesh;
     class PxCooking;
     class PxPhysics;
-    class PxVec3;
-    class PxVec4;
-    class PxTransform;
     class PxJoint;
-    class PxMat44;
     class PxCpuDispatcher;
     class PxGpuDispatcher;
     class PxSimulationEventCallback;
@@ -55,6 +83,8 @@ namespace physx
     class PxQueryFilterCallback;
     class PxControllerFilterCallback;
     class PxHeightField;
+    class PxPlane;
+    class PxBounds3;
     struct PxFilterData;
     struct PxRaycastHit;
     struct PxSweepHit;

@@ -103,7 +103,9 @@ namespace FlaxEditor
             case BuildPlatform.AndroidARM64: return PlatformType.Android;
             case BuildPlatform.XboxScarlett: return PlatformType.XboxScarlett;
             case BuildPlatform.Switch: return PlatformType.Switch;
+            case BuildPlatform.MacOSARM64:
             case BuildPlatform.MacOSx64: return PlatformType.Mac;
+            case BuildPlatform.iOSARM64: return PlatformType.iOS;
             default: throw new ArgumentOutOfRangeException(nameof(buildPlatform), buildPlatform, null);
             }
         }

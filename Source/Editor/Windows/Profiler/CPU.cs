@@ -19,16 +19,16 @@ namespace FlaxEngine
             {
                 get
                 {
-                    fixed (char* name = &Name0)
+                    fixed (short* name = Name0)
                     {
-                        return new string(name);
+                        return new string((char*)name);
                     }
                 }
             }
 
             internal unsafe bool NameStartsWith(string prefix)
             {
-                fixed (char* name = &Name0)
+                fixed (short* name = Name0)
                 {
                     fixed (char* p = prefix)
                     {
@@ -197,7 +197,7 @@ namespace FlaxEditor.Windows.Profiler
             if (_tableRowsCache == null)
                 _tableRowsCache = new List<Row>();
 
-            var viewRange = GetEventsViewRange();
+            var viewRange = _showOnlyLastUpdateEvents ? GetMainThreadUpdateRange() : ViewRange.Full;
             UpdateTimeline(ref viewRange);
             UpdateTable(ref viewRange);
         }
@@ -235,36 +235,27 @@ namespace FlaxEditor.Windows.Profiler
             }
         }
 
-        private ViewRange GetEventsViewRange()
+        private ViewRange GetMainThreadUpdateRange()
         {
-            if (_showOnlyLastUpdateEvents)
+            if (_events != null && _events.Count != 0)
             {
-                // Find root event named 'Update' and use it as a view range
-                if (_events != null && _events.Count != 0)
+                var threads = _events.Get(_mainChart.SelectedSampleIndex);
+                if (threads != null)
                 {
-                    var data = _events.Get(_mainChart.SelectedSampleIndex);
-                    if (data != null)
+                    for (int j = 0; j < threads.Length; j++)
                     {
-                        for (int j = 0; j < data.Length; j++)
+                        var thread = threads[j];
+                        if (thread.Name != "Main" || thread.Events == null)
+                            continue;
+                        for (int i = 0; i < thread.Events.Length; i++)
                         {
-                            var events = data[j].Events;
-                            if (events == null)
-                                continue;
-
-                            for (int i = 0; i < events.Length; i++)
-                            {
-                                var e = events[i];
-
-                                if (e.Depth == 0 && e.Name == "Update")
-                                {
-                                    return new ViewRange(ref e);
-                                }
-                            }
+                            ref var e = ref thread.Events[i];
+                            if (e.Depth == 0 && e.Name == "Update")
+                                return new ViewRange(ref e);
                         }
                     }
                 }
             }
-
             return ViewRange.Full;
         }
 
@@ -352,13 +343,28 @@ namespace FlaxEditor.Windows.Profiler
 
             // Find the first event start time (for the timeline start time)
             double startTime = double.MaxValue;
-            for (int i = 0; i < data.Length; i++)
+            if (viewRange.Start > 0)
             {
-                if (data[i].Events != null && data[i].Events.Length != 0)
-                    startTime = Math.Min(startTime, data[i].Events[0].Start);
+                startTime = viewRange.Start;
             }
-            if (startTime >= double.MaxValue)
-                return 0;
+            else
+            {
+                var r = GetMainThreadUpdateRange();
+                if (r.Start > 0)
+                {
+                    startTime = r.Start;
+                }
+                else
+                {
+                    for (int i = 0; i < data.Length; i++)
+                    {
+                        if (data[i].Events != null && data[i].Events.Length != 0)
+                            startTime = Math.Min(startTime, data[i].Events[0].Start);
+                    }
+                    if (startTime >= double.MaxValue)
+                        return 0;
+                }
+            }
 
             var container = _timeline.EventsContainer;
 

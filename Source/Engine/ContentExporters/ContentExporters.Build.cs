@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using System.IO;
 using Flax.Build;
 using Flax.Build.NativeCpp;
 
@@ -23,5 +24,7 @@ public class ContentExporters : EngineModule
     /// <inheritdoc />
     public override void GetFilesToDeploy(List<string> files)
     {
+        files.Add(Path.Combine(FolderPath, "AssetsExportingManager.h"));
+        files.Add(Path.Combine(FolderPath, "Types.h"));
     }
 }

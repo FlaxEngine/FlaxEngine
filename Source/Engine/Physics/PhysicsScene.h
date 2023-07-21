@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -100,6 +100,13 @@ public:
     /// </summary>
     API_PROPERTY() void SetOrigin(const Vector3& value);
 
+#if COMPILE_WITH_PROFILER
+    /// <summary>
+    /// Gets the physics simulation statistics for the scene.
+    /// </summary>
+    API_PROPERTY() PhysicsStatistics GetStatistics() const;
+#endif
+
 public:
     /// <summary>
     /// Initializes the scene.
@@ -126,6 +133,38 @@ public:
     API_FUNCTION() void CollectResults();
 
 public:
+    /// <summary>
+    /// Performs a line between two points in the scene.
+    /// </summary>
+    /// <param name="start">The start position of the line.</param>
+    /// <param name="end">The end position of the line.</param>
+    /// <param name="layerMask">The layer mask used to filter the results.</param>
+    /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
+    /// <returns>True if ray hits an matching object, otherwise false.</returns>
+    API_FUNCTION() bool LineCast(const Vector3& start, const Vector3& end, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
+
+    /// <summary>
+    /// Performs a line between two points in the scene.
+    /// </summary>
+    /// <param name="start">The start position of the line.</param>
+    /// <param name="end">The end position of the line.</param>
+    /// <param name="hitInfo">The result hit information. Valid only when method returns true.</param>
+    /// <param name="layerMask">The layer mask used to filter the results.</param>
+    /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
+    /// <returns>True if ray hits an matching object, otherwise false.</returns>
+    API_FUNCTION() bool LineCast(const Vector3& start, const Vector3& end, API_PARAM(Out) RayCastHit& hitInfo, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
+
+    // <summary>
+    /// Performs a line between two points in the scene, returns all hitpoints infos.
+    /// </summary>
+    /// <param name="start">The origin of the ray.</param>
+    /// <param name="end">The normalized direction of the ray.</param>
+    /// <param name="results">The result hits. Valid only when method returns true.</param>
+    /// <param name="layerMask">The layer mask used to filter the results.</param>
+    /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
+    /// <returns>True if ray hits an matching object, otherwise false.</returns>
+    API_FUNCTION() bool LineCastAll(const Vector3& start, const Vector3& end, API_PARAM(Out) Array<RayCastHit, HeapAllocation>& results, uint32 layerMask = MAX_uint32, bool hitTriggers = true);
+
     /// <summary>
     /// Performs a raycast against objects in the scene.
     /// </summary>

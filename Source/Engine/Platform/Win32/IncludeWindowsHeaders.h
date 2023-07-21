@@ -55,6 +55,7 @@
 #undef MessageBox
 #undef GetCommandLine
 #undef CreateWindow
+#undef CreateProcess
 #undef SetWindowText
 #undef DrawText
 #undef CreateFont

@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,19 +22,18 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.
 
-#ifndef PXFOUNDATION_PXPLANE_H
-#define PXFOUNDATION_PXPLANE_H
+#ifndef PX_PLANE_H
+#define PX_PLANE_H
 
 /** \addtogroup foundation
 @{
 */
 
-#include "foundation/PxMath.h"
-#include "foundation/PxVec3.h"
+#include "foundation/PxTransform.h"
 
 #if !PX_DOXYGEN
 namespace physx
@@ -133,6 +131,24 @@ class PxPlane
 		d *= denom;
 	}
 
+	/**
+	\brief transform plane
+	*/
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxPlane transform(const PxTransform& pose) const
+	{
+		const PxVec3 transformedNormal = pose.rotate(n);
+		return PxPlane(transformedNormal, d - pose.p.dot(transformedNormal));
+	}
+
+	/**
+	\brief inverse-transform plane
+	*/
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxPlane inverseTransform(const PxTransform& pose) const
+	{
+		const PxVec3 transformedNormal = pose.rotateInv(n);
+		return PxPlane(transformedNormal, d + pose.p.dot(n));
+	}
+
 	PxVec3 n; //!< The normal to the plane
 	float d;  //!< The distance from the origin
 };
@@ -142,4 +158,5 @@ class PxPlane
 #endif
 
 /** @} */
-#endif // #ifndef PXFOUNDATION_PXPLANE_H
+#endif
+

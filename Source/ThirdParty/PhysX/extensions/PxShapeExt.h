@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,13 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_PHYSICS_EXTENSIONS_SHAPE_H
-#define PX_PHYSICS_EXTENSIONS_SHAPE_H
+#ifndef PX_SHAPE_EXT_H
+#define PX_SHAPE_EXT_H
 /** \addtogroup extensions
   @{
 */
@@ -39,6 +37,7 @@
 #include "PxShape.h"
 #include "PxRigidActor.h"
 #include "geometry/PxGeometryQuery.h"
+#include "PxQueryReport.h"
 
 #if !PX_DOXYGEN
 namespace physx
@@ -87,7 +86,7 @@ public:
 												PxU32 maxHits, PxRaycastHit* rayHits)
 	{
 		return PxGeometryQuery::raycast(
-			rayOrigin, rayDir, shape.getGeometry().any(), getGlobalPose(shape, actor), maxDist, hitFlags, maxHits, rayHits);
+			rayOrigin, rayDir, shape.getGeometry(), getGlobalPose(shape, actor), maxDist, hitFlags, maxHits, rayHits);
 	}
 
 	/**
@@ -104,7 +103,7 @@ public:
 	static PX_INLINE bool				overlap(const PxShape& shape, const PxRigidActor& actor, 
 												const PxGeometry& otherGeom, const PxTransform& otherGeomPose)
 	{
-		return PxGeometryQuery::overlap(shape.getGeometry().any(), getGlobalPose(shape, actor), otherGeom, otherGeomPose);
+		return PxGeometryQuery::overlap(shape.getGeometry(), getGlobalPose(shape, actor), otherGeom, otherGeomPose);
 	}
 
 	/**
@@ -128,7 +127,7 @@ public:
 										  const PxVec3& unitDir, const PxReal distance, const PxGeometry& otherGeom, const PxTransform& otherGeomPose,
 										  PxSweepHit& sweepHit, PxHitFlags hitFlags)
 	{
-		return PxGeometryQuery::sweep(unitDir, distance, otherGeom, otherGeomPose, shape.getGeometry().any(), getGlobalPose(shape, actor), sweepHit, hitFlags);
+		return PxGeometryQuery::sweep(unitDir, distance, otherGeom, otherGeomPose, shape.getGeometry(), getGlobalPose(shape, actor), sweepHit, hitFlags);
 	}
 
 
@@ -145,7 +144,7 @@ public:
 	*/
 	static PX_INLINE PxBounds3		getWorldBounds(const PxShape& shape, const PxRigidActor& actor, float inflation=1.01f)
 	{
-		return PxGeometryQuery::getWorldBounds(shape.getGeometry().any(), getGlobalPose(shape, actor), inflation);
+		return PxGeometryQuery::getWorldBounds(shape.getGeometry(), getGlobalPose(shape, actor), inflation);
 	}
 
 };

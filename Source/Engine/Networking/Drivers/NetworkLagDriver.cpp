@@ -97,7 +97,7 @@ bool NetworkLagDriver::PopEvent(NetworkEvent* eventPtr)
     if (!_driver)
         return false;
 
-    // Try to pop event from the queue
+    // Try to pop lagged event from the queue
     for (int32 i = 0; i < _events.Count(); i++)
     {
         auto& e = _events[i];
@@ -112,6 +112,9 @@ bool NetworkLagDriver::PopEvent(NetworkEvent* eventPtr)
     // Consume any incoming events
     while (_driver->PopEvent(eventPtr))
     {
+        if (Lag <= 0.0)
+            return true;
+
         auto& e = _events.AddOne();
         e.Lag = (double)Lag;
         e.Event = *eventPtr;
@@ -121,6 +124,12 @@ bool NetworkLagDriver::PopEvent(NetworkEvent* eventPtr)
 
 void NetworkLagDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message)
 {
+    if (Lag <= 0.0)
+    {
+        _driver->SendMessage(channelType, message);
+        return;
+    }
+
     auto& msg = _messages.AddOne();
     msg.Lag = (double)Lag;
     msg.Type = 0;
@@ -130,6 +139,12 @@ void NetworkLagDriver::SendMessage(const NetworkChannelType channelType, const N
 
 void NetworkLagDriver::SendMessage(NetworkChannelType channelType, const NetworkMessage& message, NetworkConnection target)
 {
+    if (Lag <= 0.0)
+    {
+        _driver->SendMessage(channelType, message, target);
+        return;
+    }
+
     auto& msg = _messages.AddOne();
     msg.Lag = (double)Lag;
     msg.Type = 1;
@@ -140,6 +155,12 @@ void NetworkLagDriver::SendMessage(NetworkChannelType channelType, const Network
 
 void NetworkLagDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection, HeapAllocation>& targets)
 {
+    if (Lag <= 0.0)
+    {
+        _driver->SendMessage(channelType, message, targets);
+        return;
+    }
+
     auto& msg = _messages.AddOne();
     msg.Lag = (double)Lag;
     msg.Type = 2;

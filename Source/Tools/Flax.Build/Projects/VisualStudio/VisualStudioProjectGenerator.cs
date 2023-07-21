@@ -534,6 +534,50 @@ namespace Flax.Build.Projects.VisualStudio
 
             // Save the file
             Utilities.WriteFileIfChanged(solution.Path, vcSolutionFileContent.ToString());
+
+            // Generate launch profiles for C# projects
+            if (Version >= VisualStudioVersion.VisualStudio2022)
+            {
+                var profiles = new Dictionary<string, string>();
+                var profile = new StringBuilder();
+                var editorPath = Path.Combine(Globals.EngineRoot, "Binaries/Editor/Win64/Development/FlaxEditor.exe").Replace('/', '\\').Replace("\\", "\\\\");
+                var workspacePath = solutionDirectory.Replace('/', '\\').Replace("\\", "\\\\");
+                foreach (var project in projects)
+                {
+                    if (project.Type == TargetType.DotNetCore)
+                    {
+                        var path = Path.Combine(Path.GetDirectoryName(project.Path), "Properties/launchSettings.json");
+                        path = Utilities.NormalizePath(path);
+                        if (profiles.ContainsKey(path))
+                            profile.AppendLine(",");
+                        profile.AppendLine($"    \"{project.BaseName}\": {{");
+                        profile.AppendLine("      \"commandName\": \"Executable\",");
+                        profile.AppendLine($"      \"workingDirectory\": \"{workspacePath}\",");
+                        profile.AppendLine($"      \"executablePath\": \"{editorPath}\",");
+                        profile.AppendLine($"      \"commandLineArgs\": \"-project \\\"{workspacePath}\\\"\",");
+                        profile.AppendLine("      \"nativeDebugging\": false");
+                        profile.Append("    }");
+                        if (profiles.ContainsKey(path))
+                            profiles[path] += profile.ToString();
+                        else
+                            profiles.Add(path, profile.ToString());
+                        profile.Clear();
+                    }
+                }
+                foreach (var e in profiles)
+                {
+                    var folder = Path.GetDirectoryName(e.Key);
+                    if (!Directory.Exists(folder))
+                        Directory.CreateDirectory(folder);
+                    profile.Clear();
+                    profile.AppendLine("{");
+                    profile.AppendLine("  \"profiles\": {");
+                    profile.AppendLine(e.Value);
+                    profile.AppendLine("  }");
+                    profile.Append("}");
+                    File.WriteAllText(e.Key, profile.ToString(), Encoding.UTF8);
+                }
+            }
         }
 
         /// <inheritdoc />

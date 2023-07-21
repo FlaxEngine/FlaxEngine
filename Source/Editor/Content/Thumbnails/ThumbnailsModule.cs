@@ -242,21 +242,36 @@ namespace FlaxEditor.Content.Thumbnails
                 if (!atlas.IsReady)
                     return;
 
-                // Setup
-                _guiRoot.RemoveChildren();
-                _guiRoot.AccentColor = request.Proxy.AccentColor;
+                try
+                {
+                    // Setup
+                    _guiRoot.RemoveChildren();
+                    _guiRoot.AccentColor = request.Proxy.AccentColor;
 
-                // Call proxy to prepare for thumbnail rendering
-                request.Proxy.OnThumbnailDrawBegin(request, _guiRoot, context);
-                _guiRoot.UnlockChildrenRecursive();
+                    // Call proxy to prepare for thumbnail rendering
+                    request.Proxy.OnThumbnailDrawBegin(request, _guiRoot, context);
+                    _guiRoot.UnlockChildrenRecursive();
 
-                // Draw preview
-                context.Clear(_output.View(), Color.Black);
-                Render2D.CallDrawing(_guiRoot, context, _output);
+                    // Draw preview
+                    context.Clear(_output.View(), Color.Black);
+                    Render2D.CallDrawing(_guiRoot, context, _output);
 
-                // Call proxy and cleanup UI (delete create controls, shared controls should be unlinked during OnThumbnailDrawEnd event)
-                request.Proxy.OnThumbnailDrawEnd(request, _guiRoot);
-                _guiRoot.DisposeChildren();
+                    // Call proxy and cleanup UI (delete create controls, shared controls should be unlinked during OnThumbnailDrawEnd event)
+                    request.Proxy.OnThumbnailDrawEnd(request, _guiRoot);
+                }
+                catch (Exception ex)
+                {
+                    // Handle internal errors gracefully (eg. when asset is corrupted and proxy fails)
+                    Editor.LogError("Failed to render thumbnail icon for asset: " + request.Item);
+                    Editor.LogWarning(ex);
+                    request.FinishRender(ref SpriteHandle.Invalid);
+                    RemoveRequest(request);
+                    return;
+                }
+                finally
+                {
+                    _guiRoot.DisposeChildren();
+                }
 
                 // Copy backbuffer with rendered preview into atlas
                 SpriteHandle icon = atlas.OccupySlot(_output, request.Item.ID);

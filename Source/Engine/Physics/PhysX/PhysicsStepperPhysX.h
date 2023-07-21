@@ -7,7 +7,7 @@
 #include "Types.h"
 #include <ThirdParty/PhysX/task/PxTask.h>
 #include <ThirdParty/PhysX/foundation/PxSimpleTypes.h>
-#include <ThirdParty/PhysX/foundation/PsSync.h>
+#include <ThirdParty/PhysX/foundation/PxSync.h>
 
 class MultiThreadStepper;
 
@@ -135,7 +135,7 @@ protected:
     StepperTaskSimulate mSimulateTask;
     StepperTask mCompletion0, mCompletion1;
     PxScene* mScene;
-    shdfnd::Sync* mSync;
+    PxSync* mSync;
 
     PxU32 mCurrentSubStep;
     PxU32 mNbSubSteps;

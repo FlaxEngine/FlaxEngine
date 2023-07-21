@@ -44,6 +44,7 @@ public:
     DECLARE_ENGINE_SERVICE_EVENT(void, FixedUpdate);
     DECLARE_ENGINE_SERVICE_EVENT(void, Update);
     DECLARE_ENGINE_SERVICE_EVENT(void, LateUpdate);
+    DECLARE_ENGINE_SERVICE_EVENT(void, LateFixedUpdate);
     DECLARE_ENGINE_SERVICE_EVENT(void, Draw);
     DECLARE_ENGINE_SERVICE_EVENT(void, BeforeExit);
     DECLARE_ENGINE_SERVICE_EVENT(void, Dispose);

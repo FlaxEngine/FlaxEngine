@@ -52,6 +52,10 @@ void AudioBackendNone::Source_PitchChanged(AudioSource* source)
 {
 }
 
+void AudioBackendNone::Source_PanChanged(AudioSource* source)
+{
+}
+
 void AudioBackendNone::Source_IsLoopingChanged(AudioSource* source)
 {
 }
@@ -110,12 +114,12 @@ void AudioBackendNone::Source_DequeueProcessedBuffers(AudioSource* source)
 {
 }
 
-void AudioBackendNone::Buffer_Create(uint32& bufferId)
+uint32 AudioBackendNone::Buffer_Create()
 {
-    bufferId = 1;
+    return 1;
 }
 
-void AudioBackendNone::Buffer_Delete(uint32& bufferId)
+void AudioBackendNone::Buffer_Delete(uint32 bufferId)
 {
 }
 

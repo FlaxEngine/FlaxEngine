@@ -29,6 +29,22 @@ public:
     void PostExecute(TaskGraph* graph) override;
 };
 
+namespace
+{
+    FORCE_INLINE bool CanUpdateModel(AnimatedModel* animatedModel)
+    {
+        auto skinnedModel = animatedModel->SkinnedModel.Get();
+        auto animGraph = animatedModel->AnimationGraph.Get();
+        return animGraph && animGraph->IsLoaded()
+                && skinnedModel && skinnedModel->IsLoaded()
+#if USE_EDITOR
+                // It may happen in editor so just add safe check to prevent any crashes
+                && animGraph->Graph.Parameters.Count() == animatedModel->GraphInstance.Parameters.Count()
+#endif
+                && animGraph->Graph.IsReady();
+    }
+}
+
 AnimationsService AnimationManagerInstance;
 Array<AnimatedModel*> UpdateList;
 TaskGraphSystem* Animations::System = nullptr;
@@ -53,14 +69,9 @@ void AnimationsSystem::Job(int32 index)
 {
     PROFILE_CPU_NAMED("Animations.Job");
     auto animatedModel = UpdateList[index];
-    auto skinnedModel = animatedModel->SkinnedModel.Get();
-    auto graph = animatedModel->AnimationGraph.Get();
-    if (graph && graph->IsLoaded() && graph->Graph.CanUseWithSkeleton(skinnedModel)
-#if USE_EDITOR
-        && graph->Graph.Parameters.Count() == animatedModel->GraphInstance.Parameters.Count() // It may happen in editor so just add safe check to prevent any crashes
-#endif
-    )
+    if (CanUpdateModel(animatedModel))
     {
+        auto graph = animatedModel->AnimationGraph.Get();
 #if COMPILE_WITH_PROFILER && TRACY_ENABLE
         const StringView graphName(graph->GetPath());
         ZoneName(*graphName, graphName.Length());
@@ -120,13 +131,7 @@ void AnimationsSystem::PostExecute(TaskGraph* graph)
     for (int32 index = 0; index < UpdateList.Count(); index++)
     {
         auto animatedModel = UpdateList[index];
-        auto skinnedModel = animatedModel->SkinnedModel.Get();
-        auto animGraph = animatedModel->AnimationGraph.Get();
-        if (animGraph && animGraph->IsLoaded() && animGraph->Graph.CanUseWithSkeleton(skinnedModel)
-#if USE_EDITOR
-            && animGraph->Graph.Parameters.Count() == animatedModel->GraphInstance.Parameters.Count() // It may happen in editor so just add safe check to prevent any crashes
-#endif
-        )
+        if (CanUpdateModel(animatedModel))
         {
             animatedModel->OnAnimationUpdated_Sync();
         }

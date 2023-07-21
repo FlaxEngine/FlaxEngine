@@ -30,7 +30,7 @@ GamePlugin::GamePlugin(const SpawnParams& params)
 #if USE_EDITOR
 
 #include "EditorPlugin.h"
-#include "Engine/Scripting/MException.h"
+#include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 
 EditorPlugin::EditorPlugin(const SpawnParams& params)
@@ -127,7 +127,7 @@ void PluginManagerService::InvokeDeinitialize(Plugin* plugin)
         return;
     StringAnsiView typeName = plugin->GetType().GetName();
     PROFILE_CPU();
-    ZoneName(typeName.Get(), typeName.Length())
+    ZoneName(typeName.Get(), typeName.Length());
 
     LOG(Info, "Unloading plugin {}", plugin->ToString());
 

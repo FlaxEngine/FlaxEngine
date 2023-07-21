@@ -43,6 +43,7 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Mac,
+                        TargetPlatform.iOS,
                     };
                 default: return new TargetPlatform[0];
                 }
@@ -72,10 +73,12 @@ namespace Flax.Deps.Dependencies
                 Downloader.DownloadFileFromUrlToPath("https://sourceforge.net/projects/freetype/files/freetype2/2.10.0/ft2100.zip/download", packagePath);
             using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
             {
-                if (!Directory.Exists(root))
+                var newRoot = Path.Combine(root, archive.Entries.First().FullName);
+                if (!Directory.Exists(newRoot))
                     archive.ExtractToDirectory(root);
-                root = Path.Combine(root, archive.Entries.First().FullName);
+                root = newRoot;
             }
+            var buildDir = Path.Combine(root, "build");
 
             var configurationMsvc = "Release Static";
             var binariesToCopyMsvc = new[]
@@ -127,7 +130,6 @@ namespace Flax.Deps.Dependencies
                         { "CC", "clang-7" },
                         { "CC_FOR_BUILD", "clang-7" }
                     };
-                    var buildDir = Path.Combine(root, "build");
 
                     // Fix scripts
                     Utilities.Run("sed", "-i -e \'s/\r$//\' autogen.sh", null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
@@ -215,8 +217,6 @@ namespace Flax.Deps.Dependencies
                 }
                 case TargetPlatform.Android:
                 {
-                    var buildDir = Path.Combine(root, "build");
-
                     // Disable using libpng even if it's found on the system
                     var cmakeFile = Path.Combine(root, "CMakeLists.txt");
                     File.WriteAllText(cmakeFile,
@@ -237,7 +237,6 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.Switch:
                 {
                     // Build for Switch
-                    var buildDir = Path.Combine(root, "build");
                     SetupDirectory(buildDir, true);
                     RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release");
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
@@ -248,11 +247,29 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.Mac:
                 {
                     // Build for Mac
-                    var buildDir = Path.Combine(root, "build");
+                    foreach (var architecture in new []{ TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    {
+                        SetupDirectory(buildDir, true);
+                        RunCmake(buildDir, platform, architecture, ".. -DCMAKE_BUILD_TYPE=Release");
+                        Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
+                    }
+                    break;
+                }
+                case TargetPlatform.iOS:
+                {
+                    // Fix archive creation issue due to missing ar tool
+                    Utilities.ReplaceInFile(Path.Combine(root, "builds/cmake/iOS.cmake"), "set(CMAKE_SYSTEM_NAME Darwin)", "set(CMAKE_SYSTEM_NAME Darwin)\nset(CMAKE_AR ar CACHE FILEPATH \"\" FORCE)");
+
+                    // Fix freetype toolchain rejecting min iPhone version
+                    Utilities.ReplaceInFile(Path.Combine(root, "builds/cmake/iOS.cmake"), "set(CMAKE_OSX_DEPLOYMENT_TARGET \"\"", "set(CMAKE_OSX_DEPLOYMENT_TARGET \"${CMAKE_OSX_DEPLOYMENT_TARGET}\"");
+
+                    // Build for iOS
                     SetupDirectory(buildDir, true);
-                    RunCmake(buildDir, platform, TargetArchitecture.x64, ".. -DCMAKE_BUILD_TYPE=Release");
+                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DIOS_PLATFORM=OS -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_BUILD_TYPE=Release -DFT_WITH_BZIP2=OFF -DFT_WITH_ZLIB=OFF -DFT_WITH_PNG=OFF");
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
                     break;
                 }

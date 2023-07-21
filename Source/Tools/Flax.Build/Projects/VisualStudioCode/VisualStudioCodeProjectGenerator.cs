@@ -141,7 +141,7 @@ namespace Flax.Build.Projects.VisualStudioCode
 
             // Prepare
             var buildToolWorkspace = Environment.CurrentDirectory;
-            var buildToolPath = Utilities.MakePathRelativeTo(typeof(Builder).Assembly.Location, solution.WorkspaceRootPath);
+            var buildToolPath = Path.ChangeExtension(Utilities.MakePathRelativeTo(typeof(Builder).Assembly.Location, solution.WorkspaceRootPath), null);
             var rules = Builder.GenerateRulesAssembly();
 
             // Create tasks file
@@ -214,10 +214,9 @@ namespace Flax.Build.Projects.VisualStudioCode
                                     }
                                     case TargetPlatform.Linux:
                                     {
-                                        json.AddField("command", Path.Combine(Globals.EngineRoot, "Source/Platforms/Editor/Linux/Mono/bin/mono"));
+                                        json.AddField("command", buildToolPath);
                                         json.BeginArray("args");
                                         {
-                                            json.AddUnnamedField(buildToolPath);
                                             json.AddUnnamedField("--build");
                                             json.AddUnnamedField("--log");
                                             json.AddUnnamedField("--mutex");
@@ -242,11 +241,9 @@ namespace Flax.Build.Projects.VisualStudioCode
                                     }
                                     case TargetPlatform.Mac:
                                     {
-                                        VisualStudioCodeInstance.GetInstance();
-                                        json.AddField("command", "mono"); // TODO: use bundled mono
+                                        json.AddField("command", buildToolPath);
                                         json.BeginArray("args");
                                         {
-                                            json.AddUnnamedField(buildToolPath);
                                             json.AddUnnamedField("--build");
                                             json.AddUnnamedField("--log");
                                             json.AddUnnamedField("--mutex");
@@ -359,7 +356,11 @@ namespace Flax.Build.Projects.VisualStudioCode
                                                     json.AddField("ignoreFailures", true);
                                                     json.EndObject();
 
-                                                    // Ignore signals used by Mono
+                                                    // Ignore signals used by C# runtime
+                                                    json.BeginObject();
+                                                    json.AddField("description", "ignore SIG34 signal");
+                                                    json.AddField("text", "handle SIG34 nostop noprint pass");
+                                                    json.EndObject();
                                                     json.BeginObject();
                                                     json.AddField("description", "ignore SIG35 signal");
                                                     json.AddField("text", "handle SIG35 nostop noprint pass");
@@ -428,6 +429,62 @@ namespace Flax.Build.Projects.VisualStudioCode
                                 }
                             }
                             // C# project
+                            else if (project.Type == TargetType.DotNetCore)
+                            {
+                                // TODO: Skip generating launch profiles for plugins and dependencies
+
+                                json.BeginObject();
+                                {
+                                    json.AddField("type", "coreclr");
+                                    json.AddField("name", project.Name + " (C# attach Editor)");
+                                    json.AddField("request", "attach");
+                                    json.AddField("processName", "FlaxEditor");
+                                }
+                                json.EndObject();
+
+                                foreach (var configuration in project.Configurations)
+                                {
+                                    var name = project.Name + '|' + configuration.Name + " (C#)";
+                                    var outputTargetFilePath = configuration.Target.GetOutputFilePath(configuration.TargetBuildOptions, TargetOutputType.Executable);
+
+                                    json.BeginObject();
+                                    {
+                                        json.AddField("type", "coreclr");
+                                        json.AddField("name", name);
+                                        json.AddField("request", "launch");
+                                        json.AddField("preLaunchTask", solution.Name + '|' + configuration.Name);
+                                        json.AddField("cwd", buildToolWorkspace);
+                                        if (configuration.Platform == Platform.BuildPlatform.Target)
+                                        {
+                                            var editorFolder = configuration.Platform == TargetPlatform.Windows ? (configuration.Architecture == TargetArchitecture.x64 ? "Win64" : "Win32") : configuration.Platform.ToString();
+                                            json.AddField("program", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", editorFolder, configuration.ConfigurationName, "FlaxEditor"));
+                                            json.BeginArray("args");
+                                            {
+                                                json.AddUnnamedField("-project");
+                                                json.AddUnnamedField(buildToolWorkspace);
+                                                json.AddUnnamedField("-skipCompile");
+                                            }
+                                            json.EndArray();
+                                        }
+                                        else
+                                        {
+                                            json.AddField("program", configuration.Target.GetOutputFilePath(configuration.TargetBuildOptions, TargetOutputType.Executable));
+                                        }
+
+                                        switch (configuration.Platform)
+                                        {
+                                        case TargetPlatform.Windows:
+                                            json.AddField("stopAtEntry", false);
+                                            json.AddField("externalConsole", true);
+                                            break;
+                                        case TargetPlatform.Linux:
+                                            break;
+                                        }
+                                    }
+                                    json.EndObject();
+                                }
+                            }
+                            // Mono C# project
                             else if (project.Type == TargetType.DotNet)
                             {
                                 foreach (var configuration in project.Configurations)
@@ -549,8 +606,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.EndObject();
                 
                 // Extension settings
-                json.AddField("omnisharp.useModernNet", false);
-
+                json.AddField("omnisharp.useModernNet", true);
 
                 json.EndRootObject();
                 json.Save(Path.Combine(vsCodeFolder, "settings.json"));
@@ -569,7 +625,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.AddField("jake.autoDetect", "off");
                 json.AddField("grunt.autoDetect", "off");
                 json.AddField("omnisharp.defaultLaunchSolution", solution.Name + ".sln");
-                json.AddField("omnisharp.useModernNet", false);
+                json.AddField("omnisharp.useModernNet", true);
                 json.EndObject();
 
                 // Folders
@@ -609,7 +665,6 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.BeginArray("recommendations");
                 {
                     json.AddUnnamedField("ms-dotnettools.csharp");
-                    json.AddUnnamedField("ms-vscode.mono-debug");
 
                     if (!Globals.Project.IsCSharpOnlyProject)
                     {

@@ -15,7 +15,25 @@ public class Scripting : EngineModule
 
         if (EngineConfiguration.WithCSharp(options))
         {
-            options.PublicDependencies.Add("mono");
+            if (EngineConfiguration.WithDotNet(options))
+            {
+                // .NET
+                options.PrivateDependencies.Add("nethost");
+                options.ScriptingAPI.Defines.Add("USE_NETCORE");
+
+                if (options.Target is EngineTarget engineTarget && engineTarget.UseSeparateMainExecutable(options))
+                {
+                    // Build target doesn't support linking again main executable (eg. Linux) thus additional shared library is used for the engine (eg. libFlaxEditor.so)
+                    var fileName = options.Platform.GetLinkOutputFileName(engineTarget.OutputName, LinkerOutput.SharedLibrary);
+                    options.CompileEnv.PreprocessorDefinitions.Add("MCORE_MAIN_MODULE_NAME=" + fileName);
+                }
+            }
+            else
+            {
+                // Mono
+                options.PrivateDependencies.Add("mono");
+                options.ScriptingAPI.Defines.Add("USE_MONO");
+            }
         }
 
         options.PrivateDependencies.Add("Utilities");

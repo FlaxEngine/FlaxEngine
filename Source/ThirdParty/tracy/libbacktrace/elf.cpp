@@ -46,6 +46,9 @@ POSSIBILITY OF SUCH DAMAGE.  */
 #include "backtrace.hpp"
 #include "internal.hpp"
 
+#include "../client/TracyFastVector.hpp"
+#include "../common/TracyAlloc.hpp"
+
 #ifndef S_ISLNK
  #ifndef S_IFLNK
   #define S_IFLNK 0120000
@@ -69,6 +72,10 @@ POSSIBILITY OF SUCH DAMAGE.  */
 
 namespace tracy
 {
+
+#ifdef TRACY_DEBUGINFOD
+int GetDebugInfoDescriptor( const char* buildid_data, size_t buildid_size );
+#endif
 
 #if !defined(HAVE_DECL_STRNLEN) || !HAVE_DECL_STRNLEN
 
@@ -867,6 +874,7 @@ elf_readlink (struct backtrace_state *state, const char *filename,
 static int
 elf_open_debugfile_by_buildid (struct backtrace_state *state,
 			       const char *buildid_data, size_t buildid_size,
+             const char *filename,
 			       backtrace_error_callback error_callback,
 			       void *data)
 {
@@ -913,7 +921,14 @@ elf_open_debugfile_by_buildid (struct backtrace_state *state,
      That seems kind of pointless to me--why would it have the right
      name but not the right build ID?--so skipping the check.  */
 
+#ifdef TRACY_DEBUGINFOD
+  if (ret == -1)
+    return GetDebugInfoDescriptor( buildid_data, buildid_size, filename );
+  else
+    return ret;
+#else
   return ret;
+#endif
 }
 
 /* Try to open a file whose name is PREFIX (length PREFIX_LEN)
@@ -1803,7 +1818,7 @@ elf_zlib_inflate (const unsigned char *pin, size_t sin, uint16_t *zdebug_table,
 	      /* An uncompressed block.  */
 
 	      /* If we've read ahead more than a byte, back up.  */
-	      while (bits > 8)
+	      while (bits >= 8)
 		{
 		  --pin;
 		  bits -= 8;
@@ -4429,7 +4444,7 @@ elf_add (struct backtrace_state *state, const char *filename, int descriptor,
       int d;
 
       d = elf_open_debugfile_by_buildid (state, buildid_data, buildid_size,
-					 error_callback, data);
+					 filename, error_callback, data);
       if (d >= 0)
 	{
 	  int ret;
@@ -4812,12 +4827,34 @@ struct phdr_data
 /* Callback passed to dl_iterate_phdr.  Load debug info from shared
    libraries.  */
 
+struct PhdrIterate
+{
+  char* dlpi_name;
+  ElfW(Addr) dlpi_addr;
+};
+FastVector<PhdrIterate> s_phdrData(16);
+
+static int
+phdr_callback_mock (struct dl_phdr_info *info, size_t size ATTRIBUTE_UNUSED,
+  void *pdata)
+{
+  auto ptr = s_phdrData.push_next();
+  if (info->dlpi_name)
+  {
+    size_t sz = strlen (info->dlpi_name) + 1;
+    ptr->dlpi_name = (char*)tracy_malloc (sz);
+    memcpy (ptr->dlpi_name, info->dlpi_name, sz);
+  }
+  else ptr->dlpi_name = nullptr;
+  ptr->dlpi_addr = info->dlpi_addr;
+  return 0;
+}
+
 static int
 #ifdef __i386__
 __attribute__ ((__force_align_arg_pointer__))
 #endif
-phdr_callback (struct dl_phdr_info *info, size_t size ATTRIBUTE_UNUSED,
-	       void *pdata)
+phdr_callback (struct PhdrIterate *info, void *pdata)
 {
   struct phdr_data *pd = (struct phdr_data *) pdata;
   const char *filename;
@@ -4896,7 +4933,14 @@ backtrace_initialize (struct backtrace_state *state, const char *filename,
   pd.exe_filename = filename;
   pd.exe_descriptor = ret < 0 ? descriptor : -1;
 
-  dl_iterate_phdr (phdr_callback, (void *) &pd);
+  assert (s_phdrData.empty());
+  dl_iterate_phdr (phdr_callback_mock, nullptr);
+  for (auto& v : s_phdrData)
+  {
+    phdr_callback (&v, (void *) &pd);
+    tracy_free (v.dlpi_name);
+  }
+  s_phdrData.clear();
 
   if (!state->threaded)
     {

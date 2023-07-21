@@ -28,7 +28,7 @@ typedef Function<CreateAssetResult(CreateAssetContext&)> CreateAssetFunction;
 /// <summary>
 /// Importing/creating asset context structure
 /// </summary>
-class CreateAssetContext : public NonCopyable
+class FLAXENGINE_API CreateAssetContext : public NonCopyable
 {
 private:
     CreateAssetResult _applyChangesResult;

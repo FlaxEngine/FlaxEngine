@@ -133,8 +133,9 @@ void GPUTextureDX11::OnResidentMipsChanged()
         srDesc.Texture2D.MostDetailedMip = firstMipIndex;
         srDesc.Texture2D.MipLevels = mipLevels;
     }
-    ID3D11ShaderResourceView* srView;
-    VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateShaderResourceView(_resource, &srDesc, &srView));
+    ID3D11ShaderResourceView* srView = nullptr;
+    if (mipLevels != 0)
+        VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateShaderResourceView(_resource, &srDesc, &srView));
     GPUTextureViewDX11& view = IsVolume() ? _handleVolume : _handlesPerSlice[0];
     if (view.GetParent() == nullptr)
        view.Init(this, nullptr, srView, nullptr, nullptr, Format(), MultiSampleLevel());

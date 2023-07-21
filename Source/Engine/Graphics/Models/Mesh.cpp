@@ -11,14 +11,12 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Threading/Task.h"
 #include "Engine/Threading/Threading.h"
 #if USE_EDITOR
 #include "Engine/Renderer/GBufferPass.h"
-#endif
-#if USE_MONO
-#include <ThirdParty/mono-2.0/mono/metadata/appdomain.h>
 #endif
 
 namespace
@@ -117,28 +115,28 @@ namespace
 #if !COMPILE_WITHOUT_CSHARP
 
     template<typename IndexType>
-    bool UpdateMesh(Mesh* mesh, uint32 vertexCount, uint32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj)
+    bool UpdateMesh(Mesh* mesh, uint32 vertexCount, uint32 triangleCount, MArray* verticesObj, MArray* trianglesObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj, MArray* colorsObj)
     {
-        ASSERT((uint32)mono_array_length(verticesObj) >= vertexCount);
-        ASSERT((uint32)mono_array_length(trianglesObj) / 3 >= triangleCount);
-        auto vertices = (Float3*)(void*)mono_array_addr_with_size(verticesObj, sizeof(Float3), 0);
-        auto triangles = (IndexType*)(void*)mono_array_addr_with_size(trianglesObj, sizeof(IndexType), 0);
-        const auto normals = normalsObj ? (Float3*)(void*)mono_array_addr_with_size(normalsObj, sizeof(Float3), 0) : nullptr;
-        const auto tangents = tangentsObj ? (Float3*)(void*)mono_array_addr_with_size(tangentsObj, sizeof(Float3), 0) : nullptr;
-        const auto uvs = uvObj ? (Float2*)(void*)mono_array_addr_with_size(uvObj, sizeof(Float2), 0) : nullptr;
-        const auto colors = colorsObj ? (Color32*)(void*)mono_array_addr_with_size(colorsObj, sizeof(Color32), 0) : nullptr;
+        ASSERT((uint32)MCore::Array::GetLength(verticesObj) >= vertexCount);
+        ASSERT((uint32)MCore::Array::GetLength(trianglesObj) / 3 >= triangleCount);
+        auto vertices = MCore::Array::GetAddress<Float3>(verticesObj);
+        auto triangles = MCore::Array::GetAddress<IndexType>(trianglesObj);
+        const auto normals = normalsObj ? MCore::Array::GetAddress<Float3>(normalsObj) : nullptr;
+        const auto tangents = tangentsObj ? MCore::Array::GetAddress<Float3>(tangentsObj) : nullptr;
+        const auto uvs = uvObj ? MCore::Array::GetAddress<Float2>(uvObj) : nullptr;
+        const auto colors = colorsObj ? MCore::Array::GetAddress<Color32>(colorsObj) : nullptr;
         return UpdateMesh<IndexType>(mesh, vertexCount, triangleCount, vertices, triangles, normals, tangents, uvs, colors);
     }
 
     template<typename IndexType>
-    bool UpdateTriangles(Mesh* mesh, int32 triangleCount, MonoArray* trianglesObj)
+    bool UpdateTriangles(Mesh* mesh, int32 triangleCount, MArray* trianglesObj)
     {
         const auto model = mesh->GetModel();
         ASSERT(model && model->IsVirtual() && trianglesObj);
 
         // Get buffer data
-        ASSERT((int32)mono_array_length(trianglesObj) / 3 >= triangleCount);
-        auto ib = (IndexType*)(void*)mono_array_addr_with_size(trianglesObj, sizeof(IndexType), 0);
+        ASSERT(MCore::Array::GetLength(trianglesObj) / 3 >= triangleCount);
+        auto ib = MCore::Array::GetAddress<IndexType>(trianglesObj);
 
         return mesh->UpdateTriangles(triangleCount, ib);
     }
@@ -717,22 +715,22 @@ ScriptingObject* Mesh::GetParentModel()
 
 #if !COMPILE_WITHOUT_CSHARP
 
-bool Mesh::UpdateMeshUInt(int32 vertexCount, int32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj)
+bool Mesh::UpdateMeshUInt(int32 vertexCount, int32 triangleCount, MArray* verticesObj, MArray* trianglesObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj, MArray* colorsObj)
 {
     return ::UpdateMesh<uint32>(this, (uint32)vertexCount, (uint32)triangleCount, verticesObj, trianglesObj, normalsObj, tangentsObj, uvObj, colorsObj);
 }
 
-bool Mesh::UpdateMeshUShort(int32 vertexCount, int32 triangleCount, MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj, MonoArray* colorsObj)
+bool Mesh::UpdateMeshUShort(int32 vertexCount, int32 triangleCount, MArray* verticesObj, MArray* trianglesObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj, MArray* colorsObj)
 {
     return ::UpdateMesh<uint16>(this, (uint32)vertexCount, (uint32)triangleCount, verticesObj, trianglesObj, normalsObj, tangentsObj, uvObj, colorsObj);
 }
 
-bool Mesh::UpdateTrianglesUInt(int32 triangleCount, MonoArray* trianglesObj)
+bool Mesh::UpdateTrianglesUInt(int32 triangleCount, MArray* trianglesObj)
 {
     return ::UpdateTriangles<uint32>(this, triangleCount, trianglesObj);
 }
 
-bool Mesh::UpdateTrianglesUShort(int32 triangleCount, MonoArray* trianglesObj)
+bool Mesh::UpdateTrianglesUShort(int32 triangleCount, MArray* trianglesObj)
 {
     return ::UpdateTriangles<uint16>(this, triangleCount, trianglesObj);
 }
@@ -746,7 +744,7 @@ enum class InternalBufferType
     IB32 = 4,
 };
 
-MonoArray* Mesh::DownloadBuffer(bool forceGpu, MonoReflectionType* resultType, int32 typeI)
+MArray* Mesh::DownloadBuffer(bool forceGpu, MTypeObject* resultType, int32 typeI)
 {
     auto mesh = this;
     auto type = (InternalBufferType)typeI;
@@ -824,8 +822,8 @@ MonoArray* Mesh::DownloadBuffer(bool forceGpu, MonoReflectionType* resultType, i
     }
 
     // Convert into managed array
-    MonoArray* result = mono_array_new(mono_domain_get(), mono_type_get_class(mono_reflection_type_get_type(resultType)), dataCount);
-    void* managedArrayPtr = mono_array_addr_with_size(result, 0, 0);
+    MArray* result = MCore::Array::New(MCore::Type::GetClass(INTERNAL_TYPE_OBJECT_GET(resultType)), dataCount);
+    void* managedArrayPtr = MCore::Array::GetAddress(result);
     const int32 elementSize = data.Length() / dataCount;
     switch (type)
     {

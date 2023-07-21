@@ -66,10 +66,7 @@ public:
     /// Gets the value indicating if camera should use perspective rendering mode, otherwise it will use orthographic projection.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(20), DefaultValue(true), EditorDisplay(\"Camera\"), Tooltip(\"Enables perspective projection mode, otherwise uses orthographic.\")")
-    FORCE_INLINE bool GetUsePerspective() const
-    {
-        return _usePerspective;
-    }
+    bool GetUsePerspective() const;
 
     /// <summary>
     /// Sets the value indicating if camera should use perspective rendering mode, otherwise it will use orthographic projection.
@@ -80,10 +77,7 @@ public:
     /// Gets the camera's field of view (in degrees).
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(10), DefaultValue(60.0f), Limit(0, 179), EditorDisplay(\"Camera\", \"Field Of View\"), Tooltip(\"Field of view angle in degrees.\")")
-    FORCE_INLINE float GetFieldOfView() const
-    {
-        return _fov;
-    }
+    float GetFieldOfView() const;
 
     /// <summary>
     /// Sets camera's field of view (in degrees).
@@ -94,10 +88,7 @@ public:
     /// Gets the custom aspect ratio. 0 if not use custom value.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(0, 10, 0.01f), EditorDisplay(\"Camera\"), Tooltip(\"Custom aspect ratio to use. Set to 0 to disable.\")")
-    FORCE_INLINE float GetCustomAspectRatio() const
-    {
-        return _customAspectRatio;
-    }
+    float GetCustomAspectRatio() const;
 
     /// <summary>
     /// Sets the custom aspect ratio. 0 if not use custom value.
@@ -108,10 +99,7 @@ public:
     /// Gets camera's near plane distance.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(30), DefaultValue(10.0f), Limit(0, 1000, 0.05f), EditorDisplay(\"Camera\"), Tooltip(\"Near clipping plane distance\")")
-    FORCE_INLINE float GetNearPlane() const
-    {
-        return _near;
-    }
+    float GetNearPlane() const;
 
     /// <summary>
     /// Sets camera's near plane distance.
@@ -122,10 +110,7 @@ public:
     /// Gets camera's far plane distance.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(40), DefaultValue(40000.0f), Limit(0, float.MaxValue, 5), EditorDisplay(\"Camera\"), Tooltip(\"Far clipping plane distance\")")
-    FORCE_INLINE float GetFarPlane() const
-    {
-        return _far;
-    }
+    float GetFarPlane() const;
 
     /// <summary>
     /// Sets camera's far plane distance.
@@ -136,10 +121,7 @@ public:
     /// Gets the orthographic projection scale.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(1.0f), Limit(0.0001f, 1000, 0.01f), EditorDisplay(\"Camera\"), Tooltip(\"Orthographic projection scale\")")
-    FORCE_INLINE float GetOrthographicScale() const
-    {
-        return _orthoScale;
-    }
+    float GetOrthographicScale() const;
 
     /// <summary>
     /// Sets the orthographic projection scale.
@@ -167,6 +149,23 @@ public:
     /// <param name="cameraViewportSpaceLocation">The output camera viewport-space location (XY in screen pixels).</param>
     /// <param name="viewport">The viewport.</param>
     API_FUNCTION() void ProjectPoint(const Vector3& worldSpaceLocation, API_PARAM(Out) Float2& cameraViewportSpaceLocation, API_PARAM(Ref) const Viewport& viewport) const;
+
+    /// <summary>
+    /// Converts a game window-space point into a corresponding point in world space.
+    /// </summary>
+    /// <param name="gameWindowSpaceLocation">The input game window coordinates (XY in screen pixels).</param>
+    /// <param name="depth">The input camera-relative depth position (eg. clipping plane).</param>
+    /// <param name="worldSpaceLocation">The output world-space location (XYZ in world).</param>
+    API_FUNCTION() void UnprojectPoint(const Float2& gameWindowSpaceLocation, float depth, API_PARAM(Out) Vector3& worldSpaceLocation) const;
+
+    /// <summary>
+    /// Converts a camera viewport-space point into a corresponding point in world space.
+    /// </summary>
+    /// <param name="cameraViewportSpaceLocation">The input camera viewport-space location (XY in screen pixels).</param>
+    /// <param name="depth">The input camera-relative depth position (eg. clipping plane).</param>
+    /// <param name="worldSpaceLocation">The output world-space location (XYZ in world).</param>
+    /// <param name="viewport">The viewport.</param>
+    API_FUNCTION() void UnprojectPoint(const Float2& cameraViewportSpaceLocation, float depth, API_PARAM(Out) Vector3& worldSpaceLocation, API_PARAM(Ref) const Viewport& viewport) const;
 
     /// <summary>
     /// Checks if the 3d point of the world is in the camera's field of view.

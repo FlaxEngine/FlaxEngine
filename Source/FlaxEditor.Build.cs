@@ -28,6 +28,7 @@ public class FlaxEditor : EngineTarget
         Architectures = new[]
         {
             TargetArchitecture.x64,
+            TargetArchitecture.ARM64,
         };
         GlobalDefinitions.Add("USE_EDITOR");
         Win32ResourceFile = Path.Combine(Globals.EngineRoot, "Source", "FlaxEditor.rc");

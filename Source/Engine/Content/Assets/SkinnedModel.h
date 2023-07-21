@@ -14,12 +14,32 @@ class StreamSkinnedModelLODTask;
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedModel : public ModelBase
 {
-    DECLARE_BINARY_ASSET_HEADER(SkinnedModel, 4);
+    DECLARE_BINARY_ASSET_HEADER(SkinnedModel, 5);
     friend SkinnedMesh;
     friend StreamSkinnedModelLODTask;
+public:
+    // Skeleton mapping descriptor.
+    struct FLAXENGINE_API SkeletonMapping
+    {
+        // Target skeleton.
+        AssetReference<SkinnedModel> TargetSkeleton;
+        // Source skeleton.
+        AssetReference<SkinnedModel> SourceSkeleton;
+        // The node-to-node mapping for the fast animation sampling for the skinned model skeleton nodes. Each item is index of the source skeleton node into target skeleton node.
+        Span<int32> NodesMapping;
+    };
+
 private:
+    struct SkeletonMappingData
+    {
+        AssetReference<SkinnedModel> SourceSkeleton;
+        Span<int32> NodesMapping;
+    };
+
+    bool _initialized = false;
     int32 _loadedLODs = 0;
     StreamSkinnedModelLODTask* _streamingTask = nullptr;
+    Dictionary<Asset*, SkeletonMappingData> _skeletonMappingCache;
 
 public:
     /// <summary>
@@ -44,7 +64,7 @@ public:
     /// </summary>
     FORCE_INLINE bool IsInitialized() const
     {
-        return LODs.HasItems();
+        return _initialized;
     }
 
     /// <summary>
@@ -76,13 +96,11 @@ public:
     /// <summary>
     /// Determines whether any LOD has been initialized.
     /// </summary>
-    /// <returns>True if any LOD has been initialized, otherwise false.</returns>
     bool HasAnyLODInitialized() const;
 
     /// <summary>
     /// Determines whether this model can be rendered.
     /// </summary>
-    /// <returns>True if can render that model, otherwise false.</returns>
     FORCE_INLINE bool CanBeRendered() const
     {
         return _loadedLODs > 0;
@@ -109,7 +127,7 @@ public:
     /// </summary>
     /// <param name="name">The name of the node.</param>
     /// <returns>The index of the node or -1 if not found.</returns>
-    API_FUNCTION() FORCE_INLINE int32 FindNode(const StringView& name)
+    API_FUNCTION() FORCE_INLINE int32 FindNode(const StringView& name) const
     {
         return Skeleton.FindNode(name);
     }
@@ -119,7 +137,7 @@ public:
     /// </summary>
     /// <param name="name">The name of the node used by the bone.</param>
     /// <returns>The index of the bone or -1 if not found.</returns>
-    API_FUNCTION() FORCE_INLINE int32 FindBone(const StringView& name)
+    API_FUNCTION() FORCE_INLINE int32 FindBone(const StringView& name) const
     {
         return FindBone(FindNode(name));
     }
@@ -129,7 +147,7 @@ public:
     /// </summary>
     /// <param name="nodeIndex">The index of the node.</param>
     /// <returns>The index of the bone or -1 if not found.</returns>
-    API_FUNCTION() FORCE_INLINE int32 FindBone(int32 nodeIndex)
+    API_FUNCTION() FORCE_INLINE int32 FindBone(int32 nodeIndex) const
     {
         return Skeleton.FindBone(nodeIndex);
     }
@@ -154,7 +172,13 @@ public:
     /// <param name="data">The data (may be missing if failed to get it).</param>
     void GetLODData(int32 lodIndex, BytesContainer& data) const;
 
-public:
+    /// <summary>
+    /// Gets the skeleton mapping for a given asset (animation or other skinned model). Uses identity mapping or manually created retargeting setup.
+    /// </summary>
+    /// <param name="source">The source asset (animation or other skinned model) to get mapping to its skeleton.</param>
+    /// <returns>The skeleton mapping for the source asset into this skeleton.</returns>
+    SkeletonMapping GetSkeletonMapping(Asset* source);
+
     /// <summary>
     /// Determines if there is an intersection between the SkinnedModel and a Ray in given world using given instance.
     /// </summary>
@@ -194,7 +218,6 @@ public:
     /// <returns>The bounding box.</returns>
     API_FUNCTION() BoundingBox GetBox(int32 lodIndex = 0) const;
 
-public:
     /// <summary>
     /// Draws the meshes. Binds vertex and index buffers and invokes the draw calls.
     /// </summary>
@@ -219,7 +242,6 @@ public:
     /// <param name="info">The packed drawing info data.</param>
     void Draw(const RenderContextBatch& renderContextBatch, const SkinnedMesh::DrawInfo& info);
 
-public:
     /// <summary>
     /// Setups the model LODs collection including meshes creation.
     /// </summary>
@@ -244,7 +266,6 @@ public:
     API_FUNCTION() bool SetupSkeleton(const Array<SkeletonNode>& nodes, const Array<SkeletonBone>& bones, bool autoCalculateOffsetMatrix);
 
 #if USE_EDITOR
-
     /// <summary>
     /// Saves this asset to the file. Supported only in Editor.
     /// </summary>
@@ -253,7 +274,6 @@ public:
     /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
     /// <returns>True if cannot save data, otherwise false.</returns>
     API_FUNCTION() bool Save(bool withMeshDataFromGpu = false, const StringView& path = StringView::Empty);
-
 #endif
 
 private:
@@ -264,8 +284,38 @@ private:
     /// <returns>True if failed, otherwise false.</returns>
     bool Init(const Span<int32>& meshesCountPerLod);
 
+    void ClearSkeletonMapping();
+    void OnSkeletonMappingSourceAssetUnloaded(Asset* obj);
+
+#if USE_EDITOR
+public:
+    // Skeleton retargeting setup (internal use only - accessed by Editor)
+    API_STRUCT(NoDefault) struct SkeletonRetarget
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(SkeletonRetarget);
+        // Source asset id.
+        API_FIELD() Guid SourceAsset;
+        // Skeleton asset id to use for remapping.
+        API_FIELD() Guid SkeletonAsset;
+        // Skeleton nodes remapping table (maps this skeleton node name to other skeleton node).
+        API_FIELD() Dictionary<String, String, HeapAllocation> NodesMapping;
+    };
+    // Gets or sets the skeleton retarget entries (accessed in Editor only).
+    API_PROPERTY() const Array<SkeletonRetarget>& GetSkeletonRetargets() const { return _skeletonRetargets; }
+    API_PROPERTY() void SetSkeletonRetargets(const Array<SkeletonRetarget>& value) { Locker.Lock(); _skeletonRetargets = value; ClearSkeletonMapping(); Locker.Unlock(); }
+private:
+#else
+    struct SkeletonRetarget
+    {
+        Guid SourceAsset, SkeletonAsset;
+        Dictionary<String, String, HeapAllocation> NodesMapping;
+    };
+#endif
+    Array<SkeletonRetarget> _skeletonRetargets;
+
 public:
     // [ModelBase]
+    uint64 GetMemoryUsage() const override;
     void SetupMaterialSlots(int32 slotsCount) override;
     int32 GetLODsCount() const override;
     void GetMeshes(Array<MeshBase*>& meshes, int32 lodIndex = 0) override;

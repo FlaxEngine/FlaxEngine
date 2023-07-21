@@ -13,13 +13,14 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.SceneGraph;
-using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 
 namespace FlaxEngine
 {
@@ -37,6 +38,8 @@ namespace FlaxEditor.Utilities
     public static class Utils
     {
         private static readonly StringBuilder CachedSb = new StringBuilder(256);
+        private static readonly Regex IncNameRegex1 = new Regex("(\\d+)$");
+        private static readonly Regex IncNameRegex2 = new Regex("\\((\\d+)\\)$");
 
         private static readonly string[] MemorySizePostfixes =
         {
@@ -52,6 +55,92 @@ namespace FlaxEditor.Utilities
         /// The name of the Flax Engine C# assembly name.
         /// </summary>
         public static readonly string FlaxEngineAssemblyName = "FlaxEngine.CSharp";
+
+        /// <summary>
+        /// Tries to parse number in the name brackets at the end of the value and then increment it to create a new name.
+        /// Supports numbers at the end without brackets.
+        /// </summary>
+        /// <param name="name">The input name.</param>
+        /// <param name="isValid">Custom function to validate the created name.</param>
+        /// <returns>The new name.</returns>
+        public static string IncrementNameNumber(string name, Func<string, bool> isValid)
+        {
+            // Validate input name
+            if (isValid == null || isValid(name))
+                return name;
+
+            // Temporary data
+            int index;
+            int MaxChecks = 10000;
+            string result;
+
+            // Find '<name><num>' case
+            var match = IncNameRegex1.Match(name);
+            if (match.Success && match.Groups.Count == 2)
+            {
+                // Get result
+                string num = match.Groups[0].Value;
+
+                // Parse value
+                if (int.TryParse(num, out index))
+                {
+                    // Get prefix
+                    string prefix = name.Substring(0, name.Length - num.Length);
+
+                    // Generate name
+                    do
+                    {
+                        result = string.Format("{0}{1}", prefix, ++index);
+
+                        if (MaxChecks-- < 0)
+                            return name + Guid.NewGuid();
+                    } while (!isValid(result));
+
+                    if (result.Length > 0)
+                        return result;
+                }
+            }
+
+            // Find '<name> (<num>)' case
+            match = IncNameRegex2.Match(name);
+            if (match.Success && match.Groups.Count == 2)
+            {
+                // Get result
+                string num = match.Groups[0].Value;
+                num = num.Substring(1, num.Length - 2);
+
+                // Parse value
+                if (int.TryParse(num, out index))
+                {
+                    // Get prefix
+                    string prefix = name.Substring(0, name.Length - num.Length - 2);
+
+                    // Generate name
+                    do
+                    {
+                        result = string.Format("{0}({1})", prefix, ++index);
+
+                        if (MaxChecks-- < 0)
+                            return name + Guid.NewGuid();
+                    } while (!isValid(result));
+
+                    if (result.Length > 0)
+                        return result;
+                }
+            }
+
+            // Generate name
+            index = 0;
+            do
+            {
+                result = string.Format("{0} {1}", name, index++);
+
+                if (MaxChecks-- < 0)
+                    return name + Guid.NewGuid();
+            } while (!isValid(result));
+
+            return result;
+        }
 
         /// <summary>
         /// Formats the amount of bytes to get a human-readable data size in bytes with abbreviation. Eg. 32 kB
@@ -100,6 +189,16 @@ namespace FlaxEditor.Utilities
             if (actor != null)
                 str += string.Format(" ({0})", TypeUtils.GetObjectType(obj).Name);
             return str;
+        }
+
+        internal static void GetActorsTree(List<Actor> list, Actor a)
+        {
+            list.Add(a);
+            int cnt = a.ChildrenCount;
+            for (int i = 0; i < cnt; i++)
+            {
+                GetActorsTree(list, a.GetChild(i));
+            }
         }
 
         /// <summary>
@@ -888,21 +987,6 @@ namespace FlaxEditor.Utilities
                 }
             }
         }
-        
-        /// <summary>
-        /// Gets all of the Actors in the actor's tree. This list will include the Actor passed in.
-        /// </summary>
-        /// <param name="list">The list to add all of the actors to</param>
-        /// <param name="a">The Actor which the tree will be created from</param>
-        public static void GetActorsTree(List<Actor> list, Actor a)
-        {
-            list.Add(a);
-            int cnt = a.ChildrenCount;
-            for (int i = 0; i < cnt; i++)
-            {
-                GetActorsTree(list, a.GetChild(i));
-            }
-        }
 
         /// <summary>
         /// Gets the property name for UI. Removes unnecessary characters and filters text. Makes it more user-friendly.
@@ -1006,7 +1090,7 @@ namespace FlaxEditor.Utilities
         }
 
         /// <summary>
-        /// Updates (recursivly) search popup tree structures based on the filter text.
+        /// Updates (recursively) search popup tree structures based on the filter text.
         /// </summary>
         public static void UpdateSearchPopupFilter(TreeNode node, string filterText)
         {
@@ -1033,15 +1117,28 @@ namespace FlaxEditor.Utilities
         }
 
         /// <summary>
+        /// Gets the asset name relative to the project root folder (with asset file extension)
+        /// </summary>
+        /// <param name="path">The asset path.</param>
+        /// <returns>The processed name path.</returns> 
+        public static string GetAssetNamePathWithExt(string path)
+        {
+            var projectFolder = Globals.ProjectFolder;
+            if (path == projectFolder)
+                path = string.Empty;
+            else if (path.StartsWith(projectFolder))
+                path = path.Substring(projectFolder.Length + 1);
+            return path;
+        }
+
+        /// <summary>
         /// Gets the asset name relative to the project root folder (without asset file extension)
         /// </summary>
         /// <param name="path">The asset path.</param>
         /// <returns>The processed name path.</returns>
         public static string GetAssetNamePath(string path)
         {
-            var projectFolder = Globals.ProjectFolder;
-            if (path.StartsWith(projectFolder))
-                path = path.Substring(projectFolder.Length + 1);
+            path = GetAssetNamePathWithExt(path);
             return StringUtils.GetPathWithoutExtension(path);
         }
 
@@ -1078,7 +1175,7 @@ namespace FlaxEditor.Utilities
         internal static string FormatFloat(string str, bool isNegative)
         {
             // Reference: https://stackoverflow.com/questions/1546113/double-to-string-conversion-without-scientific-notation
-            int x = str.IndexOf('E');
+            int x = str.IndexOf('E', StringComparison.OrdinalIgnoreCase);
             if (x < 0)
                 return str;
             int x1 = x + 1;

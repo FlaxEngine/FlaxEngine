@@ -15,7 +15,9 @@ String Globals::EngineContentFolder;
 String Globals::ProjectSourceFolder;
 #endif
 String Globals::ProjectContentFolder;
+#if USE_MONO
 String Globals::MonoPath;
+#endif
 bool Globals::FatalErrorOccurred;
 bool Globals::IsRequestingExit;
 int32 Globals::ExitCode;

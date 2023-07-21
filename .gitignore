@@ -7,6 +7,7 @@ Cache/
 Binaries/
 Output/
 Logs/
+Source/*.Gen.*
 Source/*.csproj
 /Package_*/
 !Source/Engine/Debug
@@ -24,6 +25,7 @@ PackagePlatforms_Cert.bat
 *.opendb
 *.DS_Store
 *.xcodeproj
+launchSettings.json
 
 # NUNIT
 *.VisualState.xml

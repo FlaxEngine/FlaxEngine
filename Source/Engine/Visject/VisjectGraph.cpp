@@ -9,7 +9,6 @@
 #include "Engine/Engine/GameplayGlobals.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Level/Actor.h"
-#include "Engine/Scripting/ManagedCLR/MType.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MField.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
@@ -676,6 +675,10 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
                 }
             }
         }
+
+        // For in-built structures try to convert it into internal format for better comparability with the scripting
+        value.Inline();
+
         break;
     }
     // Unpack Structure
@@ -693,14 +696,14 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeNameAnsiView);
         if (!typeHandle)
         {
-#if !COMPILE_WITHOUT_CSHARP
+#if USE_CSHARP
             const auto mclass = Scripting::FindClass(typeNameAnsiView);
             if (mclass)
             {
                 // Fallback to C#-only types
-                auto instance = (MonoObject*)structureValue;
+                auto instance = (MObject*)structureValue;
                 CHECK(instance);
-                if (structureValue.Type.Type != VariantType::ManagedObject || mono_object_get_class(instance) != mclass->GetNative())
+                if (structureValue.Type.Type != VariantType::ManagedObject || MCore::Object::GetClass(instance) != mclass)
                 {
                     OnError(node, box, String::Format(TEXT("Cannot unpack value of type {0} to structure of type {1}"), String(MUtils::GetClassFullname(instance)), typeName));
                     return;
@@ -982,6 +985,9 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
             break;
         case PlatformType::Mac:
             boxId = 11;
+            break;
+        case PlatformType::iOS:
+            boxId = 12;
             break;
         default: ;
         }
@@ -1273,16 +1279,16 @@ void VisjectExecutor::ProcessGroupParticles(Box* box, Node* node, Value& value)
     // Random Float Range
     case 213:
     {
-        auto& a = node->Values[0].AsFloat;
-        auto& b = node->Values[1].AsFloat;
+        auto a = tryGetValue(node->TryGetBox(1), node->Values[0]).AsFloat;
+        auto b = tryGetValue(node->TryGetBox(2), node->Values[1]).AsFloat;
         value = Math::Lerp(a, b, RAND);
         break;
     }
     // Random Vector2 Range
     case 214:
     {
-        auto a = (Float2)node->Values[0];
-        auto b = (Float2)node->Values[1];
+        auto a = tryGetValue(node->TryGetBox(1),  node->Values[0]).AsFloat2();
+        auto b = tryGetValue(node->TryGetBox(2),  node->Values[1]).AsFloat2();
         value = Float2(
             Math::Lerp(a.X, b.X, RAND),
             Math::Lerp(a.Y, b.Y, RAND)
@@ -1292,8 +1298,8 @@ void VisjectExecutor::ProcessGroupParticles(Box* box, Node* node, Value& value)
     // Random Vector3 Range
     case 215:
     {
-        auto a = (Float3)node->Values[0];
-        auto b = (Float3)node->Values[1];
+        auto a = tryGetValue(node->TryGetBox(1), node->Values[0]).AsFloat3();
+        auto b = tryGetValue(node->TryGetBox(2), node->Values[1]).AsFloat3();
         value = Float3(
             Math::Lerp(a.X, b.X, RAND),
             Math::Lerp(a.Y, b.Y, RAND),
@@ -1304,8 +1310,8 @@ void VisjectExecutor::ProcessGroupParticles(Box* box, Node* node, Value& value)
     // Random Vector4 Range
     case 216:
     {
-        auto a = (Float4)node->Values[0];
-        auto b = (Float4)node->Values[1];
+        auto a = tryGetValue(node->TryGetBox(1), node->Values[0]).AsFloat4();
+        auto b = tryGetValue(node->TryGetBox(2), node->Values[1]).AsFloat4();
         value = Float4(
             Math::Lerp(a.X, b.X, RAND),
             Math::Lerp(a.Y, b.Y, RAND),

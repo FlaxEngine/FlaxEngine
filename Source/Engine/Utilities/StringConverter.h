@@ -49,7 +49,7 @@ public:
     {
     }
 
-    StringAsANSI(const Char* text, const int32 length)
+    StringAsANSI(const Char* text, int32 length)
     {
         if (length + 1 < InlinedSize)
         {
@@ -83,7 +83,7 @@ public:
     {
     }
 
-    StringAsUTF8(const Char* text, const int32 length)
+    StringAsUTF8(const Char* text, int32 length)
     {
         int32 lengthUtf8;
         if (length + 1 < InlinedSize)
@@ -112,17 +112,17 @@ public:
     {
     }
 
-    StringAsUTF16(const char* text, const int32 length)
+    StringAsUTF16(const char* text, int32 length)
     {
         if (length + 1 < InlinedSize)
         {
-            StringUtils::ConvertANSI2UTF16(text, this->_inlined, length);
+            StringUtils::ConvertANSI2UTF16(text, this->_inlined, length, length);
             this->_inlined[length] = 0;
         }
         else
         {
             this->_dynamic = (CharType*)Allocator::Allocate((length + 1) * sizeof(CharType));
-            StringUtils::ConvertANSI2UTF16(text, this->_dynamic, length);
+            StringUtils::ConvertANSI2UTF16(text, this->_dynamic, length, length);
             this->_dynamic[length] = 0;
         }
     }

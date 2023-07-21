@@ -109,7 +109,7 @@ public:
     static void CreateGuid(Guid& result);
     static String GetMainDirectory();
     static String GetExecutableFilePath();
-    static struct Guid GetUniqueDeviceId();
+    static Guid GetUniqueDeviceId();
     static String GetWorkingDirectory();
     static bool SetWorkingDirectory(const String& path);
     static void FreeLibrary(void* handle);

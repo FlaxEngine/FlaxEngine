@@ -89,7 +89,15 @@ GPUDevice* GPUDeviceDX12::Create()
 
     // Create DXGI factory (CreateDXGIFactory2 is supported on Windows 8.1 or newer)
     IDXGIFactory4* dxgiFactory;
-    HRESULT hr = CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
+    IDXGIFactory6* dxgiFactory6;
+    HRESULT hr = CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory6));
+    if (hr == S_OK)
+        dxgiFactory = dxgiFactory6;
+    else
+    {
+        dxgiFactory6 = nullptr;
+        hr = CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
+    }
     if (hr != S_OK)
     {
         LOG(Error, "Cannot create DXGI adapter. Error code: {0:x}.", hr);
@@ -97,6 +105,7 @@ GPUDevice* GPUDeviceDX12::Create()
     }
 
     // Enumerate the DXGIFactory's adapters
+    int32 selectedAdapterIndex = -1;
     Array<GPUAdapterDX> adapters;
     IDXGIAdapter* tempAdapter;
     for (uint32 index = 0; dxgiFactory->EnumAdapters(index, &tempAdapter) != DXGI_ERROR_NOT_FOUND; index++)
@@ -118,8 +127,39 @@ GPUDevice* GPUDeviceDX12::Create()
         }
     }
 
+    // Find the best performing adapter and prefer using it instead of the first device
+    const auto gpuPreference = DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE;
+    if (dxgiFactory6 != nullptr && selectedAdapterIndex == -1)
+    {
+        if (dxgiFactory6->EnumAdapterByGpuPreference(0, gpuPreference, IID_PPV_ARGS(&tempAdapter)) != DXGI_ERROR_NOT_FOUND)
+        {
+            GPUAdapterDX adapter;
+            if (tempAdapter && CheckDX12Support(tempAdapter))
+            {
+                DXGI_ADAPTER_DESC desc;
+                VALIDATE_DIRECTX_RESULT(tempAdapter->GetDesc(&desc));
+                for (int i = 0; i < adapters.Count(); i++)
+                {
+                    if (adapters[i].Description.AdapterLuid.LowPart == desc.AdapterLuid.LowPart &&
+                        adapters[i].Description.AdapterLuid.HighPart == desc.AdapterLuid.HighPart)
+                    {
+                        selectedAdapterIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     // Select the adapter to use
-    GPUAdapterDX selectedAdapter = adapters[0];
+    if (selectedAdapterIndex < 0)
+        selectedAdapterIndex = 0;
+    if (adapters.Count() == 0 || selectedAdapterIndex >= adapters.Count())
+    {
+        LOG(Error, "Failed to find valid DirectX adapter!");
+        return nullptr;
+    }
+    GPUAdapterDX selectedAdapter = adapters[selectedAdapterIndex];
     uint32 vendorId = 0;
     if (CommandLine::Options.NVIDIA)
         vendorId = GPU_VENDOR_ID_NVIDIA;
@@ -324,10 +364,10 @@ bool GPUDeviceDX12::Init()
     // Spawn some info about the hardware
     D3D12_FEATURE_DATA_D3D12_OPTIONS options;
     VALIDATE_DIRECTX_RESULT(_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options)));
-    LOG(Info, "Tiled Resources Tier: {0}", options.TiledResourcesTier);
-    LOG(Info, "Resource Binding Tier: {0}", options.ResourceBindingTier);
-    LOG(Info, "Conservative Rasterization Tier: {0}", options.ConservativeRasterizationTier);
-    LOG(Info, "Resource Heap Tier: {0}", options.ResourceHeapTier);
+    LOG(Info, "Tiled Resources Tier: {0}", (int32)options.TiledResourcesTier);
+    LOG(Info, "Resource Binding Tier: {0}", (int32)options.ResourceBindingTier);
+    LOG(Info, "Conservative Rasterization Tier: {0}", (int32)options.ConservativeRasterizationTier);
+    LOG(Info, "Resource Heap Tier: {0}", (int32)options.ResourceHeapTier);
 
     // Init device limits
     {

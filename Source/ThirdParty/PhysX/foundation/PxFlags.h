@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,12 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.
 
-#ifndef PXFOUNDATION_PXFLAGS_H
-#define PXFOUNDATION_PXFLAGS_H
+#ifndef PX_FLAGS_H
+#define PX_FLAGS_H
 
 /** \addtogroup foundation
   @{
@@ -83,8 +82,6 @@ class PxFlags
 	PX_CUDA_CALLABLE PX_INLINE PxFlags(const PxFlags<enumtype, storagetype>& f);
 	PX_CUDA_CALLABLE PX_INLINE explicit PxFlags(storagetype b);
 
-	PX_CUDA_CALLABLE PX_INLINE bool isSet(enumtype e) const;
-	PX_CUDA_CALLABLE PX_INLINE PxFlags<enumtype, storagetype>& set(enumtype e);
 	PX_CUDA_CALLABLE PX_INLINE bool operator==(enumtype e) const;
 	PX_CUDA_CALLABLE PX_INLINE bool operator==(const PxFlags<enumtype, storagetype>& f) const;
 	PX_CUDA_CALLABLE PX_INLINE bool operator==(bool b) const;
@@ -117,6 +114,9 @@ class PxFlags
 	PX_CUDA_CALLABLE PX_INLINE operator uint32_t(void) const;
 
 	PX_CUDA_CALLABLE PX_INLINE void clear(enumtype e);
+	PX_CUDA_CALLABLE PX_INLINE void raise(enumtype e);
+	PX_CUDA_CALLABLE PX_INLINE bool isSet(enumtype e) const;
+	PX_CUDA_CALLABLE PX_INLINE PxFlags<enumtype, storagetype>& setAll(enumtype e);
 
   public:
 	friend PX_INLINE PxFlags<enumtype, storagetype> operator&(enumtype a, PxFlags<enumtype, storagetype>& b)
@@ -132,26 +132,26 @@ class PxFlags
 
 #if !PX_DOXYGEN
 
-#define PX_FLAGS_OPERATORS(enumtype, storagetype)                                                                      \
-	PX_CUDA_CALLABLE PX_INLINE PxFlags<enumtype, storagetype> operator|(enumtype a, enumtype b)                                         \
-	{                                                                                                                  \
-		PxFlags<enumtype, storagetype> r(a);                                                                           \
-		r |= b;                                                                                                        \
-		return r;                                                                                                      \
-	}                                                                                                                  \
-	PX_CUDA_CALLABLE PX_INLINE PxFlags<enumtype, storagetype> operator&(enumtype a, enumtype b)                                         \
-	{                                                                                                                  \
-		PxFlags<enumtype, storagetype> r(a);                                                                           \
-		r &= b;                                                                                                        \
-		return r;                                                                                                      \
-	}                                                                                                                  \
-	PX_CUDA_CALLABLE PX_INLINE PxFlags<enumtype, storagetype> operator~(enumtype a)                                                     \
-	{                                                                                                                  \
-		return ~PxFlags<enumtype, storagetype>(a);                                                                     \
+#define PX_FLAGS_OPERATORS(enumtype, storagetype)												\
+	PX_CUDA_CALLABLE PX_INLINE PxFlags<enumtype, storagetype> operator|(enumtype a, enumtype b)	\
+	{																							\
+		PxFlags<enumtype, storagetype> r(a);													\
+		r |= b;																					\
+		return r;																				\
+	}																							\
+	PX_CUDA_CALLABLE PX_INLINE PxFlags<enumtype, storagetype> operator&(enumtype a, enumtype b)	\
+	{																							\
+		PxFlags<enumtype, storagetype> r(a);													\
+		r &= b;																					\
+		return r;																				\
+	}																							\
+	PX_CUDA_CALLABLE PX_INLINE PxFlags<enumtype, storagetype> operator~(enumtype a)				\
+	{																							\
+		return ~PxFlags<enumtype, storagetype>(a);												\
 	}
 
-#define PX_FLAGS_TYPEDEF(x, y)                                                                                         \
-	typedef PxFlags<x::Enum, y> x##s;                                                                                  \
+#define PX_FLAGS_TYPEDEF(x, y)																	\
+	typedef PxFlags<x::Enum, y> x##s;															\
 	PX_FLAGS_OPERATORS(x::Enum, y)
 
 template <typename enumtype, typename storagetype>
@@ -176,19 +176,6 @@ template <typename enumtype, typename storagetype>
 PX_CUDA_CALLABLE PX_INLINE PxFlags<enumtype, storagetype>::PxFlags(storagetype b)
 {
 	mBits = b;
-}
-
-template <typename enumtype, typename storagetype>
-PX_CUDA_CALLABLE PX_INLINE bool PxFlags<enumtype, storagetype>::isSet(enumtype e) const
-{
-	return (mBits & static_cast<storagetype>(e)) == static_cast<storagetype>(e);
-}
-
-template <typename enumtype, typename storagetype>
-PX_CUDA_CALLABLE PX_INLINE PxFlags<enumtype, storagetype>& PxFlags<enumtype, storagetype>::set(enumtype e)
-{
-	mBits = static_cast<storagetype>(e);
-	return *this;
 }
 
 template <typename enumtype, typename storagetype>
@@ -369,8 +356,28 @@ PX_CUDA_CALLABLE PX_INLINE void PxFlags<enumtype, storagetype>::clear(enumtype e
 	mBits &= ~static_cast<storagetype>(e);
 }
 
+template <typename enumtype, typename storagetype>
+PX_CUDA_CALLABLE PX_INLINE void PxFlags<enumtype, storagetype>::raise(enumtype e)
+{
+	mBits |= static_cast<storagetype>(e);
+}
+
+template <typename enumtype, typename storagetype>
+PX_CUDA_CALLABLE PX_INLINE bool PxFlags<enumtype, storagetype>::isSet(enumtype e) const
+{
+	return (mBits & static_cast<storagetype>(e)) == static_cast<storagetype>(e);
+}
+
+template <typename enumtype, typename storagetype>
+PX_CUDA_CALLABLE PX_INLINE PxFlags<enumtype, storagetype>& PxFlags<enumtype, storagetype>::setAll(enumtype e)
+{
+	mBits = static_cast<storagetype>(e);
+	return *this;
+}
+
 } // namespace physx
 #endif //!PX_DOXYGEN
 
 /** @} */
-#endif // #ifndef PXFOUNDATION_PXFLAGS_H
+#endif
+

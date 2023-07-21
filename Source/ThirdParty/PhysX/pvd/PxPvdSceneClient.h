@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,7 +22,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.
 
@@ -36,17 +35,21 @@
 
 #include "foundation/PxFlags.h"
 
+#if !PX_DOXYGEN
 namespace physx
 {
+#endif
 	namespace pvdsdk
 	{
 		class PvdClient;
-		struct PvdDebugPoint;
-		struct PvdDebugLine;
-		struct PvdDebugTriangle;
-		struct PvdDebugText;
 	}
-}
+	struct PxDebugPoint;
+	struct PxDebugLine;
+	struct PxDebugTriangle;
+	struct PxDebugText;
+#if !PX_DOXYGEN
+} // namespace physx
+#endif
 
 #if !PX_DOXYGEN
 namespace physx
@@ -108,22 +111,22 @@ class PxPvdSceneClient
 	/**
 	draw points on PVD application's render window
 	*/
-	virtual void drawPoints(const physx::pvdsdk::PvdDebugPoint* points, PxU32 count) = 0;
+	virtual void drawPoints(const physx::PxDebugPoint* points, PxU32 count) = 0;
 
 	/**
 	draw lines on PVD application's render window
 	*/
-	virtual void drawLines(const physx::pvdsdk::PvdDebugLine* lines, PxU32 count) = 0;
+	virtual void drawLines(const physx::PxDebugLine* lines, PxU32 count) = 0;
 
 	/**
 	draw triangles on PVD application's render window
 	*/
-	virtual void drawTriangles(const physx::pvdsdk::PvdDebugTriangle* triangles, PxU32 count) = 0;
+	virtual void drawTriangles(const physx::PxDebugTriangle* triangles, PxU32 count) = 0;
 
 	/**
 	draw text on PVD application's render window
 	*/
-	virtual void drawText(const physx::pvdsdk::PvdDebugText& text) = 0;
+	virtual void drawText(const physx::PxDebugText& text) = 0;
 
 	/**
 	get the underlying client, for advanced users
@@ -139,4 +142,4 @@ protected:
 #endif
 
 /** @} */
-#endif // PX_PVD_SCENE_CLIENT_H
+#endif

@@ -167,7 +167,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             Presenter.Undo?.AddAction(new MultiUndoAction(actions));
 
             // Build ragdoll
-            SceneGraph.Actors.AnimatedModelNode.BuildRagdoll(animatedModel, options, ragdoll);
+            AnimatedModelNode.BuildRagdoll(animatedModel, options, ragdoll);
         }
 
         private void OnRebuildBone(Button button)
@@ -191,7 +191,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
 
             // Build ragdoll
-            SceneGraph.Actors.AnimatedModelNode.BuildRagdoll(animatedModel, new AnimatedModelNode.RebuildOptions(), ragdoll, name);
+            AnimatedModelNode.BuildRagdoll(animatedModel, new AnimatedModelNode.RebuildOptions(), ragdoll, name);
         }
 
         private void OnRemoveBone(Button button)

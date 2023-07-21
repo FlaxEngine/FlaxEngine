@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,9 +22,10 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
+
 #ifndef PX_REPX_SERIALIZER_H
 #define PX_REPX_SERIALIZER_H
 /** \addtogroup Serializers
@@ -128,21 +128,22 @@ PX_INLINE physx::PxRepXObject PxCreateRepXObject(const physx::PxBase* inType, co
 template<typename TDataType>
 PX_INLINE physx::PxRepXObject PxCreateRepXObject(const TDataType* inType)
 {
-	return PxCreateRepXObject(inType, static_cast<physx::PxSerialObjectId>(reinterpret_cast<size_t>(inType)));
+	return PxCreateRepXObject(inType, static_cast<physx::PxSerialObjectId>(size_t(inType)));
 }
 
 /**
 \brief Preprocessor macro for RepX serializer creation.
 */
 #define PX_NEW_REPX_SERIALIZER(T) \
-		*PX_PLACEMENT_NEW(PxGetFoundation().getAllocatorCallback().allocate(sizeof(T), "PxRepXSerializer",  __FILE__, __LINE__ ), T)(PxGetFoundation().getAllocatorCallback())
+		*PX_PLACEMENT_NEW(PxGetAllocatorCallback()->allocate(sizeof(T), "PxRepXSerializer",  __FILE__, __LINE__ ), T)(*PxGetAllocatorCallback())
 
 /**
 \brief Preprocessor Macro to simplify RepX serializer delete.
 */
 #define PX_DELETE_REPX_SERIALIZER(x) \
-		{ PxRepXSerializer* s = x; if (s) { PxGetFoundation().getAllocatorCallback().deallocate(s); } }
+		{ PxRepXSerializer* s = x; if (s) { PxGetAllocatorCallback()->deallocate(s); } }
 
 
 /** @} */
-#endif // PX_REPX_SERIALIZER_H
+#endif
+

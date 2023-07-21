@@ -24,7 +24,7 @@ namespace Log
         /// <summary>
         /// Creates default exception with additional data
         /// </summary>
-        /// <param name="message">Additional information that help describe error</param>
+        /// <param name="additionalInfo">Additional information that help describe error</param>
         PlatformNotSupportedException(const String& additionalInfo)
             : Exception(TEXT("Method or operation in not supported on current platform."), additionalInfo)
         {

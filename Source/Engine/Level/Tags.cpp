@@ -55,7 +55,21 @@ Tag Tags::Get(const StringView& tagName)
     return tag;
 }
 
-bool Tags::HasTag(const Array<Tag>& list, const Tag& tag)
+Array<Tag> Tags::GetSubTags(Tag parentTag)
+{
+    Array<Tag> subTags;
+    const String& parentTagName = parentTag.ToString();
+    for (int32 i = 0; i < List.Count(); i++)
+    {
+        const Tag tag(i + 1);
+        const String& tagName = List[i];
+        if (tagName.StartsWith(parentTagName) && parentTag.Index != tag.Index)
+            subTags.Add(tag);
+    }
+    return subTags;
+}
+
+bool Tags::HasTag(const Array<Tag>& list, const Tag tag)
 {
     if (tag.Index == 0)
         return false;
@@ -69,7 +83,7 @@ bool Tags::HasTag(const Array<Tag>& list, const Tag& tag)
     return false;
 }
 
-bool Tags::HasTagExact(const Array<Tag>& list, const Tag& tag)
+bool Tags::HasTagExact(const Array<Tag>& list, const Tag tag)
 {
     if (tag.Index == 0)
         return false;

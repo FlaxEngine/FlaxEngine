@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,13 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_PHYSICS_EXTENSIONS_MASS_PROPERTIES_H
-#define PX_PHYSICS_EXTENSIONS_MASS_PROPERTIES_H
+#ifndef PX_MASS_PROPERTIES_H
+#define PX_MASS_PROPERTIES_H
 /** \addtogroup extensions
   @{
 */
@@ -47,6 +45,9 @@
 #include "geometry/PxCapsuleGeometry.h"
 #include "geometry/PxConvexMeshGeometry.h"
 #include "geometry/PxConvexMesh.h"
+#include "geometry/PxCustomGeometry.h"
+#include "geometry/PxTriangleMeshGeometry.h"
+#include "geometry/PxTriangleMesh.h"
 
 #if !PX_DOXYGEN
 namespace physx
@@ -135,20 +136,47 @@ public:
 
 				const PxMeshScale& s = c.scale;
 				mass = unscaledMass * s.scale.x * s.scale.y * s.scale.z;
-				centerOfMass = s.rotation.rotate(s.scale.multiply(s.rotation.rotateInv(unscaledCoM)));
+				centerOfMass = s.transform(unscaledCoM);
 				inertiaTensor = scaleInertia(unscaledInertiaTensorCOM, s.rotation, s.scale);
 			}
 			break;
 
-			case PxGeometryType::eHEIGHTFIELD:
-			case PxGeometryType::ePLANE:
+			case PxGeometryType::eCUSTOM:
+			{
+				*this = PxMassProperties();
+				static_cast<const PxCustomGeometry&>(geometry).callbacks->computeMassProperties(geometry, *this);
+			}
+			break;
+
 			case PxGeometryType::eTRIANGLEMESH:
-			case PxGeometryType::eINVALID:
-			case PxGeometryType::eGEOMETRY_COUNT:
+			{
+				const PxTriangleMeshGeometry& g = static_cast<const PxTriangleMeshGeometry&>(geometry);
+
+				PxVec3 unscaledCoM;
+				PxMat33 unscaledInertiaTensorNonCOM; // inertia tensor of convex mesh in mesh local space
+				PxMat33 unscaledInertiaTensorCOM;
+				PxReal unscaledMass;
+				g.triangleMesh->getMassInformation(unscaledMass, unscaledInertiaTensorNonCOM, unscaledCoM);
+
+				// inertia tensor relative to center of mass
+				unscaledInertiaTensorCOM[0][0] = unscaledInertiaTensorNonCOM[0][0] - unscaledMass * PxReal((unscaledCoM.y*unscaledCoM.y + unscaledCoM.z*unscaledCoM.z));
+				unscaledInertiaTensorCOM[1][1] = unscaledInertiaTensorNonCOM[1][1] - unscaledMass * PxReal((unscaledCoM.z*unscaledCoM.z + unscaledCoM.x*unscaledCoM.x));
+				unscaledInertiaTensorCOM[2][2] = unscaledInertiaTensorNonCOM[2][2] - unscaledMass * PxReal((unscaledCoM.x*unscaledCoM.x + unscaledCoM.y*unscaledCoM.y));
+				unscaledInertiaTensorCOM[0][1] = unscaledInertiaTensorCOM[1][0] = (unscaledInertiaTensorNonCOM[0][1] + unscaledMass * PxReal(unscaledCoM.x*unscaledCoM.y));
+				unscaledInertiaTensorCOM[1][2] = unscaledInertiaTensorCOM[2][1] = (unscaledInertiaTensorNonCOM[1][2] + unscaledMass * PxReal(unscaledCoM.y*unscaledCoM.z));
+				unscaledInertiaTensorCOM[0][2] = unscaledInertiaTensorCOM[2][0] = (unscaledInertiaTensorNonCOM[0][2] + unscaledMass * PxReal(unscaledCoM.z*unscaledCoM.x));
+
+				const PxMeshScale& s = g.scale;
+				mass = unscaledMass * s.scale.x * s.scale.y * s.scale.z;
+				centerOfMass = s.transform(unscaledCoM);
+				inertiaTensor = scaleInertia(unscaledInertiaTensorCOM, s.rotation, s.scale);
+			}
+			break;
+
+			default:
 			{
 				*this = PxMassProperties();
 			}
-			break;
 		}
 
 		PX_ASSERT(inertiaTensor.column0.isFinite() && inertiaTensor.column1.isFinite() && inertiaTensor.column2.isFinite());
@@ -229,7 +257,8 @@ public:
 	\brief Rotate an inertia tensor around the center of mass
 
 	\param[in] inertia The inertia tensor to rotate.
-	\param[in] q The rotation to apply to the inertia tensor.
+	\param[in] q The rotation from the new to the old coordinate frame, i.e. q.rotate(v) transforms
+	the coordinates of vector v from the old to the new coordinate frame.
 	\return The rotated inertia tensor.
 	*/
 	PX_FORCE_INLINE static PxMat33 rotateInertia(const PxMat33& inertia, const PxQuat& q)
@@ -247,8 +276,9 @@ public:
 	\brief Non-uniform scaling of the inertia tensor
 
 	\param[in] inertia The inertia tensor to scale.
-	\param[in] scaleRotation The frame of the provided scaling factors.
-	\param[in] scale The scaling factor for each axis (relative to the frame specified in scaleRotation).
+	\param[in] scaleRotation The rotation from the scaling frame to the frame that inertia is expressed in.
+	I.e. scaleRotation.rotate(v) transforms the coordinates of vertex v from inertia's frame to the scaling-axes frame.
+	\param[in] scale The scaling factor for each axis (relative to the frame specified with scaleRotation).
 	\return The scaled inertia tensor.
 	*/
 	static PxMat33 scaleInertia(const PxMat33& inertia, const PxQuat& scaleRotation, const PxVec3& scale)

@@ -26,6 +26,7 @@
 #define FEATURE_LEVEL_ES3_1 2
 #define FEATURE_LEVEL_SM4 3
 #define FEATURE_LEVEL_SM5 4
+#define FEATURE_LEVEL_SM6 5
 #if !defined(FEATURE_LEVEL)
 #error "Invalid platform defines"
 #endif

@@ -21,12 +21,11 @@ enum class StringSearchCase
 };
 
 /// <summary>
-/// The string operations utilities collection.
+/// The string operations utilities.
 /// </summary>
 class FLAXENGINE_API StringUtils
 {
 public:
-
     /// <summary>
     /// Calculates the hash code for input string.
     /// </summary>
@@ -65,7 +64,6 @@ public:
     }
 
 public:
-
     // Returns true if character is uppercase
     static bool IsUpper(char c);
 
@@ -92,7 +90,6 @@ public:
     static char ToLower(char c);
 
 public:
-
     // Returns true if character is uppercase
     static bool IsUpper(Char c);
 
@@ -119,7 +116,6 @@ public:
     static Char ToLower(Char c);
 
 public:
-
     // Compare two strings with case sensitive. Strings must not be null.
     static int32 Compare(const Char* str1, const Char* str2);
 
@@ -145,7 +141,6 @@ public:
     static int32 CompareIgnoreCase(const char* str1, const char* str2, int32 maxCount);
 
 public:
-
     // Get string length. Returns 0 if str is null.
     static int32 Length(const Char* str);
 
@@ -183,9 +178,8 @@ public:
     static const char* FindIgnoreCase(const char* str, const char* toFind);
 
 public:
-
     // Converts characters from ANSI to UTF-16
-    static void ConvertANSI2UTF16(const char* from, Char* to, int32 len);
+    static void ConvertANSI2UTF16(const char* from, Char* to, int32 fromLength, int32& toLength);
 
     // Converts characters from UTF-16 to ANSI
     static void ConvertUTF162ANSI(const Char* from, char* to, int32 len);
@@ -203,7 +197,6 @@ public:
     static char* ConvertUTF162UTF8(const Char* from, int32 fromLength, int32& toLength);
 
 public:
-
     // Returns the directory name of the specified path string
     // @param path The path string from which to obtain the directory name
     // @returns Directory name
@@ -224,95 +217,8 @@ public:
     static void PathRemoveRelativeParts(String& path);
 
 public:
-
-    /// <summary>
-    /// Convert integer value to string
-    /// </summary>
-    /// <param name="value">Value to convert</param>
-    /// <param name="base">Base (8,10,16)</param>
-    /// <param name="buffer">Input buffer</param>
-    /// <param name="length">Result string length</param>
-    template<typename CharType>
-    static void itoa(int32 value, int32 base, CharType* buffer, int32& length)
-    {
-        // Allocate buffer
-        bool isNegative = false;
-        CharType* pos = buffer;
-        CharType* pos1 = buffer;
-        length = 0;
-
-        // Validate input base
-        if (base < 8 || base > 16)
-        {
-            *pos = '\0';
-            return;
-        }
-
-        // Special case for zero
-        if (value == 0)
-        {
-            length++;
-            *pos++ = '0';
-            *pos = '\0';
-            return;
-        }
-
-        // Check if value is negative
-        if (value < 0)
-        {
-            isNegative = true;
-            value = -value;
-        }
-
-        // Convert. If base is power of two (2,4,8,16..)
-        // we could use binary and operation and shift offset instead of division
-        while (value)
-        {
-            length++;
-            int32 reminder = value % base;
-            *pos++ = reminder + (reminder > 9 ? 'a' - 10 : '0');
-            value /= base;
-        }
-
-        // Apply negative sign
-        if (isNegative)
-            *pos++ = '-';
-
-        // Add null terminator char
-        *pos-- = 0;
-
-        // Reverse the buffer
-        while (pos1 < pos)
-        {
-            CharType c = *pos;
-            *pos-- = *pos1;
-            *pos1++ = c;
-        }
-    }
-
-    static int32 HexDigit(Char c)
-    {
-        int32 result = 0;
-
-        if (c >= '0' && c <= '9')
-        {
-            result = c - '0';
-        }
-        else if (c >= 'a' && c <= 'f')
-        {
-            result = c + 10 - 'a';
-        }
-        else if (c >= 'A' && c <= 'F')
-        {
-            result = c + 10 - 'A';
-        }
-        else
-        {
-            result = 0;
-        }
-
-        return result;
-    }
+    // Converts hexadecimal character into the value.
+    static int32 HexDigit(Char c);
 
     // Parse text to unsigned integer value
     // @param str String to parse
@@ -431,7 +337,6 @@ public:
     static bool Parse(const char* str, float* result);
 
 public:
-
     static String ToString(int32 value);
     static String ToString(int64 value);
     static String ToString(uint32 value);
@@ -440,7 +345,6 @@ public:
     static String ToString(double value);
 
 public:
-
     // Returns the String to double null-terminated string
     // @param str Double null-terminated string
     // @return Double null-terminated String

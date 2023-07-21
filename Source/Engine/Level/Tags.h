@@ -92,6 +92,13 @@ API_CLASS(Static) class FLAXENGINE_API Tags
     /// <returns>The tag.</returns>
     API_FUNCTION() static Tag Get(const StringView& tagName);
 
+    /// <summary>
+    /// Get all subtags of the specific Tag
+    /// </summary>
+    /// <param name="tag"></param>
+    /// <returns></returns>
+    API_FUNCTION() static Array<Tag> GetSubTags(Tag tag);
+
 public:
     /// <summary>
     /// Checks if the list of tags contains a given tag (including parent tags check). For example, HasTag({"A.B"}, "A") returns true, for exact check use HasTagExact.
@@ -99,7 +106,7 @@ public:
     /// <param name="list">The tags list to use.</param>
     /// <param name="tag">The tag to check.</param>
     /// <returns>True if given tag is contained by the list of tags. Returns false for empty list.</returns>
-    static bool HasTag(const Array<Tag>& list, const Tag& tag);
+    static bool HasTag(const Array<Tag>& list, const Tag tag);
 
     /// <summary>
     /// Checks if the list of tags contains a given tag (exact match). For example, HasTag({"A.B"}, "A") returns false, for parents check use HasTag.
@@ -107,7 +114,7 @@ public:
     /// <param name="list">The tags list to use.</param>
     /// <param name="tag">The tag to check.</param>
     /// <returns>True if given tag is contained by the list of tags. Returns false for empty list.</returns>
-    static bool HasTagExact(const Array<Tag>& list, const Tag& tag);
+    static bool HasTagExact(const Array<Tag>& list, const Tag tag);
 
     /// <summary>
     /// Checks if the list of tags contains any of the given tags (including parent tags check). For example, HasAny({"A.B", "C"}, {"A"}) returns true, for exact check use HasAnyExact.

@@ -168,7 +168,7 @@ namespace FlaxEditor.Windows
                 actor.Transform = parentActor.Transform;
 
                 // Rename actor to identify it easily
-                actor.Name = StringUtils.IncrementNameNumber(type.Name, x => parentActor.GetChild(x) == null);
+                actor.Name = Utilities.Utils.IncrementNameNumber(type.Name, x => parentActor.GetChild(x) == null);
             }
 
             // Spawn it

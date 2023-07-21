@@ -12,7 +12,7 @@ class Actor;
 /// <summary>
 /// Editor viewports icons rendering service.
 /// </summary>
-API_CLASS(Static, Namespace="FlaxEditor") class ViewportIconsRenderer
+API_CLASS(Static, Namespace="FlaxEditor") class FLAXENGINE_API ViewportIconsRenderer
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(ViewportIconsRenderer);
 
@@ -36,6 +36,13 @@ public:
     /// </summary>
     /// <param name="actor">The actor to register for icon drawing.</param>
     API_FUNCTION() static void AddActor(Actor* actor);
+
+    /// <summary>
+    /// Adds actor to the viewport icon rendering.
+    /// </summary>
+    /// <param name="actor">The actor to register for icon drawing.</param>
+    /// <param name="iconTexture">The icon texture to draw.</param>
+    API_FUNCTION() static void AddActorWithTexture(Actor* actor, Texture* iconTexture);
 
     /// <summary>
     /// Removes actor from the viewport icon rendering.

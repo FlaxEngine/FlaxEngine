@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2020 Flax Engine. All rights reserved.
+// Copyright (c) 2012-2023 Flax Engine. All rights reserved.
 
 #define USE_STD
 
@@ -49,37 +49,32 @@ namespace Flax.Deploy
                     var src = Path.Combine(RootPath, binariesSubDir);
                     var dst = Path.Combine(OutputPath, binariesSubDir);
 
-                    DeployFile(src, dst, "Flax.Build.exe");
-                    CodeSign(Path.Combine(dst, "Flax.Build.exe"));
-                    DeployFile(src, dst, "Flax.Build.xml");
+                    var buildToolExe = Platform.BuildTargetPlatform == TargetPlatform.Windows ? "Flax.Build.exe" : "Flax.Build";
+                    DeployFile(src, dst, buildToolExe);
+                    CodeSign(Path.Combine(dst, buildToolExe));
+                    var buildToolDll = "Flax.Build.dll";
+                    DeployFile(src, dst,buildToolDll);
+                    CodeSign(Path.Combine(dst, buildToolDll));
+                    DeployFile(src, dst, "Flax.Build.xml", true);
+                    DeployFile(src, dst, "Flax.Build.pdb");
+                    DeployFile(src, dst, "Flax.Build.deps.json");
+                    DeployFile(src, dst, "Flax.Build.runtimeconfig.json");
                     DeployFile(src, dst, "Ionic.Zip.Reduced.dll");
-                    DeployFile(src, dst, "Newtonsoft.Json.dll");
                     DeployFile(src, dst, "Mono.Cecil.dll");
+                    DeployFile(src, dst, "Microsoft.CodeAnalysis.dll");
+                    DeployFile(src, dst, "Microsoft.CodeAnalysis.CSharp.dll");
+                    DeployFile(src, dst, "Microsoft.VisualStudio.Setup.Configuration.Interop.dll");
                 }
 
                 // Deploy content
                 DeployFolder(RootPath, OutputPath, "Content");
-
-                // Deploy Mono runtime data files
-                switch (Platform.BuildTargetPlatform)
-                {
-                case TargetPlatform.Windows:
-                    DeployFolder(RootPath, OutputPath, "Source/Platforms/Editor/Windows/Mono");
-                    break;
-                case TargetPlatform.Linux:
-                    DeployFolder(RootPath, OutputPath, "Source/Platforms/Editor/Linux/Mono");
-                    break;
-                case TargetPlatform.Mac:
-                    DeployFolder(RootPath, OutputPath, "Source/Platforms/Editor/Mac/Mono");
-                    break;
-                default: throw new InvalidPlatformException(Platform.BuildTargetPlatform);
-                }
 
                 // Deploy DotNet deps
                 {
                     var subDir = "Source/Platforms/DotNet";
                     DeployFile(RootPath, OutputPath, subDir, "Newtonsoft.Json.dll");
                     DeployFile(RootPath, OutputPath, subDir, "Newtonsoft.Json.xml");
+                    DeployFile(RootPath, OutputPath, Path.Combine(subDir, "AOT"), "Newtonsoft.Json.dll");
                 }
 
                 // Deploy sources
@@ -130,7 +125,7 @@ namespace Flax.Deploy
                 // Compress
                 if (Configuration.DontCompress)
                     return;
-                
+
                 Log.Info(string.Empty);
                 Log.Info("Compressing editor files...");
                 string editorPackageZipPath;
@@ -199,6 +194,12 @@ namespace Flax.Deploy
                 var dst = Path.Combine(OutputPath, binariesSubDir);
                 Directory.CreateDirectory(dst);
 
+                DeployFile(src, dst, "FlaxEditor.Build.json");
+                DeployFile(src, dst, "FlaxEngine.CSharp.runtimeconfig.json");
+                DeployFile(src, dst, "FlaxEngine.CSharp.pdb");
+                DeployFile(src, dst, "FlaxEngine.CSharp.xml");
+                DeployFile(src, dst, "Newtonsoft.Json.pdb");
+
                 if (Platform.BuildTargetPlatform == TargetPlatform.Windows)
                 {
                     var dstDebug = Path.Combine(Deployer.PackageOutputPath, "EditorDebugSymbols/Win64/" + configuration);
@@ -215,11 +216,7 @@ namespace Flax.Deploy
                     // Deploy binaries
                     DeployFile(src, dst, editorExeName);
                     CodeSign(Path.Combine(dst, editorExeName));
-                    DeployFile(src, dst, "FlaxEditor.Build.json");
                     DeployFile(src, dst, "FlaxEditor.lib");
-                    DeployFile(src, dst, "FlaxEngine.CSharp.pdb");
-                    DeployFile(src, dst, "FlaxEngine.CSharp.xml");
-                    DeployFile(src, dst, "Newtonsoft.Json.pdb");
                     DeployFiles(src, dst, "*.dll");
                     CodeSign(Path.Combine(dst, "FlaxEngine.CSharp.dll"));
 
@@ -237,10 +234,6 @@ namespace Flax.Deploy
                 {
                     // Deploy binaries
                     DeployFile(src, dst, "FlaxEditor");
-                    DeployFile(src, dst, "FlaxEditor.Build.json");
-                    DeployFile(src, dst, "FlaxEngine.CSharp.pdb");
-                    DeployFile(src, dst, "FlaxEngine.CSharp.xml");
-                    DeployFile(src, dst, "Newtonsoft.Json.pdb");
                     DeployFiles(src, dst, "*.dll");
                     DeployFiles(src, dst, "*.so");
                     DeployFile(src, dst, "Logo.png");
@@ -248,18 +241,11 @@ namespace Flax.Deploy
                     // Optimize package size
                     Utilities.Run("strip", "FlaxEditor", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("strip", "libFlaxEditor.so", null, dst, Utilities.RunOptions.None);
-                    Utilities.Run("strip", "libmonosgen-2.0.so", null, dst, Utilities.RunOptions.None);
-                    Utilities.Run("ln", "-s libmonosgen-2.0.so libmonosgen-2.0.so.1", null, dst, Utilities.RunOptions.None);
-                    Utilities.Run("ln", "-s libmonosgen-2.0.so libmonosgen-2.0.so.1.0.0", null, dst, Utilities.RunOptions.None);
                 }
                 else if (Platform.BuildTargetPlatform == TargetPlatform.Mac)
                 {
                     // Deploy binaries
                     DeployFile(src, dst, "FlaxEditor");
-                    DeployFile(src, dst, "FlaxEditor.Build.json");
-                    DeployFile(src, dst, "FlaxEngine.CSharp.pdb");
-                    DeployFile(src, dst, "FlaxEngine.CSharp.xml");
-                    DeployFile(src, dst, "Newtonsoft.Json.pdb");
                     DeployFile(src, dst, "MoltenVK_icd.json");
                     DeployFiles(src, dst, "*.dll");
                     DeployFiles(src, dst, "*.dylib");
@@ -267,7 +253,6 @@ namespace Flax.Deploy
                     // Optimize package size
                     Utilities.Run("strip", "FlaxEditor", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("strip", "FlaxEditor.dylib", null, dst, Utilities.RunOptions.None);
-                    Utilities.Run("strip", "libmonosgen-2.0.1.dylib", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("strip", "libMoltenVK.dylib", null, dst, Utilities.RunOptions.None);
                 }
             }

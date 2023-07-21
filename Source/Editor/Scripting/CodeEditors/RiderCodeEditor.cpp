@@ -9,6 +9,7 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Platform/File.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Serialization/Json.h"
 
 #if PLATFORM_WINDOWS
@@ -237,13 +238,19 @@ void RiderCodeEditor::OpenFile(const String& path, int32 line)
     // Generate project files if solution is missing
     if (!FileSystem::FileExists(_solutionPath))
     {
-        ScriptsBuilder::GenerateProject(TEXT("-vs2019"));
+        ScriptsBuilder::GenerateProject(TEXT("-vs2022"));
     }
 
     // Open file
     line = line > 0 ? line : 1;
-    const String args = String::Format(TEXT("\"{0}\" --line {2} \"{1}\""), _solutionPath, path, line);
-    Platform::StartProcess(_execPath, args, StringView::Empty);
+    CreateProcessSettings procSettings;
+    procSettings.FileName = _execPath;
+    procSettings.Arguments = String::Format(TEXT("\"{0}\" --line {2} \"{1}\""), _solutionPath, path, line);
+    procSettings.HiddenWindow = false;
+    procSettings.WaitForEnd = false;
+    procSettings.LogOutput = false;
+    procSettings.ShellExecute = true;
+    Platform::CreateProcess(procSettings);
 }
 
 void RiderCodeEditor::OpenSolution()
@@ -251,12 +258,18 @@ void RiderCodeEditor::OpenSolution()
     // Generate project files if solution is missing
     if (!FileSystem::FileExists(_solutionPath))
     {
-        ScriptsBuilder::GenerateProject(TEXT("-vs2019"));
+        ScriptsBuilder::GenerateProject(TEXT("-vs2022"));
     }
 
     // Open solution
-    const String args = String::Format(TEXT("\"{0}\""), _solutionPath);
-    Platform::StartProcess(_execPath, args, StringView::Empty);
+    CreateProcessSettings procSettings;
+    procSettings.FileName = _execPath;
+    procSettings.Arguments = String::Format(TEXT("\"{0}\""), _solutionPath);
+    procSettings.HiddenWindow = false;
+    procSettings.WaitForEnd = false;
+    procSettings.LogOutput = false;
+    procSettings.ShellExecute = true;
+    Platform::CreateProcess(procSettings);
 }
 
 void RiderCodeEditor::OnFileAdded(const String& path)

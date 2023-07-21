@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,20 +22,21 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_PHYSICS_NX_SCENEDESC
-#define PX_PHYSICS_NX_SCENEDESC
+#ifndef PX_SCENE_DESC_H
+#define PX_SCENE_DESC_H
 /** \addtogroup physics
 @{
 */
 
+#include "PxSceneQueryDesc.h"
 #include "PxPhysXConfig.h"
 #include "foundation/PxFlags.h"
 #include "foundation/PxBounds3.h"
+#include "foundation/PxBitUtils.h"
 #include "PxFiltering.h"
 #include "PxBroadPhase.h"
 #include "common/PxTolerancesScale.h"
@@ -47,67 +47,8 @@ namespace physx
 {
 #endif
 
+	class PxBroadPhaseCallback;
 	class PxCudaContextManager;
-
-/**
-\brief Pruning structure used to accelerate scene queries.
-
-eNONE uses a simple data structure that consumes less memory than the alternatives,
-but generally has slower query performance.
-
-eDYNAMIC_AABB_TREE usually provides the fastest queries. However there is a
-constant per-frame management cost associated with this structure. How much work should
-be done per frame can be tuned via the #PxSceneDesc::dynamicTreeRebuildRateHint
-parameter.
-
-eSTATIC_AABB_TREE is typically used for static objects. It is the same as the
-dynamic AABB tree, without the per-frame overhead. This can be a good choice for static
-objects, if no static objects are added, moved or removed after the scene has been
-created. If there is no such guarantee (e.g. when streaming parts of the world in and out),
-then the dynamic version is a better choice even for static objects.
-
-*/
-struct PxPruningStructureType
-{
-	enum Enum
-	{
-		eNONE,					//!< Using a simple data structure
-		eDYNAMIC_AABB_TREE,		//!< Using a dynamic AABB tree
-		eSTATIC_AABB_TREE,		//!< Using a static AABB tree
-
-		eLAST
-	};
-};
-
-/**
-\brief Scene query update mode
-
-When PxScene::fetchResults is called it does scene query related work, with this enum it is possible to 
-set what work is done during the fetchResults. 
-
-FetchResults will sync changed bounds during simulation and update the scene query bounds in pruners, this work is mandatory.
-
-eCOMMIT_ENABLED_BUILD_ENABLED does allow to execute the new AABB tree build step during fetchResults, additionally the pruner commit is
-called where any changes are applied. During commit PhysX refits the dynamic scene query tree and if a new tree was built and 
-the build finished the tree is swapped with current AABB tree. 
-
-eCOMMIT_DISABLED_BUILD_ENABLED does allow to execute the new AABB tree build step during fetchResults. Pruner commit is not called,
-this means that refit will then occur during the first scene query following fetchResults, or may be forced by the method PxScene::flushSceneQueryUpdates().
-
-eCOMMIT_DISABLED_BUILD_DISABLED no further scene query work is executed. The scene queries update needs to be called manually, see PxScene::sceneQueriesUpdate.
-It is recommended to call PxScene::sceneQueriesUpdate right after fetchResults as the pruning structures are not updated. 
-
-*/
-struct PxSceneQueryUpdateMode
-{
-	enum Enum
-	{
-		eBUILD_ENABLED_COMMIT_ENABLED,		//!< Both scene query build and commit are executed.
-		eBUILD_ENABLED_COMMIT_DISABLED,		//!< Scene query build only is executed.
-		eBUILD_DISABLED_COMMIT_DISABLED		//!< No work is done, no update of scene queries
-	};
-};
-
 
 /**
 \brief Enum for selecting the friction algorithm used for simulation.
@@ -135,11 +76,10 @@ struct PxFrictionType
 	};
 };
 
-
 /**
 \brief Enum for selecting the type of solver used for the simulation.
 
-#PxSolverType::ePGS selects the default iterative sequential impulse solver. This is the same kind of solver used in PhysX 3.4 and earlier releases.
+#PxSolverType::ePGS selects the iterative sequential impulse solver. This is the same kind of solver used in PhysX 3.4 and earlier releases.
 
 #PxSolverType::eTGS selects a non linear iterative solver. This kind of solver can lead to improved convergence and handle large mass ratios, long chains and jointed systems better. It is slightly more expensive than the default solver and can introduce more energy to correct joint and contact errors.
 */
@@ -147,18 +87,16 @@ struct PxSolverType
 {
 	enum Enum
 	{
-		ePGS,			//!< Default Projected Gauss-Seidel iterative solver
-		eTGS			//!< Temporal Gauss-Seidel solver
+		ePGS,	//!< Projected Gauss-Seidel iterative solver
+		eTGS	//!< Default Temporal Gauss-Seidel solver
 	};
 };
-
 
 /**
 \brief flags for configuring properties of the scene
 
 @see PxScene
 */
-
 struct PxSceneFlag
 {
 	enum Enum
@@ -211,15 +149,6 @@ struct PxSceneFlag
 		@see PxRigidBodyFlag::eENABLE_CCD, PxPairFlag::eDETECT_CCD_CONTACT, eENABLE_CCD
 		*/
 		eDISABLE_CCD_RESWEEP	= (1<<2),
-
-		/**
-		\brief Enable adaptive forces to accelerate convergence of the solver. 
-		
-		\note This flag is not mutable, and must be set in PxSceneDesc at scene creation.
-
-		<b>Default:</b> false
-		*/
-		eADAPTIVE_FORCE			= (1<<3),
 
 		/**
 		\brief Enable GJK-based distance collision detection system.
@@ -349,10 +278,20 @@ struct PxSceneFlag
 		*/
 		eENABLE_FRICTION_EVERY_ITERATION = (1 << 15),
 
-		eMUTABLE_FLAGS = eENABLE_ACTIVE_ACTORS|eEXCLUDE_KINEMATICS_FROM_ACTIVE_ACTORS
+		/*
+		\brief Disables GPU readback of articulation data when running on GPU.
+		Useful if your application only needs to communicate to the GPU via GPU buffers. Can be significantly faster
+		*/
+		eSUPPRESS_READBACK = (1<<16),
+
+		/*
+		\brief Forces GPU readback of articulation data when user raise eSUPPRESS_READBACK.
+		*/
+		eFORCE_READBACK = (1 << 17),
+
+		eMUTABLE_FLAGS = eENABLE_ACTIVE_ACTORS|eEXCLUDE_KINEMATICS_FROM_ACTIVE_ACTORS|eSUPPRESS_READBACK
 	};
 };
-
 
 /**
 \brief collection of set bits defined in PxSceneFlag.
@@ -361,7 +300,6 @@ struct PxSceneFlag
 */
 typedef PxFlags<PxSceneFlag::Enum,PxU32> PxSceneFlags;
 PX_FLAGS_OPERATORS(PxSceneFlag::Enum,PxU32)
-
 
 class PxSimulationEventCallback;
 class PxContactModifyCallback;
@@ -437,27 +375,43 @@ PX_INLINE bool PxSceneLimits::isValid() const
 
 struct PxgDynamicsMemoryConfig
 {
-	PxU32 constraintBufferCapacity;	//!< Capacity of constraint buffer allocated in GPU global memory
-	PxU32 contactBufferCapacity;	//!< Capacity of contact buffer allocated in GPU global memory
-	PxU32 tempBufferCapacity;		//!< Capacity of temp buffer allocated in pinned host memory.
-	PxU32 contactStreamSize;		//!< Size of contact stream buffer allocated in pinned host memory. This is double-buffered so total allocation size = 2* contactStreamCapacity * sizeof(PxContact).
-	PxU32 patchStreamSize;			//!< Size of the contact patch stream buffer allocated in pinned host memory. This is double-buffered so total allocation size = 2 * patchStreamCapacity * sizeof(PxContactPatch).
-	PxU32 forceStreamCapacity;		//!< Capacity of force buffer allocated in pinned host memory.
-	PxU32 heapCapacity;				//!< Initial capacity of the GPU and pinned host memory heaps. Additional memory will be allocated if more memory is required.
-	PxU32 foundLostPairsCapacity;	//!< Capacity of found and lost buffers allocated in GPU global memory. This is used for the found/lost pair reports in the BP. 
+	PxU32 tempBufferCapacity;				//!< Capacity of temp buffer allocated in pinned host memory.
+	PxU32 maxRigidContactCount;				//!< Size of contact stream buffer allocated in pinned host memory. This is double-buffered so total allocation size = 2* contactStreamCapacity * sizeof(PxContact).
+	PxU32 maxRigidPatchCount;				//!< Size of the contact patch stream buffer allocated in pinned host memory. This is double-buffered so total allocation size = 2 * patchStreamCapacity * sizeof(PxContactPatch).
+	PxU32 heapCapacity;						//!< Initial capacity of the GPU and pinned host memory heaps. Additional memory will be allocated if more memory is required.
+	PxU32 foundLostPairsCapacity;			//!< Capacity of found and lost buffers allocated in GPU global memory. This is used for the found/lost pair reports in the BP. 
+	PxU32 foundLostAggregatePairsCapacity;	//!<Capacity of found and lost buffers in aggregate system allocated in GPU global memory. This is used for the found/lost pair reports in AABB manager
+	PxU32 totalAggregatePairsCapacity;		//!<Capacity of total number of aggregate pairs allocated in GPU global memory.
+	PxU32 maxSoftBodyContacts;
+	PxU32 maxFemClothContacts;
+	PxU32 maxParticleContacts;
+	PxU32 collisionStackSize;
+	PxU32 maxHairContacts;
 
 	PxgDynamicsMemoryConfig() :
-		constraintBufferCapacity(32 * 1024 * 1024),
-		contactBufferCapacity(24 * 1024 * 1024),
 		tempBufferCapacity(16 * 1024 * 1024),
-		contactStreamSize(1024 * 512),
-		patchStreamSize(1024 * 80),
-		forceStreamCapacity(1 * 1024 * 1024),
+		maxRigidContactCount(1024 * 512),
+		maxRigidPatchCount(1024 * 80),
 		heapCapacity(64 * 1024 * 1024),
-		foundLostPairsCapacity(256 * 1024)
+		foundLostPairsCapacity(256 * 1024),
+		foundLostAggregatePairsCapacity(1024),
+		totalAggregatePairsCapacity(1024),
+		maxSoftBodyContacts(1 * 1024 * 1024),
+		maxFemClothContacts(1 * 1024 * 1024),
+		maxParticleContacts(1*1024*1024),
+		collisionStackSize(64*1024*1024),
+		maxHairContacts(1 * 1024 * 1024)
 	{
 	}
+
+	PX_PHYSX_CORE_API bool isValid() const;
 };
+
+PX_INLINE bool PxgDynamicsMemoryConfig::isValid() const
+{
+	const bool isPowerOfTwo = PxIsPowerOfTwo(heapCapacity);
+	return isPowerOfTwo;
+}
 
 //#endif
 
@@ -468,7 +422,7 @@ This struct must be initialized with the same PxTolerancesScale values used to i
 
 @see PxScene PxPhysics.createScene PxTolerancesScale
 */
-class PxSceneDesc
+class PxSceneDesc : public PxSceneQueryDesc
 {
 public:
 
@@ -478,11 +432,11 @@ public:
 	<b>Range:</b> force vector<br>
 	<b>Default:</b> Zero
 
-	@see PxScene.setGravity()
+	@see PxScene.setGravity() PxScene.getGravity()
 
 	When setting gravity, you should probably also set bounce threshold.
 	*/
-	PxVec3					gravity;
+	PxVec3	gravity;
 
 	/**
 	\brief Possible notification callback.
@@ -518,18 +472,18 @@ public:
 
 	<b>Default:</b> NULL
 
-	@see PxSimulationFilterShader PxScene::setFilterShaderData()
+	@see PxSimulationFilterShader PxScene.setFilterShaderData() PxScene.getFilterShaderData()
 	*/
-	const void*				filterShaderData;
+	const void*	filterShaderData;
 
 	/**
 	\brief Size (in bytes) of the shared global filter data #filterShaderData.
 
 	<b>Default:</b> 0
 
-	@see PxSimulationFilterShader filterShaderData
+	@see PxSimulationFilterShader filterShaderData PxScene.getFilterShaderDataSize()
 	*/
-	PxU32					filterShaderDataSize;
+	PxU32	filterShaderDataSize;
 
 	/**
 	\brief The custom filter shader to use for collision filtering.
@@ -538,7 +492,7 @@ public:
 	use the default shader #PxDefaultSimulationFilterShader which can be found in the PhysX extensions 
 	library.
 
-	@see PxSimulationFilterShader
+	@see PxSimulationFilterShader PxScene.getFilterShader()
 	*/
 	PxSimulationFilterShader	filterShader;
 
@@ -548,7 +502,7 @@ public:
 
 	<b>Default:</b> NULL
 
-	@see PxSimulationFilterCallback
+	@see PxSimulationFilterCallback PxScene.getFilterCallback()
 	*/
 	PxSimulationFilterCallback*	filterCallback;
 
@@ -557,53 +511,52 @@ public:
 
 	<b>Default:</b> PxPairFilteringMode::eDEFAULT
 
-	@see PxPairFilteringMode
+	@see PxPairFilteringMode PxScene.getKinematicKinematicFilteringMode()
 	*/
-	PxPairFilteringMode::Enum		kineKineFilteringMode;
+	PxPairFilteringMode::Enum	kineKineFilteringMode;
 
 	/**
 	\brief Filtering mode for static-kinematic pairs in the broadphase.
 
 	<b>Default:</b> PxPairFilteringMode::eDEFAULT
 
-	@see PxPairFilteringMode
+	@see PxPairFilteringMode PxScene.getStaticKinematicFilteringMode()
 	*/
-	PxPairFilteringMode::Enum		staticKineFilteringMode;
+	PxPairFilteringMode::Enum	staticKineFilteringMode;
 
 	/**
 	\brief Selects the broad-phase algorithm to use.
 
-	<b>Default:</b> PxBroadPhaseType::eABP
+	<b>Default:</b> PxBroadPhaseType::ePABP
 
-	@see PxBroadPhaseType
+	@see PxBroadPhaseType PxScene.getBroadPhaseType()
 	*/
-	PxBroadPhaseType::Enum		broadPhaseType;
+	PxBroadPhaseType::Enum	broadPhaseType;
 
 	/**
 	\brief Broad-phase callback
 
 	<b>Default:</b> NULL
 
-	@see PxBroadPhaseCallback
+	@see PxBroadPhaseCallback PxScene.getBroadPhaseCallback() PxScene.setBroadPhaseCallback()
 	*/
-	PxBroadPhaseCallback*		broadPhaseCallback;
+	PxBroadPhaseCallback*	broadPhaseCallback;
 
 	/**
 	\brief Expected scene limits.
 
-	@see PxSceneLimits
+	@see PxSceneLimits PxScene.getLimits()
 	*/
-	PxSceneLimits				limits;
+	PxSceneLimits	limits;
 
 	/**
 	\brief Selects the friction algorithm to use for simulation.
 
 	\note frictionType cannot be modified after the first call to any of PxScene::simulate, PxScene::solve and PxScene::collide
 
-	@see PxFrictionType
 	<b>Default:</b> PxFrictionType::ePATCH
 
-	@see PxScene::setFrictionType, PxScene::getFrictionType
+	@see PxFrictionType PxScene.setFrictionType(), PxScene.getFrictionType()
 	*/
 	PxFrictionType::Enum frictionType;
 
@@ -612,18 +565,18 @@ public:
 
 	<b>Default:</b> PxSolverType::ePGS
 
-	@see PxSolverType
+	@see PxSolverType PxScene.getSolverType()
 	*/
-	PxSolverType::Enum 			solverType;
+	PxSolverType::Enum	solverType;
 
 	/**
 	\brief A contact with a relative velocity below this will not bounce. A typical value for simulation.
 	stability is about 0.2 * gravity.
 
-	<b>Range:</b> [0, PX_MAX_F32)<br>
+	<b>Range:</b> (0, PX_MAX_F32)<br>
 	<b>Default:</b> 0.2 * PxTolerancesScale::speed
 
-	@see PxMaterial
+	@see PxMaterial PxScene.setBounceThresholdVelocity() PxScene.getBounceThresholdVelocity()
 	*/
 	PxReal bounceThresholdVelocity; 
 
@@ -639,96 +592,56 @@ public:
 
 	<b>Range:</b> [0, PX_MAX_F32)<br>
 	<b>Default:</b> 0.04 * PxTolerancesScale::length
+
+	@see PxScene.setFrictionOffsetThreshold() PxScene.getFrictionOffsetThreshold()
 	*/
 	PxReal frictionOffsetThreshold;
 
 	/**
-	\brief A threshold for speculative CCD. Used to control whether bias, restitution or a combination of the two are used to resolve the contacts.
+	\brief Friction correlation distance used to decide whether contacts are close enough to be merged into a single friction anchor point or not.
 
-	\note This only has any effect on contacting pairs where one of the bodies has PxRigidBodyFlag::eENABLE_SPECULATIVE_CCD raised.
+	\note If the correlation distance is larger than the distance between contact points generated between a pair of shapes, some of the contacts may not experience frictional forces.
 
-	<b>Range:</b> [0, PX_MAX_F32)<br>
-	<b>Default:</b> 0.04 * PxTolerancesScale::length
-	*/
-
-	PxReal ccdMaxSeparation;
-
-	/**
-	\brief A slop value used to zero contact offsets from the body's COM on an axis if the offset along that axis is smaller than this threshold. Can be used to compensate
-	for small numerical errors in contact generation.
+	\note This parameter can be used to tune the correlation distance used in the solver. Contact points can be merged into a single friction anchor if the distance between the contacts is smaller than correlation distance.
 
 	<b>Range:</b> [0, PX_MAX_F32)<br>
-	<b>Default:</b> 0.0
-	*/
+	<b>Default:</b> 0.025f * PxTolerancesScale::length
 
-	PxReal solverOffsetSlop;
+	@see PxScene.setFrictionCorrelationDistance() PxScene.getFrictionCorrelationDistance()
+	*/
+	PxReal frictionCorrelationDistance;
 
 	/**
 	\brief Flags used to select scene options.
 
-	@see PxSceneFlag PxSceneFlags
+	<b>Default:</b> PxSceneFlag::eENABLE_PCM
+
+	@see PxSceneFlag PxSceneFlags PxScene.getFlags() PxScene.setFlag()
 	*/
-	PxSceneFlags			flags;
+	PxSceneFlags	flags;
 
 	/**
 	\brief The CPU task dispatcher for the scene.
 
-	See PxCpuDispatcher, PxScene::getCpuDispatcher
+	@see PxCpuDispatcher, PxScene::getCpuDispatcher
 	*/
-	PxCpuDispatcher*		cpuDispatcher;
+	PxCpuDispatcher*	cpuDispatcher;
 
 	/**
 	\brief The CUDA context manager for the scene.
 
 	<b>Platform specific:</b> Applies to PC GPU only.
 
-	See PxCudaContextManager, PxScene::getCudaContextManager
+	@see PxCudaContextManager, PxScene::getCudaContextManager
 	*/
 	PxCudaContextManager* 	cudaContextManager;
-
-	/**
-	\brief Defines the structure used to store static objects.
-
-	\note Only PxPruningStructureType::eSTATIC_AABB_TREE and PxPruningStructureType::eDYNAMIC_AABB_TREE are allowed here.
-	*/
-	PxPruningStructureType::Enum	staticStructure;
-
-	/**
-	\brief Defines the structure used to store dynamic objects.
-	*/
-	PxPruningStructureType::Enum	dynamicStructure;
-
-	/**
-	\brief Hint for how much work should be done per simulation frame to rebuild the pruning structure.
-
-	This parameter gives a hint on the distribution of the workload for rebuilding the dynamic AABB tree
-	pruning structure #PxPruningStructureType::eDYNAMIC_AABB_TREE. It specifies the desired number of simulation frames
-	the rebuild process should take. Higher values will decrease the workload per frame but the pruning
-	structure will get more and more outdated the longer the rebuild takes (which can make
-	scene queries less efficient).
-
-	\note Only used for #PxPruningStructureType::eDYNAMIC_AABB_TREE pruning structure.
-
-	\note This parameter gives only a hint. The rebuild process might still take more or less time depending on the
-	number of objects involved.
-
-	<b>Range:</b> [4, PX_MAX_U32)<br>
-	<b>Default:</b> 100
-	*/
-	PxU32					dynamicTreeRebuildRateHint;
-
-	/**
-	\brief Defines the scene query update mode.
-	<b>Default:</b> PxSceneQueryUpdateMode::eBUILD_ENABLED_COMMIT_ENABLED
-	*/
-	PxSceneQueryUpdateMode::Enum sceneQueryUpdateMode;
 
 	/**
 	\brief Will be copied to PxScene::userData.
 
 	<b>Default:</b> NULL
 	*/
-	void*					userData;
+	void*	userData;
 
 	/**
 	\brief Defines the number of actors required to spawn a separate rigid body solver island task chain.
@@ -745,7 +658,7 @@ public:
 
 	@see PxScene.setSolverBatchSize() PxScene.getSolverBatchSize()
 	*/
-	PxU32					solverBatchSize;
+	PxU32	solverBatchSize;
 
 	/**
 	\brief Defines the number of articulations required to spawn a separate rigid body solver island task chain.
@@ -758,11 +671,11 @@ public:
 
 	Note that a rigid body solver task chain is spawned as soon as either a sufficient number of rigid bodies or articulations are batched together. 
 
-	<b>Default:</b> 128
+	<b>Default:</b> 16
 
 	@see PxScene.setSolverArticulationBatchSize() PxScene.getSolverArticulationBatchSize()
 	*/
-	PxU32					solverArticulationBatchSize;
+	PxU32	solverArticulationBatchSize;
 
 	/**
 	\brief Setting to define the number of 16K blocks that will be initially reserved to store contact, friction, and contact cache data.
@@ -777,7 +690,7 @@ public:
 
 	@see PxPhysics::createScene PxScene::setNbContactDataBlocks 
 	*/
-	PxU32					nbContactDataBlocks;
+	PxU32	nbContactDataBlocks;
 
 	/**
 	\brief Setting to define the maximum number of 16K blocks that can be allocated to store contact, friction, and contact cache data.
@@ -795,9 +708,9 @@ public:
 
 	<b>Range:</b> [0, PX_MAX_U32]<br>
 
-	@see nbContactDataBlocks PxScene::setNbContactDataBlocks 
+	@see nbContactDataBlocks PxScene.setNbContactDataBlocks()
 	*/
-	PxU32					maxNbContactDataBlocks;
+	PxU32	maxNbContactDataBlocks;
 
 	/**
 	\brief The maximum bias coefficient used in the constraint solver
@@ -814,8 +727,9 @@ public:
 
 	<b> Range</b> [0, PX_MAX_F32] <br>
 
+	@see PxScene.setMaxBiasCoefficient() PxScene.getMaxBiasCoefficient()
 	*/
-	PxReal					maxBiasCoefficient;
+	PxReal	maxBiasCoefficient;
 
 	/**
 	\brief Size of the contact report stream (in bytes).
@@ -829,8 +743,9 @@ public:
 
 	<b>Range:</b> (0, PX_MAX_U32]<br>
 	
+	@see PxScene.getContactReportStreamBufferSize()
 	*/
-	PxU32					contactReportStreamBufferSize;
+	PxU32	contactReportStreamBufferSize;
 
 	/**
 	\brief Maximum number of CCD passes 
@@ -842,8 +757,10 @@ public:
 
 	<b>Default:</b> 1
 	<b>Range:</b> [1, PX_MAX_U32]<br>
+
+	@see PxScene.setCCDMaxPasses() PxScene.getCCDMaxPasses()
 	*/
-	PxU32					ccdMaxPasses;
+	PxU32	ccdMaxPasses;
 
 	/**
 	\brief CCD threshold
@@ -857,9 +774,22 @@ public:
 
 	<b>Default:</b> PX_MAX_F32
 	<b>Range:</b> [Eps, PX_MAX_F32]<br>
-	*/
 
-	PxReal					ccdThreshold;
+	@see PxScene.setCCDThreshold() PxScene.getCCDThreshold()
+	*/
+	PxReal	ccdThreshold;
+
+	/**
+	\brief A threshold for speculative CCD. Used to control whether bias, restitution or a combination of the two are used to resolve the contacts.
+
+	\note This only has any effect on contacting pairs where one of the bodies has PxRigidBodyFlag::eENABLE_SPECULATIVE_CCD raised.
+
+	<b>Range:</b> [0, PX_MAX_F32)<br>
+	<b>Default:</b> 0.04 * PxTolerancesScale::length
+
+	@see PxScene.setCCDMaxSeparation() PxScene.getCCDMaxSeparation()
+	*/
+	PxReal	ccdMaxSeparation;
 
 	/**
 	\brief The wake counter reset value
@@ -869,9 +799,9 @@ public:
 	<b>Range:</b> (0, PX_MAX_F32)<br>
 	<b>Default:</b> 0.4 (which corresponds to 20 frames for a time step of 0.02)
 
-	@see PxRigidDynamic::wakeUp() PxArticulationBase::wakeUp()
+	@see PxRigidDynamic::wakeUp() PxArticulationReducedCoordinate::wakeUp() PxScene.getWakeCounterResetValue()
 	*/
-	PxReal					wakeCounterResetValue;
+	PxReal	wakeCounterResetValue;
 
 	/**
 	\brief The bounds used to sanity check user-set positions of actors and articulation links
@@ -882,7 +812,7 @@ public:
 	<b>Range:</b> any valid PxBounds3 <br> 
 	<b>Default:</b> (-PX_MAX_BOUNDS_EXTENTS, PX_MAX_BOUNDS_EXTENTS) on each axis
 	*/
-	PxBounds3				sanityBounds;
+	PxBounds3	sanityBounds;
 
 	/**
 	\brief The pre-allocations performed in the GPU dynamics pipeline.
@@ -895,23 +825,51 @@ public:
 	A value greater than 32 is currently not supported.
 	<b>Range:</b> (1, 32)<br>
 	*/
-	PxU32					gpuMaxNumPartitions;
+	PxU32	gpuMaxNumPartitions;
+
+	/**
+	\brief Limitation for the number of static rigid body partitions in the GPU dynamics pipeline.
+	<b>Range:</b> (1, 255)<br>
+	<b>Default:</b> 16
+	*/
+	PxU32	gpuMaxNumStaticPartitions;
 
 	/**
 	\brief Defines which compute version the GPU dynamics should target. DO NOT MODIFY
 	*/
-	PxU32					gpuComputeVersion;
+	PxU32	gpuComputeVersion;
+
+	/**
+	\brief Defines the size of a contact pool slab.
+	Contact pairs and associated data are allocated using a pool allocator. Increasing the slab size can trade
+	off some performance spikes when a large number of new contacts are found for an increase in overall memory 
+	usage.
+	
+	<b>Range:</b>(1, PX_MAX_U32)<br>
+	<b>Default:</b> 256
+	*/
+	PxU32	contactPairSlabSize;	
+
+	/**
+	\brief The scene query sub-system for the scene.
+
+	If left to NULL, PxScene will use its usual internal sub-system. If non-NULL, all SQ-related calls
+	will be re-routed to the user-provided implementation. An external SQ implementation is available
+	in the Extensions library (see PxCreateExternalSceneQuerySystem). This can also be fully re-implemented by users if needed.
+
+	@see PxSceneQuerySystem
+	*/
+	PxSceneQuerySystem* sceneQuerySystem;
 
 private:
 	/**
 	\cond
 	*/
 	// For internal use only
-	PxTolerancesScale		tolerancesScale;
+	PxTolerancesScale	tolerancesScale;
 	/**
 	\endcond
 	*/
-
 
 public:
 	/**
@@ -951,55 +909,53 @@ public:
 };
 
 PX_INLINE PxSceneDesc::PxSceneDesc(const PxTolerancesScale& scale):
-	gravity								(PxVec3(0.0f)),
-	simulationEventCallback				(NULL),
-	contactModifyCallback				(NULL),
-	ccdContactModifyCallback			(NULL),
+	gravity							(PxVec3(0.0f)),
+	simulationEventCallback			(NULL),
+	contactModifyCallback			(NULL),
+	ccdContactModifyCallback		(NULL),
 
-	filterShaderData					(NULL),
-	filterShaderDataSize				(0),
-	filterShader						(NULL),
-	filterCallback						(NULL),
+	filterShaderData				(NULL),
+	filterShaderDataSize			(0),
+	filterShader					(NULL),
+	filterCallback					(NULL),
 
-	kineKineFilteringMode				(PxPairFilteringMode::eDEFAULT),
-	staticKineFilteringMode				(PxPairFilteringMode::eDEFAULT),
+	kineKineFilteringMode			(PxPairFilteringMode::eDEFAULT),
+	staticKineFilteringMode			(PxPairFilteringMode::eDEFAULT),
 
-	broadPhaseType						(PxBroadPhaseType::eABP),
-	broadPhaseCallback					(NULL),
+	broadPhaseType					(PxBroadPhaseType::ePABP),
+	broadPhaseCallback				(NULL),
 
-	frictionType						(PxFrictionType::ePATCH),
-	solverType							(PxSolverType::ePGS),
-	bounceThresholdVelocity				(0.2f * scale.speed),
-	frictionOffsetThreshold				(0.04f * scale.length),
-	ccdMaxSeparation					(0.04f * scale.length),
-	solverOffsetSlop					(0.0f),
+	frictionType					(PxFrictionType::ePATCH),
+	solverType						(PxSolverType::ePGS),
+	bounceThresholdVelocity			(0.2f * scale.speed),
+	frictionOffsetThreshold			(0.04f * scale.length),
+	frictionCorrelationDistance		(0.025f * scale.length),
 
-	flags								(PxSceneFlag::eENABLE_PCM),
+	flags							(PxSceneFlag::eENABLE_PCM),
 
-	cpuDispatcher						(NULL),
-	cudaContextManager					(NULL),
+	cpuDispatcher					(NULL),
+	cudaContextManager				(NULL),
 
-	staticStructure						(PxPruningStructureType::eDYNAMIC_AABB_TREE),
-	dynamicStructure					(PxPruningStructureType::eDYNAMIC_AABB_TREE),
-	dynamicTreeRebuildRateHint			(100),
-	sceneQueryUpdateMode				(PxSceneQueryUpdateMode::eBUILD_ENABLED_COMMIT_ENABLED),
+	userData						(NULL),
 
-	userData							(NULL),
+	solverBatchSize					(128),
+	solverArticulationBatchSize		(16),
 
-	solverBatchSize						(128),
-	solverArticulationBatchSize			(16),
-
-	nbContactDataBlocks					(0),
-	maxNbContactDataBlocks				(1<<16),
-	maxBiasCoefficient					(PX_MAX_F32),
-	contactReportStreamBufferSize		(8192),
-	ccdMaxPasses						(1),
-	ccdThreshold						(PX_MAX_F32),
-	wakeCounterResetValue				(20.0f*0.02f),
-	sanityBounds						(PxBounds3(PxVec3(-PX_MAX_BOUNDS_EXTENTS), PxVec3(PX_MAX_BOUNDS_EXTENTS))),
-	gpuMaxNumPartitions					(8),
-	gpuComputeVersion					(0),
-	tolerancesScale						(scale)
+	nbContactDataBlocks				(0),
+	maxNbContactDataBlocks			(1<<16),
+	maxBiasCoefficient				(PX_MAX_F32),
+	contactReportStreamBufferSize	(8192),
+	ccdMaxPasses					(1),
+	ccdThreshold					(PX_MAX_F32),
+	ccdMaxSeparation				(0.04f * scale.length),
+	wakeCounterResetValue			(20.0f*0.02f),
+	sanityBounds					(PxBounds3(PxVec3(-PX_MAX_BOUNDS_EXTENTS), PxVec3(PX_MAX_BOUNDS_EXTENTS))),
+	gpuMaxNumPartitions				(8),
+	gpuMaxNumStaticPartitions		(16),
+	gpuComputeVersion				(0),
+	contactPairSlabSize				(256),
+	sceneQuerySystem				(NULL),
+	tolerancesScale					(scale)
 {
 }
 
@@ -1010,6 +966,9 @@ PX_INLINE void PxSceneDesc::setToDefault(const PxTolerancesScale& scale)
 
 PX_INLINE bool PxSceneDesc::isValid() const
 {
+	if(!PxSceneQueryDesc::isValid())
+		return false;
+
 	if(!filterShader)
 		return false;
 
@@ -1020,22 +979,21 @@ PX_INLINE bool PxSceneDesc::isValid() const
 	if(!limits.isValid())
 		return false;
 
-	if(staticStructure!=PxPruningStructureType::eSTATIC_AABB_TREE && staticStructure!=PxPruningStructureType::eDYNAMIC_AABB_TREE)
-		return false;
-
-	if(dynamicTreeRebuildRateHint < 4)
-		return false;
-
-	if(bounceThresholdVelocity < 0.0f)
+	if(bounceThresholdVelocity <= 0.0f)
 		return false;
 	if(frictionOffsetThreshold < 0.0f)
 		return false;
-	if(ccdMaxSeparation < 0.0f)
-		return false;
-	if (solverOffsetSlop < 0.f)
+	if(frictionCorrelationDistance <= 0)
 		return false;
 
-	if(ccdThreshold <= 0.f)
+	if(maxBiasCoefficient < 0.0f)
+		return false;
+
+	if(!ccdMaxPasses)
+		return false;
+	if(ccdThreshold <= 0.0f)
+		return false;
+	if(ccdMaxSeparation < 0.0f)
 		return false;
 
 	if(!cpuDispatcher)
@@ -1050,24 +1008,31 @@ PX_INLINE bool PxSceneDesc::isValid() const
 	if(wakeCounterResetValue <= 0.0f)
 		return false;
 
-	//Adaptive force and stabilization are incompatible. You can only have one or the other
-	if((flags & (PxSceneFlag::eADAPTIVE_FORCE | PxSceneFlag::eENABLE_STABILIZATION)) == (PxSceneFlag::eADAPTIVE_FORCE | PxSceneFlag::eENABLE_STABILIZATION))
-		return false;
-
 	if(!sanityBounds.isValid())
 		return false;
 
 #if PX_SUPPORT_GPU_PHYSX
-	//gpuMaxNumPartitions must be power of 2
-	if((gpuMaxNumPartitions&(gpuMaxNumPartitions - 1)) != 0)
+	if(!PxIsPowerOfTwo(gpuMaxNumPartitions))
 		return false;
-	if (gpuMaxNumPartitions > 32)
+	if(gpuMaxNumPartitions > 32)
 		return false;
+	if (gpuMaxNumPartitions == 0)
+		return false;
+	if(!gpuDynamicsConfig.isValid())
+		return false;
+
+	if (flags & PxSceneFlag::eSUPPRESS_READBACK)
+	{
+		if(!(flags & PxSceneFlag::eENABLE_GPU_DYNAMICS && broadPhaseType == PxBroadPhaseType::eGPU))
+			return false;
+	}
 #endif
+
+	if(contactPairSlabSize == 0)
+		return false;
 
 	return true;
 }
-
 
 #if !PX_DOXYGEN
 } // namespace physx

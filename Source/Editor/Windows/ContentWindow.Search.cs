@@ -164,6 +164,7 @@ namespace FlaxEditor.Windows
             // Check if clear filters
             if (_itemsSearchBox.TextLength == 0 && !_viewDropdown.HasSelection)
             {
+                _view.IsSearching = false;
                 RefreshView();
                 return;
             }

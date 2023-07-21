@@ -5,6 +5,7 @@
 #include "PhysicsBackend.h"
 #include "PhysicalMaterial.h"
 #include "PhysicsSettings.h"
+#include "PhysicsStatistics.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -56,7 +57,6 @@ void PhysicsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier*
     DESERIALIZE(FrictionCombineMode);
     DESERIALIZE(RestitutionCombineMode);
     DESERIALIZE(DisableCCD);
-    DESERIALIZE(EnableAdaptiveForce);
     DESERIALIZE(MaxDeltaTime);
     DESERIALIZE(EnableSubstepping);
     DESERIALIZE(SubstepDeltaTime);
@@ -216,6 +216,21 @@ void Physics::FlushRequests()
     for (PhysicsScene* scene : Scenes)
         PhysicsBackend::FlushRequests(scene->GetPhysicsScene());
     PhysicsBackend::FlushRequests();
+}
+
+bool Physics::LineCast(const Vector3& start, const Vector3& end, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->LineCast(start, end, layerMask, hitTriggers);
+}
+
+bool Physics::LineCast(const Vector3& start, const Vector3& end, RayCastHit& hitInfo, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->LineCast(start, end, hitInfo, layerMask, hitTriggers);
+}
+
+bool Physics::LineCastAll(const Vector3& start, const Vector3& end, Array<RayCastHit>& results, uint32 layerMask, bool hitTriggers)
+{
+    return DefaultScene->LineCastAll(start, end, results, layerMask, hitTriggers);
 }
 
 bool Physics::RayCast(const Vector3& origin, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
@@ -418,6 +433,17 @@ void PhysicsScene::SetOrigin(const Vector3& value)
     }
 }
 
+#if COMPILE_WITH_PROFILER
+
+PhysicsStatistics PhysicsScene::GetStatistics() const
+{
+    PhysicsStatistics result;
+    PhysicsBackend::GetSceneStatistics(_scene, result);
+    return result;
+}
+
+#endif
+
 bool PhysicsScene::Init(const StringView& name, const PhysicsSettings& settings)
 {
     if (_scene)
@@ -448,6 +474,33 @@ void PhysicsScene::CollectResults()
     ASSERT(IsInMainThread());
     PhysicsBackend::EndSimulateScene(_scene);
     _isDuringSimulation = false;
+}
+
+bool PhysicsScene::LineCast(const Vector3& start, const Vector3& end, uint32 layerMask, bool hitTriggers)
+{
+    Vector3 directionToEnd = end - start;
+    const float distanceToEnd = directionToEnd.Length();
+    if (distanceToEnd >= ZeroTolerance)
+        directionToEnd /= distanceToEnd;
+    return PhysicsBackend::RayCast(_scene, start, directionToEnd, distanceToEnd, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::LineCast(const Vector3& start, const Vector3& end, RayCastHit& hitInfo, uint32 layerMask, bool hitTriggers)
+{
+    Vector3 directionToEnd = end - start;
+    const float distanceToEnd = directionToEnd.Length();
+    if (distanceToEnd >= ZeroTolerance)
+        directionToEnd /= distanceToEnd;
+    return PhysicsBackend::RayCast(_scene, start, directionToEnd, hitInfo, distanceToEnd, layerMask, hitTriggers);
+}
+
+bool PhysicsScene::LineCastAll(const Vector3& start, const Vector3& end, Array<RayCastHit>& results, uint32 layerMask, bool hitTriggers)
+{
+    Vector3 directionToEnd = end - start;
+    const float distanceToEnd = directionToEnd.Length();
+    if (distanceToEnd >= ZeroTolerance)
+        directionToEnd /= distanceToEnd;
+    return PhysicsBackend::RayCastAll(_scene, start, directionToEnd, results, distanceToEnd, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::RayCast(const Vector3& origin, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)

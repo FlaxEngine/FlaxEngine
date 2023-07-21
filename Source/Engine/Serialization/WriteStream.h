@@ -176,6 +176,26 @@ public:
     {
         Write(v.Get());
     }
+    template<typename T>
+    FORCE_INLINE void Write(const SoftObjectReference<T>& v)
+    {
+        Write(v.Get());
+    }
+    template<typename T>
+    FORCE_INLINE void Write(const AssetReference<T>& v)
+    {
+        Write(v.Get());
+    }
+    template<typename T>
+    FORCE_INLINE void Write(const WeakAssetReference<T>& v)
+    {
+        Write(v.Get());
+    }
+    template<typename T>
+    FORCE_INLINE void Write(const SoftAssetReference<T>& v)
+    {
+        Write(v.Get());
+    }
 
     template<typename T, typename AllocationType = HeapAllocation>
     void Write(const Array<T, AllocationType>& data)
@@ -199,13 +219,10 @@ public:
     {
         const int32 count = data.Count();
         WriteInt32(count);
-        if (count > 0)
+        for (const auto& e : data)
         {
-            for (const auto& e : data)
-            {
-                Write(e.Key);
-                Write(e.Value);
-            }
+            Write(e.Key);
+            Write(e.Value);
         }
     }
 

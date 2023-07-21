@@ -32,7 +32,7 @@ public:
     /// <summary>
     /// Controls the radial falloff of light when UseInverseSquaredFalloff is disabled.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(13), DefaultValue(8.0f), EditorDisplay(\"Light\"), Limit(2, 16, 0.01f)")
+    API_FIELD(Attributes="EditorOrder(13), DefaultValue(8.0f), EditorDisplay(\"Light\"), Limit(2, 16, 0.01f), VisibleIf(nameof(UseInverseSquaredFalloff), true)")
     float FallOffExponent = 8.0f;
 
     /// <summary>
@@ -127,6 +127,7 @@ public:
 #if USE_EDITOR
     void OnDebugDraw() override;
     void OnDebugDrawSelected() override;
+    void DrawLightsDebug(RenderView& view) override;
 #endif
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Loader;
 using System.Runtime.Serialization.Formatters.Binary;
 using FlaxEngine;
 
@@ -54,8 +56,13 @@ namespace FlaxEditor.Surface
                 {
                     try
                     {
+                        // Ensure we are in the correct load context (https://github.com/dotnet/runtime/issues/42041)
+                        using var ctx = AssemblyLoadContext.EnterContextualReflection(typeof(Editor).Assembly);
+
                         var formatter = new BinaryFormatter();
+#pragma warning disable SYSLIB0011
                         return (Attribute[])formatter.Deserialize(stream);
+#pragma warning restore SYSLIB0011
                     }
                     catch (Exception ex)
                     {
@@ -122,8 +129,13 @@ namespace FlaxEditor.Surface
                 }
                 using (var stream = new MemoryStream())
                 {
+                    // Ensure we are in the correct load context (https://github.com/dotnet/runtime/issues/42041)
+                    using var ctx = AssemblyLoadContext.EnterContextualReflection(typeof(Editor).Assembly);
+
                     var formatter = new BinaryFormatter();
+#pragma warning disable SYSLIB0011
                     formatter.Serialize(stream, attributes);
+#pragma warning restore SYSLIB0011
                     AddEntry(AttributeMetaTypeID, stream.ToArray());
                 }
             }

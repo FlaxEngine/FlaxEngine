@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,15 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-#ifndef PX_VEHICLE_UTILSTELEMETRY_H
-#define PX_VEHICLE_UTILSTELEMETRY_H
-/** \addtogroup vehicle
-  @{
-*/
+#ifndef PX_VEHICLE_UTIL_TELEMETRY_H
+#define PX_VEHICLE_UTIL_TELEMETRY_H
 
 #include "vehicle/PxVehicleSDK.h"
 #include "foundation/PxSimpleTypes.h"
@@ -44,7 +40,7 @@ namespace physx
 
 #if PX_DEBUG_VEHICLE_ON
 
-class PxVehicleGraphDesc
+class PX_DEPRECATED PxVehicleGraphDesc
 {
 
 	friend class PxVehicleGraph;
@@ -90,7 +86,7 @@ private:
 	bool isValid() const;
 };
 
-struct PxVehicleGraphChannelDesc
+struct PX_DEPRECATED PxVehicleGraphChannelDesc
 {
 public:
 
@@ -134,7 +130,7 @@ private:
 	bool isValid() const;
 };
 
-struct PxVehicleWheelGraphChannel
+struct PX_DEPRECATED PxVehicleWheelGraphChannel
 {
 	enum Enum
 	{
@@ -153,7 +149,7 @@ struct PxVehicleWheelGraphChannel
 	};
 };
 
-struct PxVehicleDriveGraphChannel
+struct PX_DEPRECATED PxVehicleDriveGraphChannel
 {
 	enum Enum
 	{
@@ -170,7 +166,7 @@ struct PxVehicleDriveGraphChannel
 	};
 };
 
-struct PxVehicleGraphType
+struct PX_DEPRECATED PxVehicleGraphType
 {
 	enum Enum
 	{
@@ -180,7 +176,7 @@ struct PxVehicleGraphType
 };
 
 
-class PxVehicleGraph
+class PX_DEPRECATED PxVehicleGraph
 {
 public:
 
@@ -246,6 +242,14 @@ public:
 	*/
 	PxF32 getLatestValue(const PxU32 channel) const ;
 
+	/**
+	\brief Get the raw data of a specific graph channel.
+
+	\param[in] channel is the ID of the graph channel to get data from.
+	\param[out] values is the buffer to write the data to. Minimum required size is eMAX_NB_SAMPLES.
+	*/
+	void getRawData(const PxU32 channel, PxReal* values) const;
+
 private:
 
 	//Min and max of each sample.
@@ -300,7 +304,7 @@ private:
 PX_COMPILE_TIME_ASSERT(PxU32(PxVehicleGraph::eMAX_NB_CHANNELS) >= PxU32(PxVehicleWheelGraphChannel::eMAX_NB_WHEEL_CHANNELS) && PxU32(PxVehicleGraph::eMAX_NB_CHANNELS) >= PxU32(PxVehicleDriveGraphChannel::eMAX_NB_DRIVE_CHANNELS));
 PX_COMPILE_TIME_ASSERT(0==(sizeof(PxVehicleGraph) & 15));
 
-class PxVehicleTelemetryData
+class PX_DEPRECATED PxVehicleTelemetryData
 {
 public:
 
@@ -406,5 +410,4 @@ PX_COMPILE_TIME_ASSERT(0==(sizeof(PxVehicleTelemetryData) & 15));
 } // namespace physx
 #endif
 
-/** @} */
-#endif //PX_VEHICLE_UTILSTELEMETRY_H
+#endif

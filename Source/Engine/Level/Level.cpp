@@ -26,7 +26,7 @@
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MDomain.h"
-#include "Engine/Scripting/MException.h"
+#include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Serialization/JsonTools.h"
@@ -138,6 +138,7 @@ public:
     void Update() override;
     void LateUpdate() override;
     void FixedUpdate() override;
+    void LateFixedUpdate() override;
     void Dispose() override;
 };
 
@@ -242,95 +243,59 @@ void LayersAndTagsSettings::Apply()
     }
 }
 
-void LevelService::Update()
-{
-    PROFILE_CPU_NAMED("Level::Update");
-
-    ScopeLock lock(Level::ScenesLock);
-    auto& scenes = Level::Scenes;
-
-    // Update all actors
-    if (!Time::GetGamePaused() && Level::TickEnabled)
-    {
-        for (int32 i = 0; i < scenes.Count(); i++)
-        {
-            if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.Update.Tick();
-        }
+#define TICK_LEVEL(tickingStage, name) \
+    PROFILE_CPU_NAMED(name); \
+    ScopeLock lock(Level::ScenesLock); \
+    auto& scenes = Level::Scenes; \
+    if (!Time::GetGamePaused() && Level::TickEnabled) \
+    { \
+        for (int32 i = 0; i < scenes.Count(); i++) \
+        { \
+            if (scenes[i]->GetIsActive()) \
+                scenes[i]->Ticking.tickingStage.Tick(); \
+        } \
     }
 #if USE_EDITOR
-    else if (!Editor::IsPlayMode)
-    {
-        // Run event for script executed in editor
-        for (int32 i = 0; i < scenes.Count(); i++)
-        {
-            if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.Update.TickExecuteInEditor();
-        }
+#define TICK_LEVEL_EDITOR(tickingStage) \
+    else if (!Editor::IsPlayMode) \
+    { \
+        for (int32 i = 0; i < scenes.Count(); i++) \
+        { \
+            if (scenes[i]->GetIsActive()) \
+                scenes[i]->Ticking.tickingStage.TickExecuteInEditor(); \
+        } \
     }
+#else
+#define TICK_LEVEL_EDITOR(tickingStage)
 #endif
+
+void LevelService::Update()
+{
+    TICK_LEVEL(Update, "Level::Update")
+    TICK_LEVEL_EDITOR(Update)
 }
 
 void LevelService::LateUpdate()
 {
-    PROFILE_CPU_NAMED("Level::LateUpdate");
-
-    ScopeLock lock(Level::ScenesLock);
-    auto& scenes = Level::Scenes;
-
-    // Update all actors
-    if (!Time::GetGamePaused() && Level::TickEnabled)
-    {
-        for (int32 i = 0; i < scenes.Count(); i++)
-        {
-            if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.LateUpdate.Tick();
-        }
-    }
-#if USE_EDITOR
-    else if (!Editor::IsPlayMode)
-    {
-        // Run event for script executed in editor
-        for (int32 i = 0; i < scenes.Count(); i++)
-        {
-            if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.LateUpdate.TickExecuteInEditor();
-        }
-    }
-#endif
-
-    // Flush actions
+    TICK_LEVEL(LateUpdate, "Level::LateUpdate")
+    TICK_LEVEL_EDITOR(LateUpdate)
     flushActions();
 }
 
 void LevelService::FixedUpdate()
 {
-    PROFILE_CPU_NAMED("Level::FixedUpdate");
-
-    ScopeLock lock(Level::ScenesLock);
-    auto& scenes = Level::Scenes;
-
-    // Update all actors
-    if (!Time::GetGamePaused() && Level::TickEnabled)
-    {
-        for (int32 i = 0; i < scenes.Count(); i++)
-        {
-            if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.FixedUpdate.Tick();
-        }
-    }
-#if USE_EDITOR
-    else if (!Editor::IsPlayMode)
-    {
-        // Run event for script executed in editor
-        for (int32 i = 0; i < scenes.Count(); i++)
-        {
-            if (scenes[i]->GetIsActive())
-                scenes[i]->Ticking.FixedUpdate.TickExecuteInEditor();
-        }
-    }
-#endif
+    TICK_LEVEL(FixedUpdate, "Level::FixedUpdate")
+    TICK_LEVEL_EDITOR(FixedUpdate)
 }
+
+void LevelService::LateFixedUpdate()
+{
+    TICK_LEVEL(LateFixedUpdate, "Level::LateFixedUpdate")
+    TICK_LEVEL_EDITOR(LateFixedUpdate)
+}
+
+#undef TICK_LEVEL
+#undef TICK_LEVEL_EDITOR
 
 void LevelService::Dispose()
 {
@@ -761,67 +726,6 @@ int32 Level::GetLayerIndex(const StringView& layer)
     return result;
 }
 
-Actor* FindActorRecursive(Actor* node, const Tag& tag)
-{
-    if (node->HasTag(tag))
-        return node;
-    Actor* result = nullptr;
-    for (Actor* child : node->Children)
-    {
-        result = FindActorRecursive(child, tag);
-        if (result)
-            break;
-    }
-    return result;
-}
-
-void FindActorsRecursive(Actor* node, const Tag& tag, Array<Actor*>& result)
-{
-    if (node->HasTag(tag))
-        result.Add(node);
-    for (Actor* child : node->Children)
-        FindActorsRecursive(child, tag, result);
-}
-
-Actor* Level::FindActor(const Tag& tag, Actor* root)
-{
-    PROFILE_CPU();
-    if (root)
-        return FindActorRecursive(root, tag);
-    Actor* result = nullptr;
-    for (Scene* scene : Scenes)
-    {
-        result = FindActorRecursive(scene, tag);
-        if (result)
-            break;
-    }
-    return result;
-}
-
-void FindActorRecursive(Actor* node, const Tag& tag, Array<Actor*>& result)
-{
-    if (node->HasTag(tag))
-        result.Add(node);
-    for (Actor* child : node->Children)
-        FindActorRecursive(child, tag, result);
-}
-
-Array<Actor*> Level::FindActors(const Tag& tag, Actor* root)
-{
-    PROFILE_CPU();
-    Array<Actor*> result;
-    if (root)
-    {
-        FindActorsRecursive(root, tag, result);
-    }
-    else
-    {
-        for (Scene* scene : Scenes)
-            FindActorsRecursive(scene, tag, result);
-    }
-    return result;
-}
-
 void Level::callActorEvent(ActorEventType eventType, Actor* a, Actor* b)
 {
     PROFILE_CPU();
@@ -903,12 +807,11 @@ bool LevelImpl::unloadScene(Scene* scene)
 bool LevelImpl::unloadScenes()
 {
     auto scenes = Level::Scenes;
-    for (int32 i = 0; i < scenes.Count(); i++)
+    for (int32 i = scenes.Count() - 1; i >= 0; i--)
     {
         if (unloadScene(scenes[i]))
             return true;
     }
-
     return false;
 }
 
@@ -1210,6 +1113,15 @@ bool LevelImpl::saveScene(Scene* scene, const String& path)
 
     LOG(Info, "Scene saved! Time {0} ms", Math::CeilToInt((float)(DateTime::NowUTC() - startTime).GetTotalMilliseconds()));
 
+#if USE_EDITOR
+    // Reload asset at the target location if is loaded
+    Asset* asset = Content::GetAsset(sceneId);
+    if (!asset)
+        asset = Content::GetAsset(path);
+    if (asset)
+        asset->Reload();
+#endif
+
     // Fire event
     CallSceneEvent(SceneEventType::OnSceneSaved, scene, sceneId);
 
@@ -1293,7 +1205,7 @@ bool Level::SaveSceneToBytes(Scene* scene, rapidjson_flax::StringBuffer& outData
     }
 
     // Info
-    LOG(Info, "Scene saved! Time {0} ms", Math::CeilToInt(static_cast<float>((DateTime::NowUTC()- startTime).GetTotalMilliseconds())));
+    LOG(Info, "Scene saved! Time {0} ms", Math::CeilToInt(static_cast<float>((DateTime::NowUTC() - startTime).GetTotalMilliseconds())));
 
     // Fire event
     CallSceneEvent(SceneEventType::OnSceneSaved, scene, scene->GetID());
@@ -1470,6 +1382,153 @@ Actor* Level::FindActor(const MClass* type)
     ScopeLock lock(ScenesLock);
     for (int32 i = 0; result == nullptr && i < Scenes.Count(); i++)
         result = Scenes[i]->FindActor(type);
+    return result;
+}
+
+Actor* Level::FindActor(const MClass* type, const StringView& name)
+{
+    CHECK_RETURN(type, nullptr);
+    Actor* result = nullptr;
+    ScopeLock lock(ScenesLock);
+    for (int32 i = 0; result == nullptr && i < Scenes.Count(); i++)
+        result = Scenes[i]->FindActor(type, name);
+    return result;
+}
+
+Actor* FindActorRecursive(Actor* node, const Tag& tag)
+{
+    if (node->HasTag(tag))
+        return node;
+    Actor* result = nullptr;
+    for (Actor* child : node->Children)
+    {
+        result = FindActorRecursive(child, tag);
+        if (result)
+            break;
+    }
+    return result;
+}
+
+Actor* FindActorRecursiveByType(Actor* node, const MClass* type, const Tag& tag)
+{
+    CHECK_RETURN(type, nullptr);
+    if (node->HasTag(tag) && node->GetClass()->IsSubClassOf(type))
+        return node;
+    Actor* result = nullptr;
+    for (Actor* child : node->Children)
+    {
+        result = FindActorRecursiveByType(child, type, tag);
+        if (result)
+            break;
+    }
+    return result;
+}
+
+void FindActorsRecursive(Actor* node, const Tag& tag, const bool activeOnly, Array<Actor*>& result)
+{
+    if (activeOnly && !node->GetIsActive())
+        return;
+    if (node->HasTag(tag))
+        result.Add(node);
+    for (Actor* child : node->Children)
+        FindActorsRecursive(child, tag, activeOnly, result);
+}
+
+void FindActorsRecursiveByParentTags(Actor* node, const Array<Tag>& tags, const bool activeOnly, Array<Actor*>& result)
+{
+    if (activeOnly && !node->GetIsActive())
+        return;
+    for (Tag tag : tags)
+    {
+        if (node->HasTag(tag))
+        {
+            result.Add(node);
+            break;
+        }
+    }
+    for (Actor* child : node->Children)
+        FindActorsRecursiveByParentTags(child, tags, activeOnly, result);
+}
+
+Actor* Level::FindActor(const Tag& tag, Actor* root)
+{
+    PROFILE_CPU();
+    if (root)
+        return FindActorRecursive(root, tag);
+    Actor* result = nullptr;
+    for (Scene* scene : Scenes)
+    {
+        result = FindActorRecursive(scene, tag);
+        if (result)
+            break;
+    }
+    return result;
+}
+
+Actor* Level::FindActor(const MClass* type, const Tag& tag, Actor* root)
+{
+    CHECK_RETURN(type, nullptr);
+    if (root)
+        return FindActorRecursiveByType(root, type, tag);
+    Actor* result = nullptr;
+    ScopeLock lock(ScenesLock);
+    for (int32 i = 0; result == nullptr && i < Scenes.Count(); i++)
+        result = Scenes[i]->FindActor(type, tag);
+    return result;
+}
+
+void FindActorRecursive(Actor* node, const Tag& tag, Array<Actor*>& result)
+{
+    if (node->HasTag(tag))
+        result.Add(node);
+    for (Actor* child : node->Children)
+        FindActorRecursive(child, tag, result);
+}
+
+Array<Actor*> Level::FindActors(const Tag& tag, const bool activeOnly, Actor* root)
+{
+    PROFILE_CPU();
+    Array<Actor*> result;
+    if (root)
+    {
+        FindActorsRecursive(root, tag, activeOnly, result);
+    }
+    else
+    {
+        ScopeLock lock(ScenesLock);
+        for (Scene* scene : Scenes)
+            FindActorsRecursive(scene, tag, activeOnly,  result);
+    }
+    return result;
+}
+
+Array<Actor*> Level::FindActorsByParentTag(const Tag& parentTag, const bool activeOnly, Actor* root)
+{
+    PROFILE_CPU();
+    Array<Actor*> result;
+    const Array<Tag> subTags = Tags::GetSubTags(parentTag);
+
+    if (subTags.Count() == 0)
+    {
+        return result;
+    }
+    if (subTags.Count() == 1)
+    {
+        result = FindActors(subTags[0], activeOnly, root);
+        return result;
+    }
+
+    if (root)
+    {
+        FindActorsRecursiveByParentTags(root, subTags, activeOnly, result);
+    }
+    else
+    {
+        ScopeLock lock(ScenesLock);
+        for (Scene* scene : Scenes)
+            FindActorsRecursiveByParentTags(scene, subTags, activeOnly, result);
+    }
+
     return result;
 }
 

@@ -11,6 +11,7 @@ using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Tools;
 using FlaxEngine.Utilities;
 using Object = FlaxEngine.Object;
 
@@ -157,7 +158,7 @@ namespace FlaxEditor.Windows.Assets
                     var proxy = (MeshesPropertiesProxy)Values[0];
                     if (proxy.Asset == null || !proxy.Asset.IsLoaded)
                     {
-                        layout.Label("Loading...");
+                        layout.Label("Loading...", TextAlignment.Center);
                         return;
                     }
                     proxy._materialSlotComboBoxes.Clear();
@@ -196,12 +197,12 @@ namespace FlaxEditor.Windows.Assets
                             group.Label("No SDF");
                         }
 
-                        var resolution = group.FloatValue("Resolution Scale", proxy.Window.Editor.CodeDocs.GetTooltip(typeof(ModelImportSettings), nameof(ModelImportSettings.SDFResolution)));
+                        var resolution = group.FloatValue("Resolution Scale", proxy.Window.Editor.CodeDocs.GetTooltip(typeof(ModelTool.Options), nameof(ModelImportSettings.Settings.SDFResolution)));
                         resolution.ValueBox.MinValue = 0.0001f;
                         resolution.ValueBox.MaxValue = 100.0f;
                         resolution.ValueBox.Value = sdf.Texture != null ? sdf.ResolutionScale : 1.0f;
-                        resolution.ValueBox.BoxValueChanged += b => { proxy.Window._importSettings.SDFResolution = b.Value; };
-                        proxy.Window._importSettings.SDFResolution = sdf.ResolutionScale;
+                        resolution.ValueBox.BoxValueChanged += b => { proxy.Window._importSettings.Settings.SDFResolution = b.Value; };
+                        proxy.Window._importSettings.Settings.SDFResolution = sdf.ResolutionScale;
 
                         var backfacesThreshold = group.FloatValue("Backfaces Threshold", "Custom threshold (in range 0-1) for adjusting mesh internals detection based on the percentage of test rays hit triangle backfaces. Use lower value for more dense mesh.");
                         backfacesThreshold.ValueBox.MinValue = 0.001f;
@@ -293,7 +294,7 @@ namespace FlaxEditor.Windows.Assets
                 private void OnRebuildSDF()
                 {
                     var proxy = (MeshesPropertiesProxy)Values[0];
-                    proxy.Asset.GenerateSDF(proxy.Window._importSettings.SDFResolution, _sdfModelLodIndex.Value, true, proxy.Window._backfacesThreshold);
+                    proxy.Asset.GenerateSDF(proxy.Window._importSettings.Settings.SDFResolution, _sdfModelLodIndex.Value, true, proxy.Window._backfacesThreshold);
                     proxy.Window.MarkAsEdited();
                     Presenter.BuildLayoutOnUpdate();
                 }
@@ -402,7 +403,7 @@ namespace FlaxEditor.Windows.Assets
                     var proxy = (MaterialsPropertiesProxy)Values[0];
                     if (proxy.Asset == null || !proxy.Asset.IsLoaded)
                     {
-                        layout.Label("Loading...");
+                        layout.Label("Loading...", TextAlignment.Center);
                         return;
                     }
 
@@ -464,7 +465,7 @@ namespace FlaxEditor.Windows.Assets
                     var proxy = (UVsPropertiesProxy)Values[0];
                     if (proxy.Asset == null || !proxy.Asset.IsLoaded)
                     {
-                        layout.Label("Loading...");
+                        layout.Label("Loading...", TextAlignment.Center);
                         return;
                     }
 
@@ -713,7 +714,7 @@ namespace FlaxEditor.Windows.Assets
                     var proxy = (ImportPropertiesProxy)Values[0];
                     if (proxy.Asset == null || !proxy.Asset.IsLoaded)
                     {
-                        layout.Label("Loading...");
+                        layout.Label("Loading...", TextAlignment.Center);
                         return;
                     }
 
@@ -778,12 +779,16 @@ namespace FlaxEditor.Windows.Assets
         private MeshDataCache _meshData;
         private ModelImportSettings _importSettings = new ModelImportSettings();
         private float _backfacesThreshold = 0.6f;
+        private ToolStripButton _showCurrentLODButton;
 
         /// <inheritdoc />
         public ModelWindow(Editor editor, AssetItem item)
         : base(editor, item)
         {
             // Toolstrip
+            _toolstrip.AddSeparator();
+            _showCurrentLODButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Info64, () => _preview.ShowCurrentLOD = !_preview.ShowCurrentLOD).LinkTooltip("Show LOD statistics");
+            _toolstrip.AddButton(editor.Icons.CenterView64, () => _preview.ResetCamera()).LinkTooltip("Show whole model");
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/graphics/models/index.html")).LinkTooltip("See documentation to learn more");
 
@@ -868,6 +873,8 @@ namespace FlaxEditor.Windows.Assets
                 }
             }
 
+            _showCurrentLODButton.Checked = _preview.ShowCurrentLOD;
+
             base.Update(deltaTime);
         }
 
@@ -876,10 +883,13 @@ namespace FlaxEditor.Windows.Assets
         {
             if (!IsEdited)
                 return;
-
             if (_asset.WaitForLoaded())
-            {
                 return;
+
+            foreach (var child in _tabs.Children)
+            {
+                if (child is Tab tab && tab.Proxy.Window != null)
+                    tab.Proxy.OnSave();
             }
 
             if (_asset.Save())
@@ -916,7 +926,7 @@ namespace FlaxEditor.Windows.Assets
         {
             _refreshOnLODsLoaded = true;
             _preview.ViewportCamera.SetArcBallView(Asset.GetBox());
-            ModelImportSettings.TryRestore(ref _importSettings, Item.Path);
+            Editor.TryRestoreImportOptions(ref _importSettings.Settings, Item.Path);
             UpdateEffectsOnAsset();
 
             // TODO: disable streaming for this model
@@ -942,6 +952,7 @@ namespace FlaxEditor.Windows.Assets
             base.OnDestroy();
 
             Object.Destroy(ref _highlightActor);
+            _showCurrentLODButton = null;
         }
     }
 }

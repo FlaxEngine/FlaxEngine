@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Xml;
 using FlaxEditor.Content;
@@ -26,6 +27,7 @@ namespace FlaxEditor.Windows
     {
         private const string ProjectDataLastViewedFolder = "LastViewedFolder";
         private bool _isWorkspaceDirty;
+        private string _workspaceRebuildLocation;
         private SplitPanel _split;
         private Panel _contentViewPanel;
         private Panel _contentTreePanel;
@@ -74,7 +76,23 @@ namespace FlaxEditor.Windows
 
             // Content database events
             editor.ContentDatabase.WorkspaceModified += () => _isWorkspaceDirty = true;
-            editor.ContentDatabase.ItemRemoved += ContentDatabaseOnItemRemoved;
+            editor.ContentDatabase.ItemRemoved += OnContentDatabaseItemRemoved;
+            editor.ContentDatabase.WorkspaceRebuilding += () => { _workspaceRebuildLocation = SelectedNode?.Path; };
+            editor.ContentDatabase.WorkspaceRebuilt += () =>
+            {
+                var selected = Editor.ContentDatabase.Find(_workspaceRebuildLocation);
+                if (selected is ContentFolder selectedFolder)
+                {
+                    _navigationUnlocked = false;
+                    RefreshView(selectedFolder.Node);
+                    _tree.Select(selectedFolder.Node);
+                    UpdateItemsSearch();
+                    _navigationUnlocked = true;
+                    UpdateUI();
+                }
+                else
+                    ShowRoot();
+            };
 
             var options = Editor.Options;
             options.OptionsChanged += OnOptionsChanged;
@@ -488,7 +506,10 @@ namespace FlaxEditor.Windows
         /// <param name="item">The item to delete.</param>
         public void Delete(ContentItem item)
         {
-            Delete(Editor.Instance.Windows.ContentWin.View.Selection);
+            var items = View.Selection;
+            if (items.Count == 0)
+                items = new List<ContentItem>() { item };
+            Delete(items);
         }
 
         /// <summary>
@@ -531,12 +552,12 @@ namespace FlaxEditor.Windows
             string destinationName;
             if (item.IsFolder)
             {
-                destinationName = StringUtils.IncrementNameNumber(item.ShortName, x => !Directory.Exists(StringUtils.CombinePaths(sourceFolder, x)));
+                destinationName = Utilities.Utils.IncrementNameNumber(item.ShortName, x => !Directory.Exists(StringUtils.CombinePaths(sourceFolder, x)));
             }
             else
             {
                 string extension = Path.GetExtension(sourcePath);
-                destinationName = StringUtils.IncrementNameNumber(item.ShortName, x => !File.Exists(StringUtils.CombinePaths(sourceFolder, x + extension))) + extension;
+                destinationName = Utilities.Utils.IncrementNameNumber(item.ShortName, x => !File.Exists(StringUtils.CombinePaths(sourceFolder, x + extension))) + extension;
             }
 
             return StringUtils.NormalizePath(StringUtils.CombinePaths(sourceFolder, destinationName));
@@ -608,7 +629,16 @@ namespace FlaxEditor.Windows
         /// <param name="files">The files paths to import.</param>
         public void Paste(string[] files)
         {
-            Editor.ContentImporting.Import(files, CurrentViewFolder);
+            var importFiles = new List<string>();
+            foreach (var sourcePath in files)
+            {
+                var item = Editor.ContentDatabase.Find(sourcePath);
+                if (item != null)
+                    Editor.ContentDatabase.Copy(item, Path.Combine(CurrentViewFolder.Path, item.FileName));
+                else
+                    importFiles.Add(sourcePath);
+            }
+            Editor.ContentImporting.Import(importFiles, CurrentViewFolder);
         }
 
         /// <summary>
@@ -656,6 +686,11 @@ namespace FlaxEditor.Windows
                 throw new ArgumentNullException(nameof(proxy));
 
             string name = initialName ?? proxy.NewItemName;
+
+            // If the proxy can not be created in the current folder, then navigate to the content folder
+            if (!proxy.CanCreate(CurrentViewFolder))
+                Navigate(Editor.Instance.ContentDatabase.Game.Content);
+
             ContentFolder parentFolder = CurrentViewFolder;
             string parentFolderPath = parentFolder.Path;
 
@@ -719,7 +754,7 @@ namespace FlaxEditor.Windows
             }
         }
 
-        private void ContentDatabaseOnItemRemoved(ContentItem contentItem)
+        private void OnContentDatabaseItemRemoved(ContentItem contentItem)
         {
             if (contentItem is ContentFolder folder)
             {
@@ -814,7 +849,10 @@ namespace FlaxEditor.Windows
         /// </summary>
         public void RefreshView()
         {
-            RefreshView(SelectedNode);
+            if (_view.IsSearching)
+                UpdateItemsSearch();
+            else
+                RefreshView(SelectedNode);
         }
 
         /// <summary>
@@ -1012,8 +1050,8 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnLayoutSerialize(XmlWriter writer)
         {
-            writer.WriteAttributeString("Split", _split.SplitterValue.ToString());
-            writer.WriteAttributeString("Scale", _view.ViewScale.ToString());
+            LayoutSerializeSplitter(writer, "Split", _split);
+            writer.WriteAttributeString("Scale", _view.ViewScale.ToString(CultureInfo.InvariantCulture));
             writer.WriteAttributeString("ShowFileExtensions", _view.ShowFileExtensions.ToString());
             writer.WriteAttributeString("ViewType", _view.ViewType.ToString());
         }
@@ -1021,15 +1059,11 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            if (float.TryParse(node.GetAttribute("Split"), out float value1))
-                _split.SplitterValue = value1;
-
-            if (float.TryParse(node.GetAttribute("Scale"), out value1))
+            LayoutDeserializeSplitter(node, "Split", _split);
+            if (float.TryParse(node.GetAttribute("Scale"), CultureInfo.InvariantCulture, out var value1))
                 _view.ViewScale = value1;
-
             if (bool.TryParse(node.GetAttribute("ShowFileExtensions"), out bool value2))
                 _view.ShowFileExtensions = value2;
-
             if (Enum.TryParse(node.GetAttribute("ViewType"), out ContentViewType viewType))
                 _view.ViewType = viewType;
         }

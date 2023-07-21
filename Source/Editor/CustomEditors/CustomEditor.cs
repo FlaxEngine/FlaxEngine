@@ -7,6 +7,7 @@ using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 using Newtonsoft.Json;
 using JsonSerializer = FlaxEngine.Json.JsonSerializer;
 
@@ -147,7 +148,7 @@ namespace FlaxEditor.CustomEditors
                 return;
 
             // Special case for root objects to run normal layout build
-            if (_presenter.Selection == Values)
+            if (_presenter != null && _presenter.Selection == Values)
             {
                 _presenter.BuildLayout();
                 return;
@@ -158,7 +159,7 @@ namespace FlaxEditor.CustomEditors
             var layout = _layout;
             var control = layout.ContainerControl;
             var parent = _parent;
-            var parentScrollV = (_presenter.Panel.Parent as Panel)?.VScrollBar?.Value ?? -1;
+            var parentScrollV = (_presenter?.Panel.Parent as Panel)?.VScrollBar?.Value ?? -1;
 
             control.IsLayoutLocked = true;
             control.DisposeChildren();
@@ -248,6 +249,28 @@ namespace FlaxEditor.CustomEditors
 
         internal virtual void RefreshRootChild()
         {
+            // Check if need to update value
+            if (_hasValueDirty)
+            {
+                IsSettingValue = true;
+                try
+                {
+                    // Cleanup (won't retry update in case of exception)
+                    object val = _valueToSet;
+                    _hasValueDirty = false;
+                    _valueToSet = null;
+
+                    // Assign value
+                    for (int i = 0; i < _values.Count; i++)
+                        _values[i] = val;
+                }
+                finally
+                {
+                    OnUnDirty();
+                    IsSettingValue = false;
+                }
+            }
+
             Refresh();
 
             for (int i = 0; i < _children.Count; i++)
@@ -603,9 +626,7 @@ namespace FlaxEditor.CustomEditors
                         JsonSerializer.Deserialize(obj, text);
                     }
                 }
-#pragma warning disable 618
-                else if (Newtonsoft.Json.Schema.JsonSchema.Parse(text) == null)
-#pragma warning restore 618
+                else if (!text.StartsWith("{") || !text.EndsWith("}"))
                 {
                     return false;
                 }
@@ -628,7 +649,14 @@ namespace FlaxEditor.CustomEditors
             else
             {
                 // Default
-                obj = JsonConvert.DeserializeObject(text, TypeUtils.GetType(Values.Type), JsonSerializer.Settings);
+                try
+                {
+                    obj = JsonConvert.DeserializeObject(text, TypeUtils.GetType(Values.Type), JsonSerializer.Settings);
+                }
+                catch
+                {
+                    obj = null;
+                }
             }
 
             if (obj == null || Values.Type.IsInstanceOfType(obj))
@@ -795,6 +823,8 @@ namespace FlaxEditor.CustomEditors
         /// <returns>True if allow to handle this event, otherwise false.</returns>
         protected virtual bool OnDirty(CustomEditor editor, object value, object token = null)
         {
+            if (ParentEditor == null)
+                return false;
             return ParentEditor.OnDirty(editor, value, token);
         }
 

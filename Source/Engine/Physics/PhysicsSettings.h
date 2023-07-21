@@ -44,12 +44,6 @@ public:
     bool DisableCCD = false;
 
     /// <summary>
-    /// Enables adaptive forces to accelerate convergence of the solver. Can improve physics simulation performance but lead to artifacts.
-    /// </summary>
-    API_FIELD(Attributes="EditorOrder(80), EditorDisplay(\"Simulation\")")
-    bool EnableAdaptiveForce = false;
-
-    /// <summary>
     /// The maximum allowed delta time (in seconds) for the physics simulation step.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(1000), EditorDisplay(\"Framerate\")")

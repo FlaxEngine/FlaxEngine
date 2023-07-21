@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2019 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -23,6 +23,7 @@ public:
     const Char* GetName() const override;
     PlatformType GetPlatform() const override;
     ArchitectureType GetArchitecture() const override;
+    bool UseSystemDotnet() const override;
     bool IsNativeCodeFile(CookingData& data, const String& file) override;
     void OnBuildStarted(CookingData& data) override;
     bool OnPostProcess(CookingData& data) override;

@@ -46,6 +46,19 @@ namespace FlaxEditor.Surface
                         },
                         Size = new Float2(100, 0),
                     },
+                    new NodeArchetype
+                    {
+                        TypeID = 34,
+                        Create = (id, context, arch, groupArch) => new Animation.StateMachineAny(id, context, arch, groupArch),
+                        Title = "Any",
+                        Description = "The generic animation states machine state with source transitions from any other state",
+                        Flags = NodeFlags.AnimGraph,
+                        Size = new Float2(100, 0),
+                        DefaultValues = new object[]
+                        {
+                            Utils.GetEmptyArray<byte>(),
+                        },
+                    },
                 }
             }
         });

@@ -253,6 +253,11 @@ int32 ParticleEffect::GetParticlesCount() const
     return Instance.GetParticlesCount();
 }
 
+bool ParticleEffect::GetIsPlaying() const
+{
+    return _isPlaying;
+}
+
 void ParticleEffect::ResetSimulation()
 {
     Instance.ClearState();
@@ -275,20 +280,38 @@ void ParticleEffect::UpdateSimulation(bool singleFrame)
     Particles::UpdateEffect(this);
 }
 
+void ParticleEffect::Play()
+{
+    _isPlaying = true;
+}
+
+void ParticleEffect::Pause()
+{
+    _isPlaying = false;
+}
+
+void ParticleEffect::Stop()
+{
+    _isPlaying = false;
+    ResetSimulation();
+}
+
 void ParticleEffect::UpdateBounds()
 {
     BoundingBox bounds = BoundingBox::Empty;
-    if (ParticleSystem && Instance.LastUpdateTime >= 0)
+    const auto particleSystem = ParticleSystem.Get();
+    if (particleSystem && Instance.LastUpdateTime >= 0)
     {
-        for (int32 j = 0; j < ParticleSystem->Tracks.Count(); j++)
+        for (int32 j = 0; j < particleSystem->Tracks.Count(); j++)
         {
-            const auto& track = ParticleSystem->Tracks[j];
+            const auto& track = particleSystem->Tracks[j];
             if (track.Type != ParticleSystem::Track::Types::Emitter || track.Disabled)
                 continue;
-            auto& emitter = ParticleSystem->Emitters[track.AsEmitter.Index];
-            auto& data = Instance.Emitters[track.AsEmitter.Index];
-            if (!emitter || emitter->Capacity == 0 || emitter->Graph.Layout.Size == 0)
+            const int32 emitterIndex = track.AsEmitter.Index;
+            ParticleEmitter* emitter = particleSystem->Emitters[emitterIndex].Get();
+            if (!emitter || emitter->Capacity == 0 || emitter->Graph.Layout.Size == 0 || Instance.Emitters.Count() <= emitterIndex)
                 continue;
+            auto& data = Instance.Emitters[emitterIndex];
 
             BoundingBox emitterBounds;
             if (emitter->GraphExecutorCPU.ComputeBounds(emitter, this, data, emitterBounds))
@@ -395,6 +418,13 @@ void ParticleEffect::SetParametersOverrides(const Array<ParameterOverride>& valu
 
 void ParticleEffect::Update()
 {
+    if (!_isPlaying)
+    {
+        // Move update timer forward while paused for correct delta time after unpause
+        Instance.LastUpdateTime = (UseTimeScale ? Time::Update.Time : Time::Update.UnscaledTime).GetTotalSeconds();
+        return;
+    }
+
     // Skip if off-screen
     if (!UpdateWhenOffscreen && _lastMinDstSqr >= MAX_Real)
         return;
@@ -416,8 +446,12 @@ void ParticleEffect::Update()
 
 void ParticleEffect::UpdateExecuteInEditor()
 {
+    // Auto-play in Editor
     if (!Editor::IsPlayMode)
+    {
+        _isPlaying = true;
         Update();
+    }
 }
 
 #endif
@@ -576,6 +610,7 @@ void ParticleEffect::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(SimulationSpeed);
     SERIALIZE(UseTimeScale);
     SERIALIZE(IsLooping);
+    SERIALIZE(PlayOnStart);
     SERIALIZE(UpdateWhenOffscreen);
     SERIALIZE(DrawModes);
     SERIALIZE(SortOrder);
@@ -589,6 +624,7 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     const auto overridesMember = stream.FindMember("Overrides");
     if (overridesMember != stream.MemberEnd())
     {
+        // [Deprecated on 25.11.2018, expires on 25.11.2022]
         if (modifier->EngineBuild < 6197)
         {
             const auto& overrides = overridesMember->value;
@@ -675,6 +711,7 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     DESERIALIZE(SimulationSpeed);
     DESERIALIZE(UseTimeScale);
     DESERIALIZE(IsLooping);
+    DESERIALIZE(PlayOnStart);
     DESERIALIZE(UpdateWhenOffscreen);
     DESERIALIZE(DrawModes);
     DESERIALIZE(SortOrder);
@@ -705,6 +742,9 @@ void ParticleEffect::OnEnable()
     GetSceneRendering()->AddViewportIcon(this);
     GetScene()->Ticking.Update.AddTickExecuteInEditor<ParticleEffect, &ParticleEffect::UpdateExecuteInEditor>(this);
 #endif
+
+    if (PlayOnStart)
+        Play();
 
     // Base
     Actor::OnEnable();

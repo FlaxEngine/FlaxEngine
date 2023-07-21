@@ -3,20 +3,19 @@
 #include "ManagedEditor.h"
 #include "Editor/Editor.h"
 #include "FlaxEngine.Gen.h"
-#include "Engine/Scripting/MException.h"
-#include "Engine/Scripting/Scripting.h"
-#include "Engine/Scripting/MainThreadManagedInvokeAction.h"
 #include "Engine/ShadowsOfMordor/Builder.h"
+#include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
+#include "Engine/Scripting/ManagedCLR/MException.h"
+#include "Engine/Scripting/Internal/MainThreadManagedInvokeAction.h"
 #include "Engine/Content/Assets/VisualScript.h"
 #include "Engine/CSG/CSGBuilder.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Renderer/ProbesRenderer.h"
 #include "Engine/Animations/Graph/AnimGraph.h"
-#include <ThirdParty/mono-2.0/mono/metadata/threads.h>
 
 ManagedEditor::InternalOptions ManagedEditor::ManagedEditorOptions;
 
@@ -79,7 +78,7 @@ void OnBakeEvent(bool started, const ProbesRenderer::Entry& e)
         ASSERT(Internal_EnvProbeBake);
     }
 
-    MonoObject* probeObj = e.Actor ? e.Actor->GetManagedInstance() : nullptr;
+    MObject* probeObj = e.Actor ? e.Actor->GetManagedInstance() : nullptr;
 
     MainThreadManagedInvokeAction::ParamsBuilder params;
     params.AddParam(started);
@@ -107,8 +106,8 @@ void OnBrushModified(CSG::Brush* brush)
 
 struct VisualScriptingDebugFlowInfo
 {
-    MonoObject* Script;
-    MonoObject* ScriptInstance;
+    MObject* Script;
+    MObject* ScriptInstance;
     uint32 NodeId;
     int32 BoxId;
 };
@@ -187,7 +186,7 @@ void ManagedEditor::Init()
     {
         LOG(Fatal, "Invalid Editor assembly! Missing initialization method.");
     }
-    MonoObject* instance = GetOrCreateManagedInstance();
+    MObject* instance = GetOrCreateManagedInstance();
     if (instance == nullptr)
     {
         LOG(Fatal, "Failed to create editor instance.");
@@ -240,6 +239,13 @@ void ManagedEditor::Init()
             LOG(Fatal, "Build command failed!");
         }
     }
+}
+
+void ManagedEditor::BeforeRun()
+{
+    // If during last lightmaps baking engine crashed we could try to restore the progress
+    if (ShadowsOfMordor::Builder::Instance()->RestoreState())
+        GetClass()->GetMethod("Internal_StartLightingBake")->Invoke(GetOrCreateManagedInstance(), nullptr, nullptr);
 }
 
 void ManagedEditor::Update()
@@ -325,7 +331,7 @@ bool ManagedEditor::CanReloadScripts()
 bool ManagedEditor::CanAutoBuildCSG()
 {
     // Skip calls from non-managed thread (eg. physics worker)
-    if (!mono_domain_get() || !mono_thread_current())
+    if (!MCore::Thread::IsAttached())
         return false;
 
     if (!HasManagedInstance())
@@ -343,7 +349,7 @@ bool ManagedEditor::CanAutoBuildCSG()
 bool ManagedEditor::CanAutoBuildNavMesh()
 {
     // Skip calls from non-managed thread (eg. physics worker)
-    if (!mono_domain_get() || !mono_thread_current())
+    if (!MCore::Thread::IsAttached())
         return false;
 
     if (!HasManagedInstance())

@@ -272,7 +272,7 @@ bool GPUTextureVulkan::OnInit()
         imageInfo.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     if (useUAV)
         imageInfo.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
-#if PLATFORM_MAC
+#if PLATFORM_MAC || PLATFORM_IOS
     // MoltenVK: VK_ERROR_FEATURE_NOT_PRESENT: vkCreateImageView(): 2D views on 3D images can only be used as color attachments.
     if (IsVolume() && _desc.HasPerSliceViews())
         imageInfo.usage &= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;

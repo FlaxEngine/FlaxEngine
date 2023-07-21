@@ -6,6 +6,7 @@
 #include "Engine/Core/Templates.h"
 
 extern FLAXENGINE_API class ScriptingObject* FindObject(const Guid& id, class MClass* type);
+extern FLAXENGINE_API class Asset* LoadAsset(const Guid& id, const struct ScriptingTypeHandle& type);
 
 /// <summary>
 /// Base class for all data read streams
@@ -159,6 +160,34 @@ public:
         Read(ptr);
         v = ptr;
     }
+    template<typename T>
+    FORCE_INLINE void Read(SoftObjectReference<T>& v)
+    {
+        uint32 id[4];
+        ReadBytes(id, sizeof(id));
+        v.Set(*(Guid*)id);
+    }
+    template<typename T>
+    FORCE_INLINE void Read(AssetReference<T>& v)
+    {
+        uint32 id[4];
+        ReadBytes(id, sizeof(id));
+        v = (T*)::LoadAsset(*(Guid*)id, T::TypeInitializer);
+    }
+    template<typename T>
+    FORCE_INLINE void Read(WeakAssetReference<T>& v)
+    {
+        uint32 id[4];
+        ReadBytes(id, sizeof(id));
+        v = (T*)::LoadAsset(*(Guid*)id, T::TypeInitializer);
+    }
+    template<typename T>
+    FORCE_INLINE void Read(SoftAssetReference<T>& v)
+    {
+        uint32 id[4];
+        ReadBytes(id, sizeof(id));
+        v.Set(*(Guid*)id);
+    }
 
     /// <summary>
     /// Read data array
@@ -193,14 +222,11 @@ public:
         ReadInt32(&count);
         data.Clear();
         data.EnsureCapacity(count);
-        if (count > 0)
+        for (int32 i = 0; i < count; i++)
         {
-            for (int32 i = 0; i < count; i++)
-            {
-                KeyType key;
-                Read(key);
-                Read(data[key]);
-            }
+            KeyType key;
+            Read(key);
+            Read(data[key]);
         }
     }
 

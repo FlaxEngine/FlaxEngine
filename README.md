@@ -26,16 +26,12 @@ This repository contains full source code of the Flax Engine (excluding NDA-prot
 
 Follow the instructions below to compile and run the engine from source.
 
-## Flax plugin for Visual Studio
-
-Flax Visual Studio extension provides better programming workflow, C# scripts debugging functionality and allows to attach to running engine instance to debug C# source. This extension is available to download [here](https://marketplace.visualstudio.com/items?itemName=Flax.FlaxVS).
-
 ## Windows
 
-* Install Visual Studio 2015 or newer
+* Install Visual Studio 2022 or newer
 * Install Windows 8.1 SDK or newer (via Visual Studio Installer)
 * Install Microsoft Visual C++ 2015 v140 toolset or newer (via Visual Studio Installer)
-* Install .Net Framework 4.5.2 SDK/Targeting Pack (via Visual Studio Installer)
+* Install .Net 7 SDK (via Visual Studio Installer or [from web](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
 * Install Git with LFS
 * Clone repo (with LFS)
 * Run **GenerateProjectFiles.bat**
@@ -44,16 +40,13 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 * Compile Flax project (hit F7 or CTRL+Shift+B)
 * Run Flax (hit F5 key)
 
-> When building on Windows to support Vulkan rendering, first install the Vulkan SDK then set an environment variable to provide the path to the SDK prior to running GenerateProjectFiles.bat: `set VULKAN_SDK=%sdk_path%`
-
 ## Linux
 
 * Install Visual Studio Code
-* Install Mono
-  * Ubuntu: see the instructions here: ([https://www.mono-project.com/download/stable](https://www.mono-project.com/download/stable))
-  * Arch: `sudo pacman -S mono`
-* Install Vulkan SDK
-  * Ubuntu: see the instructions here: ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
+* Install .Net 7 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
+  * Ubuntu: `sudo apt install dotnet-sdk-7.0`
+* Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
+  * Ubuntu: `sudo apt install vulkan-sdk`
   * Arch: `sudo pacman -S spirv-tools vulkan-headers vulkan-tools vulkan-validation-layers`
 * Install Git with LFS
   * Ubuntu: `sudo apt-get install git git-lfs`
@@ -73,12 +66,30 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 ## Mac
 
 * Install XCode
-* Install Mono ([https://www.mono-project.com/download/stable](https://www.mono-project.com/download/stable))
+* Install .Net 7 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
 * Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
 * Clone repo (with LFS)
 * Run `GenerateProjectFiles.command`
 * Open workspace with XCode or Visual Studio Code
 * Build and run (configuration  `Editor.Mac.Development`)
+
+#### Troubleshooting
+
+* `Could not execute because the specified command or file was not found.`
+
+Restart PC - ensure DotNet is added to PATH for command line tools execution.
+
+* `Microsoft.NET.TargetFrameworkInference.targets(141,5): error NETSDK1045: The current .NET SDK does not support targeting .NET 7.0.  Either target .NET 5.0 or lower, or use a version of the .NET SDK that supports .NET 7.0`
+
+Use Visual Studio 2022, older versions are not supported by .NET SDK 7.
+
+* `Building for Windows without Vulkan rendering backend (Vulkan SDK is missing)`
+
+Install the Vulkan SDK then set an environment variable to provide the path to the SDK prior to running GenerateProjectFiles.bat: `set VULKAN_SDK=%sdk_path%`.
+
+* `The NuGetSdkResolver did not resolve this SDK`
+
+Install `.NET SDK`, `NuGet package manager` and `NuGet targets and build tasks` in Visual Studio components.
 
 ## Workspace directory
 
@@ -93,7 +104,6 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
 - **Content/** - assets and binary files used by the engine and editor
 - **Development/** - engine development files
   - **Scripts/** - utility scripts
-- **packages/** - NuGet packages cache location
 - **Source/** - source code location
   - **Editor/** - Flax Editor source code
   - **Engine/** - Flax Engine source code
@@ -103,7 +113,6 @@ Flax Visual Studio extension provides better programming workflow, C# scripts de
     - ***PlatformName*/** - per-platform files
       - **Binaries/** - per-platform binaries
         - **Game/** - Flax Game binaries
-        - **Mono/** - Mono runtime files and data
         - **ThirdParty/** - prebuilt 3rd Party binaries
   - **Shaders/** - shaders source code
   - **ThirdParty/** - 3rd Party source code

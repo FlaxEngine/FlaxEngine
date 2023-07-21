@@ -316,6 +316,42 @@ namespace FlaxEditor.Modules
         }
 
         /// <summary>
+        /// Closes all of the scenes except for the specified scene (async).
+        /// </summary>
+        /// <param name="scene">The scene to not close.</param>
+        public void CloseAllScenesExcept(Scene scene)
+        {
+            // Check if cannot change scene now
+            if (!Editor.StateMachine.CurrentState.CanChangeScene)
+                return;
+
+            var scenes = new List<Scene>();
+            foreach (var s in Level.Scenes)
+            {
+                if (s == scene)
+                    continue;
+                scenes.Add(s);
+            }
+            
+            // In play-mode Editor mocks the level streaming script
+            if (Editor.IsPlayMode)
+            {
+                foreach (var s in scenes)
+                {
+                    Level.UnloadSceneAsync(s);
+                }
+                return;
+            }
+
+            // Ensure to save all pending changes
+            if (CheckSaveBeforeClose())
+                return;
+
+            // Unload scenes
+            Editor.StateMachine.ChangingScenesState.UnloadScene(scenes);
+        }
+
+        /// <summary>
         /// Show save before scene load/unload action.
         /// </summary>
         /// <param name="scene">The scene that will be closed.</param>

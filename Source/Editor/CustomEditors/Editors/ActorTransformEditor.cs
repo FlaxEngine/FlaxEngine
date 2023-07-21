@@ -78,7 +78,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <seealso cref="FlaxEditor.CustomEditors.Editors.Float3Editor" />
         public class ScaleEditor : Float3Editor
         {
-            private Image _linkImage;
+            private Button _linkButton;
 
             /// <inheritdoc />
             public override void Initialize(LayoutElementsContainer layout)
@@ -87,19 +87,21 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 LinkValues = Editor.Instance.Windows.PropertiesWin.ScaleLinked;
 
-                _linkImage = new Image
+                // Add button with the link icon
+                _linkButton = new Button
                 {
+                    BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Link32),
                     Parent = LinkedLabel,
                     Width = 18,
                     Height = 18,
-                    Brush = LinkValues ? new SpriteBrush(Editor.Instance.Icons.Link32) : new SpriteBrush(),
                     AnchorPreset = AnchorPresets.TopLeft,
-                    TooltipText = "Scale values are linked together.",
                 };
+                _linkButton.Clicked += ToggleLink;
+                ToggleEnabled();
+                SetLinkStyle();
                 var x = LinkedLabel.Text.Value.Length * 7 + 5;
-                _linkImage.LocalX += x;
-                _linkImage.LocalY += 1;
-
+                _linkButton.LocalX += x;
+                _linkButton.LocalY += 1;
                 LinkedLabel.SetupContextMenu += (label, menu, editor) =>
                 {
                     menu.AddSeparator();
@@ -127,7 +129,45 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 LinkValues = !LinkValues;
                 Editor.Instance.Windows.PropertiesWin.ScaleLinked = LinkValues;
-                _linkImage.Brush = LinkValues ? new SpriteBrush(Editor.Instance.Icons.Link32) : new SpriteBrush();
+                ToggleEnabled();
+                SetLinkStyle();
+            }
+
+            /// <summary>
+            /// Toggles enables on value boxes.
+            /// </summary>
+            public void ToggleEnabled()
+            {
+                if (LinkValues)
+                {
+                    if (Mathf.NearEqual(((Float3)Values[0]).X, 0))
+                    {
+                        XElement.ValueBox.Enabled = false;
+                    }
+                    if (Mathf.NearEqual(((Float3)Values[0]).Y, 0))
+                    {
+                        YElement.ValueBox.Enabled = false;
+                    }
+                    if (Mathf.NearEqual(((Float3)Values[0]).Z, 0))
+                    {
+                        ZElement.ValueBox.Enabled = false;
+                    }
+                }
+                else
+                {
+                    XElement.ValueBox.Enabled = true;
+                    YElement.ValueBox.Enabled = true;
+                    ZElement.ValueBox.Enabled = true;
+                }
+            }
+
+            private void SetLinkStyle()
+            {
+                var style = FlaxEngine.GUI.Style.Current;
+                var backgroundColor = LinkValues ? style.Foreground : style.ForegroundDisabled;
+                _linkButton.SetColors(backgroundColor);
+                _linkButton.BorderColor = _linkButton.BorderColorSelected = _linkButton.BorderColorHighlighted = Color.Transparent;
+                _linkButton.TooltipText = LinkValues ? "Unlinks scale components from uniform scaling" : "Links scale components for uniform scaling";
             }
         }
     }

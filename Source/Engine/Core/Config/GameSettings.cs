@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using FlaxEngine;
 
 namespace FlaxEditor.Content.Settings
@@ -201,6 +202,14 @@ namespace FlaxEditor.Content.Settings
         public JsonAsset MacPlatform;
 #endif
 
+#if FLAX_EDITOR || PLATFORM_IOS
+        /// <summary>
+        /// Reference to <see cref="iOSPlatformSettings"/> asset. Used to apply configuration on iOS platform.
+        /// </summary>
+        [EditorOrder(2100), EditorDisplay("Platform Settings", "iOS"), AssetReference(typeof(iOSPlatformSettings), true), Tooltip("Reference to iOS Platform Settings asset")]
+        public JsonAsset iOSPlatform;
+#endif
+
         /// <summary>
         /// Gets the absolute path to the game settings asset file.
         /// </summary>
@@ -332,6 +341,10 @@ namespace FlaxEditor.Content.Settings
             if (type == typeof(MacPlatformSettings))
                 return Load<MacPlatformSettings>(gameSettings.MacPlatform) as T;
 #endif
+#if FLAX_EDITOR || PLATFORM_IOS
+            if (type == typeof(iOSPlatformSettings))
+                return Load<iOSPlatformSettings>(gameSettings.iOSPlatform) as T;
+#endif
 
             if (gameSettings.CustomSettings != null)
             {
@@ -425,6 +438,10 @@ namespace FlaxEditor.Content.Settings
 #if FLAX_EDITOR || PLATFORM_MAC
             if (type == typeof(MacPlatformSettings))
                 return gameSettings.MacPlatform;
+#endif
+#if FLAX_EDITOR || PLATFORM_IOS
+            if (type == typeof(iOSPlatformSettings))
+                return gameSettings.iOSPlatform;
 #endif
 
             if (gameSettings.CustomSettings != null)
@@ -538,6 +555,8 @@ namespace FlaxEditor.Content.Settings
                 return SaveAsset(gameSettings, ref gameSettings.Audio, obj);
             if (type == typeof(MacPlatformSettings))
                 return SaveAsset(gameSettings, ref gameSettings.MacPlatform, obj);
+            if (type == typeof(iOSPlatformSettings))
+                return SaveAsset(gameSettings, ref gameSettings.iOSPlatform, obj);
 
             return true;
         }
@@ -572,8 +591,8 @@ namespace FlaxEditor.Content.Settings
         /// <summary>
         /// Loads the current game settings asset and applies it to the engine runtime configuration.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void Apply();
+        [LibraryImport("FlaxEngine", EntryPoint = "GameSettingsInternal_Apply")]
+        public static partial void Apply();
 #endif
     }
 }

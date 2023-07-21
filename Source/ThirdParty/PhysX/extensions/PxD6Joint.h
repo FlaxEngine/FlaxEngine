@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,12 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-#ifndef PX_D6JOINT_H
-#define PX_D6JOINT_H
+#ifndef PX_D6_JOINT_H
+#define PX_D6_JOINT_H
 /** \addtogroup extensions
   @{
 */
@@ -429,7 +428,8 @@ public:
 	<b>Default</b> the identity transform
 
 	\param[in] pose The goal drive pose if positional drive is in use. 
-	\param[in] autowake Whether to wake the joint rigids up if it is asleep.
+	\param[in] autowake If true and the attached actors are in a scene, this call wakes them up and increases their
+	wake counters to #PxSceneDesc::wakeCounterResetValue if the counter value is below the reset value.
 
 	@see setDrivePosition()
 	*/
@@ -449,7 +449,8 @@ public:
 
 	\param[in] linear The goal velocity for linear drive
 	\param[in] angular The goal velocity for angular drive
-	\param[in] autowake Whether to wake the joint rigids up if it is asleep.
+	\param[in] autowake If true and the attached actors are in a scene, this call wakes them up and increases their
+	wake counters to #PxSceneDesc::wakeCounterResetValue if the counter value is below the reset value.
 
 	@see getDriveVelocity()
 	*/
@@ -482,8 +483,10 @@ public:
 	\param[in] tolerance the linear tolerance threshold
 
 	@see getProjectionLinearTolerance() PxJoint::setConstraintFlags() PxConstraintFlag::ePROJECTION
+
+	@deprecated
 	*/
-	virtual void				setProjectionLinearTolerance(PxReal tolerance)	= 0;
+	PX_DEPRECATED	virtual void				setProjectionLinearTolerance(PxReal tolerance)	= 0;
 
 	/**
 	\brief Get the linear tolerance threshold for projection.
@@ -491,8 +494,10 @@ public:
 	\return the linear tolerance threshold
 
 	@see setProjectionLinearTolerance()
+
+	@deprecated
 	*/
-	virtual PxReal				getProjectionLinearTolerance()	const	= 0;
+	PX_DEPRECATED	virtual PxReal				getProjectionLinearTolerance()	const	= 0;
 
 	/**
 	\brief Set the angular tolerance threshold for projection. Projection is enabled if 
@@ -514,8 +519,10 @@ public:
 	Angular projection is implemented only for the case of two or three locked angular degrees of freedom.
 
 	@see getProjectionAngularTolerance() PxJoint::setConstraintFlag() PxConstraintFlag::ePROJECTION
+
+	@deprecated
 	*/
-	virtual void				setProjectionAngularTolerance(PxReal tolerance)	= 0;
+	PX_DEPRECATED	virtual void				setProjectionAngularTolerance(PxReal tolerance)	= 0;
 
 	/**
 	\brief Get the angular tolerance threshold for projection.
@@ -523,8 +530,10 @@ public:
 	\return tolerance the angular tolerance threshold in radians
 
 	@see setProjectionAngularTolerance()
+
+	@deprecated
 	*/
-	virtual PxReal				getProjectionAngularTolerance()	const	= 0;
+	PX_DEPRECATED	virtual PxReal				getProjectionAngularTolerance()	const	= 0;
 
 	/**
 	\brief Returns string name of PxD6Joint, used for serialization

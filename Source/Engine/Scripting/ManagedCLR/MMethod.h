@@ -18,33 +18,41 @@ class FLAXENGINE_API MMethod
     friend MEvent;
 
 protected:
-
 #if USE_MONO
     MonoMethod* _monoMethod;
+#elif USE_NETCORE
+    void* _handle;
+    int32 _paramsCount;
+    mutable void* _returnType;
+    mutable Array<void*, InlinedAllocation<8>> _parameterTypes;
+    void CacheSignature() const;
 #endif
     MClass* _parentClass;
-    MString _name;
+    StringAnsi _name;
     MVisibility _visibility;
 #if !USE_MONO_AOT
     void* _cachedThunk = nullptr;
 #endif
 
-    int32 _hasCachedAttributes : 1;
+    mutable int32 _hasCachedAttributes : 1;
+#if USE_NETCORE
+    mutable int32 _hasCachedSignature : 1;
+#endif
     int32 _isStatic : 1;
 
-    Array<MObject*> _attributes;
+    mutable Array<MObject*> _attributes;
 
 public:
-
 #if USE_MONO
     explicit MMethod(MonoMethod* monoMethod, MClass* parentClass);
     explicit MMethod(MonoMethod* monoMethod, const char* name, MClass* parentClass);
+#elif USE_NETCORE
+    MMethod(MClass* parentClass, StringAnsi&& name, void* handle, int32 paramsCount, MMethodAttributes attributes);
 #endif
 
 public:
-
 #if COMPILE_WITH_PROFILER
-    MString ProfilerName;
+    StringAnsi ProfilerName;
     SourceLocationData ProfilerData;
 #endif
 
@@ -84,16 +92,23 @@ public:
     /// </summary>
     /// <remarks>
     /// This is the fastest way of calling managed code.
-    /// Get thunk from class if you want to call static method. You to call it from method of a instance wrapper to call a specific instance.
+    /// Get thunk from class if you want to call static method. You need to call it from method of a instance wrapper to call a specific instance.
+    /// Thunks return boxed value but for some smaller types (eg. bool, int, float) the return is inlined into pointer.
     /// </remarks>
     /// <returns>The method thunk pointer.</returns>
     void* GetThunk();
 #endif
 
     /// <summary>
+    /// Creates a method that is inflated out of generic method.
+    /// </summary>
+    /// <returns>The inflated generic method.</returns>
+    MMethod* InflateGeneric() const;
+
+    /// <summary>
     /// Gets the method name.
     /// </summary>
-    FORCE_INLINE const MString& GetName() const
+    FORCE_INLINE const StringAnsi& GetName() const
     {
         return _name;
     }
@@ -109,7 +124,7 @@ public:
     /// <summary>
     /// Returns the type of the return value. Returns null if method has no return value.
     /// </summary>
-    MType GetReturnType() const;
+    MType* GetReturnType() const;
 
     /// <summary>
     /// Returns the number of parameters the method expects.
@@ -121,7 +136,7 @@ public:
     /// </summary>
     /// <param name="paramIdx">The parameter type.</param>
     /// <returns>The parameter type.</returns>
-    MType GetParameterType(int32 paramIdx) const;
+    MType* GetParameterType(int32 paramIdx) const;
 
     /// <summary>
     /// Returns the value indicating whenever the method parameter  at the specified index is marked as output parameter.
@@ -157,7 +172,6 @@ public:
 #endif
 
 public:
-
     /// <summary>
     /// Checks if method has an attribute of the specified type.
     /// </summary>
@@ -182,5 +196,5 @@ public:
     /// Returns an instance of all attributes connected with given method. Returns null if the method doesn't have any attributes.
     /// </summary>
     /// <returns>The array of attribute objects.</returns>
-    const Array<MObject*>& GetAttributes();
+    const Array<MObject*>& GetAttributes() const;
 };

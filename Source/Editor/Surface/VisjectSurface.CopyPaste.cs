@@ -6,6 +6,7 @@ using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Surface.Undo;
 using FlaxEngine;
+using FlaxEngine.Utilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 

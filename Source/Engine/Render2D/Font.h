@@ -10,6 +10,7 @@
 #include "TextLayoutOptions.h"
 
 class FontAsset;
+struct FontTextureAtlasSlot;
 
 // The default DPI that engine is using
 #define DefaultDPI 96
@@ -17,17 +18,17 @@ class FontAsset;
 /// <summary>
 /// The text range.
 /// </summary>
-API_STRUCT() struct TextRange
+API_STRUCT(NoDefault) struct TextRange
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(TextRange);
 
     /// <summary>
-    /// The start index.
+    /// The start index (inclusive).
     /// </summary>
     API_FIELD() int32 StartIndex;
 
     /// <summary>
-    /// The end index.
+    /// The end index (exclusive).
     /// </summary>
     API_FIELD() int32 EndIndex;
 
@@ -70,7 +71,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(TextRange);
     /// <summary>
     /// Gets the substring from the source text.
     /// </summary>
-    /// <param name="other">The text.</param>
+    /// <param name="text">The text.</param>
     /// <returns>The substring of the original text of the defined range.</returns>
     StringView Substring(const StringView& text) const
     {
@@ -87,7 +88,7 @@ struct TIsPODType<TextRange>
 /// <summary>
 /// The font line info generated during text processing.
 /// </summary>
-API_STRUCT() struct FontLineCache
+API_STRUCT(NoDefault) struct FontLineCache
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(FontLineCache);
 
@@ -151,7 +152,7 @@ struct TIsPODType<FontLineCache>
 /// <summary>
 /// The cached font character entry (read for rendering and further processing).
 /// </summary>
-API_STRUCT() struct FontCharacterEntry
+API_STRUCT(NoDefault) struct FontCharacterEntry
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(FontCharacterEntry);
 
@@ -204,6 +205,11 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(FontCharacterEntry);
     /// The size the character in the texture (in texture coordinates space).
     /// </summary>
     API_FIELD() Float2 UVSize;
+
+    /// <summary>
+    /// The slot in texture atlas, containing the pixel data of the glyph.
+    /// </summary>
+    API_FIELD() const FontTextureAtlasSlot* Slot;
 };
 
 template<>
@@ -222,7 +228,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Font);
 private:
 
     FontAsset* _asset;
-    int32 _size;
+    float _size;
     int32 _height;
     int32 _ascender;
     int32 _descender;
@@ -238,7 +244,7 @@ public:
     /// </summary>
     /// <param name="parentAsset">The parent asset.</param>
     /// <param name="size">The size.</param>
-    Font(FontAsset* parentAsset, int32 size);
+    Font(FontAsset* parentAsset, float size);
 
     /// <summary>
     /// Finalizes an instance of the <see cref="Font"/> class.
@@ -258,7 +264,7 @@ public:
     /// <summary>
     /// Gets font size.
     /// </summary>
-    API_PROPERTY() FORCE_INLINE int32 GetSize() const
+    API_PROPERTY() FORCE_INLINE float GetSize() const
     {
         return _size;
     }

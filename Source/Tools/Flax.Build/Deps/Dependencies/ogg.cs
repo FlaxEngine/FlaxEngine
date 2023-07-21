@@ -42,6 +42,7 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Mac,
+                        TargetPlatform.iOS,
                     };
                 default: return new TargetPlatform[0];
                 }
@@ -81,6 +82,7 @@ namespace Flax.Deps.Dependencies
             vcxprojContents = vcxprojContents.Replace("<RuntimeLibrary>MultiThreaded</RuntimeLibrary>", "<RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>");
             vcxprojContents = vcxprojContents.Replace("<RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>", "<RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>");
             vcxprojContents = vcxprojContents.Replace("<WholeProgramOptimization>true</WholeProgramOptimization>", "<WholeProgramOptimization>false</WholeProgramOptimization>");
+            var buildDir = Path.Combine(root, "build");
 
             foreach (var platform in options.Platforms)
             {
@@ -119,7 +121,6 @@ namespace Flax.Deps.Dependencies
                         { "CC", "clang-7" },
                         { "CC_FOR_BUILD", "clang-7" }
                     };
-                    var buildDir = Path.Combine(root, "build");
 
                     Utilities.Run(Path.Combine(root, "autogen.sh"), null, null, root, Utilities.RunOptions.Default, envVars);
 
@@ -192,8 +193,6 @@ namespace Flax.Deps.Dependencies
                 }
                 case TargetPlatform.Android:
                 {
-                    var buildDir = Path.Combine(root, "build");
-
                     // Build for Android
                     SetupDirectory(buildDir, true);
                     RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release");
@@ -205,10 +204,9 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.Switch:
                 {
                     // Get the build data files
-                    Utilities.DirectoryCopy(Path.Combine(options.PlatformsFolder, "Switch", "Data", "ogg"), root, true, true);
+                    Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "ogg"), root, true, true);
 
                     // Build for Switch
-                    var buildDir = Path.Combine(root, "build");
                     SetupDirectory(buildDir, true);
                     RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release");
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
@@ -218,13 +216,23 @@ namespace Flax.Deps.Dependencies
                 }
                 case TargetPlatform.Mac:
                 {
-                    var buildDir = Path.Combine(root, "build");
-
                     // Build for Mac
+                    foreach (var architecture in new []{ TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    {
+                        SetupDirectory(buildDir, true);
+                        RunCmake(buildDir, platform, architecture, ".. -DCMAKE_BUILD_TYPE=Release");
+                        Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
+                    }
+                    break;
+                }
+                case TargetPlatform.iOS:
+                {
                     SetupDirectory(buildDir, true);
-                    RunCmake(buildDir, platform, TargetArchitecture.x64, ".. -DCMAKE_BUILD_TYPE=Release");
+                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release");
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.None);
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
                     break;
                 }

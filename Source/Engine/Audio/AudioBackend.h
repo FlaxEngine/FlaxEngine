@@ -41,6 +41,7 @@ private:
     virtual void Source_TransformChanged(AudioSource* source) = 0;
     virtual void Source_VolumeChanged(AudioSource* source) = 0;
     virtual void Source_PitchChanged(AudioSource* source) = 0;
+    virtual void Source_PanChanged(AudioSource* source) = 0;
     virtual void Source_IsLoopingChanged(AudioSource* source) = 0;
     virtual void Source_SpatialSetupChanged(AudioSource* source) = 0;
     virtual void Source_ClipLoaded(AudioSource* source) = 0;
@@ -57,8 +58,8 @@ private:
     virtual void Source_DequeueProcessedBuffers(AudioSource* source) = 0;
 
     // Buffer
-    virtual void Buffer_Create(uint32& bufferId) = 0;
-    virtual void Buffer_Delete(uint32& bufferId) = 0;
+    virtual uint32 Buffer_Create() = 0;
+    virtual void Buffer_Delete(uint32 bufferId) = 0;
     virtual void Buffer_Write(uint32 bufferId, byte* samples, const AudioDataInfo& info) = 0;
 
     // Base
@@ -143,6 +144,11 @@ public:
             Instance->Source_PitchChanged(source);
         }
 
+        FORCE_INLINE static void PanChanged(AudioSource* source)
+        {
+            Instance->Source_PanChanged(source);
+        }
+
         FORCE_INLINE static void IsLoopingChanged(AudioSource* source)
         {
             Instance->Source_IsLoopingChanged(source);
@@ -218,15 +224,14 @@ public:
     {
     public:
 
-        FORCE_INLINE static void Create(uint32& bufferId)
+        FORCE_INLINE static uint32 Create()
         {
-            Instance->Buffer_Create(bufferId);
+            return Instance->Buffer_Create();
         }
 
-        FORCE_INLINE static void Delete(uint32& bufferId)
+        FORCE_INLINE static void Delete(uint32 bufferId)
         {
-            if (Instance)
-                Instance->Buffer_Delete(bufferId);
+            Instance->Buffer_Delete(bufferId);
         }
 
         FORCE_INLINE static void Write(uint32 bufferId, byte* samples, const AudioDataInfo& info)

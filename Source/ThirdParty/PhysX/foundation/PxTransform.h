@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,18 +22,17 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.
 
-#ifndef PXFOUNDATION_PXTRANSFORM_H
-#define PXFOUNDATION_PXTRANSFORM_H
+#ifndef PX_TRANSFORM_H
+#define PX_TRANSFORM_H
 /** \addtogroup foundation
   @{
 */
 
 #include "foundation/PxQuat.h"
-#include "foundation/PxPlane.h"
 
 #if !PX_DOXYGEN
 namespace physx
@@ -45,106 +43,117 @@ namespace physx
 \brief class representing a rigid euclidean transform as a quaternion and a vector
 */
 
-class PxTransform
+template<class Type>
+class PxTransformT
 {
   public:
-	PxQuat q;
-	PxVec3 p;
+	PxQuatT<Type>	q;
+	PxVec3T<Type>	p;
 
-	PX_CUDA_CALLABLE PX_FORCE_INLINE PxTransform()
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxTransformT()
 	{
 	}
 
-	PX_CUDA_CALLABLE PX_FORCE_INLINE explicit PxTransform(const PxVec3& position) : q(PxIdentity), p(position)
+	PX_CUDA_CALLABLE PX_FORCE_INLINE explicit PxTransformT(const PxVec3T<Type>& position) : q(PxIdentity), p(position)
 	{
 	}
 
-	PX_CUDA_CALLABLE PX_FORCE_INLINE explicit PxTransform(PxIDENTITY r) : q(PxIdentity), p(PxZero)
-	{
-		PX_UNUSED(r);
-	}
-
-	PX_CUDA_CALLABLE PX_FORCE_INLINE explicit PxTransform(const PxQuat& orientation) : q(orientation), p(0)
-	{
-		PX_SHARED_ASSERT(orientation.isSane());
-	}
-
-	PX_CUDA_CALLABLE PX_FORCE_INLINE PxTransform(float x, float y, float z, PxQuat aQ = PxQuat(PxIdentity))
-	: q(aQ), p(x, y, z)
+	PX_CUDA_CALLABLE PX_FORCE_INLINE explicit PxTransformT(PxIDENTITY) : q(PxIdentity), p(PxZero)
 	{
 	}
 
-	PX_CUDA_CALLABLE PX_FORCE_INLINE PxTransform(const PxVec3& p0, const PxQuat& q0) : q(q0), p(p0)
+	PX_CUDA_CALLABLE PX_FORCE_INLINE explicit PxTransformT(const PxQuatT<Type>& orientation) : q(orientation), p(Type(0))
 	{
-		PX_SHARED_ASSERT(q0.isSane());
+		PX_ASSERT(orientation.isSane());
 	}
 
-	PX_CUDA_CALLABLE PX_FORCE_INLINE explicit PxTransform(const PxMat44& m); // defined in PxMat44.h
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxTransformT(Type x, Type y, Type z, PxQuatT<Type> aQ = PxQuatT<Type>(PxIdentity)) :
+		q(aQ), p(x, y, z)
+	{
+	}
+
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxTransformT(const PxVec3T<Type>& p0, const PxQuatT<Type>& q0) : q(q0), p(p0)
+	{
+		PX_ASSERT(q0.isSane());
+	}
+
+	PX_CUDA_CALLABLE PX_FORCE_INLINE explicit PxTransformT(const PxMat44T<Type>& m); // defined in PxMat44.h
+
+	PX_CUDA_CALLABLE PX_FORCE_INLINE void operator=(const PxTransformT& other)
+	{
+		p = other.p;
+		q = other.q;
+	}
+
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxTransformT(const PxTransformT& other)
+	{
+		p = other.p;
+		q = other.q;
+	}
 
 	/**
 	\brief returns true if the two transforms are exactly equal
 	*/
-	PX_CUDA_CALLABLE PX_INLINE bool operator==(const PxTransform& t) const
+	PX_CUDA_CALLABLE PX_INLINE bool operator==(const PxTransformT& t) const
 	{
 		return p == t.p && q == t.q;
 	}
 
-	PX_CUDA_CALLABLE PX_FORCE_INLINE PxTransform operator*(const PxTransform& x) const
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxTransformT operator*(const PxTransformT& x) const
 	{
-		PX_SHARED_ASSERT(x.isSane());
+		PX_ASSERT(x.isSane());
 		return transform(x);
 	}
 
 	//! Equals matrix multiplication
-	PX_CUDA_CALLABLE PX_INLINE PxTransform& operator*=(PxTransform& other)
+	PX_CUDA_CALLABLE PX_INLINE PxTransformT& operator*=(const PxTransformT& other)
 	{
 		*this = *this * other;
 		return *this;
 	}
 
-	PX_CUDA_CALLABLE PX_FORCE_INLINE PxTransform getInverse() const
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxTransformT getInverse() const
 	{
-		PX_SHARED_ASSERT(isFinite());
-		return PxTransform(q.rotateInv(-p), q.getConjugate());
+		PX_ASSERT(isFinite());
+		return PxTransformT(q.rotateInv(-p), q.getConjugate());
 	}
 
-	PX_CUDA_CALLABLE PX_FORCE_INLINE PxVec3 transform(const PxVec3& input) const
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxVec3T<Type> transform(const PxVec3T<Type>& input) const
 	{
-		PX_SHARED_ASSERT(isFinite());
+		PX_ASSERT(isFinite());
 		return q.rotate(input) + p;
 	}
 
-	PX_CUDA_CALLABLE PX_FORCE_INLINE PxVec3 transformInv(const PxVec3& input) const
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxVec3T<Type> transformInv(const PxVec3T<Type>& input) const
 	{
-		PX_SHARED_ASSERT(isFinite());
+		PX_ASSERT(isFinite());
 		return q.rotateInv(input - p);
 	}
 
-	PX_CUDA_CALLABLE PX_FORCE_INLINE PxVec3 rotate(const PxVec3& input) const
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxVec3T<Type> rotate(const PxVec3T<Type>& input) const
 	{
-		PX_SHARED_ASSERT(isFinite());
+		PX_ASSERT(isFinite());
 		return q.rotate(input);
 	}
 
-	PX_CUDA_CALLABLE PX_FORCE_INLINE PxVec3 rotateInv(const PxVec3& input) const
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxVec3T<Type> rotateInv(const PxVec3T<Type>& input) const
 	{
-		PX_SHARED_ASSERT(isFinite());
+		PX_ASSERT(isFinite());
 		return q.rotateInv(input);
 	}
 
 	//! Transform transform to parent (returns compound transform: first src, then *this)
-	PX_CUDA_CALLABLE PX_FORCE_INLINE PxTransform transform(const PxTransform& src) const
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxTransformT transform(const PxTransformT& src) const
 	{
-		PX_SHARED_ASSERT(src.isSane());
-		PX_SHARED_ASSERT(isSane());
+		PX_ASSERT(src.isSane());
+		PX_ASSERT(isSane());
 		// src = [srct, srcr] -> [r*srct + t, r*srcr]
-		return PxTransform(q.rotate(src.p) + p, q * src.q);
+		return PxTransformT(q.rotate(src.p) + p, q * src.q);
 	}
 
 	/**
 	\brief returns true if finite and q is a unit quaternion
 	*/
-
 	PX_CUDA_CALLABLE bool isValid() const
 	{
 		return p.isFinite() && q.isFinite() && q.isUnit();
@@ -154,7 +163,6 @@ class PxTransform
 	\brief returns true if finite and quat magnitude is reasonably close to unit to allow for some accumulation of error
 	vs isValid
 	*/
-
 	PX_CUDA_CALLABLE bool isSane() const
 	{
 		return isFinite() && q.isSane();
@@ -169,47 +177,48 @@ class PxTransform
 	}
 
 	//! Transform transform from parent (returns compound transform: first src, then this->inverse)
-	PX_CUDA_CALLABLE PX_FORCE_INLINE PxTransform transformInv(const PxTransform& src) const
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxTransformT transformInv(const PxTransformT& src) const
 	{
-		PX_SHARED_ASSERT(src.isSane());
-		PX_SHARED_ASSERT(isFinite());
+		PX_ASSERT(src.isSane());
+		PX_ASSERT(isFinite());
 		// src = [srct, srcr] -> [r^-1*(srct-t), r^-1*srcr]
-		PxQuat qinv = q.getConjugate();
-		return PxTransform(qinv.rotate(src.p - p), qinv * src.q);
-	}
-
-	/**
-	\brief transform plane
-	*/
-
-	PX_CUDA_CALLABLE PX_FORCE_INLINE PxPlane transform(const PxPlane& plane) const
-	{
-		PxVec3 transformedNormal = rotate(plane.n);
-		return PxPlane(transformedNormal, plane.d - p.dot(transformedNormal));
-	}
-
-	/**
-	\brief inverse-transform plane
-	*/
-
-	PX_CUDA_CALLABLE PX_FORCE_INLINE PxPlane inverseTransform(const PxPlane& plane) const
-	{
-		PxVec3 transformedNormal = rotateInv(plane.n);
-		return PxPlane(transformedNormal, plane.d + p.dot(plane.n));
+		const PxQuatT<Type> qinv = q.getConjugate();
+		return PxTransformT(qinv.rotate(src.p - p), qinv * src.q);
 	}
 
 	/**
 	\brief return a normalized transform (i.e. one in which the quaternion has unit magnitude)
 	*/
-	PX_CUDA_CALLABLE PX_FORCE_INLINE PxTransform getNormalized() const
+	PX_CUDA_CALLABLE PX_FORCE_INLINE PxTransformT getNormalized() const
 	{
-		return PxTransform(p, q.getNormalized());
+		return PxTransformT(p, q.getNormalized());
 	}
 };
+
+typedef PxTransformT<float>		PxTransform;
+typedef PxTransformT<double>	PxTransformd;
+
+/*!
+\brief	A generic padded & aligned transform class.
+
+This can be used for safe faster loads & stores, and faster address computations
+(the default PxTransformT often generating imuls for this otherwise). Padding bytes
+can be reused to store useful data if needed.
+*/
+struct PX_ALIGN_PREFIX(16) PxTransformPadded
+{
+	PxTransform	transform;
+	PxU32		padding;
+}
+PX_ALIGN_SUFFIX(16);
+PX_COMPILE_TIME_ASSERT(sizeof(PxTransformPadded)==32);
+
+typedef PxTransformPadded	PxTransform32;
 
 #if !PX_DOXYGEN
 } // namespace physx
 #endif
 
 /** @} */
-#endif // #ifndef PXFOUNDATION_PXTRANSFORM_H
+#endif
+

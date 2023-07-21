@@ -1,78 +1,86 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "PrecompileAssembliesStep.h"
-#include "Editor/Scripting/ScriptsBuilder.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/File.h"
+#include "Engine/Core/Config/BuildSettings.h"
+#include "Engine/Engine/Globals.h"
+#include "Editor/Scripting/ScriptsBuilder.h"
 #include "Editor/Cooker/PlatformTools.h"
+#include "Editor/Utilities/EditorUtilities.h"
+
+void PrecompileAssembliesStep::OnBuildStarted(CookingData& data)
+{
+    const DotNetAOTModes aotMode = data.Tools->UseAOT();
+    if (aotMode == DotNetAOTModes::None)
+        return;
+    const auto& buildSettings = *BuildSettings::Get();
+
+    // Redirect C# assemblies to intermediate cooking directory (processed by ILC)
+    data.ManagedCodeOutputPath = data.CacheDirectory / TEXT("AOTAssemblies");
+
+    // Reset any AOT cache from previous run if the AOT mode has changed (eg. Mono AOT -> ILC on Desktop)
+    const String aotModeCacheFilePath = data.ManagedCodeOutputPath / TEXT("AOTMode.txt");
+    String aotModeCacheValue = String::Format(TEXT("{};{};{};{}"),
+                                              (int32)aotMode,
+                                              (int32)data.Configuration,
+                                              (int32)buildSettings.SkipUnusedDotnetLibsPackaging,
+                                              FileSystem::GetFileLastEditTime(ScriptsBuilder::GetBuildToolPath()).Ticks);
+    for (const String& define : data.CustomDefines)
+        aotModeCacheValue += define;
+    if (FileSystem::DirectoryExists(data.ManagedCodeOutputPath))
+    {
+        String cachedData;
+        File::ReadAllText(aotModeCacheFilePath, cachedData);
+        if (cachedData != aotModeCacheValue)
+        {
+            LOG(Info, "AOT cache invalidation");
+            FileSystem::DeleteDirectory(data.ManagedCodeOutputPath);
+        }
+    }
+    if (!FileSystem::DirectoryExists(data.ManagedCodeOutputPath))
+    {
+        FileSystem::CreateDirectory(data.ManagedCodeOutputPath);
+        File::WriteAllText(aotModeCacheFilePath, aotModeCacheValue, Encoding::ANSI);
+    }
+}
 
 bool PrecompileAssembliesStep::Perform(CookingData& data)
 {
-    // Skip for some platforms
-    if (!data.Tools->UseAOT())
+    const DotNetAOTModes aotMode = data.Tools->UseAOT();
+    if (aotMode == DotNetAOTModes::None)
+        return false;
+    const auto& buildSettings = *BuildSettings::Get();
+    if (buildSettings.SkipDotnetPackaging && data.Tools->UseSystemDotnet())
         return false;
     LOG(Info, "Using AOT...");
-
-    // Useful references about AOT:
-    // http://www.mono-project.com/docs/advanced/runtime/docs/aot/
-    // http://www.mono-project.com/docs/advanced/aot/
-
     const String infoMsg = TEXT("Running AOT");
     data.StepProgress(infoMsg, 0);
 
-    // Setup
-    PlatformTools::AotConfig config(data);
-    data.Tools->OnConfigureAOT(data, config);
+    // Override Newtonsoft.Json with AOT-version (one that doesn't use System.Reflection.Emit)
+    EditorUtilities::CopyFileIfNewer(data.ManagedCodeOutputPath / TEXT("Newtonsoft.Json.dll"), Globals::StartupFolder / TEXT("Source/Platforms/DotNet/AOT/Newtonsoft.Json.dll"));
+    FileSystem::DeleteFile(data.ManagedCodeOutputPath / TEXT("Newtonsoft.Json.xml"));
+    FileSystem::DeleteFile(data.ManagedCodeOutputPath / TEXT("Newtonsoft.Json.pdb"));
 
-    // Prepare output directory
-    config.AotCachePath = data.DataOutputPath / TEXT("Mono/lib/mono/aot-cache");
-    switch (data.Tools->GetArchitecture())
+    // Run AOT by Flax.Build (see DotNetAOT)
+    const Char *platform, *architecture, *configuration = ::ToString(data.Configuration);
+    data.GetBuildPlatformName(platform, architecture);
+    const String logFile = data.CacheDirectory / TEXT("AOTLog.txt");
+    String args = String::Format(
+        TEXT("-log -logfile=\"{}\" -runDotNetAOT -mutex -platform={} -arch={} -configuration={} -aotMode={} -binaries=\"{}\" -intermediate=\"{}\""),
+        logFile, platform, architecture, configuration, ToString(aotMode), data.DataOutputPath, data.ManagedCodeOutputPath);
+    if (!buildSettings.SkipUnusedDotnetLibsPackaging)
+        args += TEXT(" -skipUnusedDotnetLibs=false"); // Run AOT on whole class library (not just used libs)
+    for (const String& define : data.CustomDefines)
     {
-    case ArchitectureType::x86:
-        config.AotCachePath /= TEXT("x86");
-        break;
-    case ArchitectureType::x64:
-        config.AotCachePath /= TEXT("amd64");
-        break;
-    default:
-        data.Error(TEXT("Not supported AOT architecture"));
+        args += TEXT(" -D");
+        args += define;
+    }
+    if (ScriptsBuilder::RunBuildTool(args))
+    {
+        data.Error(TEXT("Failed to precompile game scripts."));
         return true;
     }
-    if (!FileSystem::DirectoryExists(config.AotCachePath))
-    {
-        if (FileSystem::CreateDirectory(config.AotCachePath))
-        {
-            data.Error(TEXT("Failed to setup AOT output directory."));
-            return true;
-        }
-    }
-
-    // Collect assemblies for AOT
-    // TODO: don't perform AOT on all assemblies but only ones used by the game and engine assemblies
-    for (auto& dir : config.AssembliesSearchDirs)
-        FileSystem::DirectoryGetFiles(config.Assemblies, dir, TEXT("*.dll"), DirectorySearchOption::TopDirectoryOnly);
-    for (auto& binaryModule : data.BinaryModules)
-        if (binaryModule.ManagedPath.HasChars())
-            config.Assemblies.Add(data.ManagedCodeOutputPath / binaryModule.ManagedPath);
-    // TODO: move AOT to Flax.Build and perform it on all C# assemblies used in target build
-    config.Assemblies.Add(data.ManagedCodeOutputPath / TEXT("Newtonsoft.Json.dll"));
-
-    // Perform AOT for the assemblies
-    for (int32 i = 0; i < config.Assemblies.Count(); i++)
-    {
-        BUILD_STEP_CANCEL_CHECK;
-
-        if (data.Tools->OnPerformAOT(data, config, config.Assemblies[i]))
-            return true;
-
-        data.StepProgress(infoMsg, static_cast<float>(i) / config.Assemblies.Count());
-    }
-
-    BUILD_STEP_CANCEL_CHECK;
-
-    if (data.Tools->OnPostProcessAOT(data, config))
-        return true;
-
-    // TODO: maybe remove GAC/assemblies? aot-cache could be only used in the build game
 
     return false;
 }

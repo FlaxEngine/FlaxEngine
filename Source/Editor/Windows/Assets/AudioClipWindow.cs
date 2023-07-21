@@ -284,10 +284,10 @@ namespace FlaxEditor.Windows.Assets
             {
                 _preview.Source = null;
                 _previewSource.Stop();
-                Object.Destroy(_previewSource);
+                FlaxEngine.Object.Destroy(_previewSource);
                 _previewSource = null;
             }
-            Object.Destroy(ref _previewScene);
+            FlaxEngine.Object.Destroy(ref _previewScene);
 
             base.OnDestroy();
         }
@@ -336,14 +336,13 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnLayoutSerialize(XmlWriter writer)
         {
-            writer.WriteAttributeString("Split", _split.SplitterValue.ToString());
+            LayoutSerializeSplitter(writer, "Split", _split);
         }
 
         /// <inheritdoc />
         public override void OnLayoutDeserialize(XmlElement node)
         {
-            if (float.TryParse(node.GetAttribute("Split"), out float value1))
-                _split.SplitterValue = value1;
+            LayoutDeserializeSplitter(node, "Split", _split);
         }
 
         /// <inheritdoc />

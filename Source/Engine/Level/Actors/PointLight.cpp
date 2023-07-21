@@ -143,6 +143,16 @@ void PointLight::OnDebugDrawSelected()
     LightWithShadow::OnDebugDrawSelected();
 }
 
+void PointLight::DrawLightsDebug(RenderView& view)
+{
+    const BoundingSphere sphere(_sphere.Center - view.Origin, _sphere.Radius);
+    if (!view.CullingFrustum.Intersects(sphere) || !EnumHasAnyFlags(view.Flags, ViewFlags::PointLights))
+        return;
+    
+    // Draw influence range
+    DEBUG_DRAW_WIRE_SPHERE(_sphere, Color::Yellow, 0, true);
+}
+
 #endif
 
 void PointLight::OnLayerChanged()

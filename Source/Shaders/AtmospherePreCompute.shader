@@ -174,7 +174,7 @@ float4 PS_CopyInscatter1(Quad_VS2PS input) : SV_Target0
 {
 	float3 uvw = float3(input.TexCoord, (float(AtmosphereLayer) + 0.5f) / float(AtmosphericFogInscatterAltitudeSampleNum));
     float4 ray = AtmosphereDeltaSRTexture.Sample(SamplerLinearClamp, uvw);
-    float4 mie = AtmosphereDeltaSRTexture.Sample(SamplerLinearClamp, uvw);
+    float4 mie = AtmosphereDeltaSMTexture.Sample(SamplerLinearClamp, uvw);
 	return float4(ray.xyz, mie.x);
 }
 

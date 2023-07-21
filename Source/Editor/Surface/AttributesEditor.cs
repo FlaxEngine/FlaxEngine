@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Runtime.Serialization.Formatters.Binary;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
@@ -118,8 +119,13 @@ namespace FlaxEditor.Surface
 
             using (var stream = new MemoryStream())
             {
+                // Ensure we are in the correct load context (https://github.com/dotnet/runtime/issues/42041)
+                using var ctx = AssemblyLoadContext.EnterContextualReflection(typeof(Editor).Assembly);
+
                 var formatter = new BinaryFormatter();
+#pragma warning disable SYSLIB0011
                 formatter.Serialize(stream, attributes);
+#pragma warning restore SYSLIB0011
                 _oldData = stream.ToArray();
             }
             editor.Select(new Proxy
@@ -141,8 +147,13 @@ namespace FlaxEditor.Surface
             }
             using (var stream = new MemoryStream())
             {
+                // Ensure we are in the correct load context (https://github.com/dotnet/runtime/issues/42041)
+                using var ctx = AssemblyLoadContext.EnterContextualReflection(typeof(Editor).Assembly);
+
                 var formatter = new BinaryFormatter();
+#pragma warning disable SYSLIB0011
                 formatter.Serialize(stream, newValue);
+#pragma warning restore SYSLIB0011
                 var newData = stream.ToArray();
                 if (!_oldData.SequenceEqual(newData))
                 {

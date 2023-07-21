@@ -13,6 +13,7 @@ using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.SceneGraph.GUI
@@ -625,10 +626,19 @@ namespace FlaxEditor.SceneGraph.GUI
                 {
                     var item = _dragAssets.Objects[i];
                     var actor = item.OnEditorDrop(this);
-                    actor.StaticFlags = spawnParent.StaticFlags;
+                    if (spawnParent.GetType() != typeof(Scene))
+                    {
+                        // Set all Actors static flags to match parents
+                        List<Actor> childActors = new List<Actor>();
+                        Utilities.Utils.GetActorsTree(childActors, actor);
+                        foreach (var child in childActors)
+                        {
+                            child.StaticFlags = spawnParent.StaticFlags;
+                        }
+                    }
                     actor.Name = item.ShortName;
                     actor.Transform = spawnParent.Transform;
-                    Editor.Instance.SceneEditing.Spawn(actor, spawnParent, false);
+                    ActorNode.Root.Spawn(actor, spawnParent);
                     actor.OrderInParent = newOrder;
                 }
                 result = DragDropEffect.Move;
@@ -639,8 +649,6 @@ namespace FlaxEditor.SceneGraph.GUI
                 for (int i = 0; i < _dragActorType.Objects.Count; i++)
                 {
                     var item = _dragActorType.Objects[i];
-
-                    // Create actor
                     var actor = item.CreateInstance() as Actor;
                     if (actor == null)
                     {
@@ -650,8 +658,6 @@ namespace FlaxEditor.SceneGraph.GUI
                     actor.StaticFlags = Actor.StaticFlags;
                     actor.Name = item.Name;
                     actor.Transform = Actor.Transform;
-
-                    // Spawn
                     ActorNode.Root.Spawn(actor, Actor);
                 }
 
@@ -710,8 +716,6 @@ namespace FlaxEditor.SceneGraph.GUI
         {
             DragData data;
             var tree = ParentTree;
-            if (tree.Selection.Count == 1)
-                Select();
 
             // Check if this node is selected
             if (tree.Selection.Contains(this))

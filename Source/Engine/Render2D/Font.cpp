@@ -7,7 +7,7 @@
 #include "Engine/Threading/Threading.h"
 #include "IncludeFreeType.h"
 
-Font::Font(FontAsset* parentAsset, int32 size)
+Font::Font(FontAsset* parentAsset, float size)
     : ManagedScriptingObject(SpawnParams(Guid::New(), Font::TypeInitializer))
     , _asset(parentAsset)
     , _size(size)
@@ -118,15 +118,9 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
     tmpLine.FirstCharIndex = 0;
     tmpLine.LastCharIndex = -1;
 
-    int32 lastWhitespaceIndex = INVALID_INDEX;
-    float lastWhitespaceX = 0;
+    int32 lastWrapCharIndex = INVALID_INDEX;
+    float lastWrapCharX = 0;
     bool lastMoveLine = false;
-
-    int32 lastUpperIndex = INVALID_INDEX;
-    float lastUpperX = 0;
-
-    int32 lastUnderscoreIndex = INVALID_INDEX;
-    float lastUnderscoreX = 0;
 
     // Process each character to split text into single lines
     for (int32 currentIndex = 0; currentIndex < textLength;)
@@ -137,30 +131,14 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
 
         // Cache current character
         const Char currentChar = text[currentIndex];
-
-        // Check if character is a whitespace
         const bool isWhitespace = StringUtils::IsWhitespace(currentChar);
-        if (isWhitespace)
-        {
-            // Cache line break point
-            lastWhitespaceIndex = currentIndex;
-            lastWhitespaceX = cursorX;
-        }
 
-        // Check if character is an upper case letter
-        const bool isUpper = StringUtils::IsUpper(currentChar);
-        if (isUpper && currentIndex != 0)
+        // Check if character can wrap words
+        const bool isWrapChar = !StringUtils::IsAlnum(currentChar) || isWhitespace || StringUtils::IsUpper(currentChar);
+        if (isWrapChar && currentIndex != 0)
         {
-            lastUpperIndex = currentIndex;
-            lastUpperX = cursorX;
-        }
-
-        // Check if character is an underscore
-        const bool isUnderscore = currentChar == '_';
-        if (isUnderscore)
-        {
-            lastUnderscoreIndex = currentIndex;
-            lastUnderscoreX = cursorX;
+            lastWrapCharIndex = currentIndex;
+            lastWrapCharX = cursorX;
         }
 
         // Check if it's a newline character
@@ -197,37 +175,32 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
             }
             else if (layout.TextWrapping == TextWrapping::WrapWords)
             {
-                // Move line but back to the last after-whitespace character
-                moveLine = true;
-                if (lastWhitespaceIndex != INVALID_INDEX)
+                if (lastWrapCharIndex != INVALID_INDEX)
                 {
-                    // Back
-                    cursorX = lastWhitespaceX;
-                    tmpLine.LastCharIndex = lastWhitespaceIndex - 1;
-                    currentIndex = lastWhitespaceIndex + 1;
-                    nextCharIndex = currentIndex;
-                }
-                else if (lastUpperIndex != INVALID_INDEX)
-                {
-                    cursorX = lastUpperX;
-                    tmpLine.LastCharIndex = lastUpperIndex - 1;
-                    currentIndex = lastUpperIndex;
-                    nextCharIndex = currentIndex;
-                }
-                else if (lastUnderscoreIndex != INVALID_INDEX)
-                {
-                    cursorX = lastUnderscoreX;
-                    tmpLine.LastCharIndex = lastUnderscoreIndex;
-                    currentIndex = lastUnderscoreIndex + 1;
-                    nextCharIndex = currentIndex;
-                }
-                else
-                {
-                    nextCharIndex = currentIndex;
-
                     // Skip moving twice for the same character
-                    if (lastMoveLine)
-                        break;
+                    int32 lastLineLasCharIndex = outputLines.HasItems() ? outputLines.Last().LastCharIndex : -10000;
+                    if (lastLineLasCharIndex == lastWrapCharIndex || lastLineLasCharIndex == lastWrapCharIndex - 1 || lastLineLasCharIndex == lastWrapCharIndex - 2)
+                    {
+                        currentIndex = nextCharIndex;
+                        lastMoveLine = moveLine;
+                        continue;
+                    }
+
+                    // Move line
+                    const Char wrapChar = text[lastWrapCharIndex];
+                    moveLine = true;
+                    cursorX = lastWrapCharX;
+                    if (StringUtils::IsWhitespace(wrapChar))
+                    {
+                        // Skip whitespaces
+                        tmpLine.LastCharIndex = lastWrapCharIndex - 1;
+                        nextCharIndex = currentIndex = lastWrapCharIndex + 1;
+                    }
+                    else
+                    {
+                        tmpLine.LastCharIndex = lastWrapCharIndex - 1;
+                        nextCharIndex = currentIndex = lastWrapCharIndex;
+                    }
                 }
             }
             else if (layout.TextWrapping == TextWrapping::WrapChars)
@@ -256,16 +229,8 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
             tmpLine.FirstCharIndex = currentIndex;
             tmpLine.LastCharIndex = currentIndex - 1;
             cursorX = 0;
-
-            lastWhitespaceIndex = INVALID_INDEX;
-            lastWhitespaceX = 0;
-
-            lastUpperIndex = INVALID_INDEX;
-            lastUpperX = 0;
-
-            lastUnderscoreIndex = INVALID_INDEX;
-            lastUnderscoreX = 0;
-
+            lastWrapCharIndex = INVALID_INDEX;
+            lastWrapCharX = 0;
             previous.IsValid = false;
         }
 
@@ -471,7 +436,7 @@ void Font::FlushFaceSize() const
 {
     // Set the character size
     const FT_Face face = _asset->GetFTFace();
-    const FT_Error error = FT_Set_Char_Size(face, 0, ConvertPixelTo26Dot6<FT_F26Dot6>((float)_size * FontManager::FontScale), DefaultDPI, DefaultDPI);
+    const FT_Error error = FT_Set_Char_Size(face, 0, ConvertPixelTo26Dot6<FT_F26Dot6>(_size * FontManager::FontScale), DefaultDPI, DefaultDPI);
     if (error)
     {
         LOG_FT_ERROR(error);

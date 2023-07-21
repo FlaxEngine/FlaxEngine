@@ -5,14 +5,13 @@
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
-#include "Engine/Scripting/MException.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/Events.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MField.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
-#include "Engine/Scripting/ManagedCLR/MType.h"
+#include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Serialization/Serialization.h"
@@ -310,15 +309,15 @@ void VisualScriptExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
                 const StringAsANSI<100> typeNameAnsi(typeName.Get(), typeName.Length());
                 if (StringUtils::Compare(typeNameAnsi.Get(), obj.Type.GetTypeName()) != 0)
                 {
-#if USE_MONO
-                    MonoClass* klass = Scripting::FindClassNative(StringAnsiView(typeNameAnsi.Get(), typeName.Length()));
-                    MonoClass* objKlass = MUtils::GetClass(obj);
-                    if (!klass || !objKlass || mono_class_is_subclass_of(objKlass, klass, false) == 0)
+#if USE_CSHARP
+                    MClass* klass = Scripting::FindClass(StringAnsiView(typeNameAnsi.Get(), typeName.Length()));
+                    MClass* objKlass = MUtils::GetClass(obj);
+                    if (!klass || !objKlass || !objKlass->IsSubClassOf(klass))
                         obj = Value::Null;
 #else
                     const ScriptingTypeHandle type = Scripting::FindScriptingType(StringAnsiView(typeNameAnsi.Get(), typeName.Length()));
                     const ScriptingTypeHandle objType = Scripting::FindScriptingType(obj.Type.GetTypeName());
-                    if (!type || !objType || objType.IsSubclassOf(type))
+                    if (!type || !objType || !objType.IsSubclassOf(type))
                         obj = Value::Null;
 #endif
                 }
@@ -619,7 +618,7 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
     // Return
     case 5:
     {
-        auto& scope = ThreadStacks.Get().Stack->Scope;
+        auto scope = ThreadStacks.Get().Stack->Scope;
         scope->FunctionReturn = tryGetValue(node->GetBox(1), Value::Zero);
         break;
     }
@@ -635,7 +634,7 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
         else
         {
             // Evaluate method parameter value from the current scope
-            auto& scope = ThreadStacks.Get().Stack->Scope;
+            auto scope = ThreadStacks.Get().Stack->Scope;
             int32 index = boxBase->ID - 1;
             if (index < scope->Parameters.Length())
                 value = scope->Parameters.Get()[index];
@@ -1139,7 +1138,7 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
                 break;
         }
         int32 arrayIndex = 0;
-        for (; iteratorIndex < scope->ReturnedValues.Count(); arrayIndex++)
+        for (; arrayIndex < scope->ReturnedValues.Count(); arrayIndex++)
         {
             const auto& e = scope->ReturnedValues[arrayIndex];
             if (e.NodeId == node->ID && e.BoxId == 1)

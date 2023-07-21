@@ -40,20 +40,25 @@ namespace Flax.Build.Platforms
             if (Platform.BuildTargetPlatform == TargetPlatform.Linux)
             {
                 // Pick the newest compiler (overriden by specified in command line)
-                if (Which(Compiler) != null)
+                if (Which(Configuration.Compiler) != null)
                     Compiler = Configuration.Compiler;
-                else if (Which("clang++-10") != null)
-                    Compiler = "clang++-10";
-                else if (Which("clang++-9") != null)
-                    Compiler = "clang++-9";
-                else if (Which("clang++-8") != null)
-                    Compiler = "clang++-8";
-                else if (Which("clang++-7") != null)
-                    Compiler = "clang++-7";
-                else if (Which("clang++-6") != null)
-                    Compiler = "clang++-6";
-                else if (Which("clang++") != null)
-                    Compiler = "clang++";
+                else
+                {
+                    for (int ver = 15; ver >= 6; ver--)
+                    {
+                        var compiler = "clang++-" + ver;
+                        if (Which(compiler) != null)
+                        {
+                            Compiler = compiler;
+                            break;
+                        }
+                    }
+                    if (Compiler == null)
+                    {
+                        if (Which("clang++") != null)
+                            Compiler = "clang++";
+                    }
+                }
             }
             if (Compiler != null)
             {

@@ -16,11 +16,9 @@
 #include "Engine/Platform/FileSystem.h"
 #include "AssetsImportingManager.h"
 
-bool ImportModelFile::TryGetImportOptions(String path, Options& options)
+bool ImportModelFile::TryGetImportOptions(const StringView& path, Options& options)
 {
 #if IMPORT_MODEL_CACHE_OPTIONS
-
-    // Check if target asset file exists
     if (FileSystem::FileExists(path))
     {
         // Try to load asset file and asset info
@@ -41,15 +39,12 @@ bool ImportModelFile::TryGetImportOptions(String path, Options& options)
             metadata.Parse((const char*)data.Metadata.Get(), data.Metadata.Length());
             if (metadata.HasParseError() == false)
             {
-                // Success
                 options.Deserialize(metadata, nullptr);
                 return true;
             }
         }
     }
-
 #endif
-
     return false;
 }
 
@@ -268,6 +263,9 @@ CreateAssetResult ImportModelFile::ImportSkinnedModel(CreateAssetContext& contex
     for (int32 lodIndex = 0; lodIndex < lodCount; lodIndex++)
     {
         stream.SetPosition(0);
+
+        // Mesh Data Version
+        stream.WriteByte(1);
 
         // Pack meshes
         auto& meshes = modelData.LODs[lodIndex].Meshes;

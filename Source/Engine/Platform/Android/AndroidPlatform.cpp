@@ -996,16 +996,6 @@ Float2 AndroidPlatform::GetDesktopSize()
     return Float2((float)ScreenWidth, (float)ScreenHeight);
 }
 
-Rectangle AndroidPlatform::GetMonitorBounds(const Float2& screenPos)
-{
-    return Rectangle(Float2::Zero, GetDesktopSize());
-}
-
-Rectangle AndroidPlatform::GetVirtualDesktopBounds()
-{
-    return Rectangle(Float2::Zero, GetDesktopSize());
-}
-
 String AndroidPlatform::GetMainDirectory()
 {
     return String(App->activity->internalDataPath);

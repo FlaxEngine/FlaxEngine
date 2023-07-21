@@ -54,8 +54,6 @@ class AudioListener;
 class AnimatedModel;
 class BoneSocket;
 class Decal;
-class UICanvas;
-class UIControl;
 
 // Default extension for JSON scene files
 #define DEFAULT_SCENE_EXTENSION TEXT("scene")
@@ -100,7 +98,7 @@ API_ENUM(Attributes="Flags") enum class StaticFlags
     Navigation = 1 << 3,
 
     /// <summary>
-    /// Objects is fully static on the scene.
+    /// Object is fully static in the scene.
     /// </summary>
     FullyStatic = Transform | ReflectionProbe | Lightmap | Navigation,
 

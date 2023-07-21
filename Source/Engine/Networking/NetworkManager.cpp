@@ -15,7 +15,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Scripting.h"
 
-#define NETWORK_PROTOCOL_VERSION 1
+#define NETWORK_PROTOCOL_VERSION 2
 
 float NetworkManager::NetworkFPS = 60.0f;
 NetworkPeer* NetworkManager::Peer = nullptr;
@@ -317,11 +317,12 @@ bool NetworkManager::StartHost()
     LocalClient = New<NetworkClient>(LocalClientId, NetworkConnection{ 0 });
 
     // Auto-connect host
+    LocalClient->State = NetworkConnectionState::Connecting;
+    State = NetworkConnectionState::Connected;
+    StateChanged();
     LocalClient->State = NetworkConnectionState::Connected;
     ClientConnected(LocalClient);
 
-    State = NetworkConnectionState::Connected;
-    StateChanged();
     return false;
 }
 

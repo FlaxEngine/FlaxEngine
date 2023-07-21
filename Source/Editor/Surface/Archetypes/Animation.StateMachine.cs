@@ -528,12 +528,12 @@ namespace FlaxEditor.Surface.Archetypes
         }
 
         /// <summary>
-        /// Customized <see cref="SurfaceNode" /> for the state machine state node.
+        /// Base class for state machine state node.
         /// </summary>
         /// <seealso cref="FlaxEditor.Surface.SurfaceNode" />
         /// <seealso cref="FlaxEditor.Surface.IConnectionInstigator" />
         /// <seealso cref="FlaxEditor.Surface.ISurfaceContext" />
-        internal class StateMachineState : SurfaceNode, ISurfaceContext, IConnectionInstigator
+        internal abstract class StateMachineStateBase : SurfaceNode, IConnectionInstigator
         {
             internal class AddRemoveTransitionAction : IUndoAction
             {
@@ -543,6 +543,7 @@ namespace FlaxEditor.Surface.Archetypes
                 private readonly uint _srcStateId;
                 private readonly uint _dstStateId;
                 private StateMachineTransition.Data _data;
+                private byte[] _ruleGraph;
 
                 public AddRemoveTransitionAction(StateMachineTransition transition)
                 {
@@ -552,6 +553,7 @@ namespace FlaxEditor.Surface.Archetypes
                     _dstStateId = transition.DestinationState.ID;
                     _isAdd = false;
                     transition.GetData(out _data);
+                    _ruleGraph = (byte[])transition.RuleGraph.Clone();
                 }
 
                 public AddRemoveTransitionAction(SurfaceNode src, SurfaceNode dst)
@@ -595,32 +597,32 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     var context = _context.Get(_surface);
 
-                    var src = context.FindNode(_srcStateId) as StateMachineState;
+                    var src = context.FindNode(_srcStateId) as StateMachineStateBase;
                     if (src == null)
                         throw new Exception("Missing source state.");
 
-                    var dst = context.FindNode(_dstStateId) as StateMachineState;
+                    var dst = context.FindNode(_dstStateId) as StateMachineStateBase;
                     if (dst == null)
                         throw new Exception("Missing destination state.");
 
-                    var transition = new StateMachineTransition(src, dst, ref _data);
+                    var transition = new StateMachineTransition(src, dst, ref _data, _ruleGraph);
                     src.Transitions.Add(transition);
 
                     src.UpdateTransitionsOrder();
                     src.UpdateTransitions();
                     src.UpdateTransitionsColors();
 
-                    src.SaveData();
+                    src.SaveTransitions();
                 }
 
                 private void Remove()
                 {
                     var context = _context.Get(_surface);
 
-                    if (!(context.FindNode(_srcStateId) is StateMachineState src))
+                    if (!(context.FindNode(_srcStateId) is StateMachineStateBase src))
                         throw new Exception("Missing source state.");
 
-                    if (!(context.FindNode(_dstStateId) is StateMachineState dst))
+                    if (!(context.FindNode(_dstStateId) is StateMachineStateBase dst))
                         throw new Exception("Missing destination state.");
 
                     var transition = src.Transitions.Find(x => x.DestinationState == dst);
@@ -634,21 +636,23 @@ namespace FlaxEditor.Surface.Archetypes
                     src.UpdateTransitions();
                     src.UpdateTransitionsColors();
 
-                    src.SaveData();
+                    src.SaveTransitions();
                 }
 
                 /// <inheritdoc />
                 public void Dispose()
                 {
                     _surface = null;
+                    _context = new ContextHandle();
+                    _ruleGraph = null;
                 }
             }
 
             private bool _isSavingData;
             private bool _isMouseDown;
-            private Rectangle _textRect;
-            private Rectangle _dragAreaRect;
-            private Rectangle _renameButtonRect;
+            protected Rectangle _textRect;
+            protected Rectangle _dragAreaRect;
+            protected Rectangle _renameButtonRect;
             private bool _cursorChanged = false;
             private bool _textRectHovered = false;
 
@@ -658,39 +662,19 @@ namespace FlaxEditor.Surface.Archetypes
             public readonly List<StateMachineTransition> Transitions = new List<StateMachineTransition>();
 
             /// <summary>
-            /// Gets or sets the node title text.
-            /// </summary>
-            public string StateTitle
-            {
-                get => (string)Values[0];
-                set
-                {
-                    if (!string.Equals(value, (string)Values[0], StringComparison.Ordinal))
-                    {
-                        SetValue(0, value);
-                    }
-                }
-            }
-
-            /// <summary>
-            /// Gets or sets the state data (transitions list with rules graph and other options).
-            /// </summary>
-            public byte[] StateData
-            {
-                get => (byte[])Values[2];
-                set => Values[2] = value;
-            }
-
-            /// <summary>
             /// The transitions rectangle (in surface-space).
             /// </summary>
-            public Rectangle TransitionsRectangle;
+            public Rectangle TransitionsRectangle = Rectangle.Empty;
+
+            /// <summary>
+            /// State transitions data value index (from node values).
+            /// </summary>
+            public abstract int TransitionsDataIndex { get; }
 
             /// <inheritdoc />
-            public StateMachineState(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            protected StateMachineStateBase(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
-                TransitionsRectangle = Rectangle.Empty;
             }
 
             /// <summary>
@@ -744,20 +728,7 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnValuesChanged();
 
                 if (!_isSavingData)
-                    LoadData();
-                UpdateTitle();
-            }
-
-            private void UpdateTitle()
-            {
-                Title = StateTitle;
-                var style = Style.Current;
-                var titleSize = style.FontLarge.MeasureText(Title);
-                var width = Mathf.Max(100, titleSize.X + 50);
-                Resize(width, 0);
-                titleSize.X += 8.0f;
-                var padding = new Float2(8, 8);
-                _dragAreaRect = new Rectangle(padding, Size - padding * 2);
+                    LoadTransitions();
             }
 
             /// <inheritdoc />
@@ -765,11 +736,9 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.UpdateRectangles();
 
-                const float buttonMargin = FlaxEditor.Surface.Constants.NodeCloseButtonMargin;
-                const float buttonSize = FlaxEditor.Surface.Constants.NodeCloseButtonSize;
-                _renameButtonRect = new Rectangle(_closeButtonRect.Left - buttonSize - buttonMargin, buttonMargin, buttonSize, buttonSize);
                 _textRect = new Rectangle(Float2.Zero, Size);
-                _dragAreaRect = _headerRect;
+                var padding = new Float2(8, 8);
+                _dragAreaRect = new Rectangle(padding, _textRect.Size - padding * 2);
             }
 
             /// <inheritdoc />
@@ -777,8 +746,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnSurfaceLoaded();
 
-                UpdateTitle();
-                LoadData();
+                LoadTransitions();
 
                 // Register for surface mouse events to handle transition arrows interactions
                 Surface.CustomMouseUp += OnSurfaceMouseUp;
@@ -857,34 +825,14 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
-            /// <inheritdoc />
-            public override void OnSpawned()
-            {
-                base.OnSpawned();
-
-                // Ensure to have unique name
-                var title = StateTitle;
-                var value = title;
-                int count = 1;
-                while (!OnRenameValidate(null, value))
-                {
-                    value = title + " " + count++;
-                }
-                Values[0] = value;
-                Title = value;
-
-                // Let user pick a name
-                StartRenaming();
-            }
-
             /// <summary>
             /// Loads the state data from the node value (reads transitions and related information).
             /// </summary>
-            public void LoadData()
+            public void LoadTransitions()
             {
-                ClearData();
+                ClearTransitions();
 
-                var bytes = StateData;
+                var bytes = (byte[])Values[TransitionsDataIndex];
                 if (bytes == null || bytes.Length == 0)
                 {
                     // Empty state
@@ -923,7 +871,7 @@ namespace FlaxEditor.Surface.Archetypes
                             if (ruleSize != 0)
                                 rule = reader.ReadBytes(ruleSize);
 
-                            var destination = Context.FindNode(data.Destination) as StateMachineState;
+                            var destination = Context.FindNode(data.Destination) as StateMachineStateBase;
                             if (destination == null)
                             {
                                 Editor.LogWarning("Missing state machine state destination node.");
@@ -944,10 +892,10 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <summary>
-            /// Saves the state data to the node value (writes transitions and related information).
+            /// Saves the state transitions data to the node value.
             /// </summary>
             /// <param name="withUndo">True if save data via node parameter editing via undo or without undo action.</param>
-            public void SaveData(bool withUndo = false)
+            public void SaveTransitions(bool withUndo = false)
             {
                 try
                 {
@@ -998,9 +946,9 @@ namespace FlaxEditor.Surface.Archetypes
                     }
 
                     if (withUndo)
-                        SetValue(2, value);
+                        SetValue(TransitionsDataIndex, value);
                     else
-                        Values[2] = value;
+                        Values[TransitionsDataIndex] = value;
                 }
                 finally
                 {
@@ -1009,20 +957,12 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <summary>
-            /// Clears the state data (removes transitions and related information).
+            /// Clears the state transitions.
             /// </summary>
-            public void ClearData()
+            public void ClearTransitions()
             {
                 Transitions.Clear();
                 TransitionsRectangle = Rectangle.Empty;
-            }
-
-            /// <summary>
-            /// Opens the state editing UI.
-            /// </summary>
-            public void Edit()
-            {
-                Surface.OpenContext(this);
             }
 
             private bool IsSoloAndEnabled(StateMachineTransition t)
@@ -1031,7 +971,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <summary>
-            /// Updates the transitions order in the list vy using the <see cref="StateMachineTransition.Order"/> property.
+            /// Updates the transitions order in the list by using the <see cref="StateMachineTransition.Order"/> property.
             /// </summary>
             public void UpdateTransitionsOrder()
             {
@@ -1138,32 +1078,6 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
-            /// <summary>
-            /// Starts the state renaming by showing a rename popup to the user.
-            /// </summary>
-            public void StartRenaming()
-            {
-                Surface.Select(this);
-                var dialog = RenamePopup.Show(this, _textRect, Title, false);
-                dialog.Validate += OnRenameValidate;
-                dialog.Renamed += OnRenamed;
-            }
-
-            private bool OnRenameValidate(RenamePopup popup, string value)
-            {
-                return Context.Nodes.All(node =>
-                {
-                    if (node != this && node is StateMachineState state)
-                        return state.StateTitle != value;
-                    return true;
-                });
-            }
-
-            private void OnRenamed(RenamePopup renamePopup)
-            {
-                StateTitle = renamePopup.Text;
-            }
-
             private void StartCreatingTransition()
             {
                 Surface.ConnectingStart(this);
@@ -1216,9 +1130,6 @@ namespace FlaxEditor.Surface.Archetypes
 
                 // Close button
                 Render2D.DrawSprite(style.Cross, _closeButtonRect, _closeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
-
-                // Rename button
-                Render2D.DrawSprite(style.Settings, _renameButtonRect, _renameButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
             }
 
             /// <inheritdoc />
@@ -1236,8 +1147,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (_renameButtonRect.Contains(ref location) || _closeButtonRect.Contains(ref location))
                     return true;
 
-                Edit();
-                return true;
+                return false;
             }
 
             /// <inheritdoc />
@@ -1269,17 +1179,7 @@ namespace FlaxEditor.Surface.Archetypes
                     Surface.ConnectingEnd(this);
                 }
 
-                if (base.OnMouseUp(location, button))
-                    return true;
-
-                // Rename
-                if (_renameButtonRect.Contains(ref location))
-                {
-                    StartRenaming();
-                    return true;
-                }
-
-                return false;
+                return base.OnMouseUp(location, button);
             }
 
             /// <inheritdoc />
@@ -1305,7 +1205,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     _textRectHovered = false;
                 }
-                
+
                 base.OnMouseMove(location);
             }
 
@@ -1341,7 +1241,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     Transitions.Clear();
                     UpdateTransitions();
-                    SaveData(true);
+                    SaveTransitions(true);
                 }
 
                 for (int i = 0; i < Surface.Nodes.Count; i++)
@@ -1351,7 +1251,7 @@ namespace FlaxEditor.Surface.Archetypes
                         // Break link
                         entry.FirstState = null;
                     }
-                    else if (Surface.Nodes[i] is StateMachineState state)
+                    else if (Surface.Nodes[i] is StateMachineStateBase state)
                     {
                         bool modified = false;
                         for (int j = 0; j < state.Transitions.Count && state.Transitions.Count > 0; j++)
@@ -1366,7 +1266,7 @@ namespace FlaxEditor.Surface.Archetypes
                         if (modified)
                         {
                             state.UpdateTransitions();
-                            state.SaveData(true);
+                            state.SaveTransitions(true);
                         }
                     }
                 }
@@ -1375,54 +1275,9 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public override void OnDestroy()
             {
-                Surface.RemoveContext(this);
-
-                ClearData();
+                ClearTransitions();
 
                 base.OnDestroy();
-            }
-
-            /// <inheritdoc />
-            public Asset SurfaceAsset => null;
-
-            /// <inheritdoc />
-            public string SurfaceName => StateTitle;
-
-            /// <inheritdoc />
-            public byte[] SurfaceData
-            {
-                get => (byte[])Values[1];
-                set => Values[1] = value;
-            }
-
-            /// <inheritdoc />
-            public VisjectSurfaceContext ParentContext => Context;
-
-            /// <inheritdoc />
-            public void OnContextCreated(VisjectSurfaceContext context)
-            {
-                context.Loaded += OnSurfaceLoaded;
-            }
-
-            private void OnSurfaceLoaded(VisjectSurfaceContext context)
-            {
-                // Ensure that loaded surface has output node for state
-                if (context.FindNode(9, 21) == null)
-                {
-                    var wasEnabled = true;
-                    if (Surface.Undo != null)
-                    {
-                        wasEnabled = Surface.Undo.Enabled;
-                        Surface.Undo.Enabled = false;
-                    }
-
-                    context.SpawnNode(9, 21, new Float2(100.0f));
-
-                    if (Surface.Undo != null)
-                    {
-                        Surface.Undo.Enabled = wasEnabled;
-                    }
-                }
             }
 
             /// <inheritdoc />
@@ -1448,7 +1303,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public bool AreConnected(IConnectionInstigator other)
             {
-                if (other is StateMachineState otherState)
+                if (other is StateMachineStateBase otherState)
                     return Transitions.Any(x => x.DestinationState == otherState);
                 return false;
             }
@@ -1473,8 +1328,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public void Connect(IConnectionInstigator other)
             {
-                var state = (StateMachineState)other;
-
+                var state = (StateMachineStateBase)other;
                 var action = new AddRemoveTransitionAction(this, state);
                 Surface?.AddBatchedUndoAction(action);
                 action.Do();
@@ -1483,14 +1337,262 @@ namespace FlaxEditor.Surface.Archetypes
         }
 
         /// <summary>
+        /// Customized <see cref="SurfaceNode" /> for the state machine state node.
+        /// </summary>
+        internal class StateMachineState : StateMachineStateBase, ISurfaceContext
+        {
+            /// <inheritdoc />
+            public StateMachineState(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+            }
+
+            /// <summary>
+            /// Gets or sets the node title text.
+            /// </summary>
+            public string StateTitle
+            {
+                get => (string)Values[0];
+                set
+                {
+                    if (!string.Equals(value, (string)Values[0], StringComparison.Ordinal))
+                    {
+                        SetValue(0, value);
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Opens the state editing UI.
+            /// </summary>
+            public void Edit()
+            {
+                Surface.OpenContext(this);
+            }
+
+            /// <summary>
+            /// Starts the state renaming by showing a rename popup to the user.
+            /// </summary>
+            public void StartRenaming()
+            {
+                Surface.Select(this);
+                var dialog = RenamePopup.Show(this, _textRect, Title, false);
+                dialog.Validate += OnRenameValidate;
+                dialog.Renamed += OnRenamed;
+            }
+
+            private bool OnRenameValidate(RenamePopup popup, string value)
+            {
+                return Context.Nodes.All(node =>
+                {
+                    if (node != this && node is StateMachineState state)
+                        return state.StateTitle != value;
+                    return true;
+                });
+            }
+
+            private void OnRenamed(RenamePopup renamePopup)
+            {
+                StateTitle = renamePopup.Text;
+            }
+
+            private void UpdateTitle()
+            {
+                Title = StateTitle;
+                var style = Style.Current;
+                var titleSize = style.FontLarge.MeasureText(Title);
+                var width = Mathf.Max(100, titleSize.X + 50);
+                Resize(width, 0);
+                titleSize.X += 8.0f;
+                var padding = new Float2(8, 8);
+                _dragAreaRect = new Rectangle(padding, Size - padding * 2);
+            }
+
+            private void OnSurfaceLoaded(VisjectSurfaceContext context)
+            {
+                // Ensure that loaded surface has output node for state
+                if (context.FindNode(9, 21) == null)
+                {
+                    var wasEnabled = true;
+                    if (Surface.Undo != null)
+                    {
+                        wasEnabled = Surface.Undo.Enabled;
+                        Surface.Undo.Enabled = false;
+                    }
+
+                    context.SpawnNode(9, 21, new Float2(100.0f));
+
+                    if (Surface.Undo != null)
+                    {
+                        Surface.Undo.Enabled = wasEnabled;
+                    }
+                }
+            }
+
+            /// <inheritdoc />
+            public override int TransitionsDataIndex => 2;
+
+            /// <inheritdoc />
+            public override void OnSpawned()
+            {
+                base.OnSpawned();
+
+                // Ensure to have unique name
+                var title = StateTitle;
+                var value = title;
+                int count = 1;
+                while (!OnRenameValidate(null, value))
+                {
+                    value = title + " " + count++;
+                }
+                Values[0] = value;
+                Title = value;
+
+                // Let user pick a name
+                StartRenaming();
+            }
+
+            /// <inheritdoc />
+            public override void OnSurfaceLoaded()
+            {
+                base.OnSurfaceLoaded();
+
+                UpdateTitle();
+            }
+
+            /// <inheritdoc />
+            public override void OnValuesChanged()
+            {
+                base.OnValuesChanged();
+
+                UpdateTitle();
+            }
+
+            /// <inheritdoc />
+            public override void Draw()
+            {
+                base.Draw();
+
+                var style = Style.Current;
+
+                // Rename button
+                Render2D.DrawSprite(style.Settings, _renameButtonRect, _renameButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (base.OnMouseUp(location, button))
+                    return true;
+
+                // Rename
+                if (_renameButtonRect.Contains(ref location))
+                {
+                    StartRenaming();
+                    return true;
+                }
+
+                return false;
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
+            {
+                if (base.OnMouseDoubleClick(location, button))
+                    return true;
+
+                Edit();
+                return true;
+            }
+
+            /// <inheritdoc />
+            public override void OnDestroy()
+            {
+                Surface.RemoveContext(this);
+
+                base.OnDestroy();
+            }
+
+            /// <inheritdoc />
+            protected override void UpdateRectangles()
+            {
+                base.UpdateRectangles();
+
+                const float buttonMargin = FlaxEditor.Surface.Constants.NodeCloseButtonMargin;
+                const float buttonSize = FlaxEditor.Surface.Constants.NodeCloseButtonSize;
+                _renameButtonRect = new Rectangle(_closeButtonRect.Left - buttonSize - buttonMargin, buttonMargin, buttonSize, buttonSize);
+            }
+
+            /// <inheritdoc />
+            public Asset SurfaceAsset => null;
+
+            /// <inheritdoc />
+            public string SurfaceName => StateTitle;
+
+            /// <inheritdoc />
+            public byte[] SurfaceData
+            {
+                get => (byte[])Values[1];
+                set => Values[1] = value;
+            }
+
+            /// <inheritdoc />
+            public VisjectSurfaceContext ParentContext => Context;
+
+            /// <inheritdoc />
+            public void OnContextCreated(VisjectSurfaceContext context)
+            {
+                context.Loaded += OnSurfaceLoaded;
+            }
+        }
+
+        /// <summary>
+        /// Customized <see cref="SurfaceNode" /> for the state machine Any state node.
+        /// </summary>
+        internal class StateMachineAny : StateMachineStateBase
+        {
+            /// <inheritdoc />
+            public StateMachineAny(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+            }
+
+            /// <inheritdoc />
+            public override int TransitionsDataIndex => 0;
+        }
+
+        /// <summary>
         /// State machine transition data container object.
         /// </summary>
-        /// <seealso cref="StateMachineState"/>
+        /// <seealso cref="StateMachineStateBase"/>
         /// <seealso cref="ISurfaceContext"/>
         internal class StateMachineTransition : ISurfaceContext
         {
             /// <summary>
+            /// State transition interruption flags.
+            /// </summary>
+            [Flags]
+            public enum InterruptionFlags
+            {
+                /// <summary>
+                /// Nothing.
+                /// </summary>
+                None = 0,
+
+                /// <summary>
+                /// Transition rule will be rechecked during active transition with option to interrupt transition.
+                /// </summary>
+                RuleRechecking = 1,
+
+                /// <summary>
+                /// Interrupted transition is immediately stopped without blending out.
+                /// </summary>
+                Instant = 2,
+            }
+
+            /// <summary>
             /// The packed data container for the transition data storage. Helps with serialization and versioning the data.
+            /// Must match AnimGraphBase::LoadStateTransition in C++
             /// </summary>
             /// <remarks>
             /// It does not store GC objects references to make it more lightweight. Transition rule bytes data is stores in a separate way.
@@ -1498,31 +1600,16 @@ namespace FlaxEditor.Surface.Archetypes
             [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 32)]
             internal struct Data
             {
-                /// <summary>
-                /// The transition flag types.
-                /// </summary>
+                // Must match AnimGraphStateTransition::FlagTypes
                 [Flags]
                 public enum FlagTypes
                 {
-                    /// <summary>
-                    /// The none.
-                    /// </summary>
                     None = 0,
-
-                    /// <summary>
-                    /// The enabled flag.
-                    /// </summary>
                     Enabled = 1,
-
-                    /// <summary>
-                    /// The solo flag.
-                    /// </summary>
                     Solo = 2,
-
-                    /// <summary>
-                    /// The use default rule flag.
-                    /// </summary>
                     UseDefaultRule = 4,
+                    InterruptionRuleRechecking = 8,
+                    InterruptionInstant = 16,
                 }
 
                 /// <summary>
@@ -1565,21 +1652,11 @@ namespace FlaxEditor.Surface.Archetypes
                 /// </summary>
                 public int Unused2;
 
-                /// <summary>
-                /// Determines whether the data has a given flag set.
-                /// </summary>
-                /// <param name="flag">The flag.</param>
-                /// <returns><c>true</c> if the specified flag is set; otherwise, <c>false</c>.</returns>
                 public bool HasFlag(FlagTypes flag)
                 {
                     return (Flags & flag) == flag;
                 }
 
-                /// <summary>
-                /// Sets the flag to the given value.
-                /// </summary>
-                /// <param name="flag">The flag.</param>
-                /// <param name="value">If set to <c>true</c> the flag will be set, otherwise it will be cleared.</param>
                 public void SetFlag(FlagTypes flag, bool value)
                 {
                     if (value)
@@ -1596,18 +1673,18 @@ namespace FlaxEditor.Surface.Archetypes
             /// The transition start state.
             /// </summary>
             [HideInEditor]
-            public readonly StateMachineState SourceState;
+            public readonly StateMachineStateBase SourceState;
 
             /// <summary>
             /// The transition end state.
             /// </summary>
             [HideInEditor]
-            public readonly StateMachineState DestinationState;
+            public readonly StateMachineStateBase DestinationState;
 
             /// <summary>
             /// If checked, the transition can be triggered, otherwise it will be ignored.
             /// </summary>
-            [EditorOrder(10), DefaultValue(true), Tooltip("If checked, the transition can be triggered, otherwise it will be ignored.")]
+            [EditorOrder(10), DefaultValue(true)]
             public bool Enabled
             {
                 get => _data.HasFlag(Data.FlagTypes.Enabled);
@@ -1615,14 +1692,14 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     _data.SetFlag(Data.FlagTypes.Enabled, value);
                     SourceState.UpdateTransitionsColors();
-                    SourceState.SaveData(true);
+                    SourceState.SaveTransitions(true);
                 }
             }
 
             /// <summary>
             /// If checked, animation graph will ignore other transitions from the source state and use only this transition.
             /// </summary>
-            [EditorOrder(20), DefaultValue(false), Tooltip("If checked, animation graph will ignore other transitions from the source state and use only this transition.")]
+            [EditorOrder(20), DefaultValue(false)]
             public bool Solo
             {
                 get => _data.HasFlag(Data.FlagTypes.Solo);
@@ -1630,28 +1707,28 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     _data.SetFlag(Data.FlagTypes.Solo, value);
                     SourceState.UpdateTransitionsColors();
-                    SourceState.SaveData(true);
+                    SourceState.SaveTransitions(true);
                 }
             }
 
             /// <summary>
             /// If checked, animation graph will perform automatic transition based on the state animation pose (single shot animation play).
             /// </summary>
-            [EditorOrder(30), DefaultValue(false), Tooltip("If checked, animation graph will perform automatic transition based on the state animation pose (single shot animation play).")]
+            [EditorOrder(30), DefaultValue(false)]
             public bool UseDefaultRule
             {
                 get => _data.HasFlag(Data.FlagTypes.UseDefaultRule);
                 set
                 {
                     _data.SetFlag(Data.FlagTypes.UseDefaultRule, value);
-                    SourceState.SaveData(true);
+                    SourceState.SaveTransitions(true);
                 }
             }
 
             /// <summary>
-            /// The transition order (higher first).
+            /// The transition order. Transitions with the higher order are handled before the ones with the lower order.
             /// </summary>
-            [EditorOrder(40), DefaultValue(0), Tooltip("The transition order. Transitions with the higher order are handled before the ones with the lower order.")]
+            [EditorOrder(40), DefaultValue(0)]
             public int Order
             {
                 get => _data.Order;
@@ -1660,35 +1737,58 @@ namespace FlaxEditor.Surface.Archetypes
                     _data.Order = value;
                     SourceState.UpdateTransitionsOrder();
                     SourceState.UpdateTransitionsColors();
-                    SourceState.SaveData(true);
+                    SourceState.SaveTransitions(true);
                 }
             }
 
             /// <summary>
             /// The blend duration (in seconds).
             /// </summary>
-            [EditorOrder(50), DefaultValue(0.1f), Limit(0, 20.0f, 0.1f), Tooltip("Transition blend duration (in seconds).")]
+            [EditorOrder(50), DefaultValue(0.1f), Limit(0, 20.0f, 0.1f)]
             public float BlendDuration
             {
                 get => _data.BlendDuration;
                 set
                 {
                     _data.BlendDuration = value;
-                    SourceState.SaveData(true);
+                    SourceState.SaveTransitions(true);
                 }
             }
 
             /// <summary>
-            /// The blend mode.
+            /// Transition blending mode for blend alpha.
             /// </summary>
-            [EditorOrder(60), DefaultValue(AlphaBlendMode.HermiteCubic), Tooltip("Transition blending mode for blend alpha.")]
+            [EditorOrder(60), DefaultValue(AlphaBlendMode.HermiteCubic)]
             public AlphaBlendMode BlendMode
             {
                 get => _data.BlendMode;
                 set
                 {
                     _data.BlendMode = value;
-                    SourceState.SaveData(true);
+                    SourceState.SaveTransitions(true);
+                }
+            }
+
+            /// <summary>
+            /// Transition interruption options.
+            /// </summary>
+            [EditorOrder(70), DefaultValue(InterruptionFlags.None)]
+            public InterruptionFlags Interruption
+            {
+                get
+                {
+                    var flags = InterruptionFlags.None;
+                    if (_data.HasFlag(Data.FlagTypes.InterruptionRuleRechecking))
+                        flags |= InterruptionFlags.RuleRechecking;
+                    if (_data.HasFlag(Data.FlagTypes.InterruptionInstant))
+                        flags |= InterruptionFlags.Instant;
+                    return flags;
+                }
+                set
+                {
+                    _data.SetFlag(Data.FlagTypes.InterruptionRuleRechecking, value.HasFlag(InterruptionFlags.RuleRechecking));
+                    _data.SetFlag(Data.FlagTypes.InterruptionInstant, value.HasFlag(InterruptionFlags.Instant));
+                    SourceState.SaveTransitions(true);
                 }
             }
 
@@ -1702,7 +1802,7 @@ namespace FlaxEditor.Surface.Archetypes
                 set
                 {
                     _ruleGraph = value ?? Utils.GetEmptyArray<byte>();
-                    SourceState.SaveData();
+                    SourceState.SaveTransitions();
                 }
             }
 
@@ -1737,7 +1837,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <param name="destination">The destination.</param>
             /// <param name="data">The transition data container.</param>
             /// <param name="ruleGraph">The transition rule graph. Can be null.</param>
-            public StateMachineTransition(StateMachineState source, StateMachineState destination, ref Data data, byte[] ruleGraph = null)
+            public StateMachineTransition(StateMachineStateBase source, StateMachineStateBase destination, ref Data data, byte[] ruleGraph = null)
             {
                 SourceState = source;
                 DestinationState = destination;
@@ -1759,7 +1859,7 @@ namespace FlaxEditor.Surface.Archetypes
             public Asset SurfaceAsset => null;
 
             /// <inheritdoc />
-            public string SurfaceName => string.Format("{0} to {1}", SourceState.StateTitle, DestinationState.StateTitle);
+            public string SurfaceName => string.Format("{0} to {1}", SourceState.Title, DestinationState.Title);
 
             /// <inheritdoc />
             [HideInEditor]
@@ -1807,7 +1907,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// </summary>
             public void Delete()
             {
-                var action = new StateMachineState.AddRemoveTransitionAction(this);
+                var action = new StateMachineStateBase.AddRemoveTransitionAction(this);
                 SourceState.Surface?.AddBatchedUndoAction(action);
                 action.Do();
             }

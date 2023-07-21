@@ -155,15 +155,6 @@ public:
     /// <returns>True whether the two objects intersected</returns>
     bool Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal) const;
 
-    /// <summary>
-    /// Retrieves the eight corners of the bounding box.
-    /// </summary>
-    /// <param name="corners">An array of points representing the eight corners of the bounding box.</param>
-    FORCE_INLINE void GetCorners(Vector3 corners[8]) const
-    {
-        _box.GetCorners(corners);
-    }
-
 public:
     /// <summary>
     /// Draws the mesh. Binds vertex and index buffers and invokes the draw call.
@@ -197,8 +188,8 @@ private:
     // Internal bindings
     API_FUNCTION(NoProxy) ScriptingObject* GetParentModel();
 #if !COMPILE_WITHOUT_CSHARP
-    API_FUNCTION(NoProxy) bool UpdateMeshUInt(MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* blendIndicesObj, MonoArray* blendWeightsObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj);
-    API_FUNCTION(NoProxy) bool UpdateMeshUShort(MonoArray* verticesObj, MonoArray* trianglesObj, MonoArray* blendIndicesObj, MonoArray* blendWeightsObj, MonoArray* normalsObj, MonoArray* tangentsObj, MonoArray* uvObj);
-    API_FUNCTION(NoProxy) MonoArray* DownloadBuffer(bool forceGpu, MonoReflectionType* resultType, int32 typeI);
+    API_FUNCTION(NoProxy) bool UpdateMeshUInt(MArray* verticesObj, MArray* trianglesObj, MArray* blendIndicesObj, MArray* blendWeightsObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj);
+    API_FUNCTION(NoProxy) bool UpdateMeshUShort(MArray* verticesObj, MArray* trianglesObj, MArray* blendIndicesObj, MArray* blendWeightsObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj);
+    API_FUNCTION(NoProxy) MArray* DownloadBuffer(bool forceGpu, MTypeObject* resultType, int32 typeI);
 #endif
 };

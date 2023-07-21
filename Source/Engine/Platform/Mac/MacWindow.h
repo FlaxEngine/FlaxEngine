@@ -14,7 +14,6 @@ class FLAXENGINE_API MacWindow : public WindowBase
 {
 private:
 
-    Float2 _clientSize;
     void* _window;
     bool _isMouseOver = false;
 
@@ -28,7 +27,7 @@ public:
 
 public:
 
-	// [Window]
+	// [WindowBase]
     void* GetNativePtr() const override;
     void Show() override;
     void Hide() override;

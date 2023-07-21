@@ -146,7 +146,18 @@ namespace FlaxEditor.SceneGraph.Actors
                     Time = newTime,
                     Value = actor.GetSplineLocalTransform(Index),
                 };
+
+                var oldkeyframe = actor.GetSplineKeyframe(Index);
+                var newKeyframe = new BezierCurve<Transform>.Keyframe();
+
+                // copy old curve point data to new curve point
+                newKeyframe.Value = oldkeyframe.Value;
+                newKeyframe.TangentIn = oldkeyframe.TangentIn;
+                newKeyframe.TangentOut = oldkeyframe.TangentOut;
+
                 actor.InsertSplineLocalPoint(newIndex, newTime, action.Value);
+                actor.SetSplineKeyframe(newIndex, newKeyframe);
+
                 undoAction = action;
                 var splineNode = (SplineNode)SceneGraphFactory.FindNode(action.SplineId);
                 splineNode.OnUpdate();
@@ -317,6 +328,20 @@ namespace FlaxEditor.SceneGraph.Actors
             var spline = (Spline)Actor;
             spline.AddSplineLocalPoint(Vector3.Zero, false);
             spline.AddSplineLocalPoint(new Vector3(0, 0, 100.0f));
+
+            spline.SetSplineKeyframe(0, new BezierCurve<Transform>.Keyframe()
+            {
+                Value = new Transform(Vector3.Zero, Quaternion.Identity, Vector3.One),
+                TangentIn = new Transform(Vector3.Backward * 100, Quaternion.Identity, Vector3.One),
+                TangentOut = new Transform(Vector3.Forward * 100, Quaternion.Identity, Vector3.One),
+            });
+
+            spline.SetSplineKeyframe(1, new BezierCurve<Transform>.Keyframe()
+            {
+                Value = new Transform(Vector3.Forward * 100, Quaternion.Identity, Vector3.One),
+                TangentIn = new Transform(Vector3.Backward * 100, Quaternion.Identity, Vector3.One),
+                TangentOut = new Transform(Vector3.Forward * 100, Quaternion.Identity, Vector3.One),
+            });
         }
 
         /// <inheritdoc />
@@ -336,7 +361,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 StaticFlags = Actor.StaticFlags,
                 Transform = Actor.Transform,
             };
-            Editor.Instance.SceneEditing.Spawn(actor, Actor);
+            Root.Spawn(actor, Actor);
         }
 
         private void OnAddSplineCollider()
@@ -347,7 +372,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 Transform = Actor.Transform,
             };
             // TODO: auto pick the collision data if already using spline model
-            Editor.Instance.SceneEditing.Spawn(actor, Actor);
+            Root.Spawn(actor, Actor);
         }
 
         private void OnAddSplineRopeBody()
@@ -357,7 +382,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 StaticFlags = StaticFlags.None,
                 Transform = Actor.Transform,
             };
-            Editor.Instance.SceneEditing.Spawn(actor, Actor);
+            Root.Spawn(actor, Actor);
         }
 
         internal static void OnSplineEdited(Spline spline)

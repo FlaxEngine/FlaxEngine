@@ -45,12 +45,11 @@ void ImportAudio::Options::Deserialize(DeserializeStream& stream, ISerializeModi
     DESERIALIZE(BitDepth);
 }
 
-bool ImportAudio::TryGetImportOptions(const String& path, Options& options)
+bool ImportAudio::TryGetImportOptions(const StringView& path, Options& options)
 {
 #if IMPORT_AUDIO_CACHE_OPTIONS
     if (FileSystem::FileExists(path))
     {
-        // Try to load asset file and asset info
         auto tmpFile = ContentStorageManager::GetStorage(path);
         AssetInitData data;
         if (tmpFile
@@ -64,13 +63,11 @@ bool ImportAudio::TryGetImportOptions(const String& path, Options& options)
             metadata.Parse(data.Metadata.Get<const char>(), data.Metadata.Length());
             if (!metadata.HasParseError())
             {
-                // Success
                 options.Deserialize(metadata, nullptr);
                 return true;
             }
         }
     }
-
 #endif
     return false;
 }

@@ -123,7 +123,6 @@ const Char* SplashScreenQuotes[] =
     TEXT("Hello There"),
     TEXT("BAGUETTE"),
     TEXT("All we had to do was follow the damn train, CJ"),
-    TEXT("28 stab wounds"),
     TEXT("Here we go again"),
     TEXT("@everyone"),
     TEXT("Potato"),
@@ -135,7 +134,8 @@ const Char* SplashScreenQuotes[] =
     TEXT("Scooby dooby doo"),
     TEXT("You shall not load!"),
     TEXT("The roof, the roof, the roof is on fire!"),
-    TEXT("I've seen better documentation ...\nFrom ransomware gangs !")
+    TEXT("I've seen better documentation...\nFrom ransomware gangs!"),
+    TEXT("Slava Ukraini!"),
 };
 
 SplashScreen::~SplashScreen()
@@ -153,7 +153,7 @@ void SplashScreen::Show()
     LOG(Info, "Showing splash screen");
 
     // Create window
-    const float dpiScale = (float)Platform::GetDpi() / (float)DefaultDPI;
+    const float dpiScale = Platform::GetDpiScale();
     CreateWindowSettings settings;
     settings.Title = TEXT("Flax Editor");
     settings.Size.X = 500 * dpiScale;
@@ -304,6 +304,6 @@ void SplashScreen::OnFontLoaded(Asset* asset)
 
     // Create fonts
     const float s = _dpiScale;
-    _titleFont = font->CreateFont((uint32)(35 * s));
-    _subtitleFont = font->CreateFont((uint32)(9 * s));
+    _titleFont = font->CreateFont(35 * s);
+    _subtitleFont = font->CreateFont(9 * s);
 }

@@ -328,6 +328,7 @@ private:
     EngineSettings _engine;
     DifferentialSettings _differential;
     GearboxSettings _gearbox;
+    bool _fixInvalidForwardDir = false; // [Deprecated on 13.06.2023, expires on 13.06.2025]
 
 public:
     /// <summary>
@@ -488,6 +489,7 @@ protected:
     void OnPhysicsSceneChanged(PhysicsScene* previous) override;
 
     // [Vehicle]
+    void OnTransformChanged() override;
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
 };

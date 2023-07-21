@@ -127,7 +127,7 @@ namespace FlaxEditor.Modules
                     return;
 
                 var actorsList = new List<Actor>();
-                FlaxEditor.Utilities.Utils.GetActorsTree(actorsList, _prefabCreationActor);
+                Utilities.Utils.GetActorsTree(actorsList, _prefabCreationActor);
                 
                 var actions = new IUndoAction[actorsList.Count];
                 for (int i = 0; i < actorsList.Count; i++)

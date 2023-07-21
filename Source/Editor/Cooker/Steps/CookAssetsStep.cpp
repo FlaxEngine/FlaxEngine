@@ -410,7 +410,7 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
 		assetBase->InitCompilationOptions(options); \
 		if (ShadersCompilation::Compile(options)) \
 		{ \
-			data.Data.Error(TEXT("Failed to compile shader '{0}' (profile: {1})."), asset->ToString(), ::ToString(options.Profile)); \
+			data.Data.Error(String::Format(TEXT("Failed to compile shader '{0}' (profile: {1})."), asset->ToString(), ::ToString(options.Profile))); \
 			return true; \
 		} \
         includes.Clear(); \
@@ -529,8 +529,17 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
 #endif
 #if PLATFORM_TOOLS_MAC
     case BuildPlatform::MacOSx64:
+    case BuildPlatform::MacOSARM64:
     {
         const char* platformDefineName = "PLATFORM_MAC";
+        COMPILE_PROFILE(Vulkan_SM5, SHADER_FILE_CHUNK_INTERNAL_VULKAN_SM5_CACHE);
+        break;
+    }
+#endif
+#if PLATFORM_TOOLS_IOS
+    case BuildPlatform::iOSARM64:
+    {
+        const char* platformDefineName = "PLATFORM_IOS";
         COMPILE_PROFILE(Vulkan_SM5, SHADER_FILE_CHUNK_INTERNAL_VULKAN_SM5_CACHE);
         break;
     }

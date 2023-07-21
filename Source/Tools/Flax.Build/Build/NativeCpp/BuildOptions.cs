@@ -7,6 +7,49 @@ using System.IO;
 namespace Flax.Build.NativeCpp
 {
     /// <summary>
+    /// The native C++ module build flag types.
+    /// </summary>
+    [Flags]
+    public enum BuildFlags
+    {
+        /// <summary>
+        /// Nothing.
+        /// </summary>
+        None = 0,
+
+        /// <summary>
+        /// Projects generation (not actual build, just build setup evaluation).
+        /// </summary>
+        GenerateProject = 1,
+    }
+
+    /// <summary>
+    /// The nullable context type used with reference types (C#).
+    /// </summary>
+    public enum CSharpNullableReferences
+    {
+        /// <summary>
+        /// The code is nullable oblivious, nullable warnings and language analysis features are disabled.
+        /// </summary>
+        Disable,
+
+        /// <summary>
+        /// The compiler enables all null reference analysis and all language features.
+        /// </summary>
+        Enable,
+
+        /// <summary>
+        /// The compiler performs all null analysis and emits warnings when code might dereference null.
+        /// </summary>
+        Warnings,
+
+        /// <summary>
+        /// The compiler doesn't perform null analysis or emit warnings when code might dereference null.
+        /// </summary>
+        Annotations,
+    }
+
+    /// <summary>
     /// The native C++ module build settings container.
     /// </summary>
     public sealed class BuildOptions
@@ -132,6 +175,11 @@ namespace Flax.Build.NativeCpp
         public string HotReloadPostfix;
 
         /// <summary>
+        /// The build flags.
+        /// </summary>
+        public BuildFlags Flags;
+
+        /// <summary>
         /// The full path to the dependencies folder for the current build platform, configuration, and architecture.
         /// </summary>
         public string DepsFolder => Path.Combine(Globals.EngineRoot, "Source", "Platforms", Platform.Target.ToString(), "Binaries", "ThirdParty", Architecture.ToString());
@@ -157,9 +205,23 @@ namespace Flax.Build.NativeCpp
             public HashSet<string> FileReferences;
 
             /// <summary>
+            /// The .Net libraries references (dll or exe files paths).
+            /// </summary>
+            public HashSet<string> SystemAnalyzers;
+
+            /// <summary>
             /// True if ignore compilation warnings due to missing code documentation comments.
             /// </summary>
             public bool IgnoreMissingDocumentationWarnings;
+
+            /// <summary>
+            /// The nullable context used in C# project.
+            /// </summary>
+            public CSharpNullableReferences CSharpNullableReferences = CSharpNullableReferences.Disable;
+
+            public ScriptingAPIOptions()
+            {
+            }
 
             /// <summary>
             /// Adds the other options into this.
@@ -182,9 +244,65 @@ namespace Flax.Build.NativeCpp
             Defines = new HashSet<string>(),
             SystemReferences = new HashSet<string>
             {
+                "mscorlib",
+                "netstandard",
+                "Microsoft.CSharp",
                 "System",
-                "System.Xml",
+
+                "System.Collections",
+                "System.Collections.Concurrent",
+                "System.Collections.NonGeneric",
+                "System.Collections.Specialized",
+                "System.Collections.Immutable",
+                "System.ComponentModel",
+                "System.ComponentModel.DataAnnotations",
+                "System.ComponentModel.Primitives",
+                //"System.ComponentModel.TypeConverter",
+                "System.Console",
                 "System.Core",
+                "System.Diagnostics.StackTrace",
+                "System.Globalization",
+                "System.IO",
+                "System.IO.Compression",
+                "System.IO.FileSystem.Watcher",
+                "System.Linq",
+                "System.Linq.Expressions",
+                "System.Memory",
+                "System.Net",
+                "System.Net.Http",
+                "System.Net.Primitives",
+                "System.ObjectModel",
+                "System.ValueTuple",
+
+                "System.Runtime",
+                "System.Runtime.Extensions",
+                "System.Runtime.Handles",
+                "System.Runtime.Intrinsics",
+                "System.Runtime.Numerics",
+                "System.Runtime.Loader",
+                "System.Runtime.CompilerServices.Unsafe",
+                "System.Runtime.InteropServices",
+                "System.Runtime.InteropServices.RuntimeInformation",
+                "System.Runtime.Serialization",
+                "System.Runtime.Serialization.Formatters",
+
+                "System.Security.Cryptography",
+                "System.Security.Cryptography.Algorithms",
+                "System.Security.Cryptography.Primitives",
+                //"System.Text.RegularExpressions",
+                "System.Threading.Tasks.Parallel",
+                //"System.Xml",
+
+                "System.Threading",
+                "System.Threading.Thread",
+
+                "System.Reflection",
+                //"System.Reflection.Metadata",
+            },
+            SystemAnalyzers = new HashSet<string>
+            {
+                "Microsoft.Interop.LibraryImportGenerator",
+                "Microsoft.Interop.SourceGeneration",
             },
             FileReferences = new HashSet<string>(),
         };

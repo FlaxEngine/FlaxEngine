@@ -165,7 +165,7 @@ namespace FlaxEngine
         public bool TryGetChild<T>(out T actor) where T : Actor
         {
             actor = GetChild(typeof(T)) as T;
-            return actor != null;
+            return (object)actor != null;
         }
 
         /// <summary>
@@ -236,7 +236,7 @@ namespace FlaxEngine
         public bool TryGetScript<T>(out T script) where T : class
         {
             script = GetScript(typeof(T)) as T;
-            return script != null;
+            return (object)script != null;
         }
 
         /// <summary>
@@ -257,6 +257,28 @@ namespace FlaxEngine
         public T FindActor<T>() where T : Actor
         {
             return FindActor(typeof(T)) as T;
+        }
+
+        /// <summary>
+        /// Tries to find the actor of the given type and name in this actor hierarchy (checks this actor and all children hierarchy).
+        /// </summary>
+        /// <param name="name">Name of the object.</param>
+        /// <typeparam name="T">Type of the object.</typeparam>
+        /// <returns>Actor instance if found, null otherwise.</returns>
+        public T FindActor<T>(string name) where T : Actor
+        {
+            return FindActor(typeof(T), name) as T;
+        }
+        
+        /// <summary>
+        /// Tries to find actor of the given type and tag in this actor hierarchy (checks this actor and all children hierarchy).
+        /// </summary>
+        /// <param name="tag">A tag on the object.</param>
+        /// <typeparam name="T">Type of the object.</typeparam>
+        /// <returns>Actor instance if found, null otherwise.</returns>
+        public T FindActor<T>(Tag tag) where T : Actor
+        {
+            return FindActor(typeof(T), tag) as T;
         }
 
         /// <summary>

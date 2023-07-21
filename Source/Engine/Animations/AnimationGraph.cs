@@ -3,6 +3,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace FlaxEngine
 {
@@ -44,6 +45,7 @@ namespace FlaxEngine
             /// The node evaluation context structure.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
+            [NativeMarshalling(typeof(ContextMarshaller))]
             public struct Context
             {
                 /// <summary>
@@ -92,6 +94,61 @@ namespace FlaxEngine
                 public AnimatedModel Instance;
             }
 
+            [CustomMarshaller(typeof(Context), MarshalMode.Default, typeof(ContextMarshaller))]
+            internal static class ContextMarshaller
+            {
+                [StructLayout(LayoutKind.Sequential)]
+                public struct ContextNative
+                {
+                    public IntPtr Graph;
+                    public IntPtr GraphExecutor;
+                    public IntPtr Node;
+                    public uint NodeId;
+                    public int BoxId;
+                    public float DeltaTime;
+                    public ulong CurrentFrameIndex;
+                    public IntPtr BaseModel;
+                    public IntPtr Instance;
+                }
+
+                internal static Context ConvertToManaged(ContextNative unmanaged) => ToManaged(unmanaged);
+                internal static ContextNative ConvertToUnmanaged(Context managed) => ToNative(managed);
+
+                internal static Context ToManaged(ContextNative managed)
+                {
+                    return new Context()
+                    {
+                        Graph = managed.Graph,
+                        GraphExecutor = managed.GraphExecutor,
+                        Node = managed.Node,
+                        NodeId = managed.NodeId,
+                        BoxId = managed.BoxId,
+                        DeltaTime = managed.DeltaTime,
+                        CurrentFrameIndex = managed.CurrentFrameIndex,
+                        BaseModel = SkinnedModelMarshaller.ConvertToManaged(managed.BaseModel),
+                        Instance = AnimatedModelMarshaller.ConvertToManaged(managed.Instance),
+                    };
+                }
+                internal static ContextNative ToNative(Context managed)
+                {
+                    return new ContextNative()
+                    {
+                        Graph = managed.Graph,
+                        GraphExecutor = managed.GraphExecutor,
+                        Node = managed.Node,
+                        NodeId = managed.NodeId,
+                        BoxId = managed.BoxId,
+                        DeltaTime = managed.DeltaTime,
+                        CurrentFrameIndex = managed.CurrentFrameIndex,
+                        BaseModel = SkinnedModelMarshaller.ConvertToUnmanaged(managed.BaseModel),
+                        Instance = AnimatedModelMarshaller.ConvertToUnmanaged(managed.Instance),
+                    };
+                }
+                internal static void Free(ContextNative unmanaged)
+                {
+                }
+            }
+
             /// <summary>
             /// The animation graph 'impulse' connections data container (the actual transfer is done via pointer as it gives better performance). 
             /// Container for skeleton nodes transformation hierarchy and any other required data. 
@@ -118,12 +175,7 @@ namespace FlaxEngine
                 /// <summary>
                 /// The root motion data.
                 /// </summary>
-                public Vector3 RootMotionTranslation;
-
-                /// <summary>
-                /// The root motion data.
-                /// </summary>
-                public Quaternion RootMotionRotation;
+                public Transform RootMotion;
 
                 /// <summary>
                 /// The animation time position (in seconds).
@@ -194,8 +246,7 @@ namespace FlaxEngine
                 destination->NodesCount = source->NodesCount;
                 destination->Unused = source->Unused;
                 Utils.MemoryCopy(new IntPtr(destination->Nodes), new IntPtr(source->Nodes), (ulong)(source->NodesCount * sizeof(Transform)));
-                destination->RootMotionTranslation = source->RootMotionTranslation;
-                destination->RootMotionRotation = source->RootMotionRotation;
+                destination->RootMotion = source->RootMotion;
                 destination->Position = source->Position;
                 destination->Length = source->Length;
             }
@@ -203,14 +254,16 @@ namespace FlaxEngine
 
         #region Internal Calls
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_HasConnection(ref CustomNode.Context context, int boxId);
+        [LibraryImport("FlaxEngine", EntryPoint = "AnimGraphInternal_HasConnection")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool Internal_HasConnection(ref AnimationGraph.CustomNode.Context context, int boxId);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object Internal_GetInputValue(ref CustomNode.Context context, int boxId);
+        [LibraryImport("FlaxEngine", EntryPoint = "AnimGraphInternal_GetInputValue")]
+        [return: MarshalUsing(typeof(FlaxEngine.Interop.ManagedHandleMarshaller))]
+        internal static partial object Internal_GetInputValue(ref AnimationGraph.CustomNode.Context context, int boxId);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr Internal_GetOutputImpulseData(ref CustomNode.Context context);
+        [LibraryImport("FlaxEngine", EntryPoint = "AnimGraphInternal_GetOutputImpulseData")]
+        internal static partial IntPtr Internal_GetOutputImpulseData(ref AnimationGraph.CustomNode.Context context);
 
         #endregion
     }

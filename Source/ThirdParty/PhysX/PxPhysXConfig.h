@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,13 +22,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 // Copyright (c) 2004-2008 AGEIA Technologies, Inc. All rights reserved.
 // Copyright (c) 2001-2004 NovodeX AG. All rights reserved.  
 
-
-#ifndef PX_PHYSICS_NX
-#define PX_PHYSICS_NX
+#ifndef PX_PHYSICS_CONFIG_H
+#define PX_PHYSICS_CONFIG_H
 
 /** Configuration include file for PhysX SDK */
 
@@ -43,32 +41,6 @@
 namespace physx
 {
 #endif
-
-class PxPhysics;
-class PxShape;
-
-class PxActor;
-class PxRigidActor;
-class PxRigidStatic;
-class PxRigidDynamic;
-class PxConstraint;
-class PxConstraintDesc;
-
-class PxArticulation;
-class PxArticulationReducedCoordinate;
-class PxArticulationBase;
-class PxArticulationLink;
-class PxArticulationJoint;
-class PxArticulationJointReducedCoordinate;
-class PxArticulationJointBase;
-
-class PxMaterial;
-
-class PxScene;
-class PxSceneDesc;
-class PxTolerancesScale;
-
-class PxAggregate;
 
 #if !PX_DOXYGEN
 } // namespace physx

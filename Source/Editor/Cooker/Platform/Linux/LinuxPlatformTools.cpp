@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2019 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_TOOLS_LINUX
 
@@ -32,6 +32,11 @@ PlatformType LinuxPlatformTools::GetPlatform() const
 ArchitectureType LinuxPlatformTools::GetArchitecture() const
 {
     return ArchitectureType::x64;
+}
+
+bool LinuxPlatformTools::UseSystemDotnet() const
+{
+    return true;
 }
 
 bool LinuxPlatformTools::OnDeployBinaries(CookingData& data)

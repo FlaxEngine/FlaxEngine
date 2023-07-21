@@ -50,11 +50,7 @@ public:
     /// <summary>
     /// Gets the root object identifier (prefab object ID). Asset must be loaded.
     /// </summary>
-    Guid GetRootObjectId() const
-    {
-        ASSERT(IsLoaded());
-        return ObjectsIds[0];
-    }
+    Guid GetRootObjectId() const;
 
     /// <summary>
     /// Requests the default prefab object instance. Deserializes the prefab objects from the asset. Skips if already done.
@@ -82,12 +78,12 @@ public:
 
 private:
 #if USE_EDITOR
+    typedef Array<class PrefabInstanceData> PrefabInstancesData;
     typedef Array<AssetReference<Prefab>> NestedPrefabsList;
-    bool ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPrefab);
+    bool ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPrefab, PrefabInstancesData& prefabInstancesData);
     bool UpdateInternal(const Array<SceneObject*>& defaultInstanceObjects, rapidjson_flax::StringBuffer& tmpBuffer);
-    bool SyncChanges(const NestedPrefabsList& allPrefabs);
-    bool SyncChangesInternal();
-    void SyncNestedPrefabs(const NestedPrefabsList& allPrefabs);
+    bool SyncChangesInternal(PrefabInstancesData& prefabInstancesData);
+    void SyncNestedPrefabs(const NestedPrefabsList& allPrefabs, Array<PrefabInstancesData>& allPrefabsInstancesData) const;
 #endif
     void DeleteDefaultInstance();
 

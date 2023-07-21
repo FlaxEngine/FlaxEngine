@@ -1,6 +1,10 @@
 name: Tests
 on: [push, pull_request]
 
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: false
+
 jobs:
 
   # Tests on Linux
@@ -10,6 +14,14 @@ jobs:
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+    - name: Print .NET info
+      run: |
+        dotnet --info
+        dotnet workload --info
     - name: Checkout LFS
       run: |
         git lfs version
@@ -22,41 +34,52 @@ jobs:
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
     - name: Build
       run: |
-        ./GenerateProjectFiles.sh -vs2019
+        ./GenerateProjectFiles.sh -vs2022 -log -verbose -printSDKs
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget
-        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Debug -buildtargets=FlaxEditor -BuildBindingsOnly
-        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Debug -buildtargets="FlaxEngine.Tests"
-        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Debug -buildtargets="Flax.Build.Tests"
+        dotnet msbuild Source/Tools/Flax.Build.Tests/Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
+        dotnet msbuild Source/Tools/Flax.Build.Tests/Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
     - name: Test
       run: |
-        Binaries/Editor/Linux/Development/FlaxTests
-        mono Source/Platforms/DotNet/NUnit/nunit3-console.exe Binaries/Tools/FlaxEngine.Tests.dll --framework=mono-4.0
-        mono Source/Platforms/DotNet/NUnit/nunit3-console.exe Binaries/Tools/Flax.Build.Tests.dll --framework=mono-4.0
+        ${GITHUB_WORKSPACE}/Binaries/Editor/Linux/Development/FlaxTests
+        dotnet test -f net7.0 Binaries/Tests/Flax.Build.Tests.dll
+        cp Binaries/Editor/Linux/Development/FlaxEngine.CSharp.dll Binaries/Tests
+        cp Binaries/Editor/Linux/Development/FlaxEngine.CSharp.runtimeconfig.json Binaries/Tests
+        cp Binaries/Editor/Linux/Development/Newtonsoft.Json.dll Binaries/Tests
+        dotnet test -f net7.0 Binaries/Tests/FlaxEngine.CSharp.dll
     - name: Test UseLargeWorlds
       run: |
         ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget -UseLargeWorlds=true
-        Binaries/Editor/Linux/Development/FlaxTests
+        ${GITHUB_WORKSPACE}/Binaries/Editor/Linux/Development/FlaxTests
 
   # Tests on Windows
   tests-windows:
     name: Tests (Windows)
-    runs-on: "windows-2019"
+    runs-on: "windows-2022"
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+    - name: Print .NET info
+      run: |
+        dotnet --info
+        dotnet workload --info
     - name: Checkout LFS
       run: |
         git lfs version
         git lfs pull
     - name: Build
       run: |
-        .\GenerateProjectFiles.bat -vs2019
+        .\GenerateProjectFiles.bat -vs2022 -log -verbose -printSDKs
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxTestsTarget
-        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Debug -buildtargets=FlaxEditor -BuildBindingsOnly
-        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Debug -buildtargets="FlaxEngine.Tests"
-        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Debug -buildtargets="Flax.Build.Tests"
+        dotnet msbuild Source\Tools\Flax.Build.Tests\Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
     - name: Test
       run: |
-        Binaries\Editor\Win64\Development\FlaxTests.exe
-        Source\Platforms\DotNet\NUnit\nunit3-console.exe Binaries\Tools\FlaxEngine.Tests.dll --framework=net-4.5.2
-        Source\Platforms\DotNet\NUnit\nunit3-console.exe Binaries\Tools\Flax.Build.Tests.dll --framework=net-4.5.2
+        .\Binaries\Editor\Win64\Development\FlaxTests.exe
+        dotnet test -f net7.0 Binaries\Tests\Flax.Build.Tests.dll
+        xcopy /y Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll Binaries\Tests
+        xcopy /y Binaries\Editor\Win64\Development\FlaxEngine.CSharp.runtimeconfig.json Binaries\Tests
+        xcopy /y Binaries\Editor\Win64\Development\Newtonsoft.Json.dll Binaries\Tests
+        dotnet test -f net7.0 Binaries\Tests\FlaxEngine.CSharp.dll

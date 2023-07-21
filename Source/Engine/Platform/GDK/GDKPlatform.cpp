@@ -555,19 +555,9 @@ struct GetMonitorBoundsData
     }
 };
 
-Rectangle GDKPlatform::GetMonitorBounds(const Float2& screenPos)
-{
-    return Rectangle(Float2::Zero, GetDesktopSize());
-}
-
 Float2 GDKPlatform::GetDesktopSize()
 {
     return Float2(1920, 1080);
-}
-
-Rectangle GDKPlatform::GetVirtualDesktopBounds()
-{
-    return Rectangle(Float2::Zero, GetDesktopSize());
 }
 
 void GDKPlatform::GetEnvironmentVariables(Dictionary<String, String>& result)

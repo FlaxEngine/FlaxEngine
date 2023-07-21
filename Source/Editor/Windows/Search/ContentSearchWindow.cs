@@ -17,6 +17,7 @@ using FlaxEditor.Surface;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 
 namespace FlaxEngine.Windows.Search
 {

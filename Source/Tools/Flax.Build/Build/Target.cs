@@ -1,8 +1,8 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
 
@@ -19,9 +19,14 @@ namespace Flax.Build
         NativeCpp,
 
         /// <summary>
-        /// The C# project.
+        /// The C# Mono project.
         /// </summary>
         DotNet,
+
+        /// <summary>
+        /// The C# .NET SDK project.
+        /// </summary>
+        DotNetCore,
     }
 
     /// <summary>

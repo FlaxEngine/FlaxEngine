@@ -153,7 +153,7 @@ namespace FlaxEditor.Actions
                         if (child != actor && child.Name == actor.Name)
                         {
                             var children = parent.Children;
-                            actor.Name = StringUtils.IncrementNameNumber(name, x => children.All(y => y.Name != x));
+                            actor.Name = Utilities.Utils.IncrementNameNumber(name, x => children.All(y => y.Name != x));
                         }
                     }
                 }

@@ -41,6 +41,11 @@ public:
     API_PROPERTY() static int32 GetCompilationsCount();
 
     /// <summary>
+    /// Gets the full path to the Flax.Build app.
+    /// </summary>
+    API_PROPERTY() static String GetBuildToolPath();
+
+    /// <summary>
     /// Checks if last scripting building failed due to errors.
     /// </summary>
     /// <returns>True if last compilation result was a fail, otherwise false.</returns>

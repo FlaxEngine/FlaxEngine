@@ -364,6 +364,49 @@ public:
     API_FUNCTION() static Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type);
 
     /// <summary>
+    /// Tries to find the actor of the given type and name in all the loaded scenes.
+    /// </summary>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="name">The name of the actor.</param>
+    /// <returns>Actor instance if found, null otherwise.</returns>
+    API_FUNCTION() static Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, const StringView& name);
+
+    /// <summary>
+    /// Tries to find the actor with the given tag (returns the first one found).
+    /// </summary>
+    /// <param name="tag">The tag of the actor to search for.</param>
+    /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
+    /// <returns>Found actor or null.</returns>
+    API_FUNCTION() static Actor* FindActor(const Tag& tag, Actor* root = nullptr);
+
+    /// <summary>
+    /// Tries to find the actor of the given type and tag in all the loaded scenes.
+    /// </summary>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="tag">The tag of the actor to search for.</param>
+    /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
+    /// <returns>Actor instance if found, null otherwise.</returns>
+    API_FUNCTION() static Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, const Tag& tag, Actor* root = nullptr);
+
+    /// <summary>
+    /// Tries to find the actors with the given tag (returns all found).
+    /// </summary>
+    /// <param name="tag">The tag of the actor to search for.</param>
+    /// <param name="activeOnly">Find only active actors.</param>
+    /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
+    /// <returns>Found actors or empty if none.</returns>
+    API_FUNCTION() static Array<Actor*> FindActors(const Tag& tag, const bool activeOnly = false, Actor* root = nullptr);
+
+    /// <summary>
+    /// Search actors using a parent parentTag.
+    /// </summary>
+    /// <param name="parentTag">The tag to search actors with subtags belonging to this tag</param>
+    /// <param name="activeOnly">Find only active actors.</param>
+    /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
+    /// <returns>Returns all actors that have subtags belonging to the given parent parentTag</returns>
+    API_FUNCTION() static Array<Actor*> FindActorsByParentTag(const Tag& parentTag, const bool activeOnly = false, Actor* root = nullptr);
+
+    /// <summary>
     /// Tries to find the actor of the given type in all the loaded scenes.
     /// </summary>
     /// <returns>Actor instance if found, null otherwise.</returns>
@@ -371,6 +414,29 @@ public:
     FORCE_INLINE static T* FindActor()
     {
         return (T*)FindActor(T::GetStaticClass());
+    }
+
+    /// <summary>
+    /// Tries to find the actor of the given type and name in all the loaded scenes.
+    /// </summary>
+    /// <param name="name">The name of the actor.</param>
+    /// <returns>Actor instance if found, null otherwise.</returns>
+    template<typename T>
+    FORCE_INLINE static T* FindActor(const StringView& name)
+    {
+        return (T*)FindActor(T::GetStaticClass(), name);
+    }
+
+    /// <summary>
+    /// Tries to find the actor of the given type and tag in a root actor or all the loaded scenes.
+    /// <param name="tag">The tag of the actor to search for.</param>
+    /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
+    /// </summary>
+    /// <returns>Actor instance if found, null otherwise.</returns>
+    template<typename T>
+    FORCE_INLINE static T* FindActor(const Tag& tag, Actor* root = nullptr)
+    {
+        return (T*)FindActor(T::GetStaticClass(), tag, root);
     }
 
     /// <summary>
@@ -461,23 +527,6 @@ public:
     /// Gets the zero-based index of the layer.
     /// </summary>
     API_FUNCTION() static int32 GetLayerIndex(const StringView& layer);
-
-public:
-    /// <summary>
-    /// Tries to find the actor with the given tag (returns the first one found).
-    /// </summary>
-    /// <param name="tag">The tag of the actor to search for.</param>
-    /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
-    /// <returns>Found actor or null.</returns>
-    API_FUNCTION() static Actor* FindActor(const Tag& tag, Actor* root = nullptr);
-
-    /// <summary>
-    /// Tries to find the actors with the given tag (returns all found).
-    /// </summary>
-    /// <param name="tag">The tag of the actor to search for.</param>
-    /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
-    /// <returns>Found actors or empty if none.</returns>
-    API_FUNCTION() static Array<Actor*> FindActors(const Tag& tag, Actor* root = nullptr);
 
 private:
     // Actor API

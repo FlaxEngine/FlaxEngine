@@ -5,11 +5,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using FlaxEditor.Content;
 using FlaxEditor.Content.Import;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.Content.Thumbnails;
-using FlaxEditor.GUI;
 using FlaxEditor.Modules;
 using FlaxEditor.Modules.SourceCodeEditing;
 using FlaxEditor.Options;
@@ -19,7 +19,10 @@ using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
+using FlaxEngine.Interop;
 using FlaxEngine.Json;
+
+#pragma warning disable CS1591
 
 namespace FlaxEditor
 {
@@ -63,17 +66,20 @@ namespace FlaxEditor
         /// <summary>
         /// Gets a value indicating whether this Editor is running a dev instance of the engine.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsDevInstance();
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_IsDevInstance", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool IsDevInstance();
 
         /// <summary>
         /// Gets a value indicating whether this Editor is running as official build (distributed via Flax services).
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsOfficialBuild();
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_IsOfficialBuild", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool IsOfficialBuild();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_IsPlayMode();
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_IsPlayMode", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool Internal_IsPlayMode();
 
         /// <summary>
         /// True if the editor is running now in a play mode. Assigned by the managed editor instance.
@@ -307,6 +313,7 @@ namespace FlaxEditor
             _areModulesInited = true;
 
             // Preload initial scene asset
+            try
             {
                 var startupSceneMode = Options.Options.General.StartupSceneMode;
                 if (startupSceneMode == GeneralOptions.StartupSceneModes.LastOpened && !ProjectCache.HasCustomData(ProjectDataLastScene))
@@ -323,11 +330,22 @@ namespace FlaxEditor
                 }
                 case GeneralOptions.StartupSceneModes.LastOpened:
                 {
-                    if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out var lastSceneIdName) && Guid.TryParse(lastSceneIdName, out var lastSceneId))
-                        Internal_LoadAsset(ref lastSceneId);
+                    if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out var lastSceneIdName))
+                    {
+                        var lastScenes = JsonSerializer.Deserialize<Guid[]>(lastSceneIdName);
+                        foreach (var scene in lastScenes)
+                        {
+                            var lastScene = scene;
+                            Internal_LoadAsset(ref lastScene);
+                        }
+                    }
                     break;
                 }
                 }
+            }
+            catch (Exception)
+            {
+                // Ignore errors
             }
 
             InitializationStart?.Invoke();
@@ -340,11 +358,19 @@ namespace FlaxEditor
         {
             // Check if prefab root control is this UIControl
             var loadingPreview = Viewport.Previews.PrefabPreview.LoadingPreview;
-            if (loadingPreview != null)
+            var activePreviews = Viewport.Previews.PrefabPreview.ActivePreviews;
+            if (activePreviews != null)
             {
-                // Link it to the prefab preview to see it in the editor
-                loadingPreview.customControlLinked = control;
-                return loadingPreview;
+                foreach (var preview in activePreviews)
+                {
+                    if (preview == loadingPreview || 
+                        (preview.Instance != null && (preview.Instance == control || preview.Instance.HasActorInHierarchy(control))))
+                    {
+                        // Link it to the prefab preview to see it in the editor
+                        preview.customControlLinked = control;
+                        return preview;
+                    }
+                }
             }
             return null;
         }
@@ -401,58 +427,69 @@ namespace FlaxEditor
             }
 
             // Load scene
-
-            // scene cmd line argument
-            var scene = ContentDatabase.Find(_startupSceneCmdLine);
-            if (scene is SceneItem)
+            try
             {
-                Editor.Log("Loading scene specified in command line");
-                Scene.OpenScene(_startupSceneCmdLine);
-                return;
-            }
-
-            // if no scene cmd line argument is provided
-            var startupSceneMode = Options.Options.General.StartupSceneMode;
-            if (startupSceneMode == GeneralOptions.StartupSceneModes.LastOpened && !ProjectCache.HasCustomData(ProjectDataLastScene))
-            {
-                // Fallback to default project scene if nothing saved in the cache
-                startupSceneMode = GeneralOptions.StartupSceneModes.ProjectDefault;
-            }
-            switch (startupSceneMode)
-            {
-            case GeneralOptions.StartupSceneModes.ProjectDefault:
-            {
-                if (string.IsNullOrEmpty(GameProject.DefaultScene))
-                    break;
-                JsonSerializer.ParseID(GameProject.DefaultScene, out var defaultSceneId);
-                var defaultScene = ContentDatabase.Find(defaultSceneId);
-                if (defaultScene is SceneItem)
+                // Scene cmd line argument
+                var scene = ContentDatabase.Find(_startupSceneCmdLine);
+                if (scene is SceneItem)
                 {
-                    Editor.Log("Loading default project scene");
-                    Scene.OpenScene(defaultSceneId);
-
-                    // Use spawn point
-                    Windows.EditWin.Viewport.ViewRay = GameProject.DefaultSceneSpawn;
+                    Editor.Log("Loading scene specified in command line");
+                    Scene.OpenScene(_startupSceneCmdLine);
+                    return;
                 }
-                break;
-            }
-            case GeneralOptions.StartupSceneModes.LastOpened:
-            {
-                if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out var lastSceneIdName) && Guid.TryParse(lastSceneIdName, out var lastSceneId))
+                var startupSceneMode = Options.Options.General.StartupSceneMode;
+                if (startupSceneMode == GeneralOptions.StartupSceneModes.LastOpened && !ProjectCache.HasCustomData(ProjectDataLastScene))
                 {
-                    var lastScene = ContentDatabase.Find(lastSceneId);
-                    if (lastScene is SceneItem)
+                    // Fallback to default project scene if nothing saved in the cache
+                    startupSceneMode = GeneralOptions.StartupSceneModes.ProjectDefault;
+                }
+                switch (startupSceneMode)
+                {
+                case GeneralOptions.StartupSceneModes.ProjectDefault:
+                {
+                    if (string.IsNullOrEmpty(GameProject.DefaultScene))
+                        break;
+                    JsonSerializer.ParseID(GameProject.DefaultScene, out var defaultSceneId);
+                    var defaultScene = ContentDatabase.Find(defaultSceneId);
+                    if (defaultScene is SceneItem)
                     {
-                        Editor.Log("Loading last opened scene");
-                        Scene.OpenScene(lastSceneId);
+                        Editor.Log("Loading default project scene");
+                        Scene.OpenScene(defaultSceneId);
+
+                        // Use spawn point
+                        Windows.EditWin.Viewport.ViewRay = GameProject.DefaultSceneSpawn;
+                    }
+                    break;
+                }
+                case GeneralOptions.StartupSceneModes.LastOpened:
+                {
+                    if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out var lastSceneIdName))
+                    {
+                        var lastScenes = JsonSerializer.Deserialize<Guid[]>(lastSceneIdName);
+                        foreach (var sceneId in lastScenes)
+                        {
+                            var lastScene = ContentDatabase.Find(sceneId);
+                            if (!(lastScene is SceneItem))
+                                continue;
+
+                            Editor.Log($"Loading last opened scene: {lastScene.ShortName}");
+                            if (sceneId == lastScenes[0])
+                                Scene.OpenScene(sceneId);
+                            else
+                                Level.LoadSceneAsync(sceneId);
+                        }
 
                         // Restore view
                         if (ProjectCache.TryGetCustomData(ProjectDataLastSceneSpawn, out var lastSceneSpawnName))
                             Windows.EditWin.Viewport.ViewRay = JsonSerializer.Deserialize<Ray>(lastSceneSpawnName);
                     }
+                    break;
                 }
-                break;
+                }
             }
+            catch (Exception)
+            {
+                // Ignore errors
             }
         }
 
@@ -581,8 +618,8 @@ namespace FlaxEditor
                 UI.UpdateStatusBar();
             }
 
-            if (UI?.StatusBar?.Text != null && !UI.StatusBar.Text.Contains("Auto") && 
-                _saveNowButton != null && _cancelSaveButton != null && 
+            if (UI?.StatusBar?.Text != null && !UI.StatusBar.Text.Contains("Auto") &&
+                _saveNowButton != null && _cancelSaveButton != null &&
                 (_saveNowButton.Visible || _cancelSaveButton.Visible))
             {
                 _saveNowButton.Visible = false;
@@ -662,11 +699,14 @@ namespace FlaxEditor
             // Start exit
             StateMachine.GoToState<ClosingState>();
 
-            // Cache last opened scene
+            // Cache last opened scenes
             {
-                var lastSceneId = Level.ScenesCount > 0 ? Level.Scenes[0].ID : Guid.Empty;
+                var lastScenes = Level.Scenes;
+                var lastSceneIds = new Guid[lastScenes.Length];
+                for (int i = 0; i < lastScenes.Length; i++)
+                    lastSceneIds[i] = lastScenes[i].ID;
                 var lastSceneSpawn = Windows.EditWin.Viewport.ViewRay;
-                ProjectCache.SetCustomData(ProjectDataLastScene, lastSceneId.ToString());
+                ProjectCache.SetCustomData(ProjectDataLastScene, JsonSerializer.Serialize(lastSceneIds));
                 ProjectCache.SetCustomData(ProjectDataLastSceneSpawn, JsonSerializer.Serialize(lastSceneSpawn));
             }
 
@@ -691,9 +731,16 @@ namespace FlaxEditor
             // Invoke new instance if need to open a project
             if (!string.IsNullOrEmpty(_projectToOpen))
             {
-                string args = string.Format("-project \"{0}\"", _projectToOpen);
+                var procSettings = new CreateProcessSettings
+                {
+                    FileName = Platform.ExecutableFilePath,
+                    Arguments = string.Format("-project \"{0}\"", _projectToOpen),
+                    ShellExecute = true,
+                    WaitForEnd = false,
+                    HiddenWindow = false,
+                };
                 _projectToOpen = null;
-                Platform.StartProcess(Platform.ExecutableFilePath, args, null);
+                Platform.CreateProcess(ref procSettings);
             }
         }
 
@@ -884,47 +931,6 @@ namespace FlaxEditor
             /// The <see cref="FlaxEngine.Animation"/>.
             /// </summary>
             Animation = 11,
-        }
-
-        /// <summary>
-        /// Imports the asset file to the target location.
-        /// </summary>
-        /// <param name="inputPath">The source file path.</param>
-        /// <param name="outputPath">The result asset file path.</param>
-        /// <returns>True if importing failed, otherwise false.</returns>
-        public static bool Import(string inputPath, string outputPath)
-        {
-            return Internal_Import(inputPath, outputPath, IntPtr.Zero);
-        }
-
-        /// <summary>
-        /// Imports the texture asset file to the target location.
-        /// </summary>
-        /// <param name="inputPath">The source file path.</param>
-        /// <param name="outputPath">The result asset file path.</param>
-        /// <param name="settings">The settings.</param>
-        /// <returns>True if importing failed, otherwise false.</returns>
-        public static bool Import(string inputPath, string outputPath, TextureImportSettings settings)
-        {
-            if (settings == null)
-                throw new ArgumentNullException();
-            settings.ToInternal(out var internalOptions);
-            return Internal_ImportTexture(inputPath, outputPath, ref internalOptions);
-        }
-
-        /// <summary>
-        /// Imports the model asset file to the target location.
-        /// </summary>
-        /// <param name="inputPath">The source file path.</param>
-        /// <param name="outputPath">The result asset file path.</param>
-        /// <param name="settings">The settings.</param>
-        /// <returns>True if importing failed, otherwise false.</returns>
-        public static bool Import(string inputPath, string outputPath, ModelImportSettings settings)
-        {
-            if (settings == null)
-                throw new ArgumentNullException();
-            settings.ToInternal(out var internalOptions);
-            return Internal_ImportModel(inputPath, outputPath, ref internalOptions);
         }
 
         /// <summary>
@@ -1285,6 +1291,7 @@ namespace FlaxEditor
         }
 
         [StructLayout(LayoutKind.Sequential)]
+        [NativeMarshalling(typeof(VisualScriptLocalMarshaller))]
         internal struct VisualScriptLocal
         {
             public string Value;
@@ -1293,12 +1300,96 @@ namespace FlaxEditor
             public int BoxId;
         }
 
+        [CustomMarshaller(typeof(VisualScriptLocal), MarshalMode.Default, typeof(VisualScriptLocalMarshaller))]
+        internal static class VisualScriptLocalMarshaller
+        {
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct VisualScriptLocalNative
+            {
+                public IntPtr Value;
+                public IntPtr ValueTypeName;
+                public uint NodeId;
+                public int BoxId;
+            }
+
+            internal static VisualScriptLocal ConvertToManaged(VisualScriptLocalNative unmanaged) => ToManaged(unmanaged);
+            internal static VisualScriptLocalNative ConvertToUnmanaged(VisualScriptLocal managed) => ToNative(managed);
+
+            internal static VisualScriptLocal ToManaged(VisualScriptLocalNative managed)
+            {
+                return new VisualScriptLocal()
+                {
+                    Value = ManagedString.ToManaged(managed.Value),
+                    ValueTypeName = ManagedString.ToManaged(managed.ValueTypeName),
+                    NodeId = managed.NodeId,
+                    BoxId = managed.BoxId,
+                };
+            }
+
+            internal static VisualScriptLocalNative ToNative(VisualScriptLocal managed)
+            {
+                return new VisualScriptLocalNative()
+                {
+                    Value = ManagedString.ToNative(managed.Value),
+                    ValueTypeName = ManagedString.ToNative(managed.ValueTypeName),
+                    NodeId = managed.NodeId,
+                    BoxId = managed.BoxId,
+                };
+            }
+
+            internal static void Free(VisualScriptLocalNative unmanaged)
+            {
+                ManagedString.Free(unmanaged.Value);
+                ManagedString.Free(unmanaged.ValueTypeName);
+            }
+        }
+
         [StructLayout(LayoutKind.Sequential)]
+        [NativeMarshalling(typeof(VisualScriptStackFrameMarshaller))]
         internal struct VisualScriptStackFrame
         {
             public VisualScript Script;
             public uint NodeId;
             public int BoxId;
+        }
+
+        [CustomMarshaller(typeof(VisualScriptStackFrame), MarshalMode.Default, typeof(VisualScriptStackFrameMarshaller))]
+        internal static class VisualScriptStackFrameMarshaller
+        {
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct VisualScriptStackFrameNative
+            {
+                public IntPtr Script;
+                public uint NodeId;
+                public int BoxId;
+            }
+
+            internal static VisualScriptStackFrame ConvertToManaged(VisualScriptStackFrameNative unmanaged) => ToManaged(unmanaged);
+            internal static VisualScriptStackFrameNative ConvertToUnmanaged(VisualScriptStackFrame managed) => ToNative(managed);
+
+            internal static VisualScriptStackFrame ToManaged(VisualScriptStackFrameNative managed)
+            {
+                return new VisualScriptStackFrame()
+                {
+                    Script = VisualScriptMarshaller.ConvertToManaged(managed.Script),
+                    NodeId = managed.NodeId,
+                    BoxId = managed.BoxId,
+                };
+            }
+
+            internal static VisualScriptStackFrameNative ToNative(VisualScriptStackFrame managed)
+            {
+                return new VisualScriptStackFrameNative()
+                {
+                    Script = VisualScriptMarshaller.ConvertToUnmanaged(managed.Script),
+                    NodeId = managed.NodeId,
+                    BoxId = managed.BoxId,
+                };
+            }
+
+            internal static void Free(VisualScriptStackFrameNative unmanaged)
+            {
+            }
         }
 
         internal void BuildCommand(string arg)
@@ -1498,116 +1589,121 @@ namespace FlaxEditor
             Instance.StateMachine.StateChanged += RequestStartPlayOnEditMode;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int Internal_ReadOutputLogs(string[] outMessages, byte[] outLogTypes, long[] outLogTimes);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_ReadOutputLogs", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.Interop.StringMarshaller))]
+        internal static partial int Internal_ReadOutputLogs([MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = "outCapacity")] ref string[] outMessages, [MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = "outCapacity")] ref byte[] outLogTypes, [MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = "outCapacity")] ref long[] outLogTimes, int outCapacity);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_SetPlayMode(bool value);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_SetPlayMode", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.Interop.StringMarshaller))]
+        internal static partial void Internal_SetPlayMode([MarshalAs(UnmanagedType.U1)] bool value);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern string Internal_GetProjectPath();
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetProjectPath", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial string Internal_GetProjectPath();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_CloneAssetFile(string dstPath, string srcPath, ref Guid dstId);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CloneAssetFile", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool Internal_CloneAssetFile(string dstPath, string srcPath, ref Guid dstId);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_Import(string inputPath, string outputPath, IntPtr arg);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_ImportAudio", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool Internal_ImportAudio(string inputPath, string outputPath, ref AudioImportSettings.InternalOptions options);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_ImportTexture(string inputPath, string outputPath, ref TextureImportSettings.InternalOptions options);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetAudioClipMetadata", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial void Internal_GetAudioClipMetadata(IntPtr obj, out int originalSize, out int importedSize);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_ImportModel(string inputPath, string outputPath, ref ModelImportSettings.InternalOptions options);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_SaveJsonAsset", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool Internal_SaveJsonAsset(string outputPath, string data, string typename);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_ImportAudio(string inputPath, string outputPath, ref AudioImportSettings.InternalOptions options);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CopyCache", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial void Internal_CopyCache(ref Guid dstId, ref Guid srcId);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_GetAudioClipMetadata(IntPtr obj, out int originalSize, out int importedSize);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_BakeLightmaps", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial void Internal_BakeLightmaps([MarshalAs(UnmanagedType.U1)] bool cancel);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_SaveJsonAsset(string outputPath, string data, string typename);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetShaderAssetSourceCode", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial string Internal_GetShaderAssetSourceCode(IntPtr obj);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_CopyCache(ref Guid dstId, ref Guid srcId);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CookMeshCollision", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool Internal_CookMeshCollision(string path, CollisionDataType type, IntPtr model, int modelLodIndex, uint materialSlotsMask, ConvexMeshGenerationFlags convexFlags, int convexVertexLimit);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_BakeLightmaps(bool cancel);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetCollisionWires", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial void Internal_GetCollisionWires(IntPtr collisionData, [MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = "trianglesCount")] out Float3[] triangles, [MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = "indicesCount")] out int[] indices, out int trianglesCount, out int indicesCount);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern string Internal_GetShaderAssetSourceCode(IntPtr obj);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetEditorBoxWithChildren", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial void Internal_GetEditorBoxWithChildren(IntPtr obj, out BoundingBox resultAsRef);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_CookMeshCollision(string path, CollisionDataType type, IntPtr model, int modelLodIndex, uint materialSlotsMask, ConvexMeshGenerationFlags convexFlags, int convexVertexLimit);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_SetOptions", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial void Internal_SetOptions(ref InternalOptions options);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_GetCollisionWires(IntPtr collisionData, out Float3[] triangles, out int[] indices);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_DrawNavMesh", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial void Internal_DrawNavMesh();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_GetEditorBoxWithChildren(IntPtr obj, out BoundingBox resultAsRef);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CloseSplashScreen", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial void Internal_CloseSplashScreen();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_SetOptions(ref InternalOptions options);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CreateAsset", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool Internal_CreateAsset(NewAssetType type, string outputPath);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_DrawNavMesh();
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CreateVisualScript", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool Internal_CreateVisualScript(string outputPath, string baseTypename);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_CloseSplashScreen();
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CanImport", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial string Internal_CanImport(string extension);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_CreateAsset(NewAssetType type, string outputPath);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CanExport", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool Internal_CanExport(string path);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_CreateVisualScript(string outputPath, string baseTypename);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_Export", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool Internal_Export(string inputPath, string outputFolder);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern string Internal_CanImport(string extension);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetIsEveryAssemblyLoaded", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool Internal_GetIsEveryAssemblyLoaded();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_CanExport(string path);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetLastProjectOpenedEngineBuild", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial int Internal_GetLastProjectOpenedEngineBuild();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_Export(string inputPath, string outputFolder);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetIsCSGActive", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool Internal_GetIsCSGActive();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_GetIsEveryAssemblyLoaded();
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_RunVisualScriptBreakpointLoopTick", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial void Internal_RunVisualScriptBreakpointLoopTick(float deltaTime);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int Internal_GetLastProjectOpenedEngineBuild();
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetVisualScriptLocals", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = "localsCount")]
+        internal static partial VisualScriptLocal[] Internal_GetVisualScriptLocals(out int localsCount);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_GetIsCSGActive();
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetVisualScriptStackFrames", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = "stackFrameCount")]
+        internal static partial VisualScriptStackFrame[] Internal_GetVisualScriptStackFrames(out int stackFrameCount);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_RunVisualScriptBreakpointLoopTick(float deltaTime);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetVisualScriptPreviousScopeFrame", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial VisualScriptStackFrame Internal_GetVisualScriptPreviousScopeFrame();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern VisualScriptLocal[] Internal_GetVisualScriptLocals();
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_EvaluateVisualScriptLocal", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool Internal_EvaluateVisualScriptLocal(IntPtr script, ref VisualScriptLocal local);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern VisualScriptStackFrame[] Internal_GetVisualScriptStackFrames();
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_DeserializeSceneObject", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial void Internal_DeserializeSceneObject(IntPtr sceneObject, string json);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern VisualScriptStackFrame Internal_GetVisualScriptPreviousScopeFrame();
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_LoadAsset", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial void Internal_LoadAsset(ref Guid id);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_EvaluateVisualScriptLocal(IntPtr script, ref VisualScriptLocal local);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CanSetToRoot", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static partial bool Internal_CanSetToRoot(IntPtr prefab, IntPtr newRoot);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_DeserializeSceneObject(IntPtr sceneObject, string json);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetAnimationTime", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial float Internal_GetAnimationTime(IntPtr animatedModel);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_LoadAsset(ref Guid id);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool Internal_CanSetToRoot(IntPtr prefab, IntPtr newRoot);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern float Internal_GetAnimationTime(IntPtr animatedModel);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void Internal_SetAnimationTime(IntPtr animatedModel, float time);
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_SetAnimationTime", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial void Internal_SetAnimationTime(IntPtr animatedModel, float time);
 
         #endregion
     }

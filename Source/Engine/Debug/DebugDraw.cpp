@@ -454,14 +454,19 @@ inline void DrawText3D(const DebugText3D& t, const RenderContext& renderContext,
 {
     Matrix w, fw, m;
     if (t.FaceCamera)
-        Matrix::CreateWorld(t.Transform.Translation, renderContext.View.Direction, viewUp, w);
+    {
+        Matrix s, ss;
+        Matrix::Scaling(t.Transform.Scale.X, s);
+        Matrix::CreateWorld(t.Transform.Translation, renderContext.View.Direction, viewUp, ss);
+        Matrix::Multiply(s, ss, w);
+    }
     else
         t.Transform.GetWorld(w);
     Matrix::Multiply(f, w, fw);
     Matrix::Multiply(fw, vp, m);
     Render2D::Begin(context, target, depthBuffer, viewport, m);
     const StringView text(t.Text.Get(), t.Text.Count() - 1);
-    Render2D::DrawText(DebugDrawFont->CreateFont(t.Size), text, t.Color, Vector2::Zero);
+    Render2D::DrawText(DebugDrawFont->CreateFont((float)t.Size), text, t.Color, Vector2::Zero);
     Render2D::End();
 }
 
@@ -632,9 +637,10 @@ void DebugDrawService::Update()
         desc.VS = shader->GetVS("VS");
 
         // Default
-        desc.PS = shader->GetPS("PS");
+        desc.PS = shader->GetPS("PS", 0);
         desc.PrimitiveTopologyType = PrimitiveTopologyType::Line;
         failed |= DebugDrawPsLinesDefault.Create(desc);
+        desc.PS = shader->GetPS("PS", 1);
         desc.PrimitiveTopologyType = PrimitiveTopologyType::Triangle;
         failed |= DebugDrawPsTrianglesDefault.Create(desc);
         desc.Wireframe = true;
@@ -642,9 +648,10 @@ void DebugDrawService::Update()
 
         // Depth Test
         desc.Wireframe = false;
-        desc.PS = shader->GetPS("PS_DepthTest");
+        desc.PS = shader->GetPS("PS", 2);
         desc.PrimitiveTopologyType = PrimitiveTopologyType::Line;
         failed |= DebugDrawPsLinesDepthTest.Create(desc);
+        desc.PS = shader->GetPS("PS", 3);
         desc.PrimitiveTopologyType = PrimitiveTopologyType::Triangle;
         failed |= DebugDrawPsTrianglesDepthTest.Create(desc);
         desc.Wireframe = true;
@@ -770,7 +777,7 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
             context->BindSR(0, renderContext.Buffers->DepthBuffer);
         const bool enableDepthWrite = data.EnableDepthTest;
 
-        context->SetRenderTarget(depthBuffer ? depthBuffer : *renderContext.Buffers->DepthBuffer, target);
+        context->SetRenderTarget(depthBuffer ? depthBuffer : (data.EnableDepthTest ? nullptr : renderContext.Buffers->DepthBuffer->View()), target);
 
         // Lines
         if (depthTestLines.VertexCount)
@@ -852,12 +859,12 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
                 for (auto& t : Context->DebugDrawDefault.DefaultText2D)
                 {
                     const StringView text(t.Text.Get(), t.Text.Count() - 1);
-                    Render2D::DrawText(DebugDrawFont->CreateFont(t.Size), text, t.Color, t.Position);
+                    Render2D::DrawText(DebugDrawFont->CreateFont((float)t.Size), text, t.Color, t.Position);
                 }
                 for (auto& t : Context->DebugDrawDefault.OneFrameText2D)
                 {
                     const StringView text(t.Text.Get(), t.Text.Count() - 1);
-                    Render2D::DrawText(DebugDrawFont->CreateFont(t.Size), text, t.Color, t.Position);
+                    Render2D::DrawText(DebugDrawFont->CreateFont((float)t.Size), text, t.Color, t.Position);
                 }
                 Render2D::End();
             }
@@ -1993,7 +2000,7 @@ void DebugDraw::DrawText(const StringView& text, const Float2& position, const C
     t.TimeLeft = duration;
 }
 
-void DebugDraw::DrawText(const StringView& text, const Vector3& position, const Color& color, int32 size, float duration)
+void DebugDraw::DrawText(const StringView& text, const Vector3& position, const Color& color, int32 size, float duration, float scale)
 {
     if (text.Length() == 0 || size < 4)
         return;
@@ -2003,6 +2010,7 @@ void DebugDraw::DrawText(const StringView& text, const Vector3& position, const 
     Platform::MemoryCopy(t.Text.Get(), text.Get(), text.Length() * sizeof(Char));
     t.Text[text.Length()] = 0;
     t.Transform = position - Context->Origin;
+    t.Transform.Scale.X = scale;
     t.FaceCamera = true;
     t.Size = size;
     t.Color = color;

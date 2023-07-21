@@ -140,7 +140,7 @@ namespace Flax.Build.Platforms
             }
 
             // Determinate compiler version
-            ClangVersion = GetClangVersion(ClangPath);
+            ClangVersion = GetClangVersion(platform.Target, ClangPath);
             LibStdCppVersion = GetLibStdCppVersion(ClangPath) ?? ClangVersion.ToString();
 
             // Check version
@@ -156,13 +156,16 @@ namespace Flax.Build.Platforms
             return libName;
         }
 
-        public static Version GetClangVersion(string path)
+        public static Version GetClangVersion(TargetPlatform platform, string path)
         {
             if (!File.Exists(path))
                 throw new Exception(string.Format("Missing Clang ({0})", path));
 
             // Parse the version
-            string output = Utilities.ReadProcessOutput(path, "--version -dumpversion");
+            string arg = "--version -dumpversion";
+            if (platform == TargetPlatform.PS4)
+                arg = "--version";
+            string output = Utilities.ReadProcessOutput(path, arg);
             Regex versionPattern = new Regex("\\d+(\\.\\d+)+");
             Match versionMatch = versionPattern.Match(output);
             if (versionMatch.Success)
@@ -242,6 +245,13 @@ namespace Flax.Build.Platforms
                 switch (architecture)
                 {
                 case TargetArchitecture.x64: return "x86_64-apple-macos" + Configuration.MacOSXMinVer;
+                case TargetArchitecture.ARM64: return "aarch64-apple-macos" + Configuration.MacOSXMinVer;
+                default: throw new InvalidArchitectureException(architecture);
+                }
+            case TargetPlatform.iOS:
+                switch (architecture)
+                {
+                case TargetArchitecture.ARM64: return "aarch64-apple-ios" + Configuration.iOSMinVer;
                 default: throw new InvalidArchitectureException(architecture);
                 }
             default: throw new InvalidPlatformException(platform);
@@ -315,6 +325,7 @@ namespace Flax.Build.Platforms
 
             // Setup arguments shared by all source files
             var commonArgs = new List<string>();
+            commonArgs.AddRange(options.CompileEnv.CustomArgs);
             SetupCompileCppFilesArgs(graph, options, commonArgs, outputPath);
             {
                 commonArgs.Add("-c");
@@ -501,6 +512,7 @@ namespace Flax.Build.Platforms
 
             // Setup arguments
             var args = new List<string>();
+            args.AddRange(options.LinkEnv.CustomArgs);
             {
                 args.Add(string.Format("-o \"{0}\"", outputFilePath));
 

@@ -1,4 +1,3 @@
-//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
 // are met:
@@ -11,7 +10,7 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 // PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
@@ -23,7 +22,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright (c) 2008-2019 NVIDIA Corporation. All rights reserved.
+// Copyright (c) 2008-2023 NVIDIA Corporation. All rights reserved.
 
 #ifndef PX_GPU_H
 #define PX_GPU_H
@@ -34,11 +33,10 @@
 #if PX_SUPPORT_GPU_PHYSX
 
 #include "cudamanager/PxCudaContextManager.h"
-#include "cudamanager/PxCudaMemoryManager.h"
 #include "foundation/Px.h"
 #include "foundation/PxPreprocessor.h"
+#include "foundation/PxFoundation.h"
 #include "common/PxPhysXCommonConfig.h"
-#include "PxFoundation.h"
 
 /**
 \brief PxGpuLoadHook
@@ -91,6 +89,46 @@ PX_C_EXPORT PX_PHYSX_CORE_API int PX_CALL_CONV PxGetSuggestedCudaDeviceOrdinal(p
  */
 PX_C_EXPORT PX_PHYSX_CORE_API physx::PxCudaContextManager* PX_CALL_CONV PxCreateCudaContextManager(physx::PxFoundation& foundation, const physx::PxCudaContextManagerDesc& desc, physx::PxProfilerCallback* profilerCallback = NULL);
 
+/**
+ * \brief Sets profiler callback to PhysX GPU
+ \param[in] profilerCallback PhysX profiler callback instance.
+
+ @see PxGetProfilerCallback()
+ */
+PX_C_EXPORT PX_PHYSX_CORE_API void PX_CALL_CONV PxSetPhysXGpuProfilerCallback(physx::PxProfilerCallback* profilerCallback);
+
+
+/**
+\brief Internally used callback to register function names of cuda kernels
+*/
+PX_C_EXPORT PX_PHYSX_CORE_API void PX_CALL_CONV PxCudaRegisterFunction(int moduleIndex, const char* functionName);
+
+/**
+\brief Internally used callback to register cuda modules at load time
+*/
+PX_C_EXPORT PX_PHYSX_CORE_API void** PX_CALL_CONV PxCudaRegisterFatBinary(void*);
+
+/**
+\brief Access to the registered cuda modules
+*/
+PX_C_EXPORT PX_PHYSX_CORE_API void** PX_CALL_CONV PxGetCudaModuleTable();
+
+/**
+\brief Number of registered cuda modules
+*/
+PX_C_EXPORT PX_PHYSX_CORE_API physx::PxU32 PX_CALL_CONV PxGetCudaModuleTableSize();
+
+/**
+\brief Access to the loaded cuda functions (kernels)
+*/
+PX_C_EXPORT PX_PHYSX_CORE_API physx::PxKernelIndex* PX_CALL_CONV PxGetCudaFunctionTable();
+
+/**
+\brief Number of loaded cuda functions (kernels)
+*/
+PX_C_EXPORT PX_PHYSX_CORE_API physx::PxU32 PX_CALL_CONV  PxGetCudaFunctionTableSize();
+
+
 #endif // PX_SUPPORT_GPU_PHYSX
 
-#endif // PX_GPU_H
+#endif

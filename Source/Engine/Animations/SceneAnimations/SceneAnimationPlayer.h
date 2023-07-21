@@ -46,7 +46,7 @@ private:
         MObject* ManagedObject = nullptr;
         MProperty* Property = nullptr;
         MField* Field = nullptr;
-        void* Method = nullptr;
+        MMethod* Method = nullptr;
         int32 RestoreStateIndex = -1;
         bool Warn = true;
 

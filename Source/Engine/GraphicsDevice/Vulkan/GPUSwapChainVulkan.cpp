@@ -79,7 +79,7 @@ void GPUSwapChainVulkan::OnReleaseGPU()
 
 bool GPUSwapChainVulkan::IsFullscreen()
 {
-#if PLATFORM_ANDROID || PLATFORM_SWITCH
+#if PLATFORM_ANDROID || PLATFORM_SWITCH || PLATFORM_IOS
     // Not supported
     return true;
 #else
@@ -89,7 +89,7 @@ bool GPUSwapChainVulkan::IsFullscreen()
 
 void GPUSwapChainVulkan::SetFullscreen(bool isFullscreen)
 {
-#if PLATFORM_ANDROID || PLATFORM_SWITCH
+#if PLATFORM_ANDROID || PLATFORM_SWITCH || PLATFORM_IOS
     // Not supported
 #else
     if (!_surface)

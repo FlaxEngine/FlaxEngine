@@ -75,6 +75,7 @@ public class Graphics : EngineModule
             options.PrivateDependencies.Add("GraphicsDevicePS5");
             break;
         case TargetPlatform.Android:
+        case TargetPlatform.iOS:
             options.PrivateDependencies.Add("GraphicsDeviceVulkan");
             break;
         case TargetPlatform.Switch:

@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace FlaxEngine.GUI
 {
@@ -44,7 +45,7 @@ namespace FlaxEngine.GUI
         /// <returns>True if got text block, otherwise false.</returns>
         public bool GetTextBlock(int index, out TextBlock result)
         {
-            var textBlocks = Utils.ExtractArrayFromList(_textBlocks);
+            var textBlocks = CollectionsMarshal.AsSpan(_textBlocks);
             var count = _textBlocks.Count;
             for (int i = 0; i < count; i++)
             {
@@ -95,7 +96,7 @@ namespace FlaxEngine.GUI
         public override Float2 GetTextSize()
         {
             var count = _textBlocks.Count;
-            var textBlocks = Utils.ExtractArrayFromList(_textBlocks);
+            var textBlocks = CollectionsMarshal.AsSpan(_textBlocks);
             var max = Float2.Zero;
             for (int i = 0; i < count; i++)
             {
@@ -109,7 +110,7 @@ namespace FlaxEngine.GUI
         public override Float2 GetCharPosition(int index, out float height)
         {
             var count = _textBlocks.Count;
-            var textBlocks = Utils.ExtractArrayFromList(_textBlocks);
+            var textBlocks = CollectionsMarshal.AsSpan(_textBlocks);
 
             // Check if text is empty
             if (count == 0)
@@ -181,7 +182,7 @@ namespace FlaxEngine.GUI
         {
             location = Float2.Clamp(location, Float2.Zero, _textSize);
 
-            var textBlocks = Utils.ExtractArrayFromList(_textBlocks);
+            var textBlocks = CollectionsMarshal.AsSpan(_textBlocks);
             var count = _textBlocks.Count;
             for (int i = 0; i < count; i++)
             {
@@ -242,7 +243,7 @@ namespace FlaxEngine.GUI
                 Render2D.PushTransform(Matrix3x3.Translation2D(-_viewOffset));
 
             // Calculate text blocks for drawing
-            var textBlocks = Utils.ExtractArrayFromList(_textBlocks);
+            var textBlocks = CollectionsMarshal.AsSpan(_textBlocks);
             var textBlocksCount = _textBlocks?.Count ?? 0;
             var hasSelection = HasSelection;
             var selection = new TextRange(SelectionLeft, SelectionRight);
