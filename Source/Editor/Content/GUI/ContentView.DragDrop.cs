@@ -45,8 +45,14 @@ namespace FlaxEditor.Content.GUI
 
         private void ImportActors(DragActors actors, ContentFolder location)
         {
-            // Use only the first actor
-            Editor.Instance.Prefabs.CreatePrefab(actors.Objects[0].Actor);
+            foreach (var actorNode in actors.Objects)
+            {
+                var actor = actorNode.Actor;
+                if (actors.Objects.Contains(actorNode.ParentNode as ActorNode))
+                    continue;
+
+                Editor.Instance.Prefabs.CreatePrefab(actor, false);
+            }
         }
 
         /// <inheritdoc />

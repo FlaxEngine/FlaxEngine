@@ -37,6 +37,11 @@ namespace FlaxEditor.Modules
         /// </summary>
         public event Action<Prefab, Actor> PrefabApplied;
 
+        /// <summary>
+        /// Locally cached actor for prefab creation.
+        /// </summary>
+        private Actor _prefabCreationActor;
+
         internal PrefabsModule(Editor editor)
         : base(editor)
         {
@@ -79,6 +84,16 @@ namespace FlaxEditor.Modules
         /// <param name="actor">The root prefab actor.</param>
         public void CreatePrefab(Actor actor)
         {
+            CreatePrefab(actor, true);
+        }
+
+        /// <summary>
+        /// Starts the creating prefab for the given actor by showing the new item creation dialog in <see cref="ContentWindow"/>.
+        /// </summary>
+        /// <param name="actor">The root prefab actor.</param>
+        /// <param name="rename">Allow renaming or not</param>
+        public void CreatePrefab(Actor actor, bool rename)
+        {
             // Skip in invalid states
             if (!Editor.StateMachine.CurrentState.CanEditContent)
                 return;
@@ -90,7 +105,8 @@ namespace FlaxEditor.Modules
             PrefabCreating?.Invoke(actor);
 
             var proxy = Editor.ContentDatabase.GetProxy<Prefab>();
-            Editor.Windows.ContentWin.NewItem(proxy, actor, OnPrefabCreated, actor.Name);
+            _prefabCreationActor = actor;
+            Editor.Windows.ContentWin.NewItem(proxy, actor, OnPrefabCreated, actor.Name, rename);
         }
 
         private void OnPrefabCreated(ContentItem contentItem)
@@ -107,25 +123,21 @@ namespace FlaxEditor.Modules
             // Record undo for prefab creating (backend links the target instance with the prefab)
             if (Editor.Undo.Enabled)
             {
-                var selection = Editor.SceneEditing.Selection.Where(x => x is ActorNode).ToList().BuildNodesParents();
-                if (selection.Count == 0)
+                if (!_prefabCreationActor)
                     return;
 
-                if (selection.Count == 1)
+                var actorsList = new List<Actor>();
+                Utilities.Utils.GetActorsTree(actorsList, _prefabCreationActor);
+                
+                var actions = new IUndoAction[actorsList.Count];
+                for (int i = 0; i < actorsList.Count; i++)
                 {
-                    var action = BreakPrefabLinkAction.Linked(((ActorNode)selection[0]).Actor);
-                    Undo.AddAction(action);
+                    var action = BreakPrefabLinkAction.Linked(actorsList[i]);
+                    actions[i] = action;
                 }
-                else
-                {
-                    var actions = new IUndoAction[selection.Count];
-                    for (int i = 0; i < selection.Count; i++)
-                    {
-                        var action = BreakPrefabLinkAction.Linked(((ActorNode)selection[i]).Actor);
-                        actions[i] = action;
-                    }
-                    Undo.AddAction(new MultiUndoAction(actions));
-                }
+                Undo.AddAction(new MultiUndoAction(actions));
+
+                _prefabCreationActor = null;
             }
 
             Editor.Instance.Windows.PropertiesWin.Presenter.BuildLayout();
