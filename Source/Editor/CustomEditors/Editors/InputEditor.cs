@@ -30,8 +30,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 eventNames.Add(mapping.Name);
             }
             _dropdown.Items = eventNames;
-            var value = Values[0] as InputEvent;
-            if (value != null)
+            if (Values[0] is InputEvent value)
             {
                 if (eventNames.Contains(value.Name))
                 {
@@ -102,8 +101,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 axisNames.Add(mapping.Name);
             }
             _dropdown.Items = axisNames;
-            var value = Values[0] as InputAxis;
-            if (value != null)
+            if (Values[0] is InputAxis value)
             {
                 if (axisNames.Contains(value.Name))
                 {
