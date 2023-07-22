@@ -109,17 +109,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             /// <inheritdoc/>
             public override void OnSelectTangent(Spline spline, int index) { }
-
-            private void SetKeyframeLinear(Spline spline, int index)
-            {
-                var tangentIn = spline.GetSplineTangent(index, true);
-                var tangentOut = spline.GetSplineTangent(index, false);
-                tangentIn.Translation = spline.GetSplinePoint(index);
-                tangentOut.Translation = spline.GetSplinePoint(index);
-                spline.SetSplineTangent(index, tangentIn, true, false);
-                spline.SetSplineTangent(index, tangentOut, false, false);
-                spline.UpdateSpline();
-            }
         }
 
         /// <summary>
@@ -330,7 +319,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
 
             var index = _lastPointSelected.Index;
-
             var currentTangentInPosition = SelectedSpline.GetSplineLocalTangent(index, true).Translation;
             var currentTangentOutPosition = SelectedSpline.GetSplineLocalTangent(index, false).Translation;
 
@@ -619,6 +607,24 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             var keyframe = spline.GetSplineKeyframe(index);
             return keyframe.TangentOut.Translation.Length > 0 && keyframe.TangentIn.Translation.Length == 0;
+        }
+
+        private static void SetKeyframeLinear(Spline spline, int index)
+        {
+            var keyframe = spline.GetSplineKeyframe(index);
+            keyframe.TangentIn.Translation = Vector3.Zero;
+            keyframe.TangentOut.Translation = Vector3.Zero;
+
+            var lastSplineIndex = spline.SplinePointsCount - 1;
+            if (index == lastSplineIndex && spline.IsLoop)
+            {
+                var lastPoint = spline.GetSplineKeyframe(lastSplineIndex);
+                lastPoint.TangentIn.Translation = Vector3.Zero;
+                lastPoint.TangentOut.Translation = Vector3.Zero;
+                spline.SetSplineKeyframe(lastSplineIndex, lastPoint);
+            }
+
+            spline.SetSplineKeyframe(index, keyframe);
         }
 
         private static void SetTangentSmoothIn(Spline spline, int index)

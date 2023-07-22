@@ -257,6 +257,7 @@ namespace FlaxEditor.SceneGraph.Actors
 
             public override void OnDebugDraw(ViewportDebugDrawData data)
             {
+                Debug.Log(Name);
                 // Draw spline and spline point
                 ParentNode.OnDebugDraw(data);
 
