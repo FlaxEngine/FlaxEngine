@@ -349,7 +349,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private bool CanSetTangentMode()
         {
-            return HasPointSelected || HasTangentsSelected;
+            return !HasDifferentTypes && !HasDifferentValues && (HasPointSelected || HasTangentsSelected);
         }
 
         private bool CanSetTangentSmoothIn()
