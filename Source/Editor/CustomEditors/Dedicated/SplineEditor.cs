@@ -318,9 +318,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
             UpdateSelectedPoint();
             UpdateSelectedTangent();
 
-            _freeTangentButton.Button.Enabled = CanSetTangentMode();
+            _freeTangentButton.Button.Enabled = CanSetTangentFree();
             _linearTangentButton.Button.Enabled = CanSetTangentMode();
-            _alignedTangentButton.Button.Enabled = CanSetTangentMode();
+            _alignedTangentButton.Button.Enabled = CanSetTangentAligned();
             _smoothInTangentButton.Button.Enabled = CanSetTangentSmoothIn();
             _smoothOutTangentButton.Button.Enabled = CanSetTangentSmoothOut();
 
@@ -374,6 +374,18 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             if (!CanSetTangentMode()) return false;
             return _lastPointSelected.Index < SelectedSpline.SplinePointsCount - 1;
+        }
+
+        private bool CanSetTangentFree()
+        {
+            if (!CanSetTangentMode()) return false;
+            return _lastPointSelected.Index < SelectedSpline.SplinePointsCount - 1 && _lastPointSelected.Index != 0;
+        }
+
+        private bool CanSetTangentAligned()
+        {
+            if (!CanSetTangentMode()) return false;
+            return _lastPointSelected.Index < SelectedSpline.SplinePointsCount - 1 && _lastPointSelected.Index != 0; 
         }
 
         private void SetModeLinear()
