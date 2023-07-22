@@ -187,7 +187,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             /// <inheritdoc/>
             public override void OnSetMode(Spline spline, int index)
             {
-                SetSelectTangentIn(spline, index);
+                SetTangentSmoothIn(spline, index);
                 SetSelectTangentIn(spline, index);
             }
 
@@ -252,11 +252,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// </summary>
         public Spline SelectedSpline => !Values.HasDifferentValues && Values[0] is Spline ? (Spline)Values[0] : null;
 
-        private bool HasTangentsSelected => _selectedTangentIn != null || _selectedTangentOut != null;
-
         private bool HasPointSelected => _selectedPoint != null;
-
-        private bool CanSetTangentMode => HasPointSelected || HasTangentsSelected;
+        private bool HasTangentsSelected => _selectedTangentIn != null || _selectedTangentOut != null;
 
         private Color SelectedButtonColor => FlaxEngine.GUI.Style.Current.BackgroundSelected;
 
@@ -321,18 +318,19 @@ namespace FlaxEditor.CustomEditors.Dedicated
             UpdateSelectedPoint();
             UpdateSelectedTangent();
 
-            _freeTangentButton.Button.Enabled = CanSetTangentMode;
-            _linearTangentButton.Button.Enabled = CanSetTangentMode;
-            _alignedTangentButton.Button.Enabled = CanSetTangentMode;
-            _smoothInTangentButton.Button.Enabled = CanSetTangentMode;
-            _smoothOutTangentButton.Button.Enabled = CanSetTangentMode;
+            _freeTangentButton.Button.Enabled = CanSetTangentMode();
+            _linearTangentButton.Button.Enabled = CanSetTangentMode();
+            _alignedTangentButton.Button.Enabled = CanSetTangentMode();
+            _smoothInTangentButton.Button.Enabled = CanSetTangentSmoothIn();
+            _smoothOutTangentButton.Button.Enabled = CanSetTangentSmoothOut();
 
-            if (!CanSetTangentMode)
+            if (!CanSetTangentMode())
             {
                 return;
             }
 
             var index = _lastPointSelected.Index;
+
             var currentTangentInPosition = SelectedSpline.GetSplineLocalTangent(index, true).Translation;
             var currentTangentOutPosition = SelectedSpline.GetSplineLocalTangent(index, false).Translation;
 
@@ -359,6 +357,23 @@ namespace FlaxEditor.CustomEditors.Dedicated
             if (SelectedSpline) _lastTanOutPos = currentTangentOutPosition;
             _tanInChanged = false;
             _tanOutChanged = false;
+        }
+
+        private bool CanSetTangentMode()
+        {
+            return HasPointSelected || HasTangentsSelected;
+        }
+
+        private bool CanSetTangentSmoothIn()
+        {
+            if (!CanSetTangentMode()) return false;
+            return _lastPointSelected.Index != 0;
+        }
+
+        private bool CanSetTangentSmoothOut()
+        {
+            if (!CanSetTangentMode()) return false;
+            return _lastPointSelected.Index < SelectedSpline.SplinePointsCount - 1;
         }
 
         private void SetModeLinear()
@@ -470,7 +485,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void UpdateButtonsColors()
         {
-            if (!CanSetTangentMode)
+            if (!CanSetTangentMode())
             {
                 _linearTangentButton.Button.BackgroundColor = NormalButtonColor;
                 _freeTangentButton.Button.BackgroundColor = NormalButtonColor;
@@ -505,7 +520,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             else if (isLinear) SetModeLinear();
             else if (isAligned) SetModeAligned();
             else if (isSmoothIn) SetModeSmoothIn();
-            else if (isSmoothOut) SetModeSmoothIn();
+            else if (isSmoothOut) SetModeSmoothOut();
         }
 
         private void OnSetTangentsLinear()
@@ -601,15 +616,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // auto smooth tangent if's linear
             if (keyframe.TangentIn.Translation.Length == 0)
             {
-                var isLastKeyframe = index == spline.SplinePointsCount - 1;
-
-                if (!isLastKeyframe)
-                {
-                    var nexKeyframe = spline.GetSplineKeyframe(index + 1);
-                    var directionToNextKeyframe = keyframe.Value.WorldToLocalVector(keyframe.Value.Translation - nexKeyframe.Value.Translation);
-                    directionToNextKeyframe = directionToNextKeyframe.Normalized * 100f;
-                    keyframe.TangentIn.Translation = directionToNextKeyframe;
-                }
+                var previousKeyframe = spline.GetSplineKeyframe(index - 1);
+                var tangentDirection = keyframe.Value.WorldToLocalVector(previousKeyframe.Value.Translation - keyframe.Value.Translation);
+                tangentDirection = tangentDirection.Normalized * 100f;
+                keyframe.TangentIn.Translation = tangentDirection;
             }
 
             keyframe.TangentOut.Translation = Vector3.Zero;
@@ -623,15 +633,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // auto smooth tangent if's linear
             if (keyframe.TangentOut.Translation.Length == 0)
             {
-                var isFirstKeyframe = index == 0;
-
-                if (!isFirstKeyframe)
-                {
-                    var previousKeyframe = spline.GetSplineKeyframe(index - 1);
-                    var directionToPreviousKeyframe = keyframe.Value.WorldToLocalVector(keyframe.Value.Translation - previousKeyframe.Value.Translation);
-                    directionToPreviousKeyframe = directionToPreviousKeyframe.Normalized * 100f;
-                    keyframe.TangentOut.Translation = directionToPreviousKeyframe;
-                }
+                var nextKeyframe = spline.GetSplineKeyframe(index + 1);
+                var tangentDirection = keyframe.Value.WorldToLocalVector(nextKeyframe.Value.Translation - keyframe.Value.Translation);
+                tangentDirection = tangentDirection.Normalized * 100f;
+                keyframe.TangentOut.Translation = tangentDirection;
             }
 
             keyframe.TangentIn.Translation = Vector3.Zero;
