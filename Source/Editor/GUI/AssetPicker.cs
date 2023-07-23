@@ -484,18 +484,7 @@ namespace FlaxEditor.GUI
                         if (_selected != null)
                         {
                             var selectedAssetName = Path.GetFileNameWithoutExtension(_selected.Path);
-                            foreach (var child in popup.ItemsPanel.Children)
-                            {
-                                if (child is not ItemsListContextMenu.Item item)
-                                    continue;
-                                if (string.Equals(item.Name, selectedAssetName, StringComparison.Ordinal))
-                                {
-                                    // Highlight and scroll to item
-                                    item.Focus();
-                                    popup.ScrollViewTo(item);
-                                    break;
-                                }
-                            }
+                           popup.ScrollToAndHighlightItemByName(selectedAssetName);
                         }
                     }
                     else
@@ -509,19 +498,7 @@ namespace FlaxEditor.GUI
                         });
                         if (_selectedItem != null)
                         {
-                            var selectedItemName = _selectedItem.ShortName;
-                            foreach (var child in popup.ItemsPanel.Children)
-                            {
-                                if (child is not ItemsListContextMenu.Item item)
-                                    continue;
-                                if (string.Equals(item.Name, selectedItemName, StringComparison.Ordinal))
-                                {
-                                    // Highlight and scroll to item
-                                    item.Focus();
-                                    popup.ScrollViewTo(item);
-                                    break;
-                                }
-                            }
+                            popup.ScrollToAndHighlightItemByName(_selectedItem.ShortName);
                         }
                     }
                 }
