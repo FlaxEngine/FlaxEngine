@@ -266,6 +266,15 @@ namespace FlaxEditor.GUI
         }
 
         /// <summary>
+        /// Scrolls the scroll panel to a specific Item
+        /// </summary>
+        /// <param name="item">The item to scroll to.</param>
+        public void ScrollViewTo(Item item)
+        {
+            _scrollPanel.ScrollViewTo(item, true);
+        }
+
+        /// <summary>
         /// Sorts the items list (by item name by default).
         /// </summary>
         public void SortItems()

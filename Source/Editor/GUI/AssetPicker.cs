@@ -475,22 +475,54 @@ namespace FlaxEditor.GUI
                     if (_type != ScriptType.Null)
                     {
                         // Show asset picker popup
-                        AssetSearchPopup.Show(this, Button1Rect.BottomLeft, IsValid, item =>
+                        var popup = AssetSearchPopup.Show(this, Button1Rect.BottomLeft, IsValid, item =>
                         {
                             SelectedItem = item;
                             RootWindow.Focus();
                             Focus();
                         });
+                        if (_selected != null)
+                        {
+                            var selectedAssetName = Path.GetFileNameWithoutExtension(_selected.Path);
+                            foreach (var child in popup.ItemsPanel.Children)
+                            {
+                                if (child is not ItemsListContextMenu.Item item)
+                                    continue;
+                                if (string.Equals(item.Name, selectedAssetName, StringComparison.Ordinal))
+                                {
+                                    // Highlight and scroll to item
+                                    item.Focus();
+                                    popup.ScrollViewTo(item);
+                                    break;
+                                }
+                            }
+                        }
                     }
                     else
                     {
                         // Show content item picker popup
-                        ContentSearchPopup.Show(this, Button1Rect.BottomLeft, IsValid, item =>
+                        var popup = ContentSearchPopup.Show(this, Button1Rect.BottomLeft, IsValid, item =>
                         {
                             SelectedItem = item;
                             RootWindow.Focus();
                             Focus();
                         });
+                        if (_selectedItem != null)
+                        {
+                            var selectedItemName = _selectedItem.ShortName;
+                            foreach (var child in popup.ItemsPanel.Children)
+                            {
+                                if (child is not ItemsListContextMenu.Item item)
+                                    continue;
+                                if (string.Equals(item.Name, selectedItemName, StringComparison.Ordinal))
+                                {
+                                    // Highlight and scroll to item
+                                    item.Focus();
+                                    popup.ScrollViewTo(item);
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
                 else if (_selected != null || _selectedItem != null)
