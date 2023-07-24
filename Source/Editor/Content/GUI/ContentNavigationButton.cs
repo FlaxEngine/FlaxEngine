@@ -31,7 +31,7 @@ namespace FlaxEditor.Content.GUI
         : base(x, y, height)
         {
             TargetNode = targetNode;
-            Text = targetNode.NavButtonLabel + "/";
+            Text = targetNode.NavButtonLabel;
         }
 
         /// <inheritdoc />

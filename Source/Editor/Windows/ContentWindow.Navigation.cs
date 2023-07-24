@@ -196,12 +196,18 @@ namespace FlaxEditor.Windows
             }
             float x = NavigationBar.DefaultButtonsMargin;
             float h = _toolStrip.ItemsHeight - 2 * ToolStrip.DefaultMarginV;
-            for (int i = nodes.Count - 1; i >= 0; i--)
+            for (int i = nodes.Count - 2; i >= 0; i--)
             {
-                var button = new ContentNavigationButton(nodes[i], x, ToolStrip.DefaultMarginV, h);
+                var button = new ContentNavigationButton(nodes[i], x - 100, ToolStrip.DefaultMarginV, h);
                 button.PerformLayout();
                 x += button.Width + NavigationBar.DefaultButtonsMargin;
                 _navigationBar.AddChild(button);
+                if (i == 0)
+                    continue;
+                var buttonSeparator = new ContentNavigationButtonSeparator(button, x, ToolStrip.DefaultMarginV, h);
+                buttonSeparator.PerformLayout();
+                x += buttonSeparator.Width + NavigationBar.DefaultButtonsMargin;
+                _navigationBar.AddChild(buttonSeparator);
             }
             nodes.Clear();
 

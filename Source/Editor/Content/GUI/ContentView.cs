@@ -261,11 +261,14 @@ namespace FlaxEditor.Content.GUI
                 ClearItems();
 
             // Add references and link items
-            _items.AddRange(items);
             for (int i = 0; i < items.Count; i++)
             {
-                items[i].Parent = this;
-                items[i].AddReference(this);
+                if (items[i].Visible)
+                {
+                    items[i].Parent = this;
+                    items[i].AddReference(this);
+                    _items.Add(items[i]);
+                }
             }
             if (selection != null)
             {
