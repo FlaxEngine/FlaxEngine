@@ -328,6 +328,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 _setSmoothAllTangentsButton.Button.Clicked += EndEditSpline;
 
                 if (_selectedSpline) _selectedSpline.SplineUpdated += OnSplineEdited;
+
+                SetSelectedTangentTypeAsCurrent();
+                SetEditButtonsColor();
+                SetEditButtonsEnabled();
             }
         }
 
@@ -340,7 +344,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private void OnSplineEdited()
         {
             SetSelectedTangentTypeAsCurrent();
-            UpdateButtonsColors();
+            SetEditButtonsColor();
+            SetEditButtonsEnabled();
         }
 
         /// <inheritdoc/>
@@ -350,14 +355,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             UpdateSelectedPoint();
             UpdateSelectedTangent();
-
-            _linearTangentButton.Button.Enabled = CanEditTangent();
-            _freeTangentButton.Button.Enabled = CanSetTangentFree();
-            _alignedTangentButton.Button.Enabled = CanSetTangentAligned();
-            _smoothInTangentButton.Button.Enabled = CanSetTangentSmoothIn();
-            _smoothOutTangentButton.Button.Enabled = CanSetTangentSmoothOut();
-            _setLinearAllTangentsButton.Button.Enabled = CanSetAllTangentsLinear();
-            _setSmoothAllTangentsButton.Button.Enabled = CanSetAllTangentsSmooth();
 
             if (!CanEditTangent())
             {
@@ -391,6 +388,52 @@ namespace FlaxEditor.CustomEditors.Dedicated
             if (_selectedSpline) _lastTanOutPos = currentTangentOutPosition;
             _tanInChanged = false;
             _tanOutChanged = false;
+        }
+
+        private void SetSelectedTangentTypeAsCurrent()
+        {
+            if (_lastPointSelected == null || _selectedPoint == null) return;
+            if (IsLinearTangentMode(_selectedSpline, _lastPointSelected.Index)) SetModeLinear();
+            else if (IsAlignedTangentMode(_selectedSpline, _lastPointSelected.Index)) SetModeAligned();
+            else if (IsSmoothInTangentMode(_selectedSpline, _lastPointSelected.Index)) SetModeSmoothIn();
+            else if (IsSmoothOutTangentMode(_selectedSpline, _lastPointSelected.Index)) SetModeSmoothOut();
+            else if (IsFreeTangentMode(_selectedSpline, _lastPointSelected.Index)) SetModeFree();
+        }
+
+        private void SetEditButtonsColor()
+        {
+            if (!CanEditTangent())
+            {
+                _linearTangentButton.Button.BackgroundColor = NormalButtonColor;
+                _freeTangentButton.Button.BackgroundColor = NormalButtonColor;
+                _alignedTangentButton.Button.BackgroundColor = NormalButtonColor;
+                _smoothInTangentButton.Button.BackgroundColor = NormalButtonColor;
+                _smoothOutTangentButton.Button.BackgroundColor = NormalButtonColor;
+                return;
+            }
+
+            var isFree = _currentTangentMode is FreeTangentMode;
+            var isLinear = _currentTangentMode is LinearTangentMode;
+            var isAligned = _currentTangentMode is AlignedTangentMode;
+            var isSmoothIn = _currentTangentMode is SmoothInTangentMode;
+            var isSmoothOut = _currentTangentMode is SmoothOutTangentMode;
+
+            _linearTangentButton.Button.BackgroundColor = isLinear ? SelectedButtonColor : NormalButtonColor;
+            _freeTangentButton.Button.BackgroundColor = isFree ? SelectedButtonColor : NormalButtonColor;
+            _alignedTangentButton.Button.BackgroundColor = isAligned ? SelectedButtonColor : NormalButtonColor;
+            _smoothInTangentButton.Button.BackgroundColor = isSmoothIn ? SelectedButtonColor : NormalButtonColor;
+            _smoothOutTangentButton.Button.BackgroundColor = isSmoothOut ? SelectedButtonColor : NormalButtonColor;
+        }
+
+        private void SetEditButtonsEnabled()
+        {
+            _linearTangentButton.Button.Enabled = CanEditTangent();
+            _freeTangentButton.Button.Enabled = CanSetTangentFree();
+            _alignedTangentButton.Button.Enabled = CanSetTangentAligned();
+            _smoothInTangentButton.Button.Enabled = CanSetTangentSmoothIn();
+            _smoothOutTangentButton.Button.Enabled = CanSetTangentSmoothOut();
+            _setLinearAllTangentsButton.Button.Enabled = CanSetAllTangentsLinear();
+            _setSmoothAllTangentsButton.Button.Enabled = CanSetAllTangentsSmooth();
         }
 
         private bool CanEditTangent()
@@ -470,10 +513,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private void UpdateSelectedPoint()
         {
             // works only if select one spline
-            if (Editor.Instance.SceneEditing.SelectionCount != 1)
+            if (!_selectedSpline)
             {
                 _selectedPoint = null;
-                UpdateButtonsColors();
+                SetSelectedTangentTypeAsCurrent();
+                SetEditButtonsColor();
+                SetEditButtonsEnabled();
                 return;
             }
 
@@ -484,19 +529,16 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 _selectedPoint = currentSelected as SplineNode.SplinePointNode;
                 _lastPointSelected = _selectedPoint;
-
-                var index = _lastPointSelected.Index;
-
-                SetSelectedTangentTypeAsCurrent();
-                UpdateButtonsColors();
-
-                _currentTangentMode.OnSelectKeyframe(_selectedSpline, index);
+                _currentTangentMode.OnSelectKeyframe(_selectedSpline, _lastPointSelected.Index);
             }
             else
             {
                 _selectedPoint = null;
-                UpdateButtonsColors();
             }
+
+            SetSelectedTangentTypeAsCurrent();
+            SetEditButtonsColor();
+            SetEditButtonsEnabled();
         }
 
         private void UpdateSelectedTangent()
@@ -542,41 +584,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             _selectedTangentIn = null;
             _selectedTangentOut = null;
-        }
-
-        private void UpdateButtonsColors()
-        {
-            if (!CanEditTangent())
-            {
-                _linearTangentButton.Button.BackgroundColor = NormalButtonColor;
-                _freeTangentButton.Button.BackgroundColor = NormalButtonColor;
-                _alignedTangentButton.Button.BackgroundColor = NormalButtonColor;
-                _smoothInTangentButton.Button.BackgroundColor = NormalButtonColor;
-                _smoothOutTangentButton.Button.BackgroundColor = NormalButtonColor;
-                return;
-            }
-
-            var isFree = _currentTangentMode is FreeTangentMode;
-            var isLinear = _currentTangentMode is LinearTangentMode;
-            var isAligned = _currentTangentMode is AlignedTangentMode;
-            var isSmoothIn = _currentTangentMode is SmoothInTangentMode;
-            var isSmoothOut = _currentTangentMode is SmoothOutTangentMode;
-
-            _linearTangentButton.Button.BackgroundColor = isLinear ? SelectedButtonColor : NormalButtonColor;
-            _freeTangentButton.Button.BackgroundColor = isFree ? SelectedButtonColor : NormalButtonColor;
-            _alignedTangentButton.Button.BackgroundColor = isAligned ? SelectedButtonColor : NormalButtonColor;
-            _smoothInTangentButton.Button.BackgroundColor = isSmoothIn ? SelectedButtonColor : NormalButtonColor;
-            _smoothOutTangentButton.Button.BackgroundColor = isSmoothOut ? SelectedButtonColor : NormalButtonColor;
-        }
-
-        private void SetSelectedTangentTypeAsCurrent()
-        {
-            if (_lastPointSelected == null || _selectedPoint == null) return;
-            if (IsLinearTangentMode(_selectedSpline, _lastPointSelected.Index)) SetModeLinear();
-            else if (IsAlignedTangentMode(_selectedSpline, _lastPointSelected.Index)) SetModeAligned();
-            else if (IsSmoothInTangentMode(_selectedSpline, _lastPointSelected.Index)) SetModeSmoothIn();
-            else if (IsSmoothOutTangentMode(_selectedSpline, _lastPointSelected.Index)) SetModeSmoothOut();
-            else if (IsFreeTangentMode(_selectedSpline, _lastPointSelected.Index)) SetModeFree();
         }
 
         private void StartEditSpline()
