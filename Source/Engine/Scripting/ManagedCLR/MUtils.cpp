@@ -3,7 +3,6 @@
 #include "MUtils.h"
 #include "MClass.h"
 #include "MCore.h"
-#include "MDomain.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Core/Types/Version.h"
@@ -449,7 +448,7 @@ Variant MUtils::UnboxVariant(MObject* value)
                 {
                     auto& a = array[i];
                     a.SetType(elementType);
-                    Platform::MemoryCopy(&a.AsData,(byte*)ptr + elementSize * i, elementSize);
+                    Platform::MemoryCopy(&a.AsData, (byte*)ptr + elementSize * i, elementSize);
                 }
                 break;
             case VariantType::Transform:
@@ -1004,11 +1003,11 @@ MClass* MUtils::GetClass(const Variant& value)
     case VariantType::Enum:
         return Scripting::FindClass(StringAnsiView(value.Type.TypeName));
     case VariantType::ManagedObject:
-        {
-            MObject* obj = (MObject*)value;
-            if (obj)
-                return MCore::Object::GetClass(obj);
-        }
+    {
+        MObject* obj = (MObject*)value;
+        if (obj)
+            return MCore::Object::GetClass(obj);
+    }
     default: ;
     }
     return GetClass(value.Type);
@@ -1224,10 +1223,10 @@ MObject* MUtils::ToManaged(const Version& value)
     auto versionToManaged = scriptingClass->GetMethod("VersionToManaged", 4);
     CHECK_RETURN(versionToManaged, nullptr);
 
-    int major = value.Major();
-    int minor = value.Minor();
-    int build = value.Build();
-    int revision = value.Revision();
+    int32 major = value.Major();
+    int32 minor = value.Minor();
+    int32 build = value.Build();
+    int32 revision = value.Revision();
 
     void* params[4];
     params[0] = &major;
@@ -1244,26 +1243,29 @@ MObject* MUtils::ToManaged(const Version& value)
 
 Version MUtils::ToNative(MObject* value)
 {
+    Version result;
     if (value)
 #if USE_NETCORE
     {
-        auto ver = Version();
-
         auto scriptingClass = Scripting::GetStaticClass();
-        CHECK_RETURN(scriptingClass, ver);
-        auto versionToNative = scriptingClass->GetMethod("VersionToNative", 2);
-        CHECK_RETURN(versionToNative, ver);
+        CHECK_RETURN(scriptingClass, result);
+        auto versionToNative = scriptingClass->GetMethod("VersionToNative", 5);
+        CHECK_RETURN(versionToNative, result);
 
-        void* params[2];
+        void* params[5];
         params[0] = value;
-        params[1] = &ver;
+        params[1] = (byte*)&result;
+        params[2] = (byte*)&result + sizeof(int32);
+        params[3] = (byte*)&result + sizeof(int32) * 2;
+        params[4] = (byte*)&result + sizeof(int32) * 3;
         versionToNative->Invoke(nullptr, params, nullptr);
-        return ver;
+
+        return result;
     }
 #else
         return *(Version*)MCore::Object::Unbox(value);
 #endif
-    return Version();
+    return result;
 }
 
 #endif

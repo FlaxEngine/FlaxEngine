@@ -229,22 +229,24 @@ namespace FlaxEngine
             return ManagedHandle.Alloc(new CultureInfo(lcid));
         }
 
-        internal static void VersionToNative(ManagedHandle versionHandle, IntPtr nativePtr)
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct VersionNative
+        {
+            public int Major;
+            public int Minor;
+            public int Build;
+            public int Revision;
+        }
+
+        internal static void VersionToNative(ManagedHandle versionHandle, ref int major, ref int minor, ref int build, ref int revision)
         {
             Version version = Unsafe.As<Version>(versionHandle.Target);
             if (version != null)
             {
-                Marshal.WriteInt32(nativePtr, 0, version.Major);
-                Marshal.WriteInt32(nativePtr, 4, version.Minor);
-                Marshal.WriteInt32(nativePtr, 8, version.Build);
-                Marshal.WriteInt32(nativePtr, 12, version.Revision);
-            }
-            else
-            {
-                Marshal.WriteInt32(nativePtr, 0, 0);
-                Marshal.WriteInt32(nativePtr, 4, 0);
-                Marshal.WriteInt32(nativePtr, 8, -1);
-                Marshal.WriteInt32(nativePtr, 12, -1);
+                major = version.Major;
+                minor = version.Minor;
+                build = version.Build;
+                revision = version.Revision;
             }
         }
 
