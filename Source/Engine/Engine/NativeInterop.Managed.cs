@@ -274,12 +274,12 @@ namespace FlaxEngine.Interop
 #if FLAX_EDITOR
     [HideInEditor]
 #endif
-    internal static class ManagedString
+    public static class ManagedString
     {
         internal static ManagedHandle EmptyStringHandle = ManagedHandle.Alloc(string.Empty);
 
         [System.Diagnostics.DebuggerStepThrough]
-        internal static unsafe IntPtr ToNative(string str)
+        public static unsafe IntPtr ToNative(string str)
         {
             if (str == null)
                 return IntPtr.Zero;
@@ -290,7 +290,7 @@ namespace FlaxEngine.Interop
         }
 
         [System.Diagnostics.DebuggerStepThrough]
-        internal static unsafe IntPtr ToNativeWeak(string str)
+        public static unsafe IntPtr ToNativeWeak(string str)
         {
             if (str == null)
                 return IntPtr.Zero;
@@ -301,7 +301,7 @@ namespace FlaxEngine.Interop
         }
 
         [System.Diagnostics.DebuggerStepThrough]
-        internal static string ToManaged(IntPtr ptr)
+        public static string ToManaged(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero)
                 return null;
@@ -309,7 +309,7 @@ namespace FlaxEngine.Interop
         }
 
         [System.Diagnostics.DebuggerStepThrough]
-        internal static void Free(IntPtr ptr)
+        public static void Free(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero)
                 return;

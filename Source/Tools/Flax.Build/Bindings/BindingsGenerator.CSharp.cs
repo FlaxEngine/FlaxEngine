@@ -1203,6 +1203,8 @@ namespace Flax.Build.Bindings
                             contents.Append("ref ");
                         else if (parameterInfo.IsThis)
                             contents.Append("this ");
+                        else if (parameterInfo.IsParams)
+                            contents.Append("params ");
                         contents.Append(managedType);
                         contents.Append(' ');
                         contents.Append(parameterInfo.Name);
@@ -1263,6 +1265,8 @@ namespace Flax.Build.Bindings
                                 contents.Append("ref ");
                             else if (parameterInfo.IsThis)
                                 contents.Append("this ");
+                            else if (parameterInfo.IsParams)
+                                contents.Append("params ");
                             contents.Append(managedType);
                             contents.Append(' ');
                             contents.Append(parameterInfo.Name);
@@ -1988,6 +1992,8 @@ namespace Flax.Build.Bindings
                         contents.Append("ref ");
                     else if (parameterInfo.IsThis)
                         contents.Append("this ");
+                    else if (parameterInfo.IsParams)
+                        contents.Append("params ");
                     contents.Append(managedType);
                     contents.Append(' ');
                     contents.Append(parameterInfo.Name);

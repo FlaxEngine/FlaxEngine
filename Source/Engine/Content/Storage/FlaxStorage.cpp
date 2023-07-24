@@ -205,9 +205,6 @@ FlaxStorage::~FlaxStorage()
 {
     // Validate if has been disposed
     ASSERT(IsDisposed());
-
-    // Validate other fields
-    // Note: disposed storage has no open files
     CHECK(_chunksLock == 0);
     CHECK(_refCount == 0);
     ASSERT(_chunks.IsEmpty());
@@ -216,7 +213,6 @@ FlaxStorage::~FlaxStorage()
     // Ensure to close any outstanding file handles to prevent file locking in case it failed to load
     _file.DeleteAll();
 #endif
-
 }
 
 FlaxStorage::LockData FlaxStorage::LockSafe()
@@ -550,10 +546,8 @@ bool FlaxStorage::Load()
     }
     break;
     default:
-    {
         LOG(Warning, "Unsupported storage format version: {1}. {0}", ToString(), _version);
         return true;
-    }
     }
 
     // Mark as loaded (version number describes 'isLoaded' state)
@@ -573,7 +567,7 @@ bool FlaxStorage::Reload()
 
     // Perform clean reloading
     Dispose();
-    bool failed = Load();
+    const bool failed = Load();
 
     OnReloaded(this, failed);
 
@@ -1434,10 +1428,8 @@ void FlaxFile::GetEntries(Array<Entry>& output) const
 
 void FlaxFile::Dispose()
 {
-    // Base
     FlaxStorage::Dispose();
 
-    // Clean
     _asset.ID = Guid::Empty;
 }
 
@@ -1482,7 +1474,7 @@ bool FlaxPackage::HasAsset(const Guid& id) const
 bool FlaxPackage::HasAsset(const AssetInfo& info) const
 {
     ASSERT(_path == info.Path);
-    Entry* e = _entries.TryGet(info.ID);
+    const Entry* e = _entries.TryGet(info.ID);
     return e && e->TypeName == info.TypeName;
 }
 
@@ -1511,10 +1503,8 @@ void FlaxPackage::GetEntries(Array<Entry>& output) const
 
 void FlaxPackage::Dispose()
 {
-    // Base
     FlaxStorage::Dispose();
 
-    // Clean
     _entries.Clear();
 }
 
