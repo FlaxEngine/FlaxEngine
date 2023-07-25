@@ -75,7 +75,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             /// <inheritdoc/>
             public override void OnSetMode(Spline spline, int index)
             {
-                if (IsLinearTangentMode(spline, index))
+                if (IsLinearTangentMode(spline, index) || IsSmoothInTangentMode(spline, index) || IsSmoothOutTangentMode(spline, index))
                 {
                     SetPointSmooth(spline, index);
                 }
@@ -428,8 +428,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private void SetEditButtonsEnabled()
         {
             _linearTangentButton.Button.Enabled = CanEditTangent();
-            _freeTangentButton.Button.Enabled = CanSetTangentFree();
-            _alignedTangentButton.Button.Enabled = CanSetTangentAligned();
+            _freeTangentButton.Button.Enabled = CanEditTangent();
+            _alignedTangentButton.Button.Enabled = CanEditTangent();
             _smoothInTangentButton.Button.Enabled = CanSetTangentSmoothIn();
             _smoothOutTangentButton.Button.Enabled = CanSetTangentSmoothOut();
             _setLinearAllTangentsButton.Button.Enabled = CanSetAllTangentsLinear();
@@ -451,18 +451,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             if (!CanEditTangent()) return false;
             return _lastPointSelected.Index < _selectedSpline.SplinePointsCount - 1;
-        }
-
-        private bool CanSetTangentFree()
-        {
-            if (!CanEditTangent()) return false;
-            return _lastPointSelected.Index < _selectedSpline.SplinePointsCount - 1 && _lastPointSelected.Index != 0;
-        }
-
-        private bool CanSetTangentAligned()
-        {
-            if (!CanEditTangent()) return false;
-            return _lastPointSelected.Index < _selectedSpline.SplinePointsCount - 1 && _lastPointSelected.Index != 0; 
         }
 
         private bool CanSetAllTangentsSmooth()
@@ -759,17 +747,23 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var isFirstKeyframe = index <= 0;
 
             // force smooth it's linear point
-            if (tangentInSize == 0f && !isFirstKeyframe) tangentInSize = 100;
-            if (tangentOutSize == 0f && !isLastKeyframe) tangentOutSize = 100;
+            if (tangentInSize == 0f) tangentInSize = 100;
+            if (tangentOutSize == 0f) tangentOutSize = 100;
 
+            // try get next / last keyframe
             var nextKeyframe = !isLastKeyframe ? spline.GetSplineKeyframe(index + 1) : keyframe;
             var previousKeyframe = !isFirstKeyframe ? spline.GetSplineKeyframe(index - 1) : keyframe;
 
             // calc form from Spline.cpp -> SetTangentsSmooth
-            var slop = (keyframe.Value.Translation - previousKeyframe.Value.Translation + nextKeyframe.Value.Translation - keyframe.Value.Translation).Normalized;
+            // get tangent direction
+            var tangentDirection = (keyframe.Value.Translation - previousKeyframe.Value.Translation + nextKeyframe.Value.Translation - keyframe.Value.Translation).Normalized;
 
-            keyframe.TangentIn.Translation = -slop * tangentInSize;
-            keyframe.TangentOut.Translation = slop * tangentOutSize;
+            keyframe.TangentIn.Translation = -tangentDirection;
+            keyframe.TangentOut.Translation = tangentDirection;
+
+            keyframe.TangentIn.Translation *= tangentInSize;
+            keyframe.TangentOut.Translation *= tangentOutSize;
+
             spline.SetSplineKeyframe(index, keyframe);
             spline.UpdateSpline();
         }
