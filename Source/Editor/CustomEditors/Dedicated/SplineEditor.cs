@@ -343,7 +343,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void OnSplineEdited()
         {
-            SetSelectedTangentTypeAsCurrent();
             SetEditButtonsColor();
             SetEditButtonsEnabled();
         }
