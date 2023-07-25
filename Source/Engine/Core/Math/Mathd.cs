@@ -880,7 +880,19 @@ namespace FlaxEngine
         /// <returns>Valid angle in radians.</returns>
         public static double UnwindRadians(double angle)
         {
-            // TODO: make it faster?
+            //[nori_sc] made it faster has fixed cost but with large angle values starts to lose accuracy floating point problem
+            // 1 call teaks ~20-30 ns with anny value
+            var a = angle - Floor(angle / TwoPi) * TwoPi; //loop funcion betwine 0 and TwoPi
+            return a > Pi ? (a - TwoPi) : a; // change range so it become Pi and -Pi
+        }
+        /// <summary>
+        /// the same as <see cref="UnwindRadians"/> but is more computation intensive with large <see href="angle"/> and has better accuracy with large <see href="angle"/>
+        /// <br>cost of this funcion is <see href="angle"/> % <see cref="Pi"/></br>
+        /// </summary>
+        /// <param name="angle">Angle in radians to unwind.</param>
+        /// <returns>Valid angle in radians.</returns>
+        public static double UnwindRadiansAccurate(double angle)
+        {
             while (angle > Pi)
             {
                 angle -= TwoPi;
@@ -899,14 +911,26 @@ namespace FlaxEngine
         /// <returns>Valid angle in degrees.</returns>
         public static double UnwindDegrees(double angle)
         {
-            // TODO: make it faster?
-            while (angle > 180.0f)
+            //[nori_sc] made it faster for large values has fixed cost but with large angle values starts to lose accuracy floating point problem
+            // 1 call teaks ~20 ns with anny value
+            var a = angle - Floor(angle / 360.0) * 360.0; //loop funcion betwine 0 and 360
+            return a > 180 ? (a - 360.0) : a; // change range so it become 180 and -180
+        }
+        /// <summary>
+        /// the same as <see cref="UnwindDegrees"/> but is more computation intensive with large <see href="angle"/> and has better accuracy with large <see href="angle"/>
+        /// <br>cost of this funcion is <see href="angle"/> % 180.0f</br>
+        /// </summary>
+        /// <param name="angle">Angle in radians to unwind.</param>
+        /// <returns>Valid angle in radians.</returns>
+        public static double UnwindDegreesAccurate(double angle)
+        {
+            while (angle > 180.0)
             {
-                angle -= 360.0f;
+                angle -= 360.0;
             }
-            while (angle < -180.0f)
+            while (angle < -180.0)
             {
-                angle += 360.0f;
+                angle += 360.0;
             }
             return angle;
         }
@@ -927,8 +951,9 @@ namespace FlaxEngine
         /// Interpolates between two values using a linear function by a given amount.
         /// </summary>
         /// <remarks>
-        /// See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and
-        /// http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/
+        /// See:
+        /// <br><seealso href="http://www.encyclopediaofmath.org/index.php/Linear_interpolation"/></br>
+        /// <br><seealso href="http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/"/></br>
         /// </remarks>
         /// <param name="from">Value to interpolate from.</param>
         /// <param name="to">Value to interpolate to.</param>
@@ -944,7 +969,8 @@ namespace FlaxEngine
         /// Performs smooth (cubic Hermite) interpolation between 0 and 1.
         /// </summary>
         /// <remarks>
-        /// See https://en.wikipedia.org/wiki/Smoothstep
+        /// See: 
+        /// <br><seealso href="https://en.wikipedia.org/wiki/Smoothstep"/></br>
         /// </remarks>
         /// <param name="amount">Value between 0 and 1 indicating interpolation amount.</param>
         public static double SmoothStep(double amount)
@@ -956,7 +982,8 @@ namespace FlaxEngine
         /// Performs a smooth(er) interpolation between 0 and 1 with 1st and 2nd order derivatives of zero at endpoints.
         /// </summary>
         /// <remarks>
-        /// See https://en.wikipedia.org/wiki/Smoothstep
+        /// See: 
+        /// <br><seealso href="https://en.wikipedia.org/wiki/Smoothstep"/></br>
         /// </remarks>
         /// <param name="amount">Value between 0 and 1 indicating interpolation amount.</param>
         public static double SmootherStep(double amount)
@@ -1013,7 +1040,7 @@ namespace FlaxEngine
 
         /// <summary>
         /// Gauss function.
-        /// http://en.wikipedia.org/wiki/Gaussian_function#Two-dimensional_Gaussian_function
+        /// <br><seealso href="http://en.wikipedia.org/wiki/Gaussian_function#Two-dimensional_Gaussian_function"/></br>
         /// </summary>
         /// <param name="amplitude">Curve amplitude.</param>
         /// <param name="x">Position X.</param>
