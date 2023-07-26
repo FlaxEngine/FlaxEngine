@@ -876,62 +876,54 @@ namespace FlaxEngine
         /// <summary>
         /// Given a heading which may be outside the +/- PI range, 'unwind' it back into that range.
         /// </summary>
+        /// <remarks>Optimized version of <see cref="UnwindRadiansAccurate"/> that is it faster and has fixed cost but with large angle values (100 for example) starts to lose accuracy floating point problem.</remarks>
         /// <param name="angle">Angle in radians to unwind.</param>
         /// <returns>Valid angle in radians.</returns>
         public static double UnwindRadians(double angle)
         {
-            //[nori_sc] made it faster has fixed cost but with large angle values starts to lose accuracy floating point problem
-            // 1 call teaks ~20-30 ns with anny value
-            var a = angle - Floor(angle / TwoPi) * TwoPi; //loop funcion betwine 0 and TwoPi
-            return a > Pi ? (a - TwoPi) : a; // change range so it become Pi and -Pi
+            var a = angle - Math.Floor(angle / TwoPi) * TwoPi; // Loop function between 0 and TwoPi
+            return a > Pi ? a - TwoPi : a; // Change range so it become Pi and -Pi
         }
+
         /// <summary>
-        /// the same as <see cref="UnwindRadians"/> but is more computation intensive with large <see href="angle"/> and has better accuracy with large <see href="angle"/>
-        /// <br>cost of this funcion is <see href="angle"/> % <see cref="Pi"/></br>
+        /// The same as <see cref="UnwindRadians"/> but is more computation intensive with large <see href="angle"/> and has better accuracy with large <see href="angle"/>.
+        /// <br>cost of this function is <see href="angle"/> % <see cref="Pi"/></br>
         /// </summary>
         /// <param name="angle">Angle in radians to unwind.</param>
         /// <returns>Valid angle in radians.</returns>
         public static double UnwindRadiansAccurate(double angle)
         {
             while (angle > Pi)
-            {
                 angle -= TwoPi;
-            }
             while (angle < -Pi)
-            {
                 angle += TwoPi;
-            }
             return angle;
         }
 
         /// <summary>
-        /// Utility to ensure angle is between +/- 180 degrees by unwinding
+        /// Utility to ensure angle is between +/- 180 degrees by unwinding.
         /// </summary>
+        /// <remarks>Optimized version of <see cref="UnwindDegreesAccurate"/> that is it faster and has fixed cost but with large angle values (100 for example) starts to lose accuracy floating point problem.</remarks>
         /// <param name="angle">Angle in degrees to unwind.</param>
         /// <returns>Valid angle in degrees.</returns>
         public static double UnwindDegrees(double angle)
         {
-            //[nori_sc] made it faster for large values has fixed cost but with large angle values starts to lose accuracy floating point problem
-            // 1 call teaks ~20 ns with anny value
-            var a = angle - Floor(angle / 360.0) * 360.0; //loop funcion betwine 0 and 360
-            return a > 180 ? (a - 360.0) : a; // change range so it become 180 and -180
+            var a = angle - Math.Floor(angle / 360.0) * 360.0; // Loop function between 0 and 360
+            return a > 180 ? a - 360.0 : a; // Change range so it become 180 and -180
         }
+
         /// <summary>
-        /// the same as <see cref="UnwindDegrees"/> but is more computation intensive with large <see href="angle"/> and has better accuracy with large <see href="angle"/>
-        /// <br>cost of this funcion is <see href="angle"/> % 180.0f</br>
+        /// The same as <see cref="UnwindDegrees"/> but is more computation intensive with large <see href="angle"/> and has better accuracy with large <see href="angle"/>.
+        /// <br>cost of this function is <see href="angle"/> % 180.0f</br>
         /// </summary>
         /// <param name="angle">Angle in radians to unwind.</param>
         /// <returns>Valid angle in radians.</returns>
         public static double UnwindDegreesAccurate(double angle)
         {
             while (angle > 180.0)
-            {
                 angle -= 360.0;
-            }
             while (angle < -180.0)
-            {
                 angle += 360.0;
-            }
             return angle;
         }
 
