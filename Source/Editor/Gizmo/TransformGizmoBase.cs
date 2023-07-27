@@ -469,7 +469,7 @@ namespace FlaxEditor.Gizmo
                     }
 
                     // Apply transformation (but to the parents, not whole selection pool)
-                    if (anyValid || (!_isTransforming && Owner.UseDuplicate))
+                    if (anyValid || (_isTransforming && Owner.UseDuplicate))
                     {
                         StartTransforming();
                         LastDelta = new Transform(translationDelta, rotationDelta, scaleDelta);
