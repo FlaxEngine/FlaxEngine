@@ -56,36 +56,94 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
 {
     if (CommandLine::Options.Headless)
         return DialogResult::None;
-    CFStringRef textRef = AppleUtils::ToString(text);
-    CFStringRef captionRef = AppleUtils::ToString(caption);
-    CFOptionFlags flags = 0;
+	NSAlert* alert = [[NSAlert alloc] init];
+    ASSERT(alert);
     switch (buttons)
     {
     case MessageBoxButtons::AbortRetryIgnore:
+        [alert addButtonWithTitle:@"Abort"];
+        [alert addButtonWithTitle:@"Retry"];
+        [alert addButtonWithTitle:@"Ignore"];
+        break;
+    case MessageBoxButtons::OK:
+        [alert addButtonWithTitle:@"OK"];
+        break;
     case MessageBoxButtons::OKCancel:
+        [alert addButtonWithTitle:@"OK"];
+        [alert addButtonWithTitle:@"Cancel"];
+        break;
     case MessageBoxButtons::RetryCancel:
+        [alert addButtonWithTitle:@"Retry"];
+        [alert addButtonWithTitle:@"Cancel"];
+        break;
     case MessageBoxButtons::YesNo:
+        [alert addButtonWithTitle:@"Yes"];
+        [alert addButtonWithTitle:@"No"];
+        break;
     case MessageBoxButtons::YesNoCancel:
-        flags |= kCFUserNotificationCancelResponse;
+        [alert addButtonWithTitle:@"Yes"];
+        [alert addButtonWithTitle:@"No"];
+        [alert addButtonWithTitle:@"Cancel"];
         break;
     }
     switch (icon)
     {
     case MessageBoxIcon::Information:
-        flags |= kCFUserNotificationNoteAlertLevel;
+	    [alert setAlertStyle:NSAlertStyleCritical];
         break;
     case MessageBoxIcon::Error:
     case MessageBoxIcon::Stop:
-        flags |= kCFUserNotificationStopAlertLevel;
+	    [alert setAlertStyle:NSAlertStyleInformational];
         break;
     case MessageBoxIcon::Warning:
-        flags |= kCFUserNotificationCautionAlertLevel;
+	    [alert setAlertStyle:NSAlertStyleWarning];
         break;
     }
-    SInt32 result = CFUserNotificationDisplayNotice(0, flags, nullptr, nullptr, nullptr, captionRef, textRef, nullptr);
-    CFRelease(captionRef);
-    CFRelease(textRef);
-    return DialogResult::OK;
+	[alert setMessageText:(NSString*)AppleUtils::ToString(caption)];
+	[alert setInformativeText:(NSString*)AppleUtils::ToString(text)];
+	NSInteger button = [alert runModal];
+    DialogResult result = DialogResult::OK;
+    switch (buttons)
+    {
+    case MessageBoxButtons::AbortRetryIgnore:
+        if (button == NSAlertFirstButtonReturn)
+            result = DialogResult::Abort;
+        else if (button == NSAlertSecondButtonReturn)
+            result = DialogResult::Retry;
+        else
+            result = DialogResult::Ignore;
+        break;
+    case MessageBoxButtons::OK:
+        result = DialogResult::OK;
+        break;
+    case MessageBoxButtons::OKCancel:
+        if (button == NSAlertFirstButtonReturn)
+            result = DialogResult::OK;
+        else
+            result = DialogResult::Cancel;
+        break;
+    case MessageBoxButtons::RetryCancel:
+        if (button == NSAlertFirstButtonReturn)
+            result = DialogResult::Retry;
+        else
+            result = DialogResult::Cancel;
+        break;
+    case MessageBoxButtons::YesNo:
+        if (button == NSAlertFirstButtonReturn)
+            result = DialogResult::Yes;
+        else
+            result = DialogResult::No;
+        break;
+    case MessageBoxButtons::YesNoCancel:
+        if (button == NSAlertFirstButtonReturn)
+            result = DialogResult::Yes;
+        else if (button == NSAlertSecondButtonReturn)
+            result = DialogResult::No;
+        else
+            result = DialogResult::Cancel;
+        break;
+    }
+    return result;
 }
 
 Float2 AppleUtils::PosToCoca(const Float2& pos)
@@ -301,15 +359,16 @@ Float2 MacPlatform::GetMousePosition()
     CGEventRef event = CGEventCreate(nullptr);
     CGPoint cursor = CGEventGetLocation(event);
     CFRelease(event);
-    return Float2((float)cursor.x, (float)cursor.y);
+    return Float2((float)cursor.x, (float)cursor.y) * MacPlatform::ScreenScale;
 }
 
 void MacPlatform::SetMousePosition(const Float2& pos)
 {
     CGPoint cursor;
-    cursor.x = (CGFloat)pos.X;
-    cursor.y = (CGFloat)pos.Y;
+    cursor.x = (CGFloat)(pos.X / MacPlatform::ScreenScale);
+    cursor.y = (CGFloat)(pos.Y / MacPlatform::ScreenScale);
     CGWarpMouseCursorPosition(cursor);
+    CGAssociateMouseAndMouseCursorPosition(true);
 }
 
 Float2 MacPlatform::GetDesktopSize()

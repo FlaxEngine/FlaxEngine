@@ -108,7 +108,7 @@ void ManagedSerialization::Deserialize(const StringAnsiView& data, MObject* obje
     // Prepare arguments
     void* args[3];
     args[0] = object;
-    args[1] = (void*)str;
+    args[1] = (void*)&str;
     args[2] = (void*)&len;
 
     // Call serialization tool

@@ -266,6 +266,35 @@ namespace FlaxEditor.GUI
         }
 
         /// <summary>
+        /// Scrolls the scroll panel to a specific Item
+        /// </summary>
+        /// <param name="item">The item to scroll to.</param>
+        public void ScrollViewTo(Item item)
+        {
+            _scrollPanel.ScrollViewTo(item, true);
+        }
+
+        /// <summary>
+        /// Scrolls to the item and focuses it by name.
+        /// </summary>
+        /// <param name="itemName">The item name.</param>
+        public void ScrollToAndHighlightItemByName(string itemName)
+        {
+            foreach (var child in ItemsPanel.Children)
+            {
+                if (child is not ItemsListContextMenu.Item item)
+                    continue;
+                if (string.Equals(item.Name, itemName, StringComparison.Ordinal))
+                {
+                    // Highlight and scroll to item
+                    item.Focus();
+                    ScrollViewTo(item);
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
         /// Sorts the items list (by item name by default).
         /// </summary>
         public void SortItems()

@@ -535,6 +535,31 @@ void StaticModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     }
 }
 
+const Span<MaterialSlot> StaticModel::GetMaterialSlots() const
+{
+    const auto model = Model.Get();
+    if (model && !model->WaitForLoaded())
+        return ToSpan(model->MaterialSlots);
+    return Span<MaterialSlot>();
+}
+
+MaterialBase* StaticModel::GetMaterial(int32 entryIndex)
+{
+    if (Model)
+        Model->WaitForLoaded();
+    else
+        return nullptr;
+    CHECK_RETURN(entryIndex >= 0 && entryIndex < Entries.Count(), nullptr);
+    MaterialBase* material = Entries[entryIndex].Material.Get();
+    if (!material)
+    {
+        material = Model->MaterialSlots[entryIndex].Material.Get();
+        if (!material)
+            material = GPUDevice::Instance->GetDefaultMaterial();
+    }
+    return material;
+}
+
 bool StaticModel::IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal)
 {
     auto model = Model.Get();

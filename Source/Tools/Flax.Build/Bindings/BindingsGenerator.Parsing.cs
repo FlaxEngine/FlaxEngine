@@ -337,6 +337,9 @@ namespace Flax.Build.Bindings
                         case "this":
                             currentParam.IsThis = true;
                             break;
+                        case "params":
+                            currentParam.IsParams = true;
+                            break;
                         case "attributes":
                             currentParam.Attributes = tag.Value;
                             break;
@@ -846,6 +849,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "hidden":
                     desc.IsHidden = true;
+                    break;
+                case "sealed":
+                    desc.IsVirtual = false;
                     break;
                 case "tag":
                     ParseTag(ref desc.Tags, tag);

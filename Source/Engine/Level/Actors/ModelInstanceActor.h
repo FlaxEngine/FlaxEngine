@@ -36,6 +36,17 @@ public:
     API_PROPERTY() void SetEntries(const Array<ModelInstanceEntry>& value);
 
     /// <summary>
+    /// Gets the material slots array set on the asset (eg. model or skinned model asset).
+    /// </summary>
+    API_PROPERTY(Sealed) virtual const Span<class MaterialSlot> GetMaterialSlots() const = 0;
+
+    /// <summary>
+    /// Gets the material used to draw the meshes which are assigned to that slot (set in Entries or model's default).
+    /// </summary>
+    /// <param name="entryIndex">The material slot entry index.</param>
+    API_FUNCTION(Sealed) virtual MaterialBase* GetMaterial(int32 entryIndex) = 0;
+
+    /// <summary>
     /// Sets the material to the entry slot. Can be used to override the material of the meshes using this slot.
     /// </summary>
     /// <param name="entryIndex">The material slot entry index.</param>

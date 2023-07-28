@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -94,9 +93,11 @@ namespace FlaxEngine
                 public AnimatedModel Instance;
             }
 
+            [HideInEditor]
             [CustomMarshaller(typeof(Context), MarshalMode.Default, typeof(ContextMarshaller))]
             internal static class ContextMarshaller
             {
+                [HideInEditor]
                 [StructLayout(LayoutKind.Sequential)]
                 public struct ContextNative
                 {
@@ -116,7 +117,7 @@ namespace FlaxEngine
 
                 internal static Context ToManaged(ContextNative managed)
                 {
-                    return new Context()
+                    return new Context
                     {
                         Graph = managed.Graph,
                         GraphExecutor = managed.GraphExecutor,
@@ -129,9 +130,10 @@ namespace FlaxEngine
                         Instance = AnimatedModelMarshaller.ConvertToManaged(managed.Instance),
                     };
                 }
+
                 internal static ContextNative ToNative(Context managed)
                 {
-                    return new ContextNative()
+                    return new ContextNative
                     {
                         Graph = managed.Graph,
                         GraphExecutor = managed.GraphExecutor,
@@ -144,6 +146,7 @@ namespace FlaxEngine
                         Instance = AnimatedModelMarshaller.ConvertToUnmanaged(managed.Instance),
                     };
                 }
+
                 internal static void Free(ContextNative unmanaged)
                 {
                 }
@@ -243,6 +246,12 @@ namespace FlaxEngine
                     throw new ArgumentNullException(nameof(source));
                 if (destination == null)
                     throw new ArgumentNullException(nameof(destination));
+                if (source->NodesCount <= 0 || source->NodesCount > 4096)
+                    throw new ArgumentOutOfRangeException(nameof(source));
+                if (destination->NodesCount <= 0 || destination->NodesCount > 4096)
+                    throw new ArgumentOutOfRangeException(nameof(destination));
+                if (source->NodesCount != destination->NodesCount)
+                    throw new ArgumentOutOfRangeException();
                 destination->NodesCount = source->NodesCount;
                 destination->Unused = source->Unused;
                 Utils.MemoryCopy(new IntPtr(destination->Nodes), new IntPtr(source->Nodes), (ulong)(source->NodesCount * sizeof(Transform)));
