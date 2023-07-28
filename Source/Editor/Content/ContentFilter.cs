@@ -195,7 +195,7 @@ namespace FlaxEditor.Content
         {
             engine.Visible = false;
             engine.Folder.Visible = false;
-            
+
             foreach (var item in plugins)
             {
                 item.Visible = false;
@@ -218,7 +218,6 @@ namespace FlaxEditor.Content
                 {
                     engine.Visible = true;
                     engine.Folder.Visible = true;
-                    Editor.Instance.Windows.ContentWin.RefreshView(engine);
                 }
 
                 if (dropdown.Selection[i] == 1)//Show Plugin Content
@@ -227,7 +226,6 @@ namespace FlaxEditor.Content
                     {
                         item.Visible = true;
                         item.Folder.Visible = true;
-                        Editor.Instance.Windows.ContentWin.RefreshView(item);
                     }
                 }
 
@@ -244,19 +242,16 @@ namespace FlaxEditor.Content
                     gameSettings.Visible = true;
                     settings.Visible = true;
                     settings.Folder.Visible = true;
-                    Editor.Instance.Windows.ContentWin.RefreshView((ContentTreeNode)settings.Parent);
                 }
 
                 if (dropdown.Selection[i] == 4)//"Show Shader Source"
                 {
                     shaders.Visible = true;
                     shaders.Folder.Visible = true;
-                    Editor.Instance.Windows.ContentWin.RefreshView(shaders);
                 }
             }
-
-            
-            
+            engine.ParentTree.PerformLayout();
+            Editor.Instance.Windows.ContentWin.RefreshView();
         }
     }
 }
