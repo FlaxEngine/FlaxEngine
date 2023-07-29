@@ -39,7 +39,7 @@ public:
     const Char* Name;
     int32 Order;
 
-#define DECLARE_ENGINE_SERVICE_EVENT(result, name) virtual result name(); static void On##name();
+#define DECLARE_ENGINE_SERVICE_EVENT(result, name) virtual result name(); static void On##name()
     DECLARE_ENGINE_SERVICE_EVENT(bool, Init);
     DECLARE_ENGINE_SERVICE_EVENT(void, FixedUpdate);
     DECLARE_ENGINE_SERVICE_EVENT(void, Update);

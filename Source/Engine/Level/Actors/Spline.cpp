@@ -101,25 +101,25 @@ Vector3 Spline::GetSplineLocalDirection(float time) const
 
 Vector3 Spline::GetSplinePoint(int32 index) const
 {
-    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), Vector3::Zero)
+    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), Vector3::Zero);
     return _transform.LocalToWorld(Curve[index].Value.Translation);
 }
 
 Vector3 Spline::GetSplineLocalPoint(int32 index) const
 {
-    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), Vector3::Zero)
+    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), Vector3::Zero);
     return Curve[index].Value.Translation;
 }
 
 Transform Spline::GetSplineTransform(int32 index) const
 {
-    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), Transform::Identity)
+    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), Transform::Identity);
     return _transform.LocalToWorld(Curve[index].Value);
 }
 
 Transform Spline::GetSplineLocalTransform(int32 index) const
 {
-    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), Transform::Identity)
+    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), Transform::Identity);
     return Curve[index].Value;
 }
 
@@ -130,7 +130,7 @@ Transform Spline::GetSplineTangent(int32 index, bool isIn)
 
 Transform Spline::GetSplineLocalTangent(int32 index, bool isIn)
 {
-    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), Transform::Identity)
+    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), Transform::Identity);
     const auto& k = Curve[index];
     const auto& tangent = isIn ? k.TangentIn : k.TangentOut;
     return tangent + k.Value;
@@ -209,7 +209,7 @@ float Spline::GetSplineSegmentLength(int32 index) const
 
 float Spline::GetSplineTime(int32 index) const
 {
-    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), 0.0f)
+    CHECK_RETURN(index >= 0 && index < GetSplinePointsCount(), 0.0f);
     return Curve[index].Time;
 }
 

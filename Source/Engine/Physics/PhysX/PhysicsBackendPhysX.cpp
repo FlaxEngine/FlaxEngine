@@ -2202,7 +2202,7 @@ bool PhysicsBackend::CapsuleCastAll(void* scene, const Vector3& center, const fl
 
 bool PhysicsBackend::ConvexCast(void* scene, const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false)
+    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false);
     SCENE_QUERY_SETUP_SWEEP_1();
     const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
     const PxConvexMeshGeometry geometry((PxConvexMesh*)convexMesh->GetConvex(), PxMeshScale(C2P(scale)));
@@ -2211,7 +2211,7 @@ bool PhysicsBackend::ConvexCast(void* scene, const Vector3& center, const Collis
 
 bool PhysicsBackend::ConvexCast(void* scene, const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false)
+    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false);
     SCENE_QUERY_SETUP_SWEEP_1();
     const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
     const PxConvexMeshGeometry geometry((PxConvexMesh*)convexMesh->GetConvex(), PxMeshScale(C2P(scale)));
@@ -2223,7 +2223,7 @@ bool PhysicsBackend::ConvexCast(void* scene, const Vector3& center, const Collis
 
 bool PhysicsBackend::ConvexCastAll(void* scene, const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
-    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false)
+    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false);
     SCENE_QUERY_SETUP_SWEEP();
     const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
     const PxConvexMeshGeometry geometry((PxConvexMesh*)convexMesh->GetConvex(), PxMeshScale(C2P(scale)));
@@ -2259,7 +2259,7 @@ bool PhysicsBackend::CheckCapsule(void* scene, const Vector3& center, const floa
 
 bool PhysicsBackend::CheckConvex(void* scene, const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false)
+    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false);
     SCENE_QUERY_SETUP_OVERLAP_1();
     const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
     const PxConvexMeshGeometry geometry((PxConvexMesh*)convexMesh->GetConvex(), PxMeshScale(C2P(scale)));
@@ -2301,7 +2301,7 @@ bool PhysicsBackend::OverlapCapsule(void* scene, const Vector3& center, const fl
 
 bool PhysicsBackend::OverlapConvex(void* scene, const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false)
+    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false);
     SCENE_QUERY_SETUP_OVERLAP();
     const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
     const PxConvexMeshGeometry geometry((PxConvexMesh*)convexMesh->GetConvex(), PxMeshScale(C2P(scale)));
@@ -2346,7 +2346,7 @@ bool PhysicsBackend::OverlapCapsule(void* scene, const Vector3& center, const fl
 
 bool PhysicsBackend::OverlapConvex(void* scene, const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, Array<PhysicsColliderActor*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false)
+    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false);
     SCENE_QUERY_SETUP_OVERLAP();
     const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
     const PxConvexMeshGeometry geometry((PxConvexMesh*)convexMesh->GetConvex(), PxMeshScale(C2P(scale)));
