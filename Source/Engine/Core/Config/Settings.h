@@ -45,7 +45,7 @@ public:
             } \
         } \
         return result; \
-    }
+    } static_assert(true, "")
 
 // [Deprecated on 20.01.2022, expires on 20.01.2024]
 #define IMPLEMENT_SETTINGS_GETTER(type, field) IMPLEMENT_ENGINE_SETTINGS_GETTER(type, field)
@@ -69,6 +69,6 @@ public:
             } \
         } \
         return result; \
-    }
+    } static_assert(true, "")
 
 #define DECLARE_SETTINGS_GETTER(type) static type* Get()

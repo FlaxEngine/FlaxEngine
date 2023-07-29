@@ -39,7 +39,7 @@ namespace fmt_flax
                 return fmt::format_to(ctx.out(), basic_string_view<Char>(TEXT(formatText)), ##__VA_ARGS__); \
             } \
         }; \
-    }
+    } static_assert(true, "")
 
 #define DEFINE_DEFAULT_FORMATTING_VIA_TO_STRING(type) \
     namespace fmt \
@@ -59,4 +59,4 @@ namespace fmt_flax
                 return fmt::detail::copy_str<Char>(str.Get(), str.Get() + str.Length(), ctx.out()); \
             } \
         }; \
-    }
+    } static_assert(true, "")

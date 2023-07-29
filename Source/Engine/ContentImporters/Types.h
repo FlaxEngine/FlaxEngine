@@ -149,6 +149,6 @@ public:
     CreateAssetFunction Callback;
 };
 
-#define IMPORT_SETUP(type, serializedVersion) context.Data.Header.TypeName = type::TypeName; context.Data.SerializedVersion = serializedVersion;
+#define IMPORT_SETUP(type, serializedVersion) context.Data.Header.TypeName = type::TypeName; context.Data.SerializedVersion = serializedVersion
 
 #endif
