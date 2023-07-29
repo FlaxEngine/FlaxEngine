@@ -155,6 +155,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 {
                     LOG(Error, "Terrain actor {0} is missing heightmap for baking, skipping baking stage.", terrain->GetName());
                     _wasStageDone = true;
+                    scene->EntriesLocker.Unlock();
                     return;
                 }
                 const auto heightmap = patch->Heightmap.Get()->GetTexture();
