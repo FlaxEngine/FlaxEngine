@@ -54,6 +54,7 @@ namespace FlaxEngine
         }
     }
 
+#if USE_NETCORE
     /// <summary>
     /// Specifies a options for an asset reference picker in the editor. Allows to customize view or provide custom value assign policy.
     /// </summary>
@@ -70,4 +71,5 @@ namespace FlaxEngine
         {
         }
     }
+#endif
 }
