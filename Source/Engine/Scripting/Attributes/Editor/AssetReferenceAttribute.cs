@@ -53,4 +53,21 @@ namespace FlaxEngine
             UseSmallPicker = useSmallPicker;
         }
     }
+
+    /// <summary>
+    /// Specifies a options for an asset reference picker in the editor. Allows to customize view or provide custom value assign policy.
+    /// </summary>
+    /// <seealso cref="System.Attribute" />
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    public class AssetReferenceAttribute<T> : AssetReferenceAttribute
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AssetReferenceAttribute"/> class for generic type T.
+        /// </summary>
+        /// <param name="useSmallPicker">True if use asset picker with a smaller height (single line), otherwise will use with full icon.</param>
+        public AssetReferenceAttribute(bool useSmallPicker = false)
+            : base(typeof(T), useSmallPicker)
+        {
+        }
+    }
 }
