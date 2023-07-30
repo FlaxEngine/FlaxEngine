@@ -272,8 +272,10 @@ namespace Flax.Build
             foreach (var reference in fileReferences)
                 args.Add(string.Format("/reference:\"{0}\"", reference));
 #if USE_NETCORE
-            foreach (var analyzer in buildOptions.ScriptingAPI.SystemAnalyzers)
-                args.Add(string.Format("/analyzer:\"{0}{1}.dll\"", referenceAnalyzers, analyzer));
+            foreach (var systemAnalyzer in buildOptions.ScriptingAPI.SystemAnalyzers)
+                args.Add(string.Format("/analyzer:\"{0}{1}.dll\"", referenceAnalyzers, systemAnalyzer));
+            foreach (var analyzer in buildOptions.ScriptingAPI.Analyzers)
+                args.Add(string.Format("/analyzer:\"{0}\"", analyzer));
 #endif
             foreach (var sourceFile in sourceFiles)
                 args.Add("\"" + sourceFile + "\"");
