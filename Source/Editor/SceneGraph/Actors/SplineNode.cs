@@ -12,6 +12,8 @@ using FlaxEditor.Modules;
 using FlaxEngine;
 using FlaxEngine.Json;
 using Object = FlaxEngine.Object;
+using System.Collections.Generic;
+using System.Security.Cryptography;
 
 namespace FlaxEditor.SceneGraph.Actors
 {
@@ -21,16 +23,27 @@ namespace FlaxEditor.SceneGraph.Actors
     [HideInEditor]
     public sealed class SplineNode : ActorNode
     {
-        public sealed class SplinePointNode : ActorChildNode<SplineNode>
+        public unsafe sealed class SplinePointNode : ActorChildNode<SplineNode>
         {
+            private Guid* splineNodeId;
+
+            private Spline _spline;
+            private SplineNode _splineNode;
+            private SplinePointTangentNode _tangentInNode;
+            private SplinePointTangentNode _tangentOutNode;
+
             public unsafe SplinePointNode(SplineNode node, Guid id, int index)
             : base(node, id, index)
             {
-                var g = (JsonSerializer.GuidInterop*)&id;
-                g->D++;
-                AddChild(new SplinePointTangentNode(node, id, index, true));
-                g->D++;
-                AddChild(new SplinePointTangentNode(node, id, index, false));
+                splineNodeId = &id;
+                _splineNode = node;
+                _spline = (Spline)_splineNode.Actor;
+                _spline.SplineUpdated += AddTangentIn;
+                _spline.SplineUpdated += AddTangentOut;
+
+
+                void AddTangentIn() => AddTangentNode(true, splineNodeId);
+                void AddTangentOut() => AddTangentNode(false, splineNodeId);
             }
 
             public override bool CanBeSelectedDirectly => true;
@@ -88,6 +101,54 @@ namespace FlaxEditor.SceneGraph.Actors
                 var actor = (Spline)_node.Actor;
                 actor.RemoveSplinePoint(Index);
             }
+
+            public override void OnDispose()
+            {
+                base.OnDispose();
+            }
+
+            private unsafe void AddTangentNode(bool isIn, Guid* id)
+            {
+                 if (_tangentInNode != null && _tangentOutNode != null)
+                {
+                    return;
+                }
+
+                var g = (JsonSerializer.GuidInterop*)&id;
+
+                if (isIn && _tangentInNode == null)
+                {
+                    g->D++;
+                    _tangentInNode = new SplinePointTangentNode(_splineNode, *id, Index, true);
+                    AddChild(_tangentInNode);
+                }
+
+                if (!isIn && _tangentOutNode == null)
+                {
+                    
+                    g->D++;
+                    _tangentOutNode = new SplinePointTangentNode(_splineNode, *id, Index, false);
+                    AddChild(_tangentOutNode);
+                }
+            }
+
+            //private unsafe void RemoveTangentNodes()
+            //{
+            //    var id = _splineNode.ID;
+            //    var g = (JsonSerializer.GuidInterop*)&id;
+
+            //    if (_tangentInNode != null)
+            //    {
+            //        _tangentInNode.Delete();
+            //        g->D--;
+            //    }
+
+            //    if (_tangentOutNode != null)
+            //    {
+            //        g->D--;
+            //        _tangentOutNode.Delete();
+            //    }
+            //}
 
             class DuplicateUndoAction : IUndoAction, ISceneEditAction
             {
@@ -225,12 +286,15 @@ namespace FlaxEditor.SceneGraph.Actors
             private int _index;
             private bool _isIn;
 
+
+
             public SplinePointTangentNode(SplineNode node, Guid id, int index, bool isIn)
             : base(id, isIn ? 0 : 1)
             {
                 _node = node;
                 _index = index;
                 _isIn = isIn;
+                
             }
 
             public override Transform Transform
@@ -279,44 +343,84 @@ namespace FlaxEditor.SceneGraph.Actors
             }
         }
 
+        private List<SplinePointNode> _pointNodes;
+
         /// <inheritdoc />
         public SplineNode(Actor actor)
         : base(actor)
         {
-            OnUpdate();
+            _pointNodes = new List<SplinePointNode>();
             FlaxEngine.Scripting.Update += OnUpdate;
+
+
+            var spline = (Spline)Actor;
+            spline.SplineUpdated += UpdateNodesCount;
+
+            UpdateNodesCount();
+        }
+
+        private unsafe void UpdateNodesCount()
+        {
+            var spline = (Spline)Actor;
+            var id = ID;
+            var g = (JsonSerializer.GuidInterop*)&id;
+            var splinePointsCount = spline.SplinePointsCount;
+            var splineNodePointsCount = _pointNodes.Count;
+            g->D += (uint)splineNodePointsCount;
+            while (splineNodePointsCount < splinePointsCount)
+            {
+                g->D++;
+                var newPoint = new SplinePointNode(this, id, splineNodePointsCount);
+                AddChildNode(newPoint);
+                _pointNodes.Add(newPoint);
+                splineNodePointsCount++;
+            }
+
+            while (splineNodePointsCount > splinePointsCount)
+            {
+                splineNodePointsCount--;
+                var lastPoint = _pointNodes[splineNodePointsCount];
+                _pointNodes.Remove(lastPoint);
+                lastPoint.Dispose();
+            }
         }
 
         private unsafe void OnUpdate()
         {
-            // Sync spline points with gizmo handles
-            var actor = (Spline)Actor;
-            var dstCount = actor.SplinePointsCount;
-            if (dstCount > 1 && actor.IsLoop)
-                dstCount--; // The last point is the same as the first one for loop mode
-            var srcCount = ActorChildNodes?.Count ?? 0;
-            if (dstCount != srcCount)
-            {
-                // Remove unused points
-                while (srcCount > dstCount)
-                {
-                    var node = ActorChildNodes[srcCount-- - 1];
-                    // TODO: support selection interface inside SceneGraph nodes (eg. on Root) so prefab editor can handle this too
-                    if (Editor.Instance.SceneEditing.Selection.Contains(node))
-                        Editor.Instance.SceneEditing.Deselect();
-                    node.Dispose();
-                }
+            //for (int i = 0; i < splineNodePointsCount; i++)
+            //{
+            //    _pointNodes[i].Transform = new Transform(spline.GetSplinePoint(i));
+            //}
 
-                // Add new points
-                var id = ID;
-                var g = (JsonSerializer.GuidInterop*)&id;
-                g->D += (uint)srcCount * 3;
-                while (srcCount < dstCount)
-                {
-                    g->D += 3;
-                    AddChildNode(new SplinePointNode(this, id, srcCount++));
-                }
-            }
+            // Sync spline points with gizmo handles
+            //var actor = (Spline)Actor;
+            //var dstCount = actor.SplinePointsCount;
+            //if (dstCount > 1 && actor.IsLoop)
+            //    dstCount--; // The last point is the same as the first one for loop mode
+            //var srcCount = ActorChildNodes?.Count ?? 0;
+            //if (dstCount != srcCount)
+            //{
+            //    // Remove unused points
+            //    while (srcCount > dstCount)
+            //    {
+            //        var node = ActorChildNodes[srcCount-- - 1];
+            //        // TODO: support selection interface inside SceneGraph nodes (eg. on Root) so prefab editor can handle this too
+            //        if (Editor.Instance.SceneEditing.Selection.Contains(node))
+            //            Editor.Instance.SceneEditing.Deselect();
+            //        node.Dispose();
+            //    }
+
+            //    // Add new points
+            //    var id = ID;
+            //    var g = (JsonSerializer.GuidInterop*)&id;
+            //    g->D += (uint)srcCount * 3;
+            //    while (srcCount < dstCount)
+            //    {
+            //        g->D += 3;
+            //        AddChildNode(new SplinePointNode(this, id, srcCount++));
+            //    }
+            //}
+
         }
 
         /// <inheritdoc />
