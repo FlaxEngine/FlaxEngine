@@ -20,6 +20,8 @@ using FlaxEngine.GUI;
 using FlaxEngine.Json;
 using DockHintWindow = FlaxEditor.GUI.Docking.DockHintWindow;
 using MasterDockPanel = FlaxEditor.GUI.Docking.MasterDockPanel;
+using FlaxEditor.Content.Settings;
+using static FlaxEditor.Options.InterfaceOptions;
 
 namespace FlaxEditor.Modules
 {
@@ -35,6 +37,9 @@ namespace FlaxEditor.Modules
         private List<KeyValuePair<string, DateTime>> _statusMessages;
         private ContentStats _contentStats;
         private bool _progressFailed;
+
+        ContextMenuSingleSelectGroup<int> _numberOfClientsGroup = new ContextMenuSingleSelectGroup<int>();
+        private Scene[] _scenesToReload;
 
         private ContextMenuButton _menuFileSaveScenes;
         private ContextMenuButton _menuFileCloseScenes;
@@ -54,7 +59,9 @@ namespace FlaxEditor.Modules
         private ContextMenuButton _menuSceneAlignViewportWithActor;
         private ContextMenuButton _menuScenePilotActor;
         private ContextMenuButton _menuSceneCreateTerrain;
-        private ContextMenuButton _menuGamePlay;
+        private ContextMenuButton _menuGamePlayGame;
+        private ContextMenuButton _menuGamePlayCurrentScenes;
+        private ContextMenuButton _menuGameStop;
         private ContextMenuButton _menuGamePause;
         private ContextMenuButton _menuToolsBuildScenes;
         private ContextMenuButton _menuToolsBakeLightmaps;
@@ -74,6 +81,7 @@ namespace FlaxEditor.Modules
         private ToolStripButton _toolStripRotate;
         private ToolStripButton _toolStripScale;
         private ToolStripButton _toolStripBuildScenes;
+        private ToolStripButton _toolStripCook;
         private ToolStripButton _toolStripPlay;
         private ToolStripButton _toolStripPause;
         private ToolStripButton _toolStripStep;
@@ -351,6 +359,7 @@ namespace FlaxEditor.Modules
             // Update window background
             mainWindow.BackgroundColor = Style.Current.Background;
 
+            InitSharedMenus();
             InitMainMenu(mainWindow);
             InitToolstrip(mainWindow);
             InitStatusBar(mainWindow);
@@ -466,6 +475,27 @@ namespace FlaxEditor.Modules
             return dialog;
         }
 
+        private void InitSharedMenus()
+        {
+            for (int i = 1; i <= 4; i++) _numberOfClientsGroup.AddItem(i.ToString(), i);
+
+            _numberOfClientsGroup.SetItemAsActive(Editor.Options.Options.Interface.NumberOfGameClientsToLaunch);
+            _numberOfClientsGroup.OnSelectionChanged = (value) =>
+            {
+                var options = Editor.Options.Options;
+                options.Interface.NumberOfGameClientsToLaunch = value;
+                Editor.Options.Apply(options);
+            };
+
+            Editor.Options.OptionsChanged += (options) =>
+            {
+                if (options.Interface.NumberOfGameClientsToLaunch != _numberOfClientsGroup.activeItem.value)
+                {
+                    _numberOfClientsGroup.SetItemAsActive(options.Interface.NumberOfGameClientsToLaunch);
+                }
+            };
+        }
+
         private void InitMainMenu(RootControl mainWindow)
         {
             MainMenu = new MainMenu(mainWindow)
@@ -523,11 +553,19 @@ namespace FlaxEditor.Modules
             MenuGame = MainMenu.AddButton("Game");
             cm = MenuGame.ContextMenu;
             cm.VisibleChanged += OnMenuGameShowHide;
-            _menuGamePlay = cm.AddButton("Play", inputOptions.Play.ToString(), Editor.Simulation.RequestStartPlay);
+
+            _menuGamePlayGame = cm.AddButton("Play Game", PlayGame);
+            _menuGamePlayCurrentScenes = cm.AddButton("Play Current Scenes", inputOptions.Play.ToString(), PlayScenes);
+            _menuGameStop = cm.AddButton("Stop Game", Editor.Simulation.RequestStopPlay);
             _menuGamePause = cm.AddButton("Pause", inputOptions.Pause.ToString(), Editor.Simulation.RequestPausePlay);
+
             cm.AddSeparator();
-            cm.AddButton("Cook & Run", Editor.Windows.GameCookerWin.BuildAndRun).LinkTooltip("Runs Game Cooker to build the game for this platform and runs the game after.");
-            cm.AddButton("Run cooked game", Editor.Windows.GameCookerWin.RunCooked).LinkTooltip("Runs the game build from the last cooking output. Use Cook&Play or Game Cooker first.");
+            var numberOfClientsMenu = cm.AddChildMenu("Number of game clients");
+            _numberOfClientsGroup.AddItemsToContextMenu(numberOfClientsMenu.ContextMenu);
+
+            cm.AddSeparator();
+            cm.AddButton("Cook & Run", CookAndRun).LinkTooltip("Runs Game Cooker to build the game for this platform and runs the game after.");
+            cm.AddButton("Run cooked game", RunCookedGame).LinkTooltip("Runs the game build from the last cooking output. Use Cook&Play or Game Cooker first.");
 
             // Tools
             MenuTools = MainMenu.AddButton("Tools");
@@ -603,7 +641,7 @@ namespace FlaxEditor.Modules
             _menuEditDuplicate.ShortKeys = inputOptions.Duplicate.ToString();
             _menuEditSelectAll.ShortKeys = inputOptions.SelectAll.ToString();
             _menuEditFind.ShortKeys = inputOptions.Search.ToString();
-            _menuGamePlay.ShortKeys = inputOptions.Play.ToString();
+            _menuGamePlayCurrentScenes.ShortKeys = inputOptions.Play.ToString();
             _menuGamePause.ShortKeys = inputOptions.Pause.ToString();
 
             MainMenuShortcutKeysUpdated?.Invoke();
@@ -611,6 +649,8 @@ namespace FlaxEditor.Modules
 
         private void InitToolstrip(RootControl mainWindow)
         {
+            var inputOptions = Editor.Options.Options.Input;
+
             ToolStrip = new ToolStrip(34.0f, MainMenu.Bottom)
             {
                 Parent = mainWindow,
@@ -627,8 +667,41 @@ namespace FlaxEditor.Modules
             ToolStrip.AddSeparator();
             _toolStripBuildScenes = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Build64, Editor.BuildScenesOrCancel).LinkTooltip("Build scenes data - CSG, navmesh, static lighting, env probes - configurable via Build Actions in editor options (Ctrl+F10)");
             ToolStrip.AddSeparator();
-            _toolStripPlay = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Play64, Editor.Simulation.RequestPlayOrStopPlay).LinkTooltip("Start/Stop game (F5)");
-            _toolStripPause = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Pause64, Editor.Simulation.RequestResumeOrPause).LinkTooltip("Pause/Resume game(F6)");
+
+            // build
+            _toolStripCook = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.BuildSettings128, CookAndRun).LinkTooltip("Cook and run");
+            _toolStripCook.ContextMenu = new ContextMenu();
+            _toolStripCook.ContextMenu.AddButton("Run cooked game", RunCookedGame);
+            _toolStripCook.ContextMenu.AddSeparator();
+            var numberOfClientsMenu = _toolStripCook.ContextMenu.AddChildMenu("Number of game clients");
+            _numberOfClientsGroup.AddItemsToContextMenu(numberOfClientsMenu.ContextMenu);
+
+            // play
+            _toolStripPlay = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Play64, OnPlayPressed).LinkTooltip("Play Game");
+            _toolStripPlay.ContextMenu = new ContextMenu();
+            ContextMenuChildMenu playSubMenu;
+
+            // play - button action
+            playSubMenu = _toolStripPlay.ContextMenu.AddChildMenu("Play button action");
+            var playActionGroup = new ContextMenuSingleSelectGroup<PlayAction>();
+            playActionGroup.AddItem("Play Game", PlayAction.PlayGame);
+            playActionGroup.AddItem("Play Scenes", PlayAction.PlayScenes);
+            playActionGroup.AddItemsToContextMenu(playSubMenu.ContextMenu);
+            playActionGroup.SetItemAsActive(Editor.Options.Options.Interface.PlayButtonAction);
+            // important to add the handler after setting the initial item as active above or the editor will crash
+            playActionGroup.OnSelectionChanged = SetPlayAction;
+            // TODO: there is a hole in the syncing of these values:
+            // - when changing in the editor, the options will be updated, but the options UI in-editor will not
+
+            Editor.Options.OptionsChanged += (options) =>
+            {
+                if (options.Interface.PlayButtonAction != playActionGroup.activeItem.value)
+                {
+                    playActionGroup.SetItemAsActive(options.Interface.PlayButtonAction);
+                }
+            };
+
+            _toolStripPause = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Pause64, Editor.Simulation.RequestResumeOrPause).LinkTooltip($"Pause/Resume game({inputOptions.Pause.ToString()})");
             _toolStripStep = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Skip64, Editor.Simulation.RequestPlayOneFrame).LinkTooltip("Step one frame in game");
 
             UpdateToolstrip();
@@ -786,7 +859,9 @@ namespace FlaxEditor.Modules
             var isPlayMode = Editor.StateMachine.IsPlayMode;
             var canPlay = Level.IsAnySceneLoaded;
 
-            _menuGamePlay.Enabled = !isPlayMode && canPlay;
+            _menuGamePlayGame.Enabled = !isPlayMode && canPlay;
+            _menuGamePlayCurrentScenes.Enabled = !isPlayMode && canPlay;
+            _menuGameStop.Enabled = isPlayMode && canPlay;
             _menuGamePause.Enabled = isPlayMode && canPlay;
 
             c.PerformLayout();
@@ -966,6 +1041,70 @@ namespace FlaxEditor.Modules
             projectInfo.DefaultScene = JsonSerializer.GetStringID(Level.Scenes[0].ID);
             projectInfo.DefaultSceneSpawn = Editor.Windows.EditWin.Viewport.ViewRay;
             projectInfo.Save();
+        }
+
+        private void SetPlayAction(PlayAction newPlayAction)
+        {
+            var options = Editor.Options.Options;
+            options.Interface.PlayButtonAction = newPlayAction;
+            Editor.Options.Apply(options);
+        }
+
+        private void OnPlayPressed()
+        {
+            switch (Editor.Options.Options.Interface.PlayButtonAction)
+            {
+                case PlayAction.PlayGame:
+                    if (Editor.IsPlayMode)
+                        Editor.Simulation.RequestStopPlay();
+                    else
+                        PlayGame();
+                    return;
+                case PlayAction.PlayScenes: PlayScenes(); return;
+            }
+        }
+
+        private void PlayGame()
+        {
+            var firstScene = GameSettings.Load().FirstScene;
+
+            if (firstScene == Guid.Empty)
+            {
+                if (Level.IsAnySceneLoaded) Editor.Simulation.RequestStartPlay();
+                return;
+            }
+
+            _scenesToReload = Level.Scenes;
+            Level.UnloadAllScenes();
+            Level.LoadScene(firstScene);
+
+            Editor.PlayModeEnd += OnPlayGameSceneEnding;
+            Editor.Simulation.RequestPlayOrStopPlay();
+        }
+
+        private void OnPlayGameSceneEnding()
+        {
+            Editor.PlayModeEnd -= OnPlayGameSceneEnding;
+
+            Level.UnloadAllScenes();
+
+            foreach (var scene in _scenesToReload)
+                Level.LoadScene(scene.ID);
+        }
+
+        private void PlayScenes()
+        {
+            Editor.Simulation.RequestPlayOrStopPlay();
+        }
+
+        private void CookAndRun()
+        {
+            Editor.Windows.GameCookerWin.BuildAndRun();
+        }
+
+        private void RunCookedGame()
+        {
+            Editor.Windows.GameCookerWin.RunCooked();
         }
 
         private void OnMainWindowClosing()

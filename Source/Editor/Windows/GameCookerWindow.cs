@@ -110,14 +110,14 @@ namespace FlaxEditor.Windows
 #if PLATFORM_WINDOWS
                     switch (BuildPlatform)
                     {
-                    case BuildPlatform.MacOSx64:
-                    case BuildPlatform.MacOSARM64:
-                    case BuildPlatform.iOSARM64:
-                        IsSupported = false;
-                        break;
-                    default:
-                        IsSupported = true;
-                        break;
+                        case BuildPlatform.MacOSx64:
+                        case BuildPlatform.MacOSARM64:
+                        case BuildPlatform.iOSARM64:
+                            IsSupported = false;
+                            break;
+                        default:
+                            IsSupported = true;
+                            break;
                     }
 #elif PLATFORM_LINUX
                     switch (BuildPlatform)
@@ -160,17 +160,17 @@ namespace FlaxEditor.Windows
                     {
                         switch (BuildPlatform)
                         {
-                        case BuildPlatform.Windows32:
-                        case BuildPlatform.Windows64:
-                        case BuildPlatform.UWPx86:
-                        case BuildPlatform.UWPx64:
-                        case BuildPlatform.LinuxX64:
-                        case BuildPlatform.AndroidARM64:
-                            layout.Label("Use Flax Launcher and download the required package.", TextAlignment.Center);
-                            break;
-                        default:
-                            layout.Label("Engine source is required to target this platform.", TextAlignment.Center);
-                            break;
+                            case BuildPlatform.Windows32:
+                            case BuildPlatform.Windows64:
+                            case BuildPlatform.UWPx86:
+                            case BuildPlatform.UWPx64:
+                            case BuildPlatform.LinuxX64:
+                            case BuildPlatform.AndroidARM64:
+                                layout.Label("Use Flax Launcher and download the required package.", TextAlignment.Center);
+                                break;
+                            default:
+                                layout.Label("Engine source is required to target this platform.", TextAlignment.Center);
+                                break;
                         }
                     }
                     else
@@ -272,43 +272,43 @@ namespace FlaxEditor.Windows
                         string name;
                         switch (_platform)
                         {
-                        case PlatformType.Windows:
-                            name = "Windows";
-                            break;
-                        case PlatformType.XboxOne:
-                            name = "Xbox One";
-                            break;
-                        case PlatformType.UWP:
-                            name = "Windows Store";
-                            layout.Label("UWP (Windows Store) platform has been deprecated and is no longer supported", TextAlignment.Center).Label.TextColor = Color.Red;
-                            break;
-                        case PlatformType.Linux:
-                            name = "Linux";
-                            break;
-                        case PlatformType.PS4:
-                            name = "PlayStation 4";
-                            break;
-                        case PlatformType.XboxScarlett:
-                            name = "Xbox Scarlett";
-                            break;
-                        case PlatformType.Android:
-                            name = "Android";
-                            break;
-                        case PlatformType.Switch:
-                            name = "Switch";
-                            break;
-                        case PlatformType.PS5:
-                            name = "PlayStation 5";
-                            break;
-                        case PlatformType.Mac:
-                            name = "Mac";
-                            break;
-                        case PlatformType.iOS:
-                            name = "iOS";
-                            break;
-                        default:
-                            name = Utilities.Utils.GetPropertyNameUI(_platform.ToString());
-                            break;
+                            case PlatformType.Windows:
+                                name = "Windows";
+                                break;
+                            case PlatformType.XboxOne:
+                                name = "Xbox One";
+                                break;
+                            case PlatformType.UWP:
+                                name = "Windows Store";
+                                layout.Label("UWP (Windows Store) platform has been deprecated and is no longer supported", TextAlignment.Center).Label.TextColor = Color.Red;
+                                break;
+                            case PlatformType.Linux:
+                                name = "Linux";
+                                break;
+                            case PlatformType.PS4:
+                                name = "PlayStation 4";
+                                break;
+                            case PlatformType.XboxScarlett:
+                                name = "Xbox Scarlett";
+                                break;
+                            case PlatformType.Android:
+                                name = "Android";
+                                break;
+                            case PlatformType.Switch:
+                                name = "Switch";
+                                break;
+                            case PlatformType.PS5:
+                                name = "PlayStation 5";
+                                break;
+                            case PlatformType.Mac:
+                                name = "Mac";
+                                break;
+                            case PlatformType.iOS:
+                                name = "iOS";
+                                break;
+                            default:
+                                name = Utilities.Utils.GetPropertyNameUI(_platform.ToString());
+                                break;
                         }
                         var group = layout.Group(name);
 
@@ -659,16 +659,24 @@ namespace FlaxEditor.Windows
         {
             Editor.Log("Building and running");
             GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out var buildConfiguration);
-            _buildingQueue.Enqueue(new QueueItem
+            var numberOfClients = Editor.Options.Options.Interface.NumberOfGameClientsToLaunch;
+
+            for (int i = 0; i < numberOfClients; i++)
             {
-                Target = new BuildTarget
+                var buildOptions = BuildOptions.AutoRun;
+                if (i > 0) buildOptions |= BuildOptions.NoCook;
+
+                _buildingQueue.Enqueue(new QueueItem
                 {
-                    Output = _buildTabProxy.PerPlatformOptions[platform].Output,
-                    Platform = buildPlatform,
-                    Mode = buildConfiguration,
-                },
-                Options = BuildOptions.AutoRun,
-            });
+                    Target = new BuildTarget
+                    {
+                        Output = _buildTabProxy.PerPlatformOptions[platform].Output,
+                        Platform = buildPlatform,
+                        Mode = buildConfiguration,
+                    },
+                    Options = buildOptions,
+                });
+            }
         }
 
         /// <summary>
@@ -678,16 +686,21 @@ namespace FlaxEditor.Windows
         {
             Editor.Log("Running cooked build");
             GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out var buildConfiguration);
-            _buildingQueue.Enqueue(new QueueItem
+            var numberOfClients = Editor.Options.Options.Interface.NumberOfGameClientsToLaunch;
+
+            for (int i = 0; i < numberOfClients; i++)
             {
-                Target = new BuildTarget
+                _buildingQueue.Enqueue(new QueueItem
                 {
-                    Output = _buildTabProxy.PerPlatformOptions[platform].Output,
-                    Platform = buildPlatform,
-                    Mode = buildConfiguration,
-                },
-                Options = BuildOptions.AutoRun | BuildOptions.NoCook,
-            });
+                    Target = new BuildTarget
+                    {
+                        Output = _buildTabProxy.PerPlatformOptions[platform].Output,
+                        Platform = buildPlatform,
+                        Mode = buildConfiguration,
+                    },
+                    Options = BuildOptions.AutoRun | BuildOptions.NoCook,
+                });
+            }
         }
 
         private void BuildTarget()

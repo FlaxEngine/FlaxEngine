@@ -75,6 +75,21 @@ namespace FlaxEditor.Options
         }
 
         /// <summary>
+        /// Options for the action taken by the play button.
+        /// </summary>
+        public enum PlayAction
+        {
+            /// <summary>
+            /// Launches the game from the First Scene defined in the project settings.
+            /// </summary>
+            PlayGame,
+            /// <summary>
+            /// Launches the game using the scenes currently loaded in the editor.
+            /// </summary>
+            PlayScenes
+        }
+
+        /// <summary>
         /// Gets or sets the Editor User Interface scale. Applied to all UI elements, windows and text. Can be used to scale the interface up on a bigger display. Editor restart required.
         /// </summary>
         [DefaultValue(1.0f), Limit(0.1f, 10.0f)]
@@ -196,30 +211,45 @@ namespace FlaxEditor.Options
         [EditorDisplay("Play In-Editor", "Focus Game Window On Play"), EditorOrder(400), Tooltip("Determines whether auto-focus game window on play mode start.")]
         public bool FocusGameWinOnPlay { get; set; } = true;
 
+        /// <summary>
+        /// Gets or sets a value indicating what action should be taken upon pressing the play button.
+        /// </summary>
+        [DefaultValue(PlayAction.PlayScenes)]
+        [EditorDisplay("Play In-Editor", "Play Button Action"), EditorOrder(410), Tooltip("Determines the action taken when the play button is pressed.")]
+        public PlayAction PlayButtonAction { get; set; } = PlayAction.PlayScenes;
+
+        /// <summary>
+        /// Gets or sets a value indicating the number of game clients to launch when building and/or running cooked game.
+        /// </summary>
+        [DefaultValue(1)]
+        [EditorDisplay("Cook & Run", "Number Of GameClients To Launch"), EditorOrder(500), Tooltip("Determines the number of game clients to launch when building and/or running cooked game.")]
+        [Range(1, 4)]
+        public int NumberOfGameClientsToLaunch = 1;
+
         private static FontAsset DefaultFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont);
 
         /// <summary>
         /// Gets or sets the title font for editor UI.
         /// </summary>
-        [EditorDisplay("Fonts"), EditorOrder(500), Tooltip("The title font for editor UI.")]
+        [EditorDisplay("Fonts"), EditorOrder(600), Tooltip("The title font for editor UI.")]
         public FontReference TitleFont { get; set; } = new FontReference(DefaultFont, 18);
 
         /// <summary>
         /// Gets or sets the large font for editor UI.
         /// </summary>
-        [EditorDisplay("Fonts"), EditorOrder(510), Tooltip("The large font for editor UI.")]
+        [EditorDisplay("Fonts"), EditorOrder(610), Tooltip("The large font for editor UI.")]
         public FontReference LargeFont { get; set; } = new FontReference(DefaultFont, 14);
 
         /// <summary>
         /// Gets or sets the medium font for editor UI.
         /// </summary>
-        [EditorDisplay("Fonts"), EditorOrder(520), Tooltip("The medium font for editor UI.")]
+        [EditorDisplay("Fonts"), EditorOrder(620), Tooltip("The medium font for editor UI.")]
         public FontReference MediumFont { get; set; } = new FontReference(DefaultFont, 9);
 
         /// <summary>
         /// Gets or sets the small font for editor UI.
         /// </summary>
-        [EditorDisplay("Fonts"), EditorOrder(530), Tooltip("The small font for editor UI.")]
+        [EditorDisplay("Fonts"), EditorOrder(630), Tooltip("The small font for editor UI.")]
         public FontReference SmallFont { get; set; } = new FontReference(DefaultFont, 9);
     }
 }
