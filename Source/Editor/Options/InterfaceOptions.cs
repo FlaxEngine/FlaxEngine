@@ -83,10 +83,11 @@ namespace FlaxEditor.Options
             /// Launches the game from the First Scene defined in the project settings.
             /// </summary>
             PlayGame,
+
             /// <summary>
             /// Launches the game using the scenes currently loaded in the editor.
             /// </summary>
-            PlayScenes
+            PlayScenes,
         }
 
         /// <summary>
@@ -97,14 +98,12 @@ namespace FlaxEditor.Options
         public float InterfaceScale { get; set; } = 1.0f;
 
 #if PLATFORM_WINDOWS
-
         /// <summary>
         /// Gets or sets a value indicating whether use native window title bar. Editor restart required.
         /// </summary>
         [DefaultValue(false)]
         [EditorDisplay("Interface"), EditorOrder(70), Tooltip("Determines whether use native window title bar. Editor restart required.")]
         public bool UseNativeWindowSystem { get; set; } = false;
-
 #endif
 
         /// <summary>
@@ -215,15 +214,14 @@ namespace FlaxEditor.Options
         /// Gets or sets a value indicating what action should be taken upon pressing the play button.
         /// </summary>
         [DefaultValue(PlayAction.PlayScenes)]
-        [EditorDisplay("Play In-Editor", "Play Button Action"), EditorOrder(410), Tooltip("Determines the action taken when the play button is pressed.")]
+        [EditorDisplay("Play In-Editor", "Play Button Action"), EditorOrder(410)]
         public PlayAction PlayButtonAction { get; set; } = PlayAction.PlayScenes;
 
         /// <summary>
         /// Gets or sets a value indicating the number of game clients to launch when building and/or running cooked game.
         /// </summary>
-        [DefaultValue(1)]
-        [EditorDisplay("Cook & Run", "Number Of GameClients To Launch"), EditorOrder(500), Tooltip("Determines the number of game clients to launch when building and/or running cooked game.")]
-        [Range(1, 4)]
+        [DefaultValue(1), Range(1, 4)]
+        [EditorDisplay("Cook & Run"), EditorOrder(500)]
         public int NumberOfGameClientsToLaunch = 1;
 
         private static FontAsset DefaultFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont);

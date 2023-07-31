@@ -96,6 +96,7 @@ namespace FlaxEditor
         public SpriteHandle Link64;
         public SpriteHandle Build64;
         public SpriteHandle Add64;
+        public SpriteHandle ShipIt64;
 
         // 96px
         public SpriteHandle Toolbox96;

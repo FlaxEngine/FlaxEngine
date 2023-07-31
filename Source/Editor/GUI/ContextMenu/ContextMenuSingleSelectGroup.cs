@@ -2,106 +2,92 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using FlaxEngine;
-using FlaxEngine.GUI;
 
 namespace FlaxEditor.GUI.ContextMenu
 {
     /// <summary>
-    /// Context menu single select group.
+    /// Context menu for a single selectable option from range of values (eg. enum).
     /// </summary>
     [HideInEditor]
     class ContextMenuSingleSelectGroup<T>
     {
-        public struct SingleSelectGroupItem<U>
+        private struct SingleSelectGroupItem
         {
-            public string text;
-            public U value;
-            public Action onSelected;
-            public List<ContextMenuButton> buttons;
+            public string Text;
+            public string Tooltip;
+            public T Value;
+            public Action Selected;
+            public List<ContextMenuButton> Buttons;
         }
 
         private List<ContextMenu> _menus = new List<ContextMenu>();
-        private List<SingleSelectGroupItem<T>> _items = new List<SingleSelectGroupItem<T>>();
-        public Action<T> OnSelectionChanged;
+        private List<SingleSelectGroupItem> _items = new List<SingleSelectGroupItem>();
+        private SingleSelectGroupItem _selectedItem;
 
-        public SingleSelectGroupItem<T> activeItem;
-
-        public ContextMenuSingleSelectGroup<T> AddItem(string text, T value, Action onSelected = null)
+        public T Selected
         {
-            var item = new SingleSelectGroupItem<T>
+            get => _selectedItem.Value;
+            set
             {
-                text = text,
-                value = value,
-                onSelected = onSelected,
-                buttons = new List<ContextMenuButton>()
+                var index = _items.FindIndex(x => x.Value.Equals(value));
+                if (index != -1 && !_selectedItem.Value.Equals(value))
+                {
+                    SetSelected(_items[index]);
+                }
+            }
+        }
+
+        public Action<T> SelectedChanged;
+
+        public ContextMenuSingleSelectGroup<T> AddItem(string text, T value, Action selected = null, string tooltip = null)
+        {
+            var item = new SingleSelectGroupItem
+            {
+                Text = text,
+                Tooltip = tooltip,
+                Value = value,
+                Selected = selected,
+                Buttons = new List<ContextMenuButton>()
             };
             _items.Add(item);
-
             foreach (var contextMenu in _menus)
                 AddItemToContextMenu(contextMenu, item);
-
             return this;
         }
 
         public ContextMenuSingleSelectGroup<T> AddItemsToContextMenu(ContextMenu contextMenu)
         {
             _menus.Add(contextMenu);
-
             for (int i = 0; i < _items.Count; i++)
-            {
                 AddItemToContextMenu(contextMenu, _items[i]);
-            }
-
             return this;
         }
 
-        private void AddItemToContextMenu(ContextMenu contextMenu, SingleSelectGroupItem<T> item)
+        private void AddItemToContextMenu(ContextMenu contextMenu, SingleSelectGroupItem item)
         {
-            var btn = contextMenu.AddButton(item.text, () =>
-            {
-                SetItemAsActive(item);
-            });
-
-            item.buttons.Add(btn);
-
-            if (item.Equals(activeItem))
-            {
+            var btn = contextMenu.AddButton(item.Text, () => { SetSelected(item); });
+            if (item.Tooltip != null)
+                btn.TooltipText = item.Tooltip;
+            item.Buttons.Add(btn);
+            if (item.Equals(_selectedItem))
                 btn.Checked = true;
-            }
         }
 
-        private void DeselectAll()
+        private void SetSelected(SingleSelectGroupItem item)
         {
-            foreach (var item in _items)
+            foreach (var e in _items)
             {
-                foreach (var btn in item.buttons) btn.Checked = false;
+                foreach (var btn in e.Buttons)
+                    btn.Checked = false;
             }
-        }
+            _selectedItem = item;
 
-        public void SetItemAsActive(T value)
-        {
-            var index = _items.FindIndex(x => x.value.Equals(value));
+            SelectedChanged?.Invoke(item.Value);
+            item.Selected?.Invoke();
 
-            if (index == -1) return;
-
-            SetItemAsActive(_items[index]);
-        }
-
-        private void SetItemAsActive(SingleSelectGroupItem<T> item)
-        {
-            DeselectAll();
-            activeItem = item;
-
-            var index = _items.IndexOf(item);
-            OnSelectionChanged?.Invoke(item.value);
-            item.onSelected?.Invoke();
-
-            foreach (var btn in item.buttons)
-            {
+            foreach (var btn in item.Buttons)
                 btn.Checked = true;
-            }
         }
     }
 }

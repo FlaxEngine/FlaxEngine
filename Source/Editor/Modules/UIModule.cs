@@ -21,7 +21,7 @@ using FlaxEngine.Json;
 using DockHintWindow = FlaxEditor.GUI.Docking.DockHintWindow;
 using MasterDockPanel = FlaxEditor.GUI.Docking.MasterDockPanel;
 using FlaxEditor.Content.Settings;
-using static FlaxEditor.Options.InterfaceOptions;
+using FlaxEditor.Options;
 
 namespace FlaxEditor.Modules
 {
@@ -203,6 +203,7 @@ namespace FlaxEditor.Modules
             _toolStripScale.Checked = gizmoMode == TransformGizmoBase.Mode.Scale;
             //
             _toolStripBuildScenes.Enabled = (canEditScene && !isPlayMode) || Editor.StateMachine.BuildingScenesState.IsActive;
+            _toolStripCook.Enabled = Editor.Windows.GameCookerWin.CanBuild(Platform.PlatformType) && !GameCooker.IsRunning;
             //
             var play = _toolStripPlay;
             var pause = _toolStripPause;
@@ -418,6 +419,7 @@ namespace FlaxEditor.Modules
             Editor.Undo.UndoDone += OnUndoEvent;
             Editor.Undo.RedoDone += OnUndoEvent;
             Editor.Undo.ActionDone += OnUndoEvent;
+            GameCooker.Event += OnGameCookerEvent;
 
             UpdateToolstrip();
         }
@@ -431,6 +433,11 @@ namespace FlaxEditor.Modules
         {
             UpdateToolstrip();
             UpdateStatusBar();
+        }
+
+        private void OnGameCookerEvent(GameCooker.EventType type)
+        {
+            UpdateToolstrip();
         }
 
         /// <inheritdoc />
@@ -477,23 +484,18 @@ namespace FlaxEditor.Modules
 
         private void InitSharedMenus()
         {
-            for (int i = 1; i <= 4; i++) _numberOfClientsGroup.AddItem(i.ToString(), i);
+            for (int i = 1; i <= 4; i++)
+                _numberOfClientsGroup.AddItem(i.ToString(), i);
 
-            _numberOfClientsGroup.SetItemAsActive(Editor.Options.Options.Interface.NumberOfGameClientsToLaunch);
-            _numberOfClientsGroup.OnSelectionChanged = (value) =>
+            _numberOfClientsGroup.Selected = Editor.Options.Options.Interface.NumberOfGameClientsToLaunch;
+            _numberOfClientsGroup.SelectedChanged = value =>
             {
                 var options = Editor.Options.Options;
                 options.Interface.NumberOfGameClientsToLaunch = value;
                 Editor.Options.Apply(options);
             };
 
-            Editor.Options.OptionsChanged += (options) =>
-            {
-                if (options.Interface.NumberOfGameClientsToLaunch != _numberOfClientsGroup.activeItem.value)
-                {
-                    _numberOfClientsGroup.SetItemAsActive(options.Interface.NumberOfGameClientsToLaunch);
-                }
-            };
+            Editor.Options.OptionsChanged += options => { _numberOfClientsGroup.Selected = options.Interface.NumberOfGameClientsToLaunch; };
         }
 
         private void InitMainMenu(RootControl mainWindow)
@@ -665,43 +667,33 @@ namespace FlaxEditor.Modules
             _toolStripRotate = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Rotate32, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate).LinkTooltip("Change Gizmo tool mode to Rotate (2)");
             _toolStripScale = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Scale32, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale).LinkTooltip("Change Gizmo tool mode to Scale (3)");
             ToolStrip.AddSeparator();
-            _toolStripBuildScenes = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Build64, Editor.BuildScenesOrCancel).LinkTooltip("Build scenes data - CSG, navmesh, static lighting, env probes - configurable via Build Actions in editor options (Ctrl+F10)");
-            ToolStrip.AddSeparator();
 
-            // build
-            _toolStripCook = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.BuildSettings128, CookAndRun).LinkTooltip("Cook and run");
+            // Cook scenes
+            _toolStripBuildScenes = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Build64, Editor.BuildScenesOrCancel).LinkTooltip("Build scenes data - CSG, navmesh, static lighting, env probes - configurable via Build Actions in editor options (Ctrl+F10)");
+
+            // Cook and run
+            _toolStripCook = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.ShipIt64, CookAndRun).LinkTooltip("Cook & Run - build game for the current platform and run it locally");
             _toolStripCook.ContextMenu = new ContextMenu();
             _toolStripCook.ContextMenu.AddButton("Run cooked game", RunCookedGame);
             _toolStripCook.ContextMenu.AddSeparator();
             var numberOfClientsMenu = _toolStripCook.ContextMenu.AddChildMenu("Number of game clients");
             _numberOfClientsGroup.AddItemsToContextMenu(numberOfClientsMenu.ContextMenu);
 
-            // play
+            ToolStrip.AddSeparator();
+
+            // Play
             _toolStripPlay = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Play64, OnPlayPressed).LinkTooltip("Play Game");
             _toolStripPlay.ContextMenu = new ContextMenu();
-            ContextMenuChildMenu playSubMenu;
-
-            // play - button action
-            playSubMenu = _toolStripPlay.ContextMenu.AddChildMenu("Play button action");
-            var playActionGroup = new ContextMenuSingleSelectGroup<PlayAction>();
-            playActionGroup.AddItem("Play Game", PlayAction.PlayGame);
-            playActionGroup.AddItem("Play Scenes", PlayAction.PlayScenes);
+            var playSubMenu = _toolStripPlay.ContextMenu.AddChildMenu("Play button action");
+            var playActionGroup = new ContextMenuSingleSelectGroup<InterfaceOptions.PlayAction>();
+            playActionGroup.AddItem("Play Game", InterfaceOptions.PlayAction.PlayGame, null, "Launches the game from the First Scene defined in the project settings.");
+            playActionGroup.AddItem("Play Scenes", InterfaceOptions.PlayAction.PlayScenes, null, "Launches the game using the scenes currently loaded in the editor.");
             playActionGroup.AddItemsToContextMenu(playSubMenu.ContextMenu);
-            playActionGroup.SetItemAsActive(Editor.Options.Options.Interface.PlayButtonAction);
-            // important to add the handler after setting the initial item as active above or the editor will crash
-            playActionGroup.OnSelectionChanged = SetPlayAction;
-            // TODO: there is a hole in the syncing of these values:
-            // - when changing in the editor, the options will be updated, but the options UI in-editor will not
+            playActionGroup.Selected = Editor.Options.Options.Interface.PlayButtonAction;
+            playActionGroup.SelectedChanged = SetPlayAction;
+            Editor.Options.OptionsChanged += options => { playActionGroup.Selected = options.Interface.PlayButtonAction; };
 
-            Editor.Options.OptionsChanged += (options) =>
-            {
-                if (options.Interface.PlayButtonAction != playActionGroup.activeItem.value)
-                {
-                    playActionGroup.SetItemAsActive(options.Interface.PlayButtonAction);
-                }
-            };
-
-            _toolStripPause = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Pause64, Editor.Simulation.RequestResumeOrPause).LinkTooltip($"Pause/Resume game({inputOptions.Pause.ToString()})");
+            _toolStripPause = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Pause64, Editor.Simulation.RequestResumeOrPause).LinkTooltip($"Pause/Resume game({inputOptions.Pause})");
             _toolStripStep = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Skip64, Editor.Simulation.RequestPlayOneFrame).LinkTooltip("Step one frame in game");
 
             UpdateToolstrip();
@@ -736,10 +728,7 @@ namespace FlaxEditor.Modules
             var defaultTextColor = StatusBar.TextColor;
             _outputLogButton.HoverBegin += () => StatusBar.TextColor = Style.Current.BackgroundSelected;
             _outputLogButton.HoverEnd += () => StatusBar.TextColor = defaultTextColor;
-            _outputLogButton.Clicked += () =>
-            {
-                Editor.Windows.OutputLogWin.FocusOrShow();
-            };
+            _outputLogButton.Clicked += () => { Editor.Windows.OutputLogWin.FocusOrShow(); };
 
             // Progress bar with label
             const float progressBarWidth = 120.0f;
@@ -1043,7 +1032,7 @@ namespace FlaxEditor.Modules
             projectInfo.Save();
         }
 
-        private void SetPlayAction(PlayAction newPlayAction)
+        private void SetPlayAction(InterfaceOptions.PlayAction newPlayAction)
         {
             var options = Editor.Options.Options;
             options.Interface.PlayButtonAction = newPlayAction;
@@ -1054,23 +1043,25 @@ namespace FlaxEditor.Modules
         {
             switch (Editor.Options.Options.Interface.PlayButtonAction)
             {
-                case PlayAction.PlayGame:
-                    if (Editor.IsPlayMode)
-                        Editor.Simulation.RequestStopPlay();
-                    else
-                        PlayGame();
-                    return;
-                case PlayAction.PlayScenes: PlayScenes(); return;
+            case InterfaceOptions.PlayAction.PlayGame:
+                if (Editor.IsPlayMode)
+                    Editor.Simulation.RequestStopPlay();
+                else
+                    PlayGame();
+                return;
+            case InterfaceOptions.PlayAction.PlayScenes:
+                PlayScenes();
+                return;
             }
         }
 
         private void PlayGame()
         {
             var firstScene = GameSettings.Load().FirstScene;
-
             if (firstScene == Guid.Empty)
             {
-                if (Level.IsAnySceneLoaded) Editor.Simulation.RequestStartPlay();
+                if (Level.IsAnySceneLoaded)
+                    Editor.Simulation.RequestStartPlay();
                 return;
             }
 

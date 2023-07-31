@@ -25,12 +25,12 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// Event fired when button gets clicked with the primary mouse button.
         /// </summary>
-        public Action<ToolStripButton> ButtonPrimaryClicked;
+        public Action<ToolStripButton> ButtonClicked;
 
         /// <summary>
         /// Event fired when button gets clicked with the secondary mouse button.
         /// </summary>
-        public Action<ToolStripButton> ButtonSecondaryClicked;
+        public Action<ToolStripButton> SecondaryButtonClicked;
 
         /// <summary>
         /// Tries to get the last button.
@@ -96,7 +96,7 @@ namespace FlaxEditor.GUI
                 Parent = this,
             };
             if (onClick != null)
-                button.PrimaryClicked += onClick;
+                button.Clicked += onClick;
             return button;
         }
 
@@ -115,7 +115,7 @@ namespace FlaxEditor.GUI
                 Parent = this,
             };
             if (onClick != null)
-                button.PrimaryClicked += onClick;
+                button.Clicked += onClick;
             return button;
         }
 
@@ -133,7 +133,7 @@ namespace FlaxEditor.GUI
                 Parent = this,
             };
             if (onClick != null)
-                button.PrimaryClicked += onClick;
+                button.Clicked += onClick;
             return button;
         }
 
@@ -146,14 +146,14 @@ namespace FlaxEditor.GUI
             return AddChild(new ToolStripSeparator(ItemsHeight));
         }
 
-        internal void OnButtonPrimaryClicked(ToolStripButton button)
+        internal void OnButtonClicked(ToolStripButton button)
         {
-            ButtonPrimaryClicked?.Invoke(button);
+            ButtonClicked?.Invoke(button);
         }
 
-        internal void OnButtonSecondaryClicked(ToolStripButton button)
+        internal void OnSecondaryButtonClicked(ToolStripButton button)
         {
-            ButtonSecondaryClicked?.Invoke(button);
+            SecondaryButtonClicked?.Invoke(button);
         }
 
         /// <inheritdoc />

@@ -11,12 +11,8 @@ namespace FlaxEditor.GUI
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.Control" />
     [HideInEditor]
-    public partial class ToolStripButton : Control
+    public class ToolStripButton : Control
     {
-        // TODO: abstracted for potential future in-editor input configuration (ex. for left handed mouse users)
-        private const MouseButton PRIMARY_MOUSE_BUTTON = MouseButton.Left;
-        private const MouseButton SECONDARY_MOUSE_BUTTON = MouseButton.Right;
-
         /// <summary>
         /// The default margin for button parts (icon, text, etc.).
         /// </summary>
@@ -30,7 +26,7 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// Event fired when user clicks the button.
         /// </summary>
-        public Action PrimaryClicked;
+        public Action Clicked;
 
         /// <summary>
         /// Event fired when user clicks the button.
@@ -140,13 +136,7 @@ namespace FlaxEditor.GUI
             if (!string.IsNullOrEmpty(_text))
             {
                 textRect.Size.X = Width - DefaultMargin - textRect.Left;
-                Render2D.DrawText(
-                    style.FontMedium,
-                    _text,
-                    textRect,
-                    enabled ? style.Foreground : style.ForegroundDisabled,
-                    TextAlignment.Near,
-                    TextAlignment.Center);
+                Render2D.DrawText(style.FontMedium, _text, textRect, enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
             }
         }
 
@@ -169,19 +159,15 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button == PRIMARY_MOUSE_BUTTON)
+            if (button == MouseButton.Left)
             {
-                // Set flag
                 _primaryMouseDown = true;
-
                 Focus();
                 return true;
             }
-            else if (button == SECONDARY_MOUSE_BUTTON)
+            if (button == MouseButton.Right)
             {
-                // Set flag
                 _secondaryMouseDown = true;
-
                 Focus();
                 return true;
             }
@@ -192,29 +178,22 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button == PRIMARY_MOUSE_BUTTON && _primaryMouseDown)
+            if (button == MouseButton.Left && _primaryMouseDown)
             {
-                // Clear flag
                 _primaryMouseDown = false;
-
-                // Fire events
                 if (AutoCheck)
                     Checked = !Checked;
-                PrimaryClicked?.Invoke();
-                (Parent as ToolStrip)?.OnButtonPrimaryClicked(this);
+                Clicked?.Invoke();
+                (Parent as ToolStrip)?.OnButtonClicked(this);
 
                 return true;
             }
-            else if (button == SECONDARY_MOUSE_BUTTON && _secondaryMouseDown)
+            if (button == MouseButton.Right && _secondaryMouseDown)
             {
-                // Clear flag
                 _secondaryMouseDown = false;
-
                 SecondaryClicked?.Invoke();
-                (Parent as ToolStrip)?.OnButtonSecondaryClicked(this);
-
+                (Parent as ToolStrip)?.OnSecondaryButtonClicked(this);
                 ContextMenu?.Show(this, new Float2(0, Height));
-
                 return true;
             }
 
@@ -224,7 +203,6 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override void OnMouseLeave()
         {
-            // Clear flag
             _primaryMouseDown = false;
             _secondaryMouseDown = false;
 
@@ -234,7 +212,6 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override void OnLostFocus()
         {
-            // Clear flag
             _primaryMouseDown = false;
             _secondaryMouseDown = false;
 
