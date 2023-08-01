@@ -415,6 +415,35 @@ namespace FlaxEditor.SceneGraph.Actors
             return distance * nodeSize;
         }
 
+        public override void OnDebugDraw(ViewportDebugDrawData data)
+        {
+            DrawSpline((Spline)Actor, Color.White, Actor.Transform, false);
+        }
+
+        private void DrawSpline(Spline spline, Color color, Transform transform, bool depthTest)
+        {
+            var count = spline.SplineKeyframes.Length;
+            if (count == 0)
+                return;
+            var keyframes = spline.SplineKeyframes;
+            var pointIndex = 0;
+            var prev = spline.GetSplineKeyframe(0);
+            
+            Vector3 prevPos = transform.LocalToWorld(prev.Value.Translation);
+            DebugDraw.DrawWireSphere(new BoundingSphere(prevPos, 5.0f), color, 0.0f, depthTest);
+            for (int i = 1; i < count; i++)
+            {
+                var next = keyframes[pointIndex];
+                Vector3 nextPos = transform.LocalToWorld(next.Value.Translation);
+                DebugDraw.DrawWireSphere(new BoundingSphere(nextPos, 5.0f), color, 0.0f, depthTest);
+                var d = (next.Time - prev.Time) / 3.0f;
+                DebugDraw.DrawBezier(prevPos, prevPos + prev.TangentOut.Translation * d, nextPos + next.TangentIn.Translation * d, nextPos, color, 0.0f, depthTest);
+                prev = next;
+                prevPos = nextPos;
+                pointIndex++;
+            }
+        }
+
         /// <inheritdoc />
         public override bool RayCastSelf(ref RayCastData ray, out Real distance, out Vector3 normal)
         {
