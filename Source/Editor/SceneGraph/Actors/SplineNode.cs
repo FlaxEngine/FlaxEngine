@@ -417,7 +417,7 @@ namespace FlaxEditor.SceneGraph.Actors
 
         public override void OnDebugDraw(ViewportDebugDrawData data)
         {
-            DrawSpline((Spline)Actor, Color.White, Actor.Transform, false);
+            DrawSpline((Spline)Actor, Color.White, Actor.Transform, true);
         }
 
         private void DrawSpline(Spline spline, Color color, Transform transform, bool depthTest)
@@ -428,15 +428,16 @@ namespace FlaxEditor.SceneGraph.Actors
             var keyframes = spline.SplineKeyframes;
             var pointIndex = 0;
             var prev = spline.GetSplineKeyframe(0);
-            
-            Vector3 prevPos = transform.LocalToWorld(prev.Value.Translation);
-            DebugDraw.DrawWireSphere(new BoundingSphere(prevPos, 5.0f), color, 0.0f, depthTest);
-            for (int i = 1; i < count; i++)
+            var prevPos = transform.LocalToWorld(prev.Value.Translation);
+            var pointSize = NodeSizeByDistance(spline.GetSplinePoint(0), PointNodeSize);
+            DebugDraw.DrawWireSphere(new BoundingSphere(prevPos, pointSize), color, 0.0f, depthTest);
+            for (int i = 0; i < count; i++)
             {
                 var next = keyframes[pointIndex];
-                Vector3 nextPos = transform.LocalToWorld(next.Value.Translation);
-                DebugDraw.DrawWireSphere(new BoundingSphere(nextPos, 5.0f), color, 0.0f, depthTest);
+                var nextPos = transform.LocalToWorld(next.Value.Translation);
                 var d = (next.Time - prev.Time) / 3.0f;
+                pointSize = NodeSizeByDistance(spline.GetSplinePoint(i), PointNodeSize);
+                DebugDraw.DrawWireSphere(new BoundingSphere(nextPos, pointSize), color, 0.0f, depthTest);
                 DebugDraw.DrawBezier(prevPos, prevPos + prev.TangentOut.Translation * d, nextPos + next.TangentIn.Translation * d, nextPos, color, 0.0f, depthTest);
                 prev = next;
                 prevPos = nextPos;
