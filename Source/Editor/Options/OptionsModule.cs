@@ -131,6 +131,7 @@ namespace FlaxEditor.Options
 
                     // Scale interface relative to the current value (eg. when using system-provided Dpi Scale)
                     Platform.CustomDpiScale *= Options.Interface.InterfaceScale / prevInterfaceScale;
+                    GPUDevice.Instance.DefaultMaterialOverride = Options.General.DefaultMaterialOverride; 
                 }
                 else
                 {
