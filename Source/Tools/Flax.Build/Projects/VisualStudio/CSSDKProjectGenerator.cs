@@ -247,6 +247,14 @@ namespace Flax.Build.Projects.VisualStudio
                     csProjectFileContent.AppendLine("  </ItemGroup>");
                 }
             }
+            foreach (var analyzer in configuration.TargetBuildOptions.ScriptingAPI.Analyzers)
+            {
+                csProjectFileContent.AppendLine(string.Format("  <ItemGroup Condition=\" '$(Configuration)|$(Platform)' == '{0}' \">", configuration.Name));
+                csProjectFileContent.AppendLine(string.Format("    <Analyzer Include=\"{0}\">", Path.GetFileNameWithoutExtension(analyzer)));
+                csProjectFileContent.AppendLine(string.Format("      <HintPath>{0}</HintPath>", Utilities.MakePathRelativeTo(analyzer, projectDirectory).Replace('/', '\\')));
+                csProjectFileContent.AppendLine("    </Analyzer>");
+                csProjectFileContent.AppendLine("  </ItemGroup>");
+            }
 
             csProjectFileContent.AppendLine("");
         }
