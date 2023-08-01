@@ -46,20 +46,19 @@ namespace FlaxEditor.Gizmo
                 var plane = new Plane(Vector3.Zero, Vector3.UnitY);
                 var dst = CollisionsHelper.DistancePlanePoint(ref plane, ref viewPos);
 
-                float space, size;
+                float space = Editor.Instance.Options.Options.Viewport.ViewportGridScale, size;
                 if (dst <= 500.0f)
                 {
-                    space = Editor.Instance.Options.Options.Viewport.ViewportGridScale;
                     size = 8000;
                 }
                 else if (dst <= 2000.0f)
                 {
-                    space = Editor.Instance.Options.Options.Viewport.ViewportGridScale * 2;
+                    space *= 2;
                     size = 8000;
                 }
                 else
                 {
-                    space = Editor.Instance.Options.Options.Viewport.ViewportGridScale * 20;
+                    space *= 20;
                     size = 100000;
                 }
 
