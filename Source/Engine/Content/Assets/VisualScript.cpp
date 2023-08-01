@@ -2163,18 +2163,16 @@ bool VisualScript::SaveSurface(const BytesContainer& data, const Metadata& meta)
         ReleaseChunk(i);
 
     // Set Visject Surface data
-    auto visjectSurfaceChunk = GetOrCreateChunk(0);
-    visjectSurfaceChunk->Data.Copy(data);
+    GetOrCreateChunk(0)->Data.Copy(data);
 
     // Set metadata
-    auto metadataChunk = GetOrCreateChunk(1);
     MemoryWriteStream metaStream(512);
     {
         metaStream.WriteInt32(1);
         metaStream.WriteString(meta.BaseTypename, 31);
         metaStream.WriteInt32((int32)meta.Flags);
     }
-    metadataChunk->Data.Copy(metaStream.GetHandle(), metaStream.GetPosition());
+    GetOrCreateChunk(1)->Data.Copy(metaStream.GetHandle(), metaStream.GetPosition());
 
     // Save
     AssetInitData assetData;

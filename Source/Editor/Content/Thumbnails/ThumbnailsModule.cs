@@ -368,7 +368,6 @@ namespace FlaxEditor.Content.Thumbnails
             // Create atlas
             if (PreviewsCache.Create(path))
             {
-                // Error
                 Editor.LogError("Failed to create thumbnails atlas.");
                 return null;
             }
@@ -377,7 +376,6 @@ namespace FlaxEditor.Content.Thumbnails
             var atlas = FlaxEngine.Content.LoadAsync<PreviewsCache>(path);
             if (atlas == null)
             {
-                // Error
                 Editor.LogError("Failed to load thumbnails atlas.");
                 return null;
             }

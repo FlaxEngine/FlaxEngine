@@ -284,7 +284,6 @@ namespace FlaxEditor.Windows.Assets
                 var mainNode = _surface.FindNode(1, 1) as Surface.Archetypes.Material.SurfaceNodeMaterial;
                 if (mainNode == null)
                 {
-                    // Error
                     Editor.LogError("Failed to find main material node.");
                 }
                 return mainNode;

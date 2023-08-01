@@ -795,7 +795,6 @@ namespace FlaxEditor
         {
             if (projectFilePath == null || !File.Exists(projectFilePath))
             {
-                // Error
                 MessageBox.Show("Missing project");
                 return;
             }

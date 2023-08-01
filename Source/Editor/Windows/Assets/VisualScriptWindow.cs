@@ -1131,7 +1131,6 @@ namespace FlaxEditor.Windows.Assets
                 // Save data to the asset
                 if (_asset.SaveSurface(value, ref meta))
                 {
-                    // Error
                     _surface.MarkAsEdited();
                     Editor.LogError("Failed to save surface data");
                 }
@@ -1192,7 +1191,6 @@ namespace FlaxEditor.Windows.Assets
             // Load surface graph
             if (_surface.Load())
             {
-                // Error
                 Editor.LogError("Failed to load Visual Script surface.");
                 return true;
             }
