@@ -131,7 +131,6 @@ namespace FlaxEditor.Options
 
                     // Scale interface relative to the current value (eg. when using system-provided Dpi Scale)
                     Platform.CustomDpiScale *= Options.Interface.InterfaceScale / prevInterfaceScale;
-                    GPUDevice.Instance.DefaultMaterialOverride = Options.General.DefaultMaterialOverride; 
                 }
                 else
                 {
@@ -196,8 +195,6 @@ namespace FlaxEditor.Options
             internalOptions.AutoRebuildNavMesh = (byte)(Options.General.AutoRebuildNavMesh ? 1 : 0);
             internalOptions.AutoRebuildNavMeshTimeoutMs = Options.General.AutoRebuildNavMeshTimeoutMs;
             Editor.Internal_SetOptions(ref internalOptions);
-
-            GPUDevice.Instance.DefaultMaterialOverride = Options.General.DefaultMaterialOverride;
 
             EditorAssets.Cache.OnEditorOptionsChanged(Options);
 

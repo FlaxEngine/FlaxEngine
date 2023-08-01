@@ -10,6 +10,7 @@
 #include "Engine/Engine/EngineService.h"
 
 bool Graphics::UseVSync = false;
+MaterialBase* Graphics::DefaultMaterialOverride = nullptr;
 Quality Graphics::AAQuality = Quality::Medium;
 Quality Graphics::SSRQuality = Quality::Medium;
 Quality Graphics::SSAOQuality = Quality::Medium;
@@ -58,6 +59,7 @@ GraphicsService GraphicsServiceInstance;
 void GraphicsSettings::Apply()
 {
     Graphics::UseVSync = UseVSync;
+    Graphics::DefaultMaterialOverride = DefaultMaterialOverride;
     Graphics::AAQuality = AAQuality;
     Graphics::SSRQuality = SSRQuality;
     Graphics::SSAOQuality = SSAOQuality;

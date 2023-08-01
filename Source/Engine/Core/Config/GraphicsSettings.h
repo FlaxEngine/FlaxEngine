@@ -19,7 +19,11 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(20), DefaultValue(false), EditorDisplay(\"General\", \"Use V-Sync\")")
     bool UseVSync = false;
-
+    /// <summary> 
+    /// Overites Default Engine Material
+    /// </summary> 
+    API_FIELD(Attributes = "EditorOrder(21), DefaultValue(null), EditorDisplay(\"General\", \"Default Material Override\")")
+    MaterialBase* DefaultMaterialOverride = nullptr;
     /// <summary>
     /// Anti Aliasing quality setting.
     /// </summary>

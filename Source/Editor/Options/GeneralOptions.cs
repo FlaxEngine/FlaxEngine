@@ -162,13 +162,6 @@ namespace FlaxEditor.Options
         [EditorDisplay("Content"), EditorOrder(550)]
         public bool UseAssetImportPathRelative { get; set; } = true;
 
-        /// <summary> 
-        /// Overites DefaultMaterial
-        /// </summary> 
-        [DefaultValue(null)] 
-        [EditorDisplay("Content"), EditorOrder(551)] 
-        public MaterialBase DefaultMaterialOverride { get; set; } = null; 
-
         /// <summary>
         /// Gets or sets a value indicating whether perform automatic CSG rebuild on brush change.
         /// </summary>

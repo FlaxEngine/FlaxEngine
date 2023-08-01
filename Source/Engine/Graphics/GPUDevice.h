@@ -250,12 +250,6 @@ public:
     /// <returns> returns Default Material Override only if Default Material was Overridden else will return null.<para>[Don't use without checking]</para></returns>
     /// </summary>
     API_PROPERTY() MaterialBase* GetDefaultMaterialOverride() const;
-    /// <summary>
-    /// Sets the default material override.
-    /// </summary>
-    /// <param name="material"></param>
-    /// <returns></returns>
-    API_PROPERTY() void SetDefaultMaterialOverride(MaterialBase* material);
     
     /// <summary>
     /// Gets the default material (Deformable domain).
