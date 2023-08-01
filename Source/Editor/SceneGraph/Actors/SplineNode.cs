@@ -286,8 +286,8 @@ namespace FlaxEditor.SceneGraph.Actors
             }
         }
 
-        private const float PointNodeSize = 2;
-        private const float TangentNodeSize = 1.6f;
+        private const float PointNodeSize = 1.5f;
+        private const float TangentNodeSize = 1.0f;
 
         /// <inheritdoc />
         public SplineNode(Actor actor)
@@ -408,13 +408,12 @@ namespace FlaxEditor.SceneGraph.Actors
             }
         }
 
-        private static float NodeSizeByDistance(Vector3 nodePosition, float nodeSize)
+        internal static float NodeSizeByDistance(Vector3 nodePosition, float nodeSize)
         {
             var cameraTransform = Editor.Instance.Windows.EditWin.Viewport.ViewportCamera.Viewport.ViewTransform;
             var distance = Vector3.Distance(cameraTransform.Translation, nodePosition) / 100;
             return distance * nodeSize;
         }
-
 
         /// <inheritdoc />
         public override bool RayCastSelf(ref RayCastData ray, out Real distance, out Vector3 normal)

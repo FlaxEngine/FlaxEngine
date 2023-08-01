@@ -706,9 +706,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // auto smooth tangent if's linear
             if (keyframe.TangentIn.Translation.Length == 0)
             {
+                var smoothRange = SplineNode.NodeSizeByDistance(spline.GetSplineTangent(index, false).Translation, 10f);
                 var previousKeyframe = spline.GetSplineKeyframe(index - 1);
                 var tangentDirection = keyframe.Value.WorldToLocalVector(previousKeyframe.Value.Translation - keyframe.Value.Translation);
-                tangentDirection = tangentDirection.Normalized * 100f;
+                tangentDirection = tangentDirection.Normalized * smoothRange;
                 keyframe.TangentIn.Translation = tangentDirection;
             }
 
@@ -724,9 +725,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // auto smooth tangent if's linear
             if (keyframe.TangentOut.Translation.Length == 0)
             {
+                var smoothRange = SplineNode.NodeSizeByDistance(spline.GetSplineTangent(index, false).Translation, 10f);
                 var nextKeyframe = spline.GetSplineKeyframe(index + 1);
                 var tangentDirection = keyframe.Value.WorldToLocalVector(nextKeyframe.Value.Translation - keyframe.Value.Translation);
-                tangentDirection = tangentDirection.Normalized * 100f;
+                tangentDirection = tangentDirection.Normalized * smoothRange;
                 keyframe.TangentOut.Translation = tangentDirection;
             }
 
@@ -744,10 +746,11 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             var isLastKeyframe = index >= spline.SplinePointsCount - 1;
             var isFirstKeyframe = index <= 0;
+            var smoothRange = SplineNode.NodeSizeByDistance(spline.GetSplinePoint(index), 10f);
 
             // force smooth it's linear point
-            if (tangentInSize == 0f) tangentInSize = 100;
-            if (tangentOutSize == 0f) tangentOutSize = 100;
+            if (tangentInSize == 0f) tangentInSize = smoothRange;
+            if (tangentOutSize == 0f) tangentOutSize = smoothRange;
 
             // try get next / last keyframe
             var nextKeyframe = !isLastKeyframe ? spline.GetSplineKeyframe(index + 1) : keyframe;
