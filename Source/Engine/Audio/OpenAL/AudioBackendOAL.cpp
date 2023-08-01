@@ -90,7 +90,7 @@ namespace ALC
         }
         ASSERT(Contexts.HasItems());
 #else
-        ASSERT(Contexts.Count() == 1)
+        ASSERT(Contexts.Count() == 1);
 #endif
         return Contexts[0];
     }
