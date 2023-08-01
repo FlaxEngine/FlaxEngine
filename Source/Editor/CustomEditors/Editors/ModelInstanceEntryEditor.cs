@@ -45,9 +45,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     modelInstance.SetMaterial(entryIndex, null);
                 }
                 _material = modelInstance.GetMaterial(entryIndex);
-                var defaultValue = GPUDevice.Instance.DefaultMaterialOverride;
-                if (defaultValue)
-                    defaultValue = GPUDevice.Instance.DefaultMaterial;
+                var defaultValue = GPUDevice.Instance.DefaultMaterial;
                 if (slots[entryIndex].Material)
                 {
                     // Use default value set on asset (eg. Model Asset)
@@ -73,9 +71,7 @@ namespace FlaxEditor.CustomEditors.Editors
             _isRefreshing = true;
             var slots = _modelInstance.MaterialSlots;
             var material = _materialEditor.Picker.SelectedAsset as MaterialBase;
-            var defaultMaterial = GPUDevice.Instance.DefaultMaterialOverride;
-            if(defaultMaterial)
-                defaultMaterial = GPUDevice.Instance.DefaultMaterial;
+            var defaultMaterial = GPUDevice.Instance.DefaultMaterial;
             var value = (ModelInstanceEntry)Values[0];
             var prevMaterial = value.Material;
             if (!material)
