@@ -178,7 +178,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
 
                 DrawCall drawCall;
                 if (TerrainManager::GetChunkGeometry(drawCall, chunkSize, 0))
-                    return;
+                    break;
 
                 context->UpdateCB(cb, &shaderData);
                 context->BindCB(0, cb);
