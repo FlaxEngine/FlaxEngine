@@ -240,6 +240,10 @@ public:
     /// </summary>
     API_PROPERTY() MaterialBase* GetDefaultMaterial() const;
 
+    /// <summary>
+    /// Gets engine the default material.
+    /// </summary>
+    API_PROPERTY() MaterialBase* GetEngineDefaultMaterial() const;
 
     /// <summary>
     /// <para>Gets the default material override.</para>

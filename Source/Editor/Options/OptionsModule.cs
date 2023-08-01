@@ -197,6 +197,8 @@ namespace FlaxEditor.Options
             internalOptions.AutoRebuildNavMeshTimeoutMs = Options.General.AutoRebuildNavMeshTimeoutMs;
             Editor.Internal_SetOptions(ref internalOptions);
 
+            GPUDevice.Instance.DefaultMaterialOverride = Options.General.DefaultMaterialOverride;
+
             EditorAssets.Cache.OnEditorOptionsChanged(Options);
 
             // Send event

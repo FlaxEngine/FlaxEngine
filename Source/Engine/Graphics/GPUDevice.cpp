@@ -640,9 +640,14 @@ GPUTasksManager* GPUDevice::GetTasksManager() const
 {
     return &_res->TasksManager;
 }
-
+MaterialBase* GPUDevice::GetEngineDefaultMaterial() const
+{
+    return _res->DefaultMaterial;
+}
 MaterialBase* GPUDevice::GetDefaultMaterial() const
 {
+    if (_res->DefaultMaterialOverride)
+        return _res->DefaultMaterialOverride;
     return _res->DefaultMaterial;
 }
 MaterialBase* GPUDevice::GetDefaultMaterialOverride() const
