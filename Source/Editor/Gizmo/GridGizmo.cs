@@ -49,17 +49,17 @@ namespace FlaxEditor.Gizmo
                 float space, size;
                 if (dst <= 500.0f)
                 {
-                    space = 50;
+                    space = Editor.Instance.Options.Options.Viewport.ViewportGridScale;
                     size = 8000;
                 }
                 else if (dst <= 2000.0f)
                 {
-                    space = 100;
+                    space = Editor.Instance.Options.Options.Viewport.ViewportGridScale * 2;
                     size = 8000;
                 }
                 else
                 {
-                    space = 1000;
+                    space = Editor.Instance.Options.Options.Viewport.ViewportGridScale * 20;
                     size = 100000;
                 }
 
