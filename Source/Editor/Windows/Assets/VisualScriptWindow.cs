@@ -1133,7 +1133,7 @@ namespace FlaxEditor.Windows.Assets
                 {
                     // Error
                     _surface.MarkAsEdited();
-                    Editor.LogError("Failed to save Visual Script surface data");
+                    Editor.LogError("Failed to save surface data");
                 }
                 _asset.Reload();
                 SaveBreakpoints();

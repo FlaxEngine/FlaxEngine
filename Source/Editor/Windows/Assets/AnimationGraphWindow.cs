@@ -322,13 +322,13 @@ namespace FlaxEditor.Windows.Assets
             {
                 if (value == null)
                 {
-                    Editor.LogError("Failed to save animation graph surface");
+                    Editor.LogError("Failed to save surface data");
                     return;
                 }
                 if (_asset.SaveSurface(value))
                 {
                     _surface.MarkAsEdited();
-                    Editor.LogError("Failed to save animation graph surface data");
+                    Editor.LogError("Failed to save surface data");
                     return;
                 }
                 _asset.Reload();

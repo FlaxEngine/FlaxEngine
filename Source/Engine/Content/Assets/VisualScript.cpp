@@ -2143,7 +2143,7 @@ BytesContainer VisualScript::LoadSurface()
 
 #if USE_EDITOR
 
-bool VisualScript::SaveSurface(BytesContainer& data, const Metadata& meta)
+bool VisualScript::SaveSurface(const BytesContainer& data, const Metadata& meta)
 {
     // Wait for asset to be loaded or don't if last load failed
     if (LastLoadFailed())

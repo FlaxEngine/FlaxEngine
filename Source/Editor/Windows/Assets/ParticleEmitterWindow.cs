@@ -223,7 +223,7 @@ namespace FlaxEditor.Windows.Assets
                 if (_asset.SaveSurface(value))
                 {
                     _surface.MarkAsEdited();
-                    Editor.LogError("Failed to save Particle Emitter surface data");
+                    Editor.LogError("Failed to save surface data");
                 }
                 _asset.Reload();
                 _asset.WaitForLoaded();
