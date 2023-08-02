@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using FlaxEditor.Content;
 using FlaxEditor.Modules;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -131,7 +132,12 @@ namespace FlaxEditor.Options
 
                     // Scale interface relative to the current value (eg. when using system-provided Dpi Scale)
                     Platform.CustomDpiScale *= Options.Interface.InterfaceScale / prevInterfaceScale;
-                    GPUDevice.Instance.DefaultMaterialOverride = Options.General.DefaultMaterialOverride; 
+
+                    //load editor default material override for current project
+                    var path = Globals.ProjectContentFolder + "/Settings/DefaultMaterialOverride.flax";
+                    var m = FlaxEngine.Content.Load<MaterialInstance>(path);
+                    GPUDevice.Instance.DefaultMaterialOverride = m;
+                    Options.General.DefaultMaterialOverride = m.BaseMaterial;
                 }
                 else
                 {
@@ -197,7 +203,35 @@ namespace FlaxEditor.Options
             internalOptions.AutoRebuildNavMeshTimeoutMs = Options.General.AutoRebuildNavMeshTimeoutMs;
             Editor.Internal_SetOptions(ref internalOptions);
 
-            GPUDevice.Instance.DefaultMaterialOverride = Options.General.DefaultMaterialOverride;
+            {
+                var path = Globals.ProjectContentFolder + "/Settings/DefaultMaterialOverride.flax";
+                var m = FlaxEngine.Content.Load<MaterialInstance>(path);
+                if (m)
+                {
+                    if (!Options.General.DefaultMaterialOverride)
+                    {
+                        Options.General.DefaultMaterialOverride = m.BaseMaterial;
+                    }
+                    else if (m.BaseMaterial != Options.General.DefaultMaterialOverride)
+                    {
+                        m.BaseMaterial = Options.General.DefaultMaterialOverride;
+                        m.Save();
+                    }
+                    GPUDevice.Instance.DefaultMaterialOverride = m;
+                }
+                else
+                {
+                    if (Options.General.DefaultMaterialOverride)
+                    {
+                        Editor.CreateAsset(Editor.NewAssetType.MaterialInstance, path);
+                        m = FlaxEngine.Content.Load<MaterialInstance>(path);
+                        m.BaseMaterial = Options.General.DefaultMaterialOverride;
+                        m.Save();
+                        Options.General.DefaultMaterialOverride = GPUDevice.Instance.DefaultMaterialOverride = m;
+                    }
+                }
+            }
+            
 
             EditorAssets.Cache.OnEditorOptionsChanged(Options);
 
