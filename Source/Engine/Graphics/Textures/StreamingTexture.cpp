@@ -10,6 +10,7 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Async/Tasks/GPUUploadTextureMipTask.h"
 #include "Engine/Scripting/Enums.h"
+#include <Engine/Threading/JobSystem.h>
 
 TextureHeader_Deprecated::TextureHeader_Deprecated()
 {
@@ -52,10 +53,29 @@ StreamingTexture::StreamingTexture(ITextureOwner* parent, const String& name)
     ASSERT(_owner != nullptr);
 
     // Always have created texture object
-    ASSERT(GPUDevice::Instance);
+    if (!GPUDevice::Instance)
+    {
+#if BUILD_DEBUG
+        Log::Logger::Write(LogType::Info, TEXT("[StreamingTexture] can't stream texture yet GPU Device is not valid waiting for 5000ms"));
+#endif
+        auto curentTime = DateTime::NowUTC();
+        int32 time = 0;
+        while (!GPUDevice::Instance)
+        {
+            time = (DateTime::NowUTC() - curentTime).GetMilliseconds();
+            if (time > 5000)
+            {
+#if ENABLE_ASSERTION
+                Platform::Assert("[StreamingTexture] waiting for GPU Device Time Out", __FILE__, __LINE__);
+#endif
+            }
+        }
+#if BUILD_DEBUG
+        Log::Logger::Write(LogType::Info, TEXT("[StreamingTexture] Complited the waiting for GPU Device in ") + StringUtils::ToString(time) + TEXT("ms"));
+#endif
+    }
     _texture = GPUDevice::Instance->CreateTexture(name);
     ASSERT(_texture != nullptr);
-
     _header.MipLevels = 0;
 }
 
