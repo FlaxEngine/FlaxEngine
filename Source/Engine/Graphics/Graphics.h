@@ -67,9 +67,6 @@ public:
     /// The default Post Process settings. Can be overriden by PostFxVolume on a level locally, per camera or for a whole map.
     /// </summary>
     API_FIELD() static PostProcessSettings PostProcessSettings;
-public:
-
-    static MaterialBase* DefaultMaterialOverride;
 
 public:
     /// <summary>

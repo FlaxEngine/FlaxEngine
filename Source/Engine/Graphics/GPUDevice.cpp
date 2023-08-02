@@ -646,13 +646,24 @@ MaterialBase* GPUDevice::GetEngineDefaultMaterial() const
 }
 MaterialBase* GPUDevice::GetDefaultMaterial() const
 {
-    if (GetDefaultMaterialOverride())
-        return GetDefaultMaterialOverride();
+    if (_res->DefaultMaterialOverride)
+        return _res->DefaultMaterialOverride;
     return _res->DefaultMaterial;
 }
 MaterialBase* GPUDevice::GetDefaultMaterialOverride() const
 {
-    return Graphics::DefaultMaterialOverride;
+    return _res->DefaultMaterialOverride;
+}
+void GPUDevice::SetDefaultMaterialOverride(MaterialBase* material)
+{
+    if (material)
+    {
+        MaterialBase* m = Content::Load<MaterialBase>(material->GetID());
+        if (m)
+        {
+            _res->DefaultMaterialOverride = m;
+        }
+    }
 }
 MaterialBase* GPUDevice::GetDefaultDeformableMaterial() const
 {
