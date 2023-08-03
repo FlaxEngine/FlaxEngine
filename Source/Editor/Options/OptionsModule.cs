@@ -205,29 +205,32 @@ namespace FlaxEditor.Options
 
             {
                 var path = Globals.ProjectContentFolder + "/Settings/DefaultMaterialOverride.flax";
-                var m = FlaxEngine.Content.Load<MaterialInstance>(path);
-                if (m)
+                var DMOMaterialInstance = FlaxEngine.Content.Load<MaterialInstance>(path);
+                if (DMOMaterialInstance)
                 {
+
                     if (!Options.General.DefaultMaterialOverride)
                     {
-                        Options.General.DefaultMaterialOverride = m.BaseMaterial;
+                        Options.General.DefaultMaterialOverride = DMOMaterialInstance.BaseMaterial;
                     }
-                    else if (m.BaseMaterial != Options.General.DefaultMaterialOverride)
+                    else if (DMOMaterialInstance.BaseMaterial != Options.General.DefaultMaterialOverride)
                     {
-                        m.BaseMaterial = Options.General.DefaultMaterialOverride;
-                        m.Save();
+                        //there is a need for safe guard in this place ?
+
+                        DMOMaterialInstance.BaseMaterial = Options.General.DefaultMaterialOverride;
+                        DMOMaterialInstance.Save();
                     }
-                    GPUDevice.Instance.DefaultMaterialOverride = m;
+                    GPUDevice.Instance.DefaultMaterialOverride = DMOMaterialInstance;
                 }
                 else
                 {
                     if (Options.General.DefaultMaterialOverride)
                     {
                         Editor.CreateAsset(Editor.NewAssetType.MaterialInstance, path);
-                        m = FlaxEngine.Content.Load<MaterialInstance>(path);
-                        m.BaseMaterial = Options.General.DefaultMaterialOverride;
-                        m.Save();
-                        Options.General.DefaultMaterialOverride = GPUDevice.Instance.DefaultMaterialOverride = m;
+                        DMOMaterialInstance = FlaxEngine.Content.Load<MaterialInstance>(path);
+                        DMOMaterialInstance.BaseMaterial = Options.General.DefaultMaterialOverride;
+                        DMOMaterialInstance.Save();
+                        GPUDevice.Instance.DefaultMaterialOverride = DMOMaterialInstance;
                     }
                 }
             }
