@@ -345,7 +345,7 @@ namespace FlaxEditor.Surface
                     _cmStateMachineMenu = new VisjectCM(new VisjectCM.InitInfo
                     {
                         Groups = StateMachineGroupArchetypes,
-                        CanSpawnNode = arch => true,
+                        CanSpawnNode = (_, _) => true,
                     });
                     _cmStateMachineMenu.ShowExpanded = true;
                 }
@@ -406,9 +406,9 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override bool CanUseNodeType(NodeArchetype nodeArchetype)
+        public override bool CanUseNodeType(GroupArchetype groupArchetype, NodeArchetype nodeArchetype)
         {
-            return (nodeArchetype.Flags & NodeFlags.AnimGraph) != 0 && base.CanUseNodeType(nodeArchetype);
+            return (nodeArchetype.Flags & NodeFlags.AnimGraph) != 0 && base.CanUseNodeType(groupArchetype, nodeArchetype);
         }
 
         /// <inheritdoc />

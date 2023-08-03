@@ -361,7 +361,7 @@ namespace FlaxEditor.Surface
             var flags = nodeArchetype.Flags;
             nodeArchetype.Flags &= ~NodeFlags.NoSpawnViaGUI;
             nodeArchetype.Flags &= ~NodeFlags.NoSpawnViaPaste;
-            if (_surface != null && !_surface.CanUseNodeType(nodeArchetype))
+            if (_surface != null && !_surface.CanUseNodeType(groupArchetype, nodeArchetype))
             {
                 nodeArchetype.Flags = flags;
                 Editor.LogWarning("Cannot spawn given node type. Title: " + nodeArchetype.Title);

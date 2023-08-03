@@ -29,9 +29,10 @@ namespace FlaxEditor.Surface.ContextMenu
         /// <summary>
         /// Visject Surface node archetype spawn ability checking delegate.
         /// </summary>
+        /// <param name="groupArch">The nodes group archetype to check.</param>
         /// <param name="arch">The node archetype to check.</param>
         /// <returns>True if can use this node to spawn it on a surface, otherwise false..</returns>
-        public delegate bool NodeSpawnCheckDelegate(NodeArchetype arch);
+        public delegate bool NodeSpawnCheckDelegate(GroupArchetype groupArch, NodeArchetype arch);
 
         /// <summary>
         /// Visject Surface parameters getter delegate.
@@ -184,7 +185,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 nodes.Clear();
                 foreach (var nodeArchetype in groupArchetype.Archetypes)
                 {
-                    if ((nodeArchetype.Flags & NodeFlags.NoSpawnViaGUI) == 0 && info.CanSpawnNode(nodeArchetype))
+                    if ((nodeArchetype.Flags & NodeFlags.NoSpawnViaGUI) == 0 && info.CanSpawnNode(groupArchetype, nodeArchetype))
                     {
                         nodes.Add(nodeArchetype);
                     }

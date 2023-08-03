@@ -520,9 +520,10 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Determines whether the specified node archetype can be used in the surface.
         /// </summary>
+        /// <param name="groupArchetype">The nodes group archetype.</param>
         /// <param name="nodeArchetype">The node archetype.</param>
         /// <returns>True if can use this node archetype, otherwise false.</returns>
-        public virtual bool CanUseNodeType(NodeArchetype nodeArchetype)
+        public virtual bool CanUseNodeType(GroupArchetype groupArchetype, NodeArchetype nodeArchetype)
         {
             return (nodeArchetype.Flags & NodeFlags.NoSpawnViaPaste) == 0;
         }

@@ -254,7 +254,7 @@ namespace FlaxEditor.Surface
                         throw new InvalidOperationException("Unknown node type.");
 
                     // Validate given node type
-                    if (!CanUseNodeType(nodeArchetype))
+                    if (!CanUseNodeType(groupArchetype, nodeArchetype))
                         continue;
 
                     // Create
