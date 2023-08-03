@@ -54,6 +54,7 @@ namespace FlaxEditor.Options
 
             _optionsFilePath = Path.Combine(Editor.LocalCachePath, "EditorOptions.json");
         }
+        private bool IsLoaded = false;
 
         /// <summary>
         /// Adds the custom settings factory.
@@ -134,10 +135,10 @@ namespace FlaxEditor.Options
                     Platform.CustomDpiScale *= Options.Interface.InterfaceScale / prevInterfaceScale;
 
                     //load editor default material override for current project
-                    var path = Globals.ProjectContentFolder + "/Settings/DefaultMaterialOverride.flax";
-                    var m = FlaxEngine.Content.Load<MaterialInstance>(path);
+                    var m = FlaxEngine.Content.Load<MaterialInstance>(Globals.ProjectContentFolder + "/Settings/DefaultMaterialOverride.flax");
                     GPUDevice.Instance.DefaultMaterialOverride = m;
-                    Options.General.DefaultMaterialOverride = m.BaseMaterial;
+                    Options.General.DefaultMaterialOverride = m?.BaseMaterial;
+                    IsLoaded = true;
                 }
                 else
                 {
@@ -159,6 +160,10 @@ namespace FlaxEditor.Options
         {
             Options = options;
             OnOptionsChanged();
+
+            var DMOMaterialInstance = FlaxEngine.Content.Load<MaterialInstance>(Globals.ProjectContentFolder + "/Settings/DefaultMaterialOverride.flax");
+            GPUDevice.Instance.DefaultMaterialOverride = DMOMaterialInstance;
+
             Save();
         }
 
@@ -203,24 +208,22 @@ namespace FlaxEditor.Options
             internalOptions.AutoRebuildNavMeshTimeoutMs = Options.General.AutoRebuildNavMeshTimeoutMs;
             Editor.Internal_SetOptions(ref internalOptions);
 
+            if(IsLoaded)
             {
                 var path = Globals.ProjectContentFolder + "/Settings/DefaultMaterialOverride.flax";
                 var DMOMaterialInstance = FlaxEngine.Content.Load<MaterialInstance>(path);
                 if (DMOMaterialInstance)
                 {
-
                     if (!Options.General.DefaultMaterialOverride)
                     {
-                        Options.General.DefaultMaterialOverride = DMOMaterialInstance.BaseMaterial;
+                        FlaxEngine.Content.DeleteAsset(DMOMaterialInstance);
                     }
                     else if (DMOMaterialInstance.BaseMaterial != Options.General.DefaultMaterialOverride)
                     {
                         //there is a need for safe guard in this place ?
-
                         DMOMaterialInstance.BaseMaterial = Options.General.DefaultMaterialOverride;
                         DMOMaterialInstance.Save();
                     }
-                    GPUDevice.Instance.DefaultMaterialOverride = DMOMaterialInstance;
                 }
                 else
                 {
@@ -230,7 +233,6 @@ namespace FlaxEditor.Options
                         DMOMaterialInstance = FlaxEngine.Content.Load<MaterialInstance>(path);
                         DMOMaterialInstance.BaseMaterial = Options.General.DefaultMaterialOverride;
                         DMOMaterialInstance.Save();
-                        GPUDevice.Instance.DefaultMaterialOverride = DMOMaterialInstance;
                     }
                 }
             }
