@@ -283,6 +283,8 @@ namespace FlaxEditor.Surface.ContextMenu
                 {
                     group.UnlockChildrenRecursive();
                     SortGroups();
+                    if (ShowExpanded)
+                        group.Open(false);
                     group.PerformLayout();
                     if (_searchBox.TextLength != 0)
                     {
@@ -323,6 +325,8 @@ namespace FlaxEditor.Surface.ContextMenu
                         };
                     }
                     group.SortChildren();
+                    if (ShowExpanded)
+                        group.Open(false);
                     group.Parent = _groupsPanel;
                     _groups.Add(group);
 
