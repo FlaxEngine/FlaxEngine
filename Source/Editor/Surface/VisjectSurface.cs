@@ -112,7 +112,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Occurs when selection gets changed.
         /// </summary>
-        protected event Action SelectionChanged;
+        public event Action SelectionChanged;
 
         /// <summary>
         /// The surface owner.
@@ -252,6 +252,9 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Gets the list of the selected nodes.
         /// </summary>
+        /// <remarks>
+        /// Don't call it too often. It does memory allocation and iterates over the surface controls to find selected nodes in the graph.
+        /// </remarks>
         public List<SurfaceNode> SelectedNodes
         {
             get
@@ -269,6 +272,9 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Gets the list of the selected controls (comments and nodes).
         /// </summary>
+        /// <remarks>
+        /// Don't call it too often. It does memory allocation and iterates over the surface controls to find selected nodes in the graph.
+        /// </remarks>
         public List<SurfaceControl> SelectedControls
         {
             get
@@ -573,12 +579,17 @@ namespace FlaxEditor.Surface
         /// </summary>
         public void SelectAll()
         {
+            bool selectionChanged = false;
             for (int i = 0; i < _rootControl.Children.Count; i++)
             {
-                if (_rootControl.Children[i] is SurfaceControl control)
+                if (_rootControl.Children[i] is SurfaceControl control && !control.IsSelected)
+                {
                     control.IsSelected = true;
+                    selectionChanged = true;
+                }
             }
-            SelectionChanged?.Invoke();
+            if (selectionChanged)
+                SelectionChanged?.Invoke();
         }
 
         /// <summary>
@@ -586,12 +597,17 @@ namespace FlaxEditor.Surface
         /// </summary>
         public void ClearSelection()
         {
+            bool selectionChanged = false;
             for (int i = 0; i < _rootControl.Children.Count; i++)
             {
                 if (_rootControl.Children[i] is SurfaceControl control)
+                {
                     control.IsSelected = false;
+                    selectionChanged = true;
+                }
             }
-            SelectionChanged?.Invoke();
+            if (selectionChanged)
+                SelectionChanged?.Invoke();
         }
 
         /// <summary>
@@ -600,6 +616,8 @@ namespace FlaxEditor.Surface
         /// <param name="control">The control.</param>
         public void AddToSelection(SurfaceControl control)
         {
+            if (control.IsSelected)
+                return;
             control.IsSelected = true;
             SelectionChanged?.Invoke();
         }
@@ -610,9 +628,22 @@ namespace FlaxEditor.Surface
         /// <param name="control">The control.</param>
         public void Select(SurfaceControl control)
         {
-            ClearSelection();
-            control.IsSelected = true;
-            SelectionChanged?.Invoke();
+            bool selectionChanged = false;
+            for (int i = 0; i < _rootControl.Children.Count; i++)
+            {
+                if (_rootControl.Children[i] is SurfaceControl c && c != control && c.IsSelected)
+                {
+                    c.IsSelected = false;
+                    selectionChanged = true;
+                }
+            }
+            if (!control.IsSelected)
+            {
+                control.IsSelected = true;
+                selectionChanged = true;
+            }
+            if (selectionChanged)
+                SelectionChanged?.Invoke();
         }
 
         /// <summary>
@@ -903,7 +934,7 @@ namespace FlaxEditor.Surface
         {
             return _context.FindNode(id);
         }
-        
+
         /// <summary>
         /// Adds the undo action to be batched (eg. if multiple undo actions is performed in a sequence during single update).
         /// </summary>
