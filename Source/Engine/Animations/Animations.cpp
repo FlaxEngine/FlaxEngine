@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "Animations.h"
+#include "AnimEvent.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Level/Actors/AnimatedModel.h"
@@ -51,6 +52,16 @@ TaskGraphSystem* Animations::System = nullptr;
 #if USE_EDITOR
 Delegate<Asset*, ScriptingObject*, uint32, uint32> Animations::DebugFlow;
 #endif
+
+AnimEvent::AnimEvent(const SpawnParams& params)
+    : SerializableScriptingObject(params)
+{
+}
+
+AnimContinuousEvent::AnimContinuousEvent(const SpawnParams& params)
+    : AnimEvent(params)
+{
+}
 
 bool AnimationsService::Init()
 {
