@@ -91,18 +91,19 @@ namespace FlaxEngine.Interop
 
         internal void Allocate<T>(int length) where T : unmanaged
         {
+            _length = length;
+            _arrayType = typeof(T[]);
+            _elementType = typeof(T);
+            _elementSize = Unsafe.SizeOf<T>();
+
             // Try to reuse existing allocated buffer
-            if (length * Unsafe.SizeOf<T>() > _unmanagedAllocationSize)
+            if (length * _elementSize > _unmanagedAllocationSize)
             {
                 if (_unmanagedAllocationSize > 0)
                     NativeInterop.NativeFree(_unmanagedData.ToPointer());
-                _unmanagedData = (IntPtr)NativeInterop.NativeAlloc(length, Unsafe.SizeOf<T>());
-                _unmanagedAllocationSize = Unsafe.SizeOf<T>() * length;
+                _unmanagedData = (IntPtr)NativeInterop.NativeAlloc(length, _elementSize);
+                _unmanagedAllocationSize = _elementSize * length;
             }
-            _length = length;
-            _arrayType = typeof(T).MakeArrayType();
-            _elementType = typeof(T);
-            _elementSize = Unsafe.SizeOf<T>();
         }
 
         private ManagedArray()
@@ -112,12 +113,12 @@ namespace FlaxEngine.Interop
         private ManagedArray(IntPtr ptr, int length, Type arrayType, Type elementType)
         {
             Assert.IsTrue(arrayType.IsArray);
+            _elementType = elementType;
+            _elementSize = NativeInterop.GetTypeSize(elementType);
             _unmanagedData = ptr;
-            _unmanagedAllocationSize = Marshal.SizeOf(elementType) * length;
+            _unmanagedAllocationSize = _elementSize * length;
             _length = length;
             _arrayType = arrayType;
-            _elementType = elementType;
-            _elementSize = NativeInterop.GetTypeSize(_elementType);
         }
 
         ~ManagedArray()
