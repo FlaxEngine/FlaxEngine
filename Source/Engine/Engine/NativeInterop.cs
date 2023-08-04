@@ -36,12 +36,12 @@ namespace FlaxEngine.Interop
 
         private static List<ManagedHandle> methodHandles = new();
         private static ConcurrentDictionary<IntPtr, Delegate> cachedDelegates = new();
-        private static Dictionary<Type, ManagedHandle> typeHandleCache = new();
+        private static Dictionary<Type, (TypeHolder typeHolder, ManagedHandle handle)> managedTypes = new(new TypeComparer());
         private static List<ManagedHandle> fieldHandleCache = new();
 #if FLAX_EDITOR
         private static List<ManagedHandle> methodHandlesCollectible = new();
         private static ConcurrentDictionary<IntPtr, Delegate> cachedDelegatesCollectible = new();
-        private static Dictionary<Type, ManagedHandle> typeHandleCacheCollectible = new();
+        private static Dictionary<Type, (TypeHolder typeHolder, ManagedHandle handle)> managedTypesCollectible = new(new TypeComparer());
         private static List<ManagedHandle> fieldHandleCacheCollectible = new();
 #endif
         private static Dictionary<object, ManagedHandle> classAttributesCacheCollectible = new();
@@ -115,6 +115,38 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static unsafe void Exit()
         {
+        }
+
+        // Cache offsets to frequently accessed fields of FlaxEngine.Object
+        private static int unmanagedPtrFieldOffset = IntPtr.Size + (Unsafe.Read<int>((typeof(FlaxEngine.Object).GetField("__unmanagedPtr", BindingFlags.Instance | BindingFlags.NonPublic).FieldHandle.Value + 4 + IntPtr.Size).ToPointer()) & 0xFFFFFF);
+        private static int internalIdFieldOffset = IntPtr.Size + (Unsafe.Read<int>((typeof(FlaxEngine.Object).GetField("__internalId", BindingFlags.Instance | BindingFlags.NonPublic).FieldHandle.Value + 4 + IntPtr.Size).ToPointer()) & 0xFFFFFF);
+
+        [UnmanagedCallersOnly]
+        internal static void ScriptingObjectSetInternalValues(ManagedHandle objectHandle, IntPtr unmanagedPtr, IntPtr idPtr)
+        {
+            object obj = objectHandle.Target;
+            if (obj is not Object)
+                return;
+
+            {
+                ref IntPtr fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<IntPtr>(unmanagedPtrFieldOffset, ref obj);
+                fieldRef = unmanagedPtr;
+            }
+            
+            if (idPtr != IntPtr.Zero)
+            {
+                ref Guid nativeId = ref Unsafe.AsRef<Guid>(idPtr.ToPointer());
+                ref Guid fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<Guid>(internalIdFieldOffset, ref obj);
+                fieldRef = nativeId;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static ManagedHandle ScriptingObjectCreate(ManagedHandle typeHandle, IntPtr unmanagedPtr, IntPtr idPtr)
+        {
+            TypeHolder typeHolder = Unsafe.As<TypeHolder>(typeHandle.Target);
+            object obj = typeHolder.CreateScriptingObject(unmanagedPtr, idPtr);
+            return ManagedHandle.Alloc(obj);
         }
 
         internal static void* NativeAlloc(int byteCount)
@@ -1036,7 +1068,7 @@ namespace FlaxEngine.Interop
 
             internal static void ToNativeType(ref Type managedValue, IntPtr nativePtr)
             {
-                Unsafe.Write<IntPtr>(nativePtr.ToPointer(), managedValue != null ? ManagedHandle.ToIntPtr(GetTypeGCHandle(managedValue)) : IntPtr.Zero);
+                Unsafe.Write<IntPtr>(nativePtr.ToPointer(), managedValue != null ? ManagedHandle.ToIntPtr(GetTypeManagedHandle(managedValue)) : IntPtr.Zero);
             }
 
             internal static void ToNativePointer(ref T managedValue, IntPtr nativePtr)
@@ -1186,6 +1218,72 @@ namespace FlaxEngine.Interop
             }
         }
 
+        internal class TypeComparer : IEqualityComparer<Type>
+        {
+            public bool Equals(Type x, Type y) => x == y;
+            public int GetHashCode(Type obj) => obj.GetHashCode();
+        }
+
+        internal class TypeHolder
+        {
+            internal Type type;
+            internal Type wrappedType;
+            internal ConstructorInfo ctor;
+            internal IntPtr managedClassPointer; // MClass*
+
+            internal TypeHolder(Type type)
+            {
+                this.type = type;
+                wrappedType = type;
+
+                if (type.IsAbstract)
+                {
+                    // Dotnet doesn't allow to instantiate abstract type thus allow to use generated mock class usage (eg. for Script or GPUResource) for generated abstract types
+                    var abstractWrapper = type.GetNestedType("AbstractWrapper", BindingFlags.NonPublic);
+                    if (abstractWrapper != null)
+                        wrappedType = abstractWrapper;
+                }
+
+                ctor = wrappedType.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null);
+            }
+
+            internal object CreateObject()
+            {
+                return RuntimeHelpers.GetUninitializedObject(wrappedType);
+            }
+
+            internal object CreateScriptingObject(IntPtr unmanagedPtr, IntPtr idPtr)
+            {
+                object obj = CreateObject();
+                if (obj is Object)
+                {
+                    {
+                        ref IntPtr fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<IntPtr>(unmanagedPtrFieldOffset, ref obj);
+                        fieldRef = unmanagedPtr;
+                    }
+
+                    if (idPtr != IntPtr.Zero)
+                    {
+                        ref Guid nativeId = ref Unsafe.AsRef<Guid>(idPtr.ToPointer());
+                        ref Guid fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<Guid>(internalIdFieldOffset, ref obj);
+                        fieldRef = nativeId;
+                    }
+                }
+
+                if (ctor != null)
+                    ctor.Invoke(obj, null);
+                else
+                    Debug.LogException(new Exception($"Missing empty constructor in type '{wrappedType}'."));
+
+                return obj;
+            }
+
+            public static implicit operator Type(TypeHolder holder) => holder?.type ?? null;
+            public bool Equals(TypeHolder other) => type == other.type;
+            public bool Equals(Type other) => type == other;
+            public override int GetHashCode() => type.GetHashCode();
+        }
+
         internal static class ArrayFactory
         {
             private delegate Array CreateArrayDelegate(long size);
@@ -1302,29 +1400,77 @@ namespace FlaxEngine.Interop
             return types;
         }
 
-        /// <summary>
-        /// Returns a static ManagedHandle for given Type, and caches it if needed.
-        /// </summary>
-        internal static ManagedHandle GetTypeGCHandle(Type type)
+        internal static TypeHolder GetTypeHolder(Type type)
         {
-            if (typeHandleCache.TryGetValue(type, out ManagedHandle handle))
-                return handle;
+            if (managedTypes.TryGetValue(type, out (TypeHolder typeHolder, ManagedHandle handle) tuple))
+                return tuple.typeHolder;
 #if FLAX_EDITOR
-            if (typeHandleCacheCollectible.TryGetValue(type, out handle))
-                return handle;
+            if (managedTypesCollectible.TryGetValue(type, out tuple))
+                return tuple.typeHolder;
 #endif
+            return RegisterType(type, true).typeHolder;
+        }
 
-            handle = ManagedHandle.Alloc(type);
+        internal static (TypeHolder typeHolder, ManagedHandle handle) GetTypeHolderAndManagedHandle(Type type)
+        {
+            if (managedTypes.TryGetValue(type, out (TypeHolder typeHolder, ManagedHandle handle) tuple))
+                return tuple;
 #if FLAX_EDITOR
-            if (type.IsCollectible) // check if generic parameters are also collectible?
-                typeHandleCacheCollectible.Add(type, handle);
+            if (managedTypesCollectible.TryGetValue(type, out tuple))
+                return tuple;
+#endif
+            return RegisterType(type, true);
+        }
+
+        /// <summary>
+        /// Returns a static ManagedHandle to TypeHolder for given Type, and caches it if needed.
+        /// </summary>
+        internal static ManagedHandle GetTypeManagedHandle(Type type)
+        {
+            if (managedTypes.TryGetValue(type, out (TypeHolder typeHolder, ManagedHandle handle) tuple))
+                return tuple.handle;
+#if FLAX_EDITOR
+            if (managedTypesCollectible.TryGetValue(type, out tuple))
+                return tuple.handle;
+#endif
+            return RegisterType(type, true).handle;
+        }
+
+        internal static (TypeHolder typeHolder, ManagedHandle handle) RegisterType(Type type, bool registerNativeType = false)
+        {
+            // TODO: should this strip by-ref?
+
+            (TypeHolder typeHolder, ManagedHandle handle) tuple;
+            tuple.typeHolder = new TypeHolder(type);
+            tuple.handle = ManagedHandle.Alloc(tuple.typeHolder);
+#if FLAX_EDITOR
+            bool isCollectible = type.IsCollectible;
+            if (!isCollectible && type.IsGenericType && !type.Assembly.IsCollectible)
+            {
+                // The owning assembly of a generic type with type arguments referencing
+                // collectible assemblies must be one of the collectible assemblies.
+                foreach (var genericType in type.GetGenericArguments())
+                {
+                    if (genericType.Assembly.IsCollectible)
+                    {
+                        isCollectible = true;
+                        break;
+                    }
+                }
+            }
+
+            if (isCollectible)
+                managedTypesCollectible.Add(type, tuple);
             else
 #endif
             {
-                typeHandleCache.Add(type, handle);
+                managedTypes.Add(type, tuple);
             }
 
-            return handle;
+            if (registerNativeType)
+                RegisterNativeClassFromType(tuple.typeHolder, tuple.handle);
+
+            return tuple;
         }
 
         internal static int GetTypeSize(Type type)

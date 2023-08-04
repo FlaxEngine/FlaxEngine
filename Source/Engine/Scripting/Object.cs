@@ -48,7 +48,7 @@ namespace FlaxEngine
             // Construct missing native object if managed objects gets created in managed world
             if (__unmanagedPtr == IntPtr.Zero)
             {
-                Internal_ManagedInstanceCreated(this);
+                Internal_ManagedInstanceCreated(this, FlaxEngine.Interop.NativeInterop.GetTypeHolder(GetType()).managedClassPointer);
                 if (__unmanagedPtr == IntPtr.Zero)
                     throw new Exception($"Failed to create native instance for object of type {GetType().FullName} (assembly: {GetType().Assembly.FullName}).");
             }
@@ -308,7 +308,7 @@ namespace FlaxEngine
         internal static partial Object Internal_Create2(string typeName);
 
         [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_ManagedInstanceCreated", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
-        internal static partial void Internal_ManagedInstanceCreated(Object managedInstance);
+        internal static partial void Internal_ManagedInstanceCreated(Object managedInstance, IntPtr theKlass);
 
         [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_ManagedInstanceDeleted", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial void Internal_ManagedInstanceDeleted(IntPtr nativeInstance);

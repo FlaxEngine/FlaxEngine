@@ -31,7 +31,7 @@ namespace FlaxEngine.Interop
                 if (typeof(TRet) == typeof(bool))
                     return (bool)(object)returnValue ? boolTruePtr : boolFalsePtr;
                 if (typeof(TRet) == typeof(Type))
-                    return ManagedHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnValue)));
+                    return ManagedHandle.ToIntPtr(GetTypeManagedHandle(Unsafe.As<Type>(returnValue)));
                 if (typeof(TRet).IsArray)
                 {
                     var elementType = typeof(TRet).GetElementType();
@@ -52,8 +52,8 @@ namespace FlaxEngine.Interop
                     return ManagedHandle.ToIntPtr((ManagedHandle)(object)returnObject);
                 if (returnType == typeof(bool))
                     return (bool)returnObject ? boolTruePtr : boolFalsePtr;
-                if (returnType == typeof(Type))
-                    return ManagedHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnObject)));
+                if (returnType == typeof(Type) || returnType == typeof(TypeHolder))
+                    return ManagedHandle.ToIntPtr(GetTypeManagedHandle(Unsafe.As<Type>(returnObject)));
                 if (returnType.IsArray && ArrayFactory.GetMarshalledType(returnType.GetElementType()) == returnType.GetElementType())
                     return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnObject)), GCHandleType.Weak);
                 if (returnType.IsArray)
@@ -72,7 +72,7 @@ namespace FlaxEngine.Interop
                 if (typeof(TRet) == typeof(ManagedHandle))
                     return ManagedHandle.ToIntPtr((ManagedHandle)(object)returnValue);
                 if (typeof(TRet) == typeof(Type))
-                    return ManagedHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnValue)));
+                    return ManagedHandle.ToIntPtr(GetTypeManagedHandle(Unsafe.As<Type>(returnValue)));
                 if (typeof(TRet).IsArray)
                 {
                     var elementType = typeof(TRet).GetElementType();
@@ -108,8 +108,8 @@ namespace FlaxEngine.Interop
                     return (IntPtr)(object)returnObject;
                 if (returnType == typeof(ManagedHandle))
                     return ManagedHandle.ToIntPtr((ManagedHandle)(object)returnObject);
-                if (returnType == typeof(Type))
-                    return returnObject != null ? ManagedHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnObject))) : IntPtr.Zero;
+                if (returnType == typeof(Type) || returnType == typeof(TypeHolder))
+                    return returnObject != null ? ManagedHandle.ToIntPtr(GetTypeManagedHandle(Unsafe.As<Type>(returnObject))) : IntPtr.Zero;
                 if (returnType.IsArray)
                 {
                     var elementType = returnType.GetElementType();

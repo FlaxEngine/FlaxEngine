@@ -19,6 +19,7 @@ protected:
 #elif USE_NETCORE
     void* _handle;
     void* _type;
+    int32 _fieldOffset;
 #endif
 
     MClass* _parentClass;
@@ -35,7 +36,7 @@ public:
 #if USE_MONO
     explicit MField(MonoClassField* monoField, const char* name, MClass* parentClass);
 #elif USE_NETCORE
-    MField(MClass* parentClass, void* handle, const char* name, void* type, MFieldAttributes attributes);
+    MField(MClass* parentClass, void* handle, const char* name, void* type, int fieldOffset, MFieldAttributes attributes);
 #endif
 
 public:
@@ -101,6 +102,16 @@ public:
     /// <param name="instance">The object of given type to get value from.</param>
     /// <param name="result">The return value of undefined type.</param>
     void GetValue(MObject* instance, void* result) const;
+
+    /// <summary>
+    /// Retrieves value currently set in the field on the specified object instance. If field is static object instance can be null.
+    /// </summary>
+    /// <remarks>
+    /// Value will be a pointer.
+    /// </remarks>
+    /// <param name="instance">The object of given type to get value from.</param>
+    /// <param name="result">The return value of undefined type.</param>
+    void GetValueReference(MObject* instance, void* result) const;
 
     /// <summary>
     /// Retrieves value currently set in the field on the specified object instance. If field is static object instance can be null. If returned value is a value type it will be boxed.

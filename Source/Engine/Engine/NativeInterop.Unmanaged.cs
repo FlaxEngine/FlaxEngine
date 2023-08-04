@@ -19,6 +19,7 @@ namespace FlaxEngine.Interop
     internal struct NativeClassDefinitions
     {
         internal ManagedHandle typeHandle;
+        internal IntPtr nativePointer;
         internal IntPtr name;
         internal IntPtr fullname;
         internal IntPtr @namespace;
@@ -40,6 +41,7 @@ namespace FlaxEngine.Interop
         internal IntPtr name;
         internal ManagedHandle fieldHandle;
         internal ManagedHandle fieldTypeHandle;
+        internal int fieldOffset;
         internal uint fieldAttributes;
     }
 
@@ -139,6 +141,9 @@ namespace FlaxEngine.Interop
 
     unsafe partial class NativeInterop
     {
+        [LibraryImport("FlaxEngine", EntryPoint = "NativeInterop_CreateClass", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial void NativeInterop_CreateClass(ref NativeClassDefinitions managedClass, ManagedHandle assemblyHandle);
+
         internal enum MTypes : uint
         {
             End = 0x00,
@@ -205,46 +210,8 @@ namespace FlaxEngine.Interop
                 NativeMemory.AlignedFree(ptr);
         }
 
-        [UnmanagedCallersOnly]
-        internal static void GetManagedClasses(ManagedHandle assemblyHandle, NativeClassDefinitions** managedClasses, int* managedClassCount)
+        private static Assembly GetOwningAssembly(Type type)
         {
-            Assembly assembly = Unsafe.As<Assembly>(assemblyHandle.Target);
-            var assemblyTypes = GetAssemblyTypes(assembly);
-
-            NativeClassDefinitions* arr = (NativeClassDefinitions*)NativeAlloc(assemblyTypes.Length, Unsafe.SizeOf<NativeClassDefinitions>());
-
-            for (int i = 0; i < assemblyTypes.Length; i++)
-            {
-                var type = assemblyTypes[i];
-                IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativeClassDefinitions>() * i);
-                var managedClass = new NativeClassDefinitions
-                {
-                    typeHandle = GetTypeGCHandle(type),
-                    name = NativeAllocStringAnsi(type.Name),
-                    fullname = NativeAllocStringAnsi(type.GetTypeName()),
-                    @namespace = NativeAllocStringAnsi(type.Namespace ?? ""),
-                    typeAttributes = (uint)type.Attributes,
-                };
-                Unsafe.Write(ptr.ToPointer(), managedClass);
-            }
-
-            *managedClasses = arr;
-            *managedClassCount = assemblyTypes.Length;
-        }
-
-        [UnmanagedCallersOnly]
-        internal static void GetManagedClassFromType(ManagedHandle typeHandle, NativeClassDefinitions* managedClass, ManagedHandle* assemblyHandle)
-        {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
-            *managedClass = new NativeClassDefinitions
-            {
-                typeHandle = GetTypeGCHandle(type),
-                name = NativeAllocStringAnsi(type.Name),
-                fullname = NativeAllocStringAnsi(type.GetTypeName()),
-                @namespace = NativeAllocStringAnsi(type.Namespace ?? ""),
-                typeAttributes = (uint)type.Attributes,
-            };
-
             Assembly assembly = null;
             if (type.IsGenericType && !type.Assembly.IsCollectible)
             {
@@ -261,14 +228,87 @@ namespace FlaxEngine.Interop
             }
             if (assembly == null)
                 assembly = type.Assembly;
+            return assembly;
+        }
 
-            *assemblyHandle = GetAssemblyHandle(assembly);
+        private static NativeClassDefinitions CreateNativeClassDefinitions(Type type, out ManagedHandle assemblyHandle)
+        {
+            assemblyHandle = GetAssemblyHandle(GetOwningAssembly(type));
+            return CreateNativeClassDefinitions(type);
+        }
+
+        private static NativeClassDefinitions CreateNativeClassDefinitions(Type type)
+        {
+            return new NativeClassDefinitions()
+            {
+                typeHandle = RegisterType(type).handle,
+                name = NativeAllocStringAnsi(type.Name),
+                fullname = NativeAllocStringAnsi(type.GetTypeName()),
+                @namespace = NativeAllocStringAnsi(type.Namespace ?? ""),
+                typeAttributes = (uint)type.Attributes,
+            };
+        }
+
+        private static NativeClassDefinitions CreateNativeClassDefinitions(Type type, ManagedHandle typeHandle, out ManagedHandle assemblyHandle)
+        {
+            assemblyHandle = GetAssemblyHandle(GetOwningAssembly(type));
+            return new NativeClassDefinitions()
+            {
+                typeHandle = typeHandle,
+                name = NativeAllocStringAnsi(type.Name),
+                fullname = NativeAllocStringAnsi(type.GetTypeName()),
+                @namespace = NativeAllocStringAnsi(type.Namespace ?? ""),
+                typeAttributes = (uint)type.Attributes,
+            };
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void GetManagedClasses(ManagedHandle assemblyHandle, NativeClassDefinitions** managedClasses, int* managedClassCount)
+        {
+            Assembly assembly = Unsafe.As<Assembly>(assemblyHandle.Target);
+            Type[] assemblyTypes = GetAssemblyTypes(assembly);
+
+            *managedClasses = (NativeClassDefinitions*)NativeAlloc(assemblyTypes.Length, Unsafe.SizeOf<NativeClassDefinitions>());
+            *managedClassCount = assemblyTypes.Length;
+            Span<NativeClassDefinitions> span = new Span<NativeClassDefinitions>(*managedClasses, assemblyTypes.Length);
+            for (int i = 0; i < assemblyTypes.Length; i++)
+            {
+                Type type = assemblyTypes[i];
+                ref var managedClass = ref span[i];
+                managedClass = CreateNativeClassDefinitions(type);
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void RegisterManagedClassNativePointers(NativeClassDefinitions** managedClasses, int managedClassCount)
+        {
+            Span<NativeClassDefinitions> span = new Span<NativeClassDefinitions>(Unsafe.Read<IntPtr>(managedClasses).ToPointer(), managedClassCount);
+            foreach (ref NativeClassDefinitions managedClass in span)
+            {
+                TypeHolder typeHolder = Unsafe.As<TypeHolder>(managedClass.typeHandle.Target);
+                typeHolder.managedClassPointer = managedClass.nativePointer;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void GetManagedClassFromType(ManagedHandle typeHandle, NativeClassDefinitions* managedClass, ManagedHandle* assemblyHandle)
+        {
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
+            *managedClass = CreateNativeClassDefinitions(type, out ManagedHandle handle);
+            *assemblyHandle = handle;
+        }
+
+        private static void RegisterNativeClassFromType(TypeHolder typeHolder, ManagedHandle typeHandle)
+        {
+            NativeClassDefinitions managedClass = CreateNativeClassDefinitions(typeHolder.type, typeHandle, out ManagedHandle assemblyHandle);
+            NativeInterop_CreateClass(ref managedClass, assemblyHandle);
+            typeHolder.managedClassPointer = managedClass.nativePointer;
         }
 
         [UnmanagedCallersOnly]
         internal static void GetClassMethods(ManagedHandle typeHandle, NativeMethodDefinitions** classMethods, int* classMethodsCount)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
 
             var methods = new List<MethodInfo>();
             var staticMethods = type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
@@ -296,7 +336,7 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static void GetClassFields(ManagedHandle typeHandle, NativeFieldDefinitions** classFields, int* classFieldsCount)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             NativeFieldDefinitions* arr = (NativeFieldDefinitions*)NativeAlloc(fields.Length, Unsafe.SizeOf<NativeFieldDefinitions>());
@@ -318,7 +358,8 @@ namespace FlaxEngine.Interop
                 {
                     name = NativeAllocStringAnsi(fieldHolder.field.Name),
                     fieldHandle = fieldHandle,
-                    fieldTypeHandle = GetTypeGCHandle(fieldHolder.field.FieldType),
+                    fieldTypeHandle = GetTypeManagedHandle(fieldHolder.field.FieldType),
+                    fieldOffset = fieldHolder.fieldOffset,
                     fieldAttributes = (uint)fieldHolder.field.Attributes,
                 };
                 Unsafe.Write(IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativeFieldDefinitions>() * i).ToPointer(), classField);
@@ -330,7 +371,7 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static void GetClassProperties(ManagedHandle typeHandle, NativePropertyDefinitions** classProperties, int* classPropertiesCount)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             var arr = (NativePropertyDefinitions*)NativeAlloc(properties.Length, Unsafe.SizeOf<NativePropertyDefinitions>());
@@ -364,7 +405,7 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static void GetClassAttributes(ManagedHandle typeHandle, ManagedHandle** classAttributes, int* classAttributesCount)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             object[] attributeValues = type.GetCustomAttributes(false);
 
             ManagedHandle* arr = (ManagedHandle*)NativeAlloc(attributeValues.Length, Unsafe.SizeOf<ManagedHandle>());
@@ -384,13 +425,13 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static ManagedHandle GetCustomAttribute(ManagedHandle typeHandle, ManagedHandle attributeHandle)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             var attributes = type.GetCustomAttributes(false);
             object attrib;
             if (attributeHandle.IsAllocated)
             {
                 // Check for certain attribute type
-                Type attributeType = Unsafe.As<Type>(attributeHandle.Target);
+                Type attributeType = Unsafe.As<TypeHolder>(attributeHandle.Target);
                 attrib = attributes.FirstOrDefault(x => x.GetType() == attributeType);
             }
             else
@@ -413,7 +454,7 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static void GetClassInterfaces(ManagedHandle typeHandle, IntPtr* classInterfaces, int* classInterfacesCount)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             Type[] interfaces = type.GetInterfaces();
 
             // Match mono_class_get_interfaces which doesn't return interfaces from base class
@@ -465,7 +506,7 @@ namespace FlaxEngine.Interop
             IntPtr arr = (IntPtr)NativeAlloc(interfaces.Length, IntPtr.Size);
             for (int i = 0; i < interfaces.Length; i++)
             {
-                ManagedHandle handle = GetTypeGCHandle(interfaces[i]);
+                ManagedHandle handle = GetTypeManagedHandle(interfaces[i]);
                 Unsafe.Write<ManagedHandle>(IntPtr.Add(arr, IntPtr.Size * i).ToPointer(), handle);
             }
             *classInterfaces = arr;
@@ -477,7 +518,7 @@ namespace FlaxEngine.Interop
         {
             MethodHolder methodHolder = Unsafe.As<MethodHolder>(methodHandle.Target);
             Type returnType = methodHolder.returnType;
-            return GetTypeGCHandle(returnType);
+            return GetTypeManagedHandle(returnType);
         }
 
         [UnmanagedCallersOnly]
@@ -488,7 +529,7 @@ namespace FlaxEngine.Interop
             IntPtr arr = (IntPtr)NativeAlloc(methodHolder.parameterTypes.Length, IntPtr.Size);
             for (int i = 0; i < methodHolder.parameterTypes.Length; i++)
             {
-                ManagedHandle typeHandle = GetTypeGCHandle(methodHolder.parameterTypes[i]);
+                ManagedHandle typeHandle = GetTypeManagedHandle(methodHolder.parameterTypes[i]);
                 Unsafe.Write<ManagedHandle>(IntPtr.Add(new IntPtr(arr), IntPtr.Size * i).ToPointer(), typeHandle);
             }
             *typeHandles = arr;
@@ -509,22 +550,15 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static ManagedHandle NewObject(ManagedHandle typeHandle)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
-            if (type.IsAbstract)
-            {
-                // Dotnet doesn't allow to instantiate abstract type thus allow to use generated mock class usage (eg. for Script or GPUResource) for generated abstract types
-                var abstractWrapper = type.GetNestedType("AbstractWrapper", BindingFlags.NonPublic);
-                if (abstractWrapper != null)
-                    type = abstractWrapper;
-            }
-            object value = RuntimeHelpers.GetUninitializedObject(type);
+            TypeHolder typeHolder = Unsafe.As<TypeHolder>(typeHandle.Target);
+            object value = typeHolder.CreateObject();
             return ManagedHandle.Alloc(value);
         }
 
         [UnmanagedCallersOnly]
         internal static ManagedHandle NewArray(ManagedHandle typeHandle, long size)
         {
-            Type elementType = Unsafe.As<Type>(typeHandle.Target);
+            Type elementType = Unsafe.As<TypeHolder>(typeHandle.Target);
             Type marshalledType = ArrayFactory.GetMarshalledType(elementType);
             Type arrayType = elementType.MakeArrayType();
             if (marshalledType.IsValueType)
@@ -543,9 +577,9 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static ManagedHandle GetArrayTypeFromElementType(ManagedHandle elementTypeHandle)
         {
-            Type elementType = Unsafe.As<Type>(elementTypeHandle.Target);
+            Type elementType = Unsafe.As<TypeHolder>(elementTypeHandle.Target);
             Type classType = elementType.MakeArrayType();
-            return GetTypeGCHandle(classType);
+            return GetTypeManagedHandle(classType);
         }
 
         [UnmanagedCallersOnly]
@@ -593,7 +627,7 @@ namespace FlaxEngine.Interop
             Type classType = obj.GetType();
             if (classType == typeof(ManagedArray))
                 classType = ((ManagedArray)obj).ArrayType;
-            return GetTypeGCHandle(classType);
+            return GetTypeManagedHandle(classType);
         }
 
         [UnmanagedCallersOnly]
@@ -634,7 +668,7 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static ManagedHandle BoxValue(ManagedHandle typeHandle, IntPtr valuePtr)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             object value = MarshalToManaged(valuePtr, type);
             return ManagedHandle.Alloc(value, GCHandleType.Weak);
         }
@@ -677,6 +711,14 @@ namespace FlaxEngine.Interop
             {
                 Debug.LogException(ex);
             }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static IntPtr GetObjectClass(ManagedHandle objectHandle)
+        {
+            object obj = objectHandle.Target;
+            TypeHolder typeHolder = GetTypeHolder(obj.GetType());
+            return typeHolder.managedClassPointer;
         }
 
         [UnmanagedCallersOnly]
@@ -792,7 +834,7 @@ namespace FlaxEngine.Interop
         internal static int FieldGetOffset(ManagedHandle fieldHandle)
         {
             FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
-            return (int)Marshal.OffsetOf(field.field.DeclaringType, field.field.Name);
+            return field.fieldOffset;
         }
 
         [UnmanagedCallersOnly]
@@ -861,7 +903,15 @@ namespace FlaxEngine.Interop
         }
 
         [UnmanagedCallersOnly]
-        internal static ManagedHandle LoadAssemblyImage(IntPtr assemblyPathPtr, IntPtr* assemblyName, IntPtr* assemblyFullName)
+        internal static void GetAssemblyName(ManagedHandle assemblyHandle, IntPtr* assemblyName, IntPtr* assemblyFullName)
+        {
+            Assembly assembly = Unsafe.As<Assembly>(assemblyHandle.Target);
+            *assemblyName = NativeAllocStringAnsi(assembly.GetName().Name);
+            *assemblyFullName = NativeAllocStringAnsi(assembly.FullName);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static ManagedHandle LoadAssemblyImage(IntPtr assemblyPathPtr)
         {
             if (!firstAssemblyLoaded)
             {
@@ -869,8 +919,6 @@ namespace FlaxEngine.Interop
                 firstAssemblyLoaded = true;
 
                 Assembly flaxEngineAssembly = AssemblyLoadContext.Default.Assemblies.First(x => x.GetName().Name == "FlaxEngine.CSharp");
-                *assemblyName = NativeAllocStringAnsi(flaxEngineAssembly.GetName().Name);
-                *assemblyFullName = NativeAllocStringAnsi(flaxEngineAssembly.FullName);
                 return GetAssemblyHandle(flaxEngineAssembly);
             }
 
@@ -903,21 +951,16 @@ namespace FlaxEngine.Interop
             // Assemblies loaded via streams have no Location: https://github.com/dotnet/runtime/issues/12822
             AssemblyLocations.Add(assembly.FullName, assemblyPath);
 
-            *assemblyName = NativeAllocStringAnsi(assembly.GetName().Name);
-            *assemblyFullName = NativeAllocStringAnsi(assembly.FullName);
             return GetAssemblyHandle(assembly);
         }
 
         [UnmanagedCallersOnly]
-        internal static ManagedHandle GetAssemblyByName(IntPtr namePtr, IntPtr* assemblyName, IntPtr* assemblyFullName)
+        internal static ManagedHandle GetAssemblyByName(IntPtr namePtr)
         {
             string name = Marshal.PtrToStringAnsi(namePtr);
             Assembly assembly = Utils.GetAssemblies().FirstOrDefault(x => x.GetName().Name == name);
             if (assembly == null)
                 return new ManagedHandle();
-
-            *assemblyName = NativeAllocStringAnsi(assembly.GetName().Name);
-            *assemblyFullName = NativeAllocStringAnsi(assembly.FullName);
             return GetAssemblyHandle(assembly);
         }
 
@@ -956,9 +999,9 @@ namespace FlaxEngine.Interop
 
             // Release all references in collectible ALC
             cachedDelegatesCollectible.Clear();
-            foreach (var pair in typeHandleCacheCollectible)
-                pair.Value.Free();
-            typeHandleCacheCollectible.Clear();
+            foreach (var pair in managedTypesCollectible)
+                pair.Value.handle.Free();
+            managedTypesCollectible.Clear();
             foreach (var handle in methodHandlesCollectible)
                 handle.Free();
             methodHandlesCollectible.Clear();
@@ -988,7 +1031,7 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static int NativeSizeOf(ManagedHandle typeHandle)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             Type nativeType = GetInternalType(type) ?? type;
             if (nativeType == typeof(Version))
                 nativeType = typeof(NativeVersion);
@@ -1006,8 +1049,8 @@ namespace FlaxEngine.Interop
             if (typeHandle == otherTypeHandle)
                 return 1;
 
-            Type type = Unsafe.As<Type>(typeHandle.Target);
-            Type otherType = Unsafe.As<Type>(otherTypeHandle.Target);
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
+            Type otherType = Unsafe.As<TypeHolder>(otherTypeHandle.Target);
 
             if (type == otherType)
                 return 1;
@@ -1024,37 +1067,39 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static byte TypeIsAssignableFrom(ManagedHandle typeHandle, ManagedHandle otherTypeHandle)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
-            Type otherType = Unsafe.As<Type>(otherTypeHandle.Target);
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
+            Type otherType = Unsafe.As<TypeHolder>(otherTypeHandle.Target);
             return (byte)(type.IsAssignableFrom(otherType) ? 1 : 0);
         }
 
         [UnmanagedCallersOnly]
         internal static byte TypeIsValueType(ManagedHandle typeHandle)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             return (byte)(type.IsValueType ? 1 : 0);
         }
 
         [UnmanagedCallersOnly]
         internal static byte TypeIsEnum(ManagedHandle typeHandle)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             return (byte)(type.IsEnum ? 1 : 0);
         }
 
         [UnmanagedCallersOnly]
-        internal static ManagedHandle GetClassParent(ManagedHandle typeHandle)
+        internal static IntPtr GetClassParent(ManagedHandle typeHandle)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
-            return GetTypeGCHandle(type.BaseType);
+            TypeHolder typeHolder = Unsafe.As<TypeHolder>(typeHandle.Target);
+            TypeHolder baseTypeHolder = GetTypeHolder(typeHolder.type.BaseType);
+            return baseTypeHolder.managedClassPointer;
         }
 
         [UnmanagedCallersOnly]
-        internal static ManagedHandle GetElementClass(ManagedHandle typeHandle)
+        internal static IntPtr GetElementClass(ManagedHandle typeHandle)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
-            return GetTypeGCHandle(type.GetElementType());
+            TypeHolder typeHolder = Unsafe.As<TypeHolder>(typeHandle.Target);
+            TypeHolder elementTypeHolder = GetTypeHolder(typeHolder.type.GetElementType());
+            return elementTypeHolder.managedClassPointer;
         }
 
         [UnmanagedCallersOnly]
@@ -1145,32 +1190,35 @@ namespace FlaxEngine.Interop
         }
 
         [UnmanagedCallersOnly]
-        internal static ManagedHandle GetTypeClass(ManagedHandle typeHandle)
+        internal static IntPtr GetTypeClass(ManagedHandle typeHandle)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
-            if (type.IsByRef)
-                type = type.GetElementType(); // Drop reference type (&) to get actual value type
-            return GetTypeGCHandle(type);
+            TypeHolder typeHolder = Unsafe.As<TypeHolder>(typeHandle.Target);
+            if (typeHolder.type.IsByRef)
+            {
+                // Drop reference type (&) to get actual value type
+                return GetTypeHolder(typeHolder.type.GetElementType()).managedClassPointer;
+            }
+            return typeHolder.managedClassPointer;
         }
 
         [UnmanagedCallersOnly]
         internal static bool GetTypeIsPointer(ManagedHandle typeHandle)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             return type.IsPointer;
         }
 
         [UnmanagedCallersOnly]
         internal static bool GetTypeIsReference(ManagedHandle typeHandle)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             return type.IsByRef;
         }
 
         [UnmanagedCallersOnly]
         internal static uint GetTypeMTypesEnum(ManagedHandle typeHandle)
         {
-            Type type = Unsafe.As<Type>(typeHandle.Target);
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             if (type.IsByRef)
                 type = type.GetElementType(); // Drop reference type (&) to get actual value type
             MTypes monoType;
