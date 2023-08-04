@@ -330,15 +330,9 @@ namespace FlaxEngine.Interop
     {
         private IntPtr handle;
 
-        private ManagedHandle(IntPtr handle)
-        {
-            this.handle = handle;
-        }
+        private ManagedHandle(IntPtr handle) => this.handle = handle;
 
-        private ManagedHandle(object value, GCHandleType type)
-        {
-            handle = ManagedHandlePool.AllocateHandle(value, type);
-        }
+        private ManagedHandle(object value, GCHandleType type) => handle = ManagedHandlePool.AllocateHandle(value, type);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ManagedHandle Alloc(object value) => new ManagedHandle(value, GCHandleType.Normal);
@@ -383,7 +377,7 @@ namespace FlaxEngine.Interop
 
         public override int GetHashCode() => handle.GetHashCode();
 
-        public override bool Equals(object o) => o is ManagedHandle other && Equals(other);
+        public override bool Equals(object obj) => obj is ManagedHandle other && handle == other.handle;
 
         public bool Equals(ManagedHandle other) => handle == other.handle;
 
@@ -391,42 +385,44 @@ namespace FlaxEngine.Interop
 
         public static bool operator !=(ManagedHandle a, ManagedHandle b) => a.handle != b.handle;
 
-        private static class ManagedHandlePool
+        internal static class ManagedHandlePool
         {
             private const int WeakPoolCollectionSizeThreshold = 10000000;
             private const int WeakPoolCollectionTimeThreshold = 500;
 
-            private static ulong normalHandleAccumulator = 0;
-            private static ulong pinnedHandleAccumulator = 0;
-            private static ulong weakHandleAccumulator = 0;
+            // Rolling numbers for handles, two bits reserved for the type
+            private static ulong normalHandleAccumulator = ((ulong)GCHandleType.Normal << 62) & 0xC000000000000000;
+            private static ulong pinnedHandleAccumulator = ((ulong)GCHandleType.Pinned << 62) & 0xC000000000000000;
+            private static ulong weakHandleAccumulator = ((ulong)GCHandleType.Weak << 62) & 0xC000000000000000;
 
-            private static object poolLock = new object();
-            private static Dictionary<IntPtr, object> persistentPool = new Dictionary<nint, object>();
-            private static Dictionary<IntPtr, GCHandle> pinnedPool = new Dictionary<nint, GCHandle>();
+            // Dictionaries for storing the valid handles.
+            // Note: Using locks seems to be generally the fastest when adding or fetching from the dictionary.
+            // Concurrent dictionaries could also be considered, but they perform much slower when adding to the dictionary.
+            private static Dictionary<IntPtr, object> persistentPool = new();
+            private static Dictionary<IntPtr, GCHandle> pinnedPool = new();
 
-            // Manage double-buffered pool for weak handles in order to avoid collecting in-flight handles
-            [ThreadStatic] private static Dictionary<IntPtr, object> weakPool;
-            [ThreadStatic] private static Dictionary<IntPtr, object> weakPoolOther;
-            [ThreadStatic] private static ulong nextWeakPoolCollection;
-            [ThreadStatic] private static int nextWeakPoolGCCollection;
-            [ThreadStatic] private static long lastWeakPoolCollectionTime;
+            // TODO: Performance of pinned handles are poor at the moment due to GCHandle wrapping.
+            // TODO: .NET8: Experiment with pinned arrays for faster pinning: https://github.com/dotnet/runtime/pull/89293
+
+            // Manage double-buffered pool for weak handles in order to avoid collecting in-flight handles.
+            // Periodically when the pools are being accessed and conditions are met, the other pool is cleared and swapped.
+            private static Dictionary<IntPtr, object> weakPool = new();
+            private static Dictionary<IntPtr, object> weakPoolOther = new();
+            private static object weakPoolLock = new object();
+            private static ulong nextWeakPoolCollection;
+            private static int nextWeakPoolGCCollection;
+            private static long lastWeakPoolCollectionTime;
 
             /// <summary>
             /// Tries to free all references to old weak handles so GC can collect them.
             /// </summary>
-            private static void TryCollectWeakHandles()
+            internal static void TryCollectWeakHandles()
             {
                 if (weakHandleAccumulator < nextWeakPoolCollection)
                     return;
 
                 nextWeakPoolCollection = weakHandleAccumulator + 1000;
-                if (weakPool == null)
-                {
-                    weakPool = new Dictionary<nint, object>();
-                    weakPoolOther = new Dictionary<nint, object>();
-                    nextWeakPoolGCCollection = GC.CollectionCount(0) + 1;
-                    return;
-                }
+
                 // Try to swap pools after garbage collection or whenever the pool gets too large
                 var gc0CollectionCount = GC.CollectionCount(0);
                 if (gc0CollectionCount < nextWeakPoolGCCollection && weakPool.Count < WeakPoolCollectionSizeThreshold)
@@ -443,130 +439,159 @@ namespace FlaxEngine.Interop
                 weakPool.Clear();
             }
 
-            private static IntPtr NewHandle(GCHandleType type)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static IntPtr NewHandle(GCHandleType type) => type switch
             {
-                IntPtr handle;
-                if (type == GCHandleType.Normal)
-                    handle = (IntPtr)Interlocked.Increment(ref normalHandleAccumulator);
-                else if (type == GCHandleType.Pinned)
-                    handle = (IntPtr)Interlocked.Increment(ref pinnedHandleAccumulator);
-                else //if (type == GCHandleType.Weak || type == GCHandleType.WeakTrackResurrection)
-                    handle = (IntPtr)Interlocked.Increment(ref weakHandleAccumulator);
-
-                // Two bits reserved for the type
-                handle |= (IntPtr)(((ulong)type << 62) & 0xC000000000000000);
-                return handle;
-            }
+                GCHandleType.Normal => (IntPtr)Interlocked.Increment(ref normalHandleAccumulator),
+                GCHandleType.Pinned => (IntPtr)Interlocked.Increment(ref pinnedHandleAccumulator),
+                GCHandleType.Weak => (IntPtr)Interlocked.Increment(ref weakHandleAccumulator),
+                GCHandleType.WeakTrackResurrection => (IntPtr)Interlocked.Increment(ref weakHandleAccumulator),
+                _ => throw new NotImplementedException(type.ToString())
+            };
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static GCHandleType GetHandleType(IntPtr handle)
-            {
-                return (GCHandleType)(((ulong)handle & 0xC000000000000000) >> 62);
-            }
+            private static GCHandleType GetHandleType(IntPtr handle) => (GCHandleType)(((ulong)handle & 0xC000000000000000) >> 62);
 
             internal static IntPtr AllocateHandle(object value, GCHandleType type)
             {
-                TryCollectWeakHandles();
                 IntPtr handle = NewHandle(type);
-                if (type == GCHandleType.Normal)
+                switch (type)
                 {
-                    lock (poolLock)
-                        persistentPool.Add(handle, value);
+                    case GCHandleType.Normal:
+                        lock (persistentPool)
+                            persistentPool.Add(handle, value);
+                        break;
+                    case GCHandleType.Pinned:
+                        lock (pinnedPool)
+                            pinnedPool.Add(handle, GCHandle.Alloc(value, GCHandleType.Pinned));
+                        break;
+                    case GCHandleType.Weak:
+                    case GCHandleType.WeakTrackResurrection:
+                        lock (weakPoolLock)
+                        {
+                            TryCollectWeakHandles();
+                            weakPool.Add(handle, value);
+                        }
+                        break;
                 }
-                else if (type == GCHandleType.Pinned)
-                {
-                    lock (poolLock)
-                        pinnedPool.Add(handle, GCHandle.Alloc(value, GCHandleType.Pinned));
-                }
-                else if (type == GCHandleType.Weak || type == GCHandleType.WeakTrackResurrection)
-                    weakPool.Add(handle, value);
-
                 return handle;
             }
 
             internal static object GetObject(IntPtr handle)
             {
-                TryCollectWeakHandles();
-                object value;
-                GCHandleType type = GetHandleType(handle);
-                if (type == GCHandleType.Normal)
+                switch (GetHandleType(handle))
                 {
-                    lock (poolLock)
-                    {
-                        if (persistentPool.TryGetValue(handle, out value))
-                            return value;
-                    }
+                    case GCHandleType.Normal:
+                        lock (persistentPool)
+                        {
+                            if (persistentPool.TryGetValue(handle, out object value))
+                                return value;
+                        }
+                        break;
+                    case GCHandleType.Pinned:
+                        lock (pinnedPool)
+                        {
+                            if (pinnedPool.TryGetValue(handle, out GCHandle gchandle))
+                                return gchandle.Target;
+                        }
+                        break;
+                    case GCHandleType.Weak:
+                    case GCHandleType.WeakTrackResurrection:
+                        {
+                            lock (weakPoolLock)
+                            {
+                                TryCollectWeakHandles();
+                                if (weakPool.TryGetValue(handle, out object value))
+                                    return value;
+                                else if (weakPoolOther.TryGetValue(handle, out value))
+                                    return value;
+                            }
+                        }
+                        break;
                 }
-                else if (type == GCHandleType.Pinned)
-                {
-                    lock (poolLock)
-                    {
-                        if (pinnedPool.TryGetValue(handle, out GCHandle gchandle))
-                            return gchandle.Target;
-                    }
-                }
-                else if (weakPool.TryGetValue(handle, out value))
-                    return value;
-                else if (weakPoolOther.TryGetValue(handle, out value))
-                    return value;
-
                 throw new NativeInteropException("Invalid ManagedHandle");
             }
 
             internal static void SetObject(IntPtr handle, object value)
             {
-                TryCollectWeakHandles();
-                GCHandleType type = GetHandleType(handle);
-                if (type == GCHandleType.Normal)
+                switch (GetHandleType(handle))
                 {
-                    lock (poolLock)
-                    {
-                        if (persistentPool.ContainsKey(handle))
-                            persistentPool[handle] = value;
-                    }
+                    case GCHandleType.Normal:
+                        lock (persistentPool)
+                        {
+                            ref object obj = ref CollectionsMarshal.GetValueRefOrNullRef(persistentPool, handle);
+                            if (!Unsafe.IsNullRef(ref obj))
+                            {
+                                obj = value;
+                                return;
+                            }
+                        }
+                        break;
+                    case GCHandleType.Pinned:
+                        lock (pinnedPool)
+                        {
+                            ref GCHandle gchandle = ref CollectionsMarshal.GetValueRefOrNullRef(pinnedPool, handle);
+                            if (!Unsafe.IsNullRef(ref gchandle))
+                            {
+                                gchandle.Target = value;
+                                return;
+                            }
+                        }
+                        break;
+                    case GCHandleType.Weak:
+                    case GCHandleType.WeakTrackResurrection:
+                        lock (weakPoolLock)
+                        {
+                            TryCollectWeakHandles();
+                            {
+                                ref object obj = ref CollectionsMarshal.GetValueRefOrNullRef(weakPool, handle);
+                                if (!Unsafe.IsNullRef(ref obj))
+                                {
+                                    obj = value;
+                                    return;
+                                }
+                            }
+                            {
+                                ref object obj = ref CollectionsMarshal.GetValueRefOrNullRef(weakPoolOther, handle);
+                                if (!Unsafe.IsNullRef(ref obj))
+                                {
+                                    obj = value;
+                                    return;
+                                }
+                            }
+                        }
+                        break;
                 }
-                else if (type == GCHandleType.Pinned)
-                {
-                    lock (poolLock)
-                    {
-                        if (pinnedPool.TryGetValue(handle, out GCHandle gchandle))
-                            gchandle.Target = value;
-                    }
-                }
-                else if (weakPool.ContainsKey(handle))
-                    weakPool[handle] = value;
-                else if (weakPoolOther.ContainsKey(handle))
-                    weakPoolOther[handle] = value;
-
                 throw new NativeInteropException("Invalid ManagedHandle");
             }
 
             internal static void FreeHandle(IntPtr handle)
             {
-                TryCollectWeakHandles();
-                GCHandleType type = GetHandleType(handle);
-                if (type == GCHandleType.Normal)
+                switch (GetHandleType(handle))
                 {
-                    lock (poolLock)
-                    {
-                        if (persistentPool.Remove(handle))
-                            return;
-                    }
-                }
-                else if (type == GCHandleType.Pinned)
-                {
-                    lock (poolLock)
-                    {
-                        if (pinnedPool.Remove(handle, out GCHandle gchandle))
+                    case GCHandleType.Normal:
+                        lock (persistentPool)
                         {
-                            gchandle.Free();
-                            return;
+                            if (persistentPool.Remove(handle))
+                                return;
                         }
-                    }
+                        break;
+                    case GCHandleType.Pinned:
+                        lock (pinnedPool)
+                        {
+                            if (pinnedPool.Remove(handle, out GCHandle gchandle))
+                            {
+                                gchandle.Free();
+                                return;
+                            }
+                        }
+                        break;
+                    case GCHandleType.Weak:
+                    case GCHandleType.WeakTrackResurrection:
+                        lock (weakPoolLock)
+                            TryCollectWeakHandles();
+                        return;
                 }
-                else
-                    return;
-
                 throw new NativeInteropException("Invalid ManagedHandle");
             }
         }
