@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Drag;
 using FlaxEditor.Options;
@@ -600,7 +601,7 @@ namespace FlaxEditor.Surface
             bool selectionChanged = false;
             for (int i = 0; i < _rootControl.Children.Count; i++)
             {
-                if (_rootControl.Children[i] is SurfaceControl control)
+                if (_rootControl.Children[i] is SurfaceControl control && control.IsSelected)
                 {
                     control.IsSelected = false;
                     selectionChanged = true;
@@ -652,11 +653,13 @@ namespace FlaxEditor.Surface
         /// <param name="controls">The controls.</param>
         public void Select(IEnumerable<SurfaceControl> controls)
         {
+            var newSelection = controls.ToList();
+            var prevSelection = SelectedControls;
+            if (Utils.ArraysEqual(newSelection, prevSelection))
+                return;
             ClearSelection();
-            foreach (var control in controls)
-            {
+            foreach (var control in newSelection)
                 control.IsSelected = true;
-            }
             SelectionChanged?.Invoke();
         }
 
@@ -666,6 +669,8 @@ namespace FlaxEditor.Surface
         /// <param name="control">The control.</param>
         public void Deselect(SurfaceControl control)
         {
+            if (!control.IsSelected)
+                return;
             control.IsSelected = false;
             SelectionChanged?.Invoke();
         }
@@ -724,11 +729,8 @@ namespace FlaxEditor.Surface
                     Context.OnControlDeleted(control);
                 }
             }
-
             if (selectionChanged)
-            {
                 SelectionChanged?.Invoke();
-            }
 
             if (nodes != null)
             {

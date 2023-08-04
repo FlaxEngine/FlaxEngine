@@ -115,15 +115,23 @@ namespace FlaxEditor.Surface
             var p1 = _rootControl.PointFromParent(ref _leftMouseDownPos);
             var p2 = _rootControl.PointFromParent(ref _mousePos);
             var selectionRect = Rectangle.FromPoints(p1, p2);
+            var selectionChanged = false;
 
             // Find controls to select
             for (int i = 0; i < _rootControl.Children.Count; i++)
             {
                 if (_rootControl.Children[i] is SurfaceControl control)
                 {
-                    control.IsSelected = control.IsSelectionIntersecting(ref selectionRect);
+                    var select = control.IsSelectionIntersecting(ref selectionRect);
+                    if (select != control.IsSelected)
+                    {
+                        control.IsSelected = select;
+                        selectionChanged = true;
+                    }
                 }
             }
+            if (selectionChanged)
+                SelectionChanged?.Invoke();
         }
 
         private void OnSurfaceControlSpawned(SurfaceControl control)
