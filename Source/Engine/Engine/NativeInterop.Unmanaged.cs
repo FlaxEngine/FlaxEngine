@@ -695,7 +695,7 @@ namespace FlaxEngine.Interop
                 catch (Exception exception)
                 {
                     if (exceptionPtr != IntPtr.Zero)
-                        Marshal.WriteIntPtr(exceptionPtr, ManagedHandle.ToIntPtr(exception, GCHandleType.Weak));
+                        Unsafe.Write<IntPtr>(exceptionPtr.ToPointer(), ManagedHandle.ToIntPtr(exception, GCHandleType.Weak));
                     return IntPtr.Zero;
                 }
                 return returnValue;
@@ -710,7 +710,7 @@ namespace FlaxEngine.Interop
 
                 for (int i = 0; i < numParams; i++)
                 {
-                    IntPtr nativePtr = Marshal.ReadIntPtr(IntPtr.Add(paramPtr, sizeof(IntPtr) * i));
+                    IntPtr nativePtr = Unsafe.Read<IntPtr>((IntPtr.Add(paramPtr, sizeof(IntPtr) * i)).ToPointer());
                     methodParameters[i] = MarshalToManaged(nativePtr, methodHolder.parameterTypes[i]);
                 }
 
@@ -726,7 +726,7 @@ namespace FlaxEngine.Interop
                         realException = exception.InnerException;
 
                     if (exceptionPtr != IntPtr.Zero)
-                        Marshal.WriteIntPtr(exceptionPtr, ManagedHandle.ToIntPtr(realException, GCHandleType.Weak));
+                        Unsafe.Write<IntPtr>(exceptionPtr.ToPointer(), ManagedHandle.ToIntPtr(realException, GCHandleType.Weak));
                     else
                         throw realException;
                     return IntPtr.Zero;
@@ -738,7 +738,7 @@ namespace FlaxEngine.Interop
                     Type parameterType = methodHolder.parameterTypes[i];
                     if (parameterType.IsByRef)
                     {
-                        IntPtr nativePtr = Marshal.ReadIntPtr(IntPtr.Add(paramPtr, sizeof(IntPtr) * i));
+                        IntPtr nativePtr = Unsafe.Read<IntPtr>((IntPtr.Add(paramPtr, sizeof(IntPtr) * i)).ToPointer());
                         MarshalToNative(methodParameters[i], nativePtr, parameterType.GetElementType());
                     }
                 }
@@ -800,7 +800,40 @@ namespace FlaxEngine.Interop
         {
             object fieldOwner = fieldOwnerHandle.Target;
             FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
-            field.toNativeMarshaller(field.field, fieldOwner, valuePtr, out int fieldOffset);
+            field.toNativeMarshaller(field.fieldOffset, fieldOwner, valuePtr, out int fieldSize);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void FieldGetValueReference(ManagedHandle fieldOwnerHandle, ManagedHandle fieldHandle, IntPtr valuePtr)
+        {
+            object fieldOwner = fieldOwnerHandle.Target;
+            FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
+            if (fieldOwner.GetType().IsValueType)
+            {
+                ref IntPtr fieldRef = ref FieldHelper.GetValueTypeFieldReference<object, IntPtr>(field.fieldOffset, ref fieldOwner);
+                Unsafe.Write<IntPtr>(valuePtr.ToPointer(), fieldRef);
+            }
+            else
+            {
+                ref IntPtr fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<object, IntPtr>(field.fieldOffset, ref fieldOwner);
+                Unsafe.Write<IntPtr>(valuePtr.ToPointer(), fieldRef);
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void FieldGetValueReferenceWithOffset(ManagedHandle fieldOwnerHandle, int fieldOffset, IntPtr valuePtr)
+        {
+            object fieldOwner = fieldOwnerHandle.Target;
+            if (fieldOwner.GetType().IsValueType)
+            {
+                ref IntPtr fieldRef = ref FieldHelper.GetValueTypeFieldReference<object, IntPtr>(fieldOffset, ref fieldOwner);
+                Unsafe.Write<IntPtr>(valuePtr.ToPointer(), fieldRef);
+            }
+            else
+            {
+                ref IntPtr fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<object, IntPtr>(fieldOffset, ref fieldOwner);
+                Unsafe.Write<IntPtr>(valuePtr.ToPointer(), fieldRef);
+            }
         }
 
         [UnmanagedCallersOnly]
