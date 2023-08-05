@@ -23,9 +23,14 @@ namespace FlaxEditor.GUI
         public const int DefaultMarginH = 2;
 
         /// <summary>
-        /// Event fired when button gets clicked.
+        /// Event fired when button gets clicked with the primary mouse button.
         /// </summary>
         public Action<ToolStripButton> ButtonClicked;
+
+        /// <summary>
+        /// Event fired when button gets clicked with the secondary mouse button.
+        /// </summary>
+        public Action<ToolStripButton> SecondaryButtonClicked;
 
         /// <summary>
         /// Tries to get the last button.
@@ -144,6 +149,11 @@ namespace FlaxEditor.GUI
         internal void OnButtonClicked(ToolStripButton button)
         {
             ButtonClicked?.Invoke(button);
+        }
+
+        internal void OnSecondaryButtonClicked(ToolStripButton button)
+        {
+            SecondaryButtonClicked?.Invoke(button);
         }
 
         /// <inheritdoc />

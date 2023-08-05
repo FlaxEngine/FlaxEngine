@@ -475,22 +475,31 @@ namespace FlaxEditor.GUI
                     if (_type != ScriptType.Null)
                     {
                         // Show asset picker popup
-                        AssetSearchPopup.Show(this, Button1Rect.BottomLeft, IsValid, item =>
+                        var popup = AssetSearchPopup.Show(this, Button1Rect.BottomLeft, IsValid, item =>
                         {
                             SelectedItem = item;
                             RootWindow.Focus();
                             Focus();
                         });
+                        if (_selected != null)
+                        { 
+                            var selectedAssetName = Path.GetFileNameWithoutExtension(_selected.Path); 
+                            popup.ScrollToAndHighlightItemByName(selectedAssetName);
+                        }
                     }
                     else
                     {
                         // Show content item picker popup
-                        ContentSearchPopup.Show(this, Button1Rect.BottomLeft, IsValid, item =>
+                        var popup = ContentSearchPopup.Show(this, Button1Rect.BottomLeft, IsValid, item =>
                         {
                             SelectedItem = item;
                             RootWindow.Focus();
                             Focus();
                         });
+                        if (_selectedItem != null)
+                        {
+                            popup.ScrollToAndHighlightItemByName(_selectedItem.ShortName);
+                        }
                     }
                 }
                 else if (_selected != null || _selectedItem != null)

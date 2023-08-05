@@ -34,9 +34,7 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    BoundingFrustum()
-    {
-    }
+    BoundingFrustum() = default;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BoundingFrustum"/> struct.

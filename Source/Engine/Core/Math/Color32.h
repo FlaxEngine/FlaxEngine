@@ -53,9 +53,7 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Color32()
-    {
-    }
+    Color32() = default;
 
     /// <summary>
     /// Constructs a new Color32 with given r, g, b, a components.

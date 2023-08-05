@@ -35,9 +35,7 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Ray()
-    {
-    }
+    Ray() = default;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Ray"/> struct.

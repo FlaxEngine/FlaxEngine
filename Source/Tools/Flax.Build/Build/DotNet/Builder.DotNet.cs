@@ -159,6 +159,7 @@ namespace Flax.Build
             var outputPath = Path.GetDirectoryName(buildData.Target.GetOutputFilePath(buildOptions));
             var outputFile = Path.Combine(outputPath, name + ".dll");
             var outputDocFile = Path.Combine(outputPath, name + ".xml");
+            var outputGeneratedFiles = Path.Combine(buildOptions.IntermediateFolder);
             string cscPath, referenceAssemblies;
 #if USE_NETCORE
             var dotnetSdk = DotNetSdk.Instance;
@@ -263,6 +264,9 @@ namespace Flax.Build
 #endif
             args.Add(string.Format("/out:\"{0}\"", outputFile));
             args.Add(string.Format("/doc:\"{0}\"", outputDocFile));
+#if USE_NETCORE
+            args.Add(string.Format("/generatedfilesout:\"{0}\"", outputGeneratedFiles));
+#endif
             if (buildOptions.ScriptingAPI.Defines.Count != 0)
                 args.Add("/define:" + string.Join(";", buildOptions.ScriptingAPI.Defines));
             if (buildData.Configuration == TargetConfiguration.Debug)
@@ -272,8 +276,10 @@ namespace Flax.Build
             foreach (var reference in fileReferences)
                 args.Add(string.Format("/reference:\"{0}\"", reference));
 #if USE_NETCORE
-            foreach (var analyzer in buildOptions.ScriptingAPI.SystemAnalyzers)
-                args.Add(string.Format("/analyzer:\"{0}{1}.dll\"", referenceAnalyzers, analyzer));
+            foreach (var systemAnalyzer in buildOptions.ScriptingAPI.SystemAnalyzers)
+                args.Add(string.Format("/analyzer:\"{0}{1}.dll\"", referenceAnalyzers, systemAnalyzer));
+            foreach (var analyzer in buildOptions.ScriptingAPI.Analyzers)
+                args.Add(string.Format("/analyzer:\"{0}\"", analyzer));
 #endif
             foreach (var sourceFile in sourceFiles)
                 args.Add("\"" + sourceFile + "\"");

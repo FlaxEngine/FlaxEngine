@@ -5,7 +5,6 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
-#include "Engine/Scripting/ManagedCLR/MDomain.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
@@ -189,12 +188,8 @@ bool AnimGraph::InitCustomNode(Node* node)
         return false;
     }
 
-    // Create node values managed array
+    // Initialization can happen on Content Thread so ensure to have runtime attached
     MCore::Thread::Attach();
-    MArray* values = MCore::Array::New( MCore::TypeCache::Object, node->Values.Count());
-    MObject** valuesPtr = MCore::Array::GetAddress<MObject*>(values);
-    for (int32 i = 0; i < node->Values.Count(); i++)
-        valuesPtr[i] = MUtils::BoxVariant(node->Values[i]);
 
     // Allocate managed node object (create GC handle to prevent destruction)
     MObject* obj = type->CreateInstance();
@@ -202,7 +197,7 @@ bool AnimGraph::InitCustomNode(Node* node)
 
     // Initialize node
     InternalInitData initData;
-    initData.Values = values;
+    initData.Values = MUtils::ToArray(node->Values, MCore::TypeCache::Object);
     initData.BaseModel = BaseModel.GetManagedInstance();
     void* params[1];
     params[0] = &initData;
@@ -211,7 +206,6 @@ bool AnimGraph::InitCustomNode(Node* node)
     if (exception)
     {
         MCore::GCHandle::Free(handleGC);
-
         MException ex(exception);
         ex.Log(LogType::Warning, TEXT("AnimGraph"));
         return false;

@@ -369,10 +369,6 @@ private:
 
 public:
     // [Actor]
-#if USE_EDITOR
-    void OnDebugDraw() override;
-    void OnDebugDrawSelected() override;
-#endif
     void OnTransformChanged() override;
     void Initialize() override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;

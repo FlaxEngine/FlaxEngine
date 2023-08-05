@@ -455,53 +455,6 @@ void Spline::SetKeyframes(MArray* data)
 
 #endif
 
-#if USE_EDITOR
-
-#include "Engine/Debug/DebugDraw.h"
-
-namespace
-{
-    void DrawSpline(Spline* spline, const Color& color, const Transform& transform, bool depthTest)
-    {
-        const int32 count = spline->Curve.GetKeyframes().Count();
-        if (count == 0)
-            return;
-        Spline::Keyframe* prev = spline->Curve.GetKeyframes().Get();
-        Vector3 prevPos = transform.LocalToWorld(prev->Value.Translation);
-        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(prevPos, 5.0f), color, 0.0f, depthTest);
-        for (int32 i = 1; i < count; i++)
-        {
-            Spline::Keyframe* next = prev + 1;
-            Vector3 nextPos = transform.LocalToWorld(next->Value.Translation);
-            DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(nextPos, 5.0f), color, 0.0f, depthTest);
-            const float d = (next->Time - prev->Time) / 3.0f;
-            DEBUG_DRAW_BEZIER(prevPos, prevPos + prev->TangentOut.Translation * d, nextPos + next->TangentIn.Translation * d, nextPos, color, 0.0f, depthTest);
-            prev = next;
-            prevPos = nextPos;
-        }
-    }
-}
-
-void Spline::OnDebugDraw()
-{
-    const Color color = GetSplineColor();
-    DrawSpline(this, color.AlphaMultiplied(0.7f), _transform, true);
-
-    // Base
-    Actor::OnDebugDraw();
-}
-
-void Spline::OnDebugDrawSelected()
-{
-    const Color color = GetSplineColor();
-    DrawSpline(this, color.AlphaMultiplied(0.3f), _transform, false);
-
-    // Base
-    Actor::OnDebugDrawSelected();
-}
-
-#endif
-
 void Spline::OnTransformChanged()
 {
     // Base

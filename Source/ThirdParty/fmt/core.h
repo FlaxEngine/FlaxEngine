@@ -30,6 +30,7 @@ Customizations done to fmt lib:
 #define FMT_USE_USER_DEFINED_LITERALS 0
 #define FMT_USE_STRING 0
 #define FMT_USE_LONG_DOUBLE 0
+#define FMT_USE_FLOAT128 0
 #define FMT_USE_ITERATOR 0
 #define FMT_USE_LOCALE_GROUPING 0
 #define FMT_EXCEPTIONS 0

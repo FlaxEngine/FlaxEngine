@@ -2796,6 +2796,122 @@ String Variant::ToString() const
     }
 }
 
+void Variant::Inline()
+{
+    VariantType::Types type = VariantType::Null;
+    byte data[sizeof(Matrix)];
+    if (Type.Type == VariantType::Structure && AsBlob.Data && AsBlob.Length <= sizeof(Matrix))
+    {
+        for (int32 i = 2; i < VariantType::MAX; i++)
+        {
+            if (StringUtils::Compare(Type.TypeName, InBuiltTypesTypeNames[i]) == 0)
+            {
+                type = (VariantType::Types)i;
+                break;
+            }
+        }
+        if (type == VariantType::Null)
+        {
+            // Aliases
+            if (StringUtils::Compare(Type.TypeName, "FlaxEngine.Vector2") == 0)
+                type = VariantType::Types::Vector2;
+            else if (StringUtils::Compare(Type.TypeName, "FlaxEngine.Vector3") == 0)
+                type = VariantType::Types::Vector3;
+            else if (StringUtils::Compare(Type.TypeName, "FlaxEngine.Vector4") == 0)
+                type = VariantType::Types::Vector4;
+        }
+        if (type != VariantType::Null)
+            Platform::MemoryCopy(data, AsBlob.Data, AsBlob.Length);
+    }
+    if (type != VariantType::Null)
+    {
+        switch (type)
+        {
+        case VariantType::Bool:
+            *this = *(bool*)data;
+            break;
+        case VariantType::Int:
+            *this = *(int32*)data;
+            break;
+        case VariantType::Uint:
+            *this = *(uint32*)data;
+            break;
+        case VariantType::Int64:
+            *this = *(int64*)data;
+            break;
+        case VariantType::Uint64:
+            *this = *(uint64*)data;
+            break;
+        case VariantType::Float:
+            *this = *(float*)data;
+            break;
+        case VariantType::Double:
+            *this = *(double*)data;
+            break;
+        case VariantType::Float2:
+            *this = *(Float2*)data;
+            break;
+        case VariantType::Float3:
+            *this = *(Float3*)data;
+            break;
+        case VariantType::Float4:
+            *this = *(Float4*)data;
+            break;
+        case VariantType::Color:
+            *this = *(Color*)data;
+            break;
+        case VariantType::Guid:
+            *this = *(Guid*)data;
+            break;
+        case VariantType::BoundingBox:
+            *this = Variant(*(BoundingBox*)data);
+            break;
+        case VariantType::BoundingSphere:
+            *this = *(BoundingSphere*)data;
+            break;
+        case VariantType::Quaternion:
+            *this = *(Quaternion*)data;
+            break;
+        case VariantType::Transform:
+            *this = Variant(*(Transform*)data);
+            break;
+        case VariantType::Rectangle:
+            *this = *(Rectangle*)data;
+            break;
+        case VariantType::Ray:
+            *this = Variant(*(Ray*)data);
+            break;
+        case VariantType::Matrix:
+            *this = Variant(*(Matrix*)data);
+            break;
+        case VariantType::Int2:
+            *this = *(Int2*)data;
+            break;
+        case VariantType::Int3:
+            *this = *(Int3*)data;
+            break;
+        case VariantType::Int4:
+            *this = *(Int4*)data;
+            break;
+        case VariantType::Int16:
+            *this = *(int16*)data;
+            break;
+        case VariantType::Uint16:
+            *this = *(uint16*)data;
+            break;
+        case VariantType::Double2:
+            *this = *(Double2*)data;
+            break;
+        case VariantType::Double3:
+            *this = *(Double3*)data;
+            break;
+        case VariantType::Double4:
+            *this = *(Double4*)data;
+            break;
+        }
+    }
+}
+
 bool Variant::CanCast(const Variant& v, const VariantType& to)
 {
     if (v.Type == to)
@@ -3682,6 +3798,7 @@ void Variant::AllocStructure()
         const ScriptingType& type = typeHandle.GetType();
         AsBlob.Length = type.Size;
         AsBlob.Data = Allocator::Allocate(AsBlob.Length);
+        Platform::MemoryClear(AsBlob.Data, AsBlob.Length);
         type.Struct.Ctor(AsBlob.Data);
     }
     else if (typeName == "System.Int16" || typeName == "System.UInt16")

@@ -200,14 +200,19 @@ namespace Flax.Build.NativeCpp
             public HashSet<string> SystemReferences;
 
             /// <summary>
-            /// The .Net libraries references (dll or exe files paths).
+            /// The system analyzers/source generators.
+            /// </summary>
+            public HashSet<string> SystemAnalyzers;
+
+            /// <summary>
+            /// The .NET libraries references (dll or exe files paths).
             /// </summary>
             public HashSet<string> FileReferences;
 
             /// <summary>
-            /// The .Net libraries references (dll or exe files paths).
+            /// The .NET analyzers (dll or exe files paths).
             /// </summary>
-            public HashSet<string> SystemAnalyzers;
+            public HashSet<string> Analyzers;
 
             /// <summary>
             /// True if ignore compilation warnings due to missing code documentation comments.
@@ -232,6 +237,7 @@ namespace Flax.Build.NativeCpp
                 Defines.AddRange(other.Defines);
                 SystemReferences.AddRange(other.SystemReferences);
                 FileReferences.AddRange(other.FileReferences);
+                Analyzers.AddRange(other.Analyzers);
                 IgnoreMissingDocumentationWarnings |= other.IgnoreMissingDocumentationWarnings;
             }
         }
@@ -305,6 +311,7 @@ namespace Flax.Build.NativeCpp
                 "Microsoft.Interop.SourceGeneration",
             },
             FileReferences = new HashSet<string>(),
+            Analyzers = new HashSet<string>(),
         };
 
         /// <summary>
