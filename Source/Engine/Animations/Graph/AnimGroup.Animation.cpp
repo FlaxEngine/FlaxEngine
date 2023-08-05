@@ -235,8 +235,9 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
                 const float nestedAnimLength = nestedAnim.Anim->GetLength();
                 const float nestedAnimDuration = nestedAnim.Anim->GetDuration();
                 const float nestedAnimSpeed = nestedAnim.Speed * speed;
-                nestedAnimPos = nestedAnimPos / nestedAnimDuration * nestedAnimSpeed;
-                nestedAnimPrevPos = nestedAnimPrevPos / nestedAnimDuration * nestedAnimSpeed;
+                const float frameRateMatchScale = (float)nestedAnim.Anim->Data.FramesPerSecond / (float)anim->Data.FramesPerSecond;
+                nestedAnimPos = nestedAnimPos / nestedAnimDuration * nestedAnimSpeed * frameRateMatchScale;
+                nestedAnimPrevPos = nestedAnimPrevPos / nestedAnimDuration * nestedAnimSpeed * frameRateMatchScale;
                 GetAnimSamplePos(nestedAnim.Loop, nestedAnimLength, nestedAnim.StartTime, nestedAnimPrevPos, nestedAnimPos, nestedAnimPos, nestedAnimPrevPos);
 
                 ProcessAnimation(nodes, node, true, nestedAnimLength, nestedAnimPos, nestedAnimPrevPos, nestedAnim.Anim, 1.0f, weight, mode);

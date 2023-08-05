@@ -341,6 +341,14 @@ void SplineModel::OnParentChanged()
     OnSplineUpdated();
 }
 
+const Span<MaterialSlot> SplineModel::GetMaterialSlots() const
+{
+    const auto model = Model.Get();
+    if (model && !model->WaitForLoaded())
+        return ToSpan(model->MaterialSlots);
+    return Span<MaterialSlot>();
+}
+
 MaterialBase* SplineModel::GetMaterial(int32 entryIndex)
 {
     if (Model)

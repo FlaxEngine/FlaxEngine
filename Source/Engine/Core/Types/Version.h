@@ -73,30 +73,12 @@ public:
     }
 
     /// <summary>
-    /// Gets the high 16 bits of the revision number.
-    /// </summary>
-    /// <returns>A 16-bit signed integer.</returns>
-    FORCE_INLINE int16 MajorRevision() const
-    {
-        return static_cast<int16>(_revision >> 16);
-    }
-
-    /// <summary>
     /// Gets the value of the minor component of the version number for the current Version object.
     /// </summary>
     /// <returns>The minor version number.</returns>
     FORCE_INLINE int32 Minor() const
     {
         return _minor;
-    }
-
-    /// <summary>
-    /// Gets the low 16 bits of the revision number.
-    /// </summary>
-    /// <returns>A 16-bit signed integer.</returns>
-    FORCE_INLINE int16 MinorRevision() const
-    {
-        return static_cast<int16>(_revision & 65535);
     }
 
     /// <summary>
@@ -126,61 +108,26 @@ public:
         return _major == obj._major && _minor == obj._minor && _build == obj._build && _revision == obj._revision;
     }
 
-    /// <summary>
-    /// Determines whether two specified Version objects are equal.
-    /// </summary>
-    /// <param name="other">The other Version object.</param>
-    /// <returns>True if <paramref name="v1" /> equals <paramref name="v2" />; otherwise, false.</returns>
     FORCE_INLINE bool operator==(const Version& other) const
     {
         return Equals(other);
     }
-
-    /// <summary>
-    /// Determines whether the first specified Version object is greater than the second specified Version object.
-    /// </summary>
-    /// <param name="other">The first Version object.</param>
-    /// <returns>True if <paramref name="v1" /> is greater than <paramref name="v2" />; otherwise, false.</returns>
-    FORCE_INLINE bool operator >(const Version& other) const
+    FORCE_INLINE bool operator>(const Version& other) const
     {
         return other < *this;
     }
-
-    /// <summary>
-    /// Determines whether the first specified Version object is greater than or equal to the second specified Version object.
-    /// /summary>
-    /// <param name="other">The other Version object.</param>
-    /// <returns>True if <paramref name="v1" /> is greater than or equal to <paramref name="v2" />; otherwise, false.</returns>
-    FORCE_INLINE bool operator >=(const Version& other) const
+    FORCE_INLINE bool operator>=(const Version& other) const
     {
         return other <= *this;
     }
-
-    /// <summary>
-    /// Determines whether two specified Version objects are not equal.
-    /// </summary>
-    /// <param name="other">The other Version object.</param>
-    /// <returns>True if <paramref name="v1" /> does not equal <paramref name="v2" />; otherwise, false.</returns>
     FORCE_INLINE bool operator!=(const Version& other) const
     {
         return !(*this == other);
     }
-
-    /// <summary>
-    /// Determines whether the first specified Version object is less than the second specified Version object.
-    /// </summary>
-    /// <param name="other">The first other object.</param>
-    /// <returns>True if <paramref name="v1" /> is less than <paramref name="v2" />; otherwise, false.</returns>
     FORCE_INLINE bool operator<(const Version& other) const
     {
         return CompareTo(other) < 0;
     }
-
-    /// <summary>
-    /// Determines whether the first specified Version object is less than or equal to the second Version object.
-    /// </summary>
-    /// <param name="other">The other Version object.</param>
-    /// <returns>True if <paramref name="v1" /> is less than or equal to <paramref name="v2" />; otherwise, false.</returns>
     FORCE_INLINE bool operator<=(const Version& other) const
     {
         return CompareTo(other) <= 0;

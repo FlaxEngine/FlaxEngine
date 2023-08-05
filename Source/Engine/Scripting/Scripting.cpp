@@ -476,11 +476,27 @@ bool Scripting::Load()
 
     // Load FlaxEngine
     const String flaxEnginePath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.dll");
-    if (((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->Load(flaxEnginePath))
+    auto* flaxEngineModule = (NativeBinaryModule*)GetBinaryModuleFlaxEngine();
+    if (flaxEngineModule->Assembly->Load(flaxEnginePath))
     {
         LOG(Error, "Failed to load FlaxEngine C# assembly.");
         return true;
     }
+
+    // Insert type aliases for vector types that don't exist in C++ but are just typedef (properly redirect them to actual types)
+    // TODO: add support for automatic typedef aliases setup for scripting module to properly lookup type from the alias typename
+#if USE_LARGE_WORLDS
+    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector2"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Double2"];
+    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector3"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Double3"];
+    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector4"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Double4"];
+#else
+    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector2"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Float2"];
+    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector3"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Float3"];
+    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector4"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Float4"];
+#endif
+    flaxEngineModule->ClassToTypeIndex[flaxEngineModule->Assembly->GetClass("FlaxEngine.Vector2")] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector2"];
+    flaxEngineModule->ClassToTypeIndex[flaxEngineModule->Assembly->GetClass("FlaxEngine.Vector3")] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector3"];
+    flaxEngineModule->ClassToTypeIndex[flaxEngineModule->Assembly->GetClass("FlaxEngine.Vector4")] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector4"];
 
 #if USE_EDITOR
     // Skip loading game modules in Editor on startup - Editor loads them later during splash screen (eg. after first compilation)

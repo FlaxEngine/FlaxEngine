@@ -33,7 +33,12 @@ namespace FlaxEditor.CustomEditors.Editors
     [CustomEditor(typeof(Asset)), DefaultEditor]
     public class AssetRefEditor : CustomEditor
     {
-        private AssetPicker _picker;
+        /// <summary>
+        /// The asset picker used to get a reference to an asset.
+        /// </summary>
+        public AssetPicker Picker;
+
+        private bool _isRefreshing;
         private ScriptType _valueType;
 
         /// <inheritdoc />
@@ -44,7 +49,7 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             if (HasDifferentTypes)
                 return;
-            _picker = layout.Custom<AssetPicker>().CustomControl;
+            Picker = layout.Custom<AssetPicker>().CustomControl;
 
             _valueType = Values.Type.Type != typeof(object) || Values[0] == null ? Values.Type : TypeUtils.GetObjectType(Values[0]);
             var assetType = _valueType;
@@ -66,7 +71,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 {
                     // Generic file picker
                     assetType = ScriptType.Null;
-                    _picker.FileExtension = assetReference.TypeName;
+                    Picker.FileExtension = assetReference.TypeName;
                 }
                 else
                 {
@@ -75,26 +80,30 @@ namespace FlaxEditor.CustomEditors.Editors
                         assetType = customType;
                     else if (!Content.Settings.GameSettings.OptionalPlatformSettings.Contains(assetReference.TypeName))
                         Debug.LogWarning(string.Format("Unknown asset type '{0}' to use for asset picker filter.", assetReference.TypeName));
+                    else
+                        assetType = ScriptType.Void;
                 }
             }
 
-            _picker.AssetType = assetType;
-            _picker.Height = height;
-            _picker.SelectedItemChanged += OnSelectedItemChanged;
+            Picker.AssetType = assetType;
+            Picker.Height = height;
+            Picker.SelectedItemChanged += OnSelectedItemChanged;
         }
 
         private void OnSelectedItemChanged()
         {
+            if (_isRefreshing)
+                return;
             if (typeof(AssetItem).IsAssignableFrom(_valueType.Type))
-                SetValue(_picker.SelectedItem);
+                SetValue(Picker.SelectedItem);
             else if (_valueType.Type == typeof(Guid))
-                SetValue(_picker.SelectedID);
+                SetValue(Picker.SelectedID);
             else if (_valueType.Type == typeof(SceneReference))
-                SetValue(new SceneReference(_picker.SelectedID));
+                SetValue(new SceneReference(Picker.SelectedID));
             else if (_valueType.Type == typeof(string))
-                SetValue(_picker.SelectedPath);
+                SetValue(Picker.SelectedPath);
             else
-                SetValue(_picker.SelectedAsset);
+                SetValue(Picker.SelectedAsset);
         }
 
         /// <inheritdoc />
@@ -104,16 +113,18 @@ namespace FlaxEditor.CustomEditors.Editors
 
             if (!HasDifferentValues)
             {
+                _isRefreshing = true;
                 if (Values[0] is AssetItem assetItem)
-                    _picker.SelectedItem = assetItem;
+                    Picker.SelectedItem = assetItem;
                 else if (Values[0] is Guid guid)
-                    _picker.SelectedID = guid;
+                    Picker.SelectedID = guid;
                 else if (Values[0] is SceneReference sceneAsset)
-                    _picker.SelectedItem = Editor.Instance.ContentDatabase.FindAsset(sceneAsset.ID);
+                    Picker.SelectedItem = Editor.Instance.ContentDatabase.FindAsset(sceneAsset.ID);
                 else if (Values[0] is string path)
-                    _picker.SelectedPath = path;
+                    Picker.SelectedPath = path;
                 else
-                    _picker.SelectedAsset = Values[0] as Asset;
+                    Picker.SelectedAsset = Values[0] as Asset;
+                _isRefreshing = false;
             }
         }
     }

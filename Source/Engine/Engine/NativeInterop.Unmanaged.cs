@@ -244,7 +244,25 @@ namespace FlaxEngine.Interop
                 @namespace = NativeAllocStringAnsi(type.Namespace ?? ""),
                 typeAttributes = (uint)type.Attributes,
             };
-            *assemblyHandle = GetAssemblyHandle(type.Assembly);
+
+            Assembly assembly = null;
+            if (type.IsGenericType && !type.Assembly.IsCollectible)
+            {
+                // The owning assembly of a generic type with type arguments referencing
+                // collectible assemblies must be one of the collectible assemblies.
+                foreach (var genericType in type.GetGenericArguments())
+                {
+                    if (genericType.Assembly.IsCollectible)
+                    {
+                        assembly = genericType.Assembly;
+                        break;
+                    }
+                }
+            }
+            if (assembly == null)
+                assembly = type.Assembly;
+
+            *assemblyHandle = GetAssemblyHandle(assembly);
         }
 
         [UnmanagedCallersOnly]

@@ -72,11 +72,11 @@ KeyboardKeys GetKey(NSEvent* event)
     case 0x30: return KeyboardKeys::Tab;
     case 0x31: return KeyboardKeys::Spacebar;
     case 0x32: return KeyboardKeys::BackQuote;
-    case 0x33: return KeyboardKeys::Delete;
+    case 0x33: return KeyboardKeys::Backspace;
     //case 0x34:
     case 0x35: return KeyboardKeys::Escape;
-    //case 0x36:
-    //case 0x37: Command
+    case 0x36: return KeyboardKeys::Control; // Command (right)
+    case 0x37: return KeyboardKeys::Control; // Command (left)
     case 0x38: return KeyboardKeys::Shift;
     case 0x39: return KeyboardKeys::Capital;
     case 0x3A: return KeyboardKeys::Alt;
@@ -378,7 +378,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 {
     KeyboardKeys key = GetKey(event);
     if (key != KeyboardKeys::None)
-	    Input::Keyboard->OnKeyDown(key);
+	    Input::Keyboard->OnKeyDown(key, Window);
 
 	// Send a text input event
     switch (key)
@@ -400,7 +400,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
         if (length >= 16)
             length = 15;
         [text getCharacters:buffer range:NSMakeRange(0, length)];
-        Input::Keyboard->OnCharInput((Char)buffer[0]);
+        Input::Keyboard->OnCharInput((Char)buffer[0], Window);
     }
 }
 
@@ -408,7 +408,32 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 {
     KeyboardKeys key = GetKey(event);
     if (key != KeyboardKeys::None)
-	    Input::Keyboard->OnKeyUp(key);
+	    Input::Keyboard->OnKeyUp(key, Window);
+}
+
+- (void)flagsChanged:(NSEvent*)event
+{
+    int32 modMask;
+    int32 keyCode = [event keyCode];
+    if (keyCode == 0x36 || keyCode == 0x37)
+		modMask = NSEventModifierFlagCommand;
+	else if (keyCode == 0x38 || keyCode == 0x3c)
+		modMask = NSEventModifierFlagShift;
+	else if (keyCode == 0x3a || keyCode == 0x3d)
+	    modMask = NSEventModifierFlagOption;
+	else if (keyCode == 0x3b || keyCode == 0x3e)
+        modMask = NSEventModifierFlagControl;
+	else
+        return;
+    KeyboardKeys key = GetKey(event);
+    if (key != KeyboardKeys::None)
+    {
+        int32 modifierFlags = [event modifierFlags];
+        if ((modifierFlags & modMask) == modMask)
+	        Input::Keyboard->OnKeyDown(key, Window);
+        else
+	        Input::Keyboard->OnKeyUp(key, Window);
+    }
 }
 
 - (void)scrollWheel:(NSEvent*)event
@@ -643,7 +668,6 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     // TODO: impl StartPosition for MacWindow
     // TODO: impl Fullscreen for MacWindow
     // TODO: impl ShowInTaskbar for MacWindow
-    // TODO: impl AllowInput for MacWindow
     // TODO: impl IsTopmost for MacWindow
 }
 

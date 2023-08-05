@@ -788,7 +788,9 @@ void Actor::BreakPrefabLink()
 
 void Actor::Initialize()
 {
-    ASSERT(!IsDuringPlay());
+#if ENABLE_ASSERTION
+    CHECK(!IsDuringPlay());
+#endif
 
     // Cache
     if (_parent)
@@ -802,7 +804,9 @@ void Actor::Initialize()
 
 void Actor::BeginPlay(SceneBeginData* data)
 {
-    ASSERT(!IsDuringPlay());
+#if ENABLE_ASSERTION
+    CHECK(!IsDuringPlay());
+#endif
 
     // Set flag
     Flags |= ObjectFlags::IsDuringPlay;
@@ -832,7 +836,9 @@ void Actor::BeginPlay(SceneBeginData* data)
 
 void Actor::EndPlay()
 {
-    ASSERT(IsDuringPlay());
+#if ENABLE_ASSERTION
+    CHECK(IsDuringPlay());
+#endif
 
     // Fire event for scripting
     if (IsActiveInHierarchy() && GetScene())
@@ -1059,7 +1065,9 @@ void Actor::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 
 void Actor::OnEnable()
 {
-    ASSERT(!_isEnabled);
+#if ENABLE_ASSERTION
+    CHECK(!_isEnabled);
+#endif
     _isEnabled = true;
 
     for (int32 i = 0; i < Scripts.Count(); i++)
@@ -1079,7 +1087,9 @@ void Actor::OnEnable()
 
 void Actor::OnDisable()
 {
-    ASSERT(_isEnabled);
+#if ENABLE_ASSERTION
+    CHECK(_isEnabled);
+#endif
     _isEnabled = false;
 
     for (int32 i = Scripts.Count() - 1; i >= 0; i--)

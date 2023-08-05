@@ -31,9 +31,7 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Rectangle()
-    {
-    }
+    Rectangle() = default;
 
     // Init
     // @param x Rectangle location X coordinate

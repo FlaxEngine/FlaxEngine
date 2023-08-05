@@ -444,7 +444,7 @@ namespace FlaxEngine.Interop
                                 }
                                 else
                                 {
-                                    toManagedFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToManagedField), bindingFlags);
+                                    toManagedFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, arrayElementType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToManagedFieldArray), bindingFlags);
                                     toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToNativeField), bindingFlags);
                                 }
                             }
@@ -663,6 +663,17 @@ namespace FlaxEngine.Interop
                     MarshalHelperReferenceType<TField>.ToManaged(ref fieldValueRef, Unsafe.Read<IntPtr>(fieldPtr.ToPointer()), false);
                 }
 
+                internal static void ToManagedFieldArray(FieldInfo field, ref T fieldOwner, IntPtr fieldPtr, out int fieldOffset)
+                {
+                    fieldOffset = Unsafe.SizeOf<IntPtr>();
+                    IntPtr fieldStartPtr = fieldPtr;
+                    fieldPtr = EnsureAlignment(fieldPtr, IntPtr.Size);
+                    fieldOffset += (fieldPtr - fieldStartPtr).ToInt32();
+
+                    ref TField[] fieldValueRef = ref GetFieldReference<TField[]>(field, ref fieldOwner);
+                    MarshalHelperReferenceType<TField>.ToManagedArray(ref fieldValueRef, Unsafe.Read<IntPtr>(fieldPtr.ToPointer()), false);
+                }
+
                 internal static void ToNativeField(FieldInfo field, ref T fieldOwner, IntPtr fieldPtr, out int fieldOffset)
                 {
                     fieldOffset = Unsafe.SizeOf<IntPtr>();
@@ -691,14 +702,15 @@ namespace FlaxEngine.Interop
             internal static void ToManaged(ref T managedValue, IntPtr nativePtr, bool byRef)
             {
                 Type type = typeof(T);
-                if (type.IsByRef || byRef)
+                byRef |= type.IsByRef;
+                if (byRef)
                 {
                     if (type.IsByRef)
                         type = type.GetElementType();
                     Assert.IsTrue(type.IsValueType);
                 }
 
-                if (type == typeof(IntPtr))
+                if (type == typeof(IntPtr) && byRef)
                     managedValue = (T)(object)nativePtr;
                 else if (type == typeof(ManagedHandle))
                     managedValue = (T)(object)ManagedHandle.FromIntPtr(nativePtr);
@@ -778,10 +790,12 @@ namespace FlaxEngine.Interop
 
                 if (type == typeof(string))
                     managedValue = Unsafe.As<T>(ManagedString.ToManaged(nativePtr));
+                else if (nativePtr == IntPtr.Zero)
+                    managedValue = null;
                 else if (type.IsClass)
-                    managedValue = nativePtr != IntPtr.Zero ? Unsafe.As<T>(ManagedHandle.FromIntPtr(nativePtr).Target) : null;
+                    managedValue = Unsafe.As<T>(ManagedHandle.FromIntPtr(nativePtr).Target);
                 else if (type.IsInterface) // Dictionary
-                    managedValue = nativePtr != IntPtr.Zero ? Unsafe.As<T>(ManagedHandle.FromIntPtr(nativePtr).Target) : null;
+                    managedValue = Unsafe.As<T>(ManagedHandle.FromIntPtr(nativePtr).Target);
                 else
                     throw new NotImplementedException();
             }

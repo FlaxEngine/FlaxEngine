@@ -238,6 +238,7 @@ namespace FlaxEditor.Windows
                 {
                     [EditorDisplay(null, "arm64")]
                     ARM64,
+
                     [EditorDisplay(null, "x64")]
                     x64,
                 }
@@ -615,6 +616,18 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
+        /// Returns true if can build for the given platform (both supported and available).
+        /// </summary>
+        /// <param name="platformType">The platform.</param>
+        /// <returns>True if can build, otherwise false.</returns>
+        public bool CanBuild(PlatformType platformType)
+        {
+            if (_buildTabProxy.PerPlatformOptions.TryGetValue(platformType, out var platform))
+                return platform.IsAvailable && platform.IsSupported;
+            return false;
+        }
+
+        /// <summary>
         /// Builds all the targets from the given preset.
         /// </summary>
         /// <param name="preset">The preset.</param>
@@ -659,16 +672,24 @@ namespace FlaxEditor.Windows
         {
             Editor.Log("Building and running");
             GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out var buildConfiguration);
-            _buildingQueue.Enqueue(new QueueItem
+            var numberOfClients = Editor.Options.Options.Interface.NumberOfGameClientsToLaunch;
+            for (int i = 0; i < numberOfClients; i++)
             {
-                Target = new BuildTarget
+                var buildOptions = BuildOptions.AutoRun;
+                if (i > 0)
+                    buildOptions |= BuildOptions.NoCook;
+
+                _buildingQueue.Enqueue(new QueueItem
                 {
-                    Output = _buildTabProxy.PerPlatformOptions[platform].Output,
-                    Platform = buildPlatform,
-                    Mode = buildConfiguration,
-                },
-                Options = BuildOptions.AutoRun,
-            });
+                    Target = new BuildTarget
+                    {
+                        Output = _buildTabProxy.PerPlatformOptions[platform].Output,
+                        Platform = buildPlatform,
+                        Mode = buildConfiguration,
+                    },
+                    Options = buildOptions,
+                });
+            }
         }
 
         /// <summary>
@@ -678,16 +699,20 @@ namespace FlaxEditor.Windows
         {
             Editor.Log("Running cooked build");
             GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out var buildConfiguration);
-            _buildingQueue.Enqueue(new QueueItem
+            var numberOfClients = Editor.Options.Options.Interface.NumberOfGameClientsToLaunch;
+            for (int i = 0; i < numberOfClients; i++)
             {
-                Target = new BuildTarget
+                _buildingQueue.Enqueue(new QueueItem
                 {
-                    Output = _buildTabProxy.PerPlatformOptions[platform].Output,
-                    Platform = buildPlatform,
-                    Mode = buildConfiguration,
-                },
-                Options = BuildOptions.AutoRun | BuildOptions.NoCook,
-            });
+                    Target = new BuildTarget
+                    {
+                        Output = _buildTabProxy.PerPlatformOptions[platform].Output,
+                        Platform = buildPlatform,
+                        Mode = buildConfiguration,
+                    },
+                    Options = BuildOptions.AutoRun | BuildOptions.NoCook,
+                });
+            }
         }
 
         private void BuildTarget()

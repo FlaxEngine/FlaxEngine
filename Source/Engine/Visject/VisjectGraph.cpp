@@ -675,6 +675,10 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
                 }
             }
         }
+
+        // For in-built structures try to convert it into internal format for better comparability with the scripting
+        value.Inline();
+
         break;
     }
     // Unpack Structure

@@ -292,7 +292,6 @@ void FoliageTools::Paint(Foliage* foliage, Span<int32> foliageTypesIndices, cons
     {
         PROFILE_CPU_NAMED("Place Instances");
 
-        Matrix matrix;
         FoliageInstance instance;
         Quaternion tmp;
         Matrix world;

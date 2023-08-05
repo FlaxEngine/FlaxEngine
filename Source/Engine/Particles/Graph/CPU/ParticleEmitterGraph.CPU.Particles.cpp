@@ -189,7 +189,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupTools(Box* box, Node* node, Va
         const Matrix viewProjection = context.ViewTask ? context.ViewTask->View.PrevViewProjection : Matrix::Identity;
         const Float3 position = (Float3)TryGetValue(node->GetBox(0), Value::Zero);
         Float4 projPos;
-        Float3::Transform(position, viewProjection);
+        Float3::Transform(position, viewProjection, projPos);
         projPos /= projPos.W;
         value = Float2(projPos.X * 0.5f + 0.5f, projPos.Y * 0.5f + 0.5f);
         break;
