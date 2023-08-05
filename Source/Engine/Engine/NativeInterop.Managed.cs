@@ -29,6 +29,8 @@ namespace FlaxEngine.Interop
         private int _elementSize;
         private int _length;
 
+        [ThreadStatic] private static Dictionary<ManagedArray, ManagedHandle> pooledArrayHandles;
+
         public static ManagedArray WrapNewArray(Array arr) => new ManagedArray(arr, arr.GetType());
 
         public static ManagedArray WrapNewArray(Array arr, Type arrayType) => new ManagedArray(arr, arrayType);
@@ -37,22 +39,38 @@ namespace FlaxEngine.Interop
         /// Returns an instance of ManagedArray from shared pool.
         /// </summary>
         /// <remarks>The resources must be released by calling FreePooled() instead of Free()-method.</remarks>
-        public static ManagedArray WrapPooledArray(Array arr)
+        public static (ManagedHandle managedHandle, ManagedArray managedArray) WrapPooledArray(Array arr)
         {
             ManagedArray managedArray = ManagedArrayPool.Get();
             managedArray.WrapArray(arr, arr.GetType());
-            return managedArray;
+
+            if (pooledArrayHandles == null)
+                pooledArrayHandles = new();
+            if (!pooledArrayHandles.TryGetValue(managedArray, out ManagedHandle handle))
+            {
+                handle = ManagedHandle.Alloc(managedArray);
+                pooledArrayHandles.Add(managedArray, handle);
+            }
+            return (handle, managedArray);
         }
 
         /// <summary>
         /// Returns an instance of ManagedArray from shared pool.
         /// </summary>
         /// <remarks>The resources must be released by calling FreePooled() instead of Free()-method.</remarks>
-        public static ManagedArray WrapPooledArray(Array arr, Type arrayType)
+        public static ManagedHandle WrapPooledArray(Array arr, Type arrayType)
         {
             ManagedArray managedArray = ManagedArrayPool.Get(arr.Length * NativeInterop.GetTypeSize(arr.GetType().GetElementType()));
             managedArray.WrapArray(arr, arrayType);
-            return managedArray;
+            
+            if (pooledArrayHandles == null)
+                pooledArrayHandles = new();
+            if (!pooledArrayHandles.TryGetValue(managedArray, out ManagedHandle handle))
+            {
+                handle = ManagedHandle.Alloc(managedArray);
+                pooledArrayHandles.Add(managedArray, handle);
+            }
+            return handle;
         }
 
         internal static ManagedArray AllocateNewArray(int length, Type arrayType, Type elementType)
@@ -64,12 +82,20 @@ namespace FlaxEngine.Interop
         /// <summary>
         /// Returns an instance of ManagedArray from shared pool.
         /// </summary>
-        /// <remarks>The resources must be released by calling FreePooled() instead of Free()-method.</remarks>
-        public static ManagedArray AllocatePooledArray<T>(int length) where T : unmanaged
+        /// <remarks>The resources must be released by calling FreePooled() instead of Free()-method. Do not release the returned ManagedHandle.</remarks>
+        public static (ManagedHandle managedHandle, ManagedArray managedArray) AllocatePooledArray<T>(int length) where T : unmanaged
         {
             ManagedArray managedArray = ManagedArrayPool.Get(length * Unsafe.SizeOf<T>());
             managedArray.Allocate<T>(length);
-            return managedArray;
+
+            if (pooledArrayHandles == null)
+                pooledArrayHandles = new();
+            if (!pooledArrayHandles.TryGetValue(managedArray, out ManagedHandle handle))
+            {
+                handle = ManagedHandle.Alloc(managedArray);
+                pooledArrayHandles.Add(managedArray, handle);
+            }
+            return (handle, managedArray);
         }
 
         public ManagedArray(Array arr, Type elementType) => WrapArray(arr, elementType);
