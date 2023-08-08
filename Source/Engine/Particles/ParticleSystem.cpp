@@ -2,6 +2,7 @@
 
 #include "ParticleSystem.h"
 #include "ParticleEffect.h"
+#include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Level/Level.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Serialization/MemoryReadStream.h"

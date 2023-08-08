@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Content/BinaryAsset.h"
+#include "Engine/Core/Math/BoundingBox.h"
 #include "Engine/Graphics/Shaders/Cache/ShaderAssetBase.h"
 #include "Graph/CPU/ParticleEmitterGraph.CPU.h"
 #if COMPILE_WITH_GPU_PARTICLES
