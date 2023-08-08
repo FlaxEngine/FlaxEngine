@@ -61,7 +61,7 @@ void MCore::UnloadEngine()
 
 #if USE_EDITOR
 
-void MCore::OnMidHotReload()
+void MCore::ReloadScriptingAssemblyLoadContext()
 {
 }
 

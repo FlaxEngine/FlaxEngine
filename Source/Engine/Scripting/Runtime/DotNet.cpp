@@ -160,6 +160,7 @@ DECLARE_ENUM_OPERATORS(MTypeAttributes);
 DECLARE_ENUM_OPERATORS(MMethodAttributes);
 DECLARE_ENUM_OPERATORS(MFieldAttributes);
 
+// Multiple AppDomains are superseded by AssemblyLoadContext in .NET
 extern MDomain* MRootDomain;
 extern MDomain* MActiveDomain;
 extern Array<MDomain*, FixedAllocation<4>> MDomains;
@@ -301,11 +302,14 @@ void MCore::UnloadEngine()
 
 #if USE_EDITOR
 
-void MCore::OnMidHotReload()
+void MCore::ReloadScriptingAssemblyLoadContext()
 {
     // Clear any cached class attributes (see https://github.com/FlaxEngine/FlaxEngine/issues/1108)
     for (auto e : CachedClassHandles)
         e.Value->_attributes.Clear();
+
+    static void* ReloadScriptingAssemblyLoadContextPtr = GetStaticMethodPointer(TEXT("ReloadScriptingAssemblyLoadContext"));
+    CallStaticMethod<void>(ReloadScriptingAssemblyLoadContextPtr);
 }
 
 #endif
@@ -723,16 +727,12 @@ bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePa
 
 bool MAssembly::UnloadImage(bool isReloading)
 {
-    if (_handle)
+    if (_handle && isReloading)
     {
-        // TODO: closing assembly on reload only is copy-paste from mono, do we need do this on .NET too?
-        if (isReloading)
-        {
-            LOG(Info, "Unloading managed assembly \'{0}\' (is reloading)", String(_name));
+        LOG(Info, "Unloading managed assembly \'{0}\' (is reloading)", String(_name));
 
-            static void* CloseAssemblyPtr = GetStaticMethodPointer(TEXT("CloseAssembly"));
-            CallStaticMethod<void, const void*>(CloseAssemblyPtr, _handle);
-        }
+        static void* CloseAssemblyPtr = GetStaticMethodPointer(TEXT("CloseAssembly"));
+        CallStaticMethod<void, const void*>(CloseAssemblyPtr, _handle);
 
         CachedAssemblyHandles.Remove(_handle);
         _handle = nullptr;
