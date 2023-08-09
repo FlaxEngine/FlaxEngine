@@ -28,6 +28,7 @@
 #if ENABLE_ASSETS_DISCOVERY
 #include "Engine/Core/Collections/HashSet.h"
 #endif
+#include <Engine/Debug/DebugLog.h>
 
 TimeSpan Content::AssetsUpdateInterval = TimeSpan::FromMilliseconds(500);
 TimeSpan Content::AssetsUnloadInterval = TimeSpan::FromSeconds(10);
@@ -445,6 +446,11 @@ Asset* Content::LoadAsyncInternal(const Char* internalPath, const ScriptingTypeH
 FLAXENGINE_API Asset* LoadAsset(const Guid& id, const ScriptingTypeHandle& type)
 {
     return Content::LoadAsync(id, type);
+}
+
+FLAXENGINE_API Asset* LoadAsset(const StringView& path, const ScriptingTypeHandle& type)
+{
+    return Content::LoadAsync(path, type);
 }
 
 Asset* Content::LoadAsync(const StringView& path, MClass* type)

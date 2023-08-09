@@ -11,6 +11,7 @@
 #include "Engine/Graphics/Models/ModelData.h"
 #include "Engine/Graphics/Models/SkeletonData.h"
 #include "Engine/Animations/AnimationData.h"
+#include <Engine/Content/Assets/Material.h>
 
 class JsonWriter;
 

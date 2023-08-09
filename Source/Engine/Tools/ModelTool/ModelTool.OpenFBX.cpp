@@ -542,6 +542,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
         else
             aMaterial = aMesh->getMaterial(0);
     }
+
     mesh.MaterialSlotIndex = data.AddMaterial(result, aMaterial);
 
     // Vertex positions
