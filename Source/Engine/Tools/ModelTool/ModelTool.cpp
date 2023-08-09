@@ -385,6 +385,8 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(LODCount);
     SERIALIZE(TriangleReduction);
     SERIALIZE(ImportMaterials);
+    SERIALIZE(ImportMaterialsAsInstances);
+    SERIALIZE(InstanceToImportAs);
     SERIALIZE(ImportTextures);
     SERIALIZE(RestoreMaterialsOnReimport);
     SERIALIZE(GenerateSDF);
@@ -426,6 +428,8 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(LODCount);
     DESERIALIZE(TriangleReduction);
     DESERIALIZE(ImportMaterials);
+    DESERIALIZE(ImportMaterialsAsInstances);
+    DESERIALIZE(InstanceToImportAs);
     DESERIALIZE(ImportTextures);
     DESERIALIZE(RestoreMaterialsOnReimport);
     DESERIALIZE(GenerateSDF);
@@ -977,17 +981,17 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         if (options.ImportMaterialsAsInstances)
         {
             AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialInstanceTag, assetPath, material.AssetID);
-            MaterialInstance* materialInstance = (MaterialInstance*) LoadAsset(assetPath, MaterialInstance::TypeInitializer);
+            MaterialInstance* materialInstance = (MaterialInstance*)LoadAsset(assetPath, MaterialInstance::TypeInitializer);
             if (materialInstance->WaitForLoaded())
             {
                 LOG(Error, "Failed to load material instance after creation. ({0})", assetPath);
                 return true;
             }
 
-            MaterialBase* materialInstanceOf = (MaterialBase*) LoadAsset(options.InstanceToImportAs, MaterialBase::TypeInitializer);
+            MaterialBase* materialInstanceOf = options.InstanceToImportAs;
             if (materialInstanceOf->WaitForLoaded())
             {
-                LOG(Error, "Failed to load material to create an instance of. ({0})", options.InstanceToImportAs);
+                LOG(Error, "Failed to load material to create an instance of. ({0})", options.InstanceToImportAs->GetID());
                 return true;
             }
 
