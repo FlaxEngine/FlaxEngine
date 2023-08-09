@@ -151,6 +151,13 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 auto patch = terrain->GetPatch(entry.AsTerrain.PatchIndex);
                 auto chunk = &patch->Chunks[entry.AsTerrain.ChunkIndex];
                 auto chunkSize = terrain->GetChunkSize();
+                if (!patch->Heightmap)
+                {
+                    LOG(Error, "Terrain actor {0} is missing heightmap for baking, skipping baking stage.", terrain->GetName());
+                    _wasStageDone = true;
+                    scene->EntriesLocker.Unlock();
+                    return;
+                }
                 const auto heightmap = patch->Heightmap.Get()->GetTexture();
 
                 Matrix world;
@@ -171,7 +178,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
 
                 DrawCall drawCall;
                 if (TerrainManager::GetChunkGeometry(drawCall, chunkSize, 0))
-                    return;
+                    break;
 
                 context->UpdateCB(cb, &shaderData);
                 context->BindCB(0, cb);
