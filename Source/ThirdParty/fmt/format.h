@@ -36,6 +36,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <limits>
+#include <initializer_list>
 
 #include "core.h"
 

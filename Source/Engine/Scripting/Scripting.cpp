@@ -706,7 +706,9 @@ void Scripting::Reload(bool canTriggerSceneReload)
     modules.Clear();
     _nonNativeModules.ClearDelete();
     _hasGameModulesLoaded = false;
-    MCore::OnMidHotReload();
+
+    // Release and create a new assembly load context for user assemblies
+    MCore::ReloadScriptingAssemblyLoadContext();
 
     // Give GC a try to cleanup old user objects and the other mess
     MCore::GC::Collect();
