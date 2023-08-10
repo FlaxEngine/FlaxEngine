@@ -2,6 +2,7 @@
 
 #include "ParticleEffect.h"
 #include "Particles.h"
+#include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/SceneRendering.h"
