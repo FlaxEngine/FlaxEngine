@@ -134,6 +134,7 @@ namespace FlaxEditor.Viewport
         }
 
         private bool _lockedFocus;
+        private float _lockedFocusOffset;
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
         private StaticModel _previewStaticModel;
         private int _previewModelEntryIndex;
@@ -408,7 +409,7 @@ namespace FlaxEditor.Viewport
 
             if (_lockedFocus)
             {
-                BoundingSphere selectionBounds = BoundingSphere.Empty;
+                var selectionBounds = BoundingSphere.Empty;
                 for (int i = 0; i < TransformGizmo.SelectedParents.Count; i++)
                 {
                     TransformGizmo.SelectedParents[i].GetEditorSphere(out var sphere);
@@ -416,7 +417,14 @@ namespace FlaxEditor.Viewport
                 }
 
                 var focusDistance = Mathf.Max(selectionBounds.Radius * 2f, 100f);
-                var viewportPosition = selectionBounds.Center + (-ViewDirection * focusDistance);
+
+                if (IsFocused)
+                {
+                    _lockedFocusOffset += -FlaxEngine.Input.Mouse.ScrollDelta * focusDistance;
+                }
+
+                var viewportPosition = selectionBounds.Center + (-ViewDirection * (focusDistance + _lockedFocusOffset));
+
                 ViewPosition = viewportPosition;
             }
         }
@@ -797,6 +805,7 @@ namespace FlaxEditor.Viewport
         public void UnlockFocusSelection()
         {
             _lockedFocus = false;
+            _lockedFocusOffset = 0f;
         }
 
         /// <summary>
