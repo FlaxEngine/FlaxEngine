@@ -134,7 +134,7 @@ namespace FlaxEditor.Viewport
         }
 
         private bool _lockedFocus;
-        private float _lockedFocusOffset;
+        private double _lockedFocusOffset;
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
         private StaticModel _previewStaticModel;
         private int _previewModelEntryIndex;
@@ -416,7 +416,7 @@ namespace FlaxEditor.Viewport
                     BoundingSphere.Merge(ref selectionBounds, ref sphere, out selectionBounds);
                 }
 
-                var focusDistance = Mathf.Max(selectionBounds.Radius * 2f, 100f);
+                var focusDistance = Mathf.Max(selectionBounds.Radius * 2d, 100d);
 
                 if (IsFocused)
                 {
