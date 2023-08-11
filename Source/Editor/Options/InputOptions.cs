@@ -60,7 +60,7 @@ namespace FlaxEditor.Options
         [EditorDisplay("Common"), EditorOrder(200)]
         public InputBinding FocusSelection = new InputBinding(KeyboardKeys.F);
 
-        [DefaultValue(typeof(InputBinding), "F")]
+        [DefaultValue(typeof(InputBinding), "Shift+F")]
         [EditorDisplay("Common"), EditorOrder(200)]
         public InputBinding LockFocusSelection = new InputBinding(KeyboardKeys.F, KeyboardKeys.Shift);
 
