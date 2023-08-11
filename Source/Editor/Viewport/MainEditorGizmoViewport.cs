@@ -133,6 +133,7 @@ namespace FlaxEditor.Viewport
             }
         }
 
+        private bool _lockedFocus;
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
         private StaticModel _previewStaticModel;
         private int _previewModelEntryIndex;
@@ -386,9 +387,38 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.TranslateMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);
             InputActions.Add(options => options.RotateMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate);
             InputActions.Add(options => options.ScaleMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale);
+            
+            InputActions.Add(options => options.LockFocusSelection, LockFocusSelection);
             InputActions.Add(options => options.FocusSelection, FocusSelection);
             InputActions.Add(options => options.RotateSelection, RotateSelection);
             InputActions.Add(options => options.Delete, _editor.SceneEditing.Delete);
+        }
+
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+
+            var hasSelections = TransformGizmo.SelectedParents.Count != 0;
+            var requestUnlockFocus = FlaxEngine.Input.Mouse.GetButtonDown(MouseButton.Right) || FlaxEngine.Input.Mouse.GetButtonDown(MouseButton.Left);
+
+            if ((IsFocused && requestUnlockFocus) || !hasSelections)
+            {
+                UnlockFocusSelection();
+            }
+
+            if (_lockedFocus)
+            {
+                BoundingSphere selectionBounds = BoundingSphere.Empty;
+                for (int i = 0; i < TransformGizmo.SelectedParents.Count; i++)
+                {
+                    TransformGizmo.SelectedParents[i].GetEditorSphere(out var sphere);
+                    BoundingSphere.Merge(ref selectionBounds, ref sphere, out selectionBounds);
+                }
+
+                var focusDistance = Mathf.Max(selectionBounds.Radius * 2f, 100f);
+                var viewportPosition = selectionBounds.Center + (-ViewDirection * focusDistance);
+                ViewPosition = viewportPosition;
+            }
         }
 
         /// <summary>
@@ -751,6 +781,22 @@ namespace FlaxEditor.Viewport
         {
             var orientation = ViewOrientation;
             FocusSelection(ref orientation);
+        }
+
+        /// <summary>
+        /// Lock focus on the current selection gizmo.
+        /// </summary>
+        public void LockFocusSelection()
+        {
+            _lockedFocus = true;
+        }
+
+        /// <summary>
+        /// Unlock focus on the current selection.
+        /// </summary>
+        public void UnlockFocusSelection()
+        {
+            _lockedFocus = false;
         }
 
         /// <summary>
