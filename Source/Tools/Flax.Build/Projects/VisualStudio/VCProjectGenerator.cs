@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using Flax.Build.NativeCpp;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -317,12 +318,31 @@ namespace Flax.Build.Projects.VisualStudio
             vcFiltersFileContent.AppendLine("  </ItemGroup>");
 
             // IntelliSense information
+
+            List<string> additionalOptions = new List<string>();
+            switch (project.Configurations[0].TargetBuildOptions.CompileEnv.CppVersion)
+            {
+                case CppVersion.Cpp14:
+                    additionalOptions.Add("/std:c++14");
+                    break;
+                case CppVersion.Cpp17:
+                    additionalOptions.Add("/std:c++17");
+                    break;
+                case CppVersion.Cpp20:
+                    additionalOptions.Add("/std:c++20");
+                    break;
+                case CppVersion.Latest:
+                    additionalOptions.Add("/std:c++latest");
+                    break;
+            }
+
             vcProjectFileContent.AppendLine("  <PropertyGroup>");
             vcProjectFileContent.AppendLine(string.Format("    <NMakePreprocessorDefinitions>$(NMakePreprocessorDefinitions){0}</NMakePreprocessorDefinitions>", (project.Defines.Count > 0 ? (";" + string.Join(";", project.Defines)) : "")));
             vcProjectFileContent.AppendLine(string.Format("    <NMakeIncludeSearchPath>$(NMakeIncludeSearchPath){0}</NMakeIncludeSearchPath>", (project.SearchPaths.Length > 0 ? (";" + string.Join(";", project.SearchPaths)) : "")));
             vcProjectFileContent.AppendLine("    <NMakeForcedIncludes>$(NMakeForcedIncludes)</NMakeForcedIncludes>");
             vcProjectFileContent.AppendLine("    <NMakeAssemblySearchPath>$(NMakeAssemblySearchPath)</NMakeAssemblySearchPath>");
             vcProjectFileContent.AppendLine("    <NMakeForcedUsingAssemblies>$(NMakeForcedUsingAssemblies)</NMakeForcedUsingAssemblies>");
+            vcProjectFileContent.AppendLine(string.Format("    <AdditionalOptions>{0}</AdditionalOptions>", string.Join(" ", additionalOptions)));
             vcProjectFileContent.AppendLine("  </PropertyGroup>");
 
             foreach (var platform in platforms)
