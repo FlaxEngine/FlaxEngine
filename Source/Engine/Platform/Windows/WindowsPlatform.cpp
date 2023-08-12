@@ -1191,11 +1191,8 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
         folder = StringView::Empty;
     if (folder.HasChars())
     {
-        Char& end = ((Char*)folder.Get())[folder.Length()];
-        const Char c = end;
-        end = 0;
-        SetDllDirectoryW(*folder);
-        end = c;
+        String folderNullTerminated(folder);
+        SetDllDirectoryW(folderNullTerminated.Get());
     }
 
     // Avoiding windows dialog boxes if missing

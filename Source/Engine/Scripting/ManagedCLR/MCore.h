@@ -47,7 +47,7 @@ public:
 
 #if USE_EDITOR
     // Called by Scripting in a middle of hot-reload (after unloading modules but before loading them again).
-    static void OnMidHotReload();
+    static void ReloadScriptingAssemblyLoadContext();
 #endif
 
 public:
