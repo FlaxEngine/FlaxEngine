@@ -420,7 +420,8 @@ namespace FlaxEditor.Viewport
 
                 if (IsFocused)
                 {
-                    _lockedFocusOffset += -FlaxEngine.Input.Mouse.ScrollDelta * focusDistance;
+                    var viewportFocusDistance = Vector3.Distance(ViewPosition, selectionBounds.Center) / 10f;
+                    _lockedFocusOffset -= FlaxEngine.Input.Mouse.ScrollDelta * viewportFocusDistance;
                 }
 
                 var viewportPosition = selectionBounds.Center + (-ViewDirection * (focusDistance + _lockedFocusOffset));
