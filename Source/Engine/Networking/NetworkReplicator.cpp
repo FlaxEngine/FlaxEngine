@@ -941,6 +941,13 @@ bool NetworkReplicator::HasObject(const ScriptingObject* obj)
     return false;
 }
 
+ScriptingObject* NetworkReplicator::ResolveForeignObject(Guid objectId)
+{
+    if (const auto& object = ResolveObject(objectId))
+        return object->Object.Get();
+    return nullptr;
+}
+
 uint32 NetworkReplicator::GetObjectOwnerClientId(const ScriptingObject* obj)
 {
     uint32 id = NetworkManager::ServerClientId;
