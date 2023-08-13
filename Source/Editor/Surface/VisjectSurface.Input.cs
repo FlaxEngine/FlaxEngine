@@ -299,7 +299,7 @@ namespace FlaxEditor.Surface
             if (IsMouseOver && !_leftMouseDown && !IsPrimaryMenuOpened)
             {
                 var nextViewScale = ViewScale + delta * 0.1f;
-                
+
                 if (delta > 0 && !_rightMouseDown)
                 {
                     // Scale towards mouse when zooming in
@@ -314,7 +314,7 @@ namespace FlaxEditor.Surface
                     ViewScale = nextViewScale;
                     ViewCenterPosition = viewCenter;
                 }
-                
+
                 return true;
             }
 
@@ -329,12 +329,12 @@ namespace FlaxEditor.Surface
             if (!handled)
                 CustomMouseDoubleClick?.Invoke(ref location, button, ref handled);
 
-            if (!handled && CanEdit)
+            // Insert reroute node
+            if (!handled && CanEdit && CanUseNodeType(7, 29))
             {
                 var mousePos = _rootControl.PointFromParent(ref _mousePos);
                 if (IntersectsConnection(mousePos, out InputBox inputBox, out OutputBox outputBox) && GetControlUnderMouse() == null)
                 {
-                    // Insert reroute node
                     if (Undo != null)
                     {
                         bool undoEnabled = Undo.Enabled;

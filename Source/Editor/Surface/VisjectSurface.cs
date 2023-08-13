@@ -527,6 +527,27 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Determines whether the specified node archetype can be used in the surface.
         /// </summary>
+        /// <param name="groupID">The nodes group archetype identifier.</param>
+        /// <param name="typeID">The node archetype identifier.</param>
+        /// <returns>True if can use this node archetype, otherwise false.</returns>
+        public bool CanUseNodeType(ushort groupID, ushort typeID)
+        {
+            var result = false;
+            var nodeArchetypes = NodeArchetypes ?? NodeFactory.DefaultGroups;
+            if (NodeFactory.GetArchetype(nodeArchetypes, groupID, typeID, out var groupArchetype, out var nodeArchetype))
+            {
+                var flags = nodeArchetype.Flags;
+                nodeArchetype.Flags &= ~NodeFlags.NoSpawnViaGUI;
+                nodeArchetype.Flags &= ~NodeFlags.NoSpawnViaPaste;
+                result = CanUseNodeType(groupArchetype, nodeArchetype);
+                nodeArchetype.Flags = flags;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Determines whether the specified node archetype can be used in the surface.
+        /// </summary>
         /// <param name="groupArchetype">The nodes group archetype.</param>
         /// <param name="nodeArchetype">The node archetype.</param>
         /// <returns>True if can use this node archetype, otherwise false.</returns>
