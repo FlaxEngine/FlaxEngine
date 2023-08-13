@@ -134,6 +134,11 @@ namespace FlaxEditor.Surface.Elements
         }
 
         /// <summary>
+        /// Cached color for <see cref="CurrentType"/>.
+        /// </summary>
+        public Color CurrentTypeColor => _currentTypeColor;
+
+        /// <summary>
         /// The collection of the attributes used by the box. Assigned externally. Can be used to control the default value editing for the <see cref="InputBox"/> or to provide more metadata for the surface UI.
         /// </summary>
         public object[] Attributes
@@ -544,44 +549,6 @@ namespace FlaxEditor.Surface.Elements
             }
         }
 
-        /// <summary>
-        /// Draws the box GUI using <see cref="Render2D"/>.
-        /// </summary>
-        protected void DrawBox()
-        {
-            var rect = new Rectangle(Float2.Zero, Size);
-
-            // Size culling
-            const float minBoxSize = 5.0f;
-            if (rect.Size.LengthSquared < minBoxSize * minBoxSize)
-                return;
-
-            // Debugging boxes size
-            //Render2D.DrawRectangle(rect, Color.Orange); return;
-
-            // Draw icon
-            bool hasConnections = HasAnyConnection;
-            float alpha = Enabled ? 1.0f : 0.6f;
-            Color color = _currentTypeColor * alpha;
-            var style = Surface.Style;
-            SpriteHandle icon;
-            if (_currentType.Type == typeof(void))
-                icon = hasConnections ? style.Icons.ArrowClose : style.Icons.ArrowOpen;
-            else
-                icon = hasConnections ? style.Icons.BoxClose : style.Icons.BoxOpen;
-            color *= ConnectionsHighlightIntensity + 1;
-            Render2D.DrawSprite(icon, rect, color);
-
-            // Draw selection hint
-            if (_isSelected)
-            {
-                float outlineAlpha = Mathf.Sin(Time.TimeSinceStartup * 4.0f) * 0.5f + 0.5f;
-                float outlineWidth = Mathf.Lerp(1.5f, 4.0f, outlineAlpha);
-                var outlineRect = new Rectangle(rect.X - outlineWidth, rect.Y - outlineWidth, rect.Width + outlineWidth * 2, rect.Height + outlineWidth * 2);
-                Render2D.DrawSprite(icon, outlineRect, FlaxEngine.GUI.Style.Current.BorderSelected.RGBMultiplied(1.0f + outlineAlpha * 0.4f));
-            }
-        }
-
         /// <inheritdoc />
         public override void OnMouseEnter(Float2 location)
         {
@@ -813,7 +780,7 @@ namespace FlaxEditor.Surface.Elements
         /// <inheritdoc />
         public void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color)
         {
-            OutputBox.DrawConnection(ref startPos, ref endPos, ref color, 2);
+            OutputBox.DrawConnection(Surface.Style, ref startPos, ref endPos, ref color, 2);
         }
 
         /// <inheritdoc />

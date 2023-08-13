@@ -484,7 +484,7 @@ namespace FlaxEditor.Surface.Archetypes
                     var startPos = PointToParent(ref center);
                     targetState.GetConnectionEndPoint(ref startPos, out var endPos);
                     var color = style.Foreground;
-                    StateMachineState.DrawConnection(Surface, ref startPos, ref endPos, ref color);
+                    StateMachineState.DrawConnection(ref startPos, ref endPos, ref color);
                 }
             }
 
@@ -514,7 +514,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color)
             {
-                StateMachineState.DrawConnection(Surface, ref startPos, ref endPos, ref color);
+                StateMachineState.DrawConnection(ref startPos, ref endPos, ref color);
             }
 
             /// <inheritdoc />
@@ -680,11 +680,10 @@ namespace FlaxEditor.Surface.Archetypes
             /// <summary>
             /// Draws the connection between two state machine nodes.
             /// </summary>
-            /// <param name="surface">The surface.</param>
             /// <param name="startPos">The start position.</param>
             /// <param name="endPos">The end position.</param>
             /// <param name="color">The line color.</param>
-            public static void DrawConnection(VisjectSurface surface, ref Float2 startPos, ref Float2 endPos, ref Color color)
+            public static void DrawConnection(ref Float2 startPos, ref Float2 endPos, ref Color color)
             {
                 var sub = endPos - startPos;
                 var length = sub.Length;
@@ -1293,7 +1292,7 @@ namespace FlaxEditor.Surface.Archetypes
                         isMouseOver = Float2.DistanceSquared(ref mousePosition, ref point) < 25.0f;
                     }
                     var color = isMouseOver ? Color.Wheat : t.LineColor;
-                    DrawConnection(Surface, ref t.StartPos, ref t.EndPos, ref color);
+                    DrawConnection(ref t.StartPos, ref t.EndPos, ref color);
                 }
             }
 
@@ -1322,7 +1321,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color)
             {
-                DrawConnection(Surface, ref startPos, ref endPos, ref color);
+                DrawConnection(ref startPos, ref endPos, ref color);
             }
 
             /// <inheritdoc />

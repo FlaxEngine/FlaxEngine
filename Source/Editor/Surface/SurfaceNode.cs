@@ -165,25 +165,22 @@ namespace FlaxEditor.Surface
         {
             if (Surface == null)
                 return;
-            Size = CalculateNodeSize(width, height);
 
-            // Update boxes on width change
-            //if (!Mathf.NearEqual(prevSize.X, Size.X))
+            for (int i = 0; i < Elements.Count; i++)
             {
-                for (int i = 0; i < Elements.Count; i++)
+                if (Elements[i] is OutputBox box)
                 {
-                    if (Elements[i] is OutputBox box)
-                    {
-                        box.Location = box.Archetype.Position + new Float2(width, 0);
-                    }
+                    box.Location = box.Archetype.Position + new Float2(width, 0);
                 }
             }
+
+            Size = CalculateNodeSize(width, height);
         }
 
         /// <summary>
         /// Automatically resizes the node to match the title size and all the elements for best fit of the node dimensions.
         /// </summary>
-        public void ResizeAuto()
+        public virtual void ResizeAuto()
         {
             if (Surface == null)
                 return;
