@@ -108,7 +108,7 @@ namespace Flax.Build.Projects.VisualStudio
                 vcProjectFileContent.AppendLine("    <ResolveNuGetPackages>false</ResolveNuGetPackages>");
             vcProjectFileContent.AppendLine("    <VCTargetsPath Condition=\"$(Configuration.Contains('Linux'))\">./</VCTargetsPath>");
             vcProjectFileContent.AppendLine("  </PropertyGroup>");
- 
+
             // Default properties
             vcProjectFileContent.AppendLine("  <Import Project=\"$(VCTargetsPath)\\Microsoft.Cpp.Default.props\" />");
 
@@ -319,21 +319,21 @@ namespace Flax.Build.Projects.VisualStudio
 
             // IntelliSense information
 
-            List<string> additionalOptions = new List<string>();
+            var additionalOptions = new List<string>();
             switch (project.Configurations[0].TargetBuildOptions.CompileEnv.CppVersion)
             {
-                case CppVersion.Cpp14:
-                    additionalOptions.Add("/std:c++14");
-                    break;
-                case CppVersion.Cpp17:
-                    additionalOptions.Add("/std:c++17");
-                    break;
-                case CppVersion.Cpp20:
-                    additionalOptions.Add("/std:c++20");
-                    break;
-                case CppVersion.Latest:
-                    additionalOptions.Add("/std:c++latest");
-                    break;
+            case CppVersion.Cpp14:
+                additionalOptions.Add("/std:c++14");
+                break;
+            case CppVersion.Cpp17:
+                additionalOptions.Add("/std:c++17");
+                break;
+            case CppVersion.Cpp20:
+                additionalOptions.Add("/std:c++20");
+                break;
+            case CppVersion.Latest:
+                additionalOptions.Add("/std:c++latest");
+                break;
             }
 
             vcProjectFileContent.AppendLine("  <PropertyGroup>");
