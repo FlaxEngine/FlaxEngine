@@ -62,7 +62,7 @@ namespace FlaxEngine.Interop
         {
             ManagedArray managedArray = ManagedArrayPool.Get(arr.Length * NativeInterop.GetTypeSize(arr.GetType().GetElementType()));
             managedArray.WrapArray(arr, arrayType);
-            
+
             if (pooledArrayHandles == null)
                 pooledArrayHandles = new();
             if (!pooledArrayHandles.TryGetValue(managedArray, out ManagedHandle handle))
@@ -484,22 +484,22 @@ namespace FlaxEngine.Interop
                 IntPtr handle = NewHandle(type);
                 switch (type)
                 {
-                    case GCHandleType.Normal:
-                        lock (persistentPool)
-                            persistentPool.Add(handle, value);
-                        break;
-                    case GCHandleType.Pinned:
-                        lock (pinnedPool)
-                            pinnedPool.Add(handle, GCHandle.Alloc(value, GCHandleType.Pinned));
-                        break;
-                    case GCHandleType.Weak:
-                    case GCHandleType.WeakTrackResurrection:
-                        lock (weakPoolLock)
-                        {
-                            TryCollectWeakHandles();
-                            weakPool.Add(handle, value);
-                        }
-                        break;
+                case GCHandleType.Normal:
+                    lock (persistentPool)
+                        persistentPool.Add(handle, value);
+                    break;
+                case GCHandleType.Pinned:
+                    lock (pinnedPool)
+                        pinnedPool.Add(handle, GCHandle.Alloc(value, GCHandleType.Pinned));
+                    break;
+                case GCHandleType.Weak:
+                case GCHandleType.WeakTrackResurrection:
+                    lock (weakPoolLock)
+                    {
+                        TryCollectWeakHandles();
+                        weakPool.Add(handle, value);
+                    }
+                    break;
                 }
                 return handle;
             }
@@ -508,33 +508,31 @@ namespace FlaxEngine.Interop
             {
                 switch (GetHandleType(handle))
                 {
-                    case GCHandleType.Normal:
-                        lock (persistentPool)
-                        {
-                            if (persistentPool.TryGetValue(handle, out object value))
-                                return value;
-                        }
-                        break;
-                    case GCHandleType.Pinned:
-                        lock (pinnedPool)
-                        {
-                            if (pinnedPool.TryGetValue(handle, out GCHandle gchandle))
-                                return gchandle.Target;
-                        }
-                        break;
-                    case GCHandleType.Weak:
-                    case GCHandleType.WeakTrackResurrection:
-                        {
-                            lock (weakPoolLock)
-                            {
-                                TryCollectWeakHandles();
-                                if (weakPool.TryGetValue(handle, out object value))
-                                    return value;
-                                else if (weakPoolOther.TryGetValue(handle, out value))
-                                    return value;
-                            }
-                        }
-                        break;
+                case GCHandleType.Normal:
+                    lock (persistentPool)
+                    {
+                        if (persistentPool.TryGetValue(handle, out object value))
+                            return value;
+                    }
+                    break;
+                case GCHandleType.Pinned:
+                    lock (pinnedPool)
+                    {
+                        if (pinnedPool.TryGetValue(handle, out GCHandle gcHandle))
+                            return gcHandle.Target;
+                    }
+                    break;
+                case GCHandleType.Weak:
+                case GCHandleType.WeakTrackResurrection:
+                    lock (weakPoolLock)
+                    {
+                        TryCollectWeakHandles();
+                        if (weakPool.TryGetValue(handle, out object value))
+                            return value;
+                        else if (weakPoolOther.TryGetValue(handle, out value))
+                            return value;
+                    }
+                    break;
                 }
                 throw new NativeInteropException("Invalid ManagedHandle");
             }
@@ -543,51 +541,51 @@ namespace FlaxEngine.Interop
             {
                 switch (GetHandleType(handle))
                 {
-                    case GCHandleType.Normal:
-                        lock (persistentPool)
+                case GCHandleType.Normal:
+                    lock (persistentPool)
+                    {
+                        ref object obj = ref CollectionsMarshal.GetValueRefOrNullRef(persistentPool, handle);
+                        if (!Unsafe.IsNullRef(ref obj))
                         {
-                            ref object obj = ref CollectionsMarshal.GetValueRefOrNullRef(persistentPool, handle);
+                            obj = value;
+                            return;
+                        }
+                    }
+                    break;
+                case GCHandleType.Pinned:
+                    lock (pinnedPool)
+                    {
+                        ref GCHandle gcHandle = ref CollectionsMarshal.GetValueRefOrNullRef(pinnedPool, handle);
+                        if (!Unsafe.IsNullRef(ref gcHandle))
+                        {
+                            gcHandle.Target = value;
+                            return;
+                        }
+                    }
+                    break;
+                case GCHandleType.Weak:
+                case GCHandleType.WeakTrackResurrection:
+                    lock (weakPoolLock)
+                    {
+                        TryCollectWeakHandles();
+                        {
+                            ref object obj = ref CollectionsMarshal.GetValueRefOrNullRef(weakPool, handle);
                             if (!Unsafe.IsNullRef(ref obj))
                             {
                                 obj = value;
                                 return;
                             }
                         }
-                        break;
-                    case GCHandleType.Pinned:
-                        lock (pinnedPool)
                         {
-                            ref GCHandle gchandle = ref CollectionsMarshal.GetValueRefOrNullRef(pinnedPool, handle);
-                            if (!Unsafe.IsNullRef(ref gchandle))
+                            ref object obj = ref CollectionsMarshal.GetValueRefOrNullRef(weakPoolOther, handle);
+                            if (!Unsafe.IsNullRef(ref obj))
                             {
-                                gchandle.Target = value;
+                                obj = value;
                                 return;
                             }
                         }
-                        break;
-                    case GCHandleType.Weak:
-                    case GCHandleType.WeakTrackResurrection:
-                        lock (weakPoolLock)
-                        {
-                            TryCollectWeakHandles();
-                            {
-                                ref object obj = ref CollectionsMarshal.GetValueRefOrNullRef(weakPool, handle);
-                                if (!Unsafe.IsNullRef(ref obj))
-                                {
-                                    obj = value;
-                                    return;
-                                }
-                            }
-                            {
-                                ref object obj = ref CollectionsMarshal.GetValueRefOrNullRef(weakPoolOther, handle);
-                                if (!Unsafe.IsNullRef(ref obj))
-                                {
-                                    obj = value;
-                                    return;
-                                }
-                            }
-                        }
-                        break;
+                    }
+                    break;
                 }
                 throw new NativeInteropException("Invalid ManagedHandle");
             }
@@ -596,28 +594,28 @@ namespace FlaxEngine.Interop
             {
                 switch (GetHandleType(handle))
                 {
-                    case GCHandleType.Normal:
-                        lock (persistentPool)
+                case GCHandleType.Normal:
+                    lock (persistentPool)
+                    {
+                        if (persistentPool.Remove(handle))
+                            return;
+                    }
+                    break;
+                case GCHandleType.Pinned:
+                    lock (pinnedPool)
+                    {
+                        if (pinnedPool.Remove(handle, out GCHandle gcHandle))
                         {
-                            if (persistentPool.Remove(handle))
-                                return;
+                            gcHandle.Free();
+                            return;
                         }
-                        break;
-                    case GCHandleType.Pinned:
-                        lock (pinnedPool)
-                        {
-                            if (pinnedPool.Remove(handle, out GCHandle gchandle))
-                            {
-                                gchandle.Free();
-                                return;
-                            }
-                        }
-                        break;
-                    case GCHandleType.Weak:
-                    case GCHandleType.WeakTrackResurrection:
-                        lock (weakPoolLock)
-                            TryCollectWeakHandles();
-                        return;
+                    }
+                    break;
+                case GCHandleType.Weak:
+                case GCHandleType.WeakTrackResurrection:
+                    lock (weakPoolLock)
+                        TryCollectWeakHandles();
+                    return;
                 }
                 throw new NativeInteropException("Invalid ManagedHandle");
             }
