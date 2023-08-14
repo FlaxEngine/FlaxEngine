@@ -135,6 +135,28 @@ void Screen::SetCursorLock(CursorLockMode mode)
     CursorLock = mode;
 }
 
+void Screen::SetGameWindowMode(GameWindowMode windowMode)
+{
+#if (PLATFORM_WINDOWS) && !USE_EDITOR
+    switch (windowMode)
+    {
+    case GameWindowMode::Windowed:
+        Engine::MainWindow->SetBorderless(false, false);
+        break;
+    case GameWindowMode::Fullscreen:
+        SetIsFullscreen(true);
+        break;
+    case GameWindowMode::Borderless:
+        Engine::MainWindow->SetBorderless(true, false);
+        break;
+    case GameWindowMode::FullscreenBorderless:
+        Engine::MainWindow->SetBorderless(true, true);
+        break;
+    default: ;
+    }
+#endif
+}
+
 void ScreenService::Update()
 {
 #if USE_EDITOR
