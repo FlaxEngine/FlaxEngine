@@ -1549,7 +1549,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
             if (it == Objects.End())
             {
 #if USE_EDITOR || !BUILD_RELEASE
-                if(!DespawnedObjects.Contains(obj->GetID()))
+                if (!DespawnedObjects.Contains(obj->GetID()))
                     LOG(Error, "Cannot invoke RPC method '{0}.{1}' on object '{2}' that is not registered in networking (use 'NetworkReplicator.AddObject').", e.Name.First.ToString(), String(e.Name.Second), obj->GetID());
 #endif
                 continue;
