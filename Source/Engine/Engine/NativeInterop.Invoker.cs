@@ -74,23 +74,17 @@ namespace FlaxEngine.Interop
 
             internal static IntPtr MarshalReturnValueString(ref string returnValue)
             {
-                if (returnValue == null)
-                    return IntPtr.Zero;
-                return ManagedString.ToNativeWeak(returnValue);
+                return returnValue != null ? ManagedString.ToNativeWeak(returnValue) : IntPtr.Zero;
             }
 
             internal static IntPtr MarshalReturnValueManagedHandle(ref ManagedHandle returnValue)
             {
-                if (returnValue == null)
-                    return IntPtr.Zero;
-                return ManagedHandle.ToIntPtr(returnValue);
+                return returnValue != null ? ManagedHandle.ToIntPtr(returnValue) : IntPtr.Zero;
             }
 
             internal static IntPtr MarshalReturnValueType(ref Type returnValue)
             {
-                if (returnValue == null)
-                    return IntPtr.Zero;
-                return ManagedHandle.ToIntPtr(GetTypeGCHandle(returnValue));
+                return returnValue != null ? ManagedHandle.ToIntPtr(GetTypeGCHandle(returnValue)) : IntPtr.Zero;
             }
 
             internal static IntPtr MarshalReturnValueArray<TRet>(ref TRet returnValue)
@@ -150,9 +144,7 @@ namespace FlaxEngine.Interop
 
             internal static IntPtr MarshalReturnValueWrapped<TRet>(ref TRet returnValue)
             {
-                if (returnValue == null)
-                    return IntPtr.Zero;
-                return ManagedHandle.ToIntPtr(returnValue, GCHandleType.Weak);
+                return returnValue != null ? ManagedHandle.ToIntPtr(returnValue, GCHandleType.Weak) : IntPtr.Zero;
             }
 
             internal static IntPtr MarshalReturnValue<TRet>(ref TRet returnValue)

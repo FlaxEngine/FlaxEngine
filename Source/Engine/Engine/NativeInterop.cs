@@ -968,6 +968,7 @@ namespace FlaxEngine.Interop
             private delegate Array CreateArrayDelegate(long size);
 
             private static ConcurrentDictionary<Type, Type> marshalledTypes = new ConcurrentDictionary<Type, Type>(1, 3);
+            private static ConcurrentDictionary<Type, Type> arrayTypes = new ConcurrentDictionary<Type, Type>(1, 3);
             private static ConcurrentDictionary<Type, CreateArrayDelegate> createArrayDelegates = new ConcurrentDictionary<Type, CreateArrayDelegate>(1, 3);
 
             internal static Type GetMarshalledType(Type elementType)
@@ -985,6 +986,15 @@ namespace FlaxEngine.Interop
                 if (marshalledTypes.TryGetValue(elementType, out var marshalledType))
                     return marshalledType;
                 return marshalledTypes.GetOrAdd(elementType, Factory);
+            }
+
+            internal static Type GetArrayType(Type elementType)
+            {
+                static Type Factory(Type type) => type.MakeArrayType();
+
+                if (arrayTypes.TryGetValue(elementType, out var arrayType))
+                    return arrayType;
+                return arrayTypes.GetOrAdd(elementType, Factory);
             }
 
             internal static Array CreateArray(Type type, long size)
