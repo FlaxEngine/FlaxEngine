@@ -62,7 +62,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// The node archetype.
         /// </summary>
-        public readonly NodeArchetype Archetype;
+        public NodeArchetype Archetype;
 
         /// <summary>
         /// The group archetype.
