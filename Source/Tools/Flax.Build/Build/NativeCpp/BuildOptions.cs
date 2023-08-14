@@ -185,7 +185,7 @@ namespace Flax.Build.NativeCpp
         public string DepsFolder => Path.Combine(Globals.EngineRoot, "Source", "Platforms", Platform.Target.ToString(), "Binaries", "ThirdParty", Architecture.ToString());
 
         /// <summary>
-        /// The scripting API building options.
+        /// The C# scripting API building options.
         /// </summary>
         public struct ScriptingAPIOptions
         {
@@ -224,6 +224,11 @@ namespace Flax.Build.NativeCpp
             /// </summary>
             public CSharpNullableReferences CSharpNullableReferences = CSharpNullableReferences.Disable;
 
+            /// <summary>
+            /// Enable code optimization.
+            /// </summary>
+            public bool? Optimization;
+
             public ScriptingAPIOptions()
             {
             }
@@ -232,13 +237,19 @@ namespace Flax.Build.NativeCpp
             /// Adds the other options into this.
             /// </summary>
             /// <param name="other">The other.</param>
-            public void Add(ScriptingAPIOptions other)
+            public void Add(ScriptingAPIOptions other, bool addBuildOptions = true)
             {
                 Defines.AddRange(other.Defines);
                 SystemReferences.AddRange(other.SystemReferences);
                 FileReferences.AddRange(other.FileReferences);
                 Analyzers.AddRange(other.Analyzers);
                 IgnoreMissingDocumentationWarnings |= other.IgnoreMissingDocumentationWarnings;
+
+                if (addBuildOptions)
+                {
+                    if (other.Optimization.HasValue)
+                        Optimization |= other.Optimization;
+                }
             }
         }
 
