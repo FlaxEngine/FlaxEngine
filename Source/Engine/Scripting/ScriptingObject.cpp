@@ -742,6 +742,12 @@ DEFINE_INTERNAL_CALL(void) ObjectInternal_Destroy(ScriptingObject* obj, float ti
         obj->DeleteObject(timeLeft, useGameTime);
 }
 
+DEFINE_INTERNAL_CALL(void) ObjectInternal_DestroyNow(ScriptingObject* obj)
+{
+    if (obj)
+        obj->DeleteObjectNow();
+}
+
 DEFINE_INTERNAL_CALL(MString*) ObjectInternal_GetTypeName(ScriptingObject* obj)
 {
     INTERNAL_CALL_CHECK_RETURN(obj, nullptr);
@@ -838,6 +844,7 @@ public:
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_ManagedInstanceCreated", &ObjectInternal_ManagedInstanceCreated);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_ManagedInstanceDeleted", &ObjectInternal_ManagedInstanceDeleted);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_Destroy", &ObjectInternal_Destroy);
+        ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_DestroyNow", &ObjectInternal_DestroyNow);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_GetTypeName", &ObjectInternal_GetTypeName);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_FindObject", &ObjectInternal_FindObject);
         ADD_INTERNAL_CALL("FlaxEngine.Object::Internal_TryFindObject", &ObjectInternal_TryFindObject);
