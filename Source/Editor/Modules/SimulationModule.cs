@@ -76,12 +76,12 @@ namespace FlaxEditor.Modules
         {
             switch (Editor.Options.Options.Interface.PlayButtonAction)
             {
-                case Options.InterfaceOptions.PlayAction.PlayGame:
-                    Editor.Simulation.RequestPlayGameOrStopPlay();
-                    return;
-                case Options.InterfaceOptions.PlayAction.PlayScenes:
-                    Editor.Simulation.RequestPlayScenesOrStopPlay();
-                    return;
+            case Options.InterfaceOptions.PlayAction.PlayGame:
+                Editor.Simulation.RequestPlayGameOrStopPlay();
+                return;
+            case Options.InterfaceOptions.PlayAction.PlayScenes:
+                Editor.Simulation.RequestPlayScenesOrStopPlay();
+                return;
             }
         }
 
