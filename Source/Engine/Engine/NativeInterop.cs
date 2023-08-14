@@ -17,6 +17,7 @@ using FlaxEngine.Assertions;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Text;
+using System.Threading;
 
 namespace FlaxEngine.Interop
 {
@@ -1009,44 +1010,78 @@ namespace FlaxEngine.Interop
 
         internal static class ValueTypeUnboxer
         {
-            private delegate IntPtr UnboxerDelegate(object value);
+            private static GCHandle[] pinnedBoxedValues = new GCHandle[256];
+            private static uint pinnedBoxedValuesPointer = 0;
+            private static (IntPtr ptr, int size)[] pinnedAllocations = new (IntPtr ptr, int size)[256];
+            private static uint pinnedAllocationsPointer = 0;
+            
+            private delegate TInternal ToNativeDelegate<T, TInternal>(T value);
+            private delegate IntPtr UnboxerDelegate(object value, object converter);
 
-            private static ConcurrentDictionary<Type, UnboxerDelegate> unboxers = new ConcurrentDictionary<Type, UnboxerDelegate>(1, 3);
+            private static ConcurrentDictionary<Type, (UnboxerDelegate deleg, object toNativeDeleg)> unboxers = new (1, 3);
             private static MethodInfo unboxerMethod = typeof(ValueTypeUnboxer).GetMethod(nameof(ValueTypeUnboxer.UnboxPointer), BindingFlags.Static | BindingFlags.NonPublic);
             private static MethodInfo unboxerToNativeMethod = typeof(ValueTypeUnboxer).GetMethod(nameof(ValueTypeUnboxer.UnboxPointerWithConverter), BindingFlags.Static | BindingFlags.NonPublic);
 
             internal static IntPtr GetPointer(object value, Type type)
             {
-                if (!unboxers.TryGetValue(type, out var deleg))
+                if (!unboxers.TryGetValue(type, out var tuple))
                 {
                     // Non-POD structures use internal layout (eg. SpriteHandleManaged in C++ with SpriteHandleMarshaller.SpriteHandleInternal in C#) so convert C# data into C++ data
                     var attr = type.GetCustomAttribute<System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute>();
                     var toNativeMethod = attr?.NativeType.GetMethod("ToNative", BindingFlags.Static | BindingFlags.NonPublic);
                     if (toNativeMethod != null)
                     {
-                        deleg = unboxerToNativeMethod.MakeGenericMethod(toNativeMethod.ReturnType).CreateDelegate<UnboxerDelegate>();
+                        tuple.deleg = unboxerToNativeMethod.MakeGenericMethod(type, toNativeMethod.ReturnType).CreateDelegate<UnboxerDelegate>();
+                        tuple.toNativeDeleg = toNativeMethod.CreateDelegate(typeof(ToNativeDelegate<,>).MakeGenericType(type, toNativeMethod.ReturnType));
                     }
                     else
                     {
-                        deleg = unboxerMethod.MakeGenericMethod(type).CreateDelegate<UnboxerDelegate>();
+                        tuple.deleg = unboxerMethod.MakeGenericMethod(type).CreateDelegate<UnboxerDelegate>();
                     }
-                    deleg = unboxers.GetOrAdd(type, deleg);
+                    tuple = unboxers.GetOrAdd(type, tuple);
                 }
-                return deleg(value);
+                return tuple.deleg(value, tuple.toNativeDeleg);
             }
 
-            private static IntPtr UnboxPointer<T>(object value) where T : struct
+            private static void PinValue(object value)
             {
+                // Prevent garbage collector from relocating the boxed value by pinning it temporarily.
+                // The pointer should remain valid quite long time but will be eventually unpinned.
+                uint index = Interlocked.Increment(ref pinnedBoxedValuesPointer) % (uint)pinnedBoxedValues.Length;
+                ref GCHandle handle = ref pinnedBoxedValues[index];
+                if (handle.IsAllocated)
+                    handle.Free();
+                handle = GCHandle.Alloc(value, GCHandleType.Pinned);
+            }
+
+            private static IntPtr PinValue<T>(T value) where T : struct
+            {
+                // Store the converted value in unmanaged memory so it will not be relocated by the garbage collector.
+                int size = Unsafe.SizeOf<T>();
+                uint index = Interlocked.Increment(ref pinnedAllocationsPointer) % (uint)pinnedAllocations.Length;
+                ref (IntPtr ptr, int size) alloc = ref pinnedAllocations[index];
+                if (alloc.size < size)
+                {
+                    if (alloc.ptr != IntPtr.Zero)
+                        NativeFree(alloc.ptr.ToPointer());
+                    alloc.ptr = new IntPtr(NativeAlloc(size));
+                    alloc.size = size;
+                }
+                
+                Unsafe.Write<T>(alloc.ptr.ToPointer(), value);
+                return alloc.ptr;
+            }
+
+            private static IntPtr UnboxPointer<T>(object value, object converter) where T : struct
+            {
+                PinValue(value);
                 return new IntPtr(Unsafe.AsPointer(ref Unsafe.Unbox<T>(value)));
             }
 
-            private static IntPtr UnboxPointerWithConverter<T>(object value) where T : struct
+            private static IntPtr UnboxPointerWithConverter<T, TInternal>(object value, object converter) where T : struct where TInternal : struct
             {
-                var type = value.GetType();
-                var attr = type.GetCustomAttribute<System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute>();
-                var toNative = attr.NativeType.GetMethod("ToNative", BindingFlags.Static | BindingFlags.NonPublic);
-                value = toNative.Invoke(null, new[] { value });
-                return new IntPtr(Unsafe.AsPointer(ref Unsafe.Unbox<T>(value)));
+                ToNativeDelegate<T, TInternal> toNative = Unsafe.As<ToNativeDelegate<T, TInternal>>(converter);
+                return PinValue<TInternal>(toNative(Unsafe.Unbox<T>(value)));
             }
         }
 
