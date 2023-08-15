@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Memory/Allocation.h"
+#include "Engine/Threading/Threading.h"
 
 /// <summary>
 /// The function object that supports binding static, member and lambda functions.
@@ -264,8 +265,9 @@ public:
 
 protected:
     // Single allocation for list of binded functions. Thread-safe access via atomic operations. Removing binded function simply clears the entry to handle function unregister during invocation.
-    intptr volatile _ptr = 0;
-    intptr volatile _size = 0;
+    intptr _ptr = 0;
+    intptr _size = 0;
+    CriticalSection _locker;
     typedef void (*StubSignature)(void*, Params ...);
 
 public:
@@ -388,15 +390,18 @@ public:
     /// <param name="f">The function to bind.</param>
     void Bind(const FunctionType& f)
     {
-        const intptr size = Platform::AtomicRead(&_size);
-        FunctionType* bindings = (FunctionType*)Platform::AtomicRead(&_ptr);
+        ScopeLock lock(_locker);
+
+        const intptr size = _size;
+        FunctionType* bindings = (FunctionType*)_ptr;
         if (bindings)
         {
             // Find a first free slot
             for (intptr i = 0; i < size; i++)
             {
-                if (Platform::InterlockedCompareExchange((intptr volatile*)&bindings[i]._function, (intptr)f._function, 0) == 0)
+                if (bindings[i]._function == 0)
                 {
+                    bindings[i]._function = f._function;
                     bindings[i]._callee = f._callee;
                     bindings[i]._lambda = f._lambda;
                     if (f._lambda)
@@ -416,20 +421,9 @@ public:
         newBindings[size] = f;
 
         // Set the new list
-        auto oldBindings = (FunctionType*)Platform::InterlockedCompareExchange(&_ptr, (intptr)newBindings, (intptr)bindings);
-        if (oldBindings != bindings)
-        {
-            // Other thread already set the new list so free this list and try again
-            Allocator::Free(newBindings);
-            Bind(f);
-        }
-        else
-        {
-            // Free previous bindings and update list size
-            Platform::AtomicStore(&_size, newSize);
-            // TODO: what is someone read this value before and is using the old table?
-            Allocator::Free(bindings);
-        }
+        _ptr = (intptr)newBindings;
+        _size = newSize;
+        Allocator::Free(bindings);
     }
 
     /// <summary>
@@ -471,14 +465,15 @@ public:
     /// <param name="f">The function to bind.</param>
     void BindUnique(const FunctionType& f)
     {
-        const intptr size = Platform::AtomicRead(&_size);
-        FunctionType* bindings = (FunctionType*)Platform::AtomicRead(&_ptr);
+        ScopeLock lock(_locker);
+        const intptr size = _size;
+        FunctionType* bindings = (FunctionType*)_ptr;
         if (bindings)
         {
             // Skip if already binded
             for (intptr i = 0; i < size; i++)
             {
-                if (Platform::AtomicRead((intptr volatile*)&bindings[i]._callee) == (intptr)f._callee && Platform::AtomicRead((intptr volatile*)&bindings[i]._function) == (intptr)f._function)
+                if (bindings[i]._callee == f._callee && bindings[i]._function == f._function)
                     return;
             }
         }
@@ -524,27 +519,23 @@ public:
     /// <param name="f">The function to unbind.</param>
     void Unbind(const FunctionType& f)
     {
+        ScopeLock lock(_locker);
         // Find slot with that function
-        const intptr size = Platform::AtomicRead(&_size);
-        FunctionType* bindings = (FunctionType*)Platform::AtomicRead(&_ptr);
+        const intptr size = _size;
+        FunctionType* bindings = (FunctionType*)_ptr;
         for (intptr i = 0; i < size; i++)
         {
-            if (Platform::AtomicRead((intptr volatile*)&bindings[i]._callee) == (intptr)f._callee && Platform::AtomicRead((intptr volatile*)&bindings[i]._function) == (intptr)f._function)
+            if (bindings[i]._callee == f._callee && bindings[i]._function == f._function)
             {
                 if (bindings[i]._lambda)
                 {
                     bindings[i].LambdaDtor();
                     bindings[i]._lambda = nullptr;
                 }
-                Platform::AtomicStore((intptr volatile*)&bindings[i]._callee, 0);
-                Platform::AtomicStore((intptr volatile*)&bindings[i]._function, 0);
+                bindings[i]._callee = 0;
+                bindings[i]._function = 0;
                 break;
             }
-        }
-        if ((FunctionType*)Platform::AtomicRead(&_ptr) != bindings)
-        {
-            // Someone changed the bindings list so retry unbind from the new one
-            Unbind(f);
         }
     }
 
@@ -553,8 +544,9 @@ public:
     /// </summary>
     void UnbindAll()
     {
-        const intptr size = Platform::AtomicRead(&_size);
-        FunctionType* bindings = (FunctionType*)Platform::AtomicRead(&_ptr);
+        ScopeLock lock(_locker);
+        const intptr size = _size;
+        FunctionType* bindings = (FunctionType*)_ptr;
         for (intptr i = 0; i < size; i++)
         {
             if (bindings[i]._lambda)
@@ -562,8 +554,8 @@ public:
                 bindings[i].LambdaDtor();
                 bindings[i]._lambda = nullptr;
             }
-            Platform::AtomicStore((intptr volatile*)&bindings[i]._function, 0);
-            Platform::AtomicStore((intptr volatile*)&bindings[i]._callee, 0);
+            bindings[i]._callee = 0;
+            bindings[i]._function = 0;
         }
     }
 
@@ -573,12 +565,13 @@ public:
     /// <returns>The binded functions count.</returns>
     int32 Count() const
     {
+        ScopeLock lock(_locker);
         int32 count = 0;
-        const intptr size = Platform::AtomicRead((intptr volatile*)&_size);
-        FunctionType* bindings = (FunctionType*)Platform::AtomicRead((intptr volatile*)&_ptr);
+        const intptr size = _size;
+        FunctionType* bindings = (FunctionType*)_ptr;
         for (intptr i = 0; i < size; i++)
         {
-            if (Platform::AtomicRead((intptr volatile*)&bindings[i]._function) != 0)
+            if (bindings[i]._function != 0)
                 count++;
         }
         return count;
@@ -598,11 +591,12 @@ public:
     /// <returns><c>true</c> if any function is binded; otherwise, <c>false</c>.</returns>
     bool IsBinded() const
     {
-        const intptr size = Platform::AtomicRead((intptr volatile*)&_size);
-        FunctionType* bindings = (FunctionType*)Platform::AtomicRead((intptr volatile*)&_ptr);
+        ScopeLock lock(_locker);
+        const intptr size = _size;
+        FunctionType* bindings = (FunctionType*)_ptr;
         for (intptr i = 0; i < size; i++)
         {
-            if (Platform::AtomicRead((intptr volatile*)&bindings[i]._function) != 0)
+            if (bindings[i]._function != 0)
                 return true;
         }
         return false;
@@ -616,16 +610,17 @@ public:
     /// <returns>The amount of written items into the output bindings buffer. Can be equal or less than input bindingsCount capacity.</returns>
     int32 GetBindings(FunctionType* buffer, int32 bufferSize) const
     {
+        ScopeLock lock(_locker);
         int32 count = 0;
-        const intptr size = Platform::AtomicRead((intptr volatile*)&_size);
-        FunctionType* bindings = (FunctionType*)Platform::AtomicRead((intptr volatile*)&_ptr);
+        const intptr size = _size;
+        FunctionType* bindings = (FunctionType*)_ptr;
         for (intptr i = 0; i < size && i < bufferSize; i++)
         {
-            buffer[count]._function = (StubSignature)Platform::AtomicRead((intptr volatile*)&bindings[i]._function);
+            buffer[count]._function = (StubSignature)bindings[i]._function;
             if (buffer[count]._function != nullptr)
             {
-                buffer[count]._callee = (void*)Platform::AtomicRead((intptr volatile*)&bindings[i]._callee);
-                buffer[count]._lambda = (typename FunctionType::Lambda*)Platform::AtomicRead((intptr volatile*)&bindings[i]._lambda);
+                buffer[count]._callee = (void*)bindings[i]._callee;
+                buffer[count]._lambda = (typename FunctionType::Lambda*)bindings[i]._lambda;
                 if (buffer[count]._lambda)
                     buffer[count].LambdaCtor();
                 count++;
@@ -640,13 +635,14 @@ public:
     /// <param name="params">A list of parameters for the function invocation.</param>
     void operator()(Params ... params) const
     {
-        const intptr size = Platform::AtomicRead((intptr volatile*)&_size);
-        FunctionType* bindings = (FunctionType*)Platform::AtomicRead((intptr volatile*)&_ptr);
+        ScopeLock lock(_locker); // TODO: We probably don't need to hold the lock during the function calls, only when iterating through the bindings?
+        const intptr size = _size;
+        FunctionType* bindings = (FunctionType*)_ptr;
         for (intptr i = 0; i < size; i++)
         {
-            auto function = (StubSignature)Platform::AtomicRead((intptr volatile*)&bindings->_function);
-            auto callee = (void*)Platform::AtomicRead((intptr volatile*)&bindings->_callee);
-            if (function != nullptr && function == (StubSignature)Platform::AtomicRead((intptr volatile*)&bindings->_function))
+            auto function = (StubSignature)bindings->_function;
+            auto callee = (void*)bindings->_callee;
+            if (function != nullptr)
                 function(callee, Forward<Params>(params)...);
             ++bindings;
         }
