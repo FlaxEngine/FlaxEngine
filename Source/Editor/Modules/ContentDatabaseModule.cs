@@ -1032,6 +1032,7 @@ namespace FlaxEditor.Modules
             Proxy.Add(new SkeletonMaskProxy());
             Proxy.Add(new GameplayGlobalsProxy());
             Proxy.Add(new VisualScriptProxy());
+            Proxy.Add(new BehaviorTreeProxy());
             Proxy.Add(new LocalizedStringTableProxy());
             Proxy.Add(new FileProxy());
             Proxy.Add(new SpawnableJsonAssetProxy<PhysicalMaterial>());

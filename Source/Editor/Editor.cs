@@ -930,6 +930,11 @@ namespace FlaxEditor
             /// The <see cref="FlaxEngine.Animation"/>.
             /// </summary>
             Animation = 11,
+
+            /// <summary>
+            /// The <see cref="FlaxEngine.BehaviorTree"/>.
+            /// </summary>
+            BehaviorTree = 12,
         }
 
         /// <summary>
