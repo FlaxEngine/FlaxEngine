@@ -2933,10 +2933,30 @@ Variant Variant::NewValue(const StringAnsiView& typeName)
             break;
         }
     }
+#if USE_CSHARP
+    else if (const auto mclass = Scripting::FindClass(typeName))
+    {
+        // Fallback to C#-only types
+        if (mclass->IsEnum())
+        {
+            v.SetType(VariantType(VariantType::Enum, typeName));
+            v.AsUint64 = 0;
+        }
+        else if (mclass->IsValueType())
+        {
+            v.SetType(VariantType(VariantType::Structure, typeName));
+        }
+        else
+        {
+            v.SetType(VariantType(VariantType::ManagedObject, typeName));
+        }
+    }
+#endif
     else if (typeName.HasChars())
     {
         LOG(Warning, "Missing scripting type \'{0}\'", String(typeName));
     }
+    v.Inline(); // Wrap in-built types
     return MoveTemp(v);
 }
 
