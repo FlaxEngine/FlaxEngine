@@ -2912,6 +2912,53 @@ void Variant::Inline()
     }
 }
 
+Variant Variant::NewValue(const StringAnsiView& typeName)
+{
+    Variant v;
+    const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeName);
+    if (typeHandle)
+    {
+        const ScriptingType& type = typeHandle.GetType();
+        switch (type.Type)
+        {
+        case ScriptingTypes::Script:
+            v.SetType(VariantType(VariantType::Object, typeName));
+            break;
+        case ScriptingTypes::Structure:
+            v.SetType(VariantType(VariantType::Structure, typeName));
+            break;
+        case ScriptingTypes::Enum:
+            v.SetType(VariantType(VariantType::Enum, typeName));
+            v.AsUint64 = 0;
+            break;
+        }
+    }
+    else if (typeName.HasChars())
+    {
+        LOG(Warning, "Missing scripting type \'{0}\'", String(typeName));
+    }
+    return MoveTemp(v);
+}
+
+void Variant::DeleteValue()
+{
+    // Delete any object owned by the Variant
+    switch (Type.Type)
+    {
+    case VariantType::Object:
+        if (AsObject)
+        {
+            AsObject->Deleted.Unbind<Variant, &Variant::OnObjectDeleted>(this);
+            AsObject->DeleteObject();
+            AsObject = nullptr;
+        }
+        break;
+    }
+
+    // Go back to null
+    SetType(VariantType(VariantType::Null));
+}
+
 bool Variant::CanCast(const Variant& v, const VariantType& to)
 {
     if (v.Type == to)

@@ -362,6 +362,12 @@ public:
     // Inlines potential value type into in-built format (eg. Vector3 stored as Structure, or String stored as ManagedObject).
     void Inline();
 
+    // Allocates the Variant of the specific type (eg. structure or object or value).
+    static Variant NewValue(const StringAnsiView& typeName);
+
+    // Frees the object or data owned by this Variant container (eg. structure or object).
+    void DeleteValue();
+
     FORCE_INLINE Variant Cast(const VariantType& to) const
     {
         return Cast(*this, to);
