@@ -1215,11 +1215,7 @@ namespace FlaxEditor.Windows.Assets
             _canEdit = canEdit;
             _undo.Enabled = canEdit;
             _surface.CanEdit = canEdit;
-            foreach (var child in _propertiesEditor.Panel.Children)
-            {
-                if (!(child is ScrollBar))
-                    child.Enabled = canEdit;
-            }
+            _propertiesEditor.ReadOnly = !canEdit;
             UpdateToolstrip();
         }
 

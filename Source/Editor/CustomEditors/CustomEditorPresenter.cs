@@ -287,7 +287,24 @@ namespace FlaxEditor.CustomEditors
             }
         }
 
+        /// <summary>
+        /// Gets or sets the value indicating whether properties are read-only.
+        /// </summary>
+        public bool ReadOnly
+        {
+            get => _readOnly;
+            set
+            {
+                if (_readOnly != value)
+                {
+                    _readOnly = value;
+                    UpdateReadOnly();
+                }
+            }
+        }
+
         private bool _buildOnUpdate;
+        private bool _readOnly;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CustomEditorPresenter"/> class.
@@ -381,6 +398,8 @@ namespace FlaxEditor.CustomEditors
             // Restore scroll value
             if (parentScrollV > -1)
                 panel.VScrollBar.Value = parentScrollV;
+            if (_readOnly)
+                UpdateReadOnly();
         }
 
         /// <summary>
@@ -389,6 +408,16 @@ namespace FlaxEditor.CustomEditors
         public void BuildLayoutOnUpdate()
         {
             _buildOnUpdate = true;
+        }
+
+        private void UpdateReadOnly()
+        {
+            // Only scrollbars are enabled
+            foreach (var child in Panel.Children)
+            {
+                if (!(child is ScrollBar))
+                    child.Enabled = !_readOnly;
+            }
         }
 
         private void ExpandGroups(LayoutElementsContainer c, bool open)
