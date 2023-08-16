@@ -39,7 +39,7 @@ namespace FlaxEditor.Content.Settings
         /// The list of custom defines passed to the build tool when compiling project scripts. Can be used in build scripts for configuration (Configuration.CustomDefines).
         /// </summary>
         [EditorOrder(90), Tooltip("The list of custom defines passed to the build tool when compiling project scripts. Can be used in build scripts for configuration (Configuration.CustomDefines).")]
-        public string[] CustomDefines;
+        public string[] CustomDefines = { };
 
         /// <summary>
         /// The pre-build action command line.

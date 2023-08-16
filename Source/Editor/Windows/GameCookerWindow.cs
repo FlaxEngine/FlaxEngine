@@ -87,7 +87,7 @@ namespace FlaxEditor.Windows
                 public BuildConfiguration ConfigurationMode = BuildConfiguration.Development;
 
                 [EditorOrder(90), Tooltip("The list of custom defines passed to the build tool when compiling project scripts. Can be used in build scripts for configuration (Configuration.CustomDefines).")]
-                public string[] CustomDefines;
+                public string[] CustomDefines = { };
 
                 protected abstract BuildPlatform BuildPlatform { get; }
 
