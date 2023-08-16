@@ -12,11 +12,14 @@ API_CLASS(Abstract) class FLAXENGINE_API BehaviorTreeCompoundNode : public Behav
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeCompoundNode, BehaviorTreeNode);
 
-public:
     /// <summary>
     /// List with all child nodes.
     /// </summary>
     API_FIELD(Readonly) Array<BehaviorTreeNode*, InlinedAllocation<8>> Children;
+
+public:
+    // [BehaviorTreeNode]
+    void Init(BehaviorTree* tree) override;
 };
 
 /// <summary>

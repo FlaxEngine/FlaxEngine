@@ -18,3 +18,9 @@ void BehaviorTreeNode::Deserialize(DeserializeStream& stream, ISerializeModifier
     Name.Clear(); // Missing Name is assumes as unnamed node
     DESERIALIZE(Name);
 }
+
+void BehaviorTreeCompoundNode::Init(BehaviorTree* tree)
+{
+    for (BehaviorTreeNode* child : Children)
+        child->Init(tree);
+}

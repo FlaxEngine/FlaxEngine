@@ -19,10 +19,17 @@ public:
     API_FIELD() String Name;
 
     // TODO: decorators/conditionals
-    // TODO: init methods
     // TODO: instance data ctor/dtor
     // TODO: start/stop methods
     // TODO: update method
+
+    /// <summary>
+    /// Initializes node state. Called after whole tree is loaded and nodes hierarchy is setup.
+    /// </summary>
+    /// <param name="tree">Node owner asset.</param>
+    API_FUNCTION() virtual void Init(BehaviorTree* tree)
+    {
+    }
 
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

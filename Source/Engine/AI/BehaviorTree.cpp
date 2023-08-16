@@ -146,6 +146,12 @@ Asset::LoadResult BehaviorTree::load()
         return LoadResult::Failed;
     }
 
+    // Init graph
+    if (Graph.Root)
+    {
+        Graph.Root->Init(this);
+    }
+
     return LoadResult::Ok;
 }
 
