@@ -5,6 +5,7 @@
 #include "Engine/Content/BinaryAsset.h"
 #include "Engine/Visject/VisjectGraph.h"
 
+class BehaviorKnowledge;
 class BehaviorTreeNode;
 class BehaviorTreeRootNode;
 
@@ -28,6 +29,8 @@ class BehaviorTreeGraph : public VisjectGraph<BehaviorTreeGraphNode>
 public:
     // Instance of the graph root node.
     BehaviorTreeRootNode* Root = nullptr;
+    // Total size of the nodes states memory.
+    int32 NodesStatesSize = 0;
 
     // [VisjectGraph]
     bool Load(ReadStream* stream, bool loadMeta) override;

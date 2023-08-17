@@ -4,6 +4,7 @@
 
 #include "Engine/Scripting/ScriptingType.h"
 
+class Behavior;
 class BehaviorTree;
 class BehaviorTreeNode;
 class BehaviorKnowledge;
@@ -16,9 +17,24 @@ API_STRUCT() struct FLAXENGINE_API BehaviorUpdateContext
     DECLARE_SCRIPTING_TYPE_MINIMAL(BehaviorUpdateContext);
 
     /// <summary>
+    /// Behavior to simulate.
+    /// </summary>
+    API_FIELD() Behavior* Behavior;
+
+    /// <summary>
+    /// Behavior's logic knowledge container (data, goals and sensors).
+    /// </summary>
+    API_FIELD() BehaviorKnowledge* Knowledge;
+
+    /// <summary>
+    /// Current instance memory buffer location (updated while moving down the tree).
+    /// </summary>
+    API_FIELD() void* Memory;
+
+    /// <summary>
     /// Simulation time delta (in seconds) since the last update.
     /// </summary>
-    float DeltaTime;
+    API_FIELD() float DeltaTime;
 };
 
 /// <summary>

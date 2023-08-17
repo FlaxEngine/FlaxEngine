@@ -36,6 +36,12 @@ bool BehaviorTreeGraph::Load(ReadStream* stream, bool loadMeta)
                 }
             }
         }
+        if (node.Instance)
+        {
+            // Count total states memory size
+            node.Instance->_memoryOffset = NodesStatesSize;
+            NodesStatesSize += node.Instance->GetStateSize();
+        }
     }
 
     return false;
@@ -46,6 +52,7 @@ void BehaviorTreeGraph::Clear()
     VisjectGraph<BehaviorTreeGraphNode>::Clear();
 
     Root = nullptr;
+    NodesStatesSize = 0;
 }
 
 bool BehaviorTreeGraph::onNodeLoaded(Node* n)
