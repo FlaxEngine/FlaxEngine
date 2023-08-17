@@ -1075,9 +1075,7 @@ Variant& Variant::operator=(const Variant& other)
     case VariantType::Object:
         AsObject = other.AsObject;
         if (other.AsObject)
-        {
             AsObject->Deleted.Bind<Variant, &Variant::OnObjectDeleted>(this);
-        }
         break;
     case VariantType::Asset:
         AsAsset = other.AsAsset;
@@ -2925,8 +2923,10 @@ Variant Variant::NewValue(const StringAnsiView& typeName)
         switch (type.Type)
         {
         case ScriptingTypes::Script:
-        case ScriptingTypes::Class:
             v.SetType(VariantType(VariantType::Object, typeName));
+            v.AsObject = type.Script.Spawn(ScriptingObjectSpawnParams(Guid::New(), typeHandle));
+            if (v.AsObject)
+                v.AsObject->Deleted.Bind<Variant, &Variant::OnObjectDeleted>(&v);
             break;
         case ScriptingTypes::Structure:
             v.SetType(VariantType(VariantType::Structure, typeName));
@@ -2934,6 +2934,9 @@ Variant Variant::NewValue(const StringAnsiView& typeName)
         case ScriptingTypes::Enum:
             v.SetType(VariantType(VariantType::Enum, typeName));
             v.AsUint64 = 0;
+            break;
+        default:
+            LOG(Error, "Unsupported scripting type '{}' for Variant", typeName.ToString());
             break;
         }
     }
@@ -2953,6 +2956,15 @@ Variant Variant::NewValue(const StringAnsiView& typeName)
         else
         {
             v.SetType(VariantType(VariantType::ManagedObject, typeName));
+            MObject* instance = mclass->CreateInstance();
+            if (instance)
+            {
+#if USE_NETCORE
+                v.AsUint64 = MCore::GCHandle::New(instance);
+#else
+                v.AsUint = MCore::GCHandle::New(instance);
+#endif
+            }
         }
     }
 #endif
