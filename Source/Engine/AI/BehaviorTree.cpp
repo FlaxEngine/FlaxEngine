@@ -15,6 +15,7 @@ REGISTER_BINARY_ASSET(BehaviorTree, "FlaxEngine.BehaviorTree", false);
 
 bool SortBehaviorTreeChildren(GraphBox* const& a, GraphBox* const& b)
 {
+    // Sort by node X coordinate on surface
     auto aNode = (BehaviorTreeGraph::Node*)a->Parent;
     auto bNode = (BehaviorTreeGraph::Node*)b->Parent;
     auto aEntry = aNode->Meta.GetEntry(11);
@@ -35,31 +36,18 @@ bool BehaviorTreeGraph::Load(ReadStream* stream, bool loadMeta)
         return true;
 
     // Build node instances hierarchy
+    Node* root = nullptr;
     for (Node& node : Nodes)
     {
-        if (auto* nodeCompound = ScriptingObject::Cast<BehaviorTreeCompoundNode>(node.Instance))
+        if (node.Instance == Root)
         {
-            auto& children = node.Boxes[1].Connections;
-
-            // Sort children from left to right (based on placement on a graph surface)
-            Sorting::QuickSort(children.Get(), children.Count(), SortBehaviorTreeChildren);
-
-            // Find all children (of output box)
-            for (const GraphBox* childBox : children)
-            {
-                const Node* child = childBox ? (Node*)childBox->Parent : nullptr;
-                if (child && child->Instance)
-                {
-                    nodeCompound->Children.Add(child->Instance);
-                }
-            }
+            root = &node;
+            break;
         }
-        if (node.Instance)
-        {
-            // Count total states memory size
-            node.Instance->_memoryOffset = NodesStatesSize;
-            NodesStatesSize += node.Instance->GetStateSize();
-        }
+    }
+    if (root)
+    {
+        LoadRecursive(*root);
     }
 
     return false;
@@ -70,6 +58,7 @@ void BehaviorTreeGraph::Clear()
     VisjectGraph<BehaviorTreeGraphNode>::Clear();
 
     Root = nullptr;
+    NodesCount = 0;
     NodesStatesSize = 0;
 }
 
@@ -101,6 +90,35 @@ bool BehaviorTreeGraph::onNodeLoaded(Node* n)
     }
 
     return VisjectGraph<BehaviorTreeGraphNode>::onNodeLoaded(n);
+}
+
+void BehaviorTreeGraph::LoadRecursive(Node& node)
+{
+    // Count total states memory size
+    ASSERT_LOW_LAYER(node.Instance);
+    node.Instance->_memoryOffset = NodesStatesSize;
+    node.Instance->_executionIndex = NodesCount;
+    NodesStatesSize += node.Instance->GetStateSize();
+    NodesCount++;
+
+    if (auto* nodeCompound = ScriptingObject::Cast<BehaviorTreeCompoundNode>(node.Instance))
+    {
+        auto& children = node.Boxes[1].Connections;
+
+        // Sort children from left to right (based on placement on a graph surface)
+        Sorting::QuickSort(children.Get(), children.Count(), SortBehaviorTreeChildren);
+
+        // Find all children (of output box)
+        for (const GraphBox* childBox : children)
+        {
+            Node* child = childBox ? (Node*)childBox->Parent : nullptr;
+            if (child && child->Instance)
+            {
+                nodeCompound->Children.Add(child->Instance);
+                LoadRecursive(*child);
+            }
+        }
+    }
 }
 
 BehaviorTree::BehaviorTree(const SpawnParams& params, const AssetInfo* info)

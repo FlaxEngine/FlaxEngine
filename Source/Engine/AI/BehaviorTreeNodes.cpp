@@ -1,7 +1,31 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "BehaviorTreeNodes.h"
+#include "BehaviorKnowledge.h"
 #include "Engine/Serialization/Serialization.h"
+
+BehaviorUpdateResult BehaviorTreeNode::InvokeUpdate(const BehaviorUpdateContext& context)
+{
+    ASSERT_LOW_LAYER(_executionIndex != -1);
+    if (context.Knowledge->RelevantNodes.Get(_executionIndex) == false)
+    {
+        // Node becomes relevant so initialize it's state
+        context.Knowledge->RelevantNodes.Set(_executionIndex, true);
+        InitState(context.Behavior, context.Memory);
+    }
+
+    // Node-specific update
+    const BehaviorUpdateResult result = Update(context);
+
+    // Check if node is not relevant anymore
+    if (result != BehaviorUpdateResult::Running)
+    {
+        context.Knowledge->RelevantNodes.Set(_executionIndex, false);
+        ReleaseState(context.Behavior, context.Memory);
+    }
+
+    return result;
+}
 
 void BehaviorTreeNode::Serialize(SerializeStream& stream, const void* otherObj)
 {
@@ -31,7 +55,7 @@ BehaviorUpdateResult BehaviorTreeCompoundNode::Update(BehaviorUpdateContext cont
     for (int32 i = 0; i < Children.Count() && result == BehaviorUpdateResult::Success; i++)
     {
         BehaviorTreeNode* child = Children[i];
-        result = child->Update(context);
+        result = child->InvokeUpdate(context);
     }
     return result;
 }
@@ -56,7 +80,7 @@ BehaviorUpdateResult BehaviorTreeSequenceNode::Update(BehaviorUpdateContext cont
     if (state->CurrentChildIndex == -1)
         return BehaviorUpdateResult::Failed;
 
-    auto result = Children[state->CurrentChildIndex]->Update(context);
+    auto result = Children[state->CurrentChildIndex]->InvokeUpdate(context);
 
     switch (result)
     {

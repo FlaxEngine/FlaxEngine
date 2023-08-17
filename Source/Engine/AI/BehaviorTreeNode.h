@@ -12,10 +12,13 @@ API_CLASS(Abstract) class FLAXENGINE_API BehaviorTreeNode : public SerializableS
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeNode, SerializableScriptingObject);
     friend class BehaviorTreeGraph;
+    friend class BehaviorKnowledge;
 
 protected:
     // Raw memory byte offset from the start of the behavior memory block.
     API_FIELD(ReadOnly) int32 _memoryOffset = 0;
+    // Execution index of the node within tree.
+    API_FIELD(ReadOnly) int32 _executionIndex = -1;
 
 public:
     /// <summary>
@@ -66,6 +69,9 @@ public:
     {
         return BehaviorUpdateResult::Success;
     }
+
+    // Helper utility to update node with state creation/cleanup depending on node relevancy.
+    BehaviorUpdateResult InvokeUpdate(const BehaviorUpdateContext& context);
 
     // [SerializableScriptingObject]
     void Serialize(SerializeStream& stream, const void* otherObj) override;

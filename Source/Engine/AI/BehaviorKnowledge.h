@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "Engine/Core/Types/Variant.h"
+#include "Engine/Core/Collections/BitArray.h"
 #include "Engine/Scripting/ScriptingObject.h"
 
 class Behavior;
@@ -28,16 +30,17 @@ API_CLASS() class FLAXENGINE_API BehaviorKnowledge : public ScriptingObject
     /// <summary>
     /// Raw memory chunk with all Behavior Tree nodes state.
     /// </summary>
-    API_FIELD(ReadOnly) void* Memory = nullptr;
+    void* Memory = nullptr;
+
+    /// <summary>
+    /// Array with per-node bit indicating whether node is relevant (active in graph with state created).
+    /// </summary>
+    BitArray<> RelevantNodes;
 
     /// <summary>
     /// Instance of the behaviour blackboard (structure or class).
     /// </summary>
     API_FIELD() Variant Blackboard;
-
-    // TODO: sensors data
-    // TODO: goals
-    // TODO: GetGoal/HasGoal
 
     /// <summary>
     /// Initializes the knowledge for a certain tree.

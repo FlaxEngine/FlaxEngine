@@ -29,6 +29,8 @@ class BehaviorTreeGraph : public VisjectGraph<BehaviorTreeGraphNode>
 public:
     // Instance of the graph root node.
     BehaviorTreeRootNode* Root = nullptr;
+    // Total count of used nodes.
+    int32 NodesCount = 0;
     // Total size of the nodes states memory.
     int32 NodesStatesSize = 0;
 
@@ -36,6 +38,9 @@ public:
     bool Load(ReadStream* stream, bool loadMeta) override;
     void Clear() override;
     bool onNodeLoaded(Node* n) override;
+
+private:
+    void LoadRecursive(Node& node);
 };
 
 /// <summary>
