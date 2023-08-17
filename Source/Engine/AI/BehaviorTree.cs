@@ -16,7 +16,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
         private static bool IsValidBlackboardType(ScriptType type)
         {
-            if (ScriptType.FlaxObject.IsAssignableFrom(type))
+            if (new ScriptType(typeof(SceneObject)).IsAssignableFrom(type))
                 return false;
             if (type.Type != null)
             {
@@ -35,7 +35,7 @@ namespace FlaxEngine
                    !type.IsAbstract &&
                    !type.IsArray &&
                    !type.IsVoid &&
-                   (type.IsClass || type.IsStructure) &&
+                   (type.IsStructure || ScriptType.FlaxObject.IsAssignableFrom(type)) &&
                    type.IsPublic &&
                    type.CanCreateInstance;
         }
