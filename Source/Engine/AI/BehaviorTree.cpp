@@ -3,6 +3,7 @@
 #include "BehaviorTree.h"
 #include "BehaviorTreeNode.h"
 #include "BehaviorTreeNodes.h"
+#include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Serialization/JsonSerializer.h"
@@ -11,6 +12,17 @@
 #include "FlaxEngine.Gen.h"
 
 REGISTER_BINARY_ASSET(BehaviorTree, "FlaxEngine.BehaviorTree", false);
+
+bool SortBehaviorTreeChildren(GraphBox* const& a, GraphBox* const& b)
+{
+    auto aNode = (BehaviorTreeGraph::Node*)a->Parent;
+    auto bNode = (BehaviorTreeGraph::Node*)b->Parent;
+    auto aEntry = aNode->Meta.GetEntry(11);
+    auto bEntry = bNode->Meta.GetEntry(11);
+    auto aX = aEntry && aEntry->Data.HasItems() ? ((Float2*)aEntry->Data.Get())->X : (float)aNode->ID;
+    auto bX = bEntry && bEntry->Data.HasItems() ? ((Float2*)bEntry->Data.Get())->X : (float)bNode->ID;
+    return aX < bX;
+}
 
 BehaviorTreeGraphNode::~BehaviorTreeGraphNode()
 {
@@ -27,7 +39,13 @@ bool BehaviorTreeGraph::Load(ReadStream* stream, bool loadMeta)
     {
         if (auto* nodeCompound = ScriptingObject::Cast<BehaviorTreeCompoundNode>(node.Instance))
         {
-            for (const GraphBox* childBox : node.Boxes[1].Connections)
+            auto& children = node.Boxes[1].Connections;
+
+            // Sort children from left to right (based on placement on a graph surface)
+            Sorting::QuickSort(children.Get(), children.Count(), SortBehaviorTreeChildren);
+
+            // Find all children (of output box)
+            for (const GraphBox* childBox : children)
             {
                 const Node* child = childBox ? (Node*)childBox->Parent : nullptr;
                 if (child && child->Instance)
