@@ -2206,6 +2206,10 @@ bool LinuxPlatform::Init()
 				KeyCodeMap[keyCode] = key;
 			}
 		}
+        else
+        {
+			KeyCodeMap[keyCode] = KeyboardKeys::None;
+        }
 	}
 
     Input::Mouse = Impl::Mouse = New<LinuxMouse>();
