@@ -124,13 +124,6 @@ VariantType::VariantType(Types type, MClass* klass)
 
 VariantType::VariantType(const StringAnsiView& typeName)
 {
-    // Check case for array
-    if (typeName.EndsWith(StringAnsiView("[]"), StringSearchCase::CaseSensitive))
-    {
-        new(this) VariantType(Array, StringAnsiView(typeName.Get(), typeName.Length() - 2));
-        return;
-    }
-
     // Try using in-built type
     for (uint32 i = 0; i < ARRAY_COUNT(InBuiltTypesTypeNames); i++)
     {
@@ -139,6 +132,13 @@ VariantType::VariantType(const StringAnsiView& typeName)
             new(this) VariantType((Types)i);
             return;
         }
+    }
+
+    // Check case for array
+    if (typeName.EndsWith(StringAnsiView("[]"), StringSearchCase::CaseSensitive))
+    {
+        new(this) VariantType(Array, StringAnsiView(typeName.Get(), typeName.Length() - 2));
+        return;
     }
 
     // Try using scripting type
@@ -166,7 +166,10 @@ VariantType::VariantType(const StringAnsiView& typeName)
 #if USE_CSHARP
     if (const auto mclass = Scripting::FindClass(typeName))
     {
-        new(this) VariantType(ManagedObject, typeName);
+        if (mclass->IsEnum())
+            new(this) VariantType(Enum, typeName);
+        else
+            new(this) VariantType(ManagedObject, typeName);
         return;
     }
 #endif
@@ -2922,6 +2925,7 @@ Variant Variant::NewValue(const StringAnsiView& typeName)
         switch (type.Type)
         {
         case ScriptingTypes::Script:
+        case ScriptingTypes::Class:
             v.SetType(VariantType(VariantType::Object, typeName));
             break;
         case ScriptingTypes::Structure:
