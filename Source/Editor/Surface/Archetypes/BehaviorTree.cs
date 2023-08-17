@@ -122,6 +122,14 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
+            public override void OnSpawned()
+            {
+                base.OnSpawned();
+
+                ResizeAuto();
+            }
+
+            /// <inheritdoc />
             public override void ResizeAuto()
             {
                 if (Surface == null)
