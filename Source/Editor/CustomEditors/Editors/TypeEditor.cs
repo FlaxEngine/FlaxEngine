@@ -492,9 +492,15 @@ namespace FlaxEditor.CustomEditors.Editors
             if (!HasDifferentValues && Values[0] is string asTypename &&
                 !string.Equals(asTypename, _lastTypeNameError, StringComparison.Ordinal))
             {
-                _element.CustomControl.Value = TypeUtils.GetType(asTypename);
-                if (_element.CustomControl.Value == null && asTypename.Length != 0)
-                    _lastTypeNameError = asTypename;
+                try
+                {
+                    _element.CustomControl.Value = TypeUtils.GetType(asTypename);
+                }
+                finally
+                {
+                    if (_element.CustomControl.Value == null && asTypename.Length != 0)
+                        _lastTypeNameError = asTypename;
+                }
             }
         }
     }
