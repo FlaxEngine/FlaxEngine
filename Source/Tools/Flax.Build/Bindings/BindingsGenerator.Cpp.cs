@@ -151,6 +151,8 @@ namespace Flax.Build.Bindings
                 return value;
             if (typeInfo.Type == "String")
                 return $"Variant(StringView({value}))";
+            if (typeInfo.Type == "StringAnsi")
+                return $"Variant(StringAnsiView({value}))";
             if (typeInfo.Type == "AssetReference" ||
                 typeInfo.Type == "WeakAssetReference" ||
                 typeInfo.Type == "SoftAssetReference" ||
@@ -207,6 +209,8 @@ namespace Flax.Build.Bindings
                 return value;
             if (typeInfo.Type == "String")
                 return $"(StringView){value}";
+            if (typeInfo.Type == "StringAnsi")
+                return $"(StringAnsiView){value}";
             if (typeInfo.IsPtr && typeInfo.IsConst && typeInfo.Type == "Char")
                 return $"((StringView){value}).GetText()"; // (StringView)Variant, if not empty, is guaranteed to point to a null-terminated buffer.
             if (typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftAssetReference")
