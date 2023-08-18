@@ -395,18 +395,17 @@ namespace FlaxEngine.Interop
             {
                 if (managed is null)
                     return;
-
                 sourceArray = managed;
                 (managedHandle, managedArray) = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
             }
 
             public ReadOnlySpan<T> GetManagedValuesSource() => sourceArray;
 
-            public Span<TUnmanagedElement> GetUnmanagedValuesDestination() => managedArray.ToSpan<TUnmanagedElement>();
+            public Span<TUnmanagedElement> GetUnmanagedValuesDestination() => managedArray != null ? managedArray.ToSpan<TUnmanagedElement>() : Span<TUnmanagedElement>.Empty;
 
             public TUnmanagedElement* ToUnmanaged() => (TUnmanagedElement*)ManagedHandle.ToIntPtr(managedHandle);
 
-            public void Free() => managedArray.FreePooled();
+            public void Free() => managedArray?.FreePooled();
         }
 
 #if FLAX_EDITOR

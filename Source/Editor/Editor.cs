@@ -1583,7 +1583,7 @@ namespace FlaxEditor
         private static void RequestStartPlayOnEditMode()
         {
             if (Instance.StateMachine.IsEditMode)
-                Instance.Simulation.RequestStartPlay();
+                Instance.Simulation.RequestStartPlayScenes();
             if (Instance.StateMachine.IsPlayMode)
                 Instance.StateMachine.StateChanged -= RequestStartPlayOnEditMode;
         }

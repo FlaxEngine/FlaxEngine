@@ -20,6 +20,7 @@ namespace FlaxEditor.Modules
         private bool _updateOrFixedUpdateWasCalled;
         private long _breakpointHangFlag;
         private EditorWindow _enterPlayFocusedWindow;
+        private Scene[] _scenesToReload;
 
         internal SimulationModule(Editor editor)
         : base(editor)
@@ -69,6 +70,22 @@ namespace FlaxEditor.Modules
         }
 
         /// <summary>
+        /// Delegates between playing game and playing scenes in editor based on the user's editor preference.
+        /// </summary>
+        public void DelegatePlayOrStopPlayInEditor()
+        {
+            switch (Editor.Options.Options.Interface.PlayButtonAction)
+            {
+            case Options.InterfaceOptions.PlayAction.PlayGame:
+                Editor.Simulation.RequestPlayGameOrStopPlay();
+                return;
+            case Options.InterfaceOptions.PlayAction.PlayScenes:
+                Editor.Simulation.RequestPlayScenesOrStopPlay();
+                return;
+            }
+        }
+
+        /// <summary>
         /// Returns true if play mode has been requested.
         /// </summary>
         public bool IsPlayModeRequested => _isPlayModeRequested;
@@ -76,7 +93,7 @@ namespace FlaxEditor.Modules
         /// <summary>
         /// Requests start playing in editor.
         /// </summary>
-        public void RequestStartPlay()
+        public void RequestStartPlayScenes()
         {
             if (Editor.StateMachine.IsEditMode)
             {
@@ -87,6 +104,57 @@ namespace FlaxEditor.Modules
                 _isPlayModeRequested = true;
                 Editor.UI.UpdateToolstrip();
             }
+        }
+
+        /// <summary>
+        /// Requests playing game start or stop in editor from the project's configured FirstScene.
+        /// </summary>
+        public void RequestPlayGameOrStopPlay()
+        {
+            if (Editor.StateMachine.IsPlayMode)
+            {
+                RequestStopPlay();
+            }
+            else
+            {
+                RequestStartPlayGame();
+            }
+        }
+
+        /// <summary>
+        /// Requests start playing in editor from the project's configured FirstScene.
+        /// </summary>
+        public void RequestStartPlayGame()
+        {
+            if (!Editor.StateMachine.IsEditMode)
+            {
+                return;
+            }
+
+            var firstScene = Content.Settings.GameSettings.Load().FirstScene;
+            if (firstScene == Guid.Empty)
+            {
+                if (Level.IsAnySceneLoaded)
+                    Editor.Simulation.RequestStartPlayScenes();
+                return;
+            }
+
+            _scenesToReload = Level.Scenes;
+            Level.UnloadAllScenes();
+            Level.LoadScene(firstScene);
+
+            Editor.PlayModeEnd += OnPlayGameEnd;
+            RequestPlayScenesOrStopPlay();
+        }
+
+        private void OnPlayGameEnd()
+        {
+            Editor.PlayModeEnd -= OnPlayGameEnd;
+
+            Level.UnloadAllScenes();
+
+            foreach (var scene in _scenesToReload)
+                Level.LoadScene(scene.ID);
         }
 
         /// <summary>
@@ -106,14 +174,14 @@ namespace FlaxEditor.Modules
         }
 
         /// <summary>
-        /// Requests the playing start or stop in editor.
+        /// Requests the playing scenes start or stop in editor.
         /// </summary>
-        public void RequestPlayOrStopPlay()
+        public void RequestPlayScenesOrStopPlay()
         {
             if (Editor.StateMachine.IsPlayMode)
                 RequestStopPlay();
             else
-                RequestStartPlay();
+                RequestStartPlayScenes();
         }
 
         /// <summary>
