@@ -375,6 +375,13 @@ namespace Flax.Build.Bindings
             // Find API type info
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
             var typeName = typeInfo.Type.Replace("::", ".");
+            if (typeInfo.GenericArgs != null)
+            {
+                typeName += '<';
+                foreach (var arg in typeInfo.GenericArgs)
+                    typeName += arg.Type.Replace("::", ".");
+                typeName += '>';
+            }
             if (apiType != null)
             {
                 // Add reference to the namespace
@@ -1320,7 +1327,7 @@ namespace Flax.Build.Bindings
                 contents.AppendLine(string.Join("\n" + indent, (indent + $$"""
                 /// <summary>
                 /// Marshaller for type <see cref="{{classInfo.Name}}"/>.
-                /// </summary>");
+                /// </summary>
                 #if FLAX_EDITOR
                 [HideInEditor]
                 #endif

@@ -849,14 +849,12 @@ namespace Flax.Build.Bindings
                     if (typeInfo.GenericArgs != null)
                     {
                         type += '<';
-
                         for (var i = 0; i < typeInfo.GenericArgs.Count; i++)
                         {
                             if (i != 0)
                                 type += ", ";
                             type += typeInfo.GenericArgs[i];
                         }
-
                         type += '>';
                     }
                     return string.Empty;
@@ -1071,6 +1069,10 @@ namespace Flax.Build.Bindings
                         }
                         // Arrays, Scripting Objects, Dictionaries and other types that need to be converted into managed format if used as output parameter
                         else if (!apiType.IsPod)
+                        {
+                            convertOutputParameter = true;
+                        }
+                        else if (apiType.Name == "Variant")
                         {
                             convertOutputParameter = true;
                         }
