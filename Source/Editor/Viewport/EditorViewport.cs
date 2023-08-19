@@ -479,6 +479,7 @@ namespace FlaxEditor.Viewport
                     {
                         InitFpsCounter();
                         _showFpsButon = ViewWidgetShowMenu.AddButton("FPS Counter", () => ShowFpsCounter = !ShowFpsCounter);
+                        _showFpsButon.CloseMenuOnClick = false;
                     }
                 }
 
