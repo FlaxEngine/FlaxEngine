@@ -495,8 +495,13 @@ Variant::Variant(Variant&& other) noexcept
         other.AsDictionary = nullptr;
         break;
     case VariantType::ManagedObject:
+#if USE_NETCORE
+        AsUint64 = other.AsUint64;
+        other.AsUint64 = 0;
+#elif USE_MONO
         AsUint = other.AsUint;
         other.AsUint = 0;
+#endif
         break;
     case VariantType::Null:
     case VariantType::Void:
@@ -1019,8 +1024,13 @@ Variant& Variant::operator=(Variant&& other)
         other.AsDictionary = nullptr;
         break;
     case VariantType::ManagedObject:
+#if USE_NETCORE
+        AsUint64 = other.AsUint64;
+        other.AsUint64 = 0;
+#elif USE_MONO
         AsUint = other.AsUint;
         other.AsUint = 0;
+#endif
         break;
     case VariantType::Null:
     case VariantType::Void:
@@ -2419,7 +2429,11 @@ void Variant::SetType(const VariantType& type)
         AsDictionary = New<Dictionary<Variant, Variant>>();
         break;
     case VariantType::ManagedObject:
+#if USE_NETCORE
+        AsUint64 = 0;
+#elif USE_MONO
         AsUint = 0;
+#endif
         break;
     case VariantType::Structure:
         AllocStructure();
@@ -2532,7 +2546,11 @@ void Variant::SetType(VariantType&& type)
         AsDictionary = New<Dictionary<Variant, Variant>>();
         break;
     case VariantType::ManagedObject:
+#if USE_NETCORE
+        AsUint64 = 0;
+#elif USE_MONO
         AsUint = 0;
+#endif
         break;
     case VariantType::Structure:
         AllocStructure();
@@ -2671,7 +2689,11 @@ void Variant::SetManagedObject(MObject* object)
     {
         if (Type.Type != VariantType::ManagedObject || Type.TypeName)
             SetType(VariantType(VariantType::ManagedObject));
+#if USE_NETCORE
+        AsUint64 = 0;
+#elif USE_MONO
         AsUint = 0;
+#endif
     }
 #endif
 }
