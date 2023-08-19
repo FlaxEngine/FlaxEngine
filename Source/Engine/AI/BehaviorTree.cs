@@ -1,9 +1,9 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 #if FLAX_EDITOR
-using System;
 using FlaxEngine.Utilities;
 using FlaxEditor.Scripting;
 using FlaxEngine.GUI;

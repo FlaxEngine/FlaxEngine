@@ -5,41 +5,6 @@
 #include "BehaviorTreeNodes.h"
 #include "Engine/Engine/Time.h"
 
-BehaviorKnowledge::~BehaviorKnowledge()
-{
-    FreeMemory();
-}
-
-void BehaviorKnowledge::InitMemory(BehaviorTree* tree)
-{
-    ASSERT_LOW_LAYER(!Tree && tree);
-    Tree = tree;
-    Blackboard = Variant::NewValue(tree->Graph.Root->BlackboardType);
-    RelevantNodes.Resize(tree->Graph.NodesCount, false);
-    RelevantNodes.SetAll(false);
-    if (!Memory && tree->Graph.NodesStatesSize)
-        Memory = Allocator::Allocate(tree->Graph.NodesStatesSize);
-}
-
-void BehaviorKnowledge::FreeMemory()
-{
-    if (Memory)
-    {
-        // Release any outstanding nodes state and memory
-        ASSERT_LOW_LAYER(Tree);
-        for (const auto& node : Tree->Graph.Nodes)
-        {
-            if (node.Instance && node.Instance->_executionIndex != -1 && RelevantNodes[node.Instance->_executionIndex])
-                node.Instance->ReleaseState(Behavior, Memory);
-        }
-        Allocator::Free(Memory);
-        Memory = nullptr;
-    }
-    RelevantNodes.Clear();
-    Blackboard.DeleteValue();
-    Tree = nullptr;
-}
-
 Behavior::Behavior(const SpawnParams& params)
     : Script(params)
 {

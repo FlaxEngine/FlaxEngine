@@ -6,8 +6,10 @@ using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.GUI;
+using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface;
+using FlaxEditor.Viewport;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -19,7 +21,7 @@ namespace FlaxEditor.Windows.Assets
     /// </summary>
     /// <seealso cref="BehaviorTree" />
     /// <seealso cref="BehaviorTreeSurface" />
-    public sealed class BehaviorTreeWindow : AssetEditorWindowBase<BehaviorTree>, IVisjectSurfaceWindow
+    public sealed class BehaviorTreeWindow : AssetEditorWindowBase<BehaviorTree>, IVisjectSurfaceWindow, IPresenterOwner
     {
         private readonly SplitPanel _split1;
         private readonly SplitPanel _split2;
@@ -43,6 +45,11 @@ namespace FlaxEditor.Windows.Assets
         /// Gets the undo history context for this window.
         /// </summary>
         public Undo Undo => _undo;
+
+        /// <summary>
+        /// Current instance of the Behavior Knowledge's blackboard type or null.
+        /// </summary>
+        public object Blackboard => _knowledgePropertiesEditor.Selection.Count != 0 ? _knowledgePropertiesEditor.Selection[0] : null;
 
         /// <inheritdoc />
         public BehaviorTreeWindow(Editor editor, BinaryAssetItem item)
@@ -81,11 +88,11 @@ namespace FlaxEditor.Windows.Assets
             _surface.SelectionChanged += OnNodeSelectionChanged;
 
             // Properties editors
-            _nodePropertiesEditor = new CustomEditorPresenter(null); // Surface handles undo for nodes editing
+            _nodePropertiesEditor = new CustomEditorPresenter(null, null, this); // Surface handles undo for nodes editing
             _nodePropertiesEditor.Features = FeatureFlags.UseDefault;
             _nodePropertiesEditor.Panel.Parent = _split2.Panel1;
             _nodePropertiesEditor.Modified += OnNodePropertyEdited;
-            _knowledgePropertiesEditor = new CustomEditorPresenter(null, "No blackboard type assigned"); // No undo for knowledge editing
+            _knowledgePropertiesEditor = new CustomEditorPresenter(null, "No blackboard type assigned", this); // No undo for knowledge editing
             _knowledgePropertiesEditor.Features = FeatureFlags.None;
             _knowledgePropertiesEditor.Panel.Parent = _split2.Panel2;
 
@@ -429,5 +436,13 @@ namespace FlaxEditor.Windows.Assets
 
         /// <inheritdoc />
         public VisjectSurface VisjectSurface => _surface;
+
+        /// <inheritdoc />
+        public EditorViewport PresenterViewport => null;
+
+        /// <inheritdoc />
+        public void Select(List<SceneGraphNode> nodes)
+        {
+        }
     }
 }

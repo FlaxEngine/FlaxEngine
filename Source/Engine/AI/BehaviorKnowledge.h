@@ -51,4 +51,22 @@ API_CLASS() class FLAXENGINE_API BehaviorKnowledge : public ScriptingObject
     /// Releases the memory of the knowledge.
     /// </summary>
     void FreeMemory();
+
+    /// <summary>
+    /// Gets the knowledge item value via selector path.
+    /// </summary>
+    /// <seealso cref="BehaviorKnowledgeSelector{T}"/>
+    /// <param name="path">Selector path.</param>
+    /// <param name="value">Result value (valid only when returned true).</param>
+    /// <returns>True if got value, otherwise false.</returns>
+    API_FUNCTION() bool Get(const StringAnsiView& path, API_PARAM(Out) Variant& value);
+
+    /// <summary>
+    /// Sets the knowledge item value via selector path.
+    /// </summary>
+    /// <seealso cref="BehaviorKnowledgeSelector{T}"/>
+    /// <param name="path">Selector path.</param>
+    /// <param name="value">Value to set.</param>
+    /// <returns>True if set value, otherwise false.</returns>
+    API_FUNCTION() bool Set(const StringAnsiView& path, const Variant& value);
 };
