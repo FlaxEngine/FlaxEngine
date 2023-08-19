@@ -582,6 +582,9 @@ namespace Flax.Build.Bindings
                 {
                     CppReferencesFiles.Add(apiType.File);
 
+                    if (apiType.MarshalAs != null)
+                        return GenerateCppWrapperNativeToManaged(buildData, new TypeInfo(apiType.MarshalAs), caller, out type, functionInfo);
+
                     // Scripting Object
                     if (apiType.IsScriptingObject)
                     {
@@ -791,6 +794,9 @@ namespace Flax.Build.Bindings
 
                 if (apiType != null)
                 {
+                    if (apiType.MarshalAs != null)
+                        return GenerateCppWrapperManagedToNative(buildData, new TypeInfo(apiType.MarshalAs), caller, out type, out apiType, functionInfo, out needLocalVariable);
+
                     // Scripting Object (for non-pod types converting only, other API converts managed to unmanaged object in C# wrapper code)
                     if (CppNonPodTypesConvertingGeneration && apiType.IsScriptingObject && typeInfo.IsPtr)
                     {
@@ -2370,7 +2376,9 @@ namespace Flax.Build.Bindings
                     CppUsedNonPodTypes.Add(structureInfo);
                 contents.AppendLine("    static MObject* Box(void* ptr)");
                 contents.AppendLine("    {");
-                if (structureInfo.IsPod)
+                if (structureInfo.MarshalAs != null)
+                    contents.AppendLine($"        MISSING_CODE(\"Boxing native type {structureInfo.Name} as {structureInfo.MarshalAs}\"); return nullptr;"); // TODO: impl this
+                else if (structureInfo.IsPod)
                     contents.AppendLine($"        return MCore::Object::Box(ptr, {structureTypeNameNative}::TypeInitializer.GetClass());");
                 else
                     contents.AppendLine($"        return MUtils::Box(*({structureTypeNameNative}*)ptr, {structureTypeNameNative}::TypeInitializer.GetClass());");
@@ -2379,7 +2387,9 @@ namespace Flax.Build.Bindings
                 // Unboxing structures from managed object to native data
                 contents.AppendLine("    static void Unbox(void* ptr, MObject* managed)");
                 contents.AppendLine("    {");
-                if (structureInfo.IsPod)
+                if (structureInfo.MarshalAs != null)
+                    contents.AppendLine($"        MISSING_CODE(\"Boxing native type {structureInfo.Name} as {structureInfo.MarshalAs}\");"); // TODO: impl this
+                else if (structureInfo.IsPod)
                     contents.AppendLine($"        Platform::MemoryCopy(ptr, MCore::Object::Unbox(managed), sizeof({structureTypeNameNative}));");
                 else
                     contents.AppendLine($"        *({structureTypeNameNative}*)ptr = ToNative(*({GenerateCppManagedWrapperName(structureInfo)}*)MCore::Object::Unbox(managed));");
@@ -2657,6 +2667,13 @@ namespace Flax.Build.Bindings
         {
             if (CppUsedNonPodTypesList.Contains(apiType))
                 return;
+            if (apiType is ClassStructInfo classStructInfo)
+            {
+                if (classStructInfo.MarshalAs != null)
+                    return;
+                if (classStructInfo.IsTemplate)
+                    throw new Exception($"Cannot use template type '{classStructInfo}' as non-POD type for cross-language bindings.");
+            }
             if (apiType is StructureInfo structureInfo)
             {
                 // Check all fields (if one of them is also non-POD structure then we need to generate wrappers for them too)
@@ -2678,11 +2695,6 @@ namespace Flax.Build.Bindings
                         }
                     }
                 }
-            }
-            if (apiType is ClassStructInfo classStructInfo)
-            {
-                if (classStructInfo.IsTemplate)
-                    throw new Exception($"Cannot use template type '{classStructInfo}' as non-POD type for cross-language bindings.");
             }
             CppUsedNonPodTypesList.Add(apiType);
         }

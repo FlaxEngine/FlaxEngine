@@ -628,6 +628,9 @@ namespace Flax.Build.Bindings
                 case "namespace":
                     desc.Namespace = tag.Value;
                     break;
+                case "marshalas":
+                    desc.MarshalAs = tag.Value;
+                    break;
                 case "tag":
                     ParseTag(ref desc.Tags, tag);
                     break;
@@ -1201,6 +1204,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "namespace":
                     desc.Namespace = tag.Value;
+                    break;
+                case "marshalas":
+                    desc.MarshalAs = tag.Value;
                     break;
                 case "tag":
                     ParseTag(ref desc.Tags, tag);
