@@ -1,7 +1,9 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "BehaviorTreeNodes.h"
+#include "Behavior.h"
 #include "BehaviorKnowledge.h"
+#include "Engine/Core/Random.h"
 #include "Engine/Serialization/Serialization.h"
 
 BehaviorUpdateResult BehaviorTreeNode::InvokeUpdate(const BehaviorUpdateContext& context)
@@ -95,4 +97,24 @@ BehaviorUpdateResult BehaviorTreeSequenceNode::Update(BehaviorUpdateContext cont
     }
 
     return result;
+}
+
+int32 BehaviorTreeDelayNode::GetStateSize() const
+{
+    return sizeof(State);
+}
+
+void BehaviorTreeDelayNode::InitState(Behavior* behavior, void* memory)
+{
+    auto state = GetState<State>(memory);
+    if (!WaitTimeSelector.TryGet(behavior->GetKnowledge(), state->TimeLeft))
+        state->TimeLeft = WaitTime;
+    state->TimeLeft = Random::RandRange(Math::Max(WaitTime - RandomDeviation, 0.0f), WaitTime + RandomDeviation);
+}
+
+BehaviorUpdateResult BehaviorTreeDelayNode::Update(BehaviorUpdateContext context)
+{
+    auto state = GetState<State>(context.Memory);
+    state->TimeLeft -= context.DeltaTime;
+    return state->TimeLeft <= 0.0f ? BehaviorUpdateResult::Success : BehaviorUpdateResult::Running;
 }

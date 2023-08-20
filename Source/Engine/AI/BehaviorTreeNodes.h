@@ -2,7 +2,9 @@
 
 #pragma once
 
+#include "BehaviorKnowledge.h"
 #include "BehaviorTreeNode.h"
+#include "BehaviorKnowledgeSelector.h"
 #include "Engine/Core/Collections/Array.h"
 
 /// <summary>
@@ -58,4 +60,37 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeRootNode : public BehaviorTre
     // The target amount of the behavior logic updates per second.
     API_FIELD(Attributes="EditorOrder(10)")
     float UpdateFPS = 10.0f;
+};
+
+/// <summary>
+/// Delay node that waits a specific amount of time while executed.
+/// </summary>
+API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeDelayNode : public BehaviorTreeNode
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeDelayNode, BehaviorTreeNode);
+    API_AUTO_SERIALIZATION();
+
+    // Time in seconds to wait when node gets activated. Unused if WaitTimeSelector is used.
+    API_FIELD(Attributes="EditorOrder(10), Limit(0)")
+    float WaitTime = 3.0f;
+
+    // Wait time randomization range to deviate original value.
+    API_FIELD(Attributes="EditorOrder(20), Limit(0)")
+    float RandomDeviation = 0.0f;
+
+    // Wait time from behavior's knowledge (blackboard, goal or sensor). If set, overrides WaitTime but still uses RandomDeviation.
+    API_FIELD(Attributes="EditorOrder(30)")
+    BehaviorKnowledgeSelector<float> WaitTimeSelector;
+
+public:
+    // [BehaviorTreeNode]
+    int32 GetStateSize() const override;
+    void InitState(Behavior* behavior, void* memory) override;
+    BehaviorUpdateResult Update(BehaviorUpdateContext context) override;
+
+private:
+    struct State
+    {
+        float TimeLeft;
+    };
 };
