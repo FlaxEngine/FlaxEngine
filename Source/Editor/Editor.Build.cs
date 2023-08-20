@@ -42,6 +42,10 @@ public class Editor : EditorModule
         options.ScriptingAPI.SystemReferences.Add("System.Text.RegularExpressions");
         options.ScriptingAPI.SystemReferences.Add("System.ComponentModel.TypeConverter");
 
+        // Enable optimizations for Editor, disable this for debugging the editor
+        if (options.Configuration == TargetConfiguration.Development)
+            options.ScriptingAPI.Optimization = true;
+
         options.PublicDependencies.Add("Engine");
         options.PrivateDependencies.Add("pugixml");
         options.PrivateDependencies.Add("curl");

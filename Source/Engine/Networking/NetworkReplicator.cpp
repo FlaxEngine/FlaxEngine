@@ -941,6 +941,13 @@ bool NetworkReplicator::HasObject(const ScriptingObject* obj)
     return false;
 }
 
+ScriptingObject* NetworkReplicator::ResolveForeignObject(Guid objectId)
+{
+    if (const auto& object = ResolveObject(objectId))
+        return object->Object.Get();
+    return nullptr;
+}
+
 uint32 NetworkReplicator::GetObjectOwnerClientId(const ScriptingObject* obj)
 {
     uint32 id = NetworkManager::ServerClientId;
@@ -1127,13 +1134,6 @@ bool NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHa
     rpc.Info = *info;
     rpc.ArgsData.Copy(Span<byte>(argsStream->GetBuffer(), argsStream->GetPosition()));
     rpc.Targets.Copy(targetIds);
-#if USE_EDITOR || !BUILD_RELEASE
-    auto it = Objects.Find(obj->GetID());
-    if (it == Objects.End())
-    {
-        LOG(Error, "Cannot invoke RPC method '{0}.{1}' on object '{2}' that is not registered in networking (use 'NetworkReplicator.AddObject').", type.ToString(), String(name), obj->GetID());
-    }
-#endif
     ObjectsLock.Unlock();
 
     // Check if skip local execution (eg. server rpc called from client or client rpc with specific targets)
@@ -1554,7 +1554,13 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 continue;
             auto it = Objects.Find(obj->GetID());
             if (it == Objects.End())
+            {
+#if USE_EDITOR || !BUILD_RELEASE
+                if (!DespawnedObjects.Contains(obj->GetID()))
+                    LOG(Error, "Cannot invoke RPC method '{0}.{1}' on object '{2}' that is not registered in networking (use 'NetworkReplicator.AddObject').", e.Name.First.ToString(), String(e.Name.Second), obj->GetID());
+#endif
                 continue;
+            }
             auto& item = it->Item;
 
             // Send RPC message

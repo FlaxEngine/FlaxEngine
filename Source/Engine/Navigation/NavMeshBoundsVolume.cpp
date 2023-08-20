@@ -34,10 +34,10 @@ void NavMeshBoundsVolume::Deserialize(DeserializeStream& stream, ISerializeModif
 
 void NavMeshBoundsVolume::OnEnable()
 {
+    GetScene()->Navigation.Volumes.Add(this);
+
     // Base
     Actor::OnEnable();
-
-    GetScene()->Navigation.Volumes.Add(this);
 }
 
 void NavMeshBoundsVolume::OnDisable()

@@ -200,14 +200,13 @@ namespace FlaxEngine.Interop
             public void FromManaged(Array managed)
             {
                 if (managed != null)
-                    managedArray = ManagedArray.WrapPooledArray(managed);
+                    (handle, managedArray) = ManagedArray.WrapPooledArray(managed);
             }
 
             public IntPtr ToUnmanaged()
             {
                 if (managedArray == null)
                     return IntPtr.Zero;
-                handle = ManagedHandle.Alloc(managedArray, GCHandleType.Weak);
                 return ManagedHandle.ToIntPtr(handle);
             }
 
@@ -216,7 +215,6 @@ namespace FlaxEngine.Interop
                 if (managedArray == null)
                     return;
                 managedArray.FreePooled();
-                //handle.Free(); // No need to free weak handles
             }
         }
 
@@ -335,7 +333,6 @@ namespace FlaxEngine.Interop
 #endif
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ManagedToUnmanagedIn, typeof(ArrayMarshaller<,>.ManagedToNative))]
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.UnmanagedToManagedOut, typeof(ArrayMarshaller<,>.ManagedToNative))]
-    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ElementIn, typeof(ArrayMarshaller<,>.ManagedToNative))]
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ManagedToUnmanagedOut, typeof(ArrayMarshaller<,>.NativeToManaged))]
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.UnmanagedToManagedIn, typeof(ArrayMarshaller<,>.NativeToManaged))]
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ElementOut, typeof(ArrayMarshaller<,>.NativeToManaged))]
@@ -388,38 +385,27 @@ namespace FlaxEngine.Interop
 #if FLAX_EDITOR
         [HideInEditor]
 #endif
-        public static class ManagedToNative
+        public ref struct ManagedToNative
         {
-            public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[] managed, out int numElements)
+            T[] sourceArray;
+            ManagedArray managedArray;
+            ManagedHandle managedHandle;
+
+            public void FromManaged(T[] managed)
             {
                 if (managed is null)
-                {
-                    numElements = 0;
-                    return null;
-                }
-                numElements = managed.Length;
-                ManagedArray managedArray = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
-                return (TUnmanagedElement*)ManagedHandle.ToIntPtr(managedArray, GCHandleType.Normal);
-            }
-
-            public static ReadOnlySpan<T> GetManagedValuesSource(T[] managed) => managed;
-
-            public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
-            {
-                if (unmanaged == null)
-                    return Span<TUnmanagedElement>.Empty;
-                ManagedArray managedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
-                return managedArray.ToSpan<TUnmanagedElement>();
-            }
-
-            public static void Free(TUnmanagedElement* unmanaged)
-            {
-                if (unmanaged == null)
                     return;
-                ManagedHandle handle = ManagedHandle.FromIntPtr(new IntPtr(unmanaged));
-                (Unsafe.As<ManagedArray>(handle.Target)).FreePooled();
-                //handle.Free(); // No need to free weak handles
+                sourceArray = managed;
+                (managedHandle, managedArray) = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
             }
+
+            public ReadOnlySpan<T> GetManagedValuesSource() => sourceArray;
+
+            public Span<TUnmanagedElement> GetUnmanagedValuesDestination() => managedArray != null ? managedArray.ToSpan<TUnmanagedElement>() : Span<TUnmanagedElement>.Empty;
+
+            public TUnmanagedElement* ToUnmanaged() => (TUnmanagedElement*)ManagedHandle.ToIntPtr(managedHandle);
+
+            public void Free() => managedArray?.FreePooled();
         }
 
 #if FLAX_EDITOR
@@ -427,26 +413,25 @@ namespace FlaxEngine.Interop
 #endif
         public struct Bidirectional
         {
-            T[] managedArray;
-            ManagedArray unmanagedArray;
+            T[] sourceArray;
+            ManagedArray managedArray;
             ManagedHandle handle;
 
             public void FromManaged(T[] managed)
             {
                 if (managed == null)
                     return;
-                managedArray = managed;
-                unmanagedArray = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
-                handle = ManagedHandle.Alloc(unmanagedArray);
+                sourceArray = managed;
+                (handle, managedArray) = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
             }
 
-            public ReadOnlySpan<T> GetManagedValuesSource() => managedArray;
+            public ReadOnlySpan<T> GetManagedValuesSource() => sourceArray;
 
             public Span<TUnmanagedElement> GetUnmanagedValuesDestination()
             {
-                if (unmanagedArray == null)
+                if (managedArray == null)
                     return Span<TUnmanagedElement>.Empty;
-                return unmanagedArray.ToSpan<TUnmanagedElement>();
+                return managedArray.ToSpan<TUnmanagedElement>();
             }
 
             public TUnmanagedElement* ToUnmanaged() => (TUnmanagedElement*)ManagedHandle.ToIntPtr(handle);
@@ -454,26 +439,22 @@ namespace FlaxEngine.Interop
             public void FromUnmanaged(TUnmanagedElement* unmanaged)
             {
                 ManagedArray arr = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
-                if (managedArray == null || managedArray.Length != arr.Length)
-                    managedArray = new T[arr.Length];
+                if (sourceArray == null || sourceArray.Length != arr.Length)
+                    sourceArray = new T[arr.Length];
             }
 
             public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements)
             {
-                if (unmanagedArray == null)
+                if (managedArray == null)
                     return ReadOnlySpan<TUnmanagedElement>.Empty;
-                return unmanagedArray.ToSpan<TUnmanagedElement>();
+                return managedArray.ToSpan<TUnmanagedElement>();
             }
 
-            public Span<T> GetManagedValuesDestination(int numElements) => managedArray;
+            public Span<T> GetManagedValuesDestination(int numElements) => sourceArray;
 
-            public T[] ToManaged() => managedArray;
+            public T[] ToManaged() => sourceArray;
 
-            public void Free()
-            {
-                unmanagedArray.FreePooled();
-                handle.Free();
-            }
+            public void Free() => managedArray.FreePooled();
         }
 
         public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[] managed, out int numElements)
@@ -484,9 +465,8 @@ namespace FlaxEngine.Interop
                 return null;
             }
             numElements = managed.Length;
-            ManagedArray managedArray = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
-            IntPtr handle = ManagedHandle.ToIntPtr(managedArray);
-            return (TUnmanagedElement*)handle;
+            (ManagedHandle managedArrayHandle, _) = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
+            return (TUnmanagedElement*)ManagedHandle.ToIntPtr(managedArrayHandle);
         }
 
         public static ReadOnlySpan<T> GetManagedValuesSource(T[] managed) => managed;
@@ -517,7 +497,6 @@ namespace FlaxEngine.Interop
                 return;
             ManagedHandle handle = ManagedHandle.FromIntPtr(new IntPtr(unmanaged));
             Unsafe.As<ManagedArray>(handle.Target).FreePooled();
-            handle.Free();
         }
     }
 

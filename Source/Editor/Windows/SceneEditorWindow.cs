@@ -38,7 +38,7 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.SelectAll, Editor.SceneEditing.SelectAllScenes);
             InputActions.Add(options => options.Delete, Editor.SceneEditing.Delete);
             InputActions.Add(options => options.Search, () => Editor.Windows.SceneWin.Search());
-            InputActions.Add(options => options.Play, Editor.Simulation.RequestPlayOrStopPlay);
+            InputActions.Add(options => options.Play, Editor.Simulation.DelegatePlayOrStopPlayInEditor);
             InputActions.Add(options => options.Pause, Editor.Simulation.RequestResumeOrPause);
             InputActions.Add(options => options.StepFrame, Editor.Simulation.RequestPlayOneFrame);
         }

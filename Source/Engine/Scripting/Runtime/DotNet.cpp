@@ -907,7 +907,7 @@ MMethod* MClass::GetMethod(const char* name, int32 numParams) const
     GetMethods();
     for (int32 i = 0; i < _methods.Count(); i++)
     {
-        if (_methods[i]->GetName() == name && _methods[i]->GetParametersCount() == numParams)
+        if (_methods[i]->GetParametersCount() == numParams && _methods[i]->GetName() == name)
             return _methods[i];
     }
     return nullptr;
