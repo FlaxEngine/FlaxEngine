@@ -84,7 +84,7 @@ namespace FlaxEngine.Interop
 
             internal static IntPtr MarshalReturnValueType(ref Type returnValue)
             {
-                return returnValue != null ? ManagedHandle.ToIntPtr(GetTypeGCHandle(returnValue)) : IntPtr.Zero;
+                return returnValue != null ? ManagedHandle.ToIntPtr(GetTypeManagedHandle(returnValue)) : IntPtr.Zero;
             }
 
             internal static IntPtr MarshalReturnValueArray<TRet>(ref TRet returnValue)
