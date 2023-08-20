@@ -27,6 +27,7 @@ namespace FlaxEditor.Surface.Archetypes
             private ScriptType _type;
             private InputBox _input;
             private OutputBox _output;
+            internal bool _isValueEditing;
 
             public BehaviorTreeNode Instance;
 
@@ -171,6 +172,13 @@ namespace FlaxEditor.Surface.Archetypes
             public override void OnValuesChanged()
             {
                 base.OnValuesChanged();
+
+                if (_isValueEditing)
+                {
+                    // Skip updating instance when it's being edited by user via UI
+                    UpdateTitle();
+                    return; 
+                }
 
                 try
                 {

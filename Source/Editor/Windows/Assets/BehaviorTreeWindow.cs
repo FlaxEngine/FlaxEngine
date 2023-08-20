@@ -61,7 +61,7 @@ namespace FlaxEditor.Windows.Assets
             _undo = new Undo();
             _undo.UndoDone += OnUndoRedo;
             _undo.RedoDone += OnUndoRedo;
-            _undo.ActionDone += OnUndoRedo;
+            _undo.ActionDone += OnUndoAction;
 
             // Split Panels
             _split1 = new SplitPanel(Orientation.Horizontal, ScrollBars.None, ScrollBars.None)
@@ -120,6 +120,12 @@ namespace FlaxEditor.Windows.Assets
             _nodePropertiesEditor.BuildLayoutOnUpdate();
         }
 
+        private void OnUndoAction(IUndoAction action)
+        {
+            MarkAsEdited();
+            UpdateToolstrip();
+        }
+
         private void OnNodeSelectionChanged()
         {
             // Select node instances to view/edit
@@ -149,7 +155,9 @@ namespace FlaxEditor.Windows.Assets
                     {
                         if (nodes[j] is Surface.Archetypes.BehaviorTree.Node node && node.Instance == instance)
                         {
+                            node._isValueEditing = true;
                             node.SetValue(1, FlaxEngine.Json.JsonSerializer.SaveToBytes(instance));
+                            node._isValueEditing = false;
                             break;
                         }
                     }
