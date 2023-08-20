@@ -99,6 +99,40 @@ BehaviorUpdateResult BehaviorTreeSequenceNode::Update(BehaviorUpdateContext cont
     return result;
 }
 
+int32 BehaviorTreeSelectorNode::GetStateSize() const
+{
+    return sizeof(State);
+}
+
+void BehaviorTreeSelectorNode::InitState(Behavior* behavior, void* memory)
+{
+    auto state = GetState<State>(memory);
+    new(state)State();
+}
+
+BehaviorUpdateResult BehaviorTreeSelectorNode::Update(BehaviorUpdateContext context)
+{
+    auto state = GetState<State>(context.Memory);
+
+    if (state->CurrentChildIndex >= Children.Count())
+        return BehaviorUpdateResult::Failed;
+
+    auto result = Children[state->CurrentChildIndex]->InvokeUpdate(context);
+
+    switch (result)
+    {
+    case BehaviorUpdateResult::Success:
+        return BehaviorUpdateResult::Success;
+    case BehaviorUpdateResult::Failed:
+        state->CurrentChildIndex++; // Move to the next node
+        if (state->CurrentChildIndex < Children.Count())
+            result = BehaviorUpdateResult::Running; // Keep on running to the next child on the next update
+        break;
+    }
+
+    return result;
+}
+
 int32 BehaviorTreeDelayNode::GetStateSize() const
 {
     return sizeof(State);

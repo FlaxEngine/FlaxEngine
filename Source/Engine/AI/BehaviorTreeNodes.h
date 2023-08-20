@@ -46,6 +46,26 @@ private:
 };
 
 /// <summary>
+/// Selector node updates all its children (from left to right) until one of them succeeds. If all children fail, the selector fails.
+/// </summary>
+API_CLASS() class FLAXENGINE_API BehaviorTreeSelectorNode : public BehaviorTreeCompoundNode
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeSelectorNode, BehaviorTreeCompoundNode);
+
+public:
+    // [BehaviorTreeNode]
+    int32 GetStateSize() const override;
+    void InitState(Behavior* behavior, void* memory) override;
+    BehaviorUpdateResult Update(BehaviorUpdateContext context) override;
+
+private:
+    struct State
+    {
+        int32 CurrentChildIndex = 0;
+    };
+};
+
+/// <summary>
 /// Root node of the behavior tree. Contains logic properties and definitions for the runtime.
 /// </summary>
 API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeRootNode : public BehaviorTreeSequenceNode
