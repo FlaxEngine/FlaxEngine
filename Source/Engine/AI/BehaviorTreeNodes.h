@@ -6,6 +6,7 @@
 #include "BehaviorTreeNode.h"
 #include "BehaviorKnowledgeSelector.h"
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Content/AssetReference.h"
 
 /// <summary>
 /// Base class for compound Behavior Tree nodes that composite child nodes.
@@ -112,5 +113,31 @@ private:
     struct State
     {
         float TimeLeft;
+    };
+};
+
+/// <summary>
+/// Sub-tree node runs a nested Behavior Tree within this tree.
+/// </summary>
+API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeSubTreeNode : public BehaviorTreeNode
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeSubTreeNode, BehaviorTreeNode);
+    API_AUTO_SERIALIZATION();
+
+    // Nested behavior tree to execute within this node.
+    API_FIELD(Attributes="EditorOrder(10), Limit(0)")
+    AssetReference<BehaviorTree> Tree;
+
+public:
+    // [BehaviorTreeNode]
+    int32 GetStateSize() const override;
+    void InitState(Behavior* behavior, void* memory) override;
+    void ReleaseState(Behavior* behavior, void* memory) override;
+    BehaviorUpdateResult Update(BehaviorUpdateContext context) override;
+
+    struct State
+    {
+        Array<byte> Memory;
+        BitArray<> RelevantNodes;
     };
 };

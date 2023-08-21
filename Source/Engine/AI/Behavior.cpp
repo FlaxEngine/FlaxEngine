@@ -79,6 +79,7 @@ void Behavior::OnLateUpdate()
     context.Behavior = this;
     context.Knowledge = &_knowledge;
     context.Memory = _knowledge.Memory;
+    context.RelevantNodes = &_knowledge.RelevantNodes;
     context.DeltaTime = updateDeltaTime;
     const BehaviorUpdateResult result = tree->Graph.Root->InvokeUpdate(context);
     if (result != BehaviorUpdateResult::Running)

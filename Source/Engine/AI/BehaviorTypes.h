@@ -12,7 +12,7 @@ class BehaviorKnowledge;
 /// <summary>
 /// Behavior update context state.
 /// </summary>
-API_STRUCT() struct FLAXENGINE_API BehaviorUpdateContext
+API_STRUCT(NoDefault) struct FLAXENGINE_API BehaviorUpdateContext
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(BehaviorUpdateContext);
 
@@ -30,6 +30,11 @@ API_STRUCT() struct FLAXENGINE_API BehaviorUpdateContext
     /// Current instance memory buffer location (updated while moving down the tree).
     /// </summary>
     API_FIELD() void* Memory;
+
+    /// <summary>
+    /// Pointer to array with per-node bit indicating whether node is relevant (active in graph with state created).
+    /// </summary>
+    API_FIELD() void* RelevantNodes;
 
     /// <summary>
     /// Simulation time delta (in seconds) since the last update.

@@ -13,6 +13,7 @@ API_CLASS(Abstract) class FLAXENGINE_API BehaviorTreeNode : public SerializableS
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeNode, SerializableScriptingObject);
     friend class BehaviorTreeGraph;
     friend class BehaviorKnowledge;
+    friend class BehaviorTreeSubTreeNode;
 
 protected:
     // Raw memory byte offset from the start of the behavior memory block.
