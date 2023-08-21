@@ -449,8 +449,8 @@ public:
     /// Sets the window to be borderless or not and to be fullscreen.
     /// </summary>
     /// <param name="isBorderless">Whether or not to have borders on window.</param>
-    /// <param name="fullscreen">Whether or not to make the borderless window fullscreen.</param>
-    API_FUNCTION() virtual void SetBorderless(bool isBorderless, bool fullscreen)
+    /// <param name="maximized">Whether or not to make the borderless window fullscreen (maximize to cover whole screen).</param>
+    API_FUNCTION() virtual void SetBorderless(bool isBorderless, bool maximized = false)
     {
     }
 

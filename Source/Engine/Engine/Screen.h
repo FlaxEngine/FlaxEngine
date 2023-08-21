@@ -83,6 +83,12 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Screen);
     API_PROPERTY() static void SetCursorLock(CursorLockMode mode);
 
     /// <summary>
+    /// Gets the game window mode.
+    /// </summary>
+    /// <returns>The current window mode.</returns>
+    API_PROPERTY() static GameWindowMode GetGameWindowMode();
+
+    /// <summary>
     /// Sets the game window mode.
     /// </summary>
     /// <remarks>

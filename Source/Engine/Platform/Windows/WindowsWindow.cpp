@@ -260,7 +260,7 @@ void WindowsWindow::Maximize()
     _isDuringMaximize = false;
 }
 
-void WindowsWindow::SetBorderless(bool isBorderless, bool fullscreen)
+void WindowsWindow::SetBorderless(bool isBorderless, bool maximized)
 {
     ASSERT(HasHWND());
     
@@ -292,8 +292,7 @@ void WindowsWindow::SetBorderless(bool isBorderless, bool fullscreen)
         SetWindowLong(_handle, GWL_STYLE, lStyle);
         SetWindowPos(_handle, HWND_TOP,  0, 0,0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
         
-        
-        if (fullscreen)
+        if (maximized)
         {
             ShowWindow(_handle, SW_SHOWMAXIMIZED);
         }
@@ -312,13 +311,12 @@ void WindowsWindow::SetBorderless(bool isBorderless, bool fullscreen)
             lStyle |= WS_MINIMIZEBOX;
         if (_settings.HasSizingFrame)
             lStyle |= WS_THICKFRAME;
-        // Create window style flags
         lStyle |= WS_OVERLAPPED | WS_SYSMENU | WS_BORDER | WS_CAPTION;
     
         SetWindowLong(_handle, GWL_STYLE, lStyle);
         SetWindowPos(_handle, nullptr,  0, 0, (int)_settings.Size.X, (int)_settings.Size.Y, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
         
-        if (fullscreen)
+        if (maximized)
         {
             Maximize();
         }
@@ -327,6 +325,7 @@ void WindowsWindow::SetBorderless(bool isBorderless, bool fullscreen)
             ShowWindow(_handle, SW_SHOW);
         }
     }
+
     CheckForWindowResize();
 }
 
