@@ -100,6 +100,7 @@ public:
     void Hide() override;
     void Minimize() override;
     void Maximize() override;
+    void SetBorderless(bool isBorderless, bool fullscreen) override;
     void Restore() override;
     bool IsClosed() const override;
     bool IsForegroundWindow() const override;

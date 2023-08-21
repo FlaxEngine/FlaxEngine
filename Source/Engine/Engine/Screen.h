@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Core/Config/PlatformSettingsBase.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Input/Enums.h"
 #include "Engine/Core/Math/Vector2.h"
@@ -80,4 +81,13 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Screen);
     /// </summary>
     /// <param name="mode">The mode.</param>
     API_PROPERTY() static void SetCursorLock(CursorLockMode mode);
+
+    /// <summary>
+    /// Sets the game window mode.
+    /// </summary>
+    /// <remarks>
+    /// A fullscreen mode switch may not happen immediately. It will be performed before next frame rendering. Will not work in editor.
+    /// </remarks>
+    /// <param name="windowMode">The window mode.</param>
+    API_PROPERTY() static void SetGameWindowMode(GameWindowMode windowMode);
 };
