@@ -340,6 +340,9 @@ namespace FlaxEditor.Windows
         /// <returns>The created renaming popup.</returns>
         public void Rename(ContentItem item)
         {
+            if (!item.CanRename)
+                return;
+            
             // Show element in the view
             Select(item, true);
 
