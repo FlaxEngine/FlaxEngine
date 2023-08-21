@@ -5,6 +5,7 @@
 #include "BehaviorTreeNodes.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
+#include "Engine/Content/JsonAsset.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Serialization/JsonSerializer.h"
 #include "Engine/Serialization/MemoryReadStream.h"
@@ -172,6 +173,24 @@ bool BehaviorTree::SaveSurface(const BytesContainer& data)
     }
 
     return false;
+}
+
+void BehaviorTree::GetReferences(Array<Guid>& output) const
+{
+    // Base
+    BinaryAsset::GetReferences(output);
+
+    Graph.GetReferences(output);
+
+    // Extract refs from serialized nodes data
+    for (const BehaviorTreeGraphNode& n : Graph.Nodes)
+    {
+        if (n.Instance == nullptr)
+            continue;
+        const Variant& data = n.Values[1];
+        if (data.Type == VariantType::Blob)
+            JsonAssetBase::GetReferences(StringAnsiView((char*)data.AsBlob.Data, data.AsBlob.Length), output);
+    }
 }
 
 #endif

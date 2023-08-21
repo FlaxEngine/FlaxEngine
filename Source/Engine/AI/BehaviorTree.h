@@ -82,13 +82,7 @@ public:
 public:
     // [BinaryAsset]
 #if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override
-    {
-        // Base
-        BinaryAsset::GetReferences(output);
-
-        Graph.GetReferences(output);
-    }
+    void GetReferences(Array<Guid>& output) const override;
 #endif
 
 protected:
