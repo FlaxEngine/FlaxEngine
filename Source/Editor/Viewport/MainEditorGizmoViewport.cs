@@ -371,9 +371,11 @@ namespace FlaxEditor.Viewport
             // Show grid widget
             _showGridButton = ViewWidgetShowMenu.AddButton("Grid", () => Grid.Enabled = !Grid.Enabled);
             _showGridButton.Icon = Style.Current.CheckBoxTick;
+            _showGridButton.CloseMenuOnClick = false;
 
             // Show navigation widget
             _showNavigationButton = ViewWidgetShowMenu.AddButton("Navigation", () => ShowNavigation = !ShowNavigation);
+            _showNavigationButton.CloseMenuOnClick = false;
 
             // Create camera widget
             ViewWidgetButtonMenu.AddSeparator();

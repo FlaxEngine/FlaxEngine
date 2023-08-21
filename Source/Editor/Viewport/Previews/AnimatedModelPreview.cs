@@ -194,16 +194,20 @@ namespace FlaxEditor.Viewport.Previews
             {
                 // Show Bounds
                 _showBoundsButton = ViewWidgetShowMenu.AddButton("Bounds", () => ShowBounds = !ShowBounds);
+                _showBoundsButton.CloseMenuOnClick = false;
 
                 // Show Skeleton
                 _showNodesButton = ViewWidgetShowMenu.AddButton("Skeleton", () => ShowNodes = !ShowNodes);
+                _showNodesButton.CloseMenuOnClick = false;
 
                 // Show Skeleton Names
                 _showNodesNamesButton = ViewWidgetShowMenu.AddButton("Skeleton Names", () => ShowNodesNames = !ShowNodesNames);
+                _showNodesNamesButton.CloseMenuOnClick = false;
 
                 // Show Floor
                 _showFloorButton = ViewWidgetShowMenu.AddButton("Floor", button => ShowFloor = !ShowFloor);
                 _showFloorButton.IndexInParent = 1;
+                _showFloorButton.CloseMenuOnClick = false;
             }
 
             // Enable shadows
