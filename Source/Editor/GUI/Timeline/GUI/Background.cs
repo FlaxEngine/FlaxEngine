@@ -282,7 +282,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
                     var x = time * zoom + Timeline.StartOffset;
 
                     // Header line
-                    var lineRect = new Rectangle(x - 0.5f, -verticalLinesHeaderExtend + timeAxisHeaderOffset, 1.0f, verticalLinesHeaderExtend);
+                    var lineRect = new Rectangle(x - 0.5f, -verticalLinesHeaderExtend * 0.6f + timeAxisHeaderOffset, 1.0f, verticalLinesHeaderExtend * 0.6f);
                     Render2D.FillRectangle(lineRect, lineColor);
 
                     // Time label
@@ -300,7 +300,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
                         break;
                     default: throw new ArgumentOutOfRangeException();
                     }
-                    var labelRect = new Rectangle(x + 2, -verticalLinesHeaderExtend + timeAxisHeaderOffset, 50, verticalLinesHeaderExtend);
+                    var labelRect = new Rectangle(x + 2, -verticalLinesHeaderExtend * 0.8f + timeAxisHeaderOffset, 50, verticalLinesHeaderExtend);
                     Render2D.DrawText(style.FontSmall, labelText, labelRect, labelColor, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, 0.8f);
                 }
             }
