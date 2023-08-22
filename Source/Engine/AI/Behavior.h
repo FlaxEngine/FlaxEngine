@@ -71,7 +71,8 @@ public:
     /// <summary>
     /// Stops the logic.
     /// </summary>
-    API_FUNCTION() void StopLogic();
+    /// <param name="result">The logic result.</param>
+    API_FUNCTION() void StopLogic(BehaviorUpdateResult result = BehaviorUpdateResult::Success);
 
     /// <summary>
     /// Resets the behavior logic by clearing knowledge (clears blackboard and removes goals) and resetting execution state (goes back to root).

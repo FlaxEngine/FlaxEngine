@@ -141,3 +141,19 @@ public:
         BitArray<> RelevantNodes;
     };
 };
+
+/// <summary>
+/// Forces behavior execution end with a specific result (eg. force fail).
+/// </summary>
+API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeForceFinishNode : public BehaviorTreeNode
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeForceFinishNode, BehaviorTreeNode);
+    API_AUTO_SERIALIZATION();
+
+    // Execution result.
+    API_FIELD() BehaviorUpdateResult Result = BehaviorUpdateResult::Success;
+
+public:
+    // [BehaviorTreeNode]
+    BehaviorUpdateResult Update(BehaviorUpdateContext context) override;
+};

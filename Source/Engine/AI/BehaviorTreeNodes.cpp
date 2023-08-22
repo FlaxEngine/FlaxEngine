@@ -246,3 +246,9 @@ BehaviorUpdateResult BehaviorTreeSubTreeNode::Update(BehaviorUpdateContext conte
     // Run nested tree
     return tree->Graph.Root->InvokeUpdate(context);
 }
+
+BehaviorUpdateResult BehaviorTreeForceFinishNode::Update(BehaviorUpdateContext context)
+{
+    context.Behavior->StopLogic(Result);
+    return Result;
+}

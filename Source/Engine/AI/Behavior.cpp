@@ -26,12 +26,12 @@ void Behavior::StartLogic()
     _knowledge.InitMemory(tree);
 }
 
-void Behavior::StopLogic()
+void Behavior::StopLogic(BehaviorUpdateResult result)
 {
-    if (_result != BehaviorUpdateResult::Running)
+    if (_result != BehaviorUpdateResult::Running || result == BehaviorUpdateResult::Running)
         return;
     _accumulatedTime = 0.0f;
-    _result = BehaviorUpdateResult::Success;
+    _result = result;
 }
 
 void Behavior::ResetLogic()
@@ -83,8 +83,9 @@ void Behavior::OnLateUpdate()
     context.DeltaTime = updateDeltaTime;
     const BehaviorUpdateResult result = tree->Graph.Root->InvokeUpdate(context);
     if (result != BehaviorUpdateResult::Running)
-    {
         _result = result;
+    if (_result != BehaviorUpdateResult::Running)
+    {
         Finished();
     }
 }
