@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using FlaxEditor.Content;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.ContextMenu;
 using FlaxEditor.Surface.Elements;
@@ -143,6 +144,41 @@ namespace FlaxEditor.Surface
             return (nodeArchetype.Flags & NodeFlags.BehaviorTreeGraph) != 0 &&
                    groupArchetype.GroupID == 19 &&
                    base.CanUseNodeType(groupArchetype, nodeArchetype);
+        }
+
+        /// <inheritdoc />
+        protected override bool ValidateDragItem(AssetItem assetItem)
+        {
+            if (assetItem.IsOfType<BehaviorTree>())
+                return true;
+            return base.ValidateDragItem(assetItem);
+        }
+
+        /// <inheritdoc />
+        protected override void HandleDragDropAssets(List<AssetItem> objects, DragDropEventArgs args)
+        {
+            for (int i = 0; i < objects.Count; i++)
+            {
+                var assetItem = objects[i];
+                SurfaceNode node = null;
+
+                if (assetItem.IsOfType<BehaviorTree>())
+                {
+                    var instance = new BehaviorTreeSubTreeNode();
+                    instance.Name = Utilities.Utils.GetPropertyNameUI(assetItem.ShortName);
+                    instance.Tree = (BehaviorTree)assetItem.LoadAsync();
+                    node = Context.SpawnNode(19, 1, args.SurfaceLocation, new object[]
+                    {
+                        typeof(BehaviorTreeSubTreeNode).FullName,
+                        FlaxEngine.Json.JsonSerializer.SaveToBytes(instance),
+                    });
+                    FlaxEngine.Object.Destroy(instance);
+                }
+
+                if (node != null)
+                    args.SurfaceLocation.X += node.Width + 10;
+            }
+            base.HandleDragDropAssets(objects, args);
         }
 
         /// <inheritdoc />
