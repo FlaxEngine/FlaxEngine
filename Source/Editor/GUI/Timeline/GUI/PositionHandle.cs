@@ -55,15 +55,15 @@ namespace FlaxEditor.GUI.Timeline.GUI
             Matrix3x3.Multiply(ref m1, ref m2, out var m3);
             Render2D.PushTransform(ref m3);
             // TODO: Convert to its own sprite or 9 slice
-            Render2D.DrawSprite(icon, new Rectangle(new Float2(10, -icon.Size.X * 0.5f), Size), color);
-            Render2D.FillRectangle(new Rectangle(new Float2(-6, -icon.Size.Y * 0.5f + 8), new Float2(timeAxisOverlap, 4)), color);
+            Render2D.DrawSprite(icon, new Rectangle(new Float2(10, -icon.Size.X * 0.5f - 1), Size + new Float2(0, 1)), color);
+            Render2D.FillRectangle(new Rectangle(new Float2(-6, -icon.Size.Y * 0.5f + 7), new Float2(timeAxisOverlap, 5)), color);
             Render2D.PopTransform();
             var textMatrix = Matrix3x3.Translation2D(12, timeAxisHeaderOffset);
             Render2D.PushTransform(ref textMatrix);
             Render2D.DrawText(style.FontSmall, labelText, style.Foreground, new Float2(2, -6));
             Render2D.PopTransform();
 
-            Render2D.FillRectangle(new Rectangle(Width * 0.5f - 1, Height + timeAxisHeaderOffset, 1, _timeline.MediaPanel.Height - timeAxisHeaderOffset - timeAxisOverlap), _timeline.IsMovingPositionHandle ? style.ProgressNormal : style.Foreground.RGBMultiplied(0.8f));
+            Render2D.FillRectangle(new Rectangle(Width * 0.5f, Height + timeAxisHeaderOffset, 1, _timeline.MediaPanel.Height - timeAxisHeaderOffset - timeAxisOverlap), _timeline.IsMovingPositionHandle ? style.ProgressNormal : style.Foreground.RGBMultiplied(0.8f));
 
             base.Draw();
         }
