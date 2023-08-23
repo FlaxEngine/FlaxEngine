@@ -14,6 +14,7 @@ API_CLASS(Abstract) class FLAXENGINE_API BehaviorTreeNode : public SerializableS
     friend class BehaviorTreeGraph;
     friend class BehaviorKnowledge;
     friend class BehaviorTreeSubTreeNode;
+    friend class BehaviorTreeCompoundNode;
 
 protected:
     // Raw memory byte offset from the start of the behavior memory block.
@@ -86,4 +87,8 @@ public:
         ASSERT((int32)sizeof(T) <= GetStateSize());
         return reinterpret_cast<T*>((byte*)memory + _memoryOffset);
     }
+
+protected:
+    virtual void InvokeReleaseState(const BehaviorUpdateContext& context);
+};
 };

@@ -6,6 +6,7 @@
 #include "BehaviorTreeNode.h"
 #include "BehaviorKnowledgeSelector.h"
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Collections/BitArray.h"
 #include "Engine/Content/AssetReference.h"
 
 /// <summary>
@@ -24,6 +25,10 @@ public:
     // [BehaviorTreeNode]
     void Init(BehaviorTree* tree) override;
     BehaviorUpdateResult Update(BehaviorUpdateContext context) override;
+
+protected:
+    // [BehaviorTreeNode]
+    void InvokeReleaseState(const BehaviorUpdateContext& context) override;
 };
 
 /// <summary>

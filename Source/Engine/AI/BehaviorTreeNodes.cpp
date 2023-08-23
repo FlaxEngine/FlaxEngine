@@ -56,8 +56,7 @@ BehaviorUpdateResult BehaviorTreeNode::InvokeUpdate(const BehaviorUpdateContext&
     // Check if node is not relevant anymore
     if (result != BehaviorUpdateResult::Running)
     {
-        relevantNodes.Set(_executionIndex, false);
-        ReleaseState(context.Behavior, context.Memory);
+        InvokeReleaseState(context);
     }
 
     return result;
@@ -79,6 +78,13 @@ void BehaviorTreeNode::Deserialize(DeserializeStream& stream, ISerializeModifier
     DESERIALIZE(Name);
 }
 
+void BehaviorTreeNode::InvokeReleaseState(const BehaviorUpdateContext& context)
+{
+    BitArray<>& relevantNodes = *(BitArray<>*)context.RelevantNodes;
+    relevantNodes.Set(_executionIndex, false);
+    ReleaseState(context.Behavior, context.Memory);
+}
+
 void BehaviorTreeCompoundNode::Init(BehaviorTree* tree)
 {
     for (BehaviorTreeNode* child : Children)
@@ -94,6 +100,20 @@ BehaviorUpdateResult BehaviorTreeCompoundNode::Update(BehaviorUpdateContext cont
         result = child->InvokeUpdate(context);
     }
     return result;
+}
+
+void BehaviorTreeCompoundNode::InvokeReleaseState(const BehaviorUpdateContext& context)
+{
+    const BitArray<>& relevantNodes = *(const BitArray<>*)context.RelevantNodes;
+    for (BehaviorTreeNode* child : Children)
+    {
+        if (relevantNodes.Get(child->_executionIndex) == true)
+        {
+            child->InvokeReleaseState(context);
+        }
+    }
+
+    BehaviorTreeNode::InvokeReleaseState(context);
 }
 
 int32 BehaviorTreeSequenceNode::GetStateSize() const
