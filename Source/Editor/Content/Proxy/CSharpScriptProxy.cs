@@ -51,7 +51,7 @@ namespace FlaxEditor.Content
             var copyrightComment = string.IsNullOrEmpty(gameSettings.CopyrightNotice) ? string.Empty : string.Format("// {0}{1}{1}", gameSettings.CopyrightNotice, Environment.NewLine);
             scriptTemplate = scriptTemplate.Replace("%copyright%", copyrightComment);
             scriptTemplate = scriptTemplate.Replace("%class%", scriptName);
-            scriptTemplate = scriptTemplate.Replace("%namespace%", scriptNamespace);
+            scriptTemplate = scriptTemplate.Replace("%namespace%", $"{scriptNamespace};");
 
             // Save
             File.WriteAllText(outputPath, scriptTemplate, Encoding.UTF8);
