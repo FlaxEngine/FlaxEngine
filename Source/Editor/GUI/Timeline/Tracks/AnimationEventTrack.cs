@@ -298,7 +298,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             var animEventTypes = Editor.Instance.CodeEditing.All.Get().Where(x => new ScriptType(typeof(AnimEvent)).IsAssignableFrom(x));
             foreach (var type in animEventTypes)
             {
-                if (type.IsAbstract || !type.CanCreateInstance)
+                if (type.IsAbstract || !type.CanCreateInstance || string.Equals(type.TypeName, "FlaxEngine.AnimEvent+AbstractWrapper", StringComparison.Ordinal) || string.Equals(type.TypeName, "FlaxEngine.AnimContinuousEvent+AbstractWrapper", StringComparison.Ordinal))
                     continue;
                 var add = new ScriptType(typeof(AnimContinuousEvent)).IsAssignableFrom(type) ? addContinuousEvent : addEvent;
                 var b = add.ContextMenu.AddButton(type.Name);
