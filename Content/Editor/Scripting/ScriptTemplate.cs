@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using FlaxEngine;
 
-namespace %namespace%
+namespace %namespace%;
 
 /// <summary>
 /// %class% Script.
