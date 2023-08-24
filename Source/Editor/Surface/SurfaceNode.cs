@@ -1030,9 +1030,9 @@ namespace FlaxEditor.Surface
             Render2D.DrawText(style.FontLarge, Title, _headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
 
             // Close button
-            if ((Archetype.Flags & NodeFlags.NoCloseButton) == 0)
+            if ((Archetype.Flags & NodeFlags.NoCloseButton) == 0 && Surface.CanEdit)
             {
-                Render2D.DrawSprite(style.Cross, _closeButtonRect, _closeButtonRect.Contains(_mousePosition) && Surface.CanEdit ? style.Foreground : style.ForegroundGrey);
+                Render2D.DrawSprite(style.Cross, _closeButtonRect, _closeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
             }
 
             // Footer
