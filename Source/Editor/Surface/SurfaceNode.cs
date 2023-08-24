@@ -391,6 +391,11 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
+        /// Array of nodes that are sealed to this node - sealed nodes are duplicated/copied/pasted/removed in a batch. Null if unused.
+        /// </summary>
+        public virtual SurfaceNode[] SealedNodes => null;
+
+        /// <summary>
         /// Gets a value indicating whether this node uses dependent boxes.
         /// </summary>
         public bool HasDependentBoxes => Archetype.DependentBoxes != null;

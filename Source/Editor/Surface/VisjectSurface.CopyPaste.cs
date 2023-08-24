@@ -65,6 +65,25 @@ namespace FlaxEditor.Surface
                 return;
             }
 
+            // Collect sealed nodes to be copied as well
+            foreach (var control in selection.ToArray())
+            {
+                if (control is SurfaceNode node)
+                {
+                    var sealedNodes = node.SealedNodes;
+                    if (sealedNodes != null)
+                    {
+                        foreach (var sealedNode in sealedNodes)
+                        {
+                            if (sealedNode != null && !selection.Contains(sealedNode))
+                            {
+                                selection.Add(sealedNode);
+                            }
+                        }
+                    }
+                }
+            }
+
             var dataModel = new DataModel();
             var dataModelNodes = new List<DataModelNode>(selection.Count);
             var dataModelComments = new List<DataModelComment>();

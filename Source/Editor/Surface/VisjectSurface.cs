@@ -749,7 +749,25 @@ namespace FlaxEditor.Surface
                     {
                         if (nodes == null)
                             nodes = new List<SurfaceNode>();
-                        nodes.Add(node);
+                        var sealedNodes = node.SealedNodes;
+                        if (sealedNodes != null)
+                        {
+                            foreach (var sealedNode in sealedNodes)
+                            {
+                                if (sealedNode != null)
+                                {
+                                    if (sealedNode.IsSelected)
+                                    {
+                                        selectionChanged = true;
+                                        sealedNode.IsSelected = false;
+                                    }
+                                    if (!nodes.Contains(sealedNode))
+                                        nodes.Add(sealedNode);
+                                }
+                            }
+                        }
+                        if (!nodes.Contains(node))
+                            nodes.Add(node);
                     }
                 }
                 else
