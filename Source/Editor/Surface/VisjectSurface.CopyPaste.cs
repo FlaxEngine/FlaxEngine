@@ -373,7 +373,7 @@ namespace FlaxEditor.Surface
                         }
                     }
 
-                    Context.OnControlLoaded(node);
+                    Context.OnControlLoaded(node, SurfaceNodeActions.Paste);
                 }
 
                 // Setup connections
@@ -413,11 +413,11 @@ namespace FlaxEditor.Surface
                 // Post load
                 foreach (var node in nodes)
                 {
-                    node.Value.OnSurfaceLoaded();
+                    node.Value.OnSurfaceLoaded(SurfaceNodeActions.Paste);
                 }
                 foreach (var node in nodes)
                 {
-                    node.Value.OnSpawned();
+                    node.Value.OnSpawned(SurfaceNodeActions.Paste);
                 }
 
                 // Add undo action

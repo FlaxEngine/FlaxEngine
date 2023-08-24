@@ -884,9 +884,9 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override void OnSurfaceLoaded()
+        public override void OnSurfaceLoaded(SurfaceNodeActions action)
         {
-            base.OnSurfaceLoaded();
+            base.OnSurfaceLoaded(action);
 
             UpdateBoxesTypes();
 
@@ -898,11 +898,11 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override void OnDeleted()
+        public override void OnDeleted(SurfaceNodeActions action)
         {
             RemoveConnections();
 
-            base.OnDeleted();
+            base.OnDeleted(action);
         }
 
         /// <summary>

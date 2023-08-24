@@ -122,14 +122,14 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Called when control gets loaded and added to surface.
         /// </summary>
-        public virtual void OnLoaded()
+        public virtual void OnLoaded(SurfaceNodeActions action)
         {
         }
 
         /// <summary>
         /// Called when surface gets loaded and nodes boxes are connected.
         /// </summary>
-        public virtual void OnSurfaceLoaded()
+        public virtual void OnSurfaceLoaded(SurfaceNodeActions action)
         {
             UpdateRectangles();
         }
@@ -137,14 +137,14 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Called after adding the control to the surface after user spawn (eg. add comment, add new node, etc.).
         /// </summary>
-        public virtual void OnSpawned()
+        public virtual void OnSpawned(SurfaceNodeActions action)
         {
         }
 
         /// <summary>
         /// Called on removing the control from the surface after user delete/cut operation (eg. delete comment, cut node, etc.).
         /// </summary>
-        public virtual void OnDeleted()
+        public virtual void OnDeleted(SurfaceNodeActions action)
         {
             Dispose();
         }

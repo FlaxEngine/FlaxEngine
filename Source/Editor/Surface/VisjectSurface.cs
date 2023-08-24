@@ -772,7 +772,7 @@ namespace FlaxEditor.Surface
                 }
                 else
                 {
-                    Context.OnControlDeleted(control);
+                    Context.OnControlDeleted(control, SurfaceNodeActions.User);
                 }
             }
             if (selectionChanged)
@@ -787,7 +787,7 @@ namespace FlaxEditor.Surface
                     {
                         node.RemoveConnections();
                         Nodes.Remove(node);
-                        Context.OnControlDeleted(node);
+                        Context.OnControlDeleted(node, SurfaceNodeActions.User);
                     }
                 }
                 else

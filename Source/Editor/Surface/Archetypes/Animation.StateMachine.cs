@@ -174,17 +174,17 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 UpdateUI();
             }
 
             /// <inheritdoc />
-            public override void OnSpawned()
+            public override void OnSpawned(SurfaceNodeActions action)
             {
-                base.OnSpawned();
+                base.OnSpawned(action);
 
                 // Ensure to have unique name
                 var title = StateMachineTitle;
@@ -741,9 +741,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 LoadTransitions();
 
@@ -1432,9 +1432,9 @@ namespace FlaxEditor.Surface.Archetypes
             public override int TransitionsDataIndex => 2;
 
             /// <inheritdoc />
-            public override void OnSpawned()
+            public override void OnSpawned(SurfaceNodeActions action)
             {
-                base.OnSpawned();
+                base.OnSpawned(action);
 
                 // Ensure to have unique name
                 var title = StateTitle;
@@ -1452,9 +1452,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 UpdateTitle();
             }

@@ -315,9 +315,9 @@ namespace FlaxEditor.Surface
             }
 
             // Initialize
-            OnControlLoaded(comment);
-            comment.OnSurfaceLoaded();
-            OnControlSpawned(comment);
+            OnControlLoaded(comment, SurfaceNodeActions.User);
+            comment.OnSurfaceLoaded(SurfaceNodeActions.User);
+            OnControlSpawned(comment, SurfaceNodeActions.User);
 
             MarkAsModified();
 
@@ -389,10 +389,10 @@ namespace FlaxEditor.Surface
                     throw new InvalidOperationException("Invalid node custom values.");
             }
             node.Location = location;
-            OnControlLoaded(node);
+            OnControlLoaded(node, SurfaceNodeActions.User);
             beforeSpawned?.Invoke(node);
-            node.OnSurfaceLoaded();
-            OnControlSpawned(node);
+            node.OnSurfaceLoaded(SurfaceNodeActions.User);
+            OnControlSpawned(node, SurfaceNodeActions.User);
 
             // Undo action
             if (Surface != null)
