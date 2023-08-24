@@ -396,6 +396,14 @@ namespace FlaxEditor.Surface
         public virtual SurfaceNode[] SealedNodes => null;
 
         /// <summary>
+        /// Called after adding the control to the surface after paste.
+        /// </summary>
+        /// <param name="idsMapping">The nodes IDs mapping (original node ID to pasted node ID). Can be sued to update internal node's data after paste operation from the original data.</param>
+        public virtual void OnPasted(System.Collections.Generic.Dictionary<uint, uint> idsMapping)
+        {
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this node uses dependent boxes.
         /// </summary>
         public bool HasDependentBoxes => Archetype.DependentBoxes != null;

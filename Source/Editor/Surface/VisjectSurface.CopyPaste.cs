@@ -419,6 +419,10 @@ namespace FlaxEditor.Surface
                 {
                     node.Value.OnSpawned(SurfaceNodeActions.Paste);
                 }
+                foreach (var node in nodes)
+                {
+                    node.Value.OnPasted(idsMapping);
+                }
 
                 // Add undo action
                 if (Undo != null && nodes.Count > 0)
