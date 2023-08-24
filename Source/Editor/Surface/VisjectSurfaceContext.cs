@@ -395,8 +395,8 @@ namespace FlaxEditor.Surface
             OnControlSpawned(node);
 
             // Undo action
-            if (Surface != null && Surface.Undo != null)
-                Surface.Undo.AddAction(new AddRemoveNodeAction(node, true));
+            if (Surface != null)
+                Surface.AddBatchedUndoAction(new AddRemoveNodeAction(node, true));
 
             MarkAsModified();
 

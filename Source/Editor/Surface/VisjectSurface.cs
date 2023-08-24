@@ -730,11 +730,18 @@ namespace FlaxEditor.Surface
         /// <param name="withUndo">True if use undo/redo action for node removing.</param>
         public void Delete(IEnumerable<SurfaceControl> controls, bool withUndo = true)
         {
+            if (!CanEdit || controls == null || !controls.Any())
+                return;
+
             var selectionChanged = false;
             List<SurfaceNode> nodes = null;
             foreach (var control in controls)
             {
-                selectionChanged |= control.IsSelected;
+                if (control.IsSelected)
+                {
+                    selectionChanged = true;
+                    control.IsSelected = false;
+                }
 
                 if (control is SurfaceNode node)
                 {
@@ -802,54 +809,7 @@ namespace FlaxEditor.Surface
         {
             if (!CanEdit)
                 return;
-
-            var node = control as SurfaceNode;
-            if (node == null)
-            {
-                Context.OnControlDeleted(control);
-                MarkAsEdited();
-                return;
-            }
-
-            if ((node.Archetype.Flags & NodeFlags.NoRemove) != 0)
-                return;
-
-            if (control.IsSelected)
-            {
-                control.IsSelected = false;
-                SelectionChanged?.Invoke();
-            }
-
-            if (Undo == null || !withUndo)
-            {
-                // Remove node
-                node.RemoveConnections();
-                Nodes.Remove(node);
-                Context.OnControlDeleted(node);
-            }
-            else
-            {
-                var actions = new List<IUndoAction>();
-
-                // Break connections for node
-                {
-                    var action = new EditNodeConnections(Context, node);
-                    node.RemoveConnections();
-                    action.End();
-                    actions.Add(action);
-                }
-
-                // Remove node
-                {
-                    var action = new AddRemoveNodeAction(node, false);
-                    action.Do();
-                    actions.Add(action);
-                }
-
-                Undo.AddAction(new MultiUndoAction(actions, "Remove node"));
-            }
-
-            MarkAsEdited();
+            Delete(new[] { control }, withUndo);
         }
 
         /// <summary>
@@ -859,72 +819,7 @@ namespace FlaxEditor.Surface
         {
             if (!CanEdit)
                 return;
-            bool edited = false;
-
-            List<SurfaceNode> nodes = null;
-            for (int i = 0; i < _rootControl.Children.Count; i++)
-            {
-                if (_rootControl.Children[i] is SurfaceNode node)
-                {
-                    if (node.IsSelected && (node.Archetype.Flags & NodeFlags.NoRemove) == 0)
-                    {
-                        if (nodes == null)
-                            nodes = new List<SurfaceNode>();
-                        nodes.Add(node);
-                        edited = true;
-                    }
-                }
-                else if (_rootControl.Children[i] is SurfaceControl control && control.IsSelected)
-                {
-                    i--;
-                    Context.OnControlDeleted(control);
-                    edited = true;
-                }
-            }
-
-            if (nodes != null)
-            {
-                if (Undo == null)
-                {
-                    // Remove all nodes
-                    foreach (var node in nodes)
-                    {
-                        node.RemoveConnections();
-                        Nodes.Remove(node);
-                        Context.OnControlDeleted(node);
-                    }
-                }
-                else
-                {
-                    var actions = new List<IUndoAction>();
-
-                    // Break connections for all nodes
-                    foreach (var node in nodes)
-                    {
-                        var action = new EditNodeConnections(Context, node);
-                        node.RemoveConnections();
-                        action.End();
-                        actions.Add(action);
-                    }
-
-                    // Remove all nodes
-                    foreach (var node in nodes)
-                    {
-                        var action = new AddRemoveNodeAction(node, false);
-                        action.Do();
-                        actions.Add(action);
-                    }
-
-                    Undo.AddAction(new MultiUndoAction(actions, nodes.Count == 1 ? "Remove node" : "Remove nodes"));
-                }
-            }
-
-            if (edited)
-            {
-                MarkAsEdited();
-            }
-
-            SelectionChanged?.Invoke();
+            Delete(SelectedControls, true);
         }
 
         /// <summary>

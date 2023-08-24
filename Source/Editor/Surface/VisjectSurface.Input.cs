@@ -243,8 +243,11 @@ namespace FlaxEditor.Surface
                             node.Location += delta;
                         _leftMouseDownPos = location;
                         _movingNodesDelta += delta;
-                        Cursor = CursorType.SizeAll;
-                        MarkAsEdited(false);
+                        if (_movingNodes.Count > 0)
+                        {
+                            Cursor = CursorType.SizeAll;
+                            MarkAsEdited(false);
+                        }
                     }
 
                     // Handled

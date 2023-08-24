@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Surface.Undo;
 using FlaxEngine;
