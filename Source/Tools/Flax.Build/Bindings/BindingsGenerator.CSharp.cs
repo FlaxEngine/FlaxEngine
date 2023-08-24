@@ -379,7 +379,7 @@ namespace Flax.Build.Bindings
             {
                 typeName += '<';
                 foreach (var arg in typeInfo.GenericArgs)
-                    typeName += arg.Type.Replace("::", ".");
+                    typeName += GenerateCSharpNativeToManaged(buildData, arg, caller);
                 typeName += '>';
             }
             if (apiType != null)
