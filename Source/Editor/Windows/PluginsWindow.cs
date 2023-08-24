@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -376,20 +375,12 @@ namespace FlaxEditor.Windows
             try
             {
                 // Start git clone
-                var gitProcess = new Process();
-                gitProcess.StartInfo.FileName = "git";
-                gitProcess.StartInfo.Arguments = $"clone {gitPath} \"{clonePath}\"";
-                gitProcess.StartInfo.UseShellExecute = false;
-                gitProcess.StartInfo.RedirectStandardOutput = true;
-                gitProcess.StartInfo.RedirectStandardError = true;
-
-                gitProcess.Start();
-                await gitProcess.WaitForExitAsync();
-            
-                string output = await gitProcess.StandardOutput.ReadToEndAsync();
-                string error = await gitProcess.StandardError.ReadToEndAsync();
-                Debug.Logger.LogHandler.LogWrite(LogType.Info, $"{output}");
-                Debug.Logger.LogHandler.LogWrite(LogType.Info, $"{error}");
+                var settings = new CreateProcessSettings();
+                settings.FileName = "git";
+                settings.Arguments = $"clone {gitPath} \"{clonePath}\"";
+                settings.ShellExecute = false;
+                settings.LogOutput = true;
+                Platform.CreateProcess(ref settings);
             }
             catch (Exception e)
             {
