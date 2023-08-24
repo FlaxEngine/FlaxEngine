@@ -112,9 +112,8 @@ void BehaviorTreeGraph::LoadRecursive(Node& node)
             for (int32 i = 0; i < ids.Length(); i++)
             {
                 Node* decorator = GetNode(ids[i]);
-                if (decorator && decorator->Instance)
+                if (decorator && decorator->Instance && decorator->Instance->Is<BehaviorTreeDecorator>())
                 {
-                    ASSERT_LOW_LAYER(decorator->Instance->Is<BehaviorTreeDecorator>());
                     node.Instance->_decorators.Add((BehaviorTreeDecorator*)decorator->Instance);
                     decorator->Instance->_parent = node.Instance;
                     LoadRecursive(*decorator);

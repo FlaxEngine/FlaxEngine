@@ -31,6 +31,7 @@ void Behavior::StopLogic(BehaviorUpdateResult result)
     if (_result != BehaviorUpdateResult::Running || result == BehaviorUpdateResult::Running)
         return;
     _accumulatedTime = 0.0f;
+    _totalTime = 0;
     _result = result;
 }
 
@@ -43,6 +44,7 @@ void Behavior::ResetLogic()
     // Reset state
     _knowledge.FreeMemory();
     _accumulatedTime = 0.0f;
+    _totalTime = 0;
     _result = BehaviorUpdateResult::Success;
 
     if (isActive)
@@ -73,6 +75,7 @@ void Behavior::OnLateUpdate()
     if (_accumulatedTime < updateDeltaTime)
         return;
     _accumulatedTime -= updateDeltaTime;
+    _totalTime += updateDeltaTime;
 
     // Update tree
     BehaviorUpdateContext context;
@@ -81,6 +84,7 @@ void Behavior::OnLateUpdate()
     context.Memory = _knowledge.Memory;
     context.RelevantNodes = &_knowledge.RelevantNodes;
     context.DeltaTime = updateDeltaTime;
+    context.Time = _totalTime;
     const BehaviorUpdateResult result = tree->Graph.Root->InvokeUpdate(context);
     if (result != BehaviorUpdateResult::Running)
         _result = result;

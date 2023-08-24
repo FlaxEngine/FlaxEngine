@@ -28,7 +28,7 @@ public:
 
 protected:
     // [BehaviorTreeNode]
-    void BecomeIrrelevant(const BehaviorUpdateContext& context, bool nodeOnly) override;
+    void BecomeIrrelevant(const BehaviorUpdateContext& context) override;
 };
 
 /// <summary>
@@ -224,5 +224,71 @@ public:
     struct State
     {
         int32 Loops;
+    };
+};
+
+/// <summary>
+/// Limits maximum duration of the node execution time (in seconds). Node will fail if it runs out of time.
+/// </summary>
+API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeTimeLimitDecorator : public BehaviorTreeDecorator
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeTimeLimitDecorator, BehaviorTreeDecorator);
+    API_AUTO_SERIALIZATION();
+
+    // Maximum node execution time (in seconds). Unused if MaxDurationSelector is used.
+    API_FIELD(Attributes="EditorOrder(10), Limit(0)")
+    float MaxDuration = 3.0;
+
+    // Duration time randomization range to deviate original value.
+    API_FIELD(Attributes="EditorOrder(20), Limit(0)")
+    float RandomDeviation = 0.0f;
+
+    // Maximum node execution time (in seconds) from behavior's knowledge (blackboard, goal or sensor). If set, overrides MaxDuration but still uses RandomDeviation.
+    API_FIELD(Attributes="EditorOrder(20)")
+    BehaviorKnowledgeSelector<float> MaxDurationSelector;
+
+public:
+    // [BehaviorTreeNode]
+    int32 GetStateSize() const override;
+    void InitState(Behavior* behavior, void* memory) override;
+    BehaviorUpdateResult Update(BehaviorUpdateContext context) override;
+
+    struct State
+    {
+        float TimeLeft;
+    };
+};
+
+/// <summary>
+/// Adds cooldown in between node executions.
+/// </summary>
+API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeCooldownDecorator : public BehaviorTreeDecorator
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeCooldownDecorator, BehaviorTreeDecorator);
+    API_AUTO_SERIALIZATION();
+
+    // Minimum cooldown time (in seconds). Unused if MinDurationSelector is used.
+    API_FIELD(Attributes="EditorOrder(10), Limit(0)")
+    float MinDuration = 3.0;
+
+    // Duration time randomization range to deviate original value.
+    API_FIELD(Attributes="EditorOrder(20), Limit(0)")
+    float RandomDeviation = 0.0f;
+
+    // Minimum cooldown time (in seconds) from behavior's knowledge (blackboard, goal or sensor). If set, overrides MinDuration but still uses RandomDeviation.
+    API_FIELD(Attributes="EditorOrder(20)")
+    BehaviorKnowledgeSelector<float> MinDurationSelector;
+
+public:
+    // [BehaviorTreeNode]
+    int32 GetStateSize() const override;
+    void InitState(Behavior* behavior, void* memory) override;
+    void ReleaseState(Behavior* behavior, void* memory) override;
+    bool CanUpdate(BehaviorUpdateContext context) override;
+    void PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result) override;
+
+    struct State
+    {
+        float EndTime;
     };
 };

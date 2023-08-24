@@ -60,12 +60,21 @@ BehaviorUpdateResult BehaviorTreeNode::InvokeUpdate(const BehaviorUpdateContext&
     if (relevantNodes.Get(_executionIndex) == false)
         BecomeRelevant(context);
 
-    // Node-specific update
+    // Update decorators
+    bool decoratorFailed = false;
     for (BehaviorTreeDecorator* decorator : _decorators)
     {
-        decorator->Update(context);
+        decoratorFailed |= decorator->Update(context) == BehaviorUpdateResult::Failed;
     }
-    BehaviorUpdateResult result = Update(context);
+
+    // Node-specific update
+    BehaviorUpdateResult result;
+    if (decoratorFailed)
+        result = BehaviorUpdateResult::Failed;
+    else
+        result = Update(context);
+
+    // Post-process result from decorators
     for (BehaviorTreeDecorator* decorator : _decorators)
     {
         decorator->PostUpdate(context, result);
@@ -87,16 +96,13 @@ void BehaviorTreeNode::BecomeRelevant(const BehaviorUpdateContext& context)
     InitState(context.Behavior, context.Memory);
 }
 
-void BehaviorTreeNode::BecomeIrrelevant(const BehaviorUpdateContext& context, bool nodeOnly)
+void BehaviorTreeNode::BecomeIrrelevant(const BehaviorUpdateContext& context)
 {
     // Release state
     BitArray<>& relevantNodes = *(BitArray<>*)context.RelevantNodes;
     ASSERT_LOW_LAYER(relevantNodes.Get(_executionIndex) == true);
     relevantNodes.Set(_executionIndex, false);
     ReleaseState(context.Behavior, context.Memory);
-
-    if (nodeOnly)
-        return;
 
     // Release decorators
     for (BehaviorTreeDecorator* decorator : _decorators)
@@ -141,7 +147,7 @@ BehaviorUpdateResult BehaviorTreeCompoundNode::Update(BehaviorUpdateContext cont
     return result;
 }
 
-void BehaviorTreeCompoundNode::BecomeIrrelevant(const BehaviorUpdateContext& context, bool nodeOnly)
+void BehaviorTreeCompoundNode::BecomeIrrelevant(const BehaviorUpdateContext& context)
 {
     // Make any nested nodes irrelevant as well
     const BitArray<>& relevantNodes = *(const BitArray<>*)context.RelevantNodes;
@@ -153,7 +159,7 @@ void BehaviorTreeCompoundNode::BecomeIrrelevant(const BehaviorUpdateContext& con
         }
     }
 
-    BehaviorTreeNode::BecomeIrrelevant(context, nodeOnly);
+    BehaviorTreeNode::BecomeIrrelevant(context);
 }
 
 int32 BehaviorTreeSequenceNode::GetStateSize() const
@@ -237,7 +243,7 @@ void BehaviorTreeDelayNode::InitState(Behavior* behavior, void* memory)
     auto state = GetState<State>(memory);
     if (!WaitTimeSelector.TryGet(behavior->GetKnowledge(), state->TimeLeft))
         state->TimeLeft = WaitTime;
-    state->TimeLeft = Random::RandRange(Math::Max(WaitTime - RandomDeviation, 0.0f), WaitTime + RandomDeviation);
+    state->TimeLeft = Random::RandRange(Math::Max(state->TimeLeft - RandomDeviation, 0.0f), state->TimeLeft + RandomDeviation);
 }
 
 BehaviorUpdateResult BehaviorTreeDelayNode::Update(BehaviorUpdateContext context)
@@ -272,7 +278,7 @@ void BehaviorTreeSubTreeNode::ReleaseState(Behavior* behavior, void* memory)
     {
         for (const auto& node : tree->Graph.Nodes)
         {
-            if (node.Instance && node.Instance->_executionIndex != -1 && state->RelevantNodes[node.Instance->_executionIndex])
+            if (node.Instance && node.Instance->_executionIndex != -1 && state->RelevantNodes.HasItems() && state->RelevantNodes[node.Instance->_executionIndex])
                 node.Instance->ReleaseState(behavior, state->Memory.Get());
         }
     }
@@ -354,10 +360,69 @@ void BehaviorTreeLoopDecorator::PostUpdate(BehaviorUpdateContext context, Behavi
         state->Loops--;
         if (state->Loops > 0)
         {
-            // Keep running in a loop but reset node's state (preserve decorators state including Loops counter)
+            // Keep running in a loop but reset node's state (preserve self state)
             result = BehaviorUpdateResult::Running;
-            _parent->BecomeIrrelevant(context, true);
-            _parent->BecomeRelevant(context);
+            BitArray<>& relevantNodes = *(BitArray<>*)context.RelevantNodes;
+            relevantNodes.Set(_executionIndex, false);
+            _parent->BecomeIrrelevant(context);
+            relevantNodes.Set(_executionIndex, true);
         }
+    }
+}
+
+int32 BehaviorTreeTimeLimitDecorator::GetStateSize() const
+{
+    return sizeof(State);
+}
+
+void BehaviorTreeTimeLimitDecorator::InitState(Behavior* behavior, void* memory)
+{
+    auto state = GetState<State>(memory);
+    if (!MaxDurationSelector.TryGet(behavior->GetKnowledge(), state->TimeLeft))
+        state->TimeLeft = MaxDuration;
+    state->TimeLeft = Random::RandRange(Math::Max(state->TimeLeft - RandomDeviation, 0.0f), state->TimeLeft + RandomDeviation);
+}
+
+BehaviorUpdateResult BehaviorTreeTimeLimitDecorator::Update(BehaviorUpdateContext context)
+{
+    auto state = GetState<State>(context.Memory);
+    state->TimeLeft -= context.DeltaTime;
+    return state->TimeLeft <= 0.0f ? BehaviorUpdateResult::Failed : BehaviorUpdateResult::Success;
+}
+
+int32 BehaviorTreeCooldownDecorator::GetStateSize() const
+{
+    return sizeof(State);
+}
+
+void BehaviorTreeCooldownDecorator::InitState(Behavior* behavior, void* memory)
+{
+    auto state = GetState<State>(memory);
+    state->EndTime = 0; // Allow to entry on start
+}
+
+void BehaviorTreeCooldownDecorator::ReleaseState(Behavior* behavior, void* memory)
+{
+    // Preserve the decorator's state to keep cooldown
+    BitArray<>& relevantNodes = behavior->GetKnowledge()->RelevantNodes;
+    relevantNodes.Set(_executionIndex, true);
+}
+
+bool BehaviorTreeCooldownDecorator::CanUpdate(BehaviorUpdateContext context)
+{
+    auto state = GetState<State>(context.Memory);
+    return state->EndTime <= context.Time;
+}
+
+void BehaviorTreeCooldownDecorator::PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result)
+{
+    if (result != BehaviorUpdateResult::Running)
+    {
+        // Initialize cooldown
+        auto state = GetState<State>(context.Memory);
+        if (!MinDurationSelector.TryGet(context.Knowledge, state->EndTime))
+            state->EndTime = MinDuration;
+        state->EndTime = Random::RandRange(Math::Max(state->EndTime - RandomDeviation, 0.0f), state->EndTime + RandomDeviation);
+        state->EndTime += context.Time;
     }
 }

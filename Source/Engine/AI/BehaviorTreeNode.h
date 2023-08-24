@@ -81,9 +81,9 @@ public:
     // Helper utility to update node with state creation/cleanup depending on node relevancy.
     BehaviorUpdateResult InvokeUpdate(const BehaviorUpdateContext& context);
     // Helper utility to make node relevant and init it state.
-    void BecomeRelevant(const BehaviorUpdateContext& context);
+    virtual void BecomeRelevant(const BehaviorUpdateContext& context);
     // Helper utility to make node irrelevant and release its state (including any nested nodes).
-    virtual void BecomeIrrelevant(const BehaviorUpdateContext& context, bool nodeOnly = false);
+    virtual void BecomeIrrelevant(const BehaviorUpdateContext& context);
 
     // [SerializableScriptingObject]
     void Serialize(SerializeStream& stream, const void* otherObj) override;

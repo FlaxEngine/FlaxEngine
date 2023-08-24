@@ -40,6 +40,11 @@ API_STRUCT(NoDefault) struct FLAXENGINE_API BehaviorUpdateContext
     /// Simulation time delta (in seconds) since the last update.
     /// </summary>
     API_FIELD() float DeltaTime;
+
+    /// <summary>
+    /// Simulation time (in seconds) since the first update of the Behavior (sum of all deltas since the start).
+    /// </summary>
+    API_FIELD() float Time;
 };
 
 /// <summary>

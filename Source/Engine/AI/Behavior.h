@@ -19,6 +19,7 @@ API_CLASS() class FLAXENGINE_API Behavior : public Script
 private:
     BehaviorKnowledge _knowledge;
     float _accumulatedTime = 0.0f;
+    float _totalTime = 0.0f;
     BehaviorUpdateResult _result = BehaviorUpdateResult::Success;
     void* _memory = nullptr;
 
