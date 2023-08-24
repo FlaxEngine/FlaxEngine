@@ -51,20 +51,18 @@ public:
     }
 
     /// <summary>
-    /// Initializes node instance state. Called when starting logic simulation for a given behavior.
+    /// Initializes node instance state. Called when starting logic simulation for a given behavior. Call constructor of the state container.
     /// </summary>
-    /// <param name="behavior">Behavior to simulate.</param>
-    /// <param name="memory">Pointer to pre-allocated memory for this node to use (call constructor of the state container).</param>
-    API_FUNCTION() virtual void InitState(Behavior* behavior, void* memory)
+    /// <param name="context">Behavior update context data.</param>
+    API_FUNCTION() virtual void InitState(const BehaviorUpdateContext& context)
     {
     }
 
     /// <summary>
-    /// Cleanups node instance state. Called when stopping logic simulation for a given behavior.
+    /// Cleanups node instance state. Called when stopping logic simulation for a given behavior. Call destructor of the state container.
     /// </summary>
-    /// <param name="behavior">Behavior to simulate.</param>
-    /// <param name="memory">Pointer to pre-allocated memory for this node to use (call destructor of the state container).</param>
-    API_FUNCTION() virtual void ReleaseState(Behavior* behavior, void* memory)
+    /// <param name="context">Behavior update context data.</param>
+    API_FUNCTION() virtual void ReleaseState(const BehaviorUpdateContext& context)
     {
     }
 
@@ -73,7 +71,7 @@ public:
     /// </summary>
     /// <param name="context">Behavior update context data.</param>
     /// <returns>Operation result enum.</returns>
-    API_FUNCTION() virtual BehaviorUpdateResult Update(BehaviorUpdateContext context)
+    API_FUNCTION() virtual BehaviorUpdateResult Update(const BehaviorUpdateContext& context)
     {
         return BehaviorUpdateResult::Success;
     }
@@ -111,7 +109,7 @@ API_CLASS(Abstract) class FLAXENGINE_API BehaviorTreeDecorator : public Behavior
     /// </summary>
     /// <param name="context">Behavior update context data.</param>
     /// <returns>True if can update, otherwise false to block it.</returns>
-    API_FUNCTION() virtual bool CanUpdate(BehaviorUpdateContext context)
+    API_FUNCTION() virtual bool CanUpdate(const BehaviorUpdateContext& context)
     {
         return true;
     }
@@ -121,7 +119,7 @@ API_CLASS(Abstract) class FLAXENGINE_API BehaviorTreeDecorator : public Behavior
     /// </summary>
     /// <param name="context">Behavior update context data.</param>
     /// <param name="result">The node update result. Can be modified by the decorator (eg. to force success).</param>
-    API_FUNCTION() virtual void PostUpdate(BehaviorUpdateContext context, API_PARAM(ref) BehaviorUpdateResult& result)
+    API_FUNCTION() virtual void PostUpdate(const BehaviorUpdateContext& context, API_PARAM(ref) BehaviorUpdateResult& result)
     {
     }
 };

@@ -24,7 +24,7 @@ API_CLASS(Abstract) class FLAXENGINE_API BehaviorTreeCompoundNode : public Behav
 public:
     // [BehaviorTreeNode]
     void Init(BehaviorTree* tree) override;
-    BehaviorUpdateResult Update(BehaviorUpdateContext context) override;
+    BehaviorUpdateResult Update(const BehaviorUpdateContext& context) override;
 
 protected:
     // [BehaviorTreeNode]
@@ -41,8 +41,8 @@ API_CLASS() class FLAXENGINE_API BehaviorTreeSequenceNode : public BehaviorTreeC
 public:
     // [BehaviorTreeNode]
     int32 GetStateSize() const override;
-    void InitState(Behavior* behavior, void* memory) override;
-    BehaviorUpdateResult Update(BehaviorUpdateContext context) override;
+    void InitState(const BehaviorUpdateContext& context) override;
+    BehaviorUpdateResult Update(const BehaviorUpdateContext& context) override;
 
 private:
     struct State
@@ -61,8 +61,8 @@ API_CLASS() class FLAXENGINE_API BehaviorTreeSelectorNode : public BehaviorTreeC
 public:
     // [BehaviorTreeNode]
     int32 GetStateSize() const override;
-    void InitState(Behavior* behavior, void* memory) override;
-    BehaviorUpdateResult Update(BehaviorUpdateContext context) override;
+    void InitState(const BehaviorUpdateContext& context) override;
+    BehaviorUpdateResult Update(const BehaviorUpdateContext& context) override;
 
 private:
     struct State
@@ -111,8 +111,8 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeDelayNode : public BehaviorTr
 public:
     // [BehaviorTreeNode]
     int32 GetStateSize() const override;
-    void InitState(Behavior* behavior, void* memory) override;
-    BehaviorUpdateResult Update(BehaviorUpdateContext context) override;
+    void InitState(const BehaviorUpdateContext& context) override;
+    BehaviorUpdateResult Update(const BehaviorUpdateContext& context) override;
 
 private:
     struct State
@@ -136,9 +136,9 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeSubTreeNode : public Behavior
 public:
     // [BehaviorTreeNode]
     int32 GetStateSize() const override;
-    void InitState(Behavior* behavior, void* memory) override;
-    void ReleaseState(Behavior* behavior, void* memory) override;
-    BehaviorUpdateResult Update(BehaviorUpdateContext context) override;
+    void InitState(const BehaviorUpdateContext& context) override;
+    void ReleaseState(const BehaviorUpdateContext& context) override;
+    BehaviorUpdateResult Update(const BehaviorUpdateContext& context) override;
 
     struct State
     {
@@ -160,7 +160,7 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeForceFinishNode : public Beha
 
 public:
     // [BehaviorTreeNode]
-    BehaviorUpdateResult Update(BehaviorUpdateContext context) override;
+    BehaviorUpdateResult Update(const BehaviorUpdateContext& context) override;
 };
 
 /// <summary>
@@ -172,7 +172,7 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeInvertDecorator : public Beha
 
 public:
     // [BehaviorTreeNode]
-    void PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result) override;
+    void PostUpdate(const BehaviorUpdateContext& context, BehaviorUpdateResult& result) override;
 };
 
 /// <summary>
@@ -184,7 +184,7 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeForceSuccessDecorator : publi
 
 public:
     // [BehaviorTreeNode]
-    void PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result) override;
+    void PostUpdate(const BehaviorUpdateContext& context, BehaviorUpdateResult& result) override;
 };
 
 /// <summary>
@@ -196,7 +196,7 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeForceFailedDecorator : public
 
 public:
     // [BehaviorTreeNode]
-    void PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result) override;
+    void PostUpdate(const BehaviorUpdateContext& context, BehaviorUpdateResult& result) override;
 };
 
 /// <summary>
@@ -218,8 +218,8 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeLoopDecorator : public Behavi
 public:
     // [BehaviorTreeNode]
     int32 GetStateSize() const override;
-    void InitState(Behavior* behavior, void* memory) override;
-    void PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result) override;
+    void InitState(const BehaviorUpdateContext& context) override;
+    void PostUpdate(const BehaviorUpdateContext& context, BehaviorUpdateResult& result) override;
 
     struct State
     {
@@ -250,8 +250,8 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeTimeLimitDecorator : public B
 public:
     // [BehaviorTreeNode]
     int32 GetStateSize() const override;
-    void InitState(Behavior* behavior, void* memory) override;
-    BehaviorUpdateResult Update(BehaviorUpdateContext context) override;
+    void InitState(const BehaviorUpdateContext& context) override;
+    BehaviorUpdateResult Update(const BehaviorUpdateContext& context) override;
 
     struct State
     {
@@ -282,10 +282,10 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeCooldownDecorator : public Be
 public:
     // [BehaviorTreeNode]
     int32 GetStateSize() const override;
-    void InitState(Behavior* behavior, void* memory) override;
-    void ReleaseState(Behavior* behavior, void* memory) override;
-    bool CanUpdate(BehaviorUpdateContext context) override;
-    void PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result) override;
+    void InitState(const BehaviorUpdateContext& context) override;
+    void ReleaseState(const BehaviorUpdateContext& context) override;
+    bool CanUpdate(const BehaviorUpdateContext& context) override;
+    void PostUpdate(const BehaviorUpdateContext& context, BehaviorUpdateResult& result) override;
 
     struct State
     {

@@ -93,7 +93,7 @@ void BehaviorTreeNode::BecomeRelevant(const BehaviorUpdateContext& context)
     BitArray<>& relevantNodes = *(BitArray<>*)context.RelevantNodes;
     ASSERT_LOW_LAYER(relevantNodes.Get(_executionIndex) == false);
     relevantNodes.Set(_executionIndex, true);
-    InitState(context.Behavior, context.Memory);
+    InitState(context);
 }
 
 void BehaviorTreeNode::BecomeIrrelevant(const BehaviorUpdateContext& context)
@@ -102,7 +102,7 @@ void BehaviorTreeNode::BecomeIrrelevant(const BehaviorUpdateContext& context)
     BitArray<>& relevantNodes = *(BitArray<>*)context.RelevantNodes;
     ASSERT_LOW_LAYER(relevantNodes.Get(_executionIndex) == true);
     relevantNodes.Set(_executionIndex, false);
-    ReleaseState(context.Behavior, context.Memory);
+    ReleaseState(context);
 
     // Release decorators
     for (BehaviorTreeDecorator* decorator : _decorators)
@@ -136,7 +136,7 @@ void BehaviorTreeCompoundNode::Init(BehaviorTree* tree)
         child->Init(tree);
 }
 
-BehaviorUpdateResult BehaviorTreeCompoundNode::Update(BehaviorUpdateContext context)
+BehaviorUpdateResult BehaviorTreeCompoundNode::Update(const BehaviorUpdateContext& context)
 {
     auto result = BehaviorUpdateResult::Success;
     for (int32 i = 0; i < Children.Count() && result == BehaviorUpdateResult::Success; i++)
@@ -167,13 +167,13 @@ int32 BehaviorTreeSequenceNode::GetStateSize() const
     return sizeof(State);
 }
 
-void BehaviorTreeSequenceNode::InitState(Behavior* behavior, void* memory)
+void BehaviorTreeSequenceNode::InitState(const BehaviorUpdateContext& context)
 {
-    auto state = GetState<State>(memory);
+    auto state = GetState<State>(context.Memory);
     new(state)State();
 }
 
-BehaviorUpdateResult BehaviorTreeSequenceNode::Update(BehaviorUpdateContext context)
+BehaviorUpdateResult BehaviorTreeSequenceNode::Update(const BehaviorUpdateContext& context)
 {
     auto state = GetState<State>(context.Memory);
 
@@ -204,13 +204,13 @@ int32 BehaviorTreeSelectorNode::GetStateSize() const
     return sizeof(State);
 }
 
-void BehaviorTreeSelectorNode::InitState(Behavior* behavior, void* memory)
+void BehaviorTreeSelectorNode::InitState(const BehaviorUpdateContext& context)
 {
-    auto state = GetState<State>(memory);
+    auto state = GetState<State>(context.Memory);
     new(state)State();
 }
 
-BehaviorUpdateResult BehaviorTreeSelectorNode::Update(BehaviorUpdateContext context)
+BehaviorUpdateResult BehaviorTreeSelectorNode::Update(const BehaviorUpdateContext& context)
 {
     auto state = GetState<State>(context.Memory);
 
@@ -238,15 +238,15 @@ int32 BehaviorTreeDelayNode::GetStateSize() const
     return sizeof(State);
 }
 
-void BehaviorTreeDelayNode::InitState(Behavior* behavior, void* memory)
+void BehaviorTreeDelayNode::InitState(const BehaviorUpdateContext& context)
 {
-    auto state = GetState<State>(memory);
-    if (!WaitTimeSelector.TryGet(behavior->GetKnowledge(), state->TimeLeft))
+    auto state = GetState<State>(context.Memory);
+    if (!WaitTimeSelector.TryGet(context.Knowledge, state->TimeLeft))
         state->TimeLeft = WaitTime;
     state->TimeLeft = Random::RandRange(Math::Max(state->TimeLeft - RandomDeviation, 0.0f), state->TimeLeft + RandomDeviation);
 }
 
-BehaviorUpdateResult BehaviorTreeDelayNode::Update(BehaviorUpdateContext context)
+BehaviorUpdateResult BehaviorTreeDelayNode::Update(const BehaviorUpdateContext& context)
 {
     auto state = GetState<State>(context.Memory);
     state->TimeLeft -= context.DeltaTime;
@@ -258,9 +258,9 @@ int32 BehaviorTreeSubTreeNode::GetStateSize() const
     return sizeof(State);
 }
 
-void BehaviorTreeSubTreeNode::InitState(Behavior* behavior, void* memory)
+void BehaviorTreeSubTreeNode::InitState(const BehaviorUpdateContext& context)
 {
-    auto state = GetState<State>(memory);
+    auto state = GetState<State>(context.Memory);
     new(state)State();
     const BehaviorTree* tree = Tree.Get();
     if (!tree || tree->WaitForLoaded())
@@ -270,22 +270,27 @@ void BehaviorTreeSubTreeNode::InitState(Behavior* behavior, void* memory)
     state->RelevantNodes.SetAll(false);
 }
 
-void BehaviorTreeSubTreeNode::ReleaseState(Behavior* behavior, void* memory)
+void BehaviorTreeSubTreeNode::ReleaseState(const BehaviorUpdateContext& context)
 {
-    auto state = GetState<State>(memory);
+    auto state = GetState<State>(context.Memory);
     const BehaviorTree* tree = Tree.Get();
     if (tree && tree->IsLoaded())
     {
+        // Override memory with custom one for the subtree
+        BehaviorUpdateContext subContext = context;
+        subContext.Memory = state->Memory.Get();
+        subContext.RelevantNodes = &state->RelevantNodes;
+
         for (const auto& node : tree->Graph.Nodes)
         {
             if (node.Instance && node.Instance->_executionIndex != -1 && state->RelevantNodes.HasItems() && state->RelevantNodes[node.Instance->_executionIndex])
-                node.Instance->ReleaseState(behavior, state->Memory.Get());
+                node.Instance->ReleaseState(subContext);
         }
     }
     state->~State();
 }
 
-BehaviorUpdateResult BehaviorTreeSubTreeNode::Update(BehaviorUpdateContext context)
+BehaviorUpdateResult BehaviorTreeSubTreeNode::Update(const BehaviorUpdateContext& context)
 {
     const BehaviorTree* tree = Tree.Get();
     if (!tree || !tree->Graph.Root)
@@ -306,20 +311,21 @@ BehaviorUpdateResult BehaviorTreeSubTreeNode::Update(BehaviorUpdateContext conte
 
     // Override memory with custom one for the subtree
     auto state = GetState<State>(context.Memory);
-    context.Memory = state->Memory.Get();
-    context.RelevantNodes = &state->RelevantNodes;
+    BehaviorUpdateContext subContext = context;
+    subContext.Memory = state->Memory.Get();
+    subContext.RelevantNodes = &state->RelevantNodes;
 
     // Run nested tree
-    return tree->Graph.Root->InvokeUpdate(context);
+    return tree->Graph.Root->InvokeUpdate(subContext);
 }
 
-BehaviorUpdateResult BehaviorTreeForceFinishNode::Update(BehaviorUpdateContext context)
+BehaviorUpdateResult BehaviorTreeForceFinishNode::Update(const BehaviorUpdateContext& context)
 {
     context.Behavior->StopLogic(Result);
     return Result;
 }
 
-void BehaviorTreeInvertDecorator::PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result)
+void BehaviorTreeInvertDecorator::PostUpdate(const BehaviorUpdateContext& context, BehaviorUpdateResult& result)
 {
     if (result == BehaviorUpdateResult::Success)
         result = BehaviorUpdateResult::Failed;
@@ -327,13 +333,13 @@ void BehaviorTreeInvertDecorator::PostUpdate(BehaviorUpdateContext context, Beha
         result = BehaviorUpdateResult::Success;
 }
 
-void BehaviorTreeForceSuccessDecorator::PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result)
+void BehaviorTreeForceSuccessDecorator::PostUpdate(const BehaviorUpdateContext& context, BehaviorUpdateResult& result)
 {
     if (result != BehaviorUpdateResult::Running)
         result = BehaviorUpdateResult::Success;
 }
 
-void BehaviorTreeForceFailedDecorator::PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result)
+void BehaviorTreeForceFailedDecorator::PostUpdate(const BehaviorUpdateContext& context, BehaviorUpdateResult& result)
 {
     if (result != BehaviorUpdateResult::Running)
         result = BehaviorUpdateResult::Failed;
@@ -344,14 +350,14 @@ int32 BehaviorTreeLoopDecorator::GetStateSize() const
     return sizeof(State);
 }
 
-void BehaviorTreeLoopDecorator::InitState(Behavior* behavior, void* memory)
+void BehaviorTreeLoopDecorator::InitState(const BehaviorUpdateContext& context)
 {
-    auto state = GetState<State>(memory);
-    if (!LoopCountSelector.TryGet(behavior->GetKnowledge(), state->Loops))
+    auto state = GetState<State>(context.Memory);
+    if (!LoopCountSelector.TryGet(context.Knowledge, state->Loops))
         state->Loops = LoopCount;
 }
 
-void BehaviorTreeLoopDecorator::PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result)
+void BehaviorTreeLoopDecorator::PostUpdate(const BehaviorUpdateContext& context, BehaviorUpdateResult& result)
 {
     // Continue looping only if node succeeds
     if (result == BehaviorUpdateResult::Success)
@@ -375,15 +381,15 @@ int32 BehaviorTreeTimeLimitDecorator::GetStateSize() const
     return sizeof(State);
 }
 
-void BehaviorTreeTimeLimitDecorator::InitState(Behavior* behavior, void* memory)
+void BehaviorTreeTimeLimitDecorator::InitState(const BehaviorUpdateContext& context)
 {
-    auto state = GetState<State>(memory);
-    if (!MaxDurationSelector.TryGet(behavior->GetKnowledge(), state->TimeLeft))
+    auto state = GetState<State>(context.Memory);
+    if (!MaxDurationSelector.TryGet(context.Knowledge, state->TimeLeft))
         state->TimeLeft = MaxDuration;
     state->TimeLeft = Random::RandRange(Math::Max(state->TimeLeft - RandomDeviation, 0.0f), state->TimeLeft + RandomDeviation);
 }
 
-BehaviorUpdateResult BehaviorTreeTimeLimitDecorator::Update(BehaviorUpdateContext context)
+BehaviorUpdateResult BehaviorTreeTimeLimitDecorator::Update(const BehaviorUpdateContext& context)
 {
     auto state = GetState<State>(context.Memory);
     state->TimeLeft -= context.DeltaTime;
@@ -395,26 +401,26 @@ int32 BehaviorTreeCooldownDecorator::GetStateSize() const
     return sizeof(State);
 }
 
-void BehaviorTreeCooldownDecorator::InitState(Behavior* behavior, void* memory)
+void BehaviorTreeCooldownDecorator::InitState(const BehaviorUpdateContext& context)
 {
-    auto state = GetState<State>(memory);
+    auto state = GetState<State>(context.Memory);
     state->EndTime = 0; // Allow to entry on start
 }
 
-void BehaviorTreeCooldownDecorator::ReleaseState(Behavior* behavior, void* memory)
+void BehaviorTreeCooldownDecorator::ReleaseState(const BehaviorUpdateContext& context)
 {
     // Preserve the decorator's state to keep cooldown
-    BitArray<>& relevantNodes = behavior->GetKnowledge()->RelevantNodes;
+    BitArray<>& relevantNodes = *(BitArray<>*)context.RelevantNodes;
     relevantNodes.Set(_executionIndex, true);
 }
 
-bool BehaviorTreeCooldownDecorator::CanUpdate(BehaviorUpdateContext context)
+bool BehaviorTreeCooldownDecorator::CanUpdate(const BehaviorUpdateContext& context)
 {
     auto state = GetState<State>(context.Memory);
     return state->EndTime <= context.Time;
 }
 
-void BehaviorTreeCooldownDecorator::PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result)
+void BehaviorTreeCooldownDecorator::PostUpdate(const BehaviorUpdateContext& context, BehaviorUpdateResult& result)
 {
     if (result != BehaviorUpdateResult::Running)
     {

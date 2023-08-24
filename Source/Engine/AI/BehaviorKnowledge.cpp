@@ -144,10 +144,17 @@ void BehaviorKnowledge::FreeMemory()
     {
         // Release any outstanding nodes state and memory
         ASSERT_LOW_LAYER(Tree);
+        BehaviorUpdateContext context;
+        context.Behavior = Behavior;
+        context.Knowledge = this;
+        context.Memory = Memory;
+        context.RelevantNodes = &RelevantNodes;
+        context.DeltaTime = 0.0f;
+        context.Time = 0.0f;
         for (const auto& node : Tree->Graph.Nodes)
         {
             if (node.Instance && node.Instance->_executionIndex != -1 && RelevantNodes[node.Instance->_executionIndex])
-                node.Instance->ReleaseState(Behavior, Memory);
+                node.Instance->ReleaseState(context);
         }
         Allocator::Free(Memory);
         Memory = nullptr;
