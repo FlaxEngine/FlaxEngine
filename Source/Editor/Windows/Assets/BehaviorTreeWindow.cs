@@ -135,7 +135,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 for (var i = 0; i < nodes.Count; i++)
                 {
-                    if (nodes[i] is Surface.Archetypes.BehaviorTree.Node node && node.IsSelected && node.Instance)
+                    if (nodes[i] is Surface.Archetypes.BehaviorTree.NodeBase node && node.IsSelected && node.Instance)
                         selection.Add(node.Instance);
                 }
             }
@@ -153,7 +153,7 @@ namespace FlaxEditor.Windows.Assets
                     // Sync instance data with surface node value storage
                     for (var j = 0; j < nodes.Count; j++)
                     {
-                        if (nodes[j] is Surface.Archetypes.BehaviorTree.Node node && node.Instance == instance)
+                        if (nodes[j] is Surface.Archetypes.BehaviorTree.NodeBase node && node.Instance == instance)
                         {
                             node._isValueEditing = true;
                             node.SetValue(1, FlaxEngine.Json.JsonSerializer.SaveToBytes(instance));

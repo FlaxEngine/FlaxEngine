@@ -28,7 +28,7 @@ public:
 
 protected:
     // [BehaviorTreeNode]
-    void InvokeReleaseState(const BehaviorUpdateContext& context) override;
+    void BecomeIrrelevant(const BehaviorUpdateContext& context, bool nodeOnly) override;
 };
 
 /// <summary>

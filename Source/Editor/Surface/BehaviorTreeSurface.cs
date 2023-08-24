@@ -71,6 +71,10 @@ namespace FlaxEditor.Surface
                 scriptType == typeof(BehaviorTreeRootNode))
                 return;
 
+            // Nodes-only
+            if (new ScriptType(typeof(BehaviorTreeDecorator)).IsAssignableFrom(scriptType))
+                return;
+
             // Create group archetype
             var groupKey = new KeyValuePair<string, ushort>("Behavior Tree", 19);
             if (!cache.TryGetValue(groupKey, out var group))
@@ -171,6 +175,7 @@ namespace FlaxEditor.Surface
                     {
                         typeof(BehaviorTreeSubTreeNode).FullName,
                         FlaxEngine.Json.JsonSerializer.SaveToBytes(instance),
+                        null,
                     });
                     FlaxEngine.Object.Destroy(instance);
                 }

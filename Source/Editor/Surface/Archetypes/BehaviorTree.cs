@@ -1,6 +1,8 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEngine;
@@ -17,26 +19,16 @@ namespace FlaxEditor.Surface.Archetypes
     public static class BehaviorTree
     {
         /// <summary>
-        /// Customized <see cref="SurfaceNode" /> for the Behavior Tree node.
+        /// Base class for Behavior Tree nodes wrapped inside <see cref="SurfaceNode" />.
         /// </summary>
-        internal class Node : SurfaceNode
+        internal class NodeBase : SurfaceNode
         {
-            private const float ConnectionAreaMargin = 12.0f;
-            private const float ConnectionAreaHeight = 12.0f;
-
-            private ScriptType _type;
-            private InputBox _input;
-            private OutputBox _output;
+            protected ScriptType _type;
             internal bool _isValueEditing;
 
             public BehaviorTreeNode Instance;
 
-            internal static SurfaceNode Create(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
-            {
-                return new Node(id, context, nodeArch, groupArch);
-            }
-
-            internal Node(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            protected NodeBase(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
             }
@@ -48,11 +40,13 @@ namespace FlaxEditor.Surface.Archetypes
                     title = title.Substring(12);
                 if (title.EndsWith("Node"))
                     title = title.Substring(0, title.Length - 4);
+                if (title.EndsWith("Decorator"))
+                    title = title.Substring(0, title.Length - 9);
                 title = Utilities.Utils.GetPropertyNameUI(title);
                 return title;
             }
 
-            private void UpdateTitle()
+            protected virtual void UpdateTitle()
             {
                 string title = null;
                 if (Instance != null)
@@ -66,34 +60,18 @@ namespace FlaxEditor.Surface.Archetypes
                     var typeName = (string)Values[0];
                     title = "Missing Type " + typeName;
                 }
-                if (title != Title)
-                {
-                    Title = title;
-                    ResizeAuto();
-                }
+                Title = title;
             }
 
-            /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
-
-                // Setup boxes
-                _input = (InputBox)GetBox(0);
-                _output = (OutputBox)GetBox(1);
+                base.OnLoaded(action);
 
                 // Setup node type and data
-                var flagsRoot = NodeFlags.NoRemove | NodeFlags.NoCloseButton | NodeFlags.NoSpawnViaPaste;
-                var flags = Archetype.Flags & ~flagsRoot;
                 var typeName = (string)Values[0];
                 _type = TypeUtils.GetType(typeName);
                 if (_type != null)
                 {
-                    bool isRoot = _type.Type == typeof(BehaviorTreeRootNode);
-                    _input.Enabled = _input.Visible = !isRoot;
-                    _output.Enabled = _output.Visible = new ScriptType(typeof(BehaviorTreeCompoundNode)).IsAssignableFrom(_type);
-                    if (isRoot)
-                        flags |= flagsRoot;
                     TooltipText = Editor.Instance.CodeDocs.GetTooltip(_type);
                     try
                     {
@@ -112,6 +90,259 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     Instance = null;
                 }
+
+                UpdateTitle();
+            }
+
+            public override void OnValuesChanged()
+            {
+                base.OnValuesChanged();
+
+                // Skip updating instance when it's being edited by user via UI
+                if (!_isValueEditing)
+                {
+                    try
+                    {
+                        if (Instance != null)
+                        {
+                            // Reload node instance from data
+                            var instanceData = (byte[])Values[1];
+                            if (instanceData == null || instanceData.Length == 0)
+                            {
+                                // Recreate instance data to default state if previous state was empty
+                                var defaultInstance = (BehaviorTreeNode)_type.CreateInstance(); // TODO: use default instance from native ScriptingType
+                                instanceData = FlaxEngine.Json.JsonSerializer.SaveToBytes(defaultInstance);
+                            }
+                            FlaxEngine.Json.JsonSerializer.LoadFromBytes(Instance, instanceData, Globals.EngineBuildNumber);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Editor.LogError("Failed to load Behavior Tree node of type " + _type);
+                        Editor.LogWarning(ex);
+                    }
+                }
+
+                UpdateTitle();
+            }
+
+            public override void OnSpawned(SurfaceNodeActions action)
+            {
+                base.OnSpawned(action);
+
+                ResizeAuto();
+            }
+
+            public override void OnDestroy()
+            {
+                if (IsDisposing)
+                    return;
+                _type = ScriptType.Null;
+                Object.Destroy(ref Instance);
+
+                base.OnDestroy();
+            }
+        }
+
+        /// <summary>
+        /// Customized <see cref="SurfaceNode" /> for the Behavior Tree node.
+        /// </summary>
+        internal class Node : NodeBase
+        {
+            private const float ConnectionAreaMargin = 12.0f;
+            private const float ConnectionAreaHeight = 12.0f;
+            private const float DecoratorsMarginX = 5.0f;
+            private const float DecoratorsMarginY = 2.0f;
+
+            private InputBox _input;
+            private OutputBox _output;
+            internal List<Decorator> _decorators;
+
+            internal static SurfaceNode Create(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            {
+                return new Node(id, context, nodeArch, groupArch);
+            }
+
+            internal Node(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+            }
+
+            public unsafe List<uint> DecoratorIds
+            {
+                get
+                {
+                    var result = new List<uint>();
+                    var ids = Values.Length >= 3 ? Values[2] as byte[] : null;
+                    if (ids != null)
+                    {
+                        fixed (byte* data = ids)
+                        {
+                            uint* ptr = (uint*)data;
+                            int count = ids.Length / sizeof(uint);
+                            for (int i = 0; i < count; i++)
+                                result.Add(ptr[i]);
+                        }
+                    }
+                    return result;
+                }
+                set
+                {
+                    var ids = new byte[sizeof(uint) * value.Count];
+                    if (value != null)
+                    {
+                        fixed (byte* data = ids)
+                        {
+                            uint* ptr = (uint*)data;
+                            for (var i = 0; i < value.Count; i++)
+                                ptr[i] = value[i];
+                        }
+                    }
+                    SetValue(2, ids);
+                }
+            }
+
+            public unsafe List<Decorator> Decorators
+            {
+                get
+                {
+                    if (_decorators == null)
+                    {
+                        _decorators = new List<Decorator>();
+                        var ids = Values.Length >= 3 ? Values[2] as byte[] : null;
+                        if (ids != null)
+                        {
+                            fixed (byte* data = ids)
+                            {
+                                uint* ptr = (uint*)data;
+                                int count = ids.Length / sizeof(uint);
+                                for (int i = 0; i < count; i++)
+                                {
+                                    var decorator = Surface.FindNode(ptr[i]) as Decorator;
+                                    if (decorator != null)
+                                        _decorators.Add(decorator);
+                                }
+                            }
+                        }
+                    }
+                    return _decorators;
+                }
+                set
+                {
+                    _decorators = null;
+                    var ids = new byte[sizeof(uint) * value.Count];
+                    if (value != null)
+                    {
+                        fixed (byte* data = ids)
+                        {
+                            uint* ptr = (uint*)data;
+                            for (var i = 0; i < value.Count; i++)
+                                ptr[i] = value[i].ID;
+                        }
+                    }
+                    SetValue(2, ids);
+                }
+            }
+
+            public override unsafe SurfaceNode[] SealedNodes
+            {
+                get
+                {
+                    SurfaceNode[] result = null;
+                    var ids = Values.Length >= 3 ? Values[2] as byte[] : null;
+                    if (ids != null)
+                    {
+                        fixed (byte* data = ids)
+                        {
+                            uint* ptr = (uint*)data;
+                            int count = ids.Length / sizeof(uint);
+                            result = new SurfaceNode[count];
+                            for (int i = 0; i < count; i++)
+                            {
+                                var decorator = Surface.FindNode(ptr[i]) as Decorator;
+                                if (decorator != null)
+                                    result[i] = decorator;
+                            }
+                        }
+                    }
+                    return result;
+                }
+            }
+
+            public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Float2 location)
+            {
+                base.OnShowSecondaryContextMenu(menu, location);
+
+                if (!Surface.CanEdit)
+                    return;
+
+                menu.AddSeparator();
+
+                var nodeTypes = Editor.Instance.CodeEditing.BehaviorTreeNodes.Get();
+
+                if (_input.Enabled) // Root node cannot have decorators
+                {
+                    var decorators = menu.AddChildMenu("Add Decorator");
+                    var decoratorType = new ScriptType(typeof(BehaviorTreeDecorator));
+                    foreach (var nodeType in nodeTypes)
+                    {
+                        if (nodeType != decoratorType && decoratorType.IsAssignableFrom(nodeType))
+                        {
+                            var button = decorators.ContextMenu.AddButton(GetTitle(nodeType));
+                            button.Tag = nodeType;
+                            button.TooltipText = Editor.Instance.CodeDocs.GetTooltip(nodeType);
+                            button.ButtonClicked += OnAddDecoratorButtonClicked;
+                        }
+                    }
+                }
+            }
+
+            private void OnAddDecoratorButtonClicked(ContextMenuButton button)
+            {
+                var nodeType = (ScriptType)button.Tag;
+
+                // Spawn decorator
+                var decorator = Context.SpawnNode(19, 3, Location, new object[]
+                {
+                    nodeType.TypeName,
+                    Utils.GetEmptyArray<byte>(),
+                });
+
+                // Add decorator to the node
+                var decorators = Decorators;
+                decorators.Add((Decorator)decorator);
+                Decorators = decorators;
+            }
+
+            public override void OnValuesChanged()
+            {
+                // Reject cached value
+                _decorators = null;
+
+                base.OnValuesChanged();
+
+                ResizeAuto();
+            }
+
+            public override void OnLoaded(SurfaceNodeActions action)
+            {
+                base.OnLoaded(action);
+
+                // Setup boxes
+                _input = (InputBox)GetBox(0);
+                _output = (OutputBox)GetBox(1);
+
+                // Setup node type and data
+                var flagsRoot = NodeFlags.NoRemove | NodeFlags.NoCloseButton | NodeFlags.NoSpawnViaPaste;
+                var flags = Archetype.Flags & ~flagsRoot;
+                if (_type != null)
+                {
+                    bool isRoot = _type.Type == typeof(BehaviorTreeRootNode);
+                    _input.Enabled = _input.Visible = !isRoot;
+                    _output.Enabled = _output.Visible = new ScriptType(typeof(BehaviorTreeCompoundNode)).IsAssignableFrom(_type);
+                    if (isRoot)
+                        flags |= flagsRoot;
+                }
                 if (Archetype.Flags != flags)
                 {
                     // Apply custom flags
@@ -119,18 +350,60 @@ namespace FlaxEditor.Surface.Archetypes
                     Archetype.Flags = flags;
                 }
 
-                UpdateTitle();
-            }
-
-            /// <inheritdoc />
-            public override void OnSpawned()
-            {
-                base.OnSpawned();
-
                 ResizeAuto();
             }
 
-            /// <inheritdoc />
+            public override unsafe void OnPasted(Dictionary<uint, uint> idsMapping)
+            {
+                base.OnPasted(idsMapping);
+
+                // Update decorators
+                var ids = Values.Length >= 3 ? Values[2] as byte[] : null;
+                if (ids != null)
+                {
+                    _decorators = null;
+                    fixed (byte* data = ids)
+                    {
+                        uint* ptr = (uint*)data;
+                        int count = ids.Length / sizeof(uint);
+                        for (int i = 0; i < count; i++)
+                        {
+                            if (idsMapping.TryGetValue(ptr[i], out var id))
+                            {
+                                // Fix previous parent node to re-apply layout (in case it was forced by spawned decorator)
+                                var decorator = Surface.FindNode(ptr[i]) as Decorator;
+                                var decoratorNode = decorator?.Node;
+                                if (decoratorNode != null)
+                                    decoratorNode.ResizeAuto();
+
+                                // Update mapping to the new node
+                                ptr[i] = id;
+                            }
+                        }
+                    }
+                    Values[2] = ids;
+                    ResizeAuto();
+                }
+            }
+
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
+            {
+                base.OnSurfaceLoaded(action);
+
+                ResizeAuto();
+                Surface.NodeDeleted += OnNodeDeleted;
+            }
+
+            private void OnNodeDeleted(SurfaceNode node)
+            {
+                if (node is Decorator decorator && Decorators.Contains(decorator))
+                {
+                    // Decorator was spawned (eg. via undo)
+                    _decorators = null;
+                    ResizeAuto();
+                }
+            }
+
             public override void ResizeAuto()
             {
                 if (Surface == null)
@@ -144,74 +417,134 @@ namespace FlaxEditor.Surface.Archetypes
                     height += ConnectionAreaHeight;
                 if (_output != null && _output.Visible)
                     height += ConnectionAreaHeight;
+                var decorators = Decorators;
+                foreach (var decorator in decorators)
+                {
+                    decorator.ResizeAuto();
+                    height += decorator.Height + DecoratorsMarginY;
+                    width = Mathf.Max(width, decorator.Width + 2 * DecoratorsMarginX);
+                }
                 Size = new Float2(width + FlaxEditor.Surface.Constants.NodeMarginX * 2, height + FlaxEditor.Surface.Constants.NodeHeaderSize + FlaxEditor.Surface.Constants.NodeFooterSize);
-                if (_input != null && _input.Visible)
-                    _input.Bounds = new Rectangle(ConnectionAreaMargin, 0, Width - ConnectionAreaMargin * 2, ConnectionAreaHeight);
-                if (_output != null && _output.Visible)
-                    _output.Bounds = new Rectangle(ConnectionAreaMargin, Height - ConnectionAreaHeight, Width - ConnectionAreaMargin * 2, ConnectionAreaHeight);
+                UpdateRectangles();
             }
 
-            /// <inheritdoc />
             protected override void UpdateRectangles()
             {
-                base.UpdateRectangles();
-
-                // Update boxes placement
+                Rectangle bounds = Bounds;
+                if (_input != null && _input.Visible)
+                {
+                    _input.Bounds = new Rectangle(ConnectionAreaMargin, 0, Width - ConnectionAreaMargin * 2, ConnectionAreaHeight);
+                    bounds.Location.Y += _input.Height;
+                }
+                var decorators = Decorators;
+                var indexInParent = IndexInParent;
+                foreach (var decorator in decorators)
+                {
+                    decorator.Bounds = new Rectangle(bounds.Location.X + DecoratorsMarginX, bounds.Location.Y, bounds.Width - 2 * DecoratorsMarginX, decorator.Height);
+                    bounds.Location.Y += decorator.Height + DecoratorsMarginY;
+                    if (decorator.IndexInParent < indexInParent)
+                        decorator.IndexInParent = indexInParent + 1; // Push elements above the node
+                }
                 const float footerSize = FlaxEditor.Surface.Constants.NodeFooterSize;
                 const float headerSize = FlaxEditor.Surface.Constants.NodeHeaderSize;
                 const float closeButtonMargin = FlaxEditor.Surface.Constants.NodeCloseButtonMargin;
                 const float closeButtonSize = FlaxEditor.Surface.Constants.NodeCloseButtonSize;
-                _headerRect = new Rectangle(0, 0, Width, headerSize);
-                if (_input != null && _input.Visible)
-                    _headerRect.Y += ConnectionAreaHeight;
-                _footerRect = new Rectangle(0, _headerRect.Bottom, Width, footerSize);
-                _closeButtonRect = new Rectangle(Width - closeButtonSize - closeButtonMargin, _headerRect.Y + closeButtonMargin, closeButtonSize, closeButtonSize);
+                _headerRect = new Rectangle(0, bounds.Y - Y, bounds.Width, headerSize);
+                _closeButtonRect = new Rectangle(bounds.Width - closeButtonSize - closeButtonMargin, _headerRect.Y + closeButtonMargin, closeButtonSize, closeButtonSize);
+                _footerRect = new Rectangle(0, _headerRect.Bottom, bounds.Width, footerSize);
+                if (_output != null && _output.Visible)
+                    _output.Bounds = new Rectangle(ConnectionAreaMargin, bounds.Height - ConnectionAreaHeight, bounds.Width - ConnectionAreaMargin * 2, ConnectionAreaHeight);
             }
 
-            /// <inheritdoc />
-            public override void OnValuesChanged()
+            protected override void OnLocationChanged()
             {
-                base.OnValuesChanged();
+                base.OnLocationChanged();
 
-                if (_isValueEditing)
-                {
-                    // Skip updating instance when it's being edited by user via UI
-                    UpdateTitle();
-                    return; 
-                }
+                // Sync attached elements placement
+                UpdateRectangles();
+            }
+        }
 
-                try
+        /// <summary>
+        /// Customized <see cref="SurfaceNode" /> for the Behavior Tree decorator.
+        /// </summary>
+        internal class Decorator : NodeBase
+        {
+            internal static SurfaceNode Create(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            {
+                return new Decorator(id, context, nodeArch, groupArch);
+            }
+
+            internal Decorator(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+            }
+
+            public Node Node
+            {
+                get
                 {
-                    if (Instance != null)
+                    foreach (var node in Surface.Nodes)
                     {
-                        // Reload node instance from data
-                        var instanceData = (byte[])Values[1];
-                        if (instanceData == null || instanceData.Length == 0)
-                        {
-                            // Recreate instance data to default state if previous state was empty
-                            var defaultInstance = (BehaviorTreeNode)_type.CreateInstance(); // TODO: use default instance from native ScriptingType
-                            instanceData = FlaxEngine.Json.JsonSerializer.SaveToBytes(defaultInstance);
-                        }
-                        FlaxEngine.Json.JsonSerializer.LoadFromBytes(Instance, instanceData, Globals.EngineBuildNumber);
-                        UpdateTitle();
+                        if (node is Node n && n.DecoratorIds.Contains(ID))
+                            return n;
+                    }
+                    return null;
+                }
+            }
+
+            protected override Color FooterColor => Color.Transparent;
+
+            protected override Float2 CalculateNodeSize(float width, float height)
+            {
+                return new Float2(width, height + FlaxEditor.Surface.Constants.NodeHeaderSize);
+            }
+
+            protected override void UpdateRectangles()
+            {
+                base.UpdateRectangles();
+
+                _footerRect = Rectangle.Empty;
+            }
+
+            protected override void UpdateTitle()
+            {
+                var title = Title;
+
+                base.UpdateTitle();
+
+                // Update parent node on title change
+                if (title != Title)
+                    Node?.ResizeAuto();
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+
+                // Outline
+                if (!_isSelected)
+                {
+                    var style = Style.Current;
+                    var rect = new Rectangle(Float2.Zero, Size);
+                    Render2D.DrawRectangle(rect, style.BorderHighlighted);
+                }
+            }
+
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
+            {
+                base.OnSurfaceLoaded(action);
+
+                if (action == SurfaceNodeActions.Undo)
+                {
+                    // Update parent node layout when restoring decorator from undo
+                    var node = Node;
+                    if (node != null)
+                    {
+                        node._decorators = null;
+                        node.ResizeAuto();
                     }
                 }
-                catch (Exception ex)
-                {
-                    Editor.LogError("Failed to load Behavior Tree node of type " + _type);
-                    Editor.LogWarning(ex);
-                }
-            }
-
-            /// <inheritdoc />
-            public override void OnDestroy()
-            {
-                if (IsDisposing)
-                    return;
-                _type = ScriptType.Null;
-                Object.Destroy(ref Instance);
-
-                base.OnDestroy();
             }
         }
 
@@ -222,13 +555,14 @@ namespace FlaxEditor.Surface.Archetypes
         {
             new NodeArchetype
             {
-                TypeID = 1,
+                TypeID = 1, // Task Node
                 Create = Node.Create,
                 Flags = NodeFlags.BehaviorTreeGraph | NodeFlags.NoSpawnViaGUI,
                 DefaultValues = new object[]
                 {
                     string.Empty, // Type Name
                     Utils.GetEmptyArray<byte>(), // Instance Data
+                    null, // List of Decorator Nodes IDs
                 },
                 Size = new Float2(100, 0),
                 Elements = new[]
@@ -239,7 +573,7 @@ namespace FlaxEditor.Surface.Archetypes
             },
             new NodeArchetype
             {
-                TypeID = 2,
+                TypeID = 2, // Root Node
                 Create = Node.Create,
                 Flags = NodeFlags.BehaviorTreeGraph | NodeFlags.NoSpawnViaGUI,
                 DefaultValues = new object[]
@@ -253,6 +587,18 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, string.Empty, true, ScriptType.Void, 0),
                     NodeElementArchetype.Factory.Output(0, string.Empty, ScriptType.Void, 1),
                 }
+            },
+            new NodeArchetype
+            {
+                TypeID = 3, // Decorator Node
+                Create = Decorator.Create,
+                Flags = NodeFlags.BehaviorTreeGraph | NodeFlags.NoSpawnViaGUI | NodeFlags.NoMove,
+                DefaultValues = new object[]
+                {
+                    string.Empty, // Type Name
+                    Utils.GetEmptyArray<byte>(), // Instance Data
+                },
+                Size = new Float2(100, 0),
             },
         };
     }

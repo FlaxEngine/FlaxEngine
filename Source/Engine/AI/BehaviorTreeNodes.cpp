@@ -42,24 +42,70 @@ bool IsAssignableFrom(const StringAnsiView& to, const StringAnsiView& from)
 BehaviorUpdateResult BehaviorTreeNode::InvokeUpdate(const BehaviorUpdateContext& context)
 {
     ASSERT_LOW_LAYER(_executionIndex != -1);
-    BitArray<>& relevantNodes = *(BitArray<>*)context.RelevantNodes;
-    if (relevantNodes.Get(_executionIndex) == false)
+    const BitArray<>& relevantNodes = *(const BitArray<>*)context.RelevantNodes;
+
+    // Check decorators if node can be executed
+    for (BehaviorTreeDecorator* decorator : _decorators)
     {
-        // Node becomes relevant so initialize it's state
-        relevantNodes.Set(_executionIndex, true);
-        InitState(context.Behavior, context.Memory);
+        ASSERT_LOW_LAYER(decorator->_executionIndex != -1);
+        if (relevantNodes.Get(decorator->_executionIndex) == false)
+            decorator->BecomeRelevant(context);
+        if (!decorator->CanUpdate(context))
+        {
+            return BehaviorUpdateResult::Failed;
+        }
     }
 
+    // Make node relevant before update
+    if (relevantNodes.Get(_executionIndex) == false)
+        BecomeRelevant(context);
+
     // Node-specific update
-    const BehaviorUpdateResult result = Update(context);
+    for (BehaviorTreeDecorator* decorator : _decorators)
+    {
+        decorator->Update(context);
+    }
+    BehaviorUpdateResult result = Update(context);
+    for (BehaviorTreeDecorator* decorator : _decorators)
+    {
+        decorator->PostUpdate(context, result);
+    }
 
     // Check if node is not relevant anymore
     if (result != BehaviorUpdateResult::Running)
-    {
-        InvokeReleaseState(context);
-    }
+        BecomeIrrelevant(context);
 
     return result;
+}
+
+void BehaviorTreeNode::BecomeRelevant(const BehaviorUpdateContext& context)
+{
+    // Initialize state
+    BitArray<>& relevantNodes = *(BitArray<>*)context.RelevantNodes;
+    ASSERT_LOW_LAYER(relevantNodes.Get(_executionIndex) == false);
+    relevantNodes.Set(_executionIndex, true);
+    InitState(context.Behavior, context.Memory);
+}
+
+void BehaviorTreeNode::BecomeIrrelevant(const BehaviorUpdateContext& context, bool nodeOnly)
+{
+    // Release state
+    BitArray<>& relevantNodes = *(BitArray<>*)context.RelevantNodes;
+    ASSERT_LOW_LAYER(relevantNodes.Get(_executionIndex) == true);
+    relevantNodes.Set(_executionIndex, false);
+    ReleaseState(context.Behavior, context.Memory);
+
+    if (nodeOnly)
+        return;
+
+    // Release decorators
+    for (BehaviorTreeDecorator* decorator : _decorators)
+    {
+        if (relevantNodes.Get(decorator->_executionIndex) == true)
+        {
+            decorator->BecomeIrrelevant(context);
+        }
+    }
 }
 
 void BehaviorTreeNode::Serialize(SerializeStream& stream, const void* otherObj)
@@ -76,13 +122,6 @@ void BehaviorTreeNode::Deserialize(DeserializeStream& stream, ISerializeModifier
 
     Name.Clear(); // Missing Name is assumes as unnamed node
     DESERIALIZE(Name);
-}
-
-void BehaviorTreeNode::InvokeReleaseState(const BehaviorUpdateContext& context)
-{
-    BitArray<>& relevantNodes = *(BitArray<>*)context.RelevantNodes;
-    relevantNodes.Set(_executionIndex, false);
-    ReleaseState(context.Behavior, context.Memory);
 }
 
 void BehaviorTreeCompoundNode::Init(BehaviorTree* tree)
@@ -102,18 +141,19 @@ BehaviorUpdateResult BehaviorTreeCompoundNode::Update(BehaviorUpdateContext cont
     return result;
 }
 
-void BehaviorTreeCompoundNode::InvokeReleaseState(const BehaviorUpdateContext& context)
+void BehaviorTreeCompoundNode::BecomeIrrelevant(const BehaviorUpdateContext& context, bool nodeOnly)
 {
+    // Make any nested nodes irrelevant as well
     const BitArray<>& relevantNodes = *(const BitArray<>*)context.RelevantNodes;
     for (BehaviorTreeNode* child : Children)
     {
         if (relevantNodes.Get(child->_executionIndex) == true)
         {
-            child->InvokeReleaseState(context);
+            child->BecomeIrrelevant(context);
         }
     }
 
-    BehaviorTreeNode::InvokeReleaseState(context);
+    BehaviorTreeNode::BecomeIrrelevant(context, nodeOnly);
 }
 
 int32 BehaviorTreeSequenceNode::GetStateSize() const

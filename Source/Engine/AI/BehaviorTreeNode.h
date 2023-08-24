@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/SerializableScriptingObject.h"
 #include "BehaviorTypes.h"
 
@@ -21,6 +22,11 @@ protected:
     API_FIELD(ReadOnly) int32 _memoryOffset = 0;
     // Execution index of the node within tree.
     API_FIELD(ReadOnly) int32 _executionIndex = -1;
+    // Parent node that owns this node (parent composite or decorator attachment node).
+    API_FIELD(ReadOnly) BehaviorTreeNode* _parent = nullptr;
+
+private:
+    Array<class BehaviorTreeDecorator*, InlinedAllocation<8>> _decorators;
 
 public:
     /// <summary>
@@ -74,6 +80,10 @@ public:
 
     // Helper utility to update node with state creation/cleanup depending on node relevancy.
     BehaviorUpdateResult InvokeUpdate(const BehaviorUpdateContext& context);
+    // Helper utility to make node relevant and init it state.
+    void BecomeRelevant(const BehaviorUpdateContext& context);
+    // Helper utility to make node irrelevant and release its state (including any nested nodes).
+    virtual void BecomeIrrelevant(const BehaviorUpdateContext& context, bool nodeOnly = false);
 
     // [SerializableScriptingObject]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
@@ -87,8 +97,31 @@ public:
         ASSERT((int32)sizeof(T) <= GetStateSize());
         return reinterpret_cast<T*>((byte*)memory + _memoryOffset);
     }
-
-protected:
-    virtual void InvokeReleaseState(const BehaviorUpdateContext& context);
 };
+
+/// <summary>
+/// Base class for Behavior Tree node decorators. Decorators can implement conditional filtering or override node logic and execution flow.
+/// </summary>
+API_CLASS(Abstract) class FLAXENGINE_API BehaviorTreeDecorator : public BehaviorTreeNode
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeDecorator, BehaviorTreeNode);
+
+    /// <summary>
+    /// Checks if the node can be updated (eg. decorator can block it depending on the gameplay conditions or its state).
+    /// </summary>
+    /// <param name="context">Behavior update context data.</param>
+    /// <returns>True if can update, otherwise false to block it.</returns>
+    API_FUNCTION() virtual bool CanUpdate(BehaviorUpdateContext context)
+    {
+        return true;
+    }
+
+    /// <summary>
+    /// Called after node update to post-process result or perform additional action.
+    /// </summary>
+    /// <param name="context">Behavior update context data.</param>
+    /// <param name="result">The node update result. Can be modified by the decorator (eg. to force success).</param>
+    API_FUNCTION() virtual void PostUpdate(BehaviorUpdateContext context, API_PARAM(ref) BehaviorUpdateResult& result)
+    {
+    }
 };

@@ -65,7 +65,7 @@ void BehaviorTreeGraph::Clear()
 
 bool BehaviorTreeGraph::onNodeLoaded(Node* n)
 {
-    if (n->GroupID == 19 && (n->TypeID == 1 || n->TypeID == 2))
+    if (n->GroupID == 19 && (n->TypeID == 1 || n->TypeID == 2 || n->TypeID == 3))
     {
         // Create node instance object
         ScriptingTypeHandle type = Scripting::FindScriptingType((StringAnsiView)n->Values[0]);
@@ -102,6 +102,26 @@ void BehaviorTreeGraph::LoadRecursive(Node& node)
     NodesStatesSize += node.Instance->GetStateSize();
     NodesCount++;
 
+    if (node.TypeID == 1 && node.Values.Count() >= 3)
+    {
+        // Load node decorators
+        const auto& decoratorIds = node.Values[2];
+        if (decoratorIds.Type.Type == VariantType::Blob && decoratorIds.AsBlob.Length)
+        {
+            const Span<uint32> ids((uint32*)decoratorIds.AsBlob.Data, decoratorIds.AsBlob.Length / sizeof(uint32));
+            for (int32 i = 0; i < ids.Length(); i++)
+            {
+                Node* decorator = GetNode(ids[i]);
+                if (decorator && decorator->Instance)
+                {
+                    ASSERT_LOW_LAYER(decorator->Instance->Is<BehaviorTreeDecorator>());
+                    node.Instance->_decorators.Add((BehaviorTreeDecorator*)decorator->Instance);
+                    decorator->Instance->_parent = node.Instance;
+                    LoadRecursive(*decorator);
+                }
+            }
+        }
+    }
     if (auto* nodeCompound = ScriptingObject::Cast<BehaviorTreeCompoundNode>(node.Instance))
     {
         auto& children = node.Boxes[1].Connections;
@@ -116,6 +136,7 @@ void BehaviorTreeGraph::LoadRecursive(Node& node)
             if (child && child->Instance)
             {
                 nodeCompound->Children.Add(child->Instance);
+                child->Instance->_parent = nodeCompound;
                 LoadRecursive(*child);
             }
         }
