@@ -162,3 +162,67 @@ public:
     // [BehaviorTreeNode]
     BehaviorUpdateResult Update(BehaviorUpdateContext context) override;
 };
+
+/// <summary>
+/// Inverts node's result - fails if node succeeded or succeeds if node failed.
+/// </summary>
+API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeInvertDecorator : public BehaviorTreeDecorator
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeInvertDecorator, BehaviorTreeDecorator);
+
+public:
+    // [BehaviorTreeNode]
+    void PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result) override;
+};
+
+/// <summary>
+/// Forces node to success - even if it failed.
+/// </summary>
+API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeForceSuccessDecorator : public BehaviorTreeDecorator
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeForceSuccessDecorator, BehaviorTreeDecorator);
+
+public:
+    // [BehaviorTreeNode]
+    void PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result) override;
+};
+
+/// <summary>
+/// Forces node to fail - even if it succeeded.
+/// </summary>
+API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeForceFailedDecorator : public BehaviorTreeDecorator
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeForceFailedDecorator, BehaviorTreeDecorator);
+
+public:
+    // [BehaviorTreeNode]
+    void PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result) override;
+};
+
+/// <summary>
+/// Loops node execution multiple times as long as it doesn't fail. Returns the last iteration result.
+/// </summary>
+API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeLoopDecorator : public BehaviorTreeDecorator
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeLoopDecorator, BehaviorTreeDecorator);
+    API_AUTO_SERIALIZATION();
+
+    // Amount of times to execute the node. Unused if LoopCountSelector is used.
+    API_FIELD(Attributes="EditorOrder(10), Limit(0)")
+    int32 LoopCount = 3;
+
+    // Amount of times to execute the node from behavior's knowledge (blackboard, goal or sensor). If set, overrides LoopCount.
+    API_FIELD(Attributes="EditorOrder(20)")
+    BehaviorKnowledgeSelector<int32> LoopCountSelector;
+
+public:
+    // [BehaviorTreeNode]
+    int32 GetStateSize() const override;
+    void InitState(Behavior* behavior, void* memory) override;
+    void PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result) override;
+
+    struct State
+    {
+        int32 Loops;
+    };
+};

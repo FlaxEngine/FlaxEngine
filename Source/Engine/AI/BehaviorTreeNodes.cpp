@@ -312,3 +312,52 @@ BehaviorUpdateResult BehaviorTreeForceFinishNode::Update(BehaviorUpdateContext c
     context.Behavior->StopLogic(Result);
     return Result;
 }
+
+void BehaviorTreeInvertDecorator::PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result)
+{
+    if (result == BehaviorUpdateResult::Success)
+        result = BehaviorUpdateResult::Failed;
+    else if (result == BehaviorUpdateResult::Failed)
+        result = BehaviorUpdateResult::Success;
+}
+
+void BehaviorTreeForceSuccessDecorator::PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result)
+{
+    if (result != BehaviorUpdateResult::Running)
+        result = BehaviorUpdateResult::Success;
+}
+
+void BehaviorTreeForceFailedDecorator::PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result)
+{
+    if (result != BehaviorUpdateResult::Running)
+        result = BehaviorUpdateResult::Failed;
+}
+
+int32 BehaviorTreeLoopDecorator::GetStateSize() const
+{
+    return sizeof(State);
+}
+
+void BehaviorTreeLoopDecorator::InitState(Behavior* behavior, void* memory)
+{
+    auto state = GetState<State>(memory);
+    if (!LoopCountSelector.TryGet(behavior->GetKnowledge(), state->Loops))
+        state->Loops = LoopCount;
+}
+
+void BehaviorTreeLoopDecorator::PostUpdate(BehaviorUpdateContext context, BehaviorUpdateResult& result)
+{
+    // Continue looping only if node succeeds
+    if (result == BehaviorUpdateResult::Success)
+    {
+        auto state = GetState<State>(context.Memory);
+        state->Loops--;
+        if (state->Loops > 0)
+        {
+            // Keep running in a loop but reset node's state (preserve decorators state including Loops counter)
+            result = BehaviorUpdateResult::Running;
+            _parent->BecomeIrrelevant(context, true);
+            _parent->BecomeRelevant(context);
+        }
+    }
+}
