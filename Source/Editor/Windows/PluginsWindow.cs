@@ -384,7 +384,7 @@ namespace FlaxEditor.Windows
             }
             catch (Exception e)
             {
-                Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Failed Gir process. {e}");
+                Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Failed Git process. {e}");
                 return;
             }
             
@@ -559,7 +559,7 @@ namespace FlaxEditor.Windows
             var localTemplateFolderLocation = Path.Combine(Editor.LocalCachePath, "TemplatePluginCache");
             if (!Directory.Exists(localTemplateFolderLocation))
                 Directory.CreateDirectory(localTemplateFolderLocation);
-            var localTemplatePath = localTemplateFolderLocation + @"\TemplatePlugin.zip";
+            var localTemplatePath = Path.Combine(localTemplateFolderLocation, "TemplatePlugin.zip");
 
             try
             {
@@ -567,7 +567,7 @@ namespace FlaxEditor.Windows
                 using (HttpClient client = new HttpClient())
                 {
                     byte[] zipBytes = await client.GetByteArrayAsync(templateUrl);
-                    await File.WriteAllBytesAsync(!File.Exists(localTemplatePath) ? Path.Combine(localTemplatePath) : Path.Combine(Editor.LocalCachePath, "TemplatePluginCache") + @"\TemplatePlugin1.zip", zipBytes);
+                    await File.WriteAllBytesAsync(!File.Exists(localTemplatePath) ? Path.Combine(localTemplatePath) : Path.Combine(Editor.LocalCachePath, "TemplatePluginCache" , "TemplatePlugin1.zip"), zipBytes);
                 
                     Debug.Logger.LogHandler.LogWrite(LogType.Info, "Template for plugin project has downloaded");
                 }
@@ -583,9 +583,9 @@ namespace FlaxEditor.Windows
             }
             
             // Check if any changes in new downloaded file
-            if (File.Exists(Path.Combine(Editor.LocalCachePath, "TemplatePluginCache") + @"\TemplatePlugin1.zip"))
+            if (File.Exists(Path.Combine(Editor.LocalCachePath, "TemplatePluginCache", "TemplatePlugin1.zip")))
             {
-                var localTemplatePath2 = Path.Combine(Editor.LocalCachePath, "TemplatePluginCache") + @"\TemplatePlugin1.zip";
+                var localTemplatePath2 = Path.Combine(Editor.LocalCachePath, "TemplatePluginCache", "TemplatePlugin1.zip");
                 bool areDifferent = false;
                 using (var zip1 = ZipFile.OpenRead(localTemplatePath))
                 {
