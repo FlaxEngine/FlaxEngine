@@ -44,21 +44,24 @@ BehaviorUpdateResult BehaviorTreeNode::InvokeUpdate(const BehaviorUpdateContext&
     ASSERT_LOW_LAYER(_executionIndex != -1);
     const BitArray<>& relevantNodes = *(const BitArray<>*)context.RelevantNodes;
 
-    // Check decorators if node can be executed
-    for (BehaviorTreeDecorator* decorator : _decorators)
-    {
-        ASSERT_LOW_LAYER(decorator->_executionIndex != -1);
-        if (relevantNodes.Get(decorator->_executionIndex) == false)
-            decorator->BecomeRelevant(context);
-        if (!decorator->CanUpdate(context))
-        {
-            return BehaviorUpdateResult::Failed;
-        }
-    }
-
-    // Make node relevant before update
+    // If node is not yet relevant
     if (relevantNodes.Get(_executionIndex) == false)
+    {
+        // Check decorators if node can be executed
+        for (BehaviorTreeDecorator* decorator : _decorators)
+        {
+            ASSERT_LOW_LAYER(decorator->_executionIndex != -1);
+            if (relevantNodes.Get(decorator->_executionIndex) == false)
+                decorator->BecomeRelevant(context);
+            if (!decorator->CanUpdate(context))
+            {
+                return BehaviorUpdateResult::Failed;
+            }
+        }
+
+        // Make node relevant
         BecomeRelevant(context);
+    }
 
     // Update decorators
     bool decoratorFailed = false;
