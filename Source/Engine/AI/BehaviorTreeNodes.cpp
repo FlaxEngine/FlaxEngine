@@ -8,6 +8,7 @@
 #if USE_CSHARP
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #endif
+#include "Engine/Level/Actor.h"
 #include "Engine/Serialization/Serialization.h"
 
 bool IsAssignableFrom(const StringAnsiView& to, const StringAnsiView& from)
@@ -444,4 +445,14 @@ bool BehaviorTreeKnowledgeConditionalDecorator::CanUpdate(const BehaviorUpdateCo
 bool BehaviorTreeKnowledgeValuesConditionalDecorator::CanUpdate(const BehaviorUpdateContext& context)
 {
     return BehaviorKnowledge::CompareValues((float)ValueA.Get(context.Knowledge), (float)ValueB.Get(context.Knowledge), Comparison);
+}
+
+bool BehaviorTreeHasTagDecorator::CanUpdate(const BehaviorUpdateContext& context)
+{
+    bool result = false;
+    ::Actor* actor;
+    if (Actor.TryGet(context.Knowledge, actor) && actor)
+        result = actor->HasTag(Tag);
+    result ^= Invert;
+    return result;
 }

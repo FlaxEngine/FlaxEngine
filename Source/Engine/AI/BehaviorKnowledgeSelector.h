@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Types/Variant.h"
+#include "Engine/Core/Types/VariantValueCast.h"
 #include "Engine/Serialization/SerializationFwd.h"
 
 class BehaviorKnowledge;
@@ -70,7 +71,7 @@ API_STRUCT(InBuild, Template, MarshalAs=StringAnsi) struct FLAXENGINE_API Behavi
     // Gets the selected knowledge value (typed).
     FORCE_INLINE T Get(BehaviorKnowledge* knowledge)
     {
-        return (T)BehaviorKnowledgeSelectorAny::Get(knowledge);
+        return TVariantValueCast<T>::Cast(BehaviorKnowledgeSelectorAny::Get(knowledge));
     }
 
     // Tries to get the selected knowledge value (typed). Returns true if got value, otherwise false.
@@ -79,7 +80,7 @@ API_STRUCT(InBuild, Template, MarshalAs=StringAnsi) struct FLAXENGINE_API Behavi
         Variant variant;
         if (BehaviorKnowledgeSelectorAny::TryGet(knowledge, variant))
         {
-            value = (T)variant;
+            value = TVariantValueCast<T>::Cast(variant);
             return true;
         }
         return false;

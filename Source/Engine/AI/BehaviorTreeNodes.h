@@ -8,6 +8,9 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/BitArray.h"
 #include "Engine/Content/AssetReference.h"
+#include "Engine/Level/Tags.h"
+
+class Actor;
 
 /// <summary>
 /// Base class for compound Behavior Tree nodes that composite child nodes.
@@ -337,6 +340,31 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeKnowledgeValuesConditionalDec
     // Values comparision mode.
     API_FIELD(Attributes="EditorOrder(20)")
     BehaviorValueComparison Comparison = BehaviorValueComparison::Equal;
+
+public:
+    // [BehaviorTreeNode]
+    bool CanUpdate(const BehaviorUpdateContext& context) override;
+};
+
+/// <summary>
+/// Checks if certain actor (from knowledge) has a given tag assigned.
+/// </summary>
+API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeHasTagDecorator : public BehaviorTreeDecorator
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeHasTagDecorator, BehaviorTreeDecorator);
+    API_AUTO_SERIALIZATION();
+
+    // The actor value from behavior's knowledge (blackboard, goal or sensor) to check against tag ownership.
+    API_FIELD(Attributes="EditorOrder(0)")
+    BehaviorKnowledgeSelector<Actor*> Actor;
+
+    // The tag to check.
+    API_FIELD(Attributes="EditorOrder(10)")
+    Tag Tag;
+
+    // If checked, inverts condition - checks if actor doesn't have a tag.
+    API_FIELD(Attributes="EditorOrder(20)")
+    bool Invert = false;
 
 public:
     // [BehaviorTreeNode]
