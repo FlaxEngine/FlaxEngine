@@ -435,3 +435,13 @@ void BehaviorTreeCooldownDecorator::PostUpdate(const BehaviorUpdateContext& cont
         state->EndTime += context.Time;
     }
 }
+
+bool BehaviorTreeKnowledgeConditionalDecorator::CanUpdate(const BehaviorUpdateContext& context)
+{
+    return BehaviorKnowledge::CompareValues((float)ValueA.Get(context.Knowledge), ValueB, Comparison);
+}
+
+bool BehaviorTreeKnowledgeValuesConditionalDecorator::CanUpdate(const BehaviorUpdateContext& context)
+{
+    return BehaviorKnowledge::CompareValues((float)ValueA.Get(context.Knowledge), (float)ValueB.Get(context.Knowledge), Comparison);
+}

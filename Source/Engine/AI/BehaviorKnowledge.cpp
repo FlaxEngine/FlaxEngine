@@ -68,7 +68,7 @@ bool AccessVariant(Variant& instance, const StringAnsiView& member, Variant& val
             if (set)
                 mField->SetValue(instanceObject, MUtils::VariantToManagedArgPtr(value, mField->GetType(), failed));
             else
-               value = MUtils::UnboxVariant(mField->GetValueBoxed(instanceObject));
+                value = MUtils::UnboxVariant(mField->GetValueBoxed(instanceObject));
             return true;
         }
         else if (const auto mProperty = mClass->GetProperty(member.Get()))
@@ -76,7 +76,7 @@ bool AccessVariant(Variant& instance, const StringAnsiView& member, Variant& val
             if (set)
                 mProperty->SetValue(instanceObject, MUtils::BoxVariant(value), nullptr);
             else
-               value = MUtils::UnboxVariant(mProperty->GetValue(instanceObject, nullptr));
+                value = MUtils::UnboxVariant(mProperty->GetValue(instanceObject, nullptr));
             return true;
         }
     }
@@ -172,4 +172,25 @@ bool BehaviorKnowledge::Get(const StringAnsiView& path, Variant& value)
 bool BehaviorKnowledge::Set(const StringAnsiView& path, const Variant& value)
 {
     return AccessBehaviorKnowledge(this, path, const_cast<Variant&>(value), true);
+}
+
+bool BehaviorKnowledge::CompareValues(float a, float b, BehaviorValueComparison comparison)
+{
+    switch (comparison)
+    {
+    case BehaviorValueComparison::Equal:
+        return Math::NearEqual(a, b);
+    case BehaviorValueComparison::NotEqual:
+        return Math::NotNearEqual(a, b);
+    case BehaviorValueComparison::Less:
+        return a < b;
+    case BehaviorValueComparison::LessEqual:
+        return a <= b;
+    case BehaviorValueComparison::Greater:
+        return a > b;
+    case BehaviorValueComparison::GreaterEqual:
+        return a >= b;
+    default:
+        return false;
+    }
 }

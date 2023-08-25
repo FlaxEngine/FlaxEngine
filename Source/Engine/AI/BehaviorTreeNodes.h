@@ -292,3 +292,53 @@ public:
         float EndTime;
     };
 };
+
+/// <summary>
+/// Checks certain knowledge value to conditionally enter the node.
+/// </summary>
+API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeKnowledgeConditionalDecorator : public BehaviorTreeDecorator
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeKnowledgeConditionalDecorator, BehaviorTreeDecorator);
+    API_AUTO_SERIALIZATION();
+
+    // The first value from behavior's knowledge (blackboard, goal or sensor) to use for comparision.
+    API_FIELD(Attributes="EditorOrder(0)")
+    BehaviorKnowledgeSelectorAny ValueA;
+
+    // The second value to use for comparision.
+    API_FIELD(Attributes="EditorOrder(10)")
+    float ValueB = 0.0f;
+
+    // Values comparision mode.
+    API_FIELD(Attributes="EditorOrder(20)")
+    BehaviorValueComparison Comparison = BehaviorValueComparison::Equal;
+
+public:
+    // [BehaviorTreeNode]
+    bool CanUpdate(const BehaviorUpdateContext& context) override;
+};
+
+/// <summary>
+/// Checks certain knowledge value to conditionally enter the node.
+/// </summary>
+API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeKnowledgeValuesConditionalDecorator : public BehaviorTreeDecorator
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeKnowledgeValuesConditionalDecorator, BehaviorTreeDecorator);
+    API_AUTO_SERIALIZATION();
+
+    // The first value from behavior's knowledge (blackboard, goal or sensor) to use for comparision.
+    API_FIELD(Attributes="EditorOrder(0)")
+    BehaviorKnowledgeSelectorAny ValueA;
+
+    // The second value from behavior's knowledge (blackboard, goal or sensor) to use for comparision.
+    API_FIELD(Attributes="EditorOrder(10)")
+    BehaviorKnowledgeSelectorAny ValueB;
+
+    // Values comparision mode.
+    API_FIELD(Attributes="EditorOrder(20)")
+    BehaviorValueComparison Comparison = BehaviorValueComparison::Equal;
+
+public:
+    // [BehaviorTreeNode]
+    bool CanUpdate(const BehaviorUpdateContext& context) override;
+};

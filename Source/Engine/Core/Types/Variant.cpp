@@ -1506,6 +1506,7 @@ Variant::operator float() const
     case VariantType::Float3:
         return AsFloat3().X;
     case VariantType::Float4:
+    case VariantType::Color:
         return AsFloat4().X;
     case VariantType::Double2:
         return (float)AsDouble2().X;
@@ -1519,6 +1520,16 @@ Variant::operator float() const
         return (float)AsInt3().X;
     case VariantType::Int4:
         return (float)AsInt4().X;
+    case VariantType::Pointer:
+        return AsPointer ? 1.0f : 0.0f;
+    case VariantType::Object:
+        return AsObject ? 1.0f : 0.0f;
+    case VariantType::Asset:
+        return AsAsset ? 1.0f : 0.0f;
+    case VariantType::Blob:
+        return AsBlob.Length > 0 ? 1.0f : 0.0f;
+    case VariantType::ManagedObject:
+        return MANAGED_GC_HANDLE ? 1.0f : 0.0f;
     default:
         return 0;
     }

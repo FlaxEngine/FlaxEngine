@@ -8,6 +8,7 @@
 
 class Behavior;
 class BehaviorTree;
+enum class BehaviorValueComparison;
 
 /// <summary>
 /// Behavior logic component knowledge data container. Contains blackboard values, sensors data and goals storage for Behavior Tree execution.
@@ -69,4 +70,13 @@ API_CLASS() class FLAXENGINE_API BehaviorKnowledge : public ScriptingObject
     /// <param name="value">Value to set.</param>
     /// <returns>True if set value, otherwise false.</returns>
     API_FUNCTION() bool Set(const StringAnsiView& path, const Variant& value);
+
+    /// <summary>
+    /// Compares two values and returns the comparision result.
+    /// </summary>
+    /// <param name="a">The left operand.</param>
+    /// <param name="b">The right operand.</param>
+    /// <param name="comparison">The comparison function.</param>
+    /// <returns>True if comparision passed, otherwise false.</returns>
+    API_FUNCTION() static bool CompareValues(float a, float b, BehaviorValueComparison comparison);
 };

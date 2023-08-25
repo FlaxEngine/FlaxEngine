@@ -59,3 +59,22 @@ API_ENUM() enum class BehaviorUpdateResult
     // Action failed.
     Failed,
 };
+
+/// <summary>
+/// Comparison function modes for behavior knowledge values.
+/// </summary>
+API_ENUM() enum class BehaviorValueComparison
+{
+    // If A is equal to B, the comparison passes.
+    Equal,
+    // If A is not equal to B, the comparison passes.
+    NotEqual,
+    // If A is less than the B, the comparison passes.
+    Less,
+    // If A is less than or equal to the B, the comparison passes.
+    LessEqual,
+    // If A is greater than the B, the comparison passes.
+    Greater,
+    // If A is greater than or equal to the B, the comparison passes.
+    GreaterEqual,
+};
