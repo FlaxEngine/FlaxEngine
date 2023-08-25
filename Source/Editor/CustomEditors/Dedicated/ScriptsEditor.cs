@@ -254,27 +254,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
     /// Small image control added per script group that allows to drag and drop a reference to it. Also used to reorder the scripts.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.Image" />
-    internal class ScriptDragIcon : Image
+    internal class DragImage : Image
     {
-        private ScriptsEditor _editor;
         private bool _isMouseDown;
         private Float2 _mouseDownPos;
 
         /// <summary>
-        /// Gets the target script.
+        /// Action called when drag event should start.
         /// </summary>
-        public Script Script => (Script)Tag;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ScriptDragIcon"/> class.
-        /// </summary>
-        /// <param name="editor">The script editor.</param>
-        /// <param name="script">The target script.</param>
-        public ScriptDragIcon(ScriptsEditor editor, Script script)
-        {
-            Tag = script;
-            _editor = editor;
-        }
+        public Action<DragImage> Drag;
 
         /// <inheritdoc />
         public override void OnMouseEnter(Float2 location)
@@ -287,11 +275,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <inheritdoc />
         public override void OnMouseLeave()
         {
-            // Check if start drag drop
             if (_isMouseDown)
             {
-                DoDrag();
                 _isMouseDown = false;
+                Drag(this);
             }
 
             base.OnMouseLeave();
@@ -300,11 +287,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <inheritdoc />
         public override void OnMouseMove(Float2 location)
         {
-            // Check if start drag drop
             if (_isMouseDown && Float2.Distance(location, _mouseDownPos) > 10.0f)
             {
-                DoDrag();
                 _isMouseDown = false;
+                Drag(this);
             }
 
             base.OnMouseMove(location);
@@ -315,8 +301,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             if (button == MouseButton.Left)
             {
-                // Clear flag
                 _isMouseDown = false;
+                return true;
             }
 
             return base.OnMouseUp(location, button);
@@ -327,20 +313,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             if (button == MouseButton.Left)
             {
-                // Set flag
                 _isMouseDown = true;
                 _mouseDownPos = location;
+                return true;
             }
 
             return base.OnMouseDown(location, button);
-        }
-
-        private void DoDrag()
-        {
-            var script = Script;
-            _editor.OnScriptDragChange(true, script);
-            DoDragDrop(DragScripts.GetDragData(script));
-            _editor.OnScriptDragChange(false, script);
         }
     }
 
@@ -639,7 +617,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 _scriptToggles[i] = scriptToggle;
 
                 // Add drag button to the group
-                var scriptDrag = new ScriptDragIcon(this, script)
+                var scriptDrag = new DragImage
                 {
                     TooltipText = "Script reference",
                     AutoFocus = true,
@@ -650,6 +628,13 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     Margin = new Margin(1),
                     Brush = new SpriteBrush(Editor.Instance.Icons.DragBar12),
                     Tag = script,
+                    Drag = img =>
+                    {
+                        var s = (Script)img.Tag;
+                        OnScriptDragChange(true, s);
+                        img.DoDragDrop(DragScripts.GetDragData(s));
+                        OnScriptDragChange(false, s);
+                    }
                 };
 
                 // Add settings button to the group

@@ -2,13 +2,14 @@
 
 using System;
 using System.Collections.Generic;
+using FlaxEditor.CustomEditors.Dedicated;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Drag;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
-using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Surface.Archetypes
 {
@@ -23,6 +24,11 @@ namespace FlaxEditor.Surface.Archetypes
         /// </summary>
         internal class NodeBase : SurfaceNode
         {
+            protected const float ConnectionAreaMargin = 12.0f;
+            protected const float ConnectionAreaHeight = 12.0f;
+            protected const float DecoratorsMarginX = 5.0f;
+            protected const float DecoratorsMarginY = 2.0f;
+
             protected ScriptType _type;
             internal bool _isValueEditing;
 
@@ -138,7 +144,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (IsDisposing)
                     return;
                 _type = ScriptType.Null;
-                Object.Destroy(ref Instance);
+                FlaxEngine.Object.Destroy(ref Instance);
 
                 base.OnDestroy();
             }
@@ -149,11 +155,6 @@ namespace FlaxEditor.Surface.Archetypes
         /// </summary>
         internal class Node : NodeBase
         {
-            private const float ConnectionAreaMargin = 12.0f;
-            private const float ConnectionAreaHeight = 12.0f;
-            private const float DecoratorsMarginX = 5.0f;
-            private const float DecoratorsMarginY = 2.0f;
-
             private InputBox _input;
             private OutputBox _output;
             internal List<Decorator> _decorators;
@@ -186,20 +187,7 @@ namespace FlaxEditor.Surface.Archetypes
                     }
                     return result;
                 }
-                set
-                {
-                    var ids = new byte[sizeof(uint) * value.Count];
-                    if (value != null)
-                    {
-                        fixed (byte* data = ids)
-                        {
-                            uint* ptr = (uint*)data;
-                            for (var i = 0; i < value.Count; i++)
-                                ptr[i] = value[i];
-                        }
-                    }
-                    SetValue(2, ids);
-                }
+                set => SetDecoratorIds(value, true);
             }
 
             public unsafe List<Decorator> Decorators
@@ -241,6 +229,28 @@ namespace FlaxEditor.Surface.Archetypes
                         }
                     }
                     SetValue(2, ids);
+                }
+            }
+
+            public unsafe void SetDecoratorIds(List<uint> value, bool withUndo)
+            {
+                var ids = new byte[sizeof(uint) * value.Count];
+                if (value != null)
+                {
+                    fixed (byte* data = ids)
+                    {
+                        uint* ptr = (uint*)data;
+                        for (var i = 0; i < value.Count; i++)
+                            ptr[i] = value[i];
+                    }
+                }
+                if (withUndo)
+                    SetValue(2, ids);
+                else
+                {
+                    Values[2] = ids;
+                    OnValuesChanged();
+                    Surface?.MarkAsEdited();
                 }
             }
 
@@ -422,9 +432,9 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     decorator.ResizeAuto();
                     height += decorator.Height + DecoratorsMarginY;
-                    width = Mathf.Max(width, decorator.Width + 2 * DecoratorsMarginX);
+                    width = Mathf.Max(width, decorator.Width - FlaxEditor.Surface.Constants.NodeCloseButtonSize - 2 * DecoratorsMarginX);
                 }
-                Size = new Float2(width + FlaxEditor.Surface.Constants.NodeMarginX * 2, height + FlaxEditor.Surface.Constants.NodeHeaderSize + FlaxEditor.Surface.Constants.NodeFooterSize);
+                Size = new Float2(width + FlaxEditor.Surface.Constants.NodeMarginX * 2 + FlaxEditor.Surface.Constants.NodeCloseButtonSize, height + FlaxEditor.Surface.Constants.NodeHeaderSize + FlaxEditor.Surface.Constants.NodeFooterSize);
                 UpdateRectangles();
             }
 
@@ -470,14 +480,94 @@ namespace FlaxEditor.Surface.Archetypes
         /// </summary>
         internal class Decorator : NodeBase
         {
+            private sealed class DragDecorator : DragHelper<uint, DragEventArgs>
+            {
+                public const string DragPrefix = "DECORATOR!?";
+
+                public DragDecorator(Func<uint, bool> validateFunction)
+                : base(validateFunction)
+                {
+                }
+
+                public override DragData ToDragData(uint item) => new DragDataText(DragPrefix + item);
+
+                public override DragData ToDragData(IEnumerable<uint> items)
+                {
+                    throw new NotImplementedException();
+                }
+
+                public override IEnumerable<uint> FromDragData(DragData data)
+                {
+                    if (data is DragDataText dataText)
+                    {
+                        if (dataText.Text.StartsWith(DragPrefix))
+                        {
+                            var id = dataText.Text.Remove(0, DragPrefix.Length).Split('\n');
+                            return new[] { uint.Parse(id[0]) };
+                        }
+                    }
+                    return Utils.GetEmptyArray<uint>();
+                }
+            }
+
+            private sealed class ReorderDecoratorAction : IUndoAction
+            {
+                public VisjectSurface Surface;
+                public uint DecoratorId, PrevNodeId, NewNodeId;
+                public int PrevIndex, NewIndex;
+
+                public string ActionString => "Reorder decorator";
+
+                private void Do(uint nodeId, int index)
+                {
+                    var decorator = Surface.FindNode(DecoratorId) as Decorator;
+                    if (decorator == null)
+                        throw new Exception("Missing decorator");
+                    var node = decorator.Node;
+                    var decorators = node.DecoratorIds;
+                    decorators.Remove(DecoratorId);
+                    if (node.ID != nodeId)
+                    {
+                        node.SetDecoratorIds(decorators, false);
+                        node = Surface.FindNode(nodeId) as Node;
+                        decorators = node.DecoratorIds;
+                    }
+                    if (index < 0 || index >= decorators.Count)
+                        decorators.Add(DecoratorId);
+                    else
+                        decorators.Insert(index, DecoratorId);
+                    node.SetDecoratorIds(decorators, false);
+                }
+
+                public void Do()
+                {
+                    Do(NewNodeId, NewIndex);
+                }
+
+                public void Undo()
+                {
+                    Do(PrevNodeId, PrevIndex);
+                }
+
+                public void Dispose()
+                {
+                    Surface = null;
+                }
+            }
+
             internal static SurfaceNode Create(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             {
                 return new Decorator(id, context, nodeArch, groupArch);
             }
 
+            private DragImage _dragIcon;
+            private DragDecorator _dragDecorator;
+            private float _dragLocation = -1;
+
             internal Decorator(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
+                _dragDecorator = new DragDecorator(ValidateDrag);
             }
 
             public Node Node
@@ -497,7 +587,7 @@ namespace FlaxEditor.Surface.Archetypes
 
             protected override Float2 CalculateNodeSize(float width, float height)
             {
-                return new Float2(width, height + FlaxEditor.Surface.Constants.NodeHeaderSize);
+                return new Float2(width + FlaxEditor.Surface.Constants.NodeCloseButtonSize + 2 * DecoratorsMarginX, height + FlaxEditor.Surface.Constants.NodeHeaderSize);
             }
 
             protected override void UpdateRectangles()
@@ -505,6 +595,8 @@ namespace FlaxEditor.Surface.Archetypes
                 base.UpdateRectangles();
 
                 _footerRect = Rectangle.Empty;
+                if (_dragIcon != null)
+                    _dragIcon.Bounds = new Rectangle(_closeButtonRect.X - _closeButtonRect.Width, _closeButtonRect.Y, _closeButtonRect.Size);
             }
 
             protected override void UpdateTitle()
@@ -518,16 +610,45 @@ namespace FlaxEditor.Surface.Archetypes
                     Node?.ResizeAuto();
             }
 
+            public override void OnLoaded(SurfaceNodeActions action)
+            {
+                // Add drag button to reorder decorator
+                _dragIcon = new DragImage
+                {
+                    Color = Style.Current.ForegroundGrey,
+                    Parent = this,
+                    Margin = new Margin(1),
+                    Brush = new SpriteBrush(Editor.Instance.Icons.DragBar12),
+                    Tag = this,
+                    Drag = img => { img.DoDragDrop(_dragDecorator.ToDragData(ID)); }
+                };
+
+                base.OnLoaded(action);
+            }
+
+            private bool ValidateDrag(uint id)
+            {
+                return Surface.FindNode(id) != null;
+            }
+
             public override void Draw()
             {
                 base.Draw();
 
+                var style = Style.Current;
+
                 // Outline
                 if (!_isSelected)
                 {
-                    var style = Style.Current;
                     var rect = new Rectangle(Float2.Zero, Size);
                     Render2D.DrawRectangle(rect, style.BorderHighlighted);
+                }
+
+                // Drag hint
+                if (IsDragOver && _dragDecorator.HasValidDrag)
+                {
+                    var rect = new Rectangle(0, _dragLocation < Height * 0.5f ? 0 : Height - 6, Width, 6);
+                    Render2D.FillRectangle(rect, style.BackgroundSelected);
                 }
             }
 
@@ -545,6 +666,75 @@ namespace FlaxEditor.Surface.Archetypes
                         node.ResizeAuto();
                     }
                 }
+            }
+
+            public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
+            {
+                var result = base.OnDragEnter(ref location, data);
+                if (result != DragDropEffect.None)
+                    return result;
+                if (_dragDecorator.OnDragEnter(data))
+                {
+                    _dragLocation = location.Y;
+                    result = DragDropEffect.Move;
+                }
+                return result;
+            }
+
+            public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
+            {
+                var result = base.OnDragMove(ref location, data);
+                if (result != DragDropEffect.None)
+                    return result;
+                if (_dragDecorator.HasValidDrag)
+                {
+                    _dragLocation = location.Y;
+                    result = DragDropEffect.Move;
+                }
+                return result;
+            }
+
+            public override void OnDragLeave()
+            {
+                _dragLocation = -1;
+                _dragDecorator.OnDragLeave();
+                base.OnDragLeave();
+            }
+
+            public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
+            {
+                var result = base.OnDragDrop(ref location, data);
+                if (result != DragDropEffect.None)
+                    return result;
+                if (_dragDecorator.HasValidDrag)
+                {
+                    // Reorder or reparent decorator
+                    var decorator = (Decorator)Surface.FindNode(_dragDecorator.Objects[0]);
+                    var prevNode = decorator.Node;
+                    var prevIndex = prevNode.Decorators.IndexOf(decorator);
+                    var newNode = Node;
+                    var newIndex = newNode.Decorators.IndexOf(this);
+                    if (_dragLocation >= Height * 0.5f)
+                        newIndex++;
+                    if (prevIndex != newIndex || prevNode != newNode)
+                    {
+                        var action = new ReorderDecoratorAction
+                        {
+                            Surface = Surface,
+                            DecoratorId = decorator.ID,
+                            PrevNodeId = prevNode.ID,
+                            PrevIndex = prevIndex,
+                            NewNodeId = newNode.ID,
+                            NewIndex = newIndex,
+                        };
+                        action.Do();
+                        Surface.Undo?.AddAction(action);
+                    }
+                    _dragLocation = -1;
+                    _dragDecorator.OnDragDrop();
+                    result = DragDropEffect.Move;
+                }
+                return result;
             }
         }
 
