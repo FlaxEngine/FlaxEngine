@@ -39,42 +39,37 @@ PrefabManagerService PrefabManagerServiceInstance;
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab)
 {
     Actor* parent = Level::Scenes.Count() != 0 ? Level::Scenes.Get()[0] : nullptr;
-    return SpawnPrefab(prefab, parent, nullptr);
+    return SpawnPrefab(prefab,Transform::Identity, parent, nullptr);
 }
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Vector3& position)
 {
-    auto instance = SpawnPrefab(prefab);
-    if (instance)
-        instance->SetPosition(position);
-    return instance;
+    Actor* parent = Level::Scenes.Count() != 0 ? Level::Scenes.Get()[0] : nullptr;
+    return SpawnPrefab(prefab, Transform(position), parent, nullptr);
 }
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Vector3& position, const Quaternion& rotation)
 {
-    auto instance = SpawnPrefab(prefab);
-    if (instance)
-        instance->SetTransform(Transform(position, rotation, instance->GetScale()));
-    return instance;
+    Actor* parent = Level::Scenes.Count() != 0 ? Level::Scenes.Get()[0] : nullptr;
+    return SpawnPrefab(prefab, Transform(position, rotation), parent, nullptr);
 }
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Vector3& position, const Quaternion& rotation, const Vector3& scale)
 {
-    auto instance = SpawnPrefab(prefab);
-    if (instance)
-        instance->SetTransform(Transform(position, rotation, scale));
-    return instance;
+    Actor* parent = Level::Scenes.Count() != 0 ? Level::Scenes.Get()[0] : nullptr;
+    return SpawnPrefab(prefab, Transform(position, rotation, scale), parent, nullptr);
 }
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform)
 {
-    auto instance = SpawnPrefab(prefab);
-    if (instance)
-        instance->SetTransform(transform);
-    return instance;
+    Actor* parent = Level::Scenes.Count() != 0 ? Level::Scenes.Get()[0] : nullptr;
+    return SpawnPrefab(prefab, transform, parent, nullptr);
 }
-
-Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid, const void*>* objectsCache, bool withSynchronization)
+Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent)
+{
+    return SpawnPrefab(prefab, Transform::Identity, parent, nullptr);
+}
+Actor* PrefabManager::SpawnPrefab(Prefab* prefab,const Transform& transform, Actor* parent, Dictionary<Guid, const void*>* objectsCache, bool withSynchronization)
 {
     PROFILE_CPU_NAMED("Prefab.Spawn");
     if (prefab == nullptr)
@@ -182,6 +177,10 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
     root->_parent = parent;
     if (parent)
         parent->Children.Add(root);
+
+    //move root to right location
+    if (transform != Transform::Identity)
+        root->SetTransform(transform);
 
     // Link actors hierarchy
     for (int32 i = 0; i < sceneObjects->Count(); i++)

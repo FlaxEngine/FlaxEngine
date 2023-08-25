@@ -163,7 +163,7 @@ public:
     /// <summary>
     /// Occurs when a joint gets broken during simulation.
     /// </summary>
-    API_EVENT() Action JointBreak;
+    API_EVENT() Delegate<Joint*> JointBreak;
 
     /// <summary>
     /// Called by the physics system when joint gets broken.
