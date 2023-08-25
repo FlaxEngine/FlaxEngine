@@ -898,14 +898,16 @@ namespace FlaxEditor.Viewport
             ivp.Invert();
 
             // Create near and far points
+            var nearPoint = new Vector3(mousePosition, 0.0f);
             var farPoint = new Vector3(mousePosition, 1.0f);
+            viewport.Unproject(ref nearPoint, ref ivp, out nearPoint);
             viewport.Unproject(ref farPoint, ref ivp, out farPoint);
 
             // Create direction vector
-            Vector3 direction = farPoint;
+            Vector3 direction = farPoint - nearPoint;
             direction.Normalize();
 
-            return new Ray(position, direction);
+            return new Ray(nearPoint + viewOrigin, direction);
         }
 
         /// <summary>
