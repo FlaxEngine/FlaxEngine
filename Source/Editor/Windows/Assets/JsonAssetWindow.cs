@@ -139,7 +139,8 @@ namespace FlaxEditor.Windows.Assets
             
             var typeText = new Label
             {
-                Text = $"Type: {Asset.DataTypeName}",
+                Text = $"{Asset.DataTypeName}",
+                TooltipText = "The Asset Type.",
                 AnchorPreset = AnchorPresets.TopRight,
                 AutoWidth = true,
                 Parent = this,
