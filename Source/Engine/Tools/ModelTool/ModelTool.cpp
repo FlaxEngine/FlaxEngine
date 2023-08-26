@@ -383,7 +383,7 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(BaseLOD);
     SERIALIZE(LODCount);
     SERIALIZE(TriangleReduction);
-    SERIALIZE(Sloppy);
+    SERIALIZE(SloppyOptimization);
     SERIALIZE(LODTargetError);
     SERIALIZE(ImportMaterials);
     SERIALIZE(ImportTextures);
@@ -426,7 +426,7 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(BaseLOD);
     DESERIALIZE(LODCount);
     DESERIALIZE(TriangleReduction);
-    DESERIALIZE(Sloppy);
+    DESERIALIZE(SloppyOptimization);
     DESERIALIZE(LODTargetError);
     DESERIALIZE(ImportMaterials);
     DESERIALIZE(ImportTextures);
@@ -1533,7 +1533,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                 Array<unsigned int> indices;
                 indices.Resize(dstMeshIndexCountTarget);
                 int32 dstMeshIndexCount = {};
-                if (options.Sloppy)
+                if (options.SloppyOptimization)
                     dstMeshIndexCount = (int32)meshopt_simplifySloppy(indices.Get(), srcMesh->Indices.Get(), srcMeshIndexCount, (const float*)srcMesh->Positions.Get(), srcMeshVertexCount, sizeof(Float3), dstMeshIndexCountTarget);
                 else
                     dstMeshIndexCount = (int32)meshopt_simplify(indices.Get(), srcMesh->Indices.Get(), srcMeshIndexCount, (const float*)srcMesh->Positions.Get(), srcMeshVertexCount, sizeof(Float3), dstMeshIndexCountTarget, options.LODTargetError);
