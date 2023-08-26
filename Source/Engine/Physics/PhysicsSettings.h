@@ -7,6 +7,50 @@
 #include "Types.h"
 
 /// <summary>
+/// Broad phase algorithm used in the simulation.
+/// <see href="https://nvidia-omniverse.github.io/PhysX/physx/5.1.0/_build/physx/latest/struct_px_broad_phase_type.html"/>
+/// </summary>
+API_ENUM() enum class PhysicsBroadPhaseType
+{
+    /// <summary>
+    /// Sweep and prune.
+    /// </summary>
+    SweepAndPrune = 0,
+
+    /// <summary>
+    /// Multi box pruning.
+    /// </summary>
+    MultiboxPruning = 1,
+
+    /// <summary>
+    /// Automatic box pruning.
+    /// </summary>
+    AutomaticBoxPruning = 2,
+
+    /// <summary>
+    /// Parallel automatic box pruning.
+    /// </summary>
+    ParallelAutomaticBoxPruning = 3,
+};
+
+/// <summary>
+/// The type of solver used in the simulation.
+/// <see href="https://nvidia-omniverse.github.io/PhysX/physx/5.1.0/_build/physx/latest/struct_px_solver_type.html"/>
+/// </summary>
+API_ENUM() enum class PhysicsSolverType
+{
+    /// <summary>
+    /// Projected Gauss-Seidel iterative solver.
+    /// </summary>
+    ProjectedGaussSeidelIterativeSolver = 0,
+
+    /// <summary>
+    /// Default Temporal Gauss-Seidel solver.
+    /// </summary>
+    DefaultTemporalGaussSeidelSolver = 1,
+};
+
+/// <summary>
 /// Physics simulation settings container.
 /// </summary>
 API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class FLAXENGINE_API PhysicsSettings : public SettingsBase
@@ -42,6 +86,18 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(70), EditorDisplay(\"Simulation\")")
     bool DisableCCD = false;
+
+    /// <summary>
+    /// Broad phase algorithm to use in the simulation.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(71), EditorDisplay(\"Simulation\")")
+    PhysicsBroadPhaseType BroadPhaseType = PhysicsBroadPhaseType::SweepAndPrune;
+
+    /// <summary>
+    /// The solver type to use in the simulation.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(72), EditorDisplay(\"Simulation\")")
+    PhysicsSolverType SolverType = PhysicsSolverType::ProjectedGaussSeidelIterativeSolver;
 
     /// <summary>
     /// The maximum allowed delta time (in seconds) for the physics simulation step.
