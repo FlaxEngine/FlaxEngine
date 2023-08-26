@@ -675,12 +675,17 @@ namespace FlaxEditor.Surface.Elements
             return false;
         }
 
+        /// <summary>
+        /// Connections origin offset.
+        /// </summary>
+        public Float2 ConnectionOffset;
+
         /// <inheritdoc />
         public Float2 ConnectionOrigin
         {
             get
             {
-                var center = Center;
+                var center = Center + ConnectionOffset;
                 return Parent.PointToParent(ref center);
             }
         }

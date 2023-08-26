@@ -694,11 +694,14 @@ namespace FlaxEditor.Surface.Archetypes
                     float rotation = Float2.Dot(dir, Float2.UnitY);
                     if (endPos.X < startPos.X)
                         rotation = 2 - rotation;
-                    // TODO: make it look better (fix the math)
-                    var arrowTransform = Matrix3x3.Translation2D(new Float2(-16.0f, -8.0f)) * Matrix3x3.RotationZ(rotation * Mathf.PiOverTwo) * Matrix3x3.Translation2D(endPos);
+                    var sprite = Editor.Instance.Icons.VisjectArrowClosed32;
+                    var arrowTransform =
+                        Matrix3x3.Translation2D(-6.5f, -8) *
+                        Matrix3x3.RotationZ(rotation * Mathf.PiOverTwo) * 
+                        Matrix3x3.Translation2D(endPos - dir * 8);
 
                     Render2D.PushTransform(ref arrowTransform);
-                    Render2D.DrawSprite(Editor.Instance.Icons.VisjectArrowClosed32, arrowRect, color);
+                    Render2D.DrawSprite(sprite, arrowRect, color);
                     Render2D.PopTransform();
 
                     endPos -= dir * 4.0f;
