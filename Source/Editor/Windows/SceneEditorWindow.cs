@@ -39,8 +39,11 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.Delete, Editor.SceneEditing.Delete);
             InputActions.Add(options => options.Search, () => Editor.Windows.SceneWin.Search());
             InputActions.Add(options => options.Play, Editor.Simulation.DelegatePlayOrStopPlayInEditor);
+            InputActions.Add(options => options.PlayCurrentScenes, Editor.Simulation.RequestPlayScenesOrStopPlay);
             InputActions.Add(options => options.Pause, Editor.Simulation.RequestResumeOrPause);
             InputActions.Add(options => options.StepFrame, Editor.Simulation.RequestPlayOneFrame);
+            InputActions.Add(options => options.CookAndRun, () => Editor.Windows.GameCookerWin.BuildAndRun());
+            InputActions.Add(options => options.RunCookedGame, () => Editor.Windows.GameCookerWin.RunCooked());
         }
     }
 }

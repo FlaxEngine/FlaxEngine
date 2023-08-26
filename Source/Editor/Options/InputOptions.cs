@@ -85,16 +85,28 @@ namespace FlaxEditor.Options
         public InputBinding SnapToGround = new InputBinding(KeyboardKeys.End);
 
         [DefaultValue(typeof(InputBinding), "F5")]
-        [EditorDisplay("Scene"), EditorOrder(510)]
+        [EditorDisplay("Scene", "Play/Stop"), EditorOrder(510)]
         public InputBinding Play = new InputBinding(KeyboardKeys.F5);
 
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Scene", "Play Current Scenes/Stop"), EditorOrder(520)]
+        public InputBinding PlayCurrentScenes = new InputBinding(KeyboardKeys.None);
+
         [DefaultValue(typeof(InputBinding), "F6")]
-        [EditorDisplay("Scene"), EditorOrder(520)]
+        [EditorDisplay("Scene"), EditorOrder(530)]
         public InputBinding Pause = new InputBinding(KeyboardKeys.F6);
 
         [DefaultValue(typeof(InputBinding), "F11")]
-        [EditorDisplay("Scene"), EditorOrder(530)]
+        [EditorDisplay("Scene"), EditorOrder(540)]
         public InputBinding StepFrame = new InputBinding(KeyboardKeys.F11);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Scene", "Cook & Run"), EditorOrder(550)]
+        public InputBinding CookAndRun = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Scene", "Run cooked game"), EditorOrder(560)]
+        public InputBinding RunCookedGame = new InputBinding(KeyboardKeys.None);
 
         #endregion
 
