@@ -675,20 +675,12 @@ bool Prefab::ApplyAll(Actor* targetActor)
             }
         }
 
-        // Setup default instances
-        for (int32 i = 0; i < allPrefabs.Count(); i++)
+        // Setup default instances (skip invalid prefabs)
+        for (int32 i = allPrefabs.Count() - 1; i >= 0; i--)
         {
             Prefab* prefab = allPrefabs[i];
-            if (prefab->WaitForLoaded())
-            {
-                LOG(Warning, "Waiting for nesting prefab asset load failed.");
-                return true;
-            }
-            if (prefab->GetDefaultInstance() == nullptr)
-            {
-                LOG(Warning, "Failed to create default prefab instance for the nested prefab asset.");
-                return true;
-            }
+            if (prefab->WaitForLoaded() || prefab->GetDefaultInstance() == nullptr)
+                allPrefabs.RemoveAt(i);
         }
     }
 
