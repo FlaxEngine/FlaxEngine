@@ -50,6 +50,27 @@ namespace FlaxEditor.GUI.Timeline
                 }
             }
 
+            /// <inheritdoc />
+            public override void OnMouseEnter(Float2 location)
+            {
+                base.OnMouseEnter(location);
+                Cursor = CursorType.Hand;
+            }
+
+            /// <inheritdoc />
+            public override void OnMouseLeave()
+            {
+                Cursor = CursorType.Default;
+                base.OnMouseLeave();
+            }
+
+            /// <inheritdoc />
+            public override void Defocus()
+            {
+                Cursor = CursorType.Default;
+                base.Defocus();
+            }
+
             private void Seek(ref Float2 location)
             {
                 if (_timeline.PlaybackState == PlaybackStates.Disabled)
