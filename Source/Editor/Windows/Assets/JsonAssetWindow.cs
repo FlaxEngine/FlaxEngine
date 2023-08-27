@@ -136,6 +136,18 @@ namespace FlaxEditor.Windows.Assets
                 }
             }
             _presenter.Select(_object);
+            
+            var typeText = new Label
+            {
+                Text = $"{Asset.DataTypeName}",
+                TooltipText = "The Asset Type.",
+                AnchorPreset = AnchorPresets.TopRight,
+                AutoWidth = true,
+                Parent = this,
+            };
+            typeText.LocalX += -(typeText.Width + 4);
+            typeText.LocalY += (_toolstrip.Height - typeText.Height) * 0.5f;
+            
             _undo.Clear();
             ClearEditedFlag();
 
