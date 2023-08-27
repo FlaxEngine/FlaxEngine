@@ -316,7 +316,8 @@ bool WindowsFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const Strin
         if (SUCCEEDED(SHCreateItemFromParsingName(initialDirectory.Get(), NULL, IID_PPV_ARGS(&defaultFolder))))
             fd->SetFolder(defaultFolder);
 
-        if (SUCCEEDED(fd->Show(parentWindow->GetHWND())))
+        HWND hwndOwner = parentWindow ? parentWindow->GetHWND() : NULL;
+        if (SUCCEEDED(fd->Show(hwndOwner)))
         {
             ComPtr<IShellItem> si;
             if (SUCCEEDED(fd->GetResult(&si)))
