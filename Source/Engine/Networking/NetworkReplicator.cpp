@@ -1412,9 +1412,9 @@ void NetworkInternal::NetworkReplicatorUpdate()
     if (!CachedReplicationResult)
         CachedReplicationResult = New<NetworkReplicationHierarchyUpdateResult>();
     CachedReplicationResult->Init();
-    if (!isClient && NetworkManager::Clients.IsEmpty())
+    if ((!isClient && NetworkManager::Clients.IsEmpty()) || NetworkManager::NetworkFPS < -ZeroTolerance)
     {
-        // No need to update replication when nobody's around
+        // No need to update replication when nobody's around or when replication is disabled
     }
     else if (Hierarchy)
     {
