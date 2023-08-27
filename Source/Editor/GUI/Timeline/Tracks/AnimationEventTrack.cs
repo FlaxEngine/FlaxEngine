@@ -298,7 +298,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             var animEventTypes = Editor.Instance.CodeEditing.All.Get().Where(x => new ScriptType(typeof(AnimEvent)).IsAssignableFrom(x));
             foreach (var type in animEventTypes)
             {
-                if (type.IsAbstract || !type.CanCreateInstance)
+                if (type.IsAbstract || !type.CanCreateInstance || type.HasAttribute(typeof(HideInEditorAttribute), true))
                     continue;
                 var add = new ScriptType(typeof(AnimContinuousEvent)).IsAssignableFrom(type) ? addContinuousEvent : addEvent;
                 var b = add.ContextMenu.AddButton(type.Name);
@@ -307,6 +307,10 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 b.Parent.Tag = time;
                 b.ButtonClicked += OnAddAnimEvent;
             }
+            if (!addEvent.ContextMenu.Items.Any())
+                addEvent.ContextMenu.AddButton("No Anim Events Found.").CloseMenuOnClick = false;
+            if (!addContinuousEvent.ContextMenu.Items.Any())
+                addContinuousEvent.ContextMenu.AddButton("No Continuous Anim Events Found.").CloseMenuOnClick = false;
         }
 
 
