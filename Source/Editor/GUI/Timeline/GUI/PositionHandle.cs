@@ -31,11 +31,10 @@ namespace FlaxEditor.GUI.Timeline.GUI
             var icon = Editor.Instance.Icons.VisjectArrowClosed32;
             var timeAxisOverlap = Timeline.HeaderTopAreaHeight * 0.5f;
             var timeAxisHeaderOffset = -_timeline.MediaBackground.ViewOffset.Y - timeAxisOverlap;
-            
-            var timeShowMode = _timeline.TimeShowMode;
+
             // Time label
             string labelText;
-            switch (timeShowMode)
+            switch (_timeline.TimeShowMode)
             {
             case Timeline.TimeShowModes.Frames:
                 labelText = _timeline.CurrentFrame.ToString("###0", CultureInfo.InvariantCulture);
@@ -48,7 +47,6 @@ namespace FlaxEditor.GUI.Timeline.GUI
                 break;
             default: throw new ArgumentOutOfRangeException();
             }
-
             var color = (_timeline.IsMovingPositionHandle ? style.ProgressNormal : style.Foreground).AlphaMultiplied(0.6f);
             Matrix3x3.RotationZ(Mathf.PiOverTwo, out var m1);
             var m2 = Matrix3x3.Translation2D(0, timeAxisHeaderOffset);
