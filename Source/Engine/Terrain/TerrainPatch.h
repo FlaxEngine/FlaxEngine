@@ -230,10 +230,20 @@ public:
     float* GetHeightmapData();
 
     /// <summary>
+    /// Clears cache of the heightmap data.
+    /// </summary>
+    void ClearHeightmapCache();
+
+    /// <summary>
     /// Gets the raw pointer to the holes mask data.
     /// </summary>
     /// <returns>The holes mask data.</returns>
     byte* GetHolesMaskData();
+
+    /// <summary>
+    /// Clears cache of the holes mask data.
+    /// </summary>
+    void ClearHolesMaskCache();
 
     /// <summary>
     /// Gets the raw pointer to the splat map data.
@@ -241,6 +251,16 @@ public:
     /// <param name="index">The zero-based index of the splatmap texture.</param>
     /// <returns>The splat map data.</returns>
     Color32* GetSplatMapData(int32 index);
+
+    /// <summary>
+    /// Clears cache of the splat map data.
+    /// </summary>
+    void ClearSplatMapCache();
+
+    /// <summary>
+    /// Clears all caches.
+    /// </summary>
+    void ClearCache();
 
     /// <summary>
     /// Modifies the terrain patch heightmap with the given samples.

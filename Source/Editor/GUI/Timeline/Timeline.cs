@@ -167,7 +167,7 @@ namespace FlaxEditor.GUI.Timeline
         /// <summary>
         /// The header top area height (in pixels).
         /// </summary>
-        public static readonly float HeaderTopAreaHeight = 22.0f;
+        public static readonly float HeaderTopAreaHeight = 40.0f;
 
         /// <summary>
         /// The timeline units per second (on time axis).

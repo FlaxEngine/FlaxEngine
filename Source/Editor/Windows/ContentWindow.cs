@@ -247,8 +247,17 @@ namespace FlaxEditor.Windows
             for (int i = 0; i < _viewDropdown.Items.Count; i++)
             {
                 var filterButton = filters.ContextMenu.AddButton(_viewDropdown.Items[i], OnFilterClicked);
+                filterButton.CloseMenuOnClick = false;
                 filterButton.Tag = i;
             }
+            filters.ContextMenu.ButtonClicked += button =>
+            {
+                foreach (var item in (filters.ContextMenu).Items)
+                {
+                    if (item is ContextMenuButton filterButton)
+                        filterButton.Checked = _viewDropdown.IsSelected(filterButton.Text);
+                }
+            };
             filters.ContextMenu.VisibleChanged += control =>
             {
                 if (!control.Visible)
@@ -340,6 +349,9 @@ namespace FlaxEditor.Windows
         /// <returns>The created renaming popup.</returns>
         public void Rename(ContentItem item)
         {
+            if (!item.CanRename)
+                return;
+            
             // Show element in the view
             Select(item, true);
 

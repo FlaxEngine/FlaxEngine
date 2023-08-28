@@ -260,6 +260,75 @@ void WindowsWindow::Maximize()
     _isDuringMaximize = false;
 }
 
+void WindowsWindow::SetBorderless(bool isBorderless, bool maximized)
+{
+    ASSERT(HasHWND());
+    
+    if (IsFullscreen())
+        SetIsFullscreen(false);
+
+    // Fixes issue of borderless window not going full screen
+    if (IsMaximized())
+        Restore();
+
+    _settings.HasBorder = !isBorderless;
+
+    BringToFront();
+
+    if (isBorderless)
+    {
+        LONG lStyle = GetWindowLong(_handle, GWL_STYLE);
+        lStyle &= ~(WS_THICKFRAME | WS_SYSMENU | WS_OVERLAPPED | WS_BORDER | WS_CAPTION);
+        lStyle |=  WS_POPUP;
+        lStyle |= WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
+#if WINDOWS_USE_NEW_BORDER_LESS
+        if (_settings.IsRegularWindow)
+            style |= WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU | WS_THICKFRAME | WS_GROUP;
+#elif WINDOWS_USE_NEWER_BORDER_LESS
+        if (_settings.IsRegularWindow)
+            lStyle |= WS_THICKFRAME | WS_SYSMENU;
+#endif
+
+        SetWindowLong(_handle, GWL_STYLE, lStyle);
+        SetWindowPos(_handle, HWND_TOP,  0, 0,0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        
+        if (maximized)
+        {
+            ShowWindow(_handle, SW_SHOWMAXIMIZED);
+        }
+        else
+        {
+            ShowWindow(_handle, SW_SHOW);
+        }
+    }
+    else
+    {
+        LONG lStyle = GetWindowLong(_handle, GWL_STYLE);
+        lStyle &= ~(WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
+        if (_settings.AllowMaximize)
+            lStyle |= WS_MAXIMIZEBOX;
+        if (_settings.AllowMinimize)
+            lStyle |= WS_MINIMIZEBOX;
+        if (_settings.HasSizingFrame)
+            lStyle |= WS_THICKFRAME;
+        lStyle |= WS_OVERLAPPED | WS_SYSMENU | WS_BORDER | WS_CAPTION;
+    
+        SetWindowLong(_handle, GWL_STYLE, lStyle);
+        SetWindowPos(_handle, nullptr,  0, 0, (int)_settings.Size.X, (int)_settings.Size.Y, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        
+        if (maximized)
+        {
+            Maximize();
+        }
+        else
+        {
+            ShowWindow(_handle, SW_SHOW);
+        }
+    }
+
+    CheckForWindowResize();
+}
+
 void WindowsWindow::Restore()
 {
     ASSERT(HasHWND());
