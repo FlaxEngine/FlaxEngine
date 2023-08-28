@@ -266,10 +266,12 @@ namespace Flax.Build.Bindings
                 // Reference `&` character
                 else if (token.Type == TokenType.And)
                 {
-                    if (type.IsRef)
-                        type.Type += '&';
-                    else
+                    if (!type.IsRef)
                         type.IsRef = true;
+                    else if (!type.IsMoveRef)
+                        type.IsMoveRef = true;
+                    else
+                        type.Type += '&';
                 }
                 // Namespace
                 else if (token.Type == TokenType.Colon)

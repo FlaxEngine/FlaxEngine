@@ -1241,6 +1241,11 @@ namespace Flax.Build.Bindings
                     callParams += parameterInfo.Name;
                     callParams += "Temp";
                 }
+                // Instruct for more optoimized value move operation
+                else if (parameterInfo.Type.IsMoveRef)
+                {
+                    callParams += $"MoveTemp({param})";
+                }
                 else
                 {
                     callParams += param;
