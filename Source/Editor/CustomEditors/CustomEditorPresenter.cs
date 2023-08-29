@@ -85,8 +85,15 @@ namespace FlaxEditor.CustomEditors
             /// <inheritdoc />
             public override void Update(float deltaTime)
             {
-                // Update editors
-                _presenter.Update();
+                try
+                {
+                    // Update editors
+                    _presenter.Update();
+                }
+                catch (Exception ex)
+                {
+                    FlaxEditor.Editor.LogWarning(ex);
+                }
 
                 base.Update(deltaTime);
             }
