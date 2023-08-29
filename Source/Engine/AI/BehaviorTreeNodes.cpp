@@ -456,3 +456,9 @@ bool BehaviorTreeHasTagDecorator::CanUpdate(const BehaviorUpdateContext& context
     result ^= Invert;
     return result;
 }
+
+bool BehaviorTreeHasGoalDecorator::CanUpdate(const BehaviorUpdateContext& context)
+{
+    Variant value; // TODO: use HasGoal in Knowledge to optimize this (goal struct is copied by selector accessor)
+    return Goal.TryGet(context.Knowledge, value);
+}

@@ -4,6 +4,28 @@ using System;
 
 namespace FlaxEngine
 {
+    /// <summary>
+    /// Customizes editor of <see cref="BehaviorKnowledgeSelector{T}"/> or <see cref="BehaviorKnowledgeSelectorAny"/>.
+    /// </summary>
+    /// <seealso cref="System.Attribute" />
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    public sealed class BehaviorKnowledgeSelectorAttribute : Attribute
+    {
+        /// <summary>
+        /// Changes selector editor to allow to pick only whole goals.
+        /// </summary>
+        public bool IsGoalSelector;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BehaviorKnowledgeSelectorAttribute"/> structure.
+        /// </summary>
+        /// <param name="isGoalSelector">Changes selector editor to allow to pick only whole goals.</param>
+        public BehaviorKnowledgeSelectorAttribute(bool isGoalSelector = false)
+        {
+            IsGoalSelector = isGoalSelector;
+        }
+    }
+
 #if FLAX_EDITOR
     [CustomEditor(typeof(FlaxEditor.CustomEditors.Editors.BehaviorKnowledgeSelectorEditor))]
 #endif

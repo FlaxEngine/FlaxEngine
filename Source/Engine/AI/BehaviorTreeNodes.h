@@ -374,3 +374,20 @@ public:
     // [BehaviorTreeNode]
     bool CanUpdate(const BehaviorUpdateContext& context) override;
 };
+
+/// <summary>
+/// Checks if certain goal has been added to Behavior knowledge.
+/// </summary>
+API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeHasGoalDecorator : public BehaviorTreeDecorator
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeHasGoalDecorator, BehaviorTreeDecorator);
+    API_AUTO_SERIALIZATION();
+
+    // The goal type to check.
+    API_FIELD(Attributes="EditorOrder(0), BehaviorKnowledgeSelector(IsGoalSelector = true)")
+    BehaviorKnowledgeSelectorAny Goal;
+
+public:
+    // [BehaviorTreeNode]
+    bool CanUpdate(const BehaviorUpdateContext& context) override;
+};

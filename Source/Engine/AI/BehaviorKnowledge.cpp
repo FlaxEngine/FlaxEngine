@@ -19,9 +19,11 @@ bool AccessVariant(Variant& instance, const StringAnsiView& member, Variant& val
     if (member.IsEmpty())
     {
         // Whole blackboard value
-        CHECK_RETURN(instance.Type == value.Type, false);
         if (set)
+        {
+            CHECK_RETURN(instance.Type == value.Type, false);
             instance = value;
+        }
         else
             value = instance;
         return true;

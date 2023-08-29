@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.Scripting;
@@ -89,6 +90,15 @@ namespace FlaxEditor.CustomEditors.Editors
                 typed = new ScriptType(valueType.GenericTypeArguments[0]);
             }
 
+            // Get customization options
+            var attributes = Values.GetAttributes();
+            var attribute = (BehaviorKnowledgeSelectorAttribute)attributes?.FirstOrDefault(x => x is BehaviorKnowledgeSelectorAttribute);
+            bool isGoalSelector = false;
+            if (attribute != null)
+            {
+                isGoalSelector = attribute.IsGoalSelector;
+            }
+
             // Create menu with tree-like structure and search box
             var menu = Utilities.Utils.CreateSearchPopup(out var searchBox, out var tree, 0, true);
             var selected = Path;
@@ -111,8 +121,11 @@ namespace FlaxEditor.CustomEditors.Editors
             if (string.IsNullOrEmpty(selected))
                 tree.Select(noneNode);
 
-            // Blackboard
-            SetupPickerTypeItems(tree, typed, selected, "Blackboard", "Blackboard/", rootNode.BlackboardType);
+            if (!isGoalSelector)
+            {
+                // Blackboard
+                SetupPickerTypeItems(tree, typed, selected, "Blackboard", "Blackboard/", rootNode.BlackboardType);
+            }
 
             // Goals
             var goalTypes = rootNode.GoalTypes;
@@ -129,7 +142,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     var goalType = TypeUtils.GetType(goalTypeName);
                     if (goalType == null)
                         continue;
-                    var goalTypeNode = SetupPickerTypeItems(tree, typed, selected, goalType.Name, "Goal/" + goalTypeName + "/", goalTypeName);
+                    var goalTypeNode = SetupPickerTypeItems(tree, typed, selected, goalType.Name, "Goal/" + goalTypeName + "/", goalTypeName, !isGoalSelector);
                     goalTypeNode.Parent = goalsNode;
                 }
                 goalsNode.ExpandAll(true);
@@ -138,12 +151,11 @@ namespace FlaxEditor.CustomEditors.Editors
             menu.Show(_label, new Float2(0, _label.Height));
         }
 
-        private TreeNode SetupPickerTypeItems(Tree tree, ScriptType typed, string selected, string text, string typePath, string typeName)
+        private TreeNode SetupPickerTypeItems(Tree tree, ScriptType typed, string selected, string text, string typePath, string typeName, bool addItems = true)
         {
             var type = TypeUtils.GetType(typeName);
             if (type == null)
                 return null;
-            var items = GenericEditor.GetItemsForType(type, type.IsClass, true);
             var typeNode = new TreeNode
             {
                 Text = text,
@@ -155,23 +167,27 @@ namespace FlaxEditor.CustomEditors.Editors
                 typeNode.Tag = null;
             if (string.Equals(selected, (string)typeNode.Tag, StringComparison.Ordinal))
                 tree.Select(typeNode);
-            foreach (var item in items)
+            if (addItems)
             {
-                if (typed && !typed.IsAssignableFrom(item.Info.ValueType))
-                    continue;
-                var itemPath = typePath + item.Info.Name;
-                var node = new TreeNode
+                var items = GenericEditor.GetItemsForType(type, type.IsClass, true);
+                foreach (var item in items)
                 {
-                    Text = item.DisplayName,
-                    TooltipText = item.TooltipText,
-                    Tag = itemPath,
-                    Parent = typeNode,
-                };
-                if (string.Equals(selected, itemPath, StringComparison.Ordinal))
-                    tree.Select(node);
-                // TODO: add support for nested items (eg. field from blackboard structure field)
+                    if (typed && !typed.IsAssignableFrom(item.Info.ValueType))
+                        continue;
+                    var itemPath = typePath + item.Info.Name;
+                    var node = new TreeNode
+                    {
+                        Text = item.DisplayName,
+                        TooltipText = item.TooltipText,
+                        Tag = itemPath,
+                        Parent = typeNode,
+                    };
+                    if (string.Equals(selected, itemPath, StringComparison.Ordinal))
+                        tree.Select(node);
+                    // TODO: add support for nested items (eg. field from blackboard structure field)
+                }
+                typeNode.Expand(true);
             }
-            typeNode.Expand(true);
             return typeNode;
         }
     }
