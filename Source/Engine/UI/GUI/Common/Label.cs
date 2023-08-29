@@ -201,9 +201,9 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void Draw()
+        public override void DrawSelf()
         {
-            base.Draw();
+            base.DrawSelf();
 
             var rect = new Rectangle(new Float2(Margin.Left, Margin.Top), Size - Margin.Size);
 
