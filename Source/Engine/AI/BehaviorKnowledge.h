@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Types/Variant.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/BitArray.h"
 #include "Engine/Scripting/ScriptingObject.h"
 
@@ -44,6 +45,12 @@ API_CLASS() class FLAXENGINE_API BehaviorKnowledge : public ScriptingObject
     API_FIELD() Variant Blackboard;
 
     /// <summary>
+    /// List of all active goals of the behaviour (structure or class).
+    /// </summary>
+    Array<Variant> Goals;
+
+public:
+    /// <summary>
     /// Initializes the knowledge for a certain tree.
     /// </summary>
     void InitMemory(BehaviorTree* tree);
@@ -71,6 +78,46 @@ API_CLASS() class FLAXENGINE_API BehaviorKnowledge : public ScriptingObject
     /// <returns>True if set value, otherwise false.</returns>
     API_FUNCTION() bool Set(const StringAnsiView& path, const Variant& value);
 
+public:
+    /// <summary>
+    /// Checks if knowledge has a given goal (exact type match without base class check).
+    /// </summary>
+    /// <param name="type">The goal type.</param>
+    /// <returns>True if has a given goal, otherwise false.</returns>
+    API_FUNCTION() bool HasGoal(ScriptingTypeHandle type) const;
+
+    /// <summary>
+    /// Checks if knowledge has a given goal (exact type match without base class check).
+    /// </summary>
+    /// <returns>True if has a given goal, otherwise false.</returns>
+    template<typename T>
+    FORCE_INLINE bool HasGoal()
+    {
+        return HasGoal(T::TypeInitializer);
+    }
+
+    /// <summary>
+    /// Adds the goal to the knowledge. If goal of that type already exists then it's value is updated.
+    /// </summary>
+    /// <param name="goal">The goal value to add/set.</param>
+    API_FUNCTION() void AddGoal(Variant&& goal);
+
+    /// <summary>
+    /// Removes the goal from the knowledge. Does nothing if goal of the given type doesn't exist in the knowledge.
+    /// </summary>
+    /// <param name="type">The goal type.</param>
+    API_FUNCTION() void RemoveGoal(ScriptingTypeHandle type);
+
+    /// <summary>
+    /// Removes the goal from the knowledge. Does nothing if goal of the given type doesn't exist in the knowledge.
+    /// </summary>
+    template<typename T>
+    FORCE_INLINE void RemoveGoal()
+    {
+        RemoveGoal(T::TypeInitializer);
+    }
+
+public:
     /// <summary>
     /// Compares two values and returns the comparision result.
     /// </summary>

@@ -51,6 +51,11 @@ namespace FlaxEditor.Windows.Assets
         /// </summary>
         public object Blackboard => _knowledgePropertiesEditor.Selection.Count != 0 ? _knowledgePropertiesEditor.Selection[0] : null;
 
+        /// <summary>
+        /// Gets instance of the root node of the graph. Returns null if not added (or graph not yet loaded).
+        /// </summary>
+        public BehaviorTreeRootNode RootNode => (_surface.FindNode(19, 2) as Surface.Archetypes.BehaviorTree.Node)?.Instance as BehaviorTreeRootNode;
+
         /// <inheritdoc />
         public BehaviorTreeWindow(Editor editor, BinaryAssetItem item)
         : base(editor, item)

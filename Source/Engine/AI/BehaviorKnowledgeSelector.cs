@@ -179,10 +179,9 @@ namespace FlaxEngine
         /// <returns>The output value or null (if cannot read it - eg. missing goal or no blackboard entry of that name).</returns>
         public T Get(BehaviorKnowledge knowledge)
         {
-            object value = null;
-            if (knowledge != null)
-                knowledge.Get(Path, out value);
-            return (T)value;
+            if (knowledge != null && knowledge.Get(Path, out var value))
+                return (T)value;
+            return default;
         }
 
         /// <summary>

@@ -11,6 +11,30 @@ using FlaxEngine.GUI;
 
 namespace FlaxEngine
 {
+    partial class BehaviorKnowledge
+    {
+        /// <summary>
+        /// Checks if knowledge has a given goal (exact type match without base class check).
+        /// </summary>
+        /// <typeparam name="T"> goal type.</typeparam>
+        /// <returns>True if ahs a given goal, otherwise false.</returns>
+        [Unmanaged]
+        public bool HasGoal<T>()
+        {
+            return HasGoal(typeof(T));
+        }
+
+        /// <summary>
+        /// Removes the goal from the knowledge. Does nothing if goal of the given type doesn't exist in the knowledge.
+        /// </summary>
+        /// <typeparam name="T"> goal type.</typeparam>
+        [Unmanaged]
+        public void RemoveGoal<T>()
+        {
+            RemoveGoal(typeof(T));
+        }
+    }
+
     partial class BehaviorTreeRootNode
     {
 #if FLAX_EDITOR

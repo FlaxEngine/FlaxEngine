@@ -86,8 +86,12 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeRootNode : public BehaviorTre
     API_FIELD(Attributes="EditorOrder(0), TypeReference(\"\", \"IsValidBlackboardType\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.TypeNameEditor\")")
     StringAnsi BlackboardType;
 
+    // List of full typenames of the behavior goals (structure or class).
+    API_FIELD(Attributes="EditorOrder(10), Collection(OverrideEditorTypeName=\"FlaxEditor.CustomEditors.Editors.TypeNameEditor\")")
+    Array<StringAnsi> GoalTypes;
+
     // The target amount of the behavior logic updates per second.
-    API_FIELD(Attributes="EditorOrder(10)")
+    API_FIELD(Attributes="EditorOrder(100)")
     float UpdateFPS = 10.0f;
 };
 

@@ -100,7 +100,20 @@ bool AccessBehaviorKnowledge(BehaviorKnowledge* knowledge, const StringAnsiView&
         const StringAnsiView member(path.Get() + typeEnd + 1, path.Length() - typeEnd - 1);
         return AccessVariant(knowledge->Blackboard, member, value, set);
     }
-    // TODO: goals and sensors data access from BehaviorKnowledge via Selector
+    if (type == "Goal")
+    {
+        const StringAnsiView subPath(path.Get() + typeEnd + 1, path.Length() - typeEnd - 1);
+        const int32 goalTypeEnd = subPath.Find('/');
+        const StringAnsiView goalType(subPath.Get(), goalTypeEnd);
+        const StringAnsiView member(subPath.Get() + goalTypeEnd + 1, subPath.Length() - goalTypeEnd - 1);
+        for (Variant& goal : knowledge->Goals)
+        {
+            if (goalType == goal.Type.GetTypeName())
+            {
+                return AccessVariant(goal, member, value, set);
+            }
+        }
+    }
     return false;
 }
 
@@ -161,6 +174,9 @@ void BehaviorKnowledge::FreeMemory()
     }
     RelevantNodes.Clear();
     Blackboard.DeleteValue();
+    for (Variant& goal : Goals)
+        goal.DeleteValue();
+    Goals.Resize(0);
     Tree = nullptr;
 }
 
@@ -172,6 +188,43 @@ bool BehaviorKnowledge::Get(const StringAnsiView& path, Variant& value)
 bool BehaviorKnowledge::Set(const StringAnsiView& path, const Variant& value)
 {
     return AccessBehaviorKnowledge(this, path, const_cast<Variant&>(value), true);
+}
+
+bool BehaviorKnowledge::HasGoal(ScriptingTypeHandle type) const
+{
+    for (int32 i = 0; i < Goals.Count(); i++)
+    {
+        const ScriptingTypeHandle goalType = Scripting::FindScriptingType(Goals[i].Type.GetTypeName());
+        if (goalType == type)
+            return true;
+    }
+    return false;
+}
+
+void BehaviorKnowledge::AddGoal(Variant&& goal)
+{
+    int32 i = 0;
+    for (; i < Goals.Count(); i++)
+    {
+        if (Goals[i].Type == goal.Type)
+            break;
+    }
+    if (i == Goals.Count())
+        Goals.AddDefault();
+    Goals.Get()[i] = MoveTemp(goal);
+}
+
+void BehaviorKnowledge::RemoveGoal(ScriptingTypeHandle type)
+{
+    for (int32 i = 0; i < Goals.Count(); i++)
+    {
+        const ScriptingTypeHandle goalType = Scripting::FindScriptingType(Goals[i].Type.GetTypeName());
+        if (goalType == type)
+        {
+            Goals.RemoveAt(i);
+            break;
+        }
+    }
 }
 
 bool BehaviorKnowledge::CompareValues(float a, float b, BehaviorValueComparison comparison)
