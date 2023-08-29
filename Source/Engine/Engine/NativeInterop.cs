@@ -1077,13 +1077,14 @@ namespace FlaxEngine.Interop
                     alloc.ptr = new IntPtr(NativeAlloc(size));
                     alloc.size = size;
                 }
-                
                 Unsafe.Write<T>(alloc.ptr.ToPointer(), value);
                 return alloc.ptr;
             }
 
             private static IntPtr UnboxPointer<T>(object value, object converter) where T : struct
             {
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) // Cannot pin structure with references
+                    return IntPtr.Zero;
                 PinValue(value);
                 return new IntPtr(Unsafe.AsPointer(ref Unsafe.Unbox<T>(value)));
             }
