@@ -6,6 +6,7 @@
 #include "Engine/Visject/VisjectGraph.h"
 
 class BehaviorKnowledge;
+class BehaviorTree;
 class BehaviorTreeNode;
 class BehaviorTreeRootNode;
 
@@ -26,6 +27,7 @@ public:
 /// </summary>
 class BehaviorTreeGraph : public VisjectGraph<BehaviorTreeGraphNode>
 {
+    friend BehaviorTree;
 public:
     // Instance of the graph root node.
     BehaviorTreeRootNode* Root = nullptr;
@@ -35,12 +37,12 @@ public:
     int32 NodesStatesSize = 0;
 
     // [VisjectGraph]
-    bool Load(ReadStream* stream, bool loadMeta) override;
     void Clear() override;
     bool onNodeLoaded(Node* n) override;
 
 private:
-    void LoadRecursive(Node& node);
+    void Setup(BehaviorTree* tree);
+    void SetupRecursive(Node& node);
 };
 
 /// <summary>
@@ -79,8 +81,15 @@ public:
     API_FUNCTION() bool SaveSurface(const BytesContainer& data);
 #endif
 
+private:
+#if USE_EDITOR
+    void OnScriptsReloadStart();
+    void OnScriptsReloadEnd();
+#endif
+
 public:
     // [BinaryAsset]
+    void OnScriptingDispose() override;
 #if USE_EDITOR
     void GetReferences(Array<Guid>& output) const override;
 #endif

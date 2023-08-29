@@ -116,6 +116,7 @@ namespace FlaxEditor.Windows.Assets
             InputActions.Add(options => options.Search, Editor.ContentFinding.ShowSearch);
 
             SetCanEdit(!isPlayMode);
+            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
         }
 
         private void OnUndoRedo(IUndoAction action)
@@ -168,6 +169,12 @@ namespace FlaxEditor.Windows.Assets
                     }
                 }
             }
+        }
+
+        private void OnScriptsReloadBegin()
+        {
+            // TODO: impl hot-reload for BT to nicely refresh state (save asset, clear undo/properties, reload surface)
+            Close();
         }
 
         private void UpdateKnowledge()
@@ -398,6 +405,7 @@ namespace FlaxEditor.Windows.Assets
         {
             if (IsDisposing)
                 return;
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             _undo.Enabled = false;
             _nodePropertiesEditor.Deselect();
             _knowledgePropertiesEditor.Deselect();

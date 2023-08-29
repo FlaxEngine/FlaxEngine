@@ -11,6 +11,9 @@
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Threading/Threading.h"
 #include "FlaxEngine.Gen.h"
+#if USE_EDITOR
+#include "Engine/Level/Level.h"
+#endif
 
 REGISTER_BINARY_ASSET(BehaviorTree, "FlaxEngine.BehaviorTree", false);
 
@@ -29,29 +32,6 @@ bool SortBehaviorTreeChildren(GraphBox* const& a, GraphBox* const& b)
 BehaviorTreeGraphNode::~BehaviorTreeGraphNode()
 {
     SAFE_DELETE(Instance);
-}
-
-bool BehaviorTreeGraph::Load(ReadStream* stream, bool loadMeta)
-{
-    if (VisjectGraph<BehaviorTreeGraphNode>::Load(stream, loadMeta))
-        return true;
-
-    // Build node instances hierarchy
-    Node* root = nullptr;
-    for (Node& node : Nodes)
-    {
-        if (node.Instance == Root)
-        {
-            root = &node;
-            break;
-        }
-    }
-    if (root)
-    {
-        LoadRecursive(*root);
-    }
-
-    return false;
 }
 
 void BehaviorTreeGraph::Clear()
@@ -77,10 +57,6 @@ bool BehaviorTreeGraph::onNodeLoaded(Node* n)
             const Variant& data = n->Values[1];
             if (data.Type == VariantType::Blob)
                 JsonSerializer::LoadFromBytes(n->Instance, Span<byte>((byte*)data.AsBlob.Data, data.AsBlob.Length), FLAXENGINE_VERSION_BUILD);
-
-            // Find root node
-            if (!Root && n->Instance && BehaviorTreeRootNode::TypeInitializer == type)
-                Root = (BehaviorTreeRootNode*)n->Instance;
         }
         else
         {
@@ -93,7 +69,35 @@ bool BehaviorTreeGraph::onNodeLoaded(Node* n)
     return VisjectGraph<BehaviorTreeGraphNode>::onNodeLoaded(n);
 }
 
-void BehaviorTreeGraph::LoadRecursive(Node& node)
+void BehaviorTreeGraph::Setup(BehaviorTree* tree)
+{
+    // Find root node
+    Node* root = nullptr;
+    Root = nullptr;
+    for (Node& node : Nodes)
+    {
+        if (node.Instance && node.GroupID == 19 && node.TypeID == 2)
+        {
+            // Find root node
+            if (node.Instance->GetTypeHandle() == BehaviorTreeRootNode::TypeInitializer)
+                Root = (BehaviorTreeRootNode*)node.Instance;
+            root = &node;
+            break;
+        }
+    }
+    if (!Root)
+        return;
+
+    // Setup nodes hierarchy
+    NodesCount = 0;
+    NodesStatesSize = 0;
+    SetupRecursive(*root);
+
+    // Init graph with asset
+    Root->Init(tree);
+}
+
+void BehaviorTreeGraph::SetupRecursive(Node& node)
 {
     // Count total states memory size
     ASSERT_LOW_LAYER(node.Instance);
@@ -116,7 +120,7 @@ void BehaviorTreeGraph::LoadRecursive(Node& node)
                 {
                     node.Instance->_decorators.Add((BehaviorTreeDecorator*)decorator->Instance);
                     decorator->Instance->_parent = node.Instance;
-                    LoadRecursive(*decorator);
+                    SetupRecursive(*decorator);
                 }
             }
         }
@@ -136,7 +140,7 @@ void BehaviorTreeGraph::LoadRecursive(Node& node)
             {
                 nodeCompound->Children.Add(child->Instance);
                 child->Instance->_parent = nodeCompound;
-                LoadRecursive(*child);
+                SetupRecursive(*child);
             }
         }
     }
@@ -195,6 +199,26 @@ bool BehaviorTree::SaveSurface(const BytesContainer& data)
     return false;
 }
 
+void BehaviorTree::OnScriptsReloadStart()
+{
+    // Include all node instances in hot-reload
+    for (BehaviorTreeGraphNode& n : Graph.Nodes)
+    {
+        Level::ScriptsReloadRegisterObject((ScriptingObject*&)n.Instance);
+    }
+
+    // Clear state
+    Graph.Root = nullptr;
+    Graph.NodesCount = 0;
+    Graph.NodesStatesSize = 0;
+}
+
+void BehaviorTree::OnScriptsReloadEnd()
+{
+    // Node instances were restored so update the graph cached structure (root, children, decorators, etc.)
+    Graph.Setup(this);
+}
+
 void BehaviorTree::GetReferences(Array<Guid>& output) const
 {
     // Base
@@ -215,6 +239,17 @@ void BehaviorTree::GetReferences(Array<Guid>& output) const
 
 #endif
 
+void BehaviorTree::OnScriptingDispose()
+{
+    // Dispose any node instances to prevent crashes (scripting is released before content)
+    for (BehaviorTreeGraphNode& n : Graph.Nodes)
+    {
+        SAFE_DELETE(n.Instance);
+    }
+
+    BinaryAsset::OnScriptingDispose();
+}
+
 Asset::LoadResult BehaviorTree::load()
 {
     // Load graph
@@ -227,18 +262,23 @@ Asset::LoadResult BehaviorTree::load()
         LOG(Warning, "Failed to load graph \'{0}\'", ToString());
         return LoadResult::Failed;
     }
+    Graph.Setup(this);
 
-    // Init graph
-    if (Graph.Root)
-    {
-        Graph.Root->Init(this);
-    }
+#if USE_EDITOR
+    Level::ScriptsReloadStart.Bind<BehaviorTree, &BehaviorTree::OnScriptsReloadStart>(this);
+    Level::ScriptsReloadEnd.Bind<BehaviorTree, &BehaviorTree::OnScriptsReloadEnd>(this);
+#endif
 
     return LoadResult::Ok;
 }
 
 void BehaviorTree::unload(bool isReloading)
 {
+#if USE_EDITOR
+    Level::ScriptsReloadStart.Unbind<BehaviorTree, &BehaviorTree::OnScriptsReloadStart>(this);
+    Level::ScriptsReloadEnd.Unbind<BehaviorTree, &BehaviorTree::OnScriptsReloadEnd>(this);
+#endif
+
     // Clear resources
     Graph.Clear();
 }
