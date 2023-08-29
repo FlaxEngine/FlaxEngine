@@ -649,7 +649,6 @@ namespace FlaxEngine.Interop
             Type type = value.GetType();
             if (!type.IsValueType)
                 return ManagedHandle.ToIntPtr(handle);
-
             return ValueTypeUnboxer.GetPointer(value, type);
         }
 
