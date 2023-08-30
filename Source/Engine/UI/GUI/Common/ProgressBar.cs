@@ -11,6 +11,32 @@ namespace FlaxEngine.GUI
     public class ProgressBar : ContainerControl
     {
         /// <summary>
+        /// The direction to move the progress bar
+        /// </summary>
+        public enum BarDirection
+        {
+            /// <summary>
+            /// Move the bar horizontally to the left.
+            /// </summary>
+            HorizontalLeft,
+            
+            /// <summary>
+            /// Move the bar horizontally to the right.
+            /// </summary>
+            HorizontalRight,
+            
+            /// <summary>
+            /// Move the bar vertically up.
+            /// </summary>
+            VerticalUp,
+            
+            /// <summary>
+            /// Move the bar vertically down.
+            /// </summary>
+            VerticalDown,
+        }
+
+        /// <summary>
         /// The value.
         /// </summary>
         protected float _value;
@@ -40,6 +66,18 @@ namespace FlaxEngine.GUI
         /// Gets a value indicating whether use progress value smoothing.
         /// </summary>
         public bool UseSmoothing => !Mathf.IsZero(SmoothingScale);
+        
+        /// <summary>
+        /// If true, the progress bar will clip instead of stretch.
+        /// </summary>
+        [EditorOrder(42), Tooltip("Whether or not to clip vs stretch the progress bar.")]
+        public bool ClipBar = false;
+        
+        /// <summary>
+        /// The direction to clip or stretch the bar.
+        /// </summary>
+        [EditorOrder(42), Tooltip("The direction to clip or stretch the bar.")]
+        public BarDirection Direction = BarDirection.HorizontalLeft;
 
         /// <summary>
         /// Gets or sets the minimum value.
@@ -168,12 +206,42 @@ namespace FlaxEngine.GUI
             float progressNormalized = (_current - _minimum) / _maximum;
             if (progressNormalized > 0.001f)
             {
-                var barRect = new Rectangle(0, 0, Width * progressNormalized, Height);
-                BarMargin.ShrinkRectangle(ref barRect);
-                if (BarBrush != null)
-                    BarBrush.Draw(barRect, BarColor);
+                Rectangle barRect = new Rectangle(0, 0, Width * progressNormalized, Height);
+                switch (Direction)
+                {
+                case BarDirection.HorizontalLeft:
+                    break;
+                case BarDirection.HorizontalRight:
+                    barRect = new Rectangle(Width - Width * progressNormalized, 0, Width * progressNormalized, Height);
+                    break;
+                case BarDirection.VerticalUp:
+                    barRect = new Rectangle(0, 0, Width, Height * progressNormalized);
+                    break;
+                case BarDirection.VerticalDown:
+                    barRect = new Rectangle(0, Height - Height * progressNormalized, Width, Height * progressNormalized);
+                    break;
+                default: break;
+                }
+
+                if (ClipBar)
+                {
+                    var rect = new Rectangle(0, 0, Width, Height);
+                    BarMargin.ShrinkRectangle(ref rect);
+                    Render2D.PushClip(ref barRect);
+                    if (BarBrush != null)
+                        BarBrush.Draw(rect, BarColor);
+                    else
+                        Render2D.FillRectangle(rect, BarColor);
+                    Render2D.PopClip();
+                }
                 else
-                    Render2D.FillRectangle(barRect, BarColor);
+                {
+                    BarMargin.ShrinkRectangle(ref barRect);
+                    if (BarBrush != null)
+                        BarBrush.Draw(barRect, BarColor);
+                    else
+                        Render2D.FillRectangle(barRect, BarColor);
+                }
             }
         }
     }
