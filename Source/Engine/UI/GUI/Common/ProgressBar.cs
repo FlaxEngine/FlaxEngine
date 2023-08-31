@@ -27,9 +27,9 @@ namespace FlaxEngine.GUI
         }
         
         /// <summary>
-        /// The direction to move the progress bar
+        /// The origin to move the progress bar to.
         /// </summary>
-        public enum BarDirection
+        public enum BarOrigin
         {
             /// <summary>
             /// Move the bar horizontally to the left.
@@ -90,10 +90,10 @@ namespace FlaxEngine.GUI
         public BarMethod Method = BarMethod.Stretch;
         
         /// <summary>
-        /// The direction to clip or stretch the bar.
+        /// The origin or where the bar decreases to.
         /// </summary>
-        [EditorOrder(42), Tooltip("The direction to clip or stretch the bar.")]
-        public BarDirection Direction = BarDirection.HorizontalLeft;
+        [EditorOrder(42), Tooltip("The origin or where the bar decreases to.")]
+        public BarOrigin Origin = BarOrigin.HorizontalLeft;
 
         /// <summary>
         /// Gets or sets the minimum value.
@@ -223,17 +223,17 @@ namespace FlaxEngine.GUI
             if (progressNormalized > 0.001f)
             {
                 Rectangle barRect = new Rectangle(0, 0, Width * progressNormalized, Height);
-                switch (Direction)
+                switch (Origin)
                 {
-                case BarDirection.HorizontalLeft:
+                case BarOrigin.HorizontalLeft:
                     break;
-                case BarDirection.HorizontalRight:
+                case BarOrigin.HorizontalRight:
                     barRect = new Rectangle(Width - Width * progressNormalized, 0, Width * progressNormalized, Height);
                     break;
-                case BarDirection.VerticalTop:
+                case BarOrigin.VerticalTop:
                     barRect = new Rectangle(0, 0, Width, Height * progressNormalized);
                     break;
-                case BarDirection.VerticalBottom:
+                case BarOrigin.VerticalBottom:
                     barRect = new Rectangle(0, Height - Height * progressNormalized, Width, Height * progressNormalized);
                     break;
                 default: break;
