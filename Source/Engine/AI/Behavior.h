@@ -15,6 +15,12 @@ API_CLASS() class FLAXENGINE_API Behavior : public Script
 {
     API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE(Behavior);
+    friend class BehaviorSystem;
+
+    /// <summary>
+    /// The system for behaviors update.
+    /// </summary>
+    API_FIELD(ReadOnly) static class TaskGraphSystem* System;
 
 private:
     BehaviorKnowledge _knowledge;
@@ -22,6 +28,8 @@ private:
     float _totalTime = 0.0f;
     BehaviorUpdateResult _result = BehaviorUpdateResult::Success;
     void* _memory = nullptr;
+
+    void UpdateAsync();
 
 public:
     /// <summary>
@@ -82,5 +90,5 @@ public:
 
     // [Script]
     void OnEnable() override;
-    void OnLateUpdate() override;
+    void OnDisable() override;
 };

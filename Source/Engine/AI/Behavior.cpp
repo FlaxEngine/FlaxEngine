@@ -3,8 +3,68 @@
 #include "Behavior.h"
 #include "BehaviorKnowledge.h"
 #include "BehaviorTreeNodes.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Engine/Time.h"
+#include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Threading/TaskGraph.h"
+
+class BehaviorSystem : public TaskGraphSystem
+{
+public:
+    Array<Behavior*> Behaviors;
+    void Job(int32 index);
+    void Execute(TaskGraph* graph) override;
+};
+
+class BehaviorService : public EngineService
+{
+public:
+    BehaviorService()
+        : EngineService(TEXT("Behaviors"), 0)
+    {
+    }
+
+    bool Init() override;
+    void Dispose() override;
+};
+
+BehaviorService BehaviorServiceInstance;
+Array<Behavior*> UpdateList;
+TaskGraphSystem* Behavior::System = nullptr;
+
+void BehaviorSystem::Job(int32 index)
+{
+    PROFILE_CPU_NAMED("Behavior.Job");
+    Behaviors[index]->UpdateAsync();
+}
+
+void BehaviorSystem::Execute(TaskGraph* graph)
+{
+    // Copy list of behaviors to update (in case one of them gets disabled during async jobs)
+    if (UpdateList.Count() == 0)
+        return;
+    Behaviors.Clear();
+    Behaviors.Add(UpdateList);
+
+    // Schedule work to update all behaviors in async
+    Function<void(int32)> job;
+    job.Bind<BehaviorSystem, &BehaviorSystem::Job>(this);
+    graph->DispatchJob(job, Behaviors.Count());
+}
+
+bool BehaviorService::Init()
+{
+    Behavior::System = New<BehaviorSystem>();
+    Engine::UpdateGraph->AddSystem(Behavior::System);
+    return false;
+}
+
+void BehaviorService::Dispose()
+{
+    UpdateList.Resize(0);
+    SAFE_DELETE(Behavior::System);
+}
 
 Behavior::Behavior(const SpawnParams& params)
     : Script(params)
@@ -12,6 +72,43 @@ Behavior::Behavior(const SpawnParams& params)
     _tickLateUpdate = 1; // TODO: run Behavior via Job System (use Engine::UpdateGraph)
     _knowledge.Behavior = this;
     Tree.Changed.Bind<Behavior, &Behavior::ResetLogic>(this);
+}
+
+void Behavior::UpdateAsync()
+{
+    if (_result != BehaviorUpdateResult::Running)
+        return;
+    const BehaviorTree* tree = Tree.Get();
+    if (!tree || !tree->Graph.Root)
+    {
+        _result = BehaviorUpdateResult::Failed;
+        Finished();
+        return;
+    }
+
+    // Update timer
+    _accumulatedTime += Time::Update.DeltaTime.GetTotalSeconds();
+    const float updateDeltaTime = 1.0f / Math::Max(tree->Graph.Root->UpdateFPS * UpdateRateScale, ZeroTolerance);
+    if (_accumulatedTime < updateDeltaTime)
+        return;
+    _accumulatedTime -= updateDeltaTime;
+    _totalTime += updateDeltaTime;
+
+    // Update tree
+    BehaviorUpdateContext context;
+    context.Behavior = this;
+    context.Knowledge = &_knowledge;
+    context.Memory = _knowledge.Memory;
+    context.RelevantNodes = &_knowledge.RelevantNodes;
+    context.DeltaTime = updateDeltaTime;
+    context.Time = _totalTime;
+    const BehaviorUpdateResult result = tree->Graph.Root->InvokeUpdate(context);
+    if (result != BehaviorUpdateResult::Running)
+        _result = result;
+    if (_result != BehaviorUpdateResult::Running)
+    {
+        Finished();
+    }
 }
 
 void Behavior::StartLogic()
@@ -58,44 +155,12 @@ void Behavior::ResetLogic()
 
 void Behavior::OnEnable()
 {
+    UpdateList.Add(this);
     if (AutoStart)
         StartLogic();
 }
 
-void Behavior::OnLateUpdate()
+void Behavior::OnDisable()
 {
-    if (_result != BehaviorUpdateResult::Running)
-        return;
-    PROFILE_CPU();
-    const BehaviorTree* tree = Tree.Get();
-    if (!tree || !tree->Graph.Root)
-    {
-        _result = BehaviorUpdateResult::Failed;
-        Finished();
-        return;
-    }
-
-    // Update timer
-    _accumulatedTime += Time::Update.DeltaTime.GetTotalSeconds();
-    const float updateDeltaTime = 1.0f / Math::Max(tree->Graph.Root->UpdateFPS * UpdateRateScale, ZeroTolerance);
-    if (_accumulatedTime < updateDeltaTime)
-        return;
-    _accumulatedTime -= updateDeltaTime;
-    _totalTime += updateDeltaTime;
-
-    // Update tree
-    BehaviorUpdateContext context;
-    context.Behavior = this;
-    context.Knowledge = &_knowledge;
-    context.Memory = _knowledge.Memory;
-    context.RelevantNodes = &_knowledge.RelevantNodes;
-    context.DeltaTime = updateDeltaTime;
-    context.Time = _totalTime;
-    const BehaviorUpdateResult result = tree->Graph.Root->InvokeUpdate(context);
-    if (result != BehaviorUpdateResult::Running)
-        _result = result;
-    if (_result != BehaviorUpdateResult::Running)
-    {
-        Finished();
-    }
+    UpdateList.Remove(this);
 }
