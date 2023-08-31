@@ -8,7 +8,14 @@
 #if USE_CSHARP
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #endif
+#include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Time.h"
 #include "Engine/Level/Actor.h"
+#include "Engine/Navigation/NavMeshRuntime.h"
+#include "Engine/Physics/Actors/RigidBody.h"
+#include "Engine/Physics/Colliders/CapsuleCollider.h"
+#include "Engine/Physics/Colliders/CharacterController.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/Serialization.h"
 
 bool IsAssignableFrom(const StringAnsiView& to, const StringAnsiView& from)
@@ -327,6 +334,202 @@ BehaviorUpdateResult BehaviorTreeForceFinishNode::Update(const BehaviorUpdateCon
 {
     context.Behavior->StopLogic(Result);
     return Result;
+}
+
+bool BehaviorTreeMoveToNode::Move(Actor* agent, const Vector3& move) const
+{
+    agent->AddMovement(move);
+    return false;
+}
+
+NavMeshRuntime* BehaviorTreeMoveToNode::GetNavMesh(Actor* agent) const
+{
+    return NavMeshRuntime::Get();
+}
+
+void BehaviorTreeMoveToNode::GetAgentSize(Actor* agent, float& outRadius, float& outHeight) const
+{
+    if (const auto* characterController = Cast<CharacterController>(agent))
+    {
+        // Character Controller is an capsule
+        outRadius = characterController->GetRadius();
+        outHeight = characterController->GetHeight() + 2 * outRadius;
+        return;
+    }
+    if (const auto* rigidBody = Cast<RigidBody>(agent))
+    {
+        // Rigid Body with a single Capsule collider (directed Up)
+        Array<Collider*, InlinedAllocation<16>> colliders;
+        rigidBody->GetColliders(colliders);
+        const auto* capsuleCollider = colliders.Count() == 1 ? (CapsuleCollider*)colliders[0] : nullptr;
+        if (capsuleCollider && (capsuleCollider->GetLocalOrientation() == Quaternion::Euler(0, 0, 90) || capsuleCollider->GetLocalOrientation() == Quaternion::Euler(0, 0, -90)))
+        {
+            outRadius = capsuleCollider->GetRadius();
+            outHeight = capsuleCollider->GetHeight() + 2 * outRadius;
+            return;
+        }
+    }
+
+    // Estimate actor bounds to extract capsule information
+    const BoundingBox box = agent->GetBox();
+    const BoundingSphere sphere = agent->GetSphere();
+    outRadius = sphere.Radius;
+    outHeight = box.GetSize().Y;
+}
+
+int32 BehaviorTreeMoveToNode::GetStateSize() const
+{
+    return sizeof(State);
+}
+
+void BehaviorTreeMoveToNode::InitState(const BehaviorUpdateContext& context)
+{
+    auto state = GetState<State>(context.Memory);
+    new(state)State();
+    state->Node = this;
+    state->Knowledge = context.Knowledge;
+
+    // Get agent to move
+    if (Agent.Path.HasChars())
+        state->Agent = Agent.Get(context.Knowledge);
+    else
+        state->Agent = context.Behavior->GetActor();
+}
+
+void BehaviorTreeMoveToNode::ReleaseState(const BehaviorUpdateContext& context)
+{
+    auto state = GetState<State>(context.Memory);
+    if (state->HasTick)
+        Engine::Update.Unbind<State, &State::OnUpdate>(state);
+    state->~State();
+}
+
+BehaviorUpdateResult BehaviorTreeMoveToNode::Update(const BehaviorUpdateContext& context)
+{
+    auto state = GetState<State>(context.Memory);
+    if (state->Agent == nullptr)
+        return BehaviorUpdateResult::Failed;
+    bool repath = !state->HasPath;
+
+    Vector3 goalLocation = state->GoalLocation;
+    if (repath || UseTargetGoalUpdate)
+    {
+        // Get current goal location
+        const Actor* target = Target.Get(context.Knowledge);
+        if (target)
+            goalLocation = target->GetPosition();
+        else
+            goalLocation = TargetLocation.Get(context.Knowledge);
+        repath |= Vector3::Distance(goalLocation, state->GoalLocation) > TargetGoalUpdateTolerance;
+        state->GoalLocation = goalLocation;
+    }
+
+    if (repath)
+    {
+        // Clear path
+        state->HasPath = false;
+        state->Path.Clear();
+        state->AgentOffset = Vector3::Zero;
+        state->UpVector = Float3::Up;
+        state->NavAgentRadius = 0;
+
+        // Find a new path
+        const Vector3 agentLocation = state->Agent->GetPosition();
+        if (UsePathfinding)
+        {
+            const NavMeshRuntime* navMesh = GetNavMesh(state->Agent);
+            if (!navMesh)
+                return BehaviorUpdateResult::Failed;
+            NavMeshPathFlags pathFlags;
+            if (!navMesh->FindPath(agentLocation, goalLocation, state->Path, pathFlags))
+                return BehaviorUpdateResult::Failed;
+            if (!UsePartialPath && EnumHasAnyFlags(pathFlags, NavMeshPathFlags::PartialPath))
+                return BehaviorUpdateResult::Failed;
+            state->UpVector = Float3::Transform(Float3::Up, navMesh->Properties.Rotation);
+            state->NavAgentRadius = navMesh->Properties.Agent.Radius;
+
+            // Place start and end on navmesh
+            navMesh->ProjectPoint(state->Path.First(), state->Path.First());
+            navMesh->ProjectPoint(state->Path.Last(), state->Path.Last());
+
+            // Calculate offset between path and the agent (aka feet offset)
+            state->AgentOffset = state->Path.First() - agentLocation;
+        }
+        else
+        {
+            // Dummy movement
+            state->Path.Resize(2);
+            state->Path.Get()[0] = agentLocation;
+            state->Path.Get()[1] = goalLocation;
+        }
+
+        // Start path following
+        state->HasPath = true;
+        state->TargetPathIndex = 1;
+        state->Result = BehaviorUpdateResult::Running;
+
+        // TODO: add path debugging in Editor (eg. via BT window)
+
+        // Register for ticking the path following logic at game update rate (BT usually use lower FPS due to performance)
+        if (!state->HasTick)
+        {
+            state->HasTick = true;
+            Engine::Update.Bind<State, &State::OnUpdate>(state);
+        }
+    }
+
+    return state->Result;
+}
+
+void BehaviorTreeMoveToNode::State::OnUpdate()
+{
+    if (Result != BehaviorUpdateResult::Running)
+        return;
+    PROFILE_CPU();
+
+    // Get agent properties
+    const Vector3 agentLocation = Agent->GetPosition();
+    float movementSpeed;
+    if (!Node->MovementSpeed.TryGet(Knowledge, movementSpeed))
+        movementSpeed = 100;
+    float agentRadius = 30.0f, agentHeight = 100.0f;
+    Node->GetAgentSize(Agent, agentRadius, agentHeight);
+
+    // Test if agent reached the next path segment
+    Vector3 pathSegmentEnd = Path[TargetPathIndex];
+    const Vector3 agentLocationOnPath = agentLocation + AgentOffset;
+    const bool isLastSegment = TargetPathIndex + 1 == Path.Count();
+    float testRadius;
+    if (isLastSegment)
+        testRadius = agentRadius + Node->AcceptableRadius;
+    else
+        testRadius = agentRadius * 0.05f + Math::Max(agentRadius - NavAgentRadius, 0.0f); // 5% threshold of agent radius and diff between navmesh vs agent radius as threshold for path segments reaching
+    const float acceptableHeightPercentage = 1.05f;
+    const float testHeight = agentHeight * acceptableHeightPercentage;
+    const Vector3 toGoal = agentLocationOnPath - pathSegmentEnd;
+    const float toGoalHeightDiff = (toGoal * UpVector).SumValues();
+    if (toGoal.Length() <= testRadius && toGoalHeightDiff <= testHeight)
+    {
+        TargetPathIndex++;
+        if (TargetPathIndex == Path.Count())
+        {
+            // Goal reached!
+            Result = BehaviorUpdateResult::Success;
+            return;
+        }
+        pathSegmentEnd = Path[TargetPathIndex];
+    }
+
+    // Move agent
+    const float maxMove = movementSpeed * Time::Update.DeltaTime.GetTotalSeconds();
+    if (maxMove <= ZeroTolerance)
+        return;
+    const Vector3 move = Vector3::MoveTowards(agentLocationOnPath, pathSegmentEnd, maxMove) - agentLocationOnPath;
+    if (Node->Move(Agent, move))
+    {
+        // Move failed!
+        Result = BehaviorUpdateResult::Failed;
+    }
 }
 
 void BehaviorTreeInvertDecorator::PostUpdate(const BehaviorUpdateContext& context, BehaviorUpdateResult& result)

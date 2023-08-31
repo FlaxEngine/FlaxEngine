@@ -4,6 +4,7 @@
 #include "BehaviorKnowledge.h"
 #include "BehaviorTreeNodes.h"
 #include "Engine/Engine/Time.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 
 Behavior::Behavior(const SpawnParams& params)
     : Script(params)
@@ -15,6 +16,8 @@ Behavior::Behavior(const SpawnParams& params)
 
 void Behavior::StartLogic()
 {
+    PROFILE_CPU();
+
     // Ensure to have tree loaded on begin play
     CHECK(Tree && !Tree->WaitForLoaded());
     BehaviorTree* tree = Tree.Get();
@@ -30,6 +33,7 @@ void Behavior::StopLogic(BehaviorUpdateResult result)
 {
     if (_result != BehaviorUpdateResult::Running || result == BehaviorUpdateResult::Running)
         return;
+    PROFILE_CPU();
     _accumulatedTime = 0.0f;
     _totalTime = 0;
     _result = result;
@@ -37,6 +41,7 @@ void Behavior::StopLogic(BehaviorUpdateResult result)
 
 void Behavior::ResetLogic()
 {
+    PROFILE_CPU();
     const bool isActive = _result == BehaviorUpdateResult::Running;
     if (isActive)
         StopLogic();
@@ -61,6 +66,7 @@ void Behavior::OnLateUpdate()
 {
     if (_result != BehaviorUpdateResult::Running)
         return;
+    PROFILE_CPU();
     const BehaviorTree* tree = Tree.Get();
     if (!tree || !tree->Graph.Root)
     {

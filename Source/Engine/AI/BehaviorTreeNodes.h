@@ -7,6 +7,8 @@
 #include "BehaviorKnowledgeSelector.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/BitArray.h"
+#include "Engine/Core/Math/Vector3.h"
+#include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Level/Tags.h"
 
@@ -147,6 +149,7 @@ public:
     void ReleaseState(const BehaviorUpdateContext& context) override;
     BehaviorUpdateResult Update(const BehaviorUpdateContext& context) override;
 
+private:
     struct State
     {
         Array<byte> Memory;
@@ -168,6 +171,87 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeForceFinishNode : public Beha
 public:
     // [BehaviorTreeNode]
     BehaviorUpdateResult Update(const BehaviorUpdateContext& context) override;
+};
+
+/// <summary>
+/// Moves an actor to the specific target location. Uses pathfinding on navmesh.
+/// </summary>
+API_CLASS() class FLAXENGINE_API BehaviorTreeMoveToNode : public BehaviorTreeNode
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeMoveToNode, BehaviorTreeNode);
+    API_AUTO_SERIALIZATION();
+
+    // The agent actor to move. If not set, uses Behavior's parent actor.
+    API_FIELD(Attributes="EditorOrder(10)")
+    BehaviorKnowledgeSelector<Actor*> Agent;
+
+    // The agent movement speed. Default value is 100 units/second.
+    API_FIELD(Attributes="EditorOrder(15)")
+    BehaviorKnowledgeSelector<float> MovementSpeed;
+
+    // The target movement object.
+    API_FIELD(Attributes="EditorOrder(30)")
+    BehaviorKnowledgeSelector<Actor*> Target;
+
+    // The target movement location.
+    API_FIELD(Attributes="EditorOrder(35)")
+    BehaviorKnowledgeSelector<Vector3> TargetLocation;
+
+    // Threshold value between Agent and Target goal location for destination reach test.
+    API_FIELD(Attributes="EditorOrder(100), Limit(0)")
+    float AcceptableRadius = 5.0f;
+
+    // Threshold value for the Target actor location offset that will trigger re-pathing to find a new path.
+    API_FIELD(Attributes="EditorOrder(110), Limit(0)")
+    float TargetGoalUpdateTolerance = 4.0f;
+
+    // If checked, the movement will use navigation system pathfinding, otherwise direct motion to the target location will happen.
+    API_FIELD(Attributes="EditorOrder(120)")
+    bool UsePathfinding = true;
+
+    // If checked, the movement will start even if there is no direct path to the target (only partial).
+    API_FIELD(Attributes="EditorOrder(130)")
+    bool UsePartialPath = true;
+
+    // If checked, the target goal location will be updated while Target actor moves.
+    API_FIELD(Attributes="EditorOrder(140)")
+    bool UseTargetGoalUpdate = true;
+
+public:
+    // Applies the movement to the agent. Returns true if cannot move.
+    virtual bool Move(Actor* agent, const Vector3& move) const;
+
+    // Returns the navmesh to use for the path-finding. Can query nav agent properties from the agent actor to select navmesh.
+    virtual class NavMeshRuntime* GetNavMesh(Actor* agent) const;
+
+    // Returns the agent dimensions used for path following (eg. goal reachability test).
+    virtual void GetAgentSize(Actor* agent, float& outRadius, float& outHeight) const;
+
+public:
+    // [BehaviorTreeNode]
+    int32 GetStateSize() const override;
+    void InitState(const BehaviorUpdateContext& context) override;
+    void ReleaseState(const BehaviorUpdateContext& context) override;
+    BehaviorUpdateResult Update(const BehaviorUpdateContext& context) override;
+
+protected:
+    struct State
+    {
+        bool HasPath = false; // True if has Path computed
+        bool HasTick = false; // True if OnUpdate is binded
+        Vector3 GoalLocation;
+        BehaviorTreeMoveToNode* Node;
+        BehaviorKnowledge* Knowledge;
+        ScriptingObjectReference<Actor> Agent;
+        Array<Vector3> Path;
+        Vector3 AgentOffset; // Offset between agent position and path position (aka feet offset)
+        float NavAgentRadius; // Size of the agent used to compute navmesh
+        Float3 UpVector; // Path Up vector (from navmesh orientation)
+        int32 TargetPathIndex; // Index of the next path point to go to
+        BehaviorUpdateResult Result; // Current result of the OnUpdate
+
+        void OnUpdate();
+    };
 };
 
 /// <summary>
