@@ -11,6 +11,22 @@ namespace FlaxEngine.GUI
     public class ProgressBar : ContainerControl
     {
         /// <summary>
+        /// The method used to effect the bar.
+        /// </summary>
+        public enum BarMethod
+        {
+            /// <summary>
+            /// Stretch the bar.
+            /// </summary>
+            Stretch,
+            
+            /// <summary>
+            /// Clip the bar.
+            /// </summary>
+            Clip,
+        }
+        
+        /// <summary>
         /// The direction to move the progress bar
         /// </summary>
         public enum BarDirection
@@ -28,12 +44,12 @@ namespace FlaxEngine.GUI
             /// <summary>
             /// Move the bar vertically up.
             /// </summary>
-            VerticalUp,
+            VerticalTop,
             
             /// <summary>
             /// Move the bar vertically down.
             /// </summary>
-            VerticalDown,
+            VerticalBottom,
         }
 
         /// <summary>
@@ -66,12 +82,12 @@ namespace FlaxEngine.GUI
         /// Gets a value indicating whether use progress value smoothing.
         /// </summary>
         public bool UseSmoothing => !Mathf.IsZero(SmoothingScale);
-        
+
         /// <summary>
-        /// If true, the progress bar will clip instead of stretch.
+        /// The method used to effect the bar.
         /// </summary>
-        [EditorOrder(42), Tooltip("Whether or not to clip vs stretch the progress bar.")]
-        public bool ClipBar = false;
+        [EditorOrder(41), Tooltip("The method used to effect the bar.")]
+        public BarMethod Method = BarMethod.Stretch;
         
         /// <summary>
         /// The direction to clip or stretch the bar.
@@ -214,17 +230,25 @@ namespace FlaxEngine.GUI
                 case BarDirection.HorizontalRight:
                     barRect = new Rectangle(Width - Width * progressNormalized, 0, Width * progressNormalized, Height);
                     break;
-                case BarDirection.VerticalUp:
+                case BarDirection.VerticalTop:
                     barRect = new Rectangle(0, 0, Width, Height * progressNormalized);
                     break;
-                case BarDirection.VerticalDown:
+                case BarDirection.VerticalBottom:
                     barRect = new Rectangle(0, Height - Height * progressNormalized, Width, Height * progressNormalized);
                     break;
                 default: break;
                 }
 
-                if (ClipBar)
+                switch (Method)
                 {
+                case BarMethod.Stretch:
+                    BarMargin.ShrinkRectangle(ref barRect);
+                    if (BarBrush != null)
+                        BarBrush.Draw(barRect, BarColor);
+                    else
+                        Render2D.FillRectangle(barRect, BarColor);
+                    break;
+                case BarMethod.Clip:
                     var rect = new Rectangle(0, 0, Width, Height);
                     BarMargin.ShrinkRectangle(ref rect);
                     Render2D.PushClip(ref barRect);
@@ -233,14 +257,8 @@ namespace FlaxEngine.GUI
                     else
                         Render2D.FillRectangle(rect, BarColor);
                     Render2D.PopClip();
-                }
-                else
-                {
-                    BarMargin.ShrinkRectangle(ref barRect);
-                    if (BarBrush != null)
-                        BarBrush.Draw(barRect, BarColor);
-                    else
-                        Render2D.FillRectangle(barRect, BarColor);
+                    break;
+                default: break;
                 }
             }
         }
