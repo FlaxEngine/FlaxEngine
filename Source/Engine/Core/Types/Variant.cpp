@@ -607,7 +607,10 @@ Variant::Variant(ScriptingObject* v)
 {
     AsObject = v;
     if (v)
+    {
+        Type.SetTypeName(v->GetType().Fullname);
         v->Deleted.Bind<Variant, &Variant::OnObjectDeleted>(this);
+    }
 }
 
 Variant::Variant(Asset* v)
@@ -616,6 +619,7 @@ Variant::Variant(Asset* v)
     AsAsset = v;
     if (v)
     {
+        Type.SetTypeName(v->GetType().Fullname);
         v->AddReference();
         v->OnUnloaded.Bind<Variant, &Variant::OnAssetUnloaded>(this);
     }
