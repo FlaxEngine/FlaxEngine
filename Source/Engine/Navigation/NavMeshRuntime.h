@@ -25,6 +25,19 @@ public:
 };
 
 /// <summary>
+/// The navigation mesh path flags.
+/// </summary>
+enum class NavMeshPathFlags
+{
+    // Nothing.
+    None = 0,
+    // Path is only partially generated, goal is unreachable so path represents the best guess.
+    PartialPath = 1,
+};
+
+DECLARE_ENUM_OPERATORS(NavMeshPathFlags);
+
+/// <summary>
 /// The navigation mesh runtime object that builds the navmesh from all loaded scenes.
 /// </summary>
 class FLAXENGINE_API NavMeshRuntime
@@ -106,7 +119,21 @@ public:
     /// <param name="endPosition">The end position.</param>
     /// <param name="resultPath">The result path.</param>
     /// <returns>True if found valid path between given two points (it may be partial), otherwise false if failed.</returns>
-    bool FindPath(const Vector3& startPosition, const Vector3& endPosition, Array<Vector3, HeapAllocation>& resultPath) const;
+    bool FindPath(const Vector3& startPosition, const Vector3& endPosition, Array<Vector3, HeapAllocation>& resultPath) const
+    {
+        NavMeshPathFlags flags;
+        return FindPath(startPosition, endPosition, resultPath, flags);
+    }
+
+    /// <summary>
+    /// Finds the path between the two positions presented as a list of waypoints stored in the corners array.
+    /// </summary>
+    /// <param name="startPosition">The start position.</param>
+    /// <param name="endPosition">The end position.</param>
+    /// <param name="resultPath">The result path.</param>
+    /// <param name="resultPath">The result path flags.</param>
+    /// <returns>True if found valid path between given two points (it may be partial), otherwise false if failed.</returns>
+    bool FindPath(const Vector3& startPosition, const Vector3& endPosition, Array<Vector3, HeapAllocation>& resultPath, NavMeshPathFlags& resultFlags) const;
 
     /// <summary>
     /// Tests the path between the two positions (non-partial).
