@@ -683,27 +683,46 @@ namespace FlaxEditor.Content
                 thumbnailRect = new Rectangle(0, 0, thumbnailSize, thumbnailSize);
                 nameAlignment = TextAlignment.Center;
                 
-                // Small shadow
-                var shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
-                var color = Color.Black.AlphaMultiplied(0.2f);
-                Render2D.FillRectangle(shadowRect, color);
-                
-                Render2D.FillRectangle(clientRect, style.LightBackground);
-                Render2D.FillRectangle(TextRectangle, style.TextBoxBackground);
-                var accentHeight = 2 * view.ViewScale;
-                var barRect = new Rectangle(0, thumbnailRect.Height - accentHeight, clientRect.Width, accentHeight);
-                Render2D.FillRectangle(barRect, Color.DimGray);
-                
-                DrawThumbnail(ref thumbnailRect, false);
-                if (isSelected)
+                if (this is ContentFolder)
                 {
-                    Render2D.FillRectangle(textRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
-                    Render2D.DrawRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                    // Small shadow
+                    var shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
+                    var color = Color.Black.AlphaMultiplied(0.2f);
+                    Render2D.FillRectangle(shadowRect, color);
+                    Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
+                    
+                    if (isSelected)
+                        Render2D.FillRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                    else if (IsMouseOver)
+                        Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
+
+                    DrawThumbnail(ref thumbnailRect, false);
                 }
-                else if (IsMouseOver)
+                else
                 {
-                    Render2D.FillRectangle(textRect, style.BackgroundHighlighted);
-                    Render2D.DrawRectangle(clientRect, style.BackgroundHighlighted);
+                    // Small shadow
+                    var shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
+                    var color = Color.Black.AlphaMultiplied(0.2f);
+                    Render2D.FillRectangle(shadowRect, color);
+                    
+                    Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
+                    Render2D.FillRectangle(TextRectangle, style.LightBackground);
+                    
+                    var accentHeight = 2 * view.ViewScale;
+                    var barRect = new Rectangle(0, thumbnailRect.Height - accentHeight, clientRect.Width, accentHeight);
+                    Render2D.FillRectangle(barRect, Color.DimGray);
+                    
+                    DrawThumbnail(ref thumbnailRect, false);
+                    if (isSelected)
+                    {
+                        Render2D.FillRectangle(textRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                        Render2D.DrawRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                    }
+                    else if (IsMouseOver)
+                    {
+                        Render2D.FillRectangle(textRect, style.BackgroundHighlighted);
+                        Render2D.DrawRectangle(clientRect, style.BackgroundHighlighted);
+                    }
                 }
                 break;
             }
