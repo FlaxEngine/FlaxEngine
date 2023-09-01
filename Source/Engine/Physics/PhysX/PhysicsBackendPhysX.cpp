@@ -1001,7 +1001,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         int32 wheelsCount = 0;
         for (auto wheelVehicle : scenePhysX->WheelVehicles)
         {
-            if (!wheelVehicle->IsActiveInHierarchy())
+            if (!wheelVehicle->IsActiveInHierarchy() || !wheelVehicle->GetEnableSimulation())
                 continue;
             auto drive = (PxVehicleWheels*)wheelVehicle->_vehicle;
             ASSERT(drive);
@@ -1216,7 +1216,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         for (int32 i = 0, ii = 0; i < scenePhysX->WheelVehicles.Count(); i++)
         {
             auto wheelVehicle = scenePhysX->WheelVehicles[i];
-            if (!wheelVehicle->IsActiveInHierarchy())
+            if (!wheelVehicle->IsActiveInHierarchy() || !wheelVehicle->GetEnableSimulation())
                 continue;
             auto drive = (PxVehicleWheels*)scenePhysX->WheelVehicles[ii]->_vehicle;
             auto& perVehicle = WheelVehiclesResultsPerVehicle[ii];
@@ -1237,7 +1237,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         for (int32 i = 0, ii = 0; i < scenePhysX->WheelVehicles.Count(); i++)
         {
             auto wheelVehicle = scenePhysX->WheelVehicles[i];
-            if (!wheelVehicle->IsActiveInHierarchy())
+            if (!wheelVehicle->IsActiveInHierarchy() || !wheelVehicle->GetEnableSimulation())
                 continue;
             auto drive = WheelVehiclesCache[ii];
             auto& perVehicle = WheelVehiclesResultsPerVehicle[ii];
