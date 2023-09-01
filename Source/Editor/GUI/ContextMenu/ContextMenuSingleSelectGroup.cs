@@ -23,6 +23,7 @@ namespace FlaxEditor.GUI.ContextMenu
 
         private List<ContextMenu> _menus = new List<ContextMenu>();
         private List<SingleSelectGroupItem> _items = new List<SingleSelectGroupItem>();
+        private bool _hasSelected = false;
         private SingleSelectGroupItem _selectedItem;
 
         public T Selected
@@ -31,7 +32,7 @@ namespace FlaxEditor.GUI.ContextMenu
             set
             {
                 var index = _items.FindIndex(x => x.Value.Equals(value));
-                if (index != -1 && !_selectedItem.Value.Equals(value))
+                if (index != -1 && (!_hasSelected || !_selectedItem.Value.Equals(value)))
                 {
                     SetSelected(_items[index]);
                 }
@@ -70,7 +71,7 @@ namespace FlaxEditor.GUI.ContextMenu
             if (item.Tooltip != null)
                 btn.TooltipText = item.Tooltip;
             item.Buttons.Add(btn);
-            if (item.Equals(_selectedItem))
+            if (_hasSelected && item.Equals(_selectedItem))
                 btn.Checked = true;
         }
 
@@ -82,6 +83,7 @@ namespace FlaxEditor.GUI.ContextMenu
                     btn.Checked = false;
             }
             _selectedItem = item;
+            _hasSelected = true;
 
             SelectedChanged?.Invoke(item.Value);
             item.Selected?.Invoke();
