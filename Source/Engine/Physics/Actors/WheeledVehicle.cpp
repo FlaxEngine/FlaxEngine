@@ -76,6 +76,10 @@ WheeledVehicle::EngineSettings WheeledVehicle::GetEngine() const
 
 void WheeledVehicle::SetEngine(const EngineSettings& value)
 {
+#if WITH_VEHICLE
+    if (_vehicle)
+        PhysicsBackend::SetVehicleEngine(_vehicle, &value);
+#endif
     _engine = value;
 }
 
@@ -86,6 +90,10 @@ WheeledVehicle::DifferentialSettings WheeledVehicle::GetDifferential() const
 
 void WheeledVehicle::SetDifferential(const DifferentialSettings& value)
 {
+#if WITH_VEHICLE
+    if (_vehicle)
+        PhysicsBackend::SetVehicleDifferential(_vehicle, &value);
+#endif
     _differential = value;
 }
 

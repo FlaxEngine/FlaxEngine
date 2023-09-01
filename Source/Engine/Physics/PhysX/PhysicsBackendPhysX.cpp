@@ -2970,12 +2970,116 @@ void PhysicsBackend::UpdateVehicleWheels(WheeledVehicle* actor)
     }
 }
 
+void PhysicsBackend::SetVehicleEngine(void* vehicle, const void* value)
+{
+    auto drive = (PxVehicleDrive*)vehicle;
+    auto& engine = *(const WheeledVehicle::EngineSettings*)value;
+    switch (drive->getVehicleType())
+    {
+    case PxVehicleTypes::eDRIVE4W:
+    {
+        auto drive4W = (PxVehicleDrive4W*)drive;
+        PxVehicleDriveSimData4W& driveSimData = drive4W->mDriveSimData;
+        PxVehicleEngineData engineData;
+        engineData.mMOI = M2ToCm2(engine.MOI);
+        engineData.mPeakTorque = M2ToCm2(engine.MaxTorque);
+        engineData.mMaxOmega = RpmToRadPerS(engine.MaxRotationSpeed);
+        engineData.mDampingRateFullThrottle = M2ToCm2(0.15f);
+        engineData.mDampingRateZeroThrottleClutchEngaged = M2ToCm2(2.0f);
+        engineData.mDampingRateZeroThrottleClutchDisengaged = M2ToCm2(0.35f);
+        driveSimData.setEngineData(engineData);
+        break;
+    }
+    case PxVehicleTypes::eDRIVENW:
+    {
+        auto drive4W = (PxVehicleDriveNW*)drive;
+        PxVehicleDriveSimDataNW& driveSimData = drive4W->mDriveSimData;
+        PxVehicleEngineData engineData;
+        engineData.mMOI = M2ToCm2(engine.MOI);
+        engineData.mPeakTorque = M2ToCm2(engine.MaxTorque);
+        engineData.mMaxOmega = RpmToRadPerS(engine.MaxRotationSpeed);
+        engineData.mDampingRateFullThrottle = M2ToCm2(0.15f);
+        engineData.mDampingRateZeroThrottleClutchEngaged = M2ToCm2(2.0f);
+        engineData.mDampingRateZeroThrottleClutchDisengaged = M2ToCm2(0.35f);
+        driveSimData.setEngineData(engineData);
+        break;
+    }
+    }
+}
+
+void PhysicsBackend::SetVehicleDifferential(void* vehicle, const void* value)
+{
+    auto drive = (PxVehicleDrive*)vehicle;
+    auto& differential = *(const WheeledVehicle::DifferentialSettings*)value;
+    switch (drive->getVehicleType())
+    {
+    case PxVehicleTypes::eDRIVE4W:
+    {
+        auto drive4W = (PxVehicleDrive4W*)drive;
+        PxVehicleDriveSimData4W& driveSimData = drive4W->mDriveSimData;
+        PxVehicleDifferential4WData differential4WData;
+        differential4WData.mType = (PxVehicleDifferential4WData::Enum)differential.Type;
+        differential4WData.mFrontRearSplit = differential.FrontRearSplit;
+        differential4WData.mFrontLeftRightSplit = differential.FrontLeftRightSplit;
+        differential4WData.mRearLeftRightSplit = differential.RearLeftRightSplit;
+        differential4WData.mCentreBias = differential.CentreBias;
+        differential4WData.mFrontBias = differential.FrontBias;
+        differential4WData.mRearBias = differential.RearBias;
+        driveSimData.setDiffData(differential4WData);
+        break;
+    }
+    }
+}
+
 void PhysicsBackend::SetVehicleGearbox(void* vehicle, const void* value)
 {
     auto drive = (PxVehicleDrive*)vehicle;
     auto& gearbox = *(const WheeledVehicle::GearboxSettings*)value;
     drive->mDriveDynData.setUseAutoGears(gearbox.AutoGear);
     drive->mDriveDynData.setAutoBoxSwitchTime(Math::Max(gearbox.SwitchTime, 0.0f));
+    switch (drive->getVehicleType())
+    {
+    case PxVehicleTypes::eDRIVE4W:
+    {
+        auto drive4W = (PxVehicleDrive4W*)drive;
+        PxVehicleDriveSimData4W& driveSimData = drive4W->mDriveSimData;
+        
+        // Gears
+        PxVehicleGearsData gears;
+        gears.mSwitchTime = Math::Max(gearbox.SwitchTime, 0.0f);
+        driveSimData.setGearsData(gears);
+
+        // Auto Box
+        PxVehicleAutoBoxData autoBox;
+        driveSimData.setAutoBoxData(autoBox);
+
+        // Clutch
+        PxVehicleClutchData clutch;
+        clutch.mStrength = M2ToCm2(gearbox.ClutchStrength);
+        driveSimData.setClutchData(clutch);
+        break;
+    }
+    case PxVehicleTypes::eDRIVENW:
+    {
+        auto drive4W = (PxVehicleDriveNW*)drive;
+        PxVehicleDriveSimDataNW& driveSimData = drive4W->mDriveSimData;
+
+        // Gears
+        PxVehicleGearsData gears;
+        gears.mSwitchTime = Math::Max(gearbox.SwitchTime, 0.0f);
+        driveSimData.setGearsData(gears);
+
+        // Auto Box
+        PxVehicleAutoBoxData autoBox;
+        driveSimData.setAutoBoxData(autoBox);
+
+        // Clutch
+        PxVehicleClutchData clutch;
+        clutch.mStrength = M2ToCm2(gearbox.ClutchStrength);
+        driveSimData.setClutchData(clutch);
+        break;
+    }
+    }
 }
 
 int32 PhysicsBackend::GetVehicleTargetGear(void* vehicle)
