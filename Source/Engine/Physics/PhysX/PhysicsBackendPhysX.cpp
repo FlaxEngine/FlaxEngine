@@ -2923,6 +2923,53 @@ void PhysicsBackend::DestroyVehicle(void* vehicle, int32 driveType)
     }
 }
 
+void PhysicsBackend::UpdateVehicleWheels(WheeledVehicle* actor)
+{
+    auto drive = (PxVehicleWheels*)actor->_vehicle;
+    PxVehicleWheelsSimData* wheelsSimData = &drive->mWheelsSimData;
+    for (uint32 i = 0; i < wheelsSimData->getNbWheels(); i++)
+    {
+        auto& wheel = actor->_wheels[i];
+
+        // Update suspension data
+        PxVehicleSuspensionData suspensionData = wheelsSimData->getSuspensionData(i);
+        const float suspensionFrequency = 7.0f;
+        suspensionData.mMaxCompression = wheel.SuspensionMaxRaise;
+        suspensionData.mMaxDroop = wheel.SuspensionMaxDrop;
+        suspensionData.mSpringStrength = Math::Square(suspensionFrequency) * suspensionData.mSprungMass;
+        suspensionData.mSpringDamperRate = wheel.SuspensionDampingRate * 2.0f * Math::Sqrt(suspensionData.mSpringStrength * suspensionData.mSprungMass);
+        wheelsSimData->setSuspensionData(i, suspensionData);
+
+        // Update tire data
+        PxVehicleTireData tire;
+        int32 tireIndex = WheelTireTypes.Find(wheel.TireFrictionScale);
+        if (tireIndex == -1)
+        {
+            // New tire type
+            tireIndex = WheelTireTypes.Count();
+            WheelTireTypes.Add(wheel.TireFrictionScale);
+            WheelTireFrictionsDirty = true;
+        }
+        tire.mType = tireIndex;
+        tire.mLatStiffX = wheel.TireLateralMax;
+        tire.mLatStiffY = wheel.TireLateralStiffness;
+        tire.mLongitudinalStiffnessPerUnitGravity = wheel.TireLongitudinalStiffness;
+        wheelsSimData->setTireData(i, tire);
+
+        // Update wheel data
+        PxVehicleWheelData wheelData;
+        wheelData.mMass = wheel.Mass;
+        wheelData.mRadius = wheel.Radius;
+        wheelData.mWidth = wheel.Width;
+        wheelData.mMOI = 0.5f * wheelData.mMass * Math::Square(wheelData.mRadius);
+        wheelData.mDampingRate = M2ToCm2(wheel.DampingRate);
+        wheelData.mMaxSteer = wheel.MaxSteerAngle * DegreesToRadians;
+        wheelData.mMaxBrakeTorque = M2ToCm2(wheel.MaxBrakeTorque);
+        wheelData.mMaxHandBrakeTorque = M2ToCm2(wheel.MaxHandBrakeTorque);
+        wheelsSimData->setWheelData(i, wheelData);
+    }
+}
+
 void PhysicsBackend::SetVehicleGearbox(void* vehicle, const void* value)
 {
     auto drive = (PxVehicleDrive*)vehicle;

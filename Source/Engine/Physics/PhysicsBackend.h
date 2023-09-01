@@ -245,6 +245,7 @@ public:
     // Vehicles
     static void* CreateVehicle(class WheeledVehicle* actor);
     static void DestroyVehicle(void* vehicle, int32 driveType);
+    static void UpdateVehicleWheels(WheeledVehicle* actor);
     static void SetVehicleGearbox(void* vehicle, const void* value);
     static int32 GetVehicleTargetGear(void* vehicle);
     static void SetVehicleTargetGear(void* vehicle, int32 value);

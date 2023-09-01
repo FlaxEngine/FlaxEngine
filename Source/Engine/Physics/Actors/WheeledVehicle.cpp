@@ -40,6 +40,31 @@ const Array<WheeledVehicle::Wheel>& WheeledVehicle::GetWheels() const
 
 void WheeledVehicle::SetWheels(const Array<Wheel>& value)
 {
+#if WITH_VEHICLE
+    // Don't recreate whole vehicle when some wheel properties are only changed (eg. suspension)
+    if (_actor && _vehicle && _wheels.Count() == value.Count() && _wheelsData.Count() == value.Count())
+    {
+        bool softUpdate = true;
+        for (int32 wheelIndex = 0; wheelIndex < value.Count(); wheelIndex++)
+        {
+            auto& oldWheel = _wheels.Get()[wheelIndex];
+            auto& newWheel = value.Get()[wheelIndex];
+            if (oldWheel.Type != newWheel.Type ||
+                Math::NotNearEqual(oldWheel.SuspensionForceOffset, newWheel.SuspensionForceOffset) ||
+                oldWheel.Collider != newWheel.Collider)
+            {
+                softUpdate = false;
+                break;
+            }
+        }
+        if (softUpdate)
+        {
+            _wheels = value;
+            PhysicsBackend::UpdateVehicleWheels(this);
+            return;
+        }
+    }
+#endif
     _wheels = value;
     Setup();
 }
