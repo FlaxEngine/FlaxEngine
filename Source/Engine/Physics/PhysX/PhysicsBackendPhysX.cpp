@@ -29,6 +29,7 @@
 #include <ThirdParty/PhysX/extensions/PxFixedJoint.h>
 #include <ThirdParty/PhysX/extensions/PxSphericalJoint.h>
 #if WITH_VEHICLE
+#include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Physics/Actors/WheeledVehicle.h"
 #include <ThirdParty/PhysX/vehicle/PxVehicleSDK.h>
 #include <ThirdParty/PhysX/vehicle/PxVehicleUpdate.h>
@@ -2630,8 +2631,20 @@ int32 PhysicsBackend::MoveController(void* controller, void* shape, const Vector
 
 #if WITH_VEHICLE
 
+bool SortWheels(WheeledVehicle::Wheel const& a, WheeledVehicle::Wheel const& b)
+{
+    return (int32)a.Type < (int32)b.Type;
+}
+
 void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
 {
+    // TODO: handle PxVehicleDrive4WWheelOrder internally rather than sorting wheels directly on the vehicle
+    if (actor->_driveType == WheeledVehicle::DriveTypes::Drive4W)
+    {
+        // Drive4W requires wheels to match order from PxVehicleDrive4WWheelOrder enum
+        Sorting::QuickSort(actor->_wheels.Get(), actor->_wheels.Count(), SortWheels);
+    }
+
     // Get wheels
     Array<WheeledVehicle::Wheel*, FixedAllocation<PX_MAX_NB_WHEELS>> wheels;
     for (auto& wheel : actor->_wheels)
@@ -2676,10 +2689,7 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
     // Initialize wheels simulation data
     PxVec3 offsets[PX_MAX_NB_WHEELS];
     for (int32 i = 0; i < wheels.Count(); i++)
-    {
-        auto& wheel = *wheels[i];
-        offsets[i] = C2P(wheel.Collider->GetLocalPosition());
-    }
+        offsets[i] = C2P(wheels[i]->Collider->GetLocalPosition());
     PxF32 sprungMasses[PX_MAX_NB_WHEELS];
     const float mass = actorPhysX->getMass();
     // TODO: get gravityDirection from scenePhysX->Scene->getGravity()
@@ -3043,7 +3053,7 @@ void PhysicsBackend::SetVehicleGearbox(void* vehicle, const void* value)
     {
         auto drive4W = (PxVehicleDrive4W*)drive;
         PxVehicleDriveSimData4W& driveSimData = drive4W->mDriveSimData;
-        
+
         // Gears
         PxVehicleGearsData gears;
         gears.mSwitchTime = Math::Max(gearbox.SwitchTime, 0.0f);
