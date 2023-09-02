@@ -732,6 +732,18 @@ void PhysicsBackend::DestroyVehicle(void* vehicle, int32 driveType)
 {
 }
 
+void PhysicsBackend::UpdateVehicleWheels(WheeledVehicle* actor)
+{
+}
+
+void PhysicsBackend::SetVehicleEngine(void* vehicle, const void* value)
+{
+}
+
+void PhysicsBackend::SetVehicleDifferential(void* vehicle, const void* value)
+{
+}
+
 void PhysicsBackend::SetVehicleGearbox(void* vehicle, const void* value)
 {
 }
