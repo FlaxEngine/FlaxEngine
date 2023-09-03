@@ -762,7 +762,7 @@ namespace FlaxEditor.GUI.Tree
                         // Add/Remove
                         tree.AddOrRemoveSelection(this);
                     }
-                    else
+                    else if (button != MouseButton.Right)
                     {
                         // Select
                         tree.Select(this);
