@@ -39,7 +39,6 @@ namespace FlaxEditor.Modules
         private bool _progressFailed;
 
         ContextMenuSingleSelectGroup<int> _numberOfClientsGroup = new ContextMenuSingleSelectGroup<int>();
-        private Scene[] _scenesToReload;
 
         private ContextMenuButton _menuFileSaveScenes;
         private ContextMenuButton _menuFileCloseScenes;
@@ -556,8 +555,8 @@ namespace FlaxEditor.Modules
             cm = MenuGame.ContextMenu;
             cm.VisibleChanged += OnMenuGameShowHide;
 
-            _menuGamePlayGame = cm.AddButton("Play Game", PlayGame);
-            _menuGamePlayCurrentScenes = cm.AddButton("Play Current Scenes", inputOptions.Play.ToString(), PlayScenes);
+            _menuGamePlayGame = cm.AddButton("Play Game", Editor.Simulation.RequestPlayGameOrStopPlay);
+            _menuGamePlayCurrentScenes = cm.AddButton("Play Current Scenes", Editor.Simulation.RequestPlayScenesOrStopPlay);
             _menuGameStop = cm.AddButton("Stop Game", Editor.Simulation.RequestStopPlay);
             _menuGamePause = cm.AddButton("Pause", inputOptions.Pause.ToString(), Editor.Simulation.RequestPausePlay);
 
@@ -566,8 +565,8 @@ namespace FlaxEditor.Modules
             _numberOfClientsGroup.AddItemsToContextMenu(numberOfClientsMenu.ContextMenu);
 
             cm.AddSeparator();
-            cm.AddButton("Cook & Run", CookAndRun).LinkTooltip("Runs Game Cooker to build the game for this platform and runs the game after.");
-            cm.AddButton("Run cooked game", RunCookedGame).LinkTooltip("Runs the game build from the last cooking output. Use Cook&Play or Game Cooker first.");
+            cm.AddButton("Cook & Run", Editor.Windows.GameCookerWin.BuildAndRun).LinkTooltip("Runs Game Cooker to build the game for this platform and runs the game after.");
+            cm.AddButton("Run cooked game", Editor.Windows.GameCookerWin.RunCooked).LinkTooltip("Runs the game build from the last cooking output. Use Cook&Play or Game Cooker first.");
 
             // Tools
             MenuTools = MainMenu.AddButton("Tools");
@@ -658,23 +657,23 @@ namespace FlaxEditor.Modules
                 Parent = mainWindow,
             };
 
-            _toolStripSaveAll = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Save64, Editor.SaveAll).LinkTooltip("Save all (Ctrl+S)");
+            _toolStripSaveAll = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Save64, Editor.SaveAll).LinkTooltip($"Save all ({inputOptions.Save})");
             ToolStrip.AddSeparator();
-            _toolStripUndo = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Undo64, Editor.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
-            _toolStripRedo = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Redo64, Editor.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
+            _toolStripUndo = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Undo64, Editor.PerformUndo).LinkTooltip($"Undo ({inputOptions.Undo})");
+            _toolStripRedo = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Redo64, Editor.PerformRedo).LinkTooltip($"Redo ({inputOptions.Redo})");
             ToolStrip.AddSeparator();
-            _toolStripTranslate = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Translate32, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate).LinkTooltip("Change Gizmo tool mode to Translate (1)");
-            _toolStripRotate = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Rotate32, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate).LinkTooltip("Change Gizmo tool mode to Rotate (2)");
-            _toolStripScale = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Scale32, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale).LinkTooltip("Change Gizmo tool mode to Scale (3)");
+            _toolStripTranslate = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Translate32, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate).LinkTooltip($"Change Gizmo tool mode to Translate ({inputOptions.TranslateMode})");
+            _toolStripRotate = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Rotate32, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate).LinkTooltip($"Change Gizmo tool mode to Rotate ({inputOptions.RotateMode})");
+            _toolStripScale = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Scale32, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale).LinkTooltip($"Change Gizmo tool mode to Scale ({inputOptions.ScaleMode})");
             ToolStrip.AddSeparator();
 
             // Cook scenes
             _toolStripBuildScenes = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Build64, Editor.BuildScenesOrCancel).LinkTooltip("Build scenes data - CSG, navmesh, static lighting, env probes - configurable via Build Actions in editor options (Ctrl+F10)");
 
             // Cook and run
-            _toolStripCook = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.ShipIt64, CookAndRun).LinkTooltip("Cook & Run - build game for the current platform and run it locally");
+            _toolStripCook = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.ShipIt64, Editor.Windows.GameCookerWin.BuildAndRun).LinkTooltip("Cook & Run - build game for the current platform and run it locally");
             _toolStripCook.ContextMenu = new ContextMenu();
-            _toolStripCook.ContextMenu.AddButton("Run cooked game", RunCookedGame);
+            _toolStripCook.ContextMenu.AddButton("Run cooked game", Editor.Windows.GameCookerWin.RunCooked);
             _toolStripCook.ContextMenu.AddSeparator();
             var numberOfClientsMenu = _toolStripCook.ContextMenu.AddChildMenu("Number of game clients");
             _numberOfClientsGroup.AddItemsToContextMenu(numberOfClientsMenu.ContextMenu);
@@ -682,7 +681,7 @@ namespace FlaxEditor.Modules
             ToolStrip.AddSeparator();
 
             // Play
-            _toolStripPlay = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Play64, OnPlayPressed).LinkTooltip("Play Game");
+            _toolStripPlay = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Play64, Editor.Simulation.DelegatePlayOrStopPlayInEditor).LinkTooltip($"Play In Editor ({inputOptions.Play})");
             _toolStripPlay.ContextMenu = new ContextMenu();
             var playSubMenu = _toolStripPlay.ContextMenu.AddChildMenu("Play button action");
             var playActionGroup = new ContextMenuSingleSelectGroup<InterfaceOptions.PlayAction>();
@@ -1037,65 +1036,6 @@ namespace FlaxEditor.Modules
             var options = Editor.Options.Options;
             options.Interface.PlayButtonAction = newPlayAction;
             Editor.Options.Apply(options);
-        }
-
-        private void OnPlayPressed()
-        {
-            switch (Editor.Options.Options.Interface.PlayButtonAction)
-            {
-            case InterfaceOptions.PlayAction.PlayGame:
-                if (Editor.IsPlayMode)
-                    Editor.Simulation.RequestStopPlay();
-                else
-                    PlayGame();
-                return;
-            case InterfaceOptions.PlayAction.PlayScenes:
-                PlayScenes();
-                return;
-            }
-        }
-
-        private void PlayGame()
-        {
-            var firstScene = GameSettings.Load().FirstScene;
-            if (firstScene == Guid.Empty)
-            {
-                if (Level.IsAnySceneLoaded)
-                    Editor.Simulation.RequestStartPlay();
-                return;
-            }
-
-            _scenesToReload = Level.Scenes;
-            Level.UnloadAllScenes();
-            Level.LoadScene(firstScene);
-
-            Editor.PlayModeEnd += OnPlayGameSceneEnding;
-            Editor.Simulation.RequestPlayOrStopPlay();
-        }
-
-        private void OnPlayGameSceneEnding()
-        {
-            Editor.PlayModeEnd -= OnPlayGameSceneEnding;
-
-            Level.UnloadAllScenes();
-
-            foreach (var scene in _scenesToReload)
-                Level.LoadScene(scene.ID);
-        }
-
-        private void PlayScenes()
-        {
-            Editor.Simulation.RequestPlayOrStopPlay();
-        }
-
-        private void CookAndRun()
-        {
-            Editor.Windows.GameCookerWin.BuildAndRun();
-        }
-
-        private void RunCookedGame()
-        {
-            Editor.Windows.GameCookerWin.RunCooked();
         }
 
         private void OnMainWindowClosing()

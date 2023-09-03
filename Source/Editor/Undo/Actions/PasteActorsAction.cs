@@ -138,6 +138,8 @@ namespace FlaxEditor.Actions
                 }
             }
 
+            // Store previously looked up names and the results
+            Dictionary<string, bool> foundNamesResults = new();
             for (int i = 0; i < nodeParents.Count; i++)
             {
                 var node = nodeParents[i];
@@ -145,15 +147,28 @@ namespace FlaxEditor.Actions
                 var parent = actor?.Parent;
                 if (parent != null)
                 {
+                    bool IsNameValid(string name)
+                    {
+                        if (!foundNamesResults.TryGetValue(name, out bool found))
+                        {
+                            found = parent.GetChild(name) != null;
+                            foundNamesResults.Add(name, found);
+                        }
+                        return !found;
+                    }
+
                     // Fix name collisions
                     var name = actor.Name;
-                    for (int j = 0; j < parent.ChildrenCount; j++)
+                    var children = parent.Children;
+                    for (int j = 0; j < children.Length; j++)
                     {
-                        var child = parent.Children[j];
-                        if (child != actor && child.Name == actor.Name)
+                        var child = children[j];
+                        if (child != actor && child.Name == name)
                         {
-                            var children = parent.Children;
-                            actor.Name = Utilities.Utils.IncrementNameNumber(name, x => children.All(y => y.Name != x));
+                            string newName = Utilities.Utils.IncrementNameNumber(name, x => IsNameValid(x));
+                            foundNamesResults[newName] = true;
+                            actor.Name = newName;
+                            // Multiple actors may have the same name, continue
                         }
                     }
                 }
@@ -162,10 +177,7 @@ namespace FlaxEditor.Actions
             }
 
             for (int i = 0; i < nodeParents.Count; i++)
-            {
-                var node = nodeParents[i];
-                node.PostPaste();
-            }
+                nodeParents[i].PostPaste();
         }
 
         /// <summary>

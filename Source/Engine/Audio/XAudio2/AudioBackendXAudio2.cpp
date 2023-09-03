@@ -5,6 +5,7 @@
 #include "AudioBackendXAudio2.h"
 #include "Engine/Audio/AudioSettings.h"
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Collections/ChunkedArray.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Audio/Audio.h"
 #include "Engine/Audio/AudioSource.h"
@@ -208,8 +209,8 @@ namespace XAudio2
     bool ForceDirty = true;
     Listener Listeners[AUDIO_MAX_LISTENERS];
     CriticalSection Locker;
-    Array<Source> Sources(32); // TODO: use ChunkedArray for better performance
-    Array<Buffer*> Buffers(64); // TODO: use ChunkedArray for better performance or use buffers pool?
+    ChunkedArray<Source, 32> Sources;
+    ChunkedArray<Buffer*, 64> Buffers; // TODO: use ChunkedArray for better performance or use buffers pool?
     EngineCallback Callback;
 
     Listener* GetListener()

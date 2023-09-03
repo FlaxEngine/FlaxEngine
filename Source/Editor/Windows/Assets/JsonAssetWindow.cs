@@ -23,6 +23,7 @@ namespace FlaxEditor.Windows.Assets
         private readonly Undo _undo;
         private object _object;
         private bool _isRegisteredForScriptsReload;
+        private Label _typeText;
 
         /// <summary>
         /// Gets the instance of the Json asset object that is being edited.
@@ -136,6 +137,22 @@ namespace FlaxEditor.Windows.Assets
                 }
             }
             _presenter.Select(_object);
+            
+            if (_typeText != null)
+                _typeText.Dispose();
+            var typeText = new ClickableLabel
+            {
+                Text = $"{Asset.DataTypeName}",
+                TooltipText = "Asset data type (full name)",
+                AnchorPreset = AnchorPresets.TopRight,
+                AutoWidth = true,
+                Parent = this,
+            };
+            typeText.LocalX += -(typeText.Width + 4);
+            typeText.LocalY += (_toolstrip.Height - typeText.Height) * 0.5f;
+            typeText.RightClick = () => Clipboard.Text = Asset.DataTypeName;
+            _typeText = typeText;
+            
             _undo.Clear();
             ClearEditedFlag();
 
@@ -175,6 +192,7 @@ namespace FlaxEditor.Windows.Assets
                 _isRegisteredForScriptsReload = false;
                 ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             }
+            _typeText = null;
 
             base.OnDestroy();
         }

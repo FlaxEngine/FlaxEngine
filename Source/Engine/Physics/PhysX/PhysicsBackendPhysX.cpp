@@ -29,6 +29,7 @@
 #include <ThirdParty/PhysX/extensions/PxFixedJoint.h>
 #include <ThirdParty/PhysX/extensions/PxSphericalJoint.h>
 #if WITH_VEHICLE
+#include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Physics/Actors/WheeledVehicle.h"
 #include <ThirdParty/PhysX/vehicle/PxVehicleSDK.h>
 #include <ThirdParty/PhysX/vehicle/PxVehicleUpdate.h>
@@ -1001,7 +1002,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         int32 wheelsCount = 0;
         for (auto wheelVehicle : scenePhysX->WheelVehicles)
         {
-            if (!wheelVehicle->IsActiveInHierarchy())
+            if (!wheelVehicle->IsActiveInHierarchy() || !wheelVehicle->GetEnableSimulation())
                 continue;
             auto drive = (PxVehicleWheels*)wheelVehicle->_vehicle;
             ASSERT(drive);
@@ -1216,7 +1217,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         for (int32 i = 0, ii = 0; i < scenePhysX->WheelVehicles.Count(); i++)
         {
             auto wheelVehicle = scenePhysX->WheelVehicles[i];
-            if (!wheelVehicle->IsActiveInHierarchy())
+            if (!wheelVehicle->IsActiveInHierarchy() || !wheelVehicle->GetEnableSimulation())
                 continue;
             auto drive = (PxVehicleWheels*)scenePhysX->WheelVehicles[ii]->_vehicle;
             auto& perVehicle = WheelVehiclesResultsPerVehicle[ii];
@@ -1237,7 +1238,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         for (int32 i = 0, ii = 0; i < scenePhysX->WheelVehicles.Count(); i++)
         {
             auto wheelVehicle = scenePhysX->WheelVehicles[i];
-            if (!wheelVehicle->IsActiveInHierarchy())
+            if (!wheelVehicle->IsActiveInHierarchy() || !wheelVehicle->GetEnableSimulation())
                 continue;
             auto drive = WheelVehiclesCache[ii];
             auto& perVehicle = WheelVehiclesResultsPerVehicle[ii];
@@ -2630,8 +2631,20 @@ int32 PhysicsBackend::MoveController(void* controller, void* shape, const Vector
 
 #if WITH_VEHICLE
 
+bool SortWheels(WheeledVehicle::Wheel const& a, WheeledVehicle::Wheel const& b)
+{
+    return (int32)a.Type < (int32)b.Type;
+}
+
 void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
 {
+    // TODO: handle PxVehicleDrive4WWheelOrder internally rather than sorting wheels directly on the vehicle
+    if (actor->_driveType == WheeledVehicle::DriveTypes::Drive4W)
+    {
+        // Drive4W requires wheels to match order from PxVehicleDrive4WWheelOrder enum
+        Sorting::QuickSort(actor->_wheels.Get(), actor->_wheels.Count(), SortWheels);
+    }
+
     // Get wheels
     Array<WheeledVehicle::Wheel*, FixedAllocation<PX_MAX_NB_WHEELS>> wheels;
     for (auto& wheel : actor->_wheels)
@@ -2676,10 +2689,7 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
     // Initialize wheels simulation data
     PxVec3 offsets[PX_MAX_NB_WHEELS];
     for (int32 i = 0; i < wheels.Count(); i++)
-    {
-        auto& wheel = *wheels[i];
-        offsets[i] = C2P(wheel.Collider->GetLocalPosition());
-    }
+        offsets[i] = C2P(wheels[i]->Collider->GetLocalPosition());
     PxF32 sprungMasses[PX_MAX_NB_WHEELS];
     const float mass = actorPhysX->getMass();
     // TODO: get gravityDirection from scenePhysX->Scene->getGravity()
@@ -2923,12 +2933,163 @@ void PhysicsBackend::DestroyVehicle(void* vehicle, int32 driveType)
     }
 }
 
+void PhysicsBackend::UpdateVehicleWheels(WheeledVehicle* actor)
+{
+    auto drive = (PxVehicleWheels*)actor->_vehicle;
+    PxVehicleWheelsSimData* wheelsSimData = &drive->mWheelsSimData;
+    for (uint32 i = 0; i < wheelsSimData->getNbWheels(); i++)
+    {
+        auto& wheel = actor->_wheels[i];
+
+        // Update suspension data
+        PxVehicleSuspensionData suspensionData = wheelsSimData->getSuspensionData(i);
+        const float suspensionFrequency = 7.0f;
+        suspensionData.mMaxCompression = wheel.SuspensionMaxRaise;
+        suspensionData.mMaxDroop = wheel.SuspensionMaxDrop;
+        suspensionData.mSpringStrength = Math::Square(suspensionFrequency) * suspensionData.mSprungMass;
+        suspensionData.mSpringDamperRate = wheel.SuspensionDampingRate * 2.0f * Math::Sqrt(suspensionData.mSpringStrength * suspensionData.mSprungMass);
+        wheelsSimData->setSuspensionData(i, suspensionData);
+
+        // Update tire data
+        PxVehicleTireData tire;
+        int32 tireIndex = WheelTireTypes.Find(wheel.TireFrictionScale);
+        if (tireIndex == -1)
+        {
+            // New tire type
+            tireIndex = WheelTireTypes.Count();
+            WheelTireTypes.Add(wheel.TireFrictionScale);
+            WheelTireFrictionsDirty = true;
+        }
+        tire.mType = tireIndex;
+        tire.mLatStiffX = wheel.TireLateralMax;
+        tire.mLatStiffY = wheel.TireLateralStiffness;
+        tire.mLongitudinalStiffnessPerUnitGravity = wheel.TireLongitudinalStiffness;
+        wheelsSimData->setTireData(i, tire);
+
+        // Update wheel data
+        PxVehicleWheelData wheelData;
+        wheelData.mMass = wheel.Mass;
+        wheelData.mRadius = wheel.Radius;
+        wheelData.mWidth = wheel.Width;
+        wheelData.mMOI = 0.5f * wheelData.mMass * Math::Square(wheelData.mRadius);
+        wheelData.mDampingRate = M2ToCm2(wheel.DampingRate);
+        wheelData.mMaxSteer = wheel.MaxSteerAngle * DegreesToRadians;
+        wheelData.mMaxBrakeTorque = M2ToCm2(wheel.MaxBrakeTorque);
+        wheelData.mMaxHandBrakeTorque = M2ToCm2(wheel.MaxHandBrakeTorque);
+        wheelsSimData->setWheelData(i, wheelData);
+    }
+}
+
+void PhysicsBackend::SetVehicleEngine(void* vehicle, const void* value)
+{
+    auto drive = (PxVehicleDrive*)vehicle;
+    auto& engine = *(const WheeledVehicle::EngineSettings*)value;
+    switch (drive->getVehicleType())
+    {
+    case PxVehicleTypes::eDRIVE4W:
+    {
+        auto drive4W = (PxVehicleDrive4W*)drive;
+        PxVehicleDriveSimData4W& driveSimData = drive4W->mDriveSimData;
+        PxVehicleEngineData engineData;
+        engineData.mMOI = M2ToCm2(engine.MOI);
+        engineData.mPeakTorque = M2ToCm2(engine.MaxTorque);
+        engineData.mMaxOmega = RpmToRadPerS(engine.MaxRotationSpeed);
+        engineData.mDampingRateFullThrottle = M2ToCm2(0.15f);
+        engineData.mDampingRateZeroThrottleClutchEngaged = M2ToCm2(2.0f);
+        engineData.mDampingRateZeroThrottleClutchDisengaged = M2ToCm2(0.35f);
+        driveSimData.setEngineData(engineData);
+        break;
+    }
+    case PxVehicleTypes::eDRIVENW:
+    {
+        auto drive4W = (PxVehicleDriveNW*)drive;
+        PxVehicleDriveSimDataNW& driveSimData = drive4W->mDriveSimData;
+        PxVehicleEngineData engineData;
+        engineData.mMOI = M2ToCm2(engine.MOI);
+        engineData.mPeakTorque = M2ToCm2(engine.MaxTorque);
+        engineData.mMaxOmega = RpmToRadPerS(engine.MaxRotationSpeed);
+        engineData.mDampingRateFullThrottle = M2ToCm2(0.15f);
+        engineData.mDampingRateZeroThrottleClutchEngaged = M2ToCm2(2.0f);
+        engineData.mDampingRateZeroThrottleClutchDisengaged = M2ToCm2(0.35f);
+        driveSimData.setEngineData(engineData);
+        break;
+    }
+    }
+}
+
+void PhysicsBackend::SetVehicleDifferential(void* vehicle, const void* value)
+{
+    auto drive = (PxVehicleDrive*)vehicle;
+    auto& differential = *(const WheeledVehicle::DifferentialSettings*)value;
+    switch (drive->getVehicleType())
+    {
+    case PxVehicleTypes::eDRIVE4W:
+    {
+        auto drive4W = (PxVehicleDrive4W*)drive;
+        PxVehicleDriveSimData4W& driveSimData = drive4W->mDriveSimData;
+        PxVehicleDifferential4WData differential4WData;
+        differential4WData.mType = (PxVehicleDifferential4WData::Enum)differential.Type;
+        differential4WData.mFrontRearSplit = differential.FrontRearSplit;
+        differential4WData.mFrontLeftRightSplit = differential.FrontLeftRightSplit;
+        differential4WData.mRearLeftRightSplit = differential.RearLeftRightSplit;
+        differential4WData.mCentreBias = differential.CentreBias;
+        differential4WData.mFrontBias = differential.FrontBias;
+        differential4WData.mRearBias = differential.RearBias;
+        driveSimData.setDiffData(differential4WData);
+        break;
+    }
+    }
+}
+
 void PhysicsBackend::SetVehicleGearbox(void* vehicle, const void* value)
 {
     auto drive = (PxVehicleDrive*)vehicle;
     auto& gearbox = *(const WheeledVehicle::GearboxSettings*)value;
     drive->mDriveDynData.setUseAutoGears(gearbox.AutoGear);
     drive->mDriveDynData.setAutoBoxSwitchTime(Math::Max(gearbox.SwitchTime, 0.0f));
+    switch (drive->getVehicleType())
+    {
+    case PxVehicleTypes::eDRIVE4W:
+    {
+        auto drive4W = (PxVehicleDrive4W*)drive;
+        PxVehicleDriveSimData4W& driveSimData = drive4W->mDriveSimData;
+
+        // Gears
+        PxVehicleGearsData gears;
+        gears.mSwitchTime = Math::Max(gearbox.SwitchTime, 0.0f);
+        driveSimData.setGearsData(gears);
+
+        // Auto Box
+        PxVehicleAutoBoxData autoBox;
+        driveSimData.setAutoBoxData(autoBox);
+
+        // Clutch
+        PxVehicleClutchData clutch;
+        clutch.mStrength = M2ToCm2(gearbox.ClutchStrength);
+        driveSimData.setClutchData(clutch);
+        break;
+    }
+    case PxVehicleTypes::eDRIVENW:
+    {
+        auto drive4W = (PxVehicleDriveNW*)drive;
+        PxVehicleDriveSimDataNW& driveSimData = drive4W->mDriveSimData;
+
+        // Gears
+        PxVehicleGearsData gears;
+        gears.mSwitchTime = Math::Max(gearbox.SwitchTime, 0.0f);
+        driveSimData.setGearsData(gears);
+
+        // Auto Box
+        PxVehicleAutoBoxData autoBox;
+        driveSimData.setAutoBoxData(autoBox);
+
+        // Clutch
+        PxVehicleClutchData clutch;
+        clutch.mStrength = M2ToCm2(gearbox.ClutchStrength);
+        driveSimData.setClutchData(clutch);
+        break;
+    }
+    }
 }
 
 int32 PhysicsBackend::GetVehicleTargetGear(void* vehicle)

@@ -2191,6 +2191,7 @@ bool LinuxPlatform::Init()
 
 	// Initialize "X11 keycode" -> "Flax KeyboardKeys" map
 	KeyCodeMap.Resize(desc->max_key_code + 1);
+    Platform::MemoryClear(KeyCodeMap.Get(), KeyCodeMap.Count() * sizeof(KeyboardKeys));
 	XkbFreeNames(desc, XkbKeyNamesMask, 1);
 	X11::XkbFreeKeyboard(desc, 0, 1);
 	for (int32 keyIdx = (int32)KeyboardKeys::None; keyIdx < MAX_uint8; keyIdx++)

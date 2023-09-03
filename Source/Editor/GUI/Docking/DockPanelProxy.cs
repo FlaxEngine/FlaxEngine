@@ -253,6 +253,12 @@ namespace FlaxEditor.GUI.Docking
                         tabColor = style.BackgroundHighlighted;
                         Render2D.FillRectangle(tabRect, tabColor);
                     }
+                    else
+                    {
+                        tabColor = style.BackgroundHighlighted;
+                        Render2D.DrawLine(tabRect.BottomLeft - new Float2(0 , 1), tabRect.UpperLeft, tabColor);
+                        Render2D.DrawLine(tabRect.BottomRight - new Float2(0 , 1), tabRect.UpperRight, tabColor);
+                    }
 
                     if (tab.Icon.IsValid)
                     {

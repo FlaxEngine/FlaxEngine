@@ -526,7 +526,7 @@ namespace FlaxEngine.Interop
         {
             Type elementType = Unsafe.As<Type>(typeHandle.Target);
             Type marshalledType = ArrayFactory.GetMarshalledType(elementType);
-            Type arrayType = elementType.MakeArrayType();
+            Type arrayType = ArrayFactory.GetArrayType(elementType);
             if (marshalledType.IsValueType)
             {
                 ManagedArray managedArray = ManagedArray.AllocateNewArray((int)size, arrayType, marshalledType);
@@ -544,7 +544,7 @@ namespace FlaxEngine.Interop
         internal static ManagedHandle GetArrayTypeFromElementType(ManagedHandle elementTypeHandle)
         {
             Type elementType = Unsafe.As<Type>(elementTypeHandle.Target);
-            Type classType = elementType.MakeArrayType();
+            Type classType = ArrayFactory.GetArrayType(elementType);
             return GetTypeGCHandle(classType);
         }
 
@@ -649,8 +649,6 @@ namespace FlaxEngine.Interop
             Type type = value.GetType();
             if (!type.IsValueType)
                 return ManagedHandle.ToIntPtr(handle);
-
-            // HACK: Get the address of a non-pinned value
             return ValueTypeUnboxer.GetPointer(value, type);
         }
 
