@@ -365,8 +365,8 @@ MString* MCore::String::GetEmpty(MDomain* domain)
 
 MString* MCore::String::New(const char* str, int32 length, MDomain* domain)
 {
-    static void* NewStringLengthPtr = GetStaticMethodPointer(TEXT("NewStringLength"));
-    return (MString*)CallStaticMethod<void*, const char*, int>(NewStringLengthPtr, str, length);
+    static void* NewStringUTF8Ptr = GetStaticMethodPointer(TEXT("NewStringUTF8"));
+    return (MString*)CallStaticMethod<void*, const char*, int>(NewStringUTF8Ptr, str, length);
 }
 
 MString* MCore::String::New(const Char* str, int32 length, MDomain* domain)
