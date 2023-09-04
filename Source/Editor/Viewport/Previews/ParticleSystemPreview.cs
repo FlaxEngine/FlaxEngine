@@ -186,8 +186,11 @@ namespace FlaxEditor.Viewport.Previews
             if (!useWidgets)
                 return;
             _showBoundsButton = ViewWidgetShowMenu.AddButton("Bounds", () => ShowBounds = !ShowBounds);
+            _showBoundsButton.CloseMenuOnClick = false;
             _showOriginButton = ViewWidgetShowMenu.AddButton("Origin", () => ShowOrigin = !ShowOrigin);
+            _showOriginButton.CloseMenuOnClick = false;
             _showParticleCounterButton = ViewWidgetShowMenu.AddButton("Particles Counter", () => ShowParticlesCounter = !ShowParticlesCounter);
+            _showParticleCounterButton.CloseMenuOnClick = false;
 
             // Play/Pause widget
             {

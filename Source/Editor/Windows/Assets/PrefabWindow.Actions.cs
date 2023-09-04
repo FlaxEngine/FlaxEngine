@@ -144,7 +144,7 @@ namespace FlaxEditor.Windows.Assets
             // Set paste target if only one actor is selected and no target provided
             if (pasteTargetActor == null && Selection.Count == 1 && Selection[0] is ActorNode actorNode)
             {
-                pasteTargetActor = actorNode.Actor;
+                pasteTargetActor = actorNode.Actor.IsPrefabRoot ? actorNode.Actor : actorNode.Actor.Parent;
             }
 
             // Create paste action

@@ -12,17 +12,96 @@
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/Internal/StdTypesContainer.h"
+#include "Engine/Core/Collections/Dictionary.h"
 
 /// <summary>
 /// Utility interop between C++ and C# for Dictionary collection.
 /// </summary>
 struct FLAXENGINE_API ManagedDictionary
 {
+public:
+    struct KeyValueType
+    {
+        MType* keyType;
+        MType* valueType;
+
+        bool operator==(const KeyValueType& other) const
+        {
+            return keyType == other.keyType && valueType == other.valueType;
+        }
+    };
+
+private:
+    static Dictionary<KeyValueType, MTypeObject*> CachedDictionaryTypes;
+
+#if !USE_MONO_AOT
+    typedef MTypeObject* (*MakeGenericTypeThunk)(MObject* instance, MTypeObject* genericType, MArray* genericArgs, MObject** exception);
+    static MakeGenericTypeThunk MakeGenericType;
+
+    typedef MObject* (*CreateInstanceThunk)(MObject* instance, MTypeObject* type, void* arr, MObject** exception);
+    static CreateInstanceThunk CreateInstance;
+
+    typedef void (*AddDictionaryItemThunk)(MObject* instance, MObject* dictionary, MObject* key, MObject* value, MObject** exception);
+    static AddDictionaryItemThunk AddDictionaryItem;
+
+    typedef MArray* (*GetDictionaryKeysThunk)(MObject* instance, MObject* dictionary, MObject** exception);
+    static GetDictionaryKeysThunk GetDictionaryKeys;
+#else
+    static MMethod* MakeGenericType;
+    static MMethod* CreateInstance;
+    static MMethod* AddDictionaryItem;
+    static MMethod* GetDictionaryKeys;
+#endif
+
+public:
     MObject* Instance;
 
     ManagedDictionary(MObject* instance = nullptr)
     {
         Instance = instance;
+
+#if !USE_MONO_AOT
+        // Cache the thunks of the dictionary helper methods
+        if (MakeGenericType == nullptr)
+        {
+            MClass* scriptingClass = Scripting::GetStaticClass();
+            CHECK(scriptingClass);
+
+            MMethod* makeGenericTypeMethod = scriptingClass->GetMethod("MakeGenericType", 2);
+            CHECK(makeGenericTypeMethod);
+            MakeGenericType = (MakeGenericTypeThunk)makeGenericTypeMethod->GetThunk();
+
+            MMethod* createInstanceMethod = StdTypesContainer::Instance()->ActivatorClass->GetMethod("CreateInstance", 2);
+            CHECK(createInstanceMethod);
+            CreateInstance = (CreateInstanceThunk)createInstanceMethod->GetThunk();
+
+            MMethod* addDictionaryItemMethod = scriptingClass->GetMethod("AddDictionaryItem", 3);
+            CHECK(addDictionaryItemMethod);
+            AddDictionaryItem = (AddDictionaryItemThunk)addDictionaryItemMethod->GetThunk();
+            
+            MMethod* getDictionaryKeysItemMethod = scriptingClass->GetMethod("GetDictionaryKeys", 1);
+            CHECK(getDictionaryKeysItemMethod);
+            GetDictionaryKeys = (GetDictionaryKeysThunk)getDictionaryKeysItemMethod->GetThunk();
+        }
+#else
+        if (MakeGenericType == nullptr)
+        {
+            MClass* scriptingClass = Scripting::GetStaticClass();
+            CHECK(scriptingClass);
+
+            MakeGenericType = scriptingClass->GetMethod("MakeGenericType", 2);
+            CHECK(MakeGenericType);
+
+            CreateInstance = StdTypesContainer::Instance()->ActivatorClass->GetMethod("CreateInstance", 2);
+            CHECK(CreateInstance);
+
+            AddDictionaryItem = scriptingClass->GetMethod("AddDictionaryItem", 3);
+            CHECK(AddDictionaryItem);
+
+            GetDictionaryKeys = scriptingClass->GetMethod("GetDictionaryKeys", 1);
+            CHECK(GetDictionaryKeys);
+        }
+#endif
     }
 
     template<typename KeyType, typename ValueType>
@@ -76,10 +155,11 @@ struct FLAXENGINE_API ManagedDictionary
 
     static MTypeObject* GetClass(MType* keyType, MType* valueType)
     {
-        MClass* scriptingClass = Scripting::GetStaticClass();
-        CHECK_RETURN(scriptingClass, nullptr);
-        MMethod* makeGenericMethod = scriptingClass->GetMethod("MakeGenericType", 2);
-        CHECK_RETURN(makeGenericMethod, nullptr);
+        // Check if the generic type was generated earlier
+        KeyValueType cacheKey = { keyType, valueType };
+        MTypeObject* dictionaryType;
+        if (CachedDictionaryTypes.TryGet(cacheKey, dictionaryType))
+            return dictionaryType;
 
         MTypeObject* genericType = MUtils::GetType(StdTypesContainer::Instance()->DictionaryClass);
 #if USE_NETCORE
@@ -91,18 +171,23 @@ struct FLAXENGINE_API ManagedDictionary
         genericArgsPtr[0] = INTERNAL_TYPE_GET_OBJECT(keyType);
         genericArgsPtr[1] = INTERNAL_TYPE_GET_OBJECT(valueType);
 
+        MObject* exception = nullptr;
+#if !USE_MONO_AOT
+        dictionaryType = MakeGenericType(nullptr, genericType, genericArgs, &exception);
+#else
         void* params[2];
         params[0] = genericType;
         params[1] = genericArgs;
-        MObject* exception = nullptr;
-        MObject* dictionaryType = makeGenericMethod->Invoke(nullptr, params, &exception);
+        dictionaryType = (MTypeObject*)MakeGenericType->Invoke(nullptr, params, &exception);
+#endif
         if (exception)
         {
             MException ex(exception);
             ex.Log(LogType::Error, TEXT(""));
             return nullptr;
         }
-        return (MTypeObject*)dictionaryType;
+        CachedDictionaryTypes.Add(cacheKey, dictionaryType);
+        return dictionaryType;
     }
 
     static ManagedDictionary New(MType* keyType, MType* valueType)
@@ -112,16 +197,15 @@ struct FLAXENGINE_API ManagedDictionary
         if (!dictionaryType)
             return result;
 
-        MClass* scriptingClass = Scripting::GetStaticClass();
-        CHECK_RETURN(scriptingClass, result);
-        MMethod* createMethod = StdTypesContainer::Instance()->ActivatorClass->GetMethod("CreateInstance", 2);
-        CHECK_RETURN(createMethod, result);
-
         MObject* exception = nullptr;
+#if !USE_MONO_AOT
+        MObject* instance = CreateInstance(nullptr, dictionaryType, nullptr, &exception);
+#else
         void* params[2];
         params[0] = dictionaryType;
         params[1] = nullptr;
-        MObject* instance = createMethod->Invoke(nullptr, params, &exception);
+        MObject* instance = CreateInstance->Invoke(nullptr, params, &exception);
+#endif
         if (exception)
         {
             MException ex(exception);
@@ -136,16 +220,17 @@ struct FLAXENGINE_API ManagedDictionary
     void Add(MObject* key, MObject* value)
     {
         CHECK(Instance);
-        MClass* scriptingClass = Scripting::GetStaticClass();
-        CHECK(scriptingClass);
-        MMethod* addDictionaryItemMethod = scriptingClass->GetMethod("AddDictionaryItem", 3);
-        CHECK(addDictionaryItemMethod);
+
+        MObject* exception = nullptr;
+#if !USE_MONO_AOT
+        AddDictionaryItem(nullptr, Instance, key, value, &exception);
+#else
         void* params[3];
         params[0] = Instance;
         params[1] = key;
         params[2] = value;
-        MObject* exception = nullptr;
-        addDictionaryItemMethod->Invoke(Instance, params, &exception);
+        AddDictionaryItem->Invoke(Instance, params, &exception);
+#endif
         if (exception)
         {
             MException ex(exception);
@@ -156,13 +241,13 @@ struct FLAXENGINE_API ManagedDictionary
     MArray* GetKeys() const
     {
         CHECK_RETURN(Instance, nullptr);
-        MClass* scriptingClass = Scripting::GetStaticClass();
-        CHECK_RETURN(scriptingClass, nullptr);
-        MMethod* getDictionaryKeysMethod = scriptingClass->GetMethod("GetDictionaryKeys", 1);
-        CHECK_RETURN(getDictionaryKeysMethod, nullptr);
+#if !USE_MONO_AOT
+        return GetDictionaryKeys(nullptr, Instance, nullptr);
+#else
         void* params[1];
         params[0] = Instance;
-        return (MArray*)getDictionaryKeysMethod->Invoke( nullptr, params, nullptr);
+        return (MArray*)GetDictionaryKeys->Invoke(nullptr, params, nullptr);
+#endif
     }
 
     MObject* GetValue(MObject* key) const
@@ -176,5 +261,12 @@ struct FLAXENGINE_API ManagedDictionary
         return getItemMethod->Invoke(Instance, params, nullptr);
     }
 };
+
+inline uint32 GetHash(const ManagedDictionary::KeyValueType& other)
+{
+    uint32 hash = ::GetHash((void*)other.keyType);
+    CombineHash(hash, ::GetHash((void*)other.valueType));
+    return hash;
+}
 
 #endif

@@ -199,13 +199,18 @@ namespace FlaxEditor.Viewport.Previews
             if (useWidgets)
             {
                 _showBoundsButton = ViewWidgetShowMenu.AddButton("Bounds", () => ShowBounds = !ShowBounds);
+                _showBoundsButton.CloseMenuOnClick = false;
                 _showNormalsButton = ViewWidgetShowMenu.AddButton("Normals", () => ShowNormals = !ShowNormals);
+                _showNormalsButton.CloseMenuOnClick = false;
                 _showTangentsButton = ViewWidgetShowMenu.AddButton("Tangents", () => ShowTangents = !ShowTangents);
+                _showTangentsButton.CloseMenuOnClick = false;
                 _showBitangentsButton = ViewWidgetShowMenu.AddButton("Bitangents", () => ShowBitangents = !ShowBitangents);
+                _showBitangentsButton.CloseMenuOnClick = false;
 
                 // Show Floor
                 _showFloorButton = ViewWidgetShowMenu.AddButton("Floor", button => ShowFloor = !ShowFloor);
                 _showFloorButton.IndexInParent = 1;
+                _showFloorButton.CloseMenuOnClick = false;
 
                 // Show current LOD widget
                 _showCurrentLODButton = ViewWidgetShowMenu.AddButton("Current LOD", button =>
@@ -214,6 +219,7 @@ namespace FlaxEditor.Viewport.Previews
                     _showCurrentLODButton.Icon = _showCurrentLOD ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
                 });
                 _showCurrentLODButton.IndexInParent = 2;
+                _showCurrentLODButton.CloseMenuOnClick = false;
 
                 // Preview LODs mode widget
                 var PreviewLODsMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);

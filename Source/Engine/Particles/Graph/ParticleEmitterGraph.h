@@ -8,6 +8,8 @@
 #include "Engine/Particles/Types.h"
 #include "Engine/Particles/ParticlesSimulation.h"
 #include "Engine/Particles/ParticlesData.h"
+#include "Engine/Core/Math/Vector4.h"
+#include "Engine/Core/Types/BaseTypes.h"
 
 class ParticleEffect;
 

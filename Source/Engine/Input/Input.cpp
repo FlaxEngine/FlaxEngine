@@ -333,6 +333,8 @@ void Keyboard::OnCharInput(Char c, Window* target)
 
 void Keyboard::OnKeyUp(KeyboardKeys key, Window* target)
 {
+    if (key >= KeyboardKeys::MAX)
+        return;
     Event& e = _queue.AddOne();
     e.Type = EventType::KeyUp;
     e.Target = target;
@@ -341,6 +343,8 @@ void Keyboard::OnKeyUp(KeyboardKeys key, Window* target)
 
 void Keyboard::OnKeyDown(KeyboardKeys key, Window* target)
 {
+    if (key >= KeyboardKeys::MAX)
+        return;
     Event& e = _queue.AddOne();
     e.Type = EventType::KeyDown;
     e.Target = target;

@@ -116,6 +116,13 @@ public:
     /// <param name="obj">The network object.</param>
     /// <returns>True if object exists in networking, otherwise false.</returns>
     API_FUNCTION() static bool HasObject(const ScriptingObject* obj);
+	
+    /// <summary>
+    /// Resolves foreign Guid into a local ScriptingObject
+    /// </summary>
+    /// <param name="objectId">The Guid of a foreign object.</param>
+    /// <returns>Object if managed to resolve, otherwise null.</returns>
+    API_FUNCTION() static ScriptingObject* ResolveForeignObject(Guid objectId);
 
     /// <summary>
     /// Gets the Client Id of the network object owner.

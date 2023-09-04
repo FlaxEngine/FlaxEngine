@@ -3,6 +3,7 @@
 #include "ParticleEmitterGraph.CPU.h"
 #include "Engine/Core/Random.h"
 #include "Engine/Utilities/Noise.h"
+#include "Engine/Core/Types/CommonValue.h"
 
 // ReSharper disable CppCStyleCast
 // ReSharper disable CppClangTidyClangDiagnosticCastAlign
