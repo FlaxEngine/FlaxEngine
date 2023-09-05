@@ -88,19 +88,19 @@ public class Slider : ContainerControl
     /// The local position of the thumb center
     /// </summary>
     [HideInEditor]
-    public float ThumbCenter => _thumbCenter;
+    public Float2 ThumbCenter => new(_thumbCenter, Height / 2);
 
     /// <summary>
     /// The local position of the beginning of the track.
     /// </summary>
     [HideInEditor]
-    public float TrackBeginning => _thumbSize.X / 2;
+    public Float2 TrackBeginning => new(_thumbSize.X / 2, Height / 2);
 
     /// <summary>
     /// The local position of the end of the track.
     /// </summary>
     [HideInEditor]
-    public float TrackEnd => Width - _thumbSize.X / 2;
+    public Float2 TrackEnd => new(Width - _thumbSize.X / 2, Height / 2);
     
     /// <summary>
     /// The height of the track.
