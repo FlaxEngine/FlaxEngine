@@ -83,6 +83,24 @@ public class Slider : ContainerControl
             }
         }
     }
+
+    /// <summary>
+    /// The local position of the thumb center
+    /// </summary>
+    [HideInEditor]
+    public float ThumbCenter => _thumbCenter;
+
+    /// <summary>
+    /// The local position of the beginning of the track.
+    /// </summary>
+    [HideInEditor]
+    public float TrackBeginning => _thumbSize.X / 2;
+
+    /// <summary>
+    /// The local position of the end of the track.
+    /// </summary>
+    [HideInEditor]
+    public float TrackEnd => Width - _thumbSize.X / 2;
     
     /// <summary>
     /// The height of the track.
