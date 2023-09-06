@@ -120,7 +120,7 @@ public:
     API_PROPERTY() void SetLayerName(const StringView& value);
 
     /// <summary>
-    /// Sets the name of the layer recursively for all underlying children.
+    /// Sets the name of the layer recursively for actor and for all underlying child actors.
     /// </summary>
     API_FUNCTION() void SetLayerNameRecursive(const StringView& value);
 
@@ -146,6 +146,12 @@ public:
     /// </summary>
     /// <param name="tag">The tag to add.</param>
     API_FUNCTION() void AddTag(const Tag& tag);
+
+    /// <summary>
+    /// Adds a tag to the actor and for all underlying child actors.
+    /// </summary>
+    /// <param name="tag">The tag to add.</param>
+    API_FUNCTION() void AddTagRecursive(const Tag& tag);
 
     /// <summary>
     /// Gets the name of the tag.

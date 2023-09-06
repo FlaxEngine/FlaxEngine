@@ -489,6 +489,13 @@ void Actor::AddTag(const Tag& tag)
     Tags.AddUnique(tag);
 }
 
+void Actor::AddTagRecursive(const Tag& tag)
+{
+    for (const auto& child : Children)
+        child->AddTagRecursive(tag);
+    Tags.AddUnique(tag);
+}
+
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 const String& Actor::GetTag() const
