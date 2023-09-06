@@ -16,6 +16,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         protected override OptionType[] Options => new[]
         {
+            new OptionType("null", null),
             new OptionType("Texture", typeof(TextureBrush)),
             new OptionType("Sprite", typeof(SpriteBrush)),
             new OptionType("GPU Texture", typeof(GPUTextureBrush)),

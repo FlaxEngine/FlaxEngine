@@ -526,7 +526,7 @@ namespace FlaxEngine.Interop
         {
             Type elementType = Unsafe.As<Type>(typeHandle.Target);
             Type marshalledType = ArrayFactory.GetMarshalledType(elementType);
-            Type arrayType = elementType.MakeArrayType();
+            Type arrayType = ArrayFactory.GetArrayType(elementType);
             if (marshalledType.IsValueType)
             {
                 ManagedArray managedArray = ManagedArray.AllocateNewArray((int)size, arrayType, marshalledType);
@@ -544,7 +544,7 @@ namespace FlaxEngine.Interop
         internal static ManagedHandle GetArrayTypeFromElementType(ManagedHandle elementTypeHandle)
         {
             Type elementType = Unsafe.As<Type>(elementTypeHandle.Target);
-            Type classType = elementType.MakeArrayType();
+            Type classType = ArrayFactory.GetArrayType(elementType);
             return GetTypeGCHandle(classType);
         }
 
@@ -649,8 +649,6 @@ namespace FlaxEngine.Interop
             Type type = value.GetType();
             if (!type.IsValueType)
                 return ManagedHandle.ToIntPtr(handle);
-
-            // HACK: Get the address of a non-pinned value
             return ValueTypeUnboxer.GetPointer(value, type);
         }
 
@@ -903,11 +901,25 @@ namespace FlaxEngine.Interop
 
             AssemblyLocations.Remove(assembly.FullName);
 
-            // Clear all caches which might hold references to closing assembly
+            // Unload native library handles associated for this assembly
+            string nativeLibraryName = assemblyOwnedNativeLibraries.GetValueOrDefault(assembly);
+            if (nativeLibraryName != null && loadedNativeLibraries.TryGetValue(nativeLibraryName, out IntPtr nativeLibrary))
+            {
+                NativeLibrary.Free(nativeLibrary);
+                loadedNativeLibraries.Remove(nativeLibraryName);
+            }
+            if (nativeLibraryName != null)
+                nativeLibraryPaths.Remove(nativeLibraryName);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void ReloadScriptingAssemblyLoadContext()
+        {
+#if FLAX_EDITOR
+            // Clear all caches which might hold references to assemblies in collectible ALC
             typeCache.Clear();
 
             // Release all references in collectible ALC
-#if FLAX_EDITOR
             cachedDelegatesCollectible.Clear();
             foreach (var pair in typeHandleCacheCollectible)
                 pair.Value.Free();
@@ -918,22 +930,12 @@ namespace FlaxEngine.Interop
             foreach (var handle in fieldHandleCacheCollectible)
                 handle.Free();
             fieldHandleCacheCollectible.Clear();
-#endif
+
             _typeSizeCache.Clear();
 
             foreach (var pair in classAttributesCacheCollectible)
                 pair.Value.Free();
             classAttributesCacheCollectible.Clear();
-
-            // Unload native library handles associated for this assembly
-            string nativeLibraryName = assemblyOwnedNativeLibraries.GetValueOrDefault(assembly);
-            if (nativeLibraryName != null && loadedNativeLibraries.TryGetValue(nativeLibraryName, out IntPtr nativeLibrary))
-            {
-                NativeLibrary.Free(nativeLibrary);
-                loadedNativeLibraries.Remove(nativeLibraryName);
-            }
-            if (nativeLibraryName != null)
-                nativeLibraryPaths.Remove(nativeLibraryName);
 
             // Unload the ALC
             bool unloading = true;
@@ -945,6 +947,7 @@ namespace FlaxEngine.Interop
 
             InitScriptingAssemblyLoadContext();
             DelegateHelpers.InitMethods();
+#endif
         }
 
         [UnmanagedCallersOnly]
