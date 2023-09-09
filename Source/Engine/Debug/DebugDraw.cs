@@ -34,7 +34,7 @@ namespace FlaxEngine
         /// <summary>
         /// Draws the line in a direction.
         /// </summary>
-        /// <param name="origin">The start point.</param>
+        /// <param name="origin">The origin of the line.</param>
         /// <param name="direction">The direction of the line.</param>
         /// <param name="color">The color.</param>
         /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
