@@ -32,6 +32,18 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Draws the line in a direction.
+        /// </summary>
+        /// <param name="origin">The start point.</param>
+        /// <param name="direction">The direction of the line.</param>
+        /// <param name="color">The color.</param>
+        /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+        /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+        public static void DrawRay(Vector3 origin, Vector3 direction, Color color, float duration = 0.0f, bool depthTest = true)
+        {
+        }
+
+        /// <summary>
         /// Draws the line.
         /// </summary>
         /// <param name="start">The start point.</param>
