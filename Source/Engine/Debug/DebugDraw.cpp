@@ -920,6 +920,11 @@ void DebugDraw::DrawActors(Actor** selectedActors, int32 selectedActorsCount, bo
     }
 }
 
+void DebugDraw::DrawRay(const Vector3& origin, const Vector3& direction, const Color& color, float duration, bool depthTest)
+{
+    DrawLine(origin, origin + direction, color, duration, depthTest);
+}
+
 void DebugDraw::DrawLine(const Vector3& start, const Vector3& end, const Color& color, float duration, bool depthTest)
 {
     const Float3 startF = start - Context->Origin, endF = end - Context->Origin;
