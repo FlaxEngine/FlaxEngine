@@ -69,32 +69,32 @@ namespace FlaxEditor.GUI.Docking
         /// <summary>
         /// The default dock tabs header height.
         /// </summary>
-        public const float DefaultHeaderHeight = 20;
+        public static const float DefaultHeaderHeight = 20;
 
         /// <summary>
         /// The default tabs header text left margin.
         /// </summary>
-        public const float DefaultLeftTextMargin = 4;
+        public static const float DefaultLeftTextMargin = 4;
 
         /// <summary>
         /// The default tabs header text right margin.
         /// </summary>
-        public const float DefaultRightTextMargin = 8;
+        public static const float DefaultRightTextMargin = 8;
 
         /// <summary>
         /// The default tabs header buttons size.
         /// </summary>
-        public const float DefaultButtonsSize = 15;
+        public static const float DefaultButtonsSize = 15;
 
         /// <summary>
         /// The default tabs header buttons margin.
         /// </summary>
-        public const float DefaultButtonsMargin = 2;
+        public static const float DefaultButtonsMargin = 2;
 
         /// <summary>
         /// The default splitters value.
         /// </summary>
-        public const float DefaultSplitterValue = 0.25f;
+        public static const float DefaultSplitterValue = 0.25f;
 
         private readonly DockPanel _parentPanel;
         private readonly List<DockPanel> _childPanels = new List<DockPanel>();
