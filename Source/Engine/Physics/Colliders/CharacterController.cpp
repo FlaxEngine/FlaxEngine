@@ -250,7 +250,6 @@ void CharacterController::UpdateBounds()
     const Vector3 extent(radius, height * 0.5f + radius, radius);
     _box = BoundingBox(position - extent, position + extent);
     BoundingSphere::FromBox(_box, _sphere);
-    DEBUG_DRAW_BOX(_box, Color::Red.AlphaMultiplied(0.4f), 2.0f, true);
 }
 
 void CharacterController::AddMovement(const Vector3& translation, const Quaternion& rotation)
