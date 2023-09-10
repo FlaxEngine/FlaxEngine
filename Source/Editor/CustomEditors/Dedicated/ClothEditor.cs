@@ -4,6 +4,7 @@ using FlaxEditor.Gizmo;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Json;
 using FlaxEngine.Tools;
 
 namespace FlaxEditor.CustomEditors.Dedicated
@@ -35,6 +36,19 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 return;
             var gizmos = gizmoOwner.Gizmos;
             _gizmoMode = new ClothPaintingGizmoMode();
+            
+            var projectCache = Editor.Instance.ProjectCache;
+            if (projectCache.TryGetCustomData("ClothGizmoPaintValue", out var cachedPaintValue))
+                _gizmoMode.PaintValue = JsonSerializer.Deserialize<float>(cachedPaintValue);
+            if (projectCache.TryGetCustomData("ClothGizmoContinuousPaint", out var cachedContinuousPaint))
+                _gizmoMode.ContinuousPaint = JsonSerializer.Deserialize<bool>(cachedContinuousPaint);
+            if (projectCache.TryGetCustomData("ClothGizmoBrushFalloff", out var cachedBrushFalloff))
+                _gizmoMode.BrushFalloff = JsonSerializer.Deserialize<float>(cachedBrushFalloff);
+            if (projectCache.TryGetCustomData("ClothGizmoBrushSize", out var cachedBrushSize))
+                _gizmoMode.BrushSize = JsonSerializer.Deserialize<float>(cachedBrushSize);
+            if (projectCache.TryGetCustomData("ClothGizmoBrushStrength", out var cachedBrushStrength))
+                _gizmoMode.BrushStrength = JsonSerializer.Deserialize<float>(cachedBrushStrength);
+            
             gizmos.AddMode(_gizmoMode);
             _prevMode = gizmos.ActiveMode;
             gizmos.ActiveMode = _gizmoMode;
@@ -66,6 +80,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 if (gizmos.ActiveMode == _gizmoMode)
                     gizmos.ActiveMode = _prevMode;
                 gizmos.RemoveMode(_gizmoMode);
+                var projectCache = Editor.Instance.ProjectCache;
+                projectCache.SetCustomData("ClothGizmoPaintValue", JsonSerializer.Serialize(_gizmoMode.PaintValue, typeof(float)));
+                projectCache.SetCustomData("ClothGizmoContinuousPaint", JsonSerializer.Serialize(_gizmoMode.ContinuousPaint, typeof(bool)));
+                projectCache.SetCustomData("ClothGizmoBrushFalloff", JsonSerializer.Serialize(_gizmoMode.BrushFalloff, typeof(float)));
+                projectCache.SetCustomData("ClothGizmoBrushSize", JsonSerializer.Serialize(_gizmoMode.BrushSize, typeof(float)));
+                projectCache.SetCustomData("ClothGizmoBrushStrength", JsonSerializer.Serialize(_gizmoMode.BrushStrength, typeof(float)));
                 _gizmoMode.Dispose();
                 _gizmoMode = null;
             }
