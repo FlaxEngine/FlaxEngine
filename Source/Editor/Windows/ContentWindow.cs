@@ -931,6 +931,7 @@ namespace FlaxEditor.Windows
 
             // Add game project on top, plugins in the middle and engine at bottom
             _root.AddChild(Editor.ContentDatabase.Game);
+            Editor.ContentDatabase.Projects.Sort();
             foreach (var project in Editor.ContentDatabase.Projects)
             {
                 project.SortChildrenRecursive();
