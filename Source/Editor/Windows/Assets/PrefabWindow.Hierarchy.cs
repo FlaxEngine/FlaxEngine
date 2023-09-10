@@ -430,7 +430,7 @@ namespace FlaxEditor.Windows.Assets
         {
             if (actorNode.Actor)
             {
-                actorNode.TreeNode.OnNameChanged();
+                actorNode.TreeNode.UpdateText();
                 actorNode.TreeNode.OnOrderInParentChanged();
             }
 

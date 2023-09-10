@@ -1255,20 +1255,19 @@ void Prefab::SyncNestedPrefabs(const NestedPrefabsList& allPrefabs, Array<Prefab
         auto nestedPrefab = allPrefabs[i].Get();
         if (nestedPrefab)
         {
-            if (WaitForLoaded())
+            if (nestedPrefab->WaitForLoaded())
             {
                 LOG(Warning, "Waiting for prefab asset load failed.");
                 continue;
             }
 
+            // Sync only if prefab is used by this prefab (directly) and it has been captured before
             const int32 nestedPrefabIndex = nestedPrefab->NestedPrefabs.Find(GetID());
             if (nestedPrefabIndex != -1)
             {
-                if (nestedPrefab->SyncChangesInternal(allPrefabsInstancesData[nestedPrefabIndex]))
+                if (nestedPrefab->SyncChangesInternal(allPrefabsInstancesData[i]))
                     continue;
-
                 nestedPrefab->SyncNestedPrefabs(allPrefabs, allPrefabsInstancesData);
-
                 ObjectsRemovalService::Flush();
             }
         }
