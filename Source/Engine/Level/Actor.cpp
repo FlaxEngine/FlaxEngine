@@ -476,6 +476,11 @@ void Actor::AddTag(const Tag& tag)
     Tags.AddUnique(tag);
 }
 
+void Actor::RemoveTag(const Tag& tag)
+{
+    Tags.Remove(tag);
+}
+
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 const String& Actor::GetTag() const
