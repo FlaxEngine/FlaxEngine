@@ -938,12 +938,12 @@ public:
 
         FORCE_INLINE bool IsEnd() const
         {
-            return _index == _array->Count();
+            return _index == _array->_count;
         }
 
         FORCE_INLINE bool IsNotEnd() const
         {
-            return _index != _array->Count();
+            return _index != _array->_count;
         }
 
         FORCE_INLINE T& operator*() const
@@ -975,7 +975,7 @@ public:
 
         Iterator& operator++()
         {
-            if (_index != _array->Count())
+            if (_index != _array->_count)
                 _index++;
             return *this;
         }
@@ -983,7 +983,7 @@ public:
         Iterator operator++(int)
         {
             Iterator temp = *this;
-            if (_index != _array->Count())
+            if (_index != _array->_count)
                 _index++;
             return temp;
         }

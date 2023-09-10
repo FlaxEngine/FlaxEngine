@@ -237,19 +237,25 @@ public:
     {
         friend Dictionary;
     private:
-        Dictionary& _collection;
+        Dictionary* _collection;
         int32 _index;
 
     public:
-        Iterator(Dictionary& collection, const int32 index)
+        Iterator(Dictionary* collection, const int32 index)
             : _collection(collection)
             , _index(index)
         {
         }
 
-        Iterator(Dictionary const& collection, const int32 index)
-            : _collection((Dictionary&)collection)
+        Iterator(Dictionary const* collection, const int32 index)
+            : _collection(const_cast<Dictionary*>(collection))
             , _index(index)
+        {
+        }
+
+        Iterator()
+            : _collection(nullptr)
+            , _index(-1)
         {
         }
 
@@ -273,27 +279,27 @@ public:
 
         FORCE_INLINE bool IsEnd() const
         {
-            return _index == _collection._size;
+            return _index == _collection->_size;
         }
 
         FORCE_INLINE bool IsNotEnd() const
         {
-            return _index != _collection._size;
+            return _index != _collection->_size;
         }
 
         FORCE_INLINE Bucket& operator*() const
         {
-            return _collection._allocation.Get()[_index];
+            return _collection->_allocation.Get()[_index];
         }
 
         FORCE_INLINE Bucket* operator->() const
         {
-            return &_collection._allocation.Get()[_index];
+            return &_collection->_allocation.Get()[_index];
         }
 
         FORCE_INLINE explicit operator bool() const
         {
-            return _index >= 0 && _index < _collection._size;
+            return _index >= 0 && _index < _collection->_size;
         }
 
         FORCE_INLINE bool operator!() const
@@ -320,10 +326,10 @@ public:
 
         Iterator& operator++()
         {
-            const int32 capacity = _collection.Capacity();
+            const int32 capacity = _collection->_size;
             if (_index != capacity)
             {
-                const Bucket* data = _collection._allocation.Get();
+                const Bucket* data = _collection->_allocation.Get();
                 do
                 {
                     _index++;
@@ -343,7 +349,7 @@ public:
         {
             if (_index > 0)
             {
-                const Bucket* data = _collection._allocation.Get();
+                const Bucket* data = _collection->_allocation.Get();
                 do
                 {
                     _index--;
@@ -633,7 +639,7 @@ public:
     /// <param name="i">Iterator with key and value.</param>
     void Add(const Iterator& i)
     {
-        ASSERT(&i._collection != this && i);
+        ASSERT(i._collection != this && i);
         const Bucket& bucket = *i;
         Add(bucket.Key, bucket.Value);
     }
@@ -667,7 +673,7 @@ public:
     /// <returns>True if cannot remove item from the collection because cannot find it, otherwise false.</returns>
     bool Remove(const Iterator& i)
     {
-        ASSERT(&i._collection == this);
+        ASSERT(i._collection == this);
         if (i)
         {
             ASSERT(_allocation.Get()[i._index].IsOccupied());
@@ -711,7 +717,7 @@ public:
             return End();
         FindPositionResult pos;
         FindPosition(key, pos);
-        return pos.ObjectIndex != -1 ? Iterator(*this, pos.ObjectIndex) : End();
+        return pos.ObjectIndex != -1 ? Iterator(this, pos.ObjectIndex) : End();
     }
 
     /// <summary>
@@ -812,38 +818,38 @@ public:
 public:
     Iterator Begin() const
     {
-        Iterator i(*this, -1);
+        Iterator i(this, -1);
         ++i;
         return i;
     }
 
     Iterator End() const
     {
-        return Iterator(*this, _size);
+        return Iterator(this, _size);
     }
 
     Iterator begin()
     {
-        Iterator i(*this, -1);
+        Iterator i(this, -1);
         ++i;
         return i;
     }
 
     FORCE_INLINE Iterator end()
     {
-        return Iterator(*this, _size);
+        return Iterator(this, _size);
     }
 
     const Iterator begin() const
     {
-        Iterator i(*this, -1);
+        Iterator i(this, -1);
         ++i;
         return i;
     }
 
     FORCE_INLINE const Iterator end() const
     {
-        return Iterator(*this, _size);
+        return Iterator(this, _size);
     }
 
 protected:
