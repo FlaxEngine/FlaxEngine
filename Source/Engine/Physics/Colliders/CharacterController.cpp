@@ -245,12 +245,10 @@ void CharacterController::CreateShape()
 
 void CharacterController::UpdateBounds()
 {
-    void* actor = _shape ? PhysicsBackend::GetShapeActor(_shape) : nullptr;
-    if (actor)
-        PhysicsBackend::GetActorBounds(actor, _box);
-    else
-        _box = BoundingBox(_transform.Translation);
-    BoundingSphere::FromBox(_box, _sphere);
+    const float radius = Math::Max(_height, _radius);
+    const Vector3 position = _transform.LocalToWorld(_center);
+    _sphere = BoundingSphere(position, radius);
+    _box = BoundingBox::FromSphere(_sphere);
 }
 
 void CharacterController::AddMovement(const Vector3& translation, const Quaternion& rotation)
