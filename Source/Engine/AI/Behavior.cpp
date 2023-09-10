@@ -13,6 +13,7 @@ class BehaviorSystem : public TaskGraphSystem
 {
 public:
     Array<Behavior*> Behaviors;
+
     void Job(int32 index);
     void Execute(TaskGraph* graph) override;
 };
@@ -20,6 +21,8 @@ public:
 class BehaviorService : public EngineService
 {
 public:
+    Array<Behavior*> UpdateList;
+
     BehaviorService()
         : EngineService(TEXT("Behaviors"), 0)
     {
@@ -30,7 +33,6 @@ public:
 };
 
 BehaviorService BehaviorServiceInstance;
-Array<Behavior*> UpdateList;
 TaskGraphSystem* Behavior::System = nullptr;
 
 void BehaviorSystem::Job(int32 index)
@@ -42,10 +44,10 @@ void BehaviorSystem::Job(int32 index)
 void BehaviorSystem::Execute(TaskGraph* graph)
 {
     // Copy list of behaviors to update (in case one of them gets disabled during async jobs)
-    if (UpdateList.Count() == 0)
+    if (BehaviorServiceInstance.UpdateList.Count() == 0)
         return;
     Behaviors.Clear();
-    Behaviors.Add(UpdateList);
+    Behaviors.Add(BehaviorServiceInstance.UpdateList);
 
     // Schedule work to update all behaviors in async
     Function<void(int32)> job;
@@ -62,7 +64,7 @@ bool BehaviorService::Init()
 
 void BehaviorService::Dispose()
 {
-    UpdateList.Resize(0);
+    BehaviorServiceInstance.UpdateList.Resize(0);
     SAFE_DELETE(Behavior::System);
 }
 
@@ -155,12 +157,12 @@ void Behavior::ResetLogic()
 
 void Behavior::OnEnable()
 {
-    UpdateList.Add(this);
+    BehaviorServiceInstance.UpdateList.Add(this);
     if (AutoStart)
         StartLogic();
 }
 
 void Behavior::OnDisable()
 {
-    UpdateList.Remove(this);
+    BehaviorServiceInstance.UpdateList.Remove(this);
 }
