@@ -711,7 +711,7 @@ namespace FlaxEditor.Content.GUI
         protected override void PerformLayoutBeforeChildren()
         {
             float width = GetClientArea().Width;
-            float x = 0, y = 0;
+            float x = 0, y = 1;
             float viewScale = _viewScale * 0.97f;
 
             switch (ViewType)
@@ -722,21 +722,22 @@ namespace FlaxEditor.Content.GUI
                 int itemsToFit = Mathf.FloorToInt(width / defaultItemsWidth) - 1;
                 if (itemsToFit < 1)
                     itemsToFit = 1;
-                float itemsWidth = width / Mathf.Max(itemsToFit, 1);
+                int xSpace = 4;
+                float itemsWidth = width / Mathf.Max(itemsToFit, 1) - xSpace;
                 float itemsHeight = itemsWidth / defaultItemsWidth * (ContentItem.DefaultHeight * viewScale);
                 var flooredItemsWidth = Mathf.Floor(itemsWidth);
                 var flooredItemsHeight = Mathf.Floor(itemsHeight);
-                x = itemsToFit == 1 ? 0 : itemsWidth / itemsToFit;
+                x = itemsToFit == 1 ? 1 : itemsWidth / itemsToFit + xSpace;
                 for (int i = 0; i < _children.Count; i++)
                 {
                     var c = _children[i];
                     c.Bounds = new Rectangle(Mathf.Floor(x), Mathf.Floor(y), flooredItemsWidth, flooredItemsHeight);
 
-                    x += itemsWidth + itemsWidth / itemsToFit;
+                    x += (itemsWidth + xSpace) + (itemsWidth + xSpace) / itemsToFit;
                     if (x + itemsWidth > width)
                     {
-                        x = itemsToFit == 1 ? 0 : itemsWidth / itemsToFit;
-                        y += itemsHeight + 5;
+                        x = itemsToFit == 1 ? 1 : itemsWidth / itemsToFit + xSpace;
+                        y += itemsHeight + 7;
                     }
                 }
                 if (x > 0)
@@ -751,7 +752,7 @@ namespace FlaxEditor.Content.GUI
                 {
                     var c = _children[i];
                     c.Bounds = new Rectangle(x, y, width, itemsHeight);
-                    y += itemsHeight + 5;
+                    y += itemsHeight + 1;
                 }
                 y += 40.0f;
 
