@@ -636,10 +636,16 @@ namespace FlaxEditor.Windows
             {
                 Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Failed to add plugin to project. {e}");
             }
-            
             var oldpluginPath = Path.Combine(extractPath, "ExamplePlugin-master");
             var newPluginPath = Path.Combine(extractPath , pluginName);
             Directory.Move(oldpluginPath, newPluginPath);
+
+            // Format plugin name into a valid name for code (C#/C++ typename)
+            var pluginCodeName = Content.ScriptItem.FilterScriptName(pluginName);
+            if (string.IsNullOrEmpty(pluginCodeName))
+                pluginCodeName = "MyPlugin";
+            Editor.Log($"Using plugin code type name: {pluginCodeName}");
+
 
             var oldFlaxProjFile = Path.Combine(newPluginPath, "ExamplePlugin.flaxproj");
             var newFlaxProjFile = Path.Combine(newPluginPath, $"{pluginName}.flaxproj");
@@ -659,8 +665,8 @@ namespace FlaxEditor.Windows
                 flaxPluginProjContents.Version = new Version(pluginVersion);
             if (!string.IsNullOrEmpty(companyName))
                 flaxPluginProjContents.Company = companyName;
-            flaxPluginProjContents.GameTarget = $"{pluginName}Target";
-            flaxPluginProjContents.EditorTarget = $"{pluginName}EditorTarget";
+            flaxPluginProjContents.GameTarget = $"{pluginCodeName}Target";
+            flaxPluginProjContents.EditorTarget = $"{pluginCodeName}EditorTarget";
             await File.WriteAllTextAsync(newFlaxProjFile, JsonSerializer.Serialize(flaxPluginProjContents, typeof(ProjectInfo)));
 
             // Rename source directories
@@ -676,14 +682,14 @@ namespace FlaxEditor.Windows
                         File.Delete(file);
                         continue;
                     }
-                    
+
                     var fileText = await File.ReadAllTextAsync(file);
-                    await File.WriteAllTextAsync(file, fileText.Replace("ExamplePlugin", pluginName));
-                    var fileName = Path.GetFileName(file).Replace("ExamplePlugin", pluginName);
+                    await File.WriteAllTextAsync(file, fileText.Replace("ExamplePlugin", pluginCodeName));
+                    var fileName = Path.GetFileName(file).Replace("ExamplePlugin", pluginCodeName);
                     File.Move(file, Path.Combine(directory, fileName));
                 }
-                
-                var newName = directory.Replace("ExamplePlugin", pluginName);
+
+                var newName = directory.Replace("ExamplePlugin", pluginCodeName);
                 Directory.Move(directory, newName);
             }
             
@@ -692,8 +698,8 @@ namespace FlaxEditor.Windows
             foreach (var file in targetFiles)
             {
                 var fileText = await File.ReadAllTextAsync(file);
-                await File.WriteAllTextAsync(file, fileText.Replace("ExamplePlugin", pluginName));
-                var newName = file.Replace("ExamplePlugin", pluginName);
+                await File.WriteAllTextAsync(file, fileText.Replace("ExamplePlugin", pluginCodeName));
+                var newName = file.Replace("ExamplePlugin", pluginCodeName);
                 File.Move(file, newName);
             }
             Debug.Logger.LogHandler.LogWrite(LogType.Info, $"Plugin project {pluginName} has successfully been created.");
