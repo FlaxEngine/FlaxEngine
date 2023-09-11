@@ -331,6 +331,10 @@ void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Va
     case 111:
         value = AccessParticleAttribute(node, TEXT("Radius"), ParticleAttribute::ValueTypes::Float, AccessMode::Read);
         break;
+    // Particle Scale
+    case 112:
+        value = AccessParticleAttribute(node, TEXT("Scale"), ParticleAttribute::ValueTypes::Float3, AccessMode::Read);
+        break;
     // Effect Position
     case 200:
         value = Value(VariantType::Float3, TEXT("EffectPosition"));

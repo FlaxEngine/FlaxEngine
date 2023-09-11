@@ -269,11 +269,18 @@ public:
             USE_ATTRIBUTE(Lifetime, Float, 1);
             break;
         }
-        // Particle Mass
+        // Particle Radius
         case GRAPH_NODE_MAKE_TYPE(14, 111):
         {
             node->UsesParticleData = true;
             USE_ATTRIBUTE(Radius, Float, 0);
+            break;
+        }
+        // Particle Scale
+        case GRAPH_NODE_MAKE_TYPE(14, 112):
+        {
+            node->UsesParticleData = true;
+            USE_ATTRIBUTE(Scale, Float3, 0);
             break;
         }
         // Random
