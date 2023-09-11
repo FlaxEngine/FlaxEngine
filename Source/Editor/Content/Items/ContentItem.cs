@@ -441,6 +441,11 @@ namespace FlaxEditor.Content
         {
             get
             {
+                if (!Visible)
+                {
+                    return Rectangle.Empty;
+                }
+
                 var view = Parent as ContentView;
                 var size = Size;
                 switch (view?.ViewType ?? ContentViewType.Tiles)
@@ -448,7 +453,7 @@ namespace FlaxEditor.Content
                 case ContentViewType.Tiles:
                 {
                     var textHeight = DefaultTextHeight * size.X / DefaultWidth;
-                    return new Rectangle(0, size.Y - textHeight, size.X, textHeight);
+                    return new Rectangle(0, size.Y - textHeight, size.X - 2, textHeight);
                 }
                 case ContentViewType.List:
                 {
@@ -666,6 +671,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void Draw()
         {
+            
             // Cache data
             var size = Size;
             var style = Style.Current;
