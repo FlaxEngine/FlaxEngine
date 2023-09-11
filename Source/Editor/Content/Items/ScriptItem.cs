@@ -30,7 +30,7 @@ namespace FlaxEditor.Content
             ShowFileExtension = true;
         }
 
-        private static string FilterScriptName(string input)
+        internal static string FilterScriptName(string input)
         {
             var length = input.Length;
             var sb = new StringBuilder(length);

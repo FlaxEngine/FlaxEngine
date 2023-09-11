@@ -6,6 +6,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
@@ -13,7 +14,6 @@ using FlaxEditor.GUI.Tabs;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
-using Debug = FlaxEngine.Debug;
 
 namespace FlaxEditor.Windows
 {
@@ -193,7 +193,7 @@ namespace FlaxEditor.Windows
                 Text = "Create Plugin Project",
                 TooltipText = "Add new plugin project.",
                 AnchorPreset = AnchorPresets.TopLeft,
-                LocalLocation = new Float2(70,18),
+                LocalLocation = new Float2(70, 18),
                 Size = new Float2(150, 25),
                 Parent = vp,
             };
@@ -209,7 +209,7 @@ namespace FlaxEditor.Windows
                 Parent = vp,
             };
             _cloneProjectButton.Clicked += OnCloneProjectButtonClicked;
-            
+
             _tabs = new Tabs
             {
                 Orientation = Orientation.Vertical,
@@ -254,7 +254,7 @@ namespace FlaxEditor.Windows
             nameTextBox.LocalX += (300 - (10)) * 0.5f;
             nameTextBox.LocalY += 10;
             nameLabel.LocalX += (300 - (nameLabel.Width + nameTextBox.Width)) * 0.5f + 10;
-            
+
             var defaultTextBoxBorderColor = nameTextBox.BorderColor;
             var defaultTextBoxBorderSelectedColor = nameTextBox.BorderSelectedColor;
             nameTextBox.TextChanged += () =>
@@ -265,7 +265,7 @@ namespace FlaxEditor.Windows
                     nameTextBox.BorderSelectedColor = defaultTextBoxBorderSelectedColor;
                     return;
                 }
-                
+
                 var pluginPath = Path.Combine(Globals.ProjectFolder, "Plugins", nameTextBox.Text);
                 if (Directory.Exists(pluginPath))
                 {
@@ -315,7 +315,7 @@ namespace FlaxEditor.Windows
             {
                 if (Directory.Exists(Path.Combine(Globals.ProjectFolder, "Plugins", nameTextBox.Text)) && !string.IsNullOrEmpty(nameTextBox.Text))
                 {
-                    Debug.Logger.LogHandler.LogWrite(LogType.Warning, "Cannot create plugin due to name conflict.");
+                    Editor.LogWarning("Cannot create plugin due to name conflict.");
                     return;
                 }
                 OnCloneButtonClicked(nameTextBox.Text, gitPathTextBox.Text);
@@ -346,7 +346,7 @@ namespace FlaxEditor.Windows
         {
             if (string.IsNullOrEmpty(gitPath))
             {
-                Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Failed to create plugin project due to no GIT path.");
+                Editor.LogError($"Failed to create plugin project due to no GIT path.");
                 return;
             }
             if (string.IsNullOrEmpty(pluginName))
@@ -363,32 +363,34 @@ namespace FlaxEditor.Windows
                     pluginName = name;
                 }
             }
-            
+
             var clonePath = Path.Combine(Globals.ProjectFolder, "Plugins", pluginName);
             if (!Directory.Exists(clonePath))
                 Directory.CreateDirectory(clonePath);
             else
             {
-                Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Plugin Name is already used. Pick a different Name.");
+                Editor.LogError($"Plugin Name is already used. Pick a different Name.");
                 return;
             }
             try
             {
                 // Start git clone
-                var settings = new CreateProcessSettings();
-                settings.FileName = "git";
-                settings.Arguments = $"clone {gitPath} \"{clonePath}\"";
-                settings.ShellExecute = false;
-                settings.LogOutput = true;
+                var settings = new CreateProcessSettings
+                {
+                    FileName = "git",
+                    Arguments = $"clone {gitPath} \"{clonePath}\"",
+                    ShellExecute = false,
+                    LogOutput = true,
+                };
                 Platform.CreateProcess(ref settings);
             }
             catch (Exception e)
             {
-                Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Failed Git process. {e}");
+                Editor.LogError($"Failed Git process. {e}");
                 return;
             }
-            
-            Debug.Logger.LogHandler.LogWrite(LogType.Info, $"Plugin project has been cloned.");
+
+            Editor.Log($"Plugin project has been cloned.");
 
             // Find project config file. Could be different then what the user named the folder.
             var files = Directory.GetFiles(clonePath);
@@ -401,9 +403,9 @@ namespace FlaxEditor.Windows
                     Debug.Log(pluginProjectName);
                 }
             }
-            
+
             if (string.IsNullOrEmpty(pluginProjectName))
-                Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Failed to find plugin project file to add to Project config. Please add manually.");
+                Editor.LogError($"Failed to find plugin project file to add to Project config. Please add manually.");
             else
             {
                 await AddReferenceToProject(pluginName, pluginProjectName);
@@ -450,7 +452,7 @@ namespace FlaxEditor.Windows
                     nameTextBox.BorderSelectedColor = defaultTextBoxBorderSelectedColor;
                     return;
                 }
-                
+
                 var pluginPath = Path.Combine(Globals.ProjectFolder, "Plugins", nameTextBox.Text);
                 if (Directory.Exists(pluginPath))
                 {
@@ -518,7 +520,7 @@ namespace FlaxEditor.Windows
             {
                 if (Directory.Exists(Path.Combine(Globals.ProjectFolder, "Plugins", nameTextBox.Text)))
                 {
-                    Debug.Logger.LogHandler.LogWrite(LogType.Warning, "Cannot create plugin due to name conflict.");
+                    Editor.LogWarning("Cannot create plugin due to name conflict.");
                     return;
                 }
                 OnCreateButtonClicked(nameTextBox.Text, versionTextBox.Text, companyTextBox.Text);
@@ -551,10 +553,10 @@ namespace FlaxEditor.Windows
         {
             if (string.IsNullOrEmpty(pluginName))
             {
-                Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Failed to create plugin project due to no plugin name.");
+                Editor.LogError($"Failed to create plugin project due to no plugin name.");
                 return;
             }
-            
+
             var templateUrl = "https://github.com/FlaxEngine/ExamplePlugin/archive/refs/heads/master.zip";
             var localTemplateFolderLocation = Path.Combine(Editor.LocalCachePath, "TemplatePluginCache");
             if (!Directory.Exists(localTemplateFolderLocation))
@@ -564,24 +566,24 @@ namespace FlaxEditor.Windows
             try
             {
                 // Download example plugin
-                using (HttpClient client = new HttpClient())
+                using (var client = new HttpClient())
                 {
                     byte[] zipBytes = await client.GetByteArrayAsync(templateUrl);
-                    await File.WriteAllBytesAsync(!File.Exists(localTemplatePath) ? Path.Combine(localTemplatePath) : Path.Combine(Editor.LocalCachePath, "TemplatePluginCache" , "TemplatePlugin1.zip"), zipBytes);
-                
-                    Debug.Logger.LogHandler.LogWrite(LogType.Info, "Template for plugin project has downloaded");
+                    await File.WriteAllBytesAsync(!File.Exists(localTemplatePath) ? Path.Combine(localTemplatePath) : Path.Combine(Editor.LocalCachePath, "TemplatePluginCache", "TemplatePlugin1.zip"), zipBytes);
+
+                    Editor.Log("Template for plugin project has downloaded");
                 }
             }
             catch (Exception e)
             {
-                Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Failed to download template project. Trying to use local file. {e}");
+                Editor.LogError($"Failed to download template project. Trying to use local file. {e}");
                 if (!File.Exists(localTemplatePath))
                 {
-                    Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Failed to use local file. Does not exist.");
+                    Editor.LogError($"Failed to use local file. Does not exist.");
                     return;
                 }
             }
-            
+
             // Check if any changes in new downloaded file
             if (File.Exists(Path.Combine(Editor.LocalCachePath, "TemplatePluginCache", "TemplatePlugin1.zip")))
             {
@@ -622,7 +624,7 @@ namespace FlaxEditor.Windows
                     File.Delete(localTemplatePath2);
                 }
             }
-            
+
             var extractPath = Path.Combine(Globals.ProjectFolder, "Plugins");
             if (!Directory.Exists(extractPath))
                 Directory.CreateDirectory(extractPath);
@@ -630,15 +632,12 @@ namespace FlaxEditor.Windows
             try
             {
                 await Task.Run(() => ZipFile.ExtractToDirectory(localTemplatePath, extractPath));
-                Debug.Logger.LogHandler.LogWrite(LogType.Info, "Template for plugin project successfully moved to project.");
+                Editor.Log("Template for plugin project successfully moved to project.");
             }
             catch (IOException e)
             {
-                Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Failed to add plugin to project. {e}");
+                Editor.LogError($"Failed to add plugin to project. {e}");
             }
-            var oldpluginPath = Path.Combine(extractPath, "ExamplePlugin-master");
-            var newPluginPath = Path.Combine(extractPath , pluginName);
-            Directory.Move(oldpluginPath, newPluginPath);
 
             // Format plugin name into a valid name for code (C#/C++ typename)
             var pluginCodeName = Content.ScriptItem.FilterScriptName(pluginName);
@@ -646,11 +645,14 @@ namespace FlaxEditor.Windows
                 pluginCodeName = "MyPlugin";
             Editor.Log($"Using plugin code type name: {pluginCodeName}");
 
+            var oldPluginPath = Path.Combine(extractPath, "ExamplePlugin-master");
+            var newPluginPath = Path.Combine(extractPath, pluginName);
+            Directory.Move(oldPluginPath, newPluginPath);
 
             var oldFlaxProjFile = Path.Combine(newPluginPath, "ExamplePlugin.flaxproj");
             var newFlaxProjFile = Path.Combine(newPluginPath, $"{pluginName}.flaxproj");
             File.Move(oldFlaxProjFile, newFlaxProjFile);
-            
+
             var readme = Path.Combine(newPluginPath, "README.md");
             if (File.Exists(readme))
                 File.Delete(readme);
@@ -667,7 +669,7 @@ namespace FlaxEditor.Windows
                 flaxPluginProjContents.Company = companyName;
             flaxPluginProjContents.GameTarget = $"{pluginCodeName}Target";
             flaxPluginProjContents.EditorTarget = $"{pluginCodeName}EditorTarget";
-            await File.WriteAllTextAsync(newFlaxProjFile, JsonSerializer.Serialize(flaxPluginProjContents, typeof(ProjectInfo)));
+            await File.WriteAllTextAsync(newFlaxProjFile, JsonSerializer.Serialize(flaxPluginProjContents, typeof(ProjectInfo)), Encoding.UTF8);
 
             // Format game settings
             var gameSettingsPath = Path.Combine(newPluginPath, "Content", "GameSettings.json");
@@ -703,17 +705,17 @@ namespace FlaxEditor.Windows
                 var newName = directory.Replace("ExamplePlugin", pluginCodeName);
                 Directory.Move(directory, newName);
             }
-            
+
             // Rename targets
             var targetFiles = Directory.GetFiles(sourcePath);
             foreach (var file in targetFiles)
             {
                 var fileText = await File.ReadAllTextAsync(file);
-                await File.WriteAllTextAsync(file, fileText.Replace("ExamplePlugin", pluginCodeName));
+                await File.WriteAllTextAsync(file, fileText.Replace("ExamplePlugin", pluginCodeName), Encoding.UTF8);
                 var newName = file.Replace("ExamplePlugin", pluginCodeName);
                 File.Move(file, newName);
             }
-            Debug.Logger.LogHandler.LogWrite(LogType.Info, $"Plugin project {pluginName} has successfully been created.");
+            Editor.Log($"Plugin project {pluginName} has successfully been created.");
 
             await AddReferenceToProject(pluginName, pluginName);
             MessageBox.Show($"{pluginName} has been successfully created. Restart editor for changes to take effect.", "Plugin Project Created", MessageBoxButtons.OK);
@@ -738,10 +740,9 @@ namespace FlaxEditor.Windows
                     references.Add(newReference);
                 }
                 flaxProjContents.References = references.ToArray();
-                await File.WriteAllTextAsync(flaxProjPath, JsonSerializer.Serialize(flaxProjContents, typeof(ProjectInfo)));
+                await File.WriteAllTextAsync(flaxProjPath, JsonSerializer.Serialize(flaxProjContents, typeof(ProjectInfo)), Encoding.UTF8);
             }
         }
-
 
         private void OnPluginsChanged()
         {
