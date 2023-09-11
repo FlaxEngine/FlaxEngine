@@ -346,7 +346,7 @@ namespace FlaxEditor.Windows
         {
             if (string.IsNullOrEmpty(gitPath))
             {
-                Editor.LogError($"Failed to create plugin project due to no GIT path.");
+                Editor.LogError("Failed to create plugin project due to no GIT path.");
                 return;
             }
             if (string.IsNullOrEmpty(pluginName))
@@ -369,7 +369,7 @@ namespace FlaxEditor.Windows
                 Directory.CreateDirectory(clonePath);
             else
             {
-                Editor.LogError($"Plugin Name is already used. Pick a different Name.");
+                Editor.LogError("Plugin Name is already used. Pick a different Name.");
                 return;
             }
             try
@@ -390,7 +390,7 @@ namespace FlaxEditor.Windows
                 return;
             }
 
-            Editor.Log($"Plugin project has been cloned.");
+            Editor.Log("Plugin project has been cloned.");
 
             // Find project config file. Could be different then what the user named the folder.
             var files = Directory.GetFiles(clonePath);
@@ -405,7 +405,7 @@ namespace FlaxEditor.Windows
             }
 
             if (string.IsNullOrEmpty(pluginProjectName))
-                Editor.LogError($"Failed to find plugin project file to add to Project config. Please add manually.");
+                Editor.LogError("Failed to find plugin project file to add to Project config. Please add manually.");
             else
             {
                 await AddReferenceToProject(pluginName, pluginProjectName);
@@ -553,7 +553,7 @@ namespace FlaxEditor.Windows
         {
             if (string.IsNullOrEmpty(pluginName))
             {
-                Editor.LogError($"Failed to create plugin project due to no plugin name.");
+                Editor.LogError("Failed to create plugin project due to no plugin name.");
                 return;
             }
 
@@ -579,7 +579,7 @@ namespace FlaxEditor.Windows
                 Editor.LogError($"Failed to download template project. Trying to use local file. {e}");
                 if (!File.Exists(localTemplatePath))
                 {
-                    Editor.LogError($"Failed to use local file. Does not exist.");
+                    Editor.LogError("Failed to use local file. Does not exist.");
                     return;
                 }
             }
@@ -690,15 +690,24 @@ namespace FlaxEditor.Windows
                 var files = Directory.GetFiles(directory);
                 foreach (var file in files)
                 {
-                    if (file.Contains("MyPlugin.cs") || file.Contains("MyPluginEditor.cs"))
+                    if (file.Contains("MyPluginEditor.cs"))
                     {
                         File.Delete(file);
                         continue;
                     }
 
-                    var fileText = await File.ReadAllTextAsync(file);
-                    await File.WriteAllTextAsync(file, fileText.Replace("ExamplePlugin", pluginCodeName));
                     var fileName = Path.GetFileName(file).Replace("ExamplePlugin", pluginCodeName);
+                    var fileText = await File.ReadAllTextAsync(file);
+                    fileText = fileText.Replace("ExamplePlugin", pluginCodeName);
+                    if (file.Contains("MyPlugin.cs"))
+                    {
+                        fileName = "ExamplePlugin.cs";
+                        fileText = fileText.Replace("MyPlugin", pluginCodeName);
+                        fileText = fileText.Replace("My Plugin", pluginName);
+                        fileText = fileText.Replace("Flax Engine", companyName);
+                        fileText = fileText.Replace("new Version(1, 0)", $"new Version({pluginVersion.Trim().Replace(".", ", ")})");
+                    }
+                    await File.WriteAllTextAsync(file, fileText);
                     File.Move(file, Path.Combine(directory, fileName));
                 }
 
@@ -856,13 +865,11 @@ namespace FlaxEditor.Windows
         {
             if (pluginType == null)
                 return null;
-
             foreach (var e in _entries.Keys)
             {
                 if (e.GetType() == pluginType && _entries.ContainsKey(e))
                     return _entries[e];
             }
-
             return null;
         }
 
