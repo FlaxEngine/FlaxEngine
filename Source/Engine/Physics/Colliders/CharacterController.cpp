@@ -8,6 +8,8 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Engine/Time.h"
 
+#define CC_MIN_SIZE 0.001f
+
 CharacterController::CharacterController(const SpawnParams& params)
     : Collider(params)
     , _controller(nullptr)
@@ -100,10 +102,9 @@ void CharacterController::SetStepOffset(float value)
     {
         const float scaling = _cachedScale.GetAbsolute().MaxValue();
         const float contactOffset = Math::Max(_contactOffset, ZeroTolerance);
-        const float minSize = 0.001f;
-        const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
-        const float radius = Math::Max(Math::Abs(_radius) * scaling - contactOffset, minSize);
-        PhysicsBackend::SetControllerStepOffset(_controller, Math::Min(value, height + radius * 2.0f - minSize));
+        const float height = Math::Max(Math::Abs(_height) * scaling, CC_MIN_SIZE);
+        const float radius = Math::Max(Math::Abs(_radius) * scaling - contactOffset, CC_MIN_SIZE);
+        PhysicsBackend::SetControllerStepOffset(_controller, Math::Min(value, height + radius * 2.0f - CC_MIN_SIZE));
     }
 }
 
@@ -175,9 +176,8 @@ CharacterController::CollisionFlags CharacterController::Move(const Vector3& dis
 void CharacterController::DrawPhysicsDebug(RenderView& view)
 {
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
-    const float minSize = 0.001f;
-    const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
-    const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
+    const float radius = Math::Max(Math::Abs(_radius) * scaling, CC_MIN_SIZE);
+    const float height = Math::Max(Math::Abs(_height) * scaling, CC_MIN_SIZE);
     const Vector3 position = _transform.LocalToWorld(_center);
     if (view.Mode == ViewMode::PhysicsColliders)
         DEBUG_DRAW_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, Color::LightYellow, 0, true);
@@ -188,9 +188,8 @@ void CharacterController::DrawPhysicsDebug(RenderView& view)
 void CharacterController::OnDebugDrawSelected()
 {
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
-    const float minSize = 0.001f;
-    const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
-    const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
+    const float radius = Math::Max(Math::Abs(_radius) * scaling, CC_MIN_SIZE);
+    const float height = Math::Max(Math::Abs(_height) * scaling, CC_MIN_SIZE);
     const Vector3 position = _transform.LocalToWorld(_center);
     DEBUG_DRAW_WIRE_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, Color::GreenYellow, 0, false);
 
@@ -231,9 +230,8 @@ void CharacterController::UpdateSize() const
     if (_controller)
     {
         const float scaling = _cachedScale.GetAbsolute().MaxValue();
-        const float minSize = 0.001f;
-        const float radius = Math::Max(Math::Abs(_radius) * scaling - Math::Max(_contactOffset, ZeroTolerance), minSize);
-        const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
+        const float radius = Math::Max(Math::Abs(_radius) * scaling - Math::Max(_contactOffset, ZeroTolerance), CC_MIN_SIZE);
+        const float height = Math::Max(Math::Abs(_height) * scaling, CC_MIN_SIZE);
         PhysicsBackend::SetControllerSize(_controller, radius, height);
     }
 }
@@ -245,11 +243,12 @@ void CharacterController::CreateShape()
 
 void CharacterController::UpdateBounds()
 {
-    void* actor = _shape ? PhysicsBackend::GetShapeActor(_shape) : nullptr;
-    if (actor)
-        PhysicsBackend::GetActorBounds(actor, _box);
-    else
-        _box = BoundingBox(_transform.Translation);
+    const float scaling = GetScale().GetAbsolute().MaxValue();
+    const float radius = Math::Max(Math::Abs(_radius) * scaling, CC_MIN_SIZE);
+    const float height = Math::Max(Math::Abs(_height) * scaling, CC_MIN_SIZE);
+    const Vector3 position = _transform.LocalToWorld(_center);
+    const Vector3 extent(radius, height * 0.5f + radius, radius);
+    _box = BoundingBox(position - extent, position + extent);
     BoundingSphere::FromBox(_box, _sphere);
 }
 

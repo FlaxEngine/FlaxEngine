@@ -123,9 +123,9 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 if (tree.IsLayoutLocked)
                     return;
-                root.LockChildrenRecursive();
+                tree.LockChildrenRecursive();
                 Utilities.Utils.UpdateSearchPopupFilter(root, searchBox.Text);
-                root.UnlockChildrenRecursive();
+                tree.UnlockChildrenRecursive();
                 menu.PerformLayout();
             };
             root.ExpandAll(true);

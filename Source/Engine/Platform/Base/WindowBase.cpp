@@ -405,6 +405,7 @@ void WindowBase::OnResize(int32 width, int32 height)
         _swapChain->Resize(width, height);
     if (RenderTask)
         RenderTask->Resize(width, height);
+    Resized({ static_cast<float>(width), static_cast<float>(height) });
     INVOKE_EVENT_PARAMS_2(OnResize, &width, &height);
 }
 

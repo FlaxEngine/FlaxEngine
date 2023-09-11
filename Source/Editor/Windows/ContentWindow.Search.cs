@@ -191,6 +191,7 @@ namespace FlaxEditor.Windows
             }
 
             // Search by filter only
+            bool showAllFiles = _showAllFiles;
             if (string.IsNullOrWhiteSpace(query))
             {
                 if (SelectedNode == _root)
@@ -199,12 +200,12 @@ namespace FlaxEditor.Windows
                     for (int i = 0; i < _root.ChildrenCount; i++)
                     {
                         if (_root.GetChild(i) is ContentTreeNode node)
-                            UpdateItemsSearchFilter(node.Folder, items, filters);
+                            UpdateItemsSearchFilter(node.Folder, items, filters, showAllFiles);
                     }
                 }
                 else
                 {
-                    UpdateItemsSearchFilter(CurrentViewFolder, items, filters);
+                    UpdateItemsSearchFilter(CurrentViewFolder, items, filters, showAllFiles);
                 }
             }
             // Search by asset ID
@@ -221,12 +222,12 @@ namespace FlaxEditor.Windows
                     for (int i = 0; i < _root.ChildrenCount; i++)
                     {
                         if (_root.GetChild(i) is ContentTreeNode node)
-                            UpdateItemsSearchFilter(node.Folder, items, filters, query);
+                            UpdateItemsSearchFilter(node.Folder, items, filters, showAllFiles, query);
                     }
                 }
                 else
                 {
-                    UpdateItemsSearchFilter(CurrentViewFolder, items, filters, query);
+                    UpdateItemsSearchFilter(CurrentViewFolder, items, filters, showAllFiles, query);
                 }
             }
 
@@ -234,42 +235,34 @@ namespace FlaxEditor.Windows
             _view.ShowItems(items, _sortType);
         }
 
-        private void UpdateItemsSearchFilter(ContentFolder folder, List<ContentItem> items, bool[] filters)
+        private void UpdateItemsSearchFilter(ContentFolder folder, List<ContentItem> items, bool[] filters, bool showAllFiles)
         {
             for (int i = 0; i < folder.Children.Count; i++)
             {
                 var child = folder.Children[i];
-
                 if (child is ContentFolder childFolder)
                 {
-                    UpdateItemsSearchFilter(childFolder, items, filters);
+                    UpdateItemsSearchFilter(childFolder, items, filters, showAllFiles);
                 }
-                else
+                else if (filters[(int)child.SearchFilter] && (showAllFiles || !(child is FileItem)))
                 {
-                    if (filters[(int)child.SearchFilter])
-                    {
-                        items.Add(child);
-                    }
+                    items.Add(child);
                 }
             }
         }
 
-        private void UpdateItemsSearchFilter(ContentFolder folder, List<ContentItem> items, bool[] filters, string filterText)
+        private void UpdateItemsSearchFilter(ContentFolder folder, List<ContentItem> items, bool[] filters, bool showAllFiles, string filterText)
         {
             for (int i = 0; i < folder.Children.Count; i++)
             {
                 var child = folder.Children[i];
-
                 if (child is ContentFolder childFolder)
                 {
-                    UpdateItemsSearchFilter(childFolder, items, filters, filterText);
+                    UpdateItemsSearchFilter(childFolder, items, filters, showAllFiles, filterText);
                 }
-                else if (filters[(int)child.SearchFilter])
+                else if (filters[(int)child.SearchFilter] && (showAllFiles || !(child is FileItem)) && QueryFilterHelper.Match(filterText, child.ShortName))
                 {
-                    if (filters[(int)child.SearchFilter] && QueryFilterHelper.Match(filterText, child.ShortName))
-                    {
-                        items.Add(child);
-                    }
+                    items.Add(child);
                 }
             }
         }

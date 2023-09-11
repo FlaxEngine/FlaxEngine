@@ -205,6 +205,13 @@ namespace FlaxEngine
 
         internal static void AddDictionaryItem(IDictionary dictionary, object key, object value)
         {
+            // TODO: more generic approach to properly add value that is of custom boxed type? (eg. via NativeInterop.MarshalToManaged)
+            if (value is ManagedArray managedArray)
+            {
+                var managedArrayHandle = ManagedHandle.Alloc(managedArray, GCHandleType.Normal);
+                value = NativeInterop.MarshalToManaged((IntPtr)managedArrayHandle, managedArray.ArrayType);
+                managedArrayHandle.Free();
+            }
             dictionary.Add(key, value);
         }
 

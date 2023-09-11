@@ -890,6 +890,23 @@ namespace FlaxEditor.Modules
             }
             if (sortChildren)
                 node.SortChildren();
+
+            // Ignore some special folders
+            if (node is MainContentTreeNode mainNode && mainNode.Folder.ShortName == "Source")
+            {
+                var mainNodeChild = mainNode.Folder.Find(StringUtils.CombinePaths(mainNode.Path, "obj")) as ContentFolder;
+                if (mainNodeChild != null)
+                {
+                    mainNodeChild.Visible = false;
+                    mainNodeChild.Node.Visible = false;
+                }
+                mainNodeChild = mainNode.Folder.Find(StringUtils.CombinePaths(mainNode.Path, "Properties")) as ContentFolder;
+                if (mainNodeChild != null)
+                {
+                    mainNodeChild.Visible = false;
+                    mainNodeChild.Node.Visible = false;
+                }
+            }
         }
 
         private void LoadScripts(ContentTreeNode parent, string[] files)

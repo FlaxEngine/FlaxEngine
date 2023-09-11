@@ -325,7 +325,7 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_SaveJsonAsset(MString* outputPathObj, 
     const StringView dataObjChars = MCore::String::GetChars(dataObj);
     const StringAsANSI<> data(dataObjChars.Get(), dataObjChars.Length());
     const StringAnsiView dataAnsi(data.Get(), data.Length());
-    
+
     const StringView dataTypeNameObjChars = MCore::String::GetChars(dataTypeNameObj);
     const StringAsANSI<> dataTypeName(dataTypeNameObjChars.Get(), dataTypeNameObjChars.Length());
     const StringAnsiView dataTypeNameAnsi(dataTypeName.Get(), dataTypeName.Length());
@@ -431,7 +431,7 @@ DEFINE_INTERNAL_CALL(void) EditorInternal_GetCollisionWires(CollisionData* colli
 
     const int32 linesCount = debugLines.Count() / 2;
     MCore::GC::WriteRef(triangles, (MObject*)MCore::Array::New(Float3::TypeInitializer.GetClass(), debugLines.Count()));
-    MCore::GC::WriteRef(indices, (MObject*)MCore::Array::New( MCore::TypeCache::Int32, linesCount * 3));
+    MCore::GC::WriteRef(indices, (MObject*)MCore::Array::New(MCore::TypeCache::Int32, linesCount * 3));
 
     // Use one triangle per debug line
     Platform::MemoryCopy(MCore::Array::GetAddress<Float3>(*triangles), debugLines.Get(), debugLines.Count() * sizeof(Float3));
@@ -589,7 +589,7 @@ DEFINE_INTERNAL_CALL(MArray*) EditorInternal_GetVisualScriptLocals(int* localsCo
         const int32 count = stack->Scope->Parameters.Length() + stack->Scope->ReturnedValues.Count();
         const MClass* mclass = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEditor.Editor+VisualScriptLocal");
         ASSERT(mclass);
-        result = MCore::Array::New( mclass, count);
+        result = MCore::Array::New(mclass, count);
         VisualScriptLocalManaged local;
         local.NodeId = MAX_uint32;
         if (stack->Scope->Parameters.Length() != 0)
@@ -646,7 +646,7 @@ DEFINE_INTERNAL_CALL(MArray*) EditorInternal_GetVisualScriptStackFrames(int* sta
         }
         const MClass* mclass = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEditor.Editor+VisualScriptStackFrame");
         ASSERT(mclass);
-        result = MCore::Array::New( mclass, count);
+        result = MCore::Array::New(mclass, count);
         VisualScriptStackFrameManaged* resultPtr = MCore::Array::GetAddress<VisualScriptStackFrameManaged>(result);
         s = stack;
         count = 0;

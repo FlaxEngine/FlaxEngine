@@ -331,6 +331,12 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
         value = GET_PARTICLE_ATTRIBUTE(0, float);
         break;
     }
+    // Particle Scale
+    case 112:
+    {
+        value = GET_PARTICLE_ATTRIBUTE(0, Float3);
+        break;
+    }
     // Effect Position
     case 200:
     {
