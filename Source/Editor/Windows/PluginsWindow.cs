@@ -669,6 +669,17 @@ namespace FlaxEditor.Windows
             flaxPluginProjContents.EditorTarget = $"{pluginCodeName}EditorTarget";
             await File.WriteAllTextAsync(newFlaxProjFile, JsonSerializer.Serialize(flaxPluginProjContents, typeof(ProjectInfo)));
 
+            // Format game settings
+            var gameSettingsPath = Path.Combine(newPluginPath, "Content", "GameSettings.json");
+            if (File.Exists(gameSettingsPath))
+            {
+                var contents = await File.ReadAllTextAsync(gameSettingsPath);
+                contents = contents.Replace("Example Plugin", pluginName);
+                contents = contents.Replace("\"CompanyName\": \"Flax\"", $"\"CompanyName\": \"{companyName}\"");
+                contents = contents.Replace("1.0", pluginVersion);
+                await File.WriteAllTextAsync(gameSettingsPath, contents, Encoding.UTF8);
+            }
+
             // Rename source directories
             var sourcePath = Path.Combine(newPluginPath, "Source");
             var sourceDirectories = Directory.GetDirectories(sourcePath);
