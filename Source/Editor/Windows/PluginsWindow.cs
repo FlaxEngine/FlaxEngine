@@ -2,11 +2,18 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Tabs;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Json;
+using Debug = FlaxEngine.Debug;
 
 namespace FlaxEditor.Windows
 {
@@ -17,6 +24,8 @@ namespace FlaxEditor.Windows
     public sealed class PluginsWindow : EditorWindow
     {
         private Tabs _tabs;
+        private Button _addPluginProjectButton;
+        private Button _cloneProjectButton;
         private readonly List<CategoryEntry> _categories = new List<CategoryEntry>();
         private readonly Dictionary<Plugin, PluginEntry> _entries = new Dictionary<Plugin, PluginEntry>();
 
@@ -174,18 +183,548 @@ namespace FlaxEditor.Windows
         {
             Title = "Plugins";
 
+            var vp = new Panel
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Parent = this,
+            };
+            _addPluginProjectButton = new Button
+            {
+                Text = "Create Plugin Project",
+                TooltipText = "Add new plugin project.",
+                AnchorPreset = AnchorPresets.TopLeft,
+                LocalLocation = new Float2(70,18),
+                Size = new Float2(150, 25),
+                Parent = vp,
+            };
+            _addPluginProjectButton.Clicked += OnAddButtonClicked;
+
+            _cloneProjectButton = new Button
+            {
+                Text = "Clone Plugin Project",
+                TooltipText = "Git Clone a plugin project.",
+                AnchorPreset = AnchorPresets.TopLeft,
+                LocalLocation = new Float2(70 + _addPluginProjectButton.Size.X + 8, 18),
+                Size = new Float2(150, 25),
+                Parent = vp,
+            };
+            _cloneProjectButton.Clicked += OnCloneProjectButtonClicked;
+            
             _tabs = new Tabs
             {
                 Orientation = Orientation.Vertical,
                 AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = Margin.Zero,
+                Offsets = new Margin(0, 0, _addPluginProjectButton.Bottom + 8, 0),
                 TabsSize = new Float2(120, 32),
-                Parent = this
+                Parent = vp
             };
 
             OnPluginsChanged();
             PluginManager.PluginsChanged += OnPluginsChanged;
         }
+
+        private void OnCloneProjectButtonClicked()
+        {
+            var popup = new ContextMenuBase
+            {
+                Size = new Float2(300, 125),
+                ClipChildren = false,
+                CullChildren = false,
+            };
+            popup.Show(_cloneProjectButton, new Float2(_cloneProjectButton.Width, 0));
+
+            var nameLabel = new Label
+            {
+                Parent = popup,
+                AnchorPreset = AnchorPresets.TopLeft,
+                AutoWidth = true,
+                Text = "Name",
+                HorizontalAlignment = TextAlignment.Near,
+            };
+            nameLabel.LocalY += 10;
+
+            var nameTextBox = new TextBox
+            {
+                Parent = popup,
+                WatermarkText = "Plugin Name",
+                TooltipText = "If left blank, this will take the git name.",
+                AnchorPreset = AnchorPresets.TopLeft,
+                IsMultiline = false,
+            };
+            nameTextBox.LocalX += (300 - (10)) * 0.5f;
+            nameTextBox.LocalY += 10;
+            nameLabel.LocalX += (300 - (nameLabel.Width + nameTextBox.Width)) * 0.5f + 10;
+            
+            var defaultTextBoxBorderColor = nameTextBox.BorderColor;
+            var defaultTextBoxBorderSelectedColor = nameTextBox.BorderSelectedColor;
+            nameTextBox.TextChanged += () =>
+            {
+                if (string.IsNullOrEmpty(nameTextBox.Text))
+                {
+                    nameTextBox.BorderColor = defaultTextBoxBorderColor;
+                    nameTextBox.BorderSelectedColor = defaultTextBoxBorderSelectedColor;
+                    return;
+                }
+                
+                var pluginPath = Path.Combine(Globals.ProjectFolder, "Plugins", nameTextBox.Text);
+                if (Directory.Exists(pluginPath))
+                {
+                    nameTextBox.BorderColor = Color.Red;
+                    nameTextBox.BorderSelectedColor = Color.Red;
+                }
+                else
+                {
+                    nameTextBox.BorderColor = defaultTextBoxBorderColor;
+                    nameTextBox.BorderSelectedColor = defaultTextBoxBorderSelectedColor;
+                }
+            };
+
+            var gitPathLabel = new Label
+            {
+                Parent = popup,
+                AnchorPreset = AnchorPresets.TopLeft,
+                AutoWidth = true,
+                Text = "Git Path",
+                HorizontalAlignment = TextAlignment.Near,
+            };
+            gitPathLabel.LocalX += (300 - gitPathLabel.Width) * 0.5f;
+            gitPathLabel.LocalY += 35;
+
+            var gitPathTextBox = new TextBox
+            {
+                Parent = popup,
+                WatermarkText = "https://github.com/FlaxEngine/ExamplePlugin.git",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Size = new Float2(280, TextBox.DefaultHeight),
+                IsMultiline = false,
+            };
+            gitPathTextBox.LocalY += 60;
+            gitPathTextBox.LocalX += 10;
+
+            var submitButton = new Button
+            {
+                Parent = popup,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Text = "Clone",
+                Width = 70,
+            };
+            submitButton.LocalX += 300 * 0.5f - submitButton.Width - 10;
+            submitButton.LocalY += 90;
+
+            submitButton.Clicked += () =>
+            {
+                if (Directory.Exists(Path.Combine(Globals.ProjectFolder, "Plugins", nameTextBox.Text)) && !string.IsNullOrEmpty(nameTextBox.Text))
+                {
+                    Debug.Logger.LogHandler.LogWrite(LogType.Warning, "Cannot create plugin due to name conflict.");
+                    return;
+                }
+                OnCloneButtonClicked(nameTextBox.Text, gitPathTextBox.Text);
+                nameTextBox.Clear();
+                gitPathTextBox.Clear();
+                popup.Hide();
+            };
+
+            var cancelButton = new Button
+            {
+                Parent = popup,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Text = "Cancel",
+                Width = 70,
+            };
+            cancelButton.LocalX += 300 * 0.5f + 10;
+            cancelButton.LocalY += 90;
+
+            cancelButton.Clicked += () =>
+            {
+                nameTextBox.Clear();
+                gitPathTextBox.Clear();
+                popup.Hide();
+            };
+        }
+
+        private async void OnCloneButtonClicked(string pluginName, string gitPath)
+        {
+            if (string.IsNullOrEmpty(gitPath))
+            {
+                Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Failed to create plugin project due to no GIT path.");
+                return;
+            }
+            if (string.IsNullOrEmpty(pluginName))
+            {
+                var split = gitPath.Split('/');
+                if (string.IsNullOrEmpty(split[^1]))
+                {
+                    var name = split[^2].Replace(".git", "");
+                    pluginName = name;
+                }
+                else
+                {
+                    var name = split[^1].Replace(".git", "");
+                    pluginName = name;
+                }
+            }
+            
+            var clonePath = Path.Combine(Globals.ProjectFolder, "Plugins", pluginName);
+            if (!Directory.Exists(clonePath))
+                Directory.CreateDirectory(clonePath);
+            else
+            {
+                Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Plugin Name is already used. Pick a different Name.");
+                return;
+            }
+            try
+            {
+                // Start git clone
+                var settings = new CreateProcessSettings();
+                settings.FileName = "git";
+                settings.Arguments = $"clone {gitPath} \"{clonePath}\"";
+                settings.ShellExecute = false;
+                settings.LogOutput = true;
+                Platform.CreateProcess(ref settings);
+            }
+            catch (Exception e)
+            {
+                Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Failed Git process. {e}");
+                return;
+            }
+            
+            Debug.Logger.LogHandler.LogWrite(LogType.Info, $"Plugin project has been cloned.");
+
+            // Find project config file. Could be different then what the user named the folder.
+            var files = Directory.GetFiles(clonePath);
+            string pluginProjectName = "";
+            foreach (var file in files)
+            {
+                if (file.Contains(".flaxproj", StringComparison.OrdinalIgnoreCase))
+                {
+                    pluginProjectName = Path.GetFileNameWithoutExtension(file);
+                    Debug.Log(pluginProjectName);
+                }
+            }
+            
+            if (string.IsNullOrEmpty(pluginProjectName))
+                Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Failed to find plugin project file to add to Project config. Please add manually.");
+            else
+            {
+                await AddReferenceToProject(pluginName, pluginProjectName);
+                MessageBox.Show($"{pluginName} has been successfully cloned. Restart editor for changes to take effect.", "Plugin Project Created", MessageBoxButtons.OK);
+            }
+        }
+
+        private void OnAddButtonClicked()
+        {
+            var popup = new ContextMenuBase
+            {
+                Size = new Float2(230, 125),
+                ClipChildren = false,
+                CullChildren = false,
+            };
+            popup.Show(_addPluginProjectButton, new Float2(_addPluginProjectButton.Width, 0));
+
+            var nameLabel = new Label
+            {
+                Parent = popup,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Text = "Name",
+                HorizontalAlignment = TextAlignment.Near,
+            };
+            nameLabel.LocalX += 10;
+            nameLabel.LocalY += 10;
+
+            var nameTextBox = new TextBox
+            {
+                Parent = popup,
+                WatermarkText = "Plugin Name",
+                AnchorPreset = AnchorPresets.TopLeft,
+                IsMultiline = false,
+            };
+            nameTextBox.LocalX += 100;
+            nameTextBox.LocalY += 10;
+            var defaultTextBoxBorderColor = nameTextBox.BorderColor;
+            var defaultTextBoxBorderSelectedColor = nameTextBox.BorderSelectedColor;
+            nameTextBox.TextChanged += () =>
+            {
+                if (string.IsNullOrEmpty(nameTextBox.Text))
+                {
+                    nameTextBox.BorderColor = defaultTextBoxBorderColor;
+                    nameTextBox.BorderSelectedColor = defaultTextBoxBorderSelectedColor;
+                    return;
+                }
+                
+                var pluginPath = Path.Combine(Globals.ProjectFolder, "Plugins", nameTextBox.Text);
+                if (Directory.Exists(pluginPath))
+                {
+                    nameTextBox.BorderColor = Color.Red;
+                    nameTextBox.BorderSelectedColor = Color.Red;
+                }
+                else
+                {
+                    nameTextBox.BorderColor = defaultTextBoxBorderColor;
+                    nameTextBox.BorderSelectedColor = defaultTextBoxBorderSelectedColor;
+                }
+            };
+
+            var versionLabel = new Label
+            {
+                Parent = popup,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Text = "Version",
+                HorizontalAlignment = TextAlignment.Near,
+            };
+            versionLabel.LocalX += 10;
+            versionLabel.LocalY += 35;
+
+            var versionTextBox = new TextBox
+            {
+                Parent = popup,
+                WatermarkText = "1.0.0",
+                AnchorPreset = AnchorPresets.TopLeft,
+                IsMultiline = false,
+            };
+            versionTextBox.LocalY += 35;
+            versionTextBox.LocalX += 100;
+
+            var companyLabel = new Label
+            {
+                Parent = popup,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Text = "Company",
+                HorizontalAlignment = TextAlignment.Near,
+            };
+            companyLabel.LocalX += 10;
+            companyLabel.LocalY += 60;
+
+            var companyTextBox = new TextBox
+            {
+                Parent = popup,
+                WatermarkText = "Company Name",
+                AnchorPreset = AnchorPresets.TopLeft,
+                IsMultiline = false,
+            };
+            companyTextBox.LocalY += 60;
+            companyTextBox.LocalX += 100;
+
+            var submitButton = new Button
+            {
+                Parent = popup,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Text = "Create",
+                Width = 70,
+            };
+            submitButton.LocalX += 40;
+            submitButton.LocalY += 90;
+
+            submitButton.Clicked += () =>
+            {
+                if (Directory.Exists(Path.Combine(Globals.ProjectFolder, "Plugins", nameTextBox.Text)))
+                {
+                    Debug.Logger.LogHandler.LogWrite(LogType.Warning, "Cannot create plugin due to name conflict.");
+                    return;
+                }
+                OnCreateButtonClicked(nameTextBox.Text, versionTextBox.Text, companyTextBox.Text);
+                nameTextBox.Clear();
+                versionTextBox.Clear();
+                companyTextBox.Clear();
+                popup.Hide();
+            };
+
+            var cancelButton = new Button
+            {
+                Parent = popup,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Text = "Cancel",
+                Width = 70,
+            };
+            cancelButton.LocalX += 120;
+            cancelButton.LocalY += 90;
+
+            cancelButton.Clicked += () =>
+            {
+                nameTextBox.Clear();
+                versionTextBox.Clear();
+                companyTextBox.Clear();
+                popup.Hide();
+            };
+        }
+
+        private async void OnCreateButtonClicked(string pluginName, string pluginVersion, string companyName)
+        {
+            if (string.IsNullOrEmpty(pluginName))
+            {
+                Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Failed to create plugin project due to no plugin name.");
+                return;
+            }
+            
+            var templateUrl = "https://github.com/FlaxEngine/ExamplePlugin/archive/refs/heads/master.zip";
+            var localTemplateFolderLocation = Path.Combine(Editor.LocalCachePath, "TemplatePluginCache");
+            if (!Directory.Exists(localTemplateFolderLocation))
+                Directory.CreateDirectory(localTemplateFolderLocation);
+            var localTemplatePath = Path.Combine(localTemplateFolderLocation, "TemplatePlugin.zip");
+
+            try
+            {
+                // Download example plugin
+                using (HttpClient client = new HttpClient())
+                {
+                    byte[] zipBytes = await client.GetByteArrayAsync(templateUrl);
+                    await File.WriteAllBytesAsync(!File.Exists(localTemplatePath) ? Path.Combine(localTemplatePath) : Path.Combine(Editor.LocalCachePath, "TemplatePluginCache" , "TemplatePlugin1.zip"), zipBytes);
+                
+                    Debug.Logger.LogHandler.LogWrite(LogType.Info, "Template for plugin project has downloaded");
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Failed to download template project. Trying to use local file. {e}");
+                if (!File.Exists(localTemplatePath))
+                {
+                    Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Failed to use local file. Does not exist.");
+                    return;
+                }
+            }
+            
+            // Check if any changes in new downloaded file
+            if (File.Exists(Path.Combine(Editor.LocalCachePath, "TemplatePluginCache", "TemplatePlugin1.zip")))
+            {
+                var localTemplatePath2 = Path.Combine(Editor.LocalCachePath, "TemplatePluginCache", "TemplatePlugin1.zip");
+                bool areDifferent = false;
+                using (var zip1 = ZipFile.OpenRead(localTemplatePath))
+                {
+                    using (var zip2 = ZipFile.OpenRead(localTemplatePath2))
+                    {
+                        if (zip1.Entries.Count != zip2.Entries.Count)
+                        {
+                            areDifferent = true;
+                        }
+
+                        foreach (ZipArchiveEntry entry1 in zip1.Entries)
+                        {
+                            ZipArchiveEntry entry2 = zip2.GetEntry(entry1.FullName);
+                            if (entry2 == null)
+                            {
+                                areDifferent = true;
+                                break;
+                            }
+                            if (entry1.Length != entry2.Length || entry1.CompressedLength != entry2.CompressedLength || entry1.Crc32 != entry2.Crc32)
+                            {
+                                areDifferent = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (areDifferent)
+                {
+                    File.Delete(localTemplatePath);
+                    File.Move(localTemplatePath2, localTemplatePath);
+                }
+                else
+                {
+                    File.Delete(localTemplatePath2);
+                }
+            }
+            
+            var extractPath = Path.Combine(Globals.ProjectFolder, "Plugins");
+            if (!Directory.Exists(extractPath))
+                Directory.CreateDirectory(extractPath);
+
+            try
+            {
+                await Task.Run(() => ZipFile.ExtractToDirectory(localTemplatePath, extractPath));
+                Debug.Logger.LogHandler.LogWrite(LogType.Info, "Template for plugin project successfully moved to project.");
+            }
+            catch (IOException e)
+            {
+                Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Failed to add plugin to project. {e}");
+            }
+            
+            var oldpluginPath = Path.Combine(extractPath, "ExamplePlugin-master");
+            var newPluginPath = Path.Combine(extractPath , pluginName);
+            Directory.Move(oldpluginPath, newPluginPath);
+
+            var oldFlaxProjFile = Path.Combine(newPluginPath, "ExamplePlugin.flaxproj");
+            var newFlaxProjFile = Path.Combine(newPluginPath, $"{pluginName}.flaxproj");
+            File.Move(oldFlaxProjFile, newFlaxProjFile);
+            
+            var readme = Path.Combine(newPluginPath, "README.md");
+            if (File.Exists(readme))
+                File.Delete(readme);
+            var license = Path.Combine(newPluginPath, "LICENSE");
+            if (File.Exists(license))
+                File.Delete(license);
+
+            // Flax plugin project file
+            var flaxPluginProjContents = JsonSerializer.Deserialize<ProjectInfo>(await File.ReadAllTextAsync(newFlaxProjFile));
+            flaxPluginProjContents.Name = pluginName;
+            if (!string.IsNullOrEmpty(pluginVersion))
+                flaxPluginProjContents.Version = new Version(pluginVersion);
+            if (!string.IsNullOrEmpty(companyName))
+                flaxPluginProjContents.Company = companyName;
+            flaxPluginProjContents.GameTarget = $"{pluginName}Target";
+            flaxPluginProjContents.EditorTarget = $"{pluginName}EditorTarget";
+            await File.WriteAllTextAsync(newFlaxProjFile, JsonSerializer.Serialize(flaxPluginProjContents, typeof(ProjectInfo)));
+
+            // Rename source directories
+            var sourcePath = Path.Combine(newPluginPath, "Source");
+            var sourceDirectories = Directory.GetDirectories(sourcePath);
+            foreach (var directory in sourceDirectories)
+            {
+                var files = Directory.GetFiles(directory);
+                foreach (var file in files)
+                {
+                    if (file.Contains("MyPlugin.cs") || file.Contains("MyPluginEditor.cs"))
+                    {
+                        File.Delete(file);
+                        continue;
+                    }
+                    
+                    var fileText = await File.ReadAllTextAsync(file);
+                    await File.WriteAllTextAsync(file, fileText.Replace("ExamplePlugin", pluginName));
+                    var fileName = Path.GetFileName(file).Replace("ExamplePlugin", pluginName);
+                    File.Move(file, Path.Combine(directory, fileName));
+                }
+                
+                var newName = directory.Replace("ExamplePlugin", pluginName);
+                Directory.Move(directory, newName);
+            }
+            
+            // Rename targets
+            var targetFiles = Directory.GetFiles(sourcePath);
+            foreach (var file in targetFiles)
+            {
+                var fileText = await File.ReadAllTextAsync(file);
+                await File.WriteAllTextAsync(file, fileText.Replace("ExamplePlugin", pluginName));
+                var newName = file.Replace("ExamplePlugin", pluginName);
+                File.Move(file, newName);
+            }
+            Debug.Logger.LogHandler.LogWrite(LogType.Info, $"Plugin project {pluginName} has successfully been created.");
+
+            await AddReferenceToProject(pluginName, pluginName);
+            MessageBox.Show($"{pluginName} has been successfully created. Restart editor for changes to take effect.", "Plugin Project Created", MessageBoxButtons.OK);
+        }
+
+        private async Task AddReferenceToProject(string pluginFolderName, string pluginName)
+        {
+            // Project flax config file
+            var flaxProjPath = Editor.GameProject.ProjectPath;
+            if (File.Exists(flaxProjPath))
+            {
+                var flaxProjContents = JsonSerializer.Deserialize<ProjectInfo>(await File.ReadAllTextAsync(flaxProjPath));
+                var oldReferences = flaxProjContents.References;
+                var references = new List<ProjectInfo.Reference>(oldReferences);
+                var newPath = $"$(ProjectPath)/Plugins/{pluginFolderName}/{pluginName}.flaxproj";
+                if (!references.Exists(x => string.Equals(x.Name, newPath)))
+                {
+                    var newReference = new ProjectInfo.Reference
+                    {
+                        Name = newPath,
+                    };
+                    references.Add(newReference);
+                }
+                flaxProjContents.References = references.ToArray();
+                await File.WriteAllTextAsync(flaxProjPath, JsonSerializer.Serialize(flaxProjContents, typeof(ProjectInfo)));
+            }
+        }
+
 
         private void OnPluginsChanged()
         {
@@ -312,6 +851,10 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (_addPluginProjectButton != null)
+                _addPluginProjectButton.Clicked -= OnAddButtonClicked;
+            if (_cloneProjectButton != null)
+                _cloneProjectButton.Clicked -= OnCloneProjectButtonClicked;
             PluginManager.PluginsChanged -= OnPluginsChanged;
 
             base.OnDestroy();
