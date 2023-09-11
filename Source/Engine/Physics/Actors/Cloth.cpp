@@ -444,8 +444,8 @@ void Cloth::EndPlay()
 
 void Cloth::OnEnable()
 {
-#if USE_EDITOR
     GetSceneRendering()->AddActor(this, _sceneRenderingKey);
+#if USE_EDITOR
     GetSceneRendering()->AddPhysicsDebug<Cloth, &Cloth::DrawPhysicsDebug>(this);
 #endif
 #if WITH_CLOTH
@@ -466,8 +466,8 @@ void Cloth::OnDisable()
 #endif
 #if USE_EDITOR
     GetSceneRendering()->RemovePhysicsDebug<Cloth, &Cloth::DrawPhysicsDebug>(this);
-    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 #endif
+    GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 }
 
 void Cloth::OnDeleteObject()
