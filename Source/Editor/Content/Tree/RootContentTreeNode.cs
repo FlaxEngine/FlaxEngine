@@ -17,6 +17,6 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override string NavButtonLabel => string.Empty;
+        public override string NavButtonLabel => " /";
     }
 }
