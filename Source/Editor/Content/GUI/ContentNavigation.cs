@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Drag;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -31,7 +32,7 @@ namespace FlaxEditor.Content.GUI
         : base(x, y, height)
         {
             TargetNode = targetNode;
-            Text = targetNode.NavButtonLabel + "/";
+            Text = targetNode.NavButtonLabel;
         }
 
         /// <inheritdoc />
@@ -72,7 +73,6 @@ namespace FlaxEditor.Content.GUI
 
             if (_dragOverItems == null)
                 _dragOverItems = new DragItems(ValidateDragItem);
-
             _dragOverItems.OnDragEnter(data);
             var result = GetDragEffect(data);
             _validDragOver = result != DragDropEffect.None;
@@ -120,6 +120,72 @@ namespace FlaxEditor.Content.GUI
             _validDragOver = false;
 
             return result;
+        }
+    }
+
+    sealed class ContentNavigationSeparator : ComboBox
+    {
+        public ContentNavigationButton Target;
+
+        public ContentNavigationSeparator(ContentNavigationButton target, float x, float y, float height)
+        {
+            Target = target;
+            Bounds = new Rectangle(x, y, 16, height);
+            Offsets = new Margin(Bounds.X, Bounds.Width, Bounds.Y, Bounds.Height);
+            UpdateTransform();
+
+            MaximumItemsInViewCount = 20;
+            var style = Style.Current;
+            BackgroundColor = style.BackgroundNormal;
+            BackgroundColorHighlighted = BackgroundColor;
+            BackgroundColorSelected = BackgroundColor;
+        }
+
+        protected override ContextMenu OnCreatePopup()
+        {
+            // Update items
+            ClearItems();
+            foreach (var child in Target.TargetNode.Children)
+            {
+                if (child is ContentTreeNode node)
+                {
+                    if (node.Folder.VisibleInHierarchy) // Respect the filter set by ContentFilterConfig.Filter(...)
+                        AddItem(node.Folder.ShortName);
+                }
+            }
+
+            return base.OnCreatePopup();
+        }
+
+        public override void Draw()
+        {
+            var style = Style.Current;
+            var rect = new Rectangle(Float2.Zero, Size);
+            var color = IsDragOver ? style.BackgroundSelected * 0.6f : (_mouseDown ? style.BackgroundSelected : (IsMouseOver ? style.BackgroundHighlighted : Color.Transparent));
+            Render2D.FillRectangle(rect, color);
+            Render2D.DrawSprite(Editor.Instance.Icons.ArrowRight12, new Rectangle(rect.Location.X, rect.Y + rect.Size.Y * 0.25f, rect.Size.X, rect.Size.X), EnabledInHierarchy ? style.Foreground : style.ForegroundDisabled);
+        }
+
+        protected override void OnLayoutMenuButton(ContextMenuButton button, int index, bool construct = false)
+        {
+            button.Icon = Editor.Instance.Icons.FolderClosed32;
+            if (_tooltips != null && _tooltips.Length > index)
+                button.TooltipText = _tooltips[index];
+        }
+
+        protected override void OnItemClicked(int index)
+        {
+            base.OnItemClicked(index);
+
+            var item = _items[index];
+            foreach (var child in Target.TargetNode.Children)
+            {
+                if (child is ContentTreeNode node && node.Folder.ShortName == item)
+                {
+                    Editor.Instance.Windows.ContentWin.Navigate(node);
+                    return;
+                }
+            }
         }
     }
 }

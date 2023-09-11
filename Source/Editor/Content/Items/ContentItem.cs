@@ -441,6 +441,9 @@ namespace FlaxEditor.Content
         {
             get
             {
+                // Skip when hidden
+                if (!Visible)
+                    return Rectangle.Empty;
                 var view = Parent as ContentView;
                 var size = Size;
                 switch (view?.ViewType ?? ContentViewType.Tiles)
@@ -666,7 +669,6 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void Draw()
         {
-            // Cache data
             var size = Size;
             var style = Style.Current;
             var view = Parent as ContentView;
