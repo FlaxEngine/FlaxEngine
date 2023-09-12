@@ -192,6 +192,8 @@ void RenderView::CopyFrom(Camera* camera, Viewport* viewport)
     Frustum.GetInvMatrix(IVP);
     CullingFrustum = Frustum;
     RenderLayersMask = camera->RenderLayersMask;
+    Flags = camera->RenderFlags;
+    Mode = camera->RenderView;
 }
 
 void RenderView::GetWorldMatrix(const Transform& transform, Matrix& world) const
