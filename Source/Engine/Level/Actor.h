@@ -153,6 +153,7 @@ public:
     /// <param name="tag">The tag to add.</param>
     API_FUNCTION() void AddTagRecursive(const Tag& tag);
 
+    /// <summary>
     /// Removes a tag to the actor
     /// </summary>
     /// <param name="tag">The tag to remove.</param>
