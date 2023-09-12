@@ -1,5 +1,5 @@
-﻿
-using System;
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+
 using System.Collections.Generic;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -13,31 +13,24 @@ namespace FlaxEditor.CustomEditors.Editors
     public class InputEventEditor : CustomEditor
     {
         private Dropdown _dropdown;
-        
+
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.Inline;
-        
+
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
             var dropdownElement = layout.Custom<Dropdown>();
             _dropdown = dropdownElement.CustomControl;
-            var eventNames = new List<LocalizedString>();
+            var names = new List<LocalizedString>();
             foreach (var mapping in Input.ActionMappings)
             {
-                if (eventNames.Contains(mapping.Name))
-                    continue;
-                eventNames.Add(mapping.Name);
+                if (!names.Contains(mapping.Name))
+                    names.Add(mapping.Name);
             }
-            _dropdown.Items = eventNames;
-            if (Values[0] is InputEvent value)
-            {
-                if (eventNames.Contains(value.Name))
-                {
-                    _dropdown.SelectedItem = value.Name;
-                }
-            }
-            
+            _dropdown.Items = names;
+            if (Values[0] is InputEvent inputEvent && names.Contains(inputEvent.Name))
+                _dropdown.SelectedItem = inputEvent.Name;
             _dropdown.SelectedIndexChanged += OnSelectedIndexChanged;
         }
 
@@ -45,7 +38,7 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             SetValue(new InputEvent(dropdown.SelectedItem));
         }
-        
+
         /// <inheritdoc />
         public override void Refresh()
         {
@@ -53,17 +46,11 @@ namespace FlaxEditor.CustomEditors.Editors
 
             if (HasDifferentValues)
             {
-                
             }
             else
             {
-                if (Values[0] is InputEvent eventValue)
-                {
-                    if (_dropdown.Items.Contains(eventValue.Name) && string.Equals(_dropdown.SelectedItem, eventValue.Name, StringComparison.Ordinal))
-                    {
-                        _dropdown.SelectedItem = eventValue.Name;
-                    }
-                }
+                if (Values[0] is InputEvent inputEvent && _dropdown.Items.Contains(inputEvent.Name))
+                    _dropdown.SelectedItem = inputEvent.Name;
             }
         }
 
@@ -73,10 +60,9 @@ namespace FlaxEditor.CustomEditors.Editors
             if (_dropdown != null)
                 _dropdown.SelectedIndexChanged -= OnSelectedIndexChanged;
             _dropdown = null;
-            base.Deinitialize();
         }
     }
-    
+
     /// <summary>
     /// Default implementation of the inspector used to edit input axis properties.
     /// </summary>
@@ -84,7 +70,7 @@ namespace FlaxEditor.CustomEditors.Editors
     public class InputAxisEditor : CustomEditor
     {
         private Dropdown _dropdown;
-        
+
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.Inline;
 
@@ -93,21 +79,15 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             var dropdownElement = layout.Custom<Dropdown>();
             _dropdown = dropdownElement.CustomControl;
-            var axisNames = new List<LocalizedString>();
+            var names = new List<LocalizedString>();
             foreach (var mapping in Input.AxisMappings)
             {
-                if (axisNames.Contains(mapping.Name))
-                    continue;
-                axisNames.Add(mapping.Name);
+                if (!names.Contains(mapping.Name))
+                    names.Add(mapping.Name);
             }
-            _dropdown.Items = axisNames;
-            if (Values[0] is InputAxis value)
-            {
-                if (axisNames.Contains(value.Name))
-                {
-                    _dropdown.SelectedItem = value.Name;
-                }
-            }
+            _dropdown.Items = names;
+            if (Values[0] is InputAxis inputAxis && names.Contains(inputAxis.Name))
+                _dropdown.SelectedItem = inputAxis.Name;
             _dropdown.SelectedIndexChanged += OnSelectedIndexChanged;
         }
 
@@ -123,27 +103,20 @@ namespace FlaxEditor.CustomEditors.Editors
 
             if (HasDifferentValues)
             {
-                
             }
             else
             {
-                if (Values[0] is InputAxis axisValue)
-                {
-                    if (_dropdown.Items.Contains(axisValue.Name) && string.Equals(_dropdown.SelectedItem, axisValue.Name, StringComparison.Ordinal))
-                    {
-                        _dropdown.SelectedItem = axisValue.Name;
-                    }
-                }
+                if (Values[0] is InputAxis inputAxis && _dropdown.Items.Contains(inputAxis.Name))
+                    _dropdown.SelectedItem = inputAxis.Name;
             }
         }
-        
+
         /// <inheritdoc />
         protected override void Deinitialize()
         {
             if (_dropdown != null)
                 _dropdown.SelectedIndexChanged -= OnSelectedIndexChanged;
             _dropdown = null;
-            base.Deinitialize();
         }
     }
 }

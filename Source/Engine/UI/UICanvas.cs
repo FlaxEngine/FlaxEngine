@@ -282,7 +282,7 @@ namespace FlaxEngine
         [EditorOrder(530), EditorDisplay("Navigation", "Navigate Left")]
         [Tooltip("The input action for performing UI navigation Left (from Input Settings).")]
         public InputEvent NavigateLeft { get; set; } = new InputEvent("NavigateLeft");
-  
+
         /// <summary>
         /// The input action for performing UI navigation Right (from Input Settings).
         /// </summary>
@@ -775,7 +775,7 @@ namespace FlaxEngine
                     jsonWriter.WriteValue(NavigateSubmit.Name);
                     jsonWriter.WriteEndObject();
                 }
-                
+
                 jsonWriter.WriteEndObject();
             }
 
