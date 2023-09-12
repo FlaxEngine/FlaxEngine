@@ -456,6 +456,19 @@ void Actor::SetLayerName(const StringView& value)
     LOG(Warning, "Unknown layer name '{0}'", value);
 }
 
+void Actor::SetLayerNameRecursive(const StringView& value)
+{
+    for (int32 i = 0; i < 32; i++)
+    {
+        if (Level::Layers[i] == value)
+        {
+            SetLayerRecursive(i);
+            return;
+        }
+    }
+    LOG(Warning, "Unknown layer name '{0}'", value);
+}
+
 bool Actor::HasTag() const
 {
     return Tags.Count() != 0;
@@ -473,6 +486,13 @@ bool Actor::HasTag(const StringView& tag) const
 
 void Actor::AddTag(const Tag& tag)
 {
+    Tags.AddUnique(tag);
+}
+
+void Actor::AddTagRecursive(const Tag& tag)
+{
+    for (const auto& child : Children)
+        child->AddTagRecursive(tag);
     Tags.AddUnique(tag);
 }
 
@@ -499,6 +519,17 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 void Actor::SetLayer(int32 layerIndex)
 {
     layerIndex = Math::Clamp(layerIndex, 0, 31);
+    if (layerIndex == _layer)
+        return;
+    _layer = layerIndex;
+    OnLayerChanged();
+}
+
+void Actor::SetLayerRecursive(int32 layerIndex)
+{
+    layerIndex = Math::Clamp(layerIndex, 0, 31);
+    for (const auto& child : Children)
+        child->SetLayerRecursive(layerIndex);
     if (layerIndex == _layer)
         return;
     _layer = layerIndex;
