@@ -75,9 +75,20 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="origin">The origin of the line.</param>
     /// <param name="direction">The direction of the line.</param>
     /// <param name="color">The color.</param>
+    /// <param name="length">The length of the ray.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
-    API_FUNCTION() static void DrawRay(const Vector3& origin, const Vector3& direction, const Color& color, float duration = 0.0f, bool depthTest = true);
+    API_FUNCTION() static void DrawRay(const Vector3& origin, const Vector3& direction, Color& color = Color::White, float length = 3.402823466e+38f, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws the line in a direction.
+    /// </summary>
+    /// <param name="ray">The ray.</param>
+    /// <param name="color">The color.</param>
+    /// <param name="length">The length of the ray.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    API_FUNCTION() static void DrawRay(const Ray& ray, Color& color = Color::White, float length = 3.402823466e+38f, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
     /// Draws the line.
