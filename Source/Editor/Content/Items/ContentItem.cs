@@ -165,7 +165,7 @@ namespace FlaxEditor.Content
         /// <summary>
         /// The default text height.
         /// </summary>
-        public const int DefaultTextHeight = 42;
+        public const int DefaultTextHeight = 40;
 
         /// <summary>
         /// The default thumbnail size.
@@ -441,11 +441,9 @@ namespace FlaxEditor.Content
         {
             get
             {
+                // Skip when hidden
                 if (!Visible)
-                {
                     return Rectangle.Empty;
-                }
-
                 var view = Parent as ContentView;
                 var size = Size;
                 switch (view?.ViewType ?? ContentViewType.Tiles)
@@ -453,7 +451,7 @@ namespace FlaxEditor.Content
                 case ContentViewType.Tiles:
                 {
                     var textHeight = DefaultTextHeight * size.X / DefaultWidth;
-                    return new Rectangle(0, size.Y - textHeight, size.X - 2, textHeight);
+                    return new Rectangle(1, size.Y - textHeight + 2, size.X - 2, textHeight-2);
                 }
                 case ContentViewType.List:
                 {
@@ -474,6 +472,30 @@ namespace FlaxEditor.Content
         {
             // Draw shadow
             if (DrawShadow)
+            {
+                const float thumbnailInShadowSize = 50.0f;
+                var shadowRect = rectangle.MakeExpanded((DefaultThumbnailSize - thumbnailInShadowSize) * rectangle.Width / DefaultThumbnailSize * 1.3f);
+                if (!_shadowIcon.IsValid)
+                    _shadowIcon = Editor.Instance.Icons.AssetShadow128;
+                Render2D.DrawSprite(_shadowIcon, shadowRect);
+            }
+
+            // Draw thumbnail
+            if (_thumbnail.IsValid)
+                Render2D.DrawSprite(_thumbnail, rectangle);
+            else
+                Render2D.FillRectangle(rectangle, Color.Black);
+        }
+        
+        /// <summary>
+        /// Draws the item thumbnail.
+        /// </summary>
+        /// <param name="rectangle">The thumbnail rectangle.</param>
+        /// /// <param name="shadow">Whether or not to draw the shadow. Overrides DrawShadow.</param>
+        public void DrawThumbnail(ref Rectangle rectangle, bool shadow)
+        {
+            // Draw shadow
+            if (shadow)
             {
                 const float thumbnailInShadowSize = 50.0f;
                 var shadowRect = rectangle.MakeExpanded((DefaultThumbnailSize - thumbnailInShadowSize) * rectangle.Width / DefaultThumbnailSize * 1.3f);
@@ -647,8 +669,6 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void Draw()
         {
-            
-            // Cache data
             var size = Size;
             var style = Style.Current;
             var view = Parent as ContentView;
@@ -661,9 +681,46 @@ namespace FlaxEditor.Content
             {
             case ContentViewType.Tiles:
             {
-                var thumbnailSize = size.X - 2 * DefaultMarginSize;
-                thumbnailRect = new Rectangle(DefaultMarginSize, DefaultMarginSize, thumbnailSize, thumbnailSize);
+                var thumbnailSize = size.X;
+                thumbnailRect = new Rectangle(0, 0, thumbnailSize, thumbnailSize);
                 nameAlignment = TextAlignment.Center;
+                
+                if (this is ContentFolder)
+                {
+                    // Small shadow
+                    var shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
+                    var color = Color.Black.AlphaMultiplied(0.2f);
+                    Render2D.FillRectangle(shadowRect, color);
+                    
+                    
+                    if (isSelected)
+                        Render2D.FillRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                    else if (IsMouseOver)
+                        Render2D.FillRectangle(clientRect, style.BackgroundHighlighted.RGBMultiplied(0.75f));
+                    else
+                        Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
+                    DrawThumbnail(ref thumbnailRect, false);
+                }
+                else
+                {
+                    nameAlignment = TextAlignment.Near;
+                    // Small shadow
+                    var shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
+                    var color = Color.Black.AlphaMultiplied(0.2f);
+                    Render2D.FillRectangle(shadowRect, color);
+
+                    var accentHeight = 2 * view.ViewScale;
+                    var barRect = new Rectangle(0, thumbnailRect.Height - accentHeight, clientRect.Width, accentHeight);
+                            
+                    if (isSelected)
+                        Render2D.FillRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                    else if (IsMouseOver)
+                        Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
+                    else
+                        Render2D.FillRectangle(clientRect, style.LightBackground);
+                    Render2D.FillRectangle(barRect, Color.DimGray);
+                    DrawThumbnail(ref thumbnailRect, false);
+                }
                 break;
             }
             case ContentViewType.List:
@@ -671,23 +728,21 @@ namespace FlaxEditor.Content
                 var thumbnailSize = size.Y - 2 * DefaultMarginSize;
                 thumbnailRect = new Rectangle(DefaultMarginSize, DefaultMarginSize, thumbnailSize, thumbnailSize);
                 nameAlignment = TextAlignment.Near;
+                
+                if (isSelected)
+                    Render2D.FillRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                else if (IsMouseOver)
+                    Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
+                
+                DrawThumbnail(ref thumbnailRect);
                 break;
             }
             default: throw new ArgumentOutOfRangeException();
             }
-
-            // Draw background
-            if (isSelected)
-                Render2D.FillRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
-            else if (IsMouseOver)
-                Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
-
-            // Draw preview
-            DrawThumbnail(ref thumbnailRect);
-
+            
             // Draw short name
             Render2D.PushClip(ref textRect);
-            Render2D.DrawText(style.FontMedium, ShowFileExtension || view.ShowFileExtensions ? FileName : ShortName, textRect, style.Foreground, nameAlignment, TextAlignment.Center, TextWrapping.WrapWords, 0.75f, 0.95f);
+            Render2D.DrawText(style.FontMedium, ShowFileExtension || view.ShowFileExtensions ? FileName : ShortName, textRect, style.Foreground, nameAlignment, TextAlignment.Center, TextWrapping.WrapWords, 1f, 0.95f);
             Render2D.PopClip();
         }
 
