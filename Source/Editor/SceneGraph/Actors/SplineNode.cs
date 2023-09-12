@@ -12,7 +12,6 @@ using FlaxEditor.Modules;
 using FlaxEngine;
 using FlaxEngine.Json;
 using Object = FlaxEngine.Object;
-using FlaxEditor.Viewport.Cameras;
 
 namespace FlaxEditor.SceneGraph.Actors
 {
@@ -22,7 +21,7 @@ namespace FlaxEditor.SceneGraph.Actors
     [HideInEditor]
     public sealed class SplineNode : ActorNode
     {
-        public sealed class SplinePointNode : ActorChildNode<SplineNode>
+        internal sealed class SplinePointNode : ActorChildNode<SplineNode>
         {
             public unsafe SplinePointNode(SplineNode node, Guid id, int index)
             : base(node, id, index)
@@ -224,7 +223,7 @@ namespace FlaxEditor.SceneGraph.Actors
             }
         }
 
-        public sealed class SplinePointTangentNode : ActorChildNode
+        internal sealed class SplinePointTangentNode : ActorChildNode
         {
             private SplineNode _node;
             private int _index;
@@ -413,36 +412,6 @@ namespace FlaxEditor.SceneGraph.Actors
             var cameraTransform = Editor.Instance.Windows.EditWin.Viewport.ViewportCamera.Viewport.ViewTransform;
             var distance = Vector3.Distance(cameraTransform.Translation, nodePosition) / 100;
             return distance * nodeSize;
-        }
-
-        public override void OnDebugDraw(ViewportDebugDrawData data)
-        {
-            DrawSpline((Spline)Actor, Color.White, Actor.Transform, true);
-        }
-
-        private void DrawSpline(Spline spline, Color color, Transform transform, bool depthTest)
-        {
-            var count = spline.SplineKeyframes.Length;
-            if (count == 0)
-                return;
-            var keyframes = spline.SplineKeyframes;
-            var pointIndex = 0;
-            var prev = spline.GetSplineKeyframe(0);
-            var prevPos = transform.LocalToWorld(prev.Value.Translation);
-            var pointSize = NodeSizeByDistance(spline.GetSplinePoint(0), PointNodeSize);
-            DebugDraw.DrawWireSphere(new BoundingSphere(prevPos, pointSize), color, 0.0f, depthTest);
-            for (int i = 0; i < count; i++)
-            {
-                var next = keyframes[pointIndex];
-                var nextPos = transform.LocalToWorld(next.Value.Translation);
-                var d = (next.Time - prev.Time) / 3.0f;
-                pointSize = NodeSizeByDistance(spline.GetSplinePoint(i), PointNodeSize);
-                DebugDraw.DrawWireSphere(new BoundingSphere(nextPos, pointSize), color, 0.0f, depthTest);
-                DebugDraw.DrawBezier(prevPos, prevPos + prev.TangentOut.Translation * d, nextPos + next.TangentIn.Translation * d, nextPos, color, 0.0f, depthTest);
-                prev = next;
-                prevPos = nextPos;
-                pointIndex++;
-            }
         }
 
         /// <inheritdoc />

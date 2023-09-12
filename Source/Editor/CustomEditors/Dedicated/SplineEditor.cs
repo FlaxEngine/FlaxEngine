@@ -22,8 +22,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// </summary>
         private struct UndoData
         {
-            public Spline spline;
-            public BezierCurve<Transform>.Keyframe[] beforeKeyframes;
+            public Spline Spline;
+            public BezierCurve<Transform>.Keyframe[] BeforeKeyframes;
         }
 
         /// <summary>
@@ -82,16 +82,24 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
 
             /// <inheritdoc/>
-            public override void OnMoveTangentIn(Spline spline, int index) { }
+            public override void OnMoveTangentIn(Spline spline, int index)
+            {
+            }
 
             /// <inheritdoc/>
-            public override void OnMoveTangentOut(Spline spline, int index) { }
+            public override void OnMoveTangentOut(Spline spline, int index)
+            {
+            }
 
             /// <inheritdoc/>
-            public override void OnSelectKeyframe(Spline spline, int index) { }
+            public override void OnSelectKeyframe(Spline spline, int index)
+            {
+            }
 
             /// <inheritdoc/>
-            public override void OnSelectTangent(Spline spline, int index) { }
+            public override void OnSelectTangent(Spline spline, int index)
+            {
+            }
         }
 
         /// <summary>
@@ -109,16 +117,24 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
 
             /// <inheritdoc/>
-            public override void OnMoveTangentIn(Spline spline, int index) { }
+            public override void OnMoveTangentIn(Spline spline, int index)
+            {
+            }
 
             /// <inheritdoc/>
-            public override void OnMoveTangentOut(Spline spline, int index) { }
+            public override void OnMoveTangentOut(Spline spline, int index)
+            {
+            }
 
             /// <inheritdoc/>
-            public override void OnSelectKeyframe(Spline spline, int index) { }
+            public override void OnSelectKeyframe(Spline spline, int index)
+            {
+            }
 
             /// <inheritdoc/>
-            public override void OnSelectTangent(Spline spline, int index) { }
+            public override void OnSelectTangent(Spline spline, int index)
+            {
+            }
         }
 
         /// <summary>
@@ -139,7 +155,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
 
             /// <inheritdoc/>
-            public override void OnSelectTangent(Spline selectedSpline, int index) { }
+            public override void OnSelectTangent(Spline selectedSpline, int index)
+            {
+            }
 
             /// <inheritdoc/>
             public override void OnMoveTangentIn(Spline spline, int index)
@@ -170,8 +188,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 // inverse of reference tangent
                 otherTangent.Translation = -referenceTangent.Translation.Normalized * otherTangent.Translation.Length;
 
-                if (alignWithIn) keyframe.TangentOut = otherTangent;
-                if (!alignWithIn) keyframe.TangentIn = otherTangent;
+                if (alignWithIn)
+                    keyframe.TangentOut = otherTangent;
+                if (!alignWithIn)
+                    keyframe.TangentIn = otherTangent;
 
                 spline.SetSplineKeyframe(index, keyframe);
             }
@@ -191,16 +211,24 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
 
             /// <inheritdoc/>
-            public override void OnMoveTangentIn(Spline spline, int index) { }
+            public override void OnMoveTangentIn(Spline spline, int index)
+            {
+            }
 
             /// <inheritdoc/>
-            public override void OnMoveTangentOut(Spline spline, int index) { }
+            public override void OnMoveTangentOut(Spline spline, int index)
+            {
+            }
 
             /// <inheritdoc/>
-            public override void OnSelectKeyframe(Spline spline, int index) { }
+            public override void OnSelectKeyframe(Spline spline, int index)
+            {
+            }
 
             /// <inheritdoc/>
-            public override void OnSelectTangent(Spline spline, int index) { }
+            public override void OnSelectTangent(Spline spline, int index)
+            {
+            }
         }
 
         /// <summary>
@@ -217,16 +245,24 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
 
             /// <inheritdoc/>
-            public override void OnMoveTangentIn(Spline spline, int index) { }
+            public override void OnMoveTangentIn(Spline spline, int index)
+            {
+            }
 
             /// <inheritdoc/>
-            public override void OnMoveTangentOut(Spline spline, int index) { }
+            public override void OnMoveTangentOut(Spline spline, int index)
+            {
+            }
 
             /// <inheritdoc/>
-            public override void OnSelectKeyframe(Spline spline, int index) { }
+            public override void OnSelectKeyframe(Spline spline, int index)
+            {
+            }
 
             /// <inheritdoc/>
-            public override void OnSelectTangent(Spline spline, int index) { }
+            public override void OnSelectTangent(Spline spline, int index)
+            {
+            }
         }
 
         private readonly Color HighlightedColor = FlaxEngine.GUI.Style.Current.BackgroundSelected;
@@ -327,7 +363,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 _setLinearAllTangentsButton.Button.Clicked += EndEditSpline;
                 _setSmoothAllTangentsButton.Button.Clicked += EndEditSpline;
 
-                if (_selectedSpline) _selectedSpline.SplineUpdated += OnSplineEdited;
+                if (_selectedSpline)
+                    _selectedSpline.SplineUpdated += OnSplineEdited;
 
                 SetSelectedTangentTypeAsCurrent();
                 SetEditButtonsColor();
@@ -338,7 +375,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <inheritdoc/>
         protected override void Deinitialize()
         {
-            if (_selectedSpline) _selectedSpline.SplineUpdated -= OnSplineEdited;
+            if (_selectedSpline)
+                _selectedSpline.SplineUpdated -= OnSplineEdited;
         }
 
         private void OnSplineEdited()
@@ -376,27 +414,37 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 _lastTanOutPos = currentTangentOutPosition;
             }
 
-            if (_tanInChanged) _currentTangentMode.OnMoveTangentIn(_selectedSpline, index);
-            if (_tanOutChanged) _currentTangentMode.OnMoveTangentOut(_selectedSpline, index);
+            if (_tanInChanged)
+                _currentTangentMode.OnMoveTangentIn(_selectedSpline, index);
+            if (_tanOutChanged)
+                _currentTangentMode.OnMoveTangentOut(_selectedSpline, index);
 
             currentTangentInPosition = _selectedSpline.GetSplineLocalTangent(index, true).Translation;
             currentTangentOutPosition = _selectedSpline.GetSplineLocalTangent(index, false).Translation;
 
             // update last tangents position after changes
-            if (_selectedSpline) _lastTanInPos = currentTangentInPosition;
-            if (_selectedSpline) _lastTanOutPos = currentTangentOutPosition;
+            if (_selectedSpline)
+                _lastTanInPos = currentTangentInPosition;
+            if (_selectedSpline)
+                _lastTanOutPos = currentTangentOutPosition;
             _tanInChanged = false;
             _tanOutChanged = false;
         }
 
         private void SetSelectedTangentTypeAsCurrent()
         {
-            if (_lastPointSelected == null || _selectedPoint == null) return;
-            if (IsLinearTangentMode(_selectedSpline, _lastPointSelected.Index)) SetModeLinear();
-            else if (IsAlignedTangentMode(_selectedSpline, _lastPointSelected.Index)) SetModeAligned();
-            else if (IsSmoothInTangentMode(_selectedSpline, _lastPointSelected.Index)) SetModeSmoothIn();
-            else if (IsSmoothOutTangentMode(_selectedSpline, _lastPointSelected.Index)) SetModeSmoothOut();
-            else if (IsFreeTangentMode(_selectedSpline, _lastPointSelected.Index)) SetModeFree();
+            if (_lastPointSelected == null || _selectedPoint == null)
+                return;
+            if (IsLinearTangentMode(_selectedSpline, _lastPointSelected.Index))
+                SetModeLinear();
+            else if (IsAlignedTangentMode(_selectedSpline, _lastPointSelected.Index))
+                SetModeAligned();
+            else if (IsSmoothInTangentMode(_selectedSpline, _lastPointSelected.Index))
+                SetModeSmoothIn();
+            else if (IsSmoothOutTangentMode(_selectedSpline, _lastPointSelected.Index))
+                SetModeSmoothOut();
+            else if (IsFreeTangentMode(_selectedSpline, _lastPointSelected.Index))
+                SetModeFree();
         }
 
         private void SetEditButtonsColor()
@@ -442,13 +490,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private bool CanSetTangentSmoothIn()
         {
-            if (!CanEditTangent()) return false;
+            if (!CanEditTangent())
+                return false;
             return _lastPointSelected.Index != 0;
         }
 
         private bool CanSetTangentSmoothOut()
         {
-            if (!CanEditTangent()) return false;
+            if (!CanEditTangent())
+                return false;
             return _lastPointSelected.Index < _selectedSpline.SplinePointsCount - 1;
         }
 
@@ -464,14 +514,16 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void SetModeLinear()
         {
-            if (_currentTangentMode is LinearTangentMode) return;
+            if (_currentTangentMode is LinearTangentMode)
+                return;
             _currentTangentMode = new LinearTangentMode();
             _currentTangentMode.OnSetMode(_selectedSpline, _lastPointSelected.Index);
         }
 
         private void SetModeFree()
         {
-            if (_currentTangentMode is FreeTangentMode) return;
+            if (_currentTangentMode is FreeTangentMode)
+                return;
             _currentTangentMode = new FreeTangentMode();
             _currentTangentMode.OnSetMode(_selectedSpline, _lastPointSelected.Index);
             SetEditButtonsColor();
@@ -479,21 +531,24 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void SetModeAligned()
         {
-            if (_currentTangentMode is AlignedTangentMode) return;
+            if (_currentTangentMode is AlignedTangentMode)
+                return;
             _currentTangentMode = new AlignedTangentMode();
             _currentTangentMode.OnSetMode(_selectedSpline, _lastPointSelected.Index);
         }
 
         private void SetModeSmoothIn()
         {
-            if (_currentTangentMode is SmoothInTangentMode) return;
+            if (_currentTangentMode is SmoothInTangentMode)
+                return;
             _currentTangentMode = new SmoothInTangentMode();
             _currentTangentMode.OnSetMode(_selectedSpline, _lastPointSelected.Index);
         }
 
         private void SetModeSmoothOut()
         {
-            if (_currentTangentMode is SmoothOutTangentMode) return;
+            if (_currentTangentMode is SmoothOutTangentMode)
+                return;
             _currentTangentMode = new SmoothOutTangentMode();
             _currentTangentMode.OnSetMode(_selectedSpline, _lastPointSelected.Index);
         }
@@ -505,7 +560,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 var currentSelected = Editor.Instance.SceneEditing.Selection[0];
 
-                if (currentSelected == _selectedPoint) return;
+                if (currentSelected == _selectedPoint)
+                    return;
                 if (currentSelected is SplineNode.SplinePointNode)
                 {
                     _selectedPoint = currentSelected as SplineNode.SplinePointNode;
@@ -546,8 +602,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 return;
             }
 
-            if (currentSelected == _selectedTangentIn) return;
-            if (currentSelected == _selectedTangentOut) return;
+            if (currentSelected == _selectedTangentIn)
+                return;
+            if (currentSelected == _selectedTangentOut)
+                return;
 
             var index = _lastPointSelected.Index;
 
@@ -556,7 +614,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 _selectedTangentIn = currentSelected as SplineNode.SplinePointTangentNode;
                 _selectedTangentOut = null;
                 _currentTangentMode.OnSelectTangent(_selectedSpline, index);
-                
+
                 return;
             }
 
@@ -587,9 +645,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 if (Values[i] is Spline spline)
                 {
-                    splines.Add(new UndoData { 
-                        spline = spline,
-                        beforeKeyframes = spline.SplineKeyframes.Clone() as BezierCurve<Transform>.Keyframe[]
+                    splines.Add(new UndoData
+                    {
+                        Spline = spline,
+                        BeforeKeyframes = spline.SplineKeyframes.Clone() as BezierCurve<Transform>.Keyframe[]
                     });
                 }
             }
@@ -609,9 +668,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
             for (int i = 0; i < selectedSplinesUndoData.Length; i++)
             {
                 var splineUndoData = selectedSplinesUndoData[i];
-                Presenter.Undo.AddAction(new EditSplineAction(_selectedSpline, splineUndoData.beforeKeyframes));
-                SplineNode.OnSplineEdited(splineUndoData.spline);
-                Editor.Instance.Scene.MarkSceneEdited(splineUndoData.spline.Scene);
+                Presenter.Undo.AddAction(new EditSplineAction(_selectedSpline, splineUndoData.BeforeKeyframes));
+                SplineNode.OnSplineEdited(splineUndoData.Spline);
+                Editor.Instance.Scene.MarkSceneEdited(splineUndoData.Spline.Scene);
             }
         }
 
@@ -629,7 +688,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private static bool IsFreeTangentMode(Spline spline, int index)
         {
-            if (IsLinearTangentMode(spline, index) || 
+            if (IsLinearTangentMode(spline, index) ||
                 IsAlignedTangentMode(spline, index) ||
                 IsSmoothInTangentMode(spline, index) ||
                 IsSmoothOutTangentMode(spline, index))
@@ -748,8 +807,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var smoothRange = SplineNode.NodeSizeByDistance(spline.GetSplinePoint(index), 10f);
 
             // force smooth it's linear point
-            if (tangentInSize == 0f) tangentInSize = smoothRange;
-            if (tangentOutSize == 0f) tangentOutSize = smoothRange;
+            if (tangentInSize == 0f)
+                tangentInSize = smoothRange;
+            if (tangentOutSize == 0f)
+                tangentOutSize = smoothRange;
 
             // try get next / last keyframe
             var nextKeyframe = !isLastKeyframe ? spline.GetSplineKeyframe(index + 1) : keyframe;
