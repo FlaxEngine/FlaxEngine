@@ -920,12 +920,12 @@ void DebugDraw::DrawActors(Actor** selectedActors, int32 selectedActorsCount, bo
     }
 }
 
-void DebugDraw::DrawRay(const Vector3& origin, const Vector3& direction, Color& color, float length, float duration, bool depthTest)
+void DebugDraw::DrawRay(const Vector3& origin, const Vector3& direction,const Color& color, float length, float duration, bool depthTest)
 {
     DrawLine(origin, origin + (direction.GetNormalized() * length), color, duration, depthTest);
 }
 
-void DebugDraw::DrawRay(const Ray& ray, Color& color, float length, float duration, bool depthTest)
+void DebugDraw::DrawRay(const Ray& ray,const Color& color, float length, float duration, bool depthTest)
 {
     DrawLine(ray.Position, ray.Position + (ray.Direction.GetNormalized() * length), color, duration, depthTest);
 }
