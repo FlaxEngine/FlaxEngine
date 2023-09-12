@@ -59,5 +59,12 @@ namespace FlaxEditor.Options
         [DefaultValue(false)]
         [EditorDisplay("Defaults"), EditorOrder(150), Tooltip("Invert the panning direction for the viewport camera.")]
         public bool DefaultInvertPanning { get; set; } = false;
+
+        /// <summary>
+        /// Scales editor viewport grid.
+        /// </summary>
+        [DefaultValue(50.0f), Limit(25.0f, 500.0f, 5.0f)]
+        [EditorDisplay("Defaults"), EditorOrder(160), Tooltip("Scales editor viewport grid.")]
+        public float ViewportGridScale { get; set; } = 50.0f;
     }
 }

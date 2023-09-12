@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -23,9 +24,14 @@ namespace FlaxEditor.GUI
         public const int DefaultMarginH = 2;
 
         /// <summary>
-        /// Event fired when button gets clicked.
+        /// Event fired when button gets clicked with the primary mouse button.
         /// </summary>
         public Action<ToolStripButton> ButtonClicked;
+
+        /// <summary>
+        /// Event fired when button gets clicked with the secondary mouse button.
+        /// </summary>
+        public Action<ToolStripButton> SecondaryButtonClicked;
 
         /// <summary>
         /// Tries to get the last button.
@@ -146,6 +152,11 @@ namespace FlaxEditor.GUI
             ButtonClicked?.Invoke(button);
         }
 
+        internal void OnSecondaryButtonClicked(ToolStripButton button)
+        {
+            SecondaryButtonClicked?.Invoke(button);
+        }
+
         /// <inheritdoc />
         protected override void PerformLayoutBeforeChildren()
         {
@@ -170,6 +181,26 @@ namespace FlaxEditor.GUI
             base.OnChildResized(control);
 
             PerformLayout();
+        }
+
+        /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            if (base.OnKeyDown(key))
+                return true;
+
+            // Fallback to the owning window for shortcuts
+            EditorWindow editorWindow = null;
+            ContainerControl c = Parent;
+            while (c != null && editorWindow == null)
+            {
+                editorWindow = c as EditorWindow;
+                c = c.Parent;
+            }
+            var editor = Editor.Instance;
+            if (editorWindow == null)
+                editorWindow = editor.Windows.EditWin; // Fallback to main editor window
+            return editorWindow.InputActions.Process(editor, this, key);
         }
     }
 }

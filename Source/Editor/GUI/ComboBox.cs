@@ -3,9 +3,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using FlaxEditor.GUI.ContextMenu;
 
 namespace FlaxEditor.GUI
 {
@@ -399,13 +399,14 @@ namespace FlaxEditor.GUI
                     OnItemClicked((int)btn.Tag);
                     if (SupportMultiSelect)
                     {
+                        // Don't hide in multi-select, so user can edit multiple elements instead of just one
                         UpdateButtons();
                         _popupMenu?.PerformLayout();
                     }
                     else
                     {
                         _popupMenu?.Hide();
-                    }//[nori_sc] don't hide it Support MultiSelect is on actions per min is important for UX, if some one wont to set more then 5 elements in multi select menu let them do it
+                    }
                 };
             }
 
@@ -423,13 +424,15 @@ namespace FlaxEditor.GUI
             if (_items.Count > 0)
             {
                 UpdateButtons();
+
                 // Show dropdown list
                 _popupMenu.MinimumWidth = Width;
                 _popupMenu.Show(this, new Float2(1, Height));
             }
         }
+
         /// <summary>
-        /// update buttons layout and repains 
+        /// Updates buttons layout. 
         /// </summary>
         private void UpdateButtons()
         {
@@ -443,7 +446,7 @@ namespace FlaxEditor.GUI
                 for (int i = 0; i < _items.Count; i++)
                 {
                     var btn = _popupMenu.AddButton(_items[i]);
-                    OnLayoutMenuButton(ref btn, i, true);
+                    OnLayoutMenuButton(btn, i, true);
                     btn.Tag = i;
                 }
             }
@@ -457,25 +460,23 @@ namespace FlaxEditor.GUI
                     if (itemControls[i] is ContextMenuButton btn)
                     {
                         btn.Text = _items[i];
-                        OnLayoutMenuButton(ref btn, i, true);
+                        OnLayoutMenuButton(btn, i, true);
                     }
                 }
             }
         }
+
         /// <summary>
-        /// caled when button is created or repainted u can overite it to give the button custom look
+        /// Called when button is created or updated. Can be used to customize the visuals.
         /// </summary>
-        /// <param name="button">button refrance</param>
-        /// <param name="index">curent item index</param>
+        /// <param name="button">The button.</param>
+        /// <param name="index">The item index.</param>
         /// <param name="construct">true if button is created else it is repainting the button</param>
-        protected virtual void OnLayoutMenuButton(ref FlaxEditor.GUI.ContextMenu.ContextMenuButton button,int index, bool construct = false)
+        protected virtual void OnLayoutMenuButton(ContextMenuButton button, int index, bool construct = false)
         {
-            var style = Style.Current;
             button.Checked = _selectedIndices.Contains(index);
             if (_tooltips != null && _tooltips.Length > index)
-            {
                 button.TooltipText = _tooltips[index];
-            }
         }
 
         /// <summary>
@@ -498,6 +499,8 @@ namespace FlaxEditor.GUI
                 _popupMenu = null;
             }
 
+            if (IsDisposing)
+                return;
             _selectedIndices.Clear();
             _selectedIndices = null;
             _items.Clear();

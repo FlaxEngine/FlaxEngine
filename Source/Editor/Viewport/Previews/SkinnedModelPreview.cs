@@ -49,6 +49,7 @@ namespace FlaxEditor.Viewport.Previews
                     _showCurrentLODButton.Icon = _showCurrentLOD ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
                 });
                 _showCurrentLODButton.IndexInParent = 2;
+                _showCurrentLODButton.CloseMenuOnClick = false;
 
                 // PreviewLODS mode widget
                 var PreviewLODSMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);

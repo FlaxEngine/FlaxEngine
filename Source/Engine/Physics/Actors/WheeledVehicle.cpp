@@ -40,6 +40,31 @@ const Array<WheeledVehicle::Wheel>& WheeledVehicle::GetWheels() const
 
 void WheeledVehicle::SetWheels(const Array<Wheel>& value)
 {
+#if WITH_VEHICLE
+    // Don't recreate whole vehicle when some wheel properties are only changed (eg. suspension)
+    if (_actor && _vehicle && _wheels.Count() == value.Count() && _wheelsData.Count() == value.Count())
+    {
+        bool softUpdate = true;
+        for (int32 wheelIndex = 0; wheelIndex < value.Count(); wheelIndex++)
+        {
+            auto& oldWheel = _wheels.Get()[wheelIndex];
+            auto& newWheel = value.Get()[wheelIndex];
+            if (oldWheel.Type != newWheel.Type ||
+                Math::NotNearEqual(oldWheel.SuspensionForceOffset, newWheel.SuspensionForceOffset) ||
+                oldWheel.Collider != newWheel.Collider)
+            {
+                softUpdate = false;
+                break;
+            }
+        }
+        if (softUpdate)
+        {
+            _wheels = value;
+            PhysicsBackend::UpdateVehicleWheels(this);
+            return;
+        }
+    }
+#endif
     _wheels = value;
     Setup();
 }
@@ -51,6 +76,10 @@ WheeledVehicle::EngineSettings WheeledVehicle::GetEngine() const
 
 void WheeledVehicle::SetEngine(const EngineSettings& value)
 {
+#if WITH_VEHICLE
+    if (_vehicle)
+        PhysicsBackend::SetVehicleEngine(_vehicle, &value);
+#endif
     _engine = value;
 }
 
@@ -61,6 +90,10 @@ WheeledVehicle::DifferentialSettings WheeledVehicle::GetDifferential() const
 
 void WheeledVehicle::SetDifferential(const DifferentialSettings& value)
 {
+#if WITH_VEHICLE
+    if (_vehicle)
+        PhysicsBackend::SetVehicleDifferential(_vehicle, &value);
+#endif
     _differential = value;
 }
 
@@ -190,9 +223,10 @@ void WheeledVehicle::Setup()
         return;
 
     // Release previous
+    void* scene = GetPhysicsScene()->GetPhysicsScene();
     if (_vehicle)
     {
-        PhysicsBackend::RemoveVehicle(GetPhysicsScene()->GetPhysicsScene(), this);
+        PhysicsBackend::RemoveVehicle(scene, this);
         PhysicsBackend::DestroyVehicle(_vehicle, (int32)_driveTypeCurrent);
         _vehicle = nullptr;
     }
@@ -203,7 +237,7 @@ void WheeledVehicle::Setup()
     if (!_vehicle)
         return;
     _driveTypeCurrent = _driveType;
-    PhysicsBackend::AddVehicle(GetPhysicsScene()->GetPhysicsScene(), this);
+    PhysicsBackend::AddVehicle(scene, this);
     PhysicsBackend::SetRigidDynamicActorSolverIterationCounts(_actor, 12, 4);
 #else
     LOG(Fatal, "Vehicles are not supported.");
@@ -325,8 +359,23 @@ void WheeledVehicle::OnColliderChanged(Collider* c)
 {
     RigidBody::OnColliderChanged(c);
 
-    // Rebuild vehicle when someone adds/removed wheels
-    Setup();
+    if (_useWheelsUpdates)
+    {
+        // Rebuild vehicle when someone adds/removed wheels
+        Setup();
+    }
+}
+
+void WheeledVehicle::OnActiveInTreeChanged()
+{
+    // Skip rebuilds from per-wheel OnColliderChanged when whole vehicle is toggled
+    _useWheelsUpdates = false;
+    RigidBody::OnActiveInTreeChanged();
+    _useWheelsUpdates = true;
+
+    // Perform whole rebuild when it gets activated
+    if (IsActiveInHierarchy())
+        Setup();
 }
 
 void WheeledVehicle::OnPhysicsSceneChanged(PhysicsScene* previous)

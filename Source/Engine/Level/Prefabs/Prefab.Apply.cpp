@@ -675,20 +675,12 @@ bool Prefab::ApplyAll(Actor* targetActor)
             }
         }
 
-        // Setup default instances
-        for (int32 i = 0; i < allPrefabs.Count(); i++)
+        // Setup default instances (skip invalid prefabs)
+        for (int32 i = allPrefabs.Count() - 1; i >= 0; i--)
         {
             Prefab* prefab = allPrefabs[i];
-            if (prefab->WaitForLoaded())
-            {
-                LOG(Warning, "Waiting for nesting prefab asset load failed.");
-                return true;
-            }
-            if (prefab->GetDefaultInstance() == nullptr)
-            {
-                LOG(Warning, "Failed to create default prefab instance for the nested prefab asset.");
-                return true;
-            }
+            if (prefab->WaitForLoaded() || prefab->GetDefaultInstance() == nullptr)
+                allPrefabs.RemoveAt(i);
         }
     }
 
@@ -1263,20 +1255,19 @@ void Prefab::SyncNestedPrefabs(const NestedPrefabsList& allPrefabs, Array<Prefab
         auto nestedPrefab = allPrefabs[i].Get();
         if (nestedPrefab)
         {
-            if (WaitForLoaded())
+            if (nestedPrefab->WaitForLoaded())
             {
                 LOG(Warning, "Waiting for prefab asset load failed.");
                 continue;
             }
 
+            // Sync only if prefab is used by this prefab (directly) and it has been captured before
             const int32 nestedPrefabIndex = nestedPrefab->NestedPrefabs.Find(GetID());
             if (nestedPrefabIndex != -1)
             {
-                if (nestedPrefab->SyncChangesInternal(allPrefabsInstancesData[nestedPrefabIndex]))
+                if (nestedPrefab->SyncChangesInternal(allPrefabsInstancesData[i]))
                     continue;
-
                 nestedPrefab->SyncNestedPrefabs(allPrefabs, allPrefabsInstancesData);
-
                 ObjectsRemovalService::Flush();
             }
         }

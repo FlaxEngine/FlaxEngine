@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.Content.GUI;
@@ -39,14 +40,13 @@ namespace FlaxEditor.Windows
         private readonly ToolStripButton _navigateForwardButton;
         private readonly ToolStripButton _navigateUpButton;
 
-        private ContentNavigationBar _navigationBar;
+        private NavigationBar _navigationBar;
         private Tree _tree;
         private TextBox _foldersSearchBox;
         private TextBox _itemsSearchBox;
         private ViewDropdown _viewDropdown;
-        private ContentSettingsDropdown _ContentSettingDropdown;
-        private const float _ContentDropdownSizeX = 100;
         private SortType _sortType;
+        private bool _showEngineFiles = true, _showPluginsFiles = true, _showAllFiles = true;
 
         private RootContentTreeNode _root;
 
@@ -66,6 +66,59 @@ namespace FlaxEditor.Windows
         /// </summary>
         public ContentView View => _view;
 
+        internal bool ShowEngineFiles
+        {
+            get => _showEngineFiles;
+            set
+            {
+                if (_showEngineFiles != value)
+                {
+                    _showEngineFiles = value;
+                    if (Editor.ContentDatabase.Engine != null)
+                    {
+                        Editor.ContentDatabase.Engine.Visible = value;
+                        Editor.ContentDatabase.Engine.Folder.Visible = value;
+                        RefreshView();
+                        _tree.PerformLayout();
+                    }
+                }
+            }
+        }
+
+        internal bool ShowPluginsFiles
+        {
+            get => _showPluginsFiles;
+            set
+            {
+                if (_showPluginsFiles != value)
+                {
+                    _showPluginsFiles = value;
+                    foreach (var project in Editor.ContentDatabase.Projects)
+                    {
+                        if (project == Editor.ContentDatabase.Game || project == Editor.ContentDatabase.Engine)
+                            continue;
+                        project.Visible = value;
+                        project.Folder.Visible = value;
+                        RefreshView();
+                        _tree.PerformLayout();
+                    }
+                }
+            }
+        }
+
+        internal bool ShowAllFiles
+        {
+            get => _showAllFiles;
+            set
+            {
+                if (_showAllFiles != value)
+                {
+                    _showAllFiles = value;
+                    RefreshView();
+                }
+            }
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ContentWindow"/> class.
         /// </summary>
@@ -75,7 +128,7 @@ namespace FlaxEditor.Windows
         {
             Title = "Content";
             Icon = editor.Icons.Folder32;
-                    
+
             // Content database events
             editor.ContentDatabase.WorkspaceModified += () => _isWorkspaceDirty = true;
             editor.ContentDatabase.ItemRemoved += OnContentDatabaseItemRemoved;
@@ -110,24 +163,11 @@ namespace FlaxEditor.Windows
             _navigateForwardButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Right64, NavigateForward).LinkTooltip("Navigate forward");
             _navigateUpButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Up64, NavigateUp).LinkTooltip("Navigate up");
             _toolStrip.AddSeparator();
+
             // Navigation bar
-            
-            _navigationBar = new ContentNavigationBar(_toolStrip)
+            _navigationBar = new NavigationBar
             {
                 Parent = _toolStrip,
-                ofssetFromRightEdge = _ContentDropdownSizeX
-            };
-            var DropdownSettingsPanel = new Panel(ScrollBars.None)
-            {
-                Parent = _toolStrip,
-                Size = new Float2(_ContentDropdownSizeX, _toolStrip.Height)
-            };
-            //setings Dropdown
-            _ContentSettingDropdown = new ContentSettingsDropdown
-            {
-                AnchorPreset = AnchorPresets.StretchAll,
-                Parent = DropdownSettingsPanel,
-                Offsets = new Margin(2, 4, 4, 4)
             };
 
             // Split panel
@@ -231,10 +271,6 @@ namespace FlaxEditor.Windows
         private ContextMenu OnViewDropdownPopupCreate(ComboBox comboBox)
         {
             var menu = new ContextMenu();
-            
-            var showFileExtensionsButton = menu.AddButton("Show file extensions", () => View.ShowFileExtensions = !View.ShowFileExtensions);
-            showFileExtensionsButton.Checked = View.ShowFileExtensions;
-            showFileExtensionsButton.AutoCheck = true;
 
             var viewScale = menu.AddButton("View Scale");
             viewScale.CloseMenuOnClick = false;
@@ -259,12 +295,48 @@ namespace FlaxEditor.Windows
                 }
             };
 
+            var show = menu.AddChildMenu("Show");
+            {
+                var b = show.ContextMenu.AddButton("File extensions", () => View.ShowFileExtensions = !View.ShowFileExtensions);
+                b.TooltipText = "Shows all files with extensions";
+                b.Checked = View.ShowFileExtensions;
+                b.CloseMenuOnClick = false;
+                b.AutoCheck = true;
+
+                b = show.ContextMenu.AddButton("Engine files", () => ShowEngineFiles = !ShowEngineFiles);
+                b.TooltipText = "Shows in-built engine content";
+                b.Checked = ShowEngineFiles;
+                b.CloseMenuOnClick = false;
+                b.AutoCheck = true;
+
+                b = show.ContextMenu.AddButton("Plugins files", () => ShowPluginsFiles = !ShowPluginsFiles);
+                b.TooltipText = "Shows plugin projects content";
+                b.Checked = ShowPluginsFiles;
+                b.CloseMenuOnClick = false;
+                b.AutoCheck = true;
+
+                b = show.ContextMenu.AddButton("All files", () => ShowAllFiles = !ShowAllFiles);
+                b.TooltipText = "Shows all files including other than assets and source code";
+                b.Checked = ShowAllFiles;
+                b.CloseMenuOnClick = false;
+                b.AutoCheck = true;
+            }
+
             var filters = menu.AddChildMenu("Filters");
             for (int i = 0; i < _viewDropdown.Items.Count; i++)
             {
                 var filterButton = filters.ContextMenu.AddButton(_viewDropdown.Items[i], OnFilterClicked);
+                filterButton.CloseMenuOnClick = false;
                 filterButton.Tag = i;
             }
+            filters.ContextMenu.ButtonClicked += button =>
+            {
+                foreach (var item in (filters.ContextMenu).Items)
+                {
+                    if (item is ContextMenuButton filterButton)
+                        filterButton.Checked = _viewDropdown.IsSelected(filterButton.Text);
+                }
+            };
             filters.ContextMenu.VisibleChanged += control =>
             {
                 if (!control.Visible)
@@ -356,6 +428,9 @@ namespace FlaxEditor.Windows
         /// <returns>The created renaming popup.</returns>
         public void Rename(ContentItem item)
         {
+            if (!item.CanRename)
+                return;
+
             // Show element in the view
             Select(item, true);
 
@@ -432,10 +507,7 @@ namespace FlaxEditor.Windows
             if (!Editor.ContentEditing.IsValidAssetName(item, newShortName, out string hint))
             {
                 // Invalid name
-                MessageBox.Show("Given asset name is invalid. " + hint,
-                                "Invalid name",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Error);
+                MessageBox.Show("Given asset name is invalid. " + hint, "Invalid name", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -881,7 +953,7 @@ namespace FlaxEditor.Windows
             if (target == _root)
             {
                 // Special case for root folder
-                List<ContentItem> items = new List<ContentItem>(8);
+                var items = new List<ContentItem>(8);
                 for (int i = 0; i < _root.ChildrenCount; i++)
                 {
                     if (_root.GetChild(i) is ContentTreeNode node)
@@ -893,9 +965,11 @@ namespace FlaxEditor.Windows
             }
             else
             {
-                
                 // Show folder contents
-                _view.ShowItems(ContentFilter.FilterFolder(target.Folder), _sortType, false, true);
+                var items = target.Folder.Children;
+                if (!_showAllFiles)
+                    items = items.Where(x => !(x is FileItem)).ToList();
+                _view.ShowItems(items, _sortType, false, true);
             }
         }
 
@@ -918,12 +992,6 @@ namespace FlaxEditor.Windows
             _navigateUpButton.Enabled = folder != null && _tree.SelectedNode != _root;
         }
 
-        private void RemoveFolder2Root(ContentTreeNode node)
-        {
-            // Remove from the root
-            _root.RemoveChild(node);
-        }
-
         /// <inheritdoc />
         public override void OnInit()
         {
@@ -935,17 +1003,20 @@ namespace FlaxEditor.Windows
             _root.Expand(true);
 
             // Add game project on top, plugins in the middle and engine at bottom
-            _root.AddChild(ContentFilter.Filter(Editor.ContentDatabase.Game));
+            _root.AddChild(Editor.ContentDatabase.Game);
+            Editor.ContentDatabase.Projects.Sort();
             foreach (var project in Editor.ContentDatabase.Projects)
             {
                 project.SortChildrenRecursive();
                 if (project == Editor.ContentDatabase.Game || project == Editor.ContentDatabase.Engine)
                     continue;
+                project.Visible = _showPluginsFiles;
+                project.Folder.Visible = _showPluginsFiles;
                 _root.AddChild(project);
-                ContentFilter.plugins.Add(project);
             }
+            Editor.ContentDatabase.Engine.Visible = _showEngineFiles;
+            Editor.ContentDatabase.Engine.Folder.Visible = _showEngineFiles;
             _root.AddChild(Editor.ContentDatabase.Engine);
-            ContentFilter.engine = Editor.ContentDatabase.Engine;
 
             Editor.ContentDatabase.Game?.Expand(true);
             _tree.Margin = new Margin(0.0f, 0.0f, -16.0f, 2.0f); // Hide root node
@@ -1016,7 +1087,6 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            // Check if it's a right mouse button
             if (button == MouseButton.Right)
             {
                 // Find control that is under the mouse
@@ -1054,6 +1124,15 @@ namespace FlaxEditor.Windows
 
             return base.OnMouseUp(location, button);
         }
+
+        /// <inheritdoc />
+        protected override void PerformLayoutBeforeChildren()
+        {
+            base.PerformLayoutBeforeChildren();
+
+            _navigationBar?.UpdateBounds(_toolStrip);
+        }
+
         /// <inheritdoc />
         public override bool UseLayoutData => true;
 
@@ -1063,13 +1142,10 @@ namespace FlaxEditor.Windows
             LayoutSerializeSplitter(writer, "Split", _split);
             writer.WriteAttributeString("Scale", _view.ViewScale.ToString(CultureInfo.InvariantCulture));
             writer.WriteAttributeString("ShowFileExtensions", _view.ShowFileExtensions.ToString());
+            writer.WriteAttributeString("ShowEngineFiles", ShowEngineFiles.ToString());
+            writer.WriteAttributeString("ShowPluginsFiles", ShowPluginsFiles.ToString());
+            writer.WriteAttributeString("ShowAllFiles", ShowAllFiles.ToString());
             writer.WriteAttributeString("ViewType", _view.ViewType.ToString());
-            for (int i = 0; i < _ContentSettingDropdown.Selection.Count; i++)
-            {
-                if(_ContentSettingDropdown.Selection.Count != 0)
-                    writer.WriteAttributeString(_ContentSettingDropdown.Settings[_ContentSettingDropdown.Selection[i]].Replace(' ', '_'), _ContentSettingDropdown.Selection[i].ToString());
-            }
-            
         }
 
         /// <inheritdoc />
@@ -1080,17 +1156,14 @@ namespace FlaxEditor.Windows
                 _view.ViewScale = value1;
             if (bool.TryParse(node.GetAttribute("ShowFileExtensions"), out bool value2))
                 _view.ShowFileExtensions = value2;
+            if (bool.TryParse(node.GetAttribute("ShowEngineFiles"), out value2))
+                ShowEngineFiles = value2;
+            if (bool.TryParse(node.GetAttribute("ShowPluginsFiles"), out value2))
+                ShowPluginsFiles = value2;
+            if (bool.TryParse(node.GetAttribute("ShowAllFiles"), out value2))
+                ShowAllFiles = value2;
             if (Enum.TryParse(node.GetAttribute("ViewType"), out ContentViewType viewType))
                 _view.ViewType = viewType;
-
-            for (int i = 0; i < _ContentSettingDropdown.Settings.Count; i++)
-            {
-                int flag;
-                if (int.TryParse(node.GetAttribute(_ContentSettingDropdown.Settings[i].Replace(' ', '_')), out flag))
-                    _ContentSettingDropdown.Selection.Add(flag);
-               
-            }
-            ContentFilter.UpdateFilterVisability(_ContentSettingDropdown);
         }
 
         /// <inheritdoc />

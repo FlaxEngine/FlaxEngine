@@ -456,6 +456,19 @@ void Actor::SetLayerName(const StringView& value)
     LOG(Warning, "Unknown layer name '{0}'", value);
 }
 
+void Actor::SetLayerNameRecursive(const StringView& value)
+{
+    for (int32 i = 0; i < 32; i++)
+    {
+        if (Level::Layers[i] == value)
+        {
+            SetLayerRecursive(i);
+            return;
+        }
+    }
+    LOG(Warning, "Unknown layer name '{0}'", value);
+}
+
 bool Actor::HasTag() const
 {
     return Tags.Count() != 0;
@@ -476,6 +489,18 @@ void Actor::AddTag(const Tag& tag)
     Tags.AddUnique(tag);
 }
 
+void Actor::AddTagRecursive(const Tag& tag)
+{
+    for (const auto& child : Children)
+        child->AddTagRecursive(tag);
+    Tags.AddUnique(tag);
+}
+
+void Actor::RemoveTag(const Tag& tag)
+{
+    Tags.Remove(tag);
+}
+
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 const String& Actor::GetTag() const
@@ -494,6 +519,17 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 void Actor::SetLayer(int32 layerIndex)
 {
     layerIndex = Math::Clamp(layerIndex, 0, 31);
+    if (layerIndex == _layer)
+        return;
+    _layer = layerIndex;
+    OnLayerChanged();
+}
+
+void Actor::SetLayerRecursive(int32 layerIndex)
+{
+    layerIndex = Math::Clamp(layerIndex, 0, 31);
+    for (const auto& child : Children)
+        child->SetLayerRecursive(layerIndex);
     if (layerIndex == _layer)
         return;
     _layer = layerIndex;
@@ -788,7 +824,9 @@ void Actor::BreakPrefabLink()
 
 void Actor::Initialize()
 {
-    ASSERT(!IsDuringPlay());
+#if ENABLE_ASSERTION
+    CHECK(!IsDuringPlay());
+#endif
 
     // Cache
     if (_parent)
@@ -802,7 +840,9 @@ void Actor::Initialize()
 
 void Actor::BeginPlay(SceneBeginData* data)
 {
-    ASSERT(!IsDuringPlay());
+#if ENABLE_ASSERTION
+    CHECK(!IsDuringPlay());
+#endif
 
     // Set flag
     Flags |= ObjectFlags::IsDuringPlay;
@@ -832,7 +872,9 @@ void Actor::BeginPlay(SceneBeginData* data)
 
 void Actor::EndPlay()
 {
-    ASSERT(IsDuringPlay());
+#if ENABLE_ASSERTION
+    CHECK(IsDuringPlay());
+#endif
 
     // Fire event for scripting
     if (IsActiveInHierarchy() && GetScene())
@@ -1059,7 +1101,9 @@ void Actor::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 
 void Actor::OnEnable()
 {
-    ASSERT(!_isEnabled);
+#if ENABLE_ASSERTION
+    CHECK(!_isEnabled);
+#endif
     _isEnabled = true;
 
     for (int32 i = 0; i < Scripts.Count(); i++)
@@ -1079,7 +1123,9 @@ void Actor::OnEnable()
 
 void Actor::OnDisable()
 {
-    ASSERT(_isEnabled);
+#if ENABLE_ASSERTION
+    CHECK(_isEnabled);
+#endif
     _isEnabled = false;
 
     for (int32 i = Scripts.Count() - 1; i >= 0; i--)

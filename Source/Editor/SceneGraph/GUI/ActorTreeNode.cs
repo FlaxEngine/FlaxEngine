@@ -97,11 +97,6 @@ namespace FlaxEditor.SceneGraph.GUI
             }
         }
 
-        internal void OnNameChanged()
-        {
-            UpdateText();
-        }
-
         /// <summary>
         /// Updates the tree node text.
         /// </summary>

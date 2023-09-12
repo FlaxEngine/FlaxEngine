@@ -196,18 +196,19 @@ namespace FlaxEditor.Windows
             }
             float x = NavigationBar.DefaultButtonsMargin;
             float h = _toolStrip.ItemsHeight - 2 * ToolStrip.DefaultMarginV;
-            for (int i = nodes.Count - 2; i >= 0; i--)
+            for (int i = nodes.Count - 1; i >= 0; i--)
             {
-                var button = new ContentNavigationButton(nodes[i], x - 100, ToolStrip.DefaultMarginV, h);
+                var button = new ContentNavigationButton(nodes[i], x, ToolStrip.DefaultMarginV, h);
                 button.PerformLayout();
                 x += button.Width + NavigationBar.DefaultButtonsMargin;
                 _navigationBar.AddChild(button);
-                if (i == 0)
-                    continue;
-                var buttonSeparator = new ContentNavigationButtonSeparator(button, x, ToolStrip.DefaultMarginV, h);
-                buttonSeparator.PerformLayout();
-                x += buttonSeparator.Width + NavigationBar.DefaultButtonsMargin;
-                _navigationBar.AddChild(buttonSeparator);
+                if (i > 0)
+                {
+                    var separator = new ContentNavigationSeparator(button, x, ToolStrip.DefaultMarginV, h);
+                    separator.PerformLayout();
+                    x += separator.Width + NavigationBar.DefaultButtonsMargin;
+                    _navigationBar.AddChild(separator);
+                }
             }
             nodes.Clear();
 
@@ -224,21 +225,13 @@ namespace FlaxEditor.Windows
         /// <summary>
         /// Gets the current view folder.
         /// </summary>
-        public ContentFolder CurrentViewFolder
-        {
-            get
-            {
-                var node = SelectedNode;
-                return node?.Folder;
-            }
-        }
+        public ContentFolder CurrentViewFolder => SelectedNode?.Folder;
 
         /// <summary>
         /// Shows the root folder.
         /// </summary>
         public void ShowRoot()
         {
-            // Show root folder
             _tree.Select(_root);
         }
     }

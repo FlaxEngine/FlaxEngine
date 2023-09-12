@@ -185,7 +185,7 @@ namespace Flax.Build.NativeCpp
         public string DepsFolder => Path.Combine(Globals.EngineRoot, "Source", "Platforms", Platform.Target.ToString(), "Binaries", "ThirdParty", Architecture.ToString());
 
         /// <summary>
-        /// The scripting API building options.
+        /// The C# scripting API building options.
         /// </summary>
         public struct ScriptingAPIOptions
         {
@@ -200,14 +200,19 @@ namespace Flax.Build.NativeCpp
             public HashSet<string> SystemReferences;
 
             /// <summary>
-            /// The .Net libraries references (dll or exe files paths).
+            /// The system analyzers/source generators.
+            /// </summary>
+            public HashSet<string> SystemAnalyzers;
+
+            /// <summary>
+            /// The .NET libraries references (dll or exe files paths).
             /// </summary>
             public HashSet<string> FileReferences;
 
             /// <summary>
-            /// The .Net libraries references (dll or exe files paths).
+            /// The .NET analyzers (dll or exe files paths).
             /// </summary>
-            public HashSet<string> SystemAnalyzers;
+            public HashSet<string> Analyzers;
 
             /// <summary>
             /// True if ignore compilation warnings due to missing code documentation comments.
@@ -219,6 +224,11 @@ namespace Flax.Build.NativeCpp
             /// </summary>
             public CSharpNullableReferences CSharpNullableReferences = CSharpNullableReferences.Disable;
 
+            /// <summary>
+            /// Enable code optimization.
+            /// </summary>
+            public bool? Optimization;
+
             public ScriptingAPIOptions()
             {
             }
@@ -227,12 +237,19 @@ namespace Flax.Build.NativeCpp
             /// Adds the other options into this.
             /// </summary>
             /// <param name="other">The other.</param>
-            public void Add(ScriptingAPIOptions other)
+            public void Add(ScriptingAPIOptions other, bool addBuildOptions = true)
             {
                 Defines.AddRange(other.Defines);
                 SystemReferences.AddRange(other.SystemReferences);
                 FileReferences.AddRange(other.FileReferences);
+                Analyzers.AddRange(other.Analyzers);
                 IgnoreMissingDocumentationWarnings |= other.IgnoreMissingDocumentationWarnings;
+
+                if (addBuildOptions)
+                {
+                    if (other.Optimization.HasValue)
+                        Optimization |= other.Optimization;
+                }
             }
         }
 
@@ -305,6 +322,7 @@ namespace Flax.Build.NativeCpp
                 "Microsoft.Interop.SourceGeneration",
             },
             FileReferences = new HashSet<string>(),
+            Analyzers = new HashSet<string>(),
         };
 
         /// <summary>

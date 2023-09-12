@@ -553,6 +553,18 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 0),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 112,
+                Title = "Particle Scale",
+                Description = "Particle scale.",
+                Flags = NodeFlags.ParticleEmitterGraph,
+                Size = new Float2(200, 30),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 0),
+                }
+            },
 
             // Simulation data access nodes
             new NodeArchetype
