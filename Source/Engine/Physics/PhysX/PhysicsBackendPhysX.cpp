@@ -889,37 +889,33 @@ void* PhysicsBackend::CreateScene(const PhysicsSettings& settings)
     PxSceneDesc sceneDesc(ToleranceScale);
     sceneDesc.gravity = C2P(settings.DefaultGravity);
     sceneDesc.flags |= PxSceneFlag::eENABLE_ACTIVE_ACTORS;
+    sceneDesc.flags |= PxSceneFlag::eENABLE_PCM;
     if (!settings.DisableCCD)
-        sceneDesc.flags |= PxSceneFlag::eENABLE_CCD | PxSceneFlag::eENABLE_PCM;
+        sceneDesc.flags |= PxSceneFlag::eENABLE_CCD;
     sceneDesc.simulationEventCallback = &scenePhysX->EventsCallback;
     sceneDesc.filterShader = FilterShader;
     sceneDesc.bounceThresholdVelocity = settings.BounceThresholdVelocity;
-    
     switch (settings.SolverType)
     {
     case PhysicsSolverType::ProjectedGaussSeidelIterativeSolver:
         sceneDesc.solverType = PxSolverType::ePGS;
         break;
-    case PhysicsSolverType::DefaultTemporalGaussSeidelSolver:
+    case PhysicsSolverType::TemporalGaussSeidelSolver:
         sceneDesc.solverType = PxSolverType::eTGS;
         break;
-    default: ;
     }
-    
-    sceneDesc.solverType = PxSolverType::eTGS;
     if (sceneDesc.cpuDispatcher == nullptr)
     {
         scenePhysX->CpuDispatcher = PxDefaultCpuDispatcherCreate(Math::Clamp<uint32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 1, 4));
         CHECK_INIT(scenePhysX->CpuDispatcher, "PxDefaultCpuDispatcherCreate failed!");
         sceneDesc.cpuDispatcher = scenePhysX->CpuDispatcher;
     }
-    
     switch (settings.BroadPhaseType)
     {
     case PhysicsBroadPhaseType::SweepAndPrune:
         sceneDesc.broadPhaseType = PxBroadPhaseType::eSAP;
         break;
-    case PhysicsBroadPhaseType::MultiboxPruning:
+    case PhysicsBroadPhaseType::MultiBoxPruning:
         sceneDesc.broadPhaseType = PxBroadPhaseType::eMBP;
         break;
     case PhysicsBroadPhaseType::AutomaticBoxPruning:
@@ -928,7 +924,6 @@ void* PhysicsBackend::CreateScene(const PhysicsSettings& settings)
     case PhysicsBroadPhaseType::ParallelAutomaticBoxPruning:
         sceneDesc.broadPhaseType = PxBroadPhaseType::ePABP;
         break;
-    default: ;
     }
 
     // Create scene

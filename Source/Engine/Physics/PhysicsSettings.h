@@ -13,22 +13,22 @@
 API_ENUM() enum class PhysicsBroadPhaseType
 {
     /// <summary>
-    /// Sweep and prune.
+    /// 3-axes sweep-and-prune. Good generic choice with great performance when many objects are sleeping.
     /// </summary>
     SweepAndPrune = 0,
 
     /// <summary>
-    /// Multi box pruning.
+    /// Alternative broad phase algorithm that does not suffer from the same performance issues as SAP when all objects are moving or when inserting large numbers of objects. 
     /// </summary>
-    MultiboxPruning = 1,
+    MultiBoxPruning = 1,
 
     /// <summary>
-    /// Automatic box pruning.
+    /// Revisited implementation of MBP, which automatically manages broad-phase regions.
     /// </summary>
     AutomaticBoxPruning = 2,
 
     /// <summary>
-    /// Parallel automatic box pruning.
+    /// Parallel implementation of ABP. It can often be the fastest (CPU) broadphase, but it can use more memory than ABP.
     /// </summary>
     ParallelAutomaticBoxPruning = 3,
 };
@@ -40,14 +40,14 @@ API_ENUM() enum class PhysicsBroadPhaseType
 API_ENUM() enum class PhysicsSolverType
 {
     /// <summary>
-    /// Projected Gauss-Seidel iterative solver.
+    /// The iterative sequential impulse solver.
     /// </summary>
     ProjectedGaussSeidelIterativeSolver = 0,
 
     /// <summary>
-    /// Default Temporal Gauss-Seidel solver.
+    /// Non linear iterative solver. This kind of solver can lead to improved convergence and handle large mass ratios, long chains and jointed systems better. It is slightly more expensive than the default solver and can introduce more energy to correct joint and contact errors.
     /// </summary>
-    DefaultTemporalGaussSeidelSolver = 1,
+    TemporalGaussSeidelSolver = 1,
 };
 
 /// <summary>
@@ -91,7 +91,7 @@ public:
     /// Broad phase algorithm to use in the simulation.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(71), EditorDisplay(\"Simulation\")")
-    PhysicsBroadPhaseType BroadPhaseType = PhysicsBroadPhaseType::SweepAndPrune;
+    PhysicsBroadPhaseType BroadPhaseType = PhysicsBroadPhaseType::ParallelAutomaticBoxPruning;
 
     /// <summary>
     /// The solver type to use in the simulation.
