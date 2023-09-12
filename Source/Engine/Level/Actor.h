@@ -103,6 +103,12 @@ public:
     API_PROPERTY() void SetLayer(int32 layerIndex);
 
     /// <summary>
+    /// Sets the layer recursively for all underlying children.
+    /// </summary>
+    /// <param name="layerIndex">The index of the layer.</param>
+    API_FUNCTION() void SetLayerRecursive(int32 layerIndex);
+
+    /// <summary>
     /// Gets the name of the layer.
     /// </summary>
     API_PROPERTY(Attributes="HideInEditor, NoSerialize, NoAnimate")
@@ -112,6 +118,11 @@ public:
     /// Sets the name of the layer.
     /// </summary>
     API_PROPERTY() void SetLayerName(const StringView& value);
+
+    /// <summary>
+    /// Sets the name of the layer recursively for actor and for all underlying child actors.
+    /// </summary>
+    API_FUNCTION() void SetLayerNameRecursive(const StringView& value);
 
     /// <summary>
     /// Determines whether this actor has any tag assigned.
@@ -137,6 +148,11 @@ public:
     API_FUNCTION() void AddTag(const Tag& tag);
 
     /// <summary>
+    /// Adds a tag to the actor and for all underlying child actors.
+    /// </summary>
+    /// <param name="tag">The tag to add.</param>
+    API_FUNCTION() void AddTagRecursive(const Tag& tag);
+
     /// Removes a tag to the actor
     /// </summary>
     /// <param name="tag">The tag to remove.</param>
