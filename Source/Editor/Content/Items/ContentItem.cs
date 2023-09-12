@@ -677,13 +677,14 @@ namespace FlaxEditor.Content
             var textRect = TextRectangle;
             Rectangle thumbnailRect;
             TextAlignment nameAlignment;
+            nameAlignment = TextAlignment.Center;
             switch (view.ViewType)
             {
             case ContentViewType.Tiles:
             {
                 var thumbnailSize = size.X;
                 thumbnailRect = new Rectangle(0, 0, thumbnailSize, thumbnailSize);
-                nameAlignment = TextAlignment.Center;
+                
                 
                 if (this is ContentFolder)
                 {
@@ -703,7 +704,6 @@ namespace FlaxEditor.Content
                 }
                 else
                 {
-                    nameAlignment = TextAlignment.Near;
                     // Small shadow
                     var shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
                     var color = Color.Black.AlphaMultiplied(0.2f);
