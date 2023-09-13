@@ -290,19 +290,14 @@ protected:
     intptr volatile _size = 0;
 #else
     HashSet<FunctionType>* _functions = nullptr;
-    CriticalSection* _locker;
-    int32* _lockerRefCount;
+    CriticalSection* _locker = nullptr;
+    int32* _lockerRefCount = nullptr;
 #endif
     typedef void (*StubSignature)(void*, Params...);
 
 public:
     Delegate()
     {
-#if !DELEGATE_USE_ATOMIC
-        _locker = New<CriticalSection>();
-        _lockerRefCount = New<int32>();
-        *_lockerRefCount = 1;
-#endif
     }
 
     Delegate(const Delegate& other)
@@ -366,14 +361,17 @@ public:
             Allocator::Free((void*)_ptr);
         }
 #else
-        int32& lockerRefCount = *_lockerRefCount;
-        lockerRefCount--;
-        if (lockerRefCount == 0)
+        if (_locker != nullptr)
         {
-            Allocator::Free(_locker);
-            Allocator::Free(_lockerRefCount);
-            _locker = nullptr;
-            _lockerRefCount = nullptr;
+            int32& lockerRefCount = *_lockerRefCount;
+            lockerRefCount--;
+            if (lockerRefCount == 0)
+            {
+                Allocator::Free(_locker);
+                Allocator::Free(_lockerRefCount);
+                _locker = nullptr;
+                _lockerRefCount = nullptr;
+            }
         }
         if (_functions != nullptr)
         {
@@ -383,6 +381,7 @@ public:
                     i->Item.LambdaCtor();
             }
             Allocator::Free(_functions);
+            _functions = nullptr;
         }
 #endif
     }
@@ -522,6 +521,12 @@ public:
             Allocator::Free(bindings);
         }
 #else
+        if (_locker == nullptr)
+        {
+            _locker = New<CriticalSection>();
+            _lockerRefCount = New<int32>();
+            *_lockerRefCount = 1;
+        }
         ScopeLock lock(*_locker);
         if (_functions == nullptr)
             _functions = New<HashSet<FunctionType>>(32);
@@ -581,6 +586,12 @@ public:
             }
         }
 #else
+        if (_locker == nullptr)
+        {
+            _locker = New<CriticalSection>();
+            _lockerRefCount = New<int32>();
+            *_lockerRefCount = 1;
+        }
         ScopeLock lock(*_locker);
         if (_functions && _functions->Contains(f))
             return; 
@@ -594,9 +605,18 @@ public:
     template<void(*Method)(Params...)>
     void Unbind()
     {
+#if DELEGATE_USE_ATOMIC
         FunctionType f;
         f.template Bind<Method>();
         Unbind(f);
+#else
+        if (_functions == nullptr)
+            return;
+        FunctionType f;
+        f.template Bind<Method>();
+        ScopeLock lock(*_locker);
+        _functions->Remove(f);
+#endif
     }
 
     /// <summary>
@@ -606,9 +626,18 @@ public:
     template<class T, void(T::*Method)(Params...)>
     void Unbind(T* callee)
     {
+#if DELEGATE_USE_ATOMIC
         FunctionType f;
         f.template Bind<T, Method>(callee);
         Unbind(f);
+#else
+        if (_functions == nullptr)
+            return;
+        FunctionType f;
+        f.template Bind<T, Method>(callee);
+        ScopeLock lock(*_locker);
+        _functions->Remove(f);
+#endif
     }
 
     /// <summary>
@@ -617,8 +646,16 @@ public:
     /// <param name="method">The method.</param>
     void Unbind(Signature method)
     {
+#if DELEGATE_USE_ATOMIC
         FunctionType f(method);
         Unbind(f);
+#else
+        if (_functions == nullptr)
+            return;
+        FunctionType f(method);
+        ScopeLock lock(*_locker);
+        _functions->Remove(f);
+#endif
     }
 
     /// <summary>
