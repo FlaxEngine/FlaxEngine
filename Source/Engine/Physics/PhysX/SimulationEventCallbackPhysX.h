@@ -8,7 +8,6 @@
 #include "Engine/Physics/Collisions.h"
 #include "Engine/Physics/Colliders/Collider.h"
 #include "Engine/Core/Types/Pair.h"
-#include "Engine/Core/Collections/Dictionary.h"
 #include <ThirdParty/PhysX/PxSimulationEventCallback.h>
 
 /// <summary>

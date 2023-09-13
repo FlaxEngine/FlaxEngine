@@ -7,6 +7,7 @@
 #include "SimulationEventCallbackPhysX.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Utilities.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Physics/CollisionData.h"
 #include "Engine/Physics/PhysicalMaterial.h"
 #include "Engine/Physics/PhysicsScene.h"
