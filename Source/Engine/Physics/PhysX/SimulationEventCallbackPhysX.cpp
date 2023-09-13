@@ -11,8 +11,10 @@
 
 namespace
 {
-    void ClearColliderFromCollection(PhysicsColliderActor* collider, Array<SimulationEventCallback::CollidersPair>& collection)
+    void ClearColliderFromCollection(const PhysicsColliderActor* collider, Array<SimulationEventCallback::CollidersPair>& collection)
     {
+        if (collection.IsEmpty())
+            return;
         for (int32 i = 0; i < collection.Count(); i++)
         {
             if (collection[i].First == collider || collection[i].Second == collider)

@@ -7,6 +7,50 @@
 #include "Types.h"
 
 /// <summary>
+/// Broad phase algorithm used in the simulation.
+/// <see href="https://nvidia-omniverse.github.io/PhysX/physx/5.1.0/_build/physx/latest/struct_px_broad_phase_type.html"/>
+/// </summary>
+API_ENUM() enum class PhysicsBroadPhaseType
+{
+    /// <summary>
+    /// 3-axes sweep-and-prune. Good generic choice with great performance when many objects are sleeping.
+    /// </summary>
+    SweepAndPrune = 0,
+
+    /// <summary>
+    /// Alternative broad phase algorithm that does not suffer from the same performance issues as SAP when all objects are moving or when inserting large numbers of objects. 
+    /// </summary>
+    MultiBoxPruning = 1,
+
+    /// <summary>
+    /// Revisited implementation of MBP, which automatically manages broad-phase regions.
+    /// </summary>
+    AutomaticBoxPruning = 2,
+
+    /// <summary>
+    /// Parallel implementation of ABP. It can often be the fastest (CPU) broadphase, but it can use more memory than ABP.
+    /// </summary>
+    ParallelAutomaticBoxPruning = 3,
+};
+
+/// <summary>
+/// The type of solver used in the simulation.
+/// <see href="https://nvidia-omniverse.github.io/PhysX/physx/5.1.0/_build/physx/latest/struct_px_solver_type.html"/>
+/// </summary>
+API_ENUM() enum class PhysicsSolverType
+{
+    /// <summary>
+    /// The iterative sequential impulse solver.
+    /// </summary>
+    ProjectedGaussSeidelIterativeSolver = 0,
+
+    /// <summary>
+    /// Non linear iterative solver. This kind of solver can lead to improved convergence and handle large mass ratios, long chains and jointed systems better. It is slightly more expensive than the default solver and can introduce more energy to correct joint and contact errors.
+    /// </summary>
+    TemporalGaussSeidelSolver = 1,
+};
+
+/// <summary>
 /// Physics simulation settings container.
 /// </summary>
 API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class FLAXENGINE_API PhysicsSettings : public SettingsBase
@@ -42,6 +86,18 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(70), EditorDisplay(\"Simulation\")")
     bool DisableCCD = false;
+
+    /// <summary>
+    /// Broad phase algorithm to use in the simulation.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(71), EditorDisplay(\"Simulation\")")
+    PhysicsBroadPhaseType BroadPhaseType = PhysicsBroadPhaseType::ParallelAutomaticBoxPruning;
+
+    /// <summary>
+    /// The solver type to use in the simulation.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(72), EditorDisplay(\"Simulation\")")
+    PhysicsSolverType SolverType = PhysicsSolverType::ProjectedGaussSeidelIterativeSolver;
 
     /// <summary>
     /// The maximum allowed delta time (in seconds) for the physics simulation step.

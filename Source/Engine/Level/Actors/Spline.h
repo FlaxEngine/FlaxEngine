@@ -354,6 +354,7 @@ public:
 
 protected:
 #if USE_EDITOR
+    // Spline color getter for debug drawing, can be overriden by custom spline types.
     virtual Color GetSplineColor()
     {
         return Color::White;

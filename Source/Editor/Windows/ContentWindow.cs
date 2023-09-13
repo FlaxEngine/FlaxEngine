@@ -79,6 +79,7 @@ namespace FlaxEditor.Windows
                         Editor.ContentDatabase.Engine.Visible = value;
                         Editor.ContentDatabase.Engine.Folder.Visible = value;
                         RefreshView();
+                        _tree.PerformLayout();
                     }
                 }
             }
@@ -99,6 +100,7 @@ namespace FlaxEditor.Windows
                         project.Visible = value;
                         project.Folder.Visible = value;
                         RefreshView();
+                        _tree.PerformLayout();
                     }
                 }
             }
