@@ -684,8 +684,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 #define DEBUG_DRAW_DIRECTION        (origin,direction,color,duration,depthTest)                             
 #define DEBUG_DRAW_RAY              (origin,direction,color,length,duration,depthTest)                      
 #define DEBUG_DRAW_RAY              (ray,color,length,duration,depthTest)                                   
-
-#define DEBUG_DRAW_RAY(origin, direction, color, duration, depthTest)                                    
+                            
 #define DEBUG_DRAW_LINE(start, end, color, duration, depthTest)                                          
 #define DEBUG_DRAW_LINES(lines, transform, color, duration, depthTest)                                   
 #define DEBUG_DRAW_BEZIER(p1, p2, p3, p4, color, duration, depthTest)                                    
