@@ -667,7 +667,6 @@ PxFilterFlags FilterShader(
     if (PxFilterObjectIsKinematic(attributes0) && PxFilterObjectIsKinematic(attributes1))
     {
         pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND;
-        pairFlags |= PxPairFlag::eNOTIFY_TOUCH_PERSISTS;
         pairFlags |= PxPairFlag::eNOTIFY_TOUCH_LOST;
         pairFlags |= PxPairFlag::eDETECT_DISCRETE_CONTACT;
         return PxFilterFlag::eSUPPRESS;
@@ -679,7 +678,7 @@ PxFilterFlags FilterShader(
         pairFlags |= PxPairFlag::eSOLVE_CONTACT;
         pairFlags |= PxPairFlag::eDETECT_DISCRETE_CONTACT;
         pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND;
-        pairFlags |= PxPairFlag::eNOTIFY_TOUCH_PERSISTS;
+        pairFlags |= PxPairFlag::eNOTIFY_TOUCH_LOST;
         pairFlags |= PxPairFlag::ePOST_SOLVER_VELOCITY;
         pairFlags |= PxPairFlag::eNOTIFY_CONTACT_POINTS;
         return PxFilterFlag::eDEFAULT;

@@ -23,26 +23,10 @@ namespace
             }
         }
     }
-
-    void ClearColliderFromCollection(PhysicsColliderActor* collider, SimulationEventCallback::CollisionsPool& collection)
-    {
-        for (auto i = collection.Begin(); i.IsNotEnd(); ++i)
-        {
-            if (i->Key.First == collider || i->Key.Second == collider)
-            {
-                collection.Remove(i);
-                if (collection.IsEmpty())
-                    break;
-            }
-        }
-    }
 }
 
 void SimulationEventCallback::Clear()
 {
-    PrevCollisions.Swap(Collisions);
-    Collisions.Clear();
-
     NewCollisions.Clear();
     RemovedCollisions.Clear();
 
@@ -54,57 +38,35 @@ void SimulationEventCallback::Clear()
 
 void SimulationEventCallback::CollectResults()
 {
-    // Generate new collisions
-    for (auto i = Collisions.Begin(); i.IsNotEnd(); ++i)
-    {
-        if (!PrevCollisions.ContainsKey(i->Key))
-            NewCollisions.Add(i->Key);
-    }
-
-    // Generate removed collisions
-    for (auto i = PrevCollisions.Begin(); i.IsNotEnd(); ++i)
-    {
-        if (!Collisions.ContainsKey(i->Key))
-            RemovedCollisions.Add(i->Key);
-    }
 }
 
 void SimulationEventCallback::SendCollisionEvents()
 {
-    for (int32 i = 0; i < RemovedCollisions.Count(); i++)
+    for (auto& c : RemovedCollisions)
     {
-        const auto pair = RemovedCollisions[i];
-        auto& c = PrevCollisions[pair];
-
-        pair.First->OnCollisionExit(c);
-
+        c.ThisActor->OnCollisionExit(c);
         c.SwapObjects();
-        pair.Second->OnCollisionExit(c);
+        c.ThisActor->OnCollisionExit(c);
         c.SwapObjects();
     }
-    for (int32 i = 0; i < NewCollisions.Count(); i++)
+    for (auto& c : NewCollisions)
     {
-        const auto pair = NewCollisions[i];
-        auto& c = Collisions[pair];
-
-        pair.First->OnCollisionEnter(c);
+        c.ThisActor->OnCollisionEnter(c);
         c.SwapObjects();
-        pair.Second->OnCollisionEnter(c);
+        c.ThisActor->OnCollisionEnter(c);
         c.SwapObjects();
     }
 }
 
 void SimulationEventCallback::SendTriggerEvents()
 {
-    for (int32 i = 0; i < LostTriggerPairs.Count(); i++)
+    for (const auto& c : LostTriggerPairs)
     {
-        const auto c = LostTriggerPairs[i];
         c.First->OnTriggerExit(c.Second);
         c.Second->OnTriggerExit(c.First);
     }
-    for (int32 i = 0; i < NewTriggerPairs.Count(); i++)
+    for (const auto& c : NewTriggerPairs)
     {
-        const auto c = NewTriggerPairs[i];
         c.First->OnTriggerEnter(c.Second);
         c.Second->OnTriggerEnter(c.First);
     }
@@ -120,9 +82,6 @@ void SimulationEventCallback::SendJointEvents()
 
 void SimulationEventCallback::OnColliderRemoved(PhysicsColliderActor* collider)
 {
-    ClearColliderFromCollection(collider, Collisions);
-    ClearColliderFromCollection(collider, PrevCollisions);
-    ClearColliderFromCollection(collider, RemovedCollisions);
     ClearColliderFromCollection(collider, NewTriggerPairs);
     ClearColliderFromCollection(collider, LostTriggerPairs);
 }
@@ -161,70 +120,78 @@ void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, c
     }
 
     Collision c;
-    c.ThisVelocity = c.OtherVelocity = Vector3::Zero;
-
-    // Extract collision pairs
-    for (PxU32 pairIndex = 0; pairIndex < nbPairs; pairIndex++)
     {
-        const PxContactPair& pair = pairs[pairIndex];
-        PxContactStreamIterator i(pair.contactPatches, pair.contactPoints, pair.getInternalFaceIndices(), pair.patchCount, pair.contactCount);
+        PxContactPairExtraDataIterator j(pairHeader.extraDataStream, pairHeader.extraDataStreamSize);
 
-        const PxReal* impulses = pair.contactImpulses;
-        //const PxU32 flippedContacts = (pair.flags & PxContactPairFlag::eINTERNAL_CONTACTS_ARE_FLIPPED);
-        const PxU32 hasImpulses = (pair.flags & PxContactPairFlag::eINTERNAL_HAS_IMPULSES);
-        PxU32 nbContacts = 0;
-        PxVec3 totalImpulse = PxVec3(0.0f);
-
-        c.ThisActor = static_cast<PhysicsColliderActor*>(pair.shapes[0]->userData);
-        c.OtherActor = static_cast<PhysicsColliderActor*>(pair.shapes[1]->userData);
-        ASSERT_LOW_LAYER(c.ThisActor && c.OtherActor);
-
-        while (i.hasNextPatch())
+        // Extract collision pairs
+        for (PxU32 pairIndex = 0; pairIndex < nbPairs; pairIndex++)
         {
-            i.nextPatch();
-            while (i.hasNextContact() && nbContacts < COLLISION_NAX_CONTACT_POINTS)
-            {
-                i.nextContact();
+            const PxContactPair& pair = pairs[pairIndex];
+            PxContactStreamIterator i(pair.contactPatches, pair.contactPoints, pair.getInternalFaceIndices(), pair.patchCount, pair.contactCount);
 
-                const PxVec3 point = i.getContactPoint();
-                const PxVec3 normal = i.getContactNormal();
-                if (hasImpulses)
-                    totalImpulse += normal * impulses[nbContacts];
+            const PxReal* impulses = pair.contactImpulses;
+            //const PxU32 flippedContacts = (pair.flags & PxContactPairFlag::eINTERNAL_CONTACTS_ARE_FLIPPED);
+            const PxU32 hasImpulses = (pair.flags & PxContactPairFlag::eINTERNAL_HAS_IMPULSES);
+            PxU32 nbContacts = 0;
+            PxVec3 totalImpulse = PxVec3(0.0f);
 
-                //PxU32 internalFaceIndex0 = flippedContacts ? iter.getFaceIndex1() : iter.getFaceIndex0();
-                //PxU32 internalFaceIndex1 = flippedContacts ? iter.getFaceIndex0() : iter.getFaceIndex1();
-
-                ContactPoint& contact = c.Contacts[nbContacts];
-                contact.Point = P2C(point);
-                contact.Normal = P2C(normal);
-                contact.Separation = i.getSeparation();
-
-                nbContacts++;
-            }
-        }
-
-        c.ContactsCount = nbContacts;
-        c.Impulse = P2C(totalImpulse);
-        Collisions[CollidersPair(c.ThisActor, c.OtherActor)] = c;
-    }
-
-    // Extract velocities
-    PxContactPairExtraDataIterator i(pairHeader.extraDataStream, pairHeader.extraDataStreamSize);
-    while (i.nextItemSet())
-    {
-        if (i.postSolverVelocity)
-        {
-            const PxVec3 linearVelocityActor0 = i.postSolverVelocity->linearVelocity[0];
-            const PxVec3 linearVelocityActor1 = i.postSolverVelocity->linearVelocity[1];
-
-            const PxContactPair& pair = pairs[i.contactPairIndex];
             c.ThisActor = static_cast<PhysicsColliderActor*>(pair.shapes[0]->userData);
             c.OtherActor = static_cast<PhysicsColliderActor*>(pair.shapes[1]->userData);
-            ASSERT(c.ThisActor && c.OtherActor);
-            Collision& collision = Collisions[CollidersPair(c.ThisActor, c.OtherActor)];
+            ASSERT_LOW_LAYER(c.ThisActor && c.OtherActor);
 
-            collision.ThisVelocity = P2C(linearVelocityActor0);
-            collision.OtherVelocity = P2C(linearVelocityActor1);
+            while (i.hasNextPatch())
+            {
+                i.nextPatch();
+                while (i.hasNextContact() && nbContacts < COLLISION_NAX_CONTACT_POINTS)
+                {
+                    i.nextContact();
+
+                    const PxVec3 point = i.getContactPoint();
+                    const PxVec3 normal = i.getContactNormal();
+                    if (hasImpulses)
+                        totalImpulse += normal * impulses[nbContacts];
+
+                    //PxU32 internalFaceIndex0 = flippedContacts ? iter.getFaceIndex1() : iter.getFaceIndex0();
+                    //PxU32 internalFaceIndex1 = flippedContacts ? iter.getFaceIndex0() : iter.getFaceIndex1();
+
+                    ContactPoint& contact = c.Contacts[nbContacts];
+                    contact.Point = P2C(point);
+                    contact.Normal = P2C(normal);
+                    contact.Separation = i.getSeparation();
+
+                    nbContacts++;
+                }
+            }
+
+            // Extract velocities
+            if (j.nextItemSet())
+            {
+                ASSERT(j.contactPairIndex == pairIndex);
+                if (j.postSolverVelocity)
+                {
+                    const PxVec3 linearVelocityActor0 = j.postSolverVelocity->linearVelocity[0];
+                    const PxVec3 linearVelocityActor1 = j.postSolverVelocity->linearVelocity[1];
+
+                    c.ThisVelocity = P2C(linearVelocityActor0);
+                    c.OtherVelocity = P2C(linearVelocityActor1);
+                }
+                else
+                {
+                    c.ThisVelocity = c.OtherVelocity = Vector3::Zero;
+                }
+            }
+
+            c.ContactsCount = nbContacts;
+            c.Impulse = P2C(totalImpulse);
+
+            if (pair.flags & PxContactPairFlag::eACTOR_PAIR_HAS_FIRST_TOUCH)
+            {
+                NewCollisions.Add(c);
+            }
+            else if (pair.flags & PxContactPairFlag::eACTOR_PAIR_LOST_TOUCH)
+            {
+                RemovedCollisions.Add(c);
+            }
         }
     }
 }
