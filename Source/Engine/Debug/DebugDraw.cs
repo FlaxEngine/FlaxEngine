@@ -40,7 +40,7 @@ namespace FlaxEngine
         /// <param name="Size">The size of the axis.</param>
         /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
         /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
-        static void DrawAxisFromDirection(Vector3 origin, Vector3 direction, Color color ,float Size = 100.0f, float duration = 0.0f, bool depthTest = true);
+        static void DrawAxisFromDirection(Vector3 origin, Vector3 direction, Color color ,float Size = 100.0f, float duration = 0.0f, bool depthTest = true){}
 
         /// <summary>
         /// Draws the line in a direction.
@@ -50,7 +50,7 @@ namespace FlaxEngine
         /// <param name="color">The color.</param>
         /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
         /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
-        static void DrawDirection(Vector3 origin, Vector3 direction, Color color, float duration = 0.0f, bool depthTest = true);
+        static void DrawDirection(Vector3 origin, Vector3 direction, Color color, float duration = 0.0f, bool depthTest = true){}
 
         /// <summary>
         /// Draws the line in a direction.
@@ -61,7 +61,7 @@ namespace FlaxEngine
         /// <param name="length">The length of the ray.</param>
         /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
         /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
-        static void DrawRay(Vector3 origin, Vector3 direction, Color color, float length = 3.402823466e+38f, float duration = 0.0f, bool depthTest = true);
+        static void DrawRay(Vector3 origin, Vector3 direction, Color color, float length = 3.402823466e+38f, float duration = 0.0f, bool depthTest = true){}
 
         /// <summary>
         /// Draws the line in a direction.
@@ -71,7 +71,9 @@ namespace FlaxEngine
         /// <param name="length">The length of the ray.</param>
         /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
         /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
-        static void DrawRay(Ray ray,Color color, float length = 3.402823466e+38f, float duration = 0.0f, bool depthTest = true);
+        static void DrawRay(Ray ray,Color color, float length = 3.402823466e+38f, float duration = 0.0f, bool depthTest = true)
+        {
+        }
 
         /// <summary>
         /// Draws the line.
