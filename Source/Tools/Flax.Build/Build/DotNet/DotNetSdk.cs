@@ -448,9 +448,9 @@ namespace Flax.Build
         {
             if (File.Exists("/etc/dotnet/install_location")) // Officialy recommended dotnet location file
                 return File.ReadAllText("/etc/dotnet/install_location").Trim();
-            if (Directory.Exists("/usr/share/dotnet")) // Officialy recommended dotnet location
+            if (File.Exists("/usr/share/dotnet/dotnet")) // Officialy recommended dotnet location
                 return"/usr/share/dotnet";
-            if (Directory.Exists("/usr/lib/dotnet")) // Deprecated recommended dotnet location
+            if (File.Exists("/usr/lib/dotnet/dotnet")) // Deprecated recommended dotnet location
                 return "/usr/lib/dotnet";
             if (Environment.GetEnvironmentVariable("PATH") is string globalBinPath) // Searching for dotnet binary
                 return globalBinPath.Split(':').FirstOrDefault(x => File.Exists(Path.Combine(x, "dotnet")));
