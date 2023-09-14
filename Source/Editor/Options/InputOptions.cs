@@ -144,6 +144,10 @@ namespace FlaxEditor.Options
         [EditorDisplay("Gizmo"), EditorOrder(1020)]
         public InputBinding ScaleMode = new InputBinding(KeyboardKeys.Alpha3);
 
+        [DefaultValue(typeof(InputBinding), "Alpha4")]
+        [EditorDisplay("Gizmo"), EditorOrder(1030)]
+        public InputBinding ToggleTransformSpace = new InputBinding(KeyboardKeys.Alpha4);
+
         #endregion
 
         #region Viewport
