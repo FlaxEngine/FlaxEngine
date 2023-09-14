@@ -203,6 +203,17 @@ bool BehaviorKnowledge::HasGoal(ScriptingTypeHandle type) const
     return false;
 }
 
+Variant BehaviorKnowledge::GetGoal(ScriptingTypeHandle type)
+{
+    for (const Variant& goal : Goals)
+    {
+        const ScriptingTypeHandle goalType = Scripting::FindScriptingType(goal.Type.GetTypeName());
+        if (goalType == type)
+            return goal;
+    }
+    return Variant::Null;
+}
+
 void BehaviorKnowledge::AddGoal(Variant&& goal)
 {
     int32 i = 0;

@@ -47,7 +47,7 @@ API_CLASS() class FLAXENGINE_API BehaviorKnowledge : public ScriptingObject
     /// <summary>
     /// List of all active goals of the behaviour (structure or class).
     /// </summary>
-    Array<Variant> Goals;
+    API_FIELD() Array<Variant> Goals;
 
 public:
     /// <summary>
@@ -95,6 +95,13 @@ public:
     {
         return HasGoal(T::TypeInitializer);
     }
+
+    /// <summary>
+    /// Gets the goal from the knowledge.
+    /// </summary>
+    /// <param name="type">The goal type.</param>
+    /// <returns>The goal value or null if not found.</returns>
+    API_FUNCTION() Variant GetGoal(ScriptingTypeHandle type);
 
     /// <summary>
     /// Adds the goal to the knowledge. If goal of that type already exists then it's value is updated.

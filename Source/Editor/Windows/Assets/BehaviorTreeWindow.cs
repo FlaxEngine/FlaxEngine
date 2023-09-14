@@ -1,10 +1,8 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
-using System;
-using System.Collections.Generic;
-using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
+using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
@@ -13,9 +11,79 @@ using FlaxEditor.Viewport;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Xml;
 
 namespace FlaxEditor.Windows.Assets
 {
+    [CustomEditor(typeof(BehaviorKnowledge)), DefaultEditor]
+    sealed class BehaviorKnowledgeEditor : CustomEditor
+    {
+        private HashSet<Type> _goals;
+        private LayoutElementsContainer _layout;
+
+        public override void Initialize(LayoutElementsContainer layout)
+        {
+            var knowledge = (BehaviorKnowledge)Values[0];
+            _layout = layout;
+
+            // Blackboard
+            var blackboard = knowledge.Blackboard;
+            var blackboardValue = new CustomValueContainer(TypeUtils.GetObjectType(blackboard), blackboard, (instance, _) => ((BehaviorKnowledge)instance).Blackboard, (instance, _, value) => ((BehaviorKnowledge)instance).Blackboard = value);
+            var blackboardEditor = CustomEditorsUtil.CreateEditor(blackboardValue.Type, false);
+            layout.Object(blackboardValue, blackboardEditor);
+
+            // Goals
+            _goals = new();
+            var goals = knowledge.Goals;
+            foreach (var goal in goals)
+            {
+                if (goal == null)
+                    continue;
+                var goalType = goal.GetType();
+                var goalValue = new CustomValueContainer(new ScriptType(goalType), goal, (instance, _) => ((BehaviorKnowledge)instance).GetGoal(goalType), (instance, _, value) => ((BehaviorKnowledge)instance).AddGoal(value));
+                var goalEditor = CustomEditorsUtil.CreateEditor(goalValue.Type, false);
+                var goalPanel = _layout.Group("Goal " + goalType.Name);
+                goalPanel.Object(goalValue, goalEditor);
+                _goals.Add(goalType);
+            }
+        }
+
+        /// <inheritdoc />
+        public override void Refresh()
+        {
+            var knowledge = (BehaviorKnowledge)Values[0];
+            if (!knowledge)
+                return;
+
+            // Rebuild layout when goals list gets changed
+            var goals = knowledge.Goals;
+            foreach (var goal in goals)
+            {
+                if (goal == null)
+                    continue;
+                var goalType = goal.GetType();
+                if (!_goals.Contains(goalType))
+                {
+                    RebuildLayout();
+                    return;
+                }
+            }
+            foreach (var goalType in _goals.ToArray())
+            {
+                if (!knowledge.HasGoal(goalType))
+                {
+                    RebuildLayout();
+                    return;
+                }
+            }
+
+            base.Refresh();
+        }
+    }
+
     /// <summary>
     /// Behavior Tree window allows to view and edit <see cref="BehaviorTree"/> asset.
     /// </summary>
@@ -32,9 +100,11 @@ namespace FlaxEditor.Windows.Assets
         private readonly ToolStripButton _saveButton;
         private readonly ToolStripButton _undoButton;
         private readonly ToolStripButton _redoButton;
+        private FlaxObjectRefPickerControl _behaviorPicker;
+        private Guid _cachedBehaviorId;
         private bool _showWholeGraphOnLoad = true;
         private bool _isWaitingForSurfaceLoad;
-        private bool _canEdit = true;
+        private bool _canEdit = true, _canDebug = false;
 
         /// <summary>
         /// Gets the Visject Surface.
@@ -60,8 +130,6 @@ namespace FlaxEditor.Windows.Assets
         public BehaviorTreeWindow(Editor editor, BinaryAssetItem item)
         : base(editor, item)
         {
-            var isPlayMode = Editor.IsPlayMode;
-
             // Undo
             _undo = new Undo();
             _undo.UndoDone += OnUndoRedo;
@@ -110,12 +178,37 @@ namespace FlaxEditor.Windows.Assets
             _toolstrip.AddButton(Editor.Icons.Search64, Editor.ContentFinding.ShowSearch).LinkTooltip("Open content search tool (Ctrl+F)");
             _toolstrip.AddButton(editor.Icons.CenterView64, _surface.ShowWholeGraph).LinkTooltip("Show whole graph");
 
+            // Debug behavior picker
+            var behaviorPickerContainer = new ContainerControl();
+            var behaviorPickerLabel = new Label
+            {
+                AnchorPreset = AnchorPresets.VerticalStretchLeft,
+                VerticalAlignment = TextAlignment.Center,
+                HorizontalAlignment = TextAlignment.Far,
+                Parent = behaviorPickerContainer,
+                Size = new Float2(60.0f, _toolstrip.Height),
+                Text = "Behavior:",
+                TooltipText = "The behavior instance to preview. Pick the behavior to debug it's logic and data.",
+            };
+            _behaviorPicker = new FlaxObjectRefPickerControl
+            {
+                Location = new Float2(behaviorPickerLabel.Right + 4.0f, 8.0f),
+                Width = 140.0f,
+                Type = new ScriptType(typeof(Behavior)),
+                Parent = behaviorPickerContainer,
+            };
+            behaviorPickerContainer.Width = _behaviorPicker.Right + 2.0f;
+            behaviorPickerContainer.Size = new Float2(_behaviorPicker.Right + 2.0f, _toolstrip.Height);
+            behaviorPickerContainer.Parent = _toolstrip;
+            _behaviorPicker.CheckValid = OnBehaviorPickerCheckValid;
+            _behaviorPicker.ValueChanged += OnBehaviorPickerValueChanged;
+
             // Setup input actions
             InputActions.Add(options => options.Undo, _undo.PerformUndo);
             InputActions.Add(options => options.Redo, _undo.PerformRedo);
             InputActions.Add(options => options.Search, Editor.ContentFinding.ShowSearch);
 
-            SetCanEdit(!isPlayMode);
+            SetCanEdit(!Editor.IsPlayMode);
             ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
         }
 
@@ -171,6 +264,17 @@ namespace FlaxEditor.Windows.Assets
             }
         }
 
+        private bool OnBehaviorPickerCheckValid(FlaxEngine.Object obj, ScriptType type)
+        {
+            return obj is Behavior behavior && behavior.Tree == Asset;
+        }
+
+        private void OnBehaviorPickerValueChanged()
+        {
+            _cachedBehaviorId = _behaviorPicker.ValueID;
+            UpdateKnowledge();
+        }
+
         private void OnScriptsReloadBegin()
         {
             // TODO: impl hot-reload for BT to nicely refresh state (save asset, clear undo/properties, reload surface)
@@ -179,6 +283,16 @@ namespace FlaxEditor.Windows.Assets
 
         private void UpdateKnowledge()
         {
+            // Pick knowledge from the behavior
+            var behavior = (Behavior)_behaviorPicker.Value;
+            if (_canDebug && behavior)
+            {
+                _knowledgePropertiesEditor.ReadOnly = false;
+                _knowledgePropertiesEditor.Select(behavior.Knowledge);
+                return;
+            }
+
+            // Use blackboard from the root node
             var rootNode = _surface.FindNode(19, 2) as Surface.Archetypes.BehaviorTree.Node;
             if (rootNode != null)
                 rootNode.ValuesChanged += UpdateKnowledge;
@@ -187,6 +301,7 @@ namespace FlaxEditor.Windows.Assets
             if (blackboardType)
             {
                 var blackboardInstance = blackboardType.CreateInstance();
+                _knowledgePropertiesEditor.ReadOnly = true;
                 _knowledgePropertiesEditor.Select(blackboardInstance);
             }
             else
@@ -198,7 +313,6 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void Save()
         {
-            // Early check
             if (!IsEdited || _asset == null || _isWaitingForSurfaceLoad)
                 return;
 
@@ -323,9 +437,16 @@ namespace FlaxEditor.Windows.Assets
             _canEdit = canEdit;
             _undo.Enabled = canEdit;
             _surface.CanEdit = canEdit;
-            _nodePropertiesEditor.ReadOnly = !_canEdit;
-            _knowledgePropertiesEditor.ReadOnly = true;
+            _nodePropertiesEditor.ReadOnly = !canEdit;
             UpdateToolstrip();
+        }
+
+        private void SetCanDebug(bool canDebug)
+        {
+            if (_canDebug == canDebug)
+                return;
+            _canDebug = canDebug;
+            UpdateKnowledge();
         }
 
         /// <inheritdoc />
@@ -347,12 +468,10 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
-            base.Update(deltaTime);
-
+            // Wait for asset loaded
             if (_isWaitingForSurfaceLoad && _asset.IsLoaded)
             {
                 _isWaitingForSurfaceLoad = false;
-
                 if (LoadSurface())
                 {
                     Close();
@@ -371,9 +490,37 @@ namespace FlaxEditor.Windows.Assets
                     _surface.ShowWholeGraph();
                 }
                 SurfaceLoaded?.Invoke();
-                _knowledgePropertiesEditor.ReadOnly = true;
                 UpdateKnowledge();
             }
+
+            // Check if don't have valid behavior picked
+            if (!_behaviorPicker.Value)
+            {
+                // Try to reassign the debug behavior
+                var id = _cachedBehaviorId;
+                if (id != Guid.Empty)
+                {
+                    var obj = FlaxEngine.Object.TryFind<Behavior>(ref id);
+                    if (obj && obj.Tree == Asset)
+                        _behaviorPicker.Value = obj;
+                }
+                else
+                {
+                    // Deselect (eg. if native C++ object has been deleted)
+                    _behaviorPicker.Value = null;
+
+                    // Remove any links to the behavior instance (eg. it could be deleted)
+                    UpdateKnowledge();
+                }
+
+                // Preserve cache value
+                _cachedBehaviorId = id;
+            }
+
+            // Update behavior debugging
+            SetCanDebug(Editor.IsPlayMode && _behaviorPicker.Value);
+
+            base.Update(deltaTime);
         }
 
         /// <inheritdoc />
@@ -384,6 +531,7 @@ namespace FlaxEditor.Windows.Assets
         {
             LayoutSerializeSplitter(writer, "Split1", _split1);
             LayoutSerializeSplitter(writer, "Split2", _split1);
+            writer.WriteAttributeString("SelectedBehavior", (_behaviorPicker.Value?.ID ?? _cachedBehaviorId).ToString());
         }
 
         /// <inheritdoc />
@@ -391,6 +539,8 @@ namespace FlaxEditor.Windows.Assets
         {
             LayoutDeserializeSplitter(node, "Split1", _split1);
             LayoutDeserializeSplitter(node, "Split2", _split2);
+            if (Guid.TryParse(node.GetAttribute("SelectedBehavior"), out Guid value1))
+                _cachedBehaviorId = value1;
         }
 
         /// <inheritdoc />
@@ -410,6 +560,7 @@ namespace FlaxEditor.Windows.Assets
             _nodePropertiesEditor.Deselect();
             _knowledgePropertiesEditor.Deselect();
             _undo.Clear();
+            _behaviorPicker = null;
 
             base.OnDestroy();
         }
