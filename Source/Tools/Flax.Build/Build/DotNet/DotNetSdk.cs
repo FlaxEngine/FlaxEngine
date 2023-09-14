@@ -192,17 +192,13 @@ namespace Flax.Build
             case TargetPlatform.Linux:
             {
                 // TODO: Support /etc/dotnet/install_location
-                rid = "";
-                ridFallback = $"linux-{arch}";
+                rid = $"linux-{arch}";
+                ridFallback = "";
                 if (string.IsNullOrEmpty(dotnetPath))
                     dotnetPath ??= SearchForDotnetLocationLinux();
                 
                 if (dotnetPath == null)
-                {
-                    rid = Utilities.ReadProcessOutput("dotnet", "--info").Split('\n').FirstOrDefault(x => x.StartsWith(" RID:"), "").Replace("RID:", "").Trim();
-                    if (rid == ridFallback)
-                        ridFallback = "";
-                }
+                    ridFallback = Utilities.ReadProcessOutput("dotnet", "--info").Split('\n').FirstOrDefault(x => x.StartsWith(" RID:"), "").Replace("RID:", "").Trim();
 
                 break;
             }
