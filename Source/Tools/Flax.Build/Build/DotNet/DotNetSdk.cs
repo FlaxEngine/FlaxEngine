@@ -428,7 +428,8 @@ namespace Flax.Build
                 version = version.Substring(0, version.IndexOf("-"));
                 rev = 0;
             }
-            Version ver = new Version(version);
+            if (!Version.TryParse(version, out var ver))
+                return null;
             return new Version(ver.Major, ver.Minor, ver.Build, rev);
         }
 
