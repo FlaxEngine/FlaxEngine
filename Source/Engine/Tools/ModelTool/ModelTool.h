@@ -6,6 +6,7 @@
 
 #include "Engine/Core/Config.h"
 #include "Engine/Content/Assets/ModelBase.h"
+#include "Engine/Physics/CollisionData.h"
 #if USE_EDITOR
 #include "Engine/Core/ISerializable.h"
 #include "Engine/Graphics/Models/ModelData.h"
@@ -262,6 +263,9 @@ public:
         // If specified, all meshes which name starts with this prefix will be imported as a separate collision data (excluded used for rendering).
         API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         String CollisionMeshesPrefix = TEXT("");
+        // The type of collision that should be generated if has collision prefix especified
+        API_FIELD(Attributes = "EditorOrder(105), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
+        CollisionDataType CollisionType = CollisionDataType::TriangleMesh;
 
     public: // Transform
 
