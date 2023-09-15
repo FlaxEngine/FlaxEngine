@@ -374,6 +374,8 @@ void LinuxWindow::SetClientBounds(const Rectangle& clientArea)
 		X11::XSetNormalHints(display, window, &hints);
 	}
 
+	X11::XMapWindow(display, window);
+
 	_clientSize = Float2((float)width, (float)height);
 	X11::XResizeWindow(display, window, width, height);
 	X11::XMoveWindow(display, window, x, y);
