@@ -187,6 +187,7 @@ void RiderCodeEditor::FindEditors(Array<CodeEditor*>* output)
     SearchRegistry(&installations, HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\WOW6432Node\\JetBrains\\JetBrains Rider"));
 
     // Versions installed via JetBrains Toolbox
+    FileSystem::GetChildDirectories(subDirectories, localAppDataPath / TEXT("Programs"));
     FileSystem::GetChildDirectories(subDirectories, localAppDataPath / TEXT("JetBrains\\Toolbox\\apps\\Rider\\ch-0\\"));
     FileSystem::GetChildDirectories(subDirectories, localAppDataPath / TEXT("JetBrains\\Toolbox\\apps\\Rider\\ch-1\\")); // Beta versions
 #endif
