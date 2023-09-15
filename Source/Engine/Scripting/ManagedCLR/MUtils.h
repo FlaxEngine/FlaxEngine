@@ -3,6 +3,7 @@
 #pragma once
 
 #include "MTypes.h"
+#include "MClass.h"
 #include "MCore.h"
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/DataContainer.h"
@@ -354,7 +355,7 @@ struct MConverter<Array<T>>
     {
         if (!klass)
             return nullptr;
-        MArray* result = MCore::Array::New(klass, data.Count());
+        MArray* result = MCore::Array::New(klass->GetElementClass(), data.Count());
         MConverter<T> converter;
         converter.ToManagedArray(result, Span<T>(data.Get(), data.Count()));
         return (MObject*)result;

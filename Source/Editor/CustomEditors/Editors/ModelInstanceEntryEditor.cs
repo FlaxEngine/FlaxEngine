@@ -39,6 +39,8 @@ namespace FlaxEditor.CustomEditors.Editors
                 _entryIndex = entryIndex;
                 _modelInstance = modelInstance;
                 var slots = modelInstance.MaterialSlots;
+                if (slots == null || entryIndex >= slots.Length)
+                    return;
                 if (entry.Material == slots[entryIndex].Material)
                 {
                     // Ensure that entry with default material set is set back to null

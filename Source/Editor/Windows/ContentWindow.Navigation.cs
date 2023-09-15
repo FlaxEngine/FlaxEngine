@@ -202,6 +202,13 @@ namespace FlaxEditor.Windows
                 button.PerformLayout();
                 x += button.Width + NavigationBar.DefaultButtonsMargin;
                 _navigationBar.AddChild(button);
+                if (i > 0)
+                {
+                    var separator = new ContentNavigationSeparator(button, x, ToolStrip.DefaultMarginV, h);
+                    separator.PerformLayout();
+                    x += separator.Width + NavigationBar.DefaultButtonsMargin;
+                    _navigationBar.AddChild(separator);
+                }
             }
             nodes.Clear();
 
@@ -218,21 +225,13 @@ namespace FlaxEditor.Windows
         /// <summary>
         /// Gets the current view folder.
         /// </summary>
-        public ContentFolder CurrentViewFolder
-        {
-            get
-            {
-                var node = SelectedNode;
-                return node?.Folder;
-            }
-        }
+        public ContentFolder CurrentViewFolder => SelectedNode?.Folder;
 
         /// <summary>
         /// Shows the root folder.
         /// </summary>
         public void ShowRoot()
         {
-            // Show root folder
             _tree.Select(_root);
         }
     }

@@ -183,6 +183,9 @@ namespace FlaxEngine.Interop
         public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.Free(unmanaged);
     }
 
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     [CustomMarshaller(typeof(Array), MarshalMode.ManagedToUnmanagedIn, typeof(SystemArrayMarshaller.ManagedToNative))]
     [CustomMarshaller(typeof(Array), MarshalMode.UnmanagedToManagedOut, typeof(SystemArrayMarshaller.ManagedToNative))]
     [CustomMarshaller(typeof(Array), MarshalMode.ManagedToUnmanagedOut, typeof(SystemArrayMarshaller.NativeToManaged))]
@@ -246,6 +249,74 @@ namespace FlaxEngine.Interop
                 if (!handle.IsAllocated)
                     return;
                 managedArray.Free();
+                handle.Free();
+            }
+        }
+    }
+
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
+    [CustomMarshaller(typeof(object[]), MarshalMode.ManagedToUnmanagedIn, typeof(SystemObjectArrayMarshaller.ManagedToNative))]
+    [CustomMarshaller(typeof(object[]), MarshalMode.UnmanagedToManagedOut, typeof(SystemObjectArrayMarshaller.ManagedToNative))]
+    [CustomMarshaller(typeof(object[]), MarshalMode.ManagedToUnmanagedOut, typeof(SystemObjectArrayMarshaller.NativeToManaged))]
+    [CustomMarshaller(typeof(object[]), MarshalMode.UnmanagedToManagedIn, typeof(SystemObjectArrayMarshaller.NativeToManaged))]
+    public static unsafe class SystemObjectArrayMarshaller
+    {
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
+        public struct ManagedToNative
+        {
+            ManagedHandle handle;
+
+            public void FromManaged(object[] managed)
+            {
+                if (managed != null)
+                {
+                    var managedArray = NativeInterop.ManagedArrayToGCHandleWrappedArray(managed);
+                    handle = ManagedHandle.Alloc(managedArray, GCHandleType.Weak);
+                }
+            }
+
+            public IntPtr ToUnmanaged()
+            {
+                return ManagedHandle.ToIntPtr(handle);
+            }
+
+            public void Free()
+            {
+                handle.Free();
+            }
+        }
+
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
+        public struct NativeToManaged
+        {
+            ManagedHandle handle;
+
+            public void FromUnmanaged(IntPtr unmanaged)
+            {
+                if (unmanaged == IntPtr.Zero)
+                    return;
+                handle = ManagedHandle.FromIntPtr(unmanaged);
+            }
+
+            public object[] ToManaged()
+            {
+                object[] result = null;
+                if (handle.IsAllocated)
+                {
+                    var managedArray = Unsafe.As<ManagedArray>(handle.Target);
+                    result = NativeInterop.GCHandleArrayToManagedArray<object>(managedArray);
+                }
+                return result;
+            }
+
+            public void Free()
+            {
                 handle.Free();
             }
         }

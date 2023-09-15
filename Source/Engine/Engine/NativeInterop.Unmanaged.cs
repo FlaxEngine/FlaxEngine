@@ -581,9 +581,9 @@ namespace FlaxEngine.Interop
         }
 
         [UnmanagedCallersOnly]
-        internal static IntPtr NewStringLength(sbyte* text, int length)
+        internal static IntPtr NewStringUTF8(sbyte* text, int length)
         {
-            return ManagedString.ToNativeWeak(new string(text, 0, length));
+            return ManagedString.ToNativeWeak(new string(text, 0, length, System.Text.Encoding.UTF8));
         }
 
         [UnmanagedCallersOnly]

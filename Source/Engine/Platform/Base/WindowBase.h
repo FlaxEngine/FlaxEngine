@@ -316,6 +316,11 @@ public:
     Action Closed;
 
     /// <summary>
+    /// Event fired when window gets resized.
+    /// </summary>
+    Delegate<Float2> Resized;
+
+    /// <summary>
     /// Event fired when window gets focused.
     /// </summary>
     Action GotFocus;

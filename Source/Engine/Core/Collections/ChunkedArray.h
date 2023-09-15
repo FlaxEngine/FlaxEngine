@@ -95,7 +95,6 @@ public:
     struct Iterator
     {
         friend ChunkedArray;
-
     private:
         ChunkedArray* _collection;
         int32 _chunkIndex;

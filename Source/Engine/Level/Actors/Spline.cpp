@@ -484,8 +484,7 @@ namespace
 
 void Spline::OnDebugDraw()
 {
-    const Color color = GetSplineColor();
-    DrawSpline(this, color.AlphaMultiplied(0.7f), _transform, true);
+    DrawSpline(this, GetSplineColor().AlphaMultiplied(0.7f), _transform, true);
 
     // Base
     Actor::OnDebugDraw();
@@ -493,8 +492,7 @@ void Spline::OnDebugDraw()
 
 void Spline::OnDebugDrawSelected()
 {
-    const Color color = GetSplineColor();
-    DrawSpline(this, color.AlphaMultiplied(0.3f), _transform, false);
+    DrawSpline(this, Color::White, _transform, false);
 
     // Base
     Actor::OnDebugDrawSelected();

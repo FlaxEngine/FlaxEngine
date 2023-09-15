@@ -305,6 +305,17 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            if (base.OnKeyDown(key))
+                return true;
+
+            // Fallback to the edit window for shortcuts
+            var editor = Editor.Instance;
+            return editor.Windows.EditWin.InputActions.Process(editor, this, key);
+        }
+
+        /// <inheritdoc />
         protected override void PerformLayoutAfterChildren()
         {
             float x = 0;

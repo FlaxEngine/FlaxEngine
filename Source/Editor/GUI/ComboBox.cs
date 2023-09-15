@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -396,14 +397,24 @@ namespace FlaxEditor.GUI
                 _popupMenu.ButtonClicked += btn =>
                 {
                     OnItemClicked((int)btn.Tag);
-                    _popupMenu?.Hide();
+                    if (SupportMultiSelect)
+                    {
+                        // Don't hide in multi-select, so user can edit multiple elements instead of just one
+                        UpdateButtons();
+                        _popupMenu?.PerformLayout();
+                    }
+                    else
+                    {
+                        _popupMenu?.Hide();
+                    }
                 };
             }
 
             // Check if menu hs been already shown
             if (_popupMenu.Visible)
             {
-                _popupMenu.Hide();
+                if (!SupportMultiSelect)
+                    _popupMenu.Hide();
                 return;
             }
 
@@ -412,32 +423,60 @@ namespace FlaxEditor.GUI
             // Check if has any items
             if (_items.Count > 0)
             {
-                // Setup items list
-                var itemControls = _popupMenu.Items.ToArray();
-                foreach (var e in itemControls)
-                    e.Dispose();
-                if (Sorted)
-                    _items.Sort();
-                var style = Style.Current;
-                for (int i = 0; i < _items.Count; i++)
-                {
-                    var btn = _popupMenu.AddButton(_items[i]);
-                    if (_selectedIndices.Contains(i))
-                    {
-                        btn.Icon = style.CheckBoxTick;
-                    }
-                    if (_tooltips != null && _tooltips.Length > i)
-                    {
-                        btn.TooltipText = _tooltips[i];
-                    }
-
-                    btn.Tag = i;
-                }
+                UpdateButtons();
 
                 // Show dropdown list
                 _popupMenu.MinimumWidth = Width;
                 _popupMenu.Show(this, new Float2(1, Height));
             }
+        }
+
+        /// <summary>
+        /// Updates buttons layout. 
+        /// </summary>
+        private void UpdateButtons()
+        {
+            if (_popupMenu.Items.Count() != _items.Count)
+            {
+                var itemControls = _popupMenu.Items.ToArray();
+                foreach (var e in itemControls)
+                    e.Dispose();
+                if (Sorted)
+                    _items.Sort();
+                for (int i = 0; i < _items.Count; i++)
+                {
+                    var btn = _popupMenu.AddButton(_items[i]);
+                    OnLayoutMenuButton(btn, i, true);
+                    btn.Tag = i;
+                }
+            }
+            else
+            {
+                var itemControls = _popupMenu.Items.ToArray();
+                if (Sorted)
+                    _items.Sort();
+                for (int i = 0; i < _items.Count; i++)
+                {
+                    if (itemControls[i] is ContextMenuButton btn)
+                    {
+                        btn.Text = _items[i];
+                        OnLayoutMenuButton(btn, i, true);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Called when button is created or updated. Can be used to customize the visuals.
+        /// </summary>
+        /// <param name="button">The button.</param>
+        /// <param name="index">The item index.</param>
+        /// <param name="construct">true if button is created else it is repainting the button</param>
+        protected virtual void OnLayoutMenuButton(ContextMenuButton button, int index, bool construct = false)
+        {
+            button.Checked = _selectedIndices.Contains(index);
+            if (_tooltips != null && _tooltips.Length > index)
+                button.TooltipText = _tooltips[index];
         }
 
         /// <summary>
@@ -460,6 +499,8 @@ namespace FlaxEditor.GUI
                 _popupMenu = null;
             }
 
+            if (IsDisposing)
+                return;
             _selectedIndices.Clear();
             _selectedIndices = null;
             _items.Clear();
