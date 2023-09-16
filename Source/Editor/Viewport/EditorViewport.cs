@@ -686,6 +686,8 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.ViewpointRight, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Right").Orientation)));
             InputActions.Add(options => options.ViewpointLeft, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Left").Orientation)));
             InputActions.Add(options => options.CameraToggleRotation, () => _isVirtualMouseRightDown = !_isVirtualMouseRightDown);
+            InputActions.Add(options => options.CameraIncreaseMoveSpeed, () => AdjustCameraMoveSpeed(1));
+            InputActions.Add(options => options.CameraDecreaseMoveSpeed, () => AdjustCameraMoveSpeed(-1));
 
             // Link for task event
             task.Begin += OnRenderBegin;
@@ -721,6 +723,30 @@ namespace FlaxEditor.Viewport
             {
                 ViewportCamera.SetArcBallView(orientation, ViewPosition, 2000.0f);
             }
+        }
+
+        /// <summary>
+        /// Increases or decreases the camera movement speed.
+        /// </summary>
+        /// <param name="step">The stepping direction for speed adjustment.</param>
+        protected void AdjustCameraMoveSpeed(int step)
+        {
+            int camValueIndex = -1;
+            for (int i = 0; i < EditorViewportCameraSpeedValues.Length; i++)
+            {
+                if (Mathf.NearEqual(EditorViewportCameraSpeedValues[i], _movementSpeed))
+                {
+                    camValueIndex = i;
+                    break;
+                }
+            }
+            if (camValueIndex == -1)
+                return;
+
+            if (step > 0)
+                MovementSpeed = EditorViewportCameraSpeedValues[Mathf.Min(camValueIndex + 1, EditorViewportCameraSpeedValues.Length - 1)];
+            else if (step < 0)
+                MovementSpeed = EditorViewportCameraSpeedValues[Mathf.Max(camValueIndex - 1, 0)];
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)
@@ -1113,29 +1139,17 @@ namespace FlaxEditor.Viewport
                     rmbWheel = useMovementSpeed && (_input.IsMouseRightDown || _isVirtualMouseRightDown) && wheelInUse;
                     if (rmbWheel)
                     {
-                        float step = 4.0f;
+                        const float step = 4.0f;
                         _wheelMovementChangeDeltaSum += _input.MouseWheelDelta * options.Viewport.MouseWheelSensitivity;
-                        int camValueIndex = -1;
-                        for (int i = 0; i < EditorViewportCameraSpeedValues.Length; i++)
+                        if (_wheelMovementChangeDeltaSum >= step)
                         {
-                            if (Mathf.NearEqual(EditorViewportCameraSpeedValues[i], _movementSpeed))
-                            {
-                                camValueIndex = i;
-                                break;
-                            }
+                            _wheelMovementChangeDeltaSum -= step;
+                            AdjustCameraMoveSpeed(1);
                         }
-                        if (camValueIndex != -1)
+                        else if (_wheelMovementChangeDeltaSum <= -step)
                         {
-                            if (_wheelMovementChangeDeltaSum >= step)
-                            {
-                                _wheelMovementChangeDeltaSum -= step;
-                                MovementSpeed = EditorViewportCameraSpeedValues[Mathf.Min(camValueIndex + 1, EditorViewportCameraSpeedValues.Length - 1)];
-                            }
-                            else if (_wheelMovementChangeDeltaSum <= -step)
-                            {
-                                _wheelMovementChangeDeltaSum += step;
-                                MovementSpeed = EditorViewportCameraSpeedValues[Mathf.Max(camValueIndex - 1, 0)];
-                            }
+                            _wheelMovementChangeDeltaSum += step;
+                            AdjustCameraMoveSpeed(-1);
                         }
                     }
                 }

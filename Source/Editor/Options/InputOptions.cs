@@ -196,28 +196,36 @@ namespace FlaxEditor.Options
         [EditorDisplay("Viewport", "Toggle Camera Rotation"), EditorOrder(1560)]
         public InputBinding CameraToggleRotation = new InputBinding(KeyboardKeys.None);
 
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Viewport", "Increase Camera Move Speed"), EditorOrder(1570)]
+        public InputBinding CameraIncreaseMoveSpeed = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Viewport", "Decrease Camera Move Speed"), EditorOrder(1571)]
+        public InputBinding CameraDecreaseMoveSpeed = new InputBinding(KeyboardKeys.None);
+
         [DefaultValue(typeof(InputBinding), "Numpad0")]
-        [EditorDisplay("Viewport"), EditorOrder(1600)]
+        [EditorDisplay("Viewport"), EditorOrder(1700)]
         public InputBinding ViewpointFront = new InputBinding(KeyboardKeys.Numpad0);
 
         [DefaultValue(typeof(InputBinding), "Numpad5")]
-        [EditorDisplay("Viewport"), EditorOrder(1610)]
+        [EditorDisplay("Viewport"), EditorOrder(1710)]
         public InputBinding ViewpointBack = new InputBinding(KeyboardKeys.Numpad5);
 
         [DefaultValue(typeof(InputBinding), "Numpad4")]
-        [EditorDisplay("Viewport"), EditorOrder(1620)]
+        [EditorDisplay("Viewport"), EditorOrder(1720)]
         public InputBinding ViewpointLeft = new InputBinding(KeyboardKeys.Numpad4);
 
         [DefaultValue(typeof(InputBinding), "Numpad6")]
-        [EditorDisplay("Viewport"), EditorOrder(1630)]
+        [EditorDisplay("Viewport"), EditorOrder(1730)]
         public InputBinding ViewpointRight = new InputBinding(KeyboardKeys.Numpad6);
 
         [DefaultValue(typeof(InputBinding), "Numpad8")]
-        [EditorDisplay("Viewport"), EditorOrder(1640)]
+        [EditorDisplay("Viewport"), EditorOrder(1740)]
         public InputBinding ViewpointTop = new InputBinding(KeyboardKeys.Numpad8);
 
         [DefaultValue(typeof(InputBinding), "Numpad2")]
-        [EditorDisplay("Viewport"), EditorOrder(1650)]
+        [EditorDisplay("Viewport"), EditorOrder(1750)]
         public InputBinding ViewpointBottom = new InputBinding(KeyboardKeys.Numpad2);
 
         #endregion
