@@ -1077,8 +1077,8 @@ namespace FlaxEditor.Viewport
                 _isControllingMouse = _input.IsControllingMouse;
 
                 // Simulate holding mouse right down for trackpad users
-                if (_prevInput.IsMouseRightDown && !_input.IsMouseRightDown)
-                    _isVirtualMouseRightDown = false;
+                if ((_prevInput.IsMouseRightDown && !_input.IsMouseRightDown) || win.GetKeyDown(KeyboardKeys.Escape))
+                    _isVirtualMouseRightDown = false; // Cancel when mouse right or escape is pressed
                 if (_wasVirtualMouseRightDown)
                     wasControllingMouse = true;
                 if (_isVirtualMouseRightDown) 
@@ -1385,6 +1385,7 @@ namespace FlaxEditor.Viewport
             {
                 OnControlMouseEnd(RootWindow.Window);
                 _isControllingMouse = false;
+                _isVirtualMouseRightDown = false;
             }
         }
 
