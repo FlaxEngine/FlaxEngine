@@ -271,7 +271,7 @@ namespace Flax.Build
 
             // Found
             IsValid = true;
-            Log.Verbose($"Found .NET SDK {VersionName} (runtime {RuntimeVersionName}) at {RootPath}");
+            Log.Info($"Using .NET SDK {VersionName}, runtime {RuntimeVersionName} ({RootPath})");
             foreach (var e in _hostRuntimes)
                 Log.Verbose($"  - Host Runtime for {e.Key.Key} {e.Key.Value}");
         }
