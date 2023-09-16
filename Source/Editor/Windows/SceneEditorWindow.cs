@@ -44,6 +44,14 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.StepFrame, Editor.Simulation.RequestPlayOneFrame);
             InputActions.Add(options => options.CookAndRun, () => Editor.Windows.GameCookerWin.BuildAndRun());
             InputActions.Add(options => options.RunCookedGame, () => Editor.Windows.GameCookerWin.RunCooked());
+            InputActions.Add(options => options.BuildScenesData, Editor.BuildScenesOrCancel);
+            InputActions.Add(options => options.BakeLightmaps, Editor.BakeLightmapsOrCancel);
+            InputActions.Add(options => options.ClearLightmaps, Editor.ClearLightmaps);
+            InputActions.Add(options => options.BakeEnvProbes, Editor.BakeAllEnvProbes);
+            InputActions.Add(options => options.BuildCSG, Editor.BuildCSG);
+            InputActions.Add(options => options.BuildNav, Editor.BuildNavMesh);
+            InputActions.Add(options => options.BuildSDF, Editor.BuildAllMeshesSDF);
+            InputActions.Add(options => options.TakeScreenshot, Editor.Windows.TakeScreenshot);
         }
     }
 }

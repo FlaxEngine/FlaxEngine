@@ -126,22 +126,58 @@ namespace FlaxEditor.Options
 
         #endregion
 
+        #region Tools
+
+        [DefaultValue(typeof(InputBinding), "Ctrl+F10")]
+        [EditorDisplay("Tools", "Build scenes data"), EditorOrder(600)]
+        public InputBinding BuildScenesData = new InputBinding(KeyboardKeys.F10, KeyboardKeys.Control);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Tools", "Bake lightmaps"), EditorOrder(601)]
+        public InputBinding BakeLightmaps = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Tools", "Clear lightmaps data"), EditorOrder(602)]
+        public InputBinding ClearLightmaps = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Tools", "Bake all env probes"), EditorOrder(603)]
+        public InputBinding BakeEnvProbes = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Tools", "Build CSG mesh"), EditorOrder(604)]
+        public InputBinding BuildCSG = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Tools", "Build Nav Mesh"), EditorOrder(605)]
+        public InputBinding BuildNav = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Tools", "Build all meshes SDF"), EditorOrder(606)]
+        public InputBinding BuildSDF = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "F12")]
+        [EditorDisplay("Tools", "Take screenshot"), EditorOrder(607)]
+        public InputBinding TakeScreenshot = new InputBinding(KeyboardKeys.F12);
+
+        #endregion
+
         #region Debugger
 
         [DefaultValue(typeof(InputBinding), "F5")]
-        [EditorDisplay("Debugger", "Continue"), EditorOrder(610)]
+        [EditorDisplay("Debugger", "Continue"), EditorOrder(810)]
         public InputBinding DebuggerContinue = new InputBinding(KeyboardKeys.F5);
 
         [DefaultValue(typeof(InputBinding), "F10")]
-        [EditorDisplay("Debugger", "Step Over"), EditorOrder(620)]
+        [EditorDisplay("Debugger", "Step Over"), EditorOrder(820)]
         public InputBinding DebuggerStepOver = new InputBinding(KeyboardKeys.F10);
 
         [DefaultValue(typeof(InputBinding), "F11")]
-        [EditorDisplay("Debugger", "Step Into"), EditorOrder(630)]
+        [EditorDisplay("Debugger", "Step Into"), EditorOrder(830)]
         public InputBinding DebuggerStepInto = new InputBinding(KeyboardKeys.F11);
 
         [DefaultValue(typeof(InputBinding), "Shift+F11")]
-        [EditorDisplay("Debugger", "Step Out"), EditorOrder(640)]
+        [EditorDisplay("Debugger", "Step Out"), EditorOrder(840)]
         public InputBinding DebuggerStepOut = new InputBinding(KeyboardKeys.F11, KeyboardKeys.Shift);
 
         #endregion
