@@ -162,6 +162,22 @@ namespace FlaxEditor.Options
 
         #endregion
 
+        #region Profiler
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Profiler", "Open Profiler Window"), EditorOrder(630)]
+        public InputBinding ProfilerWindow = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Profiler", "Start/Stop Profiler"), EditorOrder(631)]
+        public InputBinding ProfilerStartStop = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Profiler", "Clear Profiler data"), EditorOrder(632)]
+        public InputBinding ProfilerClear = new InputBinding(KeyboardKeys.None);
+
+        #endregion
+
         #region Debugger
 
         [DefaultValue(typeof(InputBinding), "F5")]

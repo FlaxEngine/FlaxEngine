@@ -72,6 +72,7 @@ namespace FlaxEditor.Modules
         private ContextMenuButton _menuToolsBuildNavMesh;
         private ContextMenuButton _menuToolsBuildAllMeshesSDF;
         private ContextMenuButton _menuToolsCancelBuilding;
+        private ContextMenuButton _menuToolsProfilerWindow;
         private ContextMenuButton _menuToolsSetTheCurrentSceneViewAsDefault;
         private ContextMenuButton _menuToolsTakeScreenshot;
         private ContextMenuChildMenu _menuWindowApplyWindowLayout;
@@ -589,7 +590,7 @@ namespace FlaxEditor.Modules
             cm.AddButton("Game Cooker", Editor.Windows.GameCookerWin.FocusOrShow);
             _menuToolsCancelBuilding = cm.AddButton("Cancel building game", () => GameCooker.Cancel());
             cm.AddSeparator();
-            cm.AddButton("Profiler", Editor.Windows.ProfilerWin.FocusOrShow);
+            _menuToolsProfilerWindow = cm.AddButton("Profiler", inputOptions.ProfilerWindow, () => Editor.Windows.ProfilerWin.FocusOrShow());
             cm.AddSeparator();
             _menuToolsSetTheCurrentSceneViewAsDefault = cm.AddButton("Set current scene view as project default", SetTheCurrentSceneViewAsDefault);
             _menuToolsTakeScreenshot = cm.AddButton("Take screenshot", inputOptions.TakeScreenshot, Editor.Windows.TakeScreenshot);
@@ -611,7 +612,7 @@ namespace FlaxEditor.Modules
             cm.AddButton("Output Log", Editor.Windows.OutputLogWin.FocusOrShow);
             cm.AddButton("Graphics Quality", Editor.Windows.GraphicsQualityWin.FocusOrShow);
             cm.AddButton("Game Cooker", Editor.Windows.GameCookerWin.FocusOrShow);
-            cm.AddButton("Profiler", Editor.Windows.ProfilerWin.FocusOrShow);
+            cm.AddButton("Profiler", inputOptions.ProfilerWindow, Editor.Windows.ProfilerWin.FocusOrShow);
             cm.AddButton("Content Search", Editor.ContentFinding.ShowSearch);
             cm.AddButton("Visual Script Debugger", Editor.Windows.VisualScriptDebuggerWin.FocusOrShow);
             cm.AddSeparator();
@@ -660,6 +661,7 @@ namespace FlaxEditor.Modules
             _menuToolsBuildCSGMesh.ShortKeys = inputOptions.BuildCSG.ToString();
             _menuToolsBuildNavMesh.ShortKeys = inputOptions.BuildNav.ToString();
             _menuToolsBuildAllMeshesSDF.ShortKeys = inputOptions.BuildSDF.ToString();
+            _menuToolsProfilerWindow.ShortKeys = inputOptions.ProfilerWindow.ToString();
             _menuToolsTakeScreenshot.ShortKeys = inputOptions.TakeScreenshot.ToString();
 
             MainMenuShortcutKeysUpdated?.Invoke();

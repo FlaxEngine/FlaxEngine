@@ -52,6 +52,9 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.BuildNav, Editor.BuildNavMesh);
             InputActions.Add(options => options.BuildSDF, Editor.BuildAllMeshesSDF);
             InputActions.Add(options => options.TakeScreenshot, Editor.Windows.TakeScreenshot);
+            InputActions.Add(options => options.ProfilerWindow, () => Editor.Windows.ProfilerWin.FocusOrShow());
+            InputActions.Add(options => options.ProfilerStartStop, () => { Editor.Windows.ProfilerWin.LiveRecording = !Editor.Windows.ProfilerWin.LiveRecording; Editor.UI.AddStatusMessage($"Profiling {(Editor.Windows.ProfilerWin.LiveRecording ? "started" : "stopped")}."); });
+            InputActions.Add(options => options.ProfilerClear, () => { Editor.Windows.ProfilerWin.Clear(); Editor.UI.AddStatusMessage($"Profiling results cleared."); });
         }
     }
 }

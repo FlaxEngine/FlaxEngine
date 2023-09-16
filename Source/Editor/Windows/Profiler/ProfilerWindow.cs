@@ -116,6 +116,10 @@ namespace FlaxEditor.Windows.Profiler
                 Parent = this
             };
             _tabs.SelectedTabChanged += OnSelectedTabChanged;
+
+            InputActions.Add(options => options.ProfilerWindow, Hide);
+            InputActions.Add(options => options.ProfilerStartStop, () => LiveRecording = !LiveRecording);
+            InputActions.Add(options => options.ProfilerClear, Clear);
         }
 
         /// <summary>

@@ -306,6 +306,9 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.Play, Editor.Simulation.DelegatePlayOrStopPlayInEditor);
             InputActions.Add(options => options.Pause, Editor.Simulation.RequestResumeOrPause);
             InputActions.Add(options => options.StepFrame, Editor.Simulation.RequestPlayOneFrame);
+            InputActions.Add(options => options.ProfilerWindow, () => Editor.Windows.ProfilerWin.FocusOrShow());
+            InputActions.Add(options => options.ProfilerStartStop, () => { Editor.Windows.ProfilerWin.LiveRecording = !Editor.Windows.ProfilerWin.LiveRecording; Editor.UI.AddStatusMessage($"Profiling {(Editor.Windows.ProfilerWin.LiveRecording ? "started" : "stopped")}."); });
+            InputActions.Add(options => options.ProfilerClear, () => { Editor.Windows.ProfilerWin.Clear(); Editor.UI.AddStatusMessage($"Profiling results cleared."); });
         }
 
         private void ChangeViewportRatio(ViewportScaleOptions v)
