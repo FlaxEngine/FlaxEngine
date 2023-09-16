@@ -120,11 +120,10 @@ namespace FlaxEditor.Modules
                 // Cache data
                 string sourcePath = item.Path;
                 string sourceFolder = System.IO.Path.GetDirectoryName(sourcePath);
-                string extension = System.IO.Path.GetExtension(sourcePath);
-                string destinationPath = StringUtils.CombinePaths(sourceFolder, shortName + extension);
 
                 if (item.IsFolder)
                 {
+                    string destinationPath = StringUtils.CombinePaths(sourceFolder, shortName);
                     // Check if directory is unique
                     if (System.IO.Directory.Exists(destinationPath))
                     {
@@ -134,6 +133,8 @@ namespace FlaxEditor.Modules
                 }
                 else
                 {
+                    string extension = System.IO.Path.GetExtension(sourcePath);
+                    string destinationPath = StringUtils.CombinePaths(sourceFolder, shortName + extension);
                     // Check if file is unique
                     if (System.IO.File.Exists(destinationPath))
                     {
