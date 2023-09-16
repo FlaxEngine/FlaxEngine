@@ -58,6 +58,7 @@ using Mathr = FlaxEngine.Mathf;
 */
 using System;
 using System.Globalization;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -951,6 +952,91 @@ namespace FlaxEngine
         {
             Lerp(ref start, ref end, ref amount, out Vector2 result);
             return result;
+        }
+
+        /// <summary>
+        /// Performs a gradual change of a vector towards a specified target over time
+        /// </summary>
+        /// <param name="current">Current vector.</param>
+        /// <param name="target">Target vector.</param>
+        /// <param name="currentVelocity">Used to store the current velocity.</param>
+        /// <param name="smoothTime">Determines the approximate time it should take to reach the target vector.</param>
+        /// <param name="maxSpeed">Defines the upper limit on the speed of the Smooth Damp.</param>
+        public static Vector2 SmoothDamp(Vector2 current, Vector2 target, ref Vector2 currentVelocity, float smoothTime, float maxSpeed)
+        {
+            return SmoothDamp(current, target, ref currentVelocity, smoothTime, maxSpeed, Time.DeltaTime);
+        }
+
+        /// <summary>
+        /// Performs a gradual change of a vector towards a specified target over time
+        /// </summary>
+        /// <param name="current">Current vector.</param>
+        /// <param name="target">Target vector.</param>
+        /// <param name="currentVelocity">Used to store the current velocity.</param>
+        /// <param name="smoothTime">Determines the approximate time it should take to reach the target vector.</param>
+        public static Vector2 SmoothDamp(Vector2 current, Vector2 target, ref Vector2 currentVelocity, float smoothTime)
+        {
+            return SmoothDamp(current, target, ref currentVelocity, smoothTime, float.PositiveInfinity, Time.DeltaTime);
+        }
+
+        /// <summary>
+        /// Performs a gradual change of a vector towards a specified target over time
+        /// </summary>
+        /// <param name="current">Current vector.</param>
+        /// <param name="target">Target vector.</param>
+        /// <param name="currentVelocity">Used to store the current velocity.</param>
+        /// <param name="smoothTime">Determines the approximate time it should take to reach the target vector.</param>
+        /// <param name="maxSpeed">Defines the upper limit on the speed of the Smooth Damp.</param>
+        /// <param name="deltaTime">Delta Time, represents the time elapsed since last frame.</param>
+        public static Vector2 SmoothDamp(Vector2 current, Vector2 target, ref Vector2 currentVelocity, float smoothTime, [DefaultValue("float.PositiveInfinity")] float maxSpeed, [DefaultValue("Time.DeltaTime")] float deltaTime)
+        {
+            smoothTime = Mathf.Max(0.0001f, smoothTime);
+            float a = 2f / smoothTime;
+            float b = a * deltaTime;
+            float e = 1f / (1f + b + 0.48f * b * b + 0.235f * b * b * b);
+
+            float change_x = current.X - target.X;
+            float change_y = current.Y - target.Y;
+            Vector2 originalTo = target;
+
+            float change = maxSpeed * smoothTime;
+            float changeSq = change * change;
+            float sqrmag = change_x * change_x + change_y * change_y;
+            if (sqrmag > changeSq)
+            {
+                var mag = (float)Math.Sqrt(sqrmag);
+                change_x = change_x / mag * change;
+                change_y = change_y / mag * change;
+            }
+
+            target.X = current.X - change_x;
+            target.Y = current.Y - change_y;
+
+            float temp_x = (currentVelocity.X + a * change_x) * deltaTime;
+            float temp_y = (currentVelocity.Y + a * change_y) * deltaTime;
+
+            currentVelocity.X = (currentVelocity.X - a * temp_x) * e;
+            currentVelocity.Y = (currentVelocity.Y - a * temp_y) * e;
+
+            float output_x = target.X + (change_x + temp_x) * e;
+            float output_y = target.Y + (change_y + temp_y) * e;
+
+            float x1 = originalTo.X - current.X;
+            float y1 = originalTo.Y - current.Y;
+
+            float x2 = output_x - originalTo.X;
+            float y2 = output_y - originalTo.Y;
+
+            if (x1 * x2 + y1 * y2 > 0)
+            {
+                output_x = originalTo.X;
+                output_y = originalTo.Y;
+
+                currentVelocity.X = (output_x - originalTo.X) / deltaTime;
+                currentVelocity.Y = (output_y - originalTo.Y) / deltaTime;
+            }
+
+            return new Vector2(output_x, output_y);
         }
 
         /// <summary>
