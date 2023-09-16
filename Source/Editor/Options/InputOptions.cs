@@ -108,6 +108,22 @@ namespace FlaxEditor.Options
         [EditorDisplay("Scene", "Run cooked game"), EditorOrder(560)]
         public InputBinding RunCookedGame = new InputBinding(KeyboardKeys.None);
 
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Scene", "Move actor to viewport"), EditorOrder(570)]
+        public InputBinding MoveActorToViewport = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Scene", "Align actor with viewport"), EditorOrder(571)]
+        public InputBinding AlignActorWithViewport = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Scene", "Align viewport with actor"), EditorOrder(572)]
+        public InputBinding AlignViewportWithActor = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Scene"), EditorOrder(573)]
+        public InputBinding PilotActor = new InputBinding(KeyboardKeys.None);
+
         #endregion
 
         #region Debugger
