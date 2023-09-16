@@ -291,7 +291,6 @@ protected:
 #else
     HashSet<FunctionType>* _functions = nullptr;
     CriticalSection* _locker = nullptr;
-    int32* _lockerRefCount = nullptr;
 #endif
     typedef void (*StubSignature)(void*, Params...);
 
@@ -324,8 +323,6 @@ public:
                 i->Item.LambdaCtor();
         }
         _locker = other._locker;
-        _lockerRefCount = other._lockerRefCount;
-        *_lockerRefCount = *_lockerRefCount + 1;
 #endif
     }
 
@@ -339,10 +336,8 @@ public:
 #else
         _functions = other._functions;
         _locker = other._locker;
-        _lockerRefCount = other._lockerRefCount;
         other._functions = nullptr;
         other._locker = nullptr;
-        other._lockerRefCount = nullptr;
 #endif
     }
 
@@ -363,15 +358,8 @@ public:
 #else
         if (_locker != nullptr)
         {
-            int32& lockerRefCount = *_lockerRefCount;
-            lockerRefCount--;
-            if (lockerRefCount == 0)
-            {
-                Allocator::Free(_locker);
-                Allocator::Free(_lockerRefCount);
-                _locker = nullptr;
-                _lockerRefCount = nullptr;
-            }
+            Allocator::Free(_locker);
+            _locker = nullptr;
         }
         if (_functions != nullptr)
         {
@@ -416,10 +404,8 @@ public:
 #else
             _functions = other._functions;
             _locker = other._locker;
-            _lockerRefCount = other._lockerRefCount;
             other._functions = nullptr;
             other._locker = nullptr;
-            other._lockerRefCount = nullptr;
 #endif
         }
         return *this;
@@ -522,11 +508,7 @@ public:
         }
 #else
         if (_locker == nullptr)
-        {
             _locker = New<CriticalSection>();
-            _lockerRefCount = New<int32>();
-            *_lockerRefCount = 1;
-        }
         ScopeLock lock(*_locker);
         if (_functions == nullptr)
             _functions = New<HashSet<FunctionType>>(32);
@@ -587,11 +569,7 @@ public:
         }
 #else
         if (_locker == nullptr)
-        {
             _locker = New<CriticalSection>();
-            _lockerRefCount = New<int32>();
-            *_lockerRefCount = 1;
-        }
         ScopeLock lock(*_locker);
         if (_functions && _functions->Contains(f))
             return; 
