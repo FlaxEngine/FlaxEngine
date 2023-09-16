@@ -520,8 +520,16 @@ namespace FlaxEditor.Windows
             }
 
             // Cache data
-            string extension = Path.GetExtension(item.Path);
-            var newPath = StringUtils.CombinePaths(item.ParentFolder.Path, newShortName + extension);
+            string newPath;
+            if (item.IsFolder)
+            {
+                newPath = StringUtils.CombinePaths(item.ParentFolder.Path, newShortName);
+            }
+            else
+            {
+                string extension = Path.GetExtension(item.Path);
+                newPath = StringUtils.CombinePaths(item.ParentFolder.Path, newShortName + extension);
+            }
 
             // Check if was renaming mock element
             // Note: we create `_newElement` and then rename it to create new asset
