@@ -441,6 +441,9 @@ namespace FlaxEditor.Viewport
 
             if (useWidgets)
             {
+                var largestText = "Invert Panning";
+                var textSize = Style.Current.FontMedium.MeasureText(largestText);
+                var xLocationForExtras = textSize.X + 5;
                 // Camera speed widget
                 var camSpeed = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
                 var camSpeedCM = new ContextMenu();
@@ -541,7 +544,7 @@ namespace FlaxEditor.Viewport
                 {
                     var ortho = ViewWidgetButtonMenu.AddButton("Orthographic");
                     ortho.CloseMenuOnClick = false;
-                    var orthoValue = new CheckBox(90, 2, _isOrtho)
+                    var orthoValue = new CheckBox(xLocationForExtras, 2, _isOrtho)
                     {
                         Parent = ortho
                     };
@@ -581,7 +584,7 @@ namespace FlaxEditor.Viewport
                 {
                     var fov = ViewWidgetButtonMenu.AddButton("Field Of View");
                     fov.CloseMenuOnClick = false;
-                    var fovValue = new FloatValueBox(1, 90, 2, 70.0f, 35.0f, 160.0f, 0.1f)
+                    var fovValue = new FloatValueBox(1, xLocationForExtras, 2, 70.0f, 35.0f, 160.0f, 0.1f)
                     {
                         Parent = fov
                     };
@@ -598,7 +601,7 @@ namespace FlaxEditor.Viewport
                 {
                     var orthoSize = ViewWidgetButtonMenu.AddButton("Ortho Scale");
                     orthoSize.CloseMenuOnClick = false;
-                    var orthoSizeValue = new FloatValueBox(_orthoSize, 90, 2, 70.0f, 0.001f, 100000.0f, 0.01f)
+                    var orthoSizeValue = new FloatValueBox(_orthoSize, xLocationForExtras, 2, 70.0f, 0.001f, 100000.0f, 0.01f)
                     {
                         Parent = orthoSize
                     };
@@ -615,7 +618,7 @@ namespace FlaxEditor.Viewport
                 {
                     var nearPlane = ViewWidgetButtonMenu.AddButton("Near Plane");
                     nearPlane.CloseMenuOnClick = false;
-                    var nearPlaneValue = new FloatValueBox(2.0f, 90, 2, 70.0f, 0.001f, 1000.0f)
+                    var nearPlaneValue = new FloatValueBox(2.0f, xLocationForExtras, 2, 70.0f, 0.001f, 1000.0f)
                     {
                         Parent = nearPlane
                     };
@@ -627,7 +630,7 @@ namespace FlaxEditor.Viewport
                 {
                     var farPlane = ViewWidgetButtonMenu.AddButton("Far Plane");
                     farPlane.CloseMenuOnClick = false;
-                    var farPlaneValue = new FloatValueBox(1000, 90, 2, 70.0f, 10.0f)
+                    var farPlaneValue = new FloatValueBox(1000, xLocationForExtras, 2, 70.0f, 10.0f)
                     {
                         Parent = farPlane
                     };
@@ -639,7 +642,7 @@ namespace FlaxEditor.Viewport
                 {
                     var brightness = ViewWidgetButtonMenu.AddButton("Brightness");
                     brightness.CloseMenuOnClick = false;
-                    var brightnessValue = new FloatValueBox(1.0f, 90, 2, 70.0f, 0.001f, 10.0f, 0.001f)
+                    var brightnessValue = new FloatValueBox(1.0f, xLocationForExtras, 2, 70.0f, 0.001f, 10.0f, 0.001f)
                     {
                         Parent = brightness
                     };
@@ -651,7 +654,7 @@ namespace FlaxEditor.Viewport
                 {
                     var resolution = ViewWidgetButtonMenu.AddButton("Resolution");
                     resolution.CloseMenuOnClick = false;
-                    var resolutionValue = new FloatValueBox(1.0f, 90, 2, 70.0f, 0.1f, 4.0f, 0.001f)
+                    var resolutionValue = new FloatValueBox(1.0f, xLocationForExtras, 2, 70.0f, 0.1f, 4.0f, 0.001f)
                     {
                         Parent = resolution
                     };
@@ -663,7 +666,7 @@ namespace FlaxEditor.Viewport
                 {
                     var invert = ViewWidgetButtonMenu.AddButton("Invert Panning");
                     invert.CloseMenuOnClick = false;
-                    var invertValue = new CheckBox(90, 2, _invertPanning)
+                    var invertValue = new CheckBox(xLocationForExtras, 2, _invertPanning)
                     {
                         Parent = invert
                     };
