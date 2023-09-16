@@ -719,6 +719,13 @@ bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePa
         StringAnsi nativeName = _name.EndsWith(".CSharp") ? StringAnsi(_name.Get(), _name.Length() - 7) : StringAnsi(_name);
         RegisterNativeLibrary(nativeName.Get(), StringAnsi(nativePath).Get());
     }
+#if USE_EDITOR
+    // Register the editor module location for Assembly resolver
+    else
+    {
+        RegisterNativeLibrary(_name.Get(), StringAnsi(assemblyPath).Get());
+    }
+#endif
 
     _hasCachedClasses = false;
     _assemblyPath = assemblyPath;

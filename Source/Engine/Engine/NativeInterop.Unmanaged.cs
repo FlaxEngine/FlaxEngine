@@ -184,7 +184,7 @@ namespace FlaxEngine.Interop
         {
             string moduleName = Marshal.PtrToStringAnsi(moduleNamePtr);
             string modulePath = Marshal.PtrToStringAnsi(modulePathPtr);
-            nativeLibraryPaths[moduleName] = modulePath;
+            libraryPaths[moduleName] = modulePath;
         }
 
         [UnmanagedCallersOnly]
@@ -909,7 +909,7 @@ namespace FlaxEngine.Interop
                 loadedNativeLibraries.Remove(nativeLibraryName);
             }
             if (nativeLibraryName != null)
-                nativeLibraryPaths.Remove(nativeLibraryName);
+                libraryPaths.Remove(nativeLibraryName);
         }
 
         [UnmanagedCallersOnly]
