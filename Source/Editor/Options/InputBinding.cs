@@ -136,10 +136,19 @@ namespace FlaxEditor.Options
 
         private bool ProcessModifiers(Control control)
         {
-            var root = control.Root;
-            bool ctrlPressed = root.GetKey(KeyboardKeys.Control);
-            bool shiftPressed = root.GetKey(KeyboardKeys.Shift);
-            bool altPressed = root.GetKey(KeyboardKeys.Alt);
+            return ProcessModifiers(control.Root.GetKey);
+        }
+
+        private bool ProcessModifiers(Window window)
+        {
+            return ProcessModifiers(window.GetKey);
+        }
+
+        private bool ProcessModifiers(Func<KeyboardKeys, bool> getKeyFunc)
+        {
+            bool ctrlPressed = getKeyFunc(KeyboardKeys.Control);
+            bool shiftPressed = getKeyFunc(KeyboardKeys.Shift);
+            bool altPressed = getKeyFunc(KeyboardKeys.Alt);
 
             bool mod1 = false;
             if (Modifier1 == KeyboardKeys.None)
@@ -208,6 +217,16 @@ namespace FlaxEditor.Options
                 return false;
 
             return ProcessModifiers(control);
+        }
+
+        /// <summary>
+        /// Processes this input binding to check if state matches.
+        /// </summary>
+        /// <param name="window">The input providing window.</param>
+        /// <returns>True if input has been processed, otherwise false.</returns>
+        public bool Process(Window window)
+        {
+            return window.GetKey(Key) && ProcessModifiers(window);
         }
 
         /// <inheritdoc />
