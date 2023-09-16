@@ -44,6 +44,10 @@ namespace
         if (document.HasParseError())
             return;
 
+        // Check if this is actually rider and not another jetbrains product
+        if (document.FindMember("name")->value != "JetBrains Rider")
+            return;
+
         // Find version
         auto versionMember = document.FindMember("version");
         if (versionMember == document.MemberEnd())
