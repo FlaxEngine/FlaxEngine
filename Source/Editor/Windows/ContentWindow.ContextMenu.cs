@@ -288,15 +288,6 @@ namespace FlaxEditor.Windows
                             popup.Hide();
                         };
                     };
-                    /*
-                    button.Size = new Float2(200, 100);
-                    var nameLabel = new Label()
-                    {
-                        Text = "Name:",
-                        Parent = button,
-                        AutoWidth = true,
-                    };
-                    */
                 }
             }
 
