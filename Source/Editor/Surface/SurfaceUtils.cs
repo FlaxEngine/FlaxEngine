@@ -12,6 +12,8 @@ using FlaxEditor.Scripting;
 using FlaxEditor.Utilities;
 using FlaxEngine.Utilities;
 using FlaxEngine;
+using FlaxEditor.GUI;
+using FlaxEditor.Options;
 
 namespace FlaxEditor.Surface
 {
@@ -531,6 +533,25 @@ namespace FlaxEditor.Surface
             else if (v is int i)
                 value = new Double4(i);
             return value;
+        }
+
+        public static void VisjectCommonToolstripSetup(Editor editor, ToolStrip toolStrip, FlaxEditor.Undo undo,
+            Action save, Action showWholeGraph, InputActionsContainer actionsContainer,
+            out ToolStripButton saveButton, out ToolStripButton undoButton, out ToolStripButton redoButton)
+        {
+            // Toolstrip
+            saveButton = (ToolStripButton)toolStrip.AddButton(editor.Icons.Save64, save).LinkTooltip("Save");
+            toolStrip.AddSeparator();
+            undoButton = (ToolStripButton)toolStrip.AddButton(editor.Icons.Undo64, undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
+            redoButton = (ToolStripButton)toolStrip.AddButton(editor.Icons.Redo64, undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
+            toolStrip.AddSeparator();
+            toolStrip.AddButton(editor.Icons.Search64, editor.ContentFinding.ShowSearch).LinkTooltip("Open content search tool (Ctrl+F)");
+            toolStrip.AddButton(editor.Icons.CenterView64, showWholeGraph).LinkTooltip("Show whole graph");
+
+            // Setup input actions
+            actionsContainer.Add(options => options.Undo, undo.PerformUndo);
+            actionsContainer.Add(options => options.Redo, undo.PerformRedo);
+            actionsContainer.Add(options => options.Search, editor.ContentFinding.ShowSearch);
         }
     }
 }
