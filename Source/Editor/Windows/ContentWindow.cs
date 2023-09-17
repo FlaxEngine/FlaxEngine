@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.Content.GUI;
@@ -730,7 +731,82 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
-        /// Stars creating the folder.
+        /// Starts creating a new module
+        /// </summary>
+        private async void CreateModule(string path, string moduleName, bool editorModule, bool cpp)
+        {
+            if (string.IsNullOrEmpty(moduleName) || string.IsNullOrEmpty(path))
+            {
+                Editor.LogWarning("Failed to create module due to no name");
+                return;
+            }
+  
+            var sourceFolder = SelectedNode.Folder;
+            var sourcePath = sourceFolder.Path;
+            
+            // Create folder
+            var moduleFolderPath = Path.Combine(path, moduleName);
+            Directory.CreateDirectory(moduleFolderPath);
+
+            // Create module
+            var moduleText = "using Flax.Build;\n" +
+                             "using Flax.Build.NativeCpp;\n" +
+                             $"\npublic class {moduleName} : Game{(editorModule ? "Editor" : "")}Module\n" +
+                             "{\n    " +
+                             "/// <inheritdoc />\n" +
+                             "    public override void Init()\n" +
+                             "    {\n" +
+                             "        base.Init();\n" +
+                             "\n" +
+                             "        // C#-only scripting if false\n" +
+                             $"        BuildNativeCode = {(cpp ? "true" : "false")};\n" +
+                             "    }\n" +
+                             "\n" +
+                             "    /// <inheritdoc />\n" +
+                             "    public override void Setup(BuildOptions options)\n" +
+                             "    {" +
+                             "\n" +
+                             "        base.Setup(options);\n" +
+                             "\n" +
+                             "        options.ScriptingAPI.IgnoreMissingDocumentationWarnings = true;\n" +
+                             "\n" +
+                             "        // Here you can modify the build options for your game module\n" +
+                             "        // To reference another module use: options.PublicDependencies.Add(\"Audio\");\n" +
+                             "        // To add C++ define use: options.PublicDefinitions.Add(\"COMPILE_WITH_FLAX\");\n" +
+                             "        // To learn more see scripting documentation.\n" +
+                             "    }\n" +
+                             "}";
+            
+            var modulePath = Path.Combine(moduleFolderPath, $"{moduleName}.Build.cs");
+            await File.WriteAllTextAsync(modulePath, moduleText, new UTF8Encoding());
+            Editor.Log($"Module created at {modulePath}");
+            
+            // Get editor target and target files and add module
+            var files = Directory.GetFiles(sourceFolder.Path);
+            var targetModuleText = $"Modules.Add(\"{moduleName}\");\n        ";
+            foreach (var file in files)
+            {
+                if (!file.Contains(".Build.cs", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var targetText = await File.ReadAllTextAsync(file);
+
+                if (!editorModule && targetText.Contains("GameProjectTarget", StringComparison.Ordinal))
+                    continue;
+
+                // TODO: Handle edge case when there are no modules in a target
+                var index = targetText.IndexOf("Modules.Add");
+                if (index != -1)
+                {
+                    var newText = targetText.Insert(index, targetModuleText);
+                    await File.WriteAllTextAsync(file, newText);
+                    Editor.Log($"Module added to Target: {file}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Starts creating the folder.
         /// </summary>
         public void NewFolder()
         {
