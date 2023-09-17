@@ -212,6 +212,16 @@ namespace Flax.Build
                 ridFallback = "";
                 if (string.IsNullOrEmpty(dotnetPath))
                     dotnetPath = "/usr/local/share/dotnet/";
+
+                // So there is not a real great way to do this but if the first thing in this list is x64
+                // then lets assume we are building for it and thus should using that rid and that dotnet path
+                if (Configuration.BuildArchitectures != null && Configuration.BuildArchitectures[0] == TargetArchitecture.x64)
+                {
+                    rid = $"osx-64";
+                    dotnetPath = Path.Combine(dotnetPath, "x64");
+                    architecture = TargetArchitecture.x64;
+                }
+
                 break;
             }
             default: throw new InvalidPlatformException(platform);
