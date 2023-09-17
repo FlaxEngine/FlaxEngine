@@ -1541,7 +1541,16 @@ bool InitHostfxr()
     get_hostfxr_params.size = sizeof(hostfxr_initialize_parameters);
     get_hostfxr_params.assembly_path = libraryPath.Get();
 #if PLATFORM_MAC
-    get_hostfxr_params.dotnet_root = "/usr/local/share/dotnet";
+    ::String macOSDotnetRoot = TEXT("/usr/local/share/dotnet");
+#if defined(__x86_64) || defined(__x86_64__) || defined(__amd64__) || defined(_M_X64)
+    // When emulating x64 on arm
+    const ::String dotnetRootEmulated = macOSDotnetRoot / TEXT("x64");
+    if (FileSystem::FileExists(dotnetRootEmulated / TEXT("dotnet"))) {
+        macOSDotnetRoot = dotnetRootEmulated;
+    }
+#endif
+    const FLAX_CORECLR_STRING& finalDotnetRootPath = FLAX_CORECLR_STRING(macOSDotnetRoot);
+    get_hostfxr_params.dotnet_root = finalDotnetRootPath.Get();
 #else
     get_hostfxr_params.dotnet_root = nullptr;
 #endif
