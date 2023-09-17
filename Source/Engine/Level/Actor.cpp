@@ -877,6 +877,15 @@ void Actor::EndPlay()
 #endif
 
     // Fire event for scripting
+    for (auto* script : Scripts)
+    {
+        CHECK_EXECUTE_IN_EDITOR
+        {
+            script->OnDestroy();
+        }
+    }
+
+    // Fire event for scripting
     if (IsActiveInHierarchy() && GetScene())
     {
         ASSERT(GetScene());
@@ -893,15 +902,6 @@ void Actor::EndPlay()
     {
         if (Children[i]->IsDuringPlay())
             Children[i]->EndPlay();
-    }
-
-    // Fire event for scripting
-    for (auto* script : Scripts)
-    {
-        CHECK_EXECUTE_IN_EDITOR
-        {
-            script->OnDestroy();
-        }
     }
 
     // Inform attached scripts
