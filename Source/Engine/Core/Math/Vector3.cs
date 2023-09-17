@@ -1084,9 +1084,9 @@ namespace FlaxEngine
             float b = a * deltaTime;
             float e = 1f / (1f + b + 0.48f * b * b + 0.235f * b * b * b);
 
-            float change_x = current.X - target.X;
-            float change_y = current.Y - target.Y;
-            float change_z = current.Z - target.Z;
+            Real change_x = current.X - target.X;
+            Real change_y = current.Y - target.Y;
+            Real change_z = current.Z - target.Z;
 
             Vector3 originalTo = target;
 
@@ -1095,7 +1095,7 @@ namespace FlaxEngine
             float sqrMag = change_x * change_x + change_y * change_y + change_z * change_z;
             if (sqrMag > changeSq)
             {
-                var mag = (float)Math.Sqrt(sqrMag);
+                var mag = (Real)Math.Sqrt(sqrMag);
                 change_x = change_x / mag * maxChangeSpeed;
                 change_y = change_y / mag * maxChangeSpeed;
                 change_z = change_z / mag * maxChangeSpeed;
@@ -1105,25 +1105,25 @@ namespace FlaxEngine
             target.Y = current.Y - change_y;
             target.Z = current.Z - change_z;
 
-            float temp_x = (currentVelocity.X + a * change_x) * deltaTime;
-            float temp_y = (currentVelocity.Y + a * change_y) * deltaTime;
-            float temp_z = (currentVelocity.Z + a * change_z) * deltaTime;
+            Real temp_x = (currentVelocity.X + a * change_x) * deltaTime;
+            Real temp_y = (currentVelocity.Y + a * change_y) * deltaTime;
+            Real temp_z = (currentVelocity.Z + a * change_z) * deltaTime;
 
             currentVelocity.X = (currentVelocity.X - a * temp_x) * e;
             currentVelocity.Y = (currentVelocity.Y - a * temp_y) * e;
             currentVelocity.Z = (currentVelocity.Z - a * temp_z) * e;
 
-            float output_x = target.X + (change_x + temp_x) * e;
-            float output_y = target.Y + (change_y + temp_y) * e;
-            float output_z = target.Z + (change_z + temp_z) * e;
+            Real output_x = target.X + (change_x + temp_x) * e;
+            Real output_y = target.Y + (change_y + temp_y) * e;
+            Real output_z = target.Z + (change_z + temp_z) * e;
 
-            float x1 = originalTo.X - current.X;
-            float y1 = originalTo.Y - current.Y;
-            float z1 = originalTo.Z - current.Z;
+            Real x1 = originalTo.X - current.X;
+            Real y1 = originalTo.Y - current.Y;
+            Real z1 = originalTo.Z - current.Z;
 
-            float x2 = output_x - originalTo.X;
-            float y2 = output_y - originalTo.Y;
-            float z2 = output_z - originalTo.Z;
+            Real x2 = output_x - originalTo.X;
+            Real y2 = output_y - originalTo.Y;
+            Real z2 = output_z - originalTo.Z;
 
             if (x1 * x2 + y1 * y2 + z1 * z2 > 0)
             {
