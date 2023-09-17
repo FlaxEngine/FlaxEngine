@@ -260,7 +260,7 @@ namespace FlaxEditor.Windows
                             // TODO: Check all modules in project including plugins
                             if (Directory.Exists(Path.Combine(Globals.ProjectFolder, "Source", nameTextBox.Text)))
                             {
-                                Editor.LogWarning("Cannot create plugin due to name conflict.");
+                                Editor.LogWarning("Cannot create module due to name conflict.");
                                 return;
                             }
                             CreateModule(node.Source.Path, nameTextBox.Text, editorCheckBox.Checked, cppCheckBox.Checked);
