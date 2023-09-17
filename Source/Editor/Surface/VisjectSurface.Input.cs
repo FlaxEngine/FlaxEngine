@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.Options;
@@ -223,16 +224,46 @@ namespace FlaxEditor.Surface
                 // Moving
                 else if (_isMovingSelection)
                 {
+                    bool testOption = true;
+                    float testGridSize = 15f;
                     // Calculate delta (apply view offset)
                     var viewDelta = _rootControl.Location - _movingSelectionViewPos;
                     _movingSelectionViewPos = _rootControl.Location;
                     var delta = location - _leftMouseDownPos - viewDelta;
-                    if (delta.LengthSquared > 0.01f)
+                    var deltaLengthSquared = delta.LengthSquared;
+
+                    delta /= _targetScale;
+                    if ((!testOption || Math.Abs(delta.X) >= testGridSize || (Math.Abs(delta.Y) >= testGridSize))
+                        && deltaLengthSquared > 0.01f)
                     {
                         // Move selected nodes
-                        delta /= _targetScale;
+                        Debug.Log("test " + delta.ToString() + ", " + testGridSize.ToString() + ", " + _targetScale.ToString());
+
+                        
+                        if (testOption)
+                        {
+                            // Round delta to ensure grid snapping.
+
+                            Float2 unroundedDelta = delta;
+                            unroundedDelta.X = (float) Math.CopySign(Math.Floor(Math.Abs((double)unroundedDelta.X) / testGridSize) * testGridSize, unroundedDelta.X);
+                            unroundedDelta.Y = (float)Math.CopySign(Math.Floor(Math.Abs((double)unroundedDelta.Y) / testGridSize) * testGridSize, unroundedDelta.Y);
+                            delta = unroundedDelta;
+                        }
+
                         foreach (var node in _movingNodes)
+                        {
+                            if (testOption)
+                            {
+                                // Ensure location is snapped if grid snap is on.
+
+                                Float2 unroundedLocation = node.Location;
+                                unroundedLocation.X = (float)Math.CopySign(Math.Round(Math.Abs((double)unroundedLocation.X) / testGridSize) * testGridSize, unroundedLocation.X);
+                                unroundedLocation.Y = (float)Math.CopySign(Math.Round(Math.Abs((double)unroundedLocation.Y) / testGridSize) * testGridSize, unroundedLocation.Y);
+                                node.Location = unroundedLocation;
+                            }
                             node.Location += delta;
+                        }
+
                         _leftMouseDownPos = location;
                         _movingNodesDelta += delta;
                         Cursor = CursorType.SizeAll;
