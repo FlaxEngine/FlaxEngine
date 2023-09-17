@@ -626,7 +626,7 @@ namespace FlaxEditor.Windows
 
             // Delete items
             for (int i = 0; i < toDelete.Count; i++)
-                Editor.ContentDatabase.Delete(toDelete[i]);
+                Editor.ContentDatabase.Delete(toDelete[i], true);
 
             RefreshView();
         }
