@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "SceneObjectsFactory.h"
+#include "Components/DummyScript.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Level/Prefabs/Prefab.h"
 #include "Engine/Content/Content.h"
@@ -238,6 +239,8 @@ void SceneObjectsFactory::HandleObjectDeserializationError(const ISerializable::
     {
         const Guid parentId = JsonTools::GetGuid(parentIdMember->value);
         Actor* parent = Scripting::FindObject<Actor>(parentId);
+        DummyScript* dummyScript = parent->AddScript<DummyScript>();
+        dummyScript->Data = String(buffer.GetString());
         if (parent)
         {
             LOG(Warning, "Parent actor of the missing object: {0}", parent->GetName());
