@@ -18,18 +18,11 @@ namespace FlaxEditor.Surface
         /// </summary>
         public readonly InputActionsContainer InputActions;
 
-        /// <summary>
-        /// Should grid snapping be enabled for these nodes?
-        /// </summary>
-        public bool GridSnappingEnabled = false;
-
         private string _currentInputText = string.Empty;
         private Float2 _movingNodesDelta;
         private Float2 _gridRoundingDelta;
         private HashSet<SurfaceNode> _movingNodes;
         private readonly Stack<InputBracket> _inputBrackets = new Stack<InputBracket>();
-        private readonly float _gridSize = 15f;
-
 
         private class InputBracket
         {
@@ -254,10 +247,6 @@ namespace FlaxEditor.Surface
                     if ((!GridSnappingEnabled || Math.Abs(delta.X) >= _gridSize || (Math.Abs(delta.Y) >= _gridSize))
                         && deltaLengthSquared > 0.01f)
                     {
-                        // Move selected nodes
-                        Debug.Log("test " + delta.ToString() + ", " + _gridSize.ToString() + ", " + _targetScale.ToString());
-
-                        // The change that occurred by rounding. Used to retain specific delta values if it doesn't snap on one axis but does on another.
                         if (GridSnappingEnabled)
                         {
                             Float2 unroundedDelta = delta;

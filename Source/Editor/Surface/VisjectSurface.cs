@@ -30,6 +30,12 @@ namespace FlaxEditor.Surface
         /// </summary>
         protected SurfaceRootControl _rootControl;
 
+        /// <summary>
+        /// Is grid snapping enabled for this surface?
+        /// </summary>
+        public bool GridSnappingEnabled = false;
+
+        private readonly float _gridSize = 15f;
         private float _targetScale = 1.0f;
         private float _moveViewWithMouseDragSpeed = 1.0f;
         private bool _canEdit = true;
