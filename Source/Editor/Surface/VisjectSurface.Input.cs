@@ -181,8 +181,8 @@ namespace FlaxEditor.Surface
         private Float2 RoundToGrid(Float2 point)
         {
             Float2 pointToRound = point;
-            pointToRound.X = (float)Math.CopySign(Math.Floor(Math.Abs((double)pointToRound.X) / _gridSize) * _gridSize, pointToRound.X);
-            pointToRound.Y = (float)Math.CopySign(Math.Floor(Math.Abs((double)pointToRound.Y) / _gridSize) * _gridSize, pointToRound.Y);
+            pointToRound.X = (float)Math.CopySign(Math.Floor(Math.Abs((double)pointToRound.X) / GridSize) * GridSize, pointToRound.X);
+            pointToRound.Y = (float)Math.CopySign(Math.Floor(Math.Abs((double)pointToRound.Y) / GridSize) * GridSize, pointToRound.Y);
             
             return pointToRound;
         }
@@ -244,7 +244,7 @@ namespace FlaxEditor.Surface
                     var deltaLengthSquared = delta.LengthSquared;
 
                     delta /= _targetScale;
-                    if ((!GridSnappingEnabled || Math.Abs(delta.X) >= _gridSize || (Math.Abs(delta.Y) >= _gridSize))
+                    if ((!GridSnappingEnabled || Math.Abs(delta.X) >= GridSize || (Math.Abs(delta.Y) >= GridSize))
                         && deltaLengthSquared > 0.01f)
                     {
                         if (GridSnappingEnabled)

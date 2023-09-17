@@ -35,7 +35,11 @@ namespace FlaxEditor.Surface
         /// </summary>
         public bool GridSnappingEnabled = false;
 
-        private readonly float _gridSize = 15f;
+        /// <summary>
+        /// The size of the snapping grid.
+        /// </summary>
+        public static readonly float GridSize = 15f;
+
         private float _targetScale = 1.0f;
         private float _moveViewWithMouseDragSpeed = 1.0f;
         private bool _canEdit = true;
