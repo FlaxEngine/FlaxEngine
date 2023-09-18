@@ -776,9 +776,9 @@ namespace FlaxEditor.Windows
                              "        // To learn more see scripting documentation.\n" +
                              "    }\n" +
                              "}";
-            
+            moduleText = Encoding.UTF8.GetString(Encoding.Default.GetBytes(moduleText));
             var modulePath = Path.Combine(moduleFolderPath, $"{moduleName}.Build.cs");
-            await File.WriteAllTextAsync(modulePath, moduleText, new UTF8Encoding());
+            await File.WriteAllTextAsync(modulePath, moduleText);
             Editor.Log($"Module created at {modulePath}");
             
             // Get editor target and target files and add module
