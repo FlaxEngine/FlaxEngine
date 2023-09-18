@@ -520,7 +520,7 @@ namespace FlaxEditor.Windows
             }
 
             // Cache data
-            string extension = Path.GetExtension(item.Path);
+            string extension = item.IsFolder ? "" : Path.GetExtension(item.Path);
             var newPath = StringUtils.CombinePaths(item.ParentFolder.Path, newShortName + extension);
 
             // Check if was renaming mock element
