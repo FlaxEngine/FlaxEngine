@@ -72,7 +72,7 @@ namespace physx
 			PX_INLINE Type(const Type& t) : mID(t.mID) {}
 
 			/**
-			\brief Assigment operator
+			\brief Assignment operator
 			*/
 			PX_INLINE Type& operator = (const Type& t) { mID = t.mID; return *this; }
 
