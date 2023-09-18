@@ -40,6 +40,8 @@ namespace Flax.Build.Platforms
                 Log.Warning("Missing iPhoneSDK. Cannot build for iOS platform.");
                 HasRequiredSDKsInstalled = false;
             }
+            else 
+                HasRequiredSDKsInstalled = true;
         }
 
         /// <inheritdoc />
