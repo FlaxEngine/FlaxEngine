@@ -24,7 +24,8 @@ namespace
         String version;
 
         RiderInstallation(const String& path_, const String& version_)
-            : path(path_), version(version_)
+            : path(path_)
+            , version(version_)
         {
         }
     };
@@ -145,14 +146,14 @@ bool sortInstallations(RiderInstallation* const& i1, RiderInstallation* const& i
     int32 version2[3] = { 0 };
     StringUtils::Parse(values1[0].Get(), &version1[0]);
     StringUtils::Parse(values1[1].Get(), &version1[1]);
-    
-    if(values1.Count() > 2)
+
+    if (values1.Count() > 2)
         StringUtils::Parse(values1[2].Get(), &version1[2]);
-    
+
     StringUtils::Parse(values2[0].Get(), &version2[0]);
     StringUtils::Parse(values2[1].Get(), &version2[1]);
-    
-    if(values2.Count() > 2)
+
+    if (values2.Count() > 2)
         StringUtils::Parse(values2[2].Get(), &version2[2]);
 
     // Compare by MAJOR.MINOR.BUILD
@@ -178,7 +179,7 @@ void RiderCodeEditor::FindEditors(Array<CodeEditor*>* output)
 
     String localAppDataPath;
     FileSystem::GetSpecialFolderPath(SpecialFolder::LocalAppData, localAppDataPath);
-    
+
 #if PLATFORM_WINDOWS
     // Lookup from all known registry locations
     SearchRegistry(&installations, HKEY_CURRENT_USER, TEXT("SOFTWARE\\WOW6432Node\\JetBrains\\Rider for Unreal Engine"));
@@ -219,21 +220,21 @@ void RiderCodeEditor::FindEditors(Array<CodeEditor*>* output)
 #if PLATFORM_MAC
     String applicationSupportFolder;
     FileSystem::GetSpecialFolderPath(SpecialFolder::ProgramData, applicationSupportFolder);
-    
-    Array<String> subMacDirectories;
 
+    Array<String> subMacDirectories;
     FileSystem::GetChildDirectories(subMacDirectories, applicationSupportFolder / TEXT("JetBrains/Toolbox/apps/Rider/ch-0/"));
     FileSystem::GetChildDirectories(subMacDirectories, applicationSupportFolder / TEXT("JetBrains/Toolbox/apps/Rider/ch-1/"));
-
-    for (auto directory : subMacDirectories) {
+    for (const String& directory : subMacDirectories)
+    {
         String riderAppDirectory = directory / TEXT("Rider.app/Contents/Resources");
         SearchDirectory(&installations, riderAppDirectory);
     }
+
     // Check the local installer version
     SearchDirectory(&installations, TEXT("/Applications/Rider.app/Contents/Resources"));
 #endif
 
-    for (auto directory : subDirectories)
+    for (const String& directory : subDirectories)
         SearchDirectory(&installations, directory);
 
     // Sort found installations by version number
