@@ -98,6 +98,7 @@ Delegate<const Float2&, int32> Input::TouchDown;
 Delegate<const Float2&, int32> Input::TouchMove;
 Delegate<const Float2&, int32> Input::TouchUp;
 Delegate<StringView> Input::ActionTriggered;
+Delegate<StringView, const InputActionState&> Input::ActionStateChanged;
 Array<ActionConfig> Input::ActionMappings;
 Array<AxisConfig> Input::AxisMappings;
 
@@ -1022,6 +1023,7 @@ void InputService::Update()
     {
         for (auto i = Actions.Begin(); i.IsNotEnd(); ++i)
         {
+            Input::ActionStateChanged(i->Key, i->Value.State);
             if (i->Value.Active)
             {
                 Input::ActionTriggered(i->Key);
