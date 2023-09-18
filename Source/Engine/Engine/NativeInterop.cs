@@ -50,7 +50,7 @@ namespace FlaxEngine.Interop
         private static Dictionary<Type, int> _typeSizeCache = new();
 
         private static Dictionary<string, IntPtr> loadedNativeLibraries = new();
-        internal static Dictionary<string, string> nativeLibraryPaths = new();
+        internal static Dictionary<string, string> libraryPaths = new();
         private static Dictionary<Assembly, string> assemblyOwnedNativeLibraries = new();
         internal static AssemblyLoadContext scriptingAssemblyLoadContext;
 
@@ -59,7 +59,7 @@ namespace FlaxEngine.Interop
         {
             if (!loadedNativeLibraries.TryGetValue(libraryName, out IntPtr nativeLibrary))
             {
-                if (!nativeLibraryPaths.TryGetValue(libraryName, out var nativeLibraryPath))
+                if (!libraryPaths.TryGetValue(libraryName, out var nativeLibraryPath))
                     nativeLibraryPath = libraryName;
 
                 nativeLibrary = NativeLibrary.Load(nativeLibraryPath, assembly, dllImportSearchPath);
@@ -101,9 +101,9 @@ namespace FlaxEngine.Interop
         private static Assembly OnScriptingAssemblyLoadContextResolving(AssemblyLoadContext assemblyLoadContext, AssemblyName assemblyName)
         {
             // FIXME: There should be a better way to resolve the path to EditorTargetPath where the dependencies are stored
-            foreach (string nativeLibraryPath in nativeLibraryPaths.Values)
+            foreach (string libraryPath in libraryPaths.Values)
             {
-                string editorTargetPath = Path.GetDirectoryName(nativeLibraryPath);
+                string editorTargetPath = Path.GetDirectoryName(libraryPath);
 
                 var assemblyPath = Path.Combine(editorTargetPath, assemblyName.Name + ".dll");
                 if (File.Exists(assemblyPath))
