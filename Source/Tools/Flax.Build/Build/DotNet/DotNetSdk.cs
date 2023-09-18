@@ -217,7 +217,7 @@ namespace Flax.Build
                 // then lets assume we are building for it and thus should using that rid and that dotnet path
                 if (architecture == TargetArchitecture.ARM64 && (Configuration.BuildArchitectures != null && Configuration.BuildArchitectures[0] == TargetArchitecture.x64))
                 {
-                    rid = $"osx-64";
+                    rid = $"osx-x64";
                     dotnetPath = Path.Combine(dotnetPath, "x64");
                     architecture = TargetArchitecture.x64;
                 }
