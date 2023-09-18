@@ -298,8 +298,10 @@ String String::TrimTrailing() const
         end--;
     }
 
-    ASSERT_LOW_LAYER(end >= start);
-    return Substring(start, end - start + 1);
+    const int32 count = end - start + 1;
+    if (start >= 0 && start + count <= Length() && count >= 0)
+        return String(_data + start, count);
+    return Empty;
 }
 
 String& String::operator/=(const Char* str)
