@@ -178,11 +178,25 @@ namespace FlaxEditor.Surface
             }
         }
 
-        private Float2 RoundToGrid(Float2 point)
+        /// <summary>
+        /// Round a visject coordinate point to the grid.
+        /// </summary>
+        /// <param name="point">The point to be rounded.</param>
+        /// <param name="ceil">Round to ceiling instead?</param>
+        /// <returns></returns>
+        public static Float2 RoundToGrid(Float2 point, bool ceil = false)
         {
+            Func<float, float> round = x =>
+            {
+                double pointGridUnits = Math.Abs((double)x) / GridSize;
+                pointGridUnits = ceil ? Math.Ceiling(pointGridUnits) : Math.Floor(pointGridUnits);
+
+                return (float)Math.CopySign(pointGridUnits * GridSize, x);
+            };
+
             Float2 pointToRound = point;
-            pointToRound.X = (float)Math.CopySign(Math.Floor(Math.Abs((double)pointToRound.X) / GridSize) * GridSize, pointToRound.X);
-            pointToRound.Y = (float)Math.CopySign(Math.Floor(Math.Abs((double)pointToRound.Y) / GridSize) * GridSize, pointToRound.Y);
+            pointToRound.X = round(pointToRound.X);
+            pointToRound.Y = round(pointToRound.Y);
             
             return pointToRound;
         }
