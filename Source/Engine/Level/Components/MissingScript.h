@@ -5,30 +5,14 @@
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Engine/Serialization/JsonWriters.h"
 
-API_CLASS(Attributes="HideInEditor") class FLAXENGINE_API DummyScript : public Script
+API_CLASS(Attributes="HideInEditor") class FLAXENGINE_API MissingScript : public Script
 {
     API_AUTO_SERIALIZATION();
-    DECLARE_SCRIPTING_TYPE(DummyScript);
+    DECLARE_SCRIPTING_TYPE(MissingScript);
 
 public:
-    API_PROPERTY(Attributes="ReadOnly")
-    FORCE_INLINE String GetMissingTypeName() const
-    {
-        if(Data.IsEmpty()) return TEXT("");
-        
-        rapidjson_flax::Document doc;
-        doc.Parse(Data.ToStringAnsi().GetText());
-        
-        String str (doc["TypeName"].GetString());
-        
-        return str;
-    }
     
-    API_PROPERTY()
-    void SetMissingTypeName(String value)
-    {
-        _missingTypeName = value;
-    }
+    API_FIELD(Attributes="ReadOnly") String MissingTypeName;
     
     API_FIELD(Hidden, Attributes="HideInEditor") String Data;
     
@@ -50,7 +34,6 @@ public:
 
 private:
     ScriptingObjectReference<Script> _referenceScript;
-    String _missingTypeName;
     
     void MapToReferenceScript()
     {
@@ -64,4 +47,4 @@ private:
     }
 };
 
-inline DummyScript::DummyScript(const SpawnParams& params) : Script(params){}
+inline MissingScript::MissingScript(const SpawnParams& params) : Script(params){}
