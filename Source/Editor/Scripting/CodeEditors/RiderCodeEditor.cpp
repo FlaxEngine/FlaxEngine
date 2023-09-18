@@ -210,6 +210,23 @@ void RiderCodeEditor::FindEditors(Array<CodeEditor*>* output)
         TEXT("flatpak run com.jetbrains.Rider"));
 #endif
 
+#if PLATFORM_MAC
+    String applicationSupportFolder;
+    FileSystem::GetSpecialFolderPath(SpecialFolder::ProgramData, applicationSupportFolder);
+    
+    Array<String> subMacDirectories;
+
+    FileSystem::GetChildDirectories(subMacDirectories, applicationSupportFolder / TEXT("JetBrains/Toolbox/apps/Rider/ch-0/"));
+    FileSystem::GetChildDirectories(subMacDirectories, applicationSupportFolder / TEXT("JetBrains/Toolbox/apps/Rider/ch-1/"));
+
+    for (auto directory : subMacDirectories) {
+        String riderAppDirectory = directory / TEXT("Rider.app/Contents/Resources");
+        SearchDirectory(&installations, riderAppDirectory);
+    }
+    // Check the local installer version
+    SearchDirectory(&installations, TEXT("/Applications/Rider.app/Contents/Resources"));
+#endif
+
     for (auto directory : subDirectories)
         SearchDirectory(&installations, directory);
 

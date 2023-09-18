@@ -462,6 +462,9 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
         }
 	}
 
+    // Sanatize the string if the exePath has spaces with properly espcaped spaces for popen
+    exePath.Replace(TEXT(" "), TEXT("\\ "));
+    
     const String cmdLine = exePath + TEXT(" ") + settings.Arguments;
     const StringAsANSI<> cmdLineAnsi(*cmdLine, cmdLine.Length());
     FILE* pipe = popen(cmdLineAnsi.Get(), "r");
