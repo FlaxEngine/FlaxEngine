@@ -208,7 +208,6 @@ namespace Flax.Build
             {
 #if USE_NETCORE
                 dotnetPath = Path.Combine(dotnetSdk.RootPath, "dotnet");
-
                 cscPath = Path.Combine(dotnetSdk.RootPath, $"sdk/{dotnetSdk.VersionName}/Roslyn/bincore/csc.dll");
                 referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/ref/net{runtimeVersionShort}/");
                 referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/analyzers/dotnet/cs/");

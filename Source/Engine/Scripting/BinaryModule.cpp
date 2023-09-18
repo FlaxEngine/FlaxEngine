@@ -1012,8 +1012,7 @@ void ManagedBinaryModule::InitType(MClass* mclass)
 
     baseType.Module->TypeNameToTypeIndex.TryGet(baseClass->GetFullName(), *(int32*)&baseType.TypeIndex);
 
-    // So we must special case this flow of a generic class of which its possible the generic base class is not 
-    // in the same module
+    // So we must special case this flow of a generic class of which its possible the generic base class is not in the same module
     if (baseType.TypeIndex == -1 && baseClass->IsGeneric())
     {
         auto genericNameIndex = baseClass->GetFullName().FindLast('`');
