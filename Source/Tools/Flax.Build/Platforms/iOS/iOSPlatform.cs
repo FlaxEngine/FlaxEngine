@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
-using System;
 using System.IO;
 
 namespace Flax.Build.Platforms
@@ -27,7 +26,6 @@ namespace Flax.Build.Platforms
         {
             if (Platform.BuildTargetPlatform != TargetPlatform.Mac)
                 return;
-
             if (!XCode.Instance.IsValid)
             {
                 Log.Warning("Missing XCode. Cannot build for iOS platform.");
@@ -36,11 +34,12 @@ namespace Flax.Build.Platforms
 
             // We should check and see if the actual iphoneSDK is installed
             string iphoneSDKPath = Utilities.ReadProcessOutput("/usr/bin/xcrun", "--sdk iphoneos --show-sdk-path");
-            if (string.IsNullOrEmpty(iphoneSDKPath) || !Directory.Exists(iphoneSDKPath)) {
+            if (string.IsNullOrEmpty(iphoneSDKPath) || !Directory.Exists(iphoneSDKPath))
+            {
                 Log.Warning("Missing iPhoneSDK. Cannot build for iOS platform.");
                 HasRequiredSDKsInstalled = false;
             }
-            else 
+            else
                 HasRequiredSDKsInstalled = true;
         }
 
