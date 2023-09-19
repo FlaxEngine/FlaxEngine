@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.IO;
 using FlaxEngine;
 using FlaxEngine.Utilities;
 
@@ -54,6 +55,13 @@ namespace FlaxEditor.States
             }
             else if (Editor.Options.Options.General.ForceScriptCompilationOnStartup && !skipCompile)
             {
+                // Generate project files when Cache is missing or was cleared previously
+                if (!Directory.Exists(Path.Combine(Editor.GameProject?.ProjectFolderPath, "Cache", "Intermediate")) ||
+                    !Directory.Exists(Path.Combine(Editor.GameProject?.ProjectFolderPath, "Cache", "Projects")))
+                {
+                    var customArgs = Editor.Instance.CodeEditing.SelectedEditor.GenerateProjectCustomArgs;
+                    ScriptsBuilder.GenerateProject(customArgs);
+                }
                 // Compile scripts before loading any scenes, then we load them and can open scenes
                 ScriptsBuilder.Compile();
             }
