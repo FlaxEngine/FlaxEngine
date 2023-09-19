@@ -7,7 +7,7 @@
 
 enum class PixelFormat : unsigned;
 enum class DirectorySearchOption;
-class TextureData;
+struct TextureData;
 
 /// <summary>
 /// Helper functions for the editor.

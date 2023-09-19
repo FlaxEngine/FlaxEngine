@@ -7,8 +7,8 @@
 
 class GPUContext;
 class GPUTask;
-class TextureMipData;
-class TextureData;
+struct TextureMipData;
+struct TextureData;
 template<typename T>
 class DataContainer;
 typedef DataContainer<byte> BytesContainer;
@@ -533,7 +533,7 @@ public:
     /// </summary>
     /// <param name="result">The result data.</param>
     /// <returns>True if cannot download data, otherwise false.</returns>
-    bool DownloadData(TextureData& result);
+    API_FUNCTION() bool DownloadData(API_PARAM(Out) TextureData& result);
 
     /// <summary>
     /// Creates GPU async task that will gather texture data from the GPU.
