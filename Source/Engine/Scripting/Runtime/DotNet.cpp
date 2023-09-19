@@ -719,6 +719,13 @@ bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePa
         StringAnsi nativeName = _name.EndsWith(".CSharp") ? StringAnsi(_name.Get(), _name.Length() - 7) : StringAnsi(_name);
         RegisterNativeLibrary(nativeName.Get(), StringAnsi(nativePath).Get());
     }
+#if USE_EDITOR
+    // Register the editor module location for Assembly resolver
+    else
+    {
+        RegisterNativeLibrary(_name.Get(), StringAnsi(assemblyPath).Get());
+    }
+#endif
 
     _hasCachedClasses = false;
     _assemblyPath = assemblyPath;
@@ -898,7 +905,6 @@ const Array<MMethod*>& MClass::GetMethods() const
         NativeMethodDefinitions& definition = methods[i];
         MMethod* method = New<MMethod>(const_cast<MClass*>(this), StringAnsi(definition.name), definition.handle, definition.numParameters, definition.methodAttributes);
         _methods.Add(method);
-
         MCore::GC::FreeMemory((void*)definition.name);
     }
     MCore::GC::FreeMemory(methods);
@@ -932,7 +938,6 @@ const Array<MField*>& MClass::GetFields() const
         NativeFieldDefinitions& definition = fields[i];
         MField* field = New<MField>(const_cast<MClass*>(this), definition.fieldHandle, definition.name, definition.fieldType, definition.fieldAttributes);
         _fields.Add(field);
-
         MCore::GC::FreeMemory((void*)definition.name);
     }
     MCore::GC::FreeMemory(fields);
@@ -977,7 +982,6 @@ const Array<MProperty*>& MClass::GetProperties() const
         const NativePropertyDefinitions& definition = foundProperties[i];
         MProperty* property = New<MProperty>(const_cast<MClass*>(this), definition.name, definition.getterHandle, definition.setterHandle, definition.getterAttributes, definition.setterAttributes);
         _properties.Add(property);
-
         MCore::GC::FreeMemory((void*)definition.name);
     }
     MCore::GC::FreeMemory(foundProperties);
@@ -1541,7 +1545,16 @@ bool InitHostfxr()
     get_hostfxr_params.size = sizeof(hostfxr_initialize_parameters);
     get_hostfxr_params.assembly_path = libraryPath.Get();
 #if PLATFORM_MAC
-    get_hostfxr_params.dotnet_root = "/usr/local/share/dotnet";
+    ::String macOSDotnetRoot = TEXT("/usr/local/share/dotnet");
+#if defined(__x86_64) || defined(__x86_64__) || defined(__amd64__) || defined(_M_X64)
+    // When emulating x64 on arm
+    const ::String dotnetRootEmulated = macOSDotnetRoot / TEXT("x64");
+    if (FileSystem::FileExists(dotnetRootEmulated / TEXT("dotnet"))) {
+        macOSDotnetRoot = dotnetRootEmulated;
+    }
+#endif
+    const FLAX_CORECLR_STRING& finalDotnetRootPath = FLAX_CORECLR_STRING(macOSDotnetRoot);
+    get_hostfxr_params.dotnet_root = finalDotnetRootPath.Get();
 #else
     get_hostfxr_params.dotnet_root = nullptr;
 #endif
@@ -1588,7 +1601,10 @@ bool InitHostfxr()
     void* hostfxr = Platform::LoadLibrary(path.Get());
     if (hostfxr == nullptr)
     {
-        LOG(Fatal, "Failed to load hostfxr library ({0})", path);
+        if (FileSystem::FileExists(path))
+            LOG(Fatal, "Failed to load hostfxr library, possible platform/architecture mismatch with the library. See log for more information. ({0})", path);
+        else
+            LOG(Fatal, "Failed to load hostfxr library ({0})", path);
         return true;
     }
     hostfxr_initialize_for_runtime_config = (hostfxr_initialize_for_runtime_config_fn)Platform::GetProcAddress(hostfxr, "hostfxr_initialize_for_runtime_config");
@@ -1627,7 +1643,28 @@ bool InitHostfxr()
     if (rc != 0 || handle == nullptr)
     {
         hostfxr_close(handle);
-        LOG(Fatal, "Failed to initialize hostfxr: {0:x} ({1})", (unsigned int)rc, String(init_params.dotnet_root));
+        if (rc == 0x80008096) // FrameworkMissingFailure
+        {
+            String platformStr;
+            switch (PLATFORM_TYPE)
+            {
+            case PlatformType::Windows:
+            case PlatformType::UWP:
+                platformStr = PLATFORM_64BITS ? "Windows x64" : "Windows x86";
+                break;
+            case PlatformType::Linux:
+                platformStr = PLATFORM_ARCH_ARM64 ? "Linux Arm64" : PLATFORM_ARCH_ARM ? "Linux Arm32" : PLATFORM_64BITS ? "Linux x64" : "Linux x86";
+                break;
+            case PlatformType::Mac:
+                platformStr = PLATFORM_ARCH_ARM || PLATFORM_ARCH_ARM64 ? "macOS Arm64" : PLATFORM_64BITS ? "macOS x64" : "macOS x86";
+                break;
+            default:;
+                platformStr = "";
+            }
+            LOG(Fatal, "Failed to resolve compatible .NET runtime version in '{0}'. Make sure the correct platform version for runtime is installed ({1})", platformStr, String(init_params.dotnet_root));
+        }
+        else
+            LOG(Fatal, "Failed to initialize hostfxr: {0:x} ({1})", (unsigned int)rc, String(init_params.dotnet_root));
         return true;
     }
 

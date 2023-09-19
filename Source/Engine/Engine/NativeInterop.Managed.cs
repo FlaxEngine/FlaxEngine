@@ -371,7 +371,6 @@ namespace FlaxEngine.Interop
         {
             if (handle == IntPtr.Zero)
                 return;
-
             ManagedHandlePool.FreeHandle(handle);
             handle = IntPtr.Zero;
         }

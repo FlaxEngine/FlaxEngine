@@ -184,7 +184,7 @@ namespace FlaxEngine.Interop
         {
             string moduleName = Marshal.PtrToStringAnsi(moduleNamePtr);
             string modulePath = Marshal.PtrToStringAnsi(modulePathPtr);
-            nativeLibraryPaths[moduleName] = modulePath;
+            libraryPaths[moduleName] = modulePath;
         }
 
         [UnmanagedCallersOnly]
@@ -297,7 +297,7 @@ namespace FlaxEngine.Interop
         internal static void GetClassFields(ManagedHandle typeHandle, NativeFieldDefinitions** classFields, int* classFieldsCount)
         {
             Type type = Unsafe.As<Type>(typeHandle.Target);
-            var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var fields = type.GetFields(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             NativeFieldDefinitions* arr = (NativeFieldDefinitions*)NativeAlloc(fields.Length, Unsafe.SizeOf<NativeFieldDefinitions>());
             for (int i = 0; i < fields.Length; i++)
@@ -331,7 +331,7 @@ namespace FlaxEngine.Interop
         internal static void GetClassProperties(ManagedHandle typeHandle, NativePropertyDefinitions** classProperties, int* classPropertiesCount)
         {
             Type type = Unsafe.As<Type>(typeHandle.Target);
-            var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var properties = type.GetProperties(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             var arr = (NativePropertyDefinitions*)NativeAlloc(properties.Length, Unsafe.SizeOf<NativePropertyDefinitions>());
             for (int i = 0; i < properties.Length; i++)
@@ -804,8 +804,8 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static IntPtr FieldGetValueBoxed(ManagedHandle fieldOwnerHandle, ManagedHandle fieldHandle)
         {
-            object fieldOwner = fieldOwnerHandle.Target;
             FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
+            object fieldOwner = field.field.IsStatic ? null : fieldOwnerHandle.Target;
             object fieldValue = field.field.GetValue(fieldOwner);
             return Invoker.MarshalReturnValueGeneric(field.field.FieldType, fieldValue);
         }
@@ -909,7 +909,7 @@ namespace FlaxEngine.Interop
                 loadedNativeLibraries.Remove(nativeLibraryName);
             }
             if (nativeLibraryName != null)
-                nativeLibraryPaths.Remove(nativeLibraryName);
+                libraryPaths.Remove(nativeLibraryName);
         }
 
         [UnmanagedCallersOnly]

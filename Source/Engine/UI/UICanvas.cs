@@ -263,39 +263,39 @@ namespace FlaxEngine
         public float NavigationInputRepeatRate { get; set; } = 0.05f;
 
         /// <summary>
-        /// The name of the input action for performing UI navigation Up (from Input Settings).
+        /// The input action for performing UI navigation Up (from Input Settings).
         /// </summary>
         [EditorOrder(510), EditorDisplay("Navigation", "Navigate Up")]
-        [Tooltip("The name of the input action for performing UI navigation Up (from Input Settings).")]
-        public string NavigationInputActionUp { get; set; } = "NavigateUp";
+        [Tooltip("The input action for performing UI navigation Up (from Input Settings).")]
+        public InputEvent NavigateUp { get; set; } = new InputEvent("NavigateUp");
 
         /// <summary>
-        /// The name of the input action for performing UI navigation Down (from Input Settings).
+        /// The input action for performing UI navigation Down (from Input Settings).
         /// </summary>
         [EditorOrder(520), EditorDisplay("Navigation", "Navigate Down")]
-        [Tooltip("The name of the input action for performing UI navigation Down (from Input Settings).")]
-        public string NavigationInputActionDown { get; set; } = "NavigateDown";
+        [Tooltip("The input action for performing UI navigation Down (from Input Settings).")]
+        public InputEvent NavigateDown { get; set; } = new InputEvent("NavigateDown");
 
         /// <summary>
-        /// The name of the input action for performing UI navigation Left (from Input Settings).
+        /// The input action for performing UI navigation Left (from Input Settings).
         /// </summary>
         [EditorOrder(530), EditorDisplay("Navigation", "Navigate Left")]
-        [Tooltip("The name of the input action for performing UI navigation Left (from Input Settings).")]
-        public string NavigationInputActionLeft { get; set; } = "NavigateLeft";
+        [Tooltip("The input action for performing UI navigation Left (from Input Settings).")]
+        public InputEvent NavigateLeft { get; set; } = new InputEvent("NavigateLeft");
 
         /// <summary>
-        /// The name of the input action for performing UI navigation Right (from Input Settings).
+        /// The input action for performing UI navigation Right (from Input Settings).
         /// </summary>
         [EditorOrder(540), EditorDisplay("Navigation", "Navigate Right")]
-        [Tooltip("The name of the input action for performing UI navigation Right (from Input Settings).")]
-        public string NavigationInputActionRight { get; set; } = "NavigateRight";
+        [Tooltip("The input action for performing UI navigation Right (from Input Settings).")]
+        public InputEvent NavigateRight { get; set; } = new InputEvent("NavigateRight");
 
         /// <summary>
-        /// The name of the input action for performing UI navigation Submit (from Input Settings).
+        /// The input action for performing UI navigation Submit (from Input Settings).
         /// </summary>
-        [EditorOrder(540), EditorDisplay("Navigation", "Navigate Submit")]
-        [Tooltip("The name of the input action for performing UI navigation Submit (from Input Settings).")]
-        public string NavigationInputActionSubmit { get; set; } = "NavigateSubmit";
+        [EditorOrder(550), EditorDisplay("Navigation", "Navigate Submit")]
+        [Tooltip("The input action for performing UI navigation Submit (from Input Settings).")]
+        public InputEvent NavigateSubmit { get; set; } = new InputEvent("NavigateSubmit");
 
         #endregion
 
@@ -620,14 +620,36 @@ namespace FlaxEngine
                 jsonWriter.WriteValue(NavigationInputRepeatDelay);
                 jsonWriter.WritePropertyName("NavigationInputRepeatRate");
                 jsonWriter.WriteValue(NavigationInputRepeatRate);
-                jsonWriter.WritePropertyName("NavigationInputActionUp");
-                jsonWriter.WriteValue(NavigationInputActionUp);
-                jsonWriter.WritePropertyName("NavigationInputActionDown");
-                jsonWriter.WriteValue(NavigationInputActionDown);
-                jsonWriter.WritePropertyName("NavigationInputActionLeft");
-                jsonWriter.WriteValue(NavigationInputActionLeft);
-                jsonWriter.WritePropertyName("NavigationInputActionRight");
-                jsonWriter.WriteValue(NavigationInputActionRight);
+
+                jsonWriter.WritePropertyName("NavigateUp");
+                jsonWriter.WriteStartObject();
+                jsonWriter.WritePropertyName("Name");
+                jsonWriter.WriteValue(NavigateUp.Name);
+                jsonWriter.WriteEndObject();
+
+                jsonWriter.WritePropertyName("NavigateDown");
+                jsonWriter.WriteStartObject();
+                jsonWriter.WritePropertyName("Name");
+                jsonWriter.WriteValue(NavigateDown.Name);
+                jsonWriter.WriteEndObject();
+
+                jsonWriter.WritePropertyName("NavigateLeft");
+                jsonWriter.WriteStartObject();
+                jsonWriter.WritePropertyName("Name");
+                jsonWriter.WriteValue(NavigateLeft.Name);
+                jsonWriter.WriteEndObject();
+
+                jsonWriter.WritePropertyName("NavigateRight");
+                jsonWriter.WriteStartObject();
+                jsonWriter.WritePropertyName("Name");
+                jsonWriter.WriteValue(NavigateRight.Name);
+                jsonWriter.WriteEndObject();
+
+                jsonWriter.WritePropertyName("NavigateSubmit");
+                jsonWriter.WriteStartObject();
+                jsonWriter.WritePropertyName("Name");
+                jsonWriter.WriteValue(NavigateSubmit.Name);
+                jsonWriter.WriteEndObject();
 
                 jsonWriter.WriteEndObject();
             }
@@ -713,25 +735,45 @@ namespace FlaxEngine
                     jsonWriter.WritePropertyName("NavigationInputRepeatRate");
                     jsonWriter.WriteValue(NavigationInputRepeatRate);
                 }
-                if (NavigationInputActionUp != other.NavigationInputActionUp)
+                if (NavigateUp.Name != other.NavigateUp.Name)
                 {
-                    jsonWriter.WritePropertyName("NavigationInputActionUp");
-                    jsonWriter.WriteValue(NavigationInputActionUp);
+                    jsonWriter.WritePropertyName("NavigateUp");
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("Name");
+                    jsonWriter.WriteValue(NavigateUp.Name);
+                    jsonWriter.WriteEndObject();
                 }
-                if (NavigationInputActionDown != other.NavigationInputActionDown)
+                if (NavigateDown.Name != other.NavigateDown.Name)
                 {
-                    jsonWriter.WritePropertyName("NavigationInputActionDown");
-                    jsonWriter.WriteValue(NavigationInputActionDown);
+                    jsonWriter.WritePropertyName("NavigateDown");
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("Name");
+                    jsonWriter.WriteValue(NavigateDown.Name);
+                    jsonWriter.WriteEndObject();
                 }
-                if (NavigationInputActionLeft != other.NavigationInputActionLeft)
+                if (NavigateLeft.Name != other.NavigateLeft.Name)
                 {
-                    jsonWriter.WritePropertyName("NavigationInputActionLeft");
-                    jsonWriter.WriteValue(NavigationInputActionLeft);
+                    jsonWriter.WritePropertyName("NavigateLeft");
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("Name");
+                    jsonWriter.WriteValue(NavigateLeft.Name);
+                    jsonWriter.WriteEndObject();
                 }
-                if (NavigationInputActionRight != other.NavigationInputActionRight)
+                if (NavigateRight.Name != other.NavigateRight.Name)
                 {
-                    jsonWriter.WritePropertyName("NavigationInputActionRight");
-                    jsonWriter.WriteValue(NavigationInputActionRight);
+                    jsonWriter.WritePropertyName("NavigateRight");
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("Name");
+                    jsonWriter.WriteValue(NavigateRight.Name);
+                    jsonWriter.WriteEndObject();
+                }
+                if (NavigateSubmit.Name != other.NavigateSubmit.Name)
+                {
+                    jsonWriter.WritePropertyName("NavigateSubmit");
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("Name");
+                    jsonWriter.WriteValue(NavigateSubmit.Name);
+                    jsonWriter.WriteEndObject();
                 }
 
                 jsonWriter.WriteEndObject();

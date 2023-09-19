@@ -212,6 +212,15 @@ namespace Flax.Build
                 ridFallback = "";
                 if (string.IsNullOrEmpty(dotnetPath))
                     dotnetPath = "/usr/local/share/dotnet/";
+
+                // Use x64 when cross-compiling from ARM64
+                if (architecture == TargetArchitecture.ARM64 && (Configuration.BuildArchitectures != null && Configuration.BuildArchitectures[0] == TargetArchitecture.x64))
+                {
+                    rid = "osx-x64";
+                    dotnetPath = Path.Combine(dotnetPath, "x64");
+                    architecture = TargetArchitecture.x64;
+                }
+
                 break;
             }
             default: throw new InvalidPlatformException(platform);
@@ -271,7 +280,7 @@ namespace Flax.Build
 
             // Found
             IsValid = true;
-            Log.Verbose($"Found .NET SDK {VersionName} (runtime {RuntimeVersionName}) at {RootPath}");
+            Log.Info($"Using .NET SDK {VersionName}, runtime {RuntimeVersionName} ({RootPath})");
             foreach (var e in _hostRuntimes)
                 Log.Verbose($"  - Host Runtime for {e.Key.Key} {e.Key.Value}");
         }
