@@ -1080,9 +1080,9 @@ namespace FlaxEngine
         public static Vector3 SmoothDamp(Vector3 current, Vector3 target, ref Vector3 currentVelocity, float smoothTime, [DefaultValue("float.PositiveInfinity")] float maxSpeed, [DefaultValue("Time.DeltaTime")] float deltaTime)
         {
             smoothTime = Mathf.Max(0.0001f, smoothTime);
-            float a = 2f / smoothTime;
-            float b = a * deltaTime;
-            float e = 1f / (1f + b + 0.48f * b * b + 0.235f * b * b * b);
+            Real a = 2f / smoothTime;
+            Real b = a * deltaTime;
+            Real e = 1f / (1f + b + 0.48f * b * b + 0.235f * b * b * b);
 
             Real change_x = current.X - target.X;
             Real change_y = current.Y - target.Y;
@@ -1090,8 +1090,8 @@ namespace FlaxEngine
 
             Vector3 originalTo = target;
 
-            float maxChangeSpeed = maxSpeed * smoothTime;
-            float changeSq = maxChangeSpeed * maxChangeSpeed;
+            Real maxChangeSpeed = maxSpeed * smoothTime;
+            Real changeSq = maxChangeSpeed * maxChangeSpeed;
             Real sqrMag = change_x * change_x + change_y * change_y + change_z * change_z;
             if (sqrMag > changeSq)
             {
