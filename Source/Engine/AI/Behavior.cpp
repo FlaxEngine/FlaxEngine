@@ -171,7 +171,7 @@ void Behavior::OnDisable()
 
 bool Behavior::GetNodeDebugRelevancy(const BehaviorTreeNode* node, const Behavior* behavior)
 {
-    return node && behavior && behavior->_knowledge.RelevantNodes.Get(node->_executionIndex);
+    return node && behavior && node->_executionIndex != -1 && behavior->_knowledge.RelevantNodes.Get(node->_executionIndex);
 }
 
 String Behavior::GetNodeDebugInfo(const BehaviorTreeNode* node, Behavior* behavior)
@@ -180,7 +180,7 @@ String Behavior::GetNodeDebugInfo(const BehaviorTreeNode* node, Behavior* behavi
         return String::Empty;
     BehaviorUpdateContext context;
     Platform::MemoryClear(&context, sizeof(context));
-    if (behavior && behavior->_knowledge.RelevantNodes.Get(node->_executionIndex))
+    if (behavior && node->_executionIndex != -1 && behavior->_knowledge.RelevantNodes.Get(node->_executionIndex))
     {
         // Pass behavior and knowledge data only for relevant nodes to properly access it
         context.Behavior = behavior;

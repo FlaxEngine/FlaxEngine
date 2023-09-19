@@ -701,6 +701,7 @@ namespace FlaxEditor.Surface.Archetypes
                     Color = Style.Current.ForegroundGrey,
                     Parent = this,
                     Margin = new Margin(1),
+                    Visible = Surface.CanEdit,
                     Brush = new SpriteBrush(Editor.Instance.Icons.DragBar12),
                     Tag = this,
                     Drag = img => { img.DoDragDrop(_dragDecorator.ToDragData(ID)); }
@@ -749,6 +750,14 @@ namespace FlaxEditor.Surface.Archetypes
                         node.ResizeAuto();
                     }
                 }
+            }
+
+            public override void OnSurfaceCanEditChanged(bool canEdit)
+            {
+                base.OnSurfaceCanEditChanged(canEdit);
+
+                if (_dragIcon != null)
+                    _dragIcon.Visible = canEdit;
             }
 
             public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)

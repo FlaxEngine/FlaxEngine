@@ -217,7 +217,7 @@ namespace FlaxEditor.Surface
                         width = Mathf.Max(width, control.Right + 4 - Constants.NodeMarginX);
                         height = Mathf.Max(height, control.Bottom + 4 - Constants.NodeMarginY - Constants.NodeHeaderSize);
                     }
-                    else
+                    else if (!_headerRect.Intersects(control.Bounds))
                     {
                         width = Mathf.Max(width, control.Width + 4);
                         height = Mathf.Max(height, control.Height + 4);
