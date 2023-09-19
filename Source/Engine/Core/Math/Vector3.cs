@@ -1092,7 +1092,7 @@ namespace FlaxEngine
 
             float maxChangeSpeed = maxSpeed * smoothTime;
             float changeSq = maxChangeSpeed * maxChangeSpeed;
-            float sqrMag = change_x * change_x + change_y * change_y + change_z * change_z;
+            Real sqrMag = change_x * change_x + change_y * change_y + change_z * change_z;
             if (sqrMag > changeSq)
             {
                 var mag = (Real)Math.Sqrt(sqrMag);
