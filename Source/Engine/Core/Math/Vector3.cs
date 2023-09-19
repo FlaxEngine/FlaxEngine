@@ -964,24 +964,6 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Returns the length of a vector.
-        /// </summary>
-        /// <param name="vector">The vector to get the length from.</param>
-        public static Real Length(Vector3 vector)
-        {
-            return (Real)Mathf.Sqrt(vector.X * vector.X + vector.Y * vector.Y + vector.Z * vector.Z);
-        }
-
-        /// <summary>
-        /// Returns the length squared of a vector.
-        /// </summary>
-        /// <param name="vector">The vector to get the length squared from.</param>
-        public static Real LengthSquared(Vector3 vector)
-        {
-            return vector.X * vector.X + vector.Y * vector.Y + vector.Z * vector.Z;
-        }
-
-        /// <summary>
         /// Makes sure that Length of the output vector is always below max and above 0.
         /// </summary>
         /// <param name="vector">Input Vector.</param>
