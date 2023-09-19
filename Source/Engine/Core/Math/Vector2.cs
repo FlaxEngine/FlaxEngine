@@ -1001,7 +1001,7 @@ namespace FlaxEngine
 
             float maxChangeSpeed = maxSpeed * smoothTime;
             float changeSq = maxChangeSpeed * maxChangeSpeed;
-            float sqrDist = change_x * change_x + change_y * change_y;
+            Real sqrDist = change_x * change_x + change_y * change_y;
             if (sqrDist > changeSq)
             {
                 var dist = (Real)Math.Sqrt(sqrDist);
