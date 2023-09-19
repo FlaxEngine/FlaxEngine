@@ -1245,13 +1245,13 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
     if (EnumHasAnyFlags(data.Types, ImportDataTypes::Geometry) && context->Scene->getMeshCount() > 0)
     {
         const int meshCount = context->Scene->getMeshCount();
-        if (options.SplitObjects && options.ObjectIndex == -1)
+        if (options.SplitObjects && options.ObjectIndex == -1 && meshCount > 1)
         {
             // Import the first object within this call
             options.SplitObjects = false;
             options.ObjectIndex = 0;
 
-            if (meshCount > 1 && options.OnSplitImport.IsBinded())
+            if (options.OnSplitImport.IsBinded())
             {
                 // Split all animations into separate assets
                 LOG(Info, "Splitting imported {0} meshes", meshCount);
@@ -1328,13 +1328,13 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
     if (EnumHasAnyFlags(data.Types, ImportDataTypes::Animations))
     {
         const int animCount = context->Scene->getAnimationStackCount();
-        if (options.SplitObjects && options.ObjectIndex == -1)
+        if (options.SplitObjects && options.ObjectIndex == -1 && animCount > 1)
         {
             // Import the first object within this call
             options.SplitObjects = false;
             options.ObjectIndex = 0;
 
-            if (animCount > 1 && options.OnSplitImport.IsBinded())
+            if (options.OnSplitImport.IsBinded())
             {
                 // Split all animations into separate assets
                 LOG(Info, "Splitting imported {0} animations", animCount);
