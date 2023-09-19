@@ -19,7 +19,7 @@ namespace FlaxEngine.Tests
         {
             var result = 0;
             var libraryName = "FlaxEngine";
-            var library = NativeLibrary.Load(Interop.NativeInterop.nativeLibraryPaths[libraryName]);
+            var library = NativeLibrary.Load(Interop.NativeInterop.libraryPaths[libraryName]);
             if (library == IntPtr.Zero)
                 return -1;
             var types = typeof(FlaxEngine.Object).Assembly.GetTypes();

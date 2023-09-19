@@ -104,6 +104,12 @@ namespace FlaxEditor.Modules
                     hint = "Too long name.";
                     return false;
                 }
+                
+                if (item.IsFolder && shortName.EndsWith("."))
+                {
+                    hint = "Name cannot end with '.'";
+                    return false;
+                }
 
                 // Find invalid characters
                 if (Utilities.Utils.HasInvalidPathChar(shortName))
@@ -134,7 +140,7 @@ namespace FlaxEditor.Modules
                 // Cache data
                 string sourcePath = item.Path;
                 string sourceFolder = System.IO.Path.GetDirectoryName(sourcePath);
-                string extension = System.IO.Path.GetExtension(sourcePath);
+                string extension = item.IsFolder ? "" : System.IO.Path.GetExtension(sourcePath);
                 string destinationPath = StringUtils.CombinePaths(sourceFolder, shortName + extension);
 
                 if (item.IsFolder)

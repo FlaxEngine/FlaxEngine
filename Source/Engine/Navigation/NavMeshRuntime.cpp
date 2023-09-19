@@ -21,6 +21,7 @@ namespace
     FORCE_INLINE void InitFilter(dtQueryFilter& filter)
     {
         Platform::MemoryCopy(filter.m_areaCost, NavMeshRuntime::NavAreasCosts, sizeof(NavMeshRuntime::NavAreasCosts));
+        static_assert(sizeof(dtQueryFilter::m_areaCost) == sizeof(NavMeshRuntime::NavAreasCosts), "Invalid navmesh area cost list.");
     }
 }
 
