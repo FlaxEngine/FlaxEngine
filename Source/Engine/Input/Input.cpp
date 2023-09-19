@@ -1023,7 +1023,11 @@ void InputService::Update()
     {
         for (auto i = Actions.Begin(); i.IsNotEnd(); ++i)
         {
-            Input::ActionStateChanged(i->Key, i->Value.State);
+            if (i->Value.State != InputActionState::Waiting) 
+            {
+                Input::ActionStateChanged(i->Key, i->Value.State);
+            }
+
             if (i->Value.Active)
             {
                 Input::ActionTriggered(i->Key);
