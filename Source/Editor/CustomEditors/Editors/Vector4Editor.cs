@@ -45,6 +45,26 @@ namespace FlaxEditor.CustomEditors.Editors
         /// The W component editor.
         /// </summary>
         protected FloatValueElement WElement;
+        
+        /// <summary>
+        /// The X label.
+        /// </summary>
+        protected LabelElement XLabel;
+        
+        /// <summary>
+        /// The Y label.
+        /// </summary>
+        protected LabelElement YLabel;
+        
+        /// <summary>
+        /// The Z label.
+        /// </summary>
+        protected LabelElement ZLabel;
+        
+        /// <summary>
+        /// The W label.
+        /// </summary>
+        protected LabelElement WLabel;
 
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.Inline;
@@ -66,23 +86,31 @@ namespace FlaxEditor.CustomEditors.Editors
                 limit = (LimitAttribute)attributes.FirstOrDefault(x => x is LimitAttribute);
             }
 
-            XElement = grid.FloatValue();
-            XElement.SetLimits(limit);
+            var xContainer = CustomEditorUtils.CreateGridContainer(grid, "X", out var xLabel);
+            XLabel = xLabel;
+            
+            XElement = CustomEditorUtils.CreateFloatValue(xContainer, limit);
             XElement.ValueBox.ValueChanged += OnValueChanged;
             XElement.ValueBox.SlidingEnd += ClearToken;
-
-            YElement = grid.FloatValue();
-            YElement.SetLimits(limit);
+            
+            var yContainer = CustomEditorUtils.CreateGridContainer(grid, "Y", out var yLabel);
+            YLabel = yLabel;
+            
+            YElement = CustomEditorUtils.CreateFloatValue(yContainer, limit);
             YElement.ValueBox.ValueChanged += OnValueChanged;
             YElement.ValueBox.SlidingEnd += ClearToken;
-
-            ZElement = grid.FloatValue();
-            ZElement.SetLimits(limit);
+            
+            var zContainer = CustomEditorUtils.CreateGridContainer(grid, "Z", out var zLabel);
+            ZLabel = zLabel;
+            
+            ZElement = CustomEditorUtils.CreateFloatValue(zContainer, limit);
             ZElement.ValueBox.ValueChanged += OnValueChanged;
             ZElement.ValueBox.SlidingEnd += ClearToken;
-
-            WElement = grid.FloatValue();
-            WElement.SetLimits(limit);
+            
+            var wContainer = CustomEditorUtils.CreateGridContainer(grid, "W", out var wLabel);
+            WLabel = wLabel;
+            
+            WElement = CustomEditorUtils.CreateFloatValue(wContainer, limit);
             WElement.ValueBox.ValueChanged += OnValueChanged;
             WElement.ValueBox.SlidingEnd += ClearToken;
         }
@@ -156,6 +184,26 @@ namespace FlaxEditor.CustomEditors.Editors
         /// The W component editor.
         /// </summary>
         protected DoubleValueElement WElement;
+        
+        /// <summary>
+        /// The X label.
+        /// </summary>
+        protected LabelElement XLabel;
+        
+        /// <summary>
+        /// The Y label.
+        /// </summary>
+        protected LabelElement YLabel;
+        
+        /// <summary>
+        /// The Z label.
+        /// </summary>
+        protected LabelElement ZLabel;
+        
+        /// <summary>
+        /// The W label.
+        /// </summary>
+        protected LabelElement WLabel;
 
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.Inline;
@@ -177,23 +225,31 @@ namespace FlaxEditor.CustomEditors.Editors
                 limit = (LimitAttribute)attributes.FirstOrDefault(x => x is LimitAttribute);
             }
 
-            XElement = grid.DoubleValue();
-            XElement.SetLimits(limit);
+            var xContainer = CustomEditorUtils.CreateGridContainer(grid, "X", out var xLabel);
+            XLabel = xLabel;
+            
+            XElement = CustomEditorUtils.CreateDoubleValue(xContainer, limit);
             XElement.ValueBox.ValueChanged += OnValueChanged;
             XElement.ValueBox.SlidingEnd += ClearToken;
-
-            YElement = grid.DoubleValue();
-            YElement.SetLimits(limit);
+            
+            var yContainer = CustomEditorUtils.CreateGridContainer(grid, "Y", out var yLabel);
+            YLabel = yLabel;
+            
+            YElement = CustomEditorUtils.CreateDoubleValue(yContainer, limit);
             YElement.ValueBox.ValueChanged += OnValueChanged;
             YElement.ValueBox.SlidingEnd += ClearToken;
-
-            ZElement = grid.DoubleValue();
-            ZElement.SetLimits(limit);
+            
+            var zContainer = CustomEditorUtils.CreateGridContainer(grid, "Z", out var zLabel);
+            ZLabel = zLabel;
+            
+            ZElement = CustomEditorUtils.CreateDoubleValue(zContainer, limit);
             ZElement.ValueBox.ValueChanged += OnValueChanged;
             ZElement.ValueBox.SlidingEnd += ClearToken;
-
-            WElement = grid.DoubleValue();
-            WElement.SetLimits(limit);
+            
+            var wContainer = CustomEditorUtils.CreateGridContainer(grid, "W", out var wLabel);
+            WLabel = wLabel;
+            
+            WElement = CustomEditorUtils.CreateDoubleValue(wContainer, limit);
             WElement.ValueBox.ValueChanged += OnValueChanged;
             WElement.ValueBox.SlidingEnd += ClearToken;
         }
@@ -267,6 +323,26 @@ namespace FlaxEditor.CustomEditors.Editors
         /// The W component editor.
         /// </summary>
         protected IntegerValueElement WElement;
+        
+        /// <summary>
+        /// The X label.
+        /// </summary>
+        protected LabelElement XLabel;
+        
+        /// <summary>
+        /// The Y label.
+        /// </summary>
+        protected LabelElement YLabel;
+        
+        /// <summary>
+        /// The Z label.
+        /// </summary>
+        protected LabelElement ZLabel;
+        
+        /// <summary>
+        /// The W label.
+        /// </summary>
+        protected LabelElement WLabel;
 
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.Inline;
@@ -288,23 +364,31 @@ namespace FlaxEditor.CustomEditors.Editors
                 limit = (LimitAttribute)attributes.FirstOrDefault(x => x is LimitAttribute);
             }
 
-            XElement = grid.IntegerValue();
-            XElement.SetLimits(limit);
+            var xContainer = CustomEditorUtils.CreateGridContainer(grid, "X", out var xLabel);
+            XLabel = xLabel;
+            
+            XElement = CustomEditorUtils.CreateIntValue(xContainer, limit);
             XElement.IntValue.ValueChanged += OnValueChanged;
             XElement.IntValue.SlidingEnd += ClearToken;
-
-            YElement = grid.IntegerValue();
-            YElement.SetLimits(limit);
+            
+            var yContainer = CustomEditorUtils.CreateGridContainer(grid, "Y", out var yLabel);
+            YLabel = yLabel;
+            
+            YElement = CustomEditorUtils.CreateIntValue(yContainer, limit);
             YElement.IntValue.ValueChanged += OnValueChanged;
             YElement.IntValue.SlidingEnd += ClearToken;
-
-            ZElement = grid.IntegerValue();
-            ZElement.SetLimits(limit);
+            
+            var zContainer = CustomEditorUtils.CreateGridContainer(grid, "Z", out var zLabel);
+            ZLabel = zLabel;
+            
+            ZElement = CustomEditorUtils.CreateIntValue(zContainer, limit);
             ZElement.IntValue.ValueChanged += OnValueChanged;
             ZElement.IntValue.SlidingEnd += ClearToken;
-
-            WElement = grid.IntegerValue();
-            WElement.SetLimits(limit);
+            
+            var wContainer = CustomEditorUtils.CreateGridContainer(grid, "W", out var wLabel);
+            WLabel = wLabel;
+            
+            WElement = CustomEditorUtils.CreateIntValue(wContainer, limit);
             WElement.IntValue.ValueChanged += OnValueChanged;
             WElement.IntValue.SlidingEnd += ClearToken;
         }
