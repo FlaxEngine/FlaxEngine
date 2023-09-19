@@ -283,6 +283,117 @@ namespace FlaxEngine.GUI
         public Color BorderSelectedColor { get; set; }
 
         /// <summary>
+        /// The border rectangle. Used to draw border around the text box.
+        /// </summary>
+        [EditorDisplay("Border Style"), EditorOrder(2012), Tooltip("The border rectangle. Used to draw border around the text box.")]
+        public TextBoxBorder Border { get; set; } = new TextBoxBorder();
+
+        /// <summary>
+        /// The background rectangle. Used to draw background of the text box.
+        /// </summary>
+        [Serializable]
+        public struct TextBoxBorder
+        {
+            public Color Color { get; set; } = Color.Transparent;
+            public Color SelectedColor { get; set; } = Color.Transparent;
+
+            /// <summary>
+            /// The border lines width. Use 0 to disable border.
+            /// </summary>
+            public float Width
+            {
+                get => _width;
+                set => LeftWidth = RightWidth = TopWidth = BottomWidth = value;
+            }
+            
+            /// <summary>
+            /// The vertical border lines width. Use 0 to disable border. Top and bottom width.
+            /// </summary>
+            public float VerticalWidth
+            {
+                get => TopWidth;
+                set => TopWidth = BottomWidth = value;
+            }
+            
+            /// <summary>
+            /// The horizontal border lines width. Use 0 to disable border. Left and right width.
+            /// </summary>
+            public float HorizontalWidth
+            {
+                get => LeftWidth;
+                set => LeftWidth = RightWidth = value;
+            }
+
+            /// <summary>
+            /// The left border line width. Use 0 to disable border.
+            /// </summary>
+            public float LeftWidth { get; set; }
+            /// <summary>
+            /// The right border line width. Use 0 to disable border.
+            /// </summary>
+            public float RightWidth { get; set; }
+            /// <summary>
+            /// The top border line width. Use 0 to disable border.
+            /// </summary>
+            public float TopWidth { get; set; }
+            /// <summary>
+            /// The bottom border line width. Use 0 to disable border.
+            /// </summary>
+            public float BottomWidth { get; set; }
+
+            private float _width { get; }
+            
+            public TextBoxBorder(Color color, Color selectedColor, float width)
+            {
+                Color = color;
+                SelectedColor = selectedColor;
+                Width = width;
+            }
+            
+            public TextBoxBorder(Color color, Color selectedColor, float topWidth, float bottomWidth, float leftWidth, float rightWidth)
+            {
+                Color = color;
+                SelectedColor = selectedColor;
+                TopWidth = topWidth;
+                BottomWidth = bottomWidth;
+                LeftWidth = leftWidth;
+                RightWidth = rightWidth;
+                _width = 0;
+            }
+            
+            public TextBoxBorder(Color color, Color selectedColor, float verticalWidth, float horizontalWidth)
+            {
+                Color = color;
+                SelectedColor = selectedColor;
+                LeftWidth = RightWidth = horizontalWidth;
+                TopWidth = BottomWidth = verticalWidth;
+                _width = 0;
+            }
+            
+            public TextBoxBorder(Color color, Color selectedColor, Vector4 width)
+            {
+                Color = color;
+                SelectedColor = selectedColor;
+                TopWidth = width.X;
+                BottomWidth = width.Y;
+                LeftWidth = width.Z;
+                RightWidth = width.W;
+                _width = 0;
+            }
+            
+            public TextBoxBorder(Color color, Color selectedColor, Vector2 verticalWidth, Vector2 horizontalWidth)
+            {
+                Color = color;
+                SelectedColor = selectedColor;
+                TopWidth = verticalWidth.X;
+                BottomWidth = verticalWidth.Y;
+                LeftWidth = horizontalWidth.X;
+                RightWidth = horizontalWidth.Y;
+                _width = 0;
+            }
+        }
+        
+        /// <summary>
         /// Gets the size of the text (cached).
         /// </summary>
         public Float2 TextSize => _textSize;
