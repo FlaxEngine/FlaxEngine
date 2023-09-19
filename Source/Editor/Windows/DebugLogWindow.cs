@@ -131,20 +131,21 @@ namespace FlaxEditor.Windows
                 else if (index % 2 == 0)
                     Render2D.FillRectangle(clientRect, style.Background * 0.9f);
 
+                var color = Group == LogGroup.Error ? _window.ErrorColor : (Group == LogGroup.Warning ? _window.WarningColor : _window.InfoColor);
+
                 // Icon
-                var iconColor = Group == LogGroup.Error ? Color.Red : (Group == LogGroup.Warning ? Color.Yellow : style.Foreground);
-                Render2D.DrawSprite(Icon, new Rectangle(5, 0, 32, 32), iconColor);
+                Render2D.DrawSprite(Icon, new Rectangle(5, 0, 32, 32), color);
 
                 // Title
                 var textRect = new Rectangle(38, 2, clientRect.Width - 40, clientRect.Height - 10);
                 Render2D.PushClip(ref clientRect);
                 if (LogCount == 1)
                 {
-                    Render2D.DrawText(style.FontMedium, Desc.Title, textRect, style.Foreground);
+                    Render2D.DrawText(style.FontMedium, Desc.Title, textRect, color);
                 }
                 else if (LogCount > 1)
                 {
-                    Render2D.DrawText(style.FontMedium, $"{Desc.Title} ({LogCount})", textRect, style.Foreground);
+                    Render2D.DrawText(style.FontMedium, $"{Desc.Title} ({LogCount})", textRect, color);
                 }
                 Render2D.PopClip();
             }
@@ -304,8 +305,12 @@ namespace FlaxEditor.Windows
         private LogType _iconType = LogType.Info;
 
         internal SpriteHandle IconInfo;
+        internal Color InfoColor;
         internal SpriteHandle IconWarning;
+        internal Color WarningColor;
         internal SpriteHandle IconError;
+        internal Color ErrorColor;
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DebugLogWindow"/> class.
@@ -368,15 +373,33 @@ namespace FlaxEditor.Windows
             IconWarning = Editor.Icons.Warning64;
             IconError = Editor.Icons.Error64;
 
+            //Cache entries color
+            var interfaceOptions = Editor.Options.Options.Interface;
+            InfoColor = interfaceOptions.OutputLogTextColor;
+            WarningColor = interfaceOptions.OutputLogWarningTextColor;
+            ErrorColor = interfaceOptions.OutputLogErrorTextColor;
+
             // Bind events
             Editor.Options.OptionsChanged += OnEditorOptionsChanged;
+            OnEditorOptionsChanged(Editor.Options.Options);
+
             Debug.Logger.LogHandler.SendLog += LogHandlerOnSendLog;
             Debug.Logger.LogHandler.SendExceptionLog += LogHandlerOnSendExceptionLog;
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)
         {
+            if (_timestampsFormats == options.Interface.DebugLogTimestampsFormat &&
+                InfoColor == options.Interface.OutputLogTextColor &&
+                WarningColor == options.Interface.OutputLogWarningTextColor &&
+                ErrorColor == options.Interface.OutputLogErrorTextColor)
+                return;
+
             _timestampsFormats = options.Interface.DebugLogTimestampsFormat;
+
+            InfoColor = options.Interface.OutputLogTextColor;
+            WarningColor = options.Interface.OutputLogWarningTextColor;
+            ErrorColor = options.Interface.OutputLogErrorTextColor;
         }
 
         /// <summary>

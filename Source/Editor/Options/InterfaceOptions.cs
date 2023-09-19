@@ -190,6 +190,22 @@ namespace FlaxEditor.Options
         public Float2 OutputLogTextShadowOffset { get; set; } = new Float2(1);
 
         /// <summary>
+        /// Gets or sets the output log text color for warnings
+        /// </summary>
+        [DefaultValue(typeof(Color), "1,1,0,1")]
+        [EditorDisplay("Output Log", "Warning Color"), EditorOrder(341), Tooltip("The output log text color for warnings.")]
+        public Color OutputLogWarningTextColor { get; set; } = Color.Yellow;
+
+
+        /// <summary>
+        /// Gets or sets the output log text color for errors
+        /// </summary>
+        [DefaultValue(typeof(Color), "1,0,0,1")]
+        [EditorDisplay("Output Log", "Error Color"), EditorOrder(342), Tooltip("The output log text color for errors.")]
+        public Color OutputLogErrorTextColor { get; set; } = Color.Red;
+
+
+        /// <summary>
         /// Gets or sets a value indicating whether auto-focus output log window on code compilation error.
         /// </summary>
         [DefaultValue(true)]
