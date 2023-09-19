@@ -272,15 +272,15 @@ namespace RenderToolsDX
 #if GPU_ENABLE_ASSERTION
 
 // DirectX results validation
-#define VALIDATE_DIRECTX_RESULT(x) { HRESULT result = x; if (FAILED(result)) RenderToolsDX::ValidateD3DResult(result, __FILE__, __LINE__); }
+#define VALIDATE_DIRECTX_CALL(x) { HRESULT result = x; if (FAILED(result)) RenderToolsDX::ValidateD3DResult(result, __FILE__, __LINE__); }
 #define LOG_DIRECTX_RESULT(result) if (FAILED(result)) RenderToolsDX::LogD3DResult(result, __FILE__, __LINE__)
-#define LOG_DIRECTX_RESULT_WITH_RETURN(result) if (FAILED(result)) { RenderToolsDX::LogD3DResult(result, __FILE__, __LINE__); return true; }
+#define LOG_DIRECTX_RESULT_WITH_RETURN(result, returnValue) if (FAILED(result)) { RenderToolsDX::LogD3DResult(result, __FILE__, __LINE__); return returnValue; }
 
 #else
 
-#define VALIDATE_DIRECTX_RESULT(x) x
+#define VALIDATE_DIRECTX_CALL(x) x
 #define LOG_DIRECTX_RESULT(result) if(FAILED(result)) RenderToolsDX::LogD3DResult(result)
-#define LOG_DIRECTX_RESULT_WITH_RETURN(result) if(FAILED(result)) { RenderToolsDX::LogD3DResult(result); return true; }
+#define LOG_DIRECTX_RESULT_WITH_RETURN(result, returnValue) if(FAILED(result)) { RenderToolsDX::LogD3DResult(result); return returnValue; }
 
 #endif
 

@@ -87,7 +87,7 @@ bool GPUTextureDX11::OnInit()
         result = device->CreateTexture2D(&textureDesc, nullptr, &texture);
         _resource = texture;
     }
-    LOG_DIRECTX_RESULT_WITH_RETURN(result);
+    LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
     ASSERT(_resource != nullptr);
     DX_SET_DEBUG_NAME(_resource, GetName());
 
@@ -135,7 +135,7 @@ void GPUTextureDX11::OnResidentMipsChanged()
     }
     ID3D11ShaderResourceView* srView = nullptr;
     if (mipLevels != 0)
-        VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateShaderResourceView(_resource, &srDesc, &srView));
+        VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateShaderResourceView(_resource, &srDesc, &srView));
     GPUTextureViewDX11& view = IsVolume() ? _handleVolume : _handlesPerSlice[0];
     if (view.GetParent() == nullptr)
        view.Init(this, nullptr, srView, nullptr, nullptr, Format(), MultiSampleLevel());
@@ -201,7 +201,7 @@ void GPUTextureDX11::initHandles()
             srDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE3D;
             srDesc.Texture3D.MostDetailedMip = 0;
             srDesc.Texture3D.MipLevels = mipLevels;
-            VALIDATE_DIRECTX_RESULT(device->CreateShaderResourceView(_resource, &srDesc, &srView));
+            VALIDATE_DIRECTX_CALL(device->CreateShaderResourceView(_resource, &srDesc, &srView));
         }
         if (useRTV)
         {
@@ -209,7 +209,7 @@ void GPUTextureDX11::initHandles()
             rtDesc.Texture3D.MipSlice = 0;
             rtDesc.Texture3D.FirstWSlice = 0;
             rtDesc.Texture3D.WSize = Depth();
-            VALIDATE_DIRECTX_RESULT(device->CreateRenderTargetView(_resource, &rtDesc, &rtView));
+            VALIDATE_DIRECTX_CALL(device->CreateRenderTargetView(_resource, &rtDesc, &rtView));
         }
         if (useUAV)
         {
@@ -217,7 +217,7 @@ void GPUTextureDX11::initHandles()
             uaDesc.Texture3D.MipSlice = 0;
             uaDesc.Texture3D.WSize = Depth();
             uaDesc.Texture3D.FirstWSlice = 0;
-            VALIDATE_DIRECTX_RESULT(device->CreateUnorderedAccessView(_resource, &uaDesc, &uaView));
+            VALIDATE_DIRECTX_CALL(device->CreateUnorderedAccessView(_resource, &uaDesc, &uaView));
         }
         _handleVolume.Init(this, rtView, srView, nullptr, uaView, format, msaa);
 
@@ -232,7 +232,7 @@ void GPUTextureDX11::initHandles()
             for (int32 sliceIndex = 0; sliceIndex < Depth(); sliceIndex++)
             {
                 rtDesc.Texture3D.FirstWSlice = sliceIndex;
-                VALIDATE_DIRECTX_RESULT(device->CreateRenderTargetView(_resource, &rtDesc, &rtView));
+                VALIDATE_DIRECTX_CALL(device->CreateRenderTargetView(_resource, &rtDesc, &rtView));
                 _handlesPerSlice[sliceIndex].Init(this, rtView, nullptr, nullptr, nullptr, format, msaa);
             }
         }
@@ -263,7 +263,7 @@ void GPUTextureDX11::initHandles()
                     dsDesc.Texture2DArray.FirstArraySlice = arrayIndex;
                     dsDesc.Texture2DArray.MipSlice = 0;
                 }
-                VALIDATE_DIRECTX_RESULT(device->CreateDepthStencilView(_resource, &dsDesc, &dsView));
+                VALIDATE_DIRECTX_CALL(device->CreateDepthStencilView(_resource, &dsDesc, &dsView));
             }
             if (useRTV)
             {
@@ -281,7 +281,7 @@ void GPUTextureDX11::initHandles()
                     rtDesc.Texture2DArray.FirstArraySlice = arrayIndex;
                     rtDesc.Texture2DArray.MipSlice = 0;
                 }
-                VALIDATE_DIRECTX_RESULT(device->CreateRenderTargetView(_resource, &rtDesc, &rtView));
+                VALIDATE_DIRECTX_CALL(device->CreateRenderTargetView(_resource, &rtDesc, &rtView));
             }
             if (useSRV)
             {
@@ -305,7 +305,7 @@ void GPUTextureDX11::initHandles()
                         srDesc.Texture2DArray.MipLevels = mipLevels;
                         srDesc.Texture2DArray.MostDetailedMip = 0;
                     }
-                    VALIDATE_DIRECTX_RESULT(device->CreateShaderResourceView(_resource, &srDesc, &srView));
+                    VALIDATE_DIRECTX_CALL(device->CreateShaderResourceView(_resource, &srDesc, &srView));
                 }
             }
 
@@ -322,7 +322,7 @@ void GPUTextureDX11::initHandles()
                 dsDesc.Texture2DArray.ArraySize = arraySize;
                 dsDesc.Texture2DArray.FirstArraySlice = 0;
                 dsDesc.Texture2DArray.MipSlice = 0;
-                VALIDATE_DIRECTX_RESULT(device->CreateDepthStencilView(_resource, &dsDesc, &dsView));
+                VALIDATE_DIRECTX_CALL(device->CreateDepthStencilView(_resource, &dsDesc, &dsView));
             }
             if (useRTV)
             {
@@ -330,7 +330,7 @@ void GPUTextureDX11::initHandles()
                 rtDesc.Texture2DArray.ArraySize = arraySize;
                 rtDesc.Texture2DArray.FirstArraySlice = 0;
                 rtDesc.Texture2DArray.MipSlice = 0;
-                VALIDATE_DIRECTX_RESULT(device->CreateRenderTargetView(_resource, &rtDesc, &rtView));
+                VALIDATE_DIRECTX_CALL(device->CreateRenderTargetView(_resource, &rtDesc, &rtView));
             }
             if (useSRV)
             {
@@ -348,7 +348,7 @@ void GPUTextureDX11::initHandles()
                     srDesc.Texture2DArray.MipLevels = mipLevels;
                     srDesc.Texture2DArray.MostDetailedMip = 0;
                 }
-                VALIDATE_DIRECTX_RESULT(device->CreateShaderResourceView(_resource, &srDesc, &srView));
+                VALIDATE_DIRECTX_CALL(device->CreateShaderResourceView(_resource, &srDesc, &srView));
             }
             if (useUAV)
             {
@@ -356,7 +356,7 @@ void GPUTextureDX11::initHandles()
                 uaDesc.Texture2DArray.MipSlice = 0;
                 uaDesc.Texture2DArray.ArraySize = arraySize;
                 uaDesc.Texture2DArray.FirstArraySlice = 0;
-                VALIDATE_DIRECTX_RESULT(device->CreateUnorderedAccessView(_resource, &uaDesc, &uaView));
+                VALIDATE_DIRECTX_CALL(device->CreateUnorderedAccessView(_resource, &uaDesc, &uaView));
             }
             _handleArray.Init(this, rtView, srView, dsView, uaView, format, msaa);
         }
@@ -386,7 +386,7 @@ void GPUTextureDX11::initHandles()
                 dsDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
                 dsDesc.Texture2D.MipSlice = 0;
             }
-            VALIDATE_DIRECTX_RESULT(device->CreateDepthStencilView(_resource, &dsDesc, &dsView));
+            VALIDATE_DIRECTX_CALL(device->CreateDepthStencilView(_resource, &dsDesc, &dsView));
         }
         if (useRTV)
         {
@@ -406,7 +406,7 @@ void GPUTextureDX11::initHandles()
                 rtDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
                 rtDesc.Texture2D.MipSlice = 0;
             }
-            VALIDATE_DIRECTX_RESULT(device->CreateRenderTargetView(_resource, &rtDesc, &rtView));
+            VALIDATE_DIRECTX_CALL(device->CreateRenderTargetView(_resource, &rtDesc, &rtView));
         }
         if (useSRV)
         {
@@ -426,13 +426,13 @@ void GPUTextureDX11::initHandles()
                 srDesc.Texture2D.MostDetailedMip = 0;
                 srDesc.Texture2D.MipLevels = mipLevels;
             }
-            VALIDATE_DIRECTX_RESULT(device->CreateShaderResourceView(_resource, &srDesc, &srView));
+            VALIDATE_DIRECTX_CALL(device->CreateShaderResourceView(_resource, &srDesc, &srView));
         }
         if (useUAV)
         {
             uaDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
             uaDesc.Texture2D.MipSlice = 0;
-            VALIDATE_DIRECTX_RESULT(device->CreateUnorderedAccessView(_resource, &uaDesc, &uaView));
+            VALIDATE_DIRECTX_CALL(device->CreateUnorderedAccessView(_resource, &uaDesc, &uaView));
         }
         _handlesPerSlice[0].Init(this, rtView, srView, dsView, uaView, format, msaa);
     }
@@ -521,7 +521,7 @@ void GPUTextureDX11::initHandles()
             dsDesc.Flags = D3D11_DSV_READ_ONLY_DEPTH;
             if (PixelFormatExtensions::HasStencil(format))
                 dsDesc.Flags |= D3D11_DSV_READ_ONLY_STENCIL;
-            VALIDATE_DIRECTX_RESULT(device->CreateDepthStencilView(_resource, &dsDesc, &dsView));
+            VALIDATE_DIRECTX_CALL(device->CreateDepthStencilView(_resource, &dsDesc, &dsView));
         }
         ASSERT(!useRTV);
         rtView = nullptr;
@@ -543,7 +543,7 @@ void GPUTextureDX11::initHandles()
                 srDesc.Texture2D.MostDetailedMip = 0;
                 srDesc.Texture2D.MipLevels = mipLevels;
             }
-            VALIDATE_DIRECTX_RESULT(device->CreateShaderResourceView(_resource, &srDesc, &srView));
+            VALIDATE_DIRECTX_CALL(device->CreateShaderResourceView(_resource, &srDesc, &srView));
         }
         _handleReadOnlyDepth.Init(this, rtView, srView, dsView, nullptr, format, msaa);
     }
