@@ -615,6 +615,9 @@ namespace Flax.Build.Bindings
                 case "private":
                     desc.Access = AccessLevel.Private;
                     break;
+                case "internal":
+                    desc.Access = AccessLevel.Internal;
+                    break;
                 case "template":
                     desc.IsTemplate = true;
                     break;
@@ -705,6 +708,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "private":
                     desc.Access = AccessLevel.Private;
+                    break;
+                case "internal":
+                    desc.Access = AccessLevel.Internal;
                     break;
                 case "template":
                     desc.IsTemplate = true;
@@ -842,6 +848,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "private":
                     desc.Access = AccessLevel.Private;
+                    break;
+                case "internal":
+                    desc.Access = AccessLevel.Internal;
                     break;
                 case "attributes":
                     desc.Attributes = tag.Value;
@@ -1121,6 +1130,9 @@ namespace Flax.Build.Bindings
                 case "private":
                     desc.Access = AccessLevel.Private;
                     break;
+                case "internal":
+                    desc.Access = AccessLevel.Internal;
+                    break;
                 case "inbuild":
                     desc.IsInBuild = true;
                     break;
@@ -1185,6 +1197,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "private":
                     desc.Access = AccessLevel.Private;
+                    break;
+                case "internal":
+                    desc.Access = AccessLevel.Internal;
                     break;
                 case "template":
                     desc.IsTemplate = true;
@@ -1325,6 +1340,9 @@ namespace Flax.Build.Bindings
                 case "private":
                     desc.Access = AccessLevel.Private;
                     break;
+                case "internal":
+                    desc.Access = AccessLevel.Internal;
+                    break;
                 case "attributes":
                     desc.Attributes = tag.Value;
                     break;
@@ -1399,6 +1417,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "private":
                     desc.Access = AccessLevel.Private;
+                    break;
+                case "internal":
+                    desc.Access = AccessLevel.Internal;
                     break;
                 case "attributes":
                     desc.Attributes = tag.Value;

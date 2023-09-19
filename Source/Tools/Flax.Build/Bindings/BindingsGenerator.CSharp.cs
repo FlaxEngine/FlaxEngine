@@ -873,6 +873,8 @@ namespace Flax.Build.Bindings
                 return "protected ";
             if (access == AccessLevel.Private)
                 return "private ";
+            if (access == AccessLevel.Internal)
+                return "internal ";
             return "public ";
         }
 
@@ -1470,13 +1472,7 @@ namespace Flax.Build.Bindings
                         else
                             originalType = type = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
 
-                        contents.Append(indent);
-                        if (fieldInfo.Access == AccessLevel.Public)
-                            contents.Append("public ");
-                        else if (fieldInfo.Access == AccessLevel.Protected)
-                            contents.Append("protected ");
-                        else if (fieldInfo.Access == AccessLevel.Private)
-                            contents.Append("private ");
+                        contents.Append(indent).Append(GenerateCSharpAccessLevel(fieldInfo.Access));
                         if (fieldInfo.IsConstexpr)
                             contents.Append("const ");
                         else if (fieldInfo.IsStatic)
@@ -1493,13 +1489,7 @@ namespace Flax.Build.Bindings
                             {
                                 contents.AppendLine();
                                 GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic);
-                                contents.Append(indent);
-                                if (fieldInfo.Access == AccessLevel.Public)
-                                    contents.Append("public ");
-                                else if (fieldInfo.Access == AccessLevel.Protected)
-                                    contents.Append("protected ");
-                                else if (fieldInfo.Access == AccessLevel.Private)
-                                    contents.Append("private ");
+                                contents.Append(indent).Append(GenerateCSharpAccessLevel(fieldInfo.Access));
                                 if (fieldInfo.IsStatic)
                                     contents.Append("static ");
                                 contents.Append(type).Append(' ').Append(fieldInfo.Name + i).Append(';').AppendLine();
