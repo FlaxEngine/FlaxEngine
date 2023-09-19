@@ -112,7 +112,7 @@ bool dtIntersectSegmentPoly2D(const float* p0, const float* p1,
 							  float& tmin, float& tmax,
 							  int& segMin, int& segMax)
 {
-	static const float EPS = 0.00000001f;
+	static const float EPS = 0.000001f;
 	
 	tmin = 0;
 	tmax = 1;
@@ -180,13 +180,6 @@ float dtDistancePtSegSqr2D(const float* pt, const float* p, const float* q, floa
 	else if (t > 1) t = 1;
 	dx = p[0] + t*pqx - pt[0];
 	dz = p[2] + t*pqz - pt[2];
-	return dx*dx + dz*dz;
-}
-
-float dtDistancePtPtSqr2D(const float* pt, const float* p)
-{
-	float dx = pt[0] - p[0];
-	float dz = pt[2] - p[2];
 	return dx*dx + dz*dz;
 }
 

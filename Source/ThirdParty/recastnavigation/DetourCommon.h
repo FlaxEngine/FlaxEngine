@@ -37,7 +37,6 @@ feature to find minor members.
 
 /// Used to ignore a function parameter.  VS complains about unused parameters
 /// and this silences the warning.
-///  @param [in] _ Unused parameter
 template<class T> void dtIgnoreUnused(const T&) { }
 
 /// Swaps the values of the two parameters.
@@ -319,7 +318,7 @@ inline float dtVdot2D(const float* u, const float* v)
 /// Derives the xz-plane 2D perp product of the two vectors. (uz*vx - ux*vz)
 ///  @param[in]		u		The LHV vector [(x, y, z)]
 ///  @param[in]		v		The RHV vector [(x, y, z)]
-/// @return The dot product on the xz-plane.
+/// @return The perp dot product on the xz-plane.
 ///
 /// The vectors are projected onto the xz-plane, so the y-values are ignored.
 inline float dtVperp2D(const float* u, const float* v)
@@ -416,8 +415,6 @@ bool dtDistancePtPolyEdgesSqr(const float* pt, const float* verts, const int nve
 							float* ed, float* et);
 
 float dtDistancePtSegSqr2D(const float* pt, const float* p, const float* q, float& t);
-
-float dtDistancePtPtSqr2D(const float* pt, const float* p);
 
 /// Derives the centroid of a convex polygon.
 ///  @param[out]	tc		The centroid of the polgyon. [(x, y, z)]

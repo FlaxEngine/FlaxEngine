@@ -117,6 +117,11 @@ void dtFreeNavMeshQuery(dtNavMeshQuery* navmesh)
 	dtFree(navmesh);
 }
 
+dtPolyQuery::~dtPolyQuery()
+{
+	// Defined out of line to fix the weak v-tables warning
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////
 
 /// @class dtNavMeshQuery
@@ -301,11 +306,7 @@ dtStatus dtNavMeshQuery::findRandomPoint(const dtQueryFilter* filter, float (*fr
 	float pt[3];
 	dtRandomPointInConvexPoly(verts, poly->vertCount, areas, s, t, pt);
 	
-	float h = 0.0f;
-	dtStatus status = getPolyHeight(polyRef, pt, &h);
-	if (dtStatusFailed(status))
-		return status;
-	pt[1] = h;
+	closestPointOnPoly(polyRef, pt, pt, NULL);
 	
 	dtVcopy(randomPt, pt);
 	*randomRef = polyRef;
@@ -482,25 +483,18 @@ dtStatus dtNavMeshQuery::findRandomPointAroundCircle(dtPolyRef startRef, const f
 		dtVcopy(&verts[j*3],v);
 	}
 	
+	const float s = frand();
+	const float t = frand();
+	
 	float pt[3];
-    do
-    {
-        const float s = frand();
-	    const float t = frand();
-	    dtRandomPointInConvexPoly(verts, randomPoly->vertCount, areas, s, t, pt);
-    }
-	while (dtDistancePtPtSqr2D(centerPos, pt) > radiusSqr);
-
-	float h = 0.0f;
-	dtStatus stat = getPolyHeight(randomPolyRef, pt, &h);
-	if (dtStatusFailed(status))
-		return stat;
-	pt[1] = h;
+	dtRandomPointInConvexPoly(verts, randomPoly->vertCount, areas, s, t, pt);
+	
+	closestPointOnPoly(randomPolyRef, pt, pt, NULL);
 	
 	dtVcopy(randomPt, pt);
 	*randomRef = randomPolyRef;
 	
-	return DT_SUCCESS;
+	return status;
 }
 
 
@@ -641,6 +635,8 @@ public:
 	{
 	}
 
+	virtual ~dtFindNearestPolyQuery();
+
 	dtPolyRef nearestRef() const { return m_nearestRef; }
 	const float* nearestPoint() const { return m_nearestPoint; }
 	bool isOverPoly() const { return m_overPoly; }
@@ -682,6 +678,11 @@ public:
 		}
 	}
 };
+
+dtFindNearestPolyQuery::~dtFindNearestPolyQuery()
+{
+	// Defined out of line to fix the weak v-tables warning
+}
 
 /// @par 
 ///
@@ -858,6 +859,8 @@ public:
 	{
 	}
 
+	virtual ~dtCollectPolysQuery();
+
 	int numCollected() const { return m_numCollected; }
 	bool overflowed() const { return m_overflow; }
 
@@ -878,6 +881,11 @@ public:
 		m_numCollected += toCopy;
 	}
 };
+
+dtCollectPolysQuery::~dtCollectPolysQuery()
+{
+	// Defined out of line to fix the weak v-tables warning
+}
 
 /// @par 
 ///
