@@ -416,6 +416,8 @@ bool dtDistancePtPolyEdgesSqr(const float* pt, const float* verts, const int nve
 
 float dtDistancePtSegSqr2D(const float* pt, const float* p, const float* q, float& t);
 
+float dtDistancePtPtSqr2D(const float* pt, const float* p);
+
 /// Derives the centroid of a convex polygon.
 ///  @param[out]	tc		The centroid of the polgyon. [(x, y, z)]
 ///  @param[in]		idx		The polygon indices. [(vertIndex) * @p nidx]

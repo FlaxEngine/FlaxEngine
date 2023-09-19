@@ -482,12 +482,18 @@ dtStatus dtNavMeshQuery::findRandomPointAroundCircle(dtPolyRef startRef, const f
 		v = &randomTile->verts[randomPoly->verts[j]*3];
 		dtVcopy(&verts[j*3],v);
 	}
-	
-	const float s = frand();
-	const float t = frand();
-	
+
 	float pt[3];
-	dtRandomPointInConvexPoly(verts, randomPoly->vertCount, areas, s, t, pt);
+    int checksLimit = 100;
+    do
+    {
+        const float s = frand();
+        const float t = frand();
+        dtRandomPointInConvexPoly(verts, randomPoly->vertCount, areas, s, t, pt);
+    }
+    while (dtDistancePtPtSqr2D(centerPos, pt) > radiusSqr && checksLimit-- > 0);
+    if (checksLimit <= 0)
+        return DT_FAILURE;
 	
 	closestPointOnPoly(randomPolyRef, pt, pt, NULL);
 	
