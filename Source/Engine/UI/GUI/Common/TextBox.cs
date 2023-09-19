@@ -255,8 +255,16 @@ namespace FlaxEngine.GUI
             var leftWidth = border.LeftWidth * 0.5f;
             var rightWidth = border.RightWidth * 0.5f;
             var bottomWidth = border.BottomWidth * 0.5f;
+            var width = border.Width * 0.5f;
 
-            // TODO: This needs to be optimized
+            // This needs to be optimized, ideally we would want a better way to draw the border in a single call instead of individual borders for each side
+
+            if (width > 0)
+            {
+                CreateRect(new Rectangle(0, 0, Width, Height));
+
+                return;
+            }
             
             // Add top border
             if (topWidth > 0)

@@ -286,7 +286,7 @@ namespace FlaxEngine.GUI
         /// The border rectangle. Used to draw border around the text box.
         /// </summary>
         [EditorDisplay("Border Style"), EditorOrder(2012), Tooltip("The border rectangle. Used to draw border around the text box.")]
-        public TextBoxBorder Border { get; set; } = new TextBoxBorder();
+        public TextBoxBorder Border { get; set; }
 
         /// <summary>
         /// The background rectangle. Used to draw background of the text box.
@@ -300,11 +300,7 @@ namespace FlaxEngine.GUI
             /// <summary>
             /// The border lines width. Use 0 to disable border.
             /// </summary>
-            public float Width
-            {
-                get => _width;
-                set => LeftWidth = RightWidth = TopWidth = BottomWidth = value;
-            }
+            public float Width { get; set; }
             
             /// <summary>
             /// The vertical border lines width. Use 0 to disable border. Top and bottom width.
@@ -341,8 +337,6 @@ namespace FlaxEngine.GUI
             /// </summary>
             public float BottomWidth { get; set; }
 
-            private float _width { get; }
-            
             public TextBoxBorder(Color color, Color selectedColor, float width)
             {
                 Color = color;
@@ -358,16 +352,16 @@ namespace FlaxEngine.GUI
                 BottomWidth = bottomWidth;
                 LeftWidth = leftWidth;
                 RightWidth = rightWidth;
-                _width = 0;
+                Width = 0;
             }
             
             public TextBoxBorder(Color color, Color selectedColor, float verticalWidth, float horizontalWidth)
             {
                 Color = color;
                 SelectedColor = selectedColor;
-                LeftWidth = RightWidth = horizontalWidth;
-                TopWidth = BottomWidth = verticalWidth;
-                _width = 0;
+                VerticalWidth = verticalWidth;
+                HorizontalWidth = horizontalWidth;
+                Width = 0;
             }
             
             public TextBoxBorder(Color color, Color selectedColor, Vector4 width)
@@ -378,7 +372,7 @@ namespace FlaxEngine.GUI
                 BottomWidth = width.Y;
                 LeftWidth = width.Z;
                 RightWidth = width.W;
-                _width = 0;
+                Width = 0;
             }
             
             public TextBoxBorder(Color color, Color selectedColor, Vector2 verticalWidth, Vector2 horizontalWidth)
@@ -389,7 +383,7 @@ namespace FlaxEngine.GUI
                 BottomWidth = verticalWidth.Y;
                 LeftWidth = horizontalWidth.X;
                 RightWidth = horizontalWidth.Y;
-                _width = 0;
+                Width = 0;
             }
         }
         
