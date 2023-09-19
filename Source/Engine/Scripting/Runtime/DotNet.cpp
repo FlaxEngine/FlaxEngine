@@ -905,7 +905,6 @@ const Array<MMethod*>& MClass::GetMethods() const
         NativeMethodDefinitions& definition = methods[i];
         MMethod* method = New<MMethod>(const_cast<MClass*>(this), StringAnsi(definition.name), definition.handle, definition.numParameters, definition.methodAttributes);
         _methods.Add(method);
-
         MCore::GC::FreeMemory((void*)definition.name);
     }
     MCore::GC::FreeMemory(methods);
@@ -939,7 +938,6 @@ const Array<MField*>& MClass::GetFields() const
         NativeFieldDefinitions& definition = fields[i];
         MField* field = New<MField>(const_cast<MClass*>(this), definition.fieldHandle, definition.name, definition.fieldType, definition.fieldAttributes);
         _fields.Add(field);
-
         MCore::GC::FreeMemory((void*)definition.name);
     }
     MCore::GC::FreeMemory(fields);
@@ -984,7 +982,6 @@ const Array<MProperty*>& MClass::GetProperties() const
         const NativePropertyDefinitions& definition = foundProperties[i];
         MProperty* property = New<MProperty>(const_cast<MClass*>(this), definition.name, definition.getterHandle, definition.setterHandle, definition.getterAttributes, definition.setterAttributes);
         _properties.Add(property);
-
         MCore::GC::FreeMemory((void*)definition.name);
     }
     MCore::GC::FreeMemory(foundProperties);
