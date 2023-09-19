@@ -72,7 +72,7 @@ void String::Set(const char* chars, int32 length)
         }
         _length = length;
     }
-    if (chars)
+    if (chars && length)
         StringUtils::ConvertANSI2UTF16(chars, _data, length, _length);
 }
 
