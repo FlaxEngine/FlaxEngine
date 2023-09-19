@@ -20,7 +20,6 @@ internal static class CustomEditorUtils
         var labelElement = label.Label;
         labelElement.VerticalAlignment = TextAlignment.Center;
         labelElement.HorizontalAlignment = TextAlignment.Center;
-        labelElement.BackgroundColor = FlaxEngine.GUI.Style.Current.TextBoxBackground;
             
         return container;
     }
