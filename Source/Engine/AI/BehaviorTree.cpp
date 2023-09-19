@@ -17,6 +17,8 @@
 
 REGISTER_BINARY_ASSET(BehaviorTree, "FlaxEngine.BehaviorTree", false);
 
+#define IS_BT_NODE(n) (n.GroupID == 19 && (n.TypeID == 1 || n.TypeID == 2 || n.TypeID == 3))
+
 bool SortBehaviorTreeChildren(GraphBox* const& a, GraphBox* const& b)
 {
     // Sort by node X coordinate on surface
@@ -45,7 +47,8 @@ void BehaviorTreeGraph::Clear()
 
 bool BehaviorTreeGraph::onNodeLoaded(Node* n)
 {
-    if (n->GroupID == 19 && (n->TypeID == 1 || n->TypeID == 2 || n->TypeID == 3))
+    const Node& node = *n;
+    if (IS_BT_NODE(node))
     {
         // Create node instance object
         ScriptingTypeHandle type = Scripting::FindScriptingType((StringAnsiView)n->Values[0]);
@@ -149,6 +152,16 @@ void BehaviorTreeGraph::SetupRecursive(Node& node)
 BehaviorTree::BehaviorTree(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)
 {
+}
+
+BehaviorTreeNode* BehaviorTree::GetNodeInstance(uint32 id)
+{
+    for (const auto& node : Graph.Nodes)
+    {
+        if (node.ID == id && node.Instance && IS_BT_NODE(node))
+            return node.Instance;
+    }
+    return nullptr;
 }
 
 BytesContainer BehaviorTree::LoadSurface()

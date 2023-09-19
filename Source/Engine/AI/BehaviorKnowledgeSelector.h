@@ -21,13 +21,13 @@ API_STRUCT(NoDefault, MarshalAs=StringAnsi) struct FLAXENGINE_API BehaviorKnowle
     API_FIELD() StringAnsi Path;
 
     // Sets the selected knowledge value (as Variant).
-    bool Set(BehaviorKnowledge* knowledge, const Variant& value);
+    bool Set(BehaviorKnowledge* knowledge, const Variant& value) const;
 
     // Gets the selected knowledge value (as Variant).
-    Variant Get(BehaviorKnowledge* knowledge);
+    Variant Get(const BehaviorKnowledge* knowledge) const;
 
     // Tries to get the selected knowledge value (as Variant). Returns true if got value, otherwise false.
-    bool TryGet(BehaviorKnowledge* knowledge, Variant& value);
+    bool TryGet(const BehaviorKnowledge* knowledge, Variant& value) const;
 
     FORCE_INLINE bool operator==(const BehaviorKnowledgeSelectorAny& other) const
     {
@@ -63,19 +63,19 @@ API_STRUCT(InBuild, Template, MarshalAs=StringAnsi) struct FLAXENGINE_API Behavi
     using BehaviorKnowledgeSelectorAny::TryGet;
 
     // Sets the selected knowledge value (typed).
-    FORCE_INLINE void Set(BehaviorKnowledge* knowledge, const T& value)
+    FORCE_INLINE void Set(BehaviorKnowledge* knowledge, const T& value) const
     {
         BehaviorKnowledgeSelectorAny::Set(knowledge, Variant(value));
     }
 
     // Gets the selected knowledge value (typed).
-    FORCE_INLINE T Get(BehaviorKnowledge* knowledge)
+    FORCE_INLINE T Get(const BehaviorKnowledge* knowledge) const
     {
         return TVariantValueCast<T>::Cast(BehaviorKnowledgeSelectorAny::Get(knowledge));
     }
 
     // Tries to get the selected knowledge value (typed). Returns true if got value, otherwise false.
-    FORCE_INLINE bool TryGet(BehaviorKnowledge* knowledge, T& value)
+    FORCE_INLINE bool TryGet(const BehaviorKnowledge* knowledge, T& value)
     {
         Variant variant;
         if (BehaviorKnowledgeSelectorAny::TryGet(knowledge, variant))

@@ -12,6 +12,7 @@
 API_CLASS(Abstract) class FLAXENGINE_API BehaviorTreeNode : public SerializableScriptingObject
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeNode, SerializableScriptingObject);
+    friend class Behavior;
     friend class BehaviorTreeGraph;
     friend class BehaviorKnowledge;
     friend class BehaviorTreeSubTreeNode;
@@ -75,6 +76,18 @@ public:
     {
         return BehaviorUpdateResult::Success;
     }
+
+#if USE_EDITOR
+    /// <summary>
+    /// Gets the node debug state text (multiline). Used in Editor-only to display nodes state. Can be called without valid Behavior/Knowledge/Memory to display default debug info (eg. node properties).
+    /// </summary>
+    /// <param name="context">Behavior context data.</param>
+    /// <returns>Debug info text (multiline).</returns>
+    API_FUNCTION() virtual String GetDebugInfo(const BehaviorUpdateContext& context) const
+    {
+        return String::Empty;
+    }
+#endif
 
     // Helper utility to update node with state creation/cleanup depending on node relevancy.
     BehaviorUpdateResult InvokeUpdate(const BehaviorUpdateContext& context);

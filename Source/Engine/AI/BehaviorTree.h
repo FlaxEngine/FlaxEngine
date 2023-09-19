@@ -67,6 +67,13 @@ public:
     BehaviorTreeGraph Graph;
 
     /// <summary>
+    /// Gets a specific node instance object from Behavior Tree.
+    /// </summary>
+    /// <param name="id">The unique node identifier (Visject surface).</param>
+    /// <returns>The node instance or null if cannot get it.</returns>
+    API_FUNCTION() BehaviorTreeNode* GetNodeInstance(uint32 id);
+
+    /// <summary>
     /// Tries to load surface graph from the asset.
     /// </summary>
     /// <returns>The surface data or empty if failed to load it.</returns>

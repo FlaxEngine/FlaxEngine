@@ -27,7 +27,6 @@ private:
     float _accumulatedTime = 0.0f;
     float _totalTime = 0.0f;
     BehaviorUpdateResult _result = BehaviorUpdateResult::Success;
-    void* _memory = nullptr;
 
     void UpdateAsync();
 
@@ -91,4 +90,10 @@ public:
     // [Script]
     void OnEnable() override;
     void OnDisable() override;
+
+private:
+#if USE_EDITOR
+    // Editor-only utility to debug nodes state.
+    API_FUNCTION(Internal) static String GetNodeDebugInfo(BehaviorTreeNode* node, Behavior* behavior);
+#endif
 };

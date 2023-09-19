@@ -29,6 +29,8 @@ namespace FlaxEditor.Surface.Archetypes
             protected const float DecoratorsMarginX = 5.0f;
             protected const float DecoratorsMarginY = 2.0f;
 
+            protected string _debugInfo;
+            protected Float2 _debugInfoSize;
             protected ScriptType _type;
             internal bool _isValueEditing;
 
@@ -52,6 +54,21 @@ namespace FlaxEditor.Surface.Archetypes
                 return title;
             }
 
+            public virtual void UpdateDebug(Behavior behavior)
+            {
+                BehaviorTreeNode instance = null;
+                if (behavior)
+                {
+                    // Try to use instance from the currently debugged behavior
+                    // TODO: support nodes from nested trees
+                    instance = behavior.Tree.GetNodeInstance(ID);
+                }
+                var size = _debugInfoSize;
+                UpdateDebugInfo(instance, behavior);
+                if (size != _debugInfoSize)
+                    ResizeAuto();
+            }
+
             protected virtual void UpdateTitle()
             {
                 string title = null;
@@ -67,6 +84,21 @@ namespace FlaxEditor.Surface.Archetypes
                     title = "Missing Type " + typeName;
                 }
                 Title = title;
+            }
+
+            protected virtual void UpdateDebugInfo(BehaviorTreeNode instance = null, Behavior behavior = null)
+            {
+                _debugInfo = null;
+                _debugInfoSize = Float2.Zero;
+                if (!instance)
+                    instance = Instance;
+                if (instance)
+                {
+                    // Get debug description for the node based on the current settings
+                    _debugInfo = Behavior.GetNodeDebugInfo(instance, behavior);
+                    if (!string.IsNullOrEmpty(_debugInfo))
+                        _debugInfoSize = Style.Current.FontSmall.MeasureText(_debugInfo);
+                }
             }
 
             public override void OnLoaded(SurfaceNodeActions action)
@@ -97,6 +129,7 @@ namespace FlaxEditor.Surface.Archetypes
                     Instance = null;
                 }
 
+                UpdateDebugInfo();
                 UpdateTitle();
             }
 
@@ -129,6 +162,7 @@ namespace FlaxEditor.Surface.Archetypes
                     }
                 }
 
+                UpdateDebugInfo();
                 UpdateTitle();
             }
 
@@ -139,10 +173,23 @@ namespace FlaxEditor.Surface.Archetypes
                 ResizeAuto();
             }
 
+            public override void Draw()
+            {
+                base.Draw();
+
+                // Debug Info
+                if (!string.IsNullOrEmpty(_debugInfo))
+                {
+                    var style = Style.Current;
+                    Render2D.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom + 4, _debugInfoSize), style.Foreground);
+                }
+            }
+
             public override void OnDestroy()
             {
                 if (IsDisposing)
                     return;
+                _debugInfo = null;
                 _type = ScriptType.Null;
                 FlaxEngine.Object.Destroy(ref Instance);
 
@@ -258,6 +305,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 get
                 {
+                    // Return decorator nodes attached to this node to be moved/copied/pasted as a one
                     SurfaceNode[] result = null;
                     var ids = Values.Length >= 3 ? Values[2] as byte[] : null;
                     if (ids != null)
@@ -425,6 +473,11 @@ namespace FlaxEditor.Surface.Archetypes
                 var titleLabelFont = Style.Current.FontLarge;
                 width = Mathf.Max(width, 100.0f);
                 width = Mathf.Max(width, titleLabelFont.MeasureText(Title).X + 30);
+                if (_debugInfoSize.X > 0)
+                {
+                    width = Mathf.Max(width, _debugInfoSize.X + 8.0f);
+                    height += _debugInfoSize.Y + 8.0f;
+                }
                 if (_input != null && _input.Visible)
                     height += ConnectionAreaHeight;
                 if (_output != null && _output.Visible)
@@ -463,9 +516,12 @@ namespace FlaxEditor.Surface.Archetypes
                 const float closeButtonSize = FlaxEditor.Surface.Constants.NodeCloseButtonSize;
                 _headerRect = new Rectangle(0, bounds.Y - Y, bounds.Width, headerSize);
                 _closeButtonRect = new Rectangle(bounds.Width - closeButtonSize - closeButtonMargin, _headerRect.Y + closeButtonMargin, closeButtonSize, closeButtonSize);
-                _footerRect = new Rectangle(0, _headerRect.Bottom, bounds.Width, footerSize);
+                _footerRect = new Rectangle(0, bounds.Height - footerSize, bounds.Width, footerSize);
                 if (_output != null && _output.Visible)
+                {
+                    _footerRect.Y -= ConnectionAreaHeight;
                     _output.Bounds = new Rectangle(ConnectionAreaMargin, bounds.Height - ConnectionAreaHeight, bounds.Width - ConnectionAreaMargin * 2, ConnectionAreaHeight);
+                }
             }
 
             protected override void OnLocationChanged()
@@ -589,7 +645,12 @@ namespace FlaxEditor.Surface.Archetypes
 
             protected override Float2 CalculateNodeSize(float width, float height)
             {
-                return new Float2(width + FlaxEditor.Surface.Constants.NodeCloseButtonSize + 2 * DecoratorsMarginX, height + FlaxEditor.Surface.Constants.NodeHeaderSize);
+                if (_debugInfoSize.X > 0)
+                {
+                    width = Mathf.Max(width, _debugInfoSize.X + 8.0f);
+                    height += _debugInfoSize.Y + 8.0f;
+                }
+                return new Float2(width + FlaxEditor.Surface.Constants.NodeCloseButtonSize * 2 + DecoratorsMarginX * 2, height + FlaxEditor.Surface.Constants.NodeHeaderSize);
             }
 
             protected override void UpdateRectangles()
@@ -603,12 +664,19 @@ namespace FlaxEditor.Surface.Archetypes
 
             protected override void UpdateTitle()
             {
-                var title = Title;
-
-                base.UpdateTitle();
-
                 // Update parent node on title change
+                var title = Title;
+                base.UpdateTitle();
                 if (title != Title)
+                    Node?.ResizeAuto();
+            }
+
+            protected override void UpdateDebugInfo(BehaviorTreeNode instance, Behavior behavior)
+            {
+                // Update parent node on debug text change
+                var debugInfoSize = _debugInfoSize;
+                base.UpdateDebugInfo(instance, behavior);
+                if (debugInfoSize != _debugInfoSize)
                     Node?.ResizeAuto();
             }
 

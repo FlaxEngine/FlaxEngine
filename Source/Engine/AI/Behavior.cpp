@@ -166,3 +166,25 @@ void Behavior::OnDisable()
 {
     BehaviorServiceInstance.UpdateList.Remove(this);
 }
+
+#if USE_EDITOR
+
+String Behavior::GetNodeDebugInfo(BehaviorTreeNode* node, Behavior* behavior)
+{
+    if (!node)
+        return String::Empty;
+    BehaviorUpdateContext context;
+    Platform::MemoryClear(&context, sizeof(context));
+    if (behavior && behavior->_knowledge.RelevantNodes.Get(node->_executionIndex))
+    {
+        // Pass behavior and knowledge data only for relevant nodes to properly access it
+        context.Behavior = behavior;
+        context.Knowledge = &behavior->_knowledge;
+        context.Memory = behavior->_knowledge.Memory;
+        context.RelevantNodes = &behavior->_knowledge.RelevantNodes;
+        context.Time = behavior->_totalTime;
+    }
+    return node->GetDebugInfo(context);
+}
+
+#endif

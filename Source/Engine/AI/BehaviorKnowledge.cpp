@@ -119,12 +119,12 @@ bool AccessBehaviorKnowledge(BehaviorKnowledge* knowledge, const StringAnsiView&
     return false;
 }
 
-bool BehaviorKnowledgeSelectorAny::Set(BehaviorKnowledge* knowledge, const Variant& value)
+bool BehaviorKnowledgeSelectorAny::Set(BehaviorKnowledge* knowledge, const Variant& value) const
 {
     return knowledge && knowledge->Set(Path, value);
 }
 
-Variant BehaviorKnowledgeSelectorAny::Get(BehaviorKnowledge* knowledge)
+Variant BehaviorKnowledgeSelectorAny::Get(const BehaviorKnowledge* knowledge) const
 {
     Variant value;
     if (knowledge)
@@ -132,7 +132,7 @@ Variant BehaviorKnowledgeSelectorAny::Get(BehaviorKnowledge* knowledge)
     return value;
 }
 
-bool BehaviorKnowledgeSelectorAny::TryGet(BehaviorKnowledge* knowledge, Variant& value)
+bool BehaviorKnowledgeSelectorAny::TryGet(const BehaviorKnowledge* knowledge, Variant& value) const
 {
     return knowledge && knowledge->Get(Path, value);
 }
@@ -182,9 +182,9 @@ void BehaviorKnowledge::FreeMemory()
     Tree = nullptr;
 }
 
-bool BehaviorKnowledge::Get(const StringAnsiView& path, Variant& value)
+bool BehaviorKnowledge::Get(const StringAnsiView& path, Variant& value) const
 {
-    return AccessBehaviorKnowledge(this, path, value, false);
+    return AccessBehaviorKnowledge(const_cast<BehaviorKnowledge*>(this), path, value, false);
 }
 
 bool BehaviorKnowledge::Set(const StringAnsiView& path, const Variant& value)

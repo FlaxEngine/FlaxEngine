@@ -6,6 +6,7 @@
 #include "Engine/Core/Random.h"
 #include "Engine/Scripting/Scripting.h"
 #if USE_CSHARP
+#include "Engine/Core/Utilities.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #endif
 #include "Engine/Engine/Engine.h"
@@ -264,6 +265,28 @@ BehaviorUpdateResult BehaviorTreeDelayNode::Update(const BehaviorUpdateContext& 
     return state->TimeLeft <= 0.0f ? BehaviorUpdateResult::Success : BehaviorUpdateResult::Running;
 }
 
+#if USE_EDITOR
+
+String BehaviorTreeDelayNode::GetDebugInfo(const BehaviorUpdateContext& context) const
+{
+    if (context.Memory)
+    {
+        const auto state = GetState<State>(context.Memory);
+        return String::Format(TEXT("Time Left: {}s"), Utilities::RoundTo2DecimalPlaces(state->TimeLeft));
+    }
+
+    String delay;
+    if (WaitTimeSelector.Path.HasChars())
+        delay = String(WaitTimeSelector.Path);
+    else
+        delay = StringUtils::ToString(WaitTime);
+    if (RandomDeviation > 0.0f)
+        delay += String::Format(TEXT("+/-{}"), RandomDeviation);
+    return String::Format(TEXT("Delay: {}s"), delay);
+}
+
+#endif
+
 int32 BehaviorTreeSubTreeNode::GetStateSize() const
 {
     return sizeof(State);
@@ -480,6 +503,35 @@ BehaviorUpdateResult BehaviorTreeMoveToNode::Update(const BehaviorUpdateContext&
 
     return state->Result;
 }
+
+#if USE_EDITOR
+
+String BehaviorTreeMoveToNode::GetDebugInfo(const BehaviorUpdateContext& context) const
+{
+    if (context.Memory)
+    {
+        const auto state = GetState<State>(context.Memory);
+        if (state->Agent)
+        {
+            const String agent = state->Agent->GetNamePath();
+            String goal;
+            const Actor* target = Target.Get(context.Knowledge);
+            if (target)
+                goal = target->GetNamePath();
+            else
+                goal = state->GoalLocation.ToString();
+            const Vector3 agentLocation = state->Agent->GetPosition();
+            const Vector3 agentLocationOnPath = agentLocation + state->AgentOffset;
+            float distanceLeft = state->Path.Count() > state->TargetPathIndex ? Vector3::Distance(state->Path[state->TargetPathIndex], agentLocationOnPath) : 0;
+            for (int32 i = state->TargetPathIndex; i < state->Path.Count(); i++)
+                distanceLeft += Vector3::Distance(state->Path[i - 1], state->Path[i]);
+            return String::Format(TEXT("Agent: '{}'\nGoal: '{}'\nDistance: {}"), agent, goal, (int32)distanceLeft);
+        }
+    }
+    return String::Empty;
+}
+
+#endif
 
 void BehaviorTreeMoveToNode::State::OnUpdate()
 {

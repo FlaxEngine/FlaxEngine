@@ -67,7 +67,7 @@ public:
     /// <param name="path">Selector path.</param>
     /// <param name="value">Result value (valid only when returned true).</param>
     /// <returns>True if got value, otherwise false.</returns>
-    API_FUNCTION() bool Get(const StringAnsiView& path, API_PARAM(Out) Variant& value);
+    API_FUNCTION() bool Get(const StringAnsiView& path, API_PARAM(Out) Variant& value) const;
 
     /// <summary>
     /// Sets the knowledge item value via selector path.

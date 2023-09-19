@@ -449,6 +449,18 @@ namespace FlaxEditor.Windows.Assets
             UpdateKnowledge();
         }
 
+        private void UpdateDebugInfos(bool playMode)
+        {
+            var behavior = playMode ? (Behavior)_behaviorPicker.Value : null;
+            if (!behavior)
+                behavior = null;
+            foreach (var e in _surface.Nodes)
+            {
+                if (e is Surface.Archetypes.BehaviorTree.NodeBase node)
+                    node.UpdateDebug(behavior);
+            }
+        }
+
         /// <inheritdoc />
         public override void OnPlayBegin()
         {
@@ -461,6 +473,7 @@ namespace FlaxEditor.Windows.Assets
         public override void OnPlayEnd()
         {
             SetCanEdit(true);
+            UpdateDebugInfos(false);
 
             base.OnPlayEnd();
         }
@@ -519,6 +532,12 @@ namespace FlaxEditor.Windows.Assets
 
             // Update behavior debugging
             SetCanDebug(Editor.IsPlayMode && _behaviorPicker.Value);
+
+            // Update debug info texts on all nodes
+            if (Editor.IsPlayMode)
+            {
+                UpdateDebugInfos(true);
+            }
 
             base.Update(deltaTime);
         }
