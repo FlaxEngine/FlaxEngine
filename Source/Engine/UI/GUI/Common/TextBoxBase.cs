@@ -37,7 +37,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Default height of the text box
         /// </summary>
-        public static float DefaultHeight = 18;
+        public static float DefaultHeight = 22;
 
         /// <summary>
         /// Left and right margin for text inside the text box bounds rectangle
