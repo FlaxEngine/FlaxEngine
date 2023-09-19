@@ -186,14 +186,14 @@ namespace FlaxEditor.Options
         /// Gets or sets the output log text shadow offset. Set to 0 to disable this feature.
         /// </summary>
         [DefaultValue(typeof(Float2), "1,1")]
-        [EditorDisplay("Output Log", "Text Shadow Offset"), EditorOrder(340), Tooltip("The output log text shadow offset. Set to 0 to disable this feature.")]
+        [EditorDisplay("Output Log", "Text Shadow Offset"), EditorOrder(350), Tooltip("The output log text shadow offset. Set to 0 to disable this feature.")]
         public Float2 OutputLogTextShadowOffset { get; set; } = new Float2(1);
 
         /// <summary>
         /// Gets or sets the output log text color for warnings
         /// </summary>
         [DefaultValue(typeof(Color), "1,1,0,1")]
-        [EditorDisplay("Output Log", "Warning Color"), EditorOrder(341), Tooltip("The output log text color for warnings.")]
+        [EditorDisplay("Output Log", "Warning Color"), EditorOrder(360), Tooltip("The output log text color for warnings.")]
         public Color OutputLogWarningTextColor { get; set; } = Color.Yellow;
 
 
@@ -201,7 +201,7 @@ namespace FlaxEditor.Options
         /// Gets or sets the output log text color for errors
         /// </summary>
         [DefaultValue(typeof(Color), "1,0,0,1")]
-        [EditorDisplay("Output Log", "Error Color"), EditorOrder(342), Tooltip("The output log text color for errors.")]
+        [EditorDisplay("Output Log", "Error Color"), EditorOrder(370), Tooltip("The output log text color for errors.")]
         public Color OutputLogErrorTextColor { get; set; } = Color.Red;
 
 
@@ -209,14 +209,14 @@ namespace FlaxEditor.Options
         /// Gets or sets a value indicating whether auto-focus output log window on code compilation error.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Output Log", "Focus Output Log On Compilation Error"), EditorOrder(350), Tooltip("Determines whether auto-focus output log window on code compilation error.")]
+        [EditorDisplay("Output Log", "Focus Output Log On Compilation Error"), EditorOrder(380), Tooltip("Determines whether auto-focus output log window on code compilation error.")]
         public bool FocusOutputLogOnCompilationError { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether auto-focus output log window on game build error.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Output Log", "Focus Output Log On Game Build Error"), EditorOrder(360), Tooltip("Determines whether auto-focus output log window on game build error.")]
+        [EditorDisplay("Output Log", "Focus Output Log On Game Build Error"), EditorOrder(390), Tooltip("Determines whether auto-focus output log window on game build error.")]
         public bool FocusOutputLogOnGameBuildError { get; set; } = true;
 
         /// <summary>
