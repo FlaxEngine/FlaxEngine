@@ -93,7 +93,8 @@ public:
 
 private:
 #if USE_EDITOR
-    // Editor-only utility to debug nodes state.
-    API_FUNCTION(Internal) static String GetNodeDebugInfo(BehaviorTreeNode* node, Behavior* behavior);
+    // Editor-only utilities to debug nodes state.
+    API_FUNCTION(Internal) static bool GetNodeDebugRelevancy(const BehaviorTreeNode* node, const Behavior* behavior);
+    API_FUNCTION(Internal) static String GetNodeDebugInfo(const BehaviorTreeNode* node, Behavior* behavior);
 #endif
 };

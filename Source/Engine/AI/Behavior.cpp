@@ -169,7 +169,12 @@ void Behavior::OnDisable()
 
 #if USE_EDITOR
 
-String Behavior::GetNodeDebugInfo(BehaviorTreeNode* node, Behavior* behavior)
+bool Behavior::GetNodeDebugRelevancy(const BehaviorTreeNode* node, const Behavior* behavior)
+{
+    return node && behavior && behavior->_knowledge.RelevantNodes.Get(node->_executionIndex);
+}
+
+String Behavior::GetNodeDebugInfo(const BehaviorTreeNode* node, Behavior* behavior)
 {
     if (!node)
         return String::Empty;
