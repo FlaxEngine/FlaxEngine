@@ -1092,13 +1092,13 @@ namespace FlaxEngine
 
             Real maxChangeSpeed = maxSpeed * smoothTime;
             Real changeSq = maxChangeSpeed * maxChangeSpeed;
-            Real sqrMag = change_x * change_x + change_y * change_y + change_z * change_z;
-            if (sqrMag > changeSq)
+            Real sqrLen = change_x * change_x + change_y * change_y + change_z * change_z;
+            if (sqrLen > changeSq)
             {
-                var mag = (Real)Math.Sqrt(sqrMag);
-                change_x = change_x / mag * maxChangeSpeed;
-                change_y = change_y / mag * maxChangeSpeed;
-                change_z = change_z / mag * maxChangeSpeed;
+                var len = (Real)Math.Sqrt(sqrLen);
+                change_x = change_x / len * maxChangeSpeed;
+                change_y = change_y / len * maxChangeSpeed;
+                change_z = change_z / len * maxChangeSpeed;
             }
 
             target.X = current.X - change_x;
