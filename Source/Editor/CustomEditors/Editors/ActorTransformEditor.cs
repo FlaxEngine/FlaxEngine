@@ -122,12 +122,16 @@ namespace FlaxEditor.CustomEditors.Editors
                 // Override colors
                 var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
                 var grayOutFactor = 0.6f;
-                XElement.ValueBox.BorderColor = Color.Lerp(AxisColorX, back, grayOutFactor);
-                XElement.ValueBox.BorderSelectedColor = AxisColorX;
-                YElement.ValueBox.BorderColor = Color.Lerp(AxisColorY, back, grayOutFactor);
-                YElement.ValueBox.BorderSelectedColor = AxisColorY;
-                ZElement.ValueBox.BorderColor = Color.Lerp(AxisColorZ, back, grayOutFactor);
-                ZElement.ValueBox.BorderSelectedColor = AxisColorZ;
+                var borderSides = new Vector4(0, 1, 0, 1);
+                var xAxisColor = Color.Lerp(AxisColorX, back, grayOutFactor);
+                var yAxisColor = Color.Lerp(AxisColorY, back, grayOutFactor);
+                var zAxisColor = Color.Lerp(AxisColorZ, back, grayOutFactor);
+                XElement.ValueBox.Border = new TextBoxBase.TextBoxBorder(xAxisColor, AxisColorX, borderSides);
+                XLabel.Control.BackgroundColor = xAxisColor;
+                YElement.ValueBox.Border = new TextBoxBase.TextBoxBorder(yAxisColor, AxisColorY, borderSides);
+                YLabel.Control.BackgroundColor = yAxisColor;
+                ZElement.ValueBox.Border = new TextBoxBase.TextBoxBorder(zAxisColor, AxisColorZ, borderSides);
+                ZLabel.Control.BackgroundColor = zAxisColor;
             }
 
             /// <summary>
