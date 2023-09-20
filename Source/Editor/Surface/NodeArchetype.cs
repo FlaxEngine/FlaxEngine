@@ -100,11 +100,11 @@ namespace FlaxEditor.Surface
         public CreateCustomNodeFunc Create;
 
         private Float2 _size;
-
         /// <summary>
         /// Default initial size of the node.
         /// </summary>
-        public Float2 Size {
+        public Float2 Size
+        {
             get
             {
                 return _size;
@@ -112,7 +112,6 @@ namespace FlaxEditor.Surface
             set
             {
                 _size = VisjectSurface.RoundToGrid(value, true);
-                Debug.Log(_size.ToString());
             }
         }
 
