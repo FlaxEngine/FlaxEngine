@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+using System.Runtime.InteropServices;
 
 namespace Flax.Build.Platforms
 {
@@ -41,5 +42,20 @@ namespace Flax.Build.Platforms
             default: return false;
             }
         }
+
+        [DllImport ("c")]
+		public static unsafe extern int sysctlbyname (
+			string name, void* oldp, ulong *oldlenp, void* newp, ulong newlen);
+
+        public unsafe static bool GetProcessIsTranslated()
+		{
+			int ret = 0;
+			ulong size = sizeof (int);
+			if (sysctlbyname ("sysctl.proc_translated", &ret, &size, null, 0) == -1) {
+				return false;
+			}
+
+			return ret != 0;
+		}
     }
 }
