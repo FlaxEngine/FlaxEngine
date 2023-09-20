@@ -147,7 +147,7 @@ namespace FlaxEditor.Windows
 
             cm.AddSeparator();
 
-            if (!isRootFolder)
+            if (!isRootFolder && !(item is ContentFolder projectFolder && projectFolder.Node is ProjectTreeNode))
             {
                 cm.AddButton("New folder", NewFolder);
             }
