@@ -14,7 +14,7 @@ internal static class CustomEditorUtils
         containerControl.Height = grid.CustomControl.Height;
         containerControl.RowFill = new[] { 1f, 1f };
         containerControl.ColumnFill = new[] { -20f, 1f };
-        containerControl.SlotPadding = new Margin(0,4,0,0);
+        containerControl.SlotPadding = new Margin(0);
         
         label = container.Label(unit);
         var labelElement = label.Label;
