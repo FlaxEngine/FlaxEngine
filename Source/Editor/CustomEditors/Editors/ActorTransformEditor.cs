@@ -14,17 +14,17 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <summary>
         /// The X axis color.
         /// </summary>
-        public static Color AxisColorX = new Color(1.0f, 0.0f, 0.02745f, 1.0f);
+        public static Color AxisColorX = Color.ParseHex("CB2F44FF");
 
         /// <summary>
         /// The Y axis color.
         /// </summary>
-        public static Color AxisColorY = new Color(0.239215f, 1.0f, 0.047058f, 1.0f);
+        public static Color AxisColorY = Color.ParseHex("81CB1CFF");
 
         /// <summary>
         /// The Z axis color.
         /// </summary>
-        public static Color AxisColorZ = new Color(0.0f, 0.0235294f, 1.0f, 1.0f);
+        public static Color AxisColorZ = Color.ParseHex("2872CBFF");
 
         /// <summary>
         /// Custom editor for actor position property.
