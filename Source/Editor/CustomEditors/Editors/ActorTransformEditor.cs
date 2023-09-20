@@ -25,6 +25,46 @@ namespace FlaxEditor.CustomEditors.Editors
         /// The Z axis color.
         /// </summary>
         public static Color AxisColorZ = Color.ParseHex("2872CBFF");
+        
+        /// <summary>
+        /// The X axis color for background.
+        /// </summary>
+        public static Color AxisColorXBackground = Color.Lerp(AxisColorX, Style.Current.TextBoxBackground, DarkenFactor);
+        
+        /// <summary>
+        /// The Y axis color for background.
+        /// </summary>
+        public static Color AxisColorYBackground = Color.Lerp(AxisColorY, Style.Current.TextBoxBackground, DarkenFactor);
+        
+        /// <summary>
+        /// The Z axis color for background.
+        /// </summary>
+        public static Color AxisColorZBackground = Color.Lerp(AxisColorZ, Style.Current.TextBoxBackground, DarkenFactor);
+        
+        /// <summary>
+        /// The darken factor for axis colors.
+        /// </summary>
+        public const float DarkenFactor = 0.3f;
+        
+        /// <summary>
+        /// The darken factor for axis colors.
+        /// </summary>
+        public const float TextDarkenFactor = 0.9f;
+        
+        /// <summary>
+        /// The X axis color for the text label.
+        /// </summary>
+        public static Color AxisTextColorX = Color.Lerp(AxisColorX, Color.White, TextDarkenFactor);
+        
+        /// <summary>
+        /// The Y axis color for the text label.
+        /// </summary>
+        public static Color AxisTextColorY = Color.Lerp(AxisColorY, Color.White, TextDarkenFactor);
+        
+        /// <summary>
+        /// The Z axis color for the text label.
+        /// </summary>
+        public static Color AxisTextColorZ = Color.Lerp(AxisColorZ, Color.White, TextDarkenFactor);
 
         /// <summary>
         /// Custom editor for actor position property.
@@ -38,18 +78,12 @@ namespace FlaxEditor.CustomEditors.Editors
                 base.Initialize(layout);
 
                 // Override colors
-                var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
-                var grayOutFactor = 0.6f;
-                var borderSides = new Vector4(0, 1, 0, 1);
-                var xAxisColor = Color.Lerp(AxisColorX, back, grayOutFactor);
-                var yAxisColor = Color.Lerp(AxisColorY, back, grayOutFactor);
-                var zAxisColor = Color.Lerp(AxisColorZ, back, grayOutFactor);
-                XElement.ValueBox.Border = new TextBoxBase.TextBoxBorder(xAxisColor, AxisColorX, borderSides);
-                XLabel.Control.BackgroundColor = xAxisColor;
-                YElement.ValueBox.Border = new TextBoxBase.TextBoxBorder(yAxisColor, AxisColorY, borderSides);
-                YLabel.Control.BackgroundColor = yAxisColor;
-                ZElement.ValueBox.Border = new TextBoxBase.TextBoxBorder(zAxisColor, AxisColorZ, borderSides);
-                ZLabel.Control.BackgroundColor = zAxisColor;
+                XLabel.Control.BackgroundColor = AxisColorXBackground;
+                XLabel.Label.TextColor = AxisTextColorX;
+                YLabel.Control.BackgroundColor = AxisColorYBackground;
+                YLabel.Label.TextColor = AxisTextColorY;
+                ZLabel.Control.BackgroundColor = AxisColorZBackground;
+                ZLabel.Label.TextColor = AxisTextColorZ;
             }
         }
 
@@ -65,18 +99,12 @@ namespace FlaxEditor.CustomEditors.Editors
                 base.Initialize(layout);
 
                 // Override colors
-                var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
-                var grayOutFactor = 0.6f;
-                var borderSides = new Vector4(0, 1, 0, 1);
-                var xAxisColor = Color.Lerp(AxisColorX, back, grayOutFactor);
-                var yAxisColor = Color.Lerp(AxisColorY, back, grayOutFactor);
-                var zAxisColor = Color.Lerp(AxisColorZ, back, grayOutFactor);
-                XElement.ValueBox.Border = new TextBoxBase.TextBoxBorder(xAxisColor, AxisColorX, borderSides);
-                XLabel.Control.BackgroundColor = xAxisColor;
-                YElement.ValueBox.Border = new TextBoxBase.TextBoxBorder(yAxisColor, AxisColorY, borderSides);
-                YLabel.Control.BackgroundColor = yAxisColor;
-                ZElement.ValueBox.Border = new TextBoxBase.TextBoxBorder(zAxisColor, AxisColorZ, borderSides);
-                ZLabel.Control.BackgroundColor = zAxisColor;
+                XLabel.Control.BackgroundColor = AxisColorXBackground;
+                XLabel.Label.TextColor = AxisTextColorX;
+                YLabel.Control.BackgroundColor = AxisColorYBackground;
+                YLabel.Label.TextColor = AxisTextColorY;
+                ZLabel.Control.BackgroundColor = AxisColorZBackground;
+                ZLabel.Label.TextColor = AxisTextColorZ;
             }
         }
 
@@ -120,18 +148,12 @@ namespace FlaxEditor.CustomEditors.Editors
                 };
 
                 // Override colors
-                var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
-                var grayOutFactor = 0.6f;
-                var borderSides = new Vector4(0, 1, 0, 1);
-                var xAxisColor = Color.Lerp(AxisColorX, back, grayOutFactor);
-                var yAxisColor = Color.Lerp(AxisColorY, back, grayOutFactor);
-                var zAxisColor = Color.Lerp(AxisColorZ, back, grayOutFactor);
-                XElement.ValueBox.Border = new TextBoxBase.TextBoxBorder(xAxisColor, AxisColorX, borderSides);
-                XLabel.Control.BackgroundColor = xAxisColor;
-                YElement.ValueBox.Border = new TextBoxBase.TextBoxBorder(yAxisColor, AxisColorY, borderSides);
-                YLabel.Control.BackgroundColor = yAxisColor;
-                ZElement.ValueBox.Border = new TextBoxBase.TextBoxBorder(zAxisColor, AxisColorZ, borderSides);
-                ZLabel.Control.BackgroundColor = zAxisColor;
+                XLabel.Control.BackgroundColor = AxisColorXBackground;
+                XLabel.Label.TextColor = AxisTextColorX;
+                YLabel.Control.BackgroundColor = AxisColorYBackground;
+                YLabel.Label.TextColor = AxisTextColorY;
+                ZLabel.Control.BackgroundColor = AxisColorZBackground;
+                ZLabel.Label.TextColor = AxisTextColorZ;
             }
 
             /// <summary>
