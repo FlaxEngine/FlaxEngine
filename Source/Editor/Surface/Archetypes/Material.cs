@@ -281,7 +281,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Material",
                 Description = "Main material node",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.NoRemove | NodeFlags.NoSpawnViaGUI | NodeFlags.NoSpawnViaPaste | NodeFlags.NoCloseButton,
-                Size = new Float2(150, 300),
+                Size = new Float2(180, 300),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "", true, typeof(void), 0),
