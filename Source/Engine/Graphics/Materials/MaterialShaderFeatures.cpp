@@ -76,11 +76,11 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     // Set reflection probe data
     EnvironmentProbe* probe = nullptr;
     // TODO: optimize env probe searching for a transparent material - use spatial cache for renderer to find it
-    const Vector3 drawCallOrigin = drawCall.ObjectPosition + view.Origin;
+    const BoundingSphere objectBoundsWorld(drawCall.ObjectPosition + view.Origin, drawCall.ObjectRadius);
     for (int32 i = 0; i < cache->EnvironmentProbes.Count(); i++)
     {
         const auto p = cache->EnvironmentProbes[i];
-        if (p->GetSphere().Contains(drawCallOrigin) != ContainmentType::Disjoint)
+        if (CollisionsHelper::SphereIntersectsSphere(objectBoundsWorld, p->GetSphere()))
         {
             probe = p;
             break;
@@ -99,10 +99,12 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
 
     // Set local lights
     data.LocalLightsCount = 0;
+    const BoundingSphere objectBounds(drawCall.ObjectPosition, drawCall.ObjectRadius);
+    // TODO: optimize lights searching for a transparent material - use spatial cache for renderer to find it
     for (int32 i = 0; i < cache->PointLights.Count() && data.LocalLightsCount < MaxLocalLights; i++)
     {
         const auto& light = cache->PointLights[i];
-        if (BoundingSphere(light.Position, light.Radius).Contains(drawCall.ObjectPosition) != ContainmentType::Disjoint)
+        if (CollisionsHelper::SphereIntersectsSphere(objectBounds, BoundingSphere(light.Position, light.Radius)))
         {
             light.SetupLightData(&data.LocalLights[data.LocalLightsCount], false);
             data.LocalLightsCount++;
@@ -111,7 +113,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     for (int32 i = 0; i < cache->SpotLights.Count() && data.LocalLightsCount < MaxLocalLights; i++)
     {
         const auto& light = cache->SpotLights[i];
-        if (BoundingSphere(light.Position, light.Radius).Contains(drawCall.ObjectPosition) != ContainmentType::Disjoint)
+        if (CollisionsHelper::SphereIntersectsSphere(objectBounds, BoundingSphere(light.Position, light.Radius)))
         {
             light.SetupLightData(&data.LocalLights[data.LocalLightsCount], false);
             data.LocalLightsCount++;
