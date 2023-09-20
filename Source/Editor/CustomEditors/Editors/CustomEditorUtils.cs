@@ -23,28 +23,4 @@ internal static class CustomEditorUtils
             
         return container;
     }
-    
-    public static FloatValueElement CreateFloatValue(CustomElementsContainer<GridPanel> container, LimitAttribute limit)
-    {
-        var element = container.FloatValue();
-        element.SetLimits(limit);
-            
-        return element;
-    }
-    
-    public static DoubleValueElement CreateDoubleValue(CustomElementsContainer<GridPanel> container, LimitAttribute limit)
-    {
-        var element = container.DoubleValue();
-        element.SetLimits(limit);
-            
-        return element;
-    }
-    
-    public static IntegerValueElement CreateIntValue(CustomElementsContainer<GridPanel> container, LimitAttribute limit)
-    {
-        var element = container.IntegerValue();
-        element.SetLimits(limit);
-            
-        return element;
-    }
 }

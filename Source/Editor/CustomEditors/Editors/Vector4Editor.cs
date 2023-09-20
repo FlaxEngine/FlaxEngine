@@ -89,28 +89,32 @@ namespace FlaxEditor.CustomEditors.Editors
             var xContainer = CustomEditorUtils.CreateGridContainer(grid, "X", out var xLabel);
             XLabel = xLabel;
             
-            XElement = CustomEditorUtils.CreateFloatValue(xContainer, limit);
+            XElement = xContainer.FloatValue();
+            XElement.SetLimits(limit);
             XElement.ValueBox.ValueChanged += OnValueChanged;
             XElement.ValueBox.SlidingEnd += ClearToken;
             
             var yContainer = CustomEditorUtils.CreateGridContainer(grid, "Y", out var yLabel);
             YLabel = yLabel;
             
-            YElement = CustomEditorUtils.CreateFloatValue(yContainer, limit);
+            YElement = yContainer.FloatValue();
+            YElement.SetLimits(limit);
             YElement.ValueBox.ValueChanged += OnValueChanged;
             YElement.ValueBox.SlidingEnd += ClearToken;
             
             var zContainer = CustomEditorUtils.CreateGridContainer(grid, "Z", out var zLabel);
             ZLabel = zLabel;
             
-            ZElement = CustomEditorUtils.CreateFloatValue(zContainer, limit);
+            ZElement = zContainer.FloatValue();
+            ZElement.SetLimits(limit);
             ZElement.ValueBox.ValueChanged += OnValueChanged;
             ZElement.ValueBox.SlidingEnd += ClearToken;
             
             var wContainer = CustomEditorUtils.CreateGridContainer(grid, "W", out var wLabel);
             WLabel = wLabel;
             
-            WElement = CustomEditorUtils.CreateFloatValue(wContainer, limit);
+            WElement = wContainer.FloatValue();
+            WElement.SetLimits(limit);
             WElement.ValueBox.ValueChanged += OnValueChanged;
             WElement.ValueBox.SlidingEnd += ClearToken;
         }
@@ -228,28 +232,32 @@ namespace FlaxEditor.CustomEditors.Editors
             var xContainer = CustomEditorUtils.CreateGridContainer(grid, "X", out var xLabel);
             XLabel = xLabel;
             
-            XElement = CustomEditorUtils.CreateDoubleValue(xContainer, limit);
+            XElement = xContainer.DoubleValue();
+            XElement.SetLimits(limit);
             XElement.ValueBox.ValueChanged += OnValueChanged;
             XElement.ValueBox.SlidingEnd += ClearToken;
             
             var yContainer = CustomEditorUtils.CreateGridContainer(grid, "Y", out var yLabel);
             YLabel = yLabel;
             
-            YElement = CustomEditorUtils.CreateDoubleValue(yContainer, limit);
+            YElement = yContainer.DoubleValue();
+            YElement.SetLimits(limit);
             YElement.ValueBox.ValueChanged += OnValueChanged;
             YElement.ValueBox.SlidingEnd += ClearToken;
             
             var zContainer = CustomEditorUtils.CreateGridContainer(grid, "Z", out var zLabel);
             ZLabel = zLabel;
             
-            ZElement = CustomEditorUtils.CreateDoubleValue(zContainer, limit);
+            ZElement = zContainer.DoubleValue();
+            ZElement.SetLimits(limit);
             ZElement.ValueBox.ValueChanged += OnValueChanged;
             ZElement.ValueBox.SlidingEnd += ClearToken;
             
             var wContainer = CustomEditorUtils.CreateGridContainer(grid, "W", out var wLabel);
             WLabel = wLabel;
             
-            WElement = CustomEditorUtils.CreateDoubleValue(wContainer, limit);
+            WElement = wContainer.DoubleValue();
+            WElement.SetLimits(limit);
             WElement.ValueBox.ValueChanged += OnValueChanged;
             WElement.ValueBox.SlidingEnd += ClearToken;
         }
@@ -367,28 +375,32 @@ namespace FlaxEditor.CustomEditors.Editors
             var xContainer = CustomEditorUtils.CreateGridContainer(grid, "X", out var xLabel);
             XLabel = xLabel;
             
-            XElement = CustomEditorUtils.CreateIntValue(xContainer, limit);
+            XElement = xContainer.IntegerValue();
+            XElement.SetLimits(limit);
             XElement.IntValue.ValueChanged += OnValueChanged;
             XElement.IntValue.SlidingEnd += ClearToken;
             
             var yContainer = CustomEditorUtils.CreateGridContainer(grid, "Y", out var yLabel);
             YLabel = yLabel;
             
-            YElement = CustomEditorUtils.CreateIntValue(yContainer, limit);
+            YElement = yContainer.IntegerValue();
+            YElement.SetLimits(limit);
             YElement.IntValue.ValueChanged += OnValueChanged;
             YElement.IntValue.SlidingEnd += ClearToken;
             
             var zContainer = CustomEditorUtils.CreateGridContainer(grid, "Z", out var zLabel);
             ZLabel = zLabel;
             
-            ZElement = CustomEditorUtils.CreateIntValue(zContainer, limit);
+            ZElement = zContainer.IntegerValue();
+            ZElement.SetLimits(limit);
             ZElement.IntValue.ValueChanged += OnValueChanged;
             ZElement.IntValue.SlidingEnd += ClearToken;
             
             var wContainer = CustomEditorUtils.CreateGridContainer(grid, "W", out var wLabel);
             WLabel = wLabel;
             
-            WElement = CustomEditorUtils.CreateIntValue(wContainer, limit);
+            WElement = wContainer.IntegerValue();
+            WElement.SetLimits(limit);
             WElement.IntValue.ValueChanged += OnValueChanged;
             WElement.IntValue.SlidingEnd += ClearToken;
         }
