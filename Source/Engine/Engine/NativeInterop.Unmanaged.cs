@@ -560,6 +560,19 @@ namespace FlaxEngine.Interop
         }
 
         [UnmanagedCallersOnly]
+        internal static IntPtr GetArray(ManagedHandle handle)
+        {
+            if (!handle.IsAllocated)
+                return IntPtr.Zero;
+            object value = handle.Target;
+            if (value is ManagedArray)
+                return (IntPtr)handle;
+            if (value is Array)
+                return Invoker.MarshalReturnValueGeneric(value.GetType(), value);
+            return IntPtr.Zero;
+        }
+
+        [UnmanagedCallersOnly]
         internal static int GetArrayLength(ManagedHandle arrayHandle)
         {
             if (!arrayHandle.IsAllocated)
