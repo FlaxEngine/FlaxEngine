@@ -31,7 +31,7 @@ ID3D12CommandAllocator* CommandAllocatorPoolDX12::RequestAllocator(uint64 comple
         if (firstPair.First <= completedFenceValue)
         {
             allocator = firstPair.Second;
-            VALIDATE_DIRECTX_RESULT(allocator->Reset());
+            VALIDATE_DIRECTX_CALL(allocator->Reset());
             _ready.RemoveAtKeepOrder(0);
         }
     }
@@ -39,7 +39,7 @@ ID3D12CommandAllocator* CommandAllocatorPoolDX12::RequestAllocator(uint64 comple
     // If no allocators were ready to be reused, create a new one
     if (allocator == nullptr)
     {
-        VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateCommandAllocator(_type, IID_PPV_ARGS(&allocator)));
+        VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateCommandAllocator(_type, IID_PPV_ARGS(&allocator)));
 #if GPU_ENABLE_RESOURCE_NAMING
         Char name[32];
         swprintf(name, 32, L"CommandAllocator %u", _pool.Count());

@@ -136,7 +136,7 @@ bool LinuxFileSystem::ShowFileExplorer(const StringView& path)
 {
     const StringAsANSI<> pathAnsi(*path, path.Length());
     char cmd[2048];
-    sprintf(cmd, "nautilus %s &", pathAnsi.Get());
+    sprintf(cmd, "xdg-open %s &", pathAnsi.Get());
     system(cmd);
     return false;
 }

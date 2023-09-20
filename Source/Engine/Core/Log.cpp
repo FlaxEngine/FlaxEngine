@@ -223,10 +223,10 @@ void Log::Logger::ProcessLogMessage(LogType type, const StringView& msg, fmt_fla
     else
     {
         //w.append(msg.Get(), msg.Get() + msg.Length());
-        fmt_flax::format(w, TEXT("{}"), (const Char*)msg.Get());
+        fmt_flax::format(w, TEXT("{}"), msg);
     }
 #else
-    fmt_flax::format(w, TEXT("{}"), (const Char*)msg.Get());
+    fmt_flax::format(w, TEXT("{}"), msg);
 #endif
 }
 
