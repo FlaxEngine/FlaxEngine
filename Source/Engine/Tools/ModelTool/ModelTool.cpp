@@ -16,6 +16,7 @@
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/Models/ModelData.h"
 #include "Engine/Content/Assets/Model.h"
+#include "Engine/Content/Content.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #if USE_EDITOR
 #include "Engine/Core/Types/DateTime.h"
@@ -984,6 +985,15 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         auto assetPath = autoImportOutput / filename + ASSET_FILES_EXTENSION_WITH_DOT;
         if (options.ImportMaterialsAsInstances)
         {
+            if (!options.SplitObjects && options.ObjectIndex != 1 && options.ObjectIndex != -1)
+            {
+                // Find that asset create previously
+                AssetInfo info;
+                if (Content::GetAssetInfo(assetPath, info))
+                    material.AssetID = info.ID;
+                continue;
+            }
+
             AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialInstanceTag, assetPath, material.AssetID);
             MaterialInstance* materialInstance = (MaterialInstance*)LoadAsset(assetPath, MaterialInstance::TypeInitializer);
             if (materialInstance->WaitForLoaded())
@@ -1021,6 +1031,15 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                 materialOptions.Info.CullMode = CullMode::TwoSided;
             if (!Math::IsOne(material.Opacity.Value) || material.Opacity.TextureIndex != -1)
                 materialOptions.Info.BlendMode = MaterialBlendMode::Transparent;
+
+            if (!options.SplitObjects && options.ObjectIndex != 1 && options.ObjectIndex != -1)
+            {
+                // Find that asset create previously
+                AssetInfo info;
+                if (Content::GetAssetInfo(assetPath, info))
+                    material.AssetID = info.ID;
+                continue;
+            }
             AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialTag, assetPath, material.AssetID, &materialOptions);
         }
 #endif
