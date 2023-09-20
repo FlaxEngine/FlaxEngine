@@ -360,7 +360,7 @@ namespace FlaxEngine.GUI
                 {
                     var containerControl = child as ContainerControl;
                     var childAtRecursive = containerControl?.GetChildAtRecursive(childLocation);
-                    if (childAtRecursive != null)
+                    if (childAtRecursive != null && childAtRecursive.Visible)
                     {
                         child = childAtRecursive;
                     }
