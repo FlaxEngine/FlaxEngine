@@ -746,7 +746,6 @@ namespace FlaxEditor.Modules
                 return;
             }
             UpdateWindowTitle();
-            MainWindow.Maximize();
 
             // Link for main window events
             MainWindow.Closing += MainWindow_OnClosing;
