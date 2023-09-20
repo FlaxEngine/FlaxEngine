@@ -327,7 +327,7 @@ void MacPlatform::Tick()
     NSEvent* event = nil;
     do
     {
-        NSEvent* event = [NSApp nextEventMatchingMask: NSEventMaskAny untilDate: nil inMode: NSDefaultRunLoopMode dequeue: YES];
+        event = [NSApp nextEventMatchingMask: NSEventMaskAny untilDate: nil inMode: NSDefaultRunLoopMode dequeue: YES];
         if (event)
         {
             [NSApp sendEvent:event];
@@ -464,17 +464,15 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
             }
         }
 	}
-    
+
     NSTask *task = [[NSTask alloc] init];
     task.launchPath = AppleUtils::ToNSString(exePath);
     task.arguments  = AppleUtils::ParseArguments(AppleUtils::ToNSString(settings.Arguments));
-    
+
     if (cwd.Length() != 0)
         task.currentDirectoryPath = AppleUtils::ToNSString(cwd);
-    
-    
+
     int32 returnCode = 0;
-        
     if (settings.WaitForEnd)
     {
         id<NSObject> outputObserver = nil;
@@ -493,11 +491,16 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
                 NSData* data = [stdoutPipe fileHandleForReading].availableData;
                 if (data.length)
                 {
-                      String line((char*)data.bytes);
+                      String line((const char*)data.bytes, data.length);
                       if (settings.SaveOutput)
                         settings.Output.Add(line.Get(), line.Length());
                       if (settings.LogOutput)
-                        Log::Logger::Write(LogType::Info, line);
+                      {
+                        StringView lineView(line);
+                        if (line[line.Length() - 1] == '\n')
+                            lineView = StringView(line.Get(), line.Length() - 1);
+                        Log::Logger::Write(LogType::Info, lineView);
+                      }
                     [[stdoutPipe fileHandleForReading] waitForDataInBackgroundAndNotify];
                 }
             }
