@@ -246,20 +246,17 @@ bool ScriptsBuilder::RunBuildTool(const StringView& args, const StringView& work
         Log::FileNotFoundException(monoPath).SetLevel(LogType::Fatal);
         return true;
     }
-    //const String monoPath = TEXT("mono");
-    cmdLine.Append(TEXT("\""));
+    const String monoPath = TEXT("mono");
     cmdLine.Append(monoPath);
-    cmdLine.Append(TEXT("\" "));
+    cmdLine.Append(TEXT(" "));
     // TODO: Set env var for the mono MONO_GC_PARAMS=nursery-size64m to boost build performance -> profile it
 #endif
-    cmdLine.Append(TEXT("\""));
     cmdLine.Append(buildToolPath);
-    cmdLine.Append(TEXT("\" "));
-    cmdLine.Append(args.Get(), args.Length());
 
     // Call build tool
     CreateProcessSettings procSettings;
     procSettings.FileName = StringView(*cmdLine, cmdLine.Length());
+    procSettings.Arguments = args.Get();
     procSettings.WorkingDirectory = workingDir;
     const int32 result = Platform::CreateProcess(procSettings);
     if (result != 0)

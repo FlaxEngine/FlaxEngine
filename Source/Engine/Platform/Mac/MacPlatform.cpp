@@ -324,13 +324,16 @@ void MacPlatform::BeforeRun()
 void MacPlatform::Tick()
 {
     // Process system events
-    while (true)
+    NSEvent* event = nil;
+    do
     {
-        NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
-        if (event == nil)
-            break;
-        [NSApp sendEvent:event];
-    }
+        NSEvent* event = [NSApp nextEventMatchingMask: NSEventMaskAny untilDate: nil inMode: NSDefaultRunLoopMode dequeue: YES];
+        if (event)
+        {
+            [NSApp sendEvent:event];
+        }
+        
+    } while(event);
 
     ApplePlatform::Tick();
 }
@@ -461,50 +464,88 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
             }
         }
 	}
-
-    // Sanatize the string if the exePath has spaces with properly espcaped spaces for popen
-    exePath.Replace(TEXT(" "), TEXT("\\ "));
     
-    const String cmdLine = exePath + TEXT(" ") + settings.Arguments;
-    const StringAsANSI<> cmdLineAnsi(*cmdLine, cmdLine.Length());
-    FILE* pipe = popen(cmdLineAnsi.Get(), "r");
+    NSTask *task = [[NSTask alloc] init];
+    task.launchPath = AppleUtils::ToNSString(exePath);
+    task.arguments  = AppleUtils::ParseArguments(AppleUtils::ToNSString(settings.Arguments));
+    
     if (cwd.Length() != 0)
-    {
-        Platform::SetWorkingDirectory(cwd);
-    }
-    if (!pipe)
-    {
-		LOG(Warning, "Failed to start process, errno={}", errno);
-        return -1;
-    }
-
-    // TODO: environment
-
+        task.currentDirectoryPath = AppleUtils::ToNSString(cwd);
+    
+    
     int32 returnCode = 0;
+        
     if (settings.WaitForEnd)
     {
+        id<NSObject> outputObserver = nil;
+        
         if (captureStdOut)
         {
-            char lineBuffer[1024];
-            while (fgets(lineBuffer, sizeof(lineBuffer), pipe) != NULL)
+            NSPipe *stdoutPipe = [NSPipe pipe];
+            [task setStandardOutput:stdoutPipe];
+            
+            outputObserver = [[NSNotificationCenter defaultCenter]
+                                          addObserverForName: NSFileHandleDataAvailableNotification
+                                          object: [stdoutPipe fileHandleForReading]
+                                          queue: nil
+                              usingBlock:^(NSNotification* notification)
             {
-                char* p = lineBuffer + strlen(lineBuffer) - 1;
-                if (*p == '\n') *p = 0;
-                String line(lineBuffer);
-                if (settings.SaveOutput)
-                    settings.Output.Add(line.Get(), line.Length());
-                if (settings.LogOutput)
-                    Log::Logger::Write(LogType::Info, line);
+                NSData* data = [stdoutPipe fileHandleForReading].availableData;
+                if (data.length)
+                {
+                      String line((char*)data.bytes);
+                      if (settings.SaveOutput)
+                        settings.Output.Add(line.Get(), line.Length());
+                      if (settings.LogOutput)
+                        Log::Logger::Write(LogType::Info, line);
+                    [[stdoutPipe fileHandleForReading] waitForDataInBackgroundAndNotify];
+                }
             }
+                ];
+            
+            [[stdoutPipe fileHandleForReading] waitForDataInBackgroundAndNotify];
         }
-        else
+
+        String exception;
+        
+        @try
         {
-            while (!feof(pipe))
-            {
-                sleep(1);
-            }
+            [task launch];
+            [task waitUntilExit];
+        }
+        @catch (NSException* e)
+        {
+            exception = e.reason.UTF8String;
+        }
+        
+        if (!exception.IsEmpty())
+        {
+            LOG(Error, "Failed to run command {0} {1} with error {2}", settings.FileName, settings.Arguments, exception);
+            return -1;
+        }
+        
+        returnCode = [task terminationStatus];
+    }
+    else {
+        
+        String exception;
+        
+        @try
+        {
+            [task launch];
+        }
+        @catch (NSException* e)
+        {
+            exception = e.reason.UTF8String;
+        }
+        
+        if (!exception.IsEmpty())
+        {
+            LOG(Error, "Failed to run command {0} {1} with error {2}", settings.FileName, settings.Arguments, exception);
+            return -1;
         }
     }
+    
 
 	return returnCode;
 }
