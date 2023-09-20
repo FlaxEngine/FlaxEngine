@@ -878,7 +878,7 @@ namespace FlaxEditor.Surface
         /// <inheritdoc />
         public override bool CanSelect(ref Float2 location)
         {
-            return _headerRect.MakeOffsetted(Location).Contains(ref location);
+            return _headerRect.MakeOffsetted(Location).Contains(ref location) || new Rectangle(Float2.Zero, Size).MakeOffsetted(Location).Contains(ref location);
         }
 
         /// <inheritdoc />
