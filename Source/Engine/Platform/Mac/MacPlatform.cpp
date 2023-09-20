@@ -432,13 +432,6 @@ Window* MacPlatform::CreateWindow(const CreateWindowSettings& settings)
 int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
 {
     LOG(Info, "Command: {0} {1}", settings.FileName, settings.Arguments);
-    String cwd;
-    if (settings.WorkingDirectory.HasChars())
-    {
-        LOG(Info, "Working directory: {0}", settings.WorkingDirectory);
-        cwd = Platform::GetWorkingDirectory();
-        Platform::SetWorkingDirectory(settings.WorkingDirectory);
-    }
     const bool captureStdOut = settings.LogOutput || settings.SaveOutput;
     
     // Special case if filename points to the app package (use actual executable)
@@ -468,9 +461,8 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
     NSTask *task = [[NSTask alloc] init];
     task.launchPath = AppleUtils::ToNSString(exePath);
     task.arguments  = AppleUtils::ParseArguments(AppleUtils::ToNSString(settings.Arguments));
-
-    if (cwd.Length() != 0)
-        task.currentDirectoryPath = AppleUtils::ToNSString(cwd);
+    if (settings.WorkingDirectory.HasChars())
+        task.currentDirectoryPath = AppleUtils::ToNSString(settings.WorkingDirectory);
 
     int32 returnCode = 0;
     if (settings.WaitForEnd)
@@ -510,29 +502,25 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
         }
 
         String exception;
-        
         @try
         {
             [task launch];
             [task waitUntilExit];
+            returnCode = [task terminationStatus];
         }
         @catch (NSException* e)
         {
             exception = e.reason.UTF8String;
         }
-        
         if (!exception.IsEmpty())
         {
             LOG(Error, "Failed to run command {0} {1} with error {2}", settings.FileName, settings.Arguments, exception);
-            return -1;
+            returnCode = -1;
         }
-        
-        returnCode = [task terminationStatus];
     }
-    else {
-        
-        String exception;
-        
+    else
+    {
+        String exception;  
         @try
         {
             [task launch];
@@ -541,14 +529,12 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
         {
             exception = e.reason.UTF8String;
         }
-        
         if (!exception.IsEmpty())
         {
             LOG(Error, "Failed to run command {0} {1} with error {2}", settings.FileName, settings.Arguments, exception);
-            return -1;
+            returnCode = -1;
         }
     }
-    
 
 	return returnCode;
 }
