@@ -5,6 +5,7 @@
 #include "MacPlatformTools.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Platform/Mac/MacPlatformSettings.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Core/Config/BuildSettings.h"
@@ -124,17 +125,35 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
             LOG(Error, "Failed to export application icon.");
             return true;
         }
-        bool failed = Platform::RunProcess(TEXT("sips -z 16 16 icon_1024x1024.png --out icon_16x16.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 32 32 icon_1024x1024.png --out icon_16x16@2x.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 32 32 icon_1024x1024.png --out icon_32x32.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 64 64 icon_1024x1024.png --out icon_32x32@2x.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 128 128 icon_1024x1024.png --out icon_128x128.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 256 256 icon_1024x1024.png --out icon_128x128@2x.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 256 256 icon_1024x1024.png --out icon_256x256.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 512 512 icon_1024x1024.png --out icon_256x256@2x.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 512 512 icon_1024x1024.png --out icon_512x512.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("sips -z 1024 1024 icon_1024x1024.png --out icon_512x512@2x.png"), tmpFolderPath);
-        failed |= Platform::RunProcess(TEXT("iconutil -c icns icon.iconset"), iconFolderPath);
+        CreateProcessSettings procSettings;
+        procSettings.HiddenWindow = true;
+        procSettings.FileName = TEXT("/usr/bin/sips");
+        procSettings.WorkingDirectory = tmpFolderPath;
+        procSettings.Arguments = TEXT("-z 16 16 icon_1024x1024.png --out icon_16x16.png");
+        bool failed = false;
+        failed |= Platform::CreateProcess(procSettings);
+        procSettings.Arguments = TEXT("-z 32 32 icon_1024x1024.png --out icon_16x16@2x.png");
+        failed |= Platform::CreateProcess(procSettings);
+        procSettings.Arguments = TEXT("-z 32 32 icon_1024x1024.png --out icon_32x32.png");
+        failed |= Platform::CreateProcess(procSettings);
+        procSettings.Arguments = TEXT("-z 64 64 icon_1024x1024.png --out icon_32x32@2x.png");
+        failed |= Platform::CreateProcess(procSettings);
+        procSettings.Arguments = TEXT("-z 128 128 icon_1024x1024.png --out icon_128x128.png");
+        failed |= Platform::CreateProcess(procSettings);
+        procSettings.Arguments = TEXT("-z 256 256 icon_1024x1024.png --out icon_128x128@2x.png");
+        failed |= Platform::CreateProcess(procSettings);
+        procSettings.Arguments = TEXT("-z 256 256 icon_1024x1024.png --out icon_256x256.png");
+        failed |= Platform::CreateProcess(procSettings);
+        procSettings.Arguments = TEXT("-z 512 512 icon_1024x1024.png --out icon_256x256@2x.png");
+        failed |= Platform::CreateProcess(procSettings);
+        procSettings.Arguments = TEXT("-z 512 512 icon_1024x1024.png --out icon_512x512.png");
+        failed |= Platform::CreateProcess(procSettings);
+        procSettings.Arguments = TEXT("-z 1024 1024 icon_1024x1024.png --out icon_512x512@2x.png");
+        failed |= Platform::CreateProcess(procSettings);
+        procSettings.FileName = TEXT("/usr/bin/iconutil");
+        procSettings.Arguments = TEXT("-c icns icon.iconset");
+        procSettings.WorkingDirectory = iconFolderPath;
+        failed |= Platform::CreateProcess(procSettings);
         if (failed)
         {
             LOG(Error, "Failed to export application icon.");
@@ -210,16 +229,22 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
         return false;
     GameCooker::PackageFiles();
     LOG(Info, "Building app package...");
-    const String dmgPath = data.OriginalOutputPath / appName + TEXT(".dmg");
-    const String dmgCommand = String::Format(TEXT("hdiutil create {0}.dmg -volname {0} -fs HFS+ -srcfolder {0}.app"), appName);
-    const int32 result = Platform::RunProcess(dmgCommand, data.OriginalOutputPath);
-    if (result != 0)
     {
-        data.Error(String::Format(TEXT("Failed to package app (result code: {0}). See log for more info."), result));
-        return true;
+        const String dmgPath = data.OriginalOutputPath / appName + TEXT(".dmg");
+        CreateProcessSettings procSettings;
+        procSettings.HiddenWindow = true;
+        procSettings.WorkingDirectory = data.OriginalOutputPath;
+        procSettings.FileName = TEXT("/usr/bin/hdiutil");
+        procSettings.Arguments = String::Format(TEXT("create {0}.dmg -volname {0} -fs HFS+ -srcfolder {0}.app"), appName);
+        const int32 result = Platform::CreateProcess(procSettings);
+        if (result != 0)
+        {
+            data.Error(String::Format(TEXT("Failed to package app (result code: {0}). See log for more info."), result));
+            return true;
+        }
+        // TODO: sign dmg
+        LOG(Info, "Output application package: {0} (size: {1} MB)", dmgPath, FileSystem::GetFileSize(dmgPath) / 1024 / 1024);
     }
-    // TODO: sign dmg
-    LOG(Info, "Output application package: {0} (size: {1} MB)", dmgPath, FileSystem::GetFileSize(dmgPath) / 1024 / 1024);
 
     return false;
 }
