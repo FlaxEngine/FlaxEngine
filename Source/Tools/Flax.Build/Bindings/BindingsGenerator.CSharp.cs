@@ -521,7 +521,7 @@ namespace Flax.Build.Bindings
                 returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemTypeMarshaller))";
             else if (returnValueType == "CultureInfo")
                 returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.CultureInfoMarshaller))";
-            else if (functionInfo.ReturnType.Type == "Variant")
+            else if (functionInfo.ReturnType.Type == "Variant") // object
                 returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.ManagedHandleMarshaller))";
             else if (FindApiTypeInfo(buildData, functionInfo.ReturnType, caller)?.IsInterface ?? false)
             {
@@ -530,6 +530,8 @@ namespace Flax.Build.Bindings
             }
             else if (functionInfo.ReturnType.Type == "MonoArray" || functionInfo.ReturnType.Type == "MArray")
                 returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemArrayMarshaller))";
+            else if (returnValueType == "object[]")
+                returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemObjectArrayMarshaller))";
             else if (functionInfo.ReturnType.Type == "Array" || functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "DataContainer" || functionInfo.ReturnType.Type == "BytesContainer" || returnNativeType == "Array")
                 returnMarshalType = $"MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = nameof(__returnCount))";
             else if (functionInfo.ReturnType.Type == "Dictionary")
@@ -579,6 +581,8 @@ namespace Flax.Build.Bindings
                     parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.ManagedHandleMarshaller))";
                 else if (parameterInfo.Type.Type == "MonoArray" || parameterInfo.Type.Type == "MArray")
                     parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemArrayMarshaller))";
+                else if (nativeType == "object[]")
+                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemObjectArrayMarshaller))";
                 else if (parameterInfo.Type.Type == "Array" && parameterInfo.Type.GenericArgs.Count > 0 && parameterInfo.Type.GenericArgs[0].Type == "bool")
                     parameterMarshalType = $"MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1, SizeParamIndex = {(!functionInfo.IsStatic ? 1 : 0) + functionInfo.Parameters.Count + (functionInfo.Glue.CustomParameters.FindIndex(x => x.Name == $"__{parameterInfo.Name}Count"))})";
                 else if (parameterInfo.Type.Type == "Array" || parameterInfo.Type.Type == "Span" || parameterInfo.Type.Type == "DataContainer" || parameterInfo.Type.Type == "BytesContainer" || nativeType == "Array")
@@ -1336,6 +1340,7 @@ namespace Flax.Build.Bindings
                     public static class NativeToManaged
                     {
                         public static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{{classInfo.Name}}>(ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged));
+                        public static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => ManagedHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);
                         public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.NativeToManaged.Free(unmanaged);
                     }
                 #if FLAX_EDITOR
@@ -1343,6 +1348,7 @@ namespace Flax.Build.Bindings
                 #endif
                     public static class ManagedToNative
                     {
+                        public static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{{classInfo.Name}}>(ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged));
                         public static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => ManagedHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);
                         public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.ManagedToNative.Free(unmanaged);
                     }
@@ -1664,6 +1670,7 @@ namespace Flax.Build.Bindings
                     contents.Append(indent).AppendLine("[HideInEditor]");
                 contents.Append(indent).AppendLine("public static class NativeToManaged").Append(indent).AppendLine("{");
                 contents.Append(indent2).AppendLine($"public static {structureInfo.Name} ConvertToManaged({structureInfo.Name}Internal unmanaged) => {marshallerName}.ToManaged(unmanaged);");
+                contents.Append(indent2).AppendLine($"public static {structureInfo.Name}Internal ConvertToUnmanaged({structureInfo.Name} managed) => {marshallerName}.ToNative(managed);");
                 contents.Append(indent2).AppendLine($"public static void Free({structureInfo.Name}Internal unmanaged)");
                 contents.Append(indent2).AppendLine("{").Append(indent3).AppendLine(freeContents2.Replace("\n", "\n" + indent3).ToString().TrimEnd()).Append(indent2).AppendLine("}");
                 contents.Append(indent).AppendLine("}");
@@ -1672,6 +1679,7 @@ namespace Flax.Build.Bindings
                 if (buildData.Target != null && buildData.Target.IsEditor)
                     contents.Append(indent).AppendLine("[HideInEditor]");
                 contents.Append(indent).AppendLine($"public static class ManagedToNative").Append(indent).AppendLine("{");
+                contents.Append(indent2).AppendLine($"public static {structureInfo.Name} ConvertToManaged({structureInfo.Name}Internal unmanaged) => {marshallerName}.ToManaged(unmanaged);");
                 contents.Append(indent2).AppendLine($"public static {structureInfo.Name}Internal ConvertToUnmanaged({structureInfo.Name} managed) => {marshallerName}.ToNative(managed);");
                 contents.Append(indent2).AppendLine($"public static void Free({structureInfo.Name}Internal unmanaged) => {marshallerName}.Free(unmanaged);");
                 contents.Append(indent).AppendLine("}");

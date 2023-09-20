@@ -42,7 +42,16 @@ public:
     void write(const char* message) override
     {
         String s(message);
-        s.Replace('\n', ' ');
+        if (s.Length() <= 0)
+            return;
+        for (int32 i = 0; i < s.Length(); i++)
+        {
+            Char& c = s[i];
+            if (c == '\n')
+                c = ' ';
+            else if (c >= 255)
+                c = '?';
+        }
         LOG(Info, "[Assimp]: {0}", s);
     }
 };

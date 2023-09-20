@@ -60,6 +60,7 @@ public class Slider : ContainerControl
     private float _thumbCenter;
     private Float2 _thumbSize = new Float2(16, 16);
     private bool _isSliding;
+    private bool _mouseOverThumb;
 
     /// <summary>
     /// Gets or sets the value (normalized to range 0-100).
@@ -163,21 +164,27 @@ public class Slider : ContainerControl
     public IBrush FillTrackBrush { get; set; }
 
     /// <summary>
-    /// The color of the slider thumb when it's not selected
+    /// The color of the slider thumb when it's not selected.
     /// </summary>
     [EditorDisplay("Thumb Style"), EditorOrder(2030), Tooltip("The color of the slider thumb when it's not selected."), ExpandGroups]
     public Color ThumbColor { get; set; }
+    
+    /// <summary>
+    /// The color of the slider thumb when it's highlighted.
+    /// </summary>
+    [EditorDisplay("Thumb Style"), EditorOrder(2031), Tooltip("The color of the slider thumb when it's highlighted.")]
+    public Color ThumbColorHighlighted { get; set; }
 
     /// <summary>
-    /// The color of the slider thumb when it's selected
+    /// The color of the slider thumb when it's selected.
     /// </summary>
-    [EditorDisplay("Thumb Style"), EditorOrder(2031), Tooltip("The color of the slider thumb when it's selected.")]
+    [EditorDisplay("Thumb Style"), EditorOrder(2032), Tooltip("The color of the slider thumb when it's selected.")]
     public Color ThumbColorSelected { get; set; }
 
     /// <summary>
     /// Gets or sets the brush used for slider thumb drawing.
     /// </summary>
-    [EditorDisplay("Thumb Style"), EditorOrder(2032), Tooltip("The brush of the slider thumb.")]
+    [EditorDisplay("Thumb Style"), EditorOrder(2033), Tooltip("The brush of the slider thumb.")]
     public IBrush ThumbBrush { get; set; }
 
     /// <summary>
@@ -222,6 +229,7 @@ public class Slider : ContainerControl
         TrackFillLineColor = style.LightBackground;
         ThumbColor = style.BackgroundNormal;
         ThumbColorSelected = style.BackgroundSelected;
+        ThumbColorHighlighted = style.BackgroundHighlighted;
         UpdateThumb();
     }
 
@@ -270,7 +278,7 @@ public class Slider : ContainerControl
         }
         
         // Draw thumb
-        var thumbColor = _isSliding ? ThumbColorSelected : ThumbColor;
+        var thumbColor = _isSliding ? ThumbColorSelected : (_mouseOverThumb ? ThumbColorHighlighted : ThumbColor);
         if (ThumbBrush != null)
             ThumbBrush.Draw(_thumbRect, thumbColor);
         else
@@ -317,6 +325,7 @@ public class Slider : ContainerControl
     /// <inheritdoc />
     public override void OnMouseMove(Float2 location)
     {
+        _mouseOverThumb = _thumbRect.Contains(location);
         if (_isSliding)
         {
             // Update sliding

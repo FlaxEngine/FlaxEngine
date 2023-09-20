@@ -199,11 +199,11 @@ namespace FlaxEngine.GUI
             // UI navigation
             if (_canvas.ReceivesEvents)
             {
-                UpdateNavigation(deltaTime, _canvas.NavigationInputActionUp, NavDirection.Up, ref _navigationHeldTimeUp, ref _navigationRateTimeUp);
-                UpdateNavigation(deltaTime, _canvas.NavigationInputActionDown, NavDirection.Down, ref _navigationHeldTimeDown, ref _navigationRateTimeDown);
-                UpdateNavigation(deltaTime, _canvas.NavigationInputActionLeft, NavDirection.Left, ref _navigationHeldTimeLeft, ref _navigationRateTimeLeft);
-                UpdateNavigation(deltaTime, _canvas.NavigationInputActionRight, NavDirection.Right, ref _navigationHeldTimeRight, ref _navigationRateTimeRight);
-                UpdateNavigation(deltaTime, _canvas.NavigationInputActionSubmit, ref _navigationHeldTimeSubmit, ref _navigationRateTimeSubmit, SubmitFocused);
+                UpdateNavigation(deltaTime, _canvas.NavigateUp.Name, NavDirection.Up, ref _navigationHeldTimeUp, ref _navigationRateTimeUp);
+                UpdateNavigation(deltaTime, _canvas.NavigateDown.Name, NavDirection.Down, ref _navigationHeldTimeDown, ref _navigationRateTimeDown);
+                UpdateNavigation(deltaTime, _canvas.NavigateLeft.Name, NavDirection.Left, ref _navigationHeldTimeLeft, ref _navigationRateTimeLeft);
+                UpdateNavigation(deltaTime, _canvas.NavigateRight.Name, NavDirection.Right, ref _navigationHeldTimeRight, ref _navigationRateTimeRight);
+                UpdateNavigation(deltaTime, _canvas.NavigateSubmit.Name, ref _navigationHeldTimeSubmit, ref _navigationRateTimeSubmit, SubmitFocused);
             }
             else
             {
