@@ -155,11 +155,7 @@ namespace FlaxEngine.GUI
             if (IsMouseOver || IsNavFocused)
                 backColor = BackgroundSelectedColor;
             Render2D.FillRectangle(rect, backColor);
-            
-            var borderColor = Border.Color != Color.Transparent ? Border.Color : BorderColor;
-            var borderSelectedColor = Border.SelectedColor != Color.Transparent ? Border.SelectedColor : BorderSelectedColor;
-
-            GenerateBorder(borderColor, borderSelectedColor);
+            Render2D.DrawRectangle(rect, IsFocused ? BorderSelectedColor : BorderColor);
 
             // Apply view offset and clip mask
             if (ClipText)
@@ -233,62 +229,6 @@ namespace FlaxEngine.GUI
                 Render2D.PopTransform();
             if (ClipText)
                 Render2D.PopClip();
-        }
-
-        private void GenerateBorder(Color borderColor, Color selectedBorderColor)
-        {
-            // Determine if a border is needed to spawn
-            if (borderColor == Color.Transparent && selectedBorderColor == Color.Transparent)
-            {
-                return;
-            }
-
-            // Create as little new rectangles as possible and group them together when possible
-
-            void CreateRect(Rectangle rect)
-            {
-                Render2D.DrawRectangle(rect, IsFocused ? selectedBorderColor : borderColor);
-            }
-
-            var border = Border;
-            var topWidth = border.TopWidth * 0.5f;
-            var leftWidth = border.LeftWidth * 0.5f;
-            var rightWidth = border.RightWidth * 0.5f;
-            var bottomWidth = border.BottomWidth * 0.5f;
-            var width = border.Width * 0.5f;
-
-            // This needs to be optimized, ideally we would want a better way to draw the border in a single call instead of individual borders for each side
-
-            if (width > 0)
-            {
-                CreateRect(new Rectangle(0, 0, Width, Height));
-
-                return;
-            }
-            
-            // Add top border
-            if (topWidth > 0)
-            {
-                CreateRect(new Rectangle(0, 0, Width, topWidth));
-            }
-
-            // Add bottom border
-            if (bottomWidth > 0)
-            {
-                CreateRect(new Rectangle(0, Height - bottomWidth, Width, bottomWidth));
-            }
-            
-            // Add left border
-            if (leftWidth > 0)
-            {
-                CreateRect(new Rectangle(0, topWidth, leftWidth, Height - topWidth - bottomWidth));
-            }
-
-            // Add right border
-            if (rightWidth > 0)
-            {
-                CreateRect(new Rectangle(Width - rightWidth, topWidth, rightWidth, Height - topWidth - bottomWidth));
-            }
         }
 
         /// <inheritdoc />
