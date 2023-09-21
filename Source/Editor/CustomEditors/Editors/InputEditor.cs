@@ -39,7 +39,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private void OnSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkededitor)
         {
-            var button = menu.AddButton("Reset to null");
+            var button = menu.AddButton("Set to null");
             button.Clicked += () => _comboBox.SelectedItem = null;
         }
 
@@ -107,7 +107,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private void OnSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkededitor)
         {
-            var button = menu.AddButton("Reset to null");
+            var button = menu.AddButton("Set to null");
             button.Clicked += () => _comboBox.SelectedItem = null;
         }
 
