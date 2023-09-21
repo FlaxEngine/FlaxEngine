@@ -255,16 +255,6 @@ namespace FlaxEngine.GUI
         public struct StatusbarStyle
         {
             /// <summary>
-            /// Color of the text in the Statusbar
-            /// </summary>
-            public Color TextColor;
-
-            /// <summary>
-            /// Color of the Statusbar in its default state
-            /// </summary>
-            public Color Normal;
-
-            /// <summary>
             /// Color of the Statusbar when in Play Mode
             /// </summary>
             public Color PlayMode;

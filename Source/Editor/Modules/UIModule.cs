@@ -281,7 +281,7 @@ namespace FlaxEditor.Modules
             if (Editor.StateMachine.IsPlayMode)
                 color = Style.Current.Statusbar.PlayMode;
             else
-                color = Style.Current.Statusbar.Normal;
+                color = Style.Current.BackgroundSelected;
 
             string text;
             if (_statusMessages != null && _statusMessages.Count != 0)
@@ -761,8 +761,7 @@ namespace FlaxEditor.Modules
                 HorizontalAlignment = TextAlignment.Far,
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
                 Parent = progressPanel,
-                Offsets = new Margin(progressBarRightMargin, progressBarWidth + progressBarLeftMargin + progressBarRightMargin, 0, 0),
-                TextColor = Style.Current.Statusbar.TextColor
+                Offsets = new Margin(progressBarRightMargin, progressBarWidth + progressBarLeftMargin + progressBarRightMargin, 0, 0)
             };
 
             UpdateStatusBar();

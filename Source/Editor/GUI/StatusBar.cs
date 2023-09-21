@@ -33,7 +33,7 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// Gets or sets the status text color
         /// </summary>
-        public Color TextColor { get; set; } = Style.Current.Statusbar.TextColor;
+        public Color TextColor { get; set; } = Style.Current.Foreground;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StatusBar"/> class.

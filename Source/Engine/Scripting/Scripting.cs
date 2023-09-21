@@ -279,8 +279,6 @@ namespace FlaxEngine
                 SharedTooltip = new Tooltip(),
                 Statusbar = new Style.StatusbarStyle()
                 {
-                    TextColor = Color.White,
-                    Normal = Color.FromBgra(0xFF007ACC),
                     PlayMode = Color.FromBgra(0xFF2F9135),
                     Failed = Color.FromBgra(0xFF9C2424),
                     Loading = Color.FromBgra(0xFF2D2D30)
