@@ -1099,12 +1099,12 @@ namespace FlaxEngine.Interop
         private delegate IntPtr InvokeThunkDelegate(ManagedHandle instanceHandle, IntPtr param1, IntPtr param2, IntPtr param3, IntPtr param4, IntPtr param5, IntPtr param6, IntPtr param7);
 
         /// <summary>
-        /// Returns all types that that owned by this assembly.
+        /// Returns all types owned by this assembly.
         /// </summary>
         private static Type[] GetAssemblyTypes(Assembly assembly)
         {
             var referencedAssemblies = assembly.GetReferencedAssemblies();
-            var allAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var allAssemblies = Utils.GetAssemblies();
             var referencedTypes = new List<string>();
             foreach (var assemblyName in referencedAssemblies)
             {
