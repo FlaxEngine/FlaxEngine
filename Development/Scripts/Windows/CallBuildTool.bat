@@ -2,14 +2,15 @@
 
 rem Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
-if not exist "Development\Scripts\Windows\GetMSBuildPath.bat" goto Error_InvalidLocation
-
 for %%I in (Source\Logo.png) do if %%~zI LSS 2000 (
 	goto Error_MissingLFS
 )
 
-call "Development\Scripts\Windows\GetMSBuildPath.bat"
-if errorlevel 1 goto Error_NoVisualStudioEnvironment
+where >nul 2>nul dotnet
+if %errorlevel% neq 0 goto Error_MissingDotNet
+
+FOR /F "delims=" %%i IN ('dotnet --version') DO echo Using dotnet %%i
+if errorlevel 1 goto Error_MissingDotNet
 
 :Compile
 md Cache\Intermediate >nul 2>nul
@@ -18,9 +19,13 @@ fc /b Cache\Intermediate\Build\Flax.Build.Files.txt Cache\Intermediate\Build\Fla
 if not errorlevel 1 goto SkipClean
 
 copy /y Cache\Intermediate\Build\Flax.Build.Files.txt Cache\Intermediate\Build\Flax.Build.PrevFiles.txt >nul
-%MSBUILD_PATH% /nologo /verbosity:quiet Source\Tools\Flax.Build\Flax.Build.csproj /property:Configuration=Release /target:Restore,Clean /property:RestorePackagesConfig=True /p:RuntimeIdentifiers=win-x64
+
+echo Performing Clean/Restore
+dotnet build --nologo --verbosity quiet Source\Tools\Flax.Build\Flax.Build.csproj --configuration Release /target:Restore,Clean /property:RestorePackagesConfig=True --arch x64
 :SkipClean
-%MSBUILD_PATH% /nologo /verbosity:quiet Source\Tools\Flax.Build\Flax.Build.csproj /property:Configuration=Release /target:Build /property:SelfContained=False /property:RuntimeIdentifiers=win-x64
+
+echo Performing Build
+dotnet build --nologo --verbosity quiet Source\Tools\Flax.Build\Flax.Build.csproj --configuration Release /target:Build --no-self-contained --arch x64
 if errorlevel 1 goto Error_CompilationFailed
 
 Binaries\Tools\Flax.Build.exe %*
@@ -35,6 +40,10 @@ echo CallBuildTool ERROR: The script is in invalid directory.
 goto Exit
 :Error_NoVisualStudioEnvironment
 echo CallBuildTool ERROR: Missing Visual Studio 2022 or newer.
+goto Exit
+:Error_MissingDotNet
+echo CallBuildTool ERROR: .NET SDK not found. Please install the .NET SDK using the link below and rerun the script
+echo https://dotnet.microsoft.com/en-us/download/dotnet/7.0
 goto Exit
 :Error_CompilationFailed
 echo CallBuildTool ERROR: Failed to compile Flax.Build project.
