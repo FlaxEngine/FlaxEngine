@@ -568,7 +568,8 @@ namespace FlaxEditor
                             BackgroundColorSelected = Color.Transparent,
                             BorderColorHighlighted = Color.Transparent,
                             Text = "Save Now",
-                            TooltipText = "Saves now and restarts the auto save timer."
+                            TooltipText = "Saves now and restarts the auto save timer.",
+                            TextColor = Style.Current.Statusbar.TextColor
                         };
                         _saveNowButton.LocalX += 120;
                         _saveNowButton.Clicked += () => _autoSaveNow = true;
@@ -590,7 +591,8 @@ namespace FlaxEditor
                             BackgroundColorSelected = Color.Transparent,
                             BorderColorHighlighted = Color.Transparent,
                             Text = "Cancel",
-                            TooltipText = "Cancels this auto save."
+                            TooltipText = "Cancels this auto save.",
+                            TextColor = Style.Current.Statusbar.TextColor
                         };
                         _cancelSaveButton.LocalX += 180;
                         _cancelSaveButton.Clicked += () =>

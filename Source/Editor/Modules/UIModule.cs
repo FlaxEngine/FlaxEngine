@@ -279,9 +279,9 @@ namespace FlaxEditor.Modules
 
             Color color;
             if (Editor.StateMachine.IsPlayMode)
-                color = Color.OrangeRed;
+                color = Style.Current.Statusbar.PlayMode;
             else
-                color = Style.Current.BackgroundSelected;
+                color = Style.Current.Statusbar.Normal;
 
             string text;
             if (_statusMessages != null && _statusMessages.Count != 0)
@@ -292,6 +292,11 @@ namespace FlaxEditor.Modules
                 text = string.Format("Loading {0}/{1}", contentStats.LoadingAssetsCount, contentStats.AssetsCount);
             else
                 text = "Ready";
+
+            if(ProgressVisible)
+            {
+                color = Style.Current.Statusbar.Loading;
+            }
 
             StatusBar.Text = text;
             StatusBar.StatusColor = color;
@@ -338,7 +343,7 @@ namespace FlaxEditor.Modules
         internal void ProgressFailed(string message)
         {
             _progressFailed = true;
-            StatusBar.StatusColor = Color.Red;
+            StatusBar.StatusColor = Style.Current.Statusbar.Failed;
             StatusBar.Text = message;
             _outputLogButton.Visible = true;
         }
@@ -388,6 +393,10 @@ namespace FlaxEditor.Modules
                 UpdateStatusBar();
             }
             else if (FlaxEngine.Content.Stats.LoadingAssetsCount != _contentStats.LoadingAssetsCount)
+            {
+                UpdateStatusBar();
+            }
+            else if(ProgressVisible)
             {
                 UpdateStatusBar();
             }
@@ -753,6 +762,7 @@ namespace FlaxEditor.Modules
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
                 Parent = progressPanel,
                 Offsets = new Margin(progressBarRightMargin, progressBarWidth + progressBarLeftMargin + progressBarRightMargin, 0, 0),
+                TextColor = Style.Current.Statusbar.TextColor
             };
 
             UpdateStatusBar();

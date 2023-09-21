@@ -244,6 +244,15 @@ namespace FlaxEditor.Options
                 CollectionBackgroundColor = Color.FromBgra(0x14CCCCCC),
                 ProgressNormal = Color.FromBgra(0xFF0ad328),
 
+                Statusbar = new Style.StatusbarStyle()
+                {
+                    TextColor = Color.White,
+                    Normal = Color.FromBgra(0xFF007ACC),
+                    PlayMode = Color.ParseHex("#2f9135"),
+                    Failed = Color.ParseHex("#9c2424"),
+                    Loading = Color.ParseHex("#2d2d30")
+                },
+
                 // Fonts
                 FontTitle = options.Interface.TitleFont.GetFont(),
                 FontLarge = options.Interface.LargeFont.GetFont(),
