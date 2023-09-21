@@ -416,6 +416,10 @@ namespace Flax.Build.Projects.VisualStudio
                     if (project.Configurations == null || project.Configurations.Count == 0)
                         throw new Exception("Missing configurations for project " + project.Name);
 
+                    // Prevent generating default Debug|AnyCPU and Release|AnyCPU configurations from Flax projects
+                    if (project.Name == "BuildScripts" || project.Name == "Flax.Build" || project.Name == "Flax.Build.Tests")
+                        continue;
+
                     foreach (var configuration in project.Configurations)
                     {
                         configurations.Add(new SolutionConfiguration(configuration));
