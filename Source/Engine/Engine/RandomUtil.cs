@@ -2,6 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using FlaxEngine.Utilities;
 
 namespace FlaxEngine
 {
@@ -30,11 +31,11 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="min">The minimum value of the range.</param>
         /// <param name="max">The maximum value of the range.</param>
-        /// <returns>The random number.</returns>
+        /// <returns>The random <see cref="float"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float RandRange(float min, float max)
         {
-            return Rand() * (max - min) + min;
+            return Random.NextFloat(min, max);
         }
 
         /// <summary>
@@ -42,11 +43,11 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="min">The minimum value of the range.</param>
         /// <param name="max">The maximum value of the range.</param>
-        /// <returns>The random number.</returns>
+        /// <returns>The random <see cref="double"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double RandRange(double min, double max)
         {
-            return Random.NextDouble() * (max - min) + min;
+            return Random.NextDouble(min, max);
         }
 
         /// <summary>
@@ -54,7 +55,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="min">The minimum value of the range.</param>
         /// <param name="max">The maximum value of the range.</param>
-        /// <returns>The random number.</returns>
+        /// <returns>The random <see cref="int"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int RandRange(int min, int max)
         {
@@ -64,40 +65,39 @@ namespace FlaxEngine
         /// <summary>
         /// Generates a random point inside a sphere with radius 1.0.
         /// </summary>
-        /// <returns>A random point within the sphere.</returns>
+        /// <returns>A random <see cref="Float3"/> within the sphere.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Float3 InsideSphere()
         {
-            float u = RandRange(-1, 1); 
-            float v = RandRange(-1, 1); 
-            float w = RandRange(-1, 1); 
-
-            // Normalize the vector to ensure it's inside the unit sphere
-            float length = Mathf.Sqrt(u * u + v * v + w * w);
-            u /= length;
-            v /= length;
-            w /= length;
-
-            return new Float3(u, v, w);
+            return Random.NextUnitVector3();
         }
 
         /// <summary>
         /// Generates a random point on the surface of a sphere with radius 1.0.
         /// </summary>
-        /// <returns>A random point on the sphere's surface.</returns>
+        /// <returns>A random <see cref="Float3"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Float3 OnSphere()
         {
-            float phi = Rand() * 2f * Mathf.Pi;
-            float cosTheta = Rand() * 2f - 1f;
-            float sinTheta = Mathf.Sqrt(1f - cosTheta * cosTheta);
+            float z = 2 * Random.NextFloat() - 1;
+            float t = 2 * Mathf.Pi * Random.NextFloat();
 
-            float x = Mathf.Cos(phi) * sinTheta;
-            float y = Mathf.Sin(phi) * sinTheta;
-            float z = cosTheta;
+            float r = Mathf.Sqrt(1 - z * z);
+            float x = r * Mathf.Cos(t);
+            float y = r * Mathf.Sin(t);
 
             return new Float3(x, y, z);
         }
 
+        /// <summary>
+        /// Generates a random uniform rotation quaternion.
+        /// </summary>
+        /// <returns>A random <see cref="Quaternion"/>.</returns>
+        /// <param name="randomRoll">Should the roll value be randomized.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quaternion GetUniformOrientation(bool randomRoll = false)
+        {
+            return Random.NextQuaternion(randomRoll);
+        }
     }
 }
