@@ -281,9 +281,9 @@ namespace FlaxEngine
                 {
                     TextColor = Color.White,
                     Normal = Color.FromBgra(0xFF007ACC),
-                    PlayMode = Color.ParseHex("#2f9135"),
-                    Failed = Color.ParseHex("#9c2424"),
-                    Loading = Color.ParseHex("#2d2d30")
+                    PlayMode = Color.FromBgra(0xFF2F9135),
+                    Failed = Color.FromBgra(0xFF9C2424),
+                    Loading = Color.FromBgra(0xFF2D2D30)
                 }
             };
             style.DragWindow = style.BackgroundSelected * 0.7f;
