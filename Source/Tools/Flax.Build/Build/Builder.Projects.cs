@@ -501,6 +501,35 @@ namespace Flax.Build
                     }
                 }
 
+                // When generating C#-only projects for Game that uses source-engine distribution replace dependencies on FlaxEngine with fixed dll file refs to fix Intellisense issues
+                if (rootProject.IsCSharpOnlyProject)
+                {
+                    Project flaxDependencyToRemove = null;
+                    foreach (var project in projects)
+                    {
+                        if (project.BaseName != "FlaxEngine")
+                        {
+                            var flaxDependency = project.Dependencies.FirstOrDefault(x => x.BaseName == "FlaxEngine");
+                            if (flaxDependency != null)
+                            {
+                                project.Dependencies.Remove(flaxDependency);
+
+                                // TODO: instead of this hack find a way to reference the prebuilt target bindings binary (example: game C# project references FlaxEngine C# prebuilt dll)
+                                project.CSharp.FileReferences.Add(Path.Combine(Globals.EngineRoot, "Binaries/Editor/Win64/Development/FlaxEngine.CSharp.dll"));
+
+                                // Remove FlaxEngine from projects to prevent duplicated types errors in Intellisense (eg. Actor type defined in both FlaxEngine.CSharp.dll and FlaxEngine.csproj)
+                                flaxDependencyToRemove = flaxDependency;
+                            }
+                        }
+                    }
+                    if (flaxDependencyToRemove != null)
+                    {
+                        projects.Remove(flaxDependencyToRemove);
+                        foreach (var project in projects)
+                            project.Dependencies.Remove(flaxDependencyToRemove);
+                    }
+                }
+
                 // Setup custom projects
                 GenerateCustomProjects?.Invoke(projects);
                 nativeProjectGenerator.GenerateCustomProjects(projects);
