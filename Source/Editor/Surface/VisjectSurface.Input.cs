@@ -418,12 +418,10 @@ namespace FlaxEditor.Surface
             {
                 _rightMouseDown = true;
                 _rightMouseDownPos = location;
-                Debug.Log("The right mouse button is down in a window");
             }
             if (button == MouseButton.Middle) {
                 _middleMouseDown = true;
                 _middleMouseDownPos = location;
-                Debug.Log("The middle mouse button is down in a window");
             }
 
             // Check if any node is under the mouse
