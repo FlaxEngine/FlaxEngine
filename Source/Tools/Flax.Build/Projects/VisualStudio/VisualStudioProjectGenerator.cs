@@ -236,6 +236,20 @@ namespace Flax.Build.Projects.VisualStudio
         /// <inheritdoc />
         public override void GenerateSolution(Solution solution)
         {
+            // Ensure that the main project is the first one (initially selected by Visual Studio)
+            if (solution.MainProject != null && solution.Projects.Length != 0 && solution.Projects[0] != solution.MainProject)
+            {
+                for (int i = 1; i < solution.Projects.Length; i++)
+                {
+                    if (solution.Projects[i] == solution.MainProject)
+                    {
+                        solution.Projects[i] = solution.Projects[0];
+                        solution.Projects[0] = solution.MainProject;
+                        break;
+                    }
+                }
+            }
+
             // Try to extract info from the existing solution file to make random IDs stable
             var solutionId = Guid.NewGuid();
             var folderIds = new Dictionary<string, Guid>();
