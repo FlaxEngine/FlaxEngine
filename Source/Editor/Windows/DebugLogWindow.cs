@@ -573,7 +573,7 @@ namespace FlaxEditor.Windows
                 if (match.Success)
                 {
                     desc.LocationFile = match.Groups[2].Value;
-                    int.TryParse(match.Groups[3].Value, out desc.LocationLine);
+                    int.TryParse(match.Groups[4].Value, out desc.LocationLine);
                 }
             }
 
