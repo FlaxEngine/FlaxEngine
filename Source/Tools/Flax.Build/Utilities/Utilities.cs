@@ -754,9 +754,9 @@ namespace Flax.Build
         public static string GetPlatformExecutableExt()
         {
             var extEnding = ".exe";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) 
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                    extEnding = "";
+                extEnding = "";
             }
 
             return extEnding;

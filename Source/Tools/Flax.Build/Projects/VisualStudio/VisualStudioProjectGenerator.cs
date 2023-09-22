@@ -421,7 +421,7 @@ namespace Flax.Build.Projects.VisualStudio
                         continue;
 
                     foreach (var configuration in project.Configurations)
-                    {        
+                    {
                         configurations.Add(new SolutionConfiguration(configuration));
                     }
                 }
