@@ -40,11 +40,11 @@ ShaderGraphValue::ShaderGraphValue(const Variant& v)
         break;
     case VariantType::Float:
         Type = VariantType::Types::Float;
-        Value = String::Format(TEXT("{}"), v.AsFloat);
+        Value = String::Format(TEXT("{:.8f}"), v.AsFloat);
         break;
     case VariantType::Double:
         Type = VariantType::Types::Float;
-        Value = String::Format(TEXT("{}"), (float)v.AsDouble);
+        Value = String::Format(TEXT("{:.8f}"), (float)v.AsDouble);
         break;
     case VariantType::Float2:
     {
