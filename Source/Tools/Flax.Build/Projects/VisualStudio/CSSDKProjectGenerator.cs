@@ -174,8 +174,35 @@ namespace Flax.Build.Projects.VisualStudio
                 else
                     fileType = "None";
 
-                var projectPath = Utilities.MakePathRelativeTo(file, projectDirectory);
-                csProjectFileContent.AppendLine(string.Format("    <{0} Include=\"{1}\" />", fileType, projectPath));
+                var filePath = file.Replace('/', '\\'); // Normalize path
+                var projectPath = Utilities.MakePathRelativeTo(filePath, projectDirectory);
+                string linkPath = null;
+                if (projectPath.StartsWith(@"..\..\..\"))
+                {
+                    // Create folder structure for project external files
+                    var sourceIndex = filePath.LastIndexOf(@"\Source\");
+                    if (sourceIndex != -1)
+                    {
+                        projectPath = filePath;
+                        string fileProjectRoot = filePath.Substring(0, sourceIndex);
+                        string fileProjectName = Path.GetFileName(fileProjectRoot);
+                        string fileProjectRelativePath = filePath.Substring(sourceIndex + 1);
+
+                        // Remove Source-directory from path
+                        if (fileProjectRelativePath.IndexOf('\\') != -1)
+                            fileProjectRelativePath = fileProjectRelativePath.Substring(fileProjectRelativePath.IndexOf('\\') + 1);
+
+                        if (fileProjectRoot == project.SourceFolderPath)
+                            linkPath = fileProjectRelativePath;
+                        else // BuildScripts project
+                            linkPath = Path.Combine(fileProjectName, fileProjectRelativePath);
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(linkPath))
+                    csProjectFileContent.AppendLine(string.Format("    <{0} Include=\"{1}\" Link=\"{2}\" />", fileType, projectPath, linkPath));
+                else
+                    csProjectFileContent.AppendLine(string.Format("    <{0} Include=\"{1}\" />", fileType, projectPath));
             }
 
             if (project.GeneratedSourceFiles != null)
@@ -188,7 +215,8 @@ namespace Flax.Build.Projects.VisualStudio
                     else
                         fileType = "None";
 
-                    csProjectFileContent.AppendLine(string.Format("    <{0} Visible=\"false\" Include=\"{1}\" />", fileType, file));
+                    var filePath = file.Replace('/', '\\');
+                    csProjectFileContent.AppendLine(string.Format("    <{0} Visible=\"false\" Include=\"{1}\" />", fileType, filePath));
                 }
             }
 
