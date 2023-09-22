@@ -33,11 +33,20 @@ namespace FlaxEditor.Surface.Elements
         /// <param name="thickness">The connection thickness.</param>
         public static void DrawConnection(ref Float2 start, ref Float2 end, ref Color color, float thickness = 1)
         {
+            // Control points parameters
+            const float minControlLength = 100f;
+            const float maxControlLength = 150f;
+            var dst = (end - start).Length;
+            var yDst = Mathf.Abs(start.Y - end.Y);
+            
             // Calculate control points
-            var dst = (end - start) * new Float2(0.5f, 0.05f);
-            var control1 = new Float2(start.X + dst.X, start.Y + dst.Y);
-            var control2 = new Float2(end.X - dst.X, end.Y + dst.Y);
-
+            var minControlDst = dst * 0.5f;
+            var maxControlDst = Mathf.Max(Mathf.Min(maxControlLength, dst), minControlLength);
+            var controlDst = Mathf.Lerp(minControlDst, maxControlDst, Mathf.Clamp(yDst / minControlLength, 0f, 1f));
+            
+            var control1 = new Float2(start.X + controlDst, start.Y);
+            var control2 = new Float2(end.X - controlDst, end.Y);
+            
             // Draw line
             Render2D.DrawBezier(start, control1, control2, end, color, thickness);
 
