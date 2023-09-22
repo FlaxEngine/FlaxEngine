@@ -34,6 +34,7 @@ const Char* SplashScreenQuotes[] =
     TEXT("Why does macbook heat up?\nBecause it doesn't have windows"),
     TEXT("Starting Direc... um, Vulkan renderer."),
 #endif
+    TEXT("Kappa!"),
     TEXT("How you doin'?"),
     TEXT("Why so serious?"),
     TEXT("Bond. James Bond."),
