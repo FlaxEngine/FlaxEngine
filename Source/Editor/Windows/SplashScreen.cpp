@@ -26,12 +26,13 @@ const Char* SplashScreenQuotes[] =
 #if PLATFORM_WINDOWS
     TEXT("We're getting everything ready for you."),
 #elif PLATFORM_LINUX
-    TEXT("don't compare Macbooks to oranges."),
-    TEXT("trying to exit vim"),
-    TEXT("sudo flax --loadproject"),
+    TEXT("Don't compare Macbooks to oranges."),
+    TEXT("Trying to exit vim"),
+    TEXT("Sudo flax --loadproject"),
 #elif PLATFORM_MAC
     TEXT("don't compare Macbooks to oranges."),
     TEXT("Why does macbook heat up?\nBecause it doesn't have windows"),
+    TEXT("Starting Direc... um, Vulkan renderer."),
 #endif
     TEXT("How you doin'?"),
     TEXT("Why so serious?"),
@@ -73,7 +74,6 @@ const Char* SplashScreenQuotes[] =
     TEXT("Made with Flax"),
     TEXT("This is the way"),
     TEXT("The quick brown fox jumps over the lazy dog"),
-    TEXT("Hit The Road Jack"),
     TEXT("You have 7 lives left"),
     TEXT("May the Force be with you"),
     TEXT("A martini. Shaken, not stirred"),
@@ -84,7 +84,7 @@ const Char* SplashScreenQuotes[] =
     TEXT("Error 404: Joke Not Found"),
     TEXT("Rushing B"),
     TEXT("Putting pineapple on pizza"),
-    TEXT("Loading Simulation"),
+    TEXT("Entering the Matrix"),
     TEXT("Get ready for a surprise!"),
     TEXT("Coffee is my fuel"),
     TEXT("With great power comes great electricity bill"),
@@ -102,7 +102,8 @@ const Char* SplashScreenQuotes[] =
     TEXT("YOU SHALL NOT PASS!"),
     TEXT("You have my bow.\nAnd my axe!"),
     TEXT("To the bridge of Khazad-dum."),
-    TEXT("Compiling Shaders (93,788)"),
+    TEXT("That's what she said"),
+    TEXT("We could be compiling shaders here"),
     TEXT("Hello There"),
     TEXT("BAGUETTE"),
     TEXT("Here we go again"),
@@ -119,6 +120,9 @@ const Char* SplashScreenQuotes[] =
     TEXT("Increasing Fiber count"),
     TEXT("Now this is podracing!"),
     TEXT("Slava Ukraini!"),
+    TEXT("Weird flax, but ok"),
+    TEXT("Reticulating Splines"),
+    TEXT("Discombobulating"),
 };
 
 SplashScreen::~SplashScreen()
