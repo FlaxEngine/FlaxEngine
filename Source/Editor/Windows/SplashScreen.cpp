@@ -119,7 +119,6 @@ const Char* SplashScreenQuotes[] =
     TEXT("RTX off... for now!"),
     TEXT("Increasing Fiber count"),
     TEXT("Now this is podracing!"),
-    TEXT("Slava Ukraini!"),
     TEXT("Weird flax, but ok"),
     TEXT("Reticulating Splines"),
     TEXT("Discombobulating"),
