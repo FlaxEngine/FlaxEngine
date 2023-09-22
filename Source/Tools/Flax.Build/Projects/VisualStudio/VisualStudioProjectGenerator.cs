@@ -405,8 +405,6 @@ namespace Flax.Build.Projects.VisualStudio
                 vcSolutionFileContent.AppendLine("EndProject");
             }
 
-            var globalPlatformName = "";
-
             // Global configuration
             {
                 vcSolutionFileContent.AppendLine("Global");
@@ -423,11 +421,7 @@ namespace Flax.Build.Projects.VisualStudio
                         continue;
 
                     foreach (var configuration in project.Configurations)
-                    {
-                        // We just grab the platform name from the first config
-                        if (string.IsNullOrEmpty(globalPlatformName))
-                            globalPlatformName = configuration.PlatformName;
-                            
+                    {        
                         configurations.Add(new SolutionConfiguration(configuration));
                     }
                 }
@@ -564,7 +558,7 @@ namespace Flax.Build.Projects.VisualStudio
             {
                 var profiles = new Dictionary<string, string>();
                 var profile = new StringBuilder();
-                var editorPath = Utilities.NormalizePath(Path.Combine(Globals.EngineRoot, $"Binaries/Editor/{globalPlatformName}/Development/FlaxEditor{Utilities.GetPlatformExecutableExt()}"));
+                var editorPath = Utilities.NormalizePath(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), $"Development/FlaxEditor{Utilities.GetPlatformExecutableExt()}"));
                 var workspacePath = Utilities.NormalizePath(solutionDirectory);
                 foreach (var project in projects)
                 {
