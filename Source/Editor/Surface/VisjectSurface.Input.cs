@@ -706,6 +706,8 @@ namespace FlaxEditor.Surface
             {
                 if (_inputBrackets.Count == 0)
                 {
+                    if (currentInputText.StartsWith(' '))
+                        currentInputText = "";
                     ResetInput();
                     ShowPrimaryMenu(_mousePos, false, currentInputText);
                 }
