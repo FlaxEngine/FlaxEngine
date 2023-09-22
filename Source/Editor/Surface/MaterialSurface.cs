@@ -108,5 +108,24 @@ namespace FlaxEditor.Surface
 
             base.HandleDragDropAssets(objects, args);
         }
+
+        /// <inheritdoc/>
+        protected override void GetShortcutNode(KeyboardKeys key, out ushort archetype, out ushort node)
+        {
+            base.GetShortcutNode(key, out archetype, out node);
+            switch (key)
+            {
+                // Texture Sample
+                case KeyboardKeys.T:
+                    archetype = 5;
+                    node = 1;
+                    break;
+                // Texture Coordinates
+                case KeyboardKeys.U:
+                    archetype = 5;
+                    node = 2;
+                    break;
+            }
+        }
     }
 }

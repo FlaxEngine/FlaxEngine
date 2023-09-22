@@ -488,6 +488,16 @@ namespace FlaxEditor.Surface
                 else if (_connectionInstigator != null)
                 {
                 }
+                else if (_heldKey != KeyboardKeys.None)
+                {
+                    // Get shortcut based on key held down
+                    GetShortcutNode(_heldKey, out var archetype, out var node);
+
+                    if (archetype == 0 || node == 0) return true;
+
+                    // Spawn node based on the key that is held down
+                    Context.SpawnNode(archetype, node, _rootControl.PointFromParent(location));
+                }
                 // Selecting
                 else
                 {
@@ -567,6 +577,8 @@ namespace FlaxEditor.Surface
 
             if (InputActions.Process(Editor.Instance, this, key))
                 return true;
+
+            _heldKey = key;
 
             if (HasNodesSelection)
             {
@@ -679,10 +691,36 @@ namespace FlaxEditor.Surface
                     }
                     return true;
                 }
+                case KeyboardKeys.Spacebar:
+                {
+                    Box selectedBox = GetSelectedBox(SelectedNodes, true);
+                    // If we don't have a input/output selected, find one.
+                    if (selectedBox == null) selectedBox = GetFirstEmptyPort(SelectedNodes[0]);
+                    // Add a new node
+                    ConnectingStart(selectedBox);
+                    Cursor = CursorType.Default; // Do I need this?
+                    EndMouseCapture();
+                    ShowPrimaryMenu(_rootControl.PointToParent(FindEmptySpace(selectedBox)), true);
+                    return true;
+                }
                 }
             }
-
+            else
+            {
+                if (key == KeyboardKeys.Spacebar)
+                {
+                    ShowPrimaryMenu(_mousePos);
+                    return true;
+                }
+            }
             return false;
+        }
+
+        /// <inheritdoc/>
+        public override void OnKeyUp(KeyboardKeys key)
+        {
+            base.OnKeyUp(key);
+            _heldKey = KeyboardKeys.None;
         }
 
         private void ResetInput()
@@ -702,20 +740,6 @@ namespace FlaxEditor.Surface
             }
 
             var selection = SelectedNodes;
-            if (selection.Count == 0)
-            {
-                if (_inputBrackets.Count == 0)
-                {
-                    ResetInput();
-                    ShowPrimaryMenu(_mousePos, false, currentInputText);
-                }
-                else
-                {
-                    InputText = "";
-                    ShowPrimaryMenu(_rootControl.PointToParent(_inputBrackets.Peek().Area.Location), true, currentInputText);
-                }
-                return;
-            }
 
             // Multi-Node Editing
             const string Comment = "//";
@@ -770,16 +794,6 @@ namespace FlaxEditor.Surface
                         TryConnect(selectedBox, bracket.Box);
                     }
                 }
-            }
-            else
-            {
-                InputText = "";
-
-                // Add a new node
-                ConnectingStart(selectedBox);
-                Cursor = CursorType.Default; // Do I need this?
-                EndMouseCapture();
-                ShowPrimaryMenu(_rootControl.PointToParent(FindEmptySpace(selectedBox)), true, currentInputText);
             }
         }
 
@@ -895,6 +909,109 @@ namespace FlaxEditor.Surface
             outputBox = null;
             inputBox = null;
             return false;
+        }
+
+        private Box GetFirstEmptyPort(SurfaceNode node)
+        {
+            
+            for (int i = 0; i < node.Elements.Count; i++)
+            {
+                if (node.Elements[i] is InputBox ib)
+                {
+                    if (ib.Connections.Count == 0)
+                    {
+                        return ib as Box;
+                    }
+                }
+                else if(node.Elements[i] is OutputBox ob)
+                {
+                    if (ob.Connections.Count == 0)
+                    {
+                        return ob as Box;
+                    }
+                }
+            }
+            return null;
+        }
+
+        // TODO Move this to Utils.cs and make it static?
+        /// <summary>
+        /// Sets archetype and node based on the input key.
+        /// </summary>
+        /// <param name="key">The key being held down.</param>
+        /// <param name="archetype"></param>
+        /// <param name="node"></param>
+        protected virtual void GetShortcutNode(KeyboardKeys key, out ushort archetype, out ushort node)
+        {
+            archetype = 0;
+            node = 0;
+            switch (key)
+            {
+                // Add node
+                case KeyboardKeys.A:
+                    archetype = 3;
+                    node = 1;
+                    break;
+                // Subtract
+                case KeyboardKeys.S:
+                    archetype = 3;
+                    node = 2;
+                    break;
+                // Multiply
+                case KeyboardKeys.M:
+                    archetype = 3;
+                    node = 3;
+                    break;
+                // Divide
+                case KeyboardKeys.D:
+                    archetype = 3;
+                    node = 5;
+                    break;
+                // Lerp
+                case KeyboardKeys.L:
+                    archetype = 3;
+                    node = 25;
+                    break;
+                // Power
+                case KeyboardKeys.E:
+                    archetype = 3;
+                    node = 23;
+                    break;
+
+                // Get Parameter
+                case KeyboardKeys.G:
+                    archetype = 6;
+                    node = 1;
+                    break;
+
+                // Float
+                case KeyboardKeys.Alpha1:
+                    archetype = 2;
+                    node = 3;
+                    break;
+                // Float2
+                case KeyboardKeys.Alpha2:
+                    archetype = 2;
+                    node = 4;
+                    break;
+                // Float3
+                case KeyboardKeys.Alpha3:
+                    archetype = 2;
+                    node = 5;
+                    break;
+                // Float4
+                case KeyboardKeys.Alpha4:
+                    archetype = 2;
+                    node = 6;
+                    break;
+                // Color
+                case KeyboardKeys.Alpha5:
+                    archetype = 2;
+                    node = 7;
+                    break;
+                default:
+                    break;
+            }
         }
     }
 }
