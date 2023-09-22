@@ -131,7 +131,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(CreateWindowSettings);
     /// <summary>
     /// Enable/disable window auto-show after the first paint.
     /// </summary>
-    API_FIELD() bool ShowAfterFirstPaint = false;
+    API_FIELD() bool ShowAfterFirstPaint = true;
 
     /// <summary>
     /// The custom data (platform dependant).
