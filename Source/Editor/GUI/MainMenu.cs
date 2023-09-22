@@ -292,7 +292,8 @@ namespace FlaxEditor.GUI
                 return true;
 
 #if PLATFORM_WINDOWS
-            if (_useCustomWindowSystem)
+            var child = GetChildAtRecursive(location);
+            if (_useCustomWindowSystem && child is not Button && child is not MainMenuButton)
             {
                 if (_window.IsMaximized)
                     _window.Restore();
