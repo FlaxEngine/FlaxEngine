@@ -165,7 +165,7 @@ namespace FlaxEditor.Surface
         {
             if (Surface == null)
                 return;
-            Size = CalculateNodeSize(width, height);
+            Size = CalculateNodeSize(width, height); 
 
             // Update boxes on width change
             //if (!Mathf.NearEqual(prevSize.X, Size.X))
@@ -180,6 +180,109 @@ namespace FlaxEditor.Surface
             }
         }
 
+        private Float2 GetBoxControlWidthHeight(Control control, Font boxLabelFont)
+        {
+            float boxWidth = 0;
+            float boxHeight = 0;
+
+            if (control is InputBox inputBox)
+            {
+                boxWidth = boxLabelFont.MeasureText(inputBox.Text).X + 20;
+                if (inputBox.DefaultValueEditor != null)
+                    boxWidth += inputBox.DefaultValueEditor.Width + 4;
+                boxHeight = inputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f;
+            }
+            else if (control is OutputBox outputBox)
+            {
+                boxWidth = boxLabelFont.MeasureText(outputBox.Text).X + 20;
+                boxHeight = outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f;
+            }
+            else if (control is Control defaultControl)
+            {
+                if (defaultControl.AnchorPreset == AnchorPresets.TopLeft)
+                {
+                    boxWidth = defaultControl.Right + 4 - Constants.NodeMarginX;
+                    boxHeight = defaultControl.Bottom + 4 - Constants.NodeMarginY - Constants.NodeHeaderSize;
+                }
+                else
+                {
+                    boxWidth = defaultControl.Width + 4;
+                    boxHeight = defaultControl.Height + 4;
+                }
+            }
+
+            return new Float2(boxWidth, boxHeight);
+        }
+
+        public ContainerControl HACK = null;
+
+        private Float2 CompareAndGetNewCollisionSize(Rectangle rect1, Rectangle rect2, float collisionWidth, float collisionHeight)
+        {
+            Rectangle sharedArea;
+            Rectangle.Shared(ref rect1, ref rect2, out sharedArea);
+
+            Color colliderColor = Color.Chocolate;
+            colliderColor.A = 0.1f;
+            Panel colliderPanel = new Panel
+            {
+                BackgroundColor = colliderColor,
+                Location = sharedArea.Location,
+                Size = sharedArea.Size,
+                Parent = HACK
+            };
+
+            return new Float2(Mathf.Max(collisionWidth, sharedArea.Width + 4), Mathf.Max(collisionHeight, sharedArea.Height + 4));
+        }
+
+        private Float2 CalculateCollisionSize(List<Control> controls, Font boxLabelFont)
+        {
+            List<Rectangle> colliderRectangles = new List<Rectangle>();
+            int controlsCount = controls.Count;
+            for (int i = 0; i < controlsCount; i++)
+            {
+                var control = controls[i];
+                if (!control.Visible || control is Panel panel)
+                    continue;
+
+                Float2 boxSize = GetBoxControlWidthHeight(control, boxLabelFont);
+
+                Rectangle controlRect = new Rectangle(control.X, control.Y, boxSize.X, boxSize.Y);
+                colliderRectangles.Add(controlRect);
+
+                Color colliderColor = Style.Current.BackgroundSelected;
+                colliderColor.A = 0.25f;
+                Panel colliderPanel = new Panel
+                {
+                    BackgroundColor = colliderColor,
+                    Location = controlRect.Location,
+                    Size = controlRect.Size,
+                    Parent = HACK
+                };
+            }
+
+            float collisionWidth = 0;
+            float collisionHeight = 0;
+            for (int i = 0; i < colliderRectangles.Count; i++)
+            {
+                for (int j = 0; j < colliderRectangles.Count; j++)
+                {
+                    if (i == j)
+                    {
+                        continue;
+                    }
+
+                    Rectangle rect1 = colliderRectangles[i];
+                    Rectangle rect2 = colliderRectangles[j];
+                    Float2 newCollisionSize = CompareAndGetNewCollisionSize(rect1, rect2, collisionWidth, collisionHeight);
+
+                    collisionWidth = newCollisionSize.X;
+                    collisionHeight = newCollisionSize.Y;
+                }
+            }
+
+            return new Float2(collisionWidth, collisionHeight);
+        }
+
         /// <summary>
         /// Automatically resizes the node to match the title size and all the elements for best fit of the node dimensions.
         /// </summary>
@@ -187,6 +290,7 @@ namespace FlaxEditor.Surface
         {
             if (Surface == null)
                 return;
+            HACK = this;
             var width = 0.0f;
             var height = 0.0f;
             var leftHeight = 0.0f;
@@ -195,43 +299,74 @@ namespace FlaxEditor.Surface
             var rightWidth = 40.0f;
             var boxLabelFont = Style.Current.FontSmall;
             var titleLabelFont = Style.Current.FontLarge;
-            for (int i = 0; i < Children.Count; i++)
+            int childrenCount = Children.Count;
+            for (int i = 0; i < childrenCount; i++)
             {
                 var child = Children[i];
+                if (child is Panel panel)
+                {
+                    panel.Visible = false;
+                }
                 if (!child.Visible)
                     continue;
+
+                Float2 boxSize = GetBoxControlWidthHeight(child, boxLabelFont);
                 if (child is InputBox inputBox)
                 {
-                    var boxWidth = boxLabelFont.MeasureText(inputBox.Text).X + 20;
-                    if (inputBox.DefaultValueEditor != null)
-                        boxWidth += inputBox.DefaultValueEditor.Width + 4;
-                    leftWidth = Mathf.Max(leftWidth, boxWidth);
-                    leftHeight = Mathf.Max(leftHeight, inputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f);
+                    leftWidth = Mathf.Max(leftWidth, boxSize.X);
+                    leftHeight = Mathf.Max(leftHeight, boxSize.Y);
                 }
                 else if (child is OutputBox outputBox)
                 {
-                    rightWidth = Mathf.Max(rightWidth, boxLabelFont.MeasureText(outputBox.Text).X + 20);
-                    rightHeight = Mathf.Max(rightHeight, outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f);
+                    rightWidth = Mathf.Max(rightWidth, boxSize.X);
+                    rightHeight = Mathf.Max(rightHeight, boxSize.Y);
                 }
-                else if (child is Control control)
+                else
                 {
-                    if (control.AnchorPreset == AnchorPresets.TopLeft)
-                    {
-                        width = Mathf.Max(width, control.Right + 4 - Constants.NodeMarginX);
-                        height = Mathf.Max(height, control.Bottom + 4 - Constants.NodeMarginY - Constants.NodeHeaderSize);
-                    }
-                    else
-                    {
-                        width = Mathf.Max(width, control.Width + 4);
-                        height = Mathf.Max(height, control.Height + 4);
-                    }
+                    width = Mathf.Max(width, boxSize.X);
+                    height = Mathf.Max(height, boxSize.Y);
                 }
             }
+            Debug.Log(Title);
+            Float2 collisionSize = CalculateCollisionSize(Children, boxLabelFont);
+            Debug.Log(collisionSize.ToString());
+            //width += collisionSize.X;
+            //height += collisionSize.Y;
+
             width = Mathf.Max(width, leftWidth + rightWidth + 10);
             width = Mathf.Max(width, titleLabelFont.MeasureText(Title).X + 30);
             height = Mathf.Max(height, Mathf.Max(leftHeight, rightHeight));
-            Resize(width, height);
+            
+            Float2 roundedSize = VisjectSurface.RoundToGrid(new Float2(width, height), true);
+            Resize(roundedSize.X, roundedSize.Y);
         }
+
+        /* if (child is InputBox inputBox)
+{
+    var boxWidth = boxLabelFont.MeasureText(inputBox.Text).X + 20;
+    if (inputBox.DefaultValueEditor != null)
+        boxWidth += inputBox.DefaultValueEditor.Width + 4;
+    leftWidth = Mathf.Max(leftWidth, boxWidth);
+    leftHeight = Mathf.Max(leftHeight, inputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f);
+}
+else if (child is OutputBox outputBox)
+{
+    rightWidth = Mathf.Max(rightWidth, boxLabelFont.MeasureText(outputBox.Text).X + 20);
+    rightHeight = Mathf.Max(rightHeight, outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f);
+}
+else if (child is Control control)
+{
+    if (control.AnchorPreset == AnchorPresets.TopLeft)
+    {
+        width = Mathf.Max(width, control.Right + 4 - Constants.NodeMarginX);
+        height = Mathf.Max(height, control.Bottom + 4 - Constants.NodeMarginY - Constants.NodeHeaderSize);
+    }
+    else
+    {
+        width = Mathf.Max(width, control.Width + 4);
+        height = Mathf.Max(height, control.Height + 4);
+    }
+}*/
 
         /// <summary>
         /// Creates an element from the archetype and adds the element to the node.
@@ -310,6 +445,9 @@ namespace FlaxEditor.Surface
             Elements.Add(element);
             if (element is Control control)
                 AddChild(control);
+
+            if (!(element is Panel panel))
+                ResizeAuto();
         }
 
         /// <summary>

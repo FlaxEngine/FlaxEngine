@@ -132,8 +132,8 @@ namespace FlaxEditor.Surface
                 {
                     Type = NodeElementType.Input,
                     Position = new Float2(
-                                          Constants.NodeMarginX - Constants.BoxOffsetX,
-                                          Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY),
+                                            Constants.NodeMarginX - Constants.BoxOffsetX,
+                                            Constants.NodeMarginY + Constants.NodeHeaderSize + yLevel * Constants.LayoutOffsetY),
                     Text = text,
                     Single = single,
                     ValueIndex = valueIndex,
