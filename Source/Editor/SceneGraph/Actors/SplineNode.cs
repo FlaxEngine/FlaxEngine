@@ -8,10 +8,12 @@ using Real = System.Single;
 
 using System;
 using System.Collections.Generic;
-using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Actions;
 using FlaxEditor.Modules;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using FlaxEngine.Json;
+using FlaxEngine.Utilities;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.SceneGraph.Actors
@@ -301,14 +303,24 @@ namespace FlaxEditor.SceneGraph.Actors
             FlaxEngine.Scripting.Update += OnUpdate;
         }
 
-        private unsafe void OnUpdate()
+        private void OnUpdate()
         {
             if (Input.Keyboard.GetKey(KeyboardKeys.Shift))
             {
                 EditSplineWithSnap();
             }
 
-            // Sync spline points with gizmo handles
+            var canAddSplinePoint = Input.Mouse.PositionDelta == Float2.Zero && Input.Mouse.Position != Float2.Zero;
+            var requestAddSplinePoint = Input.Keyboard.GetKey(KeyboardKeys.Control) && Input.Mouse.GetButtonDown(MouseButton.Right);
+
+            if (requestAddSplinePoint && canAddSplinePoint)
+                AddSplinePoint();
+
+            SyncSplineKeyframeWithNodes();
+        }
+
+        private unsafe void SyncSplineKeyframeWithNodes()
+        {
             var actor = (Spline)Actor;
             var dstCount = actor.SplinePointsCount;
             if (dstCount > 1 && actor.IsLoop)
@@ -338,12 +350,91 @@ namespace FlaxEditor.SceneGraph.Actors
             }
         }
 
+        private unsafe void AddSplinePoint()
+        {
+            var selectedPoint = GetSelectedSplineNode();
+            if (selectedPoint == null)
+                return;
+
+            // checking mouse hit on scene
+            var spline = (Spline)Actor;
+            var viewport = Editor.Instance.Windows.EditWin.Viewport;
+            var mouseRay = viewport.MouseRay;
+            var viewRay = new Ray(viewport.ViewPosition, viewport.ViewDirection);
+            var flags = RayCastData.FlagTypes.SkipColliders | RayCastData.FlagTypes.SkipEditorPrimitives;
+            var hit = Editor.Instance.Scene.Root.RayCast(ref mouseRay, ref viewRay, out var closest, out var normal, flags);
+
+            if (hit == null)
+                return;
+
+            // Undo data
+            var oldSpline = spline.SplineKeyframes;
+            var editAction = new EditSplineAction(spline, oldSpline);
+            Root.Undo.AddAction(editAction);
+
+            // Getting spline point to duplicate
+            var hitPoint = mouseRay.Position + mouseRay.Direction * closest;
+            var lastPointIndex = selectedPoint.Index;
+            var newPointIndex = lastPointIndex > 0 ? lastPointIndex + 1 : 0;
+            var lastKeyframe = spline.GetSplineKeyframe(lastPointIndex);
+            var isLastPoint = lastPointIndex == spline.SplinePointsCount - 1;
+            var isFirstPoint = lastPointIndex == 0;
+
+            // Getting data to create new point
+
+            var lastPointTime = spline.GetSplineTime(lastPointIndex);
+            var nextPointTime = isLastPoint ? lastPointTime : spline.GetSplineTime(newPointIndex);
+            var newTime = isLastPoint ? lastPointTime + 1.0f : (lastPointTime + nextPointTime) * 0.5f;
+            var distanceFromLastPoint = Vector3.Distance(hitPoint, spline.GetSplinePoint(lastPointIndex));
+            var newPointDirection = spline.GetSplineTangent(lastPointIndex, false).Translation - hitPoint;
+
+            // set correctly keyframe direction on spawn point
+            if (isFirstPoint)
+                newPointDirection = hitPoint - spline.GetSplineTangent(lastPointIndex, true).Translation;
+            else if (isLastPoint)
+                newPointDirection = spline.GetSplineTangent(lastPointIndex, false).Translation - hitPoint;
+
+            var newPointLocalPosition = spline.Transform.WorldToLocal(hitPoint);
+            var newPointLocalOrientation = Quaternion.LookRotation(newPointDirection);
+
+            // Adding new point
+            spline.InsertSplinePoint(newPointIndex, newTime, Transform.Identity, false);
+            var newKeyframe = lastKeyframe.DeepClone();
+            var newKeyframeTransform = newKeyframe.Value;
+            newKeyframeTransform.Translation = newPointLocalPosition;
+            newKeyframeTransform.Orientation = newPointLocalOrientation;
+            newKeyframe.Value = newKeyframeTransform;
+
+            // Setting new point keyframe
+            var newkeyframeTangentIn = Transform.Identity;
+            var newkeyframeTangentOut = Transform.Identity;
+            newkeyframeTangentIn.Translation = (Vector3.Forward * newPointLocalOrientation) * distanceFromLastPoint;
+            newkeyframeTangentOut.Translation = (Vector3.Backward * newPointLocalOrientation) * distanceFromLastPoint;
+            newKeyframe.TangentIn = newkeyframeTangentIn;
+            newKeyframe.TangentOut = newkeyframeTangentOut;
+            spline.SetSplineKeyframe(newPointIndex, newKeyframe);
+
+            for (int i = 1; i < spline.SplinePointsCount; i++)
+            {
+                // check all elements to don't left keyframe has invalid time
+                // because points can be added on start or on middle of spline
+                // conflicting with time of another keyframes
+                spline.SetSplinePointTime(i, i, false);
+            }
+
+            // Select new point node
+            SyncSplineKeyframeWithNodes();
+            Editor.Instance.SceneEditing.Select(ChildNodes[newPointIndex]);
+
+            spline.UpdateSpline();
+        }
+
         private void EditSplineWithSnap()
         {
             if (_currentEditSpline == null || _currentEditSpline != Actor)
                 return;
 
-            var selectedNode = SelectedSplineNode();
+            var selectedNode = GetSelectedSplineNode();
             if (selectedNode == null)
                 return;
 
@@ -468,7 +559,7 @@ namespace FlaxEditor.SceneGraph.Actors
             }
         }
 
-        private static SplinePointNode SelectedSplineNode()
+        private static SplinePointNode GetSelectedSplineNode()
         {
             var selection = Editor.Instance.SceneEditing.Selection;
             if (selection.Count != 1)
