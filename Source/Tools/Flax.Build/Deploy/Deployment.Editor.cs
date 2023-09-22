@@ -17,10 +17,14 @@ namespace Flax.Deploy
         {
             if (string.IsNullOrEmpty(Configuration.DeployCert))
                 return;
+            Log.Info("Code signing file: " + file);
             switch (Platform.BuildTargetPlatform)
             {
             case TargetPlatform.Windows:
                 VCEnvironment.CodeSign(file, Configuration.DeployCert, Configuration.DeployCertPass);
+                break;
+            case TargetPlatform.Mac:
+                MacPlatform.CodeSign(file, Configuration.DeployCert);
                 break;
             }
         }
@@ -254,6 +258,10 @@ namespace Flax.Deploy
                     Utilities.Run("strip", "FlaxEditor", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("strip", "FlaxEditor.dylib", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("strip", "libMoltenVK.dylib", null, dst, Utilities.RunOptions.None);
+
+                    CodeSign(Path.Combine(dst, "FlaxEditor"));
+                    CodeSign(Path.Combine(dst, "FlaxEditor.dylib"));
+                    CodeSign(Path.Combine(dst, "libMoltenVK.dylib"));
                 }
             }
         }
