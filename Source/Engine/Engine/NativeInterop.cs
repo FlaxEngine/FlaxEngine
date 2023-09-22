@@ -149,6 +149,20 @@ namespace FlaxEngine.Interop
         }
 
         /// <summary>
+        /// Converts a delegate into a function pointer that is callable from unmanaged code via <see cref="Marshal.GetFunctionPointerForDelegate{TDelegate}"/> but cached <paramref name="d"/> delegate to prevent collecting it by GC.
+        /// </summary>
+        /// <typeparam name="TDelegate">The type of delegate to convert.</typeparam>
+        /// <param name="d">The delegate to be passed to unmanaged code.</param>
+        /// <returns>A value that can be passed to unmanaged code, which, in turn, can use it to call the underlying managed delegate.</returns>
+        public static IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d) where TDelegate : notnull
+        {
+            // Example use-case: C# script runs actions via JobSystem.Dispatch which causes crash due to GC collecting Delegate object
+            ManagedHandle.Alloc(d, GCHandleType.Weak);
+
+            return Marshal.GetFunctionPointerForDelegate<TDelegate>(d);
+        }
+
+        /// <summary>
         /// Converts array of GC Handles from native runtime to managed array.
         /// </summary>
         /// <typeparam name="T">Array element type.</typeparam>
