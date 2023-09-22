@@ -497,7 +497,7 @@ namespace Flax.Build
                                     else if (dependencyModule.BinaryModuleName == "FlaxEngine")
                                     {
                                         // TODO: instead of this hack find a way to reference the prebuilt target bindings binary (example: game C# project references FlaxEngine C# prebuilt dll)
-                                        project.CSharp.FileReferences.Add(Path.Combine(Globals.EngineRoot, "Binaries/Editor/Win64/Development/FlaxEngine.CSharp.dll"));
+                                        project.CSharp.FileReferences.Add(Path.Combine(Globals.EngineRoot, $"Binaries/Editor/{project.Configurations[0].PlatformName}/Development/FlaxEngine.CSharp.dll"));
                                     }
                                 }
                             }
@@ -519,7 +519,7 @@ namespace Flax.Build
                                 project.Dependencies.Remove(flaxDependency);
 
                                 // TODO: instead of this hack find a way to reference the prebuilt target bindings binary (example: game C# project references FlaxEngine C# prebuilt dll)
-                                project.CSharp.FileReferences.Add(Path.Combine(Globals.EngineRoot, "Binaries/Editor/Win64/Development/FlaxEngine.CSharp.dll"));
+                                project.CSharp.FileReferences.Add(Path.Combine(Globals.EngineRoot, $"Binaries/Editor/{project.Configurations[0].PlatformName}/Development/FlaxEngine.CSharp.dll"));
 
                                 // Remove FlaxEngine from projects to prevent duplicated types errors in Intellisense (eg. Actor type defined in both FlaxEngine.CSharp.dll and FlaxEngine.csproj)
                                 flaxDependencyToRemove = flaxDependency;
