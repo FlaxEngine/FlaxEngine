@@ -26,7 +26,6 @@ const Char* SplashScreenQuotes[] =
 #if PLATFORM_WINDOWS
     TEXT("We're getting everything ready for you."),
 #elif PLATFORM_LINUX
-    TEXT("Don't compare Macbooks to oranges."),
     TEXT("Trying to exit vim"),
     TEXT("Sudo flax --loadproject"),
 #elif PLATFORM_MAC
