@@ -26,6 +26,7 @@ const Char* SplashScreenQuotes[] =
 #if PLATFORM_WINDOWS
     TEXT("We're getting everything ready for you."),
 #elif PLATFORM_LINUX
+    TEXT("Try it on a Raspberry"),
     TEXT("Trying to exit vim"),
     TEXT("Sudo flax --loadproject"),
 #elif PLATFORM_MAC
@@ -101,6 +102,7 @@ const Char* SplashScreenQuotes[] =
     TEXT("YOU SHALL NOT PASS!"),
     TEXT("You have my bow.\nAnd my axe!"),
     TEXT("To the bridge of Khazad-dum."),
+    TEXT("One ring to rule them all.\nOne ring to find them."),
     TEXT("That's what she said"),
     TEXT("We could be compiling shaders here"),
     TEXT("Hello There"),
@@ -121,6 +123,9 @@ const Char* SplashScreenQuotes[] =
     TEXT("Weird flax, but ok"),
     TEXT("Reticulating Splines"),
     TEXT("Discombobulating"),
+    TEXT("Who is signing all these integers?!"),
+    TEXT("Flax fact: Flax was called Celelej once."),
+    TEXT("Changing text overflow setti-"),
 };
 
 SplashScreen::~SplashScreen()
