@@ -215,8 +215,12 @@ namespace Flax.Build
                     }
                 }
 
-                // Use x64 when cross-compiling from ARM64
-                if (architecture == TargetArchitecture.ARM64 && (Configuration.BuildArchitectures != null && Configuration.BuildArchitectures[0] == TargetArchitecture.x64))
+                bool isRunningOnArm64Targetx64 = architecture == TargetArchitecture.ARM64 && (Configuration.BuildArchitectures != null && Configuration.BuildArchitectures[0] == TargetArchitecture.x64);
+
+                // We need to support two paths here: 
+                // 1. We are running an x64 binary and we are running on an arm64 host machine 
+                // 2. We are running an Arm64 binary and we are targeting an x64 host machine
+                if (Flax.Build.Platforms.MacPlatform.GetProcessIsTranslated() || isRunningOnArm64Targetx64) 
                 {
                     rid = "osx-x64";
                     dotnetPath = Path.Combine(dotnetPath, "x64");

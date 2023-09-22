@@ -236,6 +236,20 @@ namespace Flax.Build.Projects.VisualStudio
         /// <inheritdoc />
         public override void GenerateSolution(Solution solution)
         {
+            // Ensure that the main project is the first one (initially selected by Visual Studio)
+            if (solution.MainProject != null && solution.Projects.Length != 0 && solution.Projects[0] != solution.MainProject)
+            {
+                for (int i = 1; i < solution.Projects.Length; i++)
+                {
+                    if (solution.Projects[i] == solution.MainProject)
+                    {
+                        solution.Projects[i] = solution.Projects[0];
+                        solution.Projects[0] = solution.MainProject;
+                        break;
+                    }
+                }
+            }
+
             // Try to extract info from the existing solution file to make random IDs stable
             var solutionId = Guid.NewGuid();
             var folderIds = new Dictionary<string, Guid>();
@@ -402,6 +416,10 @@ namespace Flax.Build.Projects.VisualStudio
                     if (project.Configurations == null || project.Configurations.Count == 0)
                         throw new Exception("Missing configurations for project " + project.Name);
 
+                    // Prevent generating default Debug|AnyCPU and Release|AnyCPU configurations from Flax projects
+                    if (project.Name == "BuildScripts" || project.Name == "Flax.Build" || project.Name == "Flax.Build.Tests")
+                        continue;
+
                     foreach (var configuration in project.Configurations)
                     {
                         configurations.Add(new SolutionConfiguration(configuration));
@@ -540,8 +558,8 @@ namespace Flax.Build.Projects.VisualStudio
             {
                 var profiles = new Dictionary<string, string>();
                 var profile = new StringBuilder();
-                var editorPath = Path.Combine(Globals.EngineRoot, "Binaries/Editor/Win64/Development/FlaxEditor.exe").Replace('/', '\\').Replace("\\", "\\\\");
-                var workspacePath = solutionDirectory.Replace('/', '\\').Replace("\\", "\\\\");
+                var editorPath = Utilities.NormalizePath(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), $"Development/FlaxEditor{Utilities.GetPlatformExecutableExt()}"));
+                var workspacePath = Utilities.NormalizePath(solutionDirectory);
                 foreach (var project in projects)
                 {
                     if (project.Type == TargetType.DotNetCore)

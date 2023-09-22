@@ -45,7 +45,7 @@ bool TerrainChunk::PrepareDraw(const RenderContext& renderContext)
 
         // Calculate chunk distance to view
         const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
-        const float distance = Float3::Distance(_boundsCenter - lodView->Origin, lodView->Position);
+        const float distance = Float3::Distance(_sphere.Center - lodView->Origin, lodView->Position);
         lod = (int32)Math::Pow(distance / chunkEdgeSize, lodDistribution);
         lod += lodBias;
 
@@ -88,6 +88,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
     drawCall.Material = _cachedDrawMaterial;
     renderContext.View.GetWorldMatrix(_transform, drawCall.World);
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.ObjectRadius = _sphere.Radius;
     drawCall.Terrain.Patch = _patch;
     drawCall.Terrain.HeightmapUVScaleBias = _heightmapUVScaleBias;
     drawCall.Terrain.OffsetUV = Vector2((float)(_patch->_x * TerrainPatch::CHUNKS_COUNT_EDGE + _x), (float)(_patch->_z * TerrainPatch::CHUNKS_COUNT_EDGE + _z));
@@ -145,6 +146,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
     drawCall.Material = material;
     renderContext.View.GetWorldMatrix(_transform, drawCall.World);
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.ObjectRadius = _sphere.Radius;
     drawCall.Terrain.Patch = _patch;
     drawCall.Terrain.HeightmapUVScaleBias = _heightmapUVScaleBias;
     drawCall.Terrain.OffsetUV = Vector2((float)(_patch->_x * TerrainPatch::CHUNKS_COUNT_EDGE + _x), (float)(_patch->_z * TerrainPatch::CHUNKS_COUNT_EDGE + _z));
@@ -202,7 +204,7 @@ void TerrainChunk::UpdateBounds()
     OrientedBoundingBox obb(Vector3::Zero, Vector3::One);
     obb.Transform(localTransform);
     obb.GetBoundingBox(_bounds);
-    _boundsCenter = _bounds.GetCenter();
+    BoundingSphere::FromBox(_bounds, _sphere);
 
     _bounds.Minimum -= boundsExtent;
     _bounds.Maximum += boundsExtent;

@@ -122,7 +122,7 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
     {
         // Create shader
         ID3D11DomainShader* buffer = nullptr;
-        VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateDomainShader(cacheBytes, cacheSize, nullptr, &buffer));
+        result = _device->GetDevice()->CreateDomainShader(cacheBytes, cacheSize, nullptr, &buffer);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, nullptr);
 
         // Create object
