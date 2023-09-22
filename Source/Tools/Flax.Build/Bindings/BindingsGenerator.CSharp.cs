@@ -473,7 +473,7 @@ namespace Flax.Build.Bindings
                 return "FlaxEngine.Object.GetUnmanagedPtr({0})";
             case "Function":
                 // delegate
-                return "Marshal.GetFunctionPointerForDelegate({0})";
+                return "NativeInterop.GetFunctionPointerForDelegate({0})";
             default:
                 var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
                 if (apiType != null)

@@ -567,12 +567,17 @@ bool ImportMaterials(ImportedModelData& result, AssimpImporterData& data, String
     return false;
 }
 
+bool IsMeshInvalid(const aiMesh* aMesh)
+{
+    return aMesh->mPrimitiveTypes != aiPrimitiveType_TRIANGLE || aMesh->mNumVertices == 0 || aMesh->mNumFaces == 0 || aMesh->mFaces[0].mNumIndices != 3;
+}
+
 bool ImportMesh(int32 i, ImportedModelData& result, AssimpImporterData& data, String& errorMsg)
 {
     const auto aMesh = data.Scene->mMeshes[i];
 
     // Skip invalid meshes
-    if (aMesh->mPrimitiveTypes != aiPrimitiveType_TRIANGLE || aMesh->mNumVertices == 0 || aMesh->mNumFaces == 0 || aMesh->mFaces[0].mNumIndices != 3)
+    if (IsMeshInvalid(aMesh))
         return false;
 
     // Skip unused meshes

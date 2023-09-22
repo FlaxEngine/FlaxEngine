@@ -721,7 +721,12 @@ namespace FlaxEditor.Windows
             {
                 var item = Editor.ContentDatabase.Find(sourcePath);
                 if (item != null)
-                    Editor.ContentDatabase.Copy(item, Path.Combine(CurrentViewFolder.Path, item.FileName));
+                {
+                    var newPath = StringUtils.NormalizePath(Path.Combine(CurrentViewFolder.Path, item.FileName));
+                    if (sourcePath.Equals(newPath))
+                        newPath = GetClonedAssetPath(item);
+                    Editor.ContentDatabase.Copy(item, newPath);
+                }
                 else
                     importFiles.Add(sourcePath);
             }
