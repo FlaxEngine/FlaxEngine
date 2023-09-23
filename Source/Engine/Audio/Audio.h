@@ -104,4 +104,6 @@ public:
 
     static void OnAddSource(AudioSource* source);
     static void OnRemoveSource(AudioSource* source);
+    static Array<AudioSource*>& GetAudioSources();
+    static Array<AudioListener*>& GetAudioListeners();
 };

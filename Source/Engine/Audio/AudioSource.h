@@ -48,11 +48,13 @@ private:
     float _pitch;
     float _pan = 0.0f;
     float _minDistance;
+    float _maxDistance;
     float _attenuation = 1.0f;
     float _dopplerFactor = 1.0f;
     bool _loop;
     bool _playOnStart;
     bool _allowSpatialization;
+    bool _audioEnabled;
 
     bool _isActuallyPlayingSth = false;
     bool _needToUpdateStreamingBuffers = false;
@@ -153,10 +155,40 @@ public:
     API_PROPERTY() void SetPlayOnStart(bool value);
 
     /// <summary>
+    /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound. At 0, no distance attenuation ever occurs.
+    /// </summary>
+    API_PROPERTY(Attributes = "EditorOrder(60), DefaultValue(false), EditorDisplay(\"Audio Source\"), Header(\"3D settings\")")
+    FORCE_INLINE bool GetAllowSpatialization() const
+    {
+        return _allowSpatialization;
+    }
+
+    /// <summary>
+    /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound.
+    /// </summary>
+    API_PROPERTY() void SetAllowSpatialization(bool value);
+
+    /// <summary>
+    /// Gets the maximum distance at which it is responsible for clipping the audio. It is possible to disable the Max Distance by setting the value 0
+    /// </summary>
+    API_PROPERTY(Attributes = "EditorOrder(70), DefaultValue(1000.0f), Limit(0.0f, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\"), VisibleIf(nameof(AllowSpatialization))")
+    FORCE_INLINE float GetMaxDistance() const
+    {
+        return _maxDistance;
+    }
+
+    /// <summary>
+    /// Sets the maximum distance at which it is responsible for clipping the audio. It is possible to disable the Max Distance by setting the value 0
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    API_PROPERTY() void SetMaxDistance(float value);
+
+    /// <summary>
     /// Gets the minimum distance at which audio attenuation starts. When the listener is closer to the source than this value, audio is heard at full volume. Once farther away the audio starts attenuating.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(1000.0f), Limit(0, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\")")
-    FORCE_INLINE float GetMinDistance() const
+    API_PROPERTY(Attributes = "EditorOrder(80), DefaultValue(100.0f), Limit(0.1f, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\"), VisibleIf(nameof(AllowSpatialization))")
+        FORCE_INLINE float GetMinDistance() const
     {
         return _minDistance;
     }
@@ -169,7 +201,7 @@ public:
     /// <summary>
     /// Gets the attenuation that controls how quickly does audio volume drop off as the listener moves further from the source.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(70), DefaultValue(1.0f), Limit(0, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\")")
+    API_PROPERTY(Attributes="EditorOrder(90), DefaultValue(1.0f), Limit(0, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\"), VisibleIf(nameof(AllowSpatialization))")
     FORCE_INLINE float GetAttenuation() const
     {
         return _attenuation;
@@ -183,7 +215,7 @@ public:
     /// <summary>
     /// Gets the doppler effect factor. Scale for source velocity. Default is 1.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(75), DefaultValue(1.0f), Limit(0, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\")")
+    API_PROPERTY(Attributes="EditorOrder(100), DefaultValue(1.0f), Limit(0, float.MaxValue, 0.1f), EditorDisplay(\"Audio Source\"), VisibleIf(nameof(AllowSpatialization))")
     FORCE_INLINE float GetDopplerFactor() const
     {
         return _dopplerFactor;
@@ -193,20 +225,6 @@ public:
     /// Sets the doppler effect factor. Scale for source velocity. Default is 1.
     /// </summary>
     API_PROPERTY() void SetDopplerFactor(float value);
-
-    /// <summary>
-    /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound. At 0, no distance attenuation ever occurs.
-    /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(80), DefaultValue(true), EditorDisplay(\"Audio Source\")")
-    FORCE_INLINE bool GetAllowSpatialization() const
-    {
-        return _allowSpatialization;
-    }
-
-    /// <summary>
-    /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound.
-    /// </summary>
-    API_PROPERTY() void SetAllowSpatialization(bool value);
 
 public:
     /// <summary>
@@ -277,6 +295,18 @@ public:
     /// </summary>
     void Cleanup();
 
+    /// <summary>
+    /// Sets a value for the controller that is responsible for turning audio on and off based on maximum distance
+    /// </summary>
+    /// <param name="value"></param>
+    void SetAudioEnabled(bool enabled);
+
+    /// <summary>
+    /// Gets a value for the controller that is responsible for turning audio on and off based on maximum distance
+    /// </summary>
+    /// <returns></returns>
+    bool GetAudioEnabled() const { return _audioEnabled; }
+
 private:
     void OnClipChanged();
     void OnClipLoaded();
@@ -290,6 +320,11 @@ private:
     /// Plays the audio source. Should have buffer(s) binded before.
     /// </summary>
     void PlayInternal();
+
+    /// <summary>
+    /// System responsible for all the calculation of the distance from the AudioListener to the AudioSource based on the maximum distance, thus assigning a value to the controller of that system
+    /// </summary>
+    void CheckMaxDistance(Vector3 pos);
 
     void Update();
 
