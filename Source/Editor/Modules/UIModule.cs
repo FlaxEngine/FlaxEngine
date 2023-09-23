@@ -937,7 +937,7 @@ namespace FlaxEditor.Modules
             Editor.Windows.LoadLayout((string)button.Tag);
         }
 
-        private void AlignViewportWithActor()
+        internal void AlignViewportWithActor()
         {
             var selection = Editor.SceneEditing;
             if (selection.HasSthSelected && selection.Selection[0] is ActorNode node)
@@ -948,7 +948,7 @@ namespace FlaxEditor.Modules
             }
         }
 
-        private void MoveActorToViewport()
+        internal void MoveActorToViewport()
         {
             var selection = Editor.SceneEditing;
             if (selection.HasSthSelected && selection.Selection[0] is ActorNode node)
@@ -962,7 +962,7 @@ namespace FlaxEditor.Modules
             }
         }
 
-        private void AlignActorWithViewport()
+        internal void AlignActorWithViewport()
         {
             var selection = Editor.SceneEditing;
             if (selection.HasSthSelected && selection.Selection[0] is ActorNode node)

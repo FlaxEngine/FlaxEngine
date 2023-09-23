@@ -1263,6 +1263,10 @@ namespace FlaxEditor.Utilities
             inputActions.Add(options => options.SelectAll, Editor.Instance.SceneEditing.SelectAllScenes);
             inputActions.Add(options => options.Delete, Editor.Instance.SceneEditing.Delete);
             inputActions.Add(options => options.Search, () => Editor.Instance.Windows.SceneWin.Search());
+            inputActions.Add(options => options.MoveActorToViewport, Editor.Instance.UI.MoveActorToViewport);
+            inputActions.Add(options => options.AlignActorWithViewport, Editor.Instance.UI.AlignActorWithViewport);
+            inputActions.Add(options => options.AlignViewportWithActor, Editor.Instance.UI.AlignViewportWithActor);
+            inputActions.Add(options => options.PilotActor, Editor.Instance.UI.PilotActor);
             inputActions.Add(options => options.Play, Editor.Instance.Simulation.DelegatePlayOrStopPlayInEditor);
             inputActions.Add(options => options.PlayCurrentScenes, Editor.Instance.Simulation.RequestPlayScenesOrStopPlay);
             inputActions.Add(options => options.Pause, Editor.Instance.Simulation.RequestResumeOrPause);
