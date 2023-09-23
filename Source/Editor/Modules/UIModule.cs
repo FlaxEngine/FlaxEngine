@@ -42,8 +42,10 @@ namespace FlaxEditor.Modules
 
         private ContextMenuButton _menuFileSaveScenes;
         private ContextMenuButton _menuFileCloseScenes;
+        private ContextMenuButton _menuFileOpenScriptsProject;
         private ContextMenuButton _menuFileGenerateScriptsProjectFiles;
-        private ContextMenuButton _menuSaveAll;
+        private ContextMenuButton _menuFileRecompileScripts;
+        private ContextMenuButton _menuFileSaveAll;
         private ContextMenuButton _menuEditUndo;
         private ContextMenuButton _menuEditRedo;
         private ContextMenuButton _menuEditCut;
@@ -514,13 +516,13 @@ namespace FlaxEditor.Modules
             MenuFile = MainMenu.AddButton("File");
             var cm = MenuFile.ContextMenu;
             cm.VisibleChanged += OnMenuFileShowHide;
-            _menuSaveAll = cm.AddButton("Save All", inputOptions.Save, Editor.SaveAll);
-            _menuFileSaveScenes = cm.AddButton("Save scenes", Editor.Scene.SaveScenes);
-            _menuFileCloseScenes = cm.AddButton("Close scenes", Editor.Scene.CloseAllScenes);
+            _menuFileSaveAll = cm.AddButton("Save All", inputOptions.Save, Editor.SaveAll);
+            _menuFileSaveScenes = cm.AddButton("Save scenes", inputOptions.SaveScenes, Editor.Scene.SaveScenes);
+            _menuFileCloseScenes = cm.AddButton("Close scenes", inputOptions.CloseScenes, Editor.Scene.CloseAllScenes);
             cm.AddSeparator();
-            cm.AddButton("Open scripts project", Editor.CodeEditing.OpenSolution);
-            _menuFileGenerateScriptsProjectFiles = cm.AddButton("Generate scripts project files", Editor.ProgressReporting.GenerateScriptsProjectFiles.RunAsync);
-            cm.AddButton("Recompile scripts", ScriptsBuilder.Compile);
+            _menuFileOpenScriptsProject = cm.AddButton("Open scripts project", inputOptions.OpenScriptsProject, Editor.CodeEditing.OpenSolution);
+            _menuFileGenerateScriptsProjectFiles = cm.AddButton("Generate scripts project files", inputOptions.GenerateScriptsProject, Editor.ProgressReporting.GenerateScriptsProjectFiles.RunAsync);
+            _menuFileRecompileScripts = cm.AddButton("Recompile scripts", inputOptions.RecompileScripts, ScriptsBuilder.Compile);
             cm.AddSeparator();
             cm.AddButton("Open project...", OpenProject);
             cm.AddSeparator();
@@ -639,7 +641,12 @@ namespace FlaxEditor.Modules
         {
             var inputOptions = options.Input;
 
-            _menuSaveAll.ShortKeys = inputOptions.Save.ToString();
+            _menuFileSaveAll.ShortKeys = inputOptions.Save.ToString();
+            _menuFileSaveScenes.ShortKeys = inputOptions.SaveScenes.ToString();
+            _menuFileCloseScenes.ShortKeys = inputOptions.CloseScenes.ToString();
+            _menuFileOpenScriptsProject.ShortKeys = inputOptions.OpenScriptsProject.ToString();
+            _menuFileGenerateScriptsProjectFiles.ShortKeys = inputOptions.GenerateScriptsProject.ToString();
+            _menuFileRecompileScripts.ShortKeys = inputOptions.RecompileScripts.ToString();
             _menuEditUndo.ShortKeys = inputOptions.Undo.ToString();
             _menuEditRedo.ShortKeys = inputOptions.Redo.ToString();
             _menuEditCut.ShortKeys = inputOptions.Cut.ToString();

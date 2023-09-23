@@ -78,6 +78,30 @@ namespace FlaxEditor.Options
 
         #endregion
 
+        #region File
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("File"), EditorOrder(300)]
+        public InputBinding SaveScenes = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("File"), EditorOrder(310)]
+        public InputBinding CloseScenes = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("File"), EditorOrder(320)]
+        public InputBinding OpenScriptsProject = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("File"), EditorOrder(330)]
+        public InputBinding GenerateScriptsProject = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("File"), EditorOrder(340)]
+        public InputBinding RecompileScripts = new InputBinding(KeyboardKeys.None);
+
+        #endregion
+
         #region Scene
 
         [DefaultValue(typeof(InputBinding), "End")]
