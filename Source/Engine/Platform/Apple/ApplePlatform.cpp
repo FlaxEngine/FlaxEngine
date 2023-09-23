@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <sys/sysctl.h>
 #include <sys/time.h>
+#include <sys/resource.h>
 #include <mach/mach_time.h>
 #include <mach-o/dyld.h>
 #include <uuid/uuid.h>
@@ -307,6 +308,14 @@ bool ApplePlatform::Init()
         String username;
         GetEnvironmentVariable(TEXT("USER"), username);
         OnPlatformUserAdd(New<User>(username));
+    }
+
+    // Increase the maximum number of simultaneously open files
+    {
+        struct rlimit limit;
+        limit.rlim_cur = OPEN_MAX;
+        limit.rlim_max = RLIM_INFINITY;
+        setrlimit(RLIMIT_NOFILE, &limit);
     }
 
     AutoreleasePool = [[NSAutoreleasePool alloc] init];
