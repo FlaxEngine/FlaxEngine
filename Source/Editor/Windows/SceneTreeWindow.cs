@@ -354,13 +354,13 @@ namespace FlaxEditor.Windows
             {
                 switch (Editor.Options.Options.Input.DoubleClickSceneNode)
                 {
-                    case SceneNodeDoubleClick.Rename:
+                    case SceneNodeDoubleClick.RenameActor:
                         Rename();
                         return true;
-                    case SceneNodeDoubleClick.Focus:
+                    case SceneNodeDoubleClick.FocusActor:
                         Editor.Windows.EditWin.Viewport.FocusSelection();
                         return true;
-                    case SceneNodeDoubleClick.Open:
+                    case SceneNodeDoubleClick.OpenPrefab:
                         return Editor.Prefabs.OpenPrefab();
                     case SceneNodeDoubleClick.None:
                     default:
@@ -496,14 +496,14 @@ namespace FlaxEditor.Windows
         /// <summary>
         /// Rename the Scene Node
         /// </summary>
-        Rename,
+        RenameActor,
         /// <summary>
         /// Focus the Scene Node object in the Scene View
         /// </summary>
-        Focus,
+        FocusActor,
         /// <summary>
         /// If possible, open the scene node in an associated Editor (e.g. Prefab Editor)
         /// </summary>
-        Open
+        OpenPrefab
     }
 }
