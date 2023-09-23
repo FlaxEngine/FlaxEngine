@@ -200,7 +200,6 @@ namespace FlaxEditor.Windows.Assets
                 ViewportCamera = new FPSCamera(),
                 Parent = _split.Panel1
             };
-            _preview.Task.ViewFlags = ViewFlags.AntiAliasing;
 
             // Asset properties
             _propertiesPresenter = new CustomEditorPresenter(null);
