@@ -150,6 +150,7 @@ namespace FlaxEditor.Windows
         {
             Title = "Output Log";
             ClipChildren = false;
+            FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
 
             // Setup UI
             _viewDropdown = new Button(2, 2, 40.0f, TextBoxBase.DefaultHeight)
