@@ -50,6 +50,11 @@ API_STRUCT(NoDefault, MarshalAs=StringAnsi) struct FLAXENGINE_API BehaviorKnowle
     {
         return Path;
     }
+
+    String ToString() const
+    {
+        return Path.ToString();
+    }
 };
 
 /// <summary>

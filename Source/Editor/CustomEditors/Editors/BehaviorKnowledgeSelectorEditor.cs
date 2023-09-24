@@ -61,6 +61,8 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             set
             {
+                if (string.Equals(Path, value, StringComparison.Ordinal))
+                    return;
                 var v = Values[0];
                 if (v is BehaviorKnowledgeSelectorAny)
                     v = new BehaviorKnowledgeSelectorAny(value);
@@ -102,14 +104,6 @@ namespace FlaxEditor.CustomEditors.Editors
             // Create menu with tree-like structure and search box
             var menu = Utilities.Utils.CreateSearchPopup(out var searchBox, out var tree, 0, true);
             var selected = Path;
-            tree.SelectedChanged += delegate(List<TreeNode> before, List<TreeNode> after)
-            {
-                if (after.Count == 1)
-                {
-                    menu.Hide();
-                    Path = after[0].Tag as string;
-                }
-            };
 
             // Empty
             var noneNode = new TreeNode
@@ -148,6 +142,14 @@ namespace FlaxEditor.CustomEditors.Editors
                 goalsNode.ExpandAll(true);
             }
 
+            tree.SelectedChanged += delegate(List<TreeNode> before, List<TreeNode> after)
+            {
+                if (after.Count == 1)
+                {
+                    menu.Hide();
+                    Path = after[0].Tag as string;
+                }
+            };
             menu.Show(_label, new Float2(0, _label.Height));
         }
 
