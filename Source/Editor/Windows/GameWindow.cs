@@ -232,7 +232,8 @@ namespace FlaxEditor.Windows
             {
                 if (!EnableEvents)
                     return;
-
+                Parent.Focus();
+                Screen.CursorVisible = true;
                 base.OnMouseLeave();
             }
 
