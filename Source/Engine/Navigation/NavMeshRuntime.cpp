@@ -26,7 +26,8 @@ namespace
 }
 
 NavMeshRuntime::NavMeshRuntime(const NavMeshProperties& properties)
-    : Properties(properties)
+    : ScriptingObject(SpawnParams(Guid::Empty, NavMeshRuntime::TypeInitializer))
+    , Properties(properties)
 {
     _navMesh = nullptr;
     _navMeshQuery = dtAllocNavMeshQuery();

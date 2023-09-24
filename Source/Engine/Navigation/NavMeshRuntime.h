@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Platform/CriticalSection.h"
+#include "Engine/Scripting/ScriptingObject.h"
 #include "NavMeshData.h"
 #include "NavigationTypes.h"
 
@@ -40,20 +41,21 @@ DECLARE_ENUM_OPERATORS(NavMeshPathFlags);
 /// <summary>
 /// The navigation mesh runtime object that builds the navmesh from all loaded scenes.
 /// </summary>
-class FLAXENGINE_API NavMeshRuntime
+API_CLASS(NoSpawn) class FLAXENGINE_API NavMeshRuntime : public ScriptingObject
 {
+    DECLARE_SCRIPTING_TYPE_MINIMAL(NavMeshRuntime);
 public:
     // Gets the first valid navigation mesh runtime. Return null if none created.
-    static NavMeshRuntime* Get();
+    API_FUNCTION() static NavMeshRuntime* Get();
 
     // Gets the navigation mesh runtime for a given navmesh name. Return null if missing.
-    static NavMeshRuntime* Get(const StringView& navMeshName);
+    API_FUNCTION() static NavMeshRuntime* Get(const StringView& navMeshName);
 
     // Gets the navigation mesh runtime for a given agent properties trying to pick the best matching navmesh.
-    static NavMeshRuntime* Get(const NavAgentProperties& agentProperties);
+    API_FUNCTION() static NavMeshRuntime* Get(API_PARAM(Ref) const NavAgentProperties& agentProperties);
 
     // Gets the navigation mesh runtime for a given navmesh properties.
-    static NavMeshRuntime* Get(const NavMeshProperties& navMeshProperties, bool createIfMissing = false);
+    API_FUNCTION() static NavMeshRuntime* Get(API_PARAM(Ref) const NavMeshProperties& navMeshProperties, bool createIfMissing = false);
 
     // The lookup table that maps areaId of the navmesh to the current properties (applied by the NavigationSettings). Cached to improve runtime performance.
     static float NavAreasCosts[64];
@@ -80,12 +82,12 @@ public:
     /// <summary>
     /// The navigation mesh properties.
     /// </summary>
-    NavMeshProperties Properties;
+    API_FIELD(ReadOnly) NavMeshProperties Properties;
 
     /// <summary>
     /// Gets the size of the tile (in world-units). Returns zero if not initialized yet.
     /// </summary>
-    FORCE_INLINE float GetTileSize() const
+    API_PROPERTY() FORCE_INLINE float GetTileSize() const
     {
         return _tileSize;
     }
@@ -110,7 +112,7 @@ public:
     /// <param name="hitInfo">The result hit information. Valid only when query succeed.</param>
     /// <param name="maxDistance">The maximum distance to search for wall (search radius).</param>
     /// <returns>True if ray hits an matching object, otherwise false.</returns>
-    bool FindDistanceToWall(const Vector3& startPosition, NavMeshHit& hitInfo, float maxDistance = MAX_float) const;
+    API_FUNCTION() bool FindDistanceToWall(const Vector3& startPosition, NavMeshHit& hitInfo, float maxDistance = MAX_float) const;
 
     /// <summary>
     /// Finds the path between the two positions presented as a list of waypoints stored in the corners array.
@@ -119,7 +121,7 @@ public:
     /// <param name="endPosition">The end position.</param>
     /// <param name="resultPath">The result path.</param>
     /// <returns>True if found valid path between given two points (it may be partial), otherwise false if failed.</returns>
-    bool FindPath(const Vector3& startPosition, const Vector3& endPosition, Array<Vector3, HeapAllocation>& resultPath) const
+    API_FUNCTION() bool FindPath(const Vector3& startPosition, const Vector3& endPosition, API_PARAM(Out) Array<Vector3, HeapAllocation>& resultPath) const
     {
         NavMeshPathFlags flags;
         return FindPath(startPosition, endPosition, resultPath, flags);
@@ -131,9 +133,9 @@ public:
     /// <param name="startPosition">The start position.</param>
     /// <param name="endPosition">The end position.</param>
     /// <param name="resultPath">The result path.</param>
-    /// <param name="resultPath">The result path flags.</param>
+    /// <param name="resultFlags">The result path flags.</param>
     /// <returns>True if found valid path between given two points (it may be partial), otherwise false if failed.</returns>
-    bool FindPath(const Vector3& startPosition, const Vector3& endPosition, Array<Vector3, HeapAllocation>& resultPath, NavMeshPathFlags& resultFlags) const;
+    bool FindPath(const Vector3& startPosition, const Vector3& endPosition, API_PARAM(Out) Array<Vector3, HeapAllocation>& resultPath, NavMeshPathFlags& resultFlags) const;
 
     /// <summary>
     /// Tests the path between the two positions (non-partial).
@@ -141,7 +143,7 @@ public:
     /// <param name="startPosition">The start position.</param>
     /// <param name="endPosition">The end position.</param>
     /// <returns>True if found valid path between given two points, otherwise false if failed.</returns>
-    bool TestPath(const Vector3& startPosition, const Vector3& endPosition) const;
+    API_FUNCTION() bool TestPath(const Vector3& startPosition, const Vector3& endPosition) const;
 
     /// <summary>
     /// Projects the point to nav mesh surface (finds the nearest polygon).
@@ -149,14 +151,14 @@ public:
     /// <param name="point">The source point.</param>
     /// <param name="result">The result position on the navmesh (valid only if method returns true).</param>
     /// <returns>True if found valid location on the navmesh, otherwise false.</returns>
-    bool ProjectPoint(const Vector3& point, Vector3& result) const;
+    API_FUNCTION() bool ProjectPoint(const Vector3& point, API_PARAM(Out) Vector3& result) const;
 
     /// <summary>
     /// Finds random location on nav mesh.
     /// </summary>
     /// <param name="result">The result position on the navmesh (valid only if method returns true).</param>
     /// <returns>True if found valid location on the navmesh, otherwise false.</returns>
-    bool FindRandomPoint(Vector3& result) const;
+    API_FUNCTION() bool FindRandomPoint(API_PARAM(Out) Vector3& result) const;
 
     /// <summary>
     /// Finds random location on nav mesh within the reach of specified location.
@@ -165,7 +167,7 @@ public:
     /// <param name="radius">The search distance for a random point. Maximum distance for a result point from the center of the circle.</param>
     /// <param name="result">The result position on the navmesh (valid only if method returns true).</param>
     /// <returns>True if found valid location on the navmesh, otherwise false.</returns>
-    bool FindRandomPointAroundCircle(const Vector3& center, float radius, Vector3& result) const;
+    API_FUNCTION() bool FindRandomPointAroundCircle(const Vector3& center, float radius, API_PARAM(Out) Vector3& result) const;
 
     /// <summary>
     /// Casts a 'walkability' ray along the surface of the navigation mesh from the start position toward the end position.
@@ -174,7 +176,7 @@ public:
     /// <param name="endPosition">The end position.</param>
     /// <param name="hitInfo">The result hit information. Valid only when query succeed.</param>
     /// <returns>True if ray hits an matching object, otherwise false.</returns>
-    bool RayCast(const Vector3& startPosition, const Vector3& endPosition, NavMeshHit& hitInfo) const;
+    API_FUNCTION() bool RayCast(const Vector3& startPosition, const Vector3& endPosition, API_PARAM(Out) NavMeshHit& hitInfo) const;
 
 public:
     /// <summary>
