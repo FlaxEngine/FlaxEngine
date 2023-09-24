@@ -255,6 +255,13 @@ bool VariantType::operator==(const VariantType& other) const
     return false;
 }
 
+bool VariantType::operator==(const ScriptingTypeHandle& type) const
+{
+    if (Type == Null)
+        return !type;
+    return type && type.GetType().Fullname == GetTypeName();
+}
+
 void VariantType::SetTypeName(const StringView& typeName)
 {
     if (StringUtils::Length(TypeName) != typeName.Length())

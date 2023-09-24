@@ -10,6 +10,7 @@ struct Transform;
 struct CommonValue;
 template<typename T>
 class AssetReference;
+struct ScriptingTypeHandle;
 
 /// <summary>
 /// Represents an object type that can be interpreted as more than one type.
@@ -120,6 +121,7 @@ public:
     VariantType& operator=(const VariantType& other);
     bool operator==(const Types& type) const;
     bool operator==(const VariantType& other) const;
+    bool operator==(const ScriptingTypeHandle& type) const;
 
     FORCE_INLINE bool operator!=(const VariantType& other) const
     {
@@ -344,6 +346,14 @@ public:
     const Matrix& AsMatrix() const;
     Array<Variant, HeapAllocation>& AsArray();
     const Array<Variant, HeapAllocation>& AsArray() const;
+
+    template<typename T>
+    const T* AsStructure() const
+    {
+        if (Type.Type == VariantType::Structure && Type == T::TypeInitializer)
+            return (const T*)AsBlob.Data;
+        return nullptr;
+    }
 
 public:
     void SetType(const VariantType& type);
