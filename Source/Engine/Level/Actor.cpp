@@ -402,7 +402,7 @@ void Actor::SetOrderInParent(int32 index)
 
 Actor* Actor::GetRoot()
 {
-    return GetRoot(GetParent());
+    return GetRoot(this);
 }
 
 Actor* Actor::GetChild(int32 index) const
