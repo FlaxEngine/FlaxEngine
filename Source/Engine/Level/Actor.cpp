@@ -127,6 +127,15 @@ void Actor::OnDisableInHierarchy()
     }
 }
 
+Actor* Actor::GetRoot(Actor* actor)
+{
+    if (actor->GetParent() == nullptr)
+        return actor;
+    if (actor->GetParent() != _scene)
+        return GetRoot(actor->GetParent());
+    return actor;
+}
+
 bool Actor::IsSubClassOf(const Actor* object, const MClass* klass)
 {
     return object->GetClass()->IsSubClassOf(klass);
@@ -389,6 +398,11 @@ void Actor::SetOrderInParent(int32 index)
         // Fire event
         OnOrderInParentChanged();
     }
+}
+
+Actor* Actor::GetRoot()
+{
+    return GetRoot(GetParent());
 }
 
 Actor* Actor::GetChild(int32 index) const
