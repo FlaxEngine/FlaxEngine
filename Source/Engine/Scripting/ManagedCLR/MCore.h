@@ -85,6 +85,7 @@ public:
         static MClass* GetClass(MClass* elementKlass);
         static int32 GetLength(const MArray* obj);
         static void* GetAddress(const MArray* obj);
+        static MArray* Unbox(MObject* obj);
 
         template<typename T>
         FORCE_INLINE static T* GetAddress(const MArray* obj)

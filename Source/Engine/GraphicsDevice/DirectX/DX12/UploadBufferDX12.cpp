@@ -229,7 +229,7 @@ UploadBufferPageDX12::UploadBufferPageDX12(GPUDeviceDX12* device, uint64 size)
     resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
     resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
     ID3D12Resource* resource;
-    VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&resource)));
+    VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&resource)));
 
     // Set state
     initResource(resource, D3D12_RESOURCE_STATE_GENERIC_READ, 1);
@@ -238,7 +238,7 @@ UploadBufferPageDX12::UploadBufferPageDX12(GPUDeviceDX12* device, uint64 size)
     GPUAddress = _resource->GetGPUVirtualAddress();
 
     // Map buffer
-    VALIDATE_DIRECTX_RESULT(_resource->Map(0, nullptr, &CPUAddress));
+    VALIDATE_DIRECTX_CALL(_resource->Map(0, nullptr, &CPUAddress));
 }
 
 void UploadBufferPageDX12::OnReleaseGPU()

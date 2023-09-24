@@ -545,7 +545,7 @@ namespace FlaxEditor.GUI
             Render2D.DrawRectangle(clientRect.MakeExpanded(-2.0f), borderColor);
 
             // Check if has selected item
-            if (_selectedIndices.Count > 0)
+            if (_selectedIndices != null && _selectedIndices.Count > 0)
             {
                 string text = _selectedIndices.Count == 1 ? _items[_selectedIndices[0]] : "Multiple Values";
 

@@ -408,6 +408,12 @@ void* MCore::Array::GetAddress(const MArray* obj)
     return CallStaticMethod<void*, void*>(GetArrayPointerPtr, (void*)obj);
 }
 
+MArray* MCore::Array::Unbox(MObject* obj)
+{
+    static void* GetArrayPtr = GetStaticMethodPointer(TEXT("GetArray"));
+    return (MArray*)CallStaticMethod<void*, void*>(GetArrayPtr, (void*)obj);
+}
+
 MGCHandle MCore::GCHandle::New(MObject* obj, bool pinned)
 {
     ASSERT(obj);

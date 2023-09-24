@@ -141,6 +141,11 @@ void* MCore::Array::GetAddress(const MArray* obj)
     return nullptr;
 }
 
+MArray* MCore::Array::Unbox(MObject* obj)
+{
+    return nullptr;
+}
+
 MGCHandle MCore::GCHandle::New(MObject* obj, bool pinned)
 {
     return (MGCHandle)(uintptr)obj;
