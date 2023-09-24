@@ -66,7 +66,7 @@ namespace FlaxEditor.Surface.ContextMenu
             {
                 if (_children[i] is VisjectCMItem item)
                 {
-                    item.UpdateFilter(null);
+                    item.UpdateFilter(null, null);
                     item.UpdateScore(null);
                 }
             }
@@ -84,7 +84,7 @@ namespace FlaxEditor.Surface.ContextMenu
         /// Updates the filter.
         /// </summary>
         /// <param name="filterText">The filter text.</param>
-        public void UpdateFilter(string filterText)
+        public void UpdateFilter(string filterText, Box selectedBox)
         {
             Profiler.BeginEvent("VisjectCMGroup.UpdateFilter");
 
@@ -94,13 +94,13 @@ namespace FlaxEditor.Surface.ContextMenu
             {
                 if (_children[i] is VisjectCMItem item)
                 {
-                    item.UpdateFilter(filterText);
+                    item.UpdateFilter(filterText, selectedBox);
                     isAnyVisible |= item.Visible;
                 }
             }
 
             // Update header title
-            if (QueryFilterHelper.Match(filterText, HeaderText))
+            /*if (QueryFilterHelper.Match(filterText, HeaderText))
             {
                 for (int i = 0; i < _children.Count; i++)
                 {
@@ -110,7 +110,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     }
                 }
                 isAnyVisible = true;
-            }
+            }*/
 
             // Update itself
             if (isAnyVisible)
@@ -128,6 +128,35 @@ namespace FlaxEditor.Surface.ContextMenu
             Profiler.EndEvent();
         }
 
+        public void EvaluateVisibilityWithBox(Box selectedBox)
+        {
+            if (selectedBox == null)
+            {
+                Visible = true;
+                return;
+            }
+
+            bool isAnyVisible = false;
+            for (int i = 0; i < _children.Count; i++)
+            {
+                if (_children[i] is VisjectCMItem item)
+                {
+                    isAnyVisible |= item.IsCompatibleWithBox(selectedBox);
+                }
+            }
+            
+            // Update itself
+            if (isAnyVisible)
+            {
+                Visible = true;
+            }
+            else
+            {
+                // Hide group if none of the items matched the filter
+                Visible = false;
+            }
+        }
+        
         /// <summary>
         /// Updates the sorting of the <see cref="VisjectCMItem"/>s of this <see cref="VisjectCMGroup"/>
         /// Also updates the <see cref="SortScore"/>

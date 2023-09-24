@@ -419,7 +419,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
             Profiler.BeginEvent("VisjectCM.OnSearchFilterChanged");
             
-            if (string.IsNullOrEmpty(_searchBox.Text))
+            if (string.IsNullOrEmpty(_searchBox.Text) && _selectedBox == null)
             {
                 ResetView();
                 Profiler.EndEvent();
@@ -430,7 +430,7 @@ namespace FlaxEditor.Surface.ContextMenu
             LockChildrenRecursive();
             for (int i = 0; i < _groups.Count; i++)
             {
-                _groups[i].UpdateFilter(_searchBox.Text);
+                _groups[i].UpdateFilter(_searchBox.Text, _selectedBox);
                 _groups[i].UpdateItemSort(_selectedBox);
             }
             SortGroups();
@@ -503,12 +503,19 @@ namespace FlaxEditor.Surface.ContextMenu
             _searchBox.Clear();
             SelectedItem = null;
             for (int i = 0; i < _groups.Count; i++)
+            {
                 _groups[i].ResetView();
+            }
             UnlockChildrenRecursive();
 
             SortGroups();
             PerformLayout();
 
+            for (int i = 0; i < _groups.Count; i++)
+            {
+                _groups[i].EvaluateVisibilityWithBox(_selectedBox);
+            }
+            
             Profiler.EndEvent();
         }
 
@@ -626,10 +633,11 @@ namespace FlaxEditor.Surface.ContextMenu
             // Prepare
             UpdateSurfaceParametersGroup();
             ResetView();
+            
             _panel1.VScrollBar.TargetValue = 0;
             Focus();
             _waitingForInput = true;
-
+            
             base.OnShow();
         }
 

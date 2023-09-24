@@ -113,12 +113,51 @@ namespace FlaxEditor.Surface.ContextMenu
             return false;
         }
 
+        public bool IsCompatibleWithBox(Box box)
+        {
+            if (box == null)
+                return true;
+            
+            if(_archetype?.Elements == null)
+                return false;
+            
+            bool isCompatible = false;
+            foreach (NodeElementArchetype element in _archetype.Elements)
+            {
+                if(element.Type != NodeElementType.Output && element.Type != NodeElementType.Input)
+                    continue;
+                
+                if ((box.IsOutput && element.Type == NodeElementType.Output) || (!box.IsOutput && element.Type == NodeElementType.Input))
+                    continue;
+                
+                bool checkCompatibility = box.CanUseType(element.ConnectionsType);;
+                if (!checkCompatibility)
+                {
+                    if ((element.ConnectionsType == null || element.ConnectionsType == typeof(void)) && box.CurrentType != typeof(FlaxEngine.Object))
+                        checkCompatibility = true;
+                }
+                isCompatible |= checkCompatibility;
+                
+                /*if(!isCompatible)
+                    Debug.Log($"Is {_archetype.Title} cant connect type {element.ConnectionsType}");*/
+            }
+            
+            Visible = isCompatible;
+            return isCompatible;
+        }
+        
         /// <summary>
         /// Updates the filter.
         /// </summary>
         /// <param name="filterText">The filter text.</param>
-        public void UpdateFilter(string filterText)
+        public void UpdateFilter(string filterText, Box selectedBox)
         {
+            if (selectedBox != null)
+            {
+                if (!IsCompatibleWithBox(selectedBox))
+                    return;
+            }
+            
             _isStartsWithMatch = _isFullMatch = false;
             if (filterText == null)
             {
@@ -192,7 +231,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 }
             }
         }
-
+        
         /// <inheritdoc />
         public override void Draw()
         {
