@@ -82,7 +82,7 @@ namespace FlaxEngine
         /// Sets the node state at the given memory address.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AllocState(IntPtr memory, object state)
+        public void NewState(IntPtr memory, object state)
         {
             var handle = GCHandle.Alloc(state);
             var ptr = IntPtr.Add(memory, _memoryOffset).ToPointer();
