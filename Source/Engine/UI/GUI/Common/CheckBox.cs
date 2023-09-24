@@ -107,17 +107,29 @@ namespace FlaxEngine.GUI
                 CacheBox();
             }
         }
+        
+        /// <summary>
+        /// Gets or sets whether to have a border.
+        /// </summary>
+        [EditorDisplay("Border Style"), EditorOrder(2010), Tooltip("Whether to have a border."), ExpandGroups]
+        public bool HasBorder { get; set; } = true;
+        
+        /// <summary>
+        /// Gets or sets the border thickness.
+        /// </summary>
+        [EditorDisplay("Border Style"), EditorOrder(2011), Tooltip("The thickness of the border."), Limit(0)]
+        public float BorderThickness { get; set; } = 1.0f;
 
         /// <summary>
         /// Gets or sets the color of the border.
         /// </summary>
-        [EditorDisplay("Border Style"), EditorOrder(2010), ExpandGroups]
+        [EditorDisplay("Border Style"), EditorOrder(2012)]
         public Color BorderColor { get; set; }
 
         /// <summary>
         /// Gets or sets the border color when checkbox is hovered.
         /// </summary>
-        [EditorDisplay("Border Style"), EditorOrder(2011)]
+        [EditorDisplay("Border Style"), EditorOrder(2013)]
         public Color BorderColorHighlighted { get; set; }
 
         /// <summary>
@@ -221,12 +233,15 @@ namespace FlaxEngine.GUI
             bool enabled = EnabledInHierarchy;
 
             // Border
-            Color borderColor = BorderColor;
-            if (!enabled)
-                borderColor *= 0.5f;
-            else if (_isPressed || _mouseOverBox || IsNavFocused)
-                borderColor = BorderColorHighlighted;
-            Render2D.DrawRectangle(_box.MakeExpanded(-2.0f), borderColor);
+            if (HasBorder)
+            {
+                Color borderColor = BorderColor;
+                if (!enabled)
+                    borderColor *= 0.5f;
+                else if (_isPressed || _mouseOverBox || IsNavFocused)
+                    borderColor = BorderColorHighlighted;
+                Render2D.DrawRectangle(_box.MakeExpanded(-2.0f), borderColor, BorderThickness);
+            }
 
             // Icon
             if (_state != CheckBoxState.Default)
