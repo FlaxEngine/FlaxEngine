@@ -121,6 +121,8 @@ namespace FlaxEditor.Surface.ContextMenu
             if(_archetype?.Elements == null)
                 return false;
             
+            Profiler.BeginEvent("VisjectCMItem.IsCompatibleWithBox");
+            
             bool isCompatible = false;
             foreach (NodeElementArchetype element in _archetype.Elements)
             {
@@ -129,11 +131,11 @@ namespace FlaxEditor.Surface.ContextMenu
                 
                 if ((box.IsOutput && element.Type == NodeElementType.Output) || (!box.IsOutput && element.Type == NodeElementType.Input))
                     continue;
-                
-                bool checkCompatibility = box.CanUseType(element.ConnectionsType);;
+
+                bool checkCompatibility = ((element.ConnectionsType == null || element.ConnectionsType == typeof(void)) && box.CurrentType != typeof(FlaxEngine.Object));
                 if (!checkCompatibility)
                 {
-                    if ((element.ConnectionsType == null || element.ConnectionsType == typeof(void)) && box.CurrentType != typeof(FlaxEngine.Object))
+                    if (box.CanUseType(element.ConnectionsType))
                         checkCompatibility = true;
                 }
                 isCompatible |= checkCompatibility;
@@ -143,6 +145,8 @@ namespace FlaxEditor.Surface.ContextMenu
             }
             
             Visible = isCompatible;
+            
+            Profiler.EndEvent();
             return isCompatible;
         }
         

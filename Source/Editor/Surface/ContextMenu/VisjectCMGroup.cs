@@ -136,6 +136,8 @@ namespace FlaxEditor.Surface.ContextMenu
                 return;
             }
 
+            Profiler.BeginEvent("VisjectCMGroup.EvaluateVisibilityWithBox");
+            
             bool isAnyVisible = false;
             for (int i = 0; i < _children.Count; i++)
             {
@@ -155,6 +157,8 @@ namespace FlaxEditor.Surface.ContextMenu
                 // Hide group if none of the items matched the filter
                 Visible = false;
             }
+            
+            Profiler.EndEvent();
         }
         
         /// <summary>
