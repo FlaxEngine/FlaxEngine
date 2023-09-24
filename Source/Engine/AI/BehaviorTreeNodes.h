@@ -11,6 +11,7 @@
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Level/Tags.h"
+#include "Engine/Navigation/NavMeshRuntime.h"
 
 class Actor;
 
@@ -222,13 +223,13 @@ API_CLASS() class FLAXENGINE_API BehaviorTreeMoveToNode : public BehaviorTreeNod
 
 public:
     // Applies the movement to the agent. Returns true if cannot move.
-    virtual bool Move(Actor* agent, const Vector3& move) const;
+    API_FUNCTION() virtual bool Move(Actor* agent, const Vector3& move) const;
 
     // Returns the navmesh to use for the path-finding. Can query nav agent properties from the agent actor to select navmesh.
-    virtual class NavMeshRuntime* GetNavMesh(Actor* agent) const;
+    API_FUNCTION() virtual NavMeshRuntime* GetNavMesh(Actor* agent) const;
 
     // Returns the agent dimensions used for path following (eg. goal reachability test).
-    virtual void GetAgentSize(Actor* agent, float& outRadius, float& outHeight) const;
+    API_FUNCTION() virtual void GetAgentSize(Actor* agent, API_PARAM(Out) float& outRadius, API_PARAM(Out) float& outHeight) const;
 
 public:
     // [BehaviorTreeNode]
