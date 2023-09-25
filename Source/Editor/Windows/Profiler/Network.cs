@@ -65,13 +65,14 @@ namespace FlaxEditor.Windows.Profiler
         /// <inheritdoc />
         public override void Update(ref SharedUpdateData sharedData)
         {
-            var peer = FlaxEngine.Networking.NetworkManager.Peer;
-            if (peer == null)
+            var peers = FlaxEngine.Networking.NetworkPeer.Peers;
+            var stats = new FlaxEngine.Networking.NetworkDriverStats();
+            foreach (var peer in peers)
             {
-                _prevStats = new FlaxEngine.Networking.NetworkDriverStats();
-                return;
+                var peerStats = peer.NetworkDriver.GetStats();
+                stats.TotalDataSent += peerStats.TotalDataSent;
+                stats.TotalDataReceived += peerStats.TotalDataReceived;
             }
-            var stats = peer.NetworkDriver.GetStats();
             _dataSentChart.AddSample(Mathf.Max((long)stats.TotalDataSent - (long)_prevStats.TotalDataSent, 0));
             _dataReceivedChart.AddSample(Mathf.Max((long)stats.TotalDataReceived - (long)_prevStats.TotalDataReceived, 0));
             _prevStats = stats;
