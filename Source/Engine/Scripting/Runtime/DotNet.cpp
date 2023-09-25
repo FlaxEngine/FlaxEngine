@@ -703,13 +703,10 @@ bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePa
 {
     // TODO: Use new hostfxr delegate load_assembly_bytes? (.NET 8+)
     // Open .Net assembly
-    const StringAnsi assemblyPathAnsi = assemblyPath.ToStringAnsi();
-    const char* name;
-    const char* fullname;
+    const char* name = nullptr;
+    const char* fullname = nullptr;
     static void* LoadAssemblyImagePtr = GetStaticMethodPointer(TEXT("LoadAssemblyImage"));
-    _handle = CallStaticMethod<void*, const char*, const char**, const char**>(LoadAssemblyImagePtr, assemblyPathAnsi.Get(), &name, &fullname);
-    _name = name;
-    _fullname = fullname;
+    _handle = CallStaticMethod<void*, const Char*, const char**, const char**>(LoadAssemblyImagePtr, assemblyPath.Get(), &name, &fullname);
     MCore::GC::FreeMemory((void*)name);
     MCore::GC::FreeMemory((void*)fullname);
     if (_handle == nullptr)
@@ -717,6 +714,8 @@ bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePa
         Log::CLRInnerException(TEXT(".NET assembly image is invalid at ") + assemblyPath);
         return true;
     }
+    _name = name;
+    _fullname = fullname;
     CachedAssemblyHandles.Add(_handle, this);
 
     // Provide new path of hot-reloaded native library path for managed DllImport
