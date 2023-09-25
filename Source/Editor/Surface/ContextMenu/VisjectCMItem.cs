@@ -121,13 +121,6 @@ namespace FlaxEditor.Surface.ContextMenu
                 Visible = true;
                 return true;   
             }
-
-            if (_archetype.Title == "GetChild")
-            {
-                Debug.Log("");
-                Debug.Log(_archetype.Create == null);
-                Debug.Log(_archetype.Create.GetType() == typeof(FlaxEditor.Surface.Archetypes.Function.MethodOverrideNode));
-            }
             
             if (_archetype?.Elements == null)
             {
@@ -161,15 +154,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 }
                 
                 bool checkCompatibility = CanCastToType(inType, outType, hint);
-                /*if (!checkCompatibility)
-                {
-                    /*checkCompatibility = element.ConnectionsType == null && startBox.CurrentType != ScriptType.Object;#1#
-                    checkCompatibility = 
-                }*/
                 isCompatible |= checkCompatibility;
-                
-                /*if(!isCompatible)
-                    Debug.Log($"Is {_archetype.Title} cant connect type {element.ConnectionsType}");*/
             }
             
             Visible = isCompatible;
