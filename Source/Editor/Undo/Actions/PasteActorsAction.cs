@@ -144,7 +144,7 @@ namespace FlaxEditor.Actions
             {
                 var node = nodeParents[i];
                 var actor = node.Actor;
-                var parent = actor?.Parent;
+                var parent = actor != null ? actor.Parent : null;
                 if (parent != null)
                 {
                     bool IsNameValid(string name)

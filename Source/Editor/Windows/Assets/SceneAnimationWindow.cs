@@ -792,7 +792,7 @@ namespace FlaxEditor.Windows.Assets
         {
             if (_previewButton.Checked)
                 return;
-            _previewPlayerPicker.Value = _timeline.Player;
+            _previewPlayerPicker.Value = _timeline.Player != null ? _timeline.Player : null;
             _cachedPlayerId = _timeline.Player?.ID ?? Guid.Empty;
         }
 

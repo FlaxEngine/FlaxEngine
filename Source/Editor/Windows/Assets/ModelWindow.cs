@@ -134,7 +134,7 @@ namespace FlaxEditor.Windows.Assets
                 if (Window._skipEffectsGuiEvents)
                     return;
 
-                Window._isolateIndex = mesh?.MaterialSlotIndex ?? -1;
+                Window._isolateIndex = mesh != null ? mesh.MaterialSlotIndex : -1;
                 Window.UpdateEffectsOnAsset();
                 UpdateEffectsOnUI();
             }
@@ -144,7 +144,7 @@ namespace FlaxEditor.Windows.Assets
                 if (Window._skipEffectsGuiEvents)
                     return;
 
-                Window._highlightIndex = mesh?.MaterialSlotIndex ?? -1;
+                Window._highlightIndex = mesh != null ? mesh.MaterialSlotIndex : -1;
                 Window.UpdateEffectsOnAsset();
                 UpdateEffectsOnUI();
             }
@@ -326,7 +326,7 @@ namespace FlaxEditor.Windows.Assets
             [EditorOrder(10), EditorDisplay("Materials", EditorDisplayAttribute.InlineStyle)]
             public MaterialSlot[] MaterialSlots
             {
-                get => Asset?.MaterialSlots;
+                get => Asset != null ? Asset.MaterialSlots : null;
                 set
                 {
                     if (Asset != null)
