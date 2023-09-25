@@ -117,10 +117,23 @@ namespace FlaxEditor.Surface.ContextMenu
         public bool CanConnectTo(Box startBox)
         {
             if (startBox == null)
-                return true;
+            {
+                Visible = true;
+                return true;   
+            }
+
+            if (_archetype.Title == "GetChild")
+            {
+                Debug.Log("");
+                Debug.Log(_archetype.Create == null);
+                Debug.Log(_archetype.Create.GetType() == typeof(FlaxEditor.Surface.Archetypes.Function.MethodOverrideNode));
+            }
             
-            if(_archetype?.Elements == null)
+            if (_archetype?.Elements == null)
+            {
+                Visible = false;
                 return false;
+            }
             
             bool isCompatible = false;
             foreach (NodeElementArchetype element in _archetype.Elements)

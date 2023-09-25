@@ -288,6 +288,10 @@ namespace FlaxEditor.Surface.ContextMenu
                         OnSearchFilterChanged();
                     }
                 }
+                else
+                {
+                    group.EvaluateVisibilityWithBox(_selectedBox);
+                }
 
                 Profiler.EndEvent();
             }
@@ -321,6 +325,7 @@ namespace FlaxEditor.Surface.ContextMenu
                             Parent = group
                         };
                     }
+                    group.EvaluateVisibilityWithBox(_selectedBox); 
                     group.SortChildren();
                     group.Parent = _groupsPanel;
                     _groups.Add(group);
