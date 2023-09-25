@@ -505,9 +505,6 @@ namespace FlaxEditor.Surface.ContextMenu
             for (int i = 0; i < _groups.Count; i++)
             {
                 _groups[i].ResetView();
-            }
-            for (int i = 0; i < _groups.Count; i++)
-            {
                 _groups[i].EvaluateVisibilityWithBox(_selectedBox);
             }
             UnlockChildrenRecursive();

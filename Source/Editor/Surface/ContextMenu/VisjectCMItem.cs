@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Utilities;
 using FlaxEngine;
@@ -113,15 +114,13 @@ namespace FlaxEditor.Surface.ContextMenu
             return false;
         }
 
-        public bool IsCompatibleWithBox(Box box)
+        public bool CanConnectTo(Box startBox)
         {
-            if (box == null)
+            if (startBox == null)
                 return true;
             
             if(_archetype?.Elements == null)
                 return false;
-            
-            Profiler.BeginEvent("VisjectCMItem.IsCompatibleWithBox");
             
             bool isCompatible = false;
             foreach (NodeElementArchetype element in _archetype.Elements)
@@ -129,15 +128,31 @@ namespace FlaxEditor.Surface.ContextMenu
                 if(element.Type != NodeElementType.Output && element.Type != NodeElementType.Input)
                     continue;
                 
-                if ((box.IsOutput && element.Type == NodeElementType.Output) || (!box.IsOutput && element.Type == NodeElementType.Input))
+                if ((startBox.IsOutput && element.Type == NodeElementType.Output) || (!startBox.IsOutput && element.Type == NodeElementType.Input))
                     continue;
-
-                bool checkCompatibility = ((element.ConnectionsType == null || element.ConnectionsType == typeof(void)) && box.CurrentType != typeof(FlaxEngine.Object));
-                if (!checkCompatibility)
+                
+                ScriptType inType;
+                ScriptType outType;
+                ConnectionsHint hint;
+                if (startBox.IsOutput)
                 {
-                    if (box.CanUseType(element.ConnectionsType))
-                        checkCompatibility = true;
+                    inType = element.ConnectionsType;
+                    outType = startBox.CurrentType;
+                    hint = _archetype.ConnectionsHints;
                 }
+                else
+                {
+                    inType = startBox.CurrentType;
+                    outType = element.ConnectionsType;
+                    hint = startBox.ParentNode.Archetype.ConnectionsHints;
+                }
+                
+                bool checkCompatibility = CanCastToType(inType, outType, hint);
+                /*if (!checkCompatibility)
+                {
+                    /*checkCompatibility = element.ConnectionsType == null && startBox.CurrentType != ScriptType.Object;#1#
+                    checkCompatibility = 
+                }*/
                 isCompatible |= checkCompatibility;
                 
                 /*if(!isCompatible)
@@ -146,8 +161,79 @@ namespace FlaxEditor.Surface.ContextMenu
             
             Visible = isCompatible;
             
-            Profiler.EndEvent();
             return isCompatible;
+        }
+
+        private bool CanCastToType(ScriptType currentType, ScriptType type, ConnectionsHint hint)
+        {
+            if (VisjectSurface.CanUseDirectCastStatic(type, currentType, false))
+                return true;
+
+            var connectionsHints = hint;
+            if (currentType == ScriptType.Null && connectionsHints != ConnectionsHint.None)
+            {
+                if ((connectionsHints & ConnectionsHint.Anything) == ConnectionsHint.Anything)
+                    return true;
+                if ((connectionsHints & ConnectionsHint.Value) == ConnectionsHint.Value && type.Type != typeof(void))
+                    return true;
+                if ((connectionsHints & ConnectionsHint.Enum) == ConnectionsHint.Enum && type.IsEnum)
+                    return true;
+                if ((connectionsHints & ConnectionsHint.Array) == ConnectionsHint.Array && type.IsArray)
+                    return true;
+                if ((connectionsHints & ConnectionsHint.Dictionary) == ConnectionsHint.Dictionary && type.IsDictionary)
+                    return true;
+                if ((connectionsHints & ConnectionsHint.Vector) == ConnectionsHint.Vector)
+                {
+                    var t = type.Type;
+                    if (t == typeof(Vector2) ||
+                        t == typeof(Vector3) ||
+                        t == typeof(Vector4) ||
+                        t == typeof(Float2) ||
+                        t == typeof(Float3) ||
+                        t == typeof(Float4) ||
+                        t == typeof(Double2) ||
+                        t == typeof(Double3) ||
+                        t == typeof(Double4) ||
+                        t == typeof(Int2) ||
+                        t == typeof(Int3) ||
+                        t == typeof(Int4) ||
+                        t == typeof(Color))
+                    {
+                        return true;
+                    }
+                }
+                if ((connectionsHints & ConnectionsHint.Scalar) == ConnectionsHint.Scalar)
+                {
+                    var t = type.Type;
+                    if (t == typeof(bool) ||
+                        t == typeof(char) ||
+                        t == typeof(byte) ||
+                        t == typeof(short) ||
+                        t == typeof(ushort) ||
+                        t == typeof(int) ||
+                        t == typeof(uint) ||
+                        t == typeof(long) ||
+                        t == typeof(ulong) ||
+                        t == typeof(float) ||
+                        t == typeof(double))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return CanCast(type, currentType);
+        }
+        
+        private static bool CanCast(ScriptType oB, ScriptType iB)
+        {
+            if (oB == iB)
+                return true;
+            if (oB == ScriptType.Null || iB == ScriptType.Null)
+                return false;
+            return (oB.Type != typeof(void) && oB.Type != typeof(FlaxEngine.Object)) &&
+                   (iB.Type != typeof(void) && iB.Type != typeof(FlaxEngine.Object)) &&
+                   oB.IsAssignableFrom(iB);
         }
         
         /// <summary>
@@ -158,7 +244,7 @@ namespace FlaxEditor.Surface.ContextMenu
         {
             if (selectedBox != null)
             {
-                if (!IsCompatibleWithBox(selectedBox))
+                if (!CanConnectTo(selectedBox))
                     return;
             }
             

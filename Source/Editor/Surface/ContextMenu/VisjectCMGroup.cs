@@ -143,7 +143,7 @@ namespace FlaxEditor.Surface.ContextMenu
             {
                 if (_children[i] is VisjectCMItem item)
                 {
-                    isAnyVisible |= item.IsCompatibleWithBox(selectedBox);
+                    isAnyVisible |= item.CanConnectTo(selectedBox);
                 }
             }
             
