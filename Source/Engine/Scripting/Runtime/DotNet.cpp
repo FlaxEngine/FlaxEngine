@@ -703,11 +703,10 @@ bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePa
 {
     // TODO: Use new hostfxr delegate load_assembly_bytes? (.NET 8+)
     // Open .Net assembly
-    const StringAnsi assemblyPathAnsi = assemblyPath.ToStringAnsi();
     const char* name = nullptr;
     const char* fullname = nullptr;
     static void* LoadAssemblyImagePtr = GetStaticMethodPointer(TEXT("LoadAssemblyImage"));
-    _handle = CallStaticMethod<void*, const char*, const char**, const char**>(LoadAssemblyImagePtr, assemblyPathAnsi.Get(), &name, &fullname);
+    _handle = CallStaticMethod<void*, const Char*, const char**, const char**>(LoadAssemblyImagePtr, assemblyPath.Get(), &name, &fullname);
     MCore::GC::FreeMemory((void*)name);
     MCore::GC::FreeMemory((void*)fullname);
     if (_handle == nullptr)

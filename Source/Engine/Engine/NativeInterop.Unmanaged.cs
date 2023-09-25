@@ -853,7 +853,7 @@ namespace FlaxEngine.Interop
             }
             try
             {
-                string assemblyPath = Marshal.PtrToStringAnsi(assemblyPathPtr);
+                string assemblyPath = Marshal.PtrToStringUni(assemblyPathPtr);
 
                 Assembly assembly;
 #if FLAX_EDITOR
