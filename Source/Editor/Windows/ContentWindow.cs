@@ -994,7 +994,7 @@ namespace FlaxEditor.Windows
                 if (!_showAllFiles)
                     items = items.Where(x => !(x is FileItem)).ToList();
                 if (!_showGeneratedFiles)
-                    items = items.Where(x => !(x.Path.Contains(".Gen.cs") || x.Path.Contains(".Gen.h") || x.Path.Contains(".Gen.cpp") || x.Path.Contains(".csproj") || x.Path.Contains(".CSharp"))).ToList();
+                    items = items.Where(x => !(x.Path.EndsWith(".Gen.cs", StringComparison.Ordinal) || x.Path.EndsWith(".Gen.h", StringComparison.Ordinal) || x.Path.EndsWith(".Gen.cpp", StringComparison.Ordinal) || x.Path.EndsWith(".csproj", StringComparison.Ordinal) || x.Path.Contains(".CSharp"))).ToList();
                 _view.ShowItems(items, _sortType, false, true);
             }
         }
