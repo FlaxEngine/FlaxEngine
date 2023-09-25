@@ -912,7 +912,7 @@ namespace FlaxEditor.Surface
         {
             return _context.FindNode(id);
         }
-        
+
         /// <summary>
         /// Adds the undo action to be batched (eg. if multiple undo actions is performed in a sequence during single update).
         /// </summary>

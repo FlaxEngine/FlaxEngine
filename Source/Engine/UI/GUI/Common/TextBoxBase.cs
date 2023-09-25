@@ -15,7 +15,7 @@ namespace FlaxEngine.GUI
         /// The delete control character (used for text filtering).
         /// </summary>
         protected const char DelChar = (char)0x7F;
-        
+
         /// <summary>
         /// The text separators (used for words skipping).
         /// </summary>
@@ -357,9 +357,9 @@ namespace FlaxEngine.GUI
                 value = value.Replace("\r", "");
 
             // Filter text (handle backspace control character)
-            if(value.IndexOf(DelChar) != -1)
+            if (value.IndexOf(DelChar) != -1)
                 value = value.Replace(DelChar.ToString(), "");
-                
+
             // Clamp length
             if (value.Length > MaxLength)
                 value = value.Substring(0, MaxLength);
@@ -1341,12 +1341,12 @@ namespace FlaxEngine.GUI
                 if (ctrDown)
                 {
                     int prevWordBegin = FindPrevWordBegin();
-                    _text = _text.Remove(prevWordBegin, CaretPosition-prevWordBegin);
+                    _text = _text.Remove(prevWordBegin, CaretPosition - prevWordBegin);
                     SetSelection(prevWordBegin);
                     OnTextChanged();
                     return true;
                 }
-                
+
                 int left = SelectionLeft;
                 if (HasSelection)
                 {

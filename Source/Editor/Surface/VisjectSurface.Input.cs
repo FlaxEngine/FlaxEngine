@@ -213,10 +213,12 @@ namespace FlaxEditor.Surface
                 return;
             }
 
-            if (_middleMouseDown) {
+            if (_middleMouseDown)
+            {
                 // Calculate delta
                 var delta = location - _middleMouseDownPos;
-                if (delta.LengthSquared > 0.01f) {
+                if (delta.LengthSquared > 0.01f)
+                {
                     // Move view
                     _mouseMoveAmount += delta.Length;
                     _rootControl.Location += delta;
@@ -284,7 +286,8 @@ namespace FlaxEditor.Surface
                 _rightMouseDown = false;
                 Cursor = CursorType.Default;
             }
-            if (_middleMouseDown) {
+            if (_middleMouseDown)
+            {
                 _middleMouseDown = false;
                 Cursor = CursorType.Default;
             }
@@ -310,7 +313,7 @@ namespace FlaxEditor.Surface
             if (IsMouseOver && !_leftMouseDown && !IsPrimaryMenuOpened)
             {
                 var nextViewScale = ViewScale + delta * 0.1f;
-                
+
                 if (delta > 0 && !_rightMouseDown)
                 {
                     // Scale towards mouse when zooming in
@@ -325,7 +328,7 @@ namespace FlaxEditor.Surface
                     ViewScale = nextViewScale;
                     ViewCenterPosition = viewCenter;
                 }
-                
+
                 return true;
             }
 
@@ -419,7 +422,8 @@ namespace FlaxEditor.Surface
                 _rightMouseDown = true;
                 _rightMouseDownPos = location;
             }
-            if (button == MouseButton.Middle) {
+            if (button == MouseButton.Middle)
+            {
                 _middleMouseDown = true;
                 _middleMouseDownPos = location;
             }
@@ -537,7 +541,8 @@ namespace FlaxEditor.Surface
                 }
                 _mouseMoveAmount = 0;
             }
-            if (_middleMouseDown && button == MouseButton.Middle) {
+            if (_middleMouseDown && button == MouseButton.Middle)
+            {
                 _middleMouseDown = false;
                 EndMouseCapture();
                 Cursor = CursorType.Default;
