@@ -45,6 +45,15 @@ namespace FlaxEditor.Windows
             if (hasSthSelected)
             {
                 contextMenu.AddButton(Editor.Windows.EditWin.IsPilotActorActive ? "Stop piloting actor" : "Pilot actor", Editor.UI.PilotActor);
+                // Position camera to viewport view
+                if (Editor.SceneEditing.Selection[0] is ActorNode a && a.Actor is Camera c && isSingleActorSelected)
+                {
+                    contextMenu.AddButton("Position Camera to View", () =>
+                    {
+                        c.Position = Editor.Windows.EditWin.Viewport.ViewPosition;
+                        c.Orientation = Editor.Windows.EditWin.Viewport.ViewOrientation;
+                    });
+                }
             }
 
             contextMenu.AddSeparator();
