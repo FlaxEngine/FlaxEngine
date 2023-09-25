@@ -177,6 +177,7 @@ namespace FlaxEditor.Windows.Assets
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(Editor.Icons.Search64, Editor.ContentFinding.ShowSearch).LinkTooltip("Open content search tool (Ctrl+F)");
             _toolstrip.AddButton(editor.Icons.CenterView64, _surface.ShowWholeGraph).LinkTooltip("Show whole graph");
+            _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/scripting/ai/behavior-trees/index.html")).LinkTooltip("See documentation to learn more");
 
             // Debug behavior picker
             var behaviorPickerContainer = new ContainerControl();
@@ -301,6 +302,7 @@ namespace FlaxEditor.Windows.Assets
             if (blackboardType)
             {
                 var blackboardInstance = blackboardType.CreateInstance();
+                Utilities.Utils.InitDefaultValues(blackboardInstance);
                 _knowledgePropertiesEditor.ReadOnly = true;
                 _knowledgePropertiesEditor.Select(blackboardInstance);
             }

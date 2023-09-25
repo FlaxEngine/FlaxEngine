@@ -71,7 +71,6 @@ void BehaviorService::Dispose()
 Behavior::Behavior(const SpawnParams& params)
     : Script(params)
 {
-    _tickLateUpdate = 1; // TODO: run Behavior via Job System (use Engine::UpdateGraph)
     _knowledge.Behavior = this;
     Tree.Changed.Bind<Behavior, &Behavior::ResetLogic>(this);
 }

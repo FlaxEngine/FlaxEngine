@@ -358,7 +358,7 @@ public:
 };
 
 /// <summary>
-/// Adds cooldown in between node executions.
+/// Adds cooldown in between node executions. Blocks node execution for a given duration after last run.
 /// </summary>
 API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeCooldownDecorator : public BehaviorTreeDecorator
 {
@@ -403,7 +403,7 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeKnowledgeConditionalDecorator
     API_FIELD(Attributes="EditorOrder(0)")
     BehaviorKnowledgeSelectorAny ValueA;
 
-    // The second value to use for comparision.
+    // The second value to use for comparision (constant).
     API_FIELD(Attributes="EditorOrder(10)")
     float ValueB = 0.0f;
 

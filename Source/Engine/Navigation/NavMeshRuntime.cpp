@@ -26,7 +26,7 @@ namespace
 }
 
 NavMeshRuntime::NavMeshRuntime(const NavMeshProperties& properties)
-    : ScriptingObject(SpawnParams(Guid::Empty, NavMeshRuntime::TypeInitializer))
+    : ScriptingObject(SpawnParams(Guid::New(), NavMeshRuntime::TypeInitializer))
     , Properties(properties)
 {
     _navMesh = nullptr;
