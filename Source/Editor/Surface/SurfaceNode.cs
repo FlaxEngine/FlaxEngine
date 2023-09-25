@@ -223,19 +223,21 @@ namespace FlaxEditor.Surface
 
             Color colliderColor = Color.Chocolate;
             colliderColor.A = 0.1f;
-            Panel colliderPanel = new Panel
+            /*Panel colliderPanel = new Panel
             {
                 BackgroundColor = colliderColor,
                 Location = sharedArea.Location,
                 Size = sharedArea.Size,
                 Parent = HACK
-            };
+            };*/
 
             return new Float2(Mathf.Max(collisionWidth, sharedArea.Width + 4), Mathf.Max(collisionHeight, sharedArea.Height + 4));
         }
 
         private Float2 CalculateCollisionSize(List<Control> controls, Font boxLabelFont)
         {
+            Debug.Log(string.Format("{0}:", Title));
+
             List<Rectangle> colliderRectangles = new List<Rectangle>();
             int controlsCount = controls.Count;
             for (int i = 0; i < controlsCount; i++)
@@ -244,20 +246,98 @@ namespace FlaxEditor.Surface
                 if (!control.Visible || control is Panel panel)
                     continue;
 
-                Float2 boxSize = GetBoxControlWidthHeight(control, boxLabelFont);
+                Debug.Log(string.Format("\t{0}:", control.GetType().ToString()));
+                Debug.Log(string.Format("\t\tControl Bounds: {0}", control.Bounds));
+                /*Color colliderColor2 = Color.Crimson;
+                colliderColor2.A = 0.25f;
+                new Panel
+                {
+                    BackgroundColor = colliderColor2,
+                    Location = control.Bounds.Location,
+                    Size = control.Bounds.Size,
+                    Parent = HACK
+                };
 
-                Rectangle controlRect = new Rectangle(control.X, control.Y, boxSize.X, boxSize.Y);
+                if (control is InputBox inputBox2)
+                {
+                    Rectangle textRect;
+                    textRect.Size = boxLabelFont.MeasureText(inputBox2.Text);
+                    textRect.Location = new Float2(control.Bounds.Location.X + 24, control.Bounds.Location.Y);
+                    Debug.Log(string.Format("\t\tText Rectangle: {0}", textRect));
+
+                    Color colliderColor3 = Color.ForestGreen;
+                    colliderColor3.A = 0.25f;
+                    new Panel
+                    {
+                        BackgroundColor = colliderColor3,
+                        Location = textRect.Location,
+                        Size = textRect.Size,
+                        Parent = HACK
+                    };
+                }
+
+                if (control is OutputBox outputBox2)
+                {
+                    Rectangle textRect;
+                    textRect.Size = boxLabelFont.MeasureText(outputBox2.Text);
+                    textRect.Location = new Float2(control.Bounds.Location.X - textRect.Size.X - 2, control.Bounds.Location.Y);
+                    Debug.Log(string.Format("\t\tText Rectangle: {0}", textRect));
+
+                    Color colliderColor3 = Color.ForestGreen;
+                    colliderColor3.A = 0.25f;
+                    new Panel
+                    {
+                        BackgroundColor = colliderColor3,
+                        Location = textRect.Location,
+                        Size = textRect.Size,
+                        Parent = HACK
+                    };
+                }*/
+
+
+
+
+
+                Float2 boxSize = GetBoxControlWidthHeight(control, boxLabelFont);
+                Float2 boxPosition = control.Location;
+
+                // Special condition handling that is different than `GetBoxControlWidthHeight`
+                if (control is OutputBox outputBox)
+                {
+                    boxPosition.X -= boxLabelFont.MeasureText(outputBox.Text).X;
+                    boxSize.X = boxLabelFont.MeasureText(outputBox.Text).X + 20;
+                    boxSize.Y = Mathf.Max(boxLabelFont.MeasureText(outputBox.Text).Y, outputBox.Height) + 4;
+                } else if (control is InputBox inputBox)
+                {
+                    boxSize.X = boxLabelFont.MeasureText(inputBox.Text).X + 20;
+                    boxSize.Y = Mathf.Max(boxLabelFont.MeasureText(inputBox.Text).Y, inputBox.Height) + 4;
+                } else
+                {
+                    if (control.AnchorPreset == AnchorPresets.TopLeft)
+                    {
+                        boxSize.X = control.Right + 4 - Constants.NodeMarginX;
+                        boxSize.Y = control.Bottom - control.Top + 4 - Constants.NodeMarginY - Constants.NodeHeaderSize;
+                        boxPosition.Y = control.Top;
+                    }
+                    else
+                    {
+                        boxSize.X = control.Width + 4;
+                        boxSize.Y = control.Height + 4;
+                    }
+                }
+
+                Rectangle controlRect = new Rectangle(boxPosition.X, boxPosition.Y, boxSize.X, boxSize.Y);
                 colliderRectangles.Add(controlRect);
 
                 Color colliderColor = Style.Current.BackgroundSelected;
                 colliderColor.A = 0.25f;
-                Panel colliderPanel = new Panel
+                /*Panel colliderPanel = new Panel
                 {
                     BackgroundColor = colliderColor,
                     Location = controlRect.Location,
                     Size = controlRect.Size,
                     Parent = HACK
-                };
+                };*/
             }
 
             float collisionWidth = 0;
@@ -281,6 +361,13 @@ namespace FlaxEditor.Surface
             }
 
             return new Float2(collisionWidth, collisionHeight);
+        }
+
+        //HACK
+        private Color alphainator(Color color, float alpha)
+        {
+            color.A = alpha;
+            return color;
         }
 
         /// <summary>
@@ -336,9 +423,39 @@ namespace FlaxEditor.Surface
             width = Mathf.Max(width, leftWidth + rightWidth + 10);
             width = Mathf.Max(width, titleLabelFont.MeasureText(Title).X + 30);
             height = Mathf.Max(height, Mathf.Max(leftHeight, rightHeight));
-            
-            Float2 roundedSize = VisjectSurface.RoundToGrid(new Float2(width, height), true);
-            Resize(roundedSize.X, roundedSize.Y);
+
+            new Panel
+            {
+                BackgroundColor = alphainator(Color.Azure, 0.25f),
+                Size = new Float2(leftWidth, height),
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(4f, Constants.NodeHeaderSize + 4),
+                Parent = HACK
+            };
+
+            new Panel
+            {
+                BackgroundColor = alphainator(Color.Crimson, 0.25f),
+                Size = new Float2(rightWidth, height),
+                AnchorPreset = AnchorPresets.TopRight,
+                Location = new Float2(-4-rightWidth, Constants.NodeHeaderSize + 4),
+                Parent = HACK
+            };
+
+            /*Rectangle testRect = Rectangle.Default;
+            testRect.Width = width;
+            testRect.Height = height;
+            testRect.Y += 10; // ra
+            new Panel
+            {
+                BackgroundColor = colliderColor,
+                Location = testRect.Location,
+                Size = testRect.Size,
+                Parent = HACK
+            };*/
+
+            Float2 roundedSize = VisjectSurface.RoundToGrid(new Float2(width, height), ceil: true);
+            //Resize(roundedSize.X, roundedSize.Y);
         }
 
         /* if (child is InputBox inputBox)
