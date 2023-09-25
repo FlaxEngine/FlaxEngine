@@ -60,15 +60,6 @@ namespace FlaxEngine.GUI
         public float TrackThickness { get; set; } = 2.0f;
 
         /// <summary>
-        /// Gets or sets the value smoothing scale (0 to not use it).
-        /// [Deprecated on 26.09.2023, expires on 26.09.2025]
-        /// This property is deprecated, use <see cref="ScrollAnimationDuration"/> instead
-        /// Set this to >= 0 to use legacy behavior
-        /// </summary>
-        [Obsolete("Deprecated in 1.7")]
-        public float SmoothingScale { get; set; } = -1f;
-
-        /// <summary>
         /// The maximum time it takes to animate from current to target scroll position 
         /// </summary>
         public float ScrollAnimationDuration { get; set; } = 0.18f;
@@ -76,15 +67,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets a value indicating whether use scroll value smoothing.
         /// </summary>
-        public bool UseSmoothing
-        {
-            get
-            {
-                if (!EnableSmoothing || Mathf.IsZero(SmoothingScale)) { return false; }
-                
-                return SmoothingScale > 0 || SmoothingScale < 0 && !Mathf.IsZero(ScrollAnimationDuration);
-            }
-        }
+        public bool UseSmoothing => EnableSmoothing && !Mathf.IsZero(ScrollAnimationDuration);
 
         /// <summary>
         /// Enables scroll smoothing
@@ -332,29 +315,21 @@ namespace FlaxEngine.GUI
                 float value;
                 if (!isDeltaSlow && UseSmoothing)
                 {
-                    // use legacy behavior
-                    if (SmoothingScale >= 0)
-                    {
-                        value = Mathf.Lerp(_value, _targetValue, deltaTime * 20.0f * SmoothingScale);
-                    }
-                    else
-                    {
-                        // percentage of scroll from 0 to _scrollChange, ex. 0.5 at _scrollChange / 2
-                        var minScrollChangeRatio = Mathf.Clamp(Mathf.Abs(_targetValue - _startValue) / _scrollChange, 0, 1);
+                    // percentage of scroll from 0 to _scrollChange, ex. 0.5 at _scrollChange / 2
+                    var minScrollChangeRatio = Mathf.Clamp(Mathf.Abs(_targetValue - _startValue) / _scrollChange, 0, 1);
                         
-                        // shorten the duration if we scrolled less than _scrollChange
-                        var actualDuration = ScrollAnimationDuration * minScrollChangeRatio;
-                        var step = deltaTime / actualDuration;
+                    // shorten the duration if we scrolled less than _scrollChange
+                    var actualDuration = ScrollAnimationDuration * minScrollChangeRatio;
+                    var step = deltaTime / actualDuration;
 
-                        var progress = _scrollAnimationProgress;
-                        progress = Mathf.Clamp(progress + step, 0, 1);
+                    var progress = _scrollAnimationProgress;
+                    progress = Mathf.Clamp(progress + step, 0, 1);
                             
-                        // https://easings.net/#easeInOutQuad
-                        var easedProgress = Mathf.Sin((progress * Mathf.Pi) / 2);
-                        value = Mathf.Lerp(_startValue, _targetValue, easedProgress);
+                    // https://easings.net/#easeInOutQuad
+                    var easedProgress = Mathf.Sin((progress * Mathf.Pi) / 2);
+                    value = Mathf.Lerp(_startValue, _targetValue, easedProgress);
 
-                        _scrollAnimationProgress = progress;
-                    }
+                    _scrollAnimationProgress = progress;
                 }
                 else
                 {
