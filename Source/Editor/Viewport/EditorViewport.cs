@@ -129,14 +129,17 @@ namespace FlaxEditor.Viewport
         /// </summary>
         protected ViewportWidgetButton _speedWidget;
 
+        /// <summary>
+        /// Viewport camera movement speed
+        /// </summary>
+        protected float _movementSpeed;
+
         private float _mouseSensitivity;
-        private float _movementSpeed;
         private float _mouseAccelerationScale;
         private bool _useMouseFiltering;
         private bool _useMouseAcceleration;
 
         // Input
-
         private bool _isControllingMouse, _isViewportControllingMouse;
         private int _deltaFilteringStep;
         private Float2 _startPos;
@@ -441,26 +444,6 @@ namespace FlaxEditor.Viewport
 
             if (useWidgets)
             {
-                // Camera speed widget
-                var camSpeed = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-                var camSpeedCM = new ContextMenu();
-                var camSpeedButton = new ViewportWidgetButton(_movementSpeed.ToString(), Editor.Instance.Icons.CamSpeed32, camSpeedCM)
-                {
-                    Tag = this,
-                    TooltipText = "Camera speed scale"
-                };
-                _speedWidget = camSpeedButton;
-                for (int i = 0; i < EditorViewportCameraSpeedValues.Length; i++)
-                {
-                    var v = EditorViewportCameraSpeedValues[i];
-                    var button = camSpeedCM.AddButton(v.ToString());
-                    button.Tag = v;
-                }
-                camSpeedCM.ButtonClicked += button => MovementSpeed = (float)button.Tag;
-                camSpeedCM.VisibleChanged += WidgetCamSpeedShowHide;
-                camSpeedButton.Parent = camSpeed;
-                camSpeed.Parent = this;
-
                 // View mode widget
                 var viewMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperLeft);
                 ViewWidgetButtonMenu = new ContextMenu();
@@ -1392,7 +1375,10 @@ namespace FlaxEditor.Viewport
             new CameraViewpoint("Bottom", new Float3(-90, 0, 0))
         };
 
-        private readonly float[] EditorViewportCameraSpeedValues =
+        /// <summary>
+        /// Viewport camera speed preset speed values
+        /// </summary>
+        protected readonly float[] EditorViewportCameraSpeedValues =
         {
             0.05f,
             0.1f,
@@ -1462,24 +1448,6 @@ namespace FlaxEditor.Viewport
             new ViewModeOptions(ViewMode.GlobalSurfaceAtlas, "Global Surface Atlas"),
             new ViewModeOptions(ViewMode.GlobalIllumination, "Global Illumination"),
         };
-
-        private void WidgetCamSpeedShowHide(Control cm)
-        {
-            if (cm.Visible == false)
-                return;
-
-            var ccm = (ContextMenu)cm;
-            foreach (var e in ccm.Items)
-            {
-                if (e is ContextMenuButton b)
-                {
-                    var v = (float)b.Tag;
-                    b.Icon = Mathf.Abs(MovementSpeed - v) < 0.001f
-                             ? Style.Current.CheckBoxTick
-                             : SpriteHandle.Invalid;
-                }
-            }
-        }
 
         private void WidgetViewModeShowHideClicked(ContextMenuButton button)
         {

@@ -229,6 +229,26 @@ namespace FlaxEditor.Viewport
 
             editor.SceneEditing.SelectionChanged += OnSelectionChanged;
 
+            // Camera speed widget
+            var camSpeed = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
+            var camSpeedCM = new ContextMenu();
+            var camSpeedButton = new ViewportWidgetButton(_movementSpeed.ToString(), Editor.Instance.Icons.CamSpeed32, camSpeedCM)
+            {
+                Tag = this,
+                TooltipText = "Camera speed scale"
+            };
+            _speedWidget = camSpeedButton;
+            for (int i = 0; i < EditorViewportCameraSpeedValues.Length; i++)
+            {
+                var v = EditorViewportCameraSpeedValues[i];
+                var button = camSpeedCM.AddButton(v.ToString());
+                button.Tag = v;
+            }
+            camSpeedCM.ButtonClicked += button => MovementSpeed = (float)button.Tag;
+            camSpeedCM.VisibleChanged += WidgetCamSpeedShowHide;
+            camSpeedButton.Parent = camSpeed;
+            camSpeed.Parent = this;
+
             // Initialize snapping enabled from cached values
             if (_editor.ProjectCache.TryGetCustomData("TranslateSnapState", out var cachedState))
                 TransformGizmo.TranslationSnapEnable = bool.Parse(cachedState);
@@ -255,7 +275,7 @@ namespace FlaxEditor.Viewport
             };
             transformSpaceToggle.Toggled += OnTransformSpaceToggle;
             transformSpaceWidget.Parent = this;
-
+            
             // Scale snapping widget
             var scaleSnappingWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
             var enableScaleSnapping = new ViewportWidgetButton(string.Empty, editor.Icons.ScaleSnap32, null, true)
@@ -729,6 +749,24 @@ namespace FlaxEditor.Viewport
             }
         }
 
+        private void WidgetCamSpeedShowHide(Control cm)
+        {
+            if (cm.Visible == false)
+                return;
+
+            var ccm = (ContextMenu)cm;
+            foreach (var e in ccm.Items)
+            {
+                if (e is ContextMenuButton b)
+                {
+                    var v = (float)b.Tag;
+                    b.Icon = Mathf.Abs(MovementSpeed - v) < 0.001f
+                             ? Style.Current.CheckBoxTick
+                             : SpriteHandle.Invalid;
+                }
+            }
+        }
+
         private void OnSelectionChanged()
         {
             var selection = _editor.SceneEditing.Selection;
@@ -958,6 +996,7 @@ namespace FlaxEditor.Viewport
             _previewModelEntryIndex = -1;
             _previewBrushSurface = new BrushSurface();
         }
+
 
         /// <inheritdoc />
         public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
