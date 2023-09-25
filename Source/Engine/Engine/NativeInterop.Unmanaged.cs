@@ -851,39 +851,46 @@ namespace FlaxEngine.Interop
                 *assemblyFullName = NativeAllocStringAnsi(flaxEngineAssembly.FullName);
                 return GetAssemblyHandle(flaxEngineAssembly);
             }
+            try
+            {
+                string assemblyPath = Marshal.PtrToStringAnsi(assemblyPathPtr);
 
-            string assemblyPath = Marshal.PtrToStringAnsi(assemblyPathPtr);
-
-            Assembly assembly;
+                Assembly assembly;
 #if FLAX_EDITOR
-            // Load assembly from loaded bytes to prevent file locking in Editor
-            var assemblyBytes = File.ReadAllBytes(assemblyPath);
-            using MemoryStream stream = new MemoryStream(assemblyBytes);
-            var pdbPath = Path.ChangeExtension(assemblyPath, "pdb");
-            if (File.Exists(pdbPath))
-            {
-                // Load including debug symbols
-                using FileStream pdbStream = new FileStream(Path.ChangeExtension(assemblyPath, "pdb"), FileMode.Open);
-                assembly = scriptingAssemblyLoadContext.LoadFromStream(stream, pdbStream);
-            }
-            else
-            {
-                assembly = scriptingAssemblyLoadContext.LoadFromStream(stream);
-            }
+                // Load assembly from loaded bytes to prevent file locking in Editor
+                var assemblyBytes = File.ReadAllBytes(assemblyPath);
+                using MemoryStream stream = new MemoryStream(assemblyBytes);
+                var pdbPath = Path.ChangeExtension(assemblyPath, "pdb");
+                if (File.Exists(pdbPath))
+                {
+                    // Load including debug symbols
+                    using FileStream pdbStream = new FileStream(Path.ChangeExtension(assemblyPath, "pdb"), FileMode.Open);
+                    assembly = scriptingAssemblyLoadContext.LoadFromStream(stream, pdbStream);
+                }
+                else
+                {
+                    assembly = scriptingAssemblyLoadContext.LoadFromStream(stream);
+                }
 #else
-            // Load assembly from file
-            assembly = scriptingAssemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
+                // Load assembly from file
+                assembly = scriptingAssemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
 #endif
-            if (assembly == null)
-                return new ManagedHandle();
-            NativeLibrary.SetDllImportResolver(assembly, NativeLibraryImportResolver);
+                if (assembly == null)
+                    return new ManagedHandle();
+                NativeLibrary.SetDllImportResolver(assembly, NativeLibraryImportResolver);
 
-            // Assemblies loaded via streams have no Location: https://github.com/dotnet/runtime/issues/12822
-            AssemblyLocations.Add(assembly.FullName, assemblyPath);
+                // Assemblies loaded via streams have no Location: https://github.com/dotnet/runtime/issues/12822
+                AssemblyLocations.Add(assembly.FullName, assemblyPath);
 
-            *assemblyName = NativeAllocStringAnsi(assembly.GetName().Name);
-            *assemblyFullName = NativeAllocStringAnsi(assembly.FullName);
-            return GetAssemblyHandle(assembly);
+                *assemblyName = NativeAllocStringAnsi(assembly.GetName().Name);
+                *assemblyFullName = NativeAllocStringAnsi(assembly.FullName);
+                return GetAssemblyHandle(assembly);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            return new ManagedHandle();
         }
 
         [UnmanagedCallersOnly]
