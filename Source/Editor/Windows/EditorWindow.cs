@@ -207,7 +207,8 @@ namespace FlaxEditor.Windows
             case KeyboardKeys.Tab:
                 if (CanUseNavigation && Root != null)
                 {
-                    Root.Navigate(NavDirection.Next);
+                    bool shiftDown = Root.GetKey(KeyboardKeys.Shift);
+                    Root.Navigate(shiftDown ? NavDirection.Previous : NavDirection.Next);
                     return true;
                 }
                 break;

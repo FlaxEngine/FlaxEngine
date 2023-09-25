@@ -202,5 +202,10 @@ namespace FlaxEngine.GUI
         /// The next item (right with layout wrapping).
         /// </summary>
         Next,
+        
+        /// <summary>
+        /// The previous item (left with layout wrapping).
+        /// </summary>
+        Previous,
     }
 }
