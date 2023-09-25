@@ -50,8 +50,9 @@ namespace FlaxEditor.Windows
                 {
                     contextMenu.AddButton("Position Camera to View", () =>
                     {
-                        c.Position = Editor.Windows.EditWin.Viewport.ViewPosition;
-                        c.Orientation = Editor.Windows.EditWin.Viewport.ViewOrientation;
+                        var viewport = Editor.Windows.EditWin.Viewport;
+                        c.Position = viewport.ViewPosition;
+                        c.Orientation = viewport.ViewOrientation;
                     });
                 }
             }
