@@ -107,6 +107,16 @@ public:
 
 public:
     /// <summary>
+    /// Controls the engine profiler (CPU, GPU, etc.) usage.
+    /// </summary>
+    API_PROPERTY() static bool GetEnabled();
+
+    /// <summary>
+    /// Controls the engine profiler (CPU, GPU, etc.) usage.
+    /// </summary>
+    API_PROPERTY() static void SetEnabled(bool enabled);
+
+    /// <summary>
     /// The current collected main stats by the profiler from the local session. Updated every frame.
     /// </summary>
     API_FIELD(ReadOnly) static MainStats Stats;

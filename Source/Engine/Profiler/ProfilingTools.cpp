@@ -175,4 +175,15 @@ void ProfilingToolsService::Dispose()
     ProfilingTools::EventsGPU.SetCapacity(0);
 }
 
+bool ProfilingTools::GetEnabled()
+{
+    return ProfilerCPU::Enabled && ProfilerGPU::Enabled;
+}
+
+void ProfilingTools::SetEnabled(bool enabled)
+{
+    ProfilerCPU::Enabled = enabled;
+    ProfilerGPU::Enabled = enabled;
+}
+
 #endif

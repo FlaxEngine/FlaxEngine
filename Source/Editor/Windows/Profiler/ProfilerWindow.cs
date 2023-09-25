@@ -93,7 +93,7 @@ namespace FlaxEditor.Windows.Profiler
             _liveRecordingButton = toolstrip.AddButton(editor.Icons.Play64);
             _liveRecordingButton.LinkTooltip("Live profiling events recording");
             _liveRecordingButton.AutoCheck = true;
-            _liveRecordingButton.Clicked += () => _liveRecordingButton.Icon = LiveRecording ? editor.Icons.Stop64 : editor.Icons.Play64;
+            _liveRecordingButton.Clicked += OnLiveRecordingChanged;
             _clearButton = toolstrip.AddButton(editor.Icons.Rotate32, Clear);
             _clearButton.LinkTooltip("Clear data");
             toolstrip.AddSeparator();
@@ -116,6 +116,12 @@ namespace FlaxEditor.Windows.Profiler
                 Parent = this
             };
             _tabs.SelectedTabChanged += OnSelectedTabChanged;
+        }
+
+        private void OnLiveRecordingChanged()
+        {
+            _liveRecordingButton.Icon = LiveRecording ? Editor.Icons.Stop64 : Editor.Icons.Play64;
+            ProfilingTools.Enabled = LiveRecording;
         }
 
         /// <summary>
