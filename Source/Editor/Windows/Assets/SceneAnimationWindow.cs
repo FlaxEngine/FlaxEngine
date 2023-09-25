@@ -821,7 +821,7 @@ namespace FlaxEditor.Windows.Assets
             if (_timeline.IsModified)
             {
                 var time = _timeline.CurrentTime;
-                var isPlaying = _previewPlayer?.IsPlaying ?? false;
+                var isPlaying = _previewPlayer != null ? _previewPlayer.IsPlaying : false;
                 _timeline.Save(_asset);
                 if (_previewButton.Checked && _previewPlayer != null)
                 {
