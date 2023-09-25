@@ -425,7 +425,7 @@ namespace FlaxEngine.GUI
                 float mousePosition = _orientation == Orientation.Vertical ? slidePosition.Y : slidePosition.X;
 
                 float percentage = (mousePosition - _mouseOffset - _thumbSize / 2) / (TrackSize - _thumbSize);
-                Value = _minimum + percentage * (_maximum - _minimum);
+                TargetValue = _minimum + percentage * (_maximum - _minimum);
             }
         }
 
