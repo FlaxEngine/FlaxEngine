@@ -118,7 +118,7 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_IsDevInstance()
 #if COMPILE_WITH_DEV_ENV
     return true;
 #else
-    return false;
+	return false;
 #endif
 }
 
@@ -151,7 +151,7 @@ DEFINE_INTERNAL_CALL(int32) EditorInternal_ReadOutputLogs(MArray** outMessages, 
     int64* outLogTimesPtr = MCore::Array::GetAddress<int64>(*outLogTimes);
     while (count < maxCount && ptr != end)
     {
-        auto type = (byte) * (int32*)ptr;
+        auto type = (byte)*(int32*)ptr;
         ptr += 4;
 
         auto time = *(int64*)ptr;
@@ -338,7 +338,7 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_CanExport(MString* pathObj)
 
     return AssetsExportingManager::CanExport(path);
 #else
-    return false;
+	return false;
 #endif
 }
 
@@ -355,7 +355,7 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_Export(MString* inputPathObj, MString*
 
     return AssetsExportingManager::Export(inputPath, outputFolder);
 #else
-    return false;
+	return false;
 #endif
 }
 
@@ -413,8 +413,8 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_CookMeshCollision(MString* pathObj, Co
     arg.ConvexVertexLimit = convexVertexLimit;
     return CreateCollisionData::CookMeshCollision(path, arg);
 #else
-    LOG(Warning, "Collision cooking is disabled.");
-    return true;
+	LOG(Warning, "Collision cooking is disabled.");
+	return true;
 #endif
 }
 
@@ -522,7 +522,7 @@ DEFINE_INTERNAL_CALL(void) EditorInternal_RunVisualScriptBreakpointLoopTick(floa
                 continue;
             switch (e.Type)
             {
-                // Keyboard events
+            // Keyboard events
             case InputDevice::EventType::Char:
                 window->OnCharInput(e.CharData.Char);
                 break;
@@ -532,7 +532,7 @@ DEFINE_INTERNAL_CALL(void) EditorInternal_RunVisualScriptBreakpointLoopTick(floa
             case InputDevice::EventType::KeyUp:
                 window->OnKeyUp(e.KeyData.Key);
                 break;
-                // Mouse events
+            // Mouse events
             case InputDevice::EventType::MouseDown:
                 window->OnMouseDown(window->ScreenToClient(e.MouseData.Position), e.MouseData.Button);
                 break;
