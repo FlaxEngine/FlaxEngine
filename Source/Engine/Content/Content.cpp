@@ -28,7 +28,6 @@
 #if ENABLE_ASSETS_DISCOVERY
 #include "Engine/Core/Collections/HashSet.h"
 #endif
-#include <Engine/Debug/DebugLog.h>
 
 TimeSpan Content::AssetsUpdateInterval = TimeSpan::FromMilliseconds(500);
 TimeSpan Content::AssetsUnloadInterval = TimeSpan::FromSeconds(10);
