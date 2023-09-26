@@ -98,6 +98,7 @@ Delegate<const Float2&, int32> Input::TouchDown;
 Delegate<const Float2&, int32> Input::TouchMove;
 Delegate<const Float2&, int32> Input::TouchUp;
 Delegate<StringView, const InputActionState&> Input::ActionTriggered;
+Delegate<StringView> Input::AxisChanged;
 Array<ActionConfig> Input::ActionMappings;
 Array<AxisConfig> Input::AxisMappings;
 
@@ -1020,6 +1021,14 @@ void InputService::Update()
     // Send events for the active actions (send events only in play mode)
     if (!Time::GetGamePaused())
     {
+        for (auto i = Axes.Begin(); i.IsNotEnd(); ++i)
+        {
+            if (Math::NotNearEqual(i->Value.Value, i->Value.PrevKeyValue))
+            {
+                Input::AxisChanged(i->Key);
+            }
+        }
+        
         for (auto i = Actions.Begin(); i.IsNotEnd(); ++i)
         {
             if (i->Value.State != InputActionState::Waiting)
