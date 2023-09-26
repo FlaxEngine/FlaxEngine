@@ -464,7 +464,7 @@ namespace Flax.Build.Bindings
                 return "FlaxEngine.Object.GetUnmanagedPtr({0})";
             case "Function":
                 // delegate
-                return "Marshal.GetFunctionPointerForDelegate({0})";
+                return "NativeInterop.GetFunctionPointerForDelegate({0})";
             default:
                 var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
                 if (apiType != null)
@@ -1340,6 +1340,7 @@ namespace Flax.Build.Bindings
                     public static class NativeToManaged
                     {
                         public static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{{classInfo.Name}}>(ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged));
+                        public static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => ManagedHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);
                         public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.NativeToManaged.Free(unmanaged);
                     }
                 #if FLAX_EDITOR
@@ -1347,6 +1348,7 @@ namespace Flax.Build.Bindings
                 #endif
                     public static class ManagedToNative
                     {
+                        public static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{{classInfo.Name}}>(ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged));
                         public static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => ManagedHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);
                         public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.ManagedToNative.Free(unmanaged);
                     }
@@ -1668,6 +1670,7 @@ namespace Flax.Build.Bindings
                     contents.Append(indent).AppendLine("[HideInEditor]");
                 contents.Append(indent).AppendLine("public static class NativeToManaged").Append(indent).AppendLine("{");
                 contents.Append(indent2).AppendLine($"public static {structureInfo.Name} ConvertToManaged({structureInfo.Name}Internal unmanaged) => {marshallerName}.ToManaged(unmanaged);");
+                contents.Append(indent2).AppendLine($"public static {structureInfo.Name}Internal ConvertToUnmanaged({structureInfo.Name} managed) => {marshallerName}.ToNative(managed);");
                 contents.Append(indent2).AppendLine($"public static void Free({structureInfo.Name}Internal unmanaged)");
                 contents.Append(indent2).AppendLine("{").Append(indent3).AppendLine(freeContents2.Replace("\n", "\n" + indent3).ToString().TrimEnd()).Append(indent2).AppendLine("}");
                 contents.Append(indent).AppendLine("}");
@@ -1676,6 +1679,7 @@ namespace Flax.Build.Bindings
                 if (buildData.Target != null && buildData.Target.IsEditor)
                     contents.Append(indent).AppendLine("[HideInEditor]");
                 contents.Append(indent).AppendLine($"public static class ManagedToNative").Append(indent).AppendLine("{");
+                contents.Append(indent2).AppendLine($"public static {structureInfo.Name} ConvertToManaged({structureInfo.Name}Internal unmanaged) => {marshallerName}.ToManaged(unmanaged);");
                 contents.Append(indent2).AppendLine($"public static {structureInfo.Name}Internal ConvertToUnmanaged({structureInfo.Name} managed) => {marshallerName}.ToNative(managed);");
                 contents.Append(indent2).AppendLine($"public static void Free({structureInfo.Name}Internal unmanaged) => {marshallerName}.Free(unmanaged);");
                 contents.Append(indent).AppendLine("}");

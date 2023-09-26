@@ -46,7 +46,7 @@ namespace FlaxEditor.Windows
         private TextBox _itemsSearchBox;
         private ViewDropdown _viewDropdown;
         private SortType _sortType;
-        private bool _showEngineFiles = true, _showPluginsFiles = true, _showAllFiles = true;
+        private bool _showEngineFiles = true, _showPluginsFiles = true, _showAllFiles = true, _showGeneratedFiles = false;
 
         private RootContentTreeNode _root;
 
@@ -102,6 +102,19 @@ namespace FlaxEditor.Windows
                         RefreshView();
                         _tree.PerformLayout();
                     }
+                }
+            }
+        }
+
+        internal bool ShowGeneratedFiles
+        {
+            get => _showGeneratedFiles;
+            set
+            {
+                if (_showGeneratedFiles != value)
+                {
+                    _showGeneratedFiles = value;
+                    RefreshView();
                 }
             }
         }
@@ -314,6 +327,12 @@ namespace FlaxEditor.Windows
                 b.Checked = ShowPluginsFiles;
                 b.CloseMenuOnClick = false;
                 b.AutoCheck = true;
+                
+                b = show.ContextMenu.AddButton("Generated files", () => ShowGeneratedFiles = !ShowGeneratedFiles);
+                b.TooltipText = "Shows generated files";
+                b.Checked = ShowGeneratedFiles;
+                b.CloseMenuOnClick = false;
+                b.AutoCheck = true;
 
                 b = show.ContextMenu.AddButton("All files", () => ShowAllFiles = !ShowAllFiles);
                 b.TooltipText = "Shows all files including other than assets and source code";
@@ -520,7 +539,7 @@ namespace FlaxEditor.Windows
             }
 
             // Cache data
-            string extension = Path.GetExtension(item.Path);
+            string extension = item.IsFolder ? "" : Path.GetExtension(item.Path);
             var newPath = StringUtils.CombinePaths(item.ParentFolder.Path, newShortName + extension);
 
             // Check if was renaming mock element
@@ -626,7 +645,7 @@ namespace FlaxEditor.Windows
 
             // Delete items
             for (int i = 0; i < toDelete.Count; i++)
-                Editor.ContentDatabase.Delete(toDelete[i]);
+                Editor.ContentDatabase.Delete(toDelete[i], true);
 
             RefreshView();
         }
@@ -722,7 +741,12 @@ namespace FlaxEditor.Windows
             {
                 var item = Editor.ContentDatabase.Find(sourcePath);
                 if (item != null)
-                    Editor.ContentDatabase.Copy(item, Path.Combine(CurrentViewFolder.Path, item.FileName));
+                {
+                    var newPath = StringUtils.NormalizePath(Path.Combine(CurrentViewFolder.Path, item.FileName));
+                    if (sourcePath.Equals(newPath))
+                        newPath = GetClonedAssetPath(item);
+                    Editor.ContentDatabase.Copy(item, newPath);
+                }
                 else
                     importFiles.Add(sourcePath);
             }
@@ -969,6 +993,8 @@ namespace FlaxEditor.Windows
                 var items = target.Folder.Children;
                 if (!_showAllFiles)
                     items = items.Where(x => !(x is FileItem)).ToList();
+                if (!_showGeneratedFiles)
+                    items = items.Where(x => !(x.Path.EndsWith(".Gen.cs", StringComparison.Ordinal) || x.Path.EndsWith(".Gen.h", StringComparison.Ordinal) || x.Path.EndsWith(".Gen.cpp", StringComparison.Ordinal) || x.Path.EndsWith(".csproj", StringComparison.Ordinal) || x.Path.Contains(".CSharp"))).ToList();
                 _view.ShowItems(items, _sortType, false, true);
             }
         }
@@ -1145,6 +1171,7 @@ namespace FlaxEditor.Windows
             writer.WriteAttributeString("ShowEngineFiles", ShowEngineFiles.ToString());
             writer.WriteAttributeString("ShowPluginsFiles", ShowPluginsFiles.ToString());
             writer.WriteAttributeString("ShowAllFiles", ShowAllFiles.ToString());
+            writer.WriteAttributeString("ShowGeneratedFiles", ShowGeneratedFiles.ToString());
             writer.WriteAttributeString("ViewType", _view.ViewType.ToString());
         }
 
@@ -1162,6 +1189,8 @@ namespace FlaxEditor.Windows
                 ShowPluginsFiles = value2;
             if (bool.TryParse(node.GetAttribute("ShowAllFiles"), out value2))
                 ShowAllFiles = value2;
+            if (bool.TryParse(node.GetAttribute("ShowGeneratedFiles"), out value2))
+                ShowGeneratedFiles = value2;
             if (Enum.TryParse(node.GetAttribute("ViewType"), out ContentViewType viewType))
                 _view.ViewType = viewType;
         }

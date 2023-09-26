@@ -12,6 +12,11 @@ namespace FlaxEngine.GUI
     public abstract class TextBoxBase : ContainerControl
     {
         /// <summary>
+        /// The delete control character (used for text filtering).
+        /// </summary>
+        protected const char DelChar = (char)0x7F;
+
+        /// <summary>
         /// The text separators (used for words skipping).
         /// </summary>
         protected static readonly char[] Separators =
@@ -351,6 +356,10 @@ namespace FlaxEngine.GUI
             if (value.IndexOf('\r') != -1)
                 value = value.Replace("\r", "");
 
+            // Filter text (handle backspace control character)
+            if (value.IndexOf(DelChar) != -1)
+                value = value.Replace(DelChar.ToString(), "");
+
             // Clamp length
             if (value.Length > MaxLength)
                 value = value.Substring(0, MaxLength);
@@ -673,6 +682,8 @@ namespace FlaxEngine.GUI
             // Filter text
             if (str.IndexOf('\r') != -1)
                 str = str.Replace("\r", "");
+            if (str.IndexOf(DelChar) != -1)
+                str = str.Replace(DelChar.ToString(), "");
             if (!IsMultiline && str.IndexOf('\n') != -1)
                 str = str.Replace("\n", "");
 
@@ -1326,6 +1337,15 @@ namespace FlaxEngine.GUI
             {
                 if (IsReadOnly)
                     return true;
+
+                if (ctrDown)
+                {
+                    int prevWordBegin = FindPrevWordBegin();
+                    _text = _text.Remove(prevWordBegin, CaretPosition - prevWordBegin);
+                    SetSelection(prevWordBegin);
+                    OnTextChanged();
+                    return true;
+                }
 
                 int left = SelectionLeft;
                 if (HasSelection)

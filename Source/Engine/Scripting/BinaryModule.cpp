@@ -1009,12 +1009,36 @@ void ManagedBinaryModule::InitType(MClass* mclass)
     }
     if (baseType.Module == this)
         InitType(baseClass); // Ensure base is initialized before
+
     baseType.Module->TypeNameToTypeIndex.TryGet(baseClass->GetFullName(), *(int32*)&baseType.TypeIndex);
+
+    // So we must special case this flow of a generic class of which its possible the generic base class is not in the same module
+    if (baseType.TypeIndex == -1 && baseClass->IsGeneric())
+    {
+        auto genericNameIndex = baseClass->GetFullName().FindLast('`');
+        // we add 2 because of the way generic names work its `N
+        auto genericClassName = baseClass->GetFullName().Substring(0, genericNameIndex + 2);
+
+        // We check for the generic class name instead of the baseclass fullname
+        baseType.Module->TypeNameToTypeIndex.TryGet(genericClassName, *(int32*)&baseType.TypeIndex);
+    }
+
     if (!baseType)
     {
         LOG(Error, "Missing base class for managed class {0} from assembly {1}.", String(typeName), Assembly->ToString());
         return;
     }
+
+    if (baseType.TypeIndex == -1)
+    {
+        if (baseType.Module)
+            LOG(Error, "Missing base class for managed class {0} from assembly {1}.", String(baseClass->GetFullName()), baseType.Module->GetName().ToString());
+        else
+            // Not sure this can happen but never hurts to account for it
+            LOG(Error, "Missing base class for managed class {0} from unknown assembly.", String(baseClass->GetFullName()));
+        return;
+    }
+
     ScriptingTypeHandle nativeType = baseType;
     while (true)
     {

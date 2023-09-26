@@ -363,11 +363,12 @@ struct MConverter<Array<T>>
 
     void Unbox(Array<T>& result, MObject* data)
     {
-        const int32 length = data ? MCore::Array::GetLength((MArray*)data) : 0;
+        MArray* array = MCore::Array::Unbox(data);
+        const int32 length = array ? MCore::Array::GetLength(array) : 0;
         result.Resize(length);
         MConverter<T> converter;
         Span<T> resultSpan(result.Get(), length);
-        converter.ToNativeArray(resultSpan, (MArray*)data);
+        converter.ToNativeArray(resultSpan, array);
     }
 };
 

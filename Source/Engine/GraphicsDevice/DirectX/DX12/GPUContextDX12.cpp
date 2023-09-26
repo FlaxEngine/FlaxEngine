@@ -83,7 +83,7 @@ GPUContextDX12::GPUContextDX12(GPUDeviceDX12* device, D3D12_COMMAND_LIST_TYPE ty
     FrameFenceValues[0] = 0;
     FrameFenceValues[1] = 0;
     _currentAllocator = _device->GetCommandQueue()->RequestAllocator();
-    VALIDATE_DIRECTX_RESULT(device->GetDevice()->CreateCommandList(0, type, _currentAllocator, nullptr, IID_PPV_ARGS(&_commandList)));
+    VALIDATE_DIRECTX_CALL(device->GetDevice()->CreateCommandList(0, type, _currentAllocator, nullptr, IID_PPV_ARGS(&_commandList)));
 #if GPU_ENABLE_RESOURCE_NAMING
     _commandList->SetName(TEXT("GPUContextDX12::CommandList"));
 #endif

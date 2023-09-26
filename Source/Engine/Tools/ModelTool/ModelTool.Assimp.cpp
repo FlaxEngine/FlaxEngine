@@ -42,7 +42,16 @@ public:
     void write(const char* message) override
     {
         String s(message);
-        s.Replace('\n', ' ');
+        if (s.Length() <= 0)
+            return;
+        for (int32 i = 0; i < s.Length(); i++)
+        {
+            Char& c = s[i];
+            if (c == '\n')
+                c = ' ';
+            else if (c >= 255)
+                c = '?';
+        }
         LOG(Info, "[Assimp]: {0}", s);
     }
 };
@@ -557,12 +566,17 @@ bool ImportMaterials(ImportedModelData& result, AssimpImporterData& data, String
     return false;
 }
 
+bool IsMeshInvalid(const aiMesh* aMesh)
+{
+    return aMesh->mPrimitiveTypes != aiPrimitiveType_TRIANGLE || aMesh->mNumVertices == 0 || aMesh->mNumFaces == 0 || aMesh->mFaces[0].mNumIndices != 3;
+}
+
 bool ImportMesh(int32 i, ImportedModelData& result, AssimpImporterData& data, String& errorMsg)
 {
     const auto aMesh = data.Scene->mMeshes[i];
 
     // Skip invalid meshes
-    if (aMesh->mPrimitiveTypes != aiPrimitiveType_TRIANGLE || aMesh->mNumVertices == 0 || aMesh->mNumFaces == 0 || aMesh->mFaces[0].mNumIndices != 3)
+    if (IsMeshInvalid(aMesh))
         return false;
 
     // Skip unused meshes
@@ -707,13 +721,13 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
     if (EnumHasAnyFlags(data.Types, ImportDataTypes::Geometry) && context->Scene->HasMeshes())
     {
         const int meshCount = context->Scene->mNumMeshes;
-        if (options.SplitObjects && options.ObjectIndex == -1)
+        if (options.SplitObjects && options.ObjectIndex == -1 && meshCount > 1)
         {
             // Import the first object within this call
             options.SplitObjects = false;
             options.ObjectIndex = 0;
 
-            if (meshCount > 1 && options.OnSplitImport.IsBinded())
+            if (options.OnSplitImport.IsBinded())
             {
                 // Split all animations into separate assets
                 LOG(Info, "Splitting imported {0} meshes", meshCount);
@@ -780,13 +794,13 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
     if (EnumHasAnyFlags(data.Types, ImportDataTypes::Animations) && context->Scene->HasAnimations())
     {
         const int32 animCount = (int32)context->Scene->mNumAnimations;
-        if (options.SplitObjects && options.ObjectIndex == -1)
+        if (options.SplitObjects && options.ObjectIndex == -1 && animCount > 1)
         {
             // Import the first object within this call
             options.SplitObjects = false;
             options.ObjectIndex = 0;
 
-            if (animCount > 1 && options.OnSplitImport.IsBinded())
+            if (options.OnSplitImport.IsBinded())
             {
                 // Split all animations into separate assets
                 LOG(Info, "Splitting imported {0} animations", animCount);

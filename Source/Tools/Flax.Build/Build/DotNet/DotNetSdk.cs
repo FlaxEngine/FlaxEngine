@@ -191,19 +191,12 @@ namespace Flax.Build
             }
             case TargetPlatform.Linux:
             {
-                // TODO: Support /etc/dotnet/install_location
-
-                // Detect custom RID in some distros
-                rid = Utilities.ReadProcessOutput("dotnet", "--info").Split('\n').FirstOrDefault(x => x.StartsWith(" RID:"), "").Replace("RID:", "").Trim();
-                ridFallback = $"linux-{arch}";
-                if (rid == ridFallback)
-                    ridFallback = "";
+                rid = $"linux-{arch}";
+                ridFallback = "";
                 if (string.IsNullOrEmpty(dotnetPath))
-                {
-                    dotnetPath = "/usr/lib/dotnet/";
-                    if (!Directory.Exists(dotnetPath))
-                        dotnetPath = "/usr/share/dotnet/";
-                }
+                    dotnetPath ??= SearchForDotnetLocationLinux();
+                if (dotnetPath == null)
+                    ridFallback = Utilities.ReadProcessOutput("dotnet", "--info").Split('\n').FirstOrDefault(x => x.StartsWith(" RID:"), "").Replace("RID:", "").Trim();
                 break;
             }
             case TargetPlatform.Mac:
@@ -211,7 +204,29 @@ namespace Flax.Build
                 rid = $"osx-{arch}";
                 ridFallback = "";
                 if (string.IsNullOrEmpty(dotnetPath))
+                {
                     dotnetPath = "/usr/local/share/dotnet/";
+                    if (!Directory.Exists(dotnetPath)) // Officially recommended dotnet location
+                    {
+                        if (Environment.GetEnvironmentVariable("PATH") is string globalBinPath)
+                            dotnetPath = globalBinPath.Split(':').FirstOrDefault(x => File.Exists(Path.Combine(x, "dotnet")));
+                        else
+                            dotnetPath = string.Empty;
+                    }
+                }
+
+                bool isRunningOnArm64Targetx64 = architecture == TargetArchitecture.ARM64 && (Configuration.BuildArchitectures != null && Configuration.BuildArchitectures[0] == TargetArchitecture.x64);
+
+                // We need to support two paths here: 
+                // 1. We are running an x64 binary and we are running on an arm64 host machine 
+                // 2. We are running an Arm64 binary and we are targeting an x64 host machine
+                if (Flax.Build.Platforms.MacPlatform.GetProcessIsTranslated() || isRunningOnArm64Targetx64) 
+                {
+                    rid = "osx-x64";
+                    dotnetPath = Path.Combine(dotnetPath, "x64");
+                    architecture = TargetArchitecture.x64;
+                }
+
                 break;
             }
             default: throw new InvalidPlatformException(platform);
@@ -271,7 +286,7 @@ namespace Flax.Build
 
             // Found
             IsValid = true;
-            Log.Verbose($"Found .NET SDK {VersionName} (runtime {RuntimeVersionName}) at {RootPath}");
+            Log.Info($"Using .NET SDK {VersionName}, runtime {RuntimeVersionName} ({RootPath})");
             foreach (var e in _hostRuntimes)
                 Log.Verbose($"  - Host Runtime for {e.Key.Key} {e.Key.Value}");
         }
@@ -427,7 +442,8 @@ namespace Flax.Build
                 version = version.Substring(0, version.IndexOf("-"));
                 rev = 0;
             }
-            Version ver = new Version(version);
+            if (!Version.TryParse(version, out var ver))
+                return null;
             return new Version(ver.Major, ver.Minor, ver.Build, rev);
         }
 
@@ -440,6 +456,19 @@ namespace Flax.Build
         {
             // TODO: reject 'future' versions like .Net 8?
             return versions.OrderByDescending(ParseVersion).FirstOrDefault();
+        }
+
+        private static string SearchForDotnetLocationLinux()
+        {
+            if (File.Exists("/etc/dotnet/install_location")) // Officially recommended dotnet location file
+                return File.ReadAllText("/etc/dotnet/install_location").Trim();
+            if (File.Exists("/usr/share/dotnet/dotnet")) // Officially recommended dotnet location
+                return "/usr/share/dotnet";
+            if (File.Exists("/usr/lib/dotnet/dotnet")) // Deprecated recommended dotnet location
+                return "/usr/lib/dotnet";
+            if (Environment.GetEnvironmentVariable("PATH") is string globalBinPath) // Searching for dotnet binary
+                return globalBinPath.Split(':').FirstOrDefault(x => File.Exists(Path.Combine(x, "dotnet")));
+            return null;
         }
     }
 }

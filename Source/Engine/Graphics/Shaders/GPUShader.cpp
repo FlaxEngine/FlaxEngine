@@ -120,7 +120,7 @@ bool GPUShader::Create(MemoryReadStream& stream)
             GPUShaderProgram* shader = CreateGPUShaderProgram(type, initializer, cache, cacheSize, stream);
             if (shader == nullptr)
             {
-                LOG(Warning, "Failed to create shader program.");
+                LOG(Error, "Failed to create {} Shader program '{}'.", ::ToString(type), String(initializer.Name));
                 return true;
             }
 

@@ -184,7 +184,7 @@ namespace FlaxEngine.Interop
         {
             string moduleName = Marshal.PtrToStringAnsi(moduleNamePtr);
             string modulePath = Marshal.PtrToStringAnsi(modulePathPtr);
-            nativeLibraryPaths[moduleName] = modulePath;
+            libraryPaths[moduleName] = modulePath;
         }
 
         [UnmanagedCallersOnly]
@@ -297,7 +297,7 @@ namespace FlaxEngine.Interop
         internal static void GetClassFields(ManagedHandle typeHandle, NativeFieldDefinitions** classFields, int* classFieldsCount)
         {
             Type type = Unsafe.As<Type>(typeHandle.Target);
-            var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var fields = type.GetFields(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             NativeFieldDefinitions* arr = (NativeFieldDefinitions*)NativeAlloc(fields.Length, Unsafe.SizeOf<NativeFieldDefinitions>());
             for (int i = 0; i < fields.Length; i++)
@@ -331,7 +331,7 @@ namespace FlaxEngine.Interop
         internal static void GetClassProperties(ManagedHandle typeHandle, NativePropertyDefinitions** classProperties, int* classPropertiesCount)
         {
             Type type = Unsafe.As<Type>(typeHandle.Target);
-            var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var properties = type.GetProperties(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             var arr = (NativePropertyDefinitions*)NativeAlloc(properties.Length, Unsafe.SizeOf<NativePropertyDefinitions>());
             for (int i = 0; i < properties.Length; i++)
@@ -557,6 +557,19 @@ namespace FlaxEngine.Interop
             if (managedArray.Length == 0)
                 return IntPtr.Zero;
             return managedArray.Pointer;
+        }
+
+        [UnmanagedCallersOnly]
+        internal static IntPtr GetArray(ManagedHandle handle)
+        {
+            if (!handle.IsAllocated)
+                return IntPtr.Zero;
+            object value = handle.Target;
+            if (value is ManagedArray)
+                return (IntPtr)handle;
+            if (value is Array)
+                return Invoker.MarshalReturnValueGeneric(value.GetType(), value);
+            return IntPtr.Zero;
         }
 
         [UnmanagedCallersOnly]
@@ -804,8 +817,8 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static IntPtr FieldGetValueBoxed(ManagedHandle fieldOwnerHandle, ManagedHandle fieldHandle)
         {
-            object fieldOwner = fieldOwnerHandle.Target;
             FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
+            object fieldOwner = field.field.IsStatic ? null : fieldOwnerHandle.Target;
             object fieldValue = field.field.GetValue(fieldOwner);
             return Invoker.MarshalReturnValueGeneric(field.field.FieldType, fieldValue);
         }
@@ -838,39 +851,46 @@ namespace FlaxEngine.Interop
                 *assemblyFullName = NativeAllocStringAnsi(flaxEngineAssembly.FullName);
                 return GetAssemblyHandle(flaxEngineAssembly);
             }
+            try
+            {
+                string assemblyPath = Marshal.PtrToStringUni(assemblyPathPtr);
 
-            string assemblyPath = Marshal.PtrToStringAnsi(assemblyPathPtr);
-
-            Assembly assembly;
+                Assembly assembly;
 #if FLAX_EDITOR
-            // Load assembly from loaded bytes to prevent file locking in Editor
-            var assemblyBytes = File.ReadAllBytes(assemblyPath);
-            using MemoryStream stream = new MemoryStream(assemblyBytes);
-            var pdbPath = Path.ChangeExtension(assemblyPath, "pdb");
-            if (File.Exists(pdbPath))
-            {
-                // Load including debug symbols
-                using FileStream pdbStream = new FileStream(Path.ChangeExtension(assemblyPath, "pdb"), FileMode.Open);
-                assembly = scriptingAssemblyLoadContext.LoadFromStream(stream, pdbStream);
-            }
-            else
-            {
-                assembly = scriptingAssemblyLoadContext.LoadFromStream(stream);
-            }
+                // Load assembly from loaded bytes to prevent file locking in Editor
+                var assemblyBytes = File.ReadAllBytes(assemblyPath);
+                using MemoryStream stream = new MemoryStream(assemblyBytes);
+                var pdbPath = Path.ChangeExtension(assemblyPath, "pdb");
+                if (File.Exists(pdbPath))
+                {
+                    // Load including debug symbols
+                    using FileStream pdbStream = new FileStream(Path.ChangeExtension(assemblyPath, "pdb"), FileMode.Open);
+                    assembly = scriptingAssemblyLoadContext.LoadFromStream(stream, pdbStream);
+                }
+                else
+                {
+                    assembly = scriptingAssemblyLoadContext.LoadFromStream(stream);
+                }
 #else
-            // Load assembly from file
-            assembly = scriptingAssemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
+                // Load assembly from file
+                assembly = scriptingAssemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
 #endif
-            if (assembly == null)
-                return new ManagedHandle();
-            NativeLibrary.SetDllImportResolver(assembly, NativeLibraryImportResolver);
+                if (assembly == null)
+                    return new ManagedHandle();
+                NativeLibrary.SetDllImportResolver(assembly, NativeLibraryImportResolver);
 
-            // Assemblies loaded via streams have no Location: https://github.com/dotnet/runtime/issues/12822
-            AssemblyLocations.Add(assembly.FullName, assemblyPath);
+                // Assemblies loaded via streams have no Location: https://github.com/dotnet/runtime/issues/12822
+                AssemblyLocations.Add(assembly.FullName, assemblyPath);
 
-            *assemblyName = NativeAllocStringAnsi(assembly.GetName().Name);
-            *assemblyFullName = NativeAllocStringAnsi(assembly.FullName);
-            return GetAssemblyHandle(assembly);
+                *assemblyName = NativeAllocStringAnsi(assembly.GetName().Name);
+                *assemblyFullName = NativeAllocStringAnsi(assembly.FullName);
+                return GetAssemblyHandle(assembly);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            return new ManagedHandle();
         }
 
         [UnmanagedCallersOnly]
@@ -909,7 +929,7 @@ namespace FlaxEngine.Interop
                 loadedNativeLibraries.Remove(nativeLibraryName);
             }
             if (nativeLibraryName != null)
-                nativeLibraryPaths.Remove(nativeLibraryName);
+                libraryPaths.Remove(nativeLibraryName);
         }
 
         [UnmanagedCallersOnly]

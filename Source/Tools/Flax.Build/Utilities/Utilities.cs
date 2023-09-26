@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Flax.Build
@@ -745,6 +746,20 @@ namespace Flax.Build
             var text = File.ReadAllText(file);
             text = text.Replace(findWhat, replaceWith);
             File.WriteAllText(file, text);
+        }
+
+        /// <summary>
+        /// Returns back the exe ext for the current platform
+        /// </summary>
+        public static string GetPlatformExecutableExt()
+        {
+            var extEnding = ".exe";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                extEnding = "";
+            }
+
+            return extEnding;
         }
     }
 }

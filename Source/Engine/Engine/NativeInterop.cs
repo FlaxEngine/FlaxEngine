@@ -24,7 +24,8 @@ namespace FlaxEngine.Interop
     /// <summary>
     /// Provides a Mono-like API for native code to access managed runtime.
     /// </summary>
-    internal static unsafe partial class NativeInterop
+    [HideInEditor]
+    public static unsafe partial class NativeInterop
     {
         internal static Dictionary<string, string> AssemblyLocations = new();
 
@@ -50,7 +51,7 @@ namespace FlaxEngine.Interop
         private static Dictionary<Type, int> _typeSizeCache = new();
 
         private static Dictionary<string, IntPtr> loadedNativeLibraries = new();
-        internal static Dictionary<string, string> nativeLibraryPaths = new();
+        internal static Dictionary<string, string> libraryPaths = new();
         private static Dictionary<Assembly, string> assemblyOwnedNativeLibraries = new();
         internal static AssemblyLoadContext scriptingAssemblyLoadContext;
 
@@ -59,7 +60,7 @@ namespace FlaxEngine.Interop
         {
             if (!loadedNativeLibraries.TryGetValue(libraryName, out IntPtr nativeLibrary))
             {
-                if (!nativeLibraryPaths.TryGetValue(libraryName, out var nativeLibraryPath))
+                if (!libraryPaths.TryGetValue(libraryName, out var nativeLibraryPath))
                     nativeLibraryPath = libraryName;
 
                 nativeLibrary = NativeLibrary.Load(nativeLibraryPath, assembly, dllImportSearchPath);
@@ -101,9 +102,9 @@ namespace FlaxEngine.Interop
         private static Assembly OnScriptingAssemblyLoadContextResolving(AssemblyLoadContext assemblyLoadContext, AssemblyName assemblyName)
         {
             // FIXME: There should be a better way to resolve the path to EditorTargetPath where the dependencies are stored
-            foreach (string nativeLibraryPath in nativeLibraryPaths.Values)
+            foreach (string libraryPath in libraryPaths.Values)
             {
-                string editorTargetPath = Path.GetDirectoryName(nativeLibraryPath);
+                string editorTargetPath = Path.GetDirectoryName(libraryPath);
 
                 var assemblyPath = Path.Combine(editorTargetPath, assemblyName.Name + ".dll");
                 if (File.Exists(assemblyPath))
@@ -147,7 +148,27 @@ namespace FlaxEngine.Interop
             NativeMemory.AlignedFree(ptr);
         }
 
-        internal static T[] GCHandleArrayToManagedArray<T>(ManagedArray ptrArray) where T : class
+        /// <summary>
+        /// Converts a delegate into a function pointer that is callable from unmanaged code via <see cref="Marshal.GetFunctionPointerForDelegate{TDelegate}"/> but cached <paramref name="d"/> delegate to prevent collecting it by GC.
+        /// </summary>
+        /// <typeparam name="TDelegate">The type of delegate to convert.</typeparam>
+        /// <param name="d">The delegate to be passed to unmanaged code.</param>
+        /// <returns>A value that can be passed to unmanaged code, which, in turn, can use it to call the underlying managed delegate.</returns>
+        public static IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d) where TDelegate : notnull
+        {
+            // Example use-case: C# script runs actions via JobSystem.Dispatch which causes crash due to GC collecting Delegate object
+            ManagedHandle.Alloc(d, GCHandleType.Weak);
+
+            return Marshal.GetFunctionPointerForDelegate<TDelegate>(d);
+        }
+
+        /// <summary>
+        /// Converts array of GC Handles from native runtime to managed array.
+        /// </summary>
+        /// <typeparam name="T">Array element type.</typeparam>
+        /// <param name="ptrArray">Input array.</param>
+        /// <returns>Output array.</returns>
+        public static T[] GCHandleArrayToManagedArray<T>(ManagedArray ptrArray) where T : class
         {
             Span<IntPtr> span = ptrArray.ToSpan<IntPtr>();
             T[] managedArray = new T[ptrArray.Length];
@@ -156,7 +177,12 @@ namespace FlaxEngine.Interop
             return managedArray;
         }
 
-        internal static IntPtr[] ManagedArrayToGCHandleArray(Array array)
+        /// <summary>
+        /// Converts managed array wrapper into array of GC Handles for native runtime.
+        /// </summary>
+        /// <param name="array">Input array.</param>
+        /// <returns>Output array.</returns>
+        public static IntPtr[] ManagedArrayToGCHandleArray(Array array)
         {
             if (array.Length == 0)
                 return Array.Empty<IntPtr>();
@@ -170,13 +196,26 @@ namespace FlaxEngine.Interop
             return pointerArray;
         }
 
-        internal static ManagedArray ManagedArrayToGCHandleWrappedArray(Array array)
+        /// <summary>
+        /// Converts managed array wrapper into array of GC Handles for native runtime.
+        /// </summary>
+        /// <param name="array">Input array.</param>
+        /// <returns>Output array.</returns>
+        public static ManagedArray ManagedArrayToGCHandleWrappedArray(Array array)
         {
             IntPtr[] pointerArray = ManagedArrayToGCHandleArray(array);
             return ManagedArray.WrapNewArray(pointerArray, array.GetType());
         }
 
-        internal static TDst[] ConvertArray<TSrc, TDst>(Span<TSrc> src, Func<TSrc, TDst> convertFunc)
+        /// <summary>
+        /// Converts array with a custom converter function for each element.
+        /// </summary>
+        /// <typeparam name="TSrc">Input data type.</typeparam>
+        /// <typeparam name="TDst">Output data type.</typeparam>
+        /// <param name="src">The input array.</param>
+        /// <param name="convertFunc">Converter callback.</param>
+        /// <returns>The output array.</returns>
+        public static TDst[] ConvertArray<TSrc, TDst>(Span<TSrc> src, Func<TSrc, TDst> convertFunc)
         {
             TDst[] dst = new TDst[src.Length];
             for (int i = 0; i < src.Length; i++)
@@ -184,7 +223,15 @@ namespace FlaxEngine.Interop
             return dst;
         }
 
-        internal static TDst[] ConvertArray<TSrc, TDst>(TSrc[] src, Func<TSrc, TDst> convertFunc)
+        /// <summary>
+        /// Converts array with a custom converter function for each element.
+        /// </summary>
+        /// <typeparam name="TSrc">Input data type.</typeparam>
+        /// <typeparam name="TDst">Output data type.</typeparam>
+        /// <param name="src">The input array.</param>
+        /// <param name="convertFunc">Converter callback.</param>
+        /// <returns>The output array.</returns>
+        public static TDst[] ConvertArray<TSrc, TDst>(TSrc[] src, Func<TSrc, TDst> convertFunc)
         {
             TDst[] dst = new TDst[src.Length];
             for (int i = 0; i < src.Length; i++)
@@ -1024,11 +1071,12 @@ namespace FlaxEngine.Interop
             private static uint pinnedBoxedValuesPointer = 0;
             private static (IntPtr ptr, int size)[] pinnedAllocations = new (IntPtr ptr, int size)[256];
             private static uint pinnedAllocationsPointer = 0;
-            
+
             private delegate TInternal ToNativeDelegate<T, TInternal>(T value);
+
             private delegate IntPtr UnboxerDelegate(object value, object converter);
 
-            private static ConcurrentDictionary<Type, (UnboxerDelegate deleg, object toNativeDeleg)> unboxers = new (1, 3);
+            private static ConcurrentDictionary<Type, (UnboxerDelegate deleg, object toNativeDeleg)> unboxers = new(1, 3);
             private static MethodInfo unboxerMethod = typeof(ValueTypeUnboxer).GetMethod(nameof(ValueTypeUnboxer.UnboxPointer), BindingFlags.Static | BindingFlags.NonPublic);
             private static MethodInfo unboxerToNativeMethod = typeof(ValueTypeUnboxer).GetMethod(nameof(ValueTypeUnboxer.UnboxPointerWithConverter), BindingFlags.Static | BindingFlags.NonPublic);
 
@@ -1089,7 +1137,8 @@ namespace FlaxEngine.Interop
                 return new IntPtr(Unsafe.AsPointer(ref Unsafe.Unbox<T>(value)));
             }
 
-            private static IntPtr UnboxPointerWithConverter<T, TInternal>(object value, object converter) where T : struct where TInternal : struct
+            private static IntPtr UnboxPointerWithConverter<T, TInternal>(object value, object converter) where T : struct
+                                                                                                          where TInternal : struct
             {
                 ToNativeDelegate<T, TInternal> toNative = Unsafe.As<ToNativeDelegate<T, TInternal>>(converter);
                 return PinValue<TInternal>(toNative(Unsafe.Unbox<T>(value)));
@@ -1099,12 +1148,12 @@ namespace FlaxEngine.Interop
         private delegate IntPtr InvokeThunkDelegate(ManagedHandle instanceHandle, IntPtr param1, IntPtr param2, IntPtr param3, IntPtr param4, IntPtr param5, IntPtr param6, IntPtr param7);
 
         /// <summary>
-        /// Returns all types that that owned by this assembly.
+        /// Returns all types owned by this assembly.
         /// </summary>
         private static Type[] GetAssemblyTypes(Assembly assembly)
         {
             var referencedAssemblies = assembly.GetReferencedAssemblies();
-            var allAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var allAssemblies = Utils.GetAssemblies();
             var referencedTypes = new List<string>();
             foreach (var assemblyName in referencedAssemblies)
             {

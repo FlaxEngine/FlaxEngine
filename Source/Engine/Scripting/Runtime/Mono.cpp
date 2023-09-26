@@ -804,6 +804,11 @@ void* MCore::Array::GetAddress(const MArray* obj)
     return mono_array_addr_with_size((MonoArray*)obj, 0, 0);
 }
 
+MArray* MCore::Array::Unbox(MObject* obj)
+{
+    return (MArray*)obj;
+}
+
 MGCHandle MCore::GCHandle::New(MObject* obj, bool pinned)
 {
     return mono_gchandle_new(obj, pinned);
