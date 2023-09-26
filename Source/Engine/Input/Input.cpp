@@ -1018,7 +1018,7 @@ void InputService::Update()
         Input::SetMousePosition(Screen::GetSize() * 0.5f);
     }
 
-    // Send events for the active actions (send events only in play mode)
+    // Send events for the active actions and axes (send events only in play mode)
     if (!Time::GetGamePaused())
     {
         for (auto i = Axes.Begin(); i.IsNotEnd(); ++i)
