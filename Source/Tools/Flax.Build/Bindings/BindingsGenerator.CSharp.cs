@@ -1767,6 +1767,10 @@ namespace Flax.Build.Bindings
                         // char's are not blittable, store as short instead
                         contents.Append($"fixed short {fieldInfo.Name}0[{fieldInfo.Type.ArraySize}]; // {managedType}*").AppendLine();
                     }
+                    else if (managedType == "byte")
+                    {
+                        contents.Append($"fixed byte {fieldInfo.Name}0[{fieldInfo.Type.ArraySize}]; // {managedType}*").AppendLine();
+                    }
                     else
 #endif
                     {

@@ -105,6 +105,24 @@ public:
         API_FIELD() Array<ProfilerCPU::Event> Events;
     };
 
+    /// <summary>
+    /// The network stat.
+    /// </summary>
+    API_STRUCT(NoDefault) struct NetworkEventStat
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkEventStat);
+
+        // Amount of occurrences.
+        API_FIELD() uint16 Count;
+        // Transferred data size (in bytes).
+        API_FIELD() uint16 DataSize;
+        // Transferred message (data+header) size (in bytes).
+        API_FIELD() uint16 MessageSize;
+        // Amount of peers that will receive this message.
+        API_FIELD() uint16 Receivers;
+        API_FIELD(Private, NoArray) byte Name[120];
+    };
+
 public:
     /// <summary>
     /// Controls the engine profiler (CPU, GPU, etc.) usage.
@@ -130,6 +148,11 @@ public:
     /// The GPU rendering profiler events.
     /// </summary>
     API_FIELD(ReadOnly) static Array<ProfilerGPU::Event> EventsGPU;
+
+    /// <summary>
+    /// The networking profiler events.
+    /// </summary>
+    API_FIELD(ReadOnly) static Array<NetworkEventStat> EventsNetwork;
 };
 
 #endif
