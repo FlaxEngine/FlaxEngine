@@ -26,6 +26,12 @@ namespace FlaxEngine
         public InputActionState State => Input.GetActionState(Name);
 
         /// <summary>
+        /// Occurs when event is triggered (e.g. user pressed a key). Called before scripts update.
+        /// </summary>
+        [System.Obsolete("Depreciated in 1.7, use Pressed.")]
+        public event Action Triggered;
+
+        /// <summary>
         /// Occurs when event is pressed (e.g. user pressed a key). Called before scripts update.
         /// </summary>
         public event Action Pressed;
@@ -75,6 +81,7 @@ namespace FlaxEngine
             case InputActionState.None: break;
             case InputActionState.Waiting: break;
             case InputActionState.Pressing:
+                Triggered?.Invoke();
                 Pressing?.Invoke();
                 break;
             case InputActionState.Press:
