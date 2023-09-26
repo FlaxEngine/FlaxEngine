@@ -16,9 +16,14 @@ namespace FlaxEngine
         public string Name;
 
         /// <summary>
-        /// Returns true if the event has been triggered during the current frame (e.g. user pressed a key). Use <see cref="Pressed"/>, <see cref="Pressing"/>, <see cref="Released"/> to catch events without active waiting.
+        /// Returns true if the event has been triggered during the current frame (e.g. user pressed a key). Use <see cref="Pressed"/> to catch events without active waiting.
         /// </summary>
         public bool Active => Input.GetAction(Name);
+
+        /// <summary>
+        /// Returns the event state. Use Use <see cref="Pressed"/>, <see cref="Pressing"/>, <see cref="Released"/> to catch events without active waiting.
+        /// </summary>
+        public InputActionState State => Input.GetActionState(Name);
 
         /// <summary>
         /// Occurs when event is pressed (e.g. user pressed a key). Called before scripts update.
