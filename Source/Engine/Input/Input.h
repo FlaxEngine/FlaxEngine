@@ -293,7 +293,7 @@ public:
     /// Event fired when virtual input action is triggered. Called before scripts update. See <see cref="ActionMappings"/> to edit configuration.
     /// </summary>
     /// <seealso cref="InputEvent"/>
-    API_EVENT() static Delegate<StringView> ActionTriggered;
+    API_EVENT() static Delegate<StringView, const InputActionState&> ActionTriggered;
 
     /// <summary>
     /// Gets the value of the virtual action identified by name. Use <see cref="ActionMappings"/> to get the current config.

@@ -97,7 +97,7 @@ Action Input::MouseLeave;
 Delegate<const Float2&, int32> Input::TouchDown;
 Delegate<const Float2&, int32> Input::TouchMove;
 Delegate<const Float2&, int32> Input::TouchUp;
-Delegate<StringView> Input::ActionTriggered;
+Delegate<StringView, const InputActionState&> Input::ActionTriggered;
 Array<ActionConfig> Input::ActionMappings;
 Array<AxisConfig> Input::AxisMappings;
 
@@ -1022,9 +1022,9 @@ void InputService::Update()
     {
         for (auto i = Actions.Begin(); i.IsNotEnd(); ++i)
         {
-            if (i->Value.Active)
+            if (i->Value.State != InputActionState::Waiting)
             {
-                Input::ActionTriggered(i->Key);
+                Input::ActionTriggered(i->Key, i->Value.State);
             }
         }
     }
