@@ -299,7 +299,7 @@ public:
     /// Event fired when virtual input axis is changed. Called before scripts update. See <see cref="AxisMappings"/> to edit configuration.
     /// </summary>
     /// <seealso cref="InputAxis"/>
-    API_EVENT() static Delegate<StringView> AxisChanged;
+    API_EVENT() static Delegate<StringView> AxisValueChanged;
 
     /// <summary>
     /// Gets the value of the virtual action identified by name. Use <see cref="ActionMappings"/> to get the current config.

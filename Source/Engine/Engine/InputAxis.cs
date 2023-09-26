@@ -35,7 +35,7 @@ namespace FlaxEngine
         /// </summary>
         public InputAxis()
         {
-            Input.AxisChanged += Handler;
+            Input.AxisValueChanged += Handler;
         }
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace FlaxEngine
         /// <param name="name">The axis name.</param>
         public InputAxis(string name)
         {
-            Input.AxisChanged += Handler;
+            Input.AxisValueChanged += Handler;
             Name = name;
         }
         
@@ -59,7 +59,7 @@ namespace FlaxEngine
         /// </summary>
         ~InputAxis()
         {
-            Input.AxisChanged -= Handler;
+            Input.AxisValueChanged -= Handler;
         }
         
         /// <summary>
@@ -67,7 +67,7 @@ namespace FlaxEngine
         /// </summary>
         public void Dispose()
         {
-            Input.AxisChanged -= Handler;
+            Input.AxisValueChanged -= Handler;
             GC.SuppressFinalize(this);
         }
     }

@@ -98,7 +98,7 @@ Delegate<const Float2&, int32> Input::TouchDown;
 Delegate<const Float2&, int32> Input::TouchMove;
 Delegate<const Float2&, int32> Input::TouchUp;
 Delegate<StringView, const InputActionState&> Input::ActionTriggered;
-Delegate<StringView> Input::AxisChanged;
+Delegate<StringView> Input::AxisValueChanged;
 Array<ActionConfig> Input::ActionMappings;
 Array<AxisConfig> Input::AxisMappings;
 
@@ -1025,7 +1025,7 @@ void InputService::Update()
         {
             if (Math::NotNearEqual(i->Value.Value, i->Value.PrevKeyValue))
             {
-                Input::AxisChanged(i->Key);
+                Input::AxisValueChanged(i->Key);
             }
         }
         
