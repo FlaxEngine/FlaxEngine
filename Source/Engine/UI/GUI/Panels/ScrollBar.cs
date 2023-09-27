@@ -325,7 +325,7 @@ namespace FlaxEngine.GUI
                     var progress = _scrollAnimationProgress;
                     progress = Mathf.Clamp(progress + step, 0, 1);
                             
-                    // https://easings.net/#easeInOutQuad
+                    // https://easings.net/#easeOutSine
                     var easedProgress = Mathf.Sin((progress * Mathf.Pi) / 2);
                     value = Mathf.Lerp(_startValue, _targetValue, easedProgress);
 
