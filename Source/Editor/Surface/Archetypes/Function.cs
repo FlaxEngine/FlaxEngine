@@ -2228,6 +2228,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Function Input",
                 Description = "The graph function input data",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaPaste,
+                NodeTypeHint = NodeTypeHint.FunctionNode,
                 Size = new Float2(240, 60),
                 DefaultValues = new object[]
                 {
@@ -2247,6 +2248,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Function Output",
                 Description = "The graph function output data",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaPaste,
+                NodeTypeHint = NodeTypeHint.FunctionNode,
                 Size = new Float2(240, 60),
                 DefaultValues = new object[]
                 {
@@ -2265,6 +2267,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = string.Empty,
                 Description = "Overrides the base class method with custom implementation",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI | NodeFlags.NoSpawnViaPaste,
+                NodeTypeHint = NodeTypeHint.FunctionNode,
                 Size = new Float2(240, 60),
                 DefaultValues = new object[]
                 {
@@ -2279,6 +2282,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new InvokeMethodNode(id, context, arch, groupArch),
                 Title = string.Empty,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
+                NodeTypeHint = NodeTypeHint.FunctionNode,
                 Size = new Float2(240, 60),
                 DefaultValues = new object[]
                 {
@@ -2302,6 +2306,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new ReturnNode(id, context, arch, groupArch),
                 Title = "Return",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
+                NodeTypeHint = NodeTypeHint.FunctionNode,
                 Size = new Float2(100, 40),
                 DefaultValues = new object[]
                 {
@@ -2320,6 +2325,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "New Function",
                 Description = "Adds a new function to the script",
                 Flags = NodeFlags.VisualScriptGraph,
+                NodeTypeHint = NodeTypeHint.FunctionNode,
                 Size = new Float2(240, 20),
                 DefaultValues = new object[]
                 {
@@ -2332,6 +2338,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new GetFieldNode(id, context, arch, groupArch),
                 Title = string.Empty,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
+                NodeTypeHint = NodeTypeHint.FunctionNode,
                 Size = new Float2(240, 60),
                 DefaultValues = new object[]
                 {
@@ -2347,6 +2354,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new SetFieldNode(id, context, arch, groupArch),
                 Title = string.Empty,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
+                NodeTypeHint = NodeTypeHint.FunctionNode,
                 Size = new Float2(240, 60),
                 DefaultValues = new object[]
                 {
@@ -2363,6 +2371,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new BindEventNode(id, context, arch, groupArch),
                 Title = string.Empty,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
+                NodeTypeHint = NodeTypeHint.FunctionNode,
                 Size = new Float2(260, 60),
                 DefaultValues = new object[]
                 {
@@ -2385,6 +2394,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new UnbindEventNode(id, context, arch, groupArch),
                 Title = string.Empty,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
+                NodeTypeHint = NodeTypeHint.FunctionNode,
                 Size = new Float2(260, 60),
                 DefaultValues = new object[]
                 {

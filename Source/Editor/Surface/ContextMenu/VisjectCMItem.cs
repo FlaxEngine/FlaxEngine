@@ -3,11 +3,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Utilities;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Surface.ContextMenu
 {
@@ -121,13 +123,70 @@ namespace FlaxEditor.Surface.ContextMenu
                 Visible = true;
                 return true;   
             }
-            
-            if (_archetype?.Elements == null)
+
+            if (_archetype == null)
             {
                 Visible = false;
                 return false;
             }
-            
+
+            bool isCompatible = false;
+            if (_archetype.Elements != null)
+            {
+                isCompatible = CheckElementsCompatibility(startBox);
+            }
+
+            if (_archetype.NodeTypeHint == NodeTypeHint.FunctionNode)
+            {
+                isCompatible = false;
+                ScriptMemberInfo memberInfo = ScriptMemberInfo.Null;
+
+                if (_archetype.Tag is ScriptMemberInfo info)
+                {
+                    memberInfo = info;
+                }
+                else if(_archetype.DefaultValues is { Length: > 1 })
+                {
+                    var eventName = (string)_archetype.DefaultValues[1];
+                    var eventType = TypeUtils.GetType((string)_archetype.DefaultValues[0]);
+                    memberInfo = eventType.GetMember(eventName, MemberTypes.Event, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
+                }
+
+                if (memberInfo != ScriptMemberInfo.Null)
+                {
+                    if (startBox.IsOutput)
+                    {
+                        var parameters = memberInfo.GetParameters();
+                        ScriptType outType = startBox.CurrentType;
+
+                        if (!memberInfo.IsStatic)
+                        {
+                            var scriptType = TypeUtils.GetType((string)_archetype.DefaultValues[0]);
+                            isCompatible |= CanCastToType(scriptType, outType, _archetype.ConnectionsHints);
+                        }
+
+                        if (!memberInfo.IsEvent)
+                        {
+                            for (int i = 0; i < parameters.Length; i++)
+                            {
+                                ScriptType inType = parameters[i].Type;
+                                isCompatible |= CanCastToType(inType, outType, _archetype.ConnectionsHints);
+                            }
+                        }
+                    }
+                    else
+                    {
+
+                    }
+                }
+            }
+
+            Visible = isCompatible;
+            return isCompatible;
+        }
+
+        private bool CheckElementsCompatibility(Box startBox)
+        {
             bool isCompatible = false;
             foreach (NodeElementArchetype element in _archetype.Elements)
             {
@@ -153,15 +212,12 @@ namespace FlaxEditor.Surface.ContextMenu
                     hint = startBox.ParentNode.Archetype.ConnectionsHints;
                 }
                 
-                bool checkCompatibility = CanCastToType(inType, outType, hint);
-                isCompatible |= checkCompatibility;
+                isCompatible |= CanCastToType(inType, outType, hint);
             }
-            
-            Visible = isCompatible;
-            
+
             return isCompatible;
         }
-
+        
         private bool CanCastToType(ScriptType currentType, ScriptType type, ConnectionsHint hint)
         {
             if (VisjectSurface.CanUseDirectCastStatic(type, currentType, false))

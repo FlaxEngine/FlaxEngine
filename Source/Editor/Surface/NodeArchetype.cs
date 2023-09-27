@@ -73,6 +73,20 @@ namespace FlaxEditor.Surface
         All = Scalar | Vector | Enum | Anything | Value | Array | Dictionary,
     }
 
+    [HideInEditor]
+    public enum NodeTypeHint
+    {
+        /// <summary>
+        /// Is Node.
+        /// </summary>
+        Default = 0,
+        
+        /// <summary>
+        /// Is Function Node.
+        /// </summary>
+        FunctionNode = 1,
+    }
+    
     /// <summary>
     /// Surface node archetype description.
     /// </summary>
@@ -153,6 +167,11 @@ namespace FlaxEditor.Surface
         public ConnectionsHint ConnectionsHints;
 
         /// <summary>
+        /// Node Type hints.
+        /// </summary>
+        public NodeTypeHint NodeTypeHint;
+        
+        /// <summary>
         /// Array with independent boxes IDs.
         /// </summary>
         public int[] IndependentBoxes;
@@ -193,6 +212,7 @@ namespace FlaxEditor.Surface
                 DefaultValues = (object[])DefaultValues?.Clone(),
                 DefaultType = DefaultType,
                 ConnectionsHints = ConnectionsHints,
+                NodeTypeHint = NodeTypeHint,
                 IndependentBoxes = (int[])IndependentBoxes?.Clone(),
                 DependentBoxes = (int[])DependentBoxes?.Clone(),
                 Elements = (NodeElementArchetype[])Elements?.Clone(),
