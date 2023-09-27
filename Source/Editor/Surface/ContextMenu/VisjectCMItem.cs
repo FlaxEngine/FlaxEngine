@@ -156,32 +156,37 @@ namespace FlaxEditor.Surface.ContextMenu
                     if(memberInfo.IsEvent)
                         isCompatible = false;
                     
-                    if (startBox.IsOutput)
-                    {
-                        var parameters = memberInfo.GetParameters();
-                        ScriptType outType = startBox.CurrentType;
-
-                        if (startBox.CurrentType.IsVoid && memberInfo.ValueType.IsVoid)
-                            isCompatible = true;
-                        
-                        if (!memberInfo.IsStatic)
-                        {
-                            var scriptType = TypeUtils.GetType((string)_archetype.DefaultValues[0]);
-                            isCompatible |= CanCastToType(scriptType, outType, _archetype.ConnectionsHints);
-                        }
-
-                        if (!memberInfo.IsEvent)
-                        {
-                            for (int i = 0; i < parameters.Length; i++)
-                            {
-                                ScriptType inType = parameters[i].Type;
-                                isCompatible |= CanCastToType(inType, outType, _archetype.ConnectionsHints);
-                            }
-                        }
-                    }
+                    if (startBox.CurrentType.IsVoid && memberInfo.ValueType.IsVoid)
+                        isCompatible = true;
                     else
                     {
+                        if (startBox.IsOutput)
+                        {
+                            var parameters = memberInfo.GetParameters();
+                            ScriptType outType = startBox.CurrentType;
 
+                            if (!memberInfo.IsStatic)
+                            {
+                                var scriptType = memberInfo.DeclaringType;
+                                isCompatible |= CanCastToType(scriptType, outType, _archetype.ConnectionsHints);
+                            }
+
+                            if (!memberInfo.IsEvent)
+                            {
+                                for (int i = 0; i < parameters.Length; i++)
+                                {
+                                    ScriptType inType = parameters[i].Type;
+                                    isCompatible |= CanCastToType(inType, outType, _archetype.ConnectionsHints);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            ScriptType inType = startBox.CurrentType;
+                            ScriptType outType = memberInfo.ValueType;
+
+                            isCompatible |= CanCastToType(inType, outType, _archetype.ConnectionsHints);
+                        }
                     }
                 }
             }
