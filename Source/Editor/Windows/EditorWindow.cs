@@ -192,6 +192,13 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
+            // Prevent closing the editor window when using RMB + Ctrl + W to slow down the camera flight
+            if (Editor.Options.Options.Input.CloseTab.Process(this, key))
+            {
+                if (Root.GetMouseButton(MouseButton.Right))
+                    return true;
+            }
+
             if (base.OnKeyDown(key))
                 return true;
 
