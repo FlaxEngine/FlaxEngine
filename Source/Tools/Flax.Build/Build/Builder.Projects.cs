@@ -199,6 +199,9 @@ namespace Flax.Build
                 if (projectFormats.Count == 0)
                     projectFormats.Add(Platform.BuildPlatform.DefaultProjectFormat);
 
+                // Always generate VS solution files for project (needed for C# Intellisense support)
+                projectFormats.Add(ProjectFormat.VisualStudio2022);
+
                 foreach (ProjectFormat projectFormat in projectFormats)
                     GenerateProject(projectFormat);
             }
