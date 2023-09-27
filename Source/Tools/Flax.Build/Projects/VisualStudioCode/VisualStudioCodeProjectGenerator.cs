@@ -38,7 +38,7 @@ namespace Flax.Build.Projects.VisualStudioCode
         }
 
         /// <inheritdoc />
-        public override void GenerateProject(Project project)
+        public override void GenerateProject(Project project, string solutionPath)
         {
             // Not used, solution contains all projects definitions
         }

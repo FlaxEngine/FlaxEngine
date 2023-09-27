@@ -228,6 +228,8 @@ namespace Flax.Build
                 var projectToModulesBuildOptions = new Dictionary<Project, Dictionary<Module, BuildOptions>>();
                 Project mainSolutionProject = null;
                 ProjectGenerator nativeProjectGenerator = ProjectGenerator.Create(projectFormat, TargetType.NativeCpp);
+                var solutionName = rootProject.Name;
+                var solutionPath = Path.Combine(workspaceRoot, solutionName + '.' + nativeProjectGenerator.SolutionFileExtension);
 
                 // Group targets by project name and sort groups based on the project (ensures that referenced plugin source projects are generated firstly before main source projects)
                 var targetGroups = new List<ProjectTargetsGroup>();
@@ -549,7 +551,7 @@ namespace Flax.Build
                     foreach (var project in projects)
                     {
                         Log.Verbose(project.Name + " -> " + project.Path);
-                        project.Generate();
+                        project.Generate(solutionPath);
                     }
                 }
 
@@ -628,7 +630,7 @@ namespace Flax.Build
                     using (new ProfileEventScope("GenerateProject"))
                     {
                         Log.Verbose("Project " + rulesProjectName + " -> " + project.Path);
-                        dotNetProjectGenerator.GenerateProject(project);
+                        dotNetProjectGenerator.GenerateProject(project, solutionPath);
                     }
 
                     projects.Add(project);
@@ -641,9 +643,9 @@ namespace Flax.Build
                     using (new ProfileEventScope("CreateSolution"))
                     {
                         solution = nativeProjectGenerator.CreateSolution();
-                        solution.Name = rootProject.Name;
+                        solution.Name = solutionName;
                         solution.WorkspaceRootPath = workspaceRoot;
-                        solution.Path = Path.Combine(workspaceRoot, solution.Name + '.' + nativeProjectGenerator.SolutionFileExtension);
+                        solution.Path = solutionPath;
                         solution.Projects = projects.ToArray();
                         solution.MainProject = mainSolutionProject;
                     }
