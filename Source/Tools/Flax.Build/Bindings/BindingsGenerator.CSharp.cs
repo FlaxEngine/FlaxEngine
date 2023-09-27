@@ -953,7 +953,7 @@ namespace Flax.Build.Bindings
                     CppParamsWrappersCache[i] = result;
                 }
 
-                string eventSignature;
+                string eventType;
                 if (useCustomDelegateSignature)
                 {
                     contents.Append(indent).Append($"/// <summary>The delegate for event {eventInfo.Name}.</summary>").AppendLine();
@@ -968,24 +968,25 @@ namespace Flax.Build.Bindings
                         contents.Append(CppParamsWrappersCache[i]).Append(" arg").Append(i);
                     }
                     contents.Append(");").AppendLine().AppendLine();
-                    eventSignature = "event " + eventInfo.Name + "Delegate";
+                    eventType = eventInfo.Name + "Delegate";
                 }
                 else
                 {
-                    eventSignature = "event Action";
+                    eventType = "Action";
                     if (paramsCount != 0)
                     {
-                        eventSignature += '<';
+                        eventType += '<';
                         for (var i = 0; i < paramsCount; i++)
                         {
                             if (i != 0)
-                                eventSignature += ", ";
+                                eventType += ", ";
                             CppParamsWrappersCache[i] = GenerateCSharpNativeToManaged(buildData, eventInfo.Type.GenericArgs[i], classInfo);
-                            eventSignature += CppParamsWrappersCache[i];
+                            eventType += CppParamsWrappersCache[i];
                         }
-                        eventSignature += '>';
+                        eventType += '>';
                     }
                 }
+                string eventSignature = "event " + eventType;
 
                 GenerateCSharpComment(contents, indent, eventInfo.Comment, true);
                 GenerateCSharpAttributes(buildData, contents, indent, classInfo, eventInfo, useUnmanaged);
@@ -998,11 +999,7 @@ namespace Flax.Build.Bindings
                 indent += "    ";
                 var eventInstance = eventInfo.IsStatic ? string.Empty : "__unmanagedPtr, ";
                 contents.Append(indent).Append($"add {{ Internal_{eventInfo.Name} += value; if (Internal_{eventInfo.Name}_Count++ == 0) Internal_{eventInfo.Name}_Bind({eventInstance}true); }}").AppendLine();
-                contents.Append(indent).Append("remove { ").AppendLine();
-                contents.Append("#if FLAX_EDITOR || BUILD_DEBUG").AppendLine();
-                contents.Append(indent).Append($"if (Internal_{eventInfo.Name} != null) {{ bool invalid = true; foreach (Delegate e in Internal_{eventInfo.Name}.GetInvocationList()) {{ if (e == (Delegate)value) {{ invalid = false; break; }} }} if (invalid) throw new Exception(\"Cannot unregister from event if not registered before.\"); }}").AppendLine();
-                contents.Append("#endif").AppendLine();
-                contents.Append(indent).Append($"Internal_{eventInfo.Name} -= value; if (--Internal_{eventInfo.Name}_Count == 0) Internal_{eventInfo.Name}_Bind({eventInstance}false); }}").AppendLine();
+                contents.Append(indent).Append($"remove {{ var __delegate = ({eventType})Delegate.Remove(Internal_{eventInfo.Name}, value); if (__delegate != Internal_{eventInfo.Name}) {{ Internal_{eventInfo.Name} = __delegate; if (--Internal_{eventInfo.Name}_Count == 0) Internal_{eventInfo.Name}_Bind({eventInstance}false); }} }}").AppendLine();
                 indent = indent.Substring(0, indent.Length - 4);
                 contents.Append(indent).Append('}').AppendLine();
 
@@ -1019,6 +1016,7 @@ namespace Flax.Build.Bindings
                     contents.Append("static ");
                 contents.Append($"{eventSignature} Internal_{eventInfo.Name};");
                 contents.AppendLine();
+                contents.Append("#pragma warning restore 67").AppendLine();
 
                 contents.AppendLine();
                 contents.Append(indent).Append("internal ");
