@@ -674,9 +674,9 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             set
             {
-                if (Values[0] is Tag[])
+                if (Values[0] is Tag[] || Values.Type.Type == typeof(Tag[]))
                     SetValue(value);
-                if (Values[0] is List<Tag>)
+                else if (Values[0] is List<Tag> || Values.Type.Type == typeof(List<Tag>))
                     SetValue(new List<Tag>(value));
             }
         }
