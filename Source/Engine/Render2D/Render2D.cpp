@@ -1596,16 +1596,18 @@ void Render2D::DrawTexture(TextureBase* t, const Rectangle& rect, const Color& c
 void Render2D::DrawSprite(const SpriteHandle& spriteHandle, const Rectangle& rect, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
+    if (spriteHandle.Id == Guid::Empty || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
         return;
 
-    Sprite* sprite = &spriteHandle.Atlas->Sprites.At(spriteHandle.Index);
+    Sprite sprite{};
+    if (!spriteHandle.Atlas->Sprites.TryGet(spriteHandle.Id, sprite)) return;
+
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::FillTexture;
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = 6;
     drawCall.AsTexture.Ptr = spriteHandle.Atlas->GetTexture();
-    WriteRect(rect, color, sprite->Area.GetUpperLeft(), sprite->Area.GetBottomRight());
+    WriteRect(rect, color, sprite.Area.GetUpperLeft(), sprite.Area.GetBottomRight());
 }
 
 void Render2D::DrawTexturePoint(GPUTexture* t, const Rectangle& rect, const Color& color)
@@ -1623,16 +1625,18 @@ void Render2D::DrawTexturePoint(GPUTexture* t, const Rectangle& rect, const Colo
 void Render2D::DrawSpritePoint(const SpriteHandle& spriteHandle, const Rectangle& rect, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
+    if (spriteHandle.Id == Guid::Empty || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
         return;
 
-    Sprite* sprite = &spriteHandle.Atlas->Sprites.At(spriteHandle.Index);
+    Sprite sprite{};
+    if (!spriteHandle.Atlas->Sprites.TryGet(spriteHandle.Id, sprite)) return;
+
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::FillTexturePoint;
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = 6;
     drawCall.AsTexture.Ptr = spriteHandle.Atlas->GetTexture();
-    WriteRect(rect, color, sprite->Area.GetUpperLeft(), sprite->Area.GetBottomRight());
+    WriteRect(rect, color, sprite.Area.GetUpperLeft(), sprite.Area.GetBottomRight());
 }
 
 void Render2D::Draw9SlicingTexture(TextureBase* t, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color)
@@ -1664,31 +1668,35 @@ void Render2D::Draw9SlicingTexturePoint(TextureBase* t, const Rectangle& rect, c
 void Render2D::Draw9SlicingSprite(const SpriteHandle& spriteHandle, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
+    if (spriteHandle.Id == Guid::Empty || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
         return;
 
-    Sprite* sprite = &spriteHandle.Atlas->Sprites.At(spriteHandle.Index);
+    Sprite sprite{};
+    if (!spriteHandle.Atlas->Sprites.TryGet(spriteHandle.Id, sprite)) return;
+
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::FillTexture;
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = 6 * 9;
     drawCall.AsTexture.Ptr = spriteHandle.Atlas->GetTexture();
-    Write9SlicingRect(rect, color, border, borderUVs, sprite->Area.Location, sprite->Area.Size);
+    Write9SlicingRect(rect, color, border, borderUVs, sprite.Area.Location, sprite.Area.Size);
 }
 
 void Render2D::Draw9SlicingSpritePoint(const SpriteHandle& spriteHandle, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
+    if (spriteHandle.Id == Guid::Empty || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
         return;
 
-    Sprite* sprite = &spriteHandle.Atlas->Sprites.At(spriteHandle.Index);
+    Sprite sprite{};
+    if (!spriteHandle.Atlas->Sprites.TryGet(spriteHandle.Id, sprite)) return;
+
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::FillTexturePoint;
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = 6 * 9;
     drawCall.AsTexture.Ptr = spriteHandle.Atlas->GetTexture();
-    Write9SlicingRect(rect, color, border, borderUVs, sprite->Area.Location, sprite->Area.Size);
+    Write9SlicingRect(rect, color, border, borderUVs, sprite.Area.Location, sprite.Area.Size);
 }
 
 void Render2D::DrawCustom(GPUTexture* t, const Rectangle& rect, GPUPipelineState* ps, const Color& color)

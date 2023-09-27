@@ -87,10 +87,10 @@ void SpriteRender::SetImage()
 {
     TextureBase* image = Image.Get();
     Vector4 imageMAD(Vector2::One, Vector2::Zero);
-    if (!image && _sprite.IsValid())
+    if (!image && _sprite.IsValid() && _sprite.Atlas->Sprites.ContainsKey(_sprite.Id))
     {
         image = _sprite.Atlas.Get();
-        Sprite* sprite = &_sprite.Atlas->Sprites.At(_sprite.Index);
+        const Sprite* sprite = &_sprite.Atlas->Sprites.At(_sprite.Id);
         imageMAD = Vector4(sprite->Area.Size, sprite->Area.Location);
     }
     if (_paramImage)

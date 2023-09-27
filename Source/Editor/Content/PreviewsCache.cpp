@@ -121,9 +121,10 @@ Asset::LoadResult PreviewsCache::load()
     const float positionOffset = static_cast<float>(ASSETS_ICONS_ATLAS_MARGIN) / ASSETS_ICONS_ATLAS_SIZE;
     for (int32 i = 0; i < ASSETS_ICONS_PER_ATLAS; i++)
     {
+        sprite.Id = Guid::New();
         sprite.Area.Location = Float2(static_cast<float>(i % ASSETS_ICONS_PER_ROW), static_cast<float>(i / ASSETS_ICONS_PER_ROW)) * positionScale + positionOffset;
         sprite.Name = StringUtils::ToString(i);
-        Sprites.Add(sprite);
+        Sprites[sprite.Id] = sprite;
     }
 
     _isDirty = false;

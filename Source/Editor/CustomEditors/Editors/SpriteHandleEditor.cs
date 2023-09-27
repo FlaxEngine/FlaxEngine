@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System;
+using System.Linq;
 using FlaxEditor.GUI;
 using FlaxEditor.Scripting;
 using FlaxEngine;
@@ -15,7 +17,8 @@ namespace FlaxEditor.CustomEditors.Editors
     {
         private ComboBox _spritePicker;
         private ValueContainer _atlasValues;
-        private ValueContainer _indexValues;
+        private ValueContainer _idValues;
+        private Guid[] _guids;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
@@ -27,8 +30,8 @@ namespace FlaxEditor.CustomEditors.Editors
             _atlasValues = atlasValues;
 
             // Sprite
-            var spriteIndexField = typeof(SpriteHandle).GetField("Index");
-            _indexValues = new ValueContainer(new ScriptMemberInfo(spriteIndexField), Values);
+            var spriteIdField = typeof(SpriteHandle).GetField("Id");
+            _idValues = new ValueContainer(new ScriptMemberInfo(spriteIdField), Values);
             var spriteLabel = layout.AddPropertyItem("Sprite", "The selected sprite from the atlas.");
 
             // Check state
@@ -54,10 +57,20 @@ namespace FlaxEditor.CustomEditors.Editors
             var spritesCount = value.SpritesCount;
             var spritePicker = spriteLabel.ComboBox();
             spritePicker.ComboBox.Items.Capacity = spritesCount;
-            for (int i = 0; i < spritesCount; i++)
-            {
-                spritePicker.ComboBox.AddItem(value.GetSprite(i).Name);
+            _guids = new Guid[spritesCount];
+
+            var sortedSprites = value.Sprites.Values.ToList();
+            sortedSprites.Sort((s0, s1) => {
+                var xComp = s0.Area.Location.X.CompareTo(s1.Area.Location.X);
+
+                return xComp == 0 ? s0.Area.Location.Y.CompareTo(s1.Area.Location.Y) : xComp;
+            });
+            var idx = 0;
+            foreach (var sprite in sortedSprites) {
+                spritePicker.ComboBox.AddItem(sprite.Name);
+                _guids[idx++] = sprite.Id;
             }
+
             spritePicker.ComboBox.SupportMultiSelect = false;
             spritePicker.ComboBox.SelectedIndexChanged += OnSelectedIndexChanged;
             _spritePicker = spritePicker.ComboBox;
@@ -70,7 +83,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
             SpriteHandle value;
             value.Atlas = (SpriteAtlas)_atlasValues[0];
-            value.Index = _spritePicker.SelectedIndex;
+            value.Id = _guids[_spritePicker.SelectedIndex];
             SetValue(value);
         }
 
@@ -84,15 +97,15 @@ namespace FlaxEditor.CustomEditors.Editors
 
             // Fetch the instance values
             _atlasValues.Refresh(Values);
-            _indexValues.Refresh(Values);
+            _idValues.Refresh(Values);
 
             // Update selection
             int selectedIndex = -1;
             for (int i = 0; i < Values.Count; i++)
             {
-                var idx = (int)_indexValues[i];
-                if (idx != -1 && idx < _spritePicker.Items.Count)
-                    selectedIndex = idx;
+                var id = (Guid)_idValues[i];
+                if (id != Guid.Empty)
+                    selectedIndex = Array.IndexOf(_guids, id);
             }
             _spritePicker.SelectedIndex = selectedIndex;
         }
