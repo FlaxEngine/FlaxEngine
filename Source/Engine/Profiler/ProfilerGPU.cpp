@@ -14,7 +14,7 @@ RenderStatsData RenderStatsData::Counter;
 int32 ProfilerGPU::_depth = 0;
 Array<GPUTimerQuery*> ProfilerGPU::_timerQueriesPool;
 Array<GPUTimerQuery*> ProfilerGPU::_timerQueriesFree;
-bool ProfilerGPU::Enabled = true;
+bool ProfilerGPU::Enabled = false;
 int32 ProfilerGPU::CurrentBuffer = 0;
 ProfilerGPU::EventBuffer ProfilerGPU::Buffers[PROFILER_GPU_EVENTS_FRAMES];
 

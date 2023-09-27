@@ -634,6 +634,7 @@ namespace FlaxEngine.GUI
             case NavDirection.Left: return new Float2(0, size.Y * 0.5f);
             case NavDirection.Right: return new Float2(size.X, size.Y * 0.5f);
             case NavDirection.Next: return Float2.Zero;
+            case NavDirection.Previous: return size;
             default: return size * 0.5f;
             }
         }

@@ -32,14 +32,21 @@ CreateAssetResult ImportShader::Import(CreateAssetContext& context)
         LOG(Warning, "Empty shader source file.");
         return CreateAssetResult::Error;
     }
+
+    // Ensure the source code has an empty line at the end (expected by glslang)
+    auto sourceCodeChunkSize = sourceCodeSize + 1;
+    if (sourceCodeText[sourceCodeSize - 1] != '\n')
+        sourceCodeChunkSize++;
+
     const auto& sourceCodeChunk = context.Data.Header.Chunks[SourceCodeChunk];
-    sourceCodeChunk->Data.Allocate(sourceCodeSize + 1);
+    sourceCodeChunk->Data.Allocate(sourceCodeChunkSize);
     const auto sourceCode = sourceCodeChunk->Get();
     Platform::MemoryCopy(sourceCode, sourceCodeText.Get(), sourceCodeSize);
+    sourceCode[sourceCodeChunkSize - 2] = '\n';
 
     // Encrypt source code
-    Encryption::EncryptBytes(sourceCode, sourceCodeSize);
-    sourceCode[sourceCodeSize] = 0;
+    Encryption::EncryptBytes(sourceCode, sourceCodeChunkSize - 1);
+    sourceCode[sourceCodeChunkSize - 1] = 0;
 
     // Set Custom Data with Header
     ShaderStorage::Header20 shaderHeader;

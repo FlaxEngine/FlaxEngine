@@ -40,6 +40,11 @@ bool NetworkReplicator::EnableLog = false;
 #define NETWORK_REPLICATOR_LOG(messageType, format, ...)
 #endif
 
+#if COMPILE_WITH_PROFILER
+bool NetworkInternal::EnableProfiling = false;
+Dictionary<Pair<ScriptingTypeHandle, StringAnsiView>, NetworkInternal::ProfilerEvent> NetworkInternal::ProfilerEvents;
+#endif
+
 PACK_STRUCT(struct NetworkMessageObjectReplicate
     {
     NetworkMessageIDs ID = NetworkMessageIDs::ObjectReplicate;
@@ -1806,6 +1811,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
             NetworkMessage msg = peer->BeginSendMessage();
             msg.WriteStructure(msgData);
             msg.WriteBytes(stream->GetBuffer(), msgDataSize);
+            uint32 dataSize = msgDataSize, messageSize = msg.Length;
             if (isClient)
                 peer->EndSendMessage(NetworkChannelType::Unreliable, msg);
             else
@@ -1824,6 +1830,8 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 msg = peer->BeginSendMessage();
                 msg.WriteStructure(msgDataPart);
                 msg.WriteBytes(stream->GetBuffer() + msgDataPart.PartStart, msgDataPart.PartSize);
+                messageSize += msg.Length;
+                dataSize += msgDataPart.PartSize;
                 dataStart += msgDataPart.PartSize;
                 if (isClient)
                     peer->EndSendMessage(NetworkChannelType::Unreliable, msg);
@@ -1832,7 +1840,18 @@ void NetworkInternal::NetworkReplicatorUpdate()
             }
             ASSERT_LOW_LAYER(dataStart == size);
 
-            // TODO: stats for bytes send per object type
+#if COMPILE_WITH_PROFILER
+            // Network stats recording
+            if (EnableProfiling)
+            {
+                const Pair<ScriptingTypeHandle, StringAnsiView> name(obj->GetTypeHandle(), StringAnsiView::Empty);
+                auto& profileEvent = ProfilerEvents[name];
+                profileEvent.Count++;
+                profileEvent.DataSize += dataSize;
+                profileEvent.MessageSize += messageSize;
+                profileEvent.Receivers += isClient ? 1 : CachedTargets.Count();
+            }
+#endif
         }
     }
 
@@ -1873,6 +1892,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
             NetworkMessage msg = peer->BeginSendMessage();
             msg.WriteStructure(msgData);
             msg.WriteBytes(e.ArgsData.Get(), e.ArgsData.Length());
+            uint32 dataSize = e.ArgsData.Length(), messageSize = msg.Length, receivers = 0;
             NetworkChannelType channel = (NetworkChannelType)e.Info.Channel;
             if (e.Info.Server && isClient)
             {
@@ -1882,13 +1902,27 @@ void NetworkInternal::NetworkReplicatorUpdate()
                     NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Server RPC '{}::{}' called with non-empty list of targets is not supported (only server will receive it)", e.Name.First.ToString(), e.Name.Second.ToString());
 #endif
                 peer->EndSendMessage(channel, msg);
+                receivers = 1;
             }
             else if (e.Info.Client && (isServer || isHost))
             {
                 // Server -> Client(s)
                 BuildCachedTargets(NetworkManager::Clients, item.TargetClientIds, e.Targets, NetworkManager::LocalClientId);
                 peer->EndSendMessage(channel, msg, CachedTargets);
+                receivers = CachedTargets.Count();
             }
+
+#if COMPILE_WITH_PROFILER
+            // Network stats recording
+            if (EnableProfiling && receivers)
+            {
+                auto& profileEvent = ProfilerEvents[e.Name];
+                profileEvent.Count++;
+                profileEvent.DataSize += dataSize;
+                profileEvent.MessageSize += messageSize;
+                profileEvent.Receivers += receivers;
+            }
+#endif
         }
         RpcQueue.Clear();
     }
