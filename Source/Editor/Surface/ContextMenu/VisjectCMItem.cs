@@ -138,7 +138,6 @@ namespace FlaxEditor.Surface.ContextMenu
 
             if (_archetype.NodeTypeHint == NodeTypeHint.FunctionNode)
             {
-                isCompatible = false;
                 ScriptMemberInfo memberInfo = ScriptMemberInfo.Null;
 
                 if (_archetype.Tag is ScriptMemberInfo info)
@@ -154,11 +153,17 @@ namespace FlaxEditor.Surface.ContextMenu
 
                 if (memberInfo != ScriptMemberInfo.Null)
                 {
+                    if(memberInfo.IsEvent)
+                        isCompatible = false;
+                    
                     if (startBox.IsOutput)
                     {
                         var parameters = memberInfo.GetParameters();
                         ScriptType outType = startBox.CurrentType;
 
+                        if (startBox.CurrentType.IsVoid && memberInfo.ValueType.IsVoid)
+                            isCompatible = true;
+                        
                         if (!memberInfo.IsStatic)
                         {
                             var scriptType = TypeUtils.GetType((string)_archetype.DefaultValues[0]);
