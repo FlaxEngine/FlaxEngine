@@ -1512,8 +1512,8 @@ namespace Flax.Build.Bindings
                                 type = "IntPtr";
                             else if (type == "bool")
                                 type = "byte";
-                            else if (type == "object")
-                                type = "NativeVariant";
+                            else if (fieldInfo.Type.Type == "Variant")
+                                type = "IntPtr";
                             else if (internalType)
                             {
                                 internalTypeMarshaller = type + "Marshaller";
@@ -1529,9 +1529,6 @@ namespace Flax.Build.Bindings
                         // Generate struct constructor/getter and deconstructor/setter function
                         if (fieldInfo.NoArray && fieldInfo.Type.IsArray)
                             continue;
-
-                        if (type == "NativeVariant")
-                            continue; // TODO: FIXME
 
                         if (useSeparator)
                         {
@@ -1633,6 +1630,12 @@ namespace Flax.Build.Bindings
                         {
                             toManagedContent.Append($"managed.{fieldInfo.Name} != 0");
                             toNativeContent.Append($"managed.{fieldInfo.Name} ? (byte)1 : (byte)0");
+                        }
+                        else if (fieldInfo.Type.Type == "Variant")
+                        {
+                            // Variant passed as boxed object handle
+                            toManagedContent.Append($"ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(managed.{fieldInfo.Name})");
+                            toNativeContent.Append($"ManagedHandleMarshaller.NativeToManaged.ConvertToUnmanaged(managed.{fieldInfo.Name})");
                         }
                         else if (internalType)
                         {
