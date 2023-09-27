@@ -179,7 +179,7 @@ namespace Flax.Build
             using (new ProfileEventScope("GenerateProjects"))
             {
                 // Pick the project format
-                List<ProjectFormat> projectFormats = new List<ProjectFormat>();
+                HashSet<ProjectFormat> projectFormats = new HashSet<ProjectFormat>();
 
                 if (Configuration.ProjectFormatVS2022)
                     projectFormats.Add(ProjectFormat.VisualStudio2022);
@@ -191,6 +191,8 @@ namespace Flax.Build
                     projectFormats.Add(ProjectFormat.VisualStudio2015);
                 if (Configuration.ProjectFormatVSCode)
                     projectFormats.Add(ProjectFormat.VisualStudioCode);
+                if (Configuration.ProjectFormatRider)
+                    projectFormats.Add(ProjectFormat.VisualStudio2022);
                 if (!string.IsNullOrEmpty(Configuration.ProjectFormatCustom))
                     projectFormats.Add(ProjectFormat.Custom);
 
