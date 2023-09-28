@@ -40,6 +40,8 @@ namespace FlaxEditor.Surface.ContextMenu
         public delegate List<SurfaceParameter> ParameterGetterDelegate();
 
         private readonly List<VisjectCMGroup> _groups = new List<VisjectCMGroup>(16);
+        private CheckBox _contextSensitiveToggle;
+        private bool _contextSensitiveSearchEnabled = true;
         private readonly TextBox _searchBox;
         private bool _waitingForInput;
         private VisjectCMGroup _surfaceParametersGroup;
@@ -127,7 +129,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 _parameterSetNodeArchetype = info.ParameterSetNodeArchetype ?? Archetypes.Parameters.Nodes[3];
 
             // Context menu dimensions
-            Size = new Float2(320, 248);
+            Size = new Float2(300, 400);
 
             var headerPanel = new Panel(ScrollBars.None)
             {
@@ -139,17 +141,40 @@ namespace FlaxEditor.Surface.ContextMenu
             };
 
             // Title bar
+            var titleFontReference = new FontReference(Style.Current.FontLarge.Asset, 10);
             var titleLabel = new Label
             {
-                Width = Width - 8,
+                Width = Width * 0.5f - 8f,
                 Height = 20,
                 X = 4,
                 Parent = headerPanel,
                 Text = "Select Node",
-                HorizontalAlignment = TextAlignment.Center,
-                Font = new FontReference(Style.Current.FontLarge.Asset, 10),
+                HorizontalAlignment = TextAlignment.Near,
+                Font = titleFontReference,
             };
 
+            // Context sensitive toggle
+            var contextSensitiveLabel = new Label
+            {
+                Width = Width * 0.5f - 28,
+                Height = 20,
+                X = Width * 0.5f,
+                Parent = headerPanel,
+                Text = "Context Sensitive",
+                HorizontalAlignment = TextAlignment.Far,
+                Font = titleFontReference,
+            };
+            
+            _contextSensitiveToggle = new CheckBox
+            {
+                Width = 20,
+                Height = 20,
+                X = Width - 24,
+                Parent = headerPanel,
+                Checked = _contextSensitiveSearchEnabled,
+            };
+            _contextSensitiveToggle.StateChanged += OnContextSensitiveToggleStateChanged;
+            
             // Search box
             _searchBox = new SearchBox(false, 2, 22)
             {
@@ -249,6 +274,11 @@ namespace FlaxEditor.Surface.ContextMenu
                     group.SortChildren();
                 }
             }
+        }
+
+        private void OnContextSensitiveToggleStateChanged(CheckBox checkBox)
+        {
+            _contextSensitiveSearchEnabled = checkBox.Checked;
         }
 
         /// <summary>
@@ -767,6 +797,13 @@ namespace FlaxEditor.Surface.ContextMenu
         private IEnumerable<T> GetPreviousSiblings<T>(Control item) where T : Control
         {
             return GetPreviousSiblings(item).OfType<T>();
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            _contextSensitiveToggle.StateChanged -= OnContextSensitiveToggleStateChanged;
+            base.OnDestroy();
         }
     }
 }
