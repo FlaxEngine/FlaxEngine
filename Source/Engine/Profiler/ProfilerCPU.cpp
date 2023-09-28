@@ -205,7 +205,7 @@ int32 ProfilerCPU::BeginEvent(const char* name)
 
 void ProfilerCPU::EndEvent(int32 index)
 {
-    if (Enabled && Thread::Current)
+    if (index != -1 && Thread::Current)
         Thread::Current->EndEvent(index);
 }
 

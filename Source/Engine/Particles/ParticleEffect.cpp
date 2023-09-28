@@ -402,7 +402,7 @@ SceneRenderTask* ParticleEffect::GetRenderTask() const
 
 #if USE_EDITOR
 
-Array<ParticleEffect::ParameterOverride> ParticleEffect::GetParametersOverrides()
+Array<ParticleEffect::ParameterOverride>& ParticleEffect::GetParametersOverrides()
 {
     CacheModifiedParameters();
     return _parametersOverrides;
@@ -461,7 +461,6 @@ void ParticleEffect::CacheModifiedParameters()
 {
     if (_parameters.IsEmpty())
         return;
-
     _parametersOverrides.Clear();
     auto& parameters = GetParameters();
     for (auto& param : parameters)
