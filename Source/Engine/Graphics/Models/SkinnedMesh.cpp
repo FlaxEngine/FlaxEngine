@@ -175,11 +175,6 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
     DrawCall drawCall;
     drawCall.Geometry.IndexBuffer = _indexBuffer;
     drawCall.Geometry.VertexBuffers[0] = _vertexBuffer;
-    drawCall.Geometry.VertexBuffers[1] = nullptr;
-    drawCall.Geometry.VertexBuffers[2] = nullptr;
-    drawCall.Geometry.VertexBuffersOffsets[0] = 0;
-    drawCall.Geometry.VertexBuffersOffsets[1] = 0;
-    drawCall.Geometry.VertexBuffersOffsets[2] = 0;
     if (info.Deformation)
         info.Deformation->RunDeformers(this, MeshBufferType::Vertex0, drawCall.Geometry.VertexBuffers[0]);
     drawCall.Draw.StartIndex = 0;
@@ -224,14 +219,8 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
     DrawCall drawCall;
     drawCall.Geometry.IndexBuffer = _indexBuffer;
     drawCall.Geometry.VertexBuffers[0] = _vertexBuffer;
-    drawCall.Geometry.VertexBuffers[1] = nullptr;
-    drawCall.Geometry.VertexBuffers[2] = nullptr;
-    drawCall.Geometry.VertexBuffersOffsets[0] = 0;
-    drawCall.Geometry.VertexBuffersOffsets[1] = 0;
-    drawCall.Geometry.VertexBuffersOffsets[2] = 0;
     if (info.Deformation)
         info.Deformation->RunDeformers(this, MeshBufferType::Vertex0, drawCall.Geometry.VertexBuffers[0]);
-    drawCall.Draw.StartIndex = 0;
     drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;
     drawCall.Material = material;

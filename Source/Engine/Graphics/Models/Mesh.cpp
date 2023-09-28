@@ -401,10 +401,6 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
     drawCall.Geometry.VertexBuffers[1] = _vertexBuffers[1];
     drawCall.Geometry.VertexBuffers[2] = _vertexBuffers[2];
-    drawCall.Geometry.VertexBuffersOffsets[0] = 0;
-    drawCall.Geometry.VertexBuffersOffsets[1] = 0;
-    drawCall.Geometry.VertexBuffersOffsets[2] = 0;
-    drawCall.Draw.StartIndex = 0;
     drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;
     drawCall.Material = material;
@@ -459,9 +455,6 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
     drawCall.Geometry.VertexBuffers[1] = _vertexBuffers[1];
     drawCall.Geometry.VertexBuffers[2] = _vertexBuffers[2];
-    drawCall.Geometry.VertexBuffersOffsets[0] = 0;
-    drawCall.Geometry.VertexBuffersOffsets[1] = 0;
-    drawCall.Geometry.VertexBuffersOffsets[2] = 0;
     if (info.Deformation)
     {
         info.Deformation->RunDeformers(this, MeshBufferType::Vertex0, drawCall.Geometry.VertexBuffers[0]);
@@ -476,7 +469,6 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
         drawCall.Geometry.VertexBuffers[2] = info.VertexColors[_lodIndex];
         drawCall.Geometry.VertexBuffersOffsets[2] = vertexOffset * sizeof(VB2ElementType);
     }
-    drawCall.Draw.StartIndex = 0;
     drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;
     drawCall.Material = material;
@@ -525,9 +517,6 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
     drawCall.Geometry.VertexBuffers[1] = _vertexBuffers[1];
     drawCall.Geometry.VertexBuffers[2] = _vertexBuffers[2];
-    drawCall.Geometry.VertexBuffersOffsets[0] = 0;
-    drawCall.Geometry.VertexBuffersOffsets[1] = 0;
-    drawCall.Geometry.VertexBuffersOffsets[2] = 0;
     if (info.Deformation)
     {
         info.Deformation->RunDeformers(this, MeshBufferType::Vertex0, drawCall.Geometry.VertexBuffers[0]);
@@ -542,7 +531,6 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
         drawCall.Geometry.VertexBuffers[2] = info.VertexColors[_lodIndex];
         drawCall.Geometry.VertexBuffersOffsets[2] = vertexOffset * sizeof(VB2ElementType);
     }
-    drawCall.Draw.StartIndex = 0;
     drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;
     drawCall.Material = material;

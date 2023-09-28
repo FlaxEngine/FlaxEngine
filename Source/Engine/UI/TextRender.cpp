@@ -379,9 +379,6 @@ void TextRender::Draw(RenderContext& renderContext)
         drawCall.Geometry.VertexBuffers[0] = _vb0.GetBuffer();
         drawCall.Geometry.VertexBuffers[1] = _vb1.GetBuffer();
         drawCall.Geometry.VertexBuffers[2] = _vb2.GetBuffer();
-        drawCall.Geometry.VertexBuffersOffsets[0] = 0;
-        drawCall.Geometry.VertexBuffersOffsets[1] = 0;
-        drawCall.Geometry.VertexBuffersOffsets[2] = 0;
         drawCall.InstanceCount = 1;
 
         // Submit draw calls
