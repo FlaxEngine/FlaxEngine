@@ -161,6 +161,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 X = Width * 0.5f,
                 Parent = headerPanel,
                 Text = "Context Sensitive",
+                TooltipText = "Should the nodes be filtered to only show those that can be connected in the current context?",
                 HorizontalAlignment = TextAlignment.Far,
                 Font = titleFontReference,
             };
@@ -276,11 +277,6 @@ namespace FlaxEditor.Surface.ContextMenu
             }
         }
 
-        private void OnContextSensitiveToggleStateChanged(CheckBox checkBox)
-        {
-            _contextSensitiveSearchEnabled = checkBox.Checked;
-        }
-
         /// <summary>
         /// Adds the group archetype to add to the menu.
         /// </summary>
@@ -318,7 +314,7 @@ namespace FlaxEditor.Surface.ContextMenu
                         OnSearchFilterChanged();
                     }
                 }
-                else
+                else if(_contextSensitiveSearchEnabled)
                 {
                     group.EvaluateVisibilityWithBox(_selectedBox);
                 }
@@ -355,7 +351,8 @@ namespace FlaxEditor.Surface.ContextMenu
                             Parent = group
                         };
                     }
-                    group.EvaluateVisibilityWithBox(_selectedBox); 
+                    if(_contextSensitiveSearchEnabled)
+                        group.EvaluateVisibilityWithBox(_selectedBox); 
                     group.SortChildren();
                     group.Parent = _groupsPanel;
                     _groups.Add(group);
@@ -465,7 +462,7 @@ namespace FlaxEditor.Surface.ContextMenu
             LockChildrenRecursive();
             for (int i = 0; i < _groups.Count; i++)
             {
-                _groups[i].UpdateFilter(_searchBox.Text, _selectedBox);
+                _groups[i].UpdateFilter(_searchBox.Text, _contextSensitiveSearchEnabled ? _selectedBox : null);
                 _groups[i].UpdateItemSort(_selectedBox);
             }
             SortGroups();
@@ -484,6 +481,30 @@ namespace FlaxEditor.Surface.ContextMenu
             Profiler.EndEvent();
         }
 
+        private void OnContextSensitiveToggleStateChanged(CheckBox checkBox)
+        {
+            Profiler.BeginEvent("VisjectCM.OnContextSensitiveToggleStateChanged");
+            _contextSensitiveSearchEnabled = checkBox.Checked;
+            
+            LockChildrenRecursive();
+            for (int i = 0; i < _groups.Count; i++)
+            {
+                _groups[i].UpdateFilter(_searchBox.Text, _contextSensitiveSearchEnabled ? _selectedBox : null);
+            }
+            SortGroups();
+            UnlockChildrenRecursive();
+            
+            Profiler.BeginEvent("VisjectCM.Layout");
+            if (SelectedItem == null || !SelectedItem.VisibleInHierarchy)
+                SelectedItem = _groups.Find(g => g.Visible)?.Children.Find(c => c.Visible && c is VisjectCMItem) as VisjectCMItem;
+            PerformLayout();
+            if (SelectedItem != null)
+                _panel1.ScrollViewTo(SelectedItem);
+            Profiler.EndEvent();
+            
+            Profiler.EndEvent();
+        }
+        
         /// <summary>
         /// Sort the groups and keeps <see cref="_groups"/> in sync
         /// </summary>
@@ -540,7 +561,8 @@ namespace FlaxEditor.Surface.ContextMenu
             for (int i = 0; i < _groups.Count; i++)
             {
                 _groups[i].ResetView();
-                _groups[i].EvaluateVisibilityWithBox(_selectedBox);
+                if(_contextSensitiveSearchEnabled)
+                    _groups[i].EvaluateVisibilityWithBox(_selectedBox);
             }
             UnlockChildrenRecursive();
 

@@ -309,11 +309,14 @@ namespace FlaxEditor.Surface.ContextMenu
             if (selectedBox != null)
             {
                 if (!CanConnectTo(selectedBox))
+                {
+                    _highlights?.Clear();
                     return;
+                }
             }
             
             _isStartsWithMatch = _isFullMatch = false;
-            if (filterText == null)
+            if (string.IsNullOrEmpty(filterText))
             {
                 // Clear filter
                 _highlights?.Clear();

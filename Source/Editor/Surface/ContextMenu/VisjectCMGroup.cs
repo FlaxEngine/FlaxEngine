@@ -132,6 +132,13 @@ namespace FlaxEditor.Surface.ContextMenu
         {
             if (selectedBox == null)
             {
+                for (int i = 0; i < _children.Count; i++)
+                {
+                    if (_children[i] is VisjectCMItem item)
+                    {
+                        item.CanConnectTo(null);
+                    }
+                }
                 Visible = true;
                 return;
             }
