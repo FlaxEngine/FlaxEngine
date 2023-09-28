@@ -363,7 +363,7 @@ namespace FlaxEngine.Interop
 
         internal delegate object MarshalToManagedDelegate(IntPtr nativePtr, bool byRef);
         internal delegate void MarshalToNativeDelegate(object managedObject, IntPtr nativePtr);
-        internal delegate void MarshalToNativeFieldDelegate(int fieldOffset, object fieldOwner, IntPtr nativePtr, out int fieldSize);
+        internal delegate void MarshalToNativeFieldDelegate(FieldInfo field, int fieldOffset, object fieldOwner, IntPtr nativePtr, out int fieldSize);
 
         internal static ConcurrentDictionary<Type, MarshalToManagedDelegate> toManagedMarshallers = new ConcurrentDictionary<Type, MarshalToManagedDelegate>(1, 3);
         internal static ConcurrentDictionary<Type, MarshalToNativeDelegate> toNativeMarshallers = new ConcurrentDictionary<Type, MarshalToNativeDelegate>(1, 3);
@@ -471,7 +471,7 @@ namespace FlaxEngine.Interop
         {
             private delegate void MarshalToNativeTypedDelegate(ref T managedValue, IntPtr nativePtr);
             private delegate void MarshalToManagedTypedDelegate(ref T managedValue, IntPtr nativePtr, bool byRef);
-            internal delegate void MarshalFieldTypedDelegate(int managedFieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize);
+            internal delegate void MarshalFieldTypedDelegate(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize);
             internal delegate void* GetBasePointer(ref T fieldOwner);
 
             internal static FieldInfo[] marshallableFields;
@@ -605,7 +605,6 @@ namespace FlaxEngine.Interop
                         methodName = nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToManagedWithMarshallableFields);
                     else
                         methodName = nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToManaged);
-
                     toManagedMethod = typeof(MarshalHelperValueType<>).MakeGenericType(type).GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
                 }
                 else if (type.IsArray)
@@ -716,7 +715,7 @@ namespace FlaxEngine.Interop
                 toNativeTypedMarshaller(ref managedValue, nativePtr);
             }
 
-            internal static void ToNativeField(int fieldOffset, ref T fieldOwner, IntPtr nativePtr, out int fieldSize)
+            internal static void ToNativeField(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativePtr, out int fieldSize)
             {
                 if (marshallableFields != null)
                 {
@@ -724,7 +723,7 @@ namespace FlaxEngine.Interop
                     {
                         if (marshallableFieldOffsets[i] == fieldOffset)
                         {
-                            toNativeFieldMarshallers[i](fieldOffset, ref fieldOwner, nativePtr, out fieldSize);
+                            toNativeFieldMarshallers[i](field, fieldOffset, ref fieldOwner, nativePtr, out fieldSize);
                             return;
                         }
                     }
@@ -732,28 +731,28 @@ namespace FlaxEngine.Interop
                 throw new NativeInteropException($"Invalid field with offset {fieldOffset} to marshal for type {typeof(T).Name}");
             }
 
-            private static void ToManagedFieldPointerValueType(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
+            private static void ToManagedFieldPointerValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
             {
                 ref IntPtr fieldValueRef = ref FieldHelper.GetValueTypeFieldReference<T, IntPtr>(fieldOffset, ref fieldOwner);
                 fieldValueRef = Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer());
                 fieldSize = IntPtr.Size;
             }
 
-            private static void ToManagedFieldPointerReferenceType(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
+            private static void ToManagedFieldPointerReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
             {
                 ref IntPtr fieldValueRef = ref FieldHelper.GetReferenceTypeFieldReference<T, IntPtr>(fieldOffset, ref fieldOwner);
                 fieldValueRef = Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer());
                 fieldSize = IntPtr.Size;
             }
 
-            private static void ToNativeFieldPointerValueType(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
+            private static void ToNativeFieldPointerValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
             {
                 ref IntPtr fieldValueRef = ref FieldHelper.GetValueTypeFieldReference<T, IntPtr>(fieldOffset, ref fieldOwner);
                 Unsafe.Write<IntPtr>(nativeFieldPtr.ToPointer(), fieldValueRef);
                 fieldSize = IntPtr.Size;
             }
 
-            private static void ToNativeFieldPointerReferenceType(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
+            private static void ToNativeFieldPointerReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
             {
                 ref IntPtr fieldValueRef = ref FieldHelper.GetReferenceTypeFieldReference<T, IntPtr>(fieldOffset, ref fieldOwner);
                 Unsafe.Write<IntPtr>(nativeFieldPtr.ToPointer(), fieldValueRef);
@@ -788,7 +787,7 @@ namespace FlaxEngine.Interop
                         fieldAlignment = GetTypeSize(fieldType);
                 }
 
-                internal static void ToManagedFieldValueType(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
+                internal static void ToManagedFieldValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
                 {
                     fieldSize = Unsafe.SizeOf<TField>();
                     if (fieldAlignment > 1)
@@ -802,7 +801,7 @@ namespace FlaxEngine.Interop
                     MarshalHelper<TField>.ToManaged(ref fieldValueRef, nativeFieldPtr, false);
                 }
 
-                internal static void ToManagedFieldReferenceType(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
+                internal static void ToManagedFieldReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
                 {
                     fieldSize = Unsafe.SizeOf<TField>();
                     if (fieldAlignment > 1)
@@ -816,7 +815,7 @@ namespace FlaxEngine.Interop
                     MarshalHelper<TField>.ToManaged(ref fieldValueRef, nativeFieldPtr, false);
                 }
 
-                internal static void ToManagedFieldArrayValueType(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
+                internal static void ToManagedFieldArrayValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
                 {
                     // Follows the same marshalling semantics with reference types
                     fieldSize = Unsafe.SizeOf<IntPtr>();
@@ -828,7 +827,7 @@ namespace FlaxEngine.Interop
                     MarshalHelper<TField[]>.ToManaged(ref fieldValueRef, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
                 }
 
-                internal static void ToManagedFieldArrayReferenceType(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
+                internal static void ToManagedFieldArrayReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
                 {
                     // Follows the same marshalling semantics with reference types
                     fieldSize = Unsafe.SizeOf<IntPtr>();
@@ -840,7 +839,7 @@ namespace FlaxEngine.Interop
                     MarshalHelper<TField[]>.ToManaged(ref fieldValueRef, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
                 }
 
-                internal static void ToNativeFieldValueType(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
+                internal static void ToNativeFieldValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
                 {
                     fieldSize = Unsafe.SizeOf<TField>();
                     if (fieldAlignment > 1)
@@ -858,7 +857,7 @@ namespace FlaxEngine.Interop
                     MarshalHelper<TField>.ToNative(ref fieldValueRef, nativeFieldPtr);
                 }
 
-                internal static void ToNativeFieldReferenceType(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
+                internal static void ToNativeFieldReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
                 {
                     fieldSize = Unsafe.SizeOf<TField>();
                     if (fieldAlignment > 1)
@@ -883,12 +882,12 @@ namespace FlaxEngine.Interop
                 {
                 }
 
-                internal static void ToManagedField(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize)
+                internal static void ToManagedField(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize)
                 {
                     fieldSize = 0;
                 }
 
-                internal static void ToNativeField(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize)
+                internal static void ToNativeField(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize)
                 {
                     fieldSize = 0;
                 }
@@ -896,7 +895,7 @@ namespace FlaxEngine.Interop
 
             private static class ReferenceTypeField<TField> where TField : class
             {
-                internal static void ToManagedFieldValueType(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
+                internal static void ToManagedFieldValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
                 {
                     fieldSize = Unsafe.SizeOf<IntPtr>();
                     IntPtr fieldStartPtr = nativeFieldPtr;
@@ -907,7 +906,7 @@ namespace FlaxEngine.Interop
                     MarshalHelper<TField>.ToManaged(ref fieldValueRef, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
                 }
 
-                internal static void ToManagedFieldReferenceType(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
+                internal static void ToManagedFieldReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
                 {
                     fieldSize = Unsafe.SizeOf<IntPtr>();
                     IntPtr fieldStartPtr = nativeFieldPtr;
@@ -918,7 +917,7 @@ namespace FlaxEngine.Interop
                     MarshalHelper<TField>.ToManaged(ref fieldValueRef, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
                 }
 
-                internal static void ToManagedFieldArrayValueType(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
+                internal static void ToManagedFieldArrayValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
                 {
                     fieldSize = Unsafe.SizeOf<IntPtr>();
                     IntPtr fieldStartPtr = nativeFieldPtr;
@@ -929,7 +928,7 @@ namespace FlaxEngine.Interop
                     MarshalHelper<TField[]>.ToManaged(ref fieldValueRef, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
                 }
 
-                internal static void ToManagedFieldArrayReferenceType(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
+                internal static void ToManagedFieldArrayReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
                 {
                     fieldSize = Unsafe.SizeOf<IntPtr>();
                     IntPtr fieldStartPtr = nativeFieldPtr;
@@ -940,7 +939,7 @@ namespace FlaxEngine.Interop
                     MarshalHelper<TField[]>.ToManaged(ref fieldValueRef, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
                 }
 
-                internal static void ToNativeFieldValueType(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
+                internal static void ToNativeFieldValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
                 {
                     fieldSize = Unsafe.SizeOf<IntPtr>();
                     IntPtr fieldStartPtr = nativeFieldPtr;
@@ -951,7 +950,7 @@ namespace FlaxEngine.Interop
                     MarshalHelper<TField>.ToNative(ref fieldValueRef, nativeFieldPtr);
                 }
 
-                internal static void ToNativeFieldReferenceType(int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
+                internal static void ToNativeFieldReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
                 {
                     fieldSize = Unsafe.SizeOf<IntPtr>();
                     IntPtr fieldStartPtr = nativeFieldPtr;
@@ -971,9 +970,9 @@ namespace FlaxEngine.Interop
                 MarshalHelper<T>.ToNative(ref Unsafe.Unbox<T>(managedObject), nativePtr);
             }
 
-            internal static void ToNativeFieldWrapper(int fieldOffset, object fieldOwner, IntPtr nativePtr, out int fieldSize)
+            internal static void ToNativeFieldWrapper(FieldInfo field, int fieldOffset, object fieldOwner, IntPtr nativePtr, out int fieldSize)
             {
-                MarshalHelper<T>.ToNativeField(fieldOffset, ref Unsafe.Unbox<T>(fieldOwner), nativePtr, out fieldSize);
+                MarshalHelper<T>.ToNativeField(field, fieldOffset, ref Unsafe.Unbox<T>(fieldOwner), nativePtr, out fieldSize);
             }
 
             internal static void ToManagedPointer(ref IntPtr managedValue, IntPtr nativePtr, bool byRef)
@@ -982,7 +981,6 @@ namespace FlaxEngine.Interop
                 byRef |= type.IsByRef; // Is this needed?
                 if (type.IsByRef)
                     Assert.IsTrue(type.GetElementType().IsValueType);
-
                 managedValue = byRef ? nativePtr : Unsafe.Read<IntPtr>(nativePtr.ToPointer());
             }
 
@@ -994,9 +992,12 @@ namespace FlaxEngine.Interop
             internal static void ToManagedWithMarshallableFields(ref T managedValue, IntPtr nativePtr, bool byRef)
             {
                 IntPtr fieldPtr = nativePtr;
-                for (int i = 0; i < MarshalHelper<T>.marshallableFields.Length; i++)
+                var fields = MarshalHelper<T>.marshallableFields;
+                var offsets = MarshalHelper<T>.marshallableFieldOffsets;
+                var marshallers = MarshalHelper<T>.toManagedFieldMarshallers;
+                for (int i = 0; i < fields.Length; i++)
                 {
-                    MarshalHelper<T>.toManagedFieldMarshallers[i](MarshalHelper<T>.marshallableFieldOffsets[i], ref managedValue, fieldPtr, out int fieldSize);
+                    marshallers[i](fields[i], offsets[i], ref managedValue, fieldPtr, out int fieldSize);
                     fieldPtr += fieldSize;
                 }
                 Assert.IsTrue((fieldPtr - nativePtr) <= Unsafe.SizeOf<T>());
@@ -1038,9 +1039,12 @@ namespace FlaxEngine.Interop
             internal static void ToNativeWithMarshallableFields(ref T managedValue, IntPtr nativePtr)
             {
                 IntPtr fieldPtr = nativePtr;
+                var fields = MarshalHelper<T>.marshallableFields;
+                var offsets = MarshalHelper<T>.marshallableFieldOffsets;
+                var marshallers = MarshalHelper<T>.toNativeFieldMarshallers;
                 for (int i = 0; i < MarshalHelper<T>.marshallableFields.Length; i++)
                 {
-                    MarshalHelper<T>.toNativeFieldMarshallers[i](MarshalHelper<T>.marshallableFieldOffsets[i], ref managedValue, nativePtr, out int fieldSize);
+                    marshallers[i](fields[i], offsets[i], ref managedValue, nativePtr, out int fieldSize);
                     nativePtr += fieldSize;
                 }
                 Assert.IsTrue((nativePtr - fieldPtr) <= Unsafe.SizeOf<T>());
@@ -1060,10 +1064,10 @@ namespace FlaxEngine.Interop
                 MarshalHelper<T>.ToNative(ref managedValue, nativePtr);
             }
 
-            internal static void ToNativeFieldWrapper(int fieldOffset, object managedObject, IntPtr nativePtr, out int fieldSize)
+            internal static void ToNativeFieldWrapper(FieldInfo field, int fieldOffset, object fieldOwner, IntPtr nativePtr, out int fieldSize)
             {
-                T managedValue = Unsafe.As<T>(managedObject);
-                MarshalHelper<T>.ToNativeField(fieldOffset, ref managedValue, nativePtr, out fieldSize);
+                T managedValue = Unsafe.As<T>(fieldOwner);
+                MarshalHelper<T>.ToNativeField(field, fieldOffset, ref managedValue, nativePtr, out fieldSize);
             }
 
             internal static void ToManagedString(ref string managedValue, IntPtr nativePtr, bool byRef)
