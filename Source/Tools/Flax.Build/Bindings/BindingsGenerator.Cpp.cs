@@ -1967,7 +1967,7 @@ namespace Flax.Build.Bindings
                     }
                     contents.Append(')').AppendLine();
                     contents.Append("    {").AppendLine();
-                    if (buildData.Target.IsEditor)
+                    if (buildData.Target.IsEditor && false)
                         contents.Append("        MMethod* method = nullptr;").AppendLine(); // TODO: find a better way to cache event method in editor and handle C# hot-reload
                     else
                         contents.Append("        static MMethod* method = nullptr;").AppendLine();
