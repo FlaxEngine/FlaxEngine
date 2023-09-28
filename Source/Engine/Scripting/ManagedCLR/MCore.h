@@ -196,7 +196,7 @@ public:
     /// </summary>
     struct FLAXENGINE_API ScriptingObject
     {
-        static void SetInternalValues(MObject* object, void* unmanagedPtr, const Guid* id);
+        static void SetInternalValues(MClass* klass, MObject* object, void* unmanagedPtr, const Guid* id);
         static MObject* CreateScriptingObject(MClass* klass, void* unmanagedPtr, const Guid* id);
     };
 };

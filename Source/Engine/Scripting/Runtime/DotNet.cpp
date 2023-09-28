@@ -1737,7 +1737,7 @@ void* GetStaticMethodPointer(const String& methodName)
     return fun;
 }
 
-void MCore::ScriptingObject::SetInternalValues(MObject* object, void* unmanagedPtr, const Guid* id)
+void MCore::ScriptingObject::SetInternalValues(MClass* klass, MObject* object, void* unmanagedPtr, const Guid* id)
 {
     static void* ScriptingObjectSetInternalValuesPtr = GetStaticMethodPointer(TEXT("ScriptingObjectSetInternalValues"));
     CallStaticMethod<void, MObject*, void*, const Guid*>(ScriptingObjectSetInternalValuesPtr, object, unmanagedPtr, id);

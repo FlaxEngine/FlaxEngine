@@ -565,7 +565,7 @@ const Array<MObject*>& MProperty::GetAttributes() const
     return _attributes;
 }
 
-void MCore::ScriptingObject::SetInternalValues(MObject* object, void* unmanagedPtr, const Guid* id)
+void MCore::ScriptingObject::SetInternalValues(MClass* klass, MObject* object, void* unmanagedPtr, const Guid* id)
 {
 }
 

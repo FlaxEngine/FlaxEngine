@@ -134,7 +134,7 @@ namespace FlaxEngine.Interop
                 ref IntPtr fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<IntPtr>(unmanagedPtrFieldOffset, ref obj);
                 fieldRef = unmanagedPtr;
             }
-            
+
             if (idPtr != IntPtr.Zero)
             {
                 ref Guid nativeId = ref Unsafe.AsRef<Guid>(idPtr.ToPointer());
