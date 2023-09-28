@@ -206,6 +206,13 @@ public:
     /// </summary>
     void UnregisterObject();
 
+#if USE_CSHARP
+    /// <summary>
+    /// Sets the internal values in managed object.
+    /// </summary>
+    static void SetInternalValues(MClass* monoClass, MObject* managedInstance, void* unmanagedPtr, const Guid* id);
+#endif
+
 protected:
 #if USE_CSHARP
     /// <summary>
