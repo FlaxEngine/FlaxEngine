@@ -216,5 +216,36 @@ namespace FlaxEditor.Windows
 
             base.OnDestroy();
         }
+
+        /// <inheritdoc />
+        protected override bool OnClosing(ClosingReason reason)
+        {
+            // Block closing only on user events
+            if (reason == ClosingReason.User)
+            {
+                // Check if asset has been edited and not saved (and still has linked item)
+                if (_isDataDirty && _options != null)
+                {
+                    // Ask user for further action
+                    var result = MessageBox.Show(
+                                                 "Editor options have been edited. Save before closing?",
+                                                 "Save before closing?",
+                                                 MessageBoxButtons.YesNoCancel
+                                                );
+                    if (result == DialogResult.OK || result == DialogResult.Yes)
+                    {
+                        // Save and close
+                        SaveData();
+                    }
+                    else if (result == DialogResult.Cancel || result == DialogResult.Abort)
+                    {
+                        // Cancel closing
+                        return true;
+                    }
+                }
+            }
+
+            return base.OnClosing(reason);
+        }
     }
 }
