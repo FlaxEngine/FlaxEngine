@@ -106,6 +106,7 @@ namespace FlaxEngine.GUI
             desc.IsTopmost = true;
             desc.IsRegularWindow = false;
             desc.HasSizingFrame = false;
+            desc.ShowAfterFirstPaint = true;
             _window = Platform.CreateWindow(ref desc);
             if (_window == null)
                 throw new InvalidOperationException("Failed to create tooltip window.");
@@ -195,8 +196,32 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
-            // Auto hide if mouse leaves control area
             var mousePos = Input.MouseScreenPosition;
+            
+            // Calculate popup direction
+            float dpiScale = _showTarget.RootWindow.DpiScale;
+            var dpiSize = Size * dpiScale;
+            var locationSS = mousePos;
+            var monitorBounds = Platform.GetMonitorBounds(locationSS);
+            var rightBottomMonitorBounds = monitorBounds.BottomRight;
+            var rightBottomLocationSS = locationSS + dpiSize;
+
+            // Prioritize tooltip placement within parent window, fall back to virtual desktop
+            if (rightBottomMonitorBounds.Y < rightBottomLocationSS.Y)
+            {
+                // Direction: up
+                locationSS.Y -= dpiSize.Y + 10;
+            }
+            if (rightBottomMonitorBounds.X < rightBottomLocationSS.X)
+            {
+                // Direction: left
+                locationSS.X -= dpiSize.X + 20;
+            }
+            
+            // Move window with mouse location
+            _window.Position = locationSS + new Float2(15, 10);
+            
+            // Auto hide if mouse leaves control area
             var location = _showTarget.PointFromScreen(mousePos);
             if (!_showTarget.OnTestTooltipOverControl(ref location))
             {
