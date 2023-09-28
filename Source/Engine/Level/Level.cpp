@@ -993,7 +993,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
 
     // /\ all above this has to be done on an any thread
     // \/ all below this has to be done on multiple threads at once
-
+    
     {
         PROFILE_CPU_NAMED("Deserialize");
 
@@ -1016,7 +1016,15 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
 
     // Synchronize prefab instances (prefab may have objects removed or reordered so deserialized instances need to synchronize with it)
     // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
+
     SceneObjectsFactory::SynchronizePrefabInstances(context, prefabSyncData);
+
+    // Cache transformations
+    {
+        PROFILE_CPU_NAMED("Cache Transform");
+
+        scene->OnTransformChanged();
+    }
 
     // Initialize scene objects
     {
@@ -1037,13 +1045,6 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
                 }
             }
         }
-    }
-
-    // Cache transformations
-    {
-        PROFILE_CPU_NAMED("Cache Transform");
-
-        scene->OnTransformChanged();
     }
 
     // /\ all above this has to be done on an any thread
