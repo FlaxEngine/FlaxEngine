@@ -43,7 +43,7 @@ Guid Prefab::GetRootObjectId() const
                 if (prefabObjectId == basePrefabRootId)
                 {
                     objectIndex = i;
-                    break;   
+                    break;
                 }
             }
         }

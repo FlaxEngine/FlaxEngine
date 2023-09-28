@@ -39,7 +39,7 @@ PrefabManagerService PrefabManagerServiceInstance;
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab)
 {
     Actor* parent = Level::Scenes.Count() != 0 ? Level::Scenes.Get()[0] : nullptr;
-    return SpawnPrefab(prefab,Transform::Identity, parent, nullptr);
+    return SpawnPrefab(prefab, Transform::Identity, parent, nullptr);
 }
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Vector3& position)
@@ -65,11 +65,23 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform)
     Actor* parent = Level::Scenes.Count() != 0 ? Level::Scenes.Get()[0] : nullptr;
     return SpawnPrefab(prefab, transform, parent, nullptr);
 }
+
+Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, const Transform& transform)
+{
+    return SpawnPrefab(prefab, transform, parent, nullptr);
+}
+
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent)
 {
     return SpawnPrefab(prefab, Transform::Identity, parent, nullptr);
 }
-Actor* PrefabManager::SpawnPrefab(Prefab* prefab,const Transform& transform, Actor* parent, Dictionary<Guid, const void*>* objectsCache, bool withSynchronization)
+
+Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid, const void*>* objectsCache, bool withSynchronization)
+{
+    return SpawnPrefab(prefab, Transform::Identity, parent, objectsCache, withSynchronization);
+}
+
+Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform, Actor* parent, Dictionary<Guid, const void*>* objectsCache, bool withSynchronization)
 {
     PROFILE_CPU_NAMED("Prefab.Spawn");
     if (prefab == nullptr)
@@ -178,7 +190,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab,const Transform& transform, Act
     if (parent)
         parent->Children.Add(root);
 
-    //move root to right location
+    // Move root to the right location
     if (transform != Transform::Identity)
         root->SetTransform(transform);
 

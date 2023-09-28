@@ -993,7 +993,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
 
     // /\ all above this has to be done on an any thread
     // \/ all below this has to be done on multiple threads at once
-    
+
     {
         PROFILE_CPU_NAMED("Deserialize");
 
@@ -1001,10 +1001,11 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
 
         // Load all scene objects
         Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
+        SceneObject** objects = sceneObjects->Get();
         for (int32 i = 1; i < objectsCount; i++) // start from 1. at index [0] was scene
         {
             auto& objData = data[i];
-            auto obj = sceneObjects->At(i);
+            auto obj = objects[i];
             if (obj)
                 SceneObjectsFactory::Deserialize(context, obj, objData);
         }
@@ -1016,7 +1017,6 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
 
     // Synchronize prefab instances (prefab may have objects removed or reordered so deserialized instances need to synchronize with it)
     // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
-
     SceneObjectsFactory::SynchronizePrefabInstances(context, prefabSyncData);
 
     // Cache transformations
@@ -1030,9 +1030,10 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
     {
         PROFILE_CPU_NAMED("Initialize");
 
+        SceneObject** objects = sceneObjects->Get();
         for (int32 i = 0; i < sceneObjects->Count(); i++)
         {
-            SceneObject* obj = sceneObjects->At(i);
+            SceneObject* obj = objects[i];
             if (obj)
             {
                 obj->Initialize();
@@ -1498,7 +1499,7 @@ Array<Actor*> Level::FindActors(const Tag& tag, const bool activeOnly, Actor* ro
     {
         ScopeLock lock(ScenesLock);
         for (Scene* scene : Scenes)
-            FindActorsRecursive(scene, tag, activeOnly,  result);
+            FindActorsRecursive(scene, tag, activeOnly, result);
     }
     return result;
 }

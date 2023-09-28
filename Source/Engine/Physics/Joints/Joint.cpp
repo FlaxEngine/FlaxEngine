@@ -146,7 +146,7 @@ void Joint::Create()
     if (_enableAutoAnchor && target)
     {
         // Place target anchor at the joint location
-        desc.Pos1 = (Target->GetOrientation() * (GetPosition() - Target->GetPosition())) + Target->GetPosition();
+        desc.Pos1 = Target->GetTransform().WorldToLocal(GetPosition());
         desc.Rot1 = WorldToLocal(Target->GetOrientation(), GetOrientation());
     }
     _joint = CreateJoint(desc);
@@ -197,9 +197,8 @@ Vector3 Joint::GetTargetPosition() const
     if (Target)
     {
         if (_enableAutoAnchor)
-            position = (Target->GetOrientation() * (GetPosition() - Target->GetPosition())) + Target->GetPosition();
-        else
-            position = Target->GetOrientation() * position + Target->GetPosition();
+            position = Target->GetTransform().WorldToLocal(GetPosition());
+        position = Target->GetOrientation() * position + Target->GetPosition();
     }
     return position;
 }

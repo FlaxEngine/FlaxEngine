@@ -1221,7 +1221,7 @@ bool Prefab::SyncChangesInternal(PrefabInstancesData& prefabInstancesData)
     {
         ScopeLock lock(Locker);
         _isCreatingDefaultInstance = true;
-        _defaultInstance = PrefabManager::SpawnPrefab(this,Transform::Identity, nullptr, &ObjectsCache, true);
+        _defaultInstance = PrefabManager::SpawnPrefab(this, Transform::Identity, nullptr, &ObjectsCache, true);
         _isCreatingDefaultInstance = false;
     }
 
