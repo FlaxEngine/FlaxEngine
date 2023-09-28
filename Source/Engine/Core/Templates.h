@@ -303,9 +303,9 @@ inline typename TRemoveReference<T>::Type&& MoveTemp(T&& obj)
 template<typename T>
 inline void Swap(T& a, T& b) noexcept
 {
-    T tmp = a;
+    T tmp = MoveTemp(a);
     a = b;
-    b = tmp;
+    b = MoveTemp(tmp);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////

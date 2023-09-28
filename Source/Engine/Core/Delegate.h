@@ -572,7 +572,7 @@ public:
             _locker = New<CriticalSection>();
         ScopeLock lock(*_locker);
         if (_functions && _functions->Contains(f))
-            return; 
+            return;
 #endif
         Bind(f);
     }
