@@ -299,6 +299,8 @@ namespace Flax.Build.Bindings
             // Object reference property
             if (typeInfo.IsObjectRef)
                 return GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller);
+            if (typeInfo.Type == "SoftTypeReference" || typeInfo.Type == "SoftObjectReference")
+                return typeInfo.Type;
 
             // Array or Span or DataContainer
 #if USE_NETCORE

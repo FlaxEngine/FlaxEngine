@@ -26,7 +26,7 @@ namespace Flax.Build.Projects.VisualStudio
         public override TargetType? Type => TargetType.DotNetCore;
 
         /// <inheritdoc />
-        public override void GenerateProject(Project project)
+        public override void GenerateProject(Project project, string solutionPath)
         {
             var csProjectFileContent = new StringBuilder();
 
@@ -52,6 +52,11 @@ namespace Flax.Build.Projects.VisualStudio
                     break;
                 }
             }
+
+            // Try to reuse the existing project guid from solution file
+            vsProject.ProjectGuid = GetProjectGuid(solutionPath, vsProject.Name);
+            if (vsProject.ProjectGuid == Guid.Empty)
+                vsProject.ProjectGuid = Guid.NewGuid();
 
             // Header
             csProjectFileContent.AppendLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
