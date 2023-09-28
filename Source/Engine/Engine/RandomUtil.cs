@@ -67,7 +67,7 @@ namespace FlaxEngine
         /// </summary>
         /// <returns>A random <see cref="Float3"/> within the sphere.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Float3 InsideSphere()
+        public static Float3 GetPointInsideSphere()
         {
             return Random.NextUnitVector3();
         }
@@ -77,7 +77,7 @@ namespace FlaxEngine
         /// </summary>
         /// <returns>A random <see cref="Float3"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Float3 OnSphere()
+        public static Float3 GetPointOnSphere()
         {
             float z = 2 * Random.NextFloat() - 1;
             float t = 2 * Mathf.Pi * Random.NextFloat();
