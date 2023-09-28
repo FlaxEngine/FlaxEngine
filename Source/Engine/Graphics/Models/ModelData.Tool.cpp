@@ -154,8 +154,8 @@ bool MeshData::GenerateLightmapUVs()
 
 int32 FindVertex(const MeshData& mesh, int32 vertexIndex, int32 startIndex, int32 searchRange, const Array<int32>& mapping
 #if USE_SPARIAL_SORT
-    , const Assimp::SpatialSort& spatialSort
-    , std::vector<unsigned int>& sparialSortCache
+                 , const Assimp::SpatialSort& spatialSort
+                 , std::vector<unsigned int>& sparialSortCache
 #endif
 )
 {
@@ -181,18 +181,19 @@ int32 FindVertex(const MeshData& mesh, int32 vertexIndex, int32 startIndex, int3
         if (v < startIndex || v >= end)
             continue;
 #else
-    const Float3 vPosition = mesh.Positions[vertexIndex];
-    const Float2 vUV = mesh.UVs.HasItems() ? mesh.UVs[vertexIndex] : Float2::Zero;
-    const Float3 vNormal = mesh.Normals.HasItems() ? mesh.Normals[vertexIndex] : Float3::Zero;
-    const Float3 vTangent = mesh.Tangents.HasItems() ? mesh.Tangents[vertexIndex] : Float3::Zero;
-    const Float2 vLightmapUV = mesh.LightmapUVs.HasItems() ? mesh.LightmapUVs[vertexIndex] : Float2::Zero;
+	const Float3 vPosition = mesh.Positions[vertexIndex];
+	const Float2 vUV = mesh.UVs.HasItems() ? mesh.UVs[vertexIndex] : Float2::Zero;
+	const Float3 vNormal = mesh.Normals.HasItems() ? mesh.Normals[vertexIndex] : Float3::Zero;
+	const Float3 vTangent = mesh.Tangents.HasItems() ? mesh.Tangents[vertexIndex] : Float3::Zero;
+	const Float2 vLightmapUV = mesh.LightmapUVs.HasItems() ? mesh.LightmapUVs[vertexIndex] : Float2::Zero;
     const Color vColor = mesh.Colors.HasItems() ? mesh.Colors[vertexIndex] : Color::Black; // Assuming Color::Black as a default color
-    const int32 end = startIndex + searchRange;
 
-    for (int32 v = startIndex; v < end; v++)
-    {
-        if (!Float3::NearEqual(vPosition, mesh.Positions[v]))
-            continue;
+	const int32 end = startIndex + searchRange;
+
+	for (int32 v = startIndex; v < end; v++)
+	{
+		if (!Float3::NearEqual(vPosition, mesh.Positions[v]))
+			continue;
 #endif
         if (mapping[v] == INVALID_INDEX)
             continue;
