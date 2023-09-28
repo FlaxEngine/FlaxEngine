@@ -105,6 +105,12 @@ namespace FlaxEngine.GUI
         public Color ForegroundDisabled;
 
         /// <summary>
+        /// The foreground color in viewports (usually have a dark background)
+        /// </summary>
+        [EditorOrder(115)]
+        public Color ForegroundViewport;
+
+        /// <summary>
         /// The background highlighted color.
         /// </summary>
         [EditorOrder(120)]

@@ -63,13 +63,14 @@ namespace FlaxEditor.Options
             private void ReloadOptions(ComboBox obj)
             {
                 var themeOptions = (ThemeOptions)ParentEditor.Values[0];
-                var options = new string[themeOptions.Styles.Count + 1];
+                var options = new string[themeOptions.Styles.Count + 2];
                 options[0] = "Default";
+                options[1] = "LightDefault";
 
                 int i = 0;
                 foreach (var styleName in themeOptions.Styles.Keys)
                 {
-                    options[i + 1] = styleName;
+                    options[i + 2] = styleName;
                     i++;
                 }
                 _combobox.ComboBox.SetItems(options);

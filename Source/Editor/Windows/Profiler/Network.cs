@@ -205,6 +205,7 @@ namespace FlaxEditor.Windows.Profiler
         private static Table InitTable(ContainerControl parent, string name)
         {
             var headerColor = Style.Current.LightBackground;
+            var textColor = Style.Current.Foreground;
             var table = new Table
             {
                 Columns = new[]
@@ -215,28 +216,33 @@ namespace FlaxEditor.Windows.Profiler
                         CellAlignment = TextAlignment.Near,
                         Title = name,
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Count",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Data Size",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                         FormatValue = FormatCellBytes,
                     },
                     new ColumnDefinition
                     {
                         Title = "Message Size",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                         FormatValue = FormatCellBytes,
                     },
                     new ColumnDefinition
                     {
                         Title = "Receivers",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                     },
                 },
                 Splits = new[]
