@@ -293,7 +293,7 @@ public:
     /// Event fired when virtual input action is triggered. Called before scripts update. See <see cref="ActionMappings"/> to edit configuration.
     /// </summary>
     /// <seealso cref="InputEvent"/>
-    API_EVENT() static Delegate<StringView, const InputActionState&> ActionTriggered;
+    API_EVENT() static Delegate<StringView, InputActionState> ActionTriggered;
 
     /// <summary>
     /// Event fired when virtual input axis is changed. Called before scripts update. See <see cref="AxisMappings"/> to edit configuration.

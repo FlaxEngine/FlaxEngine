@@ -97,7 +97,7 @@ Action Input::MouseLeave;
 Delegate<const Float2&, int32> Input::TouchDown;
 Delegate<const Float2&, int32> Input::TouchMove;
 Delegate<const Float2&, int32> Input::TouchUp;
-Delegate<StringView, const InputActionState&> Input::ActionTriggered;
+Delegate<StringView, InputActionState> Input::ActionTriggered;
 Delegate<StringView> Input::AxisValueChanged;
 Array<ActionConfig> Input::ActionMappings;
 Array<AxisConfig> Input::AxisMappings;
