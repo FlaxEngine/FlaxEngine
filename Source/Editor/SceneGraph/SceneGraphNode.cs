@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.Modules;
 using FlaxEditor.SceneGraph.Actors;
+using FlaxEditor.Windows;
 using FlaxEngine;
 
 namespace FlaxEditor.SceneGraph
@@ -339,7 +340,7 @@ namespace FlaxEditor.SceneGraph
         /// <summary>
         /// Called when scene tree window wants to show the context menu. Allows to add custom options.
         /// </summary>
-        public virtual void OnContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu contextMenu)
+        public virtual void OnContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu contextMenu, EditorWindow window)
         {
         }
 
