@@ -68,26 +68,12 @@ namespace FlaxEngine.GUI
             var parentWin = target.Root;
             if (parentWin == null)
                 return;
-            float dpiScale = target.RootWindow.DpiScale;
+            var dpiScale = target.RootWindow.DpiScale;
             var dpiSize = Size * dpiScale;
             var locationWS = target.PointToWindow(location);
             var locationSS = parentWin.PointToScreen(locationWS);
-            var monitorBounds = Platform.GetMonitorBounds(locationSS);
-            var rightBottomMonitorBounds = monitorBounds.BottomRight;
-            var rightBottomLocationSS = locationSS + dpiSize;
-
-            // Prioritize tooltip placement within parent window, fall back to virtual desktop
-            if (rightBottomMonitorBounds.Y < rightBottomLocationSS.Y)
-            {
-                // Direction: up
-                locationSS.Y -= dpiSize.Y;
-            }
-            if (rightBottomMonitorBounds.X < rightBottomLocationSS.X)
-            {
-                // Direction: left
-                locationSS.X -= dpiSize.X;
-            }
             _showTarget = target;
+            WrapPosition(ref locationSS);
 
             // Create window
             var desc = CreateWindowSettings.Default;
@@ -193,15 +179,11 @@ namespace FlaxEngine.GUI
             }
         }
 
-        /// <inheritdoc />
-        public override void Update(float deltaTime)
+        private void WrapPosition(ref Float2 locationSS, float flipOffset = 0.0f)
         {
-            var mousePos = Input.MouseScreenPosition;
-            
             // Calculate popup direction
-            float dpiScale = _showTarget.RootWindow.DpiScale;
+            var dpiScale = _showTarget.RootWindow.DpiScale;
             var dpiSize = Size * dpiScale;
-            var locationSS = mousePos;
             var monitorBounds = Platform.GetMonitorBounds(locationSS);
             var rightBottomMonitorBounds = monitorBounds.BottomRight;
             var rightBottomLocationSS = locationSS + dpiSize;
@@ -210,17 +192,23 @@ namespace FlaxEngine.GUI
             if (rightBottomMonitorBounds.Y < rightBottomLocationSS.Y)
             {
                 // Direction: up
-                locationSS.Y -= dpiSize.Y + 10;
+                locationSS.Y -= dpiSize.Y + flipOffset;
             }
             if (rightBottomMonitorBounds.X < rightBottomLocationSS.X)
             {
                 // Direction: left
-                locationSS.X -= dpiSize.X + 20;
+                locationSS.X -= dpiSize.X + flipOffset * 2;
             }
-            
+        }
+
+        /// <inheritdoc />
+        public override void Update(float deltaTime)
+        {
             // Move window with mouse location
-            _window.Position = locationSS + new Float2(15, 10);
-            
+            var mousePos = Input.MouseScreenPosition;
+            WrapPosition(ref mousePos, 10);
+            _window.Position = mousePos + new Float2(15, 10);
+
             // Auto hide if mouse leaves control area
             var location = _showTarget.PointFromScreen(mousePos);
             if (!_showTarget.OnTestTooltipOverControl(ref location))
