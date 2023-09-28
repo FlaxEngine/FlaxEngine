@@ -142,6 +142,8 @@ namespace FlaxEditor.Windows
             Title = "Content";
             Icon = editor.Icons.Folder32;
 
+            FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
+
             // Content database events
             editor.ContentDatabase.WorkspaceModified += () => _isWorkspaceDirty = true;
             editor.ContentDatabase.ItemRemoved += OnContentDatabaseItemRemoved;
