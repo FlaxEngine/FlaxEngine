@@ -241,10 +241,14 @@ ScriptingObject* ScriptingObject::ToNative(MObject* obj)
 #if USE_CSHARP
     if (obj)
     {
-        // TODO: cache the field offset from object and read directly from object pointer
+#if USE_MONO
         const auto ptrField = MCore::Object::GetClass(obj)->GetField(ScriptingObject_unmanagedPtr);
         CHECK_RETURN(ptrField, nullptr);
         ptrField->GetValue(obj, &ptr);
+#else
+        static const MField* ptrField = MCore::Object::GetClass(obj)->GetField(ScriptingObject_unmanagedPtr);
+        ptrField->GetValueReference(obj, &ptr);
+#endif
     }
 #endif
     return ptr;
@@ -335,12 +339,7 @@ bool ScriptingObject::CreateManaged()
         if (const auto monoClass = GetClass())
         {
             // Reset managed to unmanaged pointer
-            const MField* monoUnmanagedPtrField = monoClass->GetField(ScriptingObject_unmanagedPtr);
-            if (monoUnmanagedPtrField)
-            {
-                void* param = nullptr;
-                monoUnmanagedPtrField->SetValue(managedInstance, &param);
-            }
+            MCore::ScriptingObject::SetInternalValues(monoClass, managedInstance, nullptr, nullptr);
         }
         MCore::GCHandle::Free(handle);
         return true;
@@ -366,33 +365,11 @@ MObject* ScriptingObject::CreateManagedInternal()
         return nullptr;
     }
 
-    // Ensure to have managed domain attached (this can be called from custom native thread, eg. content loader)
-    MCore::Thread::Attach();
-
-    // Allocate managed instance
-    MObject* managedInstance = MCore::Object::New(monoClass);
+    MObject* managedInstance = MCore::ScriptingObject::CreateScriptingObject(monoClass, this, &_id);
     if (managedInstance == nullptr)
     {
         LOG(Warning, "Failed to create new instance of the object of type {0}", String(monoClass->GetFullName()));
     }
-
-    // Set handle to unmanaged object
-    const MField* monoUnmanagedPtrField = monoClass->GetField(ScriptingObject_unmanagedPtr);
-    if (monoUnmanagedPtrField)
-    {
-        const void* value = this;
-        monoUnmanagedPtrField->SetValue(managedInstance, &value);
-    }
-
-    // Set object id
-    const MField* monoIdField = monoClass->GetField(ScriptingObject_id);
-    if (monoIdField)
-    {
-        monoIdField->SetValue(managedInstance, (void*)&_id);
-    }
-
-    // Initialize managed instance (calls constructor)
-    MCore::Object::Init(managedInstance);
 
     return managedInstance;
 }
@@ -410,12 +387,7 @@ void ScriptingObject::DestroyManaged()
     {
         if (const auto monoClass = GetClass())
         {
-            const MField* monoUnmanagedPtrField = monoClass->GetField(ScriptingObject_unmanagedPtr);
-            if (monoUnmanagedPtrField)
-            {
-                void* param = nullptr;
-                monoUnmanagedPtrField->SetValue(managedInstance, &param);
-            }
+            MCore::ScriptingObject::SetInternalValues(monoClass, managedInstance, nullptr, nullptr);
         }
     }
 
@@ -539,12 +511,7 @@ bool ManagedScriptingObject::CreateManaged()
         if (const auto monoClass = GetClass())
         {
             // Reset managed to unmanaged pointer
-            const MField* monoUnmanagedPtrField = monoClass->GetField(ScriptingObject_unmanagedPtr);
-            if (monoUnmanagedPtrField)
-            {
-                void* param = nullptr;
-                monoUnmanagedPtrField->SetValue(managedInstance, &param);
-            }
+            MCore::ScriptingObject::SetInternalValues(monoClass, managedInstance, nullptr, nullptr);
         }
         MCore::GCHandle::Free(handle);
         return true;
@@ -666,10 +633,8 @@ DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_Create2(MString* typeNameObj)
     return managedInstance;
 }
 
-DEFINE_INTERNAL_CALL(void) ObjectInternal_ManagedInstanceCreated(MObject* managedInstance)
+DEFINE_INTERNAL_CALL(void) ObjectInternal_ManagedInstanceCreated(MObject* managedInstance, MClass* typeClass)
 {
-    MClass* typeClass = MCore::Object::GetClass(managedInstance);
-
     // Get the assembly with that class
     auto module = ManagedBinaryModule::FindModule(typeClass);
     if (module == nullptr)
@@ -706,22 +671,8 @@ DEFINE_INTERNAL_CALL(void) ObjectInternal_ManagedInstanceCreated(MObject* manage
     }
 
     MClass* monoClass = obj->GetClass();
-
-    // Set handle to unmanaged object
-    const MField* monoUnmanagedPtrField = monoClass->GetField(ScriptingObject_unmanagedPtr);
-    if (monoUnmanagedPtrField)
-    {
-        const void* value = obj;
-        monoUnmanagedPtrField->SetValue(managedInstance, &value);
-    }
-
-    // Set object id
-    const MField* monoIdField = monoClass->GetField(ScriptingObject_id);
-    if (monoIdField)
-    {
-        const Guid id = obj->GetID();
-        monoIdField->SetValue(managedInstance, (void*)&id);
-    }
+    const Guid id = obj->GetID();
+    MCore::ScriptingObject::SetInternalValues(monoClass, managedInstance, obj, &id);
 
     // Register object
     if (!obj->IsRegistered())

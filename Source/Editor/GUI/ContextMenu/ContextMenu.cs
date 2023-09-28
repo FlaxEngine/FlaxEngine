@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -261,6 +262,24 @@ namespace FlaxEditor.GUI.ContextMenu
         public ContextMenuButton AddButton(string text, string shortKeys, Action clicked)
         {
             var item = new ContextMenuButton(this, text, shortKeys)
+            {
+                Parent = _panel
+            };
+            item.Clicked += clicked;
+            SortButtons();
+            return item;
+        }
+
+        /// <summary>
+        /// Adds the button.
+        /// </summary>
+        /// <param name="text">The text.</param>
+        /// <param name="binding">The input binding.</param>
+        /// <param name="clicked">On button clicked event.</param>
+        /// <returns>Created context menu item control.</returns>
+        public ContextMenuButton AddButton(string text, InputBinding binding, Action clicked)
+        {
+            var item = new ContextMenuButton(this, text, binding.ToString())
             {
                 Parent = _panel
             };

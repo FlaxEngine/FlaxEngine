@@ -84,7 +84,7 @@ namespace FlaxEngine.Interop
 
             internal static IntPtr MarshalReturnValueType(ref Type returnValue)
             {
-                return returnValue != null ? ManagedHandle.ToIntPtr(GetTypeGCHandle(returnValue)) : IntPtr.Zero;
+                return returnValue != null ? ManagedHandle.ToIntPtr(GetTypeManagedHandle(returnValue)) : IntPtr.Zero;
             }
 
             internal static IntPtr MarshalReturnValueArray<TRet>(ref TRet returnValue)
@@ -162,8 +162,8 @@ namespace FlaxEngine.Interop
                     return ManagedHandle.ToIntPtr((ManagedHandle)(object)returnObject);
                 if (returnType == typeof(bool))
                     return (bool)returnObject ? boolTruePtr : boolFalsePtr;
-                if (returnType == typeof(Type))
-                    return ManagedHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnObject)));
+                if (returnType == typeof(Type) || returnType == typeof(TypeHolder))
+                    return ManagedHandle.ToIntPtr(GetTypeManagedHandle(Unsafe.As<Type>(returnObject)));
                 if (returnType.IsArray && ArrayFactory.GetMarshalledType(returnType.GetElementType()) == returnType.GetElementType())
                     return ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(Unsafe.As<Array>(returnObject)), GCHandleType.Weak);
                 if (returnType.IsArray)
@@ -186,8 +186,8 @@ namespace FlaxEngine.Interop
                     return (IntPtr)(object)returnObject;
                 if (returnType == typeof(ManagedHandle))
                     return ManagedHandle.ToIntPtr((ManagedHandle)(object)returnObject);
-                if (returnType == typeof(Type))
-                    return returnObject != null ? ManagedHandle.ToIntPtr(GetTypeGCHandle(Unsafe.As<Type>(returnObject))) : IntPtr.Zero;
+                if (returnType == typeof(Type) || returnType == typeof(TypeHolder))
+                    return returnObject != null ? ManagedHandle.ToIntPtr(GetTypeManagedHandle(Unsafe.As<Type>(returnObject))) : IntPtr.Zero;
                 if (returnType.IsArray)
                 {
                     var elementType = returnType.GetElementType();

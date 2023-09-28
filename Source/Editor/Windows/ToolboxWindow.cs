@@ -353,6 +353,8 @@ namespace FlaxEditor.Windows
         : base(editor, true, ScrollBars.None)
         {
             Title = "Toolbox";
+
+            FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
         }
 
         /// <inheritdoc />

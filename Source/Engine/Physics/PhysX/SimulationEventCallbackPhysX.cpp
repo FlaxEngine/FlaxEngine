@@ -13,9 +13,11 @@ namespace
 {
     void ClearColliderFromCollection(const PhysicsColliderActor* collider, Array<SimulationEventCallback::CollidersPair>& collection)
     {
+        const auto c = collection.Get();
         for (int32 i = 0; i < collection.Count(); i++)
         {
-            if (collection[i].First == collider || collection[i].Second == collider)
+            const SimulationEventCallback::CollidersPair cc = c[i];
+            if (cc.First == collider || cc.Second == collider)
             {
                 collection.RemoveAt(i--);
                 if (collection.IsEmpty())
