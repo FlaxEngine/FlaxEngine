@@ -565,4 +565,13 @@ const Array<MObject*>& MProperty::GetAttributes() const
     return _attributes;
 }
 
+void MCore::ScriptingObject::SetInternalValues(MObject* object, void* unmanagedPtr, const Guid* id)
+{
+}
+
+MObject* MCore::ScriptingObject::CreateScriptingObject(MClass* klass, void* unmanagedPtr, const Guid* id)
+{
+    return nullptr;
+}
+
 #endif
