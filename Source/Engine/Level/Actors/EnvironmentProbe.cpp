@@ -288,7 +288,7 @@ void EnvironmentProbe::OnTransformChanged()
 
     UpdateBounds();
 
-    if (IsDuringPlay() && UpdateMode == ProbeUpdateMode::WhenMoved)
+    if (IsActiveInHierarchy() && IsDuringPlay() && UpdateMode == ProbeUpdateMode::WhenMoved)
     {
         Bake(1.0f);
     }
