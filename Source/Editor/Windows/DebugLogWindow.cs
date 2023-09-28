@@ -317,6 +317,7 @@ namespace FlaxEditor.Windows
             Title = "Debug Log";
             Icon = IconInfo;
             OnEditorOptionsChanged(Editor.Options.Options);
+            FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
 
             // Toolstrip
             var toolstrip = new ToolStrip(22.0f)

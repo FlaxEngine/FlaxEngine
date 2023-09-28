@@ -116,6 +116,10 @@ namespace FlaxEditor.Windows.Profiler
                 Parent = this
             };
             _tabs.SelectedTabChanged += OnSelectedTabChanged;
+
+            FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
+            InputActions.Bindings.RemoveAll(x => x.Callback == this.FocusOrShow);
+            InputActions.Add(options => options.ProfilerWindow, Hide);
         }
 
         private void OnLiveRecordingChanged()
