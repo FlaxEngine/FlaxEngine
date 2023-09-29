@@ -920,7 +920,7 @@ namespace Flax.Build.Bindings
             for (int i = 0; i < functionInfo.Parameters.Count; i++)
             {
                 var parameterInfo = functionInfo.Parameters[i];
-                if (parameterInfo.IsOut || parameterInfo.IsRef || !GenerateCppWrapperFunctionImplicitBinding(buildData, parameterInfo.Type, caller))
+                if (parameterInfo.IsByRef || !GenerateCppWrapperFunctionImplicitBinding(buildData, parameterInfo.Type, caller))
                     return false;
             }
             return true;
@@ -1042,7 +1042,7 @@ namespace Flax.Build.Bindings
                     managedType = "MObject*";
 
                 contents.Append(managedType);
-                if (parameterInfo.IsRef || parameterInfo.IsOut || UsePassByReference(buildData, parameterInfo.Type, caller))
+                if (parameterInfo.IsByRef || UsePassByReference(buildData, parameterInfo.Type, caller))
                     contents.Append('*');
                 contents.Append(' ');
                 contents.Append(parameterInfo.Name);
@@ -1106,7 +1106,7 @@ namespace Flax.Build.Bindings
 
                 GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, caller, out var managedType, out _, functionInfo, out _);
                 contents.Append(managedType);
-                if (parameterInfo.IsRef || parameterInfo.IsOut || UsePassByReference(buildData, parameterInfo.Type, caller))
+                if (parameterInfo.IsByRef || UsePassByReference(buildData, parameterInfo.Type, caller))
                     contents.Append('*');
                 contents.Append(' ');
                 contents.Append(parameterInfo.Name);
@@ -1464,10 +1464,10 @@ namespace Flax.Build.Bindings
                     for (var i = 0; i < functionInfo.Parameters.Count; i++)
                     {
                         var parameterInfo = functionInfo.Parameters[i];
-                        var paramIsRef = parameterInfo.IsRef || parameterInfo.IsOut;
+                        var paramIsByRef = parameterInfo.IsByRef;
                         var paramValue = GenerateCppWrapperNativeToBox(buildData, parameterInfo.Type, classInfo, out var apiType, parameterInfo.Name);
                         var useLocalVar = false;
-                        if (paramIsRef)
+                        if (paramIsByRef)
                         {
                             // Pass as pointer to value when using ref/out parameter
                             contents.Append($"        auto __param_{parameterInfo.Name} = {paramValue};").AppendLine();
@@ -1505,8 +1505,8 @@ namespace Flax.Build.Bindings
                 for (var i = 0; i < functionInfo.Parameters.Count; i++)
                 {
                     var parameterInfo = functionInfo.Parameters[i];
-                    var paramIsRef = parameterInfo.IsRef || parameterInfo.IsOut;
-                    if (paramIsRef && !parameterInfo.Type.IsConst)
+                    var paramIsByRef = parameterInfo.IsByRef;
+                    if (paramIsByRef && !parameterInfo.Type.IsConst)
                     {
                         // Unbox from MObject*
                         parameterInfo.Type.IsRef = false;
@@ -1523,8 +1523,8 @@ namespace Flax.Build.Bindings
                     for (var i = 0; i < functionInfo.Parameters.Count; i++)
                     {
                         var parameterInfo = functionInfo.Parameters[i];
-                        var paramIsRef = parameterInfo.IsRef || parameterInfo.IsOut;
-                        var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, parameterInfo.Type, parameterInfo.Name, classInfo, paramIsRef, out CppParamsThatNeedLocalVariable[i]);
+                        var paramIsByRef = parameterInfo.IsByRef;
+                        var paramValue = GenerateCppWrapperNativeToManagedParam(buildData, contents, parameterInfo.Type, parameterInfo.Name, classInfo, paramIsByRef, out CppParamsThatNeedLocalVariable[i]);
                         contents.Append($"        params[{i}] = {paramValue};").AppendLine();
                     }
                 }
@@ -1536,8 +1536,8 @@ namespace Flax.Build.Bindings
                 for (var i = 0; i < functionInfo.Parameters.Count; i++)
                 {
                     var parameterInfo = functionInfo.Parameters[i];
-                    var paramIsRef = parameterInfo.IsRef || parameterInfo.IsOut;
-                    if (paramIsRef && !parameterInfo.Type.IsConst)
+                    var paramIsByRef = parameterInfo.IsByRef;
+                    if (paramIsByRef && !parameterInfo.Type.IsConst)
                     {
                         // Direct value convert
                         var managedToNative = GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, classInfo, out var managedType, out var apiType, null, out _);

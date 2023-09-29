@@ -331,6 +331,9 @@ namespace Flax.Build.Bindings
                         case "ref":
                             currentParam.IsRef = true;
                             break;
+                        case "in":
+                            currentParam.IsIn = true;
+                            break;
                         case "out":
                             currentParam.IsOut = true;
                             break;

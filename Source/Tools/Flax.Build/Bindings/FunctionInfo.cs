@@ -16,10 +16,27 @@ namespace Flax.Build.Bindings
             public TypeInfo Type;
             public string DefaultValue;
             public string Attributes;
+            /// <summary>The parameter is passed by ref</summary>
             public bool IsRef;
+            /// <summary>The parameter is passed by in-ref</summary>
+            public bool IsIn;
+            /// <summary>The parameter is passed by out-ref</summary>
             public bool IsOut;
+            /// <summary>The parameter is the this-parameter of an extension method</summary>
             public bool IsThis;
+            /// <summary>The parameter is a param array</summary>
             public bool IsParams;
+
+
+            /// <summary>The parameter is passed by-ref</summary>
+            public bool IsByRef => IsRef || IsOut || IsIn;
+
+            /// <summary>The parameter is passed by-ref through ref or in</summary>
+            public bool IsByRefIn => IsRef || IsIn;
+
+            /// <summary>The parameter is passed by-ref through ref or out</summary>
+            public bool IsByRefOut => IsRef || IsOut;
+
 
             public bool HasDefaultValue => !string.IsNullOrEmpty(DefaultValue);
 
@@ -36,6 +53,7 @@ namespace Flax.Build.Bindings
                 BindingsGenerator.Write(writer, Attributes);
                 // TODO: convert into flags
                 writer.Write(IsRef);
+                writer.Write(IsIn);
                 writer.Write(IsOut);
                 writer.Write(IsThis);
                 writer.Write(IsParams);
@@ -49,6 +67,7 @@ namespace Flax.Build.Bindings
                 Attributes = BindingsGenerator.Read(reader, Attributes);
                 // TODO: convert into flags
                 IsRef = reader.ReadBoolean();
+                IsIn = reader.ReadBoolean();
                 IsOut = reader.ReadBoolean();
                 IsThis = reader.ReadBoolean();
                 IsParams = reader.ReadBoolean();

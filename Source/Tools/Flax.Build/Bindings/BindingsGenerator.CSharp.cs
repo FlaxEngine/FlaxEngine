@@ -601,6 +601,8 @@ namespace Flax.Build.Bindings
 #endif
                 if (parameterInfo.IsOut)
                     contents.Append("out ");
+                else if (parameterInfo.IsIn)
+                    contents.Append("in ");
                 else if (parameterInfo.IsRef || UsePassByReference(buildData, parameterInfo.Type, caller))
                     contents.Append("ref ");
 
@@ -639,6 +641,8 @@ namespace Flax.Build.Bindings
 #endif
                 if (parameterInfo.IsOut)
                     contents.Append("out ");
+                else if (parameterInfo.IsIn)
+                    contents.Append("in ");
                 else if (parameterInfo.IsRef || UsePassByReference(buildData, parameterInfo.Type, caller))
                     contents.Append("ref ");
                 contents.Append(nativeType);
@@ -687,6 +691,8 @@ namespace Flax.Build.Bindings
 
                 if (parameterInfo.IsOut)
                     contents.Append("out ");
+                else if (parameterInfo.IsIn)
+                    contents.Append("in ");
                 else if (parameterInfo.IsRef || UsePassByReference(buildData, parameterInfo.Type, caller))
                     contents.Append("ref ");
 
@@ -721,6 +727,8 @@ namespace Flax.Build.Bindings
                 {
                     if (parameterInfo.IsOut)
                         contents.Append("out ");
+                    else if (parameterInfo.IsIn)
+                        contents.Append("in ");
                     else if (parameterInfo.IsRef || UsePassByReference(buildData, parameterInfo.Type, caller))
                         contents.Append("ref ");
 
@@ -1203,6 +1211,8 @@ namespace Flax.Build.Bindings
                         var managedType = GenerateCSharpNativeToManaged(buildData, parameterInfo.Type, classInfo);
                         if (parameterInfo.IsOut)
                             contents.Append("out ");
+                        else if (parameterInfo.IsIn)
+                            contents.Append("in ");
                         else if (parameterInfo.IsRef)
                             contents.Append("ref ");
                         else if (parameterInfo.IsThis)
@@ -1265,6 +1275,8 @@ namespace Flax.Build.Bindings
                             var managedType = GenerateCSharpNativeToManaged(buildData, parameterInfo.Type, classInfo);
                             if (parameterInfo.IsOut)
                                 contents.Append("out ");
+                            else if (parameterInfo.IsIn)
+                                contents.Append("in ");
                             else if (parameterInfo.IsRef)
                                 contents.Append("ref ");
                             else if (parameterInfo.IsThis)
@@ -2005,6 +2017,8 @@ namespace Flax.Build.Bindings
                     var managedType = GenerateCSharpNativeToManaged(buildData, parameterInfo.Type, interfaceInfo);
                     if (parameterInfo.IsOut)
                         contents.Append("out ");
+                    else if (parameterInfo.IsIn)
+                        contents.Append("in ");
                     else if (parameterInfo.IsRef)
                         contents.Append("ref ");
                     else if (parameterInfo.IsThis)
