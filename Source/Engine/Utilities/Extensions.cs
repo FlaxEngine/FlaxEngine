@@ -225,16 +225,6 @@ namespace FlaxEngine.Utilities
         }
 
         /// <summary>
-        /// Generates a pseudo-random number from normalized range [0;1].
-        /// </summary>
-        /// <param name="random">An instance of <see cref="Random"/>.</param>
-        /// <returns>The random number.</returns>
-        public static float Rand(this Random random)
-        {
-            return random.Next(0, int.MaxValue) / (float)int.MaxValue;
-        }
-
-        /// <summary>
         /// Generates a random <see cref="bool"/>.
         /// </summary>
         /// <param name="random">An instance of <see cref="Random"/>.</param>
