@@ -66,5 +66,13 @@ namespace FlaxEditor.Options
         [DefaultValue(50.0f), Limit(25.0f, 500.0f, 5.0f)]
         [EditorDisplay("Defaults"), EditorOrder(160), Tooltip("Scales editor viewport grid.")]
         public float ViewportGridScale { get; set; } = 50.0f;
+
+        /// <summary>
+        /// Spawn new actors on front of EditGame viewport when enabled if the Actor don' have a parent.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Defaults"), EditorOrder(170)]
+        [Tooltip("If enabled, when create an Actor without parent it set actor position to front of your view, but when disable create actor on scene position.")]
+        public bool CreateActorsOnFrontOfView { get; set; } = true;
     }
 }
