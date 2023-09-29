@@ -135,8 +135,13 @@ namespace FlaxEngine
         {
             if (e.ExceptionObject is Exception exception)
             {
-                Debug.LogError("Unhandled Exception: " + exception.Message);
-                Debug.LogException(exception);
+                if (e.IsTerminating && !System.Diagnostics.Debugger.IsAttached)
+                    Platform.Fatal($"Unhandled Exception: {exception}");
+                else
+                {
+                    Debug.LogError($"Unhandled Exception: {exception.Message}");
+                    Debug.LogException(exception);
+                }
             }
         }
 

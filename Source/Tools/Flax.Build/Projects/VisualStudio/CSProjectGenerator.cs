@@ -26,7 +26,7 @@ namespace Flax.Build.Projects.VisualStudio
         public override TargetType? Type => TargetType.DotNet;
 
         /// <inheritdoc />
-        public override void GenerateProject(Project project)
+        public override void GenerateProject(Project project, string solutionPath)
         {
             var csProjectFileContent = new StringBuilder();
 
@@ -48,6 +48,11 @@ namespace Flax.Build.Projects.VisualStudio
             var projectTypes = ProjectTypeGuids.ToOption(ProjectTypeGuids.WindowsCSharp);
             if (vsProject.CSharp.UseFlaxVS && VisualStudioInstance.HasFlaxVS)
                 projectTypes = ProjectTypeGuids.ToOption(ProjectTypeGuids.FlaxVS) + ';' + projectTypes;
+
+            // Try to reuse the existing project guid from solution file
+            vsProject.ProjectGuid = GetProjectGuid(solutionPath, vsProject.Name);
+            if (vsProject.ProjectGuid == Guid.Empty)
+                vsProject.ProjectGuid = Guid.NewGuid();
 
             // Header
 

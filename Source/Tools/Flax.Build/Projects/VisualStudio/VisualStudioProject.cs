@@ -36,20 +36,5 @@ namespace Flax.Build.Projects.VisualStudio
                 }
             }
         }
-
-        /// <inheritdoc />
-        public override string Path
-        {
-            get => base.Path;
-            set
-            {
-                base.Path = value;
-
-                if (ProjectGuid == Guid.Empty)
-                {
-                    ProjectGuid = VisualStudioProjectGenerator.GetProjectGuid(Path);
-                }
-            }
-        }
     }
 }
