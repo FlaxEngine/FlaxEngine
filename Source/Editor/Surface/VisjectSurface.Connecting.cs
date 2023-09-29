@@ -137,6 +137,70 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
+        /// Checks if a type is compatible with another type and can be casted by using a connection hint
+        /// </summary>
+        /// <param name="from">Source type</param>
+        /// <param name="to">Type to check compatibility with</param>
+        /// <param name="hint">Hint to check if casting is possible</param>
+        /// <returns>True if the source type is compatible with the target type</returns>
+        public static bool IsTypeCompatible(ScriptType from, ScriptType to, ConnectionsHint hint)
+        {
+            if (from == ScriptType.Null && hint != ConnectionsHint.None)
+            {
+                if ((hint & ConnectionsHint.Anything) == ConnectionsHint.Anything)
+                    return true;
+                if ((hint & ConnectionsHint.Value) == ConnectionsHint.Value && to.Type != typeof(void))
+                    return true;
+                if ((hint & ConnectionsHint.Enum) == ConnectionsHint.Enum && to.IsEnum)
+                    return true;
+                if ((hint & ConnectionsHint.Array) == ConnectionsHint.Array && to.IsArray)
+                    return true;
+                if ((hint & ConnectionsHint.Dictionary) == ConnectionsHint.Dictionary && to.IsDictionary)
+                    return true;
+                if ((hint & ConnectionsHint.Vector) == ConnectionsHint.Vector)
+                {
+                    var t = to.Type;
+                    if (t == typeof(Vector2) ||
+                        t == typeof(Vector3) ||
+                        t == typeof(Vector4) ||
+                        t == typeof(Float2) ||
+                        t == typeof(Float3) ||
+                        t == typeof(Float4) ||
+                        t == typeof(Double2) ||
+                        t == typeof(Double3) ||
+                        t == typeof(Double4) ||
+                        t == typeof(Int2) ||
+                        t == typeof(Int3) ||
+                        t == typeof(Int4) ||
+                        t == typeof(Color))
+                    {
+                        return true;
+                    }
+                }
+                if ((hint & ConnectionsHint.Scalar) == ConnectionsHint.Scalar)
+                {
+                    var t = to.Type;
+                    if (t == typeof(bool) ||
+                        t == typeof(char) ||
+                        t == typeof(byte) ||
+                        t == typeof(short) ||
+                        t == typeof(ushort) ||
+                        t == typeof(int) ||
+                        t == typeof(uint) ||
+                        t == typeof(long) ||
+                        t == typeof(ulong) ||
+                        t == typeof(float) ||
+                        t == typeof(double))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+        
+        /// <summary>
         /// Checks if can use direct conversion from one type to another.
         /// </summary>
         /// <param name="from">Source type.</param>

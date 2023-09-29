@@ -80,7 +80,7 @@ namespace FlaxEditor.Surface.ContextMenu
             if (!Visible)
                 return;
 
-            if (selectedBox != null && CanConnectTo(selectedBox, NodeArchetype))
+            if (selectedBox != null && CanConnectTo(selectedBox))
                 SortScore += 1;
             if (Data != null)
                 SortScore += 1;
@@ -95,29 +95,14 @@ namespace FlaxEditor.Surface.ContextMenu
             textRect = new Rectangle(22, 0, Width - 24, Height);
         }
 
-        private bool CanConnectTo(Box startBox, NodeArchetype nodeArchetype)
-        {
-            if (startBox == null)
-                return false;
-            if (!startBox.IsOutput)
-                return false; // For now, I'm only handing the output box case
-
-            if (nodeArchetype.Elements != null)
-            {
-                for (int i = 0; i < nodeArchetype.Elements.Length; i++)
-                {
-                    if (nodeArchetype.Elements[i].Type == NodeElementType.Input &&
-                        startBox.CanUseType(nodeArchetype.Elements[i].ConnectionsType))
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
+        /// <summary>
+        /// Checks if this context menu item can be connected to a given box, before a node is actually spawned.
+        /// </summary>
+        /// <param name="startBox">The connected box</param>
+        /// <returns>True if the connected box is compatible with this item</returns>
         public bool CanConnectTo(Box startBox)
         {
+            // Is compatible if box is null for reset reasons
             if (startBox == null)
             {
                 Visible = true;
@@ -131,15 +116,20 @@ namespace FlaxEditor.Surface.ContextMenu
             }
 
             bool isCompatible = false;
+            
+            // Check compatibility based on the defined elements in the archetype. This handles all the default groups and items
             if (_archetype.Elements != null)
             {
                 isCompatible = CheckElementsCompatibility(startBox);
             }
 
+            // Check compatibility based on the archetype tag or name. This handles custom groups and items, mainly function nodes for visual scripting
             if (_archetype.NodeTypeHint == NodeTypeHint.FunctionNode)
             {
                 ScriptMemberInfo memberInfo = ScriptMemberInfo.Null;
 
+                // Check if the archetype tag already has a member info otherwise try to fetch it via the archetype type and name
+                // Only really the InvokeMethod Nodes have a member info in their tag
                 if (_archetype.Tag is ScriptMemberInfo info)
                 {
                     memberInfo = info;
@@ -155,22 +145,29 @@ namespace FlaxEditor.Surface.ContextMenu
                 {
                     if(memberInfo.IsEvent)
                         isCompatible = false;
-                    
+
+                    // Box was dragged from an impulse port and the member info can be invoked so it is compatible
                     if (startBox.CurrentType.IsVoid && memberInfo.ValueType.IsVoid)
-                        isCompatible = true;
+                    {
+                        isCompatible = true;   
+                    }
                     else
                     {
+                        // When the startBox is output we only need to check the input parameters
                         if (startBox.IsOutput)
                         {
                             var parameters = memberInfo.GetParameters();
                             ScriptType outType = startBox.CurrentType;
-
+                            
+                            // non static members have an instance input parameter
                             if (!memberInfo.IsStatic)
                             {
                                 var scriptType = memberInfo.DeclaringType;
                                 isCompatible |= CanCastToType(scriptType, outType, _archetype.ConnectionsHints);
                             }
 
+                            // We ignore event members here since they only have output parameters, which are currently not declared as such
+                            // TODO: Fix bug where event member parameters 'IsOut' is set to false and not true
                             if (!memberInfo.IsEvent)
                             {
                                 for (int i = 0; i < parameters.Length; i++)
@@ -182,6 +179,7 @@ namespace FlaxEditor.Surface.ContextMenu
                         }
                         else
                         {
+                            // When the startBox is input we only have to check the output type of the method
                             ScriptType inType = startBox.CurrentType;
                             ScriptType outType = memberInfo.ValueType;
 
@@ -232,60 +230,10 @@ namespace FlaxEditor.Surface.ContextMenu
         {
             if (VisjectSurface.CanUseDirectCastStatic(type, currentType, false))
                 return true;
-
-            var connectionsHints = hint;
-            if (currentType == ScriptType.Null && connectionsHints != ConnectionsHint.None)
-            {
-                if ((connectionsHints & ConnectionsHint.Anything) == ConnectionsHint.Anything)
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Value) == ConnectionsHint.Value && type.Type != typeof(void))
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Enum) == ConnectionsHint.Enum && type.IsEnum)
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Array) == ConnectionsHint.Array && type.IsArray)
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Dictionary) == ConnectionsHint.Dictionary && type.IsDictionary)
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Vector) == ConnectionsHint.Vector)
-                {
-                    var t = type.Type;
-                    if (t == typeof(Vector2) ||
-                        t == typeof(Vector3) ||
-                        t == typeof(Vector4) ||
-                        t == typeof(Float2) ||
-                        t == typeof(Float3) ||
-                        t == typeof(Float4) ||
-                        t == typeof(Double2) ||
-                        t == typeof(Double3) ||
-                        t == typeof(Double4) ||
-                        t == typeof(Int2) ||
-                        t == typeof(Int3) ||
-                        t == typeof(Int4) ||
-                        t == typeof(Color))
-                    {
-                        return true;
-                    }
-                }
-                if ((connectionsHints & ConnectionsHint.Scalar) == ConnectionsHint.Scalar)
-                {
-                    var t = type.Type;
-                    if (t == typeof(bool) ||
-                        t == typeof(char) ||
-                        t == typeof(byte) ||
-                        t == typeof(short) ||
-                        t == typeof(ushort) ||
-                        t == typeof(int) ||
-                        t == typeof(uint) ||
-                        t == typeof(long) ||
-                        t == typeof(ulong) ||
-                        t == typeof(float) ||
-                        t == typeof(double))
-                    {
-                        return true;
-                    }
-                }
-            }
-
+            
+            if(VisjectSurface.IsTypeCompatible(currentType, type, hint))
+                return true;
+            
             return CanCast(type, currentType);
         }
         

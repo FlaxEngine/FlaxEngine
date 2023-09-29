@@ -231,58 +231,8 @@ namespace FlaxEditor.Surface.Elements
             }
 
             // Check using connection hints
-            var connectionsHints = ParentNode.Archetype.ConnectionsHints;
-            if (Archetype.ConnectionsType == ScriptType.Null && connectionsHints != ConnectionsHint.None)
-            {
-                if ((connectionsHints & ConnectionsHint.Anything) == ConnectionsHint.Anything)
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Value) == ConnectionsHint.Value && type.Type != typeof(void))
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Enum) == ConnectionsHint.Enum && type.IsEnum)
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Array) == ConnectionsHint.Array && type.IsArray)
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Dictionary) == ConnectionsHint.Dictionary && type.IsDictionary)
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Vector) == ConnectionsHint.Vector)
-                {
-                    var t = type.Type;
-                    if (t == typeof(Vector2) ||
-                        t == typeof(Vector3) ||
-                        t == typeof(Vector4) ||
-                        t == typeof(Float2) ||
-                        t == typeof(Float3) ||
-                        t == typeof(Float4) ||
-                        t == typeof(Double2) ||
-                        t == typeof(Double3) ||
-                        t == typeof(Double4) ||
-                        t == typeof(Int2) ||
-                        t == typeof(Int3) ||
-                        t == typeof(Int4) ||
-                        t == typeof(Color))
-                    {
-                        return true;
-                    }
-                }
-                if ((connectionsHints & ConnectionsHint.Scalar) == ConnectionsHint.Scalar)
-                {
-                    var t = type.Type;
-                    if (t == typeof(bool) ||
-                        t == typeof(char) ||
-                        t == typeof(byte) ||
-                        t == typeof(short) ||
-                        t == typeof(ushort) ||
-                        t == typeof(int) ||
-                        t == typeof(uint) ||
-                        t == typeof(long) ||
-                        t == typeof(ulong) ||
-                        t == typeof(float) ||
-                        t == typeof(double))
-                    {
-                        return true;
-                    }
-                }
-            }
+            if(VisjectSurface.IsTypeCompatible(Archetype.ConnectionsType, type, ParentNode.Archetype.ConnectionsHints))
+                return true;
 
             // Check independent and if there is box with bigger potential because it may block current one from changing type
             var parentArch = ParentNode.Archetype;
