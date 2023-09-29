@@ -614,6 +614,18 @@ bool MCore::Type::IsReference(MType* type)
     return CallStaticMethod<bool, void*>(GetTypeIsReferencePtr, type);
 }
 
+void MCore::ScriptingObject::SetInternalValues(MClass* klass, MObject* object, void* unmanagedPtr, const Guid* id)
+{
+    static void* ScriptingObjectSetInternalValuesPtr = GetStaticMethodPointer(TEXT("ScriptingObjectSetInternalValues"));
+    CallStaticMethod<void, MObject*, void*, const Guid*>(ScriptingObjectSetInternalValuesPtr, object, unmanagedPtr, id);
+}
+
+MObject* MCore::ScriptingObject::CreateScriptingObject(MClass* klass, void* unmanagedPtr, const Guid* id)
+{
+    static void* ScriptingObjectSetInternalValuesPtr = GetStaticMethodPointer(TEXT("ScriptingObjectCreate"));
+    return CallStaticMethod<MObject*, void*, void*, const Guid*>(ScriptingObjectSetInternalValuesPtr, klass->_handle, unmanagedPtr, id);
+}
+
 const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
 {
     if (_hasCachedClasses || !IsLoaded())
@@ -1735,18 +1747,6 @@ void* GetStaticMethodPointer(const String& methodName)
         LOG(Fatal, "Failed to get unmanaged function pointer for method {0}: 0x{1:x}", methodName.Get(), (unsigned int)rc);
     CachedFunctions.Add(methodName, fun);
     return fun;
-}
-
-void MCore::ScriptingObject::SetInternalValues(MClass* klass, MObject* object, void* unmanagedPtr, const Guid* id)
-{
-    static void* ScriptingObjectSetInternalValuesPtr = GetStaticMethodPointer(TEXT("ScriptingObjectSetInternalValues"));
-    CallStaticMethod<void, MObject*, void*, const Guid*>(ScriptingObjectSetInternalValuesPtr, object, unmanagedPtr, id);
-}
-
-MObject* MCore::ScriptingObject::CreateScriptingObject(MClass* klass, void* unmanagedPtr, const Guid* id)
-{
-    static void* ScriptingObjectSetInternalValuesPtr = GetStaticMethodPointer(TEXT("ScriptingObjectCreate"));
-    return CallStaticMethod<MObject*, void*, void*, const Guid*>(ScriptingObjectSetInternalValuesPtr, klass->_handle, unmanagedPtr, id);
 }
 
 #elif DOTNET_HOST_MONO

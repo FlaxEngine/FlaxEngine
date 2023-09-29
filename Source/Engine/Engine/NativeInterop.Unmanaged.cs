@@ -853,7 +853,7 @@ namespace FlaxEngine.Interop
         {
             object fieldOwner = fieldOwnerHandle.Target;
             FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
-            field.toNativeMarshaller(field.fieldOffset, fieldOwner, valuePtr, out int fieldSize);
+            field.toNativeMarshaller(field.field, field.fieldOffset, fieldOwner, valuePtr, out int fieldSize);
         }
 
         [UnmanagedCallersOnly]
