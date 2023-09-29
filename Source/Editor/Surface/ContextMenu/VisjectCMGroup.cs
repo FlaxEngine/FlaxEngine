@@ -100,17 +100,17 @@ namespace FlaxEditor.Surface.ContextMenu
             }
 
             // Update header title
-            /*if (QueryFilterHelper.Match(filterText, HeaderText))
+            if (QueryFilterHelper.Match(filterText, HeaderText))
             {
                 for (int i = 0; i < _children.Count; i++)
                 {
                     if (_children[i] is VisjectCMItem item)
                     {
-                        item.Visible = true;
+                        item.UpdateFilter(null, selectedBox);
+                        isAnyVisible |= item.Visible;
                     }
                 }
-                isAnyVisible = true;
-            }*/
+            }
 
             // Update itself
             if (isAnyVisible)

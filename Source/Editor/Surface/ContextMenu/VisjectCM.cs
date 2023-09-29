@@ -450,7 +450,25 @@ namespace FlaxEditor.Surface.ContextMenu
                 return;
 
             Profiler.BeginEvent("VisjectCM.OnSearchFilterChanged");
+            UpdateFilters();
+            _searchBox.Focus();
+            Profiler.EndEvent();
+        }
+
+        private void OnContextSensitiveToggleStateChanged(CheckBox checkBox)
+        {
+            // Skip events during setup or init stuff
+            if (IsLayoutLocked)
+                return;
             
+            Profiler.BeginEvent("VisjectCM.OnContextSensitiveToggleStateChanged");
+            _contextSensitiveSearchEnabled = checkBox.Checked;
+            UpdateFilters();
+            Profiler.EndEvent();
+        }
+
+        private void UpdateFilters()
+        {
             if (string.IsNullOrEmpty(_searchBox.Text) && _selectedBox == null)
             {
                 ResetView();
@@ -475,33 +493,6 @@ namespace FlaxEditor.Surface.ContextMenu
             PerformLayout();
             if (SelectedItem != null)
                 _panel1.ScrollViewTo(SelectedItem);
-            _searchBox.Focus();
-            Profiler.EndEvent();
-
-            Profiler.EndEvent();
-        }
-
-        private void OnContextSensitiveToggleStateChanged(CheckBox checkBox)
-        {
-            Profiler.BeginEvent("VisjectCM.OnContextSensitiveToggleStateChanged");
-            _contextSensitiveSearchEnabled = checkBox.Checked;
-            
-            LockChildrenRecursive();
-            for (int i = 0; i < _groups.Count; i++)
-            {
-                _groups[i].UpdateFilter(_searchBox.Text, _contextSensitiveSearchEnabled ? _selectedBox : null);
-            }
-            SortGroups();
-            UnlockChildrenRecursive();
-            
-            Profiler.BeginEvent("VisjectCM.Layout");
-            if (SelectedItem == null || !SelectedItem.VisibleInHierarchy)
-                SelectedItem = _groups.Find(g => g.Visible)?.Children.Find(c => c.Visible && c is VisjectCMItem) as VisjectCMItem;
-            PerformLayout();
-            if (SelectedItem != null)
-                _panel1.ScrollViewTo(SelectedItem);
-            Profiler.EndEvent();
-            
             Profiler.EndEvent();
         }
         
