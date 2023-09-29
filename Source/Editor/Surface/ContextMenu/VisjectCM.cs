@@ -494,7 +494,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 _panel1.ScrollViewTo(SelectedItem);
             Profiler.EndEvent();
         }
-        
+
         /// <summary>
         /// Sort the groups and keeps <see cref="_groups"/> in sync
         /// </summary>
@@ -558,7 +558,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
             SortGroups();
             PerformLayout();
-            
+
             Profiler.EndEvent();
         }
 
@@ -676,11 +676,10 @@ namespace FlaxEditor.Surface.ContextMenu
             // Prepare
             UpdateSurfaceParametersGroup();
             ResetView();
-            
             _panel1.VScrollBar.TargetValue = 0;
             Focus();
             _waitingForInput = true;
-            
+
             base.OnShow();
         }
 

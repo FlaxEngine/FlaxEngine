@@ -73,6 +73,9 @@ namespace FlaxEditor.Surface
         All = Scalar | Vector | Enum | Anything | Value | Array | Dictionary,
     }
 
+    /// <summary>
+    /// Node type hint. Helps to distinguish special archetypes
+    /// </summary>
     [HideInEditor]
     public enum NodeTypeHint
     {

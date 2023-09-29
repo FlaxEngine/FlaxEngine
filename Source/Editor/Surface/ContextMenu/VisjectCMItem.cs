@@ -336,7 +336,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 }
             }
         }
-        
+
         /// <inheritdoc />
         public override void Draw()
         {

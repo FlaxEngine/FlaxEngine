@@ -370,7 +370,7 @@ namespace FlaxEditor.Surface
                                 bindNode.Description = SurfaceUtils.GetVisualScriptMemberInfoDescription(member);
                                 bindNode.SubTitle = string.Format(" (in {0})", scriptTypeName);
                                 ((IList<NodeArchetype>)group.Archetypes).Add(bindNode);
-                                
+
                                 // Add Unbind event node
                                 var unbindNode = (NodeArchetype)Archetypes.Function.Nodes[9].Clone();
                                 unbindNode.DefaultValues[0] = scriptTypeTypeName;
