@@ -281,6 +281,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.Save(Path.Combine(vsCodeFolder, "tasks.json"));
             }
 
+            bool hasNativeProjects = solution.Projects.Any(x => x.Type == TargetType.NativeCpp);
             bool hasMonoProjects = solution.Projects.Any(x => x.Type == TargetType.DotNet);
             bool hasDotnetProjects = solution.Projects.Any(x => x.Type == TargetType.DotNetCore);
 
@@ -423,6 +424,27 @@ namespace Flax.Build.Projects.VisualStudioCode
                         }
                     }
 
+                    if (hasNativeProjects)
+                    {
+                        foreach (var platform in solution.Projects.SelectMany(x => x.Configurations).Select(x => x.Platform).Distinct())
+                        {
+                            json.BeginObject();
+                            {
+                                if (platform == TargetPlatform.Windows)
+                                    json.AddField("type", "cppvsdbg");
+                                else
+                                    json.AddField("type", "cppdbg");
+                                json.AddField("name", solution.Name + " (Attach Editor)");
+                                json.AddField("request", "attach");
+                                json.AddField("processId", "${command:pickProcess}"); // Does not seem to be possible to attach by process name?
+
+                                WriteNativePlatformLaunchSettings(json, platform);
+
+                                json.AddField("visualizerFile", Path.Combine(Globals.EngineRoot, "Source", "flax.natvis"));
+                            }
+                            json.EndObject();
+                        }
+                    }
                     if (hasDotnetProjects)
                     {
                         json.BeginObject();
