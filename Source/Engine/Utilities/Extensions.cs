@@ -290,18 +290,22 @@ namespace FlaxEngine.Utilities
             float u1 = NextFloat(random);
             float u2 = NextFloat(random);
             float u3 = NextFloat(random);
+            float rad = 2.0f * Mathf.Pi; 
 
             float sqrt1MinusU1 = Mathf.Sqrt(1 - u1);
             float sqrtU1 = Mathf.Sqrt(u1);
 
-            float rollFactor = randomRoll ? 1f : 0.0f;
-            //Rollin Quaternion is w axis
-            Quaternion result = new Quaternion(
-                sqrt1MinusU1 * Mathf.Sin(2.0f * Mathf.Pi * u2),
-                sqrt1MinusU1 * Mathf.Cos(2.0f * Mathf.Pi * u2),
-                sqrtU1 * Mathf.Sin(2.0f * Mathf.Pi * u3),
-                sqrtU1 * Mathf.Cos(2.0f * Mathf.Pi * u3) * rollFactor
-            );
+            float x = sqrt1MinusU1 * Mathf.Sin(rad * u2);
+            float y = sqrt1MinusU1 * Mathf.Cos(rad * u2);
+            float z = sqrtU1 * Mathf.Sin(rad * u3);
+            float w = sqrtU1 * Mathf.Cos(rad * u3);
+
+            Quaternion result = new Quaternion(x, y, z, w);
+
+            if (randomRoll)
+            {
+                return Quaternion.Euler(result.EulerAngles.X, result.EulerAngles.Y, 0);
+            }
 
             return result;
         }
