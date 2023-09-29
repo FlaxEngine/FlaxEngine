@@ -286,7 +286,24 @@ namespace FlaxEngine.Utilities
         /// <returns>A random <see cref="Quaternion"/>.</returns>
         public static Quaternion NextQuaternion(this Random random, bool randomRoll = false)
         {
-            return Quaternion.Euler(NextFloat(random, -180.0f, 180.0f), NextFloat(random, -180.0f, 180.0f), randomRoll ? NextFloat(random, -180.0f, 180.0f) : 0.0f);
+            //Based on https://msl.cs.uiuc.edu/planning/node198.html
+            float u1 = NextFloat(random);
+            float u2 = NextFloat(random);
+            float u3 = NextFloat(random);
+
+            float sqrt1MinusU1 = Mathf.Sqrt(1 - u1);
+            float sqrtU1 = Mathf.Sqrt(u1);
+
+            float rollFactor = randomRoll ? 1f : 0.0f;
+            //Rollin Quaternion is w axis
+            Quaternion result = new Quaternion(
+                sqrt1MinusU1 * Mathf.Sin(2.0f * Mathf.Pi * u2),
+                sqrt1MinusU1 * Mathf.Cos(2.0f * Mathf.Pi * u2),
+                sqrtU1 * Mathf.Sin(2.0f * Mathf.Pi * u3),
+                sqrtU1 * Mathf.Cos(2.0f * Mathf.Pi * u3) * rollFactor
+            );
+
+            return result;
         }
 
         /// <summary>
@@ -469,7 +486,7 @@ namespace FlaxEngine.Utilities
         /// <returns>A random <see cref="Vector3"/>.</returns>
         public static Vector3 GetPointOnSphere(this Random random)
         {
-           return NextUnitVector3(random);
+            return NextUnitVector3(random);
         }
     }
 }
