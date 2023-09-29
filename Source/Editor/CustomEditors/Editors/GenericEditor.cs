@@ -71,6 +71,11 @@ namespace FlaxEditor.CustomEditors.Editors
             public VisibleIfAttribute VisibleIf;
 
             /// <summary>
+            /// The "visible if value" attribute.
+            /// </summary>
+            public VisibleIfValueAttribute VisibleIfValue;
+
+            /// <summary>
             /// The read-only attribute usage flag.
             /// </summary>
             public bool IsReadOnly;
@@ -129,6 +134,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 Space = (SpaceAttribute)attributes.FirstOrDefault(x => x is SpaceAttribute);
                 Header = (HeaderAttribute)attributes.FirstOrDefault(x => x is HeaderAttribute);
                 VisibleIf = (VisibleIfAttribute)attributes.FirstOrDefault(x => x is VisibleIfAttribute);
+                VisibleIfValue = (VisibleIfValueAttribute)attributes.FirstOrDefault(x => x is VisibleIfValueAttribute);
                 IsReadOnly = attributes.FirstOrDefault(x => x is ReadOnlyAttribute) != null;
                 ExpandGroups = attributes.FirstOrDefault(x => x is ExpandGroupsAttribute) != null;
 
@@ -207,7 +213,7 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
-        private struct VisibleIfCache
+        private abstract class VisibleIfBaseCache
         {
             public ScriptMemberInfo Target;
             public ScriptMemberInfo Source;
@@ -216,7 +222,11 @@ namespace FlaxEditor.CustomEditors.Editors
             public bool Invert;
             public int LabelIndex;
 
-            public bool GetValue(object instance)
+            public abstract bool ShouldBeVisible(object instance);
+        }
+
+        private class VisibleIfCache : VisibleIfBaseCache {
+            public override bool ShouldBeVisible(object instance)
             {
                 var value = (bool)Source.GetValue(instance);
                 if (Invert)
@@ -225,10 +235,22 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
+        private class VisibleIfValueCache : VisibleIfBaseCache {
+            public object Value;
+
+            public override bool ShouldBeVisible(object instance)
+            {
+                var value = Source.GetValue(instance);
+                var result = Equals(value, Value);
+
+                return Invert ? !result : result;
+            }
+        }
+
         private static HashSet<PropertiesList> _visibleIfPropertiesListsCache;
         private static Stack<Dictionary<string, GroupElement>> _groups;
         private static List<Dictionary<string, GroupElement>> _groupsPool;
-        private VisibleIfCache[] _visibleIfCaches;
+        private List<VisibleIfBaseCache> _visibleIfCaches;
         private bool _isNull;
 
         /// <summary>
@@ -297,7 +319,7 @@ namespace FlaxEditor.CustomEditors.Editors
             return items;
         }
 
-        private static ScriptMemberInfo GetVisibleIfSource(ScriptType type, VisibleIfAttribute visibleIf)
+        private static ScriptMemberInfo GetVisibleIfSource(ScriptType type, VisibleIfBaseAttribute visibleIf)
         {
             var property = type.GetProperty(visibleIf.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
             if (property != ScriptMemberInfo.Null)
@@ -308,9 +330,9 @@ namespace FlaxEditor.CustomEditors.Editors
                     return ScriptMemberInfo.Null;
                 }
 
-                if (property.ValueType.Type != typeof(bool))
+                if (property.ValueType.Type != visibleIf.MemberType)
                 {
-                    Debug.LogError("Invalid VisibleIf rule. Property has to return bool type " + visibleIf.MemberName);
+                    Debug.LogError("Invalid VisibleIf rule. Property has to return '" + nameof(visibleIf.MemberType) + "' type " + visibleIf.MemberName);
                     return ScriptMemberInfo.Null;
                 }
 
@@ -320,9 +342,9 @@ namespace FlaxEditor.CustomEditors.Editors
             var field = type.GetField(visibleIf.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
             if (field != ScriptMemberInfo.Null)
             {
-                if (field.ValueType.Type != typeof(bool))
+                if (field.ValueType.Type != visibleIf.MemberType)
                 {
-                    Debug.LogError("Invalid VisibleIf rule. Field has to be bool type " + visibleIf.MemberName);
+                    Debug.LogError("Invalid VisibleIf rule. Field '" + visibleIf.MemberName + "' has to be of '" + nameof(visibleIf.MemberType) + "' type");
                     return ScriptMemberInfo.Null;
                 }
 
@@ -574,7 +596,7 @@ namespace FlaxEditor.CustomEditors.Editors
         protected virtual void SpawnProperty(LayoutElementsContainer itemLayout, ValueContainer itemValues, ItemInfo item)
         {
             int labelIndex = 0;
-            if ((item.IsReadOnly || item.VisibleIf != null) &&
+            if ((item.IsReadOnly || item.VisibleIf != null || item.VisibleIfValue != null) &&
                 itemLayout.Children.Count > 0 &&
                 itemLayout.Children[itemLayout.Children.Count - 1] is PropertiesListElement propertiesListElement)
             {
@@ -615,42 +637,60 @@ namespace FlaxEditor.CustomEditors.Editors
                     }
                 }
             }
-            if (item.VisibleIf != null && itemLayout.Children.Count > 0)
-            {
-                PropertiesListElement list = null;
-                GroupElement group = null;
-                if (itemLayout.Children[itemLayout.Children.Count - 1] is PropertiesListElement list1)
-                    list = list1;
-                else if (itemLayout.Children[itemLayout.Children.Count - 1] is GroupElement group1)
-                    group = group1;
-                else
-                    return;
 
-                // Get source member used to check rule
-                var sourceMember = GetVisibleIfSource(item.Info.DeclaringType, item.VisibleIf);
-                if (sourceMember == ScriptType.Null)
-                    return;
+            if (itemLayout.Children.Count > 0) {
+                if (item.VisibleIf != null) {
+                    AddVisibleIfCache<VisibleIfCache>(itemLayout, item, labelIndex, item.VisibleIf);
+                }
+                if (item.VisibleIfValue != null) {
+                    var newCache = AddVisibleIfCache<VisibleIfValueCache>(itemLayout, item, labelIndex, item.VisibleIfValue);
 
-                // Resize cache
-                if (_visibleIfCaches == null)
-                    _visibleIfCaches = new VisibleIfCache[8];
-                int count = 0;
-                while (count < _visibleIfCaches.Length && _visibleIfCaches[count].Target != ScriptType.Null)
-                    count++;
-                if (count >= _visibleIfCaches.Length)
-                    Array.Resize(ref _visibleIfCaches, count * 2);
-
-                // Add item
-                _visibleIfCaches[count] = new VisibleIfCache
-                {
-                    Target = item.Info,
-                    Source = sourceMember,
-                    PropertiesList = list,
-                    Group = group,
-                    LabelIndex = labelIndex,
-                    Invert = item.VisibleIf.Invert,
-                };
+                    if (newCache != null) {
+                        newCache.Value = item.VisibleIfValue.Value;
+                    }
+                }
             }
+        }
+
+        private TVisibleIf AddVisibleIfCache<TVisibleIf>(LayoutElementsContainer itemLayout, ItemInfo item, int labelIndex, VisibleIfBaseAttribute visibleIfAttribute) where TVisibleIf : VisibleIfBaseCache, new() {
+            PropertiesListElement list = null;
+            GroupElement group = null;
+
+            if (itemLayout.Children[itemLayout.Children.Count - 1] is PropertiesListElement list1)
+                list = list1;
+            else if (itemLayout.Children[itemLayout.Children.Count - 1] is GroupElement group1)
+                group = group1;
+            else
+                return null;
+
+            // Get source member used to check rule
+            var sourceMember = GetVisibleIfSource(item.Info.DeclaringType, visibleIfAttribute);
+
+            if (sourceMember == ScriptType.Null)
+                return null;
+
+            // Resize cache
+            if (_visibleIfCaches == null)
+                _visibleIfCaches = new List<VisibleIfBaseCache>();
+
+            // Add item
+            var result = new TVisibleIf {
+                Target = item.Info,
+                Source = sourceMember,
+                PropertiesList = list,
+                Group = group,
+                LabelIndex = labelIndex,
+                Invert = visibleIfAttribute.Invert
+            };
+            var emptyIndex = _visibleIfCaches.FindIndex(item => item?.Target == null || item.Target == ScriptType.Null);
+
+            if (emptyIndex >= 0) {
+                _visibleIfCaches[emptyIndex] = result;
+            } else {
+                _visibleIfCaches.Add(result);
+            }
+
+            return result;
         }
 
         /// <inheritdoc />
@@ -802,9 +842,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 try
                 {
                     // Update VisibleIf rules
-                    for (int i = 0; i < _visibleIfCaches.Length; i++)
-                    {
-                        ref var c = ref _visibleIfCaches[i];
+                    foreach (var c in _visibleIfCaches) {
                         if (c.Target == ScriptMemberInfo.Null)
                             break;
 
@@ -812,7 +850,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         bool visible = true;
                         for (int j = 0; j < Values.Count; j++)
                         {
-                            if (Values[j] != null && !c.GetValue(Values[j]))
+                            if (Values[j] != null && !c.ShouldBeVisible(Values[j]))
                             {
                                 visible = false;
                                 break;
