@@ -35,7 +35,7 @@ namespace Random
     /// <returns>The random <see cref="int"/>.</returns>
     inline int RandRange(int min, int max)
     {
-        return min + (max - min) * Rand();
+        return (int)((max - min) * Rand()) + min;
     }
 
     /// <summary>
