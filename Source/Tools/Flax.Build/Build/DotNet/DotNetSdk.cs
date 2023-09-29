@@ -192,11 +192,9 @@ namespace Flax.Build
             case TargetPlatform.Linux:
             {
                 rid = $"linux-{arch}";
-                ridFallback = "";
+                ridFallback = Utilities.ReadProcessOutput("dotnet", "--info").Split('\n').FirstOrDefault(x => x.StartsWith(" RID:"), "").Replace("RID:", "").Trim();
                 if (string.IsNullOrEmpty(dotnetPath))
                     dotnetPath ??= SearchForDotnetLocationLinux();
-                if (dotnetPath == null)
-                    ridFallback = Utilities.ReadProcessOutput("dotnet", "--info").Split('\n').FirstOrDefault(x => x.StartsWith(" RID:"), "").Replace("RID:", "").Trim();
                 break;
             }
             case TargetPlatform.Mac:
