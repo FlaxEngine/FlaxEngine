@@ -90,25 +90,13 @@ namespace FlaxEditor.Surface.ContextMenu
 
             // Update items
             bool isAnyVisible = false;
+            bool groupHeaderMatches = QueryFilterHelper.Match(filterText, HeaderText);
             for (int i = 0; i < _children.Count; i++)
             {
                 if (_children[i] is VisjectCMItem item)
                 {
-                    item.UpdateFilter(filterText, selectedBox);
+                    item.UpdateFilter(filterText, selectedBox, groupHeaderMatches);
                     isAnyVisible |= item.Visible;
-                }
-            }
-
-            // Update header title
-            if (QueryFilterHelper.Match(filterText, HeaderText))
-            {
-                for (int i = 0; i < _children.Count; i++)
-                {
-                    if (_children[i] is VisjectCMItem item)
-                    {
-                        item.UpdateFilter(null, selectedBox);
-                        isAnyVisible |= item.Visible;
-                    }
                 }
             }
 
@@ -136,7 +124,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 {
                     if (_children[i] is VisjectCMItem item)
                     {
-                        item.CanConnectTo(null);
+                        item.Visible = true;
                     }
                 }
                 Visible = true;
@@ -150,7 +138,8 @@ namespace FlaxEditor.Surface.ContextMenu
             {
                 if (_children[i] is VisjectCMItem item)
                 {
-                    isAnyVisible |= item.CanConnectTo(selectedBox);
+                    item.Visible = item.CanConnectTo(selectedBox);
+                    isAnyVisible |= item.Visible;
                 }
             }
             

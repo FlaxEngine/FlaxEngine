@@ -88,6 +88,11 @@ namespace FlaxEditor.Surface
         /// Is Function Node.
         /// </summary>
         FunctionNode = 1,
+        
+        /// <summary>
+        /// Is custom Packing Node.
+        /// </summary>
+        PackingNode = 2,
     }
     
     /// <summary>

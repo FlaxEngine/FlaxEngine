@@ -103,29 +103,23 @@ namespace FlaxEditor.Surface.ContextMenu
         {
             // Is compatible if box is null for reset reasons
             if (startBox == null)
-            {
-                Visible = true;
                 return true;   
-            }
 
             if (_archetype == null)
-            {
-                Visible = false;
                 return false;
-            }
 
             bool isCompatible = false;
             
             // Check compatibility based on the archetype tag or name. This handles custom groups and items, mainly function nodes for visual scripting
-            if (_archetype.NodeTypeHint == NodeTypeHint.FunctionNode)
+            if (_archetype.NodeTypeHint is NodeTypeHint.FunctionNode)
             {
                 ScriptMemberInfo memberInfo = ScriptMemberInfo.Null;
 
                 // Check if the archetype tag already has a member info otherwise try to fetch it via the archetype type and name
                 // Only really the InvokeMethod Nodes have a member info in their tag
-                if (_archetype.Tag is ScriptMemberInfo info)
+                if (_archetype.Tag is ScriptMemberInfo tagInfo)
                 {
-                    memberInfo = info;
+                    memberInfo = tagInfo;
                 }
                 else if(_archetype.DefaultValues is { Length: > 1 }) // We have to check since VisualScriptFunctionNode and ReturnNode don't have a name and type
                 {
@@ -139,46 +133,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
                 if (memberInfo != ScriptMemberInfo.Null)
                 {
-                    // Box was dragged from an impulse port and the member info can be invoked so it is compatible
-                    if (startBox.CurrentType.IsVoid && memberInfo.ValueType.IsVoid)
-                    {
-                        isCompatible = true;   
-                    }
-                    else
-                    {
-                        // When the startBox is output we only need to check the input parameters
-                        if (startBox.IsOutput)
-                        {
-                            var parameters = memberInfo.GetParameters();
-                            ScriptType outType = startBox.CurrentType;
-                            
-                            // non static members have an instance input parameter
-                            if (!memberInfo.IsStatic)
-                            {
-                                var scriptType = memberInfo.DeclaringType;
-                                isCompatible |= CanCastType(scriptType, outType, _archetype.ConnectionsHints);
-                            }
-
-                            // We ignore event members here since they only have output parameters, which are currently not declared as such
-                            // TODO: Fix bug where event member parameters 'IsOut' is set to false and not true
-                            if (!memberInfo.IsEvent)
-                            {
-                                for (int i = 0; i < parameters.Length; i++)
-                                {
-                                    ScriptType inType = parameters[i].Type;
-                                    isCompatible |= CanCastType(inType, outType, _archetype.ConnectionsHints);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // When the startBox is input we only have to check the output type of the method
-                            ScriptType inType = startBox.CurrentType;
-                            ScriptType outType = memberInfo.ValueType;
-
-                            isCompatible |= CanCastType(inType, outType, _archetype.ConnectionsHints);
-                        }
-                    }
+                    isCompatible |= CheckMemberInfoCompatibility(startBox, memberInfo);
                 }
             }
             else if (_archetype.Elements != null)
@@ -186,11 +141,56 @@ namespace FlaxEditor.Surface.ContextMenu
                 // Check compatibility based on the defined elements in the archetype. This handles all the default groups and items
                 isCompatible = CheckElementsCompatibility(startBox);
             }
-
-            Visible = isCompatible;
+            
             return isCompatible;
         }
 
+        private bool CheckMemberInfoCompatibility(Box startBox, ScriptMemberInfo info)
+        {
+            bool isCompatible = false;
+            // Box was dragged from an impulse port and the member info can be invoked so it is compatible
+            if (startBox.CurrentType.IsVoid && info.ValueType.IsVoid)
+            {
+                isCompatible = true;   
+            }
+            else
+            {
+                // When the startBox is output we only need to check the input parameters
+                if (startBox.IsOutput && !info.IsField)
+                {
+                    var parameters = info.GetParameters();
+                    ScriptType outType = startBox.CurrentType;
+                    
+                    // non static members have an instance input parameter
+                    if (!info.IsStatic)
+                    {
+                        var scriptType = info.DeclaringType;
+                        isCompatible |= CanCastType(scriptType, outType, _archetype.ConnectionsHints);
+                    }
+
+                    // We ignore event members here since they only have output parameters, which are currently not declared as such
+                    // TODO: Fix bug where event member parameters 'IsOut' is set to false and not true
+                    if (!info.IsEvent)
+                    {
+                        for (int i = 0; i < parameters.Length; i++)
+                        {
+                            ScriptType inType = parameters[i].Type;
+                            isCompatible |= CanCastType(inType, outType, _archetype.ConnectionsHints);
+                        }
+                    }
+                }
+                else
+                {
+                    // When the startBox is input we only have to check the output type of the method
+                    ScriptType inType = startBox.CurrentType;
+                    ScriptType outType = info.ValueType;
+
+                    isCompatible |= CanCastType(inType, outType, _archetype.ConnectionsHints);
+                }
+            }
+            return isCompatible;
+        }
+        
         private bool CheckElementsCompatibility(Box startBox)
         {
             bool isCompatible = false;
@@ -243,11 +243,12 @@ namespace FlaxEditor.Surface.ContextMenu
         /// Updates the filter.
         /// </summary>
         /// <param name="filterText">The filter text.</param>
-        public void UpdateFilter(string filterText, Box selectedBox)
+        public void UpdateFilter(string filterText, Box selectedBox, bool groupHeaderMatches = false)
         {
             if (selectedBox != null)
             {
-                if (!CanConnectTo(selectedBox))
+                Visible = CanConnectTo(selectedBox);
+                if (!Visible)
                 {
                     _highlights?.Clear();
                     return;
@@ -319,7 +320,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
                     Data = data;
                 }
-                else
+                else if(!groupHeaderMatches)
                 {
                     // Hide
                     _highlights?.Clear();
