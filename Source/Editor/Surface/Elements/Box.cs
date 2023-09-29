@@ -91,7 +91,7 @@ namespace FlaxEditor.Surface.Elements
                     _currentType = value;
 
                     // Check if will need to update box connections due to type change
-                    if ((Surface == null || Surface._isUpdatingBoxTypes == 0) && HasAnyConnection && !CanCast(prev, _currentType))
+                    if ((Surface == null || Surface._isUpdatingBoxTypes == 0) && HasAnyConnection && !prev.CanCastTo(_currentType))
                     {
                         // Remove all invalid connections and update those which still can be valid
                         var connections = Connections.ToArray();
@@ -246,7 +246,7 @@ namespace FlaxEditor.Surface.Elements
                     var b = ParentNode.GetBox(boxes[i]);
 
                     // Check if its the same and tested type matches the default value type
-                    if (b == this && CanCast(parentArch.DefaultType, type))
+                    if (b == this && parentArch.DefaultType.CanCastTo(type))
                     {
                         // Can
                         return true;
@@ -668,17 +668,6 @@ namespace FlaxEditor.Surface.Elements
             }
         }
 
-        private static bool CanCast(ScriptType oB, ScriptType iB)
-        {
-            if (oB == iB)
-                return true;
-            if (oB == ScriptType.Null || iB == ScriptType.Null)
-                return false;
-            return (oB.Type != typeof(void) && oB.Type != typeof(FlaxEngine.Object)) &&
-                   (iB.Type != typeof(void) && iB.Type != typeof(FlaxEngine.Object)) &&
-                   oB.IsAssignableFrom(iB);
-        }
-
         /// <inheritdoc />
         public bool AreConnected(IConnectionInstigator other)
         {
@@ -737,7 +726,7 @@ namespace FlaxEditor.Surface.Elements
             {
                 if (!iB.CanUseType(oB.CurrentType))
                 {
-                    if (!CanCast(oB.CurrentType, iB.CurrentType))
+                    if (!oB.CurrentType.CanCastTo(iB.CurrentType))
                     {
                         // Cannot
                         return false;
@@ -748,7 +737,7 @@ namespace FlaxEditor.Surface.Elements
             {
                 if (!oB.CanUseType(iB.CurrentType))
                 {
-                    if (!CanCast(oB.CurrentType, iB.CurrentType))
+                    if (!oB.CurrentType.CanCastTo(iB.CurrentType))
                     {
                         // Cannot
                         return false;
@@ -821,7 +810,7 @@ namespace FlaxEditor.Surface.Elements
             bool useCaster = false;
             if (!iB.CanUseType(oB.CurrentType))
             {
-                if (CanCast(oB.CurrentType, iB.CurrentType))
+                if (oB.CurrentType.CanCastTo(iB.CurrentType))
                     useCaster = true;
                 else
                     return;

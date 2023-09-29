@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Utilities;
@@ -117,12 +116,6 @@ namespace FlaxEditor.Surface.ContextMenu
 
             bool isCompatible = false;
             
-            // Check compatibility based on the defined elements in the archetype. This handles all the default groups and items
-            if (_archetype.Elements != null)
-            {
-                isCompatible = CheckElementsCompatibility(startBox);
-            }
-
             // Check compatibility based on the archetype tag or name. This handles custom groups and items, mainly function nodes for visual scripting
             if (_archetype.NodeTypeHint == NodeTypeHint.FunctionNode)
             {
@@ -134,18 +127,18 @@ namespace FlaxEditor.Surface.ContextMenu
                 {
                     memberInfo = info;
                 }
-                else if(_archetype.DefaultValues is { Length: > 1 })
+                else if(_archetype.DefaultValues is { Length: > 1 }) // We have to check since VisualScriptFunctionNode and ReturnNode don't have a name and type
                 {
                     var eventName = (string)_archetype.DefaultValues[1];
                     var eventType = TypeUtils.GetType((string)_archetype.DefaultValues[0]);
-                    memberInfo = eventType.GetMember(eventName, MemberTypes.Event, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
+                    memberInfo = eventType.GetMember(eventName, System.Reflection.MemberTypes.Event, 
+                                                     System.Reflection.BindingFlags.Public | 
+                                                     System.Reflection.BindingFlags.Static | 
+                                                     System.Reflection.BindingFlags.Instance);
                 }
 
                 if (memberInfo != ScriptMemberInfo.Null)
                 {
-                    if(memberInfo.IsEvent)
-                        isCompatible = false;
-
                     // Box was dragged from an impulse port and the member info can be invoked so it is compatible
                     if (startBox.CurrentType.IsVoid && memberInfo.ValueType.IsVoid)
                     {
@@ -163,7 +156,7 @@ namespace FlaxEditor.Surface.ContextMenu
                             if (!memberInfo.IsStatic)
                             {
                                 var scriptType = memberInfo.DeclaringType;
-                                isCompatible |= CanCastToType(scriptType, outType, _archetype.ConnectionsHints);
+                                isCompatible |= CanCastType(scriptType, outType, _archetype.ConnectionsHints);
                             }
 
                             // We ignore event members here since they only have output parameters, which are currently not declared as such
@@ -173,7 +166,7 @@ namespace FlaxEditor.Surface.ContextMenu
                                 for (int i = 0; i < parameters.Length; i++)
                                 {
                                     ScriptType inType = parameters[i].Type;
-                                    isCompatible |= CanCastToType(inType, outType, _archetype.ConnectionsHints);
+                                    isCompatible |= CanCastType(inType, outType, _archetype.ConnectionsHints);
                                 }
                             }
                         }
@@ -183,10 +176,15 @@ namespace FlaxEditor.Surface.ContextMenu
                             ScriptType inType = startBox.CurrentType;
                             ScriptType outType = memberInfo.ValueType;
 
-                            isCompatible |= CanCastToType(inType, outType, _archetype.ConnectionsHints);
+                            isCompatible |= CanCastType(inType, outType, _archetype.ConnectionsHints);
                         }
                     }
                 }
+            }
+            else if (_archetype.Elements != null)
+            {
+                // Check compatibility based on the defined elements in the archetype. This handles all the default groups and items
+                isCompatible = CheckElementsCompatibility(startBox);
             }
 
             Visible = isCompatible;
@@ -198,54 +196,47 @@ namespace FlaxEditor.Surface.ContextMenu
             bool isCompatible = false;
             foreach (NodeElementArchetype element in _archetype.Elements)
             {
+                // Ignore all elements that aren't inputs or outputs (e.g. input fields)
                 if(element.Type != NodeElementType.Output && element.Type != NodeElementType.Input)
                     continue;
                 
+                // Ignore elements with the same direction as the box
                 if ((startBox.IsOutput && element.Type == NodeElementType.Output) || (!startBox.IsOutput && element.Type == NodeElementType.Input))
                     continue;
                 
-                ScriptType inType;
-                ScriptType outType;
+                ScriptType fromType;
+                ScriptType toType;
                 ConnectionsHint hint;
                 if (startBox.IsOutput)
                 {
-                    inType = element.ConnectionsType;
-                    outType = startBox.CurrentType;
+                    fromType = element.ConnectionsType;
+                    toType = startBox.CurrentType;
                     hint = _archetype.ConnectionsHints;
                 }
                 else
                 {
-                    inType = startBox.CurrentType;
-                    outType = element.ConnectionsType;
+                    fromType = startBox.CurrentType;
+                    toType = element.ConnectionsType;
                     hint = startBox.ParentNode.Archetype.ConnectionsHints;
                 }
                 
-                isCompatible |= CanCastToType(inType, outType, hint);
+                isCompatible |= CanCastType(fromType, toType, hint);
             }
 
             return isCompatible;
         }
         
-        private bool CanCastToType(ScriptType currentType, ScriptType type, ConnectionsHint hint)
+        private bool CanCastType(ScriptType from, ScriptType to, ConnectionsHint hint)
         {
-            if (VisjectSurface.CanUseDirectCastStatic(type, currentType, false))
+            // Yes, from and to are switched on purpose
+            if (VisjectSurface.CanUseDirectCastStatic(to, from, false))
                 return true;
             
-            if(VisjectSurface.IsTypeCompatible(currentType, type, hint))
+            if(VisjectSurface.IsTypeCompatible(from, to, hint))
                 return true;
             
-            return CanCast(type, currentType);
-        }
-        
-        private static bool CanCast(ScriptType oB, ScriptType iB)
-        {
-            if (oB == iB)
-                return true;
-            if (oB == ScriptType.Null || iB == ScriptType.Null)
-                return false;
-            return (oB.Type != typeof(void) && oB.Type != typeof(FlaxEngine.Object)) &&
-                   (iB.Type != typeof(void) && iB.Type != typeof(FlaxEngine.Object)) &&
-                   oB.IsAssignableFrom(iB);
+            // Same here
+            return to.CanCastTo(from);
         }
         
         /// <summary>
