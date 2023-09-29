@@ -132,7 +132,7 @@ void SplineCollider::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_GET_OTHER_OBJ(SplineCollider);
 
     SERIALIZE(CollisionData);
-    SERIALIZE_MEMBER(PreTransform, _preTransform)
+    SERIALIZE_MEMBER(PreTransform, _preTransform);
 }
 
 void SplineCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)

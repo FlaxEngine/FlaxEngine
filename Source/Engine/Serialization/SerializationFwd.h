@@ -23,7 +23,7 @@
 	{ \
 		stream.JKEY(#name); \
 		Serialization::Serialize(stream, name, other ? &other->name : nullptr); \
-	}
+	} static_assert(true, "")
 
 // Serialization helper macro (for private members, or with custom member name)
 #define SERIALIZE_MEMBER(name, member) \
@@ -31,7 +31,7 @@
 	{ \
 		stream.JKEY(#name); \
 		Serialization::Serialize(stream, member, other ? &other->member : nullptr); \
-	}
+	} static_assert(true, "")
 
 // Deserialization helper macro
 #define DESERIALIZE(name)  \
@@ -39,7 +39,7 @@
         const auto e = SERIALIZE_FIND_MEMBER(stream, #name); \
         if (e != stream.MemberEnd()) \
             Serialization::Deserialize(e->value, name, modifier); \
-    }
+    } static_assert(true, "")
 
 // Deserialization helper macro (for private members, or with custom member name)
 #define DESERIALIZE_MEMBER(name, member) \
@@ -47,7 +47,7 @@
         const auto e = SERIALIZE_FIND_MEMBER(stream, #name); \
         if (e != stream.MemberEnd()) \
             Serialization::Deserialize(e->value, member, modifier); \
-    }
+    } static_assert(true, "")
 
 // Helper macros for bit fields
 

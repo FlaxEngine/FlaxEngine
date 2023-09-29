@@ -10,7 +10,8 @@
 #define DECLARE_BINARY_ASSET_HEADER(type, serializedVersion) \
 	DECLARE_ASSET_HEADER(type); \
 	static const uint32 SerializedVersion = serializedVersion; \
-	uint32 GetSerializedVersion() const override { return SerializedVersion; }
+	uint32 GetSerializedVersion() const override { return SerializedVersion; } \
+    static_assert(true, "")
 
 #define REGISTER_BINARY_ASSET_ABSTRACT(type, typeName) \
 	const String type::TypeName = TEXT(typeName)

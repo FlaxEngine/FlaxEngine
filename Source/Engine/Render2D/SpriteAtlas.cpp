@@ -47,7 +47,7 @@ int32 SpriteAtlas::GetSpritesCount() const
 
 Sprite SpriteAtlas::GetSprite(int32 index) const
 {
-    CHECK_RETURN(index >= 0 && index < Sprites.Count(), Sprite())
+    CHECK_RETURN(index >= 0 && index < Sprites.Count(), Sprite());
     return Sprites.Get()[index];
 }
 

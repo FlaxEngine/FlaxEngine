@@ -44,7 +44,7 @@
             PLATFORM_DEBUG_BREAK; \
         } \
         Platform::Assert(#expression, __FILE__, __LINE__); \
-    }
+    } static_assert(true, "")
 #else
 #define ASSERT(expression) ((void)0)
 #endif
@@ -60,10 +60,10 @@
     { \
         Platform::CheckFailed(#expression, __FILE__, __LINE__); \
         return; \
-    }
+    } static_assert(true, "")
 #define CHECK_RETURN(expression, returnValue) \
     if (!(expression)) \
     { \
         Platform::CheckFailed(#expression, __FILE__, __LINE__); \
         return returnValue; \
-    }
+    } static_assert(true, "")
