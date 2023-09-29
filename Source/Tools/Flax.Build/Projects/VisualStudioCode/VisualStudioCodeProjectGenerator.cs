@@ -155,122 +155,118 @@ namespace Flax.Build.Projects.VisualStudioCode
                     {
                         foreach (var project in solution.Projects)
                         {
-                            // C++ project
-                            if (project.Type == TargetType.NativeCpp)
+                            if (project.Name == "BuildScripts")
+                                continue;
+
+                            bool defaultTask = project == solution.MainProject;
+                            foreach (var configuration in project.Configurations)
                             {
-                                bool defaultTask = project == solution.MainProject;
-                                foreach (var configuration in project.Configurations)
+                                var target = configuration.Target;
+                                var name = project.Name + '|' + configuration.Name;
+
+                                json.BeginObject();
+
+                                json.AddField("label", name);
+
+                                bool isDefaultTask = defaultTask && configuration.Configuration == TargetConfiguration.Development && configuration.Platform == Platform.BuildPlatform.Target;
+
+                                json.BeginObject("group");
                                 {
-                                    var target = configuration.Target;
-                                    var name = project.Name + '|' + configuration.Name;
-
-                                    json.BeginObject();
-
-                                    json.AddField("label", name);
-
-                                    if (defaultTask && configuration.Configuration == TargetConfiguration.Development && configuration.Platform == Platform.BuildPlatform.Target)
-                                    {
-                                        defaultTask = false;
-                                        json.BeginObject("group");
-                                        {
-                                            json.AddField("kind", "build");
-                                            json.AddField("isDefault", true);
-                                        }
-                                        json.EndObject();
-                                    }
-                                    else
-                                    {
-                                        json.AddField("group", "build");
-                                    }
-
-                                    switch (Platform.BuildPlatform.Target)
-                                    {
-                                    case TargetPlatform.Windows:
-                                    {
-                                        json.AddField("command", buildToolPath);
-                                        json.BeginArray("args");
-                                        {
-                                            json.AddUnnamedField("-build");
-                                            json.AddUnnamedField("-log");
-                                            json.AddUnnamedField("-mutex");
-                                            json.AddUnnamedField(string.Format("\\\"-workspace={0}\\\"", buildToolWorkspace));
-                                            json.AddUnnamedField(string.Format("-arch={0}", configuration.ArchitectureName));
-                                            json.AddUnnamedField(string.Format("-configuration={0}", configuration.ConfigurationName));
-                                            json.AddUnnamedField(string.Format("-platform={0}", configuration.PlatformName));
-                                            json.AddUnnamedField(string.Format("-buildTargets={0}", target.Name));
-                                            if (!string.IsNullOrEmpty(Configuration.Compiler))
-                                                json.AddUnnamedField(string.Format("-compiler={0}", Configuration.Compiler));
-                                        }
-                                        json.EndArray();
-
-                                        json.AddField("type", "shell");
-
-                                        json.BeginObject("options");
-                                        {
-                                            json.AddField("cwd", buildToolWorkspace);
-                                        }
-                                        json.EndObject();
-                                        break;
-                                    }
-                                    case TargetPlatform.Linux:
-                                    {
-                                        json.AddField("command", buildToolPath);
-                                        json.BeginArray("args");
-                                        {
-                                            json.AddUnnamedField("--build");
-                                            json.AddUnnamedField("--log");
-                                            json.AddUnnamedField("--mutex");
-                                            json.AddUnnamedField(string.Format("--workspace=\\\"{0}\\\"", buildToolWorkspace));
-                                            json.AddUnnamedField(string.Format("--arch={0}", configuration.Architecture));
-                                            json.AddUnnamedField(string.Format("--configuration={0}", configuration.ConfigurationName));
-                                            json.AddUnnamedField(string.Format("--platform={0}", configuration.PlatformName));
-                                            json.AddUnnamedField(string.Format("--buildTargets={0}", target.Name));
-                                            if (!string.IsNullOrEmpty(Configuration.Compiler))
-                                                json.AddUnnamedField(string.Format("--compiler={0}", Configuration.Compiler));
-                                        }
-                                        json.EndArray();
-
-                                        json.AddField("type", "shell");
-
-                                        json.BeginObject("options");
-                                        {
-                                            json.AddField("cwd", buildToolWorkspace);
-                                        }
-                                        json.EndObject();
-                                        break;
-                                    }
-                                    case TargetPlatform.Mac:
-                                    {
-                                        json.AddField("command", buildToolPath);
-                                        json.BeginArray("args");
-                                        {
-                                            json.AddUnnamedField("--build");
-                                            json.AddUnnamedField("--log");
-                                            json.AddUnnamedField("--mutex");
-                                            json.AddUnnamedField(string.Format("--workspace=\\\"{0}\\\"", buildToolWorkspace));
-                                            json.AddUnnamedField(string.Format("--arch={0}", configuration.Architecture));
-                                            json.AddUnnamedField(string.Format("--configuration={0}", configuration.ConfigurationName));
-                                            json.AddUnnamedField(string.Format("--platform={0}", configuration.PlatformName));
-                                            json.AddUnnamedField(string.Format("--buildTargets={0}", target.Name));
-                                            if (!string.IsNullOrEmpty(Configuration.Compiler))
-                                                json.AddUnnamedField(string.Format("--compiler={0}", Configuration.Compiler));
-                                        }
-                                        json.EndArray();
-
-                                        json.AddField("type", "shell");
-
-                                        json.BeginObject("options");
-                                        {
-                                            json.AddField("cwd", buildToolWorkspace);
-                                        }
-                                        json.EndObject();
-                                        break;
-                                    }
-                                    default: throw new Exception("Visual Code project generator does not support current platform.");
-                                    }
-
-                                    json.EndObject();
+                                    json.AddField("kind", "build");
+                                    json.AddField("isDefault", isDefaultTask);
                                 }
+                                json.EndObject();
+
+                                if (isDefaultTask)
+                                    defaultTask = false;
+
+                                switch (Platform.BuildPlatform.Target)
+                                {
+                                case TargetPlatform.Windows:
+                                {
+                                    json.AddField("command", buildToolPath);
+                                    json.BeginArray("args");
+                                    {
+                                        json.AddUnnamedField("-build");
+                                        json.AddUnnamedField("-log");
+                                        json.AddUnnamedField("-mutex");
+                                        json.AddUnnamedField(string.Format("\\\"-workspace={0}\\\"", buildToolWorkspace));
+                                        json.AddUnnamedField(string.Format("-arch={0}", configuration.ArchitectureName));
+                                        json.AddUnnamedField(string.Format("-configuration={0}", configuration.ConfigurationName));
+                                        json.AddUnnamedField(string.Format("-platform={0}", configuration.PlatformName));
+                                        json.AddUnnamedField(string.Format("-buildTargets={0}", target.Name));
+                                        if (!string.IsNullOrEmpty(Configuration.Compiler))
+                                            json.AddUnnamedField(string.Format("-compiler={0}", Configuration.Compiler));
+                                    }
+                                    json.EndArray();
+
+                                    json.AddField("type", "shell");
+
+                                    json.BeginObject("options");
+                                    {
+                                        json.AddField("cwd", buildToolWorkspace);
+                                    }
+                                    json.EndObject();
+                                    break;
+                                }
+                                case TargetPlatform.Linux:
+                                {
+                                    json.AddField("command", buildToolPath);
+                                    json.BeginArray("args");
+                                    {
+                                        json.AddUnnamedField("--build");
+                                        json.AddUnnamedField("--log");
+                                        json.AddUnnamedField("--mutex");
+                                        json.AddUnnamedField(string.Format("--workspace=\\\"{0}\\\"", buildToolWorkspace));
+                                        json.AddUnnamedField(string.Format("--arch={0}", configuration.Architecture));
+                                        json.AddUnnamedField(string.Format("--configuration={0}", configuration.ConfigurationName));
+                                        json.AddUnnamedField(string.Format("--platform={0}", configuration.PlatformName));
+                                        json.AddUnnamedField(string.Format("--buildTargets={0}", target.Name));
+                                        if (!string.IsNullOrEmpty(Configuration.Compiler))
+                                            json.AddUnnamedField(string.Format("--compiler={0}", Configuration.Compiler));
+                                    }
+                                    json.EndArray();
+
+                                    json.AddField("type", "shell");
+
+                                    json.BeginObject("options");
+                                    {
+                                        json.AddField("cwd", buildToolWorkspace);
+                                    }
+                                    json.EndObject();
+                                    break;
+                                }
+                                case TargetPlatform.Mac:
+                                {
+                                    json.AddField("command", buildToolPath);
+                                    json.BeginArray("args");
+                                    {
+                                        json.AddUnnamedField("--build");
+                                        json.AddUnnamedField("--log");
+                                        json.AddUnnamedField("--mutex");
+                                        json.AddUnnamedField(string.Format("--workspace=\\\"{0}\\\"", buildToolWorkspace));
+                                        json.AddUnnamedField(string.Format("--arch={0}", configuration.Architecture));
+                                        json.AddUnnamedField(string.Format("--configuration={0}", configuration.ConfigurationName));
+                                        json.AddUnnamedField(string.Format("--platform={0}", configuration.PlatformName));
+                                        json.AddUnnamedField(string.Format("--buildTargets={0}", target.Name));
+                                        if (!string.IsNullOrEmpty(Configuration.Compiler))
+                                            json.AddUnnamedField(string.Format("--compiler={0}", Configuration.Compiler));
+                                    }
+                                    json.EndArray();
+
+                                    json.AddField("type", "shell");
+
+                                    json.BeginObject("options");
+                                    {
+                                        json.AddField("cwd", buildToolWorkspace);
+                                    }
+                                    json.EndObject();
+                                    break;
+                                }
+                                default: throw new Exception("Visual Code project generator does not support current platform.");
+                                }
+
+                                json.EndObject();
                             }
                         }
                     }
