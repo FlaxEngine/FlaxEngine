@@ -225,6 +225,16 @@ namespace FlaxEngine.Utilities
         }
 
         /// <summary>
+        /// Generates a pseudo-random number from normalized range [0;1].
+        /// </summary>
+        /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <returns>The random number.</returns>
+        public static float Rand(this Random random)
+        {
+            return random.Next(0, int.MaxValue) / (float)int.MaxValue;
+        }
+
+        /// <summary>
         /// Generates a random <see cref="bool"/>.
         /// </summary>
         /// <param name="random">An instance of <see cref="Random"/>.</param>
@@ -323,6 +333,27 @@ namespace FlaxEngine.Utilities
 
             output.Normalize();
 
+            return output;
+        }
+
+        /// <summary>
+        /// Generates a uniformly distributed random unit vector point inside a unit sphere.
+        /// </summary>
+        /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <returns>A random <see cref="Vector3"/>.</returns>
+        public static Vector3 NextInsideUnitVector3(this Random random)
+        {
+            Vector3 output;
+            Real l;
+            do
+            {
+                // Create random float with a mean of 0 and deviation of ±1
+                output.X = NextFloat(random) * 2.0f - 1.0f;
+                output.Y = NextFloat(random) * 2.0f - 1.0f;
+                output.Z = NextFloat(random) * 2.0f - 1.0f;
+
+                l = output.LengthSquared;
+            } while (l > 1);
             return output;
         }
 
@@ -429,6 +460,26 @@ namespace FlaxEngine.Utilities
         {
             Array values = Enum.GetValues(typeof(TEnum));
             return (TEnum)values.GetValue(random.Next(values.Length));
+        }
+
+        /// <summary>
+        /// Generates a random point inside a sphere with radius 1.0.
+        /// </summary>
+        /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <returns>A random <see cref="Vector3"/> within the sphere.</returns>
+        public static Vector3 GetPointInsideSphere(this Random random)
+        {
+            return NextInsideUnitVector3(random);
+        }
+
+        /// <summary>
+        /// Generates a random point on the surface of a sphere with radius 1.0.
+        /// </summary>
+        /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <returns>A random <see cref="Vector3"/>.</returns>
+        public static Vector3 GetPointOnSphere(this Random random)
+        {
+           return NextUnitVector3(random);
         }
     }
 }

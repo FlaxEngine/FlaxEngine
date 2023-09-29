@@ -6,6 +6,7 @@
 
 namespace Random
 {
+
     /// <summary>
     /// Generates a pseudo-random number from normalized range [0;1].
     /// </summary>
@@ -81,9 +82,9 @@ namespace Random
         float z = 2 * Rand() - 1;
         float t = 2 * PI * Rand();
 
-        float r = sqrt(1 - z * z);
-        float x = r * cos(t);
-        float y = r * sin(t);
+        float r = Math::Sqrt(1 - z * z);
+        float x = r * Math::Cos(t);
+        float y = r * Math::Sin(t);
 
         return Float3(x, y, z);
     }
@@ -93,11 +94,11 @@ namespace Random
     /// </summary>
     /// <returns>A random <see cref="Quaternion"/>.</returns>
     /// <param name="randomRoll">Should the roll value be randomized.</param>
-    inline Quaternion GetUniformOrientation(bool randomRoll = false)
+    inline Quaternion GetUniformOrientation(bool randRoll = false)
     {
         float randomYaw = Rand() * 360.0f;
         float randomPitch = Rand() * 360.0f; 
-        float randomRoll = randomRoll ? Rand() * 360.0f : 0.0f; 
+        float randomRoll = (randRoll) ? Rand() * 360.0f : 0.0f;
 
         return Quaternion::Euler(randomYaw, randomPitch, randomRoll);
     }
