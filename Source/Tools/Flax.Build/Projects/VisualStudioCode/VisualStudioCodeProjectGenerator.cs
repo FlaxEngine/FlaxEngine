@@ -158,6 +158,10 @@ namespace Flax.Build.Projects.VisualStudioCode
                             if (project.Name == "BuildScripts")
                                 continue;
 
+                            // Skip duplicate build tasks
+                            if (project.Name == "FlaxEngine" || (solution.MainProject.Name != "Flax" && solution.MainProject != project))
+                                continue;
+
                             bool defaultTask = project == solution.MainProject;
                             foreach (var configuration in project.Configurations)
                             {
@@ -288,9 +292,15 @@ namespace Flax.Build.Projects.VisualStudioCode
                     {
                         foreach (var project in solution.Projects)
                         {
+                            if (project.Name == "BuildScripts")
+                                continue;
                             // C++ project
                             if (project.Type == TargetType.NativeCpp)
                             {
+                                // Skip generating launch profiles for plugins and dependencies
+                                if (solution.MainProject.Name != "Flax" && project.Name != "Flax.Build" && solution.MainProject.WorkspaceRootPath != project.WorkspaceRootPath)
+                                    continue;
+
                                 foreach (var configuration in project.Configurations)
                                 {
                                     var name = project.Name + '|' + configuration.Name;
