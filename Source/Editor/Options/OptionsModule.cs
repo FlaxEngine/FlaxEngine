@@ -304,7 +304,7 @@ namespace FlaxEditor.Options
                 BorderNormal = new Color(0.59f, 0.59f, 0.64f, 1f),
                 TextBoxBackground = new Color(0.75f, 0.75f, 0.81f, 1f),
                 TextBoxBackgroundSelected = new Color(0.73f, 0.73f, 0.80f, 1f),
-                CollectionBackgroundColor = new Color(0.25f, 0.25f, 0.25f, 1f),
+                CollectionBackgroundColor = new Color(0.85f, 0.85f, 0.88f, 1f),
                 ProgressNormal = new Color(0.03f, 0.65f, 0.12f, 1f),
 
                 // Fonts

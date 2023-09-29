@@ -86,6 +86,7 @@ namespace FlaxEditor.Content
                 Folder.ParentFolder = parent.Folder;
                 Parent = parent;
             }
+            IconColor = Style.Current.Foreground;
         }
 
         /// <summary>
