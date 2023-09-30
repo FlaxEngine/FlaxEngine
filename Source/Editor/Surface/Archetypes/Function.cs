@@ -773,7 +773,7 @@ namespace FlaxEditor.Surface.Archetypes
                     Values[4] = GetSignatureData(memberInfo, memberInfo.GetParameters());
                 }
             }
-            
+
             private SignatureInfo LoadSignature()
             {
                 var signature = new SignatureInfo();

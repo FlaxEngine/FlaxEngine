@@ -153,10 +153,10 @@ namespace FlaxEditor.Surface.ContextMenu
                 // Hide group if none of the items matched the filter
                 Visible = false;
             }
-            
+
             Profiler.EndEvent();
         }
-        
+
         /// <summary>
         /// Updates the sorting of the <see cref="VisjectCMItem"/>s of this <see cref="VisjectCMGroup"/>
         /// Also updates the <see cref="SortScore"/>

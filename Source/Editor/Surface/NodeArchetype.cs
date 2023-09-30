@@ -72,7 +72,7 @@ namespace FlaxEditor.Surface
         /// </summary>
         All = Scalar | Vector | Enum | Anything | Value | Array | Dictionary,
     }
-    
+
     /// <summary>
     /// Surface node archetype description.
     /// </summary>
@@ -123,7 +123,7 @@ namespace FlaxEditor.Surface
         /// Custom set of flags.
         /// </summary>
         public NodeFlags Flags;
-        
+
         /// <summary>
         /// Title text.
         /// </summary>
@@ -166,7 +166,7 @@ namespace FlaxEditor.Surface
         /// Connections hints.
         /// </summary>
         public ConnectionsHint ConnectionsHints;
-        
+
         /// <summary>
         /// Array with independent boxes IDs.
         /// </summary>

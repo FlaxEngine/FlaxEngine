@@ -200,6 +200,13 @@ namespace FlaxEditor.Surface
             return false;
         }
 
+        /// <summary>
+        /// Checks if a type is compatible with another type and can be casted by using a connection hint
+        /// </summary>
+        /// <param name="from">Source type</param>
+        /// <param name="to">Target type</param>
+        /// <param name="hint">Connection hint</param>
+        /// <returns>True if any method of casting or compatibility check succeeds</returns>
         public static bool FullCastCheck(ScriptType from, ScriptType to, ConnectionsHint hint)
         {
             // Yes, from and to are switched on purpose
