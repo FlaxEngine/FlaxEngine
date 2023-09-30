@@ -370,7 +370,7 @@ namespace FlaxEngine
             var q = Quaternion.RotationAxis(axis, angle * Mathf.DegreesToRadians);
             var dif = (transform.Translation - point) * q;
             transform.Translation = point + dif;
-            transform.Orientation = q;
+            transform.Orientation *= q;
             Transform = transform;
         }
 
