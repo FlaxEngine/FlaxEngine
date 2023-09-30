@@ -2223,6 +2223,43 @@ namespace FlaxEditor.Surface.Archetypes
 
                 base.OnDestroy();
             }
+            
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            {
+                // Event based nodes always have a pulse input, so it's always compatible with void
+                if (outputType.IsVoid)
+                    return true;
+                
+                var eventName = (string)nodeArch.DefaultValues[1];
+                var eventType = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
+                var member = eventType.GetMember(eventName, MemberTypes.Event, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
+                if (member && SurfaceUtils.IsValidVisualScriptEvent(member))
+                {
+                    if (!member.IsStatic)
+                    {
+                        if (VisjectSurface.FullCastCheck(eventType, outputType, hint))
+                            return true;
+                    }
+                }
+                return false;
+            }
+            
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            {
+                // Event based nodes always have a pulse output, so it's always compatible with void
+                if (inputType.IsVoid)
+                    return true;
+                
+                var eventName = (string)nodeArch.DefaultValues[1];
+                var eventType = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
+                var member = eventType.GetMember(eventName, MemberTypes.Event, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
+                if (member && SurfaceUtils.IsValidVisualScriptEvent(member))
+                {
+                    if (VisjectSurface.FullCastCheck(member.ValueType, inputType, hint))
+                        return true;
+                }
+                return false;
+            }
         }
 
         private sealed class BindEventNode : EventBaseNode
@@ -2402,6 +2439,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 9,
                 Create = (id, context, arch, groupArch) => new BindEventNode(id, context, arch, groupArch),
+                IsInputCompatible = EventBaseNode.IsInputCompatible,
+                IsOutputCompatible = EventBaseNode.IsOutputCompatible,
                 Title = string.Empty,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
                 Size = new Float2(260, 60),
@@ -2424,6 +2463,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 10,
                 Create = (id, context, arch, groupArch) => new UnbindEventNode(id, context, arch, groupArch),
+                IsInputCompatible = EventBaseNode.IsInputCompatible,
+                IsOutputCompatible = EventBaseNode.IsOutputCompatible,
                 Title = string.Empty,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
                 Size = new Float2(260, 60),
