@@ -166,12 +166,14 @@ namespace Flax.Build.Projects.VisualStudio
             {
                 try
                 {
-                    Regex projectRegex = new Regex(@"Project\(.*\) = \""(\S+)\"", \""(\S+)\"", \""{(\S+)}\""");
+                    Regex projectRegex = new Regex(@"Project\(""{(\S+)}""\) = \""(\S+)\"", \""(\S+)\"", \""{(\S+)}\""");
                     MatchCollection matches = projectRegex.Matches(File.ReadAllText(path));
                     for (int i = 0; i < matches.Count; i++)
                     {
-                        if (matches[i].Groups[1].Value == projectName)
-                            return Guid.ParseExact(matches[i].Groups[3].Value, "D");
+                        if (matches[i].Groups[1].Value.Equals("2150E333-8FDC-42A3-9474-1A3956D46DE8", StringComparison.OrdinalIgnoreCase))
+                            continue;
+                        if (matches[i].Groups[2].Value == projectName)
+                            return Guid.ParseExact(matches[i].Groups[4].Value, "D");
                     }
                 }
                 catch
@@ -376,7 +378,8 @@ namespace Flax.Build.Projects.VisualStudio
                         {
                             if (!folderIds.TryGetValue(folderPath, out project.FolderGuid))
                             {
-                                project.FolderGuid = Guid.NewGuid();
+                                if (!folderIds.TryGetValue(folderParents[i], out project.FolderGuid))
+                                    project.FolderGuid = Guid.NewGuid();
                                 folderIds.Add(folderPath, project.FolderGuid);
                             }
                             folderNames.Add(folderPath);
