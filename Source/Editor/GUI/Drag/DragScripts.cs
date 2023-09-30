@@ -100,7 +100,7 @@ namespace FlaxEditor.GUI.Drag
                         // Find element
                         if (Guid.TryParse(ids[i], out Guid id))
                         {
-                            var obj = FlaxEngine.Object.Find<Script>(ref id);
+                            var obj = FlaxEngine.Object.Find<Script>(in id);
 
                             // Check it
                             if (obj != null)
@@ -130,7 +130,7 @@ namespace FlaxEditor.GUI.Drag
                     // Find element
                     if (Guid.TryParse(ids[i], out Guid id))
                     {
-                        var obj = FlaxEngine.Object.Find<Script>(ref id);
+                        var obj = FlaxEngine.Object.Find<Script>(in id);
 
                         // Check it
                         if (obj != null)

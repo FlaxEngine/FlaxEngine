@@ -78,7 +78,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     }
                     return null;
                 }
-                return FlaxEngine.Object.TryFind<Actor>(ref ActorID);
+                return FlaxEngine.Object.TryFind<Actor>(in ActorID);
             }
             set
             {

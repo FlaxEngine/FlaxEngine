@@ -952,7 +952,7 @@ namespace FlaxEditor.Windows.Assets
             // Try to reassign the player
             if (_timeline.Player == null && _cachedPlayerId != Guid.Empty)
             {
-                var obj = Object.TryFind<SceneAnimationPlayer>(ref _cachedPlayerId);
+                var obj = Object.TryFind<SceneAnimationPlayer>(in _cachedPlayerId);
                 if (obj)
                 {
                     _cachedPlayerId = Guid.Empty;

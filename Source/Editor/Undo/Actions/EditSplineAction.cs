@@ -42,7 +42,7 @@ namespace FlaxEditor.Actions
         /// <inheritdoc />
         public void Do()
         {
-            var spline = FlaxEngine.Object.Find<Spline>(ref _splineId);
+            var spline = FlaxEngine.Object.Find<Spline>(in _splineId);
             if (spline == null)
                 return;
             spline.SplineKeyframes = _after;
@@ -52,7 +52,7 @@ namespace FlaxEditor.Actions
         /// <inheritdoc />
         public void Undo()
         {
-            var spline = FlaxEngine.Object.Find<Spline>(ref _splineId);
+            var spline = FlaxEngine.Object.Find<Spline>(in _splineId);
             if (spline == null)
                 return;
             spline.SplineKeyframes = _before;
@@ -68,7 +68,7 @@ namespace FlaxEditor.Actions
         /// <inheritdoc />
         public void MarkSceneEdited(SceneModule sceneModule)
         {
-            var spline = FlaxEngine.Object.Find<Spline>(ref _splineId);
+            var spline = FlaxEngine.Object.Find<Spline>(in _splineId);
             if (spline != null)
                 sceneModule.MarkSceneEdited(spline.Scene);
         }

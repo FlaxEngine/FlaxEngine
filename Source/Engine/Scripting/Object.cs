@@ -127,9 +127,9 @@ namespace FlaxEngine
         /// <param name="id">Unique ID of the object.</param>
         /// <typeparam name="T">Type of the object.</typeparam>
         /// <returns>Found object or null if missing.</returns>
-        public static T Find<T>(ref Guid id) where T : Object
+        public static T Find<T>(in Guid id) where T : Object
         {
-            return Internal_FindObject(ref id, typeof(T)) as T;
+            return Internal_FindObject(in id, typeof(T)) as T;
         }
 
         /// <summary>
@@ -138,9 +138,9 @@ namespace FlaxEngine
         /// <param name="id">Unique ID of the object.</param>
         /// <param name="type">Type of the object.</param>
         /// <returns>Found object or null if missing.</returns>
-        public static Object Find(ref Guid id, Type type)
+        public static Object Find(in Guid id, Type type)
         {
-            return Internal_FindObject(ref id, type);
+            return Internal_FindObject(in id, type);
         }
 
         /// <summary>
@@ -149,9 +149,9 @@ namespace FlaxEngine
         /// <param name="id">Unique ID of the object.</param>
         /// <typeparam name="T">Type of the object.</typeparam>
         /// <returns>Found object or null if missing.</returns>
-        public static T TryFind<T>(ref Guid id) where T : Object
+        public static T TryFind<T>(in Guid id) where T : Object
         {
-            return Internal_TryFindObject(ref id, typeof(T)) as T;
+            return Internal_TryFindObject(in id, typeof(T)) as T;
         }
 
         /// <summary>
@@ -160,9 +160,9 @@ namespace FlaxEngine
         /// <param name="id">Unique ID of the object.</param>
         /// <param name="type">Type of the object.</param>
         /// <returns>Found object or null if missing.</returns>
-        public static Object TryFind(ref Guid id, Type type)
+        public static Object TryFind(in Guid id, Type type)
         {
-            return Internal_TryFindObject(ref id, type);
+            return Internal_TryFindObject(in id, type);
         }
 
         /// <summary>
@@ -335,13 +335,13 @@ namespace FlaxEngine
         internal static partial string Internal_GetTypeName(IntPtr obj);
 
         [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_FindObject", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
-        internal static partial Object Internal_FindObject(ref Guid id, [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);
+        internal static partial Object Internal_FindObject(in Guid id, [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);
 
         [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_TryFindObject", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
-        internal static partial Object Internal_TryFindObject(ref Guid id, [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);
+        internal static partial Object Internal_TryFindObject(in Guid id, [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);
 
         [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_ChangeID", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
-        internal static partial void Internal_ChangeID(IntPtr obj, ref Guid id);
+        internal static partial void Internal_ChangeID(IntPtr obj, in Guid id);
 
         [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_GetUnmanagedInterface", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial IntPtr Internal_GetUnmanagedInterface(IntPtr obj, [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);

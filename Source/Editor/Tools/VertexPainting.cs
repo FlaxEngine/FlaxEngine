@@ -772,14 +772,14 @@ namespace FlaxEditor.Tools
 
         public void RecordEnd()
         {
-            var model = Object.Find<StaticModel>(ref _actorId);
+            var model = Object.Find<StaticModel>(in _actorId);
             _after = GetState(model);
             Editor.Instance.Scene.MarkSceneEdited(model.Scene);
         }
 
         private void Set(string state)
         {
-            var model = Object.Find<StaticModel>(ref _actorId);
+            var model = Object.Find<StaticModel>(in _actorId);
             SetState(model, state);
             Editor.Instance.Scene.MarkSceneEdited(model.Scene);
         }

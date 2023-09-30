@@ -204,7 +204,7 @@ namespace FlaxEditor.Windows
 
             // Load asset (with cancel support)
             //Debug.Log("Searching refs for " + assetInfo.Path);
-            var obj = FlaxEngine.Object.TryFind<FlaxEngine.Object>(ref assetId);
+            var obj = FlaxEngine.Object.TryFind<FlaxEngine.Object>(in assetId);
             if (obj is Scene scene)
             {
                 // Special case for scene assets that are also loaded
@@ -260,7 +260,7 @@ namespace FlaxEditor.Windows
                 var assetRef = assetRefs[i];
 
                 // Check if asset exists
-                var obj = FlaxEngine.Object.TryFind<FlaxEngine.Object>(ref assetRef);
+                var obj = FlaxEngine.Object.TryFind<FlaxEngine.Object>(in assetRef);
                 if (!(obj is Asset) && !(obj is Scene))
                 {
                     var asset = FlaxEngine.Content.LoadAsync<Asset>(assetRef);
