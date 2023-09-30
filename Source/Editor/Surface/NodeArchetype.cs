@@ -72,28 +72,6 @@ namespace FlaxEditor.Surface
         /// </summary>
         All = Scalar | Vector | Enum | Anything | Value | Array | Dictionary,
     }
-
-    /// <summary>
-    /// Node type hint. Helps to distinguish special archetypes
-    /// </summary>
-    [HideInEditor]
-    public enum NodeTypeHint
-    {
-        /// <summary>
-        /// Is Node.
-        /// </summary>
-        Default = 0,
-        
-        /// <summary>
-        /// Is Function Node.
-        /// </summary>
-        FunctionNode = 1,
-        
-        /// <summary>
-        /// Is custom Packing Node.
-        /// </summary>
-        PackingNode = 2,
-    }
     
     /// <summary>
     /// Surface node archetype description.
@@ -112,6 +90,11 @@ namespace FlaxEditor.Surface
         public delegate SurfaceNode CreateCustomNodeFunc(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch);
 
         /// <summary>
+        /// Checks if the given type is compatible with the given node archetype. Used for custom nodes
+        /// </summary>
+        public delegate bool IsCompatible(NodeArchetype nodeArch, ScriptType portType, ConnectionsHint hint);
+        
+        /// <summary>
         /// Unique node type ID within a single group.
         /// </summary>
         public ushort TypeID;
@@ -122,6 +105,16 @@ namespace FlaxEditor.Surface
         public CreateCustomNodeFunc Create;
 
         /// <summary>
+        /// Function for asynchronously loaded nodes to check if input ports are compatible, for filtering.
+        /// </summary>
+        public IsCompatible IsInputCompatible;
+        
+        /// <summary>
+        /// Function for asynchronously loaded nodes to check if output ports are compatible, for filtering.
+        /// </summary>
+        public IsCompatible IsOutputCompatible;
+        
+        /// <summary>
         /// Default initial size of the node.
         /// </summary>
         public Float2 Size;
@@ -130,7 +123,7 @@ namespace FlaxEditor.Surface
         /// Custom set of flags.
         /// </summary>
         public NodeFlags Flags;
-
+        
         /// <summary>
         /// Title text.
         /// </summary>
@@ -173,11 +166,6 @@ namespace FlaxEditor.Surface
         /// Connections hints.
         /// </summary>
         public ConnectionsHint ConnectionsHints;
-
-        /// <summary>
-        /// Node Type hints.
-        /// </summary>
-        public NodeTypeHint NodeTypeHint;
         
         /// <summary>
         /// Array with independent boxes IDs.
@@ -211,6 +199,8 @@ namespace FlaxEditor.Surface
             {
                 TypeID = TypeID,
                 Create = Create,
+                IsInputCompatible = IsInputCompatible,
+                IsOutputCompatible = IsOutputCompatible,
                 Size = Size,
                 Flags = Flags,
                 Title = Title,
@@ -220,7 +210,6 @@ namespace FlaxEditor.Surface
                 DefaultValues = (object[])DefaultValues?.Clone(),
                 DefaultType = DefaultType,
                 ConnectionsHints = ConnectionsHints,
-                NodeTypeHint = NodeTypeHint,
                 IndependentBoxes = (int[])IndependentBoxes?.Clone(),
                 DependentBoxes = (int[])DependentBoxes?.Clone(),
                 Elements = (NodeElementArchetype[])Elements?.Clone(),

@@ -199,6 +199,17 @@ namespace FlaxEditor.Surface
 
             return false;
         }
+
+        public static bool FullCastCheck(ScriptType from, ScriptType to, ConnectionsHint hint)
+        {
+            // Yes, from and to are switched on purpose
+            if (CanUseDirectCastStatic(to, from, false))
+                return true;
+            if(IsTypeCompatible(from, to, hint))
+                return true;
+            // Same here
+            return to.CanCastTo(from);
+        }
         
         /// <summary>
         /// Checks if can use direct conversion from one type to another.

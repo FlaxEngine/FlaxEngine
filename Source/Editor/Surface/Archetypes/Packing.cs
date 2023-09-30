@@ -353,7 +353,6 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new PackStructureNode(id, context, arch, groupArch),
                 Description = "Makes the structure data to from the components.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaGUI,
-                NodeTypeHint = NodeTypeHint.PackingNode,
                 Size = new Float2(180, 20),
                 DefaultValues = new object[]
                 {
@@ -464,7 +463,6 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new UnpackStructureNode(id, context, arch, groupArch),
                 Description = "Breaks the structure data to allow extracting components from it.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaGUI,
-                NodeTypeHint = NodeTypeHint.PackingNode,
                 Size = new Float2(180, 20),
                 DefaultValues = new object[]
                 {

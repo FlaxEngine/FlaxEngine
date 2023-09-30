@@ -109,9 +109,23 @@ namespace FlaxEditor.Surface.ContextMenu
                 return false;
 
             bool isCompatible = false;
+
+            if (startBox.IsOutput && _archetype.IsInputCompatible != null)
+            {
+                isCompatible |= _archetype.IsInputCompatible.Invoke(_archetype, startBox.CurrentType, _archetype.ConnectionsHints);
+            } 
+            else if (!startBox.IsOutput && _archetype.IsOutputCompatible != null)
+            {
+                isCompatible |= _archetype.IsOutputCompatible.Invoke(_archetype, startBox.CurrentType, startBox.ParentNode.Archetype.ConnectionsHints);
+            }
+            else if (_archetype.Elements != null)
+            {
+                // Check compatibility based on the defined elements in the archetype. This handles all the default groups and items
+                isCompatible = CheckElementsCompatibility(startBox);
+            }
             
             // Check compatibility based on the archetype tag or name. This handles custom groups and items, mainly function nodes for visual scripting
-            if (_archetype.NodeTypeHint is NodeTypeHint.FunctionNode)
+            /*if (_archetype.NodeTypeHint is NodeTypeHint.FunctionNode)
             {
                 ScriptMemberInfo memberInfo = ScriptMemberInfo.Null;
 
@@ -135,12 +149,8 @@ namespace FlaxEditor.Surface.ContextMenu
                 {
                     isCompatible |= CheckMemberInfoCompatibility(startBox, memberInfo);
                 }
-            }
-            else if (_archetype.Elements != null)
-            {
-                // Check compatibility based on the defined elements in the archetype. This handles all the default groups and items
-                isCompatible = CheckElementsCompatibility(startBox);
-            }
+            }*/
+            /*else */
             
             return isCompatible;
         }
@@ -165,17 +175,16 @@ namespace FlaxEditor.Surface.ContextMenu
                     if (!info.IsStatic)
                     {
                         var scriptType = info.DeclaringType;
-                        isCompatible |= CanCastType(scriptType, outType, _archetype.ConnectionsHints);
+                        isCompatible |= VisjectSurface.FullCastCheck(scriptType, outType, _archetype.ConnectionsHints);
                     }
 
                     // We ignore event members here since they only have output parameters, which are currently not declared as such
-                    // TODO: Fix bug where event member parameters 'IsOut' is set to false and not true
                     if (!info.IsEvent)
                     {
                         for (int i = 0; i < parameters.Length; i++)
                         {
                             ScriptType inType = parameters[i].Type;
-                            isCompatible |= CanCastType(inType, outType, _archetype.ConnectionsHints);
+                            isCompatible |= VisjectSurface.FullCastCheck(inType, outType, _archetype.ConnectionsHints);
                         }
                     }
                 }
@@ -185,7 +194,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     ScriptType inType = startBox.CurrentType;
                     ScriptType outType = info.ValueType;
 
-                    isCompatible |= CanCastType(inType, outType, _archetype.ConnectionsHints);
+                    isCompatible |= VisjectSurface.FullCastCheck(inType, outType, _archetype.ConnectionsHints);
                 }
             }
             return isCompatible;
@@ -220,23 +229,10 @@ namespace FlaxEditor.Surface.ContextMenu
                     hint = startBox.ParentNode.Archetype.ConnectionsHints;
                 }
                 
-                isCompatible |= CanCastType(fromType, toType, hint);
+                isCompatible |= VisjectSurface.FullCastCheck(fromType, toType, hint);
             }
 
             return isCompatible;
-        }
-        
-        private bool CanCastType(ScriptType from, ScriptType to, ConnectionsHint hint)
-        {
-            // Yes, from and to are switched on purpose
-            if (VisjectSurface.CanUseDirectCastStatic(to, from, false))
-                return true;
-            
-            if(VisjectSurface.IsTypeCompatible(from, to, hint))
-                return true;
-            
-            // Same here
-            return to.CanCastTo(from);
         }
         
         /// <summary>
