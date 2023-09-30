@@ -302,7 +302,7 @@ namespace FlaxEngine.Utilities
 
             Quaternion result = new Quaternion(x, y, z, w);
 
-            if (randomRoll)
+            if (!randomRoll)
             {
                 return Quaternion.Euler(result.EulerAngles.X, result.EulerAngles.Y, 0);
             }
