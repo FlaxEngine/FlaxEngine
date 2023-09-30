@@ -96,7 +96,7 @@ namespace FlaxEditor.Tools.Terrain
                                    Matrix.Scaling(terrain.Scale) *
                                    Matrix.RotationQuaternion(terrain.Orientation) *
                                    Matrix.Translation(terrain.Position - renderContext.View.Origin);
-                    _planeModel.Draw(ref renderContext, _highlightMaterial, ref world);
+                    _planeModel.Draw(in renderContext, _highlightMaterial, in world);
                 }
 
                 break;

@@ -94,7 +94,7 @@ namespace FlaxEditor.Tools.Foliage
                     else
                         rotation = Quaternion.LookRotation(Vector3.Cross(Vector3.Cross(brushNormal, Vector3.Forward), brushNormal), brushNormal);
                     Matrix transform = Matrix.Scaling(Mode.CurrentBrush.Size * 0.01f) * Matrix.RotationQuaternion(rotation) * Matrix.Translation(brushPosition - renderContext.View.Origin);
-                    _brushModel.Draw(ref renderContext, brushMaterial, ref transform);
+                    _brushModel.Draw(in renderContext, brushMaterial, in transform);
                 }
             }
         }

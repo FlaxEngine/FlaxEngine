@@ -63,7 +63,7 @@ public:
     /// </summary>
     /// <param name="objectId">The ID of the object to get from prefab default object. It can be one of the child-actors or any script that exists in the prefab. Methods returns root if id is empty.</param>
     /// <returns>The object of the prefab loaded from the prefab. Contains the default values. It's not added to gameplay but deserialized with postLoad and init event fired.</returns>
-    API_FUNCTION() SceneObject* GetDefaultInstance(API_PARAM(Ref) const Guid& objectId);
+    API_FUNCTION() SceneObject* GetDefaultInstance(API_PARAM(In) const Guid& objectId);
 
 #if USE_EDITOR
     /// <summary>

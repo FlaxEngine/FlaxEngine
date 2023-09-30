@@ -98,7 +98,7 @@ namespace FlaxEngine
             Direction = camera.Direction;
             Near = camera.NearPlane;
             Far = camera.FarPlane;
-            camera.GetMatrices(out View, out Projection, ref viewport, ref Origin);
+            camera.GetMatrices(out View, out Projection, in viewport, in Origin);
             NonJitteredProjection = Projection;
             TemporalAAJitter = Float4.Zero;
             RenderLayersMask = camera.RenderLayersMask;

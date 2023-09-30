@@ -638,7 +638,7 @@ namespace FlaxEditor.Tools
                     _brushMaterial.SetParameterValue("DepthBuffer", Owner.RenderTask.Buffers.DepthBuffer);
                     Quaternion rotation = RootNode.RaycastNormalRotation(ref _hitNormal);
                     Matrix transform = Matrix.Scaling(_gizmoMode.BrushSize * 0.01f) * Matrix.RotationQuaternion(rotation) * Matrix.Translation(_hitLocation - viewOrigin);
-                    _brushModel.Draw(ref renderContext, _brushMaterial, ref transform);
+                    _brushModel.Draw(in renderContext, _brushMaterial, in transform);
                 }
 
                 // Draw intersecting vertices
@@ -669,7 +669,7 @@ namespace FlaxEditor.Tools
                                 if (brushSphere.Contains(ref pos) == ContainmentType.Disjoint)
                                     continue;
                                 Matrix transform = modelScaleMatrix * Matrix.Translation(pos - viewOrigin);
-                                _brushModel.Draw(ref renderContext, _verticesPreviewMaterial, ref transform);
+                                _brushModel.Draw(in renderContext, _verticesPreviewMaterial, in transform);
                             }
                         }
                     }

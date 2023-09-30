@@ -58,7 +58,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 if (prefab && !prefab.WaitForLoaded())
                 {
                     var prefabObjectId = actor.PrefabObjectID;
-                    var prefabInstance = prefab.GetDefaultInstance(ref prefabObjectId);
+                    var prefabInstance = prefab.GetDefaultInstance(in prefabObjectId);
                     if (prefabInstance != null)
                     {
                         // Use default prefab instance as a reference for the editor
@@ -168,7 +168,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     var actor = (Actor)Values[0];
                     var prefabObjectId = actor.PrefabObjectID;
-                    var prefabInstance = prefab.GetDefaultInstance(ref prefabObjectId);
+                    var prefabInstance = prefab.GetDefaultInstance(in prefabObjectId);
                     if (prefabInstance != null)
                     {
                         Values.SetReferenceValue(prefabInstance);
