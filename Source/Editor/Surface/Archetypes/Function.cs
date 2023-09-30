@@ -744,6 +744,16 @@ namespace FlaxEditor.Surface.Archetypes
 
                 base.OnDestroy();
             }
+            
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            {
+                return false;
+            }
+            
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            {
+                return inputType.IsVoid;
+            }
         }
 
         private sealed class InvokeMethodNode : SurfaceNode
@@ -2460,6 +2470,8 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = string.Empty,
                 Description = "Overrides the base class method with custom implementation",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI | NodeFlags.NoSpawnViaPaste,
+                IsInputCompatible = MethodOverrideNode.IsInputCompatible,
+                IsOutputCompatible = MethodOverrideNode.IsOutputCompatible,
                 Size = new Float2(240, 60),
                 DefaultValues = new object[]
                 {
