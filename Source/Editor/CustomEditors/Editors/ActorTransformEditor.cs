@@ -88,20 +88,20 @@ namespace FlaxEditor.CustomEditors.Editors
                 LinkValues = Editor.Instance.Windows.PropertiesWin.ScaleLinked;
 
                 // Add button with the link icon
+                
                 _linkButton = new Button
                 {
                     BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Link32),
                     Parent = LinkedLabel,
                     Width = 18,
                     Height = 18,
-                    AnchorPreset = AnchorPresets.TopLeft,
+                    AnchorPreset = AnchorPresets.MiddleLeft,
                 };
                 _linkButton.Clicked += ToggleLink;
                 ToggleEnabled();
                 SetLinkStyle();
-                var x = LinkedLabel.Text.Value.Length * 7 + 5;
-                _linkButton.LocalX += x;
-                _linkButton.LocalY += 1;
+                var textSize = FlaxEngine.GUI.Style.Current.FontMedium.MeasureText(LinkedLabel.Text.Value);
+                _linkButton.LocalX += textSize.X + 10;
                 LinkedLabel.SetupContextMenu += (label, menu, editor) =>
                 {
                     menu.AddSeparator();

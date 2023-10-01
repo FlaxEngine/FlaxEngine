@@ -129,6 +129,7 @@ namespace FlaxEditor.Modules
             else
             {
                 Editor.UI.UpdateProgress(string.Empty, 0);
+                Editor.UI.UpdateStatusBar();
             }
         }
 
