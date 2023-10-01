@@ -104,7 +104,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public Float2 Size => Texture?.Size ?? Float2.Zero;
+        public Float2 Size => Texture != null ? Texture.Size : Float2.Zero;
 
         /// <inheritdoc />
         public unsafe void Draw(Rectangle rect, Color color)
