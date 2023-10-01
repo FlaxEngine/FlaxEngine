@@ -18,6 +18,7 @@
 #include "Engine/Debug/Exceptions/JsonParseException.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Threading/JobSystem.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -932,11 +933,9 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
         LOG(Error, "Invalid Data member.");
         return true;
     }
-    int32 objectsCount = data.Size();
 
     // Peek scene node value (it's the first actor serialized)
-    auto& sceneValue = data[0];
-    auto sceneId = JsonTools::GetGuid(sceneValue, "ID");
+    auto sceneId = JsonTools::GetGuid(data[0], "ID");
     if (!sceneId.IsValid())
     {
         LOG(Error, "Invalid scene id.");
@@ -957,59 +956,103 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
     auto scene = New<Scene>(ScriptingObjectSpawnParams(sceneId, Scene::TypeInitializer));
     scene->LoadTime = startTime;
     scene->RegisterObject();
-    scene->Deserialize(sceneValue, modifier.Value);
+    scene->Deserialize(data[0], modifier.Value);
 
     // Fire event
     CallSceneEvent(SceneEventType::OnSceneLoading, scene, sceneId);
 
     // Loaded scene objects list
     CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache sceneObjects = ActorsCache::SceneObjectsListCache.Get();
+    const int32 objectsCount = (int32)data.Size();
     sceneObjects->Resize(objectsCount);
     sceneObjects->At(0) = scene;
 
+    // Spawn all scene objects
     SceneObjectsFactory::Context context(modifier.Value);
+    context.Async = JobSystem::GetThreadsCount() > 1 && objectsCount > 10;
     {
         PROFILE_CPU_NAMED("Spawn");
-
-        // Spawn all scene objects
-        for (int32 i = 1; i < objectsCount; i++) // start from 1. at index [0] was scene
+        SceneObject** objects = sceneObjects->Get();
+        if (context.Async)
         {
-            auto& stream = data[i];
-            auto obj = SceneObjectsFactory::Spawn(context, stream);
-            sceneObjects->At(i) = obj;
-            if (obj)
-                obj->RegisterObject();
-            else
-                SceneObjectsFactory::HandleObjectDeserializationError(stream);
+            JobSystem::Execute([&](int32 i)
+            {
+                i++; // Start from 1. at index [0] was scene
+                auto& stream = data[i];
+                auto obj = SceneObjectsFactory::Spawn(context, stream);
+                objects[i] = obj;
+                if (obj)
+                {
+                    obj->RegisterObject();
+#if USE_EDITOR
+                    // Auto-create C# objects for all actors in Editor during scene load when running in async (so main thread already has all of them)
+                    obj->CreateManaged();
+#endif
+                }
+                else
+                    SceneObjectsFactory::HandleObjectDeserializationError(stream);
+            }, objectsCount - 1);
+        }
+        else
+        {
+            for (int32 i = 1; i < objectsCount; i++) // start from 1. at index [0] was scene
+            {
+                auto& stream = data[i];
+                auto obj = SceneObjectsFactory::Spawn(context, stream);
+                sceneObjects->At(i) = obj;
+                if (obj)
+                    obj->RegisterObject();
+                else
+                    SceneObjectsFactory::HandleObjectDeserializationError(stream);
+            }
         }
     }
 
+    // Capture prefab instances in a scene to restore any missing objects (eg. newly added objects to prefab that are missing in scene file)
     SceneObjectsFactory::PrefabSyncData prefabSyncData(*sceneObjects.Value, data, modifier.Value);
-
     SceneObjectsFactory::SetupPrefabInstances(context, prefabSyncData);
-
     // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
     SceneObjectsFactory::SynchronizeNewPrefabInstances(context, prefabSyncData);
 
     // /\ all above this has to be done on an any thread
     // \/ all below this has to be done on multiple threads at once
 
+    // Load all scene objects
     {
         PROFILE_CPU_NAMED("Deserialize");
-
-        // TODO: at this point we would probably spawn a few thread pool tasks which will load deserialize scene object but only if scene is big enough
-
-        // Load all scene objects
-        Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
         SceneObject** objects = sceneObjects->Get();
-        for (int32 i = 1; i < objectsCount; i++) // start from 1. at index [0] was scene
+        bool wasAsync = context.Async;
+        context.Async = false; // TODO: fix Actor's Scripts and Children order when loading objects data out of order via async jobs
+        if (context.Async)
         {
-            auto& objData = data[i];
-            auto obj = objects[i];
-            if (obj)
-                SceneObjectsFactory::Deserialize(context, obj, objData);
+            ScenesLock.Unlock(); // Unlock scenes from Main Thread so Job Threads can use it to safely setup actors hierarchy (see Actor::Deserialize)
+            JobSystem::Execute([&](int32 i)
+            {
+                i++; // Start from 1. at index [0] was scene
+                auto obj = objects[i];
+                if (obj)
+                {
+                    auto& idMapping = Scripting::ObjectsLookupIdMapping.Get();
+                    idMapping = &context.GetModifier()->IdsMapping;
+                    SceneObjectsFactory::Deserialize(context, obj, data[i]);
+                    idMapping = nullptr;
+                }
+            }, objectsCount - 1);
+            ScenesLock.Lock();
         }
-        Scripting::ObjectsLookupIdMapping.Set(nullptr);
+        else
+        {
+            Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
+            for (int32 i = 1; i < objectsCount; i++) // start from 1. at index [0] was scene
+            {
+                auto& objData = data[i];
+                auto obj = objects[i];
+                if (obj)
+                    SceneObjectsFactory::Deserialize(context, obj, objData);
+            }
+            Scripting::ObjectsLookupIdMapping.Set(nullptr);
+        }
+        context.Async = wasAsync;
     }
 
     // /\ all above this has to be done on multiple threads at once
@@ -1031,7 +1074,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
         PROFILE_CPU_NAMED("Initialize");
 
         SceneObject** objects = sceneObjects->Get();
-        for (int32 i = 0; i < sceneObjects->Count(); i++)
+        for (int32 i = 0; i < objectsCount; i++)
         {
             SceneObject* obj = objects[i];
             if (obj)
