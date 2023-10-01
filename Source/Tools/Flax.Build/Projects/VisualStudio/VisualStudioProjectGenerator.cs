@@ -166,12 +166,14 @@ namespace Flax.Build.Projects.VisualStudio
             {
                 try
                 {
-                    Regex projectRegex = new Regex(@"Project\(.*\) = \""(\S+)\"", \""(\S+)\"", \""{(\S+)}\""");
+                    Regex projectRegex = new Regex(@"Project\(""{(\S+)}""\) = \""(\S+)\"", \""(\S+)\"", \""{(\S+)}\""");
                     MatchCollection matches = projectRegex.Matches(File.ReadAllText(path));
                     for (int i = 0; i < matches.Count; i++)
                     {
-                        if (matches[i].Groups[1].Value == projectName)
-                            return Guid.ParseExact(matches[i].Groups[3].Value, "D");
+                        if (matches[i].Groups[1].Value.Equals("2150E333-8FDC-42A3-9474-1A3956D46DE8", StringComparison.OrdinalIgnoreCase))
+                            continue;
+                        if (matches[i].Groups[2].Value == projectName)
+                            return Guid.ParseExact(matches[i].Groups[4].Value, "D");
                     }
                 }
                 catch
@@ -376,7 +378,8 @@ namespace Flax.Build.Projects.VisualStudio
                         {
                             if (!folderIds.TryGetValue(folderPath, out project.FolderGuid))
                             {
-                                project.FolderGuid = Guid.NewGuid();
+                                if (!folderIds.TryGetValue(folderParents[i], out project.FolderGuid))
+                                    project.FolderGuid = Guid.NewGuid();
                                 folderIds.Add(folderPath, project.FolderGuid);
                             }
                             folderNames.Add(folderPath);
@@ -479,7 +482,7 @@ namespace Flax.Build.Projects.VisualStudio
                         {
                             SolutionConfiguration projectConfiguration;
                             bool build = false;
-                            int firstFullMatch = -1, firstPlatformMatch = -1;
+                            int firstFullMatch = -1, firstPlatformMatch = -1, firstEditorMatch = -1;
                             for (int i = 0; i < project.Configurations.Count; i++)
                             {
                                 var e = new SolutionConfiguration(project.Configurations[i]);
@@ -492,18 +495,31 @@ namespace Flax.Build.Projects.VisualStudio
                                 {
                                     firstPlatformMatch = i;
                                 }
+                                if (firstEditorMatch == -1 && e.Configuration == configuration.Configuration)
+                                {
+                                    firstEditorMatch = i;
+                                }
                             }
                             if (firstFullMatch != -1)
                             {
                                 projectConfiguration = configuration;
                                 build = solution.MainProject == project || (solution.MainProject == null && project.Name == solution.Name);
                             }
-                            else if (firstPlatformMatch != -1)
+                            else if (firstPlatformMatch != -1 && !configuration.Name.StartsWith("Editor."))
                             {
+                                // No exact match, pick the first configuration for matching platform
                                 projectConfiguration = new SolutionConfiguration(project.Configurations[firstPlatformMatch]);
+                            }
+                            else if (firstEditorMatch != -1 && configuration.Name.StartsWith("Editor."))
+                            {
+                                // No exact match, pick the matching editor configuration for different platform.
+                                // As an example, Editor configuration for Android projects should be remapped
+                                // to desktop platform in order to provide working Intellisense information.
+                                projectConfiguration = new SolutionConfiguration(project.Configurations[firstEditorMatch]);
                             }
                             else
                             {
+                                // No match
                                 projectConfiguration = new SolutionConfiguration(project.Configurations[0]);
                             }
 

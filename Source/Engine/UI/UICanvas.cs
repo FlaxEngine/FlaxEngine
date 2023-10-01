@@ -493,7 +493,8 @@ namespace FlaxEngine
                 if (_renderer)
                 {
 #if FLAX_EDITOR
-                    _editorTask?.RemoveCustomPostFx(_renderer);
+                    if (_editorTask != null)
+                        _editorTask.RemoveCustomPostFx(_renderer);
 #endif
                     SceneRenderTask.RemoveGlobalCustomPostFx(_renderer);
                     _renderer.Canvas = null;

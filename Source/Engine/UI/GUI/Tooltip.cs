@@ -181,6 +181,9 @@ namespace FlaxEngine.GUI
 
         private void WrapPosition(ref Float2 locationSS, float flipOffset = 0.0f)
         {
+            if (_showTarget?.RootWindow == null)
+                return;
+
             // Calculate popup direction
             var dpiScale = _showTarget.RootWindow.DpiScale;
             var dpiSize = Size * dpiScale;
@@ -207,7 +210,8 @@ namespace FlaxEngine.GUI
             // Move window with mouse location
             var mousePos = Input.MouseScreenPosition;
             WrapPosition(ref mousePos, 10);
-            _window.Position = mousePos + new Float2(15, 10);
+            if (_window)
+                _window.Position = mousePos + new Float2(15, 10);
 
             // Auto hide if mouse leaves control area
             var location = _showTarget.PointFromScreen(mousePos);

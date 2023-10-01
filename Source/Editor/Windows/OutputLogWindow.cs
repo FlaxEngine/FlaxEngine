@@ -160,7 +160,7 @@ namespace FlaxEditor.Windows
                 Parent = this,
             };
             _viewDropdown.Clicked += OnViewButtonClicked;
-            _searchBox = new SearchBox(false, _viewDropdown.Right + 2, 2, Width - _viewDropdown.Right - 2 - _scrollSize)
+            _searchBox = new SearchBox(false, _viewDropdown.Right + 2, 2, Width - _viewDropdown.Right - 4)
             {
                 Parent = this,
             };
@@ -171,11 +171,12 @@ namespace FlaxEditor.Windows
                 Maximum = 0,
             };
             _hScroll.ValueChanged += OnHScrollValueChanged;
-            _vScroll = new VScrollBar(this, Width - _scrollSize, Height, _scrollSize)
+            _vScroll = new VScrollBar(this, Width - _scrollSize, Height - _viewDropdown.Height - 2, _scrollSize)
             {
                 ThumbThickness = 10,
                 Maximum = 0,
             };
+            _vScroll.Y += _viewDropdown.Height + 2;
             _vScroll.ValueChanged += OnVScrollValueChanged;
             _output = new OutputTextBox
             {
@@ -409,7 +410,7 @@ namespace FlaxEditor.Windows
 
             if (_output != null)
             {
-                _searchBox.Width = Width - _viewDropdown.Right - 2 - _scrollSize;
+                _searchBox.Width = Width - _viewDropdown.Right - 4;
                 _output.Size = new Float2(_vScroll.X - 2, _hScroll.Y - 4 - _viewDropdown.Bottom);
             }
         }

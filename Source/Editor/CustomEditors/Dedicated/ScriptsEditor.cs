@@ -25,6 +25,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private DragHandlers _dragHandlers;
         private DragScriptItems _dragScripts;
         private DragAssets _dragAssets;
+        private Button _addScriptsButton;
 
         /// <summary>
         /// The parent scripts editor.
@@ -40,16 +41,19 @@ namespace FlaxEditor.CustomEditors.Dedicated
             AutoFocus = false;
 
             // Add script button
-            float addScriptButtonWidth = 60.0f;
-            var addScriptButton = new Button
+            var buttonText = "Add script";
+            var textSize = Style.Current.FontMedium.MeasureText(buttonText);
+            float addScriptButtonWidth = (textSize.X < 60.0f) ? 60.0f : textSize.X + 4;
+            var buttonHeight = (textSize.Y < 18) ? 18 : textSize.Y + 4;
+            _addScriptsButton = new Button
             {
                 TooltipText = "Add new scripts to the actor",
                 AnchorPreset = AnchorPresets.MiddleCenter,
-                Text = "Add script",
+                Text = buttonText,
                 Parent = this,
-                Bounds = new Rectangle((Width - addScriptButtonWidth) / 2, 1, addScriptButtonWidth, 18),
+                Bounds = new Rectangle((Width - addScriptButtonWidth) / 2, 1, addScriptButtonWidth, buttonHeight),
             };
-            addScriptButton.ButtonClicked += OnAddScriptButtonClicked;
+            _addScriptsButton.ButtonClicked += OnAddScriptButtonClicked;
         }
 
         private void OnAddScriptButtonClicked(Button button)
@@ -82,7 +86,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var size = Size;
 
             // Info
-            Render2D.DrawText(style.FontSmall, "Drag scripts here", new Rectangle(2, 22, size.X - 4, size.Y - 4 - 20), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+            Render2D.DrawText(style.FontSmall, "Drag scripts here", new Rectangle(2, _addScriptsButton.Height + 4, size.X - 4, size.Y - 4 - 20), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
 
             // Check if drag is over
             if (IsDragOver && _dragHandlers != null && _dragHandlers.HasValidDrag)
@@ -554,8 +558,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     return;
                 for (int j = 0; j < e.Length; j++)
                 {
-                    var t1 = scripts[j]?.TypeName;
-                    var t2 = e[j]?.TypeName;
+                    var t1 = scripts[j] != null ? scripts[j].TypeName : null;
+                    var t2 = e[j] != null ? e[j].TypeName : null;
                     if (t1 != t2)
                         return;
                 }

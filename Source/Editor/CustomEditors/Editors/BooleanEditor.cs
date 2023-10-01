@@ -34,7 +34,9 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             else
             {
-                element.CheckBox.Checked = (bool)Values[0];
+                var value = (bool?)Values[0];
+                if (value != null)
+                    element.CheckBox.Checked = value.Value;
             }
         }
     }

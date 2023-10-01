@@ -1240,8 +1240,12 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
             return true;
         }
 
+#if USE_NETCORE
+        mInstance = instanceObject;
+#else
         // For value-types instance is the actual boxed object data, not te object itself
         mInstance = instanceObjectClass->IsValueType() ? MCore::Object::Unbox(instanceObject) : instanceObject;
+#endif
     }
 
     // Marshal parameters

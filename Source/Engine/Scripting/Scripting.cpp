@@ -104,7 +104,7 @@ namespace
     MMethod* _method_LateFixedUpdate = nullptr;
     MMethod* _method_Draw = nullptr;
     MMethod* _method_Exit = nullptr;
-    Array<BinaryModule*, InlinedAllocation<64>> _nonNativeModules;
+    Dictionary<StringAnsi, BinaryModule*, InlinedAllocation<64>> _nonNativeModules;
 #if USE_EDITOR
     bool LastBinariesLoadTriggeredCompilation = false;
 #endif
@@ -330,6 +330,8 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
             // Check if that module has been already registered
             BinaryModule* module = BinaryModule::GetModule(nameAnsi);
             if (!module)
+                _nonNativeModules.TryGet(nameAnsi, module);
+            if (!module)
             {
                 // C++
                 if (nativePath.HasChars())
@@ -398,7 +400,7 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
                 {
                     // Create module if native library is not used
                     module = New<ManagedBinaryModule>(nameAnsi);
-                    _nonNativeModules.Add(module);
+                    _nonNativeModules.Add(nameAnsi, module);
                 }
             }
 
