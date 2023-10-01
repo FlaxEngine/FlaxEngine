@@ -102,6 +102,9 @@ namespace FlaxEngine.GUI
             Visible = true;
             _window.Show();
             _showTarget.OnTooltipShown(this);
+
+            // Throttle tooltip rendering
+            _window.RenderTask.RenderFPS = 2;
         }
 
         /// <summary>
