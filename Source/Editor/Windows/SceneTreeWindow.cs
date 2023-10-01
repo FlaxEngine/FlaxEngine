@@ -173,6 +173,9 @@ namespace FlaxEditor.Windows
 
             // Spawn it
             Editor.SceneEditing.Spawn(actor, parentActor);
+
+            Editor.SceneEditing.Select(actor);
+            Rename();
         }
 
         /// <summary>
