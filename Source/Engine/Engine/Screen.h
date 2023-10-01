@@ -98,7 +98,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Screen);
     API_PROPERTY() static void SetGameWindowMode(GameWindowMode windowMode);
 
     /// <summary>
-    /// Gets the main window. Only during built game.
+    /// Gets the main window.
     /// </summary>
     /// <returns>The current window. Will be null if fails.</returns>
     API_PROPERTY() static Window* GetMainWindow();
