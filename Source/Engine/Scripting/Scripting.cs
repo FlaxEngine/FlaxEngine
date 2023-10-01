@@ -282,6 +282,12 @@ namespace FlaxEngine
                 TextBoxBackgroundSelected = Color.FromBgra(0xFF3F3F46),
                 CollectionBackgroundColor = Color.FromBgra(0x14CCCCCC),
                 SharedTooltip = new Tooltip(),
+                Statusbar = new Style.StatusbarStyle()
+                {
+                    PlayMode = Color.FromBgra(0xFF2F9135),
+                    Failed = Color.FromBgra(0xFF9C2424),
+                    Loading = Color.FromBgra(0xFF2D2D30)
+                }
             };
             style.DragWindow = style.BackgroundSelected * 0.7f;
 
