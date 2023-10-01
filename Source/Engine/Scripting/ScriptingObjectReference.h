@@ -14,22 +14,18 @@ extern FLAXENGINE_API ScriptingObject* FindObject(const Guid& id, MClass* type);
 class FLAXENGINE_API ScriptingObjectReferenceBase
 {
 public:
-
     typedef Delegate<> EventType;
 
 protected:
-
     ScriptingObject* _object = nullptr;
 
 public:
-
     /// <summary>
     /// Action fired when reference gets changed.
     /// </summary>
     EventType Changed;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ScriptingObjectReferenceBase"/> class.
     /// </summary>
@@ -56,7 +52,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the object ID.
     /// </summary>
@@ -90,32 +85,13 @@ public:
     }
 
 protected:
-
     /// <summary>
     /// Sets the object.
     /// </summary>
     /// <param name="object">The object.</param>
-    void OnSet(ScriptingObject* object)
-    {
-        auto e = _object;
-        if (e != object)
-        {
-            if (e)
-                e->Deleted.Unbind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
-            _object = e = object;
-            if (e)
-                e->Deleted.Bind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
-            Changed();
-        }
-    }
+    void OnSet(ScriptingObject* object);
 
-    void OnDeleted(ScriptingObject* obj)
-    {
-        ASSERT(_object == obj);
-        _object->Deleted.Unbind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
-        _object = nullptr;
-        Changed();
-    }
+    void OnDeleted(ScriptingObject* obj);
 };
 
 /// <summary>
@@ -125,11 +101,9 @@ template<typename T>
 API_CLASS(InBuild) class ScriptingObjectReference : public ScriptingObjectReferenceBase
 {
 public:
-
     typedef ScriptingObjectReference<T> Type;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ScriptingObjectReference"/> class.
     /// </summary>
@@ -163,19 +137,21 @@ public:
     }
 
 public:
-
     FORCE_INLINE bool operator==(T* other) const
     {
         return _object == other;
     }
+
     FORCE_INLINE bool operator!=(T* other) const
     {
         return _object != other;
     }
+
     FORCE_INLINE bool operator==(const ScriptingObjectReference& other) const
     {
         return _object == other._object;
     }
+
     FORCE_INLINE bool operator!=(const ScriptingObjectReference& other) const
     {
         return _object != other._object;
@@ -186,11 +162,13 @@ public:
         OnSet(other);
         return *this;
     }
+
     ScriptingObjectReference& operator=(const ScriptingObjectReference& other)
     {
         OnSet(other._object);
         return *this;
     }
+
     FORCE_INLINE ScriptingObjectReference& operator=(const Guid& id)
     {
         OnSet(static_cast<ScriptingObject*>(FindObject(id, T::GetStaticClass())));

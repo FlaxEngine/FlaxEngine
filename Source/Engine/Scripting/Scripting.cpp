@@ -821,6 +821,28 @@ FLAXENGINE_API ScriptingObject* FindObject(const Guid& id, MClass* type)
     return Scripting::FindObject(id, type);
 }
 
+void ScriptingObjectReferenceBase::OnSet(ScriptingObject* object)
+{
+    auto e = _object;
+    if (e != object)
+    {
+        if (e)
+            e->Deleted.Unbind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
+        _object = e = object;
+        if (e)
+            e->Deleted.Bind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
+        Changed();
+    }
+}
+
+void ScriptingObjectReferenceBase::OnDeleted(ScriptingObject* obj)
+{
+    ASSERT(_object == obj);
+    _object->Deleted.Unbind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
+    _object = nullptr;
+    Changed();
+}
+
 ScriptingObject* Scripting::FindObject(Guid id, MClass* type)
 {
     if (!id.IsValid())
