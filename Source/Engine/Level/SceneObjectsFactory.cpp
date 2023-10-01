@@ -231,7 +231,8 @@ void SceneObjectsFactory::HandleObjectDeserializationError(const ISerializable::
     rapidjson_flax::StringBuffer buffer;
     PrettyJsonWriter writer(buffer);
     value.Accept(writer.GetWriter());
-    LOG(Warning, "Failed to deserialize scene object from data: {0}", String(buffer.GetString()));
+    String bufferStr(buffer.GetString());
+    LOG(Warning, "Failed to deserialize scene object from data: {0}", bufferStr);
 
     // Try to log some useful info about missing object (eg. it's parent name for faster fixing)
     const auto parentIdMember = value.FindMember("ParentID");
@@ -241,12 +242,14 @@ void SceneObjectsFactory::HandleObjectDeserializationError(const ISerializable::
         Actor* parent = Scripting::FindObject<Actor>(parentId);
         if (parent)
         {
-            MissingScript* dummyScript = parent->AddScript<MissingScript>();
-
+#if USE_EDITOR
+            // Add dummy script
+            auto* dummyScript = parent->AddScript<MissingScript>();
             const auto parentIdMember = value.FindMember("TypeName");
-            dummyScript->MissingTypeName = parentIdMember->value.GetString();
-            dummyScript->Data = String(buffer.GetString());
-            
+            if (parentIdMember != value.MemberEnd() && parentIdMember->value.IsString())
+                dummyScript->MissingTypeName = parentIdMember->value.GetString();
+            dummyScript->Data = MoveTemp(bufferStr);
+#endif
             LOG(Warning, "Parent actor of the missing object: {0}", parent->GetName());
         }
     }
