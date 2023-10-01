@@ -759,8 +759,10 @@ public:
         }
         return false;
 #else
+        if (_functions == nullptr)
+            return false;
         ScopeLock lock(*_locker);
-        return _functions != nullptr && _functions->Count() > 0;
+        return _functions->Count() > 0;
 #endif
     }
 
@@ -789,6 +791,8 @@ public:
             }
         }
 #else
+        if (_functions == nullptr)
+            return 0;
         ScopeLock lock(*_locker);
         for (auto i = _functions->Begin(); i.IsNotEnd(); ++i)
         {
