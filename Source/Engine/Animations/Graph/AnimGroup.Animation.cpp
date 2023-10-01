@@ -512,18 +512,6 @@ void AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const 
             transitionIndex++;
             continue;
         }
-        const bool useDefaultRule = EnumHasAnyFlags(transition.Flags, AnimGraphStateTransition::FlagTypes::UseDefaultRule);
-        if (transition.RuleGraph && !useDefaultRule)
-        {
-            // Execute transition rule
-            auto rootNode = transition.RuleGraph->GetRootNode();
-            ASSERT(rootNode);
-            if (!(bool)eatBox((Node*)rootNode, &rootNode->Boxes[0]))
-            {
-                transitionIndex++;
-                continue;
-            }
-        }
 
         // Evaluate source state transition data (position, length, etc.)
         const Value sourceStatePtr = SampleState(stateMachineBucket.CurrentState);
@@ -541,6 +529,19 @@ void AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const 
             // Reset
             transitionData.Position = 0;
             transitionData.Length = ZeroTolerance;
+        }
+        
+        const bool useDefaultRule = EnumHasAnyFlags(transition.Flags, AnimGraphStateTransition::FlagTypes::UseDefaultRule);
+        if (transition.RuleGraph && !useDefaultRule)
+        {
+            // Execute transition rule
+            auto rootNode = transition.RuleGraph->GetRootNode();
+            ASSERT(rootNode);
+            if (!(bool)eatBox((Node*)rootNode, &rootNode->Boxes[0]))
+            {
+                transitionIndex++;
+                continue;
+            }
         }
 
         // Check if can trigger the transition
