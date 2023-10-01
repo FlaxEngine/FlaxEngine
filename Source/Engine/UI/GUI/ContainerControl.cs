@@ -360,7 +360,7 @@ namespace FlaxEngine.GUI
                 {
                     var containerControl = child as ContainerControl;
                     var childAtRecursive = containerControl?.GetChildAtRecursive(childLocation);
-                    if (childAtRecursive != null)
+                    if (childAtRecursive != null && childAtRecursive.Visible)
                     {
                         child = childAtRecursive;
                     }
@@ -507,15 +507,19 @@ namespace FlaxEngine.GUI
 
                 // Perform automatic navigation based on the layout
                 var result = NavigationRaycast(direction, location, visited);
-                if (result == null && direction == NavDirection.Next)
+                var rightMostLocation = location;
+                if (result == null && (direction == NavDirection.Next || direction == NavDirection.Previous))
                 {
                     // Try wrap the navigation over the layout based on the direction
                     var visitedWrap = new List<Control>(visited);
-                    result = NavigationWrap(direction, location, visitedWrap);
+                    result = NavigationWrap(direction, location, visitedWrap, out rightMostLocation);
                 }
                 if (result != null)
                 {
-                    result = result.OnNavigate(direction, result.PointFromParent(location), this, visited);
+                    // HACK: only the 'previous' direction needs the rightMostLocation so i used a ternary conditional operator.
+                    // The rightMostLocation can probably become a 'desired raycast origin' that gets calculated correctly in the NavigationWrap method.
+                    var useLocation = direction == NavDirection.Previous ? rightMostLocation : location;
+                    result = result.OnNavigate(direction, result.PointFromParent(useLocation), this, visited);
                     if (result != null)
                         return result;
                 }
@@ -551,8 +555,9 @@ namespace FlaxEngine.GUI
         /// <param name="direction">The navigation direction.</param>
         /// <param name="location">The navigation start location (in the control-space).</param>
         /// <param name="visited">The list with visited controls. Used to skip recursive navigation calls when doing traversal across the UI hierarchy.</param>
+        /// <param name="rightMostLocation">Returns the rightmost location of the parent container for the raycast used by the child container</param>
         /// <returns>The target navigation control or null if didn't performed any navigation.</returns>
-        protected virtual Control NavigationWrap(NavDirection direction, Float2 location, List<Control> visited)
+        protected virtual Control NavigationWrap(NavDirection direction, Float2 location, List<Control> visited, out Float2 rightMostLocation)
         {
             // This searches form a child that calls this navigation event (see Control.OnNavigate) to determinate the layout wrapping size based on that child size
             var currentChild = RootWindow?.FocusedControl;
@@ -566,15 +571,22 @@ namespace FlaxEngine.GUI
                 case NavDirection.Next:
                     predictedLocation = new Float2(0, location.Y + layoutSize.Y);
                     break;
+                case NavDirection.Previous:
+                    predictedLocation = new Float2(Size.X, location.Y - layoutSize.Y);
+                    break;
                 }
                 if (new Rectangle(Float2.Zero, Size).Contains(ref predictedLocation))
                 {
                     var result = NavigationRaycast(direction, predictedLocation, visited);
                     if (result != null)
-                        return result;
+                    {
+                        rightMostLocation = predictedLocation;
+                        return result;   
+                    }
                 }
             }
-            return Parent?.NavigationWrap(direction, PointToParent(ref location), visited);
+            rightMostLocation = location;
+            return Parent?.NavigationWrap(direction, PointToParent(ref location), visited, out rightMostLocation);
         }
 
         private static bool CanGetAutoFocus(Control c)
@@ -612,6 +624,10 @@ namespace FlaxEngine.GUI
             case NavDirection.Next:
                 uiDir1 = new Float2(1, 0);
                 uiDir2 = new Float2(0, 1);
+                break;
+            case NavDirection.Previous:
+                uiDir1 = new Float2(-1, 0);
+                uiDir2 = new Float2(0, -1);
                 break;
             }
             Control result = null;

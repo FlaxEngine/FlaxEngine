@@ -268,7 +268,7 @@ public class Slider : ContainerControl
         // Draw track fill
         if (FillTrack)
         {
-            var fillLineRect = new Rectangle(_thumbSize.X / 2, (Height - TrackHeight - 2) / 2, Width - (Width - _thumbCenter) - _thumbSize.X / 2, TrackHeight + 2);
+            var fillLineRect = new Rectangle(_thumbSize.X / 2 - 1, (Height - TrackHeight - 2) / 2, Width - (Width - _thumbCenter) - _thumbSize.X / 2, TrackHeight + 2);
             Render2D.PushClip(ref fillLineRect);
             if (FillTrackBrush != null)
                 FillTrackBrush.Draw(lineRect, TrackFillLineColor);

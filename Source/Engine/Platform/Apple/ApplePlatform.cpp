@@ -85,25 +85,32 @@ NSString* AppleUtils::ToNSString(const char* string)
 
 NSArray* AppleUtils::ParseArguments(NSString* argsString) {
     NSMutableArray *argsArray = [NSMutableArray array];
-    NSScanner *scanner = [NSScanner scannerWithString:argsString];
-    NSString *currentArg = nil;
+    NSMutableString *currentArg = [NSMutableString string];
     BOOL insideQuotes = NO;
     
-    while (![scanner isAtEnd]) {
-        if (insideQuotes) {
-            [scanner scanUpToString:@"\"" intoString:&currentArg];
-            [scanner scanString:@"\"" intoString:NULL];
-            insideQuotes = NO;
-        } else {
-            [scanner scanUpToString:@" " intoString:&currentArg];
-            [scanner scanString:@" " intoString:NULL];
-        }
+    for (NSInteger i = 0; i < argsString.length; ++i) {
+        unichar c = [argsString characterAtIndex:i];
         
-        if ([currentArg isEqualToString:@"\""]) {
-            insideQuotes = YES;
-        } else if (currentArg) {
-            [argsArray addObject:currentArg];
+        if (c == '\"') {
+            if (insideQuotes) {
+                [argsArray addObject:[currentArg copy]];
+                [currentArg setString:@""];
+                insideQuotes = NO;
+            } else {
+                insideQuotes = YES;
+            }
+        } else if (c == ' ' && !insideQuotes) {
+            if (currentArg.length > 0) {
+                [argsArray addObject:[currentArg copy]];
+                [currentArg setString:@""];
+            }
+        } else {
+            [currentArg appendFormat:@"%C", c];
         }
+    }
+    
+    if (currentArg.length > 0) {
+        [argsArray addObject:[currentArg copy]];
     }
     
     return [argsArray copy];

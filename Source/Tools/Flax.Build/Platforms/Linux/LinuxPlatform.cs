@@ -44,7 +44,7 @@ namespace Flax.Build.Platforms
                     Compiler = Configuration.Compiler;
                 else
                 {
-                    for (int ver = 15; ver >= 6; ver--)
+                    for (int ver = 17; ver >= 6; ver--)
                     {
                         var compiler = "clang++-" + ver;
                         if (Which(compiler) != null)
