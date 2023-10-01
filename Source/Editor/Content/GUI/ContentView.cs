@@ -720,8 +720,9 @@ namespace FlaxEditor.Content.GUI
             switch (ViewType)
             {
                 case ContentViewType.Tiles:
-                    float xSpace = ContentItem.DefaultMarginSize * viewScale;
-                    float ySpace = ContentItem.DefaultMarginSize * viewScale;
+                    const float Spacing = 1;
+                    float xSpace = (ContentItem.DefaultMarginSize + Spacing) * viewScale;
+                    float ySpace = (ContentItem.DefaultMarginSize + Spacing) * viewScale;
                     float itemsWidth = ContentItem.DefaultWidth * viewScale ;
                     itemsHeight = ContentItem.DefaultHeight * viewScale;
                     //width - element / element gives elementRowCount, * it by element width gives actual size
@@ -732,7 +733,6 @@ namespace FlaxEditor.Content.GUI
                     float lastElement = Mathf.Max((elementRowCount * (itemsWidth + xSpace)), 0);
                     if (_children.Count > elementRowCount)
                     {
-                        
                         float lastElementDistanceFromEdge = width - lastElement;
                         float scalePerElement = (lastElementDistanceFromEdge / (elementRowCount + 1));
                         itemsWidth += scalePerElement;
@@ -747,8 +747,6 @@ namespace FlaxEditor.Content.GUI
                     {
                         var c = _children[i];
                         c.Bounds = new Rectangle(x,y, flooredItemsWidth, flooredItemsHeight);
-
-
                         if (x > lastElement)
                         {
                             x = ContentItem.DefaultMarginSize;
