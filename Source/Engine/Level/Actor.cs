@@ -369,11 +369,11 @@ namespace FlaxEngine
         {
             var transform = Transform;
             var q = Quaternion.RotationAxis(axis, angle * Mathf.DegreesToRadians);
-            var dif = (transform.Translation - point) * q;
             if (Vector3.NearEqual(point, transform.Translation))
                 transform.Orientation *= q;
             else
             {
+                var dif = (transform.Translation - point) * q;
                 transform.Translation = point + dif;
                 if (orientActor)
                     transform.Orientation *= q;
