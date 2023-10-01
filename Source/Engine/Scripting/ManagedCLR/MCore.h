@@ -190,4 +190,13 @@ public:
         static MClass* Double;
         static MClass* String;
     };
+
+    /// <summary>
+    /// Utilities for ScriptingObject management.
+    /// </summary>
+    struct FLAXENGINE_API ScriptingObject
+    {
+        static void SetInternalValues(MClass* klass, MObject* object, void* unmanagedPtr, const Guid* id);
+        static MObject* CreateScriptingObject(MClass* klass, void* unmanagedPtr, const Guid* id);
+    };
 };

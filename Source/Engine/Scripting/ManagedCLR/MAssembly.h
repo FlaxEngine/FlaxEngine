@@ -52,6 +52,15 @@ public:
     MAssembly(MDomain* domain, const StringAnsiView& name);
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="MAssembly"/> class.
+    /// </summary>
+    /// <param name="domain">The assembly domain.</param>
+    /// <param name="name">The assembly name.</param>
+    /// <param name="fullname">The assembly full name.</param>
+    /// <param name="handle">The managed handle of the assembly.</param>
+    MAssembly(MDomain* domain, const StringAnsiView& name, const StringAnsiView& fullname, void* handle);
+
+    /// <summary>
     /// Finalizes an instance of the <see cref="MAssembly"/> class.
     /// </summary>
     ~MAssembly();

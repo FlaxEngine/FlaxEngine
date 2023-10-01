@@ -187,7 +187,7 @@ namespace FlaxEditor.Windows.Assets
                     base.Initialize(layout);
 
                     var emitterTrack = Values[0] as EmitterTrackProxy;
-                    if (emitterTrack?._effect?.Parameters == null)
+                    if (emitterTrack?._effect == null || emitterTrack?._effect.Parameters == null)
                         return;
 
                     var group = layout.Group("Parameters");

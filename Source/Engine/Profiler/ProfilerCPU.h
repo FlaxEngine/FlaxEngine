@@ -121,15 +121,39 @@ public:
             EventBuffer* _buffer;
             int32 _index;
 
-            Iterator(EventBuffer* buffer, const int32 index)
+            FORCE_INLINE Iterator(EventBuffer* buffer, const int32 index)
                 : _buffer(buffer)
                 , _index(index)
             {
             }
 
-            Iterator(const Iterator& i) = default;
-
         public:
+            FORCE_INLINE Iterator(const Iterator& other)
+                : _buffer(other._buffer)
+                , _index(other._index)
+            {
+            }
+
+            FORCE_INLINE Iterator(Iterator&& other) noexcept
+                : _buffer(other._buffer)
+                , _index(other._index)
+            {
+            }
+
+            FORCE_INLINE Iterator& operator=(Iterator&& other)
+            {
+                _buffer = other._buffer;
+                _index = other._index;
+                return *this;
+            }
+
+            FORCE_INLINE Iterator& operator=(const Iterator& other)
+            {
+                _buffer = other._buffer;
+                _index = other._index;
+                return *this;
+            }
+
             FORCE_INLINE int32 Index() const
             {
                 return _index;
@@ -141,15 +165,13 @@ public:
                 return _buffer->Get(_index);
             }
 
-            bool IsEnd() const
+            FORCE_INLINE bool IsEnd() const
             {
-                ASSERT_LOW_LAYER(_buffer);
                 return _index == _buffer->_head;
             }
 
-            bool IsNotEnd() const
+            FORCE_INLINE bool IsNotEnd() const
             {
-                ASSERT_LOW_LAYER(_buffer);
                 return _index != _buffer->_head;
             }
 
@@ -164,31 +186,27 @@ public:
             }
 
         public:
-            Iterator& operator++()
+            FORCE_INLINE Iterator& operator++()
             {
-                ASSERT(_buffer);
                 _index = (_index + 1) & _buffer->_capacityMask;
                 return *this;
             }
 
-            Iterator operator++(int)
+            FORCE_INLINE Iterator operator++(int)
             {
-                ASSERT(_buffer);
                 Iterator temp = *this;
                 _index = (_index + 1) & _buffer->_capacityMask;
                 return temp;
             }
 
-            Iterator& operator--()
+            FORCE_INLINE Iterator& operator--()
             {
-                ASSERT(_buffer);
                 _index = (_index - 1) & _buffer->_capacityMask;
                 return *this;
             }
 
-            Iterator operator--(int)
+            FORCE_INLINE Iterator operator--(int)
             {
-                ASSERT(_buffer);
                 Iterator temp = *this;
                 _index = (_index - 1) & _buffer->_capacityMask;
                 return temp;
