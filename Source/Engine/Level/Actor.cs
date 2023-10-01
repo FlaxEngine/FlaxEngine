@@ -364,13 +364,20 @@ namespace FlaxEngine
         /// <param name="point">The point (world-space).</param>
         /// <param name="axis">The axis (normalized).</param>
         /// <param name="angle">The angle (in degrees).</param>
-        public void RotateAround(Vector3 point, Vector3 axis, float angle)
+        /// /// <param name="orientActor">Whether to orient the actor the same amount as rotation.</param>
+        public void RotateAround(Vector3 point, Vector3 axis, float angle, bool orientActor = true)
         {
             var transform = Transform;
             var q = Quaternion.RotationAxis(axis, angle * Mathf.DegreesToRadians);
             var dif = (transform.Translation - point) * q;
-            transform.Translation = point + dif;
-            transform.Orientation *= q;
+            if (Vector3.NearEqual(point, transform.Translation))
+                transform.Orientation *= q;
+            else
+            {
+                transform.Translation = point + dif;
+                if (orientActor)
+                    transform.Orientation *= q;
+            }
             Transform = transform;
         }
 
