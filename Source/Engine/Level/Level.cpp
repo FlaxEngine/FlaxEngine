@@ -1022,7 +1022,9 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
         PROFILE_CPU_NAMED("Deserialize");
         SceneObject** objects = sceneObjects->Get();
         bool wasAsync = context.Async;
-        context.Async = false; // TODO: fix Actor's Scripts and Children order when loading objects data out of order via async jobs
+        context.Async = false; // TODO: before doing full async for scene objects fix:
+        // TODO: - fix Actor's Scripts and Children order when loading objects data out of order via async jobs
+        // TODO: - add _loadNoAsync flag to SceneObject or Actor to handle non-async loading for those types (eg. UIControl/UICanvas)
         if (context.Async)
         {
             ScenesLock.Unlock(); // Unlock scenes from Main Thread so Job Threads can use it to safely setup actors hierarchy (see Actor::Deserialize)
