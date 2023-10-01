@@ -1178,7 +1178,7 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         }
         OnLostFocus();
         break;
-    case WM_ACTIVATEAPP:
+    case WM_ACTIVATE:
         if (wParam == TRUE && !_focused)
         {
             OnGotFocus();
