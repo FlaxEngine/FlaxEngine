@@ -647,6 +647,8 @@ ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const S
     module->TypeNameToTypeIndex[fullname] = TypeIndex;
 }
 
+CriticalSection BinaryModule::Locker;
+
 BinaryModule::BinaryModulesList& BinaryModule::GetModules()
 {
     static BinaryModulesList modules;
