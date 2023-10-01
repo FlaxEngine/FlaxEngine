@@ -14,6 +14,7 @@
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
+#include "Engine/Engine/Time.h"
 
 #if USE_CSHARP
 // Helper macros for calling C# events
@@ -439,6 +440,9 @@ void WindowBase::OnGotFocus()
         return;
     _focused = true;
 
+    if (RenderTask && _settings.WindowFPSWhenNotFocused > ZeroTolerance)
+        RenderTask->RenderFPS = 0;
+
     GotFocus();
     INVOKE_EVENT_PARAMS_0(OnGotFocus);
 }
@@ -448,6 +452,9 @@ void WindowBase::OnLostFocus()
     if (!_focused)
         return;
     _focused = false;
+
+    if (RenderTask && _settings.WindowFPSWhenNotFocused > ZeroTolerance)
+        RenderTask->RenderFPS = _settings.WindowFPSWhenNotFocused;
 
     LostFocus();
     INVOKE_EVENT_PARAMS_0(OnLostFocus);

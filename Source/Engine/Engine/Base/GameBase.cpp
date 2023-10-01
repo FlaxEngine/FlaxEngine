@@ -176,6 +176,7 @@ Window* GameBase::CreateMainWindow()
     settings.AllowMinimize = true;
     settings.Size = Platform::GetDesktopSize();
     settings.Position = Float2::Zero;
+    settings.WindowFPSWhenNotFocused = 0;
 
     Game::InitMainWindowSettings(settings);
 
