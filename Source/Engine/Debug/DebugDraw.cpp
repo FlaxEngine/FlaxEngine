@@ -934,15 +934,22 @@ void DebugDraw::DrawAxisFromDirection(const Vector3& origin, const Vector3& dire
 
 void DebugDraw::DrawDirection(const Vector3& origin, const Vector3& direction, const Color& color, float duration, bool depthTest)
 {
+    auto dir = origin + direction;
+    if (dir.IsNanOrInfinity())
+        return;
     DrawLine(origin, origin + direction, color, duration, depthTest);
 }
 void DebugDraw::DrawRay(const Vector3& origin, const Vector3& direction,const Color& color, float length, float duration, bool depthTest)
 {
+    if (isnan(length) || isinf(length))
+        return;
     DrawLine(origin, origin + (direction.GetNormalized() * length), color, duration, depthTest);
 }
 
 void DebugDraw::DrawRay(const Ray& ray,const Color& color, float length, float duration, bool depthTest)
 {
+    if (isnan(length) || isinf(length))
+        return;
     DrawLine(ray.Position, ray.Position + (ray.Direction.GetNormalized() * length), color, duration, depthTest);
 }
 
