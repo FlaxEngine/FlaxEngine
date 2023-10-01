@@ -26,7 +26,7 @@ PACK_STRUCT(struct HistogramData {
 GPUBuffer* HistogramPass::Render(RenderContext& renderContext, GPUTexture* colorBuffer)
 {
     auto device = GPUDevice::Instance;
-    auto context = device->GetMainContext();;
+    auto context = device->GetMainContext();
     if (checkIfSkipPass() || !_isSupported)
         return nullptr;
 

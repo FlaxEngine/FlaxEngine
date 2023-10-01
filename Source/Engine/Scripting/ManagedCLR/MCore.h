@@ -85,6 +85,7 @@ public:
         static MClass* GetClass(MClass* elementKlass);
         static int32 GetLength(const MArray* obj);
         static void* GetAddress(const MArray* obj);
+        static MArray* Unbox(MObject* obj);
 
         template<typename T>
         FORCE_INLINE static T* GetAddress(const MArray* obj)
@@ -188,5 +189,14 @@ public:
         static MClass* Single;
         static MClass* Double;
         static MClass* String;
+    };
+
+    /// <summary>
+    /// Utilities for ScriptingObject management.
+    /// </summary>
+    struct FLAXENGINE_API ScriptingObject
+    {
+        static void SetInternalValues(MClass* klass, MObject* object, void* unmanagedPtr, const Guid* id);
+        static MObject* CreateScriptingObject(MClass* klass, void* unmanagedPtr, const Guid* id);
     };
 };

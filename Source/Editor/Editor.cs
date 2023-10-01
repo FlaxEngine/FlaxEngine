@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -13,6 +14,7 @@ using FlaxEditor.Content.Thumbnails;
 using FlaxEditor.Modules;
 using FlaxEditor.Modules.SourceCodeEditing;
 using FlaxEditor.Options;
+using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.States;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
@@ -1272,6 +1274,69 @@ namespace FlaxEditor
             }
 
             Scene.MarkSceneEdited(scenes);
+        }
+
+        /// <summary>
+        /// Bakes all environmental probes in the scene.
+        /// </summary>
+        public void BakeAllEnvProbes()
+        {
+            Scene.ExecuteOnGraph(node =>
+            {
+                if (node is EnvironmentProbeNode envProbeNode && envProbeNode.IsActive)
+                {
+                    ((EnvironmentProbe)envProbeNode.Actor).Bake();
+                    node.ParentScene.IsEdited = true;
+                }
+                else if (node is SkyLightNode skyLightNode && skyLightNode.IsActive && skyLightNode.Actor is SkyLight skyLight && skyLight.Mode == SkyLight.Modes.CaptureScene)
+                {
+                    skyLight.Bake();
+                    node.ParentScene.IsEdited = true;
+                }
+
+                return node.IsActive;
+            });
+        }
+
+        /// <summary>
+        /// Builds CSG for all open scenes.
+        /// </summary>
+        public void BuildCSG()
+        {
+            var scenes = Level.Scenes;
+            scenes.ToList().ForEach(x => x.BuildCSG(0));
+            Scene.MarkSceneEdited(scenes);
+        }
+
+        /// <summary>
+        /// Builds Nav mesh for all open scenes.
+        /// </summary>
+        public void BuildNavMesh()
+        {
+            var scenes = Level.Scenes;
+            scenes.ToList().ForEach(x => Navigation.BuildNavMesh(x, 0));
+            Scene.MarkSceneEdited(scenes);
+        }
+
+        /// <summary>
+        /// Builds SDF for all static models in the scene.
+        /// </summary>
+        public void BuildAllMeshesSDF()
+        {
+            // TODO: async maybe with progress reporting?
+            Scene.ExecuteOnGraph(node =>
+            {
+                if (node is StaticModelNode staticModelNode && staticModelNode.Actor is StaticModel staticModel)
+                {
+                    if (staticModel.DrawModes.HasFlag(DrawPass.GlobalSDF) && staticModel.Model != null && !staticModel.Model.IsVirtual && staticModel.Model.SDF.Texture == null)
+                    {
+                        Log("Generating SDF for " + staticModel.Model);
+                        if (!staticModel.Model.GenerateSDF())
+                            staticModel.Model.Save();
+                    }
+                }
+                return true;
+            });
         }
 
         #endregion

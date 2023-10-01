@@ -260,15 +260,20 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
     {
         LOG(Info, "Building app package...");
         const Char* configuration = data.Configuration == BuildConfiguration::Release ? TEXT("Release") : TEXT("Debug");
-        String command = String::Format(TEXT("xcodebuild -project FlaxGame.xcodeproj -configuration {} -scheme FlaxGame -archivePath FlaxGame.xcarchive archive"), configuration);
-        int32 result = Platform::RunProcess(command, data.OriginalOutputPath);
+        CreateProcessSettings procSettings;
+        procSettings.HiddenWindow = true;
+        procSettings.WorkingDirectory = data.OriginalOutputPath;
+        procSettings.FileName = TEXT("/usr/bin/xcodebuild");
+        procSettings.Arguments = String::Format(TEXT("-project FlaxGame.xcodeproj -configuration {} -scheme FlaxGame -archivePath FlaxGame.xcarchive archive"), configuration);
+        int32 result = Platform::CreateProcess(procSettings);
         if (result != 0)
         {
             data.Error(String::Format(TEXT("Failed to package app (result code: {0}). See log for more info."), result));
             return true;
         }
-        command = TEXT("xcodebuild -exportArchive -archivePath FlaxGame.xcarchive -allowProvisioningUpdates -exportPath . -exportOptionsPlist ExportOptions.plist");
-        result = Platform::RunProcess(command, data.OriginalOutputPath);
+        procSettings.FileName = TEXT("/usr/bin/xcodebuild");
+        procSettings.Arguments = TEXT("-exportArchive -archivePath FlaxGame.xcarchive -allowProvisioningUpdates -exportPath . -exportOptionsPlist ExportOptions.plist");
+        result = Platform::CreateProcess(procSettings);
         if (result != 0)
         {
             data.Error(String::Format(TEXT("Failed to package app (result code: {0}). See log for more info."), result));

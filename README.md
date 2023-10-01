@@ -31,19 +31,20 @@ Follow the instructions below to compile and run the engine from source.
 * Install Visual Studio 2022 or newer
 * Install Windows 8.1 SDK or newer (via Visual Studio Installer)
 * Install Microsoft Visual C++ 2015 v140 toolset or newer (via Visual Studio Installer)
-* Install .Net 7 SDK (via Visual Studio Installer or [from web](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
+* Install .NET 7 SDK for **Windows x64** (via Visual Studio Installer or [from web](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
 * Install Git with LFS
 * Clone repo (with LFS)
 * Run **GenerateProjectFiles.bat**
 * Open `Flax.sln` and set solution configuration to **Editor.Development** and solution platform to **Win64**
 * Set Flax (C++) or FlaxEngine (C#) as startup project
 * Compile Flax project (hit F7 or CTRL+Shift+B)
+* Optionally set Debug Type to **Managed Only (.NET Core)** to debug C#-only, or **Mixed (.NET Core)** to debug both C++ and C#
 * Run Flax (hit F5 key)
 
 ## Linux
 
 * Install Visual Studio Code
-* Install .Net 7 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
+* Install .NET 7 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
   * Ubuntu: `sudo apt install dotnet-sdk-7.0`
 * Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
   * Ubuntu: `sudo apt install vulkan-sdk`
@@ -66,7 +67,7 @@ Follow the instructions below to compile and run the engine from source.
 ## Mac
 
 * Install XCode
-* Install .Net 7 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
+* Install .NET 7 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
 * Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
 * Clone repo (with LFS)
 * Run `GenerateProjectFiles.command`

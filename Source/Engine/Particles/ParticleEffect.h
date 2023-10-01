@@ -382,7 +382,7 @@ public:
 #if USE_EDITOR
 protected:
     // Exposed parameters overrides for Editor Undo.
-    API_PROPERTY(Attributes="HideInEditor, Serialize") Array<ParticleEffect::ParameterOverride> GetParametersOverrides();
+    API_PROPERTY(Attributes="HideInEditor, Serialize") Array<ParticleEffect::ParameterOverride>& GetParametersOverrides();
     API_PROPERTY() void SetParametersOverrides(const Array<ParticleEffect::ParameterOverride>& value);
 #endif
 

@@ -22,7 +22,7 @@ namespace Flax.Build.Projects.VisualStudio
             public override Guid ProjectTypeGuid => ProjectTypeGuids.Android;
 
             /// <inheritdoc />
-            public override void Generate()
+            public override void Generate(string solutionPath)
             {
                 var gen = (VisualStudioProjectGenerator)Generator;
                 var projectFileToolVersion = gen.ProjectFileToolVersion;
@@ -141,9 +141,10 @@ namespace Flax.Build.Projects.VisualStudio
         /// </summary>
         /// <param name="path">The path.</param>
         /// <returns>The project ID.</returns>
-        public static Guid GetProjectGuid(string path)
+        public static Guid GetProjectGuid(string path, string projectName)
         {
-            if (File.Exists(path))
+            // Look up for the guid in VC++-project file
+            if (File.Exists(path) && Path.GetExtension(path).Equals(".vcxproj", StringComparison.OrdinalIgnoreCase))
             {
                 try
                 {
@@ -161,8 +162,25 @@ namespace Flax.Build.Projects.VisualStudio
                     // Hide errors
                 }
             }
+            if (File.Exists(path) && Path.GetExtension(path).Equals(".sln", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    Regex projectRegex = new Regex(@"Project\(.*\) = \""(\S+)\"", \""(\S+)\"", \""{(\S+)}\""");
+                    MatchCollection matches = projectRegex.Matches(File.ReadAllText(path));
+                    for (int i = 0; i < matches.Count; i++)
+                    {
+                        if (matches[i].Groups[1].Value == projectName)
+                            return Guid.ParseExact(matches[i].Groups[3].Value, "D");
+                    }
+                }
+                catch
+                {
+                    // Hide errors
+                }
+            }
 
-            return Guid.NewGuid();
+            return Guid.Empty;
         }
 
         /// <inheritdoc />
@@ -236,7 +254,21 @@ namespace Flax.Build.Projects.VisualStudio
         /// <inheritdoc />
         public override void GenerateSolution(Solution solution)
         {
-            // Try to extract info from the existing solution file to make random IDs stable
+            // Ensure that the main project is the first one (initially selected by Visual Studio)
+            if (solution.MainProject != null && solution.Projects.Length != 0 && solution.Projects[0] != solution.MainProject)
+            {
+                for (int i = 1; i < solution.Projects.Length; i++)
+                {
+                    if (solution.Projects[i] == solution.MainProject)
+                    {
+                        solution.Projects[i] = solution.Projects[0];
+                        solution.Projects[0] = solution.MainProject;
+                        break;
+                    }
+                }
+            }
+
+            // Try to extract solution folder info from the existing solution file to make random IDs stable
             var solutionId = Guid.NewGuid();
             var folderIds = new Dictionary<string, Guid>();
             if (File.Exists(solution.Path))
@@ -252,16 +284,12 @@ namespace Flax.Build.Projects.VisualStudio
                         solutionId = Guid.ParseExact(value.Substring(15), "B");
                     }
 
-                    var folderIdsMatch = Regex.Match(contents, "Project\\(\"{2150E333-8FDC-42A3-9474-1A3956D46DE8}\"\\) = \"(.*?)\", \"(.*?)\", \"{(.*?)}\"");
-                    if (folderIdsMatch.Success)
+                    var folderIdMatches = new Regex("Project\\(\"{2150E333-8FDC-42A3-9474-1A3956D46DE8}\"\\) = \"(.*?)\", \"(.*?)\", \"{(.*?)}\"").Matches(contents);
+                    foreach (Match match in folderIdMatches)
                     {
-                        foreach (Capture capture in folderIdsMatch.Captures)
-                        {
-                            var value = capture.Value.Substring("Project(\"{2150E333-8FDC-42A3-9474-1A3956D46DE8}\") = \"".Length);
-                            var folder = value.Substring(0, value.IndexOf('\"'));
-                            var folderId = Guid.ParseExact(value.Substring(folder.Length * 2 + "\", \"".Length + "\", \"".Length, 38), "B");
-                            folderIds["Source\\" + folder] = folderId;
-                        }
+                        var folder = match.Groups[1].Value;
+                        var folderId = Guid.ParseExact(match.Groups[3].Value, "D");
+                        folderIds[folder] = folderId;
                     }
                 }
                 catch (Exception ex)
@@ -402,6 +430,10 @@ namespace Flax.Build.Projects.VisualStudio
                     if (project.Configurations == null || project.Configurations.Count == 0)
                         throw new Exception("Missing configurations for project " + project.Name);
 
+                    // Prevent generating default Debug|AnyCPU and Release|AnyCPU configurations from Flax projects
+                    if (project.Name == "BuildScripts" || project.Name == "Flax.Build" || project.Name == "Flax.Build.Tests")
+                        continue;
+
                     foreach (var configuration in project.Configurations)
                     {
                         configurations.Add(new SolutionConfiguration(configuration));
@@ -540,8 +572,8 @@ namespace Flax.Build.Projects.VisualStudio
             {
                 var profiles = new Dictionary<string, string>();
                 var profile = new StringBuilder();
-                var editorPath = Path.Combine(Globals.EngineRoot, "Binaries/Editor/Win64/Development/FlaxEditor.exe").Replace('/', '\\').Replace("\\", "\\\\");
-                var workspacePath = solutionDirectory.Replace('/', '\\').Replace("\\", "\\\\");
+                var editorPath = Utilities.NormalizePath(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), $"Development/FlaxEditor{Utilities.GetPlatformExecutableExt()}"));
+                var workspacePath = Utilities.NormalizePath(solutionDirectory);
                 foreach (var project in projects)
                 {
                     if (project.Type == TargetType.DotNetCore)

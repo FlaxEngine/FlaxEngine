@@ -70,6 +70,53 @@ CFStringRef AppleUtils::ToString(const StringView& str)
     return CFStringCreateWithBytes(nullptr, (const UInt8*)str.GetText(), str.Length() * sizeof(Char), kCFStringEncodingUTF16LE, false);
 }
 
+NSString* AppleUtils::ToNSString(const StringView& str)
+{
+    NSString* ret = !str.IsEmpty() ? [[NSString alloc] initWithBytes: (const UInt8*)str.Get() length: str.Length() * sizeof(Char) encoding: NSUTF16LittleEndianStringEncoding] : nil;
+    return ret ? ret : @"";
+}
+
+NSString* AppleUtils::ToNSString(const char* string)
+{
+    NSString* ret = string ? [NSString stringWithUTF8String: string] : nil;
+    return ret ? ret : @"";
+}
+
+
+NSArray* AppleUtils::ParseArguments(NSString* argsString) {
+    NSMutableArray *argsArray = [NSMutableArray array];
+    NSMutableString *currentArg = [NSMutableString string];
+    BOOL insideQuotes = NO;
+    
+    for (NSInteger i = 0; i < argsString.length; ++i) {
+        unichar c = [argsString characterAtIndex:i];
+        
+        if (c == '\"') {
+            if (insideQuotes) {
+                [argsArray addObject:[currentArg copy]];
+                [currentArg setString:@""];
+                insideQuotes = NO;
+            } else {
+                insideQuotes = YES;
+            }
+        } else if (c == ' ' && !insideQuotes) {
+            if (currentArg.length > 0) {
+                [argsArray addObject:[currentArg copy]];
+                [currentArg setString:@""];
+            }
+        } else {
+            [currentArg appendFormat:@"%C", c];
+        }
+    }
+    
+    if (currentArg.length > 0) {
+        [argsArray addObject:[currentArg copy]];
+    }
+    
+    return [argsArray copy];
+}
+
+
 typedef uint16_t offset_t;
 #define align_mem_up(num, align) (((num) + ((align) - 1)) & ~((align) - 1))
 

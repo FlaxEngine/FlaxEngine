@@ -25,9 +25,20 @@ namespace FlaxEditor.CustomEditors.Dedicated
             get
             {
                 // All selected particle effects use the same system
-                var effect = (ParticleEffect)Values[0];
-                var system = effect.ParticleSystem;
-                return system != null && Values.TrueForAll(x => (x as ParticleEffect)?.ParticleSystem == system);
+                var effect = Values[0] as ParticleEffect;
+                var system = effect ? effect.ParticleSystem : null;
+                if (system && Values.TrueForAll(x => x is ParticleEffect fx && fx && fx.ParticleSystem == system))
+                {
+                    // All parameters can be accessed
+                    var parameters = effect.Parameters;
+                    foreach (var parameter in parameters)
+                    {
+                        if (!parameter)
+                            return false;
+                    }
+                    return true;
+                }
+                return false;
             }
         }
 

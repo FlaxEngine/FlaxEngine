@@ -16,6 +16,7 @@
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/Models/ModelData.h"
 #include "Engine/Content/Assets/Model.h"
+#include "Engine/Content/Content.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #if USE_EDITOR
 #include "Engine/Core/Types/DateTime.h"
@@ -994,6 +995,17 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             materialOptions.Info.CullMode = CullMode::TwoSided;
         if (!Math::IsOne(material.Opacity.Value) || material.Opacity.TextureIndex != -1)
             materialOptions.Info.BlendMode = MaterialBlendMode::Transparent;
+
+        // When splitting imported meshes allow only the first mesh to import assets (mesh[0] is imported after all following ones so import assets during mesh[1])
+        if (!options.SplitObjects && options.ObjectIndex != 1 && options.ObjectIndex != -1)
+        {
+            // Find that asset create previously
+            AssetInfo info;
+            if (Content::GetAssetInfo(assetPath, info))
+                material.AssetID = info.ID;
+            continue;
+        }
+
         AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialTag, assetPath, material.AssetID, &materialOptions);
 #endif
     }

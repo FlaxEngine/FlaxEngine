@@ -37,7 +37,7 @@ void GPUTimerQueryDX12::End()
     heap.EndQuery(context, _end);
 
     const auto queue = _device->GetCommandQueue()->GetCommandQueue();
-    VALIDATE_DIRECTX_RESULT(queue->GetTimestampFrequency(&_gpuFrequency));
+    VALIDATE_DIRECTX_CALL(queue->GetTimestampFrequency(&_gpuFrequency));
 
     _endCalled = true;
 }
