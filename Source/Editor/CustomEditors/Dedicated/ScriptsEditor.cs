@@ -580,8 +580,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     return;
                 for (int j = 0; j < e.Length; j++)
                 {
-                    var t1 = scripts[j]?.TypeName;
-                    var t2 = e[j]?.TypeName;
+                    var t1 = scripts[j] != null ? scripts[j].TypeName : null;
+                    var t2 = e[j] != null ? e[j].TypeName : null;
                     if (t1 != t2)
                         return;
                 }

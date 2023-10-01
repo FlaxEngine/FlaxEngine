@@ -1230,7 +1230,7 @@ namespace FlaxEngine.Interop
         internal static bool GetTypeIsReference(ManagedHandle typeHandle)
         {
             Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
-            return type.IsByRef;
+            return !type.IsValueType; // Maybe also type.IsByRef?
         }
 
         [UnmanagedCallersOnly]
