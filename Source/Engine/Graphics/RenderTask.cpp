@@ -12,6 +12,7 @@
 #include "Engine/Renderer/Renderer.h"
 #include "Engine/Render2D/Render2D.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Time.h"
 #include "Engine/Level/Actors/PostFxVolume.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Renderer/RenderList.h"
@@ -70,9 +71,20 @@ RenderTask::~RenderTask()
 
 bool RenderTask::CanDraw() const
 {
-    if (SwapChain && SwapChain->GetWindow() && !SwapChain->GetWindow()->IsVisible() && !SwapChain->GetWindow()->GetSettings().ShowAfterFirstPaint)
+    if (!Enabled)
         return false;
-    return Enabled;
+
+    const Window* window = SwapChain ? SwapChain->GetWindow() : nullptr;
+    if (window && !window->IsVisible() && !window->GetSettings().ShowAfterFirstPaint)
+        return false;
+
+    if (LastUsedFrame > 0 && RenderFPS > ZeroTolerance)
+    {
+        if (Time::Draw.UnscaledTime.GetTotalSeconds() < _lastFrameTime + (1.0f / RenderFPS))
+            return false;
+    }
+
+    return true;
 }
 
 void RenderTask::OnDraw()
@@ -81,6 +93,9 @@ void RenderTask::OnDraw()
     OnBegin(context);
     OnRender(context);
     OnEnd(context);
+
+    if (RenderFPS > ZeroTolerance)
+        _lastFrameTime = Time::Draw.UnscaledTime.GetTotalSeconds();
 }
 
 void RenderTask::OnBegin(GPUContext* context)

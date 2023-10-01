@@ -51,6 +51,8 @@ API_CLASS() class FLAXENGINE_API RenderTask : public ScriptingObject
 
 private:
     RenderTask* _prevTask = nullptr;
+    
+    float _lastFrameTime = 0.0f;
 
 public:
     /// <summary>
@@ -68,6 +70,11 @@ public:
     /// The order of the task. Used for tasks rendering order. Lower first, higher later.
     /// </summary>
     API_FIELD() int32 Order = 0;
+
+    /// <summary>
+    /// The framerate of the task, or how often the task rendering is performed per second.
+    /// </summary>
+    API_FIELD() int32 RenderFPS = 0;
 
     /// <summary>
     /// The amount of frames rendered by this task. It is auto incremented on task drawing.
