@@ -327,7 +327,6 @@ void Script::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier
             const auto parent = Scripting::FindObject<Actor>(parentId);
             if (_parent != parent)
             {
-                ScopeLock lock(Level::ScenesLock);
                 if (IsDuringPlay())
                 {
                     SetParent(parent, false);
