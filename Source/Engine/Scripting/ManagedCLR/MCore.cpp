@@ -48,6 +48,18 @@ MAssembly::MAssembly(MDomain* domain, const StringAnsiView& name)
 {
 }
 
+MAssembly::MAssembly(MDomain* domain, const StringAnsiView& name, const StringAnsiView& fullname, void* handle)
+    : _domain(domain)
+    , _isLoaded(false)
+    , _isLoading(false)
+    , _hasCachedClasses(false)
+    , _reloadCount(0)
+    , _name(name)
+    , _fullname(fullname)
+    , _handle(handle)
+{
+}
+
 MAssembly::~MAssembly()
 {
     Unload();

@@ -15,6 +15,9 @@ API_CLASS(sealed, NoSpawn, Namespace = "FlaxEngine.Networking") class FLAXENGINE
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(NetworkPeer, ScriptingObject);
 
+    // List with all active peers.
+    API_FIELD(ReadOnly) static Array<NetworkPeer*> Peers;
+
 public:
     int HostId = -1;
     NetworkConfig Config;

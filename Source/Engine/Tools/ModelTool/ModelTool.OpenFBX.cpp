@@ -923,8 +923,6 @@ bool ImportMesh(int32 index, ImportedModelData& result, OpenFbxImporterData& dat
     const auto aMesh = data.Scene->getMesh(index);
     const auto aGeometry = aMesh->getGeometry();
     const auto trianglesCount = aGeometry->getVertexCount() / 3;
-
-    // Skip invalid meshes
     if (IsMeshInvalid(aMesh))
         return false;
 
@@ -1245,13 +1243,13 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
     if (EnumHasAnyFlags(data.Types, ImportDataTypes::Geometry) && context->Scene->getMeshCount() > 0)
     {
         const int meshCount = context->Scene->getMeshCount();
-        if (options.SplitObjects && options.ObjectIndex == -1)
+        if (options.SplitObjects && options.ObjectIndex == -1 && meshCount > 1)
         {
             // Import the first object within this call
             options.SplitObjects = false;
             options.ObjectIndex = 0;
 
-            if (meshCount > 1 && options.OnSplitImport.IsBinded())
+            if (options.OnSplitImport.IsBinded())
             {
                 // Split all animations into separate assets
                 LOG(Info, "Splitting imported {0} meshes", meshCount);
@@ -1272,6 +1270,22 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
             const auto meshIndex = Math::Clamp<int32>(options.ObjectIndex, 0, meshCount - 1);
             if (ImportMesh(meshIndex, data, *context, errorMsg))
                 return true;
+
+            // Let the firstly imported mesh import all materials from all meshes (index 0 is importing all following ones before itself during splitting - see code above)
+            if (options.ObjectIndex == 1)
+            {
+                for (int32 i = 0; i < meshCount; i++)
+                {
+                    const auto aMesh = context->Scene->getMesh(i);
+                    if (i == 1 || IsMeshInvalid(aMesh))
+                        continue;
+                    for (int32 j = 0; j < aMesh->getMaterialCount(); j++)
+                    {
+                        const ofbx::Material* aMaterial = aMesh->getMaterial(j);
+                        context->AddMaterial(data, aMaterial);
+                    }
+                }
+            }
         }
         else
         {
@@ -1328,13 +1342,13 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
     if (EnumHasAnyFlags(data.Types, ImportDataTypes::Animations))
     {
         const int animCount = context->Scene->getAnimationStackCount();
-        if (options.SplitObjects && options.ObjectIndex == -1)
+        if (options.SplitObjects && options.ObjectIndex == -1 && animCount > 1)
         {
             // Import the first object within this call
             options.SplitObjects = false;
             options.ObjectIndex = 0;
 
-            if (animCount > 1 && options.OnSplitImport.IsBinded())
+            if (options.OnSplitImport.IsBinded())
             {
                 // Split all animations into separate assets
                 LOG(Info, "Splitting imported {0} animations", animCount);

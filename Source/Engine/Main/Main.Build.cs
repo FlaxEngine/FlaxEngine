@@ -81,5 +81,6 @@ public class Main : EngineModule
     /// <inheritdoc />
     public override void GetFilesToDeploy(List<string> files)
     {
+        files.Add(Path.Combine(FolderPath, "Android/android_native_app_glue.h"));
     }
 }

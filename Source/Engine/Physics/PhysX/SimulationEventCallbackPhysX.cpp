@@ -15,9 +15,11 @@ namespace
     {
         if (collection.IsEmpty())
             return;
+        const auto c = collection.Get();
         for (int32 i = 0; i < collection.Count(); i++)
         {
-            if (collection[i].First == collider || collection[i].Second == collider)
+            const SimulationEventCallback::CollidersPair cc = c[i];
+            if (cc.First == collider || cc.Second == collider)
             {
                 collection.RemoveAt(i--);
                 if (collection.IsEmpty())
@@ -32,7 +34,8 @@ namespace
             return;
         for (auto i = collection.Begin(); i.IsNotEnd(); ++i)
         {
-            if (i->Key.First == collider || i->Key.Second == collider)
+            const SimulationEventCallback::CollidersPair cc = i->Key;
+            if (cc.First == collider || cc.Second == collider)
             {
                 collection.Remove(i);
                 if (collection.IsEmpty())

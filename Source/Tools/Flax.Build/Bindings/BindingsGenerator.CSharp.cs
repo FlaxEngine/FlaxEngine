@@ -299,6 +299,8 @@ namespace Flax.Build.Bindings
             // Object reference property
             if (typeInfo.IsObjectRef)
                 return GenerateCSharpNativeToManaged(buildData, typeInfo.GenericArgs[0], caller);
+            if (typeInfo.Type == "SoftTypeReference" || typeInfo.Type == "SoftObjectReference")
+                return typeInfo.Type;
 
             // Array or Span or DataContainer
 #if USE_NETCORE
@@ -464,7 +466,7 @@ namespace Flax.Build.Bindings
                 return "FlaxEngine.Object.GetUnmanagedPtr({0})";
             case "Function":
                 // delegate
-                return "Marshal.GetFunctionPointerForDelegate({0})";
+                return "NativeInterop.GetFunctionPointerForDelegate({0})";
             default:
                 var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
                 if (apiType != null)
@@ -953,7 +955,7 @@ namespace Flax.Build.Bindings
                     CppParamsWrappersCache[i] = result;
                 }
 
-                string eventSignature;
+                string eventType;
                 if (useCustomDelegateSignature)
                 {
                     contents.Append(indent).Append($"/// <summary>The delegate for event {eventInfo.Name}.</summary>").AppendLine();
@@ -968,24 +970,25 @@ namespace Flax.Build.Bindings
                         contents.Append(CppParamsWrappersCache[i]).Append(" arg").Append(i);
                     }
                     contents.Append(");").AppendLine().AppendLine();
-                    eventSignature = "event " + eventInfo.Name + "Delegate";
+                    eventType = eventInfo.Name + "Delegate";
                 }
                 else
                 {
-                    eventSignature = "event Action";
+                    eventType = "Action";
                     if (paramsCount != 0)
                     {
-                        eventSignature += '<';
+                        eventType += '<';
                         for (var i = 0; i < paramsCount; i++)
                         {
                             if (i != 0)
-                                eventSignature += ", ";
+                                eventType += ", ";
                             CppParamsWrappersCache[i] = GenerateCSharpNativeToManaged(buildData, eventInfo.Type.GenericArgs[i], classInfo);
-                            eventSignature += CppParamsWrappersCache[i];
+                            eventType += CppParamsWrappersCache[i];
                         }
-                        eventSignature += '>';
+                        eventType += '>';
                     }
                 }
+                string eventSignature = "event " + eventType;
 
                 GenerateCSharpComment(contents, indent, eventInfo.Comment, true);
                 GenerateCSharpAttributes(buildData, contents, indent, classInfo, eventInfo, useUnmanaged);
@@ -998,11 +1001,7 @@ namespace Flax.Build.Bindings
                 indent += "    ";
                 var eventInstance = eventInfo.IsStatic ? string.Empty : "__unmanagedPtr, ";
                 contents.Append(indent).Append($"add {{ Internal_{eventInfo.Name} += value; if (Internal_{eventInfo.Name}_Count++ == 0) Internal_{eventInfo.Name}_Bind({eventInstance}true); }}").AppendLine();
-                contents.Append(indent).Append("remove { ").AppendLine();
-                contents.Append("#if FLAX_EDITOR || BUILD_DEBUG").AppendLine();
-                contents.Append(indent).Append($"if (Internal_{eventInfo.Name} != null) {{ bool invalid = true; foreach (Delegate e in Internal_{eventInfo.Name}.GetInvocationList()) {{ if (e == (Delegate)value) {{ invalid = false; break; }} }} if (invalid) throw new Exception(\"Cannot unregister from event if not registered before.\"); }}").AppendLine();
-                contents.Append("#endif").AppendLine();
-                contents.Append(indent).Append($"Internal_{eventInfo.Name} -= value; if (--Internal_{eventInfo.Name}_Count == 0) Internal_{eventInfo.Name}_Bind({eventInstance}false); }}").AppendLine();
+                contents.Append(indent).Append($"remove {{ var __delegate = ({eventType})Delegate.Remove(Internal_{eventInfo.Name}, value); if (__delegate != Internal_{eventInfo.Name}) {{ Internal_{eventInfo.Name} = __delegate; if (--Internal_{eventInfo.Name}_Count == 0) Internal_{eventInfo.Name}_Bind({eventInstance}false); }} }}").AppendLine();
                 indent = indent.Substring(0, indent.Length - 4);
                 contents.Append(indent).Append('}').AppendLine();
 
@@ -1019,6 +1018,7 @@ namespace Flax.Build.Bindings
                     contents.Append("static ");
                 contents.Append($"{eventSignature} Internal_{eventInfo.Name};");
                 contents.AppendLine();
+                contents.Append("#pragma warning restore 67").AppendLine();
 
                 contents.AppendLine();
                 contents.Append(indent).Append("internal ");
@@ -1340,6 +1340,7 @@ namespace Flax.Build.Bindings
                     public static class NativeToManaged
                     {
                         public static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{{classInfo.Name}}>(ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged));
+                        public static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => ManagedHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);
                         public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.NativeToManaged.Free(unmanaged);
                     }
                 #if FLAX_EDITOR
@@ -1347,6 +1348,7 @@ namespace Flax.Build.Bindings
                 #endif
                     public static class ManagedToNative
                     {
+                        public static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{{classInfo.Name}}>(ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged));
                         public static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => ManagedHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);
                         public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.ManagedToNative.Free(unmanaged);
                     }
@@ -1510,8 +1512,8 @@ namespace Flax.Build.Bindings
                                 type = "IntPtr";
                             else if (type == "bool")
                                 type = "byte";
-                            else if (type == "object")
-                                type = "NativeVariant";
+                            else if (fieldInfo.Type.Type == "Variant")
+                                type = "IntPtr";
                             else if (internalType)
                             {
                                 internalTypeMarshaller = type + "Marshaller";
@@ -1527,9 +1529,6 @@ namespace Flax.Build.Bindings
                         // Generate struct constructor/getter and deconstructor/setter function
                         if (fieldInfo.NoArray && fieldInfo.Type.IsArray)
                             continue;
-
-                        if (type == "NativeVariant")
-                            continue; // TODO: FIXME
 
                         if (useSeparator)
                         {
@@ -1632,6 +1631,12 @@ namespace Flax.Build.Bindings
                             toManagedContent.Append($"managed.{fieldInfo.Name} != 0");
                             toNativeContent.Append($"managed.{fieldInfo.Name} ? (byte)1 : (byte)0");
                         }
+                        else if (fieldInfo.Type.Type == "Variant")
+                        {
+                            // Variant passed as boxed object handle
+                            toManagedContent.Append($"ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(managed.{fieldInfo.Name})");
+                            toNativeContent.Append($"ManagedHandleMarshaller.NativeToManaged.ConvertToUnmanaged(managed.{fieldInfo.Name})");
+                        }
                         else if (internalType)
                         {
                             toManagedContent.Append($"{internalTypeMarshaller}.ToManaged(managed.{fieldInfo.Name})");
@@ -1668,6 +1673,7 @@ namespace Flax.Build.Bindings
                     contents.Append(indent).AppendLine("[HideInEditor]");
                 contents.Append(indent).AppendLine("public static class NativeToManaged").Append(indent).AppendLine("{");
                 contents.Append(indent2).AppendLine($"public static {structureInfo.Name} ConvertToManaged({structureInfo.Name}Internal unmanaged) => {marshallerName}.ToManaged(unmanaged);");
+                contents.Append(indent2).AppendLine($"public static {structureInfo.Name}Internal ConvertToUnmanaged({structureInfo.Name} managed) => {marshallerName}.ToNative(managed);");
                 contents.Append(indent2).AppendLine($"public static void Free({structureInfo.Name}Internal unmanaged)");
                 contents.Append(indent2).AppendLine("{").Append(indent3).AppendLine(freeContents2.Replace("\n", "\n" + indent3).ToString().TrimEnd()).Append(indent2).AppendLine("}");
                 contents.Append(indent).AppendLine("}");
@@ -1676,6 +1682,7 @@ namespace Flax.Build.Bindings
                 if (buildData.Target != null && buildData.Target.IsEditor)
                     contents.Append(indent).AppendLine("[HideInEditor]");
                 contents.Append(indent).AppendLine($"public static class ManagedToNative").Append(indent).AppendLine("{");
+                contents.Append(indent2).AppendLine($"public static {structureInfo.Name} ConvertToManaged({structureInfo.Name}Internal unmanaged) => {marshallerName}.ToManaged(unmanaged);");
                 contents.Append(indent2).AppendLine($"public static {structureInfo.Name}Internal ConvertToUnmanaged({structureInfo.Name} managed) => {marshallerName}.ToNative(managed);");
                 contents.Append(indent2).AppendLine($"public static void Free({structureInfo.Name}Internal unmanaged) => {marshallerName}.Free(unmanaged);");
                 contents.Append(indent).AppendLine("}");
@@ -1762,6 +1769,10 @@ namespace Flax.Build.Bindings
                     {
                         // char's are not blittable, store as short instead
                         contents.Append($"fixed short {fieldInfo.Name}0[{fieldInfo.Type.ArraySize}]; // {managedType}*").AppendLine();
+                    }
+                    else if (managedType == "byte")
+                    {
+                        contents.Append($"fixed byte {fieldInfo.Name}0[{fieldInfo.Type.ArraySize}]; // {managedType}*").AppendLine();
                     }
                     else
 #endif

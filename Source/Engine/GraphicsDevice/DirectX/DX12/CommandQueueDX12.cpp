@@ -111,7 +111,7 @@ bool CommandQueueDX12::Init()
     desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
     desc.NodeMask = 0;
     HRESULT result = _device->GetDevice()->CreateCommandQueue(&desc, IID_PPV_ARGS(&_commandQueue));
-    LOG_DIRECTX_RESULT_WITH_RETURN(result);
+    LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 #if GPU_ENABLE_RESOURCE_NAMING
     _commandQueue->SetName(TEXT("CommandQueueDX12::CommandQueue"));
 #endif
@@ -148,7 +148,7 @@ void CommandQueueDX12::WaitForGPU()
 
 uint64 CommandQueueDX12::ExecuteCommandList(ID3D12CommandList* list)
 {
-    VALIDATE_DIRECTX_RESULT((static_cast<ID3D12GraphicsCommandList*>(list))->Close());
+    VALIDATE_DIRECTX_CALL((static_cast<ID3D12GraphicsCommandList*>(list))->Close());
 
     _commandQueue->ExecuteCommandLists(1, &list);
 

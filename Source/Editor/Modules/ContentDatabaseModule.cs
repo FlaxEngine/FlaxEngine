@@ -643,7 +643,8 @@ namespace FlaxEditor.Modules
         /// Deletes the specified item.
         /// </summary>
         /// <param name="item">The item.</param>
-        public void Delete(ContentItem item)
+        /// <param name="deletedByUser">If the file was deleted by the user and not outside the editor.</param>
+        public void Delete(ContentItem item, bool deletedByUser = false)
         {
             if (item == null)
                 throw new ArgumentNullException();
@@ -667,12 +668,12 @@ namespace FlaxEditor.Modules
                     var children = folder.Children.ToArray();
                     for (int i = 0; i < children.Length; i++)
                     {
-                        Delete(children[i]);
+                        Delete(children[i], deletedByUser);
                     }
                 }
 
                 // Remove directory
-                if (Directory.Exists(path))
+                if (deletedByUser && Directory.Exists(path))
                 {
                     try
                     {
@@ -701,7 +702,7 @@ namespace FlaxEditor.Modules
                     // Delete asset by using content pool
                     FlaxEngine.Content.DeleteAsset(path);
                 }
-                else
+                else if (deletedByUser)
                 {
                     // Delete file
                     if (File.Exists(path))
@@ -847,7 +848,7 @@ namespace FlaxEditor.Modules
                         Editor.Log(string.Format($"Content item \'{child.Path}\' has been removed"));
 
                         // Destroy it
-                        Delete(child);
+                        Delete(child, false);
 
                         i--;
                     }

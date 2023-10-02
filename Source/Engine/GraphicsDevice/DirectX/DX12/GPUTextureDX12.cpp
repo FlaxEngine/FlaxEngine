@@ -113,7 +113,7 @@ bool GPUTextureDX12::OnInit()
         resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
         resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
         auto result = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&resource));
-        LOG_DIRECTX_RESULT_WITH_RETURN(result);
+        LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
         initResource(resource, D3D12_RESOURCE_STATE_COPY_DEST, 1);
         DX_SET_DEBUG_NAME(_resource, GetName());
         _memoryUsage = totalSize;
@@ -184,7 +184,7 @@ bool GPUTextureDX12::OnInit()
 
     // Create texture
     auto result = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, initialState, clearValuePtr, IID_PPV_ARGS(&resource));
-    LOG_DIRECTX_RESULT_WITH_RETURN(result);
+    LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
     // Set state
     bool isRead = useSRV || useUAV;

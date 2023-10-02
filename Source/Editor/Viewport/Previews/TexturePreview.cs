@@ -500,7 +500,7 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         protected override void CalculateTextureRect(out Rectangle rect)
         {
-            CalculateTextureRect(_asset?.Size ?? new Float2(100), Size, out rect);
+            CalculateTextureRect(_asset != null ? _asset.Size : new Float2(100), Size, out rect);
         }
 
         /// <inheritdoc />
@@ -549,7 +549,7 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         protected override void CalculateTextureRect(out Rectangle rect)
         {
-            CalculateTextureRect(_asset?.Size ?? new Float2(100), Size, out rect);
+            CalculateTextureRect(_asset != null ? _asset.Size : new Float2(100), Size, out rect);
         }
 
         /// <inheritdoc />
@@ -604,7 +604,7 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         protected override void CalculateTextureRect(out Rectangle rect)
         {
-            CalculateTextureRect(_asset?.Size ?? new Float2(100), Size, out rect);
+            CalculateTextureRect(_asset != null ? _asset.Size : new Float2(100), Size, out rect);
         }
 
         /// <inheritdoc />
@@ -659,7 +659,7 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         protected override void CalculateTextureRect(out Rectangle rect)
         {
-            CalculateTextureRect(_asset?.Size ?? new Float2(100), Size, out rect);
+            CalculateTextureRect(_asset != null ? _asset.Size : new Float2(100), Size, out rect);
         }
 
         /// <inheritdoc />
