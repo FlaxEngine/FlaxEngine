@@ -197,7 +197,7 @@ namespace FlaxEditor.Surface
             Float2 pointToRound = point;
             pointToRound.X = round(pointToRound.X);
             pointToRound.Y = round(pointToRound.Y);
-            
+
             return pointToRound;
         }
 

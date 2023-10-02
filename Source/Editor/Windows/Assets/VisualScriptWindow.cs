@@ -597,7 +597,7 @@ namespace FlaxEditor.Windows.Assets
             _propertiesEditor.Select(_properties);
 
             // Toolstrip
-            SurfaceUtils.VisjectCommonToolstripSetup(editor, _toolstrip, _undo, 
+            SurfaceUtils.VisjectCommonToolstripSetup(editor, _toolstrip, _undo,
                 Save, ShowWholeGraph, ToggleGridSnap, InputActions,
                 out _saveButton, out _undoButton, out _redoButton, out _gridSnapButton);
 

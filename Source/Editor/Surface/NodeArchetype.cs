@@ -1,11 +1,8 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.Scripting;
 using FlaxEngine;
-using FlaxEngine.GUI;
 
 namespace FlaxEditor.Surface
 {
@@ -181,50 +178,10 @@ namespace FlaxEditor.Surface
         /// </summary>
         public Func<Elements.Box, ScriptType, ScriptType> DependentBoxFilter;
 
-        private NodeElementArchetype[] _elements;
         /// <summary>
         /// Array with default elements descriptions.
         /// </summary>
-        public NodeElementArchetype[] Elements
-        {
-            get
-            {
-                return _elements;
-            }
-            set
-            {
-                _elements = value;
-
-                /*Float2 topLeft = Float2.Zero;
-                Float2 bottomRight = Float2.Zero;
-                List<Float2[]> textRectangles = new List<Float2[]>();
-
-                foreach (NodeElementArchetype nodeElementType in _elements)
-                {
-                    bool isInputElement = nodeElementType.Type == NodeElementType.Input;
-                    bool isOutputElement = nodeElementType.Type == NodeElementType.Output;
-                    if (isInputElement)
-                    {
-                        // Text will be to the right
-                    }
-
-                    // In case of negatives.. most likely not needed.
-                    topLeft.X = Math.Min(topLeft.X, nodeElementType.Position.X);
-                    topLeft.Y = Math.Min(topLeft.Y, nodeElementType.Position.Y);
-
-                    bottomRight.X = Math.Max(bottomRight.X, nodeElementType.Position.X + nodeElementType.Size.X);
-                    bottomRight.Y = Math.Max(bottomRight.Y, nodeElementType.Position.Y + nodeElementType.Size.Y);
-                }
-
-                float paddingConst = 15;
-
-                float sizeXElements = bottomRight.X - topLeft.X + paddingConst;
-                float sizeYElements = bottomRight.Y - topLeft.Y + paddingConst;
-                float titleSize = Style.Current.FontLarge.MeasureText(Title).X + paddingConst;
-
-                Size = new Float2(Math.Max(sizeXElements, titleSize), sizeYElements);*/
-            }
-        }
+        public NodeElementArchetype[] Elements;
 
         /// <summary>
         /// Tries to parse some text and extract the data from it.

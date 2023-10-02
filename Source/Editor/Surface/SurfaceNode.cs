@@ -165,7 +165,7 @@ namespace FlaxEditor.Surface
         {
             if (Surface == null)
                 return;
-            Size = CalculateNodeSize(width, height); 
+            Size = CalculateNodeSize(width, height);
 
             // Update boxes on width change
             //if (!Mathf.NearEqual(prevSize.X, Size.X))
@@ -228,8 +228,7 @@ namespace FlaxEditor.Surface
             var rightWidth = 40.0f;
             var boxLabelFont = Style.Current.FontSmall;
             var titleLabelFont = Style.Current.FontLarge;
-            int childrenCount = Children.Count;
-            for (int i = 0; i < childrenCount; i++)
+            for (int i = 0; i < Children.Count; i++)
             {
                 var child = Children[i];
                 if (child is Panel panel)
@@ -342,8 +341,7 @@ namespace FlaxEditor.Surface
             if (element is Control control)
                 AddChild(control);
 
-            if (!(element is Panel panel))
-                ResizeAuto();
+            ResizeAuto(); // Resize when an element is added to avoid hardcoded sizes.
         }
 
         /// <summary>
