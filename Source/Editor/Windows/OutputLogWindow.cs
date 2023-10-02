@@ -195,7 +195,7 @@ namespace FlaxEditor.Windows
             _contextMenu.AddButton("Clear log", Clear);
             _contextMenu.AddButton("Copy selection", _output.Copy);
             _contextMenu.AddButton("Select All", _output.SelectAll);
-            _contextMenu.AddButton("Show in explorer", () => FileSystem.ShowFileExplorer(Path.Combine(Globals.ProjectFolder, "Logs")));
+            _contextMenu.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(Path.Combine(Globals.ProjectFolder, "Logs")));
             _contextMenu.AddButton("Scroll to bottom", () => { _vScroll.TargetValue = _vScroll.Maximum; }).Icon = Editor.Icons.ArrowDown12;
 
             // Setup editor options
