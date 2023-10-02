@@ -78,6 +78,30 @@ namespace FlaxEditor.Options
 
         #endregion
 
+        #region File
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("File"), EditorOrder(300)]
+        public InputBinding SaveScenes = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("File"), EditorOrder(310)]
+        public InputBinding CloseScenes = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("File"), EditorOrder(320)]
+        public InputBinding OpenScriptsProject = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("File"), EditorOrder(330)]
+        public InputBinding GenerateScriptsProject = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("File"), EditorOrder(340)]
+        public InputBinding RecompileScripts = new InputBinding(KeyboardKeys.None);
+
+        #endregion
+
         #region Scene
 
         [DefaultValue(typeof(InputBinding), "End")]
@@ -85,35 +109,115 @@ namespace FlaxEditor.Options
         public InputBinding SnapToGround = new InputBinding(KeyboardKeys.End);
 
         [DefaultValue(typeof(InputBinding), "F5")]
-        [EditorDisplay("Scene"), EditorOrder(510)]
+        [EditorDisplay("Scene", "Play/Stop"), EditorOrder(510)]
         public InputBinding Play = new InputBinding(KeyboardKeys.F5);
 
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Scene", "Play Current Scenes/Stop"), EditorOrder(520)]
+        public InputBinding PlayCurrentScenes = new InputBinding(KeyboardKeys.None);
+
         [DefaultValue(typeof(InputBinding), "F6")]
-        [EditorDisplay("Scene"), EditorOrder(520)]
+        [EditorDisplay("Scene"), EditorOrder(530)]
         public InputBinding Pause = new InputBinding(KeyboardKeys.F6);
 
         [DefaultValue(typeof(InputBinding), "F11")]
-        [EditorDisplay("Scene"), EditorOrder(530)]
+        [EditorDisplay("Scene"), EditorOrder(540)]
         public InputBinding StepFrame = new InputBinding(KeyboardKeys.F11);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Scene", "Cook & Run"), EditorOrder(550)]
+        public InputBinding CookAndRun = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Scene", "Run cooked game"), EditorOrder(560)]
+        public InputBinding RunCookedGame = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Scene", "Move actor to viewport"), EditorOrder(570)]
+        public InputBinding MoveActorToViewport = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Scene", "Align actor with viewport"), EditorOrder(571)]
+        public InputBinding AlignActorWithViewport = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Scene", "Align viewport with actor"), EditorOrder(572)]
+        public InputBinding AlignViewportWithActor = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Scene"), EditorOrder(573)]
+        public InputBinding PilotActor = new InputBinding(KeyboardKeys.None);
+
+        #endregion
+
+        #region Tools
+
+        [DefaultValue(typeof(InputBinding), "Ctrl+F10")]
+        [EditorDisplay("Tools", "Build scenes data"), EditorOrder(600)]
+        public InputBinding BuildScenesData = new InputBinding(KeyboardKeys.F10, KeyboardKeys.Control);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Tools", "Bake lightmaps"), EditorOrder(601)]
+        public InputBinding BakeLightmaps = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Tools", "Clear lightmaps data"), EditorOrder(602)]
+        public InputBinding ClearLightmaps = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Tools", "Bake all env probes"), EditorOrder(603)]
+        public InputBinding BakeEnvProbes = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Tools", "Build CSG mesh"), EditorOrder(604)]
+        public InputBinding BuildCSG = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Tools", "Build Nav Mesh"), EditorOrder(605)]
+        public InputBinding BuildNav = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Tools", "Build all meshes SDF"), EditorOrder(606)]
+        public InputBinding BuildSDF = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "F12")]
+        [EditorDisplay("Tools", "Take screenshot"), EditorOrder(607)]
+        public InputBinding TakeScreenshot = new InputBinding(KeyboardKeys.F12);
+
+        #endregion
+
+        #region Profiler
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Profiler", "Open Profiler Window"), EditorOrder(630)]
+        public InputBinding ProfilerWindow = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Profiler", "Start/Stop Profiler"), EditorOrder(631)]
+        public InputBinding ProfilerStartStop = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Profiler", "Clear Profiler data"), EditorOrder(632)]
+        public InputBinding ProfilerClear = new InputBinding(KeyboardKeys.None);
 
         #endregion
 
         #region Debugger
 
         [DefaultValue(typeof(InputBinding), "F5")]
-        [EditorDisplay("Debugger", "Continue"), EditorOrder(610)]
+        [EditorDisplay("Debugger", "Continue"), EditorOrder(810)]
         public InputBinding DebuggerContinue = new InputBinding(KeyboardKeys.F5);
 
         [DefaultValue(typeof(InputBinding), "F10")]
-        [EditorDisplay("Debugger", "Step Over"), EditorOrder(620)]
+        [EditorDisplay("Debugger", "Step Over"), EditorOrder(820)]
         public InputBinding DebuggerStepOver = new InputBinding(KeyboardKeys.F10);
 
         [DefaultValue(typeof(InputBinding), "F11")]
-        [EditorDisplay("Debugger", "Step Into"), EditorOrder(630)]
+        [EditorDisplay("Debugger", "Step Into"), EditorOrder(830)]
         public InputBinding DebuggerStepInto = new InputBinding(KeyboardKeys.F11);
 
         [DefaultValue(typeof(InputBinding), "Shift+F11")]
-        [EditorDisplay("Debugger", "Step Out"), EditorOrder(640)]
+        [EditorDisplay("Debugger", "Step Out"), EditorOrder(840)]
         public InputBinding DebuggerStepOut = new InputBinding(KeyboardKeys.F11, KeyboardKeys.Shift);
 
         #endregion
@@ -131,6 +235,10 @@ namespace FlaxEditor.Options
         [DefaultValue(typeof(InputBinding), "Alpha3")]
         [EditorDisplay("Gizmo"), EditorOrder(1020)]
         public InputBinding ScaleMode = new InputBinding(KeyboardKeys.Alpha3);
+
+        [DefaultValue(typeof(InputBinding), "Alpha4")]
+        [EditorDisplay("Gizmo"), EditorOrder(1030)]
+        public InputBinding ToggleTransformSpace = new InputBinding(KeyboardKeys.Alpha4);
 
         #endregion
 
@@ -160,28 +268,40 @@ namespace FlaxEditor.Options
         [EditorDisplay("Viewport"), EditorOrder(1550)]
         public InputBinding Down = new InputBinding(KeyboardKeys.Q);
 
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Viewport", "Toggle Camera Rotation"), EditorOrder(1560)]
+        public InputBinding CameraToggleRotation = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Viewport", "Increase Camera Move Speed"), EditorOrder(1570)]
+        public InputBinding CameraIncreaseMoveSpeed = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Viewport", "Decrease Camera Move Speed"), EditorOrder(1571)]
+        public InputBinding CameraDecreaseMoveSpeed = new InputBinding(KeyboardKeys.None);
+
         [DefaultValue(typeof(InputBinding), "Numpad0")]
-        [EditorDisplay("Viewport"), EditorOrder(1600)]
+        [EditorDisplay("Viewport"), EditorOrder(1700)]
         public InputBinding ViewpointFront = new InputBinding(KeyboardKeys.Numpad0);
 
         [DefaultValue(typeof(InputBinding), "Numpad5")]
-        [EditorDisplay("Viewport"), EditorOrder(1610)]
+        [EditorDisplay("Viewport"), EditorOrder(1710)]
         public InputBinding ViewpointBack = new InputBinding(KeyboardKeys.Numpad5);
 
         [DefaultValue(typeof(InputBinding), "Numpad4")]
-        [EditorDisplay("Viewport"), EditorOrder(1620)]
+        [EditorDisplay("Viewport"), EditorOrder(1720)]
         public InputBinding ViewpointLeft = new InputBinding(KeyboardKeys.Numpad4);
 
         [DefaultValue(typeof(InputBinding), "Numpad6")]
-        [EditorDisplay("Viewport"), EditorOrder(1630)]
+        [EditorDisplay("Viewport"), EditorOrder(1730)]
         public InputBinding ViewpointRight = new InputBinding(KeyboardKeys.Numpad6);
 
         [DefaultValue(typeof(InputBinding), "Numpad8")]
-        [EditorDisplay("Viewport"), EditorOrder(1640)]
+        [EditorDisplay("Viewport"), EditorOrder(1740)]
         public InputBinding ViewpointTop = new InputBinding(KeyboardKeys.Numpad8);
 
         [DefaultValue(typeof(InputBinding), "Numpad2")]
-        [EditorDisplay("Viewport"), EditorOrder(1650)]
+        [EditorDisplay("Viewport"), EditorOrder(1750)]
         public InputBinding ViewpointBottom = new InputBinding(KeyboardKeys.Numpad2);
 
         #endregion

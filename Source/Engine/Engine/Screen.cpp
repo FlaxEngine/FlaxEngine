@@ -181,6 +181,11 @@ void Screen::SetGameWindowMode(GameWindowMode windowMode)
 #endif
 }
 
+Window* Screen::GetMainWindow()
+{
+    return Engine::MainWindow;
+}
+
 void ScreenService::Update()
 {
 #if USE_EDITOR

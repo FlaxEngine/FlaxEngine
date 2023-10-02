@@ -26,6 +26,7 @@ namespace FlaxEditor.Windows
             bool hasSthSelected = Editor.SceneEditing.HasSthSelected;
             bool isSingleActorSelected = Editor.SceneEditing.SelectionCount == 1 && Editor.SceneEditing.Selection[0] is ActorNode;
             bool canEditScene = Editor.StateMachine.CurrentState.CanEditScene && Level.IsAnySceneLoaded;
+            var inputOptions = Editor.Options.Options.Input;
 
             // Create popup
 
@@ -44,17 +45,17 @@ namespace FlaxEditor.Windows
 
             if (hasSthSelected)
             {
-                contextMenu.AddButton(Editor.Windows.EditWin.IsPilotActorActive ? "Stop piloting actor" : "Pilot actor", Editor.UI.PilotActor);
+                contextMenu.AddButton(Editor.Windows.EditWin.IsPilotActorActive ? "Stop piloting actor" : "Pilot actor", inputOptions.PilotActor, Editor.UI.PilotActor);
             }
 
             contextMenu.AddSeparator();
 
             // Basic editing options
 
-            b = contextMenu.AddButton("Rename", Rename);
+            b = contextMenu.AddButton("Rename", inputOptions.Rename, Rename);
             b.Enabled = isSingleActorSelected;
 
-            b = contextMenu.AddButton("Duplicate", Editor.SceneEditing.Duplicate);
+            b = contextMenu.AddButton("Duplicate", inputOptions.Duplicate, Editor.SceneEditing.Duplicate);
             b.Enabled = hasSthSelected;
 
             if (isSingleActorSelected)
@@ -116,17 +117,17 @@ namespace FlaxEditor.Windows
                     }
                 }
             }
-            b = contextMenu.AddButton("Delete", Editor.SceneEditing.Delete);
+            b = contextMenu.AddButton("Delete", inputOptions.Delete, Editor.SceneEditing.Delete);
             b.Enabled = hasSthSelected;
 
             contextMenu.AddSeparator();
 
-            b = contextMenu.AddButton("Copy", Editor.SceneEditing.Copy);
+            b = contextMenu.AddButton("Copy", inputOptions.Copy, Editor.SceneEditing.Copy);
 
             b.Enabled = hasSthSelected;
-            contextMenu.AddButton("Paste", Editor.SceneEditing.Paste);
+            contextMenu.AddButton("Paste", inputOptions.Paste, Editor.SceneEditing.Paste);
 
-            b = contextMenu.AddButton("Cut", Editor.SceneEditing.Cut);
+            b = contextMenu.AddButton("Cut", inputOptions.Cut, Editor.SceneEditing.Cut);
             b.Enabled = canEditScene;
 
             // Prefab options

@@ -623,13 +623,18 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             _label = layout.ClickableLabel(GetText(out _)).CustomControl;
             _label.RightClick += ShowPicker;
+            var buttonText = "...";
             var button = new Button
             {
                 Size = new Float2(16.0f),
-                Text = "...",
+                Text = buttonText,
                 TooltipText = "Edit...",
                 Parent = _label,
             };
+            var textSize = FlaxEngine.GUI.Style.Current.FontMedium.MeasureText(buttonText);
+            if (textSize.Y > button.Width)
+                button.Width = textSize.Y + 2;
+            
             button.SetAnchorPreset(AnchorPresets.MiddleRight, false, true);
             button.Clicked += ShowPicker;
         }
@@ -674,9 +679,9 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             set
             {
-                if (Values[0] is Tag[])
+                if (Values[0] is Tag[] || Values.Type.Type == typeof(Tag[]))
                     SetValue(value);
-                if (Values[0] is List<Tag>)
+                else if (Values[0] is List<Tag> || Values.Type.Type == typeof(List<Tag>))
                     SetValue(new List<Tag>(value));
             }
         }

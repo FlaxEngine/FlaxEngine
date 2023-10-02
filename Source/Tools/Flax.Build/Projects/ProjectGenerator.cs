@@ -52,7 +52,7 @@ namespace Flax.Build.Projects
         /// Generates the project.
         /// </summary>
         /// <param name="project">The project.</param>
-        public abstract void GenerateProject(Project project);
+        public abstract void GenerateProject(Project project, string solutionPath);
 
         /// <summary>
         /// Generates the solution.

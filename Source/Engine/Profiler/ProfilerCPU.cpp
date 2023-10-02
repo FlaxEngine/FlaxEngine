@@ -129,8 +129,15 @@ void ProfilerCPU::Thread::EndEvent()
 {
     const double time = Platform::GetTimeSeconds() * 1000.0;
     _depth--;
-    Event& e = (Buffer.Last()--).Event();
-    e.End = time;
+    for (auto i = Buffer.Last(); i != Buffer.Begin(); --i)
+    {
+        Event& e = i.Event();
+        if (e.End <= 0)
+        {
+            e.End = time;
+            break;
+        }
+    }
 }
 
 bool ProfilerCPU::IsProfilingCurrentThread()
@@ -205,7 +212,7 @@ int32 ProfilerCPU::BeginEvent(const char* name)
 
 void ProfilerCPU::EndEvent(int32 index)
 {
-    if (Enabled && Thread::Current)
+    if (index != -1 && Thread::Current)
         Thread::Current->EndEvent(index);
 }
 
