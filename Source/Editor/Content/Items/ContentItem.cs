@@ -165,7 +165,7 @@ namespace FlaxEditor.Content
         /// <summary>
         /// The default text height.
         /// </summary>
-        public const int DefaultTextHeight = 42;
+        public const int DefaultTextHeight = 40;
 
         /// <summary>
         /// The default thumbnail size.
@@ -451,7 +451,7 @@ namespace FlaxEditor.Content
                 case ContentViewType.Tiles:
                 {
                     var textHeight = DefaultTextHeight * size.X / DefaultWidth;
-                    return new Rectangle(0, size.Y - textHeight, size.X, textHeight);
+                    return new Rectangle(1, size.Y - textHeight + 2, size.X - 2, textHeight-2);
                 }
                 case ContentViewType.List:
                 {
@@ -677,13 +677,14 @@ namespace FlaxEditor.Content
             var textRect = TextRectangle;
             Rectangle thumbnailRect;
             TextAlignment nameAlignment;
+            nameAlignment = TextAlignment.Center;
             switch (view.ViewType)
             {
             case ContentViewType.Tiles:
             {
                 var thumbnailSize = size.X;
                 thumbnailRect = new Rectangle(0, 0, thumbnailSize, thumbnailSize);
-                nameAlignment = TextAlignment.Center;
+                
                 
                 if (this is ContentFolder)
                 {
@@ -691,13 +692,14 @@ namespace FlaxEditor.Content
                     var shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
                     var color = Color.Black.AlphaMultiplied(0.2f);
                     Render2D.FillRectangle(shadowRect, color);
-                    Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
+                    
                     
                     if (isSelected)
                         Render2D.FillRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
                     else if (IsMouseOver)
-                        Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
-
+                        Render2D.FillRectangle(clientRect, style.BackgroundHighlighted.RGBMultiplied(0.75f));
+                    else
+                        Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
                     DrawThumbnail(ref thumbnailRect, false);
                 }
                 else
@@ -706,25 +708,18 @@ namespace FlaxEditor.Content
                     var shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
                     var color = Color.Black.AlphaMultiplied(0.2f);
                     Render2D.FillRectangle(shadowRect, color);
-                    
-                    Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
-                    Render2D.FillRectangle(TextRectangle, style.LightBackground);
-                    
+
                     var accentHeight = 2 * view.ViewScale;
                     var barRect = new Rectangle(0, thumbnailRect.Height - accentHeight, clientRect.Width, accentHeight);
-                    Render2D.FillRectangle(barRect, Color.DimGray);
-                    
-                    DrawThumbnail(ref thumbnailRect, false);
+                            
                     if (isSelected)
-                    {
-                        Render2D.FillRectangle(textRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
-                        Render2D.DrawRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
-                    }
+                        Render2D.FillRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
                     else if (IsMouseOver)
-                    {
-                        Render2D.FillRectangle(textRect, style.BackgroundHighlighted);
-                        Render2D.DrawRectangle(clientRect, style.BackgroundHighlighted);
-                    }
+                        Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
+                    else
+                        Render2D.FillRectangle(clientRect, style.LightBackground);
+                    Render2D.FillRectangle(barRect, Color.DimGray);
+                    DrawThumbnail(ref thumbnailRect, false);
                 }
                 break;
             }
@@ -747,7 +742,7 @@ namespace FlaxEditor.Content
             
             // Draw short name
             Render2D.PushClip(ref textRect);
-            Render2D.DrawText(style.FontMedium, ShowFileExtension || view.ShowFileExtensions ? FileName : ShortName, textRect, style.Foreground, nameAlignment, TextAlignment.Center, TextWrapping.WrapWords, 1f, 0.95f);
+            Render2D.DrawText(style.FontMedium, ShowFileExtension || view.ShowFileExtensions ? FileName : ShortName, textRect, style.Foreground, nameAlignment, TextAlignment.Center, TextWrapping.WrapWords, 1, 0.95f);
             Render2D.PopClip();
         }
 

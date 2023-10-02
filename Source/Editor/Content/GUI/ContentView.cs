@@ -714,54 +714,66 @@ namespace FlaxEditor.Content.GUI
         protected override void PerformLayoutBeforeChildren()
         {
             float width = GetClientArea().Width;
-            float x = 0, y = 1;
-            float viewScale = _viewScale * 0.97f;
-
+            float x = 0, y = 0;
+            float viewScale = _viewScale * 1.15f;
+            float itemsHeight = 0;
             switch (ViewType)
             {
-            case ContentViewType.Tiles:
-            {
-                float defaultItemsWidth = ContentItem.DefaultWidth * viewScale;
-                int itemsToFit = Mathf.FloorToInt(width / defaultItemsWidth) - 1;
-                if (itemsToFit < 1)
-                    itemsToFit = 1;
-                int xSpace = 4;
-                float itemsWidth = width / Mathf.Max(itemsToFit, 1) - xSpace;
-                float itemsHeight = itemsWidth / defaultItemsWidth * (ContentItem.DefaultHeight * viewScale);
-                var flooredItemsWidth = Mathf.Floor(itemsWidth);
-                var flooredItemsHeight = Mathf.Floor(itemsHeight);
-                x = itemsToFit == 1 ? 1 : itemsWidth / itemsToFit + xSpace;
-                for (int i = 0; i < _children.Count; i++)
-                {
-                    var c = _children[i];
-                    c.Bounds = new Rectangle(Mathf.Floor(x), Mathf.Floor(y), flooredItemsWidth, flooredItemsHeight);
-
-                    x += (itemsWidth + xSpace) + (itemsWidth + xSpace) / itemsToFit;
-                    if (x + itemsWidth > width)
+                case ContentViewType.Tiles:
+                    const float Spacing = 1;
+                    float xSpace = (ContentItem.DefaultMarginSize + Spacing) * viewScale;
+                    float ySpace = (ContentItem.DefaultMarginSize + Spacing) * viewScale;
+                    float itemsWidth = ContentItem.DefaultWidth * viewScale ;
+                    itemsHeight = ContentItem.DefaultHeight * viewScale;
+                    //width - element / element gives elementRowCount, * it by element width gives actual size
+                    //where last elemet is - it by from width gives offset to the edge now because 
+                    //the for loop contans x += itemsWidth + xSpace;
+                    //so if all of it gets / by element count it will give the scaling
+                    float elementRowCount = Mathf.Floor(width / (itemsWidth + xSpace));
+                    float lastElement = Mathf.Max((elementRowCount * (itemsWidth + xSpace)), 0);
+                    if (_children.Count > elementRowCount)
                     {
-                        x = itemsToFit == 1 ? 1 : itemsWidth / itemsToFit + xSpace;
-                        y += itemsHeight + 7;
+                        float lastElementDistanceFromEdge = width - lastElement;
+                        float scalePerElement = (lastElementDistanceFromEdge / (elementRowCount + 1));
+                        itemsWidth += scalePerElement;
+                        itemsHeight += scalePerElement;
+                        lastElement -= itemsWidth + xSpace;
                     }
-                }
-                if (x > 0)
-                    y += itemsHeight;
 
-                break;
-            }
-            case ContentViewType.List:
-            {
-                float itemsHeight = 50.0f * viewScale;
-                for (int i = 0; i < _children.Count; i++)
-                {
-                    var c = _children[i];
-                    c.Bounds = new Rectangle(x, y, width, itemsHeight);
-                    y += itemsHeight + 1;
-                }
-                y += 40.0f;
+                    var flooredItemsWidth = Mathf.Floor(itemsWidth);
+                    var flooredItemsHeight = Mathf.Floor(itemsHeight);
+                    x = ContentItem.DefaultMarginSize;
+                    for (int i = 0; i < _children.Count; i++)
+                    {
+                        var c = _children[i];
+                        c.Bounds = new Rectangle(x,y, flooredItemsWidth, flooredItemsHeight);
+                        if (x > lastElement)
+                        {
+                            x = ContentItem.DefaultMarginSize;
+                            y += itemsHeight + ySpace;
+                        }
+                        else
+                        {
+                            x += (itemsWidth + xSpace);
+                        }
+                    }
+                    if (x > 0)
+                        y += itemsHeight;
 
-                break;
-            }
-            default: throw new ArgumentOutOfRangeException();
+                    break;
+
+                case ContentViewType.List:
+                    itemsHeight = 50.0f * viewScale;
+                    for (int i = 0; i < _children.Count; i++)
+                    {
+                        var c = _children[i];
+                        c.Bounds = new Rectangle(x, y, width, itemsHeight);
+                        y += itemsHeight + 1;
+                    }
+                    y += 40.0f;
+
+                    break;
+                default: throw new ArgumentOutOfRangeException();
             }
 
             // Set maximum size and fit the parent container
