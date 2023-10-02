@@ -910,10 +910,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
     {
         auto& texture = data.Textures[i];
 
-        // When splitting imported meshes allow only the first mesh to import assets (mesh[0] is imported after all following ones so import assets during mesh[1])
-        if (!options.SplitObjects && options.ObjectIndex != 1 && options.ObjectIndex != -1)
-            continue;
-
         // Auto-import textures
         if (autoImportOutput.IsEmpty() || (data.Types & ImportDataTypes::Textures) == ImportDataTypes::None || texture.FilePath.IsEmpty())
             continue;
@@ -1478,7 +1474,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
 
             // Group meshes that can be merged together
             typedef Pair<int32, int32> MeshGroupKey;
-            const std::function<MeshGroupKey(MeshData* const&)> f = [](MeshData* const& x) -> MeshGroupKey
+            const Function<MeshGroupKey(MeshData* const&)> f = [](MeshData* const& x) -> MeshGroupKey
             {
                 return MeshGroupKey(x->NodeIndex, x->MaterialSlotIndex);
             };

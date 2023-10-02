@@ -11,16 +11,6 @@ for %%I in (Source\Logo.png) do if %%~zI LSS 2000 (
 call "Development\Scripts\Windows\GetMSBuildPath.bat"
 if errorlevel 1 goto Error_NoVisualStudioEnvironment
 
-if not exist "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" goto Compile
-for /f "delims=" %%i in ('"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -products * -requires Microsoft.Component.MSBuild -property installationPath') do (
-	for %%j in (15.0, Current) do (
-		if exist "%%i\MSBuild\%%j\Bin\MSBuild.exe" (
-			set MSBUILD_PATH="%%i\MSBuild\%%j\Bin\MSBuild.exe"
-			goto Compile
-		)
-	)
-)
-
 :Compile
 md Cache\Intermediate >nul 2>nul
 dir /s /b Source\Tools\Flax.Build\*.cs >Cache\Intermediate\Flax.Build.Files.txt
@@ -44,7 +34,7 @@ goto Exit
 echo CallBuildTool ERROR: The script is in invalid directory.
 goto Exit
 :Error_NoVisualStudioEnvironment
-echo CallBuildTool ERROR: Missing Visual Studio 2015 or newer.
+echo CallBuildTool ERROR: Missing Visual Studio 2022 or newer.
 goto Exit
 :Error_CompilationFailed
 echo CallBuildTool ERROR: Failed to compile Flax.Build project.

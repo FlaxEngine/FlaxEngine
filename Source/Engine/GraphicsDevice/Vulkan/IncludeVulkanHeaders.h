@@ -41,4 +41,15 @@
 #define VMA_NOT_NULL
 #include <ThirdParty/VulkanMemoryAllocator/vk_mem_alloc.h>
 
+#if PLATFORM_APPLE_FAMILY
+// Declare potentially missing extensions from newer SDKs
+#ifndef VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME
+#define VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME "VK_KHR_portability_enumeration"
+#define VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR 0x00000001
+#endif
+#ifndef VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME
+#define VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME "VK_KHR_portability_subset"
+#endif
+#endif
+
 #endif

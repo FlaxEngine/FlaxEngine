@@ -1,8 +1,10 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using FlaxEditor.CustomEditors.GUI;
+using FlaxEditor.GUI;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
-using FlaxEngine.GUI;
 
 namespace FlaxEditor.CustomEditors.Editors
 {
@@ -12,7 +14,7 @@ namespace FlaxEditor.CustomEditors.Editors
     [CustomEditor(typeof(InputEvent)), DefaultEditor]
     public class InputEventEditor : CustomEditor
     {
-        private Dropdown _dropdown;
+        private ComboBox _comboBox;
 
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.Inline;
@@ -20,23 +22,30 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
-            var dropdownElement = layout.Custom<Dropdown>();
-            _dropdown = dropdownElement.CustomControl;
-            var names = new List<LocalizedString>();
+            LinkedLabel.SetupContextMenu += OnSetupContextMenu;
+            var comboBoxElement = layout.ComboBox();
+            _comboBox = comboBoxElement.ComboBox;
+            var names = new List<string>();
             foreach (var mapping in Input.ActionMappings)
             {
                 if (!names.Contains(mapping.Name))
                     names.Add(mapping.Name);
             }
-            _dropdown.Items = names;
+            _comboBox.Items = names;
             if (Values[0] is InputEvent inputEvent && names.Contains(inputEvent.Name))
-                _dropdown.SelectedItem = inputEvent.Name;
-            _dropdown.SelectedIndexChanged += OnSelectedIndexChanged;
+                _comboBox.SelectedItem = inputEvent.Name;
+            _comboBox.SelectedIndexChanged += OnSelectedIndexChanged;
         }
 
-        private void OnSelectedIndexChanged(Dropdown dropdown)
+        private void OnSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkededitor)
         {
-            SetValue(new InputEvent(dropdown.SelectedItem));
+            var button = menu.AddButton("Set to null");
+            button.Clicked += () => _comboBox.SelectedItem = null;
+        }
+
+        private void OnSelectedIndexChanged(ComboBox comboBox)
+        {
+            SetValue(comboBox.SelectedItem == null ? null : new InputEvent(comboBox.SelectedItem));
         }
 
         /// <inheritdoc />
@@ -49,17 +58,21 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             else
             {
-                if (Values[0] is InputEvent inputEvent && _dropdown.Items.Contains(inputEvent.Name))
-                    _dropdown.SelectedItem = inputEvent.Name;
+                if (Values[0] is InputEvent inputEvent && _comboBox.Items.Contains(inputEvent.Name))
+                    _comboBox.SelectedItem = inputEvent.Name;
+                else
+                    _comboBox.SelectedItem = null;
             }
         }
 
         /// <inheritdoc />
         protected override void Deinitialize()
         {
-            if (_dropdown != null)
-                _dropdown.SelectedIndexChanged -= OnSelectedIndexChanged;
-            _dropdown = null;
+            if (LinkedLabel != null)
+                LinkedLabel.SetupContextMenu -= OnSetupContextMenu;
+            if (_comboBox != null)
+                _comboBox.SelectedIndexChanged -= OnSelectedIndexChanged;
+            _comboBox = null;
         }
     }
 
@@ -69,7 +82,7 @@ namespace FlaxEditor.CustomEditors.Editors
     [CustomEditor(typeof(InputAxis)), DefaultEditor]
     public class InputAxisEditor : CustomEditor
     {
-        private Dropdown _dropdown;
+        private ComboBox _comboBox;
 
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.Inline;
@@ -77,23 +90,30 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
-            var dropdownElement = layout.Custom<Dropdown>();
-            _dropdown = dropdownElement.CustomControl;
-            var names = new List<LocalizedString>();
+            LinkedLabel.SetupContextMenu += OnSetupContextMenu;
+            var comboBoxElement = layout.ComboBox();
+            _comboBox = comboBoxElement.ComboBox;
+            var names = new List<string>();
             foreach (var mapping in Input.AxisMappings)
             {
                 if (!names.Contains(mapping.Name))
                     names.Add(mapping.Name);
             }
-            _dropdown.Items = names;
+            _comboBox.Items = names;
             if (Values[0] is InputAxis inputAxis && names.Contains(inputAxis.Name))
-                _dropdown.SelectedItem = inputAxis.Name;
-            _dropdown.SelectedIndexChanged += OnSelectedIndexChanged;
+                _comboBox.SelectedItem = inputAxis.Name;
+            _comboBox.SelectedIndexChanged += OnSelectedIndexChanged;
         }
 
-        private void OnSelectedIndexChanged(Dropdown dropdown)
+        private void OnSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkededitor)
         {
-            SetValue(new InputAxis(dropdown.SelectedItem));
+            var button = menu.AddButton("Set to null");
+            button.Clicked += () => _comboBox.SelectedItem = null;
+        }
+
+        private void OnSelectedIndexChanged(ComboBox comboBox)
+        {
+            SetValue(comboBox.SelectedItem == null ? null : new InputAxis(comboBox.SelectedItem));
         }
 
         /// <inheritdoc />
@@ -106,17 +126,21 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             else
             {
-                if (Values[0] is InputAxis inputAxis && _dropdown.Items.Contains(inputAxis.Name))
-                    _dropdown.SelectedItem = inputAxis.Name;
+                if (Values[0] is InputAxis inputAxis && _comboBox.Items.Contains(inputAxis.Name))
+                    _comboBox.SelectedItem = inputAxis.Name;
+                else
+                    _comboBox.SelectedItem = null;
             }
         }
 
         /// <inheritdoc />
         protected override void Deinitialize()
         {
-            if (_dropdown != null)
-                _dropdown.SelectedIndexChanged -= OnSelectedIndexChanged;
-            _dropdown = null;
+            if (LinkedLabel != null)
+                LinkedLabel.SetupContextMenu -= OnSetupContextMenu;
+            if (_comboBox != null)
+                _comboBox.SelectedIndexChanged -= OnSelectedIndexChanged;
+            _comboBox = null;
         }
     }
 }

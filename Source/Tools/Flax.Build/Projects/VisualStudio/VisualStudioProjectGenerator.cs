@@ -22,8 +22,15 @@ namespace Flax.Build.Projects.VisualStudio
             public override Guid ProjectTypeGuid => ProjectTypeGuids.Android;
 
             /// <inheritdoc />
-            public override void Generate()
+            public override void Generate(string solutionPath)
             {
+                // Try to reuse the existing project guid from existing files
+                ProjectGuid = GetProjectGuid(Path, Name);
+                if (ProjectGuid == Guid.Empty)
+                    ProjectGuid = GetProjectGuid(solutionPath, Name);
+                if (ProjectGuid == Guid.Empty)
+                    ProjectGuid = Guid.NewGuid();
+
                 var gen = (VisualStudioProjectGenerator)Generator;
                 var projectFileToolVersion = gen.ProjectFileToolVersion;
                 var vcProjectFileContent = new StringBuilder();
@@ -141,9 +148,10 @@ namespace Flax.Build.Projects.VisualStudio
         /// </summary>
         /// <param name="path">The path.</param>
         /// <returns>The project ID.</returns>
-        public static Guid GetProjectGuid(string path)
+        public static Guid GetProjectGuid(string path, string projectName)
         {
-            if (File.Exists(path))
+            // Look up for the guid in VC++-project file
+            if (File.Exists(path) && Path.GetExtension(path).Equals(".vcxproj", StringComparison.OrdinalIgnoreCase))
             {
                 try
                 {
@@ -161,8 +169,27 @@ namespace Flax.Build.Projects.VisualStudio
                     // Hide errors
                 }
             }
+            if (File.Exists(path) && Path.GetExtension(path).Equals(".sln", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    Regex projectRegex = new Regex(@"Project\(""{(\S+)}""\) = \""(\S+)\"", \""(\S+)\"", \""{(\S+)}\""");
+                    MatchCollection matches = projectRegex.Matches(File.ReadAllText(path));
+                    for (int i = 0; i < matches.Count; i++)
+                    {
+                        if (matches[i].Groups[1].Value.Equals("2150E333-8FDC-42A3-9474-1A3956D46DE8", StringComparison.OrdinalIgnoreCase))
+                            continue;
+                        if (matches[i].Groups[2].Value == projectName)
+                            return Guid.ParseExact(matches[i].Groups[4].Value, "D");
+                    }
+                }
+                catch
+                {
+                    // Hide errors
+                }
+            }
 
-            return Guid.NewGuid();
+            return Guid.Empty;
         }
 
         /// <inheritdoc />
@@ -236,7 +263,21 @@ namespace Flax.Build.Projects.VisualStudio
         /// <inheritdoc />
         public override void GenerateSolution(Solution solution)
         {
-            // Try to extract info from the existing solution file to make random IDs stable
+            // Ensure that the main project is the first one (initially selected by Visual Studio)
+            if (solution.MainProject != null && solution.Projects.Length != 0 && solution.Projects[0] != solution.MainProject)
+            {
+                for (int i = 1; i < solution.Projects.Length; i++)
+                {
+                    if (solution.Projects[i] == solution.MainProject)
+                    {
+                        solution.Projects[i] = solution.Projects[0];
+                        solution.Projects[0] = solution.MainProject;
+                        break;
+                    }
+                }
+            }
+
+            // Try to extract solution folder info from the existing solution file to make random IDs stable
             var solutionId = Guid.NewGuid();
             var folderIds = new Dictionary<string, Guid>();
             if (File.Exists(solution.Path))
@@ -252,16 +293,12 @@ namespace Flax.Build.Projects.VisualStudio
                         solutionId = Guid.ParseExact(value.Substring(15), "B");
                     }
 
-                    var folderIdsMatch = Regex.Match(contents, "Project\\(\"{2150E333-8FDC-42A3-9474-1A3956D46DE8}\"\\) = \"(.*?)\", \"(.*?)\", \"{(.*?)}\"");
-                    if (folderIdsMatch.Success)
+                    var folderIdMatches = new Regex("Project\\(\"{2150E333-8FDC-42A3-9474-1A3956D46DE8}\"\\) = \"(.*?)\", \"(.*?)\", \"{(.*?)}\"").Matches(contents);
+                    foreach (Match match in folderIdMatches)
                     {
-                        foreach (Capture capture in folderIdsMatch.Captures)
-                        {
-                            var value = capture.Value.Substring("Project(\"{2150E333-8FDC-42A3-9474-1A3956D46DE8}\") = \"".Length);
-                            var folder = value.Substring(0, value.IndexOf('\"'));
-                            var folderId = Guid.ParseExact(value.Substring(folder.Length * 2 + "\", \"".Length + "\", \"".Length, 38), "B");
-                            folderIds["Source\\" + folder] = folderId;
-                        }
+                        var folder = match.Groups[1].Value;
+                        var folderId = Guid.ParseExact(match.Groups[3].Value, "D");
+                        folderIds[folder] = folderId;
                     }
                 }
                 catch (Exception ex)
@@ -348,7 +385,8 @@ namespace Flax.Build.Projects.VisualStudio
                         {
                             if (!folderIds.TryGetValue(folderPath, out project.FolderGuid))
                             {
-                                project.FolderGuid = Guid.NewGuid();
+                                if (!folderIds.TryGetValue(folderParents[i], out project.FolderGuid))
+                                    project.FolderGuid = Guid.NewGuid();
                                 folderIds.Add(folderPath, project.FolderGuid);
                             }
                             folderNames.Add(folderPath);
@@ -402,6 +440,10 @@ namespace Flax.Build.Projects.VisualStudio
                     if (project.Configurations == null || project.Configurations.Count == 0)
                         throw new Exception("Missing configurations for project " + project.Name);
 
+                    // Prevent generating default Debug|AnyCPU and Release|AnyCPU configurations from Flax projects
+                    if (project.Name == "BuildScripts" || project.Name == "Flax.Build" || project.Name == "Flax.Build.Tests")
+                        continue;
+
                     foreach (var configuration in project.Configurations)
                     {
                         configurations.Add(new SolutionConfiguration(configuration));
@@ -447,7 +489,7 @@ namespace Flax.Build.Projects.VisualStudio
                         {
                             SolutionConfiguration projectConfiguration;
                             bool build = false;
-                            int firstFullMatch = -1, firstPlatformMatch = -1;
+                            int firstFullMatch = -1, firstPlatformMatch = -1, firstEditorMatch = -1;
                             for (int i = 0; i < project.Configurations.Count; i++)
                             {
                                 var e = new SolutionConfiguration(project.Configurations[i]);
@@ -460,18 +502,39 @@ namespace Flax.Build.Projects.VisualStudio
                                 {
                                     firstPlatformMatch = i;
                                 }
+                                if (firstEditorMatch == -1 && e.Configuration == configuration.Configuration)
+                                {
+                                    firstEditorMatch = i;
+                                }
                             }
-                            if (firstFullMatch != -1)
+                            if (project is AndroidProject)
+                            {
+                                // Utility Android deploy project only for exact match
+                                if (firstFullMatch != -1)
+                                    projectConfiguration = configuration;
+                                else
+                                    projectConfiguration = new SolutionConfiguration(project.Configurations[0]);
+                            }
+                            else if (firstFullMatch != -1)
                             {
                                 projectConfiguration = configuration;
                                 build = solution.MainProject == project || (solution.MainProject == null && project.Name == solution.Name);
                             }
-                            else if (firstPlatformMatch != -1)
+                            else if (firstPlatformMatch != -1 && !configuration.Name.StartsWith("Editor."))
                             {
+                                // No exact match, pick the first configuration for matching platform
                                 projectConfiguration = new SolutionConfiguration(project.Configurations[firstPlatformMatch]);
+                            }
+                            else if (firstEditorMatch != -1 && configuration.Name.StartsWith("Editor."))
+                            {
+                                // No exact match, pick the matching editor configuration for different platform.
+                                // As an example, Editor configuration for Android projects should be remapped
+                                // to desktop platform in order to provide working Intellisense information.
+                                projectConfiguration = new SolutionConfiguration(project.Configurations[firstEditorMatch]);
                             }
                             else
                             {
+                                // No match
                                 projectConfiguration = new SolutionConfiguration(project.Configurations[0]);
                             }
 
@@ -540,8 +603,8 @@ namespace Flax.Build.Projects.VisualStudio
             {
                 var profiles = new Dictionary<string, string>();
                 var profile = new StringBuilder();
-                var editorPath = Path.Combine(Globals.EngineRoot, "Binaries/Editor/Win64/Development/FlaxEditor.exe").Replace('/', '\\').Replace("\\", "\\\\");
-                var workspacePath = solutionDirectory.Replace('/', '\\').Replace("\\", "\\\\");
+                var editorPath = Utilities.NormalizePath(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), $"Development/FlaxEditor{Utilities.GetPlatformExecutableExt()}"));
+                var workspacePath = Utilities.NormalizePath(solutionDirectory);
                 foreach (var project in projects)
                 {
                     if (project.Type == TargetType.DotNetCore)

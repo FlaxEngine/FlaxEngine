@@ -30,6 +30,9 @@
 #endif
 #include "resource.h"
 
+#define CLR_EXCEPTION 0xE0434352
+#define VCPP_EXCEPTION 0xE06D7363
+
 const Char* WindowsPlatform::ApplicationWindowClass = TEXT("FlaxWindow");
 void* WindowsPlatform::Instance = nullptr;
 
@@ -272,6 +275,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 LONG CALLBACK SehExceptionHandler(EXCEPTION_POINTERS* ep)
 {
+    if (ep->ExceptionRecord->ExceptionCode == CLR_EXCEPTION)
+    {
+        // Pass CLR exceptions back to runtime
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+
     // Skip if engine already crashed
     if (Globals::FatalErrorOccurred)
         return EXCEPTION_CONTINUE_SEARCH;

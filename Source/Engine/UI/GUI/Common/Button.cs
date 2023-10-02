@@ -84,17 +84,23 @@ namespace FlaxEngine.GUI
         /// </summary>
         [EditorDisplay("Border Style"), EditorOrder(2010), ExpandGroups]
         public bool HasBorder { get; set; } = true;
+        
+        /// <summary>
+        /// Gets or sets the border thickness.
+        /// </summary>
+        [EditorDisplay("Border Style"), EditorOrder(2011), Limit(0)]
+        public float BorderThickness { get; set; } = 1.0f;
 
         /// <summary>
         /// Gets or sets the color of the border.
         /// </summary>
-        [EditorDisplay("Border Style"), EditorOrder(2011), ExpandGroups]
+        [EditorDisplay("Border Style"), EditorOrder(2012)]
         public Color BorderColor { get; set; }
 
         /// <summary>
         /// Gets or sets the border color when button is highlighted.
         /// </summary>
-        [EditorDisplay("Border Style"), EditorOrder(2012)]
+        [EditorDisplay("Border Style"), EditorOrder(2013)]
         public Color BorderColorHighlighted { get; set; }
 
         /// <summary>
@@ -252,7 +258,7 @@ namespace FlaxEngine.GUI
             else
                 Render2D.FillRectangle(clientRect, backgroundColor);
             if (HasBorder)
-                Render2D.DrawRectangle(clientRect, borderColor);
+                Render2D.DrawRectangle(clientRect, borderColor, BorderThickness);
 
             // Draw text
             Render2D.DrawText(_font?.GetFont(), TextMaterial, _text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);

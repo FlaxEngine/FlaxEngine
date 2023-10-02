@@ -11,7 +11,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the blur strength. Defines how blurry the background is. Larger numbers increase blur, resulting in a larger runtime cost on the GPU.
         /// </summary>
-        [EditorOrder(0), Limit(0, 100, 0.0f)]
+        [EditorOrder(0), Limit(0, 100, 0.1f)]
         public float BlurStrength { get; set; }
 
         /// <summary>
@@ -29,10 +29,9 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void Draw()
+        public override void DrawSelf()
         {
-            base.Draw();
-
+            base.DrawSelf();
             var size = Size;
             var strength = BlurStrength;
             if (BlurScaleWithSize)

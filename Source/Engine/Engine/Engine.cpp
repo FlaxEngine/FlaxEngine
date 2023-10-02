@@ -102,9 +102,6 @@ int32 Engine::Main(const Char* cmdLine)
 
     Platform::SetHighDpiAwarenessEnabled(!CommandLine::Options.LowDPI.IsTrue());
     Time::StartupTime = DateTime::Now();
-#if COMPILE_WITH_PROFILER
-    ProfilerCPU::Enabled = true;
-#endif
     Globals::StartupFolder = Globals::BinariesFolder = Platform::GetMainDirectory();
 #if USE_EDITOR
     Globals::StartupFolder /= TEXT("../../../..");
