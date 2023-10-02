@@ -66,7 +66,7 @@ void GPUSwapChainDX12::OnReleaseGPU()
     // Disable fullscreen mode
     if (_swapChain)
     {
-        VALIDATE_DIRECTX_RESULT(_swapChain->SetFullscreenState(false, nullptr));
+        VALIDATE_DIRECTX_CALL(_swapChain->SetFullscreenState(false, nullptr));
     }
 #endif
 
@@ -100,7 +100,7 @@ bool GPUSwapChainDX12::IsFullscreen()
 
     // Get state
     BOOL state;
-    VALIDATE_DIRECTX_RESULT(_swapChain->GetFullscreenState(&state, nullptr));
+    VALIDATE_DIRECTX_CALL(_swapChain->GetFullscreenState(&state, nullptr));
     return state == TRUE;
 #endif
 }
@@ -221,7 +221,7 @@ bool GPUSwapChainDX12::Resize(int32 width, int32 height)
         // Create swap chain (it needs the queue so that it can force a flush on it)
         IDXGISwapChain1* swapChain;
         auto dxgiFactory = _device->GetDXGIFactory();
-        VALIDATE_DIRECTX_RESULT(dxgiFactory->CreateSwapChainForHwnd(_device->GetCommandQueueDX12(), _windowHandle, &swapChainDesc, &fullscreenDesc, nullptr, &swapChain));
+        VALIDATE_DIRECTX_CALL(dxgiFactory->CreateSwapChainForHwnd(_device->GetCommandQueueDX12(), _windowHandle, &swapChainDesc, &fullscreenDesc, nullptr, &swapChain));
         _swapChain = static_cast<IDXGISwapChain3*>(swapChain);
         ASSERT(_swapChain);
         DX_SET_DEBUG_NAME_EX(_swapChain, TEXT("RenderOutput"), TEXT("SwapChain"), TEXT(""));
@@ -229,7 +229,7 @@ bool GPUSwapChainDX12::Resize(int32 width, int32 height)
         _backBuffers.Resize(swapChainDesc.BufferCount);
 
         // Disable DXGI changes to the window
-        VALIDATE_DIRECTX_RESULT(dxgiFactory->MakeWindowAssociation(_windowHandle, DXGI_MWA_NO_ALT_ENTER));
+        VALIDATE_DIRECTX_CALL(dxgiFactory->MakeWindowAssociation(_windowHandle, DXGI_MWA_NO_ALT_ENTER));
     }
     else
     {
@@ -237,7 +237,7 @@ bool GPUSwapChainDX12::Resize(int32 width, int32 height)
 
         _swapChain->GetDesc1(&swapChainDesc);
 
-        VALIDATE_DIRECTX_RESULT(_swapChain->ResizeBuffers(swapChainDesc.BufferCount, width, height, swapChainDesc.Format, swapChainDesc.Flags));
+        VALIDATE_DIRECTX_CALL(_swapChain->ResizeBuffers(swapChainDesc.BufferCount, width, height, swapChainDesc.Format, swapChainDesc.Flags));
     }
 
     _currentFrameIndex = _swapChain->GetCurrentBackBufferIndex();
@@ -316,7 +316,7 @@ void GPUSwapChainDX12::getBackBuffer()
         swapChainBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
         D3D12_CLEAR_VALUE swapChainOptimizedClearValue = {};
         swapChainOptimizedClearValue.Format = swapChainBufferDesc.Format;
-        VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateCommittedResource(
+        VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateCommittedResource(
             &swapChainHeapProperties,
             D3D12_HEAP_FLAG_ALLOW_DISPLAY,
             &swapChainBufferDesc,
@@ -324,7 +324,7 @@ void GPUSwapChainDX12::getBackBuffer()
             &swapChainOptimizedClearValue,
             IID_GRAPHICS_PPV_ARGS(&backbuffer)));
 #else
-        VALIDATE_DIRECTX_RESULT(_swapChain->GetBuffer(i, IID_PPV_ARGS(&backbuffer)));
+        VALIDATE_DIRECTX_CALL(_swapChain->GetBuffer(i, IID_PPV_ARGS(&backbuffer)));
 #endif
         DX_SET_DEBUG_NAME_EX(backbuffer, TEXT("RenderOutput"), TEXT("BackBuffer"), i);
         _backBuffers[i].Setup(this, backbuffer);
@@ -337,7 +337,7 @@ void GPUSwapChainDX12::Begin(RenderTask* task)
 {
     // Wait until frame start is signaled
     _framePipelineToken = D3D12XBOX_FRAME_PIPELINE_TOKEN_NULL;
-    VALIDATE_DIRECTX_RESULT(_device->GetDevice()->WaitFrameEventX(D3D12XBOX_FRAME_EVENT_ORIGIN, INFINITE, nullptr, D3D12XBOX_WAIT_FRAME_EVENT_FLAG_NONE, &_framePipelineToken));
+    VALIDATE_DIRECTX_CALL(_device->GetDevice()->WaitFrameEventX(D3D12XBOX_FRAME_EVENT_ORIGIN, INFINITE, nullptr, D3D12XBOX_WAIT_FRAME_EVENT_FLAG_NONE, &_framePipelineToken));
 
     GPUSwapChain::Begin(task);
 }
@@ -366,7 +366,7 @@ void GPUSwapChainDX12::Present(bool vsync)
     planeParameters.Token = _framePipelineToken;
     planeParameters.ResourceCount = 1;
     planeParameters.ppResources = &backBuffer;
-    VALIDATE_DIRECTX_RESULT(_device->GetCommandQueueDX12()->PresentX(1, &planeParameters, nullptr));
+    VALIDATE_DIRECTX_CALL(_device->GetCommandQueueDX12()->PresentX(1, &planeParameters, nullptr));
 
     // Base
     GPUSwapChain::Present(vsync);

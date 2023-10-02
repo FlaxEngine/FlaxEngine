@@ -8,7 +8,7 @@
 /// <summary>
 /// The network transport driver statistics container. Contains information about INetworkDriver usage and performance.
 /// </summary>
-API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkDriverStats
+API_STRUCT(Namespace="FlaxEngine.Networking", NoDefault) struct FLAXENGINE_API NetworkDriverStats
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkDriverStats);
 

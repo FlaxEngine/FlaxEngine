@@ -298,21 +298,7 @@ namespace FlaxEditor.Windows.Profiler
         private void UpdateTable()
         {
             _table.IsLayoutLocked = true;
-            int idx = 0;
-            while (_table.Children.Count > idx)
-            {
-                var child = _table.Children[idx];
-                if (child is Row row)
-                {
-                    _tableRowsCache.Add(row);
-                    child.Parent = null;
-                }
-                else
-                {
-                    idx++;
-                }
-            }
-            _table.LockChildrenRecursive();
+            RecycleTableRows(_table, _tableRowsCache);
 
             UpdateTableInner();
 

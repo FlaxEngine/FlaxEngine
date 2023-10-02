@@ -134,6 +134,66 @@ namespace FlaxEditor.Options
             return false;
         }
 
+        private bool ProcessModifiers(Control control)
+        {
+            return ProcessModifiers(control.Root.GetKey);
+        }
+
+        private bool ProcessModifiers(Window window)
+        {
+            return ProcessModifiers(window.GetKey);
+        }
+
+        private bool ProcessModifiers(Func<KeyboardKeys, bool> getKeyFunc)
+        {
+            bool ctrlPressed = getKeyFunc(KeyboardKeys.Control);
+            bool shiftPressed = getKeyFunc(KeyboardKeys.Shift);
+            bool altPressed = getKeyFunc(KeyboardKeys.Alt);
+
+            bool mod1 = false;
+            if (Modifier1 == KeyboardKeys.None)
+                mod1 = true;
+            else if (Modifier1 == KeyboardKeys.Control)
+            {
+                mod1 = ctrlPressed;
+                ctrlPressed = false;
+            }
+            else if (Modifier1 == KeyboardKeys.Shift)
+            {
+                mod1 = shiftPressed;
+                shiftPressed = false;
+            }
+            else if (Modifier1 == KeyboardKeys.Alt)
+            {
+                mod1 = altPressed;
+                altPressed = false;
+            }
+
+            bool mod2 = false;
+            if (Modifier2 == KeyboardKeys.None)
+                mod2 = true;
+            else if (Modifier2 == KeyboardKeys.Control)
+            {
+                mod2 = ctrlPressed;
+                ctrlPressed = false;
+            }
+            else if (Modifier2 == KeyboardKeys.Shift)
+            {
+                mod2 = shiftPressed;
+                shiftPressed = false;
+            }
+            else if (Modifier2 == KeyboardKeys.Alt)
+            {
+                mod2 = altPressed;
+                altPressed = false;
+            }
+
+            // Check if any unhandled modifiers are not pressed
+            if (mod1 && mod2)
+                return !ctrlPressed && !shiftPressed && !altPressed;
+            return false;
+        }
+
         /// <summary>
         /// Processes this input binding to check if state matches.
         /// </summary>
@@ -142,19 +202,7 @@ namespace FlaxEditor.Options
         public bool Process(Control control)
         {
             var root = control.Root;
-
-            if (root.GetKey(Key))
-            {
-                if (Modifier1 == KeyboardKeys.None || root.GetKey(Modifier1))
-                {
-                    if (Modifier2 == KeyboardKeys.None || root.GetKey(Modifier2))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            return root.GetKey(Key) && ProcessModifiers(control);
         }
 
         /// <summary>
@@ -165,20 +213,20 @@ namespace FlaxEditor.Options
         /// <returns>True if input has been processed, otherwise false.</returns>
         public bool Process(Control control, KeyboardKeys key)
         {
-            var root = control.Root;
+            if (key != Key)
+                return false;
 
-            if (key == Key)
-            {
-                if (Modifier1 == KeyboardKeys.None || root.GetKey(Modifier1))
-                {
-                    if (Modifier2 == KeyboardKeys.None || root.GetKey(Modifier2))
-                    {
-                        return true;
-                    }
-                }
-            }
+            return ProcessModifiers(control);
+        }
 
-            return false;
+        /// <summary>
+        /// Processes this input binding to check if state matches.
+        /// </summary>
+        /// <param name="window">The input providing window.</param>
+        /// <returns>True if input has been processed, otherwise false.</returns>
+        public bool Process(Window window)
+        {
+            return window.GetKey(Key) && ProcessModifiers(window);
         }
 
         /// <inheritdoc />

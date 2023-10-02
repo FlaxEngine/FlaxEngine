@@ -23,6 +23,7 @@ namespace FlaxEngine
             AllowDragAndDrop = true,
             IsRegularWindow = true,
             HasSizingFrame = true,
+            ShowAfterFirstPaint = true,
         };
     }
 }

@@ -205,8 +205,6 @@ void MaterialInstance::Bind(BindParameters& params)
 
 Asset::LoadResult MaterialInstance::load()
 {
-    ASSERT(_baseMaterial == nullptr);
-
     // Get main chunk
     auto chunk0 = GetChunk(0);
     if (chunk0 == nullptr || chunk0->IsMissing())
@@ -229,6 +227,7 @@ Asset::LoadResult MaterialInstance::load()
     else
     {
         // Clear parameters if has no material loaded
+        _baseMaterial = nullptr;
         Params.Dispose();
         ParamsChanged();
     }

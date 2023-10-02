@@ -105,7 +105,7 @@ bool GPUBufferDX11::OnInit()
         data.SysMemPitch = bufferDesc.ByteWidth;
         data.SysMemSlicePitch = 0;
     }
-    VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateBuffer(&bufferDesc, _desc.InitData ? &data : nullptr, &_resource));
+    VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateBuffer(&bufferDesc, _desc.InitData ? &data : nullptr, &_resource));
 
     // Set state
     DX_SET_DEBUG_NAME(_resource, GetName());
@@ -135,7 +135,7 @@ bool GPUBufferDX11::OnInit()
             srvDesc.Buffer.NumElements = numElements;
         }
         ID3D11ShaderResourceView* srv;
-        VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateShaderResourceView(_resource, &srvDesc, &srv));
+        VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateShaderResourceView(_resource, &srvDesc, &srv));
         _view.SetSRV(srv);
     }
     if (useUAV)
@@ -156,7 +156,7 @@ bool GPUBufferDX11::OnInit()
         else
             uavDesc.Format = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindUnorderedAccessFormat(_desc.Format));
         ID3D11UnorderedAccessView* uav;
-        VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateUnorderedAccessView(_resource, &uavDesc, &uav));
+        VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateUnorderedAccessView(_resource, &uavDesc, &uav));
         _view.SetUAV(uav);
     }
 

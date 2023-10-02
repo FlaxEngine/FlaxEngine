@@ -8,9 +8,10 @@
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 
+Array<NetworkPeer*> NetworkPeer::Peers;
+
 namespace
 {
-    Array<NetworkPeer*, HeapAllocation> Peers;
     uint32 LastHostId = 0;
 }
 
