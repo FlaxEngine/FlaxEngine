@@ -764,7 +764,7 @@ namespace Flax.Build
         /// <summary>
         /// Sorts the directories by name assuming they contain version text. Sorted from lowest to the highest version.
         /// </summary>
-        /// <param name="file">The paths array to sort.</param>
+        /// <param name="paths">The paths array to sort.</param>
         public static void SortVersionDirectories(string[] paths)
         {
             if (paths == null || paths.Length == 0)
