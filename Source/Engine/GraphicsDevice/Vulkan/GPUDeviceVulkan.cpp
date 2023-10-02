@@ -868,7 +868,7 @@ GPUBufferVulkan* HelperResourcesVulkan::GetDummyBuffer()
     if (!_dummyBuffer)
     {
         _dummyBuffer = (GPUBufferVulkan*)_device->CreateBuffer(TEXT("DummyBuffer"));
-        _dummyBuffer->Init(GPUBufferDescription::Buffer(sizeof(int32), GPUBufferFlags::ShaderResource | GPUBufferFlags::UnorderedAccess, PixelFormat::R32_SInt));
+        _dummyBuffer->Init(GPUBufferDescription::Buffer(sizeof(int32) * 256, GPUBufferFlags::ShaderResource | GPUBufferFlags::UnorderedAccess, PixelFormat::R32_SInt));
     }
 
     return _dummyBuffer;
