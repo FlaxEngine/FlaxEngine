@@ -81,10 +81,10 @@ namespace FlaxEngine
             case InputActionState.None: break;
             case InputActionState.Waiting: break;
             case InputActionState.Pressing:
-                Triggered?.Invoke();
                 Pressing?.Invoke();
                 break;
             case InputActionState.Press:
+                Triggered?.Invoke();
                 Pressed?.Invoke();
                 break;
             case InputActionState.Release:
