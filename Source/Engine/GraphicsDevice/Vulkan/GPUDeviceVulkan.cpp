@@ -1078,6 +1078,9 @@ GPUDevice* GPUDeviceVulkan::Create()
 
     VkInstanceCreateInfo instInfo;
     RenderToolsVulkan::ZeroStruct(instInfo, VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO);
+#ifdef PLATFORM_APPLE_FAMILY
+    instInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+#endif
     instInfo.pApplicationInfo = &appInfo;
 
     GetInstanceLayersAndExtensions(InstanceExtensions, InstanceLayers, SupportsDebugUtilsExt);

@@ -35,6 +35,10 @@ static const char* GValidationLayers[] =
 
 static const char* GInstanceExtensions[] =
 {
+#if PLATFORM_APPLE_FAMILY && defined(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME)
+    VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+#endif
 #if VK_EXT_validation_cache
     VK_EXT_VALIDATION_CACHE_EXTENSION_NAME,
 #endif
@@ -46,6 +50,9 @@ static const char* GInstanceExtensions[] =
 
 static const char* GDeviceExtensions[] =
 {
+#if PLATFORM_APPLE_FAMILY && defined(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME)
+    VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
+#endif
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 #if VK_KHR_maintenance1
     VK_KHR_MAINTENANCE1_EXTENSION_NAME,
