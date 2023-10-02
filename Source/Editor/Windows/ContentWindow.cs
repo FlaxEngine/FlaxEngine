@@ -740,9 +740,6 @@ namespace FlaxEditor.Windows
                 Editor.LogWarning("Failed to create module due to no name");
                 return;
             }
-  
-            var sourceFolder = SelectedNode.Folder;
-            var sourcePath = sourceFolder.Path;
             
             // Create folder
             var moduleFolderPath = Path.Combine(path, moduleName);
@@ -782,7 +779,7 @@ namespace FlaxEditor.Windows
             Editor.Log($"Module created at {modulePath}");
             
             // Get editor target and target files and add module
-            var files = Directory.GetFiles(sourceFolder.Path);
+            var files = Directory.GetFiles(path);
             var targetModuleText = $"Modules.Add(\"{moduleName}\");\n        ";
             foreach (var file in files)
             {
@@ -791,9 +788,10 @@ namespace FlaxEditor.Windows
 
                 var targetText = await File.ReadAllTextAsync(file);
 
-                if (!editorModule && targetText.Contains("GameProjectTarget", StringComparison.Ordinal))
+                // Skip game project if it is suppose to be an editor module
+                if (editorModule && targetText.Contains("GameProjectTarget", StringComparison.Ordinal))
                     continue;
-
+                
                 // TODO: Handle edge case when there are no modules in a target
                 var index = targetText.IndexOf("Modules.Add");
                 if (index != -1)
