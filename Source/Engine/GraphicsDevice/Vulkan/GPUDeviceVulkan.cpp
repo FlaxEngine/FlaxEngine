@@ -431,7 +431,7 @@ void DeferredDeletionQueueVulkan::EnqueueGenericResource(Type type, uint64 handl
     ScopeLock lock(_locker);
 
 #if BUILD_DEBUG
-    const std::function<bool(const Entry&)> ContainsHandle = [handle](const Entry& e)
+    const Function<bool(const Entry&)> ContainsHandle = [handle](const Entry& e)
     {
         return e.Handle == handle;
     };
@@ -1087,7 +1087,7 @@ GPUDevice* GPUDeviceVulkan::Create()
 
     const auto hasExtension = [](const Array<const char*>& extensions, const char* name) -> bool
     {
-        const std::function<bool(const char* const&)> callback = [&name](const char* const& extension) -> bool
+        const Function<bool(const char* const&)> callback = [&name](const char* const& extension) -> bool
         {
             return extension && StringUtils::Compare(extension, name) == 0;
         };

@@ -578,7 +578,7 @@ void GPUDeviceVulkan::ParseOptionalDeviceExtensions(const Array<const char*>& de
 
     const auto HasExtension = [&deviceExtensions](const char* name) -> bool
     {
-        const std::function<bool(const char* const&)> CheckCallback = [&name](const char* const& extension) -> bool
+        const Function<bool(const char* const&)> CheckCallback = [&name](const char* const& extension) -> bool
         {
             return StringUtils::Compare(extension, name) == 0;
         };
