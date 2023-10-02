@@ -1207,6 +1207,7 @@ namespace FlaxEditor.Modules
             {
             case WatcherChangeTypes.Created:
             case WatcherChangeTypes.Deleted:
+            case WatcherChangeTypes.Renamed:
             {
                 lock (_dirtyNodes)
                 {
