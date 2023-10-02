@@ -746,5 +746,28 @@ namespace Flax.Build
             text = text.Replace(findWhat, replaceWith);
             File.WriteAllText(file, text);
         }
+
+        /// <summary>
+        /// Sorts the directories by name assuming they contain version text. Sorted from lowest to the highest version.
+        /// </summary>
+        /// <param name="file">The paths array to sort.</param>
+        public static void SortVersionDirectories(string[] paths)
+        {
+            if (paths == null || paths.Length == 0)
+                return;
+            Array.Sort(paths, (a, b) =>
+            {
+                Version va, vb;
+                if (Version.TryParse(a, out va))
+                {
+                    if (Version.TryParse(b, out vb))
+                        return va.CompareTo(vb);
+                    return 1;
+                }
+                if (Version.TryParse(b, out vb))
+                    return -1;
+                return 0;
+            });
+        }
     }
 }
