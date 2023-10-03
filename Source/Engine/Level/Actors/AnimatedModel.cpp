@@ -526,6 +526,7 @@ void AnimatedModel::UpdateBounds()
             const int32 bonesCount = skeleton.Bones.Count();
 #define GET_NODE_POS(i) _transform.LocalToWorld(GraphInstance.NodesPose[skeleton.Bones[i].NodeIndex].GetTranslation())
             BoundingBox box(GET_NODE_POS(0));
+            box.Merge(SkinnedModel->GetBox(_transform.GetWorld()));
             for (int32 boneIndex = 1; boneIndex < bonesCount; boneIndex++)
                 box.Merge(GET_NODE_POS(boneIndex));
             _box = box;
@@ -533,15 +534,13 @@ void AnimatedModel::UpdateBounds()
         }
         else
         {
-            _box = SkinnedModel->GetBox(_transform.GetWorld());
+            // No animation applied
+            const auto modelBox = SkinnedModel->GetBox(_transform.GetWorld());
+            const Vector3 modelBoxSize = modelBox.GetSize();
+            const Vector3 center = modelBox.GetCenter();
+            const Vector3 sizeHalf = modelBoxSize * 0.5f;
+            _box = BoundingBox(center - sizeHalf, center + sizeHalf);
         }
-
-        // Apply margin based on model dimensions
-        const auto modelBox = SkinnedModel->GetBox(_transform.GetWorld());
-        const Vector3 modelBoxSize = modelBox.GetSize();
-        const Vector3 center = modelBox.GetCenter();
-        const Vector3 sizeHalf = modelBoxSize * 0.5f;
-        _box = BoundingBox(center - sizeHalf, center + sizeHalf);
     }
     else
     {
