@@ -366,9 +366,7 @@ void ProcessNodes(OpenFbxImporterData& data, const ofbx::Object* aNode, int32 pa
     {
         node.LodIndex = data.Nodes[parentIndex].LodIndex;
         if (node.LodIndex == 0)
-        {
             node.LodIndex = ModelTool::DetectLodIndex(node.Name);
-        }
         ASSERT(Math::IsInRange(node.LodIndex, 0, MODEL_MAX_LODS - 1));
     }
 
@@ -416,8 +414,9 @@ Matrix GetOffsetMatrix(OpenFbxImporterData& data, const ofbx::Mesh* mesh, const 
             }
         }
     }
+	//return Matrix::Identity;
     return ToMatrix(node->getGlobalTransform());
-#elif 1
+#else
     Matrix t = Matrix::Identity;
     const int32 boneIdx = data.FindBone(node);
     int32 idx = data.Bones[boneIdx].NodeIndex;
@@ -427,17 +426,6 @@ Matrix GetOffsetMatrix(OpenFbxImporterData& data, const ofbx::Mesh* mesh, const 
         idx = data.Nodes[idx].ParentIndex;
     } while (idx != -1);
     return t;
-#else
-	auto* skin = mesh->getGeometry()->getSkin();
-	for (int i = 0, c = skin->getClusterCount(); i < c; i++)
-	{
-		const ofbx::Cluster* cluster = skin->getCluster(i);
-		if (cluster->getLink() == node)
-		{
-			return ToMatrix(cluster->getTransformLinkMatrix());
-		}
-	}
-	return Matrix::Identity;
 #endif
 }
 
@@ -455,17 +443,14 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
         const auto aMesh = data.Scene->getMesh(i);
         const auto aGeometry = aMesh->getGeometry();
         const ofbx::Skin* skin = aGeometry->getSkin();
-
         if (skin == nullptr || IsMeshInvalid(aMesh))
             continue;
 
-        for (int clusterIndex = 0, c = skin->getClusterCount(); clusterIndex < c; clusterIndex++)
+        for (int clusterIndex = 0, clusterCount = skin->getClusterCount(); clusterIndex < clusterCount; clusterIndex++)
         {
             const ofbx::Cluster* cluster = skin->getCluster(clusterIndex);
-
             if (cluster->getIndicesCount() == 0)
                 continue;
-
             const auto link = cluster->getLink();
             ASSERT(link != nullptr);
 
@@ -487,7 +472,7 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
 
                 // Add bone
                 boneIndex = data.Bones.Count();
-                data.Bones.EnsureCapacity(Math::Max(128, boneIndex + 16));
+                data.Bones.EnsureCapacity(256);
                 data.Bones.Resize(boneIndex + 1);
                 auto& bone = data.Bones[boneIndex];
 
@@ -495,7 +480,7 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
                 bone.NodeIndex = nodeIndex;
                 bone.ParentBoneIndex = -1;
                 bone.FbxObj = link;
-                bone.OffsetMatrix = GetOffsetMatrix(data, aMesh, link);
+                bone.OffsetMatrix = GetOffsetMatrix(data, aMesh, link) * Matrix::Scaling(data.GlobalSettings.UnitScaleFactor);
                 bone.OffsetMatrix.Invert();
 
                 // Mirror offset matrices (RH to LH)
@@ -547,9 +532,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     // Vertex positions
     mesh.Positions.Resize(vertexCount, false);
     for (int i = 0; i < vertexCount; i++)
-    {
         mesh.Positions.Get()[i] = ToFloat3(vertices[i + firstVertexOffset]);
-    }
 
     // Indices (dummy index buffer)
     if (vertexCount % 3 != 0)
@@ -559,24 +542,18 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     }
     mesh.Indices.Resize(vertexCount, false);
     for (int i = 0; i < vertexCount; i++)
-    {
         mesh.Indices.Get()[i] = i;
-    }
 
     // Texture coordinates
     if (uvs)
     {
         mesh.UVs.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
-        {
             mesh.UVs.Get()[i] = ToFloat2(uvs[i + firstVertexOffset]);
-        }
         if (data.ConvertRH)
         {
             for (int32 v = 0; v < vertexCount; v++)
-            {
                 mesh.UVs[v].Y = 1.0f - mesh.UVs[v].Y;
-            }
         }
     }
 
@@ -593,16 +570,12 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     {
         mesh.Normals.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
-        {
             mesh.Normals.Get()[i] = ToFloat3(normals[i + firstVertexOffset]);
-        }
         if (data.ConvertRH)
         {
             // Mirror normals along the Z axis
             for (int32 i = 0; i < vertexCount; i++)
-            {
                 mesh.Normals.Get()[i].Z *= -1.0f;
-            }
         }
     }
 
@@ -615,16 +588,12 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     {
         mesh.Tangents.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
-        {
             mesh.Tangents.Get()[i] = ToFloat3(tangents[i + firstVertexOffset]);
-        }
         if (data.ConvertRH)
         {
             // Mirror tangents along the Z axis
             for (int32 i = 0; i < vertexCount; i++)
-            {
                 mesh.Tangents.Get()[i].Z *= -1.0f;
-            }
         }
     }
 
@@ -670,15 +639,11 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
         {
             mesh.LightmapUVs.Resize(vertexCount, false);
             for (int i = 0; i < vertexCount; i++)
-            {
                 mesh.LightmapUVs.Get()[i] = ToFloat2(lightmapUVs[i + firstVertexOffset]);
-            }
             if (data.ConvertRH)
             {
                 for (int32 v = 0; v < vertexCount; v++)
-                {
                     mesh.LightmapUVs[v].Y = 1.0f - mesh.LightmapUVs[v].Y;
-                }
             }
         }
         else
@@ -692,9 +657,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     {
         mesh.Colors.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
-        {
             mesh.Colors.Get()[i] = ToColor(colors[i + firstVertexOffset]);
-        }
     }
 
     // Blend Indices and Blend Weights
@@ -705,13 +668,11 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
         mesh.BlendIndices.SetAll(Int4::Zero);
         mesh.BlendWeights.SetAll(Float4::Zero);
 
-        for (int clusterIndex = 0, c = skin->getClusterCount(); clusterIndex < c; clusterIndex++)
+        for (int clusterIndex = 0, clusterCount = skin->getClusterCount(); clusterIndex < clusterCount; clusterIndex++)
         {
             const ofbx::Cluster* cluster = skin->getCluster(clusterIndex);
-
             if (cluster->getIndicesCount() == 0)
                 continue;
-
             const auto link = cluster->getLink();
             ASSERT(link != nullptr);
 
@@ -815,15 +776,11 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     {
         // Mirror positions along the Z axis
         for (int32 i = 0; i < vertexCount; i++)
-        {
             mesh.Positions[i].Z *= -1.0f;
-        }
         for (auto& blendShapeData : mesh.BlendShapes)
         {
             for (auto& v : blendShapeData.Vertices)
-            {
                 v.PositionDelta.Z *= -1.0f;
-            }
         }
     }
 
@@ -834,9 +791,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     {
         // Invert the order
         for (int32 i = 0; i < mesh.Indices.Count(); i += 3)
-        {
             Swap(mesh.Indices[i], mesh.Indices[i + 2]);
-        }
     }
 
     if ((data.Options.CalculateTangents || !tangents) && mesh.UVs.HasItems())
@@ -888,9 +843,7 @@ bool ImportMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofbx
         {
             node.LodIndex = data.Nodes[0].LodIndex;
             if (node.LodIndex == 0)
-            {
                 node.LodIndex = ModelTool::DetectLodIndex(node.Name);
-            }
             ASSERT(Math::IsInRange(node.LodIndex, 0, MODEL_MAX_LODS - 1));
         }
         node.LocalTransform = Transform::Identity;
@@ -999,7 +952,6 @@ void ImportCurve(const ofbx::AnimationCurveNode* curveNode, LinearCurve<T>& curv
 {
     if (curveNode == nullptr)
         return;
-
     const auto keyframes = curve.Resize(info.FramesCount);
     const auto bone = curveNode->getBone();
     Frame localFrame;

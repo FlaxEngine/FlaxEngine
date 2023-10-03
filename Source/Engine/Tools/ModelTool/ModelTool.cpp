@@ -1320,14 +1320,17 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                 }
             }
 
-            // Apply import transform on root bones
-            for (int32 i = 0; i < data.Skeleton.Bones.Count(); i++)
+            // Apply import transform on bones
+            Matrix importMatrixInv;
+            importTransform.GetWorld(importMatrixInv);
+            importMatrixInv.Invert();
+            for (SkeletonBone& bone : data.Skeleton.Bones)
             {
-                auto& bone = data.Skeleton.Bones.Get()[i];
                 if (bone.ParentIndex == -1)
                 {
                     bone.LocalTransform = importTransform.LocalToWorld(bone.LocalTransform);
                 }
+                bone.OffsetMatrix = importMatrixInv * bone.OffsetMatrix;
             }
         }
 
@@ -1363,20 +1366,21 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         // use SkeletonMapping<SkeletonBone> to map bones?
 
         // Calculate offset matrix (inverse bind pose transform) for every bone manually
-        {
-            for (int32 i = 0; i < data.Skeleton.Bones.Count(); i++)
+        /*{
+            for (SkeletonBone& bone : data.Skeleton.Bones)
             {
                 Matrix t = Matrix::Identity;
-                int32 idx = data.Skeleton.Bones[i].NodeIndex;
+                int32 idx = bone.NodeIndex;
                 do
                 {
-                    t *= data.Skeleton.Nodes[idx].LocalTransform.GetWorld();
-                    idx = data.Skeleton.Nodes[idx].ParentIndex;
+                    const SkeletonNode& node = data.Skeleton.Nodes[idx];
+                    t *= node.LocalTransform.GetWorld();
+                    idx = node.ParentIndex;
                 } while (idx != -1);
                 t.Invert();
-                data.Skeleton.Bones[i].OffsetMatrix = t;
+                bone.OffsetMatrix = t;
             }
-        }
+        }*/
 
 #if USE_SKELETON_NODES_SORTING
         // Sort skeleton nodes and bones hierarchy (parents first)

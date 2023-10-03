@@ -3538,7 +3538,7 @@ Object* Object::resolveObjectLink(int idx) const
 		if (connection.to == id && connection.from != 0)
 		{
 			Object* obj = scene.m_object_map.find(connection.from)->second.object;
-			if (obj)
+			if (obj && obj->is_node && obj != this && connection.type == Scene::Connection::OBJECT_OBJECT)
 			{
 				if (idx == 0) return obj;
 				--idx;
