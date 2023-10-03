@@ -1184,7 +1184,6 @@ struct GeometryImpl : Geometry
 	const BlendShape* blendShape = nullptr;
 
 	std::vector<int> indices;
-	std::vector<int> to_old_vertices;
 	std::vector<NewVertex> to_new_vertices;
 
 	GeometryImpl(const Scene& _scene, const IElement& _element)
@@ -1765,7 +1764,7 @@ struct AnimationLayerImpl : AnimationLayer
 	{
 		for (const AnimationCurveNodeImpl* node : curve_nodes)
 		{
-			if (node->bone_link_property == prop && node->bone == &bone) return node;
+			if (node->bone_link_property.begin && node->bone_link_property == prop && node->bone == &bone) return node;
 		}
 		return nullptr;
 	}
@@ -2487,20 +2486,22 @@ static void buildGeometryVertexData(
 	std::vector<int>& to_old_indices,
 	bool triangulationEnabled)
 {
+	std::vector<int> to_old_vertices;
+
 	if (triangulationEnabled) {
-		triangulate(original_indices, &geom->to_old_vertices, &to_old_indices);
-		geom->vertices.resize(geom->to_old_vertices.size());
+		triangulate(original_indices, &to_old_vertices, &to_old_indices);
+		geom->vertices.resize(to_old_vertices.size());
 		geom->indices.resize(geom->vertices.size());
-		for (int i = 0, c = (int)geom->to_old_vertices.size(); i < c; ++i)
+		for (int i = 0, c = (int)to_old_vertices.size(); i < c; ++i)
 		{
-			geom->vertices[i] = vertices[geom->to_old_vertices[i]];
+			geom->vertices[i] = vertices[to_old_vertices[i]];
 			geom->indices[i] = codeIndex(i, i % 3 == 2);
 		}
 	} else {
 		geom->vertices = vertices;
-		geom->to_old_vertices.resize(original_indices.size());
+		to_old_vertices.resize(original_indices.size());
 		for (size_t i = 0; i < original_indices.size(); ++i) {
-			geom->to_old_vertices[i] = decodeIndex(original_indices[i]);
+			to_old_vertices[i] = decodeIndex(original_indices[i]);
 		}
 		geom->indices = original_indices;
 		to_old_indices.resize(original_indices.size());
@@ -2508,8 +2509,7 @@ static void buildGeometryVertexData(
 	}
 
 	geom->to_new_vertices.resize(vertices.size()); // some vertices can be unused, so this isn't necessarily the same size as to_old_vertices.
-	const int* to_old_vertices = geom->to_old_vertices.empty() ? nullptr : &geom->to_old_vertices[0];
-	for (int i = 0, c = (int)geom->to_old_vertices.size(); i < c; ++i)
+	for (int i = 0, c = (int)to_old_vertices.size(); i < c; ++i)
 	{
 		int old = to_old_vertices[i];
 		add(geom->to_new_vertices[old], i);
@@ -2736,7 +2736,7 @@ bool ShapeImpl::postprocess(GeometryImpl* geom, Allocator& allocator)
 	allocator.vec3_tmp2.clear(); // old normals
 	allocator.int_tmp.clear(); // old indices
 	if (!parseDoubleVecData(*vertices_element->first_property, &allocator.vec3_tmp, &allocator.tmp)) return true;
-	if (!parseDoubleVecData(*normals_element->first_property, &allocator.vec3_tmp2, &allocator.tmp)) return true;
+	if (normals_element && !parseDoubleVecData(*normals_element->first_property, &allocator.vec3_tmp2, &allocator.tmp)) return true;
 	if (!parseBinaryArray(*indexes_element->first_property, &allocator.int_tmp)) return true;
 
 	if (allocator.vec3_tmp.size() != allocator.int_tmp.size() || allocator.vec3_tmp2.size() != allocator.int_tmp.size()) return false;
@@ -2745,7 +2745,7 @@ bool ShapeImpl::postprocess(GeometryImpl* geom, Allocator& allocator)
 	normals = geom->normals;
 
 	Vec3* vr = &allocator.vec3_tmp[0];
-	Vec3* nr = &allocator.vec3_tmp2[0];
+	Vec3* nr = normals_element ? &allocator.vec3_tmp2[0] : nullptr;
 	int* ir = &allocator.int_tmp[0];
 	for (int i = 0, c = (int)allocator.int_tmp.size(); i < c; ++i)
 	{
@@ -2755,7 +2755,7 @@ bool ShapeImpl::postprocess(GeometryImpl* geom, Allocator& allocator)
 		while (n)
 		{
 			vertices[n->index] = vertices[n->index] + vr[i];
-			normals[n->index] = normals[n->index] + nr[i];
+			if (normals_element) normals[n->index] = normals[n->index] + nr[i];
 			n = n->next;
 		}
 	}
@@ -3561,7 +3561,7 @@ Object* Object::getParent() const
 		if (connection.from == id)
 		{
 			Object* obj = scene.m_object_map.find(connection.to)->second.object;
-			if (obj && obj->is_node)
+			if (obj && obj->is_node && obj != this && connection.type == Scene::Connection::OBJECT_OBJECT)
 			{
 				assert(parent == nullptr);
 				parent = obj;
