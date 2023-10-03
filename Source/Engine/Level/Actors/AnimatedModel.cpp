@@ -537,9 +537,10 @@ void AnimatedModel::UpdateBounds()
         }
 
         // Apply margin based on model dimensions
-        const Vector3 modelBoxSize = SkinnedModel->GetBox().GetSize();
-        const Vector3 center = _box.GetCenter();
-        const Vector3 sizeHalf = Vector3::Max(_box.GetSize() + modelBoxSize * 0.2f, modelBoxSize) * 0.5f;
+        const auto modelBox = SkinnedModel->GetBox(_transform.GetWorld());
+        const Vector3 modelBoxSize = modelBox.GetSize();
+        const Vector3 center = modelBox.GetCenter();
+        const Vector3 sizeHalf = modelBoxSize * 0.5f;
         _box = BoundingBox(center - sizeHalf, center + sizeHalf);
     }
     else
