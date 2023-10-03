@@ -1283,8 +1283,8 @@ void ParticlesSystem::Job(int32 index)
         updateBounds = true;
     }
     // TODO: if using fixed timestep quantize the dt and accumulate remaining part for the next update?
-    if (dt <= 1.0f / 240.0f)
-        return;
+    //if (dt <= 1.0f / 240.0f)
+    //    return;
     dt *= effect->SimulationSpeed;
     instance.Time += dt;
     const float fps = particleSystem->FramesPerSecond;
