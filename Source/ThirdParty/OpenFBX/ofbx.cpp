@@ -365,7 +365,7 @@ float DataView::toFloat() const
 
 bool DataView::operator==(const char* rhs) const
 {
-	if (!begin) return false;
+	if (!begin) return !rhs[0];
 	const char* c = rhs;
 	const char* c2 = (const char*)begin;
 	while (*c && c2 != (const char*)end)
