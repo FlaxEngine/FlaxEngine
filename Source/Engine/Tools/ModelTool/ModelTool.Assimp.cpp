@@ -705,8 +705,15 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
             return true;
         }
 
+        // Create root node
+        AssimpNode& rootNode = context->Nodes.AddOne();
+        rootNode.ParentIndex = -1;
+        rootNode.LodIndex = 0;
+        rootNode.Name = TEXT("Root");
+        rootNode.LocalTransform = Transform::Identity;
+
         // Process imported scene nodes
-        ProcessNodes(*context, context->Scene->mRootNode, -1);
+        ProcessNodes(*context, context->Scene->mRootNode, 0);
     }
     DeleteMe<AssimpImporterData> contextCleanup(options.SplitContext ? nullptr : context);
 
