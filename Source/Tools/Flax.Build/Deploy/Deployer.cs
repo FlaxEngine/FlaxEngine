@@ -10,6 +10,12 @@ namespace Flax.Build
     public static partial class Configuration
     {
         /// <summary>
+        /// Compresses deployed files.
+        /// </summary>
+        [CommandLine("deployDontCompress", "Skips compressing deployed files, and keeps files.")]
+        public static bool DontCompress = false;
+
+        /// <summary>
         /// Package deployment output path.
         /// </summary>
         [CommandLine("deployOutput", "Package deployment output path.")]
@@ -28,9 +34,9 @@ namespace Flax.Build
         public static bool DeployPlatforms;
 
         /// <summary>
-        /// Certificate file path for binaries signing.
+        /// Certificate file path for binaries signing. Or sign identity for Apple platforms.
         /// </summary>
-        [CommandLine("deployCert", "Certificate file path for binaries signing.")]
+        [CommandLine("deployCert", "Certificate file path for binaries signing. Or sign identity for Apple platforms.")]
         public static string DeployCert;
 
         /// <summary>

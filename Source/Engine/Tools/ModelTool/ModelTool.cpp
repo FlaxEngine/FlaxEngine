@@ -1474,7 +1474,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
 
             // Group meshes that can be merged together
             typedef Pair<int32, int32> MeshGroupKey;
-            const std::function<MeshGroupKey(MeshData* const&)> f = [](MeshData* const& x) -> MeshGroupKey
+            const Function<MeshGroupKey(MeshData* const&)> f = [](MeshData* const& x) -> MeshGroupKey
             {
                 return MeshGroupKey(x->NodeIndex, x->MaterialSlotIndex);
             };
