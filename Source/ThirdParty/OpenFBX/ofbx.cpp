@@ -803,6 +803,14 @@ static OptionalError<Property*> readTextProperty(Cursor* cursor, Allocator& allo
 
 			prop->value.end = cursor->current;
 		}
+		else if (cursor->current < cursor->end && (*cursor->current == 'e' || *cursor->current == 'E')) {
+			prop->type = 'D';
+			// 10e-013
+			++cursor->current;
+			if (cursor->current < cursor->end && *cursor->current == '-') ++cursor->current;
+			while (cursor->current < cursor->end && isdigit(*cursor->current)) ++cursor->current;
+			prop->value.end = cursor->current;
+		}
 		return prop;
 	}
 
