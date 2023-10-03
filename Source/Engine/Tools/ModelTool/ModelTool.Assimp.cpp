@@ -829,7 +829,13 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
             const auto animations = context->Scene->mAnimations[animIndex];
             data.Animation.Channels.Resize(animations->mNumChannels, false);
             data.Animation.Duration = animations->mDuration;
-            data.Animation.FramesPerSecond = animations->mTicksPerSecond != 0.0 ? animations->mTicksPerSecond : 25.0;
+            data.Animation.FramesPerSecond = animations->mTicksPerSecond;
+            if (data.Animation.FramesPerSecond <= 0)
+            {
+                data.Animation.FramesPerSecond = context->Options.DefaultFrameRate;
+                if (data.Animation.FramesPerSecond <= 0)
+                    data.Animation.FramesPerSecond = 30.0f;
+            }
 
             for (unsigned i = 0; i < animations->mNumChannels; i++)
             {
