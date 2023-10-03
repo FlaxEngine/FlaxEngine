@@ -365,6 +365,7 @@ float DataView::toFloat() const
 
 bool DataView::operator==(const char* rhs) const
 {
+	if (!begin) return false;
 	const char* c = rhs;
 	const char* c2 = (const char*)begin;
 	while (*c && c2 != (const char*)end)
@@ -2473,6 +2474,15 @@ static void triangulate(
 		++in_polygon_idx;
 		if (old_indices[i] < 0)
 		{
+			if (in_polygon_idx <= 2) {
+				// invalid polygon, let's pop it
+				to_old_vertices->pop_back();
+				to_old_indices->pop_back();
+				if (in_polygon_idx == 2) {
+					to_old_vertices->pop_back();
+					to_old_indices->pop_back();
+				}
+			}
 			in_polygon_idx = 0;
 		}
 	}
