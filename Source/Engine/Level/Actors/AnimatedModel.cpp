@@ -534,12 +534,8 @@ void AnimatedModel::UpdateBounds()
         }
         else
         {
-            // No animation applied
-            const auto modelBox = SkinnedModel->GetBox(_transform.GetWorld());
-            const Vector3 modelBoxSize = modelBox.GetSize();
-            const Vector3 center = modelBox.GetCenter();
-            const Vector3 sizeHalf = modelBoxSize * 0.5f;
-            _box = BoundingBox(center - sizeHalf, center + sizeHalf);
+            // No animation asset applied
+            _box = SkinnedModel->GetBox(_transform.GetWorld());
         }
     }
     else
