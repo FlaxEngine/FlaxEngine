@@ -523,11 +523,10 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     case 40:
     {
         const auto uv = tryGetValue(node->GetBox(0), getUVs).AsFloat2();
-        const auto ratangle = tryGetValue(node->GetBox(1), node->Values[1]).AsFloat2();
+        const auto rectangle = tryGetValue(node->GetBox(1), node->Values[1]).AsFloat2();
 
-        auto d      = writeLocal(ValueType::Float2, String::Format(TEXT("abs({0} * 2 - 1) - {1}"),uv.Value, ratangle.Value), node);
-        auto fwidth = writeLocal(ValueType::Float , String::Format(TEXT("abs(ddx({0})) + abs(ddy({0}))"), d.Value), node);
-        auto d2     = writeLocal(ValueType::Float2 , String::Format(TEXT("1 - {0} / {1}"), d.Value, fwidth.Value), node);
+        auto d      = writeLocal(ValueType::Float2, String::Format(TEXT("abs({0} * 2 - 1) - {1}"),uv.Value, rectangle.Value), node);
+        auto d2     = writeLocal(ValueType::Float2 , String::Format(TEXT("1 - {0} / fwidth({0})"), d.Value), node);
         value       = writeLocal(ValueType::Float , String::Format(TEXT("saturate(min({0}.x, {0}.y))"), d2.Value), node);
         break;
     }
@@ -537,6 +536,23 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         const auto d = tryGetValue(node->GetBox(0), node->Values[0]).AsFloat();
         value =  writeLocal(ValueType::Float, String::Format(TEXT("abs(ddx({0})) + abs(ddy({0}))"), d.Value), node);
         break;
+    }
+    //AAStep (smooth version of step)
+    case 42:
+    {
+        //source https://www.ronja-tutorials.com/post/046-fwidth/#a-better-step
+
+        const auto compValue = tryGetValue(node->GetBox(0), getUVs).AsFloat();
+        const auto gradient = tryGetValue(node->GetBox(1), node->Values[1]).AsFloat();
+
+        auto change = writeLocal(ValueType::Float, String::Format(TEXT("fwidth({0})"), gradient.Value), node);
+
+        //base the range of the inverse lerp on the change over two pixels
+        auto lowerEdge = writeLocal(ValueType::Float, String::Format(TEXT("{0} - {1})"), compValue.Value, change.Value), node);
+        auto upperEdge = writeLocal(ValueType::Float, String::Format(TEXT("{0} + {1})"), compValue.Value, change.Value), node);
+
+        //do the inverse interpolation and saturate it
+        value = writeLocal(ValueType::Float, String::Format(TEXT("saturate((({0} - {1}) / ({2} - {1})))"), gradient.Value, lowerEdge.Value, upperEdge.Value), node);
     }
     default:
         break;

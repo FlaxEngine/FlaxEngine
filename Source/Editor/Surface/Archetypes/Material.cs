@@ -885,8 +885,8 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 40,
-                Title = "Ratangle Mask",
-                Description = "Creates a Ratangle mask",
+                Title = "Rectangle Mask",
+                Description = "Creates a Rectangle mask",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(150, 40),
                 ConnectionsHints = ConnectionsHint.Vector,
@@ -898,7 +898,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Float2), 0),
-                    NodeElementArchetype.Factory.Input(1, "Ratangle", true, typeof(Float2), 1),
+                    NodeElementArchetype.Factory.Input(1, "Rectangle", true, typeof(Float2), 1),
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 5),
                 }
             },
@@ -906,13 +906,32 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 41,
                 Title = "FWidth",
-                Description = "Creates a Partial Derivatives (fwidth)",
+                Description = "Creates a partial derivative (fwidth)",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(150, 20),
                 ConnectionsHints = ConnectionsHint.Vector,
                 DefaultValues = new object[]
                 {
                     1
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "value", true, typeof(float), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 5),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 42,
+                Title = "AAStep",
+                Description = "Smooth version of step",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(150, 20),
+                ConnectionsHints = ConnectionsHint.Vector,
+                DefaultValues = new object[]
+                {
+                    1,
+                    0
                 },
                 Elements = new[]
                 {
