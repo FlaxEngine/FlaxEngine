@@ -711,8 +711,27 @@ void WindowsWindow::CheckForWindowResize()
     // Cache client size
     RECT rect;
     GetClientRect(_handle, &rect);
-    const int32 width = Math::Max(rect.right - rect.left, 0L);
-    const int32 height = Math::Max(rect.bottom - rect.top, 0L);
+    int32 width = Math::Max(rect.right - rect.left, 0L);
+    int32 height = Math::Max(rect.bottom - rect.top, 0L);
+
+    // Check for windows maximized size and see if it needs to adjust position if needed
+    if (_maximized)
+    {
+        // Pick the current monitor data for sizing
+        const HMONITOR monitor = MonitorFromWindow(_handle, MONITOR_DEFAULTTONEAREST);
+        MONITORINFO monitorInfo;
+        monitorInfo.cbSize = sizeof(MONITORINFO);
+        GetMonitorInfoW(monitor, &monitorInfo);
+        
+        auto cwidth = monitorInfo.rcWork.right - monitorInfo.rcWork.left;
+        auto cheight = monitorInfo.rcWork.bottom - monitorInfo.rcWork.top;
+        if (width > cwidth && height > cheight)
+        {
+            width = cwidth;
+            height = cheight;
+            SetWindowPos(_handle, HWND_TOP, monitorInfo.rcWork.left, monitorInfo.rcWork.top, width, height, SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+        }
+    }
     _clientSize = Float2(static_cast<float>(width), static_cast<float>(height));
 
     // Check if window size has been changed
