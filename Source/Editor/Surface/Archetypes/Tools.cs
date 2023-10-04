@@ -1079,7 +1079,7 @@ namespace FlaxEditor.Surface.Archetypes
 
             private void UpdateBoxes()
             {
-                if (Surface == null || _input == null)
+                if (Surface == null || _input == null) // [hack] || _input == null https://github.com/FlaxEngine/FlaxEngine/pull/1606
                     return;
 
                 var type = _input.CurrentType;
