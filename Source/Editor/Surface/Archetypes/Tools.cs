@@ -1079,7 +1079,7 @@ namespace FlaxEditor.Surface.Archetypes
 
             private void UpdateBoxes()
             {
-                if (Surface == null)
+                if (Surface == null || _input == null)
                     return;
 
                 var type = _input.CurrentType;
