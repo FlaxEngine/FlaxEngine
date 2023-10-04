@@ -447,11 +447,6 @@ FLAXENGINE_API Asset* LoadAsset(const Guid& id, const ScriptingTypeHandle& type)
     return Content::LoadAsync(id, type);
 }
 
-FLAXENGINE_API Asset* LoadAsset(const StringView& path, const ScriptingTypeHandle& type)
-{
-    return Content::LoadAsync(path, type);
-}
-
 Asset* Content::LoadAsync(const StringView& path, MClass* type)
 {
     CHECK_RETURN(type, nullptr);

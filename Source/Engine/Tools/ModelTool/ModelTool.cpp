@@ -633,8 +633,8 @@ void CreateLinearListFromTree(Array<SkeletonNode>& nodes, Array<int32>& mapping)
     // Customized breadth first tree algorithm (each node has no direct reference to the children so we build the cache for the nodes depth level)
     const int32 count = nodes.Count();
     Array<Pair<int32, int32>> depths(count); // Pair.First = Depth, Pair.Second = Node Index
-    depths.SetSize(count);
-    depths.Set(-1);
+    depths.Resize(count);
+    depths.SetAll(-1);
     for (int32 i = 0; i < count; i++)
     {
         // Skip evaluated nodes
@@ -653,7 +653,7 @@ void CreateLinearListFromTree(Array<SkeletonNode>& nodes, Array<int32>& mapping)
         } while (end != -1 && lastDepth == -1);
 
         // Set the depth (second item is the node index)
-        depths[i] = MakePair(lastDepth + relativeDepth, i);
+        depths[i] = ToPair(lastDepth + relativeDepth, i);
     }
     for (int32 i = 0; i < count; i++)
     {
@@ -666,7 +666,7 @@ void CreateLinearListFromTree(Array<SkeletonNode>& nodes, Array<int32>& mapping)
 
     // Extract nodes mapping O(n^2)
     mapping.EnsureCapacity(count, false);
-    mapping.SetSize(count);
+    mapping.Resize(count);
     for (int32 i = 0; i < count; i++)
     {
         int32 newIndex = -1;
@@ -964,7 +964,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         case TextureEntry::TypeHint::Normals:
             textureOptions.Type = TextureFormatType::NormalMap;
             break;
-        default:;
+        default: ;
         }
         AssetsImportingManager::ImportIfEdited(texture.FilePath, assetPath, texture.AssetID, &textureOptions);
 #endif
@@ -999,37 +999,34 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         importedFileNames.Add(filename);
 #if COMPILE_WITH_ASSETS_IMPORTER
         auto assetPath = autoImportOutput / filename + ASSET_FILES_EXTENSION_WITH_DOT;
+
+        // When splitting imported meshes allow only the first mesh to import assets (mesh[0] is imported after all following ones so import assets during mesh[1])
+        if (!options.SplitObjects && options.ObjectIndex != 1 && options.ObjectIndex != -1)
+        {
+            // Find that asset create previously
+            AssetInfo info;
+            if (Content::GetAssetInfo(assetPath, info))
+                material.AssetID = info.ID;
+            continue;
+        }
+
         if (options.ImportMaterialsAsInstances)
         {
-            if (!options.SplitObjects && options.ObjectIndex != 1 && options.ObjectIndex != -1)
-            {
-                // Find that asset create previously
-                AssetInfo info;
-                if (Content::GetAssetInfo(assetPath, info))
-                    material.AssetID = info.ID;
-                continue;
-            }
-
+            // Create material instance
             AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialInstanceTag, assetPath, material.AssetID);
-            MaterialInstance* materialInstance = (MaterialInstance*)LoadAsset(assetPath, MaterialInstance::TypeInitializer);
-            if (materialInstance->WaitForLoaded())
+            if (MaterialInstance* materialInstance = Content::Load<MaterialInstance>(assetPath))
+            {
+                materialInstance->SetBaseMaterial(options.InstanceToImportAs);
+                materialInstance->Save();
+            }
+            else
             {
                 LOG(Error, "Failed to load material instance after creation. ({0})", assetPath);
-                return true;
             }
-
-            MaterialBase* materialInstanceOf = options.InstanceToImportAs;
-            if (materialInstanceOf->WaitForLoaded())
-            {
-                LOG(Error, "Failed to load material to create an instance of. ({0})", options.InstanceToImportAs->GetID());
-                return true;
-            }
-
-            materialInstance->SetBaseMaterial(materialInstanceOf);
-            materialInstance->Save();
         }
         else
         {
+            // Create material
             CreateMaterial::Options materialOptions;
             materialOptions.Diffuse.Color = material.Diffuse.Color;
             if (material.Diffuse.TextureIndex != -1)
@@ -1047,15 +1044,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                 materialOptions.Info.CullMode = CullMode::TwoSided;
             if (!Math::IsOne(material.Opacity.Value) || material.Opacity.TextureIndex != -1)
                 materialOptions.Info.BlendMode = MaterialBlendMode::Transparent;
-
-            if (!options.SplitObjects && options.ObjectIndex != 1 && options.ObjectIndex != -1)
-            {
-                // Find that asset create previously
-                AssetInfo info;
-                if (Content::GetAssetInfo(assetPath, info))
-                    material.AssetID = info.ID;
-                continue;
-            }
             AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialTag, assetPath, material.AssetID, &materialOptions);
         }
 #endif
@@ -1441,7 +1429,8 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                 bone.NodeIndex = mapping[bone.NodeIndex];
             }
         }
-        reorder_nodes_and_test_it_out!
+        reorder_nodes_and_test_it_out
+        !
 #endif
     }
     else if (options.Type == ModelType::Animation)
