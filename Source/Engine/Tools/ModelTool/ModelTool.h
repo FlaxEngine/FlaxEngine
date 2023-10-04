@@ -419,6 +419,7 @@ public:
     }
 
 private:
+    static void CalculateBoneOffsetMatrix(const Array<SkeletonNode>& nodes, Matrix& offsetMatrix, int32 nodeIndex);
 #if USE_ASSIMP
     static bool ImportDataAssimp(const char* path, ImportedModelData& data, Options& options, String& errorMsg);
 #endif

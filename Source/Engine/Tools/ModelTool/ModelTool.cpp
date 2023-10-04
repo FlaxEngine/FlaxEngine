@@ -841,18 +841,34 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             const auto mesh = data.LODs[0].Meshes[i];
             if (mesh->BlendIndices.IsEmpty() || mesh->BlendWeights.IsEmpty())
             {
-                LOG(Warning, "Imported mesh \'{0}\' has missing skinning data. It may result in invalid rendering.", mesh->Name);
-
                 auto indices = Int4::Zero;
                 auto weights = Float4::UnitX;
 
                 // Check if use a single bone for skinning
                 auto nodeIndex = data.Skeleton.FindNode(mesh->Name);
                 auto boneIndex = data.Skeleton.FindBone(nodeIndex);
-                if (boneIndex != -1)
+                if (boneIndex == -1 && nodeIndex != -1 && data.Skeleton.Bones.Count() < MAX_BONES_PER_MODEL)
                 {
-                    LOG(Warning, "Using auto-detected bone {0} (index {1})", data.Skeleton.Nodes[nodeIndex].Name, boneIndex);
+                    // Add missing bone to be used by skinned model from animated nodes pose
+                    boneIndex = data.Skeleton.Bones.Count();
+                    auto& bone = data.Skeleton.Bones.AddOne();
+                    bone.ParentIndex = -1;
+                    bone.NodeIndex = nodeIndex;
+                    bone.LocalTransform = CombineTransformsFromNodeIndices(data.Nodes, -1, nodeIndex);
+                    CalculateBoneOffsetMatrix(data.Skeleton.Nodes, bone.OffsetMatrix, bone.NodeIndex);
+                    LOG(Warning, "Using auto-created bone {0} (index {1}) for mesh \'{2}\'", data.Skeleton.Nodes[nodeIndex].Name, boneIndex, mesh->Name);
                     indices.X = boneIndex;
+                }
+                else if (boneIndex != -1)
+                {
+                    // Fallback to already added bone
+                    LOG(Warning, "Using auto-detected bone {0} (index {1}) for mesh \'{2}\'", data.Skeleton.Nodes[nodeIndex].Name, boneIndex, mesh->Name);
+                    indices.X = boneIndex;
+                }
+                else
+                {
+                    // No bone
+                    LOG(Warning, "Imported mesh \'{0}\' has missing skinning data. It may result in invalid rendering.", mesh->Name);
                 }
 
                 mesh->BlendIndices.Resize(mesh->Positions.Count());
@@ -1366,20 +1382,9 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         // use SkeletonMapping<SkeletonBone> to map bones?
 
         // Calculate offset matrix (inverse bind pose transform) for every bone manually
-        /*{
-            for (SkeletonBone& bone : data.Skeleton.Bones)
-            {
-                Matrix t = Matrix::Identity;
-                int32 idx = bone.NodeIndex;
-                do
-                {
-                    const SkeletonNode& node = data.Skeleton.Nodes[idx];
-                    t *= node.LocalTransform.GetWorld();
-                    idx = node.ParentIndex;
-                } while (idx != -1);
-                t.Invert();
-                bone.OffsetMatrix = t;
-            }
+        /*for (SkeletonBone& bone : data.Skeleton.Bones)
+        {
+            CalculateBoneOffsetMatrix(data.Skeleton.Nodes, bone.OffsetMatrix, bone.NodeIndex);
         }*/
 
 #if USE_SKELETON_NODES_SORTING
@@ -1758,5 +1763,18 @@ bool ModelTool::FindTexture(const String& sourcePath, const String& file, String
 }
 
 #endif
+
+void ModelTool::CalculateBoneOffsetMatrix(const Array<SkeletonNode>& nodes, Matrix& offsetMatrix, int32 nodeIndex)
+{
+    offsetMatrix = Matrix::Identity;
+    int32 idx = nodeIndex;
+    do
+    {
+        const SkeletonNode& node = nodes[idx];
+        offsetMatrix *= node.LocalTransform.GetWorld();
+        idx = node.ParentIndex;
+    } while (idx != -1);
+    offsetMatrix.Invert();
+}
 
 #endif
