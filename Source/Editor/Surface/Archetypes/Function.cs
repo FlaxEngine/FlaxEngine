@@ -744,12 +744,12 @@ namespace FlaxEditor.Surface.Archetypes
 
                 base.OnDestroy();
             }
-            
+
             internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
             {
                 return false;
             }
-            
+
             internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
             {
                 return inputType.IsVoid;
@@ -1161,48 +1161,48 @@ namespace FlaxEditor.Surface.Archetypes
 
                 base.OnDestroy();
             }
-            
+
             internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
             {
                 if (nodeArch.Tag is not ScriptMemberInfo memberInfo)
                     return false;
-                
+
                 if (!memberInfo.IsStatic)
                 {
                     if (VisjectSurface.FullCastCheck(memberInfo.DeclaringType, outputType, hint))
                         return true;
                 }
-                
+
                 var parameters = memberInfo.GetParameters();
                 bool isPure = (parameters.Length == 0 && !memberInfo.ValueType.IsVoid);
                 if (outputType.IsVoid)
                     return !isPure;
-                
+
                 foreach (var param in parameters)
                 {
-                    if(param.IsOut)
+                    if (param.IsOut)
                         continue;
                     if (VisjectSurface.FullCastCheck(param.Type, outputType, hint))
                         return true;
                 }
                 return false;
             }
-            
+
             internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
             {
                 if (nodeArch.Tag is not ScriptMemberInfo memberInfo)
                     return false;
                 if (VisjectSurface.FullCastCheck(memberInfo.ValueType, inputType, hint))
                     return true;
-                
+
                 var parameters = memberInfo.GetParameters();
                 bool isPure = (parameters.Length == 0 && !memberInfo.ValueType.IsVoid);
                 if (inputType.IsVoid)
                     return !isPure;
-                
+
                 foreach (var param in memberInfo.GetParameters())
                 {
-                    if(!param.IsOut)
+                    if (!param.IsOut)
                         continue;
                     if (VisjectSurface.FullCastCheck(param.Type, inputType, hint))
                         return true;
@@ -1835,12 +1835,12 @@ namespace FlaxEditor.Surface.Archetypes
 
                 base.OnDestroy();
             }
-            
+
             internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
             {
                 return false;
             }
-            
+
             internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
             {
                 return inputType.IsVoid;
@@ -1981,19 +1981,19 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Get " + SurfaceUtils.GetMethodDisplayName((string)Values[1]);
                 UpdateSignature();
             }
-            
+
             internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
             {
                 var scriptType = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
                 if (scriptType == ScriptType.Null)
                     return false;
-                
+
                 var members = scriptType.GetMembers((string)nodeArch.DefaultValues[1], MemberTypes.Field, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
                 foreach (var member in members)
                 {
                     if (!SurfaceUtils.IsValidVisualScriptField(member))
                         continue;
-                        
+
                     if (member)
                     {
                         if (!member.IsStatic && VisjectSurface.FullCastCheck(scriptType, outputType, hint))
@@ -2007,22 +2007,22 @@ namespace FlaxEditor.Surface.Archetypes
                     }
                     break;
                 }
-                
+
                 return false;
             }
-            
+
             internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
             {
                 var scriptType = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
                 if (scriptType == ScriptType.Null)
                     return false;
-                
+
                 var members = scriptType.GetMembers((string)nodeArch.DefaultValues[1], MemberTypes.Field, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
                 foreach (var member in members)
                 {
                     if (!SurfaceUtils.IsValidVisualScriptField(member))
                         continue;
-                        
+
                     if (member)
                     {
                         if (VisjectSurface.FullCastCheck(member.ValueType, inputType, hint))
@@ -2092,22 +2092,22 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Set " + SurfaceUtils.GetMethodDisplayName((string)Values[1]);
                 UpdateSignature();
             }
-            
+
             internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
             {
-                if(outputType.IsVoid)
+                if (outputType.IsVoid)
                     return true;
-                
+
                 var scriptType = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
                 if (scriptType == ScriptType.Null)
                     return false;
-                
+
                 var members = scriptType.GetMembers((string)nodeArch.DefaultValues[1], MemberTypes.Field, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
                 foreach (var member in members)
                 {
                     if (!SurfaceUtils.IsValidVisualScriptField(member))
                         continue;
-                        
+
                     if (member)
                     {
                         if (VisjectSurface.FullCastCheck(member.ValueType, outputType, hint))
@@ -2126,10 +2126,10 @@ namespace FlaxEditor.Surface.Archetypes
                     }
                     break;
                 }
-                
+
                 return false;
             }
-            
+
             internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
             {
                 return inputType.IsVoid;
@@ -2352,13 +2352,13 @@ namespace FlaxEditor.Surface.Archetypes
 
                 base.OnDestroy();
             }
-            
+
             internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
             {
                 // Event based nodes always have a pulse input, so it's always compatible with void
                 if (outputType.IsVoid)
                     return true;
-                
+
                 var eventName = (string)nodeArch.DefaultValues[1];
                 var eventType = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
                 var member = eventType.GetMember(eventName, MemberTypes.Event, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
@@ -2372,13 +2372,13 @@ namespace FlaxEditor.Surface.Archetypes
                 }
                 return false;
             }
-            
+
             internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
             {
                 // Event based nodes always have a pulse output, so it's always compatible with void
                 if (inputType.IsVoid)
                     return true;
-                
+
                 var eventName = (string)nodeArch.DefaultValues[1];
                 var eventType = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
                 var member = eventType.GetMember(eventName, MemberTypes.Event, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);

@@ -1393,7 +1393,7 @@ namespace FlaxEditor.Scripting
                 return _custom.GetMembers(name, MemberTypes.Method, bindingAttr).FirstOrDefault();
             return ScriptMemberInfo.Null;
         }
-        
+
         /// <summary>
         /// Basic check to see if a type could be casted to another type
         /// </summary>

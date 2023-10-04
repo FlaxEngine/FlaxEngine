@@ -231,7 +231,7 @@ namespace FlaxEditor.Surface.Elements
             }
 
             // Check using connection hints
-            if(VisjectSurface.IsTypeCompatible(Archetype.ConnectionsType, type, ParentNode.Archetype.ConnectionsHints))
+            if (VisjectSurface.IsTypeCompatible(Archetype.ConnectionsType, type, ParentNode.Archetype.ConnectionsHints))
                 return true;
 
             // Check independent and if there is box with bigger potential because it may block current one from changing type

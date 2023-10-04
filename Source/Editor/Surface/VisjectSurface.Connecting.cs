@@ -212,12 +212,12 @@ namespace FlaxEditor.Surface
             // Yes, from and to are switched on purpose
             if (CanUseDirectCastStatic(to, from, false))
                 return true;
-            if(IsTypeCompatible(from, to, hint))
+            if (IsTypeCompatible(from, to, hint))
                 return true;
             // Same here
             return to.CanCastTo(from);
         }
-        
+
         /// <summary>
         /// Checks if can use direct conversion from one type to another.
         /// </summary>

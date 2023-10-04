@@ -132,7 +132,7 @@ namespace FlaxEditor.Surface.ContextMenu
             }
 
             Profiler.BeginEvent("VisjectCMGroup.EvaluateVisibilityWithBox");
-            
+
             bool isAnyVisible = false;
             for (int i = 0; i < _children.Count; i++)
             {
@@ -142,7 +142,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     isAnyVisible |= item.Visible;
                 }
             }
-            
+
             // Update itself
             if (isAnyVisible)
             {

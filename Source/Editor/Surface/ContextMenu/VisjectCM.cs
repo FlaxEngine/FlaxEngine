@@ -164,7 +164,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 HorizontalAlignment = TextAlignment.Far,
                 Font = titleFontReference,
             };
-            
+
             _contextSensitiveToggle = new CheckBox
             {
                 Width = 20,
@@ -174,7 +174,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 Checked = _contextSensitiveSearchEnabled,
             };
             _contextSensitiveToggle.StateChanged += OnContextSensitiveToggleStateChanged;
-            
+
             // Search box
             _searchBox = new SearchBox(false, 2, 22)
             {
@@ -313,7 +313,7 @@ namespace FlaxEditor.Surface.ContextMenu
                         OnSearchFilterChanged();
                     }
                 }
-                else if(_contextSensitiveSearchEnabled)
+                else if (_contextSensitiveSearchEnabled)
                 {
                     group.EvaluateVisibilityWithBox(_selectedBox);
                 }
@@ -350,8 +350,8 @@ namespace FlaxEditor.Surface.ContextMenu
                             Parent = group
                         };
                     }
-                    if(_contextSensitiveSearchEnabled)
-                        group.EvaluateVisibilityWithBox(_selectedBox); 
+                    if (_contextSensitiveSearchEnabled)
+                        group.EvaluateVisibilityWithBox(_selectedBox);
                     group.SortChildren();
                     group.Parent = _groupsPanel;
                     _groups.Add(group);
@@ -459,7 +459,7 @@ namespace FlaxEditor.Surface.ContextMenu
             // Skip events during setup or init stuff
             if (IsLayoutLocked)
                 return;
-            
+
             Profiler.BeginEvent("VisjectCM.OnContextSensitiveToggleStateChanged");
             _contextSensitiveSearchEnabled = checkBox.Checked;
             UpdateFilters();
@@ -551,7 +551,7 @@ namespace FlaxEditor.Surface.ContextMenu
             for (int i = 0; i < _groups.Count; i++)
             {
                 _groups[i].ResetView();
-                if(_contextSensitiveSearchEnabled)
+                if (_contextSensitiveSearchEnabled)
                     _groups[i].EvaluateVisibilityWithBox(_selectedBox);
             }
             UnlockChildrenRecursive();

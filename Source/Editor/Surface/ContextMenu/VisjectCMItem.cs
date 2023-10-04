@@ -103,7 +103,7 @@ namespace FlaxEditor.Surface.ContextMenu
         {
             // Is compatible if box is null for reset reasons
             if (startBox == null)
-                return true;   
+                return true;
 
             if (_archetype == null)
                 return false;
@@ -112,7 +112,7 @@ namespace FlaxEditor.Surface.ContextMenu
             if (startBox.IsOutput && _archetype.IsInputCompatible != null)
             {
                 isCompatible |= _archetype.IsInputCompatible.Invoke(_archetype, startBox.CurrentType, _archetype.ConnectionsHints);
-            } 
+            }
             else if (!startBox.IsOutput && _archetype.IsOutputCompatible != null)
             {
                 isCompatible |= _archetype.IsOutputCompatible.Invoke(_archetype, startBox.CurrentType, startBox.ParentNode.Archetype.ConnectionsHints);
@@ -122,23 +122,23 @@ namespace FlaxEditor.Surface.ContextMenu
                 // Check compatibility based on the defined elements in the archetype. This handles all the default groups and items
                 isCompatible = CheckElementsCompatibility(startBox);
             }
-            
+
             return isCompatible;
         }
-        
+
         private bool CheckElementsCompatibility(Box startBox)
         {
             bool isCompatible = false;
             foreach (NodeElementArchetype element in _archetype.Elements)
             {
                 // Ignore all elements that aren't inputs or outputs (e.g. input fields)
-                if(element.Type != NodeElementType.Output && element.Type != NodeElementType.Input)
+                if (element.Type != NodeElementType.Output && element.Type != NodeElementType.Input)
                     continue;
-                
+
                 // Ignore elements with the same direction as the box
                 if ((startBox.IsOutput && element.Type == NodeElementType.Output) || (!startBox.IsOutput && element.Type == NodeElementType.Input))
                     continue;
-                
+
                 ScriptType fromType;
                 ScriptType toType;
                 ConnectionsHint hint;
@@ -154,13 +154,13 @@ namespace FlaxEditor.Surface.ContextMenu
                     toType = element.ConnectionsType;
                     hint = startBox.ParentNode.Archetype.ConnectionsHints;
                 }
-                
+
                 isCompatible |= VisjectSurface.FullCastCheck(fromType, toType, hint);
             }
 
             return isCompatible;
         }
-        
+
         /// <summary>
         /// Updates the filter.
         /// </summary>
@@ -176,7 +176,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     return;
                 }
             }
-            
+
             _isStartsWithMatch = _isFullMatch = false;
             if (string.IsNullOrEmpty(filterText))
             {
@@ -242,7 +242,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
                     Data = data;
                 }
-                else if(!groupHeaderMatches)
+                else if (!groupHeaderMatches)
                 {
                     // Hide
                     _highlights?.Clear();

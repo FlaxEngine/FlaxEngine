@@ -93,7 +93,7 @@ namespace FlaxEditor.Surface
         /// Checks if the given type is compatible with the given node archetype. Used for custom nodes
         /// </summary>
         public delegate bool IsCompatible(NodeArchetype nodeArch, ScriptType portType, ConnectionsHint hint);
-        
+
         /// <summary>
         /// Unique node type ID within a single group.
         /// </summary>
@@ -108,12 +108,12 @@ namespace FlaxEditor.Surface
         /// Function for asynchronously loaded nodes to check if input ports are compatible, for filtering.
         /// </summary>
         public IsCompatible IsInputCompatible;
-        
+
         /// <summary>
         /// Function for asynchronously loaded nodes to check if output ports are compatible, for filtering.
         /// </summary>
         public IsCompatible IsOutputCompatible;
-        
+
         /// <summary>
         /// Default initial size of the node.
         /// </summary>
