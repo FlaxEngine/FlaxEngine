@@ -12,6 +12,8 @@
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Platform/File.h"
 
+#define OPEN_FBX_CONVERT_SPACE 1
+
 // Import OpenFBX library
 // Source: https://github.com/nem0/OpenFBX
 #include <ThirdParty/OpenFBX/ofbx.h>
@@ -85,12 +87,16 @@ struct OpenFbxImporterData
     const ModelTool::Options& Options;
 
     ofbx::GlobalSettings GlobalSettings;
+#if OPEN_FBX_CONVERT_SPACE
+    Quaternion RootConvertRotation = Quaternion::Identity;
     Float3 Up;
     Float3 Front;
     Float3 Right;
     bool ConvertRH;
+#else
+    static constexpr bool ConvertRH = false;
+#endif
     float FrameRate;
-    Quaternion RootConvertRotation = Quaternion::Identity;
 
     Array<FbxNode> Nodes;
     Array<FbxBone> Bones;
@@ -103,7 +109,9 @@ struct OpenFbxImporterData
         , Path(path)
         , Options(options)
         , GlobalSettings(*scene->getGlobalSettings())
+#if OPEN_FBX_CONVERT_SPACE
         , ConvertRH(GlobalSettings.CoordAxis == ofbx::CoordSystem_RightHanded)
+#endif
         , Nodes(static_cast<int32>(scene->getMeshCount() * 4.0f))
     {
         float frameRate = scene->getSceneFrameRate();
@@ -114,6 +122,7 @@ struct OpenFbxImporterData
                 frameRate = 30.0f;
         }
         FrameRate = frameRate;
+#if OPEN_FBX_CONVERT_SPACE
         const float coordAxisSign = GlobalSettings.CoordAxis == ofbx::CoordSystem_LeftHanded ? -1.0f : +1.0f;
         switch (GlobalSettings.UpAxis)
         {
@@ -170,6 +179,7 @@ struct OpenFbxImporterData
             break;
         default: ;
         }
+#endif
     }
 
     bool ImportMaterialTexture(ImportedModelData& result, const ofbx::Material* mat, ofbx::Texture::TextureType textureType, int32& textureIndex, TextureEntry::TypeHint type) const
@@ -371,6 +381,7 @@ void ProcessNodes(OpenFbxImporterData& data, const ofbx::Object* aNode, int32 pa
     }
 
     auto transform = ToMatrix(aNode->evalLocal(aNode->getLocalTranslation(), aNode->getLocalRotation()));
+#if OPEN_FBX_CONVERT_SPACE
     if (data.ConvertRH)
     {
         // Mirror all base vectors at the local Z axis
@@ -386,6 +397,7 @@ void ProcessNodes(OpenFbxImporterData& data, const ofbx::Object* aNode, int32 pa
         transform.M33 = -transform.M33;
         transform.M43 = -transform.M43;
     }
+#endif
     transform.Decompose(node.LocalTransform);
     data.Nodes.Add(node);
 
@@ -493,6 +505,15 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
                     m.M31 = -m.M31;
                     m.M32 = -m.M32;
                     m.M34 = -m.M34;
+                }
+
+                // Convert bone matrix if scene uses root transform
+                if (!data.RootConvertRotation.IsIdentity())
+                {
+                    Matrix m;
+                    Matrix::RotationQuaternion(data.RootConvertRotation, m);
+                    m.Invert();
+                    bone.OffsetMatrix = m * bone.OffsetMatrix;
                 }
             }
         }
@@ -1095,6 +1116,14 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
         }
         fileData.Resize(0);
 
+        // Tweak scene if exported by Blender
+        auto& globalInfo = *scene->getGlobalInfo();
+        if (StringAnsiView(globalInfo.AppName).StartsWith(StringAnsiView("Blender"), StringSearchCase::IgnoreCase))
+        {
+            auto ptr = const_cast<ofbx::GlobalSettings*>(scene->getGlobalSettings());
+            ptr->UpAxis = (ofbx::UpVector)((int32)ptr->UpAxis + 1);
+        }
+
         // Process imported scene
         context = New<OpenFbxImporterData>(path, options, scene);
         auto& globalSettings = context->GlobalSettings;
@@ -1105,10 +1134,13 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
 
         // Log scene info
         LOG(Info, "Loaded FBX model, Frame Rate: {0}, Unit Scale Factor: {1}", context->FrameRate, globalSettings.UnitScaleFactor);
+        LOG(Info, "{0}, {1}, {2}", String(globalInfo.AppName), String(globalInfo.AppVersion), String(globalInfo.AppVendor));
         LOG(Info, "Up: {1}{0}", globalSettings.UpAxis == ofbx::UpVector_AxisX ? TEXT("X") : globalSettings.UpAxis == ofbx::UpVector_AxisY ? TEXT("Y") : TEXT("Z"), globalSettings.UpAxisSign == 1 ? TEXT("+") : TEXT("-"));
         LOG(Info, "Front: {1}{0}", globalSettings.FrontAxis == ofbx::FrontVector_ParityEven ? TEXT("ParityEven") : TEXT("ParityOdd"), globalSettings.FrontAxisSign == 1 ? TEXT("+") : TEXT("-"));
         LOG(Info, "{0} Handed{1}", globalSettings.CoordAxis == ofbx::CoordSystem_RightHanded ? TEXT("Right") : TEXT("Left"), globalSettings.CoordAxisSign == 1 ? TEXT("") : TEXT(" (negative)"));
+#if OPEN_FBX_CONVERT_SPACE
         LOG(Info, "Imported scene: Up={0}, Front={1}, Right={2}", context->Up, context->Front, context->Right);
+#endif
 
         // Extract embedded textures
         if (EnumHasAnyFlags(data.Types, ImportDataTypes::Textures))
@@ -1138,6 +1170,7 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
             }
         }
 
+#if OPEN_FBX_CONVERT_SPACE
         // Transform nodes to match the engine coordinates system - DirectX (UpVector = +Y, FrontVector = +Z, CoordSystem = -X (LeftHanded))
         if (context->Up == Float3(1, 0, 0) && context->Front == Float3(0, 0, 1) && context->Right == Float3(0, 1, 0))
         {
@@ -1167,15 +1200,16 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
             context->RootConvertRotation = Quaternion::Euler(90, 0, 0);*/
         if (!context->RootConvertRotation.IsIdentity())
         {
-            for (int32 i = 0; i < context->Nodes.Count(); i++)
+            for (auto& node : context->Nodes)
             {
-                if (context->Nodes[i].ParentIndex == -1)
+                if (node.ParentIndex == -1)
                 {
-                    context->Nodes[i].LocalTransform.Orientation = context->RootConvertRotation * context->Nodes[i].LocalTransform.Orientation;
+                    node.LocalTransform.Orientation = context->RootConvertRotation * node.LocalTransform.Orientation;
                     break;
                 }
             }
         }
+#endif
     }
     DeleteMe<OpenFbxImporterData> contextCleanup(options.SplitContext ? nullptr : context);
 
