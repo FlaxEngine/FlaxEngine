@@ -1567,6 +1567,7 @@ struct Scene : IScene
 	int getAnimationStackCount() const override { return (int)m_animation_stacks.size(); }
 	int getMeshCount() const override { return (int)m_meshes.size(); }
 	float getSceneFrameRate() const override { return m_scene_frame_rate; }
+    const GlobalInfo* getGlobalInfo() const override { return &m_info; }
 	const GlobalSettings* getGlobalSettings() const override { return &m_settings; }
 
 	const Object* const* getAllObjects() const override { return m_all_objects.empty() ? nullptr : &m_all_objects[0]; }
@@ -1629,6 +1630,7 @@ struct Scene : IScene
 	Element* m_root_element = nullptr;
 	Root* m_root = nullptr;
 	float m_scene_frame_rate = -1;
+	GlobalInfo m_info;
 	GlobalSettings m_settings;
 	std::unordered_map<u64, ObjectPair> m_object_map;
 	std::vector<Object*> m_all_objects;
@@ -2933,6 +2935,66 @@ static float getFramerateFromTimeMode(FrameRate time_mode, float custom_frame_ra
 }
 
 
+#define get_property(name, field, type, getter) if (node->first_property->value == name) \
+    { \
+        IElementProperty* prop = node->getProperty(4); \
+        if (prop) \
+        { \
+	        DataView value = prop->getValue(); \
+	        field = (type)value.getter(); \
+        } \
+    }
+#define get_time_property(name, field, type, getter) if (node->first_property->value == name) \
+    { \
+        IElementProperty* prop = node->getProperty(4); \
+        if (prop) \
+        { \
+	        DataView value = prop->getValue(); \
+	        field = fbxTimeToSeconds((type)value.getter()); \
+        } \
+    }
+#define get_text_property(name, field) if (node->first_property->value == name) \
+    { \
+        IElementProperty* prop = node->getProperty(4); \
+        if (prop) \
+        { \
+	        DataView value = prop->getValue(); \
+            value.toString(field); \
+        } \
+    }
+
+
+static void parseGlobalInfo(const Element& root, Scene* scene)
+{
+    for (Element* header = root.child; header; header = header->sibling)
+	{
+		if (header->id != "FBXHeaderExtension")
+		    continue;
+	    for (Element* info = header->child; info; info = info->sibling)
+	    {
+		    if (info->id != "SceneInfo")
+		        continue;
+			for (Element* props70 = info->child; props70; props70 = props70->sibling)
+			{
+				if (props70->id != "Properties70")
+				    continue;
+				for (Element* node = props70->child; node; node = node->sibling)
+				{
+					if (!node->first_property)
+						continue;
+					get_text_property("Original|ApplicationVendor", scene->m_info.AppVendor, UpVector, toInt);
+					get_text_property("Original|ApplicationName", scene->m_info.AppName, UpVector, toInt);
+					get_text_property("Original|ApplicationVersion", scene->m_info.AppVersion, UpVector, toInt);
+				}
+				break;
+			}
+			break;
+	    }
+		break;
+    }
+}
+
+
 static void parseGlobalSettings(const Element& root, Scene* scene)
 {
 	for (Element* settings = root.child; settings; settings = settings->sibling)
@@ -2947,44 +3009,20 @@ static void parseGlobalSettings(const Element& root, Scene* scene)
 					{
 						if (!node->first_property)
 							continue;
-
-						#define get_property(name, field, type, getter) if(node->first_property->value == name) \
-						{ \
-							IElementProperty* prop = node->getProperty(4); \
-							if (prop) \
-							{ \
-								DataView value = prop->getValue(); \
-								scene->m_settings.field = (type)value.getter(); \
-							} \
-						}
-
-						#define get_time_property(name, field, type, getter) if(node->first_property->value == name) \
-						{ \
-							IElementProperty* prop = node->getProperty(4); \
-							if (prop) \
-							{ \
-								DataView value = prop->getValue(); \
-								scene->m_settings.field = fbxTimeToSeconds((type)value.getter()); \
-							} \
-						}
-
-						get_property("UpAxis", UpAxis, UpVector, toInt);
-						get_property("UpAxisSign", UpAxisSign, int, toInt);
-						get_property("FrontAxis", FrontAxis, FrontVector, toInt);
-						get_property("FrontAxisSign", FrontAxisSign, int, toInt);
-						get_property("CoordAxis", CoordAxis, CoordSystem, toInt);
-						get_property("CoordAxisSign", CoordAxisSign, int, toInt);
-						get_property("OriginalUpAxis", OriginalUpAxis, int, toInt);
-						get_property("OriginalUpAxisSign", OriginalUpAxisSign, int, toInt);
-						get_property("UnitScaleFactor", UnitScaleFactor, float, toDouble);
-						get_property("OriginalUnitScaleFactor", OriginalUnitScaleFactor, float, toDouble);
-						get_time_property("TimeSpanStart", TimeSpanStart, u64, toU64);
-						get_time_property("TimeSpanStop", TimeSpanStop, u64, toU64);
-						get_property("TimeMode", TimeMode, FrameRate, toInt);
-						get_property("CustomFrameRate", CustomFrameRate, float, toDouble);
-
-						#undef get_property
-
+						get_property("UpAxis", scene->m_settings.UpAxis, UpVector, toInt);
+						get_property("UpAxisSign", scene->m_settings.UpAxisSign, int, toInt);
+						get_property("FrontAxis", scene->m_settings.FrontAxis, FrontVector, toInt);
+						get_property("FrontAxisSign", scene->m_settings.FrontAxisSign, int, toInt);
+						get_property("CoordAxis", scene->m_settings.CoordAxis, CoordSystem, toInt);
+						get_property("CoordAxisSign", scene->m_settings.CoordAxisSign, int, toInt);
+						get_property("OriginalUpAxis", scene->m_settings.OriginalUpAxis, int, toInt);
+						get_property("OriginalUpAxisSign", scene->m_settings.OriginalUpAxisSign, int, toInt);
+						get_property("UnitScaleFactor", scene->m_settings.UnitScaleFactor, float, toDouble);
+						get_property("OriginalUnitScaleFactor", scene->m_settings.OriginalUnitScaleFactor, float, toDouble);
+						get_time_property("TimeSpanStart", scene->m_settings.TimeSpanStart, u64, toU64);
+						get_time_property("TimeSpanStop", scene->m_settings.TimeSpanStop, u64, toU64);
+						get_property("TimeMode", scene->m_settings.TimeMode, FrameRate, toInt);
+						get_property("CustomFrameRate", scene->m_settings.CustomFrameRate, float, toDouble);
 						scene->m_scene_frame_rate = getFramerateFromTimeMode(scene->m_settings.TimeMode, scene->m_settings.CustomFrameRate);
 					}
 					break;
@@ -2994,6 +3032,10 @@ static void parseGlobalSettings(const Element& root, Scene* scene)
 		}
 	}
 }
+
+
+#undef get_property
+#undef get_time_property
 
 
 struct ParseGeometryJob {
@@ -3624,6 +3666,7 @@ IScene* load(const u8* data, int size, u64 flags, JobProcessor job_processor, vo
 	if (!parseConnections(*root.getValue(), scene.get())) return nullptr;
 	if (!parseTakes(scene.get())) return nullptr;
 	if (!parseObjects(*root.getValue(), scene.get(), flags, scene->m_allocator, job_processor, job_user_ptr)) return nullptr;
+	parseGlobalInfo(*root.getValue(), scene.get());
 	parseGlobalSettings(*root.getValue(), scene.get());
 
 	return scene.release();
