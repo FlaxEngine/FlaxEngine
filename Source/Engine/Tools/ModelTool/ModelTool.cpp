@@ -1107,7 +1107,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
 #if COMPILE_WITH_PHYSICS_COOKING
                 // Create collision
                 CollisionCooking::Argument arg;
-                arg.Type = CollisionDataType::TriangleMesh;
+                arg.Type = options.CollisionType;
                 arg.OverrideModelData = &collisionModel;
                 auto assetPath = autoImportOutput / StringUtils::GetFileNameWithoutExtension(path) + TEXT("Collision") ASSET_FILES_EXTENSION_WITH_DOT;
                 if (CreateCollisionData::CookMeshCollision(assetPath, arg))
