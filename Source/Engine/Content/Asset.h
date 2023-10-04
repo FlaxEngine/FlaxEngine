@@ -246,3 +246,4 @@ public:
 
 // Don't include Content.h but just Load method
 extern FLAXENGINE_API Asset* LoadAsset(const Guid& id, const ScriptingTypeHandle& type);
+extern FLAXENGINE_API Asset* LoadAsset(const StringView& path, const ScriptingTypeHandle& type);

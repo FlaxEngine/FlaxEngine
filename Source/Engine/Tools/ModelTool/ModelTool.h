@@ -12,6 +12,8 @@
 #include "Engine/Graphics/Models/ModelData.h"
 #include "Engine/Graphics/Models/SkeletonData.h"
 #include "Engine/Animations/AnimationData.h"
+#include <Engine/Content/Assets/Material.h>
+#include <Engine/Graphics/GPUDevice.h>
 
 class JsonWriter;
 
@@ -338,6 +340,12 @@ public:
         // If checked, the importer will create materials for model meshes as specified in the file.
         API_FIELD(Attributes="EditorOrder(400), EditorDisplay(\"Materials\"), VisibleIf(nameof(ShowGeometry))")
         bool ImportMaterials = true;
+        // If checked, the importer will create the model's materials as instances of a base material.
+        API_FIELD(Attributes = "EditorOrder(401), EditorDisplay(\"Materials\"), VisibleIf(nameof(ImportMaterials))")
+        bool ImportMaterialsAsInstances = false;
+        // The material to import the model's materials as an instance of.
+        API_FIELD(Attributes = "EditorOrder(402), EditorDisplay(\"Materials\"), VisibleIf(nameof(ImportMaterialsAsInstances))")
+        AssetReference<Material> InstanceToImportAs = (Material*) GPUDevice::Instance->GetDefaultMaterial();
         // If checked, the importer will import texture files used by the model and any embedded texture resources.
         API_FIELD(Attributes="EditorOrder(410), EditorDisplay(\"Materials\"), VisibleIf(nameof(ShowGeometry))")
         bool ImportTextures = true;
