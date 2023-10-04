@@ -91,7 +91,7 @@ namespace FlaxEditor.Surface.Elements
                     _currentType = value;
 
                     // Check if will need to update box connections due to type change
-                    if ((Surface == null || Surface._isUpdatingBoxTypes == 0) && HasAnyConnection && !CanCast(prev, _currentType))
+                    if ((Surface == null || Surface._isUpdatingBoxTypes == 0) && HasAnyConnection && !prev.CanCastTo(_currentType))
                     {
                         // Remove all invalid connections and update those which still can be valid
                         var connections = Connections.ToArray();
@@ -231,58 +231,8 @@ namespace FlaxEditor.Surface.Elements
             }
 
             // Check using connection hints
-            var connectionsHints = ParentNode.Archetype.ConnectionsHints;
-            if (Archetype.ConnectionsType == ScriptType.Null && connectionsHints != ConnectionsHint.None)
-            {
-                if ((connectionsHints & ConnectionsHint.Anything) == ConnectionsHint.Anything)
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Value) == ConnectionsHint.Value && type.Type != typeof(void))
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Enum) == ConnectionsHint.Enum && type.IsEnum)
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Array) == ConnectionsHint.Array && type.IsArray)
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Dictionary) == ConnectionsHint.Dictionary && type.IsDictionary)
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Vector) == ConnectionsHint.Vector)
-                {
-                    var t = type.Type;
-                    if (t == typeof(Vector2) ||
-                        t == typeof(Vector3) ||
-                        t == typeof(Vector4) ||
-                        t == typeof(Float2) ||
-                        t == typeof(Float3) ||
-                        t == typeof(Float4) ||
-                        t == typeof(Double2) ||
-                        t == typeof(Double3) ||
-                        t == typeof(Double4) ||
-                        t == typeof(Int2) ||
-                        t == typeof(Int3) ||
-                        t == typeof(Int4) ||
-                        t == typeof(Color))
-                    {
-                        return true;
-                    }
-                }
-                if ((connectionsHints & ConnectionsHint.Scalar) == ConnectionsHint.Scalar)
-                {
-                    var t = type.Type;
-                    if (t == typeof(bool) ||
-                        t == typeof(char) ||
-                        t == typeof(byte) ||
-                        t == typeof(short) ||
-                        t == typeof(ushort) ||
-                        t == typeof(int) ||
-                        t == typeof(uint) ||
-                        t == typeof(long) ||
-                        t == typeof(ulong) ||
-                        t == typeof(float) ||
-                        t == typeof(double))
-                    {
-                        return true;
-                    }
-                }
-            }
+            if(VisjectSurface.IsTypeCompatible(Archetype.ConnectionsType, type, ParentNode.Archetype.ConnectionsHints))
+                return true;
 
             // Check independent and if there is box with bigger potential because it may block current one from changing type
             var parentArch = ParentNode.Archetype;
@@ -296,7 +246,7 @@ namespace FlaxEditor.Surface.Elements
                     var b = ParentNode.GetBox(boxes[i]);
 
                     // Check if its the same and tested type matches the default value type
-                    if (b == this && CanCast(parentArch.DefaultType, type))
+                    if (b == this && parentArch.DefaultType.CanCastTo(type))
                     {
                         // Can
                         return true;
@@ -718,17 +668,6 @@ namespace FlaxEditor.Surface.Elements
             }
         }
 
-        private static bool CanCast(ScriptType oB, ScriptType iB)
-        {
-            if (oB == iB)
-                return true;
-            if (oB == ScriptType.Null || iB == ScriptType.Null)
-                return false;
-            return (oB.Type != typeof(void) && oB.Type != typeof(FlaxEngine.Object)) &&
-                   (iB.Type != typeof(void) && iB.Type != typeof(FlaxEngine.Object)) &&
-                   oB.IsAssignableFrom(iB);
-        }
-
         /// <inheritdoc />
         public bool AreConnected(IConnectionInstigator other)
         {
@@ -787,7 +726,7 @@ namespace FlaxEditor.Surface.Elements
             {
                 if (!iB.CanUseType(oB.CurrentType))
                 {
-                    if (!CanCast(oB.CurrentType, iB.CurrentType))
+                    if (!oB.CurrentType.CanCastTo(iB.CurrentType))
                     {
                         // Cannot
                         return false;
@@ -798,7 +737,7 @@ namespace FlaxEditor.Surface.Elements
             {
                 if (!oB.CanUseType(iB.CurrentType))
                 {
-                    if (!CanCast(oB.CurrentType, iB.CurrentType))
+                    if (!oB.CurrentType.CanCastTo(iB.CurrentType))
                     {
                         // Cannot
                         return false;
@@ -871,7 +810,7 @@ namespace FlaxEditor.Surface.Elements
             bool useCaster = false;
             if (!iB.CanUseType(oB.CurrentType))
             {
-                if (CanCast(oB.CurrentType, iB.CurrentType))
+                if (oB.CurrentType.CanCastTo(iB.CurrentType))
                     useCaster = true;
                 else
                     return;

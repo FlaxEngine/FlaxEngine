@@ -1393,5 +1393,32 @@ namespace FlaxEditor.Scripting
                 return _custom.GetMembers(name, MemberTypes.Method, bindingAttr).FirstOrDefault();
             return ScriptMemberInfo.Null;
         }
+        
+        /// <summary>
+        /// Basic check to see if a type could be casted to another type
+        /// </summary>
+        /// <param name="from">Source type</param>
+        /// <param name="to">Target type</param>
+        /// <returns>True if the type can be casted</returns>
+        public static bool CanCast(ScriptType from, ScriptType to)
+        {
+            if (from == to)
+                return true;
+            if (from == Null || to == Null)
+                return false;
+            return (from.Type != typeof(void) && from.Type != typeof(FlaxEngine.Object)) &&
+                   (to.Type != typeof(void) && to.Type != typeof(FlaxEngine.Object)) &&
+                   from.IsAssignableFrom(to);
+        }
+
+        /// <summary>
+        /// Basic check to see if this type could be casted to another type
+        /// </summary>
+        /// <param name="to">Target type</param>
+        /// <returns>True if the type can be casted</returns>
+        public bool CanCastTo(ScriptType to)
+        {
+            return CanCast(this, to);
+        }
     }
 }

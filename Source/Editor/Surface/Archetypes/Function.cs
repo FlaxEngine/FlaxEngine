@@ -744,6 +744,16 @@ namespace FlaxEditor.Surface.Archetypes
 
                 base.OnDestroy();
             }
+            
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            {
+                return false;
+            }
+            
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            {
+                return inputType.IsVoid;
+            }
         }
 
         private sealed class InvokeMethodNode : SurfaceNode
@@ -1150,6 +1160,54 @@ namespace FlaxEditor.Surface.Archetypes
                 }
 
                 base.OnDestroy();
+            }
+            
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            {
+                if (nodeArch.Tag is not ScriptMemberInfo memberInfo)
+                    return false;
+                
+                if (!memberInfo.IsStatic)
+                {
+                    if (VisjectSurface.FullCastCheck(memberInfo.DeclaringType, outputType, hint))
+                        return true;
+                }
+                
+                var parameters = memberInfo.GetParameters();
+                bool isPure = (parameters.Length == 0 && !memberInfo.ValueType.IsVoid);
+                if (outputType.IsVoid)
+                    return !isPure;
+                
+                foreach (var param in parameters)
+                {
+                    if(param.IsOut)
+                        continue;
+                    if (VisjectSurface.FullCastCheck(param.Type, outputType, hint))
+                        return true;
+                }
+                return false;
+            }
+            
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            {
+                if (nodeArch.Tag is not ScriptMemberInfo memberInfo)
+                    return false;
+                if (VisjectSurface.FullCastCheck(memberInfo.ValueType, inputType, hint))
+                    return true;
+                
+                var parameters = memberInfo.GetParameters();
+                bool isPure = (parameters.Length == 0 && !memberInfo.ValueType.IsVoid);
+                if (inputType.IsVoid)
+                    return !isPure;
+                
+                foreach (var param in memberInfo.GetParameters())
+                {
+                    if(!param.IsOut)
+                        continue;
+                    if (VisjectSurface.FullCastCheck(param.Type, inputType, hint))
+                        return true;
+                }
+                return false;
             }
         }
 
@@ -1777,6 +1835,16 @@ namespace FlaxEditor.Surface.Archetypes
 
                 base.OnDestroy();
             }
+            
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            {
+                return false;
+            }
+            
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            {
+                return inputType.IsVoid;
+            }
         }
 
         private abstract class FieldNodeBase : SurfaceNode
@@ -1913,6 +1981,64 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Get " + SurfaceUtils.GetMethodDisplayName((string)Values[1]);
                 UpdateSignature();
             }
+            
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            {
+                var scriptType = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
+                if (scriptType == ScriptType.Null)
+                    return false;
+                
+                var members = scriptType.GetMembers((string)nodeArch.DefaultValues[1], MemberTypes.Field, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
+                foreach (var member in members)
+                {
+                    if (!SurfaceUtils.IsValidVisualScriptField(member))
+                        continue;
+                        
+                    if (member)
+                    {
+                        if (!member.IsStatic && VisjectSurface.FullCastCheck(scriptType, outputType, hint))
+                            return true;
+                    }
+                    else
+                    {
+                        var isStatic = (bool)nodeArch.DefaultValues[3];
+                        if (!isStatic && VisjectSurface.FullCastCheck(scriptType, outputType, hint))
+                            return true;
+                    }
+                    break;
+                }
+                
+                return false;
+            }
+            
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            {
+                var scriptType = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
+                if (scriptType == ScriptType.Null)
+                    return false;
+                
+                var members = scriptType.GetMembers((string)nodeArch.DefaultValues[1], MemberTypes.Field, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
+                foreach (var member in members)
+                {
+                    if (!SurfaceUtils.IsValidVisualScriptField(member))
+                        continue;
+                        
+                    if (member)
+                    {
+                        if (VisjectSurface.FullCastCheck(member.ValueType, inputType, hint))
+                            return true;
+                    }
+                    else
+                    {
+                        var typeName = (string)nodeArch.DefaultValues[2];
+                        if (VisjectSurface.FullCastCheck(TypeUtils.GetType(typeName), inputType, hint))
+                            return true;
+                    }
+                    break;
+                }
+
+                return false;
+            }
         }
 
         private sealed class SetFieldNode : FieldNodeBase
@@ -1965,6 +2091,48 @@ namespace FlaxEditor.Surface.Archetypes
 
                 Title = "Set " + SurfaceUtils.GetMethodDisplayName((string)Values[1]);
                 UpdateSignature();
+            }
+            
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            {
+                if(outputType.IsVoid)
+                    return true;
+                
+                var scriptType = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
+                if (scriptType == ScriptType.Null)
+                    return false;
+                
+                var members = scriptType.GetMembers((string)nodeArch.DefaultValues[1], MemberTypes.Field, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
+                foreach (var member in members)
+                {
+                    if (!SurfaceUtils.IsValidVisualScriptField(member))
+                        continue;
+                        
+                    if (member)
+                    {
+                        if (VisjectSurface.FullCastCheck(member.ValueType, outputType, hint))
+                            return true;
+                        if (!member.IsStatic && VisjectSurface.FullCastCheck(scriptType, outputType, hint))
+                            return true;
+                    }
+                    else
+                    {
+                        var typeName = (string)nodeArch.DefaultValues[2];
+                        if (VisjectSurface.FullCastCheck(TypeUtils.GetType(typeName), outputType, hint))
+                            return true;
+                        var isStatic = (bool)nodeArch.DefaultValues[3];
+                        if (!isStatic && VisjectSurface.FullCastCheck(scriptType, outputType, hint))
+                            return true;
+                    }
+                    break;
+                }
+                
+                return false;
+            }
+            
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            {
+                return inputType.IsVoid;
             }
         }
 
@@ -2184,6 +2352,43 @@ namespace FlaxEditor.Surface.Archetypes
 
                 base.OnDestroy();
             }
+            
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            {
+                // Event based nodes always have a pulse input, so it's always compatible with void
+                if (outputType.IsVoid)
+                    return true;
+                
+                var eventName = (string)nodeArch.DefaultValues[1];
+                var eventType = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
+                var member = eventType.GetMember(eventName, MemberTypes.Event, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
+                if (member && SurfaceUtils.IsValidVisualScriptEvent(member))
+                {
+                    if (!member.IsStatic)
+                    {
+                        if (VisjectSurface.FullCastCheck(eventType, outputType, hint))
+                            return true;
+                    }
+                }
+                return false;
+            }
+            
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            {
+                // Event based nodes always have a pulse output, so it's always compatible with void
+                if (inputType.IsVoid)
+                    return true;
+                
+                var eventName = (string)nodeArch.DefaultValues[1];
+                var eventType = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
+                var member = eventType.GetMember(eventName, MemberTypes.Event, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
+                if (member && SurfaceUtils.IsValidVisualScriptEvent(member))
+                {
+                    if (VisjectSurface.FullCastCheck(member.ValueType, inputType, hint))
+                        return true;
+                }
+                return false;
+            }
         }
 
         private sealed class BindEventNode : EventBaseNode
@@ -2265,6 +2470,8 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = string.Empty,
                 Description = "Overrides the base class method with custom implementation",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI | NodeFlags.NoSpawnViaPaste,
+                IsInputCompatible = MethodOverrideNode.IsInputCompatible,
+                IsOutputCompatible = MethodOverrideNode.IsOutputCompatible,
                 Size = new Float2(240, 60),
                 DefaultValues = new object[]
                 {
@@ -2277,6 +2484,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 4,
                 Create = (id, context, arch, groupArch) => new InvokeMethodNode(id, context, arch, groupArch),
+                IsInputCompatible = InvokeMethodNode.IsInputCompatible,
+                IsOutputCompatible = InvokeMethodNode.IsOutputCompatible,
                 Title = string.Empty,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
                 Size = new Float2(240, 60),
@@ -2317,6 +2526,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 6,
                 Create = (id, context, arch, groupArch) => new VisualScriptFunctionNode(id, context, arch, groupArch),
+                IsInputCompatible = VisualScriptFunctionNode.IsInputCompatible,
+                IsOutputCompatible = VisualScriptFunctionNode.IsOutputCompatible,
                 Title = "New Function",
                 Description = "Adds a new function to the script",
                 Flags = NodeFlags.VisualScriptGraph,
@@ -2330,6 +2541,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 7,
                 Create = (id, context, arch, groupArch) => new GetFieldNode(id, context, arch, groupArch),
+                IsInputCompatible = GetFieldNode.IsInputCompatible,
+                IsOutputCompatible = GetFieldNode.IsOutputCompatible,
                 Title = string.Empty,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
                 Size = new Float2(240, 60),
@@ -2345,6 +2558,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 8,
                 Create = (id, context, arch, groupArch) => new SetFieldNode(id, context, arch, groupArch),
+                IsInputCompatible = SetFieldNode.IsInputCompatible,
+                IsOutputCompatible = SetFieldNode.IsOutputCompatible,
                 Title = string.Empty,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
                 Size = new Float2(240, 60),
@@ -2361,6 +2576,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 9,
                 Create = (id, context, arch, groupArch) => new BindEventNode(id, context, arch, groupArch),
+                IsInputCompatible = EventBaseNode.IsInputCompatible,
+                IsOutputCompatible = EventBaseNode.IsOutputCompatible,
                 Title = string.Empty,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
                 Size = new Float2(260, 60),
@@ -2383,6 +2600,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 10,
                 Create = (id, context, arch, groupArch) => new UnbindEventNode(id, context, arch, groupArch),
+                IsInputCompatible = EventBaseNode.IsInputCompatible,
+                IsOutputCompatible = EventBaseNode.IsOutputCompatible,
                 Title = string.Empty,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI,
                 Size = new Float2(260, 60),
