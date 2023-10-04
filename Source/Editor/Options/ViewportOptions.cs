@@ -47,6 +47,13 @@ namespace FlaxEditor.Options
         public float MaxMovementSpeed { get; set; } = 64f;
 
         /// <summary>
+        /// Gets or sets the degree to which the camera will be eased when using camera flight in the editor window.
+        /// </summary>
+        [DefaultValue(3.0f), Limit(1.0f, 8.0f)]
+        [EditorDisplay("Defaults"), EditorOrder(120), Tooltip("The default degree to which the camera will be eased when using camera flight in the editor window.")]
+        public float CameraEasingDegree { get; set; } = 3.0f;
+
+        /// <summary>
         /// Gets or sets the default near clipping plane distance for the viewport camera.
         /// </summary>
         [DefaultValue(10.0f), Limit(0.001f, 1000.0f)]

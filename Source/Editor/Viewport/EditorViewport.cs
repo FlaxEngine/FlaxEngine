@@ -182,10 +182,13 @@ namespace FlaxEditor.Viewport
         private float _farPlane;
         private float _orthoSize;
         private bool _isOrtho;
-        private float _wheelMovementChangeDeltaSum = 0;
+        private float _cameraEasingDegree;
         private float _panningSpeed;
         private bool _relativePanning;
         private bool _invertPanning;
+
+        private float _linearMovementProgress;
+        private float _easedMovementProgress;
 
         /// <summary>
         /// Speed of the mouse.
@@ -499,6 +502,8 @@ namespace FlaxEditor.Viewport
             if (_editor.ProjectCache.TryGetCustomData("CameraFarPlaneValue", out cachedState))
                 _farPlane = float.Parse(cachedState);
 
+            OnCameraMovementProgressChanged();
+
             if (useWidgets)
             {
                 #region Camera settings widget
@@ -530,6 +535,7 @@ namespace FlaxEditor.Viewport
                 camSpeedValue.ValueChanged += () => OnMovementSpeedChanged(camSpeedValue);
                 cameraCM.VisibleChanged += control => camSpeedValue.Value = _movementSpeed;
 
+                // Minimum & maximum camera speed
                 var minCamSpeedButton = cameraCM.AddButton("Min Cam Speed");
                 minCamSpeedButton.CloseMenuOnClick = false;
                 var minCamSpeedValue = new FloatValueBox(_minMovementSpeed, xLocationForExtras, 2, 70.0f, 0.05f, _maxMovementSpeed, 0.5f)
@@ -564,7 +570,7 @@ namespace FlaxEditor.Viewport
                 };
                 cameraCM.VisibleChanged += control => maxCamSpeedValue.Value = _maxMovementSpeed;
 
-                // Panning Speed
+                // Panning speed
                 {
                     var panningSpeed = cameraCM.AddButton("Panning Speed");
                     panningSpeed.CloseMenuOnClick = false;
@@ -581,7 +587,7 @@ namespace FlaxEditor.Viewport
                     };
                 }
 
-                // Relative Panning
+                // Relative panning
                 {
                     var relativePanning = cameraCM.AddButton("Relative Panning");
                     relativePanning.CloseMenuOnClick = false;
@@ -601,7 +607,7 @@ namespace FlaxEditor.Viewport
                     cameraCM.VisibleChanged += control => relativePanningValue.Checked = _relativePanning;
                 }
 
-                // Invert Panning
+                // Invert panning
                 {
                     var invertPanning = cameraCM.AddButton("Invert Panning");
                     invertPanning.CloseMenuOnClick = false;
@@ -616,7 +622,7 @@ namespace FlaxEditor.Viewport
 
                 cameraCM.AddSeparator();
 
-                // Camera Viewpoints
+                // Camera viewpoints
                 {
                     var cameraView = cameraCM.AddChildMenu("Viewpoints").ContextMenu;
                     for (int i = 0; i < EditorViewportCameraViewpointValues.Length; i++)
@@ -629,7 +635,7 @@ namespace FlaxEditor.Viewport
                     cameraView.ButtonClicked += OnViewpointChanged;
                 }
 
-                // Orthographic
+                // Orthographic mode
                 {
                     var ortho = cameraCM.AddButton("Orthographic");
                     ortho.CloseMenuOnClick = false;
@@ -649,7 +655,7 @@ namespace FlaxEditor.Viewport
                     cameraCM.VisibleChanged += control => orthoValue.Checked = _isOrtho;
                 }
 
-                // Field of View
+                // Field of view
                 {
                     var fov = cameraCM.AddButton("Field Of View");
                     fov.CloseMenuOnClick = false;
@@ -666,7 +672,7 @@ namespace FlaxEditor.Viewport
                     };
                 }
 
-                // Ortho Scale
+                // Orthographic scale
                 {
                     var orthoSize = cameraCM.AddButton("Ortho Scale");
                     orthoSize.CloseMenuOnClick = false;
@@ -683,7 +689,7 @@ namespace FlaxEditor.Viewport
                     };
                 }
 
-                // Near Plane
+                // Near plane
                 {
                     var nearPlane = cameraCM.AddButton("Near Plane");
                     nearPlane.CloseMenuOnClick = false;
@@ -696,7 +702,7 @@ namespace FlaxEditor.Viewport
                     cameraCM.VisibleChanged += control => nearPlaneValue.Value = _nearPlane;
                 }
 
-                // Far Plane
+                // Far plane
                 {
                     var farPlane = cameraCM.AddButton("Far Plane");
                     farPlane.CloseMenuOnClick = false;
@@ -711,7 +717,7 @@ namespace FlaxEditor.Viewport
 
                 cameraCM.AddSeparator();
 
-                //Reset Button
+                // Reset button
                 {
                     var reset = cameraCM.AddButton("Reset to default");
                     reset.ButtonClicked += button =>
@@ -752,7 +758,7 @@ namespace FlaxEditor.Viewport
                     }
                 }
 
-                // View Flags
+                // View flags
                 {
                     var viewFlags = ViewWidgetButtonMenu.AddChildMenu("View Flags").ContextMenu;
                     viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = Editor.Instance.Icons.Rotate32;
@@ -776,7 +782,7 @@ namespace FlaxEditor.Viewport
                     viewFlags.VisibleChanged += WidgetViewFlagsShowHide;
                 }
 
-                // Debug View
+                // Debug view
                 {
                     var debugView = ViewWidgetButtonMenu.AddChildMenu("Debug View").ContextMenu;
                     for (int i = 0; i < EditorViewportViewModeValues.Length; i++)
@@ -839,8 +845,8 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.ViewpointRight, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Right").Orientation)));
             InputActions.Add(options => options.ViewpointLeft, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Left").Orientation)));
             InputActions.Add(options => options.CameraToggleRotation, () => _isVirtualMouseRightDown = !_isVirtualMouseRightDown);
-            InputActions.Add(options => options.CameraIncreaseMoveSpeed, () => AdjustCameraMoveSpeed(1));
-            InputActions.Add(options => options.CameraDecreaseMoveSpeed, () => AdjustCameraMoveSpeed(-1));
+            InputActions.Add(options => options.CameraIncreaseMoveSpeed, () => AdjustCameraMoveSpeed(Editor.Instance.Options.Options.Viewport.MouseWheelSensitivity * 0.01f));
+            InputActions.Add(options => options.CameraDecreaseMoveSpeed, () => AdjustCameraMoveSpeed(Editor.Instance.Options.Options.Viewport.MouseWheelSensitivity * -0.01f));
 
             // Link for task event
             task.Begin += OnRenderBegin;
@@ -873,6 +879,7 @@ namespace FlaxEditor.Viewport
             var value = Mathf.Clamp(control.Value, _minMovementSpeed, _maxMovementSpeed);
             MovementSpeed = value;
 
+            OnCameraMovementProgressChanged();
             _editor.ProjectCache.SetCustomData("CameraMovementSpeedValue", _movementSpeed.ToString());
         }
 
@@ -884,6 +891,7 @@ namespace FlaxEditor.Viewport
             if (_movementSpeed < value)
                 _movementSpeed = value;
 
+            OnCameraMovementProgressChanged();
             _editor.ProjectCache.SetCustomData("CameraMinMovementSpeedValue", _minMovementSpeed.ToString());
         }
 
@@ -895,6 +903,7 @@ namespace FlaxEditor.Viewport
             if (_movementSpeed > value)
                 _movementSpeed = value;
 
+            OnCameraMovementProgressChanged();
             _editor.ProjectCache.SetCustomData("CameraMaxMovementSpeedValue", _maxMovementSpeed.ToString());
         }
 
@@ -993,32 +1002,62 @@ namespace FlaxEditor.Viewport
         }
 
         /// <summary>
+        /// The inverse of <see cref="Mathf.InterpEaseIn"/>.<br/>
+        /// Interpolate between A and B, applying a reverse ease in function. Exponent controls the degree of the curve.
+        /// </summary>
+        private float InterpInverseEaseIn(float a, float b, float alpha, float exponent)
+        {
+            return 0.5f * Mathf.Pow((2.0f * (alpha - a) / (b - a)), 1.0f / exponent);
+        }
+
+        /// <summary>
+        /// The inverse of <see cref="Mathf.InterpEaseOut"/>.<br/>
+        /// Interpolate between A and B, applying a reverse ease out function. Exponent controls the degree of the curve.
+        /// </summary>
+        private float InterpInverseEaseOut(float a, float b, float alpha, float exponent)
+        {
+            return 1.0f - InterpInverseEaseIn(a, b, 1.0f - alpha, exponent);
+        }
+
+        /// <summary>
+        /// The inverse of <see cref="Mathf.InterpEaseInOut"/>.<br/>
+        /// Interpolate between A and B, applying a reverse ease in/out function. Exponent controls the degree of the curve.
+        /// </summary>
+        private float InterpInverseEaseInOut(float a, float b, float alpha, float exponent)
+        {
+            if (alpha <= 0.0f)
+                return a;
+            if (alpha >= 1.0f)
+                return b;
+
+            return (alpha < 0.5f) ? InterpInverseEaseIn(a, b, alpha, exponent) : InterpInverseEaseOut(a, b, alpha, exponent);
+        }
+
+        private void OnCameraMovementProgressChanged()
+        {
+            _linearMovementProgress = Math.Abs(_minMovementSpeed - _maxMovementSpeed) < Mathf.Epsilon
+                                      ? 0.0f
+                                      : Mathf.Remap(_movementSpeed, _minMovementSpeed, _maxMovementSpeed, 0.0f, 1.0f);
+
+            _easedMovementProgress = InterpInverseEaseInOut(0.0f, 1.0f, _linearMovementProgress, _cameraEasingDegree);
+        }
+
+        /// <summary>
         /// Increases or decreases the camera movement speed.
         /// </summary>
-        /// <param name="step">The stepping direction for speed adjustment.</param>
-        protected void AdjustCameraMoveSpeed(int step)
+        /// <param name="speedDelta">The difference in camera speed adjustment as a fraction of 1.</param>
+        protected void AdjustCameraMoveSpeed(float speedDelta)
         {
-            int camValueIndex = -1;
-            for (int i = 0; i < EditorViewportCameraSpeedValues.Length; i++)
-            {
-                if (Mathf.NearEqual(EditorViewportCameraSpeedValues[i], _movementSpeed))
-                {
-                    camValueIndex = i;
-                    break;
-                }
-            }
-            if (camValueIndex == -1)
-                return;
-
-            if (step > 0)
-                MovementSpeed = EditorViewportCameraSpeedValues[Mathf.Min(camValueIndex + 1, EditorViewportCameraSpeedValues.Length - 1)];
-            else if (step < 0)
-                MovementSpeed = EditorViewportCameraSpeedValues[Mathf.Max(camValueIndex - 1, 0)];
+            _easedMovementProgress = Mathf.Clamp(_easedMovementProgress + speedDelta, 0.0f, 1.0f);
+            var easedSpeed = Mathf.InterpEaseInOut(_minMovementSpeed, _maxMovementSpeed, _easedMovementProgress, _cameraEasingDegree);
+            MovementSpeed = Mathf.Round(easedSpeed * 100) / 100;
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)
         {
             _mouseSensitivity = options.Viewport.MouseSensitivity;
+            _cameraEasingDegree = options.Viewport.CameraEasingDegree;
+            OnCameraMovementProgressChanged();
         }
 
         private void OnRenderBegin(RenderTask task, GPUContext context)
@@ -1210,8 +1249,6 @@ namespace FlaxEditor.Viewport
         /// <param name="win">The parent window.</param>
         protected virtual void OnControlMouseBegin(Window win)
         {
-            _wheelMovementChangeDeltaSum = 0;
-
             // Hide cursor and start tracking mouse movement
             win.StartTrackingMouse(false);
             win.Cursor = CursorType.Hidden;
@@ -1406,18 +1443,10 @@ namespace FlaxEditor.Viewport
                     rmbWheel = useMovementSpeed && (_input.IsMouseRightDown || _isVirtualMouseRightDown) && wheelInUse;
                     if (rmbWheel)
                     {
-                        const float step = 4.0f;
-                        _wheelMovementChangeDeltaSum += _input.MouseWheelDelta * options.Viewport.MouseWheelSensitivity;
-                        if (_wheelMovementChangeDeltaSum >= step)
-                        {
-                            _wheelMovementChangeDeltaSum -= step;
-                            AdjustCameraMoveSpeed(1);
-                        }
-                        else if (_wheelMovementChangeDeltaSum <= -step)
-                        {
-                            _wheelMovementChangeDeltaSum += step;
-                            AdjustCameraMoveSpeed(-1);
-                        }
+                        // speed delta can be adjusted through mouse wheel sensitivity in editor
+                        // with default sensitivity (1.0), it takes about ~100 scrolls from min to max
+                        var camSpeedDelta = _input.MouseWheelDelta * options.Viewport.MouseWheelSensitivity * 0.01f;
+                        AdjustCameraMoveSpeed(camSpeedDelta);
                     }
                 }
 
@@ -1684,22 +1713,6 @@ namespace FlaxEditor.Viewport
             new CameraViewpoint("Right", new Float3(0, -90, 0)),
             new CameraViewpoint("Top", new Float3(90, 0, 0)),
             new CameraViewpoint("Bottom", new Float3(-90, 0, 0))
-        };
-
-        private readonly float[] EditorViewportCameraSpeedValues =
-        {
-            0.05f,
-            0.1f,
-            0.25f,
-            0.5f,
-            1.0f,
-            2.0f,
-            4.0f,
-            6.0f,
-            8.0f,
-            16.0f,
-            32.0f,
-            64.0f,
         };
 
         private struct ViewModeOptions
