@@ -8,7 +8,6 @@ using FlaxEditor.Surface.Elements;
 using FlaxEditor.Utilities;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Surface.ContextMenu
 {
@@ -165,6 +164,8 @@ namespace FlaxEditor.Surface.ContextMenu
         /// Updates the filter.
         /// </summary>
         /// <param name="filterText">The filter text.</param>
+        /// <param name="selectedBox">The optionally selected box to show hints for it.</param>
+        /// <param name="groupHeaderMatches">True if item's group header got a filter match and item should stay visible.</param>
         public void UpdateFilter(string filterText, Box selectedBox, bool groupHeaderMatches = false)
         {
             if (selectedBox != null)

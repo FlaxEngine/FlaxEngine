@@ -20,7 +20,7 @@ public class MissingScriptEditor : GenericEditor
         }
 
         dropPanel.HeaderTextColor = Color.OrangeRed;
-        
+
         base.Initialize(layout);
     }
 }

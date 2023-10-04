@@ -84,6 +84,7 @@ namespace FlaxEditor.Surface.ContextMenu
         /// Updates the filter.
         /// </summary>
         /// <param name="filterText">The filter text.</param>
+        /// <param name="selectedBox">The optionally selected box to show hints for it.</param>
         public void UpdateFilter(string filterText, Box selectedBox)
         {
             Profiler.BeginEvent("VisjectCMGroup.UpdateFilter");
@@ -116,7 +117,7 @@ namespace FlaxEditor.Surface.ContextMenu
             Profiler.EndEvent();
         }
 
-        public void EvaluateVisibilityWithBox(Box selectedBox)
+        internal void EvaluateVisibilityWithBox(Box selectedBox)
         {
             if (selectedBox == null)
             {

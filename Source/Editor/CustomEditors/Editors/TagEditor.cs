@@ -634,7 +634,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var textSize = FlaxEngine.GUI.Style.Current.FontMedium.MeasureText(buttonText);
             if (textSize.Y > button.Width)
                 button.Width = textSize.Y + 2;
-            
+
             button.SetAnchorPreset(AnchorPresets.MiddleRight, false, true);
             button.Clicked += ShowPicker;
         }

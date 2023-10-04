@@ -207,26 +207,6 @@ namespace FlaxEditor.Surface.Archetypes
                     AddElement(box);
                 }
             }
-
-            protected static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
-            {
-                // Event based nodes always have a pulse input, so it's always compatible with void
-                if (outputType.IsVoid)
-                    return true;
-
-                var eventName = (string)nodeArch.DefaultValues[1];
-                var eventType = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
-                var member = eventType.GetMember(eventName, MemberTypes.Event, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
-                if (member && SurfaceUtils.IsValidVisualScriptEvent(member))
-                {
-                    if (!member.IsStatic)
-                    {
-                        if (VisjectSurface.FullCastCheck(eventType, outputType, hint))
-                            return true;
-                    }
-                }
-                return false;
-            }
         }
 
         private sealed class PackStructureNode : StructureNode

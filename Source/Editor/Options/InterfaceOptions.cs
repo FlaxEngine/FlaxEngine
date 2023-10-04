@@ -240,7 +240,7 @@ namespace FlaxEditor.Options
         private FontReference _titleFont = new FontReference(DefaultFont, 18);
         private FontReference _largeFont = new FontReference(DefaultFont, 14);
         private FontReference _mediumFont = new FontReference(DefaultFont, 9);
-        private FontReference _smallFont= new FontReference(DefaultFont, 9);
+        private FontReference _smallFont = new FontReference(DefaultFont, 9);
         private FontReference _outputLogFont = new FontReference(FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont), 10);
 
         /// <summary>
