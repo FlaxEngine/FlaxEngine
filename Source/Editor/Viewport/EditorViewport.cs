@@ -181,6 +181,8 @@ namespace FlaxEditor.Viewport
         private float _orthoSize;
         private bool _isOrtho;
         private float _wheelMovementChangeDeltaSum = 0;
+        private float _panningSpeed;
+        private bool _relativePanning;
         private bool _invertPanning;
 
         /// <summary>
@@ -413,6 +415,15 @@ namespace FlaxEditor.Viewport
         }
 
         /// <summary>
+        /// Gets or sets if the panning speed should be relative to the camera target.
+        /// </summary>
+        public bool RelativePanning
+        {
+            get => _relativePanning;
+            set => _relativePanning = value;
+        }
+
+        /// <summary>
         /// Gets or sets if the panning direction is inverted.
         /// </summary>
         public bool InvertPanning
@@ -421,6 +432,15 @@ namespace FlaxEditor.Viewport
             set => _invertPanning = value;
         }
 
+        /// <summary>
+        /// Gets or sets the camera panning speed.
+        /// </summary>
+        public float PanningSpeed
+        {
+            get => _panningSpeed;
+            set => _panningSpeed = value;
+        }
+        
         /// <summary>
         /// The input actions collection to processed during user input.
         /// </summary>
@@ -508,7 +528,7 @@ namespace FlaxEditor.Viewport
 
                     maxCamSpeedValue.MinValue = minCamSpeedValue.Value;
 
-                    if (camSpeedValue.MinValue != minCamSpeedValue.Value)
+                    if (Math.Abs(camSpeedValue.MinValue - minCamSpeedValue.Value) > Mathf.Epsilon)
                         camSpeedValue.MinValue = minCamSpeedValue.Value;
                 };
                 cameraCM.VisibleChanged += control => minCamSpeedValue.Value = _minMovementSpeed;
@@ -518,11 +538,48 @@ namespace FlaxEditor.Viewport
                     
                     minCamSpeedValue.MaxValue = maxCamSpeedValue.Value;
 
-                    if (camSpeedValue.MaxValue != maxCamSpeedValue.Value)
+                    if (Math.Abs(camSpeedValue.MaxValue - maxCamSpeedValue.Value) > Mathf.Epsilon)
                         camSpeedValue.MaxValue = maxCamSpeedValue.Value;
                 };
                 cameraCM.VisibleChanged += control => maxCamSpeedValue.Value = _maxMovementSpeed;
-                
+
+                // Panning Speed
+                {
+                    var panningSpeed = cameraCM.AddButton("Panning Speed");
+                    panningSpeed.CloseMenuOnClick = false;
+                    var panningSpeedValue = new FloatValueBox(_panningSpeed, xLocationForExtras, 2, 70.0f, 0.01f, 128.0f, 0.1f)
+                    {
+                        Parent = panningSpeed
+                    };
+
+                    panningSpeedValue.ValueChanged += () => OnPanningSpeedChanged(panningSpeedValue);
+                    cameraCM.VisibleChanged += control =>
+                    {
+                        panningSpeed.Visible = !_relativePanning;
+                        panningSpeedValue.Value = _panningSpeed;
+                    };
+                }
+
+                // Relative Panning
+                {
+                    var relativePanning = cameraCM.AddButton("Relative Panning");
+                    relativePanning.CloseMenuOnClick = false;
+                    var relativePanningValue = new CheckBox(xLocationForExtras, 2, _relativePanning)
+                    {
+                        Parent = relativePanning
+                    };
+
+                    relativePanningValue.StateChanged += checkBox =>
+                    {
+                        if (checkBox.Checked != _relativePanning)
+                        {
+                            OnRelativePanningToggled(checkBox);
+                            cameraCM.Hide();
+                        }
+                    };
+                    cameraCM.VisibleChanged += control => relativePanningValue.Checked = _relativePanning;
+                }
+
                 // Invert Panning
                 {
                     var invertPanning = cameraCM.AddButton("Invert Panning");
@@ -736,25 +793,6 @@ namespace FlaxEditor.Viewport
                     ViewWidgetButtonMenu.VisibleChanged += control => resolutionValue.Value = ResolutionScale;
                 }
                 #endregion View mode widget
-
-                // Invert Panning
-                {
-                    var invert = ViewWidgetButtonMenu.AddButton("Invert Panning");
-                    invert.CloseMenuOnClick = false;
-                    var invertValue = new CheckBox(xLocationForExtras, 2, _invertPanning)
-                    {
-                        Parent = invert
-                    };
-
-                    invertValue.StateChanged += checkBox =>
-                    {
-                        if (checkBox.Checked != _invertPanning)
-                        {
-                            _invertPanning = checkBox.Checked;
-                        }
-                    };
-                    ViewWidgetButtonMenu.VisibleChanged += control => invertValue.Checked = _invertPanning;
-                }
             }
 
             InputActions.Add(options => options.ViewpointTop, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Top").Orientation)));
@@ -794,7 +832,16 @@ namespace FlaxEditor.Viewport
             if (_movementSpeed > value)
                 _movementSpeed = value;
         }
-        
+
+        private void OnPanningSpeedChanged(FloatValueBox control)
+        {
+            _panningSpeed = control.Value;
+        }
+
+        private void OnRelativePanningToggled(Control control)
+        {
+            _relativePanning = !_relativePanning;
+        }
 
         private void OnInvertPanningToggled(Control control)
         {
@@ -1635,24 +1682,6 @@ namespace FlaxEditor.Viewport
             new ViewModeOptions(ViewMode.GlobalSurfaceAtlas, "Global Surface Atlas"),
             new ViewModeOptions(ViewMode.GlobalIllumination, "Global Illumination"),
         };
-
-        private void WidgetCamSpeedShowHide(Control cm)
-        {
-            if (cm.Visible == false)
-                return;
-
-            var ccm = (ContextMenu)cm;
-            foreach (var e in ccm.Items)
-            {
-                if (e is ContextMenuButton b)
-                {
-                    var v = (float)b.Tag;
-                    b.Icon = Mathf.Abs(MovementSpeed - v) < 0.001f
-                             ? Style.Current.CheckBoxTick
-                             : SpriteHandle.Invalid;
-                }
-            }
-        }
 
         private void WidgetViewModeShowHideClicked(ContextMenuButton button)
         {
