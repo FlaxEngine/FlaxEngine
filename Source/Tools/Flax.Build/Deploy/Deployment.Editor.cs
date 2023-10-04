@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using Flax.Build;
 using Flax.Build.Platforms;
 
@@ -17,10 +18,14 @@ namespace Flax.Deploy
         {
             if (string.IsNullOrEmpty(Configuration.DeployCert))
                 return;
+            Log.Info("Code signing file: " + file);
             switch (Platform.BuildTargetPlatform)
             {
             case TargetPlatform.Windows:
                 VCEnvironment.CodeSign(file, Configuration.DeployCert, Configuration.DeployCertPass);
+                break;
+            case TargetPlatform.Mac:
+                MacPlatform.CodeSign(file, Configuration.DeployCert);
                 break;
             }
         }
@@ -121,6 +126,45 @@ namespace Flax.Deploy
 
                 // Deploy project
                 DeployFile(RootPath, OutputPath, "Flax.flaxproj");
+
+                // Package Editor into macOS app
+                if (Platform.BuildTargetPlatform == TargetPlatform.Mac)
+                {
+                    var arch = Platform.BuildTargetArchitecture;
+                    Log.Info(string.Empty);
+                    Log.Info("Creating macOS app...");
+                    var appPath = Path.Combine(Deployer.PackageOutputPath, "FlaxEditor.app");
+                    var appContentsPath = Path.Combine(appPath, "Contents");
+                    var appBinariesPath = Path.Combine(appContentsPath, "MacOS");
+                    Utilities.DirectoryDelete(appPath);
+                    Directory.CreateDirectory(appPath);
+                    Directory.CreateDirectory(appContentsPath);
+                    Directory.CreateDirectory(appBinariesPath);
+
+                    // Copy icons set
+                    Directory.CreateDirectory(Path.Combine(appContentsPath, "Resources"));
+                    Utilities.FileCopy(Path.Combine(Globals.EngineRoot, "Source/Platforms/Mac/Default.icns"), Path.Combine(appContentsPath, "Resources/icon.icns"));
+
+                    // Create PkgInfo file
+                    File.WriteAllText(Path.Combine(appContentsPath, "PkgInfo"), "APPL???", Encoding.ASCII);
+
+                    // Create Info.plist
+                    var plist = File.ReadAllText(Path.Combine(Globals.EngineRoot, "Source/Platforms/Mac/Default.plist"));
+                    var flaxProject = EngineTarget.EngineProject;
+                    plist = plist.Replace("{Version}", flaxProject.Version.ToString());
+                    plist = plist.Replace("{Copyright}", flaxProject.Copyright);
+                    plist = plist.Replace("{Executable}", "FlaxEditor");
+                    plist = plist.Replace("{Arch}", arch == TargetArchitecture.ARM64 ? "arm64" : "x86_64");
+                    File.WriteAllText(Path.Combine(appContentsPath, "Info.plist"), plist, Encoding.ASCII);
+
+                    // Copy output editor files
+                    Utilities.DirectoryCopy(OutputPath, appContentsPath);
+
+                    // Copy native binaries for app execution
+                    var defaultEditorConfig = "Development";
+                    var ediotrBinariesPath = Path.Combine(appContentsPath, "Binaries/Editor/Mac", defaultEditorConfig);
+                    Utilities.DirectoryCopy(ediotrBinariesPath, appBinariesPath, true, true);
+                }
 
                 // Compress
                 if (Configuration.DontCompress)
@@ -254,6 +298,10 @@ namespace Flax.Deploy
                     Utilities.Run("strip", "FlaxEditor", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("strip", "FlaxEditor.dylib", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("strip", "libMoltenVK.dylib", null, dst, Utilities.RunOptions.None);
+
+                    CodeSign(Path.Combine(dst, "FlaxEditor"));
+                    CodeSign(Path.Combine(dst, "FlaxEditor.dylib"));
+                    CodeSign(Path.Combine(dst, "libMoltenVK.dylib"));
                 }
             }
         }

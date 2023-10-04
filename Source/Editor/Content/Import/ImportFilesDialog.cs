@@ -139,7 +139,7 @@ namespace FlaxEditor.Content.Import
             var menu = new ContextMenu();
             menu.AddButton("Rename", OnRenameClicked);
             menu.AddButton("Don't import", OnDontImportClicked);
-            menu.AddButton("Show in Explorer", OnShowInExplorerClicked);
+            menu.AddButton(Utilities.Constants.ShowInExplorer, OnShowInExplorerClicked);
             menu.Tag = node;
             menu.Show(node, location);
         }

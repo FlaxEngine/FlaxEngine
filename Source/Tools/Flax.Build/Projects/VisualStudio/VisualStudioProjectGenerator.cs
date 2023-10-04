@@ -24,6 +24,13 @@ namespace Flax.Build.Projects.VisualStudio
             /// <inheritdoc />
             public override void Generate(string solutionPath)
             {
+                // Try to reuse the existing project guid from existing files
+                ProjectGuid = GetProjectGuid(Path, Name);
+                if (ProjectGuid == Guid.Empty)
+                    ProjectGuid = GetProjectGuid(solutionPath, Name);
+                if (ProjectGuid == Guid.Empty)
+                    ProjectGuid = Guid.NewGuid();
+
                 var gen = (VisualStudioProjectGenerator)Generator;
                 var projectFileToolVersion = gen.ProjectFileToolVersion;
                 var vcProjectFileContent = new StringBuilder();
@@ -500,7 +507,15 @@ namespace Flax.Build.Projects.VisualStudio
                                     firstEditorMatch = i;
                                 }
                             }
-                            if (firstFullMatch != -1)
+                            if (project is AndroidProject)
+                            {
+                                // Utility Android deploy project only for exact match
+                                if (firstFullMatch != -1)
+                                    projectConfiguration = configuration;
+                                else
+                                    projectConfiguration = new SolutionConfiguration(project.Configurations[0]);
+                            }
+                            else if (firstFullMatch != -1)
                             {
                                 projectConfiguration = configuration;
                                 build = solution.MainProject == project || (solution.MainProject == null && project.Name == solution.Name);

@@ -29,7 +29,7 @@ namespace FlaxEditor.Content
             //_watcher.Changed += OnEvent;
             _watcher.Created += OnEvent;
             _watcher.Deleted += OnEvent;
-            //_watcher.Renamed += OnEvent;
+            _watcher.Renamed += OnEvent;
         }
 
         private void OnEvent(object sender, FileSystemEventArgs e)
