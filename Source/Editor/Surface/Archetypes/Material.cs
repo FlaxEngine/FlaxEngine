@@ -888,7 +888,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Ratangle Mask",
                 Description = "Creates a Ratangle mask",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(150, 100),
+                Size = new Float2(150, 40),
                 ConnectionsHints = ConnectionsHint.Vector,
                 DefaultValues = new object[]
                 {
@@ -908,7 +908,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "FWidth",
                 Description = "Creates a Partial Derivatives (fwidth)",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(150, 100),
+                Size = new Float2(150, 20),
                 ConnectionsHints = ConnectionsHint.Vector,
                 DefaultValues = new object[]
                 {

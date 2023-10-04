@@ -527,7 +527,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
 
         auto d      = writeLocal(ValueType::Float2, String::Format(TEXT("abs({0} * 2 - 1) - {1}"),uv.Value, ratangle.Value), node);
         auto fwidth = writeLocal(ValueType::Float , String::Format(TEXT("abs(ddx({0})) + abs(ddy({0}))"), d.Value), node);
-        auto d2     = writeLocal(ValueType::Float , String::Format(TEXT("1 - {0} / {1}"), d.Value, fwidth.Value), node);
+        auto d2     = writeLocal(ValueType::Float2 , String::Format(TEXT("1 - {0} / {1}"), d.Value, fwidth.Value), node);
         value       = writeLocal(ValueType::Float , String::Format(TEXT("saturate(min({0}.x, {0}.y))"), d2.Value), node);
         break;
     }
