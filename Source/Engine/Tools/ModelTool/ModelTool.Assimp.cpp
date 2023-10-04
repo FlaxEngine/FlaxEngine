@@ -524,7 +524,7 @@ bool ImportMaterialTexture(ImportedModelData& result, AssimpImporterData& data, 
         {
             const aiTexture* aTex = data.Scene->GetEmbeddedTexture(aFilename.C_Str());
             const StringView texIndexName(filename.Get() + (ARRAY_COUNT(AI_EMBEDDED_TEXNAME_PREFIX) - 1));
-            int32 texIndex;
+            uint32 texIndex;
             if (!aTex && !StringUtils::Parse(texIndexName.Get(), texIndexName.Length(), &texIndex) && texIndex >= 0 && texIndex < data.Scene->mNumTextures)
                 aTex = data.Scene->mTextures[texIndex];
             if (aTex && aTex->mHeight == 0 && aTex->mWidth > 0)
