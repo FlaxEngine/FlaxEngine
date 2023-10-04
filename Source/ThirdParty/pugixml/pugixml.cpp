@@ -4799,16 +4799,6 @@ namespace pugi
 		return xml_node();
 	}
 
-	PUGI__FN xml_node xml_node::child_or_append(const char_t* name_)
-	{
-		if (!_root) return xml_node();
-
-		for (xml_node_struct* i = _root->first_child; i; i = i->next_sibling)
-			if (i->name && impl::strequal(name_, i->name)) return xml_node(i);
-
-		return append_child(name_);
-	}
-
 	PUGI__FN xml_attribute xml_node::attribute(const char_t* name_) const
 	{
 		if (!_root) return xml_attribute();
@@ -4878,17 +4868,6 @@ namespace pugi
 
 		return PUGIXML_TEXT("");
 	}
-
-    PUGI__FN bool xml_node::set_child_value(const char_t* rhs)
-    {
-		if (!_root) return false;
-		
-		for (xml_node_struct* i = _root->first_child; i; i = i->next_sibling)
-			if (i->value && impl::is_text_node(i))
-				return xml_node(i).set_value(rhs);
-
-		return append_child(node_pcdata).set_value(rhs);
-    }
 
     PUGI__FN const char_t* xml_node::child_value(const char_t* name_) const
 	{
