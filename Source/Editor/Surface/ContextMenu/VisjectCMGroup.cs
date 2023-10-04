@@ -66,7 +66,7 @@ namespace FlaxEditor.Surface.ContextMenu
             {
                 if (_children[i] is VisjectCMItem item)
                 {
-                    item.UpdateFilter(null);
+                    item.UpdateFilter(null, null);
                     item.UpdateScore(null);
                 }
             }
@@ -84,23 +84,41 @@ namespace FlaxEditor.Surface.ContextMenu
         /// Updates the filter.
         /// </summary>
         /// <param name="filterText">The filter text.</param>
-        public void UpdateFilter(string filterText)
+        public void UpdateFilter(string filterText, Box selectedBox)
         {
             Profiler.BeginEvent("VisjectCMGroup.UpdateFilter");
 
             // Update items
             bool isAnyVisible = false;
+            bool groupHeaderMatches = QueryFilterHelper.Match(filterText, HeaderText);
             for (int i = 0; i < _children.Count; i++)
             {
                 if (_children[i] is VisjectCMItem item)
                 {
-                    item.UpdateFilter(filterText);
+                    item.UpdateFilter(filterText, selectedBox, groupHeaderMatches);
                     isAnyVisible |= item.Visible;
                 }
             }
 
-            // Update header title
-            if (QueryFilterHelper.Match(filterText, HeaderText))
+            // Update itself
+            if (isAnyVisible)
+            {
+                if (!string.IsNullOrEmpty(filterText))
+                    Open(false);
+                Visible = true;
+            }
+            else
+            {
+                // Hide group if none of the items matched the filter
+                Visible = false;
+            }
+
+            Profiler.EndEvent();
+        }
+
+        public void EvaluateVisibilityWithBox(Box selectedBox)
+        {
+            if (selectedBox == null)
             {
                 for (int i = 0; i < _children.Count; i++)
                 {
@@ -109,14 +127,25 @@ namespace FlaxEditor.Surface.ContextMenu
                         item.Visible = true;
                     }
                 }
-                isAnyVisible = true;
+                Visible = true;
+                return;
+            }
+
+            Profiler.BeginEvent("VisjectCMGroup.EvaluateVisibilityWithBox");
+
+            bool isAnyVisible = false;
+            for (int i = 0; i < _children.Count; i++)
+            {
+                if (_children[i] is VisjectCMItem item)
+                {
+                    item.Visible = item.CanConnectTo(selectedBox);
+                    isAnyVisible |= item.Visible;
+                }
             }
 
             // Update itself
             if (isAnyVisible)
             {
-                if (!string.IsNullOrEmpty(filterText))
-                    Open(false);
                 Visible = true;
             }
             else
