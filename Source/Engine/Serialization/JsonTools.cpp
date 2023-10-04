@@ -256,7 +256,7 @@ BoundingBox JsonTools::GetBoundingBox(const Value& value)
 
 Guid JsonTools::GetGuid(const Value& value)
 {
-    if (value.IsNull())
+    if (!value.IsString())
         return Guid::Empty;
     CHECK_RETURN(value.GetStringLength() == 32, Guid::Empty);
 
