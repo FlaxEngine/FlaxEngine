@@ -220,6 +220,12 @@ void WindowsWindow::Show()
         if (!_settings.HasBorder)
         {
             SetWindowPos(_handle, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
+            if (!_settings.IsRegularWindow && _settings.ShowAfterFirstPaint && _settings.StartPosition == WindowStartPosition::Manual)
+            {
+                int32 x = Math::TruncToInt(_settings.Position.X);
+                int32 y = Math::TruncToInt(_settings.Position.Y);
+                SetWindowPos(_handle, nullptr, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+            }
         }
 #endif
 
