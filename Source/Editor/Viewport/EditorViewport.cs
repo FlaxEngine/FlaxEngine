@@ -467,15 +467,8 @@ namespace FlaxEditor.Viewport
 
             // Setup options
             {
-                var options = Editor.Instance.Options.Options;
-                _movementSpeed = options.Viewport.DefaultMovementSpeed;
-                _nearPlane = options.Viewport.DefaultNearPlane;
-                _farPlane = options.Viewport.DefaultFarPlane;
-                _fieldOfView = options.Viewport.DefaultFieldOfView;
-                _invertPanning = options.Viewport.DefaultInvertPanning;
-
                 Editor.Instance.Options.OptionsChanged += OnEditorOptionsChanged;
-                OnEditorOptionsChanged(options);
+                SetupViewportOptions();
             }
 
             if (useWidgets)
@@ -807,6 +800,28 @@ namespace FlaxEditor.Viewport
 
             // Link for task event
             task.Begin += OnRenderBegin;
+        }
+
+        /// <summary>
+        /// Sets the viewport options to the default values.
+        /// </summary>
+        private void SetupViewportOptions()
+        {
+            var options = Editor.Instance.Options.Options;
+            _minMovementSpeed = options.Viewport.DefaultMinMovementSpeed;
+            _movementSpeed = options.Viewport.DefaultMovementSpeed;
+            _maxMovementSpeed = options.Viewport.DefaultMaxMovementSpeed;
+            _panningSpeed = options.Viewport.DefaultPanningSpeed;
+            _invertPanning = options.Viewport.DefaultInvertPanning;
+            _relativePanning = options.Viewport.DefaultRelativePanning;
+
+            _isOrtho = options.Viewport.DefaultOrthographicProjection;
+            _orthoSize = options.Viewport.DefaultOrthographicScale;
+            _fieldOfView = options.Viewport.DefaultFieldOfView;
+            _nearPlane = options.Viewport.DefaultNearPlane;
+            _farPlane = options.Viewport.DefaultFarPlane;
+
+            OnEditorOptionsChanged(options);
         }
         
         private void OnMovementSpeedChanged(FloatValueBox control)
