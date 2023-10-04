@@ -926,7 +926,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "AAStep",
                 Description = "Smooth version of step",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(150, 20),
+                Size = new Float2(150, 40),
                 ConnectionsHints = ConnectionsHint.Vector,
                 DefaultValues = new object[]
                 {
@@ -936,6 +936,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "value", true, typeof(float), 0),
+                    NodeElementArchetype.Factory.Input(1, "gradient", true, typeof(float), 0),
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 5),
                 }
             },
