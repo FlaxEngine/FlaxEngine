@@ -7,6 +7,7 @@
 #include "Engine/Core/DeleteMe.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/File.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 
 // Import Assimp library
@@ -515,8 +516,47 @@ bool ImportTexture(ImportedModelData& result, AssimpImporterData& data, aiString
 bool ImportMaterialTexture(ImportedModelData& result, AssimpImporterData& data, const aiMaterial* aMaterial, aiTextureType aTextureType, int32& textureIndex, TextureEntry::TypeHint type)
 {
     aiString aFilename;
-    return aMaterial->GetTexture(aTextureType, 0, &aFilename, nullptr, nullptr, nullptr, nullptr) == AI_SUCCESS &&
-            ImportTexture(result, data, aFilename, textureIndex, type);
+    if (aMaterial->GetTexture(aTextureType, 0, &aFilename, nullptr, nullptr, nullptr, nullptr) == AI_SUCCESS)
+    {
+        // Check for embedded textures
+        String filename = String(aFilename.C_Str()).TrimTrailing();
+        if (filename.StartsWith(TEXT(AI_EMBEDDED_TEXNAME_PREFIX)))
+        {
+            const aiTexture* aTex = data.Scene->GetEmbeddedTexture(aFilename.C_Str());
+            const StringView texIndexName(filename.Get() + (ARRAY_COUNT(AI_EMBEDDED_TEXNAME_PREFIX) - 1));
+            int32 texIndex;
+            if (!aTex && !StringUtils::Parse(texIndexName.Get(), texIndexName.Length(), &texIndex) && texIndex >= 0 && texIndex < data.Scene->mNumTextures)
+                aTex = data.Scene->mTextures[texIndex];
+            if (aTex && aTex->mHeight == 0 && aTex->mWidth > 0)
+            {
+                // Export embedded texture to temporary file
+                filename = String::Format(TEXT("{0}_tex_{1}.{2}"), StringUtils::GetFileNameWithoutExtension(data.Path), texIndexName, String(aTex->achFormatHint));
+                File::WriteAllBytes(String(StringUtils::GetDirectoryName(data.Path)) / filename, (const byte*)aTex->pcData, (int32)aTex->mWidth);
+            }
+        }
+
+        // Find texture file path
+        String path;
+        if (ModelTool::FindTexture(data.Path, filename, path))
+            return true;
+
+        // Check if already used
+        textureIndex = 0;
+        while (textureIndex < result.Textures.Count())
+        {
+            if (result.Textures[textureIndex].FilePath == path)
+                return true;
+            textureIndex++;
+        }
+
+        // Import texture
+        auto& texture = result.Textures.AddOne();
+        texture.FilePath = path;
+        texture.Type = type;
+        texture.AssetID = Guid::Empty;
+        return true;
+    }
+    return false;
 }
 
 bool ImportMaterials(ImportedModelData& result, AssimpImporterData& data, String& errorMsg)
@@ -705,8 +745,15 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
             return true;
         }
 
+        // Create root node
+        AssimpNode& rootNode = context->Nodes.AddOne();
+        rootNode.ParentIndex = -1;
+        rootNode.LodIndex = 0;
+        rootNode.Name = TEXT("Root");
+        rootNode.LocalTransform = Transform::Identity;
+
         // Process imported scene nodes
-        ProcessNodes(*context, context->Scene->mRootNode, -1);
+        ProcessNodes(*context, context->Scene->mRootNode, 0);
     }
     DeleteMe<AssimpImporterData> contextCleanup(options.SplitContext ? nullptr : context);
 
@@ -822,7 +869,13 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
             const auto animations = context->Scene->mAnimations[animIndex];
             data.Animation.Channels.Resize(animations->mNumChannels, false);
             data.Animation.Duration = animations->mDuration;
-            data.Animation.FramesPerSecond = animations->mTicksPerSecond != 0.0 ? animations->mTicksPerSecond : 25.0;
+            data.Animation.FramesPerSecond = animations->mTicksPerSecond;
+            if (data.Animation.FramesPerSecond <= 0)
+            {
+                data.Animation.FramesPerSecond = context->Options.DefaultFrameRate;
+                if (data.Animation.FramesPerSecond <= 0)
+                    data.Animation.FramesPerSecond = 30.0f;
+            }
 
             for (unsigned i = 0; i < animations->mNumChannels; i++)
             {

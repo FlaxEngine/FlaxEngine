@@ -68,7 +68,7 @@ namespace FlaxEditor.Content.GUI
                 _validDragOver = true;
                 result = DragDropEffect.Copy;
             }
-            else if (_dragActors.HasValidDrag)
+            else if (_dragActors != null && _dragActors.HasValidDrag)
             {
                 _validDragOver = true;
                 result = DragDropEffect.Move;
@@ -94,7 +94,7 @@ namespace FlaxEditor.Content.GUI
                 result = DragDropEffect.Copy;
             }
             // Check if drop actor(s)
-            else if (_dragActors.HasValidDrag)
+            else if (_dragActors != null && _dragActors.HasValidDrag)
             {
                 // Import actors
                 var currentFolder = Editor.Instance.Windows.ContentWin.CurrentViewFolder;
