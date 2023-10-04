@@ -680,6 +680,22 @@ namespace FlaxEditor.Viewport
                     farPlaneValue.ValueChanged += () => OnFarPlaneChanged(farPlaneValue);
                     cameraCM.VisibleChanged += control => farPlaneValue.Value = _farPlane;
                 }
+
+                cameraCM.AddSeparator();
+
+                //Reset Button
+                {
+                    var reset = cameraCM.AddButton("Reset to default");
+                    reset.ButtonClicked += button =>
+                    {
+                        SetupViewportOptions();
+
+                        // trigger UI update
+                        minCamSpeedValue.Value = _minMovementSpeed;
+                        camSpeedValue.Value = _movementSpeed;
+                        maxCamSpeedValue.Value = _maxMovementSpeed;
+                    };
+                }
                 #endregion Camera settings widget
 
                 #region View mode widget
