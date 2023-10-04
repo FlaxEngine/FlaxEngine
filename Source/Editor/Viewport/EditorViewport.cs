@@ -134,6 +134,11 @@ namespace FlaxEditor.Viewport
         /// </summary>
         protected ViewportWidgetButton _cameraButton;
 
+        /// <summary>
+        /// The orthographic mode widget button.
+        /// </summary>
+        protected ViewportWidgetButton _orthographicModeButton;
+
         private readonly Editor _editor;
 
         private float _mouseSensitivity;
@@ -523,6 +528,15 @@ namespace FlaxEditor.Viewport
                     Parent = _cameraWidget
                 };
                 _cameraWidget.Parent = this;
+
+                // Toggle orthographic mode widget
+                _orthographicModeButton = new ViewportWidgetButton(string.Empty, Editor.Instance.Icons.CamSpeed32, null, true)
+                {
+                    Checked = !_isOrtho,
+                    TooltipText = "Toggle Orthographic/Perspective Mode",
+                    Parent = _cameraWidget,
+                };
+                _orthographicModeButton.Toggled += OnOrthographicModeToggled;
 
                 // Camera speed
                 var camSpeedButton = cameraCM.AddButton("Camera Speed");
@@ -941,6 +955,9 @@ namespace FlaxEditor.Viewport
         private void OnOrthographicModeToggled(Control control)
         {
             _isOrtho = !_isOrtho;
+
+            if (_orthographicModeButton != null)
+                _orthographicModeButton.Checked = !_isOrtho;
 
             if (_isOrtho)
             {
