@@ -12,6 +12,7 @@
 #include "FlaxEngine.Gen.h"
 #include "Cache/AssetsCache.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Config/Settings.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Content/Factories/JsonAssetFactory.h"
@@ -126,8 +127,7 @@ void FindIds(ISerializable::DeserializeStream& node, Array<Guid>& output)
     }
     else if (node.IsString())
     {
-        const auto length = node.GetStringLength();
-        if (length == 32)
+        if (node.GetStringLength() == 32)
         {
             // Try parse as Guid in format `N` (32 hex chars)
             Guid id;
@@ -362,6 +362,7 @@ void JsonAsset::unload(bool isReloading)
 #endif
     Scripting::ScriptsUnload.Unbind<JsonAsset, &JsonAsset::DeleteInstance>(this);
     DeleteInstance();
+    _isAfterReload |= isReloading;
 
     JsonAssetBase::unload(isReloading);
 }
@@ -406,6 +407,13 @@ bool JsonAsset::CreateInstance()
             break;
         }
         }
+    }
+
+    // Special case for Settings assets to flush them after edited and saved in Editor
+    if (typeHandle && typeHandle.IsSubclassOf(SettingsBase::TypeInitializer) && _isAfterReload)
+    {
+        _isAfterReload = false;
+        ((SettingsBase*)Instance)->Apply();
     }
 
     return false;
