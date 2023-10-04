@@ -337,8 +337,8 @@ public:
         // If checked, the importer will import texture files used by the model and any embedded texture resources.
         API_FIELD(Attributes="EditorOrder(410), EditorDisplay(\"Materials\"), VisibleIf(nameof(ShowGeometry))")
         bool ImportTextures = true;
-        // If checked, the importer will try to restore the model material slots.
-        API_FIELD(Attributes="EditorOrder(420), EditorDisplay(\"Materials\", \"Restore Materials On Reimport\"), VisibleIf(nameof(ShowGeometry))")
+        // If checked, the importer will try to keep the model's current material slots, instead of importing materials from the source file.
+        API_FIELD(Attributes="EditorOrder(420), EditorDisplay(\"Materials\", \"Keep Material Slots on Reimport\"), VisibleIf(nameof(ShowGeometry))")
         bool RestoreMaterialsOnReimport = true;
 
     public: // SDF
