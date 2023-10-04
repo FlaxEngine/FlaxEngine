@@ -1762,8 +1762,6 @@ bool ModelTool::FindTexture(const String& sourcePath, const String& file, String
     return false;
 }
 
-#endif
-
 void ModelTool::CalculateBoneOffsetMatrix(const Array<SkeletonNode>& nodes, Matrix& offsetMatrix, int32 nodeIndex)
 {
     offsetMatrix = Matrix::Identity;
@@ -1776,5 +1774,7 @@ void ModelTool::CalculateBoneOffsetMatrix(const Array<SkeletonNode>& nodes, Matr
     } while (idx != -1);
     offsetMatrix.Invert();
 }
+
+#endif
 
 #endif
