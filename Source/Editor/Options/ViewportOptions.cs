@@ -47,10 +47,17 @@ namespace FlaxEditor.Options
         public float MaxMovementSpeed { get; set; } = 64f;
 
         /// <summary>
+        /// Gets or sets the default camera easing mode.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Defaults"), EditorOrder(120), Tooltip("The default camera easing mode.")]
+        public bool UseCameraEasing { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets the degree to which the camera will be eased when using camera flight in the editor window.
         /// </summary>
         [DefaultValue(3.0f), Limit(1.0f, 8.0f)]
-        [EditorDisplay("Defaults"), EditorOrder(120), Tooltip("The default degree to which the camera will be eased when using camera flight in the editor window.")]
+        [EditorDisplay("Defaults"), EditorOrder(121), Tooltip("The default degree to which the camera will be eased when using camera flight in the editor window (ignored if camera easing degree is enabled).")]
         public float CameraEasingDegree { get; set; } = 3.0f;
 
         /// <summary>
@@ -79,7 +86,7 @@ namespace FlaxEditor.Options
         /// </summary>
         [DefaultValue(false)]
         [EditorDisplay("Defaults"), EditorOrder(160), Tooltip("The default camera orthographic mode.")]
-        public bool OrthographicProjection { get; set; } = false;
+        public bool UseOrthographicProjection { get; set; } = false;
 
         /// <summary>
         /// Gets or sets the default camera orthographic scale (if camera uses orthographic mode).
@@ -100,7 +107,7 @@ namespace FlaxEditor.Options
         /// </summary>
         [DefaultValue(true)]
         [EditorDisplay("Defaults"), EditorOrder(190), Tooltip("The default relative panning mode. Uses distance between camera and target to determine panning speed.")]
-        public bool RelativePanning { get; set; } = true;
+        public bool UseRelativePanning { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the default panning speed (ignored if relative panning is speed enabled).

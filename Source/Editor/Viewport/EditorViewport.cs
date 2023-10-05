@@ -187,13 +187,14 @@ namespace FlaxEditor.Viewport
         private float _farPlane;
         private float _orthoSize;
         private bool _isOrtho;
+        private bool _useCameraEasing;
         private float _cameraEasingDegree;
         private float _panningSpeed;
         private bool _relativePanning;
         private bool _invertPanning;
 
         private float _linearMovementProgress;
-        private float _easedMovementProgress;
+        private float _easedMovementProgress = 0.0f;
 
         /// <summary>
         /// Speed of the mouse.
@@ -236,6 +237,15 @@ namespace FlaxEditor.Viewport
         {
             get => _maxMovementSpeed;
             set => _maxMovementSpeed = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the camera easing mode.
+        /// </summary>
+        public bool UseCameraEasing
+        {
+            get => _useCameraEasing;
+            set => _useCameraEasing = value;
         }
 
         /// <summary>
@@ -490,6 +500,8 @@ namespace FlaxEditor.Viewport
                 _minMovementSpeed = float.Parse(cachedState);
             if (_editor.ProjectCache.TryGetCustomData("CameraMaxMovementSpeedValue", out cachedState))
                 _maxMovementSpeed = float.Parse(cachedState);
+            if (_editor.ProjectCache.TryGetCustomData("UseCameraEasingState", out cachedState))
+                _useCameraEasing = bool.Parse(cachedState);
             if (_editor.ProjectCache.TryGetCustomData("CameraPanningSpeedValue", out cachedState))
                 _panningSpeed = float.Parse(cachedState);
             if (_editor.ProjectCache.TryGetCustomData("CameraInvertPanningState", out cachedState))
@@ -583,6 +595,19 @@ namespace FlaxEditor.Viewport
                         camSpeedValue.MaxValue = maxCamSpeedValue.Value;
                 };
                 cameraCM.VisibleChanged += control => maxCamSpeedValue.Value = _maxMovementSpeed;
+
+                // Camera easing
+                {
+                    var useCameraEasing = cameraCM.AddButton("Camera Easing");
+                    useCameraEasing.CloseMenuOnClick = false;
+                    var useCameraEasingValue = new CheckBox(xLocationForExtras, 2, _useCameraEasing)
+                    {
+                        Parent = useCameraEasing
+                    };
+
+                    useCameraEasingValue.StateChanged += OnCameraEasingToggled;
+                    cameraCM.VisibleChanged += control => useCameraEasingValue.Checked = _useCameraEasing;
+                }
 
                 // Panning speed
                 {
@@ -875,11 +900,12 @@ namespace FlaxEditor.Viewport
             _minMovementSpeed = options.Viewport.MinMovementSpeed;
             _movementSpeed = options.Viewport.MovementSpeed;
             _maxMovementSpeed = options.Viewport.MaxMovementSpeed;
+            _useCameraEasing = options.Viewport.UseCameraEasing;
             _panningSpeed = options.Viewport.PanningSpeed;
             _invertPanning = options.Viewport.InvertPanning;
-            _relativePanning = options.Viewport.RelativePanning;
+            _relativePanning = options.Viewport.UseRelativePanning;
 
-            _isOrtho = options.Viewport.OrthographicProjection;
+            _isOrtho = options.Viewport.UseOrthographicProjection;
             _orthoSize = options.Viewport.OrthographicScale;
             _fieldOfView = options.Viewport.FieldOfView;
             _nearPlane = options.Viewport.NearPlane;
@@ -919,6 +945,14 @@ namespace FlaxEditor.Viewport
 
             OnCameraMovementProgressChanged();
             _editor.ProjectCache.SetCustomData("CameraMaxMovementSpeedValue", _maxMovementSpeed.ToString());
+        }
+        
+        private void OnCameraEasingToggled(Control control)
+        {
+            _useCameraEasing = !_useCameraEasing;
+
+            OnCameraMovementProgressChanged();
+            _editor.ProjectCache.SetCustomData("UseCameraEasingState", _useCameraEasing.ToString());
         }
 
         private void OnPanningSpeedChanged(FloatValueBox control)
@@ -1056,6 +1090,8 @@ namespace FlaxEditor.Viewport
                                       ? 0.0f
                                       : Mathf.Remap(_movementSpeed, _minMovementSpeed, _maxMovementSpeed, 0.0f, 1.0f);
 
+            if (!_useCameraEasing)
+                return;
             _easedMovementProgress = InterpInverseEaseInOut(0.0f, 1.0f, _linearMovementProgress, _cameraEasingDegree);
         }
 
@@ -1065,9 +1101,20 @@ namespace FlaxEditor.Viewport
         /// <param name="speedDelta">The difference in camera speed adjustment as a fraction of 1.</param>
         protected void AdjustCameraMoveSpeed(float speedDelta)
         {
-            _easedMovementProgress = Mathf.Clamp(_easedMovementProgress + speedDelta, 0.0f, 1.0f);
-            var easedSpeed = Mathf.InterpEaseInOut(_minMovementSpeed, _maxMovementSpeed, _easedMovementProgress, _cameraEasingDegree);
-            MovementSpeed = Mathf.Round(easedSpeed * 100) / 100;
+            float speed;
+
+            if (_useCameraEasing)
+            {
+                _easedMovementProgress = Mathf.Clamp(_easedMovementProgress + speedDelta, 0.0f, 1.0f);
+                speed = Mathf.InterpEaseInOut(_minMovementSpeed, _maxMovementSpeed, _easedMovementProgress, _cameraEasingDegree);
+            }
+            else
+            {
+                _linearMovementProgress = Mathf.Clamp(_linearMovementProgress + speedDelta, 0.0f, 1.0f);
+                speed = Mathf.Lerp(_minMovementSpeed, _maxMovementSpeed, _linearMovementProgress);
+            }
+
+            MovementSpeed = Mathf.Round(speed * 100) / 100;
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)
