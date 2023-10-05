@@ -217,7 +217,7 @@ namespace FlaxEditor.Viewport
                 _movementSpeed = value;
 
                 if (_cameraButton != null)
-                    _cameraButton.Text = _movementSpeed.ToString();
+                    _cameraButton.Text = string.Format("{0:0.##}", _movementSpeed);
             }
         }
 
@@ -495,7 +495,7 @@ namespace FlaxEditor.Viewport
 
             // Initialize camera values from cache
             if (_editor.ProjectCache.TryGetCustomData("CameraMovementSpeedValue", out var cachedState))
-                _movementSpeed = float.Parse(cachedState);
+                MovementSpeed = float.Parse(cachedState);
             if (_editor.ProjectCache.TryGetCustomData("CameraMinMovementSpeedValue", out cachedState))
                 _minMovementSpeed = float.Parse(cachedState);
             if (_editor.ProjectCache.TryGetCustomData("CameraMaxMovementSpeedValue", out cachedState))
@@ -533,7 +533,7 @@ namespace FlaxEditor.Viewport
 
                 // Camera settings menu
                 var cameraCM = new ContextMenu();
-                _cameraButton = new ViewportWidgetButton(_movementSpeed.ToString(), Editor.Instance.Icons.Camera64, cameraCM)
+                _cameraButton = new ViewportWidgetButton(string.Format("{0:0.##}", _movementSpeed), Editor.Instance.Icons.Camera64, cameraCM, false, Style.Current.FontMedium.MeasureText("000.00").X)
                 {
                     Tag = this,
                     TooltipText = "Camera Settings",
@@ -546,7 +546,7 @@ namespace FlaxEditor.Viewport
                 {
                     Checked = !_isOrtho,
                     TooltipText = "Toggle Orthographic/Perspective Mode",
-                    Parent = _cameraWidget,
+                    Parent = _cameraWidget
                 };
                 _orthographicModeButton.Toggled += OnOrthographicModeToggled;
 
@@ -555,7 +555,7 @@ namespace FlaxEditor.Viewport
                 camSpeedButton.CloseMenuOnClick = false;
                 var camSpeedValue = new FloatValueBox(_movementSpeed, xLocationForExtras, 2, 70.0f, _minMovementSpeed, _maxMovementSpeed, 0.5f)
                 {
-                    Parent = camSpeedButton,
+                    Parent = camSpeedButton
                 };
 
                 camSpeedValue.ValueChanged += () => OnMovementSpeedChanged(camSpeedValue);
@@ -566,13 +566,13 @@ namespace FlaxEditor.Viewport
                 minCamSpeedButton.CloseMenuOnClick = false;
                 var minCamSpeedValue = new FloatValueBox(_minMovementSpeed, xLocationForExtras, 2, 70.0f, 0.05f, _maxMovementSpeed, 0.5f)
                 {
-                    Parent = minCamSpeedButton,
+                    Parent = minCamSpeedButton
                 };
                 var maxCamSpeedButton = cameraCM.AddButton("Max Cam Speed");
                 maxCamSpeedButton.CloseMenuOnClick = false;
                 var maxCamSpeedValue = new FloatValueBox(_maxMovementSpeed, xLocationForExtras, 2, 70.0f, _minMovementSpeed, 1000.0f, 0.5f)
                 {
-                    Parent = maxCamSpeedButton,
+                    Parent = maxCamSpeedButton
                 };
 
                 minCamSpeedValue.ValueChanged += () =>
@@ -898,7 +898,7 @@ namespace FlaxEditor.Viewport
         {
             var options = Editor.Instance.Options.Options;
             _minMovementSpeed = options.Viewport.MinMovementSpeed;
-            _movementSpeed = options.Viewport.MovementSpeed;
+            MovementSpeed = options.Viewport.MovementSpeed;
             _maxMovementSpeed = options.Viewport.MaxMovementSpeed;
             _useCameraEasing = options.Viewport.UseCameraEasing;
             _panningSpeed = options.Viewport.PanningSpeed;
@@ -929,7 +929,7 @@ namespace FlaxEditor.Viewport
             _minMovementSpeed = value;
 
             if (_movementSpeed < value)
-                _movementSpeed = value;
+                MovementSpeed = value;
 
             OnCameraMovementProgressChanged();
             _editor.ProjectCache.SetCustomData("CameraMinMovementSpeedValue", _minMovementSpeed.ToString());
@@ -941,7 +941,7 @@ namespace FlaxEditor.Viewport
             _maxMovementSpeed = value;
 
             if (_movementSpeed > value)
-                _movementSpeed = value;
+                MovementSpeed = value;
 
             OnCameraMovementProgressChanged();
             _editor.ProjectCache.SetCustomData("CameraMaxMovementSpeedValue", _maxMovementSpeed.ToString());
@@ -1105,16 +1105,16 @@ namespace FlaxEditor.Viewport
 
             if (_useCameraEasing)
             {
-                _easedMovementProgress = Mathf.Clamp(_easedMovementProgress + speedDelta, 0.0f, 1.0f);
+                _easedMovementProgress = Mathf.Saturate(_easedMovementProgress + speedDelta);
                 speed = Mathf.InterpEaseInOut(_minMovementSpeed, _maxMovementSpeed, _easedMovementProgress, _cameraEasingDegree);
             }
             else
             {
-                _linearMovementProgress = Mathf.Clamp(_linearMovementProgress + speedDelta, 0.0f, 1.0f);
+                _linearMovementProgress = Mathf.Saturate(_linearMovementProgress + speedDelta);
                 speed = Mathf.Lerp(_minMovementSpeed, _maxMovementSpeed, _linearMovementProgress);
             }
 
-            MovementSpeed = Mathf.Round(speed * 100) / 100;
+            MovementSpeed = speed;
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)
