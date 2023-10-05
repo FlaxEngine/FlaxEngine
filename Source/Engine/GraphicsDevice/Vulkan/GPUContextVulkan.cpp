@@ -459,9 +459,9 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
             {
             case VK_DESCRIPTOR_TYPE_SAMPLER:
             {
-                const VkSampler sampler = _samplerHandles[slot];
-                ASSERT(sampler);
-                needsWrite |= dsWriter.WriteSampler(descriptorIndex, sampler, index);
+                const VkSampler handle = _samplerHandles[slot];
+                ASSERT(handle);
+                needsWrite |= dsWriter.WriteSampler(descriptorIndex, handle, index);
                 break;
             }
             case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
@@ -547,12 +547,18 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
             }
             case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
             {
-                auto cb = handles[slot];
-                ASSERT(cb);
-                VkBuffer buffer;
-                VkDeviceSize offset, range;
-                uint32 dynamicOffset;
-                cb->DescriptorAsDynamicUniformBuffer(this, buffer, offset, range, dynamicOffset);
+                auto handle = handles[slot];
+                VkBuffer buffer = VK_NULL_HANDLE;
+                VkDeviceSize offset = 0, range = 0;
+                uint32 dynamicOffset = 0;
+                if (handle)
+                    handle->DescriptorAsDynamicUniformBuffer(this, buffer, offset, range, dynamicOffset);
+                else
+                {
+                    const auto dummy = _device->HelperResources.GetDummyBuffer();
+                    buffer = dummy->GetHandle();
+                    range = dummy->GetSize();
+                }
                 needsWrite |= dsWriter.WriteDynamicUniformBuffer(descriptorIndex, buffer, offset, range, dynamicOffset, index);
                 break;
             }

@@ -697,7 +697,8 @@ void AnimatedModel::UpdateBounds()
     }
     else if (model && model->IsLoaded() && model->LODs.Count() != 0)
     {
-        BoundingBox box = model->LODs[0].GetBox(_transform, _deformation);
+        const BoundingBox modelBox = model->GetBox(_transform.GetWorld());
+        BoundingBox box = modelBox;
         if (GraphInstance.NodesPose.Count() != 0)
         {
             // Per-bone bounds estimated from positions
@@ -705,11 +706,11 @@ void AnimatedModel::UpdateBounds()
             const int32 bonesCount = skeleton.Bones.Count();
             for (int32 boneIndex = 0; boneIndex < bonesCount; boneIndex++)
                 box.Merge(_transform.LocalToWorld(GraphInstance.NodesPose[skeleton.Bones.Get()[boneIndex].NodeIndex].GetTranslation()));
+            _box = box;
         }
-        _box = box;
 
         // Apply margin based on model dimensions
-        const Vector3 modelBoxSize = model->GetBox().GetSize();
+        const Vector3 modelBoxSize = modelBox.GetSize();
         const Vector3 center = _box.GetCenter();
         const Vector3 sizeHalf = Vector3::Max(_box.GetSize() + modelBoxSize * 0.2f, modelBoxSize) * 0.5f;
         _box = BoundingBox(center - sizeHalf, center + sizeHalf);

@@ -175,7 +175,7 @@ namespace FlaxEditor.CustomEditors.GUI
         {
             // Clear flag
             _mouseOverSplitter = false;
-            
+
             if (_cursorChanged)
             {
                 Cursor = CursorType.Default;

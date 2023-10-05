@@ -348,7 +348,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             if (!CanEditTangent())
                 return;
-            
+
             var index = _lastPointSelected.Index;
             var currentTangentInPosition = _selectedSpline.GetSplineLocalTangent(index, true).Translation;
             var currentTangentOutPosition = _selectedSpline.GetSplineLocalTangent(index, false).Translation;

@@ -378,6 +378,34 @@ namespace FlaxEngine.Json
         }
     }
 
+    /// <summary>
+    /// Serialize <see cref="Tag"/> as inlined text.
+    /// </summary>
+    /// <seealso cref="Newtonsoft.Json.JsonConverter" />
+    internal class TagConverter : JsonConverter
+    {
+        /// <inheritdoc />
+        public override void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            var tag = (Tag)value;
+            writer.WriteValue(tag.ToString());
+        }
+
+        /// <inheritdoc />
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            if (reader.TokenType == JsonToken.String)
+                return Tags.Get((string)reader.Value);
+            return Tag.Default;
+        }
+
+        /// <inheritdoc />
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(Tag);
+        }
+    }
+
     /*
     /// <summary>
     /// Serialize Guid values using `N` format

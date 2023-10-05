@@ -919,6 +919,11 @@ namespace FlaxEditor.Modules
                 // Check if node already has that element (skip during init when we want to walk project dir very fast)
                 if (_isDuringFastSetup || !parent.Folder.ContainsChild(path))
                 {
+#if PLATFORM_MAC
+                    if (path.EndsWith(".DS_Store", StringComparison.Ordinal))
+                        continue;
+#endif
+
                     // Create file item
                     ContentItem item;
                     if (path.EndsWith(".cs"))
@@ -960,6 +965,11 @@ namespace FlaxEditor.Modules
                 // Check if node already has that element (skip during init when we want to walk project dir very fast)
                 if (_isDuringFastSetup || !parent.Folder.ContainsChild(path))
                 {
+#if PLATFORM_MAC
+                    if (path.EndsWith(".DS_Store", StringComparison.Ordinal))
+                        continue;
+#endif
+
                     // Create file item
                     ContentItem item = null;
                     if (FlaxEngine.Content.GetAssetInfo(path, out var assetInfo))
@@ -1186,6 +1196,7 @@ namespace FlaxEditor.Modules
             {
             case WatcherChangeTypes.Created:
             case WatcherChangeTypes.Deleted:
+            case WatcherChangeTypes.Renamed:
             {
                 lock (_dirtyNodes)
                 {

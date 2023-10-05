@@ -105,6 +105,14 @@ int32 Engine::Main(const Char* cmdLine)
     Globals::StartupFolder = Globals::BinariesFolder = Platform::GetMainDirectory();
 #if USE_EDITOR
     Globals::StartupFolder /= TEXT("../../../..");
+#if PLATFORM_MAC
+    if (Globals::BinariesFolder.EndsWith(TEXT(".app/Contents")))
+    {
+        // If running editor from application package on macOS
+        Globals::StartupFolder = Globals::BinariesFolder;
+        Globals::BinariesFolder /= TEXT("MacOS");
+    }
+#endif
 #endif
     StringUtils::PathRemoveRelativeParts(Globals::StartupFolder);
     FileSystem::NormalizePath(Globals::BinariesFolder);
@@ -122,7 +130,6 @@ int32 Engine::Main(const Char* cmdLine)
     }
 
     EngineImpl::InitPaths();
-
     EngineImpl::InitLog();
 
 #if USE_EDITOR
@@ -542,7 +549,8 @@ void EngineImpl::InitLog()
     LOG(Info, "Product: {0}, Company: {1}", Globals::ProductName, Globals::CompanyName);
     LOG(Info, "Current culture: {0}", Platform::GetUserLocaleName());
     LOG(Info, "Command line: {0}", CommandLine);
-    LOG(Info, "Base directory: {0}", Globals::StartupFolder);
+    LOG(Info, "Base folder: {0}", Globals::StartupFolder);
+    LOG(Info, "Binaries folder: {0}", Globals::BinariesFolder);
     LOG(Info, "Temporary folder: {0}", Globals::TemporaryFolder);
     LOG(Info, "Project folder: {0}", Globals::ProjectFolder);
 #if USE_EDITOR
