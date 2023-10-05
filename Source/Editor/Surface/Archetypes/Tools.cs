@@ -787,7 +787,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
         }
 
-        private class AsNode : SurfaceNode
+        internal class AsNode : SurfaceNode
         {
             private TypePickerControl _picker;
 
@@ -838,6 +838,11 @@ namespace FlaxEditor.Surface.Archetypes
                 box.CurrentType = type ? type : ScriptType.FlaxObject;
             }
 
+            public void SetPickerValue(ScriptType type)
+            {
+                _picker.Value = type;
+            }
+            
             /// <inheritdoc />
             public override void OnDestroy()
             {
@@ -999,6 +1004,11 @@ namespace FlaxEditor.Surface.Archetypes
                 GetBox(4).CurrentType = type ? type : _picker.Type;
             }
 
+            public void SetPickerValue(ScriptType type)
+            {
+                _picker.Value = type;
+            }
+            
             /// <inheritdoc />
             public override void OnDestroy()
             {

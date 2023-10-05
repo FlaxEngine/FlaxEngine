@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Undo;
 using FlaxEngine;
@@ -820,8 +821,68 @@ namespace FlaxEditor.Surface.Elements
             if (useCaster)
             {
                 // Connect via Caster
-                //AddCaster(oB, iB);
-                throw new NotImplementedException("AddCaster(..) function");
+                const float casterXOffset = 250;
+                if (Surface.Undo != null && Surface.Undo.Enabled)
+                {
+                    bool undoEnabled = Surface.Undo.Enabled;
+                    Surface.Undo.Enabled = false;
+                    SurfaceNode node = Surface.Context.SpawnNode(7, 22, Float2.Zero); // 22 AsNode, 25 CastNode
+                    Surface.Undo.Enabled = undoEnabled;
+
+                    if(node is not Archetypes.Tools.AsNode castNode)
+                        throw new Exception("Node is not a casting node!");
+                    
+                    // Set the type of the casting node
+                    undoEnabled = castNode.Surface.Undo.Enabled;
+                    castNode.Surface.Undo.Enabled = false;
+                    castNode.SetPickerValue(iB.CurrentType);
+                    castNode.Surface.Undo.Enabled = undoEnabled;
+                    
+                    if (node.GetBox(0) is not OutputBox castOutputBox || node.GetBox(1) is not InputBox castInputBox)
+                    {
+                        throw new NullReferenceException("Casting failed. Cast node is invalid!");
+                    }
+                    
+                    undoEnabled = castNode.Surface.Undo.Enabled;
+                    castNode.Surface.Undo.Enabled = false;
+                    var wantedOffset = iB.ParentNode.Location - new Float2(casterXOffset, -(iB.LocalY - castOutputBox.LocalY));
+                    castNode.Location = Surface.Root.PointFromParent(ref wantedOffset);
+                    castNode.Surface.Undo.Enabled = undoEnabled;
+                    
+                    var spawnNodeAction = new AddRemoveNodeAction(castNode, true);
+                    
+                    var connectToCastNodeAction = new ConnectBoxesAction(castInputBox, oB, true);
+                    castInputBox.CreateConnection(oB);
+                    connectToCastNodeAction.End();
+                    
+                    var connectCastToTargetNodeAction = new ConnectBoxesAction(iB, castOutputBox, true);
+                    iB.CreateConnection(castOutputBox);
+                    connectCastToTargetNodeAction.End();
+                    
+                    Surface.AddBatchedUndoAction(new MultiUndoAction(spawnNodeAction, connectToCastNodeAction, connectCastToTargetNodeAction));
+                }
+                else
+                {
+                    SurfaceNode node = Surface.Context.SpawnNode(7, 22, Float2.Zero); // 22 AsNode, 25 CastNode
+                    
+                    if(node is not Archetypes.Tools.AsNode castNode)
+                        throw new Exception("Node is not a casting node!");
+                    
+                    // Set the type of the casting node
+                    castNode.SetPickerValue(iB.CurrentType);
+                    
+                    if (node.GetBox(0) is not OutputBox castOutputBox || node.GetBox(1) is not InputBox castInputBox)
+                    {
+                        throw new NullReferenceException("Casting failed. Cast node is invalid!");
+                    }
+                    
+                    var wantedOffset = iB.ParentNode.Location - new Float2(casterXOffset, -(iB.LocalY - castOutputBox.LocalY));
+                    castNode.Location = Surface.Root.PointFromParent(ref wantedOffset);
+                    
+                    castInputBox.CreateConnection(oB);
+                    iB.CreateConnection(castOutputBox);
+                }
+                Surface.MarkAsEdited();
             }
             else
             {
