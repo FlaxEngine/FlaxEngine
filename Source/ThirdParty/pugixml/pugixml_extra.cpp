@@ -1,9 +1,10 @@
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+
 #include "pugixml.hpp"
 #include "pugixml_extra.hpp"
 
 namespace pugi
 {
-
     // Compare two strings
     // This comes from pugi::impl::strequal
     bool strequal(const char_t* src, const char_t* dst)
