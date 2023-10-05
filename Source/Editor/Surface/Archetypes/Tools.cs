@@ -838,6 +838,10 @@ namespace FlaxEditor.Surface.Archetypes
                 box.CurrentType = type ? type : ScriptType.FlaxObject;
             }
 
+            /// <summary>
+            /// Sets the type of the picker and the type of the output box
+            /// </summary>
+            /// <param name="type">Target Type</param>
             public void SetPickerValue(ScriptType type)
             {
                 _picker.Value = type;
@@ -1004,6 +1008,10 @@ namespace FlaxEditor.Surface.Archetypes
                 GetBox(4).CurrentType = type ? type : _picker.Type;
             }
 
+            /// <summary>
+            /// Sets the type of the picker and the type of the output box
+            /// </summary>
+            /// <param name="type">Target Type</param>
             public void SetPickerValue(ScriptType type)
             {
                 _picker.Value = type;

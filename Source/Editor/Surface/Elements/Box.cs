@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Undo;
 using FlaxEngine;
@@ -843,6 +842,7 @@ namespace FlaxEditor.Surface.Elements
                         throw new NullReferenceException("Casting failed. Cast node is invalid!");
                     }
                     
+                    // We set the position of the cast node here to set it relative to the target nodes input box
                     undoEnabled = castNode.Surface.Undo.Enabled;
                     castNode.Surface.Undo.Enabled = false;
                     var wantedOffset = iB.ParentNode.Location - new Float2(casterXOffset, -(iB.LocalY - castOutputBox.LocalY));
@@ -876,6 +876,7 @@ namespace FlaxEditor.Surface.Elements
                         throw new NullReferenceException("Casting failed. Cast node is invalid!");
                     }
                     
+                    // We set the position of the cast node here to set it relative to the target nodes input box
                     var wantedOffset = iB.ParentNode.Location - new Float2(casterXOffset, -(iB.LocalY - castOutputBox.LocalY));
                     castNode.Location = Surface.Root.PointFromParent(ref wantedOffset);
                     
