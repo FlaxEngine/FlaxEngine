@@ -846,7 +846,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 _picker.Value = type;
             }
-            
+
             /// <inheritdoc />
             public override void OnDestroy()
             {
@@ -1016,7 +1016,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 _picker.Value = type;
             }
-            
+
             /// <inheritdoc />
             public override void OnDestroy()
             {
