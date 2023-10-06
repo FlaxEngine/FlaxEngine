@@ -271,6 +271,8 @@ namespace FlaxEditor.Windows
             Title = "Game";
             AutoFocus = true;
 
+            FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
+
             var task = MainRenderTask.Instance;
 
             // Setup viewport
@@ -302,10 +304,6 @@ namespace FlaxEditor.Windows
             // Link editor options
             Editor.Options.OptionsChanged += OnOptionsChanged;
             OnOptionsChanged(Editor.Options.Options);
-
-            InputActions.Add(options => options.Play, Editor.Simulation.RequestPlayOrStopPlay);
-            InputActions.Add(options => options.Pause, Editor.Simulation.RequestResumeOrPause);
-            InputActions.Add(options => options.StepFrame, Editor.Simulation.RequestPlayOneFrame);
         }
 
         private void ChangeViewportRatio(ViewportScaleOptions v)
@@ -463,6 +461,18 @@ namespace FlaxEditor.Windows
         {
             IsMaximized = false;
             Cursor = CursorType.Default;
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseLeave()
+        {
+            base.OnMouseLeave();
+
+            // Remove focus from game window when mouse moves out and the cursor is hidden during game
+            if ((IsFocused || ContainsFocus) && Parent != null && Editor.IsPlayMode && !Screen.CursorVisible)
+            {
+                Parent.Focus();
+            }
         }
 
         /// <inheritdoc />

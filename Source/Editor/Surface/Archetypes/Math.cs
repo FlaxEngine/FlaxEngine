@@ -126,7 +126,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Clamp",
                 Description = "Clamps value to the specified range",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Float2(110, 60),
+                Size = new Float2(140, 60),
                 ConnectionsHints = ConnectionsHint.Numeric,
                 IndependentBoxes = new[] { 0 },
                 DependentBoxes = new[] { 1, 2, 3 },

@@ -204,7 +204,7 @@ namespace FlaxEngine
                 up = value;
                 Internal_SetNavTargets(__unmanagedPtr, GetUnmanagedPtr(up), GetUnmanagedPtr(down), GetUnmanagedPtr(left), GetUnmanagedPtr(right));
                 if (_control != null)
-                    _control.NavTargetUp = value?.Control;
+                    _control.NavTargetUp = value != null ? value.Control : null;
             }
         }
 
@@ -228,7 +228,7 @@ namespace FlaxEngine
                 down = value;
                 Internal_SetNavTargets(__unmanagedPtr, GetUnmanagedPtr(up), GetUnmanagedPtr(down), GetUnmanagedPtr(left), GetUnmanagedPtr(right));
                 if (_control != null)
-                    _control.NavTargetDown = value?.Control;
+                    _control.NavTargetDown = value != null ? value.Control : null;
             }
         }
 
@@ -252,7 +252,7 @@ namespace FlaxEngine
                 left = value;
                 Internal_SetNavTargets(__unmanagedPtr, GetUnmanagedPtr(up), GetUnmanagedPtr(down), GetUnmanagedPtr(left), GetUnmanagedPtr(right));
                 if (_control != null)
-                    _control.NavTargetLeft = value?.Control;
+                    _control.NavTargetLeft = value != null ? value.Control : null;
             }
         }
 
@@ -276,7 +276,7 @@ namespace FlaxEngine
                 right = value;
                 Internal_SetNavTargets(__unmanagedPtr, GetUnmanagedPtr(up), GetUnmanagedPtr(down), GetUnmanagedPtr(left), GetUnmanagedPtr(right));
                 if (_control != null)
-                    _control.NavTargetRight = value?.Control;
+                    _control.NavTargetRight = value != null ? value.Control : null;
             }
         }
 

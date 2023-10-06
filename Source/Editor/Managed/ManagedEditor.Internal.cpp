@@ -50,43 +50,6 @@
 
 Guid ManagedEditor::ObjectID(0x91970b4e, 0x99634f61, 0x84723632, 0x54c776af);
 
-// Disable warning C4800: 'const byte': forcing value to bool 'true' or 'false' (performance warning)
-#if defined(_MSC_VER)
-#pragma warning( push )
-#pragma warning( disable : 4800)
-#endif
-
-struct InternalAudioOptions
-{
-    AudioFormat Format;
-    byte DisableStreaming;
-    byte Is3D;
-    int32 BitDepth;
-    float Quality;
-
-    static void Convert(InternalAudioOptions* from, ImportAudio::Options* to)
-    {
-        to->Format = from->Format;
-        to->DisableStreaming = from->DisableStreaming;
-        to->Is3D = from->Is3D;
-        to->BitDepth = from->BitDepth;
-        to->Quality = from->Quality;
-    }
-
-    static void Convert(ImportAudio::Options* from, InternalAudioOptions* to)
-    {
-        to->Format = from->Format;
-        to->DisableStreaming = from->DisableStreaming;
-        to->Is3D = from->Is3D;
-        to->BitDepth = from->BitDepth;
-        to->Quality = from->Quality;
-    }
-};
-
-#if defined(_MSC_VER)
-#pragma warning( pop )
-#endif
-
 // Pack log messages into a single scratch buffer to reduce dynamic memory allocations
 CriticalSection CachedLogDataLocker;
 Array<byte> CachedLogData;
@@ -295,16 +258,6 @@ DEFINE_INTERNAL_CALL(MString*) EditorInternal_CanImport(MString* extensionObj)
     return importer ? MUtils::ToString(importer->ResultExtension) : nullptr;
 }
 
-DEFINE_INTERNAL_CALL(bool) EditorInternal_ImportAudio(MString* inputPathObj, MString* outputPathObj, InternalAudioOptions* optionsObj)
-{
-    ImportAudio::Options options;
-    InternalAudioOptions::Convert(optionsObj, &options);
-    String inputPath, outputPath;
-    MUtils::ToString(inputPathObj, inputPath);
-    MUtils::ToString(outputPathObj, outputPath);
-    return ManagedEditor::Import(inputPath, outputPath, &options);
-}
-
 DEFINE_INTERNAL_CALL(void) EditorInternal_GetAudioClipMetadata(AudioClip* clip, int32* originalSize, int32* importedSize)
 {
     INTERNAL_CALL_CHECK(clip);
@@ -321,7 +274,7 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_SaveJsonAsset(MString* outputPathObj, 
     const StringView dataObjChars = MCore::String::GetChars(dataObj);
     const StringAsANSI<> data(dataObjChars.Get(), dataObjChars.Length());
     const StringAnsiView dataAnsi(data.Get(), data.Length());
-    
+
     const StringView dataTypeNameObjChars = MCore::String::GetChars(dataTypeNameObj);
     const StringAsANSI<> dataTypeName(dataTypeNameObjChars.Get(), dataTypeNameObjChars.Length());
     const StringAnsiView dataTypeNameAnsi(dataTypeName.Get(), dataTypeName.Length());
@@ -427,7 +380,7 @@ DEFINE_INTERNAL_CALL(void) EditorInternal_GetCollisionWires(CollisionData* colli
 
     const int32 linesCount = debugLines.Count() / 2;
     MCore::GC::WriteRef(triangles, (MObject*)MCore::Array::New(Float3::TypeInitializer.GetClass(), debugLines.Count()));
-    MCore::GC::WriteRef(indices, (MObject*)MCore::Array::New( MCore::TypeCache::Int32, linesCount * 3));
+    MCore::GC::WriteRef(indices, (MObject*)MCore::Array::New(MCore::TypeCache::Int32, linesCount * 3));
 
     // Use one triangle per debug line
     Platform::MemoryCopy(MCore::Array::GetAddress<Float3>(*triangles), debugLines.Get(), debugLines.Count() * sizeof(Float3));
@@ -585,7 +538,7 @@ DEFINE_INTERNAL_CALL(MArray*) EditorInternal_GetVisualScriptLocals(int* localsCo
         const int32 count = stack->Scope->Parameters.Length() + stack->Scope->ReturnedValues.Count();
         const MClass* mclass = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEditor.Editor+VisualScriptLocal");
         ASSERT(mclass);
-        result = MCore::Array::New( mclass, count);
+        result = MCore::Array::New(mclass, count);
         VisualScriptLocalManaged local;
         local.NodeId = MAX_uint32;
         if (stack->Scope->Parameters.Length() != 0)
@@ -642,7 +595,7 @@ DEFINE_INTERNAL_CALL(MArray*) EditorInternal_GetVisualScriptStackFrames(int* sta
         }
         const MClass* mclass = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEditor.Editor+VisualScriptStackFrame");
         ASSERT(mclass);
-        result = MCore::Array::New( mclass, count);
+        result = MCore::Array::New(mclass, count);
         VisualScriptStackFrameManaged* resultPtr = MCore::Array::GetAddress<VisualScriptStackFrameManaged>(result);
         s = stack;
         count = 0;
@@ -765,24 +718,6 @@ DEFINE_INTERNAL_CALL(MTypeObject*) CustomEditorsUtilInternal_GetCustomEditor(MTy
     return CustomEditorsUtil::GetCustomEditor(targetType);
 }
 
-DEFINE_INTERNAL_CALL(bool) AudioImportEntryInternal_GetAudioImportOptions(MString* pathObj, InternalAudioOptions* result)
-{
-    String path;
-    MUtils::ToString(pathObj, path);
-    FileSystem::NormalizePath(path);
-
-    ImportAudio::Options options;
-    if (ImportAudio::TryGetImportOptions(path, options))
-    {
-        // Convert into managed storage
-        InternalAudioOptions::Convert(&options, result);
-
-        return true;
-    }
-
-    return false;
-}
-
 DEFINE_INTERNAL_CALL(MArray*) LayersAndTagsSettingsInternal_GetCurrentLayers(int* layersCount)
 {
     *layersCount = Math::Max(1, Level::GetNonEmptyLayerNamesCount());
@@ -829,4 +764,16 @@ bool ManagedEditor::TryRestoreImportOptions(ModelTool::Options& options, String 
     // Get options from model
     FileSystem::NormalizePath(assetPath);
     return ImportModelFile::TryGetImportOptions(assetPath, options);
+}
+
+bool ManagedEditor::Import(const String& inputPath, const String& outputPath, const AudioTool::Options& options)
+{
+    return Import(inputPath, outputPath, (void*)&options);
+}
+
+bool ManagedEditor::TryRestoreImportOptions(AudioTool::Options& options, String assetPath)
+{
+    // Get options from model
+    FileSystem::NormalizePath(assetPath);
+    return ImportAudio::TryGetImportOptions(assetPath, options);
 }

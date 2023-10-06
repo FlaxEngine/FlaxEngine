@@ -441,6 +441,9 @@ namespace FlaxEditor.Content
         {
             get
             {
+                // Skip when hidden
+                if (!Visible)
+                    return Rectangle.Empty;
                 var view = Parent as ContentView;
                 var size = Size;
                 switch (view?.ViewType ?? ContentViewType.Tiles)
@@ -469,6 +472,30 @@ namespace FlaxEditor.Content
         {
             // Draw shadow
             if (DrawShadow)
+            {
+                const float thumbnailInShadowSize = 50.0f;
+                var shadowRect = rectangle.MakeExpanded((DefaultThumbnailSize - thumbnailInShadowSize) * rectangle.Width / DefaultThumbnailSize * 1.3f);
+                if (!_shadowIcon.IsValid)
+                    _shadowIcon = Editor.Instance.Icons.AssetShadow128;
+                Render2D.DrawSprite(_shadowIcon, shadowRect);
+            }
+
+            // Draw thumbnail
+            if (_thumbnail.IsValid)
+                Render2D.DrawSprite(_thumbnail, rectangle);
+            else
+                Render2D.FillRectangle(rectangle, Color.Black);
+        }
+
+        /// <summary>
+        /// Draws the item thumbnail.
+        /// </summary>
+        /// <param name="rectangle">The thumbnail rectangle.</param>
+        /// /// <param name="shadow">Whether or not to draw the shadow. Overrides DrawShadow.</param>
+        public void DrawThumbnail(ref Rectangle rectangle, bool shadow)
+        {
+            // Draw shadow
+            if (shadow)
             {
                 const float thumbnailInShadowSize = 50.0f;
                 var shadowRect = rectangle.MakeExpanded((DefaultThumbnailSize - thumbnailInShadowSize) * rectangle.Width / DefaultThumbnailSize * 1.3f);
@@ -642,7 +669,6 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void Draw()
         {
-            // Cache data
             var size = Size;
             var style = Style.Current;
             var view = Parent as ContentView;
@@ -655,9 +681,51 @@ namespace FlaxEditor.Content
             {
             case ContentViewType.Tiles:
             {
-                var thumbnailSize = size.X - 2 * DefaultMarginSize;
-                thumbnailRect = new Rectangle(DefaultMarginSize, DefaultMarginSize, thumbnailSize, thumbnailSize);
+                var thumbnailSize = size.X;
+                thumbnailRect = new Rectangle(0, 0, thumbnailSize, thumbnailSize);
                 nameAlignment = TextAlignment.Center;
+
+                if (this is ContentFolder)
+                {
+                    // Small shadow
+                    var shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
+                    var color = Color.Black.AlphaMultiplied(0.2f);
+                    Render2D.FillRectangle(shadowRect, color);
+                    Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
+
+                    if (isSelected)
+                        Render2D.FillRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                    else if (IsMouseOver)
+                        Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
+
+                    DrawThumbnail(ref thumbnailRect, false);
+                }
+                else
+                {
+                    // Small shadow
+                    var shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
+                    var color = Color.Black.AlphaMultiplied(0.2f);
+                    Render2D.FillRectangle(shadowRect, color);
+
+                    Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
+                    Render2D.FillRectangle(TextRectangle, style.LightBackground);
+
+                    var accentHeight = 2 * view.ViewScale;
+                    var barRect = new Rectangle(0, thumbnailRect.Height - accentHeight, clientRect.Width, accentHeight);
+                    Render2D.FillRectangle(barRect, Color.DimGray);
+
+                    DrawThumbnail(ref thumbnailRect, false);
+                    if (isSelected)
+                    {
+                        Render2D.FillRectangle(textRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                        Render2D.DrawRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                    }
+                    else if (IsMouseOver)
+                    {
+                        Render2D.FillRectangle(textRect, style.BackgroundHighlighted);
+                        Render2D.DrawRectangle(clientRect, style.BackgroundHighlighted);
+                    }
+                }
                 break;
             }
             case ContentViewType.List:
@@ -665,23 +733,21 @@ namespace FlaxEditor.Content
                 var thumbnailSize = size.Y - 2 * DefaultMarginSize;
                 thumbnailRect = new Rectangle(DefaultMarginSize, DefaultMarginSize, thumbnailSize, thumbnailSize);
                 nameAlignment = TextAlignment.Near;
+
+                if (isSelected)
+                    Render2D.FillRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                else if (IsMouseOver)
+                    Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
+
+                DrawThumbnail(ref thumbnailRect);
                 break;
             }
             default: throw new ArgumentOutOfRangeException();
             }
 
-            // Draw background
-            if (isSelected)
-                Render2D.FillRectangle(clientRect, Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
-            else if (IsMouseOver)
-                Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
-
-            // Draw preview
-            DrawThumbnail(ref thumbnailRect);
-
             // Draw short name
             Render2D.PushClip(ref textRect);
-            Render2D.DrawText(style.FontMedium, ShowFileExtension || view.ShowFileExtensions ? FileName : ShortName, textRect, style.Foreground, nameAlignment, TextAlignment.Center, TextWrapping.WrapWords, 0.75f, 0.95f);
+            Render2D.DrawText(style.FontMedium, ShowFileExtension || view.ShowFileExtensions ? FileName : ShortName, textRect, style.Foreground, nameAlignment, TextAlignment.Center, TextWrapping.WrapWords, 1f, 0.95f);
             Render2D.PopClip();
         }
 

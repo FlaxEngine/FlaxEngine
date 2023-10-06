@@ -51,7 +51,8 @@ public sealed class VulkanSdk : Sdk
                     var subDirs = Directory.GetDirectories(path);
                     if (subDirs.Length != 0)
                     {
-                        path = Path.Combine(subDirs[0], "macOS");
+                        Flax.Build.Utilities.SortVersionDirectories(subDirs);
+                        path = Path.Combine(subDirs.Last(), "macOS");
                         if (Directory.Exists(path))
                             vulkanSdk = path;
                     }

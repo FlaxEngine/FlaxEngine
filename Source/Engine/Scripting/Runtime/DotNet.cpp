@@ -13,6 +13,7 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Scripting/Internal/InternalCalls.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
@@ -160,6 +161,7 @@ DECLARE_ENUM_OPERATORS(MTypeAttributes);
 DECLARE_ENUM_OPERATORS(MMethodAttributes);
 DECLARE_ENUM_OPERATORS(MFieldAttributes);
 
+// Multiple AppDomains are superseded by AssemblyLoadContext in .NET
 extern MDomain* MRootDomain;
 extern MDomain* MActiveDomain;
 extern Array<MDomain*, FixedAllocation<4>> MDomains;
@@ -213,6 +215,7 @@ void* GetCustomAttribute(const MClass* klass, const MClass* attributeClass);
 struct NativeClassDefinitions
 {
     void* typeHandle;
+    MClass* nativePointer;
     const char* name;
     const char* fullname;
     const char* namespace_;
@@ -232,6 +235,7 @@ struct NativeFieldDefinitions
     const char* name;
     void* fieldHandle;
     void* fieldType;
+    int fieldOffset;
     MFieldAttributes fieldAttributes;
 };
 
@@ -301,11 +305,14 @@ void MCore::UnloadEngine()
 
 #if USE_EDITOR
 
-void MCore::OnMidHotReload()
+void MCore::ReloadScriptingAssemblyLoadContext()
 {
     // Clear any cached class attributes (see https://github.com/FlaxEngine/FlaxEngine/issues/1108)
     for (auto e : CachedClassHandles)
         e.Value->_attributes.Clear();
+
+    static void* ReloadScriptingAssemblyLoadContextPtr = GetStaticMethodPointer(TEXT("ReloadScriptingAssemblyLoadContext"));
+    CallStaticMethod<void>(ReloadScriptingAssemblyLoadContextPtr);
 }
 
 #endif
@@ -337,8 +344,8 @@ void MCore::Object::Init(MObject* obj)
 MClass* MCore::Object::GetClass(MObject* obj)
 {
     ASSERT(obj);
-    MType* typeHandle = GetObjectType(obj);
-    return GetOrCreateClass(typeHandle);
+    static void* GetObjectClassPtr = GetStaticMethodPointer(TEXT("GetObjectClass"));
+    return (MClass*)CallStaticMethod<MClass*, void*>(GetObjectClassPtr, obj);
 }
 
 MString* MCore::Object::ToString(MObject* obj)
@@ -361,8 +368,8 @@ MString* MCore::String::GetEmpty(MDomain* domain)
 
 MString* MCore::String::New(const char* str, int32 length, MDomain* domain)
 {
-    static void* NewStringLengthPtr = GetStaticMethodPointer(TEXT("NewStringLength"));
-    return (MString*)CallStaticMethod<void*, const char*, int>(NewStringLengthPtr, str, length);
+    static void* NewStringUTF8Ptr = GetStaticMethodPointer(TEXT("NewStringUTF8"));
+    return (MString*)CallStaticMethod<void*, const char*, int>(NewStringUTF8Ptr, str, length);
 }
 
 MString* MCore::String::New(const Char* str, int32 length, MDomain* domain)
@@ -402,6 +409,12 @@ void* MCore::Array::GetAddress(const MArray* obj)
 {
     static void* GetArrayPointerPtr = GetStaticMethodPointer(TEXT("GetArrayPointer"));
     return CallStaticMethod<void*, void*>(GetArrayPointerPtr, (void*)obj);
+}
+
+MArray* MCore::Array::Unbox(MObject* obj)
+{
+    static void* GetArrayPtr = GetStaticMethodPointer(TEXT("GetArray"));
+    return (MArray*)CallStaticMethod<void*, void*>(GetArrayPtr, (void*)obj);
 }
 
 MGCHandle MCore::GCHandle::New(MObject* obj, bool pinned)
@@ -564,8 +577,7 @@ MObject* MCore::Exception::GetNotSupported(const char* msg)
 MClass* MCore::Type::GetClass(MType* type)
 {
     static void* GetTypeClassPtr = GetStaticMethodPointer(TEXT("GetTypeClass"));
-    type = (MType*)CallStaticMethod<void*, void*>(GetTypeClassPtr, type);
-    return GetOrCreateClass(type);
+    return CallStaticMethod<MClass*, void*>(GetTypeClassPtr, type);
 }
 
 MType* MCore::Type::GetElementType(MType* type)
@@ -602,6 +614,18 @@ bool MCore::Type::IsReference(MType* type)
     return CallStaticMethod<bool, void*>(GetTypeIsReferencePtr, type);
 }
 
+void MCore::ScriptingObject::SetInternalValues(MClass* klass, MObject* object, void* unmanagedPtr, const Guid* id)
+{
+    static void* ScriptingObjectSetInternalValuesPtr = GetStaticMethodPointer(TEXT("ScriptingObjectSetInternalValues"));
+    CallStaticMethod<void, MObject*, void*, const Guid*>(ScriptingObjectSetInternalValuesPtr, object, unmanagedPtr, id);
+}
+
+MObject* MCore::ScriptingObject::CreateScriptingObject(MClass* klass, void* unmanagedPtr, const Guid* id)
+{
+    static void* ScriptingObjectSetInternalValuesPtr = GetStaticMethodPointer(TEXT("ScriptingObjectCreate"));
+    return CallStaticMethod<MObject*, void*, void*, const Guid*>(ScriptingObjectSetInternalValuesPtr, klass->_handle, unmanagedPtr, id);
+}
+
 const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
 {
     if (_hasCachedClasses || !IsLoaded())
@@ -630,10 +654,16 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
         MClass* klass = New<MClass>(this, managedClass.typeHandle, managedClass.name, managedClass.fullname, managedClass.namespace_, managedClass.typeAttributes);
         _classes.Add(klass->GetFullName(), klass);
 
+        managedClass.nativePointer = klass;
+
         MCore::GC::FreeMemory((void*)managedClasses[i].name);
         MCore::GC::FreeMemory((void*)managedClasses[i].fullname);
         MCore::GC::FreeMemory((void*)managedClasses[i].namespace_);
     }
+
+    static void* RegisterManagedClassNativePointersPtr = GetStaticMethodPointer(TEXT("RegisterManagedClassNativePointers"));
+    CallStaticMethod<void, NativeClassDefinitions**, int>(RegisterManagedClassNativePointersPtr, &managedClasses, classCount);
+
     MCore::GC::FreeMemory(managedClasses);
 
     const auto endTime = DateTime::NowUTC();
@@ -646,6 +676,39 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
 
     _hasCachedClasses = true;
     return _classes;
+}
+
+void GetAssemblyName(void* assemblyHandle, StringAnsi& name, StringAnsi& fullname)
+{
+    static void* GetAssemblyNamePtr = GetStaticMethodPointer(TEXT("GetAssemblyName"));
+    const char* name_;
+    const char* fullname_;
+    CallStaticMethod<void, void*, const char**, const char**>(GetAssemblyNamePtr, assemblyHandle, &name_, &fullname_);
+    name = name_;
+    fullname = fullname_;
+    MCore::GC::FreeMemory((void*)name_);
+    MCore::GC::FreeMemory((void*)fullname_);
+}
+
+DEFINE_INTERNAL_CALL(void) NativeInterop_CreateClass(NativeClassDefinitions* managedClass, void* assemblyHandle)
+{
+    MAssembly* assembly = GetAssembly(assemblyHandle);
+    if (assembly == nullptr)
+    {
+        StringAnsi assemblyName;
+        StringAnsi assemblyFullName;
+        GetAssemblyName(assemblyHandle, assemblyName, assemblyFullName);
+
+        assembly = New<MAssembly>(nullptr, assemblyName, assemblyFullName, assemblyHandle);
+        CachedAssemblyHandles.Add(assemblyHandle, assembly);
+    }
+
+    MClass* klass = New<MClass>(assembly, managedClass->typeHandle, managedClass->name, managedClass->fullname, managedClass->namespace_, managedClass->typeAttributes);
+    if (assembly != nullptr)
+    {
+        const_cast<MAssembly::ClassesDictionary&>(assembly->GetClasses()).Add(klass->GetFullName(), klass);
+    }
+    managedClass->nativePointer = klass;
 }
 
 bool MAssembly::LoadCorlib()
@@ -667,14 +730,9 @@ bool MAssembly::LoadCorlib()
 
     // Load
     {
-        const char* name;
-        const char* fullname;
         static void* GetAssemblyByNamePtr = GetStaticMethodPointer(TEXT("GetAssemblyByName"));
-        _handle = CallStaticMethod<void*, const char*, const char**, const char**>(GetAssemblyByNamePtr, "System.Private.CoreLib", &name, &fullname);
-        _name = name;
-        _fullname = fullname;
-        MCore::GC::FreeMemory((void*)name);
-        MCore::GC::FreeMemory((void*)fullname);
+        _handle = CallStaticMethod<void*, const char*>(GetAssemblyByNamePtr, "System.Private.CoreLib");
+        GetAssemblyName(_handle, _name, _fullname);
     }
     if (_handle == nullptr)
     {
@@ -693,20 +751,14 @@ bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePa
 {
     // TODO: Use new hostfxr delegate load_assembly_bytes? (.NET 8+)
     // Open .Net assembly
-    const StringAnsi assemblyPathAnsi = assemblyPath.ToStringAnsi();
-    const char* name;
-    const char* fullname;
     static void* LoadAssemblyImagePtr = GetStaticMethodPointer(TEXT("LoadAssemblyImage"));
-    _handle = CallStaticMethod<void*, const char*, const char**, const char**>(LoadAssemblyImagePtr, assemblyPathAnsi.Get(), &name, &fullname);
-    _name = name;
-    _fullname = fullname;
-    MCore::GC::FreeMemory((void*)name);
-    MCore::GC::FreeMemory((void*)fullname);
+    _handle = CallStaticMethod<void*, const Char*>(LoadAssemblyImagePtr, assemblyPath.Get());
     if (_handle == nullptr)
     {
         Log::CLRInnerException(TEXT(".NET assembly image is invalid at ") + assemblyPath);
         return true;
     }
+    GetAssemblyName(_handle, _name, _fullname);
     CachedAssemblyHandles.Add(_handle, this);
 
     // Provide new path of hot-reloaded native library path for managed DllImport
@@ -715,6 +767,13 @@ bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePa
         StringAnsi nativeName = _name.EndsWith(".CSharp") ? StringAnsi(_name.Get(), _name.Length() - 7) : StringAnsi(_name);
         RegisterNativeLibrary(nativeName.Get(), StringAnsi(nativePath).Get());
     }
+#if USE_EDITOR
+    // Register the editor module location for Assembly resolver
+    else
+    {
+        RegisterNativeLibrary(_name.Get(), StringAnsi(assemblyPath).Get());
+    }
+#endif
 
     _hasCachedClasses = false;
     _assemblyPath = assemblyPath;
@@ -723,16 +782,12 @@ bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePa
 
 bool MAssembly::UnloadImage(bool isReloading)
 {
-    if (_handle)
+    if (_handle && isReloading)
     {
-        // TODO: closing assembly on reload only is copy-paste from mono, do we need do this on .NET too?
-        if (isReloading)
-        {
-            LOG(Info, "Unloading managed assembly \'{0}\' (is reloading)", String(_name));
+        LOG(Info, "Unloading managed assembly \'{0}\' (is reloading)", String(_name));
 
-            static void* CloseAssemblyPtr = GetStaticMethodPointer(TEXT("CloseAssembly"));
-            CallStaticMethod<void, const void*>(CloseAssemblyPtr, _handle);
-        }
+        static void* CloseAssemblyPtr = GetStaticMethodPointer(TEXT("CloseAssembly"));
+        CallStaticMethod<void, const void*>(CloseAssemblyPtr, _handle);
 
         CachedAssemblyHandles.Remove(_handle);
         _handle = nullptr;
@@ -833,8 +888,7 @@ MType* MClass::GetType() const
 MClass* MClass::GetBaseClass() const
 {
     static void* GetClassParentPtr = GetStaticMethodPointer(TEXT("GetClassParent"));
-    MType* parentTypeHandle = CallStaticMethod<MType*, void*>(GetClassParentPtr, _handle);
-    return GetOrCreateClass(parentTypeHandle);
+    return CallStaticMethod<MClass*, void*>(GetClassParentPtr, _handle);
 }
 
 bool MClass::IsSubClassOf(const MClass* klass, bool checkInterfaces) const
@@ -869,8 +923,7 @@ uint32 MClass::GetInstanceSize() const
 MClass* MClass::GetElementClass() const
 {
     static void* GetElementClassPtr = GetStaticMethodPointer(TEXT("GetElementClass"));
-    MType* elementTypeHandle = CallStaticMethod<MType*, void*>(GetElementClassPtr, _handle);
-    return GetOrCreateClass(elementTypeHandle);
+    return CallStaticMethod<MClass*, void*>(GetElementClassPtr, _handle);
 }
 
 MMethod* MClass::GetMethod(const char* name, int32 numParams) const
@@ -878,7 +931,7 @@ MMethod* MClass::GetMethod(const char* name, int32 numParams) const
     GetMethods();
     for (int32 i = 0; i < _methods.Count(); i++)
     {
-        if (_methods[i]->GetName() == name && _methods[i]->GetParametersCount() == numParams)
+        if (_methods[i]->GetParametersCount() == numParams && _methods[i]->GetName() == name)
             return _methods[i];
     }
     return nullptr;
@@ -898,7 +951,6 @@ const Array<MMethod*>& MClass::GetMethods() const
         NativeMethodDefinitions& definition = methods[i];
         MMethod* method = New<MMethod>(const_cast<MClass*>(this), StringAnsi(definition.name), definition.handle, definition.numParameters, definition.methodAttributes);
         _methods.Add(method);
-
         MCore::GC::FreeMemory((void*)definition.name);
     }
     MCore::GC::FreeMemory(methods);
@@ -930,9 +982,8 @@ const Array<MField*>& MClass::GetFields() const
     for (int32 i = 0; i < numFields; i++)
     {
         NativeFieldDefinitions& definition = fields[i];
-        MField* field = New<MField>(const_cast<MClass*>(this), definition.fieldHandle, definition.name, definition.fieldType, definition.fieldAttributes);
+        MField* field = New<MField>(const_cast<MClass*>(this), definition.fieldHandle, definition.name, definition.fieldType, definition.fieldOffset, definition.fieldAttributes);
         _fields.Add(field);
-
         MCore::GC::FreeMemory((void*)definition.name);
     }
     MCore::GC::FreeMemory(fields);
@@ -977,7 +1028,6 @@ const Array<MProperty*>& MClass::GetProperties() const
         const NativePropertyDefinitions& definition = foundProperties[i];
         MProperty* property = New<MProperty>(const_cast<MClass*>(this), definition.name, definition.getterHandle, definition.setterHandle, definition.getterAttributes, definition.setterAttributes);
         _properties.Add(property);
-
         MCore::GC::FreeMemory((void*)definition.name);
     }
     MCore::GC::FreeMemory(foundProperties);
@@ -1013,7 +1063,7 @@ bool MClass::HasAttribute(const MClass* monoClass) const
 
 bool MClass::HasAttribute() const
 {
-    return GetCustomAttribute(this, nullptr) != nullptr;
+    return !GetAttributes().IsEmpty();
 }
 
 MObject* MClass::GetAttribute(const MClass* monoClass) const
@@ -1123,11 +1173,12 @@ MException::~MException()
         Delete(InnerException);
 }
 
-MField::MField(MClass* parentClass, void* handle, const char* name, void* type, MFieldAttributes attributes)
+MField::MField(MClass* parentClass, void* handle, const char* name, void* type, int fieldOffset, MFieldAttributes attributes)
     : _handle(handle)
     , _type(type)
     , _parentClass(parentClass)
     , _name(name)
+    , _fieldOffset(fieldOffset)
     , _hasCachedAttributes(false)
 {
     switch (attributes & MFieldAttributes::FieldAccessMask)
@@ -1163,14 +1214,19 @@ MType* MField::GetType() const
 
 int32 MField::GetOffset() const
 {
-    static void* FieldGetOffsetPtr = GetStaticMethodPointer(TEXT("FieldGetOffset"));
-    return CallStaticMethod<int32, void*>(FieldGetOffsetPtr, _handle);
+    return _fieldOffset;
 }
 
 void MField::GetValue(MObject* instance, void* result) const
 {
     static void* FieldGetValuePtr = GetStaticMethodPointer(TEXT("FieldGetValue"));
     CallStaticMethod<void, void*, void*, void*>(FieldGetValuePtr, instance, _handle, result);
+}
+
+void MField::GetValueReference(MObject* instance, void* result) const
+{
+    static void* FieldGetValueReferencePtr = GetStaticMethodPointer(TEXT("FieldGetValueReferenceWithOffset"));
+    CallStaticMethod<void, void*, int, void*>(FieldGetValueReferencePtr, instance, _fieldOffset, result);
 }
 
 MObject* MField::GetValueBoxed(MObject* instance) const
@@ -1505,8 +1561,7 @@ void* GetCustomAttribute(const MClass* klass, const MClass* attributeClass)
     const Array<MObject*>& attributes = klass->GetAttributes();
     for (MObject* attr : attributes)
     {
-        MType* typeHandle = GetObjectType(attr);
-        MClass* attrClass = GetOrCreateClass(typeHandle);
+        MClass* attrClass = MCore::Object::GetClass(attr);
         if (attrClass == attributeClass)
             return attr;
     }
@@ -1541,7 +1596,16 @@ bool InitHostfxr()
     get_hostfxr_params.size = sizeof(hostfxr_initialize_parameters);
     get_hostfxr_params.assembly_path = libraryPath.Get();
 #if PLATFORM_MAC
-    get_hostfxr_params.dotnet_root = "/usr/local/share/dotnet";
+    ::String macOSDotnetRoot = TEXT("/usr/local/share/dotnet");
+#if defined(__x86_64) || defined(__x86_64__) || defined(__amd64__) || defined(_M_X64)
+    // When emulating x64 on arm
+    const ::String dotnetRootEmulated = macOSDotnetRoot / TEXT("x64");
+    if (FileSystem::FileExists(dotnetRootEmulated / TEXT("dotnet"))) {
+        macOSDotnetRoot = dotnetRootEmulated;
+    }
+#endif
+    const FLAX_CORECLR_STRING& finalDotnetRootPath = FLAX_CORECLR_STRING(macOSDotnetRoot);
+    get_hostfxr_params.dotnet_root = finalDotnetRootPath.Get();
 #else
     get_hostfxr_params.dotnet_root = nullptr;
 #endif
@@ -1588,7 +1652,10 @@ bool InitHostfxr()
     void* hostfxr = Platform::LoadLibrary(path.Get());
     if (hostfxr == nullptr)
     {
-        LOG(Fatal, "Failed to load hostfxr library ({0})", path);
+        if (FileSystem::FileExists(path))
+            LOG(Fatal, "Failed to load hostfxr library, possible platform/architecture mismatch with the library. See log for more information. ({0})", path);
+        else
+            LOG(Fatal, "Failed to load hostfxr library ({0})", path);
         return true;
     }
     hostfxr_initialize_for_runtime_config = (hostfxr_initialize_for_runtime_config_fn)Platform::GetProcAddress(hostfxr, "hostfxr_initialize_for_runtime_config");
@@ -1627,7 +1694,28 @@ bool InitHostfxr()
     if (rc != 0 || handle == nullptr)
     {
         hostfxr_close(handle);
-        LOG(Fatal, "Failed to initialize hostfxr: {0:x} ({1})", (unsigned int)rc, String(init_params.dotnet_root));
+        if (rc == 0x80008096) // FrameworkMissingFailure
+        {
+            String platformStr;
+            switch (PLATFORM_TYPE)
+            {
+            case PlatformType::Windows:
+            case PlatformType::UWP:
+                platformStr = PLATFORM_64BITS ? "Windows x64" : "Windows x86";
+                break;
+            case PlatformType::Linux:
+                platformStr = PLATFORM_ARCH_ARM64 ? "Linux Arm64" : PLATFORM_ARCH_ARM ? "Linux Arm32" : PLATFORM_64BITS ? "Linux x64" : "Linux x86";
+                break;
+            case PlatformType::Mac:
+                platformStr = PLATFORM_ARCH_ARM || PLATFORM_ARCH_ARM64 ? "macOS Arm64" : PLATFORM_64BITS ? "macOS x64" : "macOS x86";
+                break;
+            default:;
+                platformStr = "";
+            }
+            LOG(Fatal, "Failed to resolve compatible .NET runtime version in '{0}'. Make sure the correct platform version for runtime is installed ({1})", platformStr, String(init_params.dotnet_root));
+        }
+        else
+            LOG(Fatal, "Failed to initialize hostfxr: {0:x} ({1})", (unsigned int)rc, String(init_params.dotnet_root));
         return true;
     }
 

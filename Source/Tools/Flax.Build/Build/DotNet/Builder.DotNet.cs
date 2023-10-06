@@ -207,6 +207,7 @@ namespace Flax.Build
             case TargetPlatform.Mac:
             {
 #if USE_NETCORE
+                dotnetPath = Path.Combine(dotnetSdk.RootPath, "dotnet");
                 cscPath = Path.Combine(dotnetSdk.RootPath, $"sdk/{dotnetSdk.VersionName}/Roslyn/bincore/csc.dll");
                 referenceAssemblies = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/ref/net{runtimeVersionShort}/");
                 referenceAnalyzers = Path.Combine(dotnetSdk.RootPath, $"packs/Microsoft.NETCore.App.Ref/{dotnetSdk.RuntimeVersionName}/analyzers/dotnet/cs/");
@@ -255,11 +256,13 @@ namespace Flax.Build
 #endif
             if (buildOptions.ScriptingAPI.IgnoreMissingDocumentationWarnings)
                 args.Add("-nowarn:1591");
-#if USE_NETCORE
+
             // Optimizations prevent debugging, only enable in release builds
-            args.Add(buildData.Configuration == TargetConfiguration.Release ? "/optimize+" : "/optimize-");
-#else
-            args.Add(buildData.Configuration == TargetConfiguration.Debug ? "/optimize-" : "/optimize+");
+            var optimize = buildData.Configuration == TargetConfiguration.Release;
+            if (buildData.TargetOptions.ScriptingAPI.Optimization.HasValue)
+                optimize = buildData.TargetOptions.ScriptingAPI.Optimization.Value;
+            args.Add(optimize ? "/optimize+" : "/optimize-");
+#if !USE_NETCORE
             args.Add(string.Format("/reference:\"{0}mscorlib.dll\"", referenceAssemblies));
 #endif
             args.Add(string.Format("/out:\"{0}\"", outputFile));

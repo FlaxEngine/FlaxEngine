@@ -166,6 +166,8 @@ namespace FlaxEditor.Modules
         public void ShowFinder(Control control)
         {
             var finder = _finder ?? (_finder = new ContentFinder());
+            if (control == null)
+                control = Editor.Instance.Windows.MainWindow.GUI;
             var position = (control.Size - new Float2(finder.Width, 300.0f)) * 0.5f;
             finder.Show(control, position);
         }

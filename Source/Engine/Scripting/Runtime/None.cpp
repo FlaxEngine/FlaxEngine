@@ -61,7 +61,7 @@ void MCore::UnloadEngine()
 
 #if USE_EDITOR
 
-void MCore::OnMidHotReload()
+void MCore::ReloadScriptingAssemblyLoadContext()
 {
 }
 
@@ -137,6 +137,11 @@ int32 MCore::Array::GetLength(const MArray* obj)
 }
 
 void* MCore::Array::GetAddress(const MArray* obj)
+{
+    return nullptr;
+}
+
+MArray* MCore::Array::Unbox(MObject* obj)
 {
     return nullptr;
 }
@@ -558,6 +563,15 @@ MObject* MProperty::GetAttribute(MClass* monoClass) const
 const Array<MObject*>& MProperty::GetAttributes() const
 {
     return _attributes;
+}
+
+void MCore::ScriptingObject::SetInternalValues(MClass* klass, MObject* object, void* unmanagedPtr, const Guid* id)
+{
+}
+
+MObject* MCore::ScriptingObject::CreateScriptingObject(MClass* klass, void* unmanagedPtr, const Guid* id)
+{
+    return nullptr;
 }
 
 #endif

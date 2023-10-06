@@ -220,6 +220,12 @@ void WindowsWindow::Show()
         if (!_settings.HasBorder)
         {
             SetWindowPos(_handle, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
+            if (!_settings.IsRegularWindow && _settings.ShowAfterFirstPaint && _settings.StartPosition == WindowStartPosition::Manual)
+            {
+                int32 x = Math::TruncToInt(_settings.Position.X);
+                int32 y = Math::TruncToInt(_settings.Position.Y);
+                SetWindowPos(_handle, nullptr, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+            }
         }
 #endif
 
@@ -258,6 +264,75 @@ void WindowsWindow::Maximize()
     _isDuringMaximize = true;
     ShowWindow(_handle, SW_MAXIMIZE);
     _isDuringMaximize = false;
+}
+
+void WindowsWindow::SetBorderless(bool isBorderless, bool maximized)
+{
+    ASSERT(HasHWND());
+    
+    if (IsFullscreen())
+        SetIsFullscreen(false);
+
+    // Fixes issue of borderless window not going full screen
+    if (IsMaximized())
+        Restore();
+
+    _settings.HasBorder = !isBorderless;
+
+    BringToFront();
+
+    if (isBorderless)
+    {
+        LONG lStyle = GetWindowLong(_handle, GWL_STYLE);
+        lStyle &= ~(WS_THICKFRAME | WS_SYSMENU | WS_OVERLAPPED | WS_BORDER | WS_CAPTION);
+        lStyle |=  WS_POPUP;
+        lStyle |= WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
+#if WINDOWS_USE_NEW_BORDER_LESS
+        if (_settings.IsRegularWindow)
+            style |= WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU | WS_THICKFRAME | WS_GROUP;
+#elif WINDOWS_USE_NEWER_BORDER_LESS
+        if (_settings.IsRegularWindow)
+            lStyle |= WS_THICKFRAME | WS_SYSMENU;
+#endif
+
+        SetWindowLong(_handle, GWL_STYLE, lStyle);
+        SetWindowPos(_handle, HWND_TOP,  0, 0,0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        
+        if (maximized)
+        {
+            ShowWindow(_handle, SW_SHOWMAXIMIZED);
+        }
+        else
+        {
+            ShowWindow(_handle, SW_SHOW);
+        }
+    }
+    else
+    {
+        LONG lStyle = GetWindowLong(_handle, GWL_STYLE);
+        lStyle &= ~(WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
+        if (_settings.AllowMaximize)
+            lStyle |= WS_MAXIMIZEBOX;
+        if (_settings.AllowMinimize)
+            lStyle |= WS_MINIMIZEBOX;
+        if (_settings.HasSizingFrame)
+            lStyle |= WS_THICKFRAME;
+        lStyle |= WS_OVERLAPPED | WS_SYSMENU | WS_BORDER | WS_CAPTION;
+    
+        SetWindowLong(_handle, GWL_STYLE, lStyle);
+        SetWindowPos(_handle, nullptr,  0, 0, (int)_settings.Size.X, (int)_settings.Size.Y, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        
+        if (maximized)
+        {
+            Maximize();
+        }
+        else
+        {
+            ShowWindow(_handle, SW_SHOW);
+        }
+    }
+
+    CheckForWindowResize();
 }
 
 void WindowsWindow::Restore()
@@ -642,8 +717,27 @@ void WindowsWindow::CheckForWindowResize()
     // Cache client size
     RECT rect;
     GetClientRect(_handle, &rect);
-    const int32 width = Math::Max(rect.right - rect.left, 0L);
-    const int32 height = Math::Max(rect.bottom - rect.top, 0L);
+    int32 width = Math::Max(rect.right - rect.left, 0L);
+    int32 height = Math::Max(rect.bottom - rect.top, 0L);
+
+    // Check for windows maximized size and see if it needs to adjust position if needed
+    if (_maximized)
+    {
+        // Pick the current monitor data for sizing
+        const HMONITOR monitor = MonitorFromWindow(_handle, MONITOR_DEFAULTTONEAREST);
+        MONITORINFO monitorInfo;
+        monitorInfo.cbSize = sizeof(MONITORINFO);
+        GetMonitorInfoW(monitor, &monitorInfo);
+        
+        auto cwidth = monitorInfo.rcWork.right - monitorInfo.rcWork.left;
+        auto cheight = monitorInfo.rcWork.bottom - monitorInfo.rcWork.top;
+        if (width > cwidth && height > cheight)
+        {
+            width = cwidth;
+            height = cheight;
+            SetWindowPos(_handle, HWND_TOP, monitorInfo.rcWork.left, monitorInfo.rcWork.top, width, height, SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+        }
+    }
     _clientSize = Float2(static_cast<float>(width), static_cast<float>(height));
 
     // Check if window size has been changed

@@ -80,21 +80,33 @@ namespace FlaxEngine.GUI
         public Color BackgroundColorSelected { get; set; }
 
         /// <summary>
-        /// Gets or sets the color of the border.
+        /// Gets or sets whether the button has a border.
         /// </summary>
         [EditorDisplay("Border Style"), EditorOrder(2010), ExpandGroups]
+        public bool HasBorder { get; set; } = true;
+        
+        /// <summary>
+        /// Gets or sets the border thickness.
+        /// </summary>
+        [EditorDisplay("Border Style"), EditorOrder(2011), Limit(0)]
+        public float BorderThickness { get; set; } = 1.0f;
+
+        /// <summary>
+        /// Gets or sets the color of the border.
+        /// </summary>
+        [EditorDisplay("Border Style"), EditorOrder(2012)]
         public Color BorderColor { get; set; }
 
         /// <summary>
         /// Gets or sets the border color when button is highlighted.
         /// </summary>
-        [EditorDisplay("Border Style"), EditorOrder(2011)]
+        [EditorDisplay("Border Style"), EditorOrder(2013)]
         public Color BorderColorHighlighted { get; set; }
 
         /// <summary>
         /// Gets or sets the border color when button is selected.
         /// </summary>
-        [EditorDisplay("Border Style"), EditorOrder(2012)]
+        [EditorDisplay("Border Style"), EditorOrder(2013)]
         public Color BorderColorSelected { get; set; }
 
         /// <summary>
@@ -245,7 +257,8 @@ namespace FlaxEngine.GUI
                 BackgroundBrush.Draw(clientRect, backgroundColor);
             else
                 Render2D.FillRectangle(clientRect, backgroundColor);
-            Render2D.DrawRectangle(clientRect, borderColor);
+            if (HasBorder)
+                Render2D.DrawRectangle(clientRect, borderColor, BorderThickness);
 
             // Draw text
             Render2D.DrawText(_font?.GetFont(), TextMaterial, _text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
@@ -298,6 +311,28 @@ namespace FlaxEngine.GUI
                 OnClick();
                 return true;
             }
+            return false;
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
+        {
+            if (base.OnMouseDoubleClick(location, button))
+                return true;
+
+            if (button == MouseButton.Left && _isPressed)
+            {
+                OnPressEnd();
+                OnClick();
+                return true;
+            }
+            
+            if (button == MouseButton.Left && !_isPressed)
+            {
+                OnPressBegin();
+                return true;
+            }
+
             return false;
         }
 

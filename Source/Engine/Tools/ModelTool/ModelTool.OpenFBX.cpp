@@ -12,6 +12,8 @@
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Platform/File.h"
 
+#define OPEN_FBX_CONVERT_SPACE 1
+
 // Import OpenFBX library
 // Source: https://github.com/nem0/OpenFBX
 #include <ThirdParty/OpenFBX/ofbx.h>
@@ -85,12 +87,16 @@ struct OpenFbxImporterData
     const ModelTool::Options& Options;
 
     ofbx::GlobalSettings GlobalSettings;
+#if OPEN_FBX_CONVERT_SPACE
+    Quaternion RootConvertRotation = Quaternion::Identity;
     Float3 Up;
     Float3 Front;
     Float3 Right;
     bool ConvertRH;
+#else
+    static constexpr bool ConvertRH = false;
+#endif
     float FrameRate;
-    Quaternion RootConvertRotation = Quaternion::Identity;
 
     Array<FbxNode> Nodes;
     Array<FbxBone> Bones;
@@ -103,7 +109,9 @@ struct OpenFbxImporterData
         , Path(path)
         , Options(options)
         , GlobalSettings(*scene->getGlobalSettings())
+#if OPEN_FBX_CONVERT_SPACE
         , ConvertRH(GlobalSettings.CoordAxis == ofbx::CoordSystem_RightHanded)
+#endif
         , Nodes(static_cast<int32>(scene->getMeshCount() * 4.0f))
     {
         float frameRate = scene->getSceneFrameRate();
@@ -114,6 +122,7 @@ struct OpenFbxImporterData
                 frameRate = 30.0f;
         }
         FrameRate = frameRate;
+#if OPEN_FBX_CONVERT_SPACE
         const float coordAxisSign = GlobalSettings.CoordAxis == ofbx::CoordSystem_LeftHanded ? -1.0f : +1.0f;
         switch (GlobalSettings.UpAxis)
         {
@@ -170,6 +179,7 @@ struct OpenFbxImporterData
             break;
         default: ;
         }
+#endif
     }
 
     bool ImportMaterialTexture(ImportedModelData& result, const ofbx::Material* mat, ofbx::Texture::TextureType textureType, int32& textureIndex, TextureEntry::TypeHint type) const
@@ -366,13 +376,12 @@ void ProcessNodes(OpenFbxImporterData& data, const ofbx::Object* aNode, int32 pa
     {
         node.LodIndex = data.Nodes[parentIndex].LodIndex;
         if (node.LodIndex == 0)
-        {
             node.LodIndex = ModelTool::DetectLodIndex(node.Name);
-        }
         ASSERT(Math::IsInRange(node.LodIndex, 0, MODEL_MAX_LODS - 1));
     }
 
     auto transform = ToMatrix(aNode->evalLocal(aNode->getLocalTranslation(), aNode->getLocalRotation()));
+#if OPEN_FBX_CONVERT_SPACE
     if (data.ConvertRH)
     {
         // Mirror all base vectors at the local Z axis
@@ -388,6 +397,7 @@ void ProcessNodes(OpenFbxImporterData& data, const ofbx::Object* aNode, int32 pa
         transform.M33 = -transform.M33;
         transform.M43 = -transform.M43;
     }
+#endif
     transform.Decompose(node.LocalTransform);
     data.Nodes.Add(node);
 
@@ -416,8 +426,9 @@ Matrix GetOffsetMatrix(OpenFbxImporterData& data, const ofbx::Mesh* mesh, const 
             }
         }
     }
+	//return Matrix::Identity;
     return ToMatrix(node->getGlobalTransform());
-#elif 1
+#else
     Matrix t = Matrix::Identity;
     const int32 boneIdx = data.FindBone(node);
     int32 idx = data.Bones[boneIdx].NodeIndex;
@@ -427,17 +438,6 @@ Matrix GetOffsetMatrix(OpenFbxImporterData& data, const ofbx::Mesh* mesh, const 
         idx = data.Nodes[idx].ParentIndex;
     } while (idx != -1);
     return t;
-#else
-	auto* skin = mesh->getGeometry()->getSkin();
-	for (int i = 0, c = skin->getClusterCount(); i < c; i++)
-	{
-		const ofbx::Cluster* cluster = skin->getCluster(i);
-		if (cluster->getLink() == node)
-		{
-			return ToMatrix(cluster->getTransformLinkMatrix());
-		}
-	}
-	return Matrix::Identity;
 #endif
 }
 
@@ -455,17 +455,14 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
         const auto aMesh = data.Scene->getMesh(i);
         const auto aGeometry = aMesh->getGeometry();
         const ofbx::Skin* skin = aGeometry->getSkin();
-
         if (skin == nullptr || IsMeshInvalid(aMesh))
             continue;
 
-        for (int clusterIndex = 0, c = skin->getClusterCount(); clusterIndex < c; clusterIndex++)
+        for (int clusterIndex = 0, clusterCount = skin->getClusterCount(); clusterIndex < clusterCount; clusterIndex++)
         {
             const ofbx::Cluster* cluster = skin->getCluster(clusterIndex);
-
             if (cluster->getIndicesCount() == 0)
                 continue;
-
             const auto link = cluster->getLink();
             ASSERT(link != nullptr);
 
@@ -487,7 +484,7 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
 
                 // Add bone
                 boneIndex = data.Bones.Count();
-                data.Bones.EnsureCapacity(Math::Max(128, boneIndex + 16));
+                data.Bones.EnsureCapacity(256);
                 data.Bones.Resize(boneIndex + 1);
                 auto& bone = data.Bones[boneIndex];
 
@@ -495,7 +492,7 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
                 bone.NodeIndex = nodeIndex;
                 bone.ParentBoneIndex = -1;
                 bone.FbxObj = link;
-                bone.OffsetMatrix = GetOffsetMatrix(data, aMesh, link);
+                bone.OffsetMatrix = GetOffsetMatrix(data, aMesh, link) * Matrix::Scaling(data.GlobalSettings.UnitScaleFactor);
                 bone.OffsetMatrix.Invert();
 
                 // Mirror offset matrices (RH to LH)
@@ -508,6 +505,15 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
                     m.M31 = -m.M31;
                     m.M32 = -m.M32;
                     m.M34 = -m.M34;
+                }
+
+                // Convert bone matrix if scene uses root transform
+                if (!data.RootConvertRotation.IsIdentity())
+                {
+                    Matrix m;
+                    Matrix::RotationQuaternion(data.RootConvertRotation, m);
+                    m.Invert();
+                    bone.OffsetMatrix = m * bone.OffsetMatrix;
                 }
             }
         }
@@ -547,9 +553,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     // Vertex positions
     mesh.Positions.Resize(vertexCount, false);
     for (int i = 0; i < vertexCount; i++)
-    {
         mesh.Positions.Get()[i] = ToFloat3(vertices[i + firstVertexOffset]);
-    }
 
     // Indices (dummy index buffer)
     if (vertexCount % 3 != 0)
@@ -559,24 +563,18 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     }
     mesh.Indices.Resize(vertexCount, false);
     for (int i = 0; i < vertexCount; i++)
-    {
         mesh.Indices.Get()[i] = i;
-    }
 
     // Texture coordinates
     if (uvs)
     {
         mesh.UVs.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
-        {
             mesh.UVs.Get()[i] = ToFloat2(uvs[i + firstVertexOffset]);
-        }
         if (data.ConvertRH)
         {
             for (int32 v = 0; v < vertexCount; v++)
-            {
                 mesh.UVs[v].Y = 1.0f - mesh.UVs[v].Y;
-            }
         }
     }
 
@@ -593,16 +591,12 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     {
         mesh.Normals.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
-        {
             mesh.Normals.Get()[i] = ToFloat3(normals[i + firstVertexOffset]);
-        }
         if (data.ConvertRH)
         {
             // Mirror normals along the Z axis
             for (int32 i = 0; i < vertexCount; i++)
-            {
                 mesh.Normals.Get()[i].Z *= -1.0f;
-            }
         }
     }
 
@@ -615,16 +609,12 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     {
         mesh.Tangents.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
-        {
             mesh.Tangents.Get()[i] = ToFloat3(tangents[i + firstVertexOffset]);
-        }
         if (data.ConvertRH)
         {
             // Mirror tangents along the Z axis
             for (int32 i = 0; i < vertexCount; i++)
-            {
                 mesh.Tangents.Get()[i].Z *= -1.0f;
-            }
         }
     }
 
@@ -670,15 +660,11 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
         {
             mesh.LightmapUVs.Resize(vertexCount, false);
             for (int i = 0; i < vertexCount; i++)
-            {
                 mesh.LightmapUVs.Get()[i] = ToFloat2(lightmapUVs[i + firstVertexOffset]);
-            }
             if (data.ConvertRH)
             {
                 for (int32 v = 0; v < vertexCount; v++)
-                {
                     mesh.LightmapUVs[v].Y = 1.0f - mesh.LightmapUVs[v].Y;
-                }
             }
         }
         else
@@ -692,9 +678,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     {
         mesh.Colors.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
-        {
             mesh.Colors.Get()[i] = ToColor(colors[i + firstVertexOffset]);
-        }
     }
 
     // Blend Indices and Blend Weights
@@ -705,13 +689,11 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
         mesh.BlendIndices.SetAll(Int4::Zero);
         mesh.BlendWeights.SetAll(Float4::Zero);
 
-        for (int clusterIndex = 0, c = skin->getClusterCount(); clusterIndex < c; clusterIndex++)
+        for (int clusterIndex = 0, clusterCount = skin->getClusterCount(); clusterIndex < clusterCount; clusterIndex++)
         {
             const ofbx::Cluster* cluster = skin->getCluster(clusterIndex);
-
             if (cluster->getIndicesCount() == 0)
                 continue;
-
             const auto link = cluster->getLink();
             ASSERT(link != nullptr);
 
@@ -815,15 +797,11 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     {
         // Mirror positions along the Z axis
         for (int32 i = 0; i < vertexCount; i++)
-        {
             mesh.Positions[i].Z *= -1.0f;
-        }
         for (auto& blendShapeData : mesh.BlendShapes)
         {
             for (auto& v : blendShapeData.Vertices)
-            {
                 v.PositionDelta.Z *= -1.0f;
-            }
         }
     }
 
@@ -834,9 +812,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     {
         // Invert the order
         for (int32 i = 0; i < mesh.Indices.Count(); i += 3)
-        {
             Swap(mesh.Indices[i], mesh.Indices[i + 2]);
-        }
     }
 
     if ((data.Options.CalculateTangents || !tangents) && mesh.UVs.HasItems())
@@ -888,9 +864,7 @@ bool ImportMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofbx
         {
             node.LodIndex = data.Nodes[0].LodIndex;
             if (node.LodIndex == 0)
-            {
                 node.LodIndex = ModelTool::DetectLodIndex(node.Name);
-            }
             ASSERT(Math::IsInRange(node.LodIndex, 0, MODEL_MAX_LODS - 1));
         }
         node.LocalTransform = Transform::Identity;
@@ -923,8 +897,6 @@ bool ImportMesh(int32 index, ImportedModelData& result, OpenFbxImporterData& dat
     const auto aMesh = data.Scene->getMesh(index);
     const auto aGeometry = aMesh->getGeometry();
     const auto trianglesCount = aGeometry->getVertexCount() / 3;
-
-    // Skip invalid meshes
     if (IsMeshInvalid(aMesh))
         return false;
 
@@ -1001,7 +973,6 @@ void ImportCurve(const ofbx::AnimationCurveNode* curveNode, LinearCurve<T>& curv
 {
     if (curveNode == nullptr)
         return;
-
     const auto keyframes = curve.Resize(info.FramesCount);
     const auto bone = curveNode->getBone();
     Frame localFrame;
@@ -1145,6 +1116,14 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
         }
         fileData.Resize(0);
 
+        // Tweak scene if exported by Blender
+        auto& globalInfo = *scene->getGlobalInfo();
+        if (StringAnsiView(globalInfo.AppName).StartsWith(StringAnsiView("Blender"), StringSearchCase::IgnoreCase))
+        {
+            auto ptr = const_cast<ofbx::GlobalSettings*>(scene->getGlobalSettings());
+            ptr->UpAxis = (ofbx::UpVector)((int32)ptr->UpAxis + 1);
+        }
+
         // Process imported scene
         context = New<OpenFbxImporterData>(path, options, scene);
         auto& globalSettings = context->GlobalSettings;
@@ -1155,10 +1134,13 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
 
         // Log scene info
         LOG(Info, "Loaded FBX model, Frame Rate: {0}, Unit Scale Factor: {1}", context->FrameRate, globalSettings.UnitScaleFactor);
+        LOG(Info, "{0}, {1}, {2}", String(globalInfo.AppName), String(globalInfo.AppVersion), String(globalInfo.AppVendor));
         LOG(Info, "Up: {1}{0}", globalSettings.UpAxis == ofbx::UpVector_AxisX ? TEXT("X") : globalSettings.UpAxis == ofbx::UpVector_AxisY ? TEXT("Y") : TEXT("Z"), globalSettings.UpAxisSign == 1 ? TEXT("+") : TEXT("-"));
         LOG(Info, "Front: {1}{0}", globalSettings.FrontAxis == ofbx::FrontVector_ParityEven ? TEXT("ParityEven") : TEXT("ParityOdd"), globalSettings.FrontAxisSign == 1 ? TEXT("+") : TEXT("-"));
         LOG(Info, "{0} Handed{1}", globalSettings.CoordAxis == ofbx::CoordSystem_RightHanded ? TEXT("Right") : TEXT("Left"), globalSettings.CoordAxisSign == 1 ? TEXT("") : TEXT(" (negative)"));
+#if OPEN_FBX_CONVERT_SPACE
         LOG(Info, "Imported scene: Up={0}, Front={1}, Right={2}", context->Up, context->Front, context->Right);
+#endif
 
         // Extract embedded textures
         if (EnumHasAnyFlags(data.Types, ImportDataTypes::Textures))
@@ -1188,6 +1170,7 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
             }
         }
 
+#if OPEN_FBX_CONVERT_SPACE
         // Transform nodes to match the engine coordinates system - DirectX (UpVector = +Y, FrontVector = +Z, CoordSystem = -X (LeftHanded))
         if (context->Up == Float3(1, 0, 0) && context->Front == Float3(0, 0, 1) && context->Right == Float3(0, 1, 0))
         {
@@ -1217,15 +1200,16 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
             context->RootConvertRotation = Quaternion::Euler(90, 0, 0);*/
         if (!context->RootConvertRotation.IsIdentity())
         {
-            for (int32 i = 0; i < context->Nodes.Count(); i++)
+            for (auto& node : context->Nodes)
             {
-                if (context->Nodes[i].ParentIndex == -1)
+                if (node.ParentIndex == -1)
                 {
-                    context->Nodes[i].LocalTransform.Orientation = context->RootConvertRotation * context->Nodes[i].LocalTransform.Orientation;
+                    node.LocalTransform.Orientation = context->RootConvertRotation * node.LocalTransform.Orientation;
                     break;
                 }
             }
         }
+#endif
     }
     DeleteMe<OpenFbxImporterData> contextCleanup(options.SplitContext ? nullptr : context);
 
@@ -1245,13 +1229,13 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
     if (EnumHasAnyFlags(data.Types, ImportDataTypes::Geometry) && context->Scene->getMeshCount() > 0)
     {
         const int meshCount = context->Scene->getMeshCount();
-        if (options.SplitObjects && options.ObjectIndex == -1)
+        if (options.SplitObjects && options.ObjectIndex == -1 && meshCount > 1)
         {
             // Import the first object within this call
             options.SplitObjects = false;
             options.ObjectIndex = 0;
 
-            if (meshCount > 1 && options.OnSplitImport.IsBinded())
+            if (options.OnSplitImport.IsBinded())
             {
                 // Split all animations into separate assets
                 LOG(Info, "Splitting imported {0} meshes", meshCount);
@@ -1272,6 +1256,22 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
             const auto meshIndex = Math::Clamp<int32>(options.ObjectIndex, 0, meshCount - 1);
             if (ImportMesh(meshIndex, data, *context, errorMsg))
                 return true;
+
+            // Let the firstly imported mesh import all materials from all meshes (index 0 is importing all following ones before itself during splitting - see code above)
+            if (options.ObjectIndex == 1)
+            {
+                for (int32 i = 0; i < meshCount; i++)
+                {
+                    const auto aMesh = context->Scene->getMesh(i);
+                    if (i == 1 || IsMeshInvalid(aMesh))
+                        continue;
+                    for (int32 j = 0; j < aMesh->getMaterialCount(); j++)
+                    {
+                        const ofbx::Material* aMaterial = aMesh->getMaterial(j);
+                        context->AddMaterial(data, aMaterial);
+                    }
+                }
+            }
         }
         else
         {
@@ -1328,13 +1328,13 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
     if (EnumHasAnyFlags(data.Types, ImportDataTypes::Animations))
     {
         const int animCount = context->Scene->getAnimationStackCount();
-        if (options.SplitObjects && options.ObjectIndex == -1)
+        if (options.SplitObjects && options.ObjectIndex == -1 && animCount > 1)
         {
             // Import the first object within this call
             options.SplitObjects = false;
             options.ObjectIndex = 0;
 
-            if (animCount > 1 && options.OnSplitImport.IsBinded())
+            if (options.OnSplitImport.IsBinded())
             {
                 // Split all animations into separate assets
                 LOG(Info, "Splitting imported {0} animations", animCount);

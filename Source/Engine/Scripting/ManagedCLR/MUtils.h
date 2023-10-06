@@ -3,6 +3,7 @@
 #pragma once
 
 #include "MTypes.h"
+#include "MClass.h"
 #include "MCore.h"
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/DataContainer.h"
@@ -354,7 +355,7 @@ struct MConverter<Array<T>>
     {
         if (!klass)
             return nullptr;
-        MArray* result = MCore::Array::New(klass, data.Count());
+        MArray* result = MCore::Array::New(klass->GetElementClass(), data.Count());
         MConverter<T> converter;
         converter.ToManagedArray(result, Span<T>(data.Get(), data.Count()));
         return (MObject*)result;
@@ -362,11 +363,12 @@ struct MConverter<Array<T>>
 
     void Unbox(Array<T>& result, MObject* data)
     {
-        const int32 length = data ? MCore::Array::GetLength((MArray*)data) : 0;
+        MArray* array = MCore::Array::Unbox(data);
+        const int32 length = array ? MCore::Array::GetLength(array) : 0;
         result.Resize(length);
         MConverter<T> converter;
         Span<T> resultSpan(result.Get(), length);
-        converter.ToNativeArray(resultSpan, (MArray*)data);
+        converter.ToNativeArray(resultSpan, array);
     }
 };
 

@@ -97,7 +97,8 @@ Action Input::MouseLeave;
 Delegate<const Float2&, int32> Input::TouchDown;
 Delegate<const Float2&, int32> Input::TouchMove;
 Delegate<const Float2&, int32> Input::TouchUp;
-Delegate<StringView> Input::ActionTriggered;
+Delegate<StringView, InputActionState> Input::ActionTriggered;
+Delegate<StringView> Input::AxisValueChanged;
 Array<ActionConfig> Input::ActionMappings;
 Array<AxisConfig> Input::AxisMappings;
 
@@ -333,6 +334,8 @@ void Keyboard::OnCharInput(Char c, Window* target)
 
 void Keyboard::OnKeyUp(KeyboardKeys key, Window* target)
 {
+    if (key >= KeyboardKeys::MAX)
+        return;
     Event& e = _queue.AddOne();
     e.Type = EventType::KeyUp;
     e.Target = target;
@@ -341,6 +344,8 @@ void Keyboard::OnKeyUp(KeyboardKeys key, Window* target)
 
 void Keyboard::OnKeyDown(KeyboardKeys key, Window* target)
 {
+    if (key >= KeyboardKeys::MAX)
+        return;
     Event& e = _queue.AddOne();
     e.Type = EventType::KeyDown;
     e.Target = target;
@@ -1013,14 +1018,22 @@ void InputService::Update()
         Input::SetMousePosition(Screen::GetSize() * 0.5f);
     }
 
-    // Send events for the active actions (send events only in play mode)
+    // Send events for the active actions and axes (send events only in play mode)
     if (!Time::GetGamePaused())
     {
+        for (auto i = Axes.Begin(); i.IsNotEnd(); ++i)
+        {
+            if (Math::NotNearEqual(i->Value.Value, i->Value.PrevKeyValue))
+            {
+                Input::AxisValueChanged(i->Key);
+            }
+        }
+        
         for (auto i = Actions.Begin(); i.IsNotEnd(); ++i)
         {
-            if (i->Value.Active)
+            if (i->Value.State != InputActionState::Waiting)
             {
-                Input::ActionTriggered(i->Key);
+                Input::ActionTriggered(i->Key, i->Value.State);
             }
         }
     }

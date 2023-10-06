@@ -503,7 +503,7 @@ namespace FlaxEditor.Modules
             // Set paste target if only one actor is selected and no target provided
             if (pasteTargetActor == null && SelectionCount == 1 && Selection[0] is ActorNode actorNode)
             {
-                pasteTargetActor = actorNode.Actor;
+                pasteTargetActor = actorNode.Actor.Scene == actorNode.Actor ? actorNode.Actor : actorNode.Actor.Parent;
             }
 
             // Create paste action

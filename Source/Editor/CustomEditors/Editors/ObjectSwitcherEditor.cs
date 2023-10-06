@@ -158,7 +158,8 @@ namespace FlaxEditor.CustomEditors.Editors
             if (comboBox.SelectedIndex != -1)
             {
                 var option = _options[comboBox.SelectedIndex];
-                value = option.Creator(option.Type);
+                if (option.Type != null)
+                    value = option.Creator(option.Type);
             }
             SetValue(value);
             RebuildLayoutOnRefresh();

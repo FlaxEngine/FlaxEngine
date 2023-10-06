@@ -58,7 +58,7 @@ namespace FlaxEditor.Windows
 
             if (item is ContentFolder contentFolder && contentFolder.Node is ProjectTreeNode)
             {
-                cm.AddButton("Show in explorer", () => FileSystem.ShowFileExplorer(CurrentViewFolder.Path));
+                cm.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(CurrentViewFolder.Path));
             }
             else if (isValidElement)
             {
@@ -72,7 +72,7 @@ namespace FlaxEditor.Windows
                             Open(e);
                     });
 
-                cm.AddButton("Show in explorer", () => FileSystem.ShowFileExplorer(System.IO.Path.GetDirectoryName(item.Path)));
+                cm.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(System.IO.Path.GetDirectoryName(item.Path)));
 
                 if (item.HasDefaultThumbnail == false)
                 {
@@ -135,7 +135,7 @@ namespace FlaxEditor.Windows
             }
             else
             {
-                cm.AddButton("Show in explorer", () => FileSystem.ShowFileExplorer(CurrentViewFolder.Path));
+                cm.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(CurrentViewFolder.Path));
 
                 b = cm.AddButton("Paste", _view.Paste);
                 b.Enabled = _view.CanPaste();
@@ -145,10 +145,9 @@ namespace FlaxEditor.Windows
                 cm.AddButton("Refresh all thumbnails", RefreshViewItemsThumbnails);
             }
 
-            cm.AddSeparator();
-
-            if (!isRootFolder)
+            if (!isRootFolder && !(item is ContentFolder projectFolder && projectFolder.Node is ProjectTreeNode))
             {
+                cm.AddSeparator();
                 cm.AddButton("New folder", NewFolder);
             }
 

@@ -259,6 +259,11 @@ struct DrawCall
     Float3 ObjectPosition;
 
     /// <summary>
+    /// Object bounding sphere radius that contains it whole (sphere at ObjectPosition).
+    /// </summary>
+    float ObjectRadius;
+
+    /// <summary>
     /// The world matrix determinant sign (used for geometry that is two sided or has inverse scale - needs to flip normal vectors and change triangles culling).
     /// </summary>
     float WorldDeterminantSign;

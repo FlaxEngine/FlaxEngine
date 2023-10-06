@@ -2,6 +2,7 @@
 
 #include "ParticleEffect.h"
 #include "Particles.h"
+#include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/SceneRendering.h"
@@ -401,7 +402,7 @@ SceneRenderTask* ParticleEffect::GetRenderTask() const
 
 #if USE_EDITOR
 
-Array<ParticleEffect::ParameterOverride> ParticleEffect::GetParametersOverrides()
+Array<ParticleEffect::ParameterOverride>& ParticleEffect::GetParametersOverrides()
 {
     CacheModifiedParameters();
     return _parametersOverrides;
@@ -460,7 +461,6 @@ void ParticleEffect::CacheModifiedParameters()
 {
     if (_parameters.IsEmpty())
         return;
-
     _parametersOverrides.Clear();
     auto& parameters = GetParameters();
     for (auto& param : parameters)

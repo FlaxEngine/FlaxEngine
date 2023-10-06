@@ -125,6 +125,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 fov = cam.FieldOfView;
                 customAspectRatio = cam.CustomAspectRatio;
                 view.RenderLayersMask = cam.RenderLayersMask;
+                view.Flags = cam.RenderFlags;
+                view.Mode = cam.RenderMode;
             }
 
             // Try to evaluate camera properties based on the animated tracks

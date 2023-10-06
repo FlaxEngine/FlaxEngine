@@ -7,6 +7,7 @@
 #include "Engine/Core/DeleteMe.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/File.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 
 // Import Assimp library
@@ -42,7 +43,16 @@ public:
     void write(const char* message) override
     {
         String s(message);
-        s.Replace('\n', ' ');
+        if (s.Length() <= 0)
+            return;
+        for (int32 i = 0; i < s.Length(); i++)
+        {
+            Char& c = s[i];
+            if (c == '\n')
+                c = ' ';
+            else if (c >= 255)
+                c = '?';
+        }
         LOG(Info, "[Assimp]: {0}", s);
     }
 };
@@ -506,8 +516,47 @@ bool ImportTexture(ImportedModelData& result, AssimpImporterData& data, aiString
 bool ImportMaterialTexture(ImportedModelData& result, AssimpImporterData& data, const aiMaterial* aMaterial, aiTextureType aTextureType, int32& textureIndex, TextureEntry::TypeHint type)
 {
     aiString aFilename;
-    return aMaterial->GetTexture(aTextureType, 0, &aFilename, nullptr, nullptr, nullptr, nullptr) == AI_SUCCESS &&
-            ImportTexture(result, data, aFilename, textureIndex, type);
+    if (aMaterial->GetTexture(aTextureType, 0, &aFilename, nullptr, nullptr, nullptr, nullptr) == AI_SUCCESS)
+    {
+        // Check for embedded textures
+        String filename = String(aFilename.C_Str()).TrimTrailing();
+        if (filename.StartsWith(TEXT(AI_EMBEDDED_TEXNAME_PREFIX)))
+        {
+            const aiTexture* aTex = data.Scene->GetEmbeddedTexture(aFilename.C_Str());
+            const StringView texIndexName(filename.Get() + (ARRAY_COUNT(AI_EMBEDDED_TEXNAME_PREFIX) - 1));
+            uint32 texIndex;
+            if (!aTex && !StringUtils::Parse(texIndexName.Get(), texIndexName.Length(), &texIndex) && texIndex >= 0 && texIndex < data.Scene->mNumTextures)
+                aTex = data.Scene->mTextures[texIndex];
+            if (aTex && aTex->mHeight == 0 && aTex->mWidth > 0)
+            {
+                // Export embedded texture to temporary file
+                filename = String::Format(TEXT("{0}_tex_{1}.{2}"), StringUtils::GetFileNameWithoutExtension(data.Path), texIndexName, String(aTex->achFormatHint));
+                File::WriteAllBytes(String(StringUtils::GetDirectoryName(data.Path)) / filename, (const byte*)aTex->pcData, (int32)aTex->mWidth);
+            }
+        }
+
+        // Find texture file path
+        String path;
+        if (ModelTool::FindTexture(data.Path, filename, path))
+            return true;
+
+        // Check if already used
+        textureIndex = 0;
+        while (textureIndex < result.Textures.Count())
+        {
+            if (result.Textures[textureIndex].FilePath == path)
+                return true;
+            textureIndex++;
+        }
+
+        // Import texture
+        auto& texture = result.Textures.AddOne();
+        texture.FilePath = path;
+        texture.Type = type;
+        texture.AssetID = Guid::Empty;
+        return true;
+    }
+    return false;
 }
 
 bool ImportMaterials(ImportedModelData& result, AssimpImporterData& data, String& errorMsg)
@@ -557,12 +606,17 @@ bool ImportMaterials(ImportedModelData& result, AssimpImporterData& data, String
     return false;
 }
 
+bool IsMeshInvalid(const aiMesh* aMesh)
+{
+    return aMesh->mPrimitiveTypes != aiPrimitiveType_TRIANGLE || aMesh->mNumVertices == 0 || aMesh->mNumFaces == 0 || aMesh->mFaces[0].mNumIndices != 3;
+}
+
 bool ImportMesh(int32 i, ImportedModelData& result, AssimpImporterData& data, String& errorMsg)
 {
     const auto aMesh = data.Scene->mMeshes[i];
 
     // Skip invalid meshes
-    if (aMesh->mPrimitiveTypes != aiPrimitiveType_TRIANGLE || aMesh->mNumVertices == 0 || aMesh->mNumFaces == 0 || aMesh->mFaces[0].mNumIndices != 3)
+    if (IsMeshInvalid(aMesh))
         return false;
 
     // Skip unused meshes
@@ -691,8 +745,15 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
             return true;
         }
 
+        // Create root node
+        AssimpNode& rootNode = context->Nodes.AddOne();
+        rootNode.ParentIndex = -1;
+        rootNode.LodIndex = 0;
+        rootNode.Name = TEXT("Root");
+        rootNode.LocalTransform = Transform::Identity;
+
         // Process imported scene nodes
-        ProcessNodes(*context, context->Scene->mRootNode, -1);
+        ProcessNodes(*context, context->Scene->mRootNode, 0);
     }
     DeleteMe<AssimpImporterData> contextCleanup(options.SplitContext ? nullptr : context);
 
@@ -707,13 +768,13 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
     if (EnumHasAnyFlags(data.Types, ImportDataTypes::Geometry) && context->Scene->HasMeshes())
     {
         const int meshCount = context->Scene->mNumMeshes;
-        if (options.SplitObjects && options.ObjectIndex == -1)
+        if (options.SplitObjects && options.ObjectIndex == -1 && meshCount > 1)
         {
             // Import the first object within this call
             options.SplitObjects = false;
             options.ObjectIndex = 0;
 
-            if (meshCount > 1 && options.OnSplitImport.IsBinded())
+            if (options.OnSplitImport.IsBinded())
             {
                 // Split all animations into separate assets
                 LOG(Info, "Splitting imported {0} meshes", meshCount);
@@ -780,13 +841,13 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
     if (EnumHasAnyFlags(data.Types, ImportDataTypes::Animations) && context->Scene->HasAnimations())
     {
         const int32 animCount = (int32)context->Scene->mNumAnimations;
-        if (options.SplitObjects && options.ObjectIndex == -1)
+        if (options.SplitObjects && options.ObjectIndex == -1 && animCount > 1)
         {
             // Import the first object within this call
             options.SplitObjects = false;
             options.ObjectIndex = 0;
 
-            if (animCount > 1 && options.OnSplitImport.IsBinded())
+            if (options.OnSplitImport.IsBinded())
             {
                 // Split all animations into separate assets
                 LOG(Info, "Splitting imported {0} animations", animCount);
@@ -808,7 +869,13 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
             const auto animations = context->Scene->mAnimations[animIndex];
             data.Animation.Channels.Resize(animations->mNumChannels, false);
             data.Animation.Duration = animations->mDuration;
-            data.Animation.FramesPerSecond = animations->mTicksPerSecond != 0.0 ? animations->mTicksPerSecond : 25.0;
+            data.Animation.FramesPerSecond = animations->mTicksPerSecond;
+            if (data.Animation.FramesPerSecond <= 0)
+            {
+                data.Animation.FramesPerSecond = context->Options.DefaultFrameRate;
+                if (data.Animation.FramesPerSecond <= 0)
+                    data.Animation.FramesPerSecond = 30.0f;
+            }
 
             for (unsigned i = 0; i < animations->mNumChannels; i++)
             {

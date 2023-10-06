@@ -133,6 +133,8 @@ namespace FlaxEditor.Viewport
             }
         }
 
+        private bool _lockedFocus;
+        private double _lockedFocusOffset;
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
         private StaticModel _previewStaticModel;
         private int _previewModelEntryIndex;
@@ -192,6 +194,7 @@ namespace FlaxEditor.Viewport
         {
             _editor = editor;
             _dragAssets = new DragAssets<DragDropEventArgs>(ValidateDragItem);
+            var inputOptions = editor.Options.Options.Input;
 
             // Prepare rendering task
             Task.ActorsSource = ActorsSources.Scenes;
@@ -248,7 +251,7 @@ namespace FlaxEditor.Viewport
             var transformSpaceToggle = new ViewportWidgetButton(string.Empty, editor.Icons.Globe32, null, true)
             {
                 Checked = TransformGizmo.ActiveTransformSpace == TransformGizmoBase.TransformSpace.World,
-                TooltipText = "Gizmo transform space (world or local)",
+                TooltipText = $"Gizmo transform space (world or local) ({inputOptions.ToggleTransformSpace})",
                 Parent = transformSpaceWidget
             };
             transformSpaceToggle.Toggled += OnTransformSpaceToggle;
@@ -345,7 +348,7 @@ namespace FlaxEditor.Viewport
             _gizmoModeTranslate = new ViewportWidgetButton(string.Empty, editor.Icons.Translate32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Translate,
-                TooltipText = "Translate gizmo mode",
+                TooltipText = $"Translate gizmo mode ({inputOptions.TranslateMode})",
                 Checked = true,
                 Parent = gizmoMode
             };
@@ -353,14 +356,14 @@ namespace FlaxEditor.Viewport
             _gizmoModeRotate = new ViewportWidgetButton(string.Empty, editor.Icons.Rotate32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Rotate,
-                TooltipText = "Rotate gizmo mode",
+                TooltipText = $"Rotate gizmo mode ({inputOptions.RotateMode})",
                 Parent = gizmoMode
             };
             _gizmoModeRotate.Toggled += OnGizmoModeToggle;
             _gizmoModeScale = new ViewportWidgetButton(string.Empty, editor.Icons.Scale32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Scale,
-                TooltipText = "Scale gizmo mode",
+                TooltipText = $"Scale gizmo mode ({inputOptions.ScaleMode})",
                 Parent = gizmoMode
             };
             _gizmoModeScale.Toggled += OnGizmoModeToggle;
@@ -369,9 +372,11 @@ namespace FlaxEditor.Viewport
             // Show grid widget
             _showGridButton = ViewWidgetShowMenu.AddButton("Grid", () => Grid.Enabled = !Grid.Enabled);
             _showGridButton.Icon = Style.Current.CheckBoxTick;
+            _showGridButton.CloseMenuOnClick = false;
 
             // Show navigation widget
             _showNavigationButton = ViewWidgetShowMenu.AddButton("Navigation", () => ShowNavigation = !ShowNavigation);
+            _showNavigationButton.CloseMenuOnClick = false;
 
             // Create camera widget
             ViewWidgetButtonMenu.AddSeparator();
@@ -386,9 +391,42 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.TranslateMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);
             InputActions.Add(options => options.RotateMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate);
             InputActions.Add(options => options.ScaleMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale);
+            InputActions.Add(options => options.ToggleTransformSpace, () => { OnTransformSpaceToggle(transformSpaceToggle); transformSpaceToggle.Checked = !transformSpaceToggle.Checked; });
+            InputActions.Add(options => options.LockFocusSelection, LockFocusSelection);
             InputActions.Add(options => options.FocusSelection, FocusSelection);
             InputActions.Add(options => options.RotateSelection, RotateSelection);
             InputActions.Add(options => options.Delete, _editor.SceneEditing.Delete);
+        }
+
+        /// <inheritdoc />
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+
+            var selection = TransformGizmo.SelectedParents;
+            var requestUnlockFocus = FlaxEngine.Input.Mouse.GetButtonDown(MouseButton.Right) || FlaxEngine.Input.Mouse.GetButtonDown(MouseButton.Left);
+            if (TransformGizmo.SelectedParents.Count == 0 || (requestUnlockFocus && ContainsFocus))
+            {
+                UnlockFocusSelection();
+            }
+            else if (_lockedFocus)
+            {
+                var selectionBounds = BoundingSphere.Empty;
+                for (int i = 0; i < selection.Count; i++)
+                {
+                    selection[i].GetEditorSphere(out var sphere);
+                    BoundingSphere.Merge(ref selectionBounds, ref sphere, out selectionBounds);
+                }
+
+                if (ContainsFocus)
+                {
+                    var viewportFocusDistance = Vector3.Distance(ViewPosition, selectionBounds.Center) / 10f;
+                    _lockedFocusOffset -= FlaxEngine.Input.Mouse.ScrollDelta * viewportFocusDistance;
+                }
+
+                var focusDistance = Mathf.Max(selectionBounds.Radius * 2d, 100d);
+                ViewPosition = selectionBounds.Center + (-ViewDirection * (focusDistance + _lockedFocusOffset));
+            }
         }
 
         /// <summary>
@@ -751,6 +789,23 @@ namespace FlaxEditor.Viewport
         {
             var orientation = ViewOrientation;
             FocusSelection(ref orientation);
+        }
+
+        /// <summary>
+        /// Lock focus on the current selection gizmo.
+        /// </summary>
+        public void LockFocusSelection()
+        {
+            _lockedFocus = true;
+        }
+
+        /// <summary>
+        /// Unlock focus on the current selection.
+        /// </summary>
+        public void UnlockFocusSelection()
+        {
+            _lockedFocus = false;
+            _lockedFocusOffset = 0f;
         }
 
         /// <summary>

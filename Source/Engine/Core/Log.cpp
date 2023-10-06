@@ -223,10 +223,10 @@ void Log::Logger::ProcessLogMessage(LogType type, const StringView& msg, fmt_fla
     else
     {
         //w.append(msg.Get(), msg.Get() + msg.Length());
-        fmt_flax::format(w, TEXT("{}"), (const Char*)msg.Get());
+        fmt_flax::format(w, TEXT("{}"), msg);
     }
 #else
-    fmt_flax::format(w, TEXT("{}"), (const Char*)msg.Get());
+    fmt_flax::format(w, TEXT("{}"), msg);
 #endif
 }
 
@@ -251,19 +251,13 @@ void Log::Logger::Write(LogType type, const StringView& msg)
         OnError(type, msg);
     }
 
-    // Check if need to show message box with that log message
-    if (type == LogType::Fatal)
-    {
+    // Ensure the error gets written to the disk
+    if (type == LogType::Fatal || type == LogType::Error)
         Flush();
 
-        // Process message further
-        if (type == LogType::Fatal)
-            Platform::Fatal(msg);
-        else if (type == LogType::Error)
-            Platform::Error(msg);
-        else
-            Platform::Info(msg);
-    }
+    // Check if need to show message box with that log message
+    if (type == LogType::Fatal)
+        Platform::Fatal(msg);
 }
 
 const Char* ToString(LogType e)

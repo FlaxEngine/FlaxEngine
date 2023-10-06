@@ -41,7 +41,7 @@ bool QueryHeapDX12::Init()
     heapDesc.Count = _queryHeapCount;
     heapDesc.NodeMask = 0;
     HRESULT result = _device->GetDevice()->CreateQueryHeap(&heapDesc, IID_PPV_ARGS(&_queryHeap));
-    LOG_DIRECTX_RESULT_WITH_RETURN(result);
+    LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
     DX_SET_DEBUG_NAME(_queryHeap, "Query Heap");
 
     // Create the result buffer
@@ -64,7 +64,7 @@ bool QueryHeapDX12::Init()
     resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
     resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
     result = _device->GetDevice()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&_resultBuffer));
-    LOG_DIRECTX_RESULT_WITH_RETURN(result);
+    LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
     DX_SET_DEBUG_NAME(_resultBuffer, "Query Heap Result Buffer");
 
     // Start out with an open query batch
@@ -181,7 +181,7 @@ void* QueryHeapDX12::ResolveQuery(ElementHandle& handle)
             range.Begin = batch.Start * _resultSize;
             range.End = range.Begin + batch.Count * _resultSize;
             void* mapped = nullptr;
-            VALIDATE_DIRECTX_RESULT(_resultBuffer->Map(0, &range, &mapped));
+            VALIDATE_DIRECTX_CALL(_resultBuffer->Map(0, &range, &mapped));
 
             // Copy the results data
             Platform::MemoryCopy(_resultData.Get() + range.Begin, (byte*)mapped + range.Begin, batch.Count * _resultSize);

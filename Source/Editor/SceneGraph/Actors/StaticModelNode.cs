@@ -3,6 +3,7 @@
 using System;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Windows;
 using FlaxEngine;
 
 namespace FlaxEditor.SceneGraph.Actors
@@ -21,9 +22,9 @@ namespace FlaxEditor.SceneGraph.Actors
         }
 
         /// <inheritdoc />
-        public override void OnContextMenu(ContextMenu contextMenu)
+        public override void OnContextMenu(ContextMenu contextMenu, EditorWindow window)
         {
-            base.OnContextMenu(contextMenu);
+            base.OnContextMenu(contextMenu, window);
 
             contextMenu.AddButton("Add collider", OnAddMeshCollider).Enabled = ((StaticModel)Actor).Model != null;
         }

@@ -1251,7 +1251,7 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
                     boxBase = node->GetBox(3);
                     if (boxBase->HasConnection())
                         eatBox(node, boxBase->FirstConnection());
-                    Dictionary<Variant, Variant>::Iterator it(dictionary, iteratorValue.Value.AsInt);
+                    Dictionary<Variant, Variant>::Iterator it(&dictionary, iteratorValue.Value.AsInt);
                     ++it;
                     iteratorValue.Value.AsInt = it.Index();
                 }
@@ -1269,12 +1269,12 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         // Key
         case 1:
             if (iteratorIndex != scope->ReturnedValues.Count() && dictionaryIndex != scope->ReturnedValues.Count())
-                value = Dictionary<Variant, Variant>::Iterator(*scope->ReturnedValues[dictionaryIndex].Value.AsDictionary, scope->ReturnedValues[iteratorIndex].Value.AsInt)->Key;
+                value = Dictionary<Variant, Variant>::Iterator(scope->ReturnedValues[dictionaryIndex].Value.AsDictionary, scope->ReturnedValues[iteratorIndex].Value.AsInt)->Key;
             break;
         // Value
         case 2:
             if (iteratorIndex != scope->ReturnedValues.Count() && dictionaryIndex != scope->ReturnedValues.Count())
-                value = Dictionary<Variant, Variant>::Iterator(*scope->ReturnedValues[dictionaryIndex].Value.AsDictionary, scope->ReturnedValues[iteratorIndex].Value.AsInt)->Value;
+                value = Dictionary<Variant, Variant>::Iterator(scope->ReturnedValues[dictionaryIndex].Value.AsDictionary, scope->ReturnedValues[iteratorIndex].Value.AsInt)->Value;
             break;
         // Break
         case 5:

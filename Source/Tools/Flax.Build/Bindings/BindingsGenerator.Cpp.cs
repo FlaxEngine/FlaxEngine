@@ -1116,7 +1116,7 @@ namespace Flax.Build.Bindings
             var signatureEnd = contents.Length;
             if (useSeparateImpl)
             {
-                // Write declarion only, function definition wil be put in the end of the file
+                // Write declaration only, function definition wil be put in the end of the file
                 CppContentsEnd.AppendFormat("{0} {2}::{1}(", returnValueType, functionInfo.UniqueName, callerName);
                 CppContentsEnd.Append(contents.ToString(signatureStart, signatureEnd - signatureStart));
                 contents.Append(';').AppendLine();
@@ -1452,7 +1452,8 @@ namespace Flax.Build.Bindings
             var useThunk = buildData.Platform.HasDynamicCodeExecutionSupport && Configuration.AOTMode == DotNetAOTModes.None;
             if (useThunk)
             {
-                contents.AppendLine($"        PROFILE_CPU_NAMED(\"{classInfo.FullNameManaged}::{functionInfo.Name}\");");
+                //contents.AppendLine($"        PROFILE_CPU_NAMED(\"{classInfo.FullNameManaged}::{functionInfo.Name}\");");
+                contents.AppendLine("        PROFILE_CPU_SRC_LOC(method->ProfilerData);");
 
                 // Convert parameters into managed format as boxed values
                 var thunkParams = string.Empty;
@@ -2016,7 +2017,7 @@ namespace Flax.Build.Bindings
                     var indent = "    ";
                     if (useSeparateImpl)
                     {
-                        // Write declarion only, function definition wil be put in the end of the file
+                        // Write declaration only, function definition wil be put in the end of the file
                         CppContentsEnd.AppendFormat("void {1}::{0}_ManagedBind(", eventInfo.Name, internalTypeName);
                         var sig = contents.ToString(signatureStart, contents.Length - signatureStart);
                         CppContentsEnd.Append(contents.ToString(signatureStart, contents.Length - signatureStart));
@@ -2027,6 +2028,8 @@ namespace Flax.Build.Bindings
                     contents.AppendLine().Append(indent).Append('{').AppendLine();
                     if (buildData.Toolchain?.Compiler == TargetCompiler.MSVC)
                         contents.Append(indent).AppendLine($"    MSVC_FUNC_EXPORT(\"{classTypeNameManaged}::Internal_{eventInfo.Name}_Bind\")"); // Export generated function binding under the C# name
+                    if (!eventInfo.IsStatic)
+                        contents.Append(indent).Append("    if (__obj == nullptr) return;").AppendLine();
                     contents.Append(indent).Append("    Function<void(");
                     for (var i = 0; i < paramsCount; i++)
                     {

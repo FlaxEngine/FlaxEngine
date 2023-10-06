@@ -233,7 +233,7 @@ namespace FlaxEditor.Windows.Assets
 
             contextMenu.AddSeparator();
 
-            b = contextMenu.AddButton("Create Prefab", () => Editor.Prefabs.CreatePrefab(Selection));
+            b = contextMenu.AddButton("Create Prefab", () => Editor.Prefabs.CreatePrefab(Selection, this));
             b.Enabled = isSingleActorSelected &&
                         (Selection[0] as ActorNode).CanCreatePrefab &&
                         Editor.Windows.ContentWin.CurrentViewFolder.CanHaveAssets;
@@ -313,7 +313,7 @@ namespace FlaxEditor.Windows.Assets
             }
             if (showCustomNodeOptions)
             {
-                Selection[0].OnContextMenu(contextMenu);
+                Selection[0].OnContextMenu(contextMenu, this);
             }
             ContextMenuShow?.Invoke(contextMenu);
 
@@ -430,7 +430,7 @@ namespace FlaxEditor.Windows.Assets
         {
             if (actorNode.Actor)
             {
-                actorNode.TreeNode.OnNameChanged();
+                actorNode.TreeNode.UpdateText();
                 actorNode.TreeNode.OnOrderInParentChanged();
             }
 

@@ -143,7 +143,7 @@ GPUDevice* GPUDeviceDX11::Create()
         if (tempAdapter && TryCreateDevice(tempAdapter, maxAllowedFeatureLevel, &adapter.MaxFeatureLevel))
         {
             adapter.Index = index;
-            VALIDATE_DIRECTX_RESULT(tempAdapter->GetDesc(&adapter.Description));
+            VALIDATE_DIRECTX_CALL(tempAdapter->GetDesc(&adapter.Description));
             uint32 outputs = RenderToolsDX::CountAdapterOutputs(tempAdapter);
 
             LOG(Info, "Adapter {1}: '{0}', DirectX {2}", adapter.Description.Description, index, RenderToolsDX::GetFeatureLevelString(adapter.MaxFeatureLevel));
@@ -163,7 +163,7 @@ GPUDevice* GPUDeviceDX11::Create()
             if (tempAdapter && TryCreateDevice(tempAdapter, maxAllowedFeatureLevel, &adapter.MaxFeatureLevel))
             {
                 DXGI_ADAPTER_DESC desc;
-                VALIDATE_DIRECTX_RESULT(tempAdapter->GetDesc(&desc));
+                VALIDATE_DIRECTX_CALL(tempAdapter->GetDesc(&desc));
                 for (int i = 0; i < adapters.Count(); i++)
                 {
                     if (adapters[i].Description.AdapterLuid.LowPart == desc.AdapterLuid.LowPart &&
@@ -274,7 +274,7 @@ ID3D11BlendState* GPUDeviceDX11::GetBlendState(const BlendingMode& blending)
 #endif
 
     // Create object
-    VALIDATE_DIRECTX_RESULT(_device->CreateBlendState(&desc, &blendState));
+    VALIDATE_DIRECTX_CALL(_device->CreateBlendState(&desc, &blendState));
 
     // Cache blend state
     BlendStates.Add(blending, blendState);
@@ -333,7 +333,7 @@ bool GPUDeviceDX11::Init()
     // Create DirectX device
     D3D_FEATURE_LEVEL createdFeatureLevel = static_cast<D3D_FEATURE_LEVEL>(0);
     auto targetFeatureLevel = GetD3DFeatureLevel();
-    VALIDATE_DIRECTX_RESULT(D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, flags, &targetFeatureLevel, 1, D3D11_SDK_VERSION, &_device, &createdFeatureLevel, &_imContext));
+    VALIDATE_DIRECTX_CALL(D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, flags, &targetFeatureLevel, 1, D3D11_SDK_VERSION, &_device, &createdFeatureLevel, &_imContext));
 
     // Validate result
     ASSERT(_device);
@@ -409,7 +409,7 @@ bool GPUDeviceDX11::Init()
     // Init debug layer
 #if GPU_ENABLE_DIAGNOSTICS
     ComPtr<ID3D11InfoQueue> infoQueue;
-    VALIDATE_DIRECTX_RESULT(_device->QueryInterface(IID_PPV_ARGS(&infoQueue)));
+    VALIDATE_DIRECTX_CALL(_device->QueryInterface(IID_PPV_ARGS(&infoQueue)));
     if (infoQueue)
     {
         D3D11_INFO_QUEUE_FILTER filter;
@@ -457,7 +457,7 @@ bool GPUDeviceDX11::Init()
         samplerDesc.MinLOD = 0;
         samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         result = _device->CreateSamplerState(&samplerDesc, &_samplerLinearClamp);
-        LOG_DIRECTX_RESULT_WITH_RETURN(result);
+        LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
         // Point Clamp
         samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
@@ -467,7 +467,7 @@ bool GPUDeviceDX11::Init()
         samplerDesc.MinLOD = 0;
         samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         result = _device->CreateSamplerState(&samplerDesc, &_samplerPointClamp);
-        LOG_DIRECTX_RESULT_WITH_RETURN(result);
+        LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
         // Linear Wrap
         samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -477,7 +477,7 @@ bool GPUDeviceDX11::Init()
         samplerDesc.MinLOD = 0;
         samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         result = _device->CreateSamplerState(&samplerDesc, &_samplerLinearWrap);
-        LOG_DIRECTX_RESULT_WITH_RETURN(result);
+        LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
         // Point Wrap
         samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
@@ -487,7 +487,7 @@ bool GPUDeviceDX11::Init()
         samplerDesc.MinLOD = 0;
         samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         result = _device->CreateSamplerState(&samplerDesc, &_samplerPointWrap);
-        LOG_DIRECTX_RESULT_WITH_RETURN(result);
+        LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
         // Shadow
         samplerDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT;
@@ -500,7 +500,7 @@ bool GPUDeviceDX11::Init()
         samplerDesc.MinLOD = 0;
         samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         result = _device->CreateSamplerState(&samplerDesc, &_samplerShadow);
-        LOG_DIRECTX_RESULT_WITH_RETURN(result);
+        LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
         // Shadow PCF
         samplerDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
@@ -514,7 +514,7 @@ bool GPUDeviceDX11::Init()
         samplerDesc.MinLOD = 0;
         samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         result = _device->CreateSamplerState(&samplerDesc, &_samplerShadowPCF);
-        LOG_DIRECTX_RESULT_WITH_RETURN(result);
+        LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
     }
 
     // Rasterizer States
@@ -534,7 +534,7 @@ bool GPUDeviceDX11::Init()
 			rDesc.AntialiasedLineEnable = !!wireframe; \
 			rDesc.DepthClipEnable = !!depthClip; \
 			result = _device->CreateRasterizerState(&rDesc, &RasterizerStates[index]); \
-			LOG_DIRECTX_RESULT_WITH_RETURN(result)
+			LOG_DIRECTX_RESULT_WITH_RETURN(result, true)
         CREATE_RASTERIZER_STATE(CullMode::Normal, D3D11_CULL_BACK, false, false);
         CREATE_RASTERIZER_STATE(CullMode::Inverted, D3D11_CULL_FRONT, false, false);
         CREATE_RASTERIZER_STATE(CullMode::TwoSided, D3D11_CULL_NONE, false, false);
@@ -568,7 +568,7 @@ bool GPUDeviceDX11::Init()
 			dsDesc.DepthFunc = (D3D11_COMPARISON_FUNC)depthFunc; \
 			index = (int32)depthFunc + (depthEnable ? 0 : 9) + (depthWrite ? 0 : 18); \
 			HRESULT result = _device->CreateDepthStencilState(&dsDesc, &DepthStencilStates[index]); \
-			LOG_DIRECTX_RESULT_WITH_RETURN(result); }
+			LOG_DIRECTX_RESULT_WITH_RETURN(result, true); }
         CREATE_DEPTH_STENCIL_STATE(false, false);
         CREATE_DEPTH_STENCIL_STATE(false, true);
         CREATE_DEPTH_STENCIL_STATE(true, true);
@@ -666,7 +666,7 @@ void GPUDeviceDX11::DrawEnd()
 #if GPU_ENABLE_DIAGNOSTICS
     // Flush debug messages queue
     ComPtr<ID3D11InfoQueue> infoQueue;
-    VALIDATE_DIRECTX_RESULT(_device->QueryInterface(IID_PPV_ARGS(&infoQueue)));
+    VALIDATE_DIRECTX_CALL(_device->QueryInterface(IID_PPV_ARGS(&infoQueue)));
     if (infoQueue)
     {
         Array<uint8> data;

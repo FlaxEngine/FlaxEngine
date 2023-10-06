@@ -68,7 +68,7 @@ namespace FlaxEditor.Viewport.Previews
         /// </summary>
         public bool ShowBounds
         {
-            get => _boundsModel?.IsActive ?? false;
+            get => _boundsModel != null ? _boundsModel.IsActive : false;
             set
             {
                 if (value == ShowBounds)
@@ -110,7 +110,7 @@ namespace FlaxEditor.Viewport.Previews
         /// </summary>
         public bool ShowOrigin
         {
-            get => _originModel?.IsActive ?? false;
+            get => _originModel != null ? _originModel.IsActive : false;
             set
             {
                 if (value == ShowOrigin)
@@ -186,8 +186,11 @@ namespace FlaxEditor.Viewport.Previews
             if (!useWidgets)
                 return;
             _showBoundsButton = ViewWidgetShowMenu.AddButton("Bounds", () => ShowBounds = !ShowBounds);
+            _showBoundsButton.CloseMenuOnClick = false;
             _showOriginButton = ViewWidgetShowMenu.AddButton("Origin", () => ShowOrigin = !ShowOrigin);
+            _showOriginButton.CloseMenuOnClick = false;
             _showParticleCounterButton = ViewWidgetShowMenu.AddButton("Particles Counter", () => ShowParticlesCounter = !ShowParticlesCounter);
+            _showParticleCounterButton.CloseMenuOnClick = false;
 
             // Play/Pause widget
             {

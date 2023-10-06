@@ -292,7 +292,8 @@ namespace FlaxEditor.GUI
                 return true;
 
 #if PLATFORM_WINDOWS
-            if (_useCustomWindowSystem)
+            var child = GetChildAtRecursive(location);
+            if (_useCustomWindowSystem && child is not Button && child is not MainMenuButton)
             {
                 if (_window.IsMaximized)
                     _window.Restore();
@@ -302,6 +303,17 @@ namespace FlaxEditor.GUI
 #endif
 
             return true;
+        }
+
+        /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            if (base.OnKeyDown(key))
+                return true;
+
+            // Fallback to the edit window for shortcuts
+            var editor = Editor.Instance;
+            return editor.Windows.EditWin.InputActions.Process(editor, this, key);
         }
 
         /// <inheritdoc />

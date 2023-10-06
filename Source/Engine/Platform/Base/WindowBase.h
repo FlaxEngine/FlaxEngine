@@ -316,6 +316,11 @@ public:
     Action Closed;
 
     /// <summary>
+    /// Event fired when window gets resized.
+    /// </summary>
+    Delegate<Float2> Resized;
+
+    /// <summary>
     /// Event fired when window gets focused.
     /// </summary>
     Action GotFocus;
@@ -442,6 +447,15 @@ public:
     /// Maximizes the window.
     /// </summary>
     API_FUNCTION() virtual void Maximize()
+    {
+    }
+
+    /// <summary>
+    /// Sets the window to be borderless or not and to be fullscreen.
+    /// </summary>
+    /// <param name="isBorderless">Whether or not to have borders on window.</param>
+    /// <param name="maximized">Whether or not to make the borderless window fullscreen (maximize to cover whole screen).</param>
+    API_FUNCTION() virtual void SetBorderless(bool isBorderless, bool maximized = false)
     {
     }
 

@@ -476,6 +476,7 @@ namespace FlaxEditor.GUI.Docking
                 settings.ShowInTaskbar = false;
                 settings.ActivateWhenFirstShown = false;
                 settings.IsTopmost = true;
+                settings.ShowAfterFirstPaint = false;
 
                 win = Platform.CreateWindow(ref settings);
 

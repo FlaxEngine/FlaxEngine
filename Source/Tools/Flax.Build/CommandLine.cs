@@ -249,6 +249,8 @@ namespace Flax.Build
                 var wholeQuote = commandLine[i] == '\"';
                 if (wholeQuote)
                     i++;
+                if (i == length)
+                    break;
                 if (commandLine[i] == '-')
                     i++;
                 else if (commandLine[i] == '/')
@@ -279,7 +281,7 @@ namespace Flax.Build
                     });
                     if (wholeQuote)
                         i++;
-                    if (i != length && commandLine[i] != '\"')
+                    if (i < length && commandLine[i] != '\"')
                         i++;
                     continue;
                 }
@@ -287,23 +289,36 @@ namespace Flax.Build
                 // Read value
                 i++;
                 int valueStart, valueEnd;
-                if (commandLine[i] == '\"')
+                if (commandLine.Length > i + 1 && commandLine[i] == '\\' && commandLine[i + 1] == '\"')
                 {
-                    valueStart = i + 1;
+                    valueStart = i + 2;
                     i++;
-                    while (i < length && commandLine[i] != '\"')
+                    while (i + 1 < length && commandLine[i] != '\\' && commandLine[i + 1] != '\"')
                         i++;
                     valueEnd = i;
-                    i++;
+                    i += 2;
+                    if (wholeQuote)
+                    {
+                        while (i < length && commandLine[i] != '\"')
+                            i++;
+                        i++;
+                    }
                 }
-                else if (commandLine[i] == '\'')
+                else if (commandLine[i] == '\"' || commandLine[i] == '\'')
                 {
+                    var quoteChar = commandLine[i];
                     valueStart = i + 1;
                     i++;
-                    while (i < length && commandLine[i] != '\'')
+                    while (i < length && commandLine[i] != quoteChar)
                         i++;
                     valueEnd = i;
                     i++;
+                    if (wholeQuote)
+                    {
+                        while (i < length && commandLine[i] != '\"')
+                            i++;
+                        i++;
+                    }
                 }
                 else if (wholeQuote)
                 {
@@ -321,10 +336,13 @@ namespace Flax.Build
                     valueEnd = i;
                 }
                 string value = commandLine.Substring(valueStart, valueEnd - valueStart);
+                value = value.Trim();
+                if (value.StartsWith("\\\"") && value.EndsWith("\\\""))
+                    value = value.Substring(2, value.Length - 4);
                 options.Add(new Option
                 {
                     Name = name,
-                    Value = value.Trim()
+                    Value = value
                 });
             }
 

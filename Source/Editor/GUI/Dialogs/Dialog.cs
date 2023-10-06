@@ -290,7 +290,11 @@ namespace FlaxEditor.GUI.Dialogs
                 OnCancel();
                 return true;
             case KeyboardKeys.Tab:
-                Root?.Navigate(NavDirection.Next);
+                if (Root != null)
+                {
+                    bool shiftDown = Root.GetKey(KeyboardKeys.Shift);
+                    Root.Navigate(shiftDown ? NavDirection.Previous : NavDirection.Next);   
+                }
                 return true;
             }
             return false;

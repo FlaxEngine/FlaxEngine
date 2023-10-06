@@ -10,6 +10,7 @@
 GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize, MemoryReadStream& stream)
 {
     GPUShaderProgram* shader = nullptr;
+    HRESULT result;
     switch (type)
     {
     case ShaderStage::Vertex:
@@ -90,12 +91,13 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
         if (inputLayoutSize > 0)
         {
             // Create input layout
-            VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateInputLayout(inputLayoutDesc, inputLayoutSize, cacheBytes, cacheSize, &inputLayout));
+            VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateInputLayout(inputLayoutDesc, inputLayoutSize, cacheBytes, cacheSize, &inputLayout));
         }
 
         // Create shader
         ID3D11VertexShader* buffer = nullptr;
-        VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateVertexShader(cacheBytes, cacheSize, nullptr, &buffer));
+        result = _device->GetDevice()->CreateVertexShader(cacheBytes, cacheSize, nullptr, &buffer);
+        LOG_DIRECTX_RESULT_WITH_RETURN(result, nullptr);
 
         // Create object
         shader = New<GPUShaderProgramVSDX11>(initializer, buffer, inputLayout, inputLayoutSize);
@@ -109,7 +111,8 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
 
         // Create shader
         ID3D11HullShader* buffer = nullptr;
-        VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateHullShader(cacheBytes, cacheSize, nullptr, &buffer));
+        result = _device->GetDevice()->CreateHullShader(cacheBytes, cacheSize, nullptr, &buffer);
+        LOG_DIRECTX_RESULT_WITH_RETURN(result, nullptr);
 
         // Create object
         shader = New<GPUShaderProgramHSDX11>(initializer, buffer, controlPointsCount);
@@ -119,7 +122,8 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
     {
         // Create shader
         ID3D11DomainShader* buffer = nullptr;
-        VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateDomainShader(cacheBytes, cacheSize, nullptr, &buffer));
+        result = _device->GetDevice()->CreateDomainShader(cacheBytes, cacheSize, nullptr, &buffer);
+        LOG_DIRECTX_RESULT_WITH_RETURN(result, nullptr);
 
         // Create object
         shader = New<GPUShaderProgramDSDX11>(initializer, buffer);
@@ -129,7 +133,8 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
     {
         // Create shader
         ID3D11GeometryShader* buffer = nullptr;
-        VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateGeometryShader(cacheBytes, cacheSize, nullptr, &buffer));
+        result = _device->GetDevice()->CreateGeometryShader(cacheBytes, cacheSize, nullptr, &buffer);
+        LOG_DIRECTX_RESULT_WITH_RETURN(result, nullptr);
 
         // Create object
         shader = New<GPUShaderProgramGSDX11>(initializer, buffer);
@@ -139,7 +144,8 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
     {
         // Create shader
         ID3D11PixelShader* buffer = nullptr;
-        VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreatePixelShader(cacheBytes, cacheSize, nullptr, &buffer));
+        result = _device->GetDevice()->CreatePixelShader(cacheBytes, cacheSize, nullptr, &buffer);
+        LOG_DIRECTX_RESULT_WITH_RETURN(result, nullptr);
 
         // Create object
         shader = New<GPUShaderProgramPSDX11>(initializer, buffer);
@@ -149,7 +155,8 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
     {
         // Create shader
         ID3D11ComputeShader* buffer = nullptr;
-        VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateComputeShader(cacheBytes, cacheSize, nullptr, &buffer));
+        result = _device->GetDevice()->CreateComputeShader(cacheBytes, cacheSize, nullptr, &buffer);
+        LOG_DIRECTX_RESULT_WITH_RETURN(result, nullptr);
 
         // Create object
         shader = New<GPUShaderProgramCSDX11>(initializer, buffer);

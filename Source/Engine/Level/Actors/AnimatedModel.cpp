@@ -519,6 +519,7 @@ void AnimatedModel::UpdateBounds()
     }
     else if (SkinnedModel && SkinnedModel->IsLoaded())
     {
+        const auto modelBox = SkinnedModel->GetBox(_transform.GetWorld());
         if (GraphInstance.NodesPose.Count() != 0)
         {
             // Per-bone bounds estimated from positions
@@ -526,6 +527,7 @@ void AnimatedModel::UpdateBounds()
             const int32 bonesCount = skeleton.Bones.Count();
 #define GET_NODE_POS(i) _transform.LocalToWorld(GraphInstance.NodesPose[skeleton.Bones[i].NodeIndex].GetTranslation())
             BoundingBox box(GET_NODE_POS(0));
+            box.Merge(modelBox);
             for (int32 boneIndex = 1; boneIndex < bonesCount; boneIndex++)
                 box.Merge(GET_NODE_POS(boneIndex));
             _box = box;
@@ -533,11 +535,12 @@ void AnimatedModel::UpdateBounds()
         }
         else
         {
-            _box = SkinnedModel->GetBox(_transform.GetWorld());
+            // No animation asset applied
+            _box = modelBox;
         }
 
         // Apply margin based on model dimensions
-        const Vector3 modelBoxSize = SkinnedModel->GetBox().GetSize();
+        const Vector3 modelBoxSize = modelBox.GetSize();
         const Vector3 center = _box.GetCenter();
         const Vector3 sizeHalf = Vector3::Max(_box.GetSize() + modelBoxSize * 0.2f, modelBoxSize) * 0.5f;
         _box = BoundingBox(center - sizeHalf, center + sizeHalf);

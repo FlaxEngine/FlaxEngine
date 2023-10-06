@@ -137,14 +137,23 @@ namespace FlaxEditor.Tools.Foliage
                 Offsets = Margin.Zero,
                 Parent = _noFoliagePanel
             };
+
+            var buttonText = "Create new foliage";
             _createNewFoliage = new Button
             {
-                Text = "Create new foliage",
+                Text = buttonText,
                 AnchorPreset = AnchorPresets.MiddleCenter,
                 Offsets = new Margin(-60, 120, -12, 24),
                 Parent = _noFoliagePanel,
                 Enabled = false
             };
+            var textSize = Style.Current.FontMedium.MeasureText(buttonText);
+            if (_createNewFoliage.Width < textSize.X)
+            {
+                _createNewFoliage.LocalX -= (textSize.X - _createNewFoliage.Width) / 2;
+                _createNewFoliage.Width = textSize.X + 6;
+            }
+
             _createNewFoliage.Clicked += OnCreateNewFoliageClicked;
         }
 

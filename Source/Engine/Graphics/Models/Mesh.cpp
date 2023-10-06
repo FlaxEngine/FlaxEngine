@@ -429,6 +429,7 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     drawCall.Material = material;
     drawCall.World = world;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.ObjectRadius = _sphere.Radius * drawCall.World.GetScaleVector().GetAbsolute().MaxValue();
     drawCall.Surface.GeometrySize = _box.GetSize();
     drawCall.Surface.PrevWorld = world;
     drawCall.Surface.Lightmap = nullptr;
@@ -495,6 +496,7 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.Material = material;
     drawCall.World = *info.World;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.ObjectRadius = info.Bounds.Radius; // TODO: should it be kept in sync with ObjectPosition?
     drawCall.Surface.GeometrySize = _box.GetSize();
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
@@ -555,6 +557,7 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.Material = material;
     drawCall.World = *info.World;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.ObjectRadius = info.Bounds.Radius; // TODO: should it be kept in sync with ObjectPosition?
     drawCall.Surface.GeometrySize = _box.GetSize();
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;

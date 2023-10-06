@@ -32,6 +32,7 @@ namespace FlaxEngine.Interop
         public static class NativeToManaged
         {
             public static object ConvertToManaged(IntPtr unmanaged) => unmanaged == IntPtr.Zero ? null : ManagedHandle.FromIntPtr(unmanaged).Target;
+            public static IntPtr ConvertToUnmanaged(object managed) => managed != null ? ManagedHandle.ToIntPtr(managed, GCHandleType.Weak) : IntPtr.Zero;
 
             public static void Free(IntPtr unmanaged)
             {
@@ -44,6 +45,7 @@ namespace FlaxEngine.Interop
 #endif
         public static class ManagedToNative
         {
+            public static object ConvertToManaged(IntPtr unmanaged) => unmanaged == IntPtr.Zero ? null : ManagedHandle.FromIntPtr(unmanaged).Target;
             public static IntPtr ConvertToUnmanaged(object managed) => managed != null ? ManagedHandle.ToIntPtr(managed, GCHandleType.Weak) : IntPtr.Zero;
 
             public static void Free(IntPtr unmanaged)
@@ -117,13 +119,13 @@ namespace FlaxEngine.Interop
     [CustomMarshaller(typeof(Type), MarshalMode.Default, typeof(SystemTypeMarshaller))]
     public static class SystemTypeMarshaller
     {
-        public static Type ConvertToManaged(IntPtr unmanaged) => Unsafe.As<Type>(ManagedHandleMarshaller.ConvertToManaged(unmanaged));
+        public static Type ConvertToManaged(IntPtr unmanaged) => unmanaged != IntPtr.Zero ? Unsafe.As<FlaxEngine.Interop.NativeInterop.TypeHolder>(ManagedHandleMarshaller.ConvertToManaged(unmanaged)).type : null;
 
         public static IntPtr ConvertToUnmanaged(Type managed)
         {
             if (managed == null)
                 return IntPtr.Zero;
-            ManagedHandle handle = NativeInterop.GetTypeGCHandle(managed);
+            ManagedHandle handle = NativeInterop.GetTypeManagedHandle(managed);
             return ManagedHandle.ToIntPtr(handle);
         }
 
@@ -147,29 +149,16 @@ namespace FlaxEngine.Interop
 #if FLAX_EDITOR
     [HideInEditor]
 #endif
-    [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.ManagedToUnmanagedIn, typeof(ObjectMarshaller.ManagedToNative))]
-    [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.UnmanagedToManagedOut, typeof(ObjectMarshaller.ManagedToNative))]
-    [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.ElementIn, typeof(ObjectMarshaller.ManagedToNative))]
-    [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.ManagedToUnmanagedOut, typeof(ObjectMarshaller.NativeToManaged))]
-    [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.UnmanagedToManagedIn, typeof(ObjectMarshaller.NativeToManaged))]
-    [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.ElementOut, typeof(ObjectMarshaller.NativeToManaged))]
+    [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.ManagedToUnmanagedIn, typeof(ObjectMarshaller))]
+    [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.UnmanagedToManagedOut, typeof(ObjectMarshaller))]
+    [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.ElementIn, typeof(ObjectMarshaller))]
+    [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.ManagedToUnmanagedOut, typeof(ObjectMarshaller))]
+    [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.UnmanagedToManagedIn, typeof(ObjectMarshaller))]
+    [CustomMarshaller(typeof(FlaxEngine.Object), MarshalMode.ElementOut, typeof(ObjectMarshaller))]
     public static class ObjectMarshaller
     {
-#if FLAX_EDITOR
-        [HideInEditor]
-#endif
-        public static class NativeToManaged
-        {
-            public static FlaxEngine.Object ConvertToManaged(IntPtr unmanaged) => unmanaged != IntPtr.Zero ? Unsafe.As<FlaxEngine.Object>(ManagedHandle.FromIntPtr(unmanaged).Target) : null;
-        }
-
-#if FLAX_EDITOR
-        [HideInEditor]
-#endif
-        public static class ManagedToNative
-        {
-            public static IntPtr ConvertToUnmanaged(FlaxEngine.Object managed) => Unsafe.As<object>(managed) != null ? ManagedHandle.ToIntPtr(managed) : IntPtr.Zero;
-        }
+        public static FlaxEngine.Object ConvertToManaged(IntPtr unmanaged) => unmanaged != IntPtr.Zero ? Unsafe.As<FlaxEngine.Object>(ManagedHandle.FromIntPtr(unmanaged).Target) : null;
+        public static IntPtr ConvertToUnmanaged(FlaxEngine.Object managed) => Unsafe.As<object>(managed) != null ? ManagedHandle.ToIntPtr(managed) : IntPtr.Zero;
     }
 
 #if FLAX_EDITOR
@@ -183,6 +172,9 @@ namespace FlaxEngine.Interop
         public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.Free(unmanaged);
     }
 
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     [CustomMarshaller(typeof(Array), MarshalMode.ManagedToUnmanagedIn, typeof(SystemArrayMarshaller.ManagedToNative))]
     [CustomMarshaller(typeof(Array), MarshalMode.UnmanagedToManagedOut, typeof(SystemArrayMarshaller.ManagedToNative))]
     [CustomMarshaller(typeof(Array), MarshalMode.ManagedToUnmanagedOut, typeof(SystemArrayMarshaller.NativeToManaged))]
@@ -200,14 +192,13 @@ namespace FlaxEngine.Interop
             public void FromManaged(Array managed)
             {
                 if (managed != null)
-                    managedArray = ManagedArray.WrapPooledArray(managed);
+                    (handle, managedArray) = ManagedArray.WrapPooledArray(managed);
             }
 
             public IntPtr ToUnmanaged()
             {
                 if (managedArray == null)
                     return IntPtr.Zero;
-                handle = ManagedHandle.Alloc(managedArray, GCHandleType.Weak);
                 return ManagedHandle.ToIntPtr(handle);
             }
 
@@ -216,7 +207,6 @@ namespace FlaxEngine.Interop
                 if (managedArray == null)
                     return;
                 managedArray.FreePooled();
-                //handle.Free(); // No need to free weak handles
             }
         }
 
@@ -256,6 +246,74 @@ namespace FlaxEngine.Interop
 #if FLAX_EDITOR
     [HideInEditor]
 #endif
+    [CustomMarshaller(typeof(object[]), MarshalMode.ManagedToUnmanagedIn, typeof(SystemObjectArrayMarshaller.ManagedToNative))]
+    [CustomMarshaller(typeof(object[]), MarshalMode.UnmanagedToManagedOut, typeof(SystemObjectArrayMarshaller.ManagedToNative))]
+    [CustomMarshaller(typeof(object[]), MarshalMode.ManagedToUnmanagedOut, typeof(SystemObjectArrayMarshaller.NativeToManaged))]
+    [CustomMarshaller(typeof(object[]), MarshalMode.UnmanagedToManagedIn, typeof(SystemObjectArrayMarshaller.NativeToManaged))]
+    public static unsafe class SystemObjectArrayMarshaller
+    {
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
+        public struct ManagedToNative
+        {
+            ManagedHandle handle;
+
+            public void FromManaged(object[] managed)
+            {
+                if (managed != null)
+                {
+                    var managedArray = NativeInterop.ManagedArrayToGCHandleWrappedArray(managed);
+                    handle = ManagedHandle.Alloc(managedArray, GCHandleType.Weak);
+                }
+            }
+
+            public IntPtr ToUnmanaged()
+            {
+                return ManagedHandle.ToIntPtr(handle);
+            }
+
+            public void Free()
+            {
+                handle.Free();
+            }
+        }
+
+#if FLAX_EDITOR
+        [HideInEditor]
+#endif
+        public struct NativeToManaged
+        {
+            ManagedHandle handle;
+
+            public void FromUnmanaged(IntPtr unmanaged)
+            {
+                if (unmanaged == IntPtr.Zero)
+                    return;
+                handle = ManagedHandle.FromIntPtr(unmanaged);
+            }
+
+            public object[] ToManaged()
+            {
+                object[] result = null;
+                if (handle.IsAllocated)
+                {
+                    var managedArray = Unsafe.As<ManagedArray>(handle.Target);
+                    result = NativeInterop.GCHandleArrayToManagedArray<object>(managedArray);
+                }
+                return result;
+            }
+
+            public void Free()
+            {
+                handle.Free();
+            }
+        }
+    }
+
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ManagedToUnmanagedIn, typeof(DictionaryMarshaller<,>.ManagedToNative))]
     [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.UnmanagedToManagedOut, typeof(DictionaryMarshaller<,>.ManagedToNative))]
     [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ElementIn, typeof(DictionaryMarshaller<,>.ManagedToNative))]
@@ -273,6 +331,7 @@ namespace FlaxEngine.Interop
         public static class NativeToManaged
         {
             public static Dictionary<T, U> ConvertToManaged(IntPtr unmanaged) => DictionaryMarshaller<T, U>.ToManaged(unmanaged);
+            public static IntPtr ConvertToUnmanaged(Dictionary<T, U> managed) => DictionaryMarshaller<T, U>.ToNative(managed, GCHandleType.Weak);
             public static void Free(IntPtr unmanaged) => DictionaryMarshaller<T, U>.Free(unmanaged);
         }
 
@@ -281,8 +340,8 @@ namespace FlaxEngine.Interop
 #endif
         public static class ManagedToNative
         {
+            public static Dictionary<T, U> ConvertToManaged(IntPtr unmanaged) => DictionaryMarshaller<T, U>.ToManaged(unmanaged);
             public static IntPtr ConvertToUnmanaged(Dictionary<T, U> managed) => DictionaryMarshaller<T, U>.ToNative(managed, GCHandleType.Weak);
-
             public static void Free(IntPtr unmanaged)
             {
                 //DictionaryMarshaller<T, U>.Free(unmanaged); // No need to free weak handles
@@ -335,7 +394,6 @@ namespace FlaxEngine.Interop
 #endif
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ManagedToUnmanagedIn, typeof(ArrayMarshaller<,>.ManagedToNative))]
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.UnmanagedToManagedOut, typeof(ArrayMarshaller<,>.ManagedToNative))]
-    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ElementIn, typeof(ArrayMarshaller<,>.ManagedToNative))]
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ManagedToUnmanagedOut, typeof(ArrayMarshaller<,>.NativeToManaged))]
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.UnmanagedToManagedIn, typeof(ArrayMarshaller<,>.NativeToManaged))]
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ElementOut, typeof(ArrayMarshaller<,>.NativeToManaged))]
@@ -355,6 +413,28 @@ namespace FlaxEngine.Interop
                 if (unmanaged is null)
                     return null;
                 return new T[numElements];
+            }
+
+            public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[] managed, out int numElements)
+            {
+                if (managed is null)
+                {
+                    numElements = 0;
+                    return null;
+                }
+                numElements = managed.Length;
+                (ManagedHandle managedArrayHandle, _) = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
+                return (TUnmanagedElement*)ManagedHandle.ToIntPtr(managedArrayHandle);
+            }
+
+            public static ReadOnlySpan<T> GetManagedValuesSource(T[] managed) => managed;
+
+            public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged)
+            {
+                if (unmanaged == null)
+                    return Span<TUnmanagedElement>.Empty;
+                ManagedArray managedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
+                return managedArray.ToSpan<TUnmanagedElement>();
             }
 
             public static Span<T> GetManagedValuesDestination(T[] managed) => managed;
@@ -388,38 +468,27 @@ namespace FlaxEngine.Interop
 #if FLAX_EDITOR
         [HideInEditor]
 #endif
-        public static class ManagedToNative
+        public ref struct ManagedToNative
         {
-            public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[] managed, out int numElements)
+            T[] sourceArray;
+            ManagedArray managedArray;
+            ManagedHandle managedHandle;
+
+            public void FromManaged(T[] managed)
             {
                 if (managed is null)
-                {
-                    numElements = 0;
-                    return null;
-                }
-                numElements = managed.Length;
-                ManagedArray managedArray = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
-                return (TUnmanagedElement*)ManagedHandle.ToIntPtr(managedArray, GCHandleType.Normal);
-            }
-
-            public static ReadOnlySpan<T> GetManagedValuesSource(T[] managed) => managed;
-
-            public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
-            {
-                if (unmanaged == null)
-                    return Span<TUnmanagedElement>.Empty;
-                ManagedArray managedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
-                return managedArray.ToSpan<TUnmanagedElement>();
-            }
-
-            public static void Free(TUnmanagedElement* unmanaged)
-            {
-                if (unmanaged == null)
                     return;
-                ManagedHandle handle = ManagedHandle.FromIntPtr(new IntPtr(unmanaged));
-                (Unsafe.As<ManagedArray>(handle.Target)).FreePooled();
-                //handle.Free(); // No need to free weak handles
+                sourceArray = managed;
+                (managedHandle, managedArray) = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
             }
+
+            public ReadOnlySpan<T> GetManagedValuesSource() => sourceArray;
+
+            public Span<TUnmanagedElement> GetUnmanagedValuesDestination() => managedArray != null ? managedArray.ToSpan<TUnmanagedElement>() : Span<TUnmanagedElement>.Empty;
+
+            public TUnmanagedElement* ToUnmanaged() => (TUnmanagedElement*)ManagedHandle.ToIntPtr(managedHandle);
+
+            public void Free() => managedArray?.FreePooled();
         }
 
 #if FLAX_EDITOR
@@ -427,26 +496,25 @@ namespace FlaxEngine.Interop
 #endif
         public struct Bidirectional
         {
-            T[] managedArray;
-            ManagedArray unmanagedArray;
+            T[] sourceArray;
+            ManagedArray managedArray;
             ManagedHandle handle;
 
             public void FromManaged(T[] managed)
             {
                 if (managed == null)
                     return;
-                managedArray = managed;
-                unmanagedArray = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
-                handle = ManagedHandle.Alloc(unmanagedArray);
+                sourceArray = managed;
+                (handle, managedArray) = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
             }
 
-            public ReadOnlySpan<T> GetManagedValuesSource() => managedArray;
+            public ReadOnlySpan<T> GetManagedValuesSource() => sourceArray;
 
             public Span<TUnmanagedElement> GetUnmanagedValuesDestination()
             {
-                if (unmanagedArray == null)
+                if (managedArray == null)
                     return Span<TUnmanagedElement>.Empty;
-                return unmanagedArray.ToSpan<TUnmanagedElement>();
+                return managedArray.ToSpan<TUnmanagedElement>();
             }
 
             public TUnmanagedElement* ToUnmanaged() => (TUnmanagedElement*)ManagedHandle.ToIntPtr(handle);
@@ -454,26 +522,22 @@ namespace FlaxEngine.Interop
             public void FromUnmanaged(TUnmanagedElement* unmanaged)
             {
                 ManagedArray arr = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
-                if (managedArray == null || managedArray.Length != arr.Length)
-                    managedArray = new T[arr.Length];
+                if (sourceArray == null || sourceArray.Length != arr.Length)
+                    sourceArray = new T[arr.Length];
             }
 
             public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements)
             {
-                if (unmanagedArray == null)
+                if (managedArray == null)
                     return ReadOnlySpan<TUnmanagedElement>.Empty;
-                return unmanagedArray.ToSpan<TUnmanagedElement>();
+                return managedArray.ToSpan<TUnmanagedElement>();
             }
 
-            public Span<T> GetManagedValuesDestination(int numElements) => managedArray;
+            public Span<T> GetManagedValuesDestination(int numElements) => sourceArray;
 
-            public T[] ToManaged() => managedArray;
+            public T[] ToManaged() => sourceArray;
 
-            public void Free()
-            {
-                unmanagedArray.FreePooled();
-                handle.Free();
-            }
+            public void Free() => managedArray.FreePooled();
         }
 
         public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[] managed, out int numElements)
@@ -484,9 +548,8 @@ namespace FlaxEngine.Interop
                 return null;
             }
             numElements = managed.Length;
-            ManagedArray managedArray = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
-            IntPtr handle = ManagedHandle.ToIntPtr(managedArray);
-            return (TUnmanagedElement*)handle;
+            (ManagedHandle managedArrayHandle, _) = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
+            return (TUnmanagedElement*)ManagedHandle.ToIntPtr(managedArrayHandle);
         }
 
         public static ReadOnlySpan<T> GetManagedValuesSource(T[] managed) => managed;
@@ -517,7 +580,6 @@ namespace FlaxEngine.Interop
                 return;
             ManagedHandle handle = ManagedHandle.FromIntPtr(new IntPtr(unmanaged));
             Unsafe.As<ManagedArray>(handle.Target).FreePooled();
-            handle.Free();
         }
     }
 
@@ -541,6 +603,7 @@ namespace FlaxEngine.Interop
         public static class NativeToManaged
         {
             public static string ConvertToManaged(IntPtr unmanaged) => ManagedString.ToManaged(unmanaged);
+            public static unsafe IntPtr ConvertToUnmanaged(string managed) => managed == null ? IntPtr.Zero : ManagedHandle.ToIntPtr(managed, GCHandleType.Weak);
             public static void Free(IntPtr unmanaged) => ManagedString.Free(unmanaged);
         }
 
@@ -549,11 +612,8 @@ namespace FlaxEngine.Interop
 #endif
         public static class ManagedToNative
         {
-            public static unsafe IntPtr ConvertToUnmanaged(string managed)
-            {
-                return managed == null ? IntPtr.Zero : ManagedHandle.ToIntPtr(managed, GCHandleType.Weak);
-            }
-
+            public static string ConvertToManaged(IntPtr unmanaged) => ManagedString.ToManaged(unmanaged);
+            public static unsafe IntPtr ConvertToUnmanaged(string managed) => managed == null ? IntPtr.Zero : ManagedHandle.ToIntPtr(managed, GCHandleType.Weak);
             public static void Free(IntPtr unmanaged)
             {
                 //ManagedString.Free(unmanaged); // No need to free weak handles

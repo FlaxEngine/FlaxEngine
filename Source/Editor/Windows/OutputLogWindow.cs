@@ -150,6 +150,7 @@ namespace FlaxEditor.Windows
         {
             Title = "Output Log";
             ClipChildren = false;
+            FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
 
             // Setup UI
             _viewDropdown = new Button(2, 2, 40.0f, TextBoxBase.DefaultHeight)
@@ -159,7 +160,7 @@ namespace FlaxEditor.Windows
                 Parent = this,
             };
             _viewDropdown.Clicked += OnViewButtonClicked;
-            _searchBox = new SearchBox(false, _viewDropdown.Right + 2, 2, Width - _viewDropdown.Right - 2 - _scrollSize)
+            _searchBox = new SearchBox(false, _viewDropdown.Right + 2, 2, Width - _viewDropdown.Right - 4)
             {
                 Parent = this,
             };
@@ -170,11 +171,12 @@ namespace FlaxEditor.Windows
                 Maximum = 0,
             };
             _hScroll.ValueChanged += OnHScrollValueChanged;
-            _vScroll = new VScrollBar(this, Width - _scrollSize, Height, _scrollSize)
+            _vScroll = new VScrollBar(this, Width - _scrollSize, Height - _viewDropdown.Height - 2, _scrollSize)
             {
                 ThumbThickness = 10,
                 Maximum = 0,
             };
+            _vScroll.Y += _viewDropdown.Height + 2;
             _vScroll.ValueChanged += OnVScrollValueChanged;
             _output = new OutputTextBox
             {
@@ -193,7 +195,7 @@ namespace FlaxEditor.Windows
             _contextMenu.AddButton("Clear log", Clear);
             _contextMenu.AddButton("Copy selection", _output.Copy);
             _contextMenu.AddButton("Select All", _output.SelectAll);
-            _contextMenu.AddButton("Show in explorer", () => FileSystem.ShowFileExplorer(Path.Combine(Globals.ProjectFolder, "Logs")));
+            _contextMenu.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(Path.Combine(Globals.ProjectFolder, "Logs")));
             _contextMenu.AddButton("Scroll to bottom", () => { _vScroll.TargetValue = _vScroll.Maximum; }).Icon = Editor.Icons.ArrowDown12;
 
             // Setup editor options
@@ -408,7 +410,7 @@ namespace FlaxEditor.Windows
 
             if (_output != null)
             {
-                _searchBox.Width = Width - _viewDropdown.Right - 2 - _scrollSize;
+                _searchBox.Width = Width - _viewDropdown.Right - 4;
                 _output.Size = new Float2(_vScroll.X - 2, _hScroll.Y - 4 - _viewDropdown.Bottom);
             }
         }

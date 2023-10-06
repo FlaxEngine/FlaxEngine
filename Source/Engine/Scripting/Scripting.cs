@@ -135,8 +135,13 @@ namespace FlaxEngine
         {
             if (e.ExceptionObject is Exception exception)
             {
-                Debug.LogError("Unhandled Exception: " + exception.Message);
-                Debug.LogException(exception);
+                if (e.IsTerminating && !System.Diagnostics.Debugger.IsAttached)
+                    Platform.Fatal($"Unhandled Exception: {exception}");
+                else
+                {
+                    Debug.LogError($"Unhandled Exception: {exception.Message}");
+                    Debug.LogException(exception);
+                }
             }
         }
 
@@ -205,6 +210,13 @@ namespace FlaxEngine
 
         internal static void AddDictionaryItem(IDictionary dictionary, object key, object value)
         {
+            // TODO: more generic approach to properly add value that is of custom boxed type? (eg. via NativeInterop.MarshalToManaged)
+            if (value is ManagedArray managedArray)
+            {
+                var managedArrayHandle = ManagedHandle.Alloc(managedArray, GCHandleType.Normal);
+                value = NativeInterop.MarshalToManaged((IntPtr)managedArrayHandle, managedArray.ArrayType);
+                managedArrayHandle.Free();
+            }
             dictionary.Add(key, value);
         }
 
@@ -270,6 +282,12 @@ namespace FlaxEngine
                 TextBoxBackgroundSelected = Color.FromBgra(0xFF3F3F46),
                 CollectionBackgroundColor = Color.FromBgra(0x14CCCCCC),
                 SharedTooltip = new Tooltip(),
+                Statusbar = new Style.StatusbarStyle()
+                {
+                    PlayMode = Color.FromBgra(0xFF2F9135),
+                    Failed = Color.FromBgra(0xFF9C2424),
+                    Loading = Color.FromBgra(0xFF2D2D30)
+                }
             };
             style.DragWindow = style.BackgroundSelected * 0.7f;
 

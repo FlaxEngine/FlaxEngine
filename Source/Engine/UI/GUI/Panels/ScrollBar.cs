@@ -23,9 +23,9 @@ namespace FlaxEngine.GUI
 
         // Scrolling
 
-        private float _clickChange = 20, _scrollChange = 100;
+        private float _clickChange = 20, _scrollChange = 50;
         private float _minimum, _maximum = 100;
-        private float _value, _targetValue;
+        private float _startValue, _value, _targetValue;
         private readonly Orientation _orientation;
         private RootControl.UpdateDelegate _update;
 
@@ -42,6 +42,7 @@ namespace FlaxEngine.GUI
         // Smoothing
 
         private float _thumbOpacity = DefaultMinimumOpacity;
+        private float _scrollAnimationProgress = 0f;
 
         /// <summary>
         /// Gets the orientation.
@@ -59,14 +60,19 @@ namespace FlaxEngine.GUI
         public float TrackThickness { get; set; } = 2.0f;
 
         /// <summary>
-        /// Gets or sets the value smoothing scale (0 to not use it).
+        /// The maximum time it takes to animate from current to target scroll position 
         /// </summary>
-        public float SmoothingScale { get; set; } = 0.6f;
+        public float ScrollAnimationDuration { get; set; } = 0.18f;
 
         /// <summary>
         /// Gets a value indicating whether use scroll value smoothing.
         /// </summary>
-        public bool UseSmoothing => !Mathf.IsZero(SmoothingScale);
+        public bool UseSmoothing => EnableSmoothing && !Mathf.IsZero(ScrollAnimationDuration);
+
+        /// <summary>
+        /// Enables scroll smoothing
+        /// </summary>
+        public bool EnableSmoothing { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the minimum value.
@@ -112,11 +118,15 @@ namespace FlaxEngine.GUI
                 if (!Mathf.NearEqual(value, _targetValue))
                 {
                     _targetValue = value;
+                    _startValue = _value;
+                    _scrollAnimationProgress = 0f;
 
                     // Check if skip smoothing
                     if (!UseSmoothing)
                     {
                         _value = value;
+                        _startValue = value;
+                        _scrollAnimationProgress = 1f;
                         OnValueChanged();
                     }
                     else
@@ -208,7 +218,8 @@ namespace FlaxEngine.GUI
         {
             if (!Mathf.NearEqual(_value, _targetValue))
             {
-                _value = _targetValue;
+                _value = _targetValue = _startValue;
+                _scrollAnimationProgress = 0f;
                 SetUpdate(ref _update, null);
                 OnValueChanged();
             }
@@ -274,7 +285,8 @@ namespace FlaxEngine.GUI
 
         internal void Reset()
         {
-            _value = _targetValue = 0;
+            _value = _targetValue = _startValue = 0;
+            _scrollAnimationProgress = 0f;
         }
 
         /// <summary>
@@ -296,22 +308,39 @@ namespace FlaxEngine.GUI
             _thumbOpacity = isDeltaSlow ? targetOpacity : Mathf.Lerp(_thumbOpacity, targetOpacity, deltaTime * 10.0f);
             bool needUpdate = Mathf.Abs(_thumbOpacity - targetOpacity) > 0.001f;
 
-            // Ensure scroll bar is visible
-            if (Visible)
+            // Ensure scroll bar is visible and smoothing is required
+            if (Visible && Mathf.Abs(_targetValue - _value) > 0.01f)
             {
-                // Value smoothing
-                if (Mathf.Abs(_targetValue - _value) > 0.01f)
+                // Interpolate or not if running slow
+                float value;
+                if (!isDeltaSlow && UseSmoothing)
                 {
-                    // Interpolate or not if running slow
-                    float value;
-                    if (!isDeltaSlow && UseSmoothing)
-                        value = Mathf.Lerp(_value, _targetValue, deltaTime * 20.0f * SmoothingScale);
-                    else
-                        value = _targetValue;
-                    _value = value;
-                    OnValueChanged();
-                    needUpdate = true;
+                    // percentage of scroll from 0 to _scrollChange, ex. 0.5 at _scrollChange / 2
+                    var minScrollChangeRatio = Mathf.Clamp(Mathf.Abs(_targetValue - _startValue) / _scrollChange, 0, 1);
+                        
+                    // shorten the duration if we scrolled less than _scrollChange
+                    var actualDuration = ScrollAnimationDuration * minScrollChangeRatio;
+                    var step = deltaTime / actualDuration;
+
+                    var progress = _scrollAnimationProgress;
+                    progress = Mathf.Clamp(progress + step, 0, 1);
+                            
+                    // https://easings.net/#easeOutSine
+                    var easedProgress = Mathf.Sin((progress * Mathf.Pi) / 2);
+                    value = Mathf.Lerp(_startValue, _targetValue, easedProgress);
+
+                    _scrollAnimationProgress = progress;
                 }
+                else
+                {
+                    value = _targetValue;
+                    _startValue = _targetValue;
+                    _scrollAnimationProgress = 0f;
+                }
+                
+                _value = value;
+                OnValueChanged();
+                needUpdate = true;
             }
 
             // End updating if all animations are done
@@ -371,7 +400,7 @@ namespace FlaxEngine.GUI
                 float mousePosition = _orientation == Orientation.Vertical ? slidePosition.Y : slidePosition.X;
 
                 float percentage = (mousePosition - _mouseOffset - _thumbSize / 2) / (TrackSize - _thumbSize);
-                Value = _minimum + percentage * (_maximum - _minimum);
+                TargetValue = _minimum + percentage * (_maximum - _minimum);
             }
         }
 
@@ -381,7 +410,7 @@ namespace FlaxEngine.GUI
             if (ThumbEnabled)
             {
                 // Scroll
-                Value = _value - delta * _scrollChange;
+                Value = _targetValue - delta * _scrollChange;
             }
             return true;
         }

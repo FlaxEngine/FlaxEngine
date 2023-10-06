@@ -6,11 +6,13 @@
 
 #include "Engine/Core/Config.h"
 #include "Engine/Content/Assets/ModelBase.h"
+#include "Engine/Physics/CollisionData.h"
 #if USE_EDITOR
 #include "Engine/Core/ISerializable.h"
 #include "Engine/Graphics/Models/ModelData.h"
 #include "Engine/Graphics/Models/SkeletonData.h"
 #include "Engine/Animations/AnimationData.h"
+#include "Engine/Content/Assets/MaterialBase.h"
 
 class JsonWriter;
 
@@ -262,6 +264,9 @@ public:
         // If specified, all meshes which name starts with this prefix will be imported as a separate collision data (excluded used for rendering).
         API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         String CollisionMeshesPrefix = TEXT("");
+        // The type of collision that should be generated if has collision prefix specified.
+        API_FIELD(Attributes = "EditorOrder(105), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
+        CollisionDataType CollisionType = CollisionDataType::TriangleMesh;
 
     public: // Transform
 
@@ -322,17 +327,29 @@ public:
         // The target amount of triangles for the generated LOD (based on the higher LOD). Normalized to range 0-1. For instance 0.4 cuts the triangle count to 40%.
         API_FIELD(Attributes="EditorOrder(1130), EditorDisplay(\"Level Of Detail\"), VisibleIf(nameof(ShowGeometry)), Limit(0, 1, 0.001f)")
         float TriangleReduction = 0.5f;
+        // Whether to do a sloppy mesh optimization. This is faster but does not follow the topology of the original mesh.
+        API_FIELD(Attributes="EditorOrder(1140), EditorDisplay(\"Level Of Detail\"), VisibleIf(nameof(ShowGeometry))")
+        bool SloppyOptimization = true;
+        // Only used if Sloppy is false. Target error is an approximate measure of the deviation from the original mesh using distance normalized to [0..1] range (e.g. 1e-2f means that simplifier will try to maintain the error to be below 1% of the mesh extents).
+        API_FIELD(Attributes="EditorOrder(1150), EditorDisplay(\"Level Of Detail\"), VisibleIf(nameof(SloppyOptimization), true), Limit(0.01f, 1, 0.001f)")
+        float LODTargetError = 0.1f;
 
     public: // Materials
 
         // If checked, the importer will create materials for model meshes as specified in the file.
         API_FIELD(Attributes="EditorOrder(400), EditorDisplay(\"Materials\"), VisibleIf(nameof(ShowGeometry))")
         bool ImportMaterials = true;
+        // If checked, the importer will create the model's materials as instances of a base material.
+        API_FIELD(Attributes = "EditorOrder(401), EditorDisplay(\"Materials\"), VisibleIf(nameof(ImportMaterials))")
+        bool ImportMaterialsAsInstances = false;
+        // The material to import the model's materials as an instance of.
+        API_FIELD(Attributes = "EditorOrder(402), EditorDisplay(\"Materials\"), VisibleIf(nameof(ImportMaterialsAsInstances))")
+        AssetReference<MaterialBase> InstanceToImportAs;
         // If checked, the importer will import texture files used by the model and any embedded texture resources.
         API_FIELD(Attributes="EditorOrder(410), EditorDisplay(\"Materials\"), VisibleIf(nameof(ShowGeometry))")
         bool ImportTextures = true;
-        // If checked, the importer will try to restore the model material slots.
-        API_FIELD(Attributes="EditorOrder(420), EditorDisplay(\"Materials\", \"Restore Materials On Reimport\"), VisibleIf(nameof(ShowGeometry))")
+        // If checked, the importer will try to keep the model's current material slots, instead of importing materials from the source file.
+        API_FIELD(Attributes="EditorOrder(420), EditorDisplay(\"Materials\", \"Keep Material Slots on Reimport\"), VisibleIf(nameof(ShowGeometry))")
         bool RestoreMaterialsOnReimport = true;
 
     public: // SDF
@@ -413,6 +430,7 @@ public:
     }
 
 private:
+    static void CalculateBoneOffsetMatrix(const Array<SkeletonNode>& nodes, Matrix& offsetMatrix, int32 nodeIndex);
 #if USE_ASSIMP
     static bool ImportDataAssimp(const char* path, ImportedModelData& data, Options& options, String& errorMsg);
 #endif

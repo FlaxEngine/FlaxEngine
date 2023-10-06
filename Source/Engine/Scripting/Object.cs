@@ -48,7 +48,7 @@ namespace FlaxEngine
             // Construct missing native object if managed objects gets created in managed world
             if (__unmanagedPtr == IntPtr.Zero)
             {
-                Internal_ManagedInstanceCreated(this);
+                Internal_ManagedInstanceCreated(this, FlaxEngine.Interop.NativeInterop.GetTypeHolder(GetType()).managedClassPointer);
                 if (__unmanagedPtr == IntPtr.Zero)
                     throw new Exception($"Failed to create native instance for object of type {GetType().FullName} (assembly: {GetType().Assembly.FullName}).");
             }
@@ -181,6 +181,18 @@ namespace FlaxEngine
 
         /// <summary>
         /// Destroys the specified object and clears the reference variable.
+        /// The object obj will be destroyed immediately.
+        /// If obj is a Script it will be removed from the Actor and deleted.
+        /// If obj is an Actor it will be removed from the Scene and deleted as well as all its Scripts and all children of the Actor.
+        /// </summary>
+        /// <param name="obj">The object to destroy.</param>
+        public static void DestroyNow(Object obj)
+        {
+            Internal_DestroyNow(GetUnmanagedPtr(obj));
+        }
+
+        /// <summary>
+        /// Destroys the specified object and clears the reference variable.
         /// The object obj will be destroyed now or after the time specified in seconds from now.
         /// If obj is a Script it will be removed from the Actor and deleted.
         /// If obj is an Actor it will be removed from the Scene and deleted as well as all its Scripts and all children of the Actor.
@@ -308,13 +320,16 @@ namespace FlaxEngine
         internal static partial Object Internal_Create2(string typeName);
 
         [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_ManagedInstanceCreated", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
-        internal static partial void Internal_ManagedInstanceCreated(Object managedInstance);
+        internal static partial void Internal_ManagedInstanceCreated(Object managedInstance, IntPtr theKlass);
 
         [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_ManagedInstanceDeleted", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial void Internal_ManagedInstanceDeleted(IntPtr nativeInstance);
 
         [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_Destroy", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial void Internal_Destroy(IntPtr obj, float timeLeft);
+
+        [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_DestroyNow", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial void Internal_DestroyNow(IntPtr obj);
 
         [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_GetTypeName", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial string Internal_GetTypeName(IntPtr obj);
