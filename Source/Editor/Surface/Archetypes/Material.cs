@@ -910,10 +910,6 @@ namespace FlaxEditor.Surface.Archetypes
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(150, 20),
                 ConnectionsHints = ConnectionsHint.Vector,
-                DefaultValues = new object[]
-                {
-                    1
-                },
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "value", true, typeof(float), 0),
