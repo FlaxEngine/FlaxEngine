@@ -39,6 +39,7 @@ namespace FlaxEditor.Windows.Assets
             public AnimationGraphPreview(AnimationGraphWindow window)
             : base(true)
             {
+                _camera = new ViewportCamera();
                 _window = window;
                 ShowFloor = true;
             }
@@ -179,7 +180,6 @@ namespace FlaxEditor.Windows.Assets
             // Asset preview
             _preview = new AnimationGraphPreview(this)
             {
-                ViewportCamera = new FPSCamera(),
                 ScaleToFit = false,
                 PlayAnimation = true,
                 Parent = _split2.Panel1

@@ -34,6 +34,7 @@ namespace FlaxEditor.Windows.Assets
             public Preview(AnimationWindow window)
             : base(true)
             {
+                _camera = new ViewportCamera(false);
                 _window = window;
                 ShowFloor = true;
             }
@@ -94,7 +95,6 @@ namespace FlaxEditor.Windows.Assets
                         // Animation preview
                         Window._preview = new Preview(Window)
                         {
-                            ViewportCamera = new FPSCamera(),
                             ScaleToFit = false,
                             AnchorPreset = AnchorPresets.StretchAll,
                             Offsets = Margin.Zero,
@@ -132,7 +132,7 @@ namespace FlaxEditor.Windows.Assets
                     {
                         // Focus model
                         value.WaitForLoaded(500);
-                        Window._preview.ViewportCamera.SetArcBallView(Window._preview.PreviewActor.Sphere);
+                        Window._preview.Camera.SetArcBallView(Window._preview.PreviewActor.Sphere);
                     }
                 }
             }

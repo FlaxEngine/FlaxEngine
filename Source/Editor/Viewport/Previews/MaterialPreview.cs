@@ -391,7 +391,7 @@ namespace FlaxEditor.Viewport.Previews
         }
 
         /// <inheritdoc />
-        public Undo Undo => null;
+        public new Undo Undo => null;
 
         /// <inheritdoc />
         void IVisjectSurfaceOwner.OnSurfaceEditedChanged()

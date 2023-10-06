@@ -960,7 +960,7 @@ namespace FlaxEditor.Modules
             {
                 var actor = node.Actor;
                 var viewport = Editor.Windows.EditWin.Viewport;
-                ((FPSCamera)viewport.ViewportCamera).MoveViewport(actor.Transform);
+                viewport.Camera.SetView(actor.Transform);
             }
         }
 
@@ -973,7 +973,7 @@ namespace FlaxEditor.Modules
                 var viewport = Editor.Windows.EditWin.Viewport;
                 using (new UndoBlock(Undo, actor, "Move to viewport"))
                 {
-                    actor.Position = viewport.ViewPosition;
+                    actor.Position = viewport.Camera.Translation;
                 }
             }
         }
@@ -987,8 +987,8 @@ namespace FlaxEditor.Modules
                 var viewport = Editor.Windows.EditWin.Viewport;
                 using (new UndoBlock(Undo, actor, "Align with viewport"))
                 {
-                    actor.Position = viewport.ViewPosition;
-                    actor.Orientation = viewport.ViewOrientation;
+                    actor.Position = viewport.Camera.Translation;
+                    actor.Orientation = viewport.Camera.Orientation;
                 }
             }
         }
@@ -1018,7 +1018,7 @@ namespace FlaxEditor.Modules
         {
             var projectInfo = Editor.GameProject;
             projectInfo.DefaultScene = JsonSerializer.GetStringID(Level.Scenes[0].ID);
-            projectInfo.DefaultSceneSpawn = Editor.Windows.EditWin.Viewport.ViewRay;
+            projectInfo.DefaultSceneSpawn = Editor.Windows.EditWin.Viewport.Camera.GetViewRay();
             projectInfo.Save();
         }
 

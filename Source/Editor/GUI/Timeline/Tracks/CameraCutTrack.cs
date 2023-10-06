@@ -794,12 +794,12 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                             {
                                 if (memberTrack.MemberName == "Position" && value is Vector3 asPosition)
                                 {
-                                    editWin.Viewport.ViewPosition = asPosition;
+                                    editWin.Viewport.Camera.SetView(asPosition);
                                     hasPositionTrack = true;
                                 }
                                 else if (memberTrack.MemberName == "Orientation" && value is Quaternion asRotation)
                                 {
-                                    editWin.Viewport.ViewOrientation = asRotation;
+                                    editWin.Viewport.Camera.SetView(asRotation);
                                     hasOrientationTrack = true;
                                 }
                             }

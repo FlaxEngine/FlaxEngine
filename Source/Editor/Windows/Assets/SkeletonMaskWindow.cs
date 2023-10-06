@@ -212,7 +212,6 @@ namespace FlaxEditor.Windows.Assets
             // Model preview
             _preview = new AnimatedModelPreview(true)
             {
-                ViewportCamera = new FPSCamera(),
                 ShowNodes = true,
                 Parent = _split.Panel1
             };

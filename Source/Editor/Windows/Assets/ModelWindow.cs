@@ -795,7 +795,6 @@ namespace FlaxEditor.Windows.Assets
             // Model preview
             _preview = new Preview(this)
             {
-                ViewportCamera = new FPSCamera(),
                 ScaleToFit = false,
                 Parent = _split.Panel1
             };
@@ -925,7 +924,7 @@ namespace FlaxEditor.Windows.Assets
         protected override void OnAssetLoaded()
         {
             _refreshOnLODsLoaded = true;
-            _preview.ViewportCamera.SetArcBallView(Asset.GetBox());
+            _preview.Camera.SetArcBallView(Asset.GetBox());
             Editor.TryRestoreImportOptions(ref _importSettings.Settings, Item.Path);
             UpdateEffectsOnAsset();
 

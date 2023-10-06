@@ -347,10 +347,10 @@ namespace FlaxEditor.Viewport.Previews
                 return PreviewActor.ForcedLOD;
 
             // Based on RenderTools::ComputeModelLOD
-            CreateProjectionMatrix(out var projectionMatrix);
+            var projectionMatrix = Camera.ViewMatrix;
             float screenMultiple = 0.5f * Mathf.Max(projectionMatrix.M11, projectionMatrix.M22);
             var sphere = PreviewActor.Sphere;
-            var viewOrigin = ViewPosition;
+            var viewOrigin = Camera.Translation;
             var distSqr = Vector3.DistanceSquared(ref sphere.Center, ref viewOrigin);
             var screenRadiusSquared = Mathf.Square(screenMultiple * sphere.Radius) / Mathf.Max(1.0f, distSqr);
             screenSize = Mathf.Sqrt((float)screenRadiusSquared) * 2.0f;
@@ -419,7 +419,7 @@ namespace FlaxEditor.Viewport.Previews
         /// </summary>
         public void ResetCamera()
         {
-            ViewportCamera.SetArcBallView(_previewModel.Box);
+            Camera.SetArcBallView(_previewModel.Box);
         }
 
         /// <inheritdoc />

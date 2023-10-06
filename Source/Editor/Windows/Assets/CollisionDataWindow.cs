@@ -197,7 +197,6 @@ namespace FlaxEditor.Windows.Assets
             // Model preview
             _preview = new ModelBasePreview(true)
             {
-                ViewportCamera = new FPSCamera(),
                 Parent = _split.Panel1
             };
             _preview.Task.ViewFlags &= ~ViewFlags.Sky & ~ViewFlags.Bloom;

@@ -1133,7 +1133,6 @@ namespace FlaxEditor.Windows.Assets
             // Model preview
             _preview = new Preview(this)
             {
-                ViewportCamera = new FPSCamera(),
                 ScaleToFit = false,
                 Parent = _split.Panel1
             };
@@ -1328,7 +1327,7 @@ namespace FlaxEditor.Windows.Assets
         protected override void OnAssetLoaded()
         {
             _refreshOnLODsLoaded = true;
-            _preview.ViewportCamera.SetArcBallView(_preview.GetBounds());
+            _preview.Camera.SetArcBallView(_preview.GetBounds());
             UpdateEffectsOnAsset();
 
             // TODO: disable streaming for this model

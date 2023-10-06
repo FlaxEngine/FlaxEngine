@@ -80,7 +80,6 @@ namespace FlaxEditor.Viewport
             _window = window;
             _window.SelectionChanged += OnSelectionChanged;
             Undo = window.Undo;
-            ViewportCamera = new FPSCamera();
             _dragAssets = new DragAssets(ValidateDragItem);
             ShowDebugDraw = true;
             ShowEditorPrimitives = true;
@@ -302,54 +301,9 @@ namespace FlaxEditor.Viewport
         /// </summary>
         public void ShowSelectedActors()
         {
-            var orient = Viewport.ViewOrientation;
-            ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orient);
+            var orient = Camera.Orientation;
+            Camera.ShowActors(TransformGizmo.SelectedParents, ref orient);
         }
-
-        /// <inheritdoc />
-        public GizmosCollection Gizmos { get; } = new GizmosCollection();
-
-        /// <inheritdoc />
-        public SceneRenderTask RenderTask => Task;
-
-        /// <inheritdoc />
-        public float ViewFarPlane => FarPlane;
-
-        /// <inheritdoc />
-        public bool IsLeftMouseButtonDown => _input.IsMouseLeftDown;
-
-        /// <inheritdoc />
-        public bool IsRightMouseButtonDown => _input.IsMouseRightDown;
-
-        /// <inheritdoc />
-        public bool IsAltKeyDown => _input.IsAltDown;
-
-        /// <inheritdoc />
-        public bool IsControlDown => _input.IsControlDown;
-
-        /// <inheritdoc />
-        public bool SnapToGround => false;
-
-        /// <inheritdoc />
-        public Float2 MouseDelta => _mouseDelta * 1000;
-
-        /// <inheritdoc />
-        public bool UseSnapping => Root.GetKey(KeyboardKeys.Control);
-
-        /// <inheritdoc />
-        public bool UseDuplicate => Root.GetKey(KeyboardKeys.Shift);
-
-        /// <inheritdoc />
-        public Undo Undo { get; }
-
-        /// <inheritdoc />
-        public RootNode SceneGraphRoot => _window.Graph.Root;
-
-        /// <inheritdoc />
-        public EditorViewport Viewport => this;
-
-        /// <inheritdoc />
-        protected override bool IsControllingMouse => Gizmos.Active?.IsControllingMouse ?? false;
 
         /// <inheritdoc />
         protected override void AddUpdateCallbacks(RootControl root)
@@ -587,8 +541,8 @@ namespace FlaxEditor.Viewport
         protected override void OnLeftMouseButtonUp()
         {
             // Skip if was controlling mouse or mouse is not over the area
-            if (_prevInput.IsControllingMouse || !Bounds.Contains(ref _viewMousePos))
-                return;
+            //if (IsControllingMouse || !Bounds.Contains(ref _viewMousePos)) //[todo] do the fix for this
+            //    return;
 
             if (TransformGizmo.IsActive)
             {
@@ -604,7 +558,7 @@ namespace FlaxEditor.Viewport
 
             // Get mouse ray and try to hit any object
             var ray = MouseRay;
-            var view = new Ray(ViewPosition, ViewDirection);
+            var view = new Ray(Camera.Translation, Camera.Forward);
             var hit = _window.Graph.Root.RayCast(ref ray, ref view, out _, SceneGraphNode.RayCastData.FlagTypes.SkipColliders);
 
             // Update selection
@@ -713,7 +667,7 @@ namespace FlaxEditor.Viewport
             var location = hitLocation;
 
             // Apply grid snapping if enabled
-            if (UseSnapping || TransformGizmo.TranslationSnapEnable)
+            if (TransformGizmo.TranslationSnapEnable)
             {
                 float snapValue = TransformGizmo.TranslationSnapValue;
                 location = new Vector3(
@@ -734,7 +688,7 @@ namespace FlaxEditor.Viewport
                     if (hit is StaticModelNode staticModelNode)
                     {
                         var staticModel = (StaticModel)staticModelNode.Actor;
-                        var ray = ConvertMouseToRay(ref location);
+                        var ray = ConvertMouseToRay(location);
                         if (staticModel.IntersectsEntry(ref ray, out _, out _, out var entryIndex))
                         {
                             var material = FlaxEngine.Content.LoadAsync<MaterialBase>(item.ID);
@@ -776,7 +730,7 @@ namespace FlaxEditor.Viewport
         /// </summary>
         public void FocusSelection()
         {
-            var orientation = ViewOrientation;
+            var orientation = Camera.Orientation;
             FocusSelection(ref orientation);
         }
 
@@ -791,9 +745,9 @@ namespace FlaxEditor.Viewport
 
             var gizmoBounds = Gizmos.Active.FocusBounds;
             if (gizmoBounds != BoundingSphere.Empty)
-                ((FPSCamera)ViewportCamera).ShowSphere(ref gizmoBounds, ref orientation);
+                Camera.ShowSphere(ref gizmoBounds, ref orientation);
             else
-                ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orientation);
+                Camera.ShowActors(TransformGizmo.SelectedParents, ref orientation);
         }
 
         /// <inheritdoc />
@@ -813,13 +767,13 @@ namespace FlaxEditor.Viewport
                 return result;
 
             // Check if drag sth
-            Vector3 hitLocation = ViewPosition;
+            Vector3 hitLocation = Camera.Translation;
             SceneGraphNode hit = null;
             if (_dragHandlers.HasValidDrag)
             {
                 // Get mouse ray and try to hit any object
-                var ray = ConvertMouseToRay(ref location);
-                var view = new Ray(ViewPosition, ViewDirection);
+                var ray = ConvertMouseToRay(location);
+                var view = new Ray(Camera.Translation, Camera.Forward);
                 hit = _window.Graph.Root.RayCast(ref ray, ref view, out var closest, SceneGraphNode.RayCastData.FlagTypes.SkipColliders);
                 if (hit != null)
                 {
@@ -829,7 +783,7 @@ namespace FlaxEditor.Viewport
                 else
                 {
                     // Use area in front of the viewport
-                    hitLocation = ViewPosition + ViewDirection * 100;
+                    hitLocation = Camera.Translation + Camera.Forward * 100;
                 }
             }
 

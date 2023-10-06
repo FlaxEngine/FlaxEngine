@@ -170,7 +170,7 @@ namespace FlaxEditor.Viewport.Previews
         /// </summary>
         /// <param name="useWidgets">if set to <c>true</c> use widgets.</param>
         public ParticleSystemPreview(bool useWidgets)
-        : base(useWidgets, new FPSCamera())
+        : base(useWidgets, new ViewportCamera())
         {
             // Setup preview scene
             _previewEffect = new ParticleEffect
@@ -270,7 +270,7 @@ namespace FlaxEditor.Viewport.Previews
             switch (key)
             {
             case KeyboardKeys.F:
-                ViewportCamera.SetArcBallView(_previewEffect.Box);
+                Camera.SetArcBallView(_previewEffect.Box);
                 return true;
             case KeyboardKeys.Spacebar:
                 PlaySimulation = !PlaySimulation;

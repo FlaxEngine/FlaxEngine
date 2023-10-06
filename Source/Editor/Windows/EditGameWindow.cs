@@ -145,8 +145,6 @@ namespace FlaxEditor.Windows
             Viewport = new MainEditorGizmoViewport(editor)
             {
                 Parent = this,
-                NearPlane = 8.0f,
-                FarPlane = 20000.0f
             };
             Viewport.Task.ViewFlags = ViewFlags.DefaultEditor;
 
@@ -189,7 +187,7 @@ namespace FlaxEditor.Windows
             _pilotActor = actor;
             _pilotStart = actor.Transform;
             _pilotBounds = actor.BoxWithChildren;
-            Viewport.ViewTransform = _pilotStart;
+            Viewport.Camera.SetView(_pilotStart);
             if (_pilotWidget == null)
             {
                 var container = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperLeft)
@@ -399,9 +397,7 @@ namespace FlaxEditor.Windows
 
             if (_pilotActor)
             {
-                var transform = Viewport.ViewTransform;
-                transform.Scale = _pilotActor.Scale;
-                _pilotActor.Transform = transform;
+                _pilotActor.Transform = new Transform(Viewport.Camera.Translation,Viewport.Camera.Orientation,_pilotActor.Scale);
             }
         }
 
@@ -424,12 +420,7 @@ namespace FlaxEditor.Windows
             writer.WriteAttributeString("GridEnabled", Viewport.Grid.Enabled.ToString());
             writer.WriteAttributeString("ShowFpsCounter", Viewport.ShowFpsCounter.ToString());
             writer.WriteAttributeString("ShowNavigation", Viewport.ShowNavigation.ToString());
-            writer.WriteAttributeString("NearPlane", Viewport.NearPlane.ToString());
-            writer.WriteAttributeString("FarPlane", Viewport.FarPlane.ToString());
-            writer.WriteAttributeString("FieldOfView", Viewport.FieldOfView.ToString());
-            writer.WriteAttributeString("MovementSpeed", Viewport.MovementSpeed.ToString());
-            writer.WriteAttributeString("OrthographicScale", Viewport.OrthographicScale.ToString());
-            writer.WriteAttributeString("UseOrthographicProjection", Viewport.UseOrthographicProjection.ToString());
+            Viewport.Camera.Serialize(ref writer);
             writer.WriteAttributeString("ViewFlags", ((ulong)Viewport.Task.View.Flags).ToString());
         }
 
@@ -445,23 +436,7 @@ namespace FlaxEditor.Windows
             if (bool.TryParse(node.GetAttribute("ShowNavigation"), out value1))
                 Viewport.ShowNavigation = value1;
 
-            if (float.TryParse(node.GetAttribute("NearPlane"), out float value2))
-                Viewport.NearPlane = value2;
-
-            if (float.TryParse(node.GetAttribute("FarPlane"), out value2))
-                Viewport.FarPlane = value2;
-
-            if (float.TryParse(node.GetAttribute("FieldOfView"), out value2))
-                Viewport.FieldOfView = value2;
-
-            if (float.TryParse(node.GetAttribute("MovementSpeed"), out value2))
-                Viewport.MovementSpeed = value2;
-
-            if (float.TryParse(node.GetAttribute("OrthographicScale"), out value2))
-                Viewport.OrthographicScale = value2;
-
-            if (bool.TryParse(node.GetAttribute("UseOrthographicProjection"), out value1))
-                Viewport.UseOrthographicProjection = value1;
+            Viewport.Camera.Deserialize(ref node);
 
             if (ulong.TryParse(node.GetAttribute("ViewFlags"), out ulong value3))
                 Viewport.Task.ViewFlags = (ViewFlags)value3;
@@ -475,12 +450,12 @@ namespace FlaxEditor.Windows
         public override void OnLayoutDeserialize()
         {
             Viewport.Grid.Enabled = true;
-            Viewport.NearPlane = 8.0f;
-            Viewport.FarPlane = 20000.0f;
-            Viewport.FieldOfView = 60.0f;
-            Viewport.MovementSpeed = 1.0f;
-            Viewport.OrthographicScale = 1.0f;
-            Viewport.UseOrthographicProjection = false;
+            Viewport.Camera.NearPlane = 8.0f;
+            Viewport.Camera.FarPlane = 20000.0f;
+            Viewport.Camera.FieldOfView = 60.0f;
+            Viewport.Camera.MovementSpeed = 1.0f;
+            Viewport.Camera.SetOrthographicScale(1.0f);
+            Viewport.Camera.UseOrthographicProjection = false;
         }
     }
 }

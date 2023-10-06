@@ -146,7 +146,7 @@ namespace FlaxEditor.Viewport.Previews
         /// <param name="useWidgets">If set to <c>true</c> use widgets for viewport, otherwise hide them.</param>
         /// <param name="orbitRadius">The initial orbit radius.</param>
         protected AssetPreview(bool useWidgets, float orbitRadius = 50.0f)
-        : this(useWidgets, new ArcBallCamera(Vector3.Zero, orbitRadius))
+        : this(useWidgets, new ViewportCamera() { OrbitRadius = orbitRadius })
         {
         }
 
@@ -160,11 +160,6 @@ namespace FlaxEditor.Viewport.Previews
         {
             Task.ViewFlags = ViewFlags.DefaultAssetPreview;
             Task.AllowGlobalCustomPostFx = false;
-
-            Real orbitRadius = 200.0f;
-            if (camera is ArcBallCamera arcBallCamera)
-                orbitRadius = arcBallCamera.OrbitRadius;
-            camera.SetArcBallView(new Quaternion(-0.08f, -0.92f, 0.31f, -0.23f), Vector3.Zero, orbitRadius);
 
             if (useWidgets)
             {
@@ -212,6 +207,9 @@ namespace FlaxEditor.Viewport.Previews
             Task.AddCustomActor(Sky);
             Task.AddCustomActor(SkyLight);
             Task.AddCustomActor(PostFxVolume);
+
+            Real orbitRadius = 50.0f;
+            camera.SetArcBallView(new Quaternion(-0.08f, -0.92f, 0.31f, -0.23f), Vector3.Zero, orbitRadius);
         }
 
         private void OnPostRender(GPUContext context, ref RenderContext renderContext)

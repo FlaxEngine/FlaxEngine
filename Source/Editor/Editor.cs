@@ -58,7 +58,6 @@ namespace FlaxEditor
         private Guid _startupSceneCmdLine;
 
         private const string ProjectDataLastScene = "LastScene";
-        private const string ProjectDataLastSceneSpawn = "LastSceneSpawn";
 
         /// <summary>
         /// Gets a value indicating whether Flax Engine is the best in the world.
@@ -247,6 +246,11 @@ namespace FlaxEditor
         /// Occurs when play mode ends (after leaving play mode).
         /// </summary>
         public event Action PlayModeEnd;
+
+        /// <summary>
+        /// Occurs when editor updates.
+        /// </summary>
+        public event Action<float> OnUpdate;
 
         internal Editor()
         {
@@ -459,7 +463,7 @@ namespace FlaxEditor
                         Scene.OpenScene(defaultSceneId);
 
                         // Use spawn point
-                        Windows.EditWin.Viewport.ViewRay = GameProject.DefaultSceneSpawn;
+                        Windows.EditWin.Viewport.Camera.SetView(GameProject.DefaultSceneSpawn);
                     }
                     break;
                 }
@@ -480,10 +484,6 @@ namespace FlaxEditor
                             else
                                 Level.LoadSceneAsync(sceneId);
                         }
-
-                        // Restore view
-                        if (ProjectCache.TryGetCustomData(ProjectDataLastSceneSpawn, out var lastSceneSpawnName))
-                            Windows.EditWin.Viewport.ViewRay = JsonSerializer.Deserialize<Ray>(lastSceneSpawnName);
                     }
                     break;
                 }
@@ -514,6 +514,8 @@ namespace FlaxEditor
                 {
                     _modules[i].OnUpdate();
                 }
+                if (OnUpdate != null)
+                    OnUpdate(Time.UnscaledDeltaTime);
             }
             catch (Exception ex)
             {
@@ -707,9 +709,7 @@ namespace FlaxEditor
                 var lastSceneIds = new Guid[lastScenes.Length];
                 for (int i = 0; i < lastScenes.Length; i++)
                     lastSceneIds[i] = lastScenes[i].ID;
-                var lastSceneSpawn = Windows.EditWin.Viewport.ViewRay;
                 ProjectCache.SetCustomData(ProjectDataLastScene, JsonSerializer.Serialize(lastSceneIds));
-                ProjectCache.SetCustomData(ProjectDataLastSceneSpawn, JsonSerializer.Serialize(lastSceneSpawn));
             }
 
             // Cleanup

@@ -410,7 +410,8 @@ namespace FlaxEditor.SceneGraph.Actors
 
         internal static Real NodeSizeByDistance(Vector3 nodePosition, Real nodeSize)
         {
-            var cameraTransform = Editor.Instance.Windows.EditWin.Viewport.ViewportCamera.Viewport.ViewTransform;
+            var c = Editor.Instance.Windows.EditWin.Viewport.Camera;
+            var cameraTransform = new Transform(c.Translation,c.Orientation);
             var distance = Vector3.Distance(cameraTransform.Translation, nodePosition) / 100;
             return distance * nodeSize;
         }

@@ -7,6 +7,8 @@ using Real = System.Single;
 #endif
 
 using FlaxEngine;
+using System.Collections.Generic;
+using FlaxEditor.SceneGraph;
 
 namespace FlaxEditor.Gizmo
 {
@@ -15,125 +17,100 @@ namespace FlaxEditor.Gizmo
         /// <summary>
         /// Gets the selection center point (in world space).
         /// </summary>
-        /// <returns>Center point or <see cref="Vector3.Zero"/> if no object selected.</returns>
+        /// <returns>Center point or <see cref="F:FlaxEngine.Vector3.Zero" /> if no object selected.</returns>
+
         public Vector3 GetSelectionCenter()
         {
             int count = SelectionCount;
-
-            // Check if there is no objects selected at all
-            if (count == 0)
-                return Vector3.Zero;
-
-            // Get center point
-            Vector3 center = Vector3.Zero;
-            for (int i = 0; i < count; i++)
-                center += GetSelectedObject(i).Translation;
-
-            // Return arithmetic average or whatever it means
-            return center / count;
+            bool flag = count == 0;
+            Vector3 result;
+            if (flag)
+            {
+                result = Vector3.Zero;
+            }
+            else
+            {
+                Vector3 center = Vector3.Zero;
+                for (int i = 0; i < count; i++)
+                {
+                    center += GetSelectedObject(i).Translation;
+                }
+                result = center / (float)count;
+            }
+            return result;
         }
 
-        private bool IntersectsRotateCircle(Vector3 normal, ref Ray ray, out Real distance)
+
+        private bool IntersectsRotateCircle(Vector3 normal, float min, float max, ref Ray ray, out float distance)
         {
-            var plane = new Plane(Vector3.Zero, normal);
-
-            if (!plane.Intersects(ref ray, out distance))
-                return false;
-            Vector3 hitPoint = ray.Position + ray.Direction * distance;
-
-            Real distanceNormalized = hitPoint.Length / RotateRadiusRaw;
-            return Mathf.IsInRange(distanceNormalized, 0.9f, 1.1f);
+            Plane plane = new Plane(Vector3.Zero, normal);
+            bool flag = !plane.Intersects(ref ray, out distance);
+            bool result;
+            if (flag)
+            {
+                result = false;
+            }
+            else
+            {
+                float distanceNormalized = (ray.Position + ray.Direction * distance).Length;
+                result = Mathf.IsInRange(distanceNormalized, min, max);
+            }
+            return result;
         }
 
         private void SelectAxis()
         {
-            // Get mouse ray
             Ray ray = Owner.MouseRay;
 
             // Transform ray into local space of the gizmo
             Ray localRay;
-            _gizmoWorld.WorldToLocalVector(ref ray.Direction, out localRay.Direction);
-            _gizmoWorld.WorldToLocal(ref ray.Position, out localRay.Position);
+            WorldTransform.WorldToLocalVector(ref ray.Direction, out localRay.Direction);
+            WorldTransform.WorldToLocal(ref ray.Position, out localRay.Position);
 
             // Find gizmo collisions with mouse
             Real closestIntersection = Real.MaxValue;
             Real intersection;
+
+            const float RotateCircleAxisMin = 40 - 2;
+            const float RotateCircleAxisMax = 40 + 2;
+
+            float CenterRotateCircleMin = 0;
+            float CenterRotateCircleMax = 10;
+
             _activeAxis = Axis.None;
-            switch (_activeMode)
+            if (_activeMode == Mode.Rotate)
             {
-            case Mode.Translate:
-            {
-                // Axis boxes collision
-                if (XAxisBox.Intersects(ref localRay, out intersection) && intersection < closestIntersection)
+                CenterRotateCircleMin = RotateCircleAxisMax;
+                CenterRotateCircleMax = 50;
+                // Circles
+                if (IntersectsRotateCircle(Vector3.UnitX, RotateCircleAxisMin, RotateCircleAxisMax, ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.X;
                     closestIntersection = intersection;
                 }
-
-                if (YAxisBox.Intersects(ref localRay, out intersection) && intersection < closestIntersection)
+                if (IntersectsRotateCircle(Vector3.UnitY, RotateCircleAxisMin, RotateCircleAxisMax, ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.Y;
                     closestIntersection = intersection;
                 }
-
-                if (ZAxisBox.Intersects(ref localRay, out intersection) && intersection < closestIntersection)
+                if (IntersectsRotateCircle(Vector3.UnitZ, RotateCircleAxisMin, RotateCircleAxisMax, ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.Z;
                     closestIntersection = intersection;
                 }
-
-                // Quad planes collision
-                if (closestIntersection >= float.MaxValue)
-                    closestIntersection = float.MinValue;
-                if (XYBox.Intersects(ref localRay, out intersection) && intersection > closestIntersection)
-                {
-                    _activeAxis = Axis.XY;
-                    closestIntersection = intersection;
-                }
-
-                if (XZBox.Intersects(ref localRay, out intersection) && intersection > closestIntersection)
-                {
-                    _activeAxis = Axis.ZX;
-                    closestIntersection = intersection;
-                }
-                if (YZBox.Intersects(ref localRay, out intersection) && intersection > closestIntersection)
-                {
-                    _activeAxis = Axis.YZ;
-                    closestIntersection = intersection;
-                }
-
-                /*// Center
-                if (CenterBoxRaw.Intersects(ref localRay, out intersection) && intersection > closestIntersection)
+                if (IntersectsRotateCircle(Center.Forward, 0, CenterRotateCircleMin, ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.Center;
+                }
+                else if (IntersectsRotateCircle(Center.Forward, CenterRotateCircleMin, CenterRotateCircleMax, ref localRay, out intersection) && intersection < closestIntersection)
+                    {
+                        _activeAxis = Axis.View;
                     closestIntersection = intersection;
-                }*/
-
-                break;
+                }
             }
-            case Mode.Rotate:
+            else
             {
-                // Circles
-                if (IntersectsRotateCircle(Vector3.UnitX, ref localRay, out intersection) && intersection < closestIntersection)
-                {
-                    _activeAxis = Axis.X;
-                    closestIntersection = intersection;
-                }
-                if (IntersectsRotateCircle(Vector3.UnitY, ref localRay, out intersection) && intersection < closestIntersection)
-                {
-                    _activeAxis = Axis.Y;
-                    closestIntersection = intersection;
-                }
-                if (IntersectsRotateCircle(Vector3.UnitZ, ref localRay, out intersection) && intersection < closestIntersection)
-                {
-                    _activeAxis = Axis.Z;
-                    closestIntersection = intersection;
-                }
 
-                break;
-            }
-            case Mode.Scale:
-            {
                 // Boxes collision
                 if (XAxisBox.Intersects(ref localRay, out intersection) && intersection < closestIntersection)
                 {
@@ -170,17 +147,17 @@ namespace FlaxEditor.Gizmo
                     _activeAxis = Axis.YZ;
                     closestIntersection = intersection;
                 }
-
-                /*// Center
-                if (CenterBoxRaw.Intersects(ref localRay, out intersection) && intersection < closestIntersection)
+                if (IntersectsRotateCircle(RotCenter.Forward, CenterRotateCircleMin, CenterRotateCircleMax, ref localRay, out intersection) && intersection < closestIntersection)
                 {
-                    _activeAxis = Axis.Center;
-                    closestIntersection = intersection;
-                }*/
-
-                break;
+                    _activeAxis = Axis.View;
+                }
             }
-            }
+        }
+        /// <inheritdoc/>>
+        public override void OnSelectionChanged(List<SceneGraphNode> newSelection)
+        {
+            Debug.Log("NewSelection");
+            base.OnSelectionChanged(newSelection);
         }
     }
 }

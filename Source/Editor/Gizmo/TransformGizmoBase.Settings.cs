@@ -7,40 +7,36 @@ namespace FlaxEditor.Gizmo
 {
     public partial class TransformGizmoBase
     {
-        /// <summary>
-        /// Scale of the gizmo itself
-        /// </summary>
-        private const float GizmoScaleFactor = 24;
 
         /// <summary>
         /// The length of each axis (outwards)
         /// </summary>
-        private const float AxisLength = 3.5f;
+        private const float AxisLength = 47.5f;
 
         /// <summary>
         /// Offset to move axis away from center
         /// </summary>
-        private const float AxisOffset = 0.8f;
+        private const float AxisOffset = 10f;
 
         /// <summary>
         /// How thick the axis should be
         /// </summary>
-        private const float AxisThickness = 0.3f;
+        private const float AxisThickness = 3f;
 
         /// <summary>
         /// Center box scale
         /// </summary>
-        private const float CenterBoxScale = 0.8f;
+        private const float CenterBoxScale = 8f;
 
         /// <summary>
         /// The inner minimum of the multiscale
         /// </summary>
-        private const float InnerExtend = AxisOffset + 0.5f;
+        private const float InnerExtend = 15f;
 
         /// <summary>
         /// The outer maximum of the multiscale
         /// </summary>
-        private const float OuterExtend = AxisOffset * 3.5f;
+        private const float OuterExtend = 25f;
 
         // Cube with the size AxisThickness, then moves it along the axis (AxisThickness) and finally makes it really long (AxisLength)
         private BoundingBox XAxisBox = new BoundingBox(new Vector3(-AxisThickness), new Vector3(AxisThickness)).MakeOffsetted(AxisOffset * Vector3.UnitX).Merge(AxisLength * Vector3.UnitX);
@@ -52,8 +48,6 @@ namespace FlaxEditor.Gizmo
         private BoundingBox YZBox = new BoundingBox(new Vector3(0, InnerExtend, InnerExtend), new Vector3(0, OuterExtend, OuterExtend));
 
         private BoundingBox CenterBoxRaw = new BoundingBox(new Vector3(-0.5f * CenterBoxScale), new Vector3(0.5f * CenterBoxScale));
-        private OrientedBoundingBox CenterBox => new OrientedBoundingBox(CenterBoxRaw) * _gizmoWorld;
-        private const float RotateRadiusRaw = 4.0f;
 
         private Mode _activeMode = Mode.Translate;
         private Axis _activeAxis = Axis.None;
@@ -78,34 +72,49 @@ namespace FlaxEditor.Gizmo
         /// <summary>
         /// Translation snap value
         /// </summary>
-        public float TranslationSnapValue = 10;
+        public float TranslationSnapValue = 10f;
 
         /// <summary>
         /// Rotation snap value
         /// </summary>
-        public float RotationSnapValue = 15;
+        public float RotationSnapValue = 15f;
 
         /// <summary>
         /// Scale snap value
         /// </summary>
-        public float ScaleSnapValue = 1.0f;
+        public float ScaleSnapValue = 1f;
 
         /// <summary>
         /// Gets the current pivot type.
         /// </summary>
-        public PivotType ActivePivot => _activePivotType;
+        public PivotType ActivePivot
+        {
+            get
+            {
+                return _activePivotType;
+            }
+        }
 
         /// <summary>
         /// Gets the current axis type.
         /// </summary>
-        public Axis ActiveAxis => _activeAxis;
+        public Axis ActiveAxis
+        {
+            get
+            {
+                return _activeAxis;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the current gizmo mode.
         /// </summary>
         public Mode ActiveMode
         {
-            get => _activeMode;
+            get
+            {
+                return _activeMode;
+            }
             set
             {
                 if (_activeMode != value)
@@ -117,16 +126,14 @@ namespace FlaxEditor.Gizmo
         }
 
         /// <summary>
-        /// Event fired when active gizmo mode gets changed.
-        /// </summary>
-        public Action ModeChanged;
-
-        /// <summary>
         /// Gets or sets the current gizmo transform space.
         /// </summary>
         public TransformSpace ActiveTransformSpace
         {
-            get => _activeTransformSpace;
+            get
+            {
+                return _activeTransformSpace;
+            }
             set
             {
                 if (_activeTransformSpace != value)
@@ -138,6 +145,11 @@ namespace FlaxEditor.Gizmo
         }
 
         /// <summary>
+        /// Event fired when active gizmo mode gets changed.
+        /// </summary>
+        public Action ModeChanged;
+
+        /// <summary>
         /// Event fired when active transform space gets changed.
         /// </summary>
         public Action TransformSpaceChanged;
@@ -147,7 +159,7 @@ namespace FlaxEditor.Gizmo
         /// </summary>
         public void ToggleTransformSpace()
         {
-            ActiveTransformSpace = _activeTransformSpace == TransformSpace.World ? TransformSpace.Local : TransformSpace.World;
+            ActiveTransformSpace = ((_activeTransformSpace == TransformSpace.World) ? TransformSpace.Local : TransformSpace.World);
         }
     }
 }

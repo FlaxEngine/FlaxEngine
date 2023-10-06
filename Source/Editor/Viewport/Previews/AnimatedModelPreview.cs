@@ -407,7 +407,7 @@ namespace FlaxEditor.Viewport.Previews
         /// </summary>
         public void ResetCamera()
         {
-            ViewportCamera.SetArcBallView(_previewModel.Box);
+            Camera.SetArcBallView(_previewModel.Box);
         }
 
         /// <inheritdoc />

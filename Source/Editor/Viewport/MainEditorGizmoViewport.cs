@@ -19,10 +19,10 @@ using Object = FlaxEngine.Object;
 namespace FlaxEditor.Viewport
 {
     /// <summary>
-    /// Main editor gizmo viewport used by the <see cref="EditGameWindow"/>.
+    /// Main editor viewport used by the <see cref="EditGameWindow"/>.
     /// </summary>
-    /// <seealso cref="FlaxEditor.Viewport.EditorGizmoViewport" />
-    public partial class MainEditorGizmoViewport : EditorGizmoViewport, IEditorPrimitivesOwner, IGizmoOwner
+    /// <seealso cref="FlaxEditor.Viewport.EditorViewport" />
+    public partial class MainEditorGizmoViewport : EditorViewport, IEditorPrimitivesOwner
     {
         private readonly Editor _editor;
 
@@ -190,7 +190,7 @@ namespace FlaxEditor.Viewport
         /// </summary>
         /// <param name="editor">Editor instance.</param>
         public MainEditorGizmoViewport(Editor editor)
-        : base(Object.New<SceneRenderTask>(), editor.Undo, editor.Scene.Root)
+        : base(Object.New<SceneRenderTask>(),new ViewportCamera(true),true, editor.Undo, editor.Scene.Root)
         {
             _editor = editor;
             _dragAssets = new DragAssets<DragDropEventArgs>(ValidateDragItem);
@@ -397,12 +397,10 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.RotateSelection, RotateSelection);
             InputActions.Add(options => options.Delete, _editor.SceneEditing.Delete);
         }
-
-        /// <inheritdoc />
-        public override void Update(float deltaTime)
+        /// <inheritdoc/>
+        protected override void OnEditorViewportUpdate(float deltaTime)
         {
-            base.Update(deltaTime);
-
+            base.OnEditorViewportUpdate(deltaTime);
             var selection = TransformGizmo.SelectedParents;
             var requestUnlockFocus = FlaxEngine.Input.Mouse.GetButtonDown(MouseButton.Right) || FlaxEngine.Input.Mouse.GetButtonDown(MouseButton.Left);
             if (TransformGizmo.SelectedParents.Count == 0 || (requestUnlockFocus && ContainsFocus))
@@ -420,12 +418,12 @@ namespace FlaxEditor.Viewport
 
                 if (ContainsFocus)
                 {
-                    var viewportFocusDistance = Vector3.Distance(ViewPosition, selectionBounds.Center) / 10f;
+                    var viewportFocusDistance = Vector3.Distance(Camera.Translation, selectionBounds.Center) / 10f;
                     _lockedFocusOffset -= FlaxEngine.Input.Mouse.ScrollDelta * viewportFocusDistance;
                 }
 
                 var focusDistance = Mathf.Max(selectionBounds.Radius * 2d, 100d);
-                ViewPosition = selectionBounds.Center + (-ViewDirection * (focusDistance + _lockedFocusOffset));
+                Camera.SetView(selectionBounds.Center + (-Camera.Forward * (focusDistance + _lockedFocusOffset)));
             }
         }
 
@@ -461,12 +459,12 @@ namespace FlaxEditor.Viewport
             {
                 StaticFlags = StaticFlags.None,
                 Name = Utilities.Utils.IncrementNameNumber("Camera", x => parent.GetChild(x) == null),
-                Transform = ViewTransform,
-                NearPlane = NearPlane,
-                FarPlane = FarPlane,
-                OrthographicScale = OrthographicScale,
-                UsePerspective = !UseOrthographicProjection,
-                FieldOfView = FieldOfView
+                Transform = new Transform (Camera.Translation,Camera.Orientation),
+                NearPlane = Camera.NearPlane,
+                FarPlane = Camera.FarPlane,
+                OrthographicScale = Camera.OrthographicScale,
+                UsePerspective = !Camera.UseOrthographicProjection,
+                FieldOfView = Camera.FieldOfView
             };
 
             // Spawn
@@ -787,7 +785,7 @@ namespace FlaxEditor.Viewport
         /// </summary>
         public void FocusSelection()
         {
-            var orientation = ViewOrientation;
+            var orientation = Camera.Orientation;
             FocusSelection(ref orientation);
         }
 
@@ -819,9 +817,9 @@ namespace FlaxEditor.Viewport
 
             var gizmoBounds = Gizmos.Active.FocusBounds;
             if (gizmoBounds != BoundingSphere.Empty)
-                ((FPSCamera)ViewportCamera).ShowSphere(ref gizmoBounds, ref orientation);
+                Camera.ShowSphere(ref gizmoBounds, ref orientation);
             else
-                ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orientation);
+                Camera.ShowActors(TransformGizmo.SelectedParents, ref orientation);
         }
 
         /// <summary>
@@ -891,8 +889,8 @@ namespace FlaxEditor.Viewport
         protected override void OnLeftMouseButtonUp()
         {
             // Skip if was controlling mouse or mouse is not over the area
-            if (_prevInput.IsControllingMouse || !Bounds.Contains(ref _viewMousePos))
-                return;
+            //if (_prevInput.IsControllingMouse || !Bounds.Contains(ref _viewMousePos)) [todo] do the fix
+            //    return;
 
             // Try to pick something with the current gizmo
             Gizmos.Active?.Pick();
@@ -906,8 +904,8 @@ namespace FlaxEditor.Viewport
         private void GetHitLocation(ref Float2 location, out SceneGraphNode hit, out Vector3 hitLocation, out Vector3 hitNormal)
         {
             // Get mouse ray and try to hit any object
-            var ray = ConvertMouseToRay(ref location);
-            var view = new Ray(ViewPosition, ViewDirection);
+            var ray = ConvertMouseToRay(location);
+            var view = new Ray(Camera.Translation, Camera.Forward);
             var gridPlane = new Plane(Vector3.Zero, Vector3.Up);
             var flags = SceneGraphNode.RayCastData.FlagTypes.SkipColliders | SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives;
             hit = Editor.Instance.Scene.Root.RayCast(ref ray, ref view, out var closest, out var normal, flags);
@@ -926,7 +924,7 @@ namespace FlaxEditor.Viewport
             else
             {
                 // Use area in front of the viewport
-                hitLocation = ViewPosition + ViewDirection * 100;
+                hitLocation = Camera.Translation + Camera.Forward * 100;
                 hitNormal = Vector3.Up;
             }
         }
@@ -944,7 +942,7 @@ namespace FlaxEditor.Viewport
                 if (hit is StaticModelNode staticModelNode)
                 {
                     _previewStaticModel = (StaticModel)staticModelNode.Actor;
-                    var ray = ConvertMouseToRay(ref location);
+                    var ray = ConvertMouseToRay(location);
                     _previewStaticModel.IntersectsEntry(ref ray, out _, out _, out _previewModelEntryIndex);
                 }
                 else if (hit is BoxBrushNode.SideLinkNode brushSurfaceNode)
@@ -1037,7 +1035,7 @@ namespace FlaxEditor.Viewport
             var location = hitLocation + new Vector3(0, bottomToCenter, 0);
 
             // Apply grid snapping if enabled
-            if (UseSnapping || TransformGizmo.TranslationSnapEnable)
+            if (TransformGizmo.TranslationSnapEnable)
             {
                 float snapValue = TransformGizmo.TranslationSnapValue;
                 location = new Vector3(
@@ -1077,7 +1075,7 @@ namespace FlaxEditor.Viewport
                 else if (hit is StaticModelNode staticModelNode)
                 {
                     var staticModel = (StaticModel)staticModelNode.Actor;
-                    var ray = ConvertMouseToRay(ref location);
+                    var ray = ConvertMouseToRay(location);
                     if (staticModel.IntersectsEntry(ref ray, out _, out _, out var entryIndex))
                     {
                         using (new UndoBlock(Undo, staticModel, "Change material"))
@@ -1129,7 +1127,7 @@ namespace FlaxEditor.Viewport
                 return result;
 
             // Check if drag sth
-            Vector3 hitLocation = ViewPosition, hitNormal = -ViewDirection;
+            Vector3 hitLocation = Camera.Translation, hitNormal = -Camera.Forward;
             SceneGraphNode hit = null;
             if (DragHandlers.HasValidDrag)
             {

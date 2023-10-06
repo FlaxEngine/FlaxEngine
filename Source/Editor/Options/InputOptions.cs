@@ -260,6 +260,14 @@ namespace FlaxEditor.Options
         [EditorDisplay("Viewport"), EditorOrder(1530)]
         public InputBinding Right = new InputBinding(KeyboardKeys.D);
 
+        [DefaultValue(typeof(InputBinding), "Ctrl+Q")]
+        [EditorDisplay("Viewport"), EditorOrder(1520)]
+        public InputBinding RollLeft = new InputBinding(KeyboardKeys.Control,KeyboardKeys.Q);
+
+        [DefaultValue(typeof(InputBinding), "Ctrl+E")]
+        [EditorDisplay("Viewport"), EditorOrder(1530)]
+        public InputBinding RollRight = new InputBinding(KeyboardKeys.Control, KeyboardKeys.E);
+
         [DefaultValue(typeof(InputBinding), "E")]
         [EditorDisplay("Viewport"), EditorOrder(1540)]
         public InputBinding Up = new InputBinding(KeyboardKeys.E);
@@ -269,8 +277,8 @@ namespace FlaxEditor.Options
         public InputBinding Down = new InputBinding(KeyboardKeys.Q);
 
         [DefaultValue(typeof(InputBinding), "None")]
-        [EditorDisplay("Viewport", "Toggle Camera Rotation"), EditorOrder(1560)]
-        public InputBinding CameraToggleRotation = new InputBinding(KeyboardKeys.None);
+        [EditorDisplay("Viewport", "Toggle / Hold Mouse Botton Right"), EditorOrder(1560)]
+        public InputBinding ToggleMouseBottonRight = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "None")]
         [EditorDisplay("Viewport", "Increase Camera Move Speed"), EditorOrder(1570)]
