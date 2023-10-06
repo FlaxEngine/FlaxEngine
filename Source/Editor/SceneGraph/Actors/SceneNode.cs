@@ -3,6 +3,7 @@
 using System.IO;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.SceneGraph.GUI;
+using FlaxEditor.Windows;
 using FlaxEngine;
 
 namespace FlaxEditor.SceneGraph.Actors
@@ -65,7 +66,7 @@ namespace FlaxEditor.SceneGraph.Actors
         public override SceneNode ParentScene => this;
 
         /// <inheritdoc />
-        public override void OnContextMenu(ContextMenu contextMenu)
+        public override void OnContextMenu(ContextMenu contextMenu, EditorWindow window)
         {
             contextMenu.AddSeparator();
             var path = Scene.Path;
@@ -80,7 +81,7 @@ namespace FlaxEditor.SceneGraph.Actors
             if (Level.ScenesCount > 1)
                 contextMenu.AddButton("Unload all but this scene", OnUnloadAllButSelectedScene).LinkTooltip("Unloads all of the active scenes except for the selected scene.").Enabled = Editor.Instance.StateMachine.CurrentState.CanChangeScene;
 
-            base.OnContextMenu(contextMenu);
+            base.OnContextMenu(contextMenu, window);
         }
 
         private void OnSelect()
