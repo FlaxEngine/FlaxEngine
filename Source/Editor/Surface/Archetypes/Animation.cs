@@ -34,6 +34,9 @@ namespace FlaxEditor.Surface.Archetypes
         /// <seealso cref="FlaxEditor.Surface.SurfaceNode" />
         public class Sample : SurfaceNode
         {
+            private AssetSelect _assetSelect;
+            private Box _assetBox;
+            
             /// <inheritdoc />
             public Sample(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
@@ -54,7 +57,12 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnSurfaceLoaded();
 
                 if (Surface != null)
+                {
+                    _assetSelect = GetChild<AssetSelect>();
+                    _assetBox = GetBox(8);
+                    _assetSelect.Visible = !_assetBox.HasAnyConnection;
                     UpdateTitle();
+                }
             }
 
             private void UpdateTitle()
@@ -63,6 +71,17 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = asset?.ShortName ?? "Animation";
                 var style = Style.Current;
                 Resize(Mathf.Max(230, style.FontLarge.MeasureText(Title).X + 30), 160);
+            }
+
+            /// <inheritdoc />
+            public override void ConnectionTick(Box box)
+            {
+                base.ConnectionTick(box);
+                
+                if(box.ID != _assetBox.ID)
+                    return;
+
+                _assetSelect.Visible = !box.HasAnyConnection;
             }
         }
 
@@ -305,7 +324,8 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, "Speed", true, typeof(float), 5, 1),
                     NodeElementArchetype.Factory.Input(1, "Loop", true, typeof(bool), 6, 2),
                     NodeElementArchetype.Factory.Input(2, "Start Position", true, typeof(float), 7, 3),
-                    NodeElementArchetype.Factory.Asset(0, Surface.Constants.LayoutOffsetY * 3, 0, typeof(FlaxEngine.Animation)),
+                    NodeElementArchetype.Factory.Input(3, "Animation Asset", true, typeof(FlaxEngine.Animation), 8),
+                    NodeElementArchetype.Factory.Asset(0, Surface.Constants.LayoutOffsetY * 4, 0, typeof(FlaxEngine.Animation)),
                 }
             },
             new NodeArchetype
