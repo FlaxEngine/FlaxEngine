@@ -81,7 +81,6 @@ void JsonTools::ChangeIds(Document& doc, const Dictionary<Guid, Guid>& mapping)
     ::ChangeIds(doc, doc, mapping);
 }
 
-
 Float2 JsonTools::GetFloat2(const Value& value)
 {
     Float2 result;
