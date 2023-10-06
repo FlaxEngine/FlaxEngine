@@ -34,6 +34,16 @@
 #error Missing Platform implementation!
 #endif
 
+//[ToDo] move it on to correct place ?
+namespace preprocesors
+{
+    //converts whatever is value as a "value" but pares any value to string at compile time
+    #define TOSTRING(s) STRINGIFY(s)
+    //converts whatever is value as a "value"
+    #define STRINGIFY(value) #value
+    #define FILE_LINE __FILE__ ":" TOSTRING(__LINE__)
+}
+
 #if ENABLE_ASSERTION
 // Performs hard assertion of the expression. Crashes the engine and inserts debugger break in case of expression fail.
 #define ASSERT(expression) \
@@ -67,3 +77,29 @@
         Platform::CheckFailed(#expression, __FILE__, __LINE__); \
         return returnValue; \
     }
+
+
+#if ENABLE_ASSERTION && USE_EDITOR
+//Performs soft assertion of the expression. crashes the engine if is not used with editor, inserts debugger break in case of expression fail, logs the massage to the file.
+//[opcional returncode if funcion needs to return somfing]
+#define SOFT_ASSERT(expression,Massage,returncode)                                                          \
+if (expression)                                                                                             \
+{                                                                                                           \
+    if (Platform::IsDebuggerPresent())                                                                      \
+    {                                                                                                       \
+        PLATFORM_DEBUG_BREAK;                                                                               \
+    }                                                                                                       \
+    LOG_STR(Fatal,                                                                                          \
+    TEXT(                                                                                                   \
+    "\n[Soft Assert Triggered]"                                                                             \
+    "\n" Massage                                                                                            \
+    "\nReport a bug at https://github.com/FlaxEngine/FlaxEngine/issues if this is engine issue"             \
+    "\nInfo:"                                                                                               \
+    "\n" FILE_LINE));                                                                                       \
+    returncode                                                                                              \
+}
+#else
+#if ENABLE_ASSERTION
+#define SOFT_ASSERT(expression,Massage,returncode) ASSERT(!(expression))
+#endif
+#endif

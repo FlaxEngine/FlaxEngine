@@ -5,6 +5,7 @@
 #include "Matrix.h"
 #include "Ray.h"
 #include "../Types/String.h"
+#include "../../Debug/DebugLog.h"
 
 const BoundingSphere BoundingSphere::Empty(Vector3(0, 0, 0), 0);
 
@@ -136,7 +137,15 @@ void BoundingSphere::FromPoints(const Double3* points, int32 pointsCount, Boundi
 
 void BoundingSphere::FromBox(const BoundingBox& box, BoundingSphere& result)
 {
-    ASSERT(!box.Minimum.IsNanOrInfinity() && !box.Maximum.IsNanOrInfinity());
+    
+    //Handle IsNanOrInfinity softly there is no need to hard crash the engine/game
+    SOFT_ASSERT
+    (
+        box.Minimum.IsNanOrInfinity() && box.Maximum.IsNanOrInfinity(),
+        "The BoundingSphere::FromBox got box with NanOrInfinity returning Empty BoundingSphere",
+        result = BoundingSphere::Empty; return;
+    );
+
     const Real x = box.Maximum.X - box.Minimum.X;
     const Real y = box.Maximum.Y - box.Minimum.Y;
     const Real z = box.Maximum.Z - box.Minimum.Z;
