@@ -685,8 +685,10 @@ namespace FlaxEngine.Interop
                 T value = default;
                 if (nativePtr == IntPtr.Zero)
                     return value;
-
-                MarshalHelper<T>.ToManaged(ref value, nativePtr, false);
+                if (typeof(T).IsValueType)
+                    value = (T)ManagedHandle.FromIntPtr(nativePtr).Target;
+                else
+                    MarshalHelper<T>.ToManaged(ref value, nativePtr, false);
                 return value;
             }
 

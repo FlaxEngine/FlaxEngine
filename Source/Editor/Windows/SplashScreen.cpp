@@ -127,6 +127,14 @@ const Char* SplashScreenQuotes[] =
     TEXT("Who is signing all these integers?!"),
     TEXT("Flax fact: Flax was called Celelej once."),
     TEXT("Changing text overflow setti-"),
+    TEXT("Testing tests"),
+    TEXT("Free hugs"),
+    TEXT("Think outside the box"),
+    TEXT("Let's make something fantastic"),
+    TEXT("Be brave"),
+    TEXT("Drum roll please"),
+    TEXT("Good Luck Have Fun"),
+    TEXT("GG Well Played"),
 };
 
 SplashScreen::~SplashScreen()
