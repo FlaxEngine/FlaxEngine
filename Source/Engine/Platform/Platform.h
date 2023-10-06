@@ -101,5 +101,7 @@ if (expression)                                                                 
 #else
 #if ENABLE_ASSERTION
 #define SOFT_ASSERT(expression,Massage,returncode) ASSERT(!(expression))
+#else
+#define SOFT_ASSERT(expression,Massage,returncode)
 #endif
 #endif
