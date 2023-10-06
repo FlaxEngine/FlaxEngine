@@ -511,6 +511,14 @@ struct GlobalSettings
 };
 
 
+struct GlobalInfo
+{
+	char AppVendor[128];
+	char AppName[128];
+	char AppVersion[128];
+};
+
+
 struct IScene
 {
 	virtual void destroy() = 0;
@@ -519,6 +527,7 @@ struct IScene
 	virtual const TakeInfo* getTakeInfo(const char* name) const = 0;
 	virtual int getMeshCount() const = 0;
 	virtual float getSceneFrameRate() const = 0;
+	virtual const GlobalInfo* getGlobalInfo() const = 0;
 	virtual const GlobalSettings* getGlobalSettings() const = 0;
 	virtual const Mesh* getMesh(int index) const = 0;
 	virtual int getAnimationStackCount() const = 0;

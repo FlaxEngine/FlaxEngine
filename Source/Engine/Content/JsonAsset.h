@@ -118,6 +118,7 @@ API_CLASS(NoSpawn) class FLAXENGINE_API JsonAsset : public JsonAssetBase
     DECLARE_ASSET_HEADER(JsonAsset);
 private:
     ScriptingType::Dtor _dtor;
+    bool _isAfterReload = false;
 
 public:
     /// <summary>
@@ -149,6 +150,7 @@ protected:
     // [JsonAssetBase]
     LoadResult loadAsset() override;
     void unload(bool isReloading) override;
+    void onLoaded_MainThread() override;
 
 private:
     bool CreateInstance();

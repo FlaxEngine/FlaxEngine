@@ -153,7 +153,11 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 		hints.max_height = (int)settings.MaximumSize.Y;
 		hints.flags |= USSize;
 	}
-	X11::XSetNormalHints(display, window, &hints);
+    // honor the WM placement except for manual (overriding) placements
+    if (settings.StartPosition == WindowStartPosition::Manual)
+    {
+        X11::XSetNormalHints(display, window, &hints);
+    }
 
 	// Ensures the child window is always on top of the parent window
 	if (settings.Parent)

@@ -34,9 +34,7 @@ namespace FlaxEditor.Surface.Elements
         public static void DrawConnection(ref Float2 start, ref Float2 end, ref Color color, float thickness = 1)
         {
             // Calculate control points
-            var dst = (end - start) * new Float2(0.5f, 0.05f);
-            var control1 = new Float2(start.X + dst.X, start.Y + dst.Y);
-            var control2 = new Float2(end.X - dst.X, end.Y + dst.Y);
+            CalculateBezierControlPoints(start, end, out var control1, out var control2);
 
             // Draw line
             Render2D.DrawBezier(start, control1, control2, end, color, thickness);
@@ -47,6 +45,23 @@ namespace FlaxEditor.Surface.Elements
             Render2D.FillRectangle(new Rectangle(control1 - bSize * 0.5f, bSize), Color.Blue);
             Render2D.FillRectangle(new Rectangle(control2 - bSize * 0.5f, bSize), Color.Gold);
             */
+        }
+
+        private static void CalculateBezierControlPoints(Float2 start, Float2 end, out Float2 control1, out Float2 control2)
+        {
+            // Control points parameters
+            const float minControlLength = 100f;
+            const float maxControlLength = 150f;
+            var dst = (end - start).Length;
+            var yDst = Mathf.Abs(start.Y - end.Y);
+
+            // Calculate control points
+            var minControlDst = dst * 0.5f;
+            var maxControlDst = Mathf.Max(Mathf.Min(maxControlLength, dst), minControlLength);
+            var controlDst = Mathf.Lerp(minControlDst, maxControlDst, Mathf.Clamp(yDst / minControlLength, 0f, 1f));
+
+            control1 = new Float2(start.X + controlDst, start.Y);
+            control2 = new Float2(end.X - controlDst, end.Y);
         }
 
         /// <summary>
@@ -71,17 +86,15 @@ namespace FlaxEditor.Surface.Elements
         public static bool IntersectsConnection(ref Float2 start, ref Float2 end, ref Float2 point, float distance)
         {
             // Pretty much a point in rectangle check
-            if ((point.X - start.X) * (end.X - point.X) < 0) return false;
+            if ((point.X - start.X) * (end.X - point.X) < 0)
+                return false;
 
             float offset = Mathf.Sign(end.Y - start.Y) * distance;
-            if ((point.Y - (start.Y - offset)) * ((end.Y + offset) - point.Y) < 0) return false;
+            if ((point.Y - (start.Y - offset)) * ((end.Y + offset) - point.Y) < 0)
+                return false;
 
-            // Taken from the Render2D.DrawBezier code
             float squaredDistance = distance;
-
-            var dst = (end - start) * new Float2(0.5f, 0.05f);
-            var control1 = new Float2(start.X + dst.X, start.Y + dst.Y);
-            var control2 = new Float2(end.X - dst.X, end.Y + dst.Y);
+            CalculateBezierControlPoints(start, end, out var control1, out var control2);
 
             var d1 = control1 - start;
             var d2 = control2 - control1;

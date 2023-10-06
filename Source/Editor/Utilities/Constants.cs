@@ -14,5 +14,11 @@ namespace FlaxEditor.Utilities
         public const string FacebookUrl = "https://facebook.com/FlaxEngine";
         public const string YoutubeUrl = "https://youtube.com/c/FlaxEngine";
         public const string TwitterUrl = "https://twitter.com/FlaxEngine";
+
+#if PLATFORM_MAC
+        public const string ShowInExplorer = "Show in Finder";
+#else
+        public const string ShowInExplorer = "Show in explorer";
+#endif
     }
 }

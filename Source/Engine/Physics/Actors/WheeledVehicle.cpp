@@ -223,9 +223,10 @@ void WheeledVehicle::Setup()
         return;
 
     // Release previous
+    void* scene = GetPhysicsScene()->GetPhysicsScene();
     if (_vehicle)
     {
-        PhysicsBackend::RemoveVehicle(GetPhysicsScene()->GetPhysicsScene(), this);
+        PhysicsBackend::RemoveVehicle(scene, this);
         PhysicsBackend::DestroyVehicle(_vehicle, (int32)_driveTypeCurrent);
         _vehicle = nullptr;
     }
@@ -236,7 +237,7 @@ void WheeledVehicle::Setup()
     if (!_vehicle)
         return;
     _driveTypeCurrent = _driveType;
-    PhysicsBackend::AddVehicle(GetPhysicsScene()->GetPhysicsScene(), this);
+    PhysicsBackend::AddVehicle(scene, this);
     PhysicsBackend::SetRigidDynamicActorSolverIterationCounts(_actor, 12, 4);
 #else
     LOG(Fatal, "Vehicles are not supported.");
@@ -358,8 +359,23 @@ void WheeledVehicle::OnColliderChanged(Collider* c)
 {
     RigidBody::OnColliderChanged(c);
 
-    // Rebuild vehicle when someone adds/removed wheels
-    Setup();
+    if (_useWheelsUpdates)
+    {
+        // Rebuild vehicle when someone adds/removed wheels
+        Setup();
+    }
+}
+
+void WheeledVehicle::OnActiveInTreeChanged()
+{
+    // Skip rebuilds from per-wheel OnColliderChanged when whole vehicle is toggled
+    _useWheelsUpdates = false;
+    RigidBody::OnActiveInTreeChanged();
+    _useWheelsUpdates = true;
+
+    // Perform whole rebuild when it gets activated
+    if (IsActiveInHierarchy())
+        Setup();
 }
 
 void WheeledVehicle::OnPhysicsSceneChanged(PhysicsScene* previous)

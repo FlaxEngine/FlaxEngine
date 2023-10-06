@@ -3,11 +3,11 @@
 #pragma once
 
 #include "Types.h"
-#include "Engine/Tools/AudioTool/AudioDecoder.h"
-#include "Engine/Core/ISerializable.h"
-#include "Engine/Audio/Config.h"
 
 #if COMPILE_WITH_ASSETS_IMPORTER
+
+#include "Engine/Tools/AudioTool/AudioTool.h"
+#include "Engine/Tools/AudioTool/AudioDecoder.h"
 
 /// <summary>
 /// Enable/disable caching audio import options
@@ -20,23 +20,7 @@
 class ImportAudio
 {
 public:
-    /// <summary>
-    /// Importing audio options
-    /// </summary>
-    struct Options : public ISerializable
-    {
-        AudioFormat Format = AudioFormat::Vorbis;
-        bool DisableStreaming = false;
-        bool Is3D = false;
-        int32 BitDepth = 16;
-        float Quality = 0.4f;
-
-        String ToString() const;
-
-        // [ISerializable]
-        void Serialize(SerializeStream& stream, const void* otherObj) override;
-        void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
-    };
+    typedef AudioTool::Options Options;
 
 public:
     /// <summary>

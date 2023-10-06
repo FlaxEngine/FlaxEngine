@@ -227,7 +227,7 @@ protected:
 
     bool onLoad(LoadAssetTask* task);
     void onLoaded();
-    void onLoaded_MainThread();
+    virtual void onLoaded_MainThread();
     virtual void onUnload_MainThread();
 #if USE_EDITOR
     virtual void onRename(const StringView& newPath) = 0;

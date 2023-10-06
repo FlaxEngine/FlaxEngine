@@ -77,5 +77,14 @@ namespace FlaxEditor.GUI.Tabs
         {
             Deselected?.Invoke(this);
         }
+
+        /// <summary>
+        /// Factory method for tabs header control (UI for the tabs strip to represent this tab).
+        /// </summary>
+        /// <returns>The tab header control.</returns>
+        public virtual Tabs.TabHeader CreateHeader()
+        {
+            return new Tabs.TabHeader((Tabs)Parent, this);
+        }
     }
 }

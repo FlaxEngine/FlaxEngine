@@ -643,7 +643,8 @@ namespace FlaxEditor.Modules
         /// Deletes the specified item.
         /// </summary>
         /// <param name="item">The item.</param>
-        public void Delete(ContentItem item)
+        /// <param name="deletedByUser">If the file was deleted by the user and not outside the editor.</param>
+        public void Delete(ContentItem item, bool deletedByUser = false)
         {
             if (item == null)
                 throw new ArgumentNullException();
@@ -667,12 +668,12 @@ namespace FlaxEditor.Modules
                     var children = folder.Children.ToArray();
                     for (int i = 0; i < children.Length; i++)
                     {
-                        Delete(children[i]);
+                        Delete(children[i], deletedByUser);
                     }
                 }
 
                 // Remove directory
-                if (Directory.Exists(path))
+                if (deletedByUser && Directory.Exists(path))
                 {
                     try
                     {
@@ -701,7 +702,7 @@ namespace FlaxEditor.Modules
                     // Delete asset by using content pool
                     FlaxEngine.Content.DeleteAsset(path);
                 }
-                else
+                else if (deletedByUser)
                 {
                     // Delete file
                     if (File.Exists(path))
@@ -847,7 +848,7 @@ namespace FlaxEditor.Modules
                         Editor.Log(string.Format($"Content item \'{child.Path}\' has been removed"));
 
                         // Destroy it
-                        Delete(child);
+                        Delete(child, false);
 
                         i--;
                     }
@@ -930,6 +931,11 @@ namespace FlaxEditor.Modules
                 // Check if node already has that element (skip during init when we want to walk project dir very fast)
                 if (_isDuringFastSetup || !parent.Folder.ContainsChild(path))
                 {
+#if PLATFORM_MAC
+                    if (path.EndsWith(".DS_Store", StringComparison.Ordinal))
+                        continue;
+#endif
+
                     // Create file item
                     ContentItem item;
                     if (path.EndsWith(".cs"))
@@ -971,6 +977,11 @@ namespace FlaxEditor.Modules
                 // Check if node already has that element (skip during init when we want to walk project dir very fast)
                 if (_isDuringFastSetup || !parent.Folder.ContainsChild(path))
                 {
+#if PLATFORM_MAC
+                    if (path.EndsWith(".DS_Store", StringComparison.Ordinal))
+                        continue;
+#endif
+
                     // Create file item
                     ContentItem item = null;
                     if (FlaxEngine.Content.GetAssetInfo(path, out var assetInfo))
@@ -1196,6 +1207,7 @@ namespace FlaxEditor.Modules
             {
             case WatcherChangeTypes.Created:
             case WatcherChangeTypes.Deleted:
+            case WatcherChangeTypes.Renamed:
             {
                 lock (_dirtyNodes)
                 {

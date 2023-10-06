@@ -37,14 +37,14 @@ namespace Flax.Build.Platforms
         public LinuxPlatform()
         {
             // Try to use system compiler
-            if (Platform.BuildTargetPlatform == TargetPlatform.Linux)
+            if (BuildTargetPlatform == TargetPlatform.Linux)
             {
                 // Pick the newest compiler (overriden by specified in command line)
                 if (Which(Configuration.Compiler) != null)
                     Compiler = Configuration.Compiler;
                 else
                 {
-                    for (int ver = 15; ver >= 6; ver--)
+                    for (int ver = 17; ver >= 6; ver--)
                     {
                         var compiler = "clang++-" + ver;
                         if (Which(compiler) != null)
@@ -67,7 +67,7 @@ namespace Flax.Build.Platforms
                 Log.Verbose($"Using native Linux toolchain (compiler {Compiler})");
                 HasRequiredSDKsInstalled = true;
             }
-            else if (Platform.BuildTargetPlatform != TargetPlatform.Mac)
+            else if (BuildTargetPlatform != TargetPlatform.Mac)
             {
                 // Check if Linux toolchain is installed
                 string toolchainName = "v13_clang-7.0.1-centos7";
@@ -76,9 +76,11 @@ namespace Flax.Build.Platforms
                 {
                     if (string.IsNullOrEmpty(toolchainsRoot))
                     {
-                        Log.Warning("Missing Linux Toolchain. Cannot build for Linux platform.");
+                        if (BuildTargetPlatform == TargetPlatform.Linux)
+                            Log.Warning("Missing Linux Toolchain. Cannot build for Linux platform.");
+                        else
+                            Log.Verbose("Missing Linux Toolchain. Cannot build for Linux platform.");
                     }
-
                     return;
                 }
 

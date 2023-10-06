@@ -2,6 +2,7 @@
 
 using System;
 using System.Linq;
+using FlaxEditor.Content.Settings;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
@@ -9,6 +10,8 @@ using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Widgets;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Newtonsoft.Json;
+using JsonSerializer = FlaxEngine.Json.JsonSerializer;
 
 namespace FlaxEditor.Viewport
 {
@@ -137,7 +140,7 @@ namespace FlaxEditor.Viewport
 
         // Input
 
-        private bool _isControllingMouse, _isViewportControllingMouse;
+        private bool _isControllingMouse, _isViewportControllingMouse, _wasVirtualMouseRightDown, _isVirtualMouseRightDown;
         private int _deltaFilteringStep;
         private Float2 _startPos;
         private Float2 _mouseDeltaLast;
@@ -441,6 +444,9 @@ namespace FlaxEditor.Viewport
 
             if (useWidgets)
             {
+                var largestText = "Invert Panning";
+                var textSize = Style.Current.FontMedium.MeasureText(largestText);
+                var xLocationForExtras = textSize.X + 5;
                 // Camera speed widget
                 var camSpeed = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
                 var camSpeedCM = new ContextMenu();
@@ -483,10 +489,63 @@ namespace FlaxEditor.Viewport
                     }
                 }
 
+                // View Layers
+                {
+                    var viewLayers = ViewWidgetButtonMenu.AddChildMenu("View Layers").ContextMenu;
+                    viewLayers.AddButton("Copy layers", () => Clipboard.Text = JsonSerializer.Serialize(Task.View.RenderLayersMask));
+                    viewLayers.AddButton("Paste layers", () =>
+                    {
+                        try
+                        {
+                            Task.ViewLayersMask = JsonSerializer.Deserialize<LayersMask>(Clipboard.Text);
+                        }
+                        catch
+                        {
+                        }
+                    });
+                    viewLayers.AddButton("Reset layers", () => Task.ViewLayersMask = LayersMask.Default).Icon = Editor.Instance.Icons.Rotate32;
+                    viewLayers.AddButton("Disable layers", () => Task.ViewLayersMask = new LayersMask(0)).Icon = Editor.Instance.Icons.Rotate32;
+                    viewLayers.AddSeparator();
+                    var layers = LayersAndTagsSettings.GetCurrentLayers();
+                    if (layers != null && layers.Length > 0)
+                    {
+                        for (int i = 0; i < layers.Length; i++)
+                        {
+                            var layer = layers[i];
+                            var button = viewLayers.AddButton(layer);
+                            button.CloseMenuOnClick = false;
+                            button.Tag = 1 << i;
+                        }
+                    }
+                    viewLayers.ButtonClicked += button =>
+                    {
+                        if (button.Tag != null)
+                        {
+                            int layerIndex = (int)button.Tag;
+                            LayersMask mask = new LayersMask(layerIndex);
+                            Task.ViewLayersMask ^= mask;
+                            button.Icon = (Task.ViewLayersMask & mask) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                        }
+                    };
+                    viewLayers.VisibleChanged += WidgetViewLayersShowHide;
+                }
+
                 // View Flags
                 {
                     var viewFlags = ViewWidgetButtonMenu.AddChildMenu("View Flags").ContextMenu;
+                    viewFlags.AddButton("Copy flags", () => Clipboard.Text = JsonSerializer.Serialize(Task.ViewFlags));
+                    viewFlags.AddButton("Paste flags", () =>
+                    {
+                        try
+                        {
+                            Task.ViewFlags = JsonSerializer.Deserialize<ViewFlags>(Clipboard.Text);
+                        }
+                        catch
+                        {
+                        }
+                    });
                     viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = Editor.Instance.Icons.Rotate32;
+                    viewFlags.AddButton("Disable flags", () => Task.ViewFlags = ViewFlags.None).Icon = Editor.Instance.Icons.Rotate32;
                     viewFlags.AddSeparator();
                     for (int i = 0; i < EditorViewportViewFlagsValues.Length; i++)
                     {
@@ -501,7 +560,7 @@ namespace FlaxEditor.Viewport
                         {
                             var v = (ViewFlags)button.Tag;
                             Task.ViewFlags ^= v;
-                            button.Icon = (Task.View.Flags & v) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                            button.Icon = (Task.ViewFlags & v) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
                         }
                     };
                     viewFlags.VisibleChanged += WidgetViewFlagsShowHide;
@@ -510,6 +569,18 @@ namespace FlaxEditor.Viewport
                 // Debug View
                 {
                     var debugView = ViewWidgetButtonMenu.AddChildMenu("Debug View").ContextMenu;
+                    debugView.AddButton("Copy view", () => Clipboard.Text = JsonSerializer.Serialize(Task.ViewMode));
+                    debugView.AddButton("Paste view", () =>
+                    {
+                        try
+                        {
+                            Task.ViewMode = JsonSerializer.Deserialize<ViewMode>(Clipboard.Text);
+                        }
+                        catch
+                        {
+                        }
+                    });
+                    debugView.AddSeparator();
                     for (int i = 0; i < EditorViewportViewModeValues.Length; i++)
                     {
                         ref var v = ref EditorViewportViewModeValues[i];
@@ -541,7 +612,7 @@ namespace FlaxEditor.Viewport
                 {
                     var ortho = ViewWidgetButtonMenu.AddButton("Orthographic");
                     ortho.CloseMenuOnClick = false;
-                    var orthoValue = new CheckBox(90, 2, _isOrtho)
+                    var orthoValue = new CheckBox(xLocationForExtras, 2, _isOrtho)
                     {
                         Parent = ortho
                     };
@@ -581,7 +652,7 @@ namespace FlaxEditor.Viewport
                 {
                     var fov = ViewWidgetButtonMenu.AddButton("Field Of View");
                     fov.CloseMenuOnClick = false;
-                    var fovValue = new FloatValueBox(1, 90, 2, 70.0f, 35.0f, 160.0f, 0.1f)
+                    var fovValue = new FloatValueBox(1, xLocationForExtras, 2, 70.0f, 35.0f, 160.0f, 0.1f)
                     {
                         Parent = fov
                     };
@@ -598,7 +669,7 @@ namespace FlaxEditor.Viewport
                 {
                     var orthoSize = ViewWidgetButtonMenu.AddButton("Ortho Scale");
                     orthoSize.CloseMenuOnClick = false;
-                    var orthoSizeValue = new FloatValueBox(_orthoSize, 90, 2, 70.0f, 0.001f, 100000.0f, 0.01f)
+                    var orthoSizeValue = new FloatValueBox(_orthoSize, xLocationForExtras, 2, 70.0f, 0.001f, 100000.0f, 0.01f)
                     {
                         Parent = orthoSize
                     };
@@ -615,7 +686,7 @@ namespace FlaxEditor.Viewport
                 {
                     var nearPlane = ViewWidgetButtonMenu.AddButton("Near Plane");
                     nearPlane.CloseMenuOnClick = false;
-                    var nearPlaneValue = new FloatValueBox(2.0f, 90, 2, 70.0f, 0.001f, 1000.0f)
+                    var nearPlaneValue = new FloatValueBox(2.0f, xLocationForExtras, 2, 70.0f, 0.001f, 1000.0f)
                     {
                         Parent = nearPlane
                     };
@@ -627,7 +698,7 @@ namespace FlaxEditor.Viewport
                 {
                     var farPlane = ViewWidgetButtonMenu.AddButton("Far Plane");
                     farPlane.CloseMenuOnClick = false;
-                    var farPlaneValue = new FloatValueBox(1000, 90, 2, 70.0f, 10.0f)
+                    var farPlaneValue = new FloatValueBox(1000, xLocationForExtras, 2, 70.0f, 10.0f)
                     {
                         Parent = farPlane
                     };
@@ -639,7 +710,7 @@ namespace FlaxEditor.Viewport
                 {
                     var brightness = ViewWidgetButtonMenu.AddButton("Brightness");
                     brightness.CloseMenuOnClick = false;
-                    var brightnessValue = new FloatValueBox(1.0f, 90, 2, 70.0f, 0.001f, 10.0f, 0.001f)
+                    var brightnessValue = new FloatValueBox(1.0f, xLocationForExtras, 2, 70.0f, 0.001f, 10.0f, 0.001f)
                     {
                         Parent = brightness
                     };
@@ -651,7 +722,7 @@ namespace FlaxEditor.Viewport
                 {
                     var resolution = ViewWidgetButtonMenu.AddButton("Resolution");
                     resolution.CloseMenuOnClick = false;
-                    var resolutionValue = new FloatValueBox(1.0f, 90, 2, 70.0f, 0.1f, 4.0f, 0.001f)
+                    var resolutionValue = new FloatValueBox(1.0f, xLocationForExtras, 2, 70.0f, 0.1f, 4.0f, 0.001f)
                     {
                         Parent = resolution
                     };
@@ -663,7 +734,7 @@ namespace FlaxEditor.Viewport
                 {
                     var invert = ViewWidgetButtonMenu.AddButton("Invert Panning");
                     invert.CloseMenuOnClick = false;
-                    var invertValue = new CheckBox(90, 2, _invertPanning)
+                    var invertValue = new CheckBox(xLocationForExtras, 2, _invertPanning)
                     {
                         Parent = invert
                     };
@@ -685,6 +756,9 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.ViewpointBack, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Back").Orientation)));
             InputActions.Add(options => options.ViewpointRight, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Right").Orientation)));
             InputActions.Add(options => options.ViewpointLeft, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Left").Orientation)));
+            InputActions.Add(options => options.CameraToggleRotation, () => _isVirtualMouseRightDown = !_isVirtualMouseRightDown);
+            InputActions.Add(options => options.CameraIncreaseMoveSpeed, () => AdjustCameraMoveSpeed(1));
+            InputActions.Add(options => options.CameraDecreaseMoveSpeed, () => AdjustCameraMoveSpeed(-1));
 
             // Link for task event
             task.Begin += OnRenderBegin;
@@ -720,6 +794,30 @@ namespace FlaxEditor.Viewport
             {
                 ViewportCamera.SetArcBallView(orientation, ViewPosition, 2000.0f);
             }
+        }
+
+        /// <summary>
+        /// Increases or decreases the camera movement speed.
+        /// </summary>
+        /// <param name="step">The stepping direction for speed adjustment.</param>
+        protected void AdjustCameraMoveSpeed(int step)
+        {
+            int camValueIndex = -1;
+            for (int i = 0; i < EditorViewportCameraSpeedValues.Length; i++)
+            {
+                if (Mathf.NearEqual(EditorViewportCameraSpeedValues[i], _movementSpeed))
+                {
+                    camValueIndex = i;
+                    break;
+                }
+            }
+            if (camValueIndex == -1)
+                return;
+
+            if (step > 0)
+                MovementSpeed = EditorViewportCameraSpeedValues[Mathf.Min(camValueIndex + 1, EditorViewportCameraSpeedValues.Length - 1)];
+            else if (step < 0)
+                MovementSpeed = EditorViewportCameraSpeedValues[Mathf.Max(camValueIndex - 1, 0)];
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)
@@ -1048,6 +1146,15 @@ namespace FlaxEditor.Viewport
                 // Track controlling mouse state change
                 bool wasControllingMouse = _prevInput.IsControllingMouse;
                 _isControllingMouse = _input.IsControllingMouse;
+
+                // Simulate holding mouse right down for trackpad users
+                if ((_prevInput.IsMouseRightDown && !_input.IsMouseRightDown) || win.GetKeyDown(KeyboardKeys.Escape))
+                    _isVirtualMouseRightDown = false; // Cancel when mouse right or escape is pressed
+                if (_wasVirtualMouseRightDown)
+                    wasControllingMouse = true;
+                if (_isVirtualMouseRightDown)
+                    _isControllingMouse = _isVirtualMouseRightDown;
+
                 if (wasControllingMouse != _isControllingMouse)
                 {
                     if (_isControllingMouse)
@@ -1061,16 +1168,18 @@ namespace FlaxEditor.Viewport
                     OnLeftMouseButtonDown();
                 else if (_prevInput.IsMouseLeftDown && !_input.IsMouseLeftDown)
                     OnLeftMouseButtonUp();
-                //
-                if (!_prevInput.IsMouseRightDown && _input.IsMouseRightDown)
+
+                if ((!_prevInput.IsMouseRightDown && _input.IsMouseRightDown) || (!_wasVirtualMouseRightDown && _isVirtualMouseRightDown))
                     OnRightMouseButtonDown();
-                else if (_prevInput.IsMouseRightDown && !_input.IsMouseRightDown)
+                else if ((_prevInput.IsMouseRightDown && !_input.IsMouseRightDown) || (_wasVirtualMouseRightDown && !_isVirtualMouseRightDown))
                     OnRightMouseButtonUp();
-                //
+
                 if (!_prevInput.IsMouseMiddleDown && _input.IsMouseMiddleDown)
                     OnMiddleMouseButtonDown();
                 else if (_prevInput.IsMouseMiddleDown && !_input.IsMouseMiddleDown)
                     OnMiddleMouseButtonUp();
+
+                _wasVirtualMouseRightDown = _isVirtualMouseRightDown;
             }
 
             // Get clamped delta time (more stable during lags)
@@ -1088,7 +1197,7 @@ namespace FlaxEditor.Viewport
                     bool isAltDown = _input.IsAltDown;
                     bool lbDown = _input.IsMouseLeftDown;
                     bool mbDown = _input.IsMouseMiddleDown;
-                    bool rbDown = _input.IsMouseRightDown;
+                    bool rbDown = _input.IsMouseRightDown || _isVirtualMouseRightDown;
                     bool wheelInUse = Math.Abs(_input.MouseWheelDelta) > Mathf.Epsilon;
 
                     _input.IsPanning = !isAltDown && mbDown && !rbDown;
@@ -1098,32 +1207,20 @@ namespace FlaxEditor.Viewport
                     _input.IsOrbiting = isAltDown && lbDown && !mbDown && !rbDown;
 
                     // Control move speed with RMB+Wheel
-                    rmbWheel = useMovementSpeed && _input.IsMouseRightDown && wheelInUse;
+                    rmbWheel = useMovementSpeed && (_input.IsMouseRightDown || _isVirtualMouseRightDown) && wheelInUse;
                     if (rmbWheel)
                     {
-                        float step = 4.0f;
+                        const float step = 4.0f;
                         _wheelMovementChangeDeltaSum += _input.MouseWheelDelta * options.Viewport.MouseWheelSensitivity;
-                        int camValueIndex = -1;
-                        for (int i = 0; i < EditorViewportCameraSpeedValues.Length; i++)
+                        if (_wheelMovementChangeDeltaSum >= step)
                         {
-                            if (Mathf.NearEqual(EditorViewportCameraSpeedValues[i], _movementSpeed))
-                            {
-                                camValueIndex = i;
-                                break;
-                            }
+                            _wheelMovementChangeDeltaSum -= step;
+                            AdjustCameraMoveSpeed(1);
                         }
-                        if (camValueIndex != -1)
+                        else if (_wheelMovementChangeDeltaSum <= -step)
                         {
-                            if (_wheelMovementChangeDeltaSum >= step)
-                            {
-                                _wheelMovementChangeDeltaSum -= step;
-                                MovementSpeed = EditorViewportCameraSpeedValues[Mathf.Min(camValueIndex + 1, EditorViewportCameraSpeedValues.Length - 1)];
-                            }
-                            else if (_wheelMovementChangeDeltaSum <= -step)
-                            {
-                                _wheelMovementChangeDeltaSum += step;
-                                MovementSpeed = EditorViewportCameraSpeedValues[Mathf.Max(camValueIndex - 1, 0)];
-                            }
+                            _wheelMovementChangeDeltaSum += step;
+                            AdjustCameraMoveSpeed(-1);
                         }
                     }
                 }
@@ -1165,7 +1262,7 @@ namespace FlaxEditor.Viewport
 
                 // Calculate smooth mouse delta not dependant on viewport size
                 var offset = _viewMousePos - _startPos;
-                if (_input.IsZooming && !_input.IsMouseRightDown && !_input.IsMouseLeftDown && !_input.IsMouseMiddleDown && !_isOrtho && !rmbWheel)
+                if (_input.IsZooming && !_input.IsMouseRightDown && !_input.IsMouseLeftDown && !_input.IsMouseMiddleDown && !_isOrtho && !rmbWheel && !_isVirtualMouseRightDown)
                 {
                     offset = Float2.Zero;
                 }
@@ -1213,7 +1310,7 @@ namespace FlaxEditor.Viewport
                 UpdateView(dt, ref moveDelta, ref mouseDelta, out var centerMouse);
 
                 // Move mouse back to the root position
-                if (centerMouse && (_input.IsMouseRightDown || _input.IsMouseLeftDown || _input.IsMouseMiddleDown))
+                if (centerMouse && (_input.IsMouseRightDown || _input.IsMouseLeftDown || _input.IsMouseMiddleDown || _isVirtualMouseRightDown))
                 {
                     var center = PointToWindow(_startPos);
                     win.MousePosition = center;
@@ -1229,7 +1326,7 @@ namespace FlaxEditor.Viewport
             }
             else
             {
-                if (_input.IsMouseLeftDown || _input.IsMouseRightDown)
+                if (_input.IsMouseLeftDown || _input.IsMouseRightDown || _isVirtualMouseRightDown)
                 {
                     // Calculate smooth mouse delta not dependant on viewport size
                     var offset = _viewMousePos - _startPos;
@@ -1359,6 +1456,7 @@ namespace FlaxEditor.Viewport
             {
                 OnControlMouseEnd(RootWindow.Window);
                 _isControllingMouse = false;
+                _isVirtualMouseRightDown = false;
             }
         }
 
@@ -1557,6 +1655,24 @@ namespace FlaxEditor.Viewport
                     b.Icon = (Task.View.Flags & v) != 0
                              ? Style.Current.CheckBoxTick
                              : SpriteHandle.Invalid;
+                }
+            }
+        }
+
+        private void WidgetViewLayersShowHide(Control cm)
+        {
+            if (cm.Visible == false)
+                return;
+
+            var ccm = (ContextMenu)cm;
+            var layersMask = Task.ViewLayersMask;
+            foreach (var e in ccm.Items)
+            {
+                if (e is ContextMenuButton b && b != null && b.Tag != null)
+                {
+                    int layerIndex = (int)b.Tag;
+                    LayersMask mask = new LayersMask(layerIndex);
+                    b.Icon = (layersMask & mask) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
                 }
             }
         }

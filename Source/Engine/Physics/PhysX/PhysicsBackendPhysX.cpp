@@ -889,17 +889,41 @@ void* PhysicsBackend::CreateScene(const PhysicsSettings& settings)
     PxSceneDesc sceneDesc(ToleranceScale);
     sceneDesc.gravity = C2P(settings.DefaultGravity);
     sceneDesc.flags |= PxSceneFlag::eENABLE_ACTIVE_ACTORS;
+    sceneDesc.flags |= PxSceneFlag::eENABLE_PCM;
     if (!settings.DisableCCD)
         sceneDesc.flags |= PxSceneFlag::eENABLE_CCD;
     sceneDesc.simulationEventCallback = &scenePhysX->EventsCallback;
     sceneDesc.filterShader = FilterShader;
     sceneDesc.bounceThresholdVelocity = settings.BounceThresholdVelocity;
-    sceneDesc.solverType = PxSolverType::ePGS;
+    switch (settings.SolverType)
+    {
+    case PhysicsSolverType::ProjectedGaussSeidelIterativeSolver:
+        sceneDesc.solverType = PxSolverType::ePGS;
+        break;
+    case PhysicsSolverType::TemporalGaussSeidelSolver:
+        sceneDesc.solverType = PxSolverType::eTGS;
+        break;
+    }
     if (sceneDesc.cpuDispatcher == nullptr)
     {
         scenePhysX->CpuDispatcher = PxDefaultCpuDispatcherCreate(Math::Clamp<uint32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 1, 4));
         CHECK_INIT(scenePhysX->CpuDispatcher, "PxDefaultCpuDispatcherCreate failed!");
         sceneDesc.cpuDispatcher = scenePhysX->CpuDispatcher;
+    }
+    switch (settings.BroadPhaseType)
+    {
+    case PhysicsBroadPhaseType::SweepAndPrune:
+        sceneDesc.broadPhaseType = PxBroadPhaseType::eSAP;
+        break;
+    case PhysicsBroadPhaseType::MultiBoxPruning:
+        sceneDesc.broadPhaseType = PxBroadPhaseType::eMBP;
+        break;
+    case PhysicsBroadPhaseType::AutomaticBoxPruning:
+        sceneDesc.broadPhaseType = PxBroadPhaseType::eABP;
+        break;
+    case PhysicsBroadPhaseType::ParallelAutomaticBoxPruning:
+        sceneDesc.broadPhaseType = PxBroadPhaseType::ePABP;
+        break;
     }
 
     // Create scene

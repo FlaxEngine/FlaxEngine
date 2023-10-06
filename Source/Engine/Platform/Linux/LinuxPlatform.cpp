@@ -2707,8 +2707,34 @@ Float2 LinuxPlatform::GetDesktopSize()
 
 Rectangle LinuxPlatform::GetMonitorBounds(const Float2& screenPos)
 {
-	// TODO: do it in a proper way
-	return Rectangle(Float2::Zero, GetDesktopSize());
+    if (!xDisplay)
+        return Rectangle::Empty;
+
+    int event, err;
+    const bool ok = X11::XineramaQueryExtension(xDisplay, &event, &err);
+    if (!ok)
+        return Rectangle::Empty;
+
+    int count;
+    int screenIdx = 0;
+    X11::XineramaScreenInfo* xsi = X11::XineramaQueryScreens(xDisplay, &count);
+    if (screenIdx >= count)
+        return Rectangle::Empty;
+    // find the screen for this screenPos
+    for (int i = 0; i < count; i++)
+    {
+        if (screenPos.X >= xsi[i].x_org && screenPos.X < xsi[i].x_org+xsi[i].width
+            && screenPos.Y >= xsi[i].y_org && screenPos.Y < xsi[i].y_org+xsi[i].height)
+        {
+            screenIdx = i;
+            break;
+        }
+    }
+
+    Float2 org((float)xsi[screenIdx].x_org, (float)xsi[screenIdx].y_org);
+    Float2 size((float)xsi[screenIdx].width, (float)xsi[screenIdx].height);
+    X11::XFree(xsi);
+	return Rectangle(org, size);
 }
 
 Rectangle LinuxPlatform::GetVirtualDesktopBounds()

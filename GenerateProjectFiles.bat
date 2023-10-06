@@ -1,14 +1,21 @@
 @echo off
-
-rem Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+:: Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 setlocal
 pushd
+
 echo Generating Flax Engine project files...
 
-rem Run Flax.Build to generate Visual Studio solution and project files (also pass the arguments)
-call "Development\Scripts\Windows\CallBuildTool.bat" -genproject %*
+:: Change the path to the script root
+cd /D "%~dp0"
+
+:: Run Flax.Build to generate Visual Studio solution and project files (also pass the arguments)
+call "Development\Scripts\Windows\CallBuildTool.bat" -genproject  %*
 if errorlevel 1 goto BuildToolFailed
+
+:: Build bindings for all editor configurations
+echo Building C# bindings...
+Binaries\Tools\Flax.Build.exe -build -BuildBindingsOnly -arch=x64 -platform=Windows --buildTargets=FlaxEditor,FlaxGame
 
 popd
 echo Done!

@@ -1452,7 +1452,8 @@ namespace Flax.Build.Bindings
             var useThunk = buildData.Platform.HasDynamicCodeExecutionSupport && Configuration.AOTMode == DotNetAOTModes.None;
             if (useThunk)
             {
-                contents.AppendLine($"        PROFILE_CPU_NAMED(\"{classInfo.FullNameManaged}::{functionInfo.Name}\");");
+                //contents.AppendLine($"        PROFILE_CPU_NAMED(\"{classInfo.FullNameManaged}::{functionInfo.Name}\");");
+                contents.AppendLine("        PROFILE_CPU_SRC_LOC(method->ProfilerData);");
 
                 // Convert parameters into managed format as boxed values
                 var thunkParams = string.Empty;

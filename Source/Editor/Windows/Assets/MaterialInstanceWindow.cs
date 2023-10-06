@@ -69,7 +69,7 @@ namespace FlaxEditor.Windows.Assets
             [EditorDisplay("General"), Tooltip("The base material used to override it's properties")]
             public MaterialBase BaseMaterial
             {
-                get => Window?.Asset?.BaseMaterial;
+                get => Window?.Asset != null ? Window?.Asset.BaseMaterial : null;
                 set
                 {
                     var asset = Window?.Asset;
@@ -101,10 +101,12 @@ namespace FlaxEditor.Windows.Assets
             [HideInEditor]
             public object[] Values
             {
-                get => Window?.Asset?.Parameters.Select(x => x.Value).ToArray();
+                get => Window?.Asset != null ? Window?.Asset.Parameters.Select(x => x.Value).ToArray() : null;
                 set
                 {
-                    var parameters = Window?.Asset?.Parameters;
+                    if (Window?.Asset == null)
+                        return;
+                    var parameters = Window?.Asset.Parameters;
                     if (value != null && parameters != null)
                     {
                         if (value.Length != parameters.Length)
@@ -131,9 +133,11 @@ namespace FlaxEditor.Windows.Assets
             [HideInEditor]
             public FlaxEngine.Object[] ValuesRef
             {
-                get => Window?.Asset?.Parameters.Select(x => x.Value as FlaxEngine.Object).ToArray();
+                get => Window?.Asset != null ? Window?.Asset.Parameters.Select(x => x.Value as FlaxEngine.Object).ToArray() : null;
                 set
                 {
+                    if (Window?.Asset == null)
+                        return;
                     var parameters = Window?.Asset?.Parameters;
                     if (value != null && parameters != null)
                     {
@@ -293,7 +297,7 @@ namespace FlaxEditor.Windows.Assets
                                                         var p = (MaterialParameter)e.Tag;
 
                                                         // Try to get default value (from the base material)
-                                                        var pBase = baseMaterial?.GetParameter(p.Name);
+                                                        var pBase = baseMaterial != null ? baseMaterial.GetParameter(p.Name) : null;
                                                         if (pBase != null && pBase.ParameterType == p.ParameterType)
                                                         {
                                                             valueContainer.SetDefaultValue(pBase.Value);

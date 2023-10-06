@@ -9,6 +9,7 @@ using Real = System.Single;
 using System;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Modules;
+using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.Json;
 using Object = FlaxEngine.Object;
@@ -21,7 +22,7 @@ namespace FlaxEditor.SceneGraph.Actors
     [HideInEditor]
     public sealed class SplineNode : ActorNode
     {
-        private sealed class SplinePointNode : ActorChildNode<SplineNode>
+        internal sealed class SplinePointNode : ActorChildNode<SplineNode>
         {
             public unsafe SplinePointNode(SplineNode node, Guid id, int index)
             : base(node, id, index)
@@ -167,10 +168,11 @@ namespace FlaxEditor.SceneGraph.Actors
 
             public override bool RayCastSelf(ref RayCastData ray, out Real distance, out Vector3 normal)
             {
+                normal = -ray.Ray.Direction;
                 var actor = (Spline)_node.Actor;
                 var pos = actor.GetSplinePoint(Index);
-                normal = -ray.Ray.Direction;
-                return new BoundingSphere(pos, 7.0f).Intersects(ref ray.Ray, out distance);
+                var nodeSize = NodeSizeByDistance(Transform.Translation, PointNodeSize);
+                return new BoundingSphere(pos, nodeSize).Intersects(ref ray.Ray, out distance);
             }
 
             public override void OnDebugDraw(ViewportDebugDrawData data)
@@ -179,29 +181,32 @@ namespace FlaxEditor.SceneGraph.Actors
                 var pos = actor.GetSplinePoint(Index);
                 var tangentIn = actor.GetSplineTangent(Index, true).Translation;
                 var tangentOut = actor.GetSplineTangent(Index, false).Translation;
+                var pointSize = NodeSizeByDistance(pos, PointNodeSize);
+                var tangentInSize = NodeSizeByDistance(tangentIn, TangentNodeSize);
+                var tangentOutSize = NodeSizeByDistance(tangentOut, TangentNodeSize);
 
                 // Draw spline path
                 ParentNode.OnDebugDraw(data);
 
                 // Draw selected point highlight
-                DebugDraw.DrawSphere(new BoundingSphere(pos, 5.0f), Color.Yellow, 0, false);
+                DebugDraw.DrawSphere(new BoundingSphere(pos, pointSize), Color.Yellow, 0, false);
 
                 // Draw tangent points
                 if (tangentIn != pos)
                 {
                     DebugDraw.DrawLine(pos, tangentIn, Color.Blue.AlphaMultiplied(0.6f), 0, false);
-                    DebugDraw.DrawWireSphere(new BoundingSphere(tangentIn, 4.0f), Color.Blue, 0, false);
+                    DebugDraw.DrawWireSphere(new BoundingSphere(tangentIn, tangentInSize), Color.Blue, 0, false);
                 }
                 if (tangentOut != pos)
                 {
                     DebugDraw.DrawLine(pos, tangentOut, Color.Red.AlphaMultiplied(0.6f), 0, false);
-                    DebugDraw.DrawWireSphere(new BoundingSphere(tangentOut, 4.0f), Color.Red, 0, false);
+                    DebugDraw.DrawWireSphere(new BoundingSphere(tangentOut, tangentOutSize), Color.Red, 0, false);
                 }
             }
 
-            public override void OnContextMenu(ContextMenu contextMenu)
+            public override void OnContextMenu(ContextMenu contextMenu, EditorWindow window)
             {
-                ParentNode.OnContextMenu(contextMenu);
+                ParentNode.OnContextMenu(contextMenu, window);
             }
 
             public static SceneGraphNode Create(StateData state)
@@ -219,7 +224,7 @@ namespace FlaxEditor.SceneGraph.Actors
             }
         }
 
-        private sealed class SplinePointTangentNode : ActorChildNode
+        internal sealed class SplinePointTangentNode : ActorChildNode
         {
             private SplineNode _node;
             private int _index;
@@ -249,10 +254,11 @@ namespace FlaxEditor.SceneGraph.Actors
 
             public override bool RayCastSelf(ref RayCastData ray, out Real distance, out Vector3 normal)
             {
+                normal = -ray.Ray.Direction;
                 var actor = (Spline)_node.Actor;
                 var pos = actor.GetSplineTangent(_index, _isIn).Translation;
-                normal = -ray.Ray.Direction;
-                return new BoundingSphere(pos, 7.0f).Intersects(ref ray.Ray, out distance);
+                var tangentSize = NodeSizeByDistance(Transform.Translation, TangentNodeSize);
+                return new BoundingSphere(pos, tangentSize).Intersects(ref ray.Ray, out distance);
             }
 
             public override void OnDebugDraw(ViewportDebugDrawData data)
@@ -263,12 +269,13 @@ namespace FlaxEditor.SceneGraph.Actors
                 // Draw selected tangent highlight
                 var actor = (Spline)_node.Actor;
                 var pos = actor.GetSplineTangent(_index, _isIn).Translation;
-                DebugDraw.DrawSphere(new BoundingSphere(pos, 5.0f), Color.YellowGreen, 0, false);
+                var tangentSize = NodeSizeByDistance(Transform.Translation, TangentNodeSize);
+                DebugDraw.DrawSphere(new BoundingSphere(pos, tangentSize), Color.YellowGreen, 0, false);
             }
 
-            public override void OnContextMenu(ContextMenu contextMenu)
+            public override void OnContextMenu(ContextMenu contextMenu, EditorWindow window)
             {
-                ParentNode.OnContextMenu(contextMenu);
+                ParentNode.OnContextMenu(contextMenu, window);
             }
 
             public override void OnDispose()
@@ -278,6 +285,9 @@ namespace FlaxEditor.SceneGraph.Actors
                 base.OnDispose();
             }
         }
+
+        private const Real PointNodeSize = 1.5f;
+        private const Real TangentNodeSize = 1.0f;
 
         /// <inheritdoc />
         public SplineNode(Actor actor)
@@ -345,9 +355,9 @@ namespace FlaxEditor.SceneGraph.Actors
         }
 
         /// <inheritdoc />
-        public override void OnContextMenu(ContextMenu contextMenu)
+        public override void OnContextMenu(ContextMenu contextMenu, EditorWindow window)
         {
-            base.OnContextMenu(contextMenu);
+            base.OnContextMenu(contextMenu, window);
 
             contextMenu.AddButton("Add spline model", OnAddSplineModel);
             contextMenu.AddButton("Add spline collider", OnAddSplineCollider);
@@ -396,6 +406,13 @@ namespace FlaxEditor.SceneGraph.Actors
                     Navigation.BuildNavMesh(collider.Scene, collider.Box, options.AutoRebuildNavMeshTimeoutMs);
                 }
             }
+        }
+
+        internal static Real NodeSizeByDistance(Vector3 nodePosition, Real nodeSize)
+        {
+            var cameraTransform = Editor.Instance.Windows.EditWin.Viewport.ViewportCamera.Viewport.ViewTransform;
+            var distance = Vector3.Distance(cameraTransform.Translation, nodePosition) / 100;
+            return distance * nodeSize;
         }
 
         /// <inheritdoc />

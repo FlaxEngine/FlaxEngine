@@ -855,6 +855,7 @@ DRAW:
         {
             auto& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
             auto drawCall = batch.DrawCall;
+            drawCall.ObjectRadius = 0.0f;
             bindParams.FirstDrawCall = &drawCall;
             const auto* instancesData = batch.Instances.Get();
 

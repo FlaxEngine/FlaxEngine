@@ -136,7 +136,7 @@ bool GPUBufferDX12::OnInit()
     // Create resource
     ID3D12Resource* resource;
     D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COPY_DEST;
-    VALIDATE_DIRECTX_RESULT(_device->GetDevice()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, initialState, nullptr, IID_PPV_ARGS(&resource)));
+    VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, initialState, nullptr, IID_PPV_ARGS(&resource)));
 
     // Set state
     initResource(resource, initialState, 1);

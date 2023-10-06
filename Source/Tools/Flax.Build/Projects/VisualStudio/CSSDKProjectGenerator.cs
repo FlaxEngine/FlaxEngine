@@ -26,7 +26,7 @@ namespace Flax.Build.Projects.VisualStudio
         public override TargetType? Type => TargetType.DotNetCore;
 
         /// <inheritdoc />
-        public override void GenerateProject(Project project)
+        public override void GenerateProject(Project project, string solutionPath)
         {
             var csProjectFileContent = new StringBuilder();
 
@@ -52,6 +52,11 @@ namespace Flax.Build.Projects.VisualStudio
                     break;
                 }
             }
+
+            // Try to reuse the existing project guid from solution file
+            vsProject.ProjectGuid = GetProjectGuid(solutionPath, vsProject.Name);
+            if (vsProject.ProjectGuid == Guid.Empty)
+                vsProject.ProjectGuid = Guid.NewGuid();
 
             // Header
             csProjectFileContent.AppendLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
@@ -174,8 +179,35 @@ namespace Flax.Build.Projects.VisualStudio
                 else
                     fileType = "None";
 
-                var projectPath = Utilities.MakePathRelativeTo(file, projectDirectory);
-                csProjectFileContent.AppendLine(string.Format("    <{0} Include=\"{1}\" />", fileType, projectPath));
+                var filePath = file.Replace('/', '\\'); // Normalize path
+                var projectPath = Utilities.MakePathRelativeTo(filePath, projectDirectory);
+                string linkPath = null;
+                if (projectPath.StartsWith(@"..\..\..\"))
+                {
+                    // Create folder structure for project external files
+                    var sourceIndex = filePath.LastIndexOf(@"\Source\");
+                    if (sourceIndex != -1)
+                    {
+                        projectPath = filePath;
+                        string fileProjectRoot = filePath.Substring(0, sourceIndex);
+                        string fileProjectName = Path.GetFileName(fileProjectRoot);
+                        string fileProjectRelativePath = filePath.Substring(sourceIndex + 1);
+
+                        // Remove Source-directory from path
+                        if (fileProjectRelativePath.IndexOf('\\') != -1)
+                            fileProjectRelativePath = fileProjectRelativePath.Substring(fileProjectRelativePath.IndexOf('\\') + 1);
+
+                        if (fileProjectRoot == project.SourceFolderPath)
+                            linkPath = fileProjectRelativePath;
+                        else // BuildScripts project
+                            linkPath = Path.Combine(fileProjectName, fileProjectRelativePath);
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(linkPath))
+                    csProjectFileContent.AppendLine(string.Format("    <{0} Include=\"{1}\" Link=\"{2}\" />", fileType, projectPath, linkPath));
+                else
+                    csProjectFileContent.AppendLine(string.Format("    <{0} Include=\"{1}\" />", fileType, projectPath));
             }
 
             if (project.GeneratedSourceFiles != null)
@@ -188,7 +220,8 @@ namespace Flax.Build.Projects.VisualStudio
                     else
                         fileType = "None";
 
-                    csProjectFileContent.AppendLine(string.Format("    <{0} Visible=\"false\" Include=\"{1}\" />", fileType, file));
+                    var filePath = file.Replace('/', '\\');
+                    csProjectFileContent.AppendLine(string.Format("    <{0} Visible=\"false\" Include=\"{1}\" />", fileType, filePath));
                 }
             }
 

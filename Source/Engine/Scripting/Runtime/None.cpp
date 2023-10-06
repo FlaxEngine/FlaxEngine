@@ -141,6 +141,11 @@ void* MCore::Array::GetAddress(const MArray* obj)
     return nullptr;
 }
 
+MArray* MCore::Array::Unbox(MObject* obj)
+{
+    return nullptr;
+}
+
 MGCHandle MCore::GCHandle::New(MObject* obj, bool pinned)
 {
     return (MGCHandle)(uintptr)obj;
@@ -558,6 +563,15 @@ MObject* MProperty::GetAttribute(MClass* monoClass) const
 const Array<MObject*>& MProperty::GetAttributes() const
 {
     return _attributes;
+}
+
+void MCore::ScriptingObject::SetInternalValues(MClass* klass, MObject* object, void* unmanagedPtr, const Guid* id)
+{
+}
+
+MObject* MCore::ScriptingObject::CreateScriptingObject(MClass* klass, void* unmanagedPtr, const Guid* id)
+{
+    return nullptr;
 }
 
 #endif

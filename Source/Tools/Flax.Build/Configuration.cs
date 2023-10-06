@@ -40,12 +40,6 @@ namespace Flax.Build
         public static bool Deploy = false;
 
         /// <summary>
-        /// Compresses deployed files.
-        /// </summary>
-        [CommandLine("deployDontCompress", "Skips compressing deployed files, and keeps files.")]
-        public static bool DontCompress = false;
-
-        /// <summary>
         /// Builds the targets. Builds all the targets, use <see cref="BuildTargets"/> to select a custom set of targets for the build.
         /// </summary>
         [CommandLine("build", "Builds the targets.")]
@@ -212,6 +206,12 @@ namespace Flax.Build
         /// </summary>
         [CommandLine("vscode", "Generates Visual Studio Code project format files. Valid only with -genproject option.")]
         public static bool ProjectFormatVSCode = false;
+
+        /// <summary>
+        /// Generates Visual Studio 2022 project format files for Rider. Valid only with -genproject option.
+        /// </summary>
+        [CommandLine("rider", "Generates Visual Studio 2022 project format files for Rider. Valid only with -genproject option.")]
+        public static bool ProjectFormatRider = false;
 
         /// <summary>
         /// Generates code project files for a custom project format type. Valid only with -genproject option.

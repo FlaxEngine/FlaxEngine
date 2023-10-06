@@ -329,6 +329,7 @@ private:
     DifferentialSettings _differential;
     GearboxSettings _gearbox;
     bool _fixInvalidForwardDir = false; // [Deprecated on 13.06.2023, expires on 13.06.2025]
+    bool _useWheelsUpdates = true;
 
 public:
     /// <summary>
@@ -484,6 +485,7 @@ public:
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     void OnColliderChanged(Collider* c) override;
+    void OnActiveInTreeChanged() override;
 
 protected:
     void OnPhysicsSceneChanged(PhysicsScene* previous) override;
