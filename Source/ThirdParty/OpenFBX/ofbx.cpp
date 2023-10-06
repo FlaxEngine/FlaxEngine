@@ -2982,9 +2982,9 @@ static void parseGlobalInfo(const Element& root, Scene* scene)
 				{
 					if (!node->first_property)
 						continue;
-					get_text_property("Original|ApplicationVendor", scene->m_info.AppVendor, UpVector, toInt);
-					get_text_property("Original|ApplicationName", scene->m_info.AppName, UpVector, toInt);
-					get_text_property("Original|ApplicationVersion", scene->m_info.AppVersion, UpVector, toInt);
+					get_text_property("Original|ApplicationVendor", scene->m_info.AppVendor);
+					get_text_property("Original|ApplicationName", scene->m_info.AppName);
+					get_text_property("Original|ApplicationVersion", scene->m_info.AppVersion);
 				}
 				break;
 			}

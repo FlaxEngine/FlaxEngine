@@ -348,7 +348,7 @@ Asset::LoadResult AudioClip::load()
 
 #if !BUILD_RELEASE
     // Validate buffer start times
-    if (Math::NotNearEqual(_buffersStartTimes[_totalChunks], GetLength()))
+    if (!Math::NearEqual(_buffersStartTimes[_totalChunks], GetLength(), 1.0f / 60.0f))
     {
         LOG(Warning, "Invalid audio buffers data size. Expected length: {0}s", GetLength());
         for (int32 i = 0; i < _totalChunks + 1; i++)
@@ -454,14 +454,12 @@ bool AudioClip::WriteBuffer(int32 chunkIndex)
     }
     break;
     case AudioFormat::Raw:
-    {
         data = Span<byte>(chunk->Get(), chunk->Size());
-    }
-    break;
+        break;
     default:
         return true;
     }
-    info.NumSamples = data.Length() / bytesPerSample;
+    info.NumSamples = Math::AlignDown(data.Length() / bytesPerSample, info.NumChannels * bytesPerSample);
 
     // Convert to Mono if used as 3D source and backend doesn't support it
     if (Is3D() && info.NumChannels > 1 && EnumHasNoneFlags(AudioBackend::Features(), AudioBackend::FeatureFlags::SpatialMultiChannel))

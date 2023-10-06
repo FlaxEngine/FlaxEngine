@@ -17,7 +17,9 @@
 #include "Editor/ProjectInfo.h"
 #include "Editor/Cooker/GameCooker.h"
 #include "Editor/Utilities/EditorUtilities.h"
-#include <ThirdParty/pugixml/pugixml.hpp>
+
+#include "pugixml/pugixml_extra.hpp"
+
 using namespace pugi;
 
 IMPLEMENT_SETTINGS_GETTER(MacPlatformSettings, MacPlatform);
@@ -170,17 +172,17 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
     const String plistPath = data.DataOutputPath / TEXT("Info.plist");
     {
         xml_document doc;
-        xml_node plist = doc.child_or_append(PUGIXML_TEXT("plist"));
+        xml_node_extra plist = xml_node_extra(doc).child_or_append(PUGIXML_TEXT("plist"));
         plist.append_attribute(PUGIXML_TEXT("version")).set_value(PUGIXML_TEXT("1.0"));
-        xml_node dict = plist.child_or_append(PUGIXML_TEXT("dict"));
+        xml_node_extra dict = plist.child_or_append(PUGIXML_TEXT("dict"));
 
 #define ADD_ENTRY(key, value) \
-    dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT(key)); \
-    dict.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT(value))
+    dict.append_child_with_value(PUGIXML_TEXT("key"), PUGIXML_TEXT(key)); \
+    dict.append_child_with_value(PUGIXML_TEXT("string"), PUGIXML_TEXT(value))
 #define ADD_ENTRY_STR(key, value) \
-    dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT(key)); \
+    dict.append_child_with_value(PUGIXML_TEXT("key"), PUGIXML_TEXT(key)); \
     { std::u16string valueStr(value.GetText()); \
-    dict.append_child(PUGIXML_TEXT("string")).set_child_value(pugi::string_t(valueStr.begin(), valueStr.end()).c_str()); }
+    dict.append_child_with_value(PUGIXML_TEXT("string"), pugi::string_t(valueStr.begin(), valueStr.end()).c_str()); }
 
         ADD_ENTRY("CFBundleDevelopmentRegion", "English");
         ADD_ENTRY("CFBundlePackageType", "APPL");
@@ -194,22 +196,22 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
         ADD_ENTRY_STR("CFBundleVersion", projectVersion);
         ADD_ENTRY_STR("NSHumanReadableCopyright", gameSettings->CopyrightNotice);
 
-        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("CFBundleSupportedPlatforms"));
-        xml_node CFBundleSupportedPlatforms = dict.append_child(PUGIXML_TEXT("array"));
-        CFBundleSupportedPlatforms.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("MacOSX"));
+        dict.append_child_with_value(PUGIXML_TEXT("key"), PUGIXML_TEXT("CFBundleSupportedPlatforms"));
+        xml_node_extra CFBundleSupportedPlatforms = dict.append_child(PUGIXML_TEXT("array"));
+        CFBundleSupportedPlatforms.append_child_with_value(PUGIXML_TEXT("string"), PUGIXML_TEXT("MacOSX"));
 
-        dict.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("LSMinimumSystemVersionByArchitecture"));
-        xml_node LSMinimumSystemVersionByArchitecture = dict.append_child(PUGIXML_TEXT("dict"));
+        dict.append_child_with_value(PUGIXML_TEXT("key"), PUGIXML_TEXT("LSMinimumSystemVersionByArchitecture"));
+        xml_node_extra LSMinimumSystemVersionByArchitecture = dict.append_child(PUGIXML_TEXT("dict"));
         switch (_arch)
         {
         case ArchitectureType::x64:
-            LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("x86_64"));
+            LSMinimumSystemVersionByArchitecture.append_child_with_value(PUGIXML_TEXT("key"), PUGIXML_TEXT("x86_64"));
             break;
         case ArchitectureType::ARM64:
-            LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("key")).set_child_value(PUGIXML_TEXT("arm64"));
+            LSMinimumSystemVersionByArchitecture.append_child_with_value(PUGIXML_TEXT("key"), PUGIXML_TEXT("arm64"));
             break;
         }
-        LSMinimumSystemVersionByArchitecture.append_child(PUGIXML_TEXT("string")).set_child_value(PUGIXML_TEXT("10.15"));
+        LSMinimumSystemVersionByArchitecture.append_child_with_value(PUGIXML_TEXT("string"), PUGIXML_TEXT("10.15"));
         
 #undef ADD_ENTRY
 #undef ADD_ENTRY_STR

@@ -166,7 +166,19 @@ namespace FlaxEditor.Options
         /// Gets or sets the output log text font.
         /// </summary>
         [EditorDisplay("Output Log", "Text Font"), EditorOrder(320), Tooltip("The output log text font.")]
-        public FontReference OutputLogTextFont { get; set; } = new FontReference(FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont), 10);
+        public FontReference OutputLogTextFont
+        {
+            get => _outputLogFont;
+            set
+            {
+                if (value == null)
+                    _outputLogFont = new FontReference(FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont), 10);
+                else if (!value.Font)
+                    _outputLogFont.Font = FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont);
+                else
+                    _outputLogFont = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the output log text color.
@@ -225,29 +237,82 @@ namespace FlaxEditor.Options
         public int NumberOfGameClientsToLaunch = 1;
 
         private static FontAsset DefaultFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont);
+        private FontReference _titleFont = new FontReference(DefaultFont, 18);
+        private FontReference _largeFont = new FontReference(DefaultFont, 14);
+        private FontReference _mediumFont = new FontReference(DefaultFont, 9);
+        private FontReference _smallFont = new FontReference(DefaultFont, 9);
+        private FontReference _outputLogFont = new FontReference(FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont), 10);
 
         /// <summary>
         /// Gets or sets the title font for editor UI.
         /// </summary>
         [EditorDisplay("Fonts"), EditorOrder(600), Tooltip("The title font for editor UI.")]
-        public FontReference TitleFont { get; set; } = new FontReference(DefaultFont, 18);
+        public FontReference TitleFont
+        {
+            get => _titleFont;
+            set
+            {
+                if (value == null)
+                    _titleFont = new FontReference(DefaultFont, 18);
+                else if (!value.Font)
+                    _titleFont.Font = DefaultFont;
+                else
+                    _titleFont = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the large font for editor UI.
         /// </summary>
         [EditorDisplay("Fonts"), EditorOrder(610), Tooltip("The large font for editor UI.")]
-        public FontReference LargeFont { get; set; } = new FontReference(DefaultFont, 14);
+        public FontReference LargeFont
+        {
+            get => _largeFont;
+            set
+            {
+                if (value == null)
+                    _largeFont = new FontReference(DefaultFont, 14);
+                else if (!value.Font)
+                    _largeFont.Font = DefaultFont;
+                else
+                    _largeFont = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the medium font for editor UI.
         /// </summary>
         [EditorDisplay("Fonts"), EditorOrder(620), Tooltip("The medium font for editor UI.")]
-        public FontReference MediumFont { get; set; } = new FontReference(DefaultFont, 9);
+        public FontReference MediumFont
+        {
+            get => _mediumFont;
+            set
+            {
+                if (value == null)
+                    _mediumFont = new FontReference(DefaultFont, 9);
+                else if (!value.Font)
+                    _mediumFont.Font = DefaultFont;
+                else
+                    _mediumFont = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the small font for editor UI.
         /// </summary>
         [EditorDisplay("Fonts"), EditorOrder(630), Tooltip("The small font for editor UI.")]
-        public FontReference SmallFont { get; set; } = new FontReference(DefaultFont, 9);
+        public FontReference SmallFont
+        {
+            get => _smallFont;
+            set
+            {
+                if (value == null)
+                    _smallFont = new FontReference(DefaultFont, 9);
+                else if (!value.Font)
+                    _smallFont.Font = DefaultFont;
+                else
+                    _smallFont = value;
+            }
+        }
     }
 }
