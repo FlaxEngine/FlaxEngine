@@ -533,8 +533,8 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     // FWidth
     case 41:
     {
-        const auto d = tryGetValue(node->GetBox(0), node->Values[0]).AsFloat();
-        value =  writeLocal(ValueType::Float, String::Format(TEXT("abs(ddx({0})) + abs(ddy({0}))"), d.Value), node);
+        const auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
+        value =  writeLocal(inValue.Type, String::Format(TEXT("fwidth({0})"), inValue.Value), node);
         break;
     }
     //AAStep (smooth version of step)
