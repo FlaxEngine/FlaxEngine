@@ -68,7 +68,7 @@ namespace FlaxEditor.Surface.Archetypes
             private void UpdateTitle()
             {
                 var asset = Editor.Instance.ContentDatabase.Find((Guid)Values[0]);
-                Title = asset?.ShortName ?? "Animation";
+                Title = _assetBox.HasAnyConnection || asset == null ? "Animation" : asset.ShortName;
                 var style = Style.Current;
                 Resize(Mathf.Max(230, style.FontLarge.MeasureText(Title).X + 30), 160);
             }
@@ -82,6 +82,7 @@ namespace FlaxEditor.Surface.Archetypes
                     return;
 
                 _assetSelect.Visible = !box.HasAnyConnection;
+                UpdateTitle();
             }
         }
 
