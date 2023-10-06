@@ -138,7 +138,7 @@ void BoundingSphere::FromPoints(const Double3* points, int32 pointsCount, Boundi
 void BoundingSphere::FromBox(const BoundingBox& box, BoundingSphere& result)
 {
     
-    //Handle IsNanOrInfinity softly there is no need to hard crash the engine/game
+    //Handle IsNanOrInfinity softly there is no need to hard crash the editor
     SOFT_ASSERT
     (
         box.Minimum.IsNanOrInfinity() && box.Maximum.IsNanOrInfinity(),
