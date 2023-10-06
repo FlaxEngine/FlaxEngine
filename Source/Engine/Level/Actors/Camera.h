@@ -7,6 +7,7 @@
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Math/Ray.h"
 #include "Engine/Core/Types/LayersMask.h"
+#include "Engine/Graphics/Enums.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #if USE_EDITOR
 #include "Engine/Content/AssetReference.h"
@@ -133,6 +134,18 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"Camera\")")
     LayersMask RenderLayersMask;
+
+    /// <summary>
+    /// Frame rendering flags used to switch between graphics features for this camera.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(110), EditorDisplay(\"Camera\")")
+    ViewFlags RenderFlags = ViewFlags::DefaultGame;
+
+    /// <summary>
+    /// Describes frame rendering modes for this camera.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(120), EditorDisplay(\"Camera\")")
+    ViewMode RenderView = ViewMode::Default;
 
 public:
     /// <summary>
