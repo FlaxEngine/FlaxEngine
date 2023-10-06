@@ -914,8 +914,8 @@ namespace FlaxEditor.Surface.Archetypes
                 DependentBoxes = new[] { 1 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, "value", true, typeof(float), 0),
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 5),
+                    NodeElementArchetype.Factory.Input(0, "value", true, null, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, null, 1),
                 }
             },
             new NodeArchetype
