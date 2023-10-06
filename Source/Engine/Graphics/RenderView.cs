@@ -102,6 +102,8 @@ namespace FlaxEngine
             NonJitteredProjection = Projection;
             TemporalAAJitter = Float4.Zero;
             RenderLayersMask = camera.RenderLayersMask;
+            Flags = camera.RenderFlags;
+            Mode = camera.RenderView;
 
             UpdateCachedData();
         }
