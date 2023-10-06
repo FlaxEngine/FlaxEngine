@@ -116,7 +116,7 @@ namespace FlaxEditor.Windows.Assets
                 _window = window;
 
                 // Try to restore target asset AudioClip import options (useful for fast reimport)
-                AudioImportSettings.TryRestore(ref ImportSettings, window.Item.Path);
+                Editor.TryRestoreImportOptions(ref ImportSettings.Settings, window.Item.Path);
 
                 // Prepare restore data
                 PeekState();

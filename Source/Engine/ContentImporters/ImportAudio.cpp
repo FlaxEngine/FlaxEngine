@@ -18,32 +18,6 @@
 #include "Engine/Tools/AudioTool/OggVorbisDecoder.h"
 #include "Engine/Tools/AudioTool/OggVorbisEncoder.h"
 #include "Engine/Serialization/JsonWriters.h"
-#include "Engine/Scripting/Enums.h"
-
-String ImportAudio::Options::ToString() const
-{
-    return String::Format(TEXT("Format:{}, DisableStreaming:{}, Is3D:{}, Quality:{}, BitDepth:{}"), ScriptingEnum::ToString(Format), DisableStreaming, Is3D, Quality, BitDepth);
-}
-
-void ImportAudio::Options::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    SERIALIZE_GET_OTHER_OBJ(ImportAudio::Options);
-
-    SERIALIZE(Format);
-    SERIALIZE(DisableStreaming);
-    SERIALIZE(Is3D);
-    SERIALIZE(Quality);
-    SERIALIZE(BitDepth);
-}
-
-void ImportAudio::Options::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    DESERIALIZE(Format);
-    DESERIALIZE(DisableStreaming);
-    DESERIALIZE(Is3D);
-    DESERIALIZE(Quality);
-    DESERIALIZE(BitDepth);
-}
 
 bool ImportAudio::TryGetImportOptions(const StringView& path, Options& options)
 {
@@ -112,16 +86,14 @@ CreateAssetResult ImportAudio::Import(CreateAssetContext& context, AudioDecoder&
     sampleBuffer.Link(audioData.Get());
 
     // Convert bit depth if need to
-    if (options.BitDepth != static_cast<int32>(info.BitDepth))
+    uint32 outputBitDepth = (uint32)options.BitDepth;
+    if (outputBitDepth != info.BitDepth)
     {
-        const uint32 outBufferSize = info.NumSamples * (options.BitDepth / 8);
+        const uint32 outBufferSize = info.NumSamples * (outputBitDepth / 8);
         sampleBuffer.Allocate(outBufferSize);
-
-        AudioTool::ConvertBitDepth(audioData.Get(), info.BitDepth, sampleBuffer.Get(), options.BitDepth, info.NumSamples);
-
-        info.BitDepth = options.BitDepth;
+        AudioTool::ConvertBitDepth(audioData.Get(), info.BitDepth, sampleBuffer.Get(), outputBitDepth, info.NumSamples);
+        info.BitDepth = outputBitDepth;
         bytesPerSample = info.BitDepth / 8;
-
         bufferSize = outBufferSize;
     }
 
@@ -149,7 +121,7 @@ CreateAssetResult ImportAudio::Import(CreateAssetContext& context, AudioDecoder&
     context.Data.Header.Chunks[chunkIndex]->Data.Copy(dataPtr, dataSize);
 
 #define WRITE_DATA(chunkIndex, dataPtr, dataSize) \
-    samplesPerChunk[chunkIndex] = (dataSize) / (options.BitDepth / 8); \
+    samplesPerChunk[chunkIndex] = (dataSize) / (outputBitDepth / 8); \
     switch (options.Format) \
     { \
     case AudioFormat::Raw: \
