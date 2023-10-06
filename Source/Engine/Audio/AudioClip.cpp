@@ -348,7 +348,7 @@ Asset::LoadResult AudioClip::load()
 
 #if !BUILD_RELEASE
     // Validate buffer start times
-    if (Math::NotNearEqual(_buffersStartTimes[_totalChunks], GetLength()))
+    if (!Math::NearEqual(_buffersStartTimes[_totalChunks], GetLength(), 1.0f / 60.0f))
     {
         LOG(Warning, "Invalid audio buffers data size. Expected length: {0}s", GetLength());
         for (int32 i = 0; i < _totalChunks + 1; i++)
