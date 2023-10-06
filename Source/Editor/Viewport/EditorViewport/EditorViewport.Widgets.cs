@@ -139,10 +139,8 @@ namespace FlaxEditor.Viewport
                     {
                         int layerIndex = (int)button.Tag;
                         LayersMask mask = new LayersMask(layerIndex);
-                        RenderView view = Task.View;
-                        view.RenderLayersMask ^= mask;
-                        Task.View = view;
-                        button.Icon = (Task.View.RenderLayersMask & mask) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                        Task.ViewLayersMask ^= mask;
+                        button.Icon = (Task.ViewLayersMask & mask) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
                     }
                 };
                 viewLayers.VisibleChanged += WidgetViewLayersShowHide;
@@ -178,7 +176,7 @@ namespace FlaxEditor.Viewport
                     {
                         var v = (ViewFlags)button.Tag;
                         Task.ViewFlags ^= v;
-                        button.Icon = (Task.View.Flags & v) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                        button.Icon = (Task.ViewFlags & v) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
                     }
                 };
                 viewFlags.VisibleChanged += WidgetViewFlagsShowHide;
@@ -373,15 +371,14 @@ namespace FlaxEditor.Viewport
                 return;
 
             var ccm = (ContextMenu)cm;
+            var layersMask = Task.ViewLayersMask;
             foreach (var e in ccm.Items)
             {
                 if (e is ContextMenuButton b && b != null && b.Tag != null)
                 {
                     int layerIndex = (int)b.Tag;
                     LayersMask mask = new LayersMask(layerIndex);
-                    b.Icon = (Task.View.RenderLayersMask & mask) != 0
-                             ? Style.Current.CheckBoxTick
-                             : SpriteHandle.Invalid;
+                    b.Icon = (layersMask & mask) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
                 }
             }
         }
