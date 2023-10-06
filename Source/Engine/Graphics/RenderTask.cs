@@ -39,5 +39,19 @@ namespace FlaxEngine
                 View = view;
             }
         }
+
+        /// <summary>
+        /// The rendering mask for layers. Used to exclude objects from rendering (via <see cref="View"/> property).
+        /// </summary>
+        public LayersMask ViewLayersMask
+        {
+            get => View.RenderLayersMask;
+            set
+            {
+                var view = View;
+                view.RenderLayersMask = value;
+                View = view;
+            }
+        }
     }
 }

@@ -313,7 +313,7 @@ namespace FlaxEditor.Windows.Assets
             }
             if (showCustomNodeOptions)
             {
-                Selection[0].OnContextMenu(contextMenu);
+                Selection[0].OnContextMenu(contextMenu, this);
             }
             ContextMenuShow?.Invoke(contextMenu);
 

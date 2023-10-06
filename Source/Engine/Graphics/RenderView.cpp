@@ -176,7 +176,7 @@ void RenderView::SetProjector(float nearPlane, float farPlane, const Float3& pos
     CullingFrustum = Frustum;
 }
 
-void RenderView::CopyFrom(Camera* camera, Viewport* viewport)
+void RenderView::CopyFrom(const Camera* camera, const Viewport* viewport)
 {
     const Vector3 cameraPos = camera->GetPosition();
     LargeWorlds::UpdateOrigin(Origin, cameraPos);
@@ -192,6 +192,8 @@ void RenderView::CopyFrom(Camera* camera, Viewport* viewport)
     Frustum.GetInvMatrix(IVP);
     CullingFrustum = Frustum;
     RenderLayersMask = camera->RenderLayersMask;
+    Flags = camera->RenderFlags;
+    Mode = camera->RenderMode;
 }
 
 void RenderView::GetWorldMatrix(const Transform& transform, Matrix& world) const

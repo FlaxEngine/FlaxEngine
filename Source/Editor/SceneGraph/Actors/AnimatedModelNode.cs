@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Windows;
 using FlaxEngine;
 
 namespace FlaxEditor.SceneGraph.Actors
@@ -22,9 +23,9 @@ namespace FlaxEditor.SceneGraph.Actors
         }
 
         /// <inheritdoc />
-        public override void OnContextMenu(ContextMenu contextMenu)
+        public override void OnContextMenu(ContextMenu contextMenu, EditorWindow window)
         {
-            base.OnContextMenu(contextMenu);
+            base.OnContextMenu(contextMenu, window);
 
             var actor = (AnimatedModel)Actor;
             if (actor && actor.SkinnedModel)
