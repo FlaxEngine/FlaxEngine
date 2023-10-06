@@ -7,6 +7,7 @@
 #include "Engine/ShadowsOfMordor/Types.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Tools/ModelTool/ModelTool.h"
+#include "Engine/Tools/AudioTool/AudioTool.h"
 
 namespace CSG
 {
@@ -188,6 +189,25 @@ public:
     /// <param name="assetPath">The asset path.</param>
     /// <returns>True settings has been restored, otherwise false.</returns>
     API_FUNCTION() static bool TryRestoreImportOptions(API_PARAM(Ref) ModelTool::Options& options, String assetPath);
+#endif
+
+#if COMPILE_WITH_AUDIO_TOOL
+    /// <summary>
+    /// Imports the audio asset file to the target location.
+    /// </summary>
+    /// <param name="inputPath">The source file path.</param>
+    /// <param name="outputPath">The result asset file path.</param>
+    /// <param name="options">The import settings.</param>
+    /// <returns>True if importing failed, otherwise false.</returns>
+    API_FUNCTION() static bool Import(const String& inputPath, const String& outputPath, const AudioTool::Options& options);
+
+    /// <summary>
+    /// Tries the restore the asset import options from the target resource file.
+    /// </summary>
+    /// <param name="options">The options.</param>
+    /// <param name="assetPath">The asset path.</param>
+    /// <returns>True settings has been restored, otherwise false.</returns>
+    API_FUNCTION() static bool TryRestoreImportOptions(API_PARAM(Ref) AudioTool::Options& options, String assetPath);
 #endif
 
 private:

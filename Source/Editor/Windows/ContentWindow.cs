@@ -989,7 +989,7 @@ namespace FlaxEditor.Windows
                 }
                 _view.ShowItems(items, _sortType, false, true);
             }
-            else
+            else if (target != null)
             {
                 // Show folder contents
                 var items = target.Folder.Children;

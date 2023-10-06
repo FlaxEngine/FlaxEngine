@@ -54,6 +54,11 @@ namespace FlaxEditor.Windows.Assets
         public PrefabWindowViewport Viewport => _viewport;
 
         /// <summary>
+        /// Gets the prefab objects properties editor.
+        /// </summary>
+        public CustomEditorPresenter Presenter => _propertiesEditor;
+
+        /// <summary>
         /// Gets the undo system used by this window for changes tracking.
         /// </summary>
         public Undo Undo => _undo;

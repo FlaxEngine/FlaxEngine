@@ -464,6 +464,18 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
+        public override void OnMouseLeave()
+        {
+            base.OnMouseLeave();
+
+            // Remove focus from game window when mouse moves out and the cursor is hidden during game
+            if ((IsFocused || ContainsFocus) && Parent != null && Editor.IsPlayMode && !Screen.CursorVisible)
+            {
+                Parent.Focus();
+            }
+        }
+
+        /// <inheritdoc />
         public override void OnShowContextMenu(ContextMenu menu)
         {
             base.OnShowContextMenu(menu);
