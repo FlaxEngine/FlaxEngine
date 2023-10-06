@@ -28,7 +28,7 @@ namespace FlaxEditor.SceneGraph.Actors
         /// <inheritdoc />
         public override void OnContextMenu(ContextMenu contextMenu, EditorWindow window)
         {
-            base.OnContextMenu(contextMenu,window);
+            base.OnContextMenu(contextMenu, window);
             if (window is not SceneTreeWindow win)
                 return;
             var button = new ContextMenuButton(contextMenu, "Move Camera to View");
