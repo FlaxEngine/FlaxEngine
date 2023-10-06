@@ -772,7 +772,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 else
                     anim = nullptr;
             }
-            
+
             const float length = anim ? anim->GetLength() : 0.0f;
 
             // Calculate new time position

@@ -36,7 +36,7 @@ namespace FlaxEditor.Surface.Archetypes
         {
             private AssetSelect _assetSelect;
             private Box _assetBox;
-            
+
             /// <inheritdoc />
             public Sample(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
@@ -77,7 +77,7 @@ namespace FlaxEditor.Surface.Archetypes
             public override void ConnectionTick(Box box)
             {
                 base.ConnectionTick(box);
-                
+
                 if(box.ID != _assetBox.ID)
                     return;
 
