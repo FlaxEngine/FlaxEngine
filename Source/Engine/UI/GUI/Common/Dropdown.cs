@@ -667,6 +667,30 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
+        {
+            if (base.OnMouseDoubleClick(location, button))
+                return true;
+            
+            if (_touchDown && button == MouseButton.Left)
+            {
+                _touchDown = false;
+                ShowPopup();
+                return true;
+            }
+            
+            if (button == MouseButton.Left)
+            {
+                _touchDown = true;
+                if (!IsPopupOpened)
+                    Focus();
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <inheritdoc />
         public override bool OnTouchDown(Float2 location, int pointerId)
         {
             if (base.OnTouchDown(location, pointerId))
