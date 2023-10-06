@@ -183,7 +183,7 @@ void AudioSource::Stop()
 
 float AudioSource::GetTime() const
 {
-    if (_state == States::Stopped || SourceIDs.IsEmpty())
+    if (_state == States::Stopped || SourceIDs.IsEmpty() || !Clip->IsLoaded())
         return 0.0f;
 
     float time = AudioBackend::Source::GetCurrentBufferTime(this);

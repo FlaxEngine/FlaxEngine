@@ -64,6 +64,10 @@ CreateAssetResult ImportAudio::Import(CreateAssetContext& context, AudioDecoder&
         }
     }
 
+    // Vorbis uses fixed 16-bit depth
+    if (options.Format == AudioFormat::Vorbis)
+        options.BitDepth = AudioTool::BitDepth::_16;
+
     LOG_STR(Info, options.ToString());
 
     // Open the file
@@ -155,8 +159,9 @@ CreateAssetResult ImportAudio::Import(CreateAssetContext& context, AudioDecoder&
     else
     {
         // Split audio data into a several chunks (uniform data spread)
-        const int32 MinChunkSize = 1 * 1024 * 1024; // 1 MB
-        const int32 chunkSize = Math::Max<int32>(MinChunkSize, (int32)Math::AlignUp<uint32>(bufferSize / ASSET_FILE_DATA_CHUNKS, 256));
+        const int32 minChunkSize = 1 * 1024 * 1024; // 1 MB
+        const int32 dataAlignment = info.NumChannels * bytesPerSample; // Ensure to never split samples in-between (eg. 24-bit that uses 3 bytes)
+        const int32 chunkSize = Math::Max<int32>(minChunkSize, (int32)Math::AlignUp<uint32>(bufferSize / ASSET_FILE_DATA_CHUNKS, dataAlignment));
         const int32 chunksCount = Math::CeilToInt((float)bufferSize / chunkSize);
         ASSERT(chunksCount > 0 && chunksCount <= ASSET_FILE_DATA_CHUNKS);
 
