@@ -103,7 +103,7 @@ namespace FlaxEngine
             TemporalAAJitter = Float4.Zero;
             RenderLayersMask = camera.RenderLayersMask;
             Flags = camera.RenderFlags;
-            Mode = camera.RenderView;
+            Mode = camera.RenderMode;
 
             UpdateCachedData();
         }

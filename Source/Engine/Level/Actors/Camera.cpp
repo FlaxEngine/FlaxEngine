@@ -416,7 +416,7 @@ void Camera::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(OrthoScale, _orthoScale);
     SERIALIZE(RenderLayersMask);
     SERIALIZE(RenderFlags);
-    SERIALIZE(RenderView);
+    SERIALIZE(RenderMode);
 }
 
 void Camera::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -432,7 +432,7 @@ void Camera::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier
     DESERIALIZE_MEMBER(OrthoScale, _orthoScale);
     DESERIALIZE(RenderLayersMask);
     DESERIALIZE(RenderFlags);
-    DESERIALIZE(RenderView);
+    DESERIALIZE(RenderMode);
 }
 
 void Camera::OnEnable()

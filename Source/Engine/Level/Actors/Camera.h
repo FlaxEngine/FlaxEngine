@@ -145,7 +145,7 @@ public:
     /// Describes frame rendering modes for this camera.
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(120), EditorDisplay(\"Camera\")")
-    ViewMode RenderView = ViewMode::Default;
+    ViewMode RenderMode = ViewMode::Default;
 
 public:
     /// <summary>
