@@ -721,9 +721,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     SelectedItem = previousSelectedItem;
 
                     // Scroll into view (without smoothing)
-                    _panel1.VScrollBar.SmoothingScale = 0;
-                    _panel1.ScrollViewTo(SelectedItem);
-                    _panel1.VScrollBar.SmoothingScale = 1;
+                    _panel1.ScrollViewTo(SelectedItem, true);
                 }
                 return true;
             }
