@@ -909,7 +909,9 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Creates a partial derivative (fwidth)",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(150, 20),
-                ConnectionsHints = ConnectionsHint.Vector,
+                ConnectionsHints = ConnectionsHint.Numeric,
+                IndependentBoxes = new[] { 0 },
+                DependentBoxes = new[] { 1 },
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "value", true, typeof(float), 0),
