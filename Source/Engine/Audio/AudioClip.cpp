@@ -454,14 +454,12 @@ bool AudioClip::WriteBuffer(int32 chunkIndex)
     }
     break;
     case AudioFormat::Raw:
-    {
         data = Span<byte>(chunk->Get(), chunk->Size());
-    }
-    break;
+        break;
     default:
         return true;
     }
-    info.NumSamples = data.Length() / bytesPerSample;
+    info.NumSamples = Math::AlignDown(data.Length() / bytesPerSample, info.NumChannels * bytesPerSample);
 
     // Convert to Mono if used as 3D source and backend doesn't support it
     if (Is3D() && info.NumChannels > 1 && EnumHasNoneFlags(AudioBackend::Features(), AudioBackend::FeatureFlags::SpatialMultiChannel))

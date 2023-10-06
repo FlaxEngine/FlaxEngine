@@ -231,8 +231,7 @@ void AudioTool::ConvertToFloat(const byte* input, uint32 inBitDepth, float* outp
         for (uint32 i = 0; i < numSamples; i++)
         {
             const int8 sample = *(int8*)input;
-            output[i] = sample / 127.0f;
-
+            output[i] = sample * (1.0f / 127.0f);
             input++;
         }
     }
@@ -241,8 +240,7 @@ void AudioTool::ConvertToFloat(const byte* input, uint32 inBitDepth, float* outp
         for (uint32 i = 0; i < numSamples; i++)
         {
             const int16 sample = *(int16*)input;
-            output[i] = sample / 32767.0f;
-
+            output[i] = sample * (1.0f / 32767.0f);
             input += 2;
         }
     }
@@ -251,8 +249,7 @@ void AudioTool::ConvertToFloat(const byte* input, uint32 inBitDepth, float* outp
         for (uint32 i = 0; i < numSamples; i++)
         {
             const int32 sample = Convert24To32Bits(input);
-            output[i] = sample / 2147483647.0f;
-
+            output[i] = sample * (1.0f / 2147483647.0f);
             input += 3;
         }
     }
@@ -261,8 +258,7 @@ void AudioTool::ConvertToFloat(const byte* input, uint32 inBitDepth, float* outp
         for (uint32 i = 0; i < numSamples; i++)
         {
             const int32 sample = *(int32*)input;
-            output[i] = sample / 2147483647.0f;
-
+            output[i] = sample * (1.0f / 2147483647.0f);
             input += 4;
         }
     }
@@ -278,7 +274,6 @@ void AudioTool::ConvertFromFloat(const float* input, int32* output, uint32 numSa
     {
         const float sample = *(float*)input;
         output[i] = static_cast<int32>(sample * 2147483647.0f);
-
         input++;
     }
 }
