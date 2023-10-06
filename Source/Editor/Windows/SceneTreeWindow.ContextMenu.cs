@@ -215,7 +215,7 @@ namespace FlaxEditor.Windows
             }
             if (showCustomNodeOptions)
             {
-                Editor.SceneEditing.Selection[0].OnContextMenu(contextMenu);
+                Editor.SceneEditing.Selection[0].OnContextMenu(contextMenu, this);
             }
 
             ContextMenuShow?.Invoke(contextMenu);

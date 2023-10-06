@@ -79,6 +79,7 @@ public:
         void Serialize(SerializeStream& stream, const void* otherObj) override;
         void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     };
+#endif
 
 public:
     /// <summary>
@@ -127,7 +128,6 @@ public:
     {
         return (input[2] << 24) | (input[1] << 16) | (input[0] << 8);
     }
-#endif
 };
 
 #endif
