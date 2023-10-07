@@ -178,7 +178,6 @@ namespace FlaxEditor.Viewport
         protected Float2 _mouseDelta;
 
         // Camera
-
         private ViewportCamera _camera;
         private float _yaw;
         private float _pitch;
@@ -193,8 +192,8 @@ namespace FlaxEditor.Viewport
         private bool _relativePanning;
         private bool _invertPanning;
 
-        private float _linearMovementProgress;
-        private float _easedMovementProgress = 0.0f;
+        private int _speedStep;
+        private int _maxSpeedSteps;
 
         /// <summary>
         /// Speed of the mouse.
@@ -216,8 +215,9 @@ namespace FlaxEditor.Viewport
             {
                 _movementSpeed = value;
 
+                var format = (_movementSpeed < 1.0f) ? "{0:0.##}" : "{0:#}";
                 if (_cameraButton != null)
-                    _cameraButton.Text = string.Format("{0:0.##}", _movementSpeed);
+                    _cameraButton.Text = string.Format(format, _movementSpeed);
             }
         }
 
@@ -527,13 +527,14 @@ namespace FlaxEditor.Viewport
                 var largestText = "Relative Panning";
                 var textSize = Style.Current.FontMedium.MeasureText(largestText);
                 var xLocationForExtras = textSize.X + 5;
+                var format = (_movementSpeed < 1.0f) ? "{0:0.##}" : "{0:#}";
 
                 // Camera settings widget
                 _cameraWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
 
                 // Camera settings menu
                 var cameraCM = new ContextMenu();
-                _cameraButton = new ViewportWidgetButton(string.Format("{0:0.##}", _movementSpeed), Editor.Instance.Icons.Camera64, cameraCM, false, Style.Current.FontMedium.MeasureText("000.00").X)
+                _cameraButton = new ViewportWidgetButton(string.Format(format, _movementSpeed), Editor.Instance.Icons.Camera64, cameraCM, false, Style.Current.FontMedium.MeasureText("0.00").X)
                 {
                     Tag = this,
                     TooltipText = "Camera Settings",
@@ -884,8 +885,8 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.ViewpointRight, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Right").Orientation)));
             InputActions.Add(options => options.ViewpointLeft, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Left").Orientation)));
             InputActions.Add(options => options.CameraToggleRotation, () => _isVirtualMouseRightDown = !_isVirtualMouseRightDown);
-            InputActions.Add(options => options.CameraIncreaseMoveSpeed, () => AdjustCameraMoveSpeed(Editor.Instance.Options.Options.Viewport.MouseWheelSensitivity * 0.01f));
-            InputActions.Add(options => options.CameraDecreaseMoveSpeed, () => AdjustCameraMoveSpeed(Editor.Instance.Options.Options.Viewport.MouseWheelSensitivity * -0.01f));
+            InputActions.Add(options => options.CameraIncreaseMoveSpeed, () => AdjustCameraMoveSpeed(1));
+            InputActions.Add(options => options.CameraDecreaseMoveSpeed, () => AdjustCameraMoveSpeed(-1));
 
             // Link for task event
             task.Begin += OnRenderBegin;
@@ -1052,74 +1053,42 @@ namespace FlaxEditor.Viewport
             }
         }
 
-        /// <summary>
-        /// The inverse of <see cref="Mathf.InterpEaseIn"/>.<br/>
-        /// Interpolate between A and B, applying a reverse ease in function. Exponent controls the degree of the curve.
-        /// </summary>
-        private float InterpInverseEaseIn(float a, float b, float alpha, float exponent)
-        {
-            return 0.5f * Mathf.Pow((2.0f * (alpha - a) / (b - a)), 1.0f / exponent);
-        }
-
-        /// <summary>
-        /// The inverse of <see cref="Mathf.InterpEaseOut"/>.<br/>
-        /// Interpolate between A and B, applying a reverse ease out function. Exponent controls the degree of the curve.
-        /// </summary>
-        private float InterpInverseEaseOut(float a, float b, float alpha, float exponent)
-        {
-            return 1.0f - InterpInverseEaseIn(a, b, 1.0f - alpha, exponent);
-        }
-
-        /// <summary>
-        /// The inverse of <see cref="Mathf.InterpEaseInOut"/>.<br/>
-        /// Interpolate between A and B, applying a reverse ease in/out function. Exponent controls the degree of the curve.
-        /// </summary>
-        private float InterpInverseEaseInOut(float a, float b, float alpha, float exponent)
-        {
-            if (alpha <= 0.0f)
-                return a;
-            if (alpha >= 1.0f)
-                return b;
-
-            return (alpha < 0.5f) ? InterpInverseEaseIn(a, b, alpha, exponent) : InterpInverseEaseOut(a, b, alpha, exponent);
-        }
-
         private void OnCameraMovementProgressChanged()
         {
-            _linearMovementProgress = Math.Abs(_minMovementSpeed - _maxMovementSpeed) < Mathf.Epsilon
-                                      ? 0.0f
-                                      : Mathf.Remap(_movementSpeed, _minMovementSpeed, _maxMovementSpeed, 0.0f, 1.0f);
-
-            if (!_useCameraEasing)
+            // prevent NaN
+            if (Math.Abs(_minMovementSpeed - _maxMovementSpeed) < Mathf.Epsilon) {
+                _speedStep = 0;
                 return;
-            _easedMovementProgress = InterpInverseEaseInOut(0.0f, 1.0f, _linearMovementProgress, _cameraEasingDegree);
+            }
+
+            // calculate current linear/eased progress
+            float progress = Mathf.Remap(_movementSpeed, _minMovementSpeed, _maxMovementSpeed, 0.0f, 1.0f);
+            if (_useCameraEasing)
+                progress = Mathf.Pow(progress, 1.0f / _cameraEasingDegree);
+
+            _speedStep = Mathf.RoundToInt(progress * _maxSpeedSteps);
         }
 
         /// <summary>
         /// Increases or decreases the camera movement speed.
         /// </summary>
-        /// <param name="speedDelta">The difference in camera speed adjustment as a fraction of 1.</param>
-        protected void AdjustCameraMoveSpeed(float speedDelta)
+        /// <param name="step">The stepping direction for speed adjustment.</param>
+        protected void AdjustCameraMoveSpeed(int step)
         {
-            float speed;
+            _speedStep = Mathf.Clamp(_speedStep + step, 0, _maxSpeedSteps);
 
-            if (_useCameraEasing)
-            {
-                _easedMovementProgress = Mathf.Saturate(_easedMovementProgress + speedDelta);
-                speed = Mathf.InterpEaseInOut(_minMovementSpeed, _maxMovementSpeed, _easedMovementProgress, _cameraEasingDegree);
-            }
-            else
-            {
-                _linearMovementProgress = Mathf.Saturate(_linearMovementProgress + speedDelta);
-                speed = Mathf.Lerp(_minMovementSpeed, _maxMovementSpeed, _linearMovementProgress);
-            }
+            // calculate new linear/eased progress
+            var progress = _useCameraEasing
+                ? Mathf.Pow((float)_speedStep / _maxSpeedSteps, _cameraEasingDegree)
+                : (float)_speedStep / _maxSpeedSteps;
 
-            MovementSpeed = speed;
+            MovementSpeed = Mathf.Lerp(_minMovementSpeed, _maxMovementSpeed, progress);
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)
         {
             _mouseSensitivity = options.Viewport.MouseSensitivity;
+            _maxSpeedSteps = options.Viewport.TotalCameraSpeedSteps;
             _cameraEasingDegree = options.Viewport.CameraEasingDegree;
             OnCameraMovementProgressChanged();
         }
@@ -1507,10 +1476,8 @@ namespace FlaxEditor.Viewport
                     rmbWheel = useMovementSpeed && (_input.IsMouseRightDown || _isVirtualMouseRightDown) && wheelInUse;
                     if (rmbWheel)
                     {
-                        // speed delta can be adjusted through mouse wheel sensitivity in editor
-                        // with default sensitivity (1.0), it takes about ~100 scrolls from min to max
-                        var camSpeedDelta = _input.MouseWheelDelta * options.Viewport.MouseWheelSensitivity * 0.01f;
-                        AdjustCameraMoveSpeed(camSpeedDelta);
+                        var step = _input.MouseWheelDelta * options.Viewport.MouseWheelSensitivity;
+                        AdjustCameraMoveSpeed(step > 0.0f ? 1 : -1);
                     }
                 }
 
