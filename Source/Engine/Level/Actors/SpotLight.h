@@ -30,16 +30,16 @@ public:
     float SourceRadius = 0.0f;
 
     /// <summary>
-    /// Controls the radial falloff of light when UseInverseSquaredFalloff is disabled.
-    /// </summary>
-    API_FIELD(Attributes="EditorOrder(13), DefaultValue(8.0f), EditorDisplay(\"Light\"), Limit(2, 16, 0.01f), VisibleIf(nameof(UseInverseSquaredFalloff), true)")
-    float FallOffExponent = 8.0f;
-
-    /// <summary>
     /// Whether to use physically based inverse squared distance falloff, where Radius is only clamping the light's contribution.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(14), DefaultValue(false), EditorDisplay(\"Light\")")
+    API_FIELD(Attributes = "EditorOrder(13), DefaultValue(false), EditorDisplay(\"Light\")")
     bool UseInverseSquaredFalloff = false;
+
+    /// <summary>
+    /// Controls the radial falloff of light when UseInverseSquaredFalloff is disabled.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(14), DefaultValue(8.0f), EditorDisplay(\"Light\"), Limit(2, 16, 0.01f), VisibleIf(nameof(UseInverseSquaredFalloff), true)")
+    float FallOffExponent = 8.0f;
 
     /// <summary>
     /// IES texture (light profiles from real world measured data)
