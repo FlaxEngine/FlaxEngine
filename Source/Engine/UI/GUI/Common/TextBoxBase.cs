@@ -769,13 +769,13 @@ namespace FlaxEngine.GUI
             {
                 SetSelection(SelectionLeft);
             }
-            else if (SelectionLeft > 0)
+            else if (SelectionLeft >= 0)
             {
                 int position;
                 if (ctrl)
                     position = FindPrevWordBegin();
                 else
-                    position = _selectionEnd - 1;
+                    position = Mathf.Max(_selectionEnd - 1, 0);
 
                 if (shift)
                 {
@@ -1302,7 +1302,7 @@ namespace FlaxEngine.GUI
                 MoveRight(shiftDown, ctrDown);
                 return true;
             case KeyboardKeys.ArrowLeft:
-                MoveLeft(shiftDown, ctrDown);
+                    MoveLeft(shiftDown, ctrDown);
                 return true;
             case KeyboardKeys.ArrowUp:
                 MoveUp(shiftDown, ctrDown);
