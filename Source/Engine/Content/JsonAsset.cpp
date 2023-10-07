@@ -367,6 +367,20 @@ void JsonAsset::unload(bool isReloading)
     JsonAssetBase::unload(isReloading);
 }
 
+void JsonAsset::onLoaded_MainThread()
+{
+    JsonAssetBase::onLoaded_MainThread();
+
+    // Special case for Settings assets to flush them after edited and saved in Editor
+    const StringAsANSI<> dataTypeNameAnsi(DataTypeName.Get(), DataTypeName.Length());
+    const auto typeHandle = Scripting::FindScriptingType(StringAnsiView(dataTypeNameAnsi.Get(), DataTypeName.Length()));
+    if (Instance && typeHandle && typeHandle.IsSubclassOf(SettingsBase::TypeInitializer) && _isAfterReload)
+    {
+        _isAfterReload = false;
+        ((SettingsBase*)Instance)->Apply();
+    }
+}
+
 bool JsonAsset::CreateInstance()
 {
     ScopeLock lock(Locker);
@@ -407,13 +421,6 @@ bool JsonAsset::CreateInstance()
             break;
         }
         }
-    }
-
-    // Special case for Settings assets to flush them after edited and saved in Editor
-    if (typeHandle && typeHandle.IsSubclassOf(SettingsBase::TypeInitializer) && _isAfterReload)
-    {
-        _isAfterReload = false;
-        ((SettingsBase*)Instance)->Apply();
     }
 
     return false;

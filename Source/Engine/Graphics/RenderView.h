@@ -295,10 +295,12 @@ public:
     /// <param name="angle">Camera's FOV angle (in degrees)</param>
     void SetProjector(float nearPlane, float farPlane, const Float3& position, const Float3& direction, const Float3& up, float angle);
 
-    // Copy view data from camera
-    // @param camera Camera to copy its data
-    // @param camera The custom viewport to use for view/projection matrices override.
-    void CopyFrom(Camera* camera, Viewport* viewport = nullptr);
+    /// <summary>
+    /// Copies view data from camera to the view.
+    /// </summary>
+    /// <param name="camera">The camera to copy its data.</param>
+    /// <param name="viewport">The custom viewport to use for view/projection matrices override.</param>
+    void CopyFrom(const Camera* camera, const Viewport* viewport = nullptr);
 
 public:
     FORCE_INLINE DrawPass GetShadowsDrawPassMask(ShadowsCastingMode shadowsMode) const

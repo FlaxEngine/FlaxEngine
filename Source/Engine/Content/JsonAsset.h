@@ -150,6 +150,7 @@ protected:
     // [JsonAssetBase]
     LoadResult loadAsset() override;
     void unload(bool isReloading) override;
+    void onLoaded_MainThread() override;
 
 private:
     bool CreateInstance();
