@@ -178,6 +178,7 @@ namespace FlaxEditor.Viewport
         protected Float2 _mouseDelta;
 
         // Camera
+
         private ViewportCamera _camera;
         private float _yaw;
         private float _pitch;
@@ -206,6 +207,23 @@ namespace FlaxEditor.Viewport
         public float MouseWheelZoomSpeedFactor = 1;
 
         /// <summary>
+        /// Format of the text for the camera move speed.
+        /// </summary>
+        private string MovementSpeedTextFormat {
+            get {
+                if (Mathf.Abs(_movementSpeed - _maxMovementSpeed) < Mathf.Epsilon || Mathf.Abs(_movementSpeed - _minMovementSpeed) < Mathf.Epsilon)
+                    return "{0:0.##}";
+
+                if (_movementSpeed < 10.0f)
+                    return "{0:0.00}";
+                else if (_movementSpeed < 100.0f)
+                    return "{0:0.0}";
+                else
+                    return "{0:#}";
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the camera movement speed.
         /// </summary>
         public float MovementSpeed
@@ -215,9 +233,8 @@ namespace FlaxEditor.Viewport
             {
                 _movementSpeed = value;
 
-                var format = (_movementSpeed < 1.0f) ? "{0:0.##}" : "{0:#}";
                 if (_cameraButton != null)
-                    _cameraButton.Text = string.Format(format, _movementSpeed);
+                    _cameraButton.Text = string.Format(MovementSpeedTextFormat, _movementSpeed);
             }
         }
 
@@ -527,14 +544,14 @@ namespace FlaxEditor.Viewport
                 var largestText = "Relative Panning";
                 var textSize = Style.Current.FontMedium.MeasureText(largestText);
                 var xLocationForExtras = textSize.X + 5;
-                var format = (_movementSpeed < 1.0f) ? "{0:0.##}" : "{0:#}";
+                var cameraSpeedTextWidth = Style.Current.FontMedium.MeasureText("0.00").X;
 
                 // Camera settings widget
                 _cameraWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
 
                 // Camera settings menu
                 var cameraCM = new ContextMenu();
-                _cameraButton = new ViewportWidgetButton(string.Format(format, _movementSpeed), Editor.Instance.Icons.Camera64, cameraCM, false, Style.Current.FontMedium.MeasureText("0.00").X)
+                _cameraButton = new ViewportWidgetButton(string.Format(MovementSpeedTextFormat, _movementSpeed), Editor.Instance.Icons.Camera64, cameraCM, false, cameraSpeedTextWidth)
                 {
                     Tag = this,
                     TooltipText = "Camera Settings",
@@ -1060,9 +1077,21 @@ namespace FlaxEditor.Viewport
                 _speedStep = 0;
                 return;
             }
+            
+            if (Math.Abs(_movementSpeed - _maxMovementSpeed) < Mathf.Epsilon)
+            {
+                _speedStep = _maxSpeedSteps;
+                return;
+            }
+            else if (Math.Abs(_movementSpeed - _minMovementSpeed) < Mathf.Epsilon)
+            {
+                _speedStep = 0;
+                return;
+            }
 
             // calculate current linear/eased progress
-            float progress = Mathf.Remap(_movementSpeed, _minMovementSpeed, _maxMovementSpeed, 0.0f, 1.0f);
+            var progress = Mathf.Remap(_movementSpeed, _minMovementSpeed, _maxMovementSpeed, 0.0f, 1.0f);
+
             if (_useCameraEasing)
                 progress = Mathf.Pow(progress, 1.0f / _cameraEasingDegree);
 
@@ -1081,8 +1110,10 @@ namespace FlaxEditor.Viewport
             var progress = _useCameraEasing
                 ? Mathf.Pow((float)_speedStep / _maxSpeedSteps, _cameraEasingDegree)
                 : (float)_speedStep / _maxSpeedSteps;
-
-            MovementSpeed = Mathf.Lerp(_minMovementSpeed, _maxMovementSpeed, progress);
+            
+            var speed = Mathf.Lerp(_minMovementSpeed, _maxMovementSpeed, progress);
+            MovementSpeed = (float)Math.Round(speed, 3);
+            _editor.ProjectCache.SetCustomData("CameraMovementSpeedValue", _movementSpeed.ToString());
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)
