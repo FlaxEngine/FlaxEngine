@@ -186,7 +186,9 @@ namespace FlaxEditor.Viewport
             }
             Profiler.BeginEvent("Input.Update");
             _input.ConsumeInput();
-            _input.ProccesInput();
+
+            _input.ProccesInput(this);
+
             if (IsGizmoControllingMouse)
             {
                 CaptureMouse();

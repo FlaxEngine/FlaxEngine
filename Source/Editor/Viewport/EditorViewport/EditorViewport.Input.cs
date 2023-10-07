@@ -247,7 +247,7 @@ namespace FlaxEditor.Viewport
                         }
                         break;
                 }
-                UpdateSheredStates();
+                
             }
 
             internal void ToggleMouseBottonRight()
@@ -268,7 +268,7 @@ namespace FlaxEditor.Viewport
             /// <summary>
             /// processes the gamepad inputs and events
             /// </summary>
-            public void ProccesInput()
+            public void ProccesInput(EditorViewport viewport)
             {
                 if (FlaxEngine.Input.GamepadsCount > 0)
                 {
@@ -285,12 +285,36 @@ namespace FlaxEditor.Viewport
                     if (ControledByGamepad)
                     {
                         // Gamepads handling
+                        //Emulate the keyboard
                         Axis = new Vector3(GetGamepadAxis(GamepadAxis.LeftStickX), 0, GetGamepadAxis(GamepadAxis.LeftStickY));
-                        MouseDelta = new Float2(GetGamepadAxis(GamepadAxis.RightStickX), -GetGamepadAxis(GamepadAxis.RightStickY)) * 45;
-                        IsMouseRightDown = FlaxEngine.Input.GetGamepadButton(InputGamepadIndex.All, GamepadButton.RightShoulder);
-                        IsMouseLeftDown = FlaxEngine.Input.GetGamepadButton(InputGamepadIndex.All, GamepadButton.LeftShoulder);
-                        //IsShiftDown = FlaxEngine.Input.GetGamepadButton(InputGamepadIndex.All, GamepadButton.LeftTrigger);
+                        //Emulate the mouse
+
+                        //[Todo] fix the mouse glitching when mouse is captured and cursor is close to the edge of the viewport
+                        var moveDelta = new Float2(GetGamepadAxis(GamepadAxis.RightStickX), -GetGamepadAxis(GamepadAxis.RightStickY)) * 20;
+                        if (!moveDelta.IsZero)
+                            viewport.RootWindow.Window.MousePosition += moveDelta;
+
+
+                        var oldIsMouseRightDown  = IsMouseRightDown;
+                        var oldIsMouseMiddleDown = IsMouseMiddleDown;
+                        var oldIsMouseLeftDown   = IsMouseLeftDown;
+                        var newIsMouseRightDown  = FlaxEngine.Input.GetGamepadButton(InputGamepadIndex.All, GamepadButton.RightShoulder);
+                        var newIsMouseLeftDown   = FlaxEngine.Input.GetGamepadButton(InputGamepadIndex.All, GamepadButton.LeftShoulder);
+                        var newIsMouseMiddleDown = FlaxEngine.Input.GetGamepadButton(InputGamepadIndex.All, GamepadButton.RightStickDown);
+                        //[Todo] find the binds for IsAltDown,IsShiftDown,IsControlDown
+
                         UpdateSheredStates();
+
+                        //trriger events
+
+                        if (oldIsMouseLeftDown != newIsMouseLeftDown)
+                            UpdateMouseStates(viewport, MouseButton.Left, newIsMouseLeftDown);
+
+                        if (oldIsMouseRightDown != newIsMouseRightDown)
+                            UpdateMouseStates(viewport, MouseButton.Right, newIsMouseRightDown);
+
+                        if (oldIsMouseMiddleDown != newIsMouseMiddleDown)
+                            UpdateMouseStates(viewport, MouseButton.Middle, newIsMouseRightDown);
                     }
                 }
             }
@@ -402,13 +426,13 @@ namespace FlaxEditor.Viewport
                 {
                     var mdelta = RootWindow.Window.MousePositionDelta;
                     //var location = PointFromWindow(RootWindow.Window.MousePosition + RootWindow.Window.MousePositionDelta);
-                    const int pading = 1;
+                    const int pading = 5;
 
-                    bool hitLeft = location.X == 0;
-                    bool hitTop = location.Y == 0;
+                    bool hitLeft = location.X <= 0;
+                    bool hitTop = location.Y <= 0;
 
-                    bool hitRight = location.X == Size.X-1;
-                    bool hitBottom = location.Y == Size.Y-1;
+                    bool hitRight = location.X >= Size.X-1;
+                    bool hitBottom = location.Y >= Size.Y-1;
 
                     Float2 mouseWarpOffset = location;
 
@@ -474,10 +498,10 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            bool isFocused = IsFocused;
-            if (isFocused)
+            if (IsFocused)
             {
                 _input.UpdateMouseStates(this, button, false);
+                _input.UpdateSheredStates();
             }
             return base.OnMouseUp(location, button);
         }
@@ -485,8 +509,18 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            Focus();
-            _input.UpdateMouseStates(this, button, true);
+            if (IsFocused)
+            {
+                _input.UpdateMouseStates(this, button, true);
+                _input.UpdateSheredStates();
+            }
+            else
+            {
+                if (EditorBounds.Contains(location))
+                {
+                    Focus();
+                }
+            }
             base.OnMouseDown(location, button);
             return true;
         }
@@ -494,13 +528,11 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         public override bool OnMouseWheel(Float2 location, float delta)
         {
-            bool isFocused = IsFocused;
-            if (isFocused)
+            if (IsFocused)
             {
                 _input.MouseWheelDelta += delta;
                 _input.IsWheelInUse = true;
                 _input.UpdateSheredStates();
-                Debug.Log(delta.ToString());
             }
             else
             {
@@ -515,28 +547,24 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
-            bool isFocused = IsFocused;
-            if (isFocused)
+            if (IsFocused)
             {
                 _input.UpdateKeyboardStates(this, key, true);
             }
             else
             {
-                bool isMouseOver = IsMouseOver;
-                if (isMouseOver)
+                if (IsMouseOver)
                 {
                     Focus();
                 }
             }
-            bool flag = base.OnKeyDown(key);
-            return flag || InputActions.Process(Editor.Instance, this, key);
+            return base.OnKeyDown(key) || InputActions.Process(Editor.Instance, this, key);
         }
 
         /// <inheritdoc />
         public override void OnKeyUp(KeyboardKeys key)
         {
-            bool isFocused = IsFocused;
-            if (isFocused)
+            if (IsFocused)
             {
                 _input.UpdateKeyboardStates(this, key, false);
             }
