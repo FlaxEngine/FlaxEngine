@@ -149,6 +149,13 @@ namespace FlaxEditor.Options
         public FlaxEngine.GUI.Orientation ContentWindowOrientation { get; set; } = FlaxEngine.GUI.Orientation.Horizontal;
 
         /// <summary>
+        /// Gets or sets the editor content window orientation.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("Interface"), EditorOrder(300), Tooltip("If checked, color pickers will always modify the color unless 'Cancel' if pressed, otherwise color won't change unless 'Ok' is pressed (default)")]
+        public bool ColorPickerAlwaysChangesColor { get; set; } = false;
+
+        /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.
         /// </summary>
         [DefaultValue(TimestampsFormats.TimeSinceStartup)]

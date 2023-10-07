@@ -362,7 +362,10 @@ namespace FlaxEditor.GUI.Dialogs
             _disableEvents = true;
 
             // Restore color if modified
-            if (_useDynamicEditing && _initialValue != _value)
+            var options = Editor.Instance.Options.Options;
+
+            if (!options.Interface.ColorPickerAlwaysChangesColor &&
+                _useDynamicEditing && _initialValue != _value)
             {
                 _onChanged?.Invoke(_initialValue, false);
             }
