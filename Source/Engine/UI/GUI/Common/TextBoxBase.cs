@@ -1302,7 +1302,7 @@ namespace FlaxEngine.GUI
                 MoveRight(shiftDown, ctrDown);
                 return true;
             case KeyboardKeys.ArrowLeft:
-                    MoveLeft(shiftDown, ctrDown);
+                MoveLeft(shiftDown, ctrDown);
                 return true;
             case KeyboardKeys.ArrowUp:
                 MoveUp(shiftDown, ctrDown);
