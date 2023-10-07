@@ -936,21 +936,6 @@ namespace FlaxEditor
         }
 
         /// <summary>
-        /// Imports the audio asset file to the target location.
-        /// </summary>
-        /// <param name="inputPath">The source file path.</param>
-        /// <param name="outputPath">The result asset file path.</param>
-        /// <param name="settings">The settings.</param>
-        /// <returns>True if importing failed, otherwise false.</returns>
-        public static bool Import(string inputPath, string outputPath, AudioImportSettings settings)
-        {
-            if (settings == null)
-                throw new ArgumentNullException();
-            settings.ToInternal(out var internalOptions);
-            return Internal_ImportAudio(inputPath, outputPath, ref internalOptions);
-        }
-
-        /// <summary>
         /// Serializes the given object to json asset.
         /// </summary>
         /// <param name="outputPath">The result asset file path.</param>
@@ -1666,10 +1651,6 @@ namespace FlaxEditor
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CloneAssetFile", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_CloneAssetFile(string dstPath, string srcPath, ref Guid dstId);
-
-        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_ImportAudio", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
-        [return: MarshalAs(UnmanagedType.U1)]
-        internal static partial bool Internal_ImportAudio(string inputPath, string outputPath, ref AudioImportSettings.InternalOptions options);
 
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetAudioClipMetadata", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         internal static partial void Internal_GetAudioClipMetadata(IntPtr obj, out int originalSize, out int importedSize);
