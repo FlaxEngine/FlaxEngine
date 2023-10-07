@@ -282,6 +282,7 @@ namespace FlaxEditor.Viewport.Cameras
         public virtual void Update(float deltaTime)
         {
             EditorViewport.ViewportInput input = _viewport.Input;
+            
             if (input.IsZooming)
             {
                 OrbitRadius = Mathf.Max(OrbitRadius - input.MouseWheelDelta * (OrbitRadius * 0.25f), 0.001f);
@@ -296,11 +297,11 @@ namespace FlaxEditor.Viewport.Cameras
                 if (input.IsMoving)
                 {
                     Vector3 axis = input.Axis * 100f * movementSpeed;
-                    //if (_useOrthographicProjection)
-                    //{
-                    //    OrbitRadius = Mathf.Max(OrbitRadius - axis.Z * deltaTime, 0.001f);
-                    //    axis *= new Float3(1f, 1f, 0f);
-                    //}
+                    if (_useOrthographicProjection)
+                    {
+                        OrbitRadius = Mathf.Max(OrbitRadius - axis.Z * deltaTime, 0.001f);
+                        axis *= new Float3(1f, 1f, 0f);
+                    }
                     OrbitCenter += axis * Orientation * deltaTime;
                 }
                 if (input.IsRotating)
@@ -348,8 +349,10 @@ namespace FlaxEditor.Viewport.Cameras
                 Vector3 position = _orbitCenter + Forward * -_orbitRadius;
                 SetView(position);
             }
+            bool StopAnimated = false;
             if (_recalculateViewMatrix)
             {
+                StopAnimated = true;
                 CalculateViewMatrix();
             }
             if (_recalculateprojectionMatrix)
@@ -358,7 +361,7 @@ namespace FlaxEditor.Viewport.Cameras
             }
             if (AnimatedActions.Count != 0)
             {
-                if (ProccesAction(AnimatedActions[0],deltaTime))
+                if (ProccesAction(AnimatedActions[0],deltaTime) || StopAnimated)
                 {
                     AnimatedActions.RemoveAt(0);
                 }
@@ -418,6 +421,7 @@ namespace FlaxEditor.Viewport.Cameras
             {
                 if (_useOrthographicProjection)
                 {
+                    OrthographicScale = OrbitRadius / (_viewport.Height * 2f);
                     Matrix.Ortho(_viewport.Width * OrthographicScale, _viewport.Height * OrthographicScale, NearPlane, FarPlane, out _projectionMatrix);
                 }
                 else
