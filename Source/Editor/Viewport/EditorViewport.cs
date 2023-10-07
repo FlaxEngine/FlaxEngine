@@ -546,10 +546,10 @@ namespace FlaxEditor.Viewport
                 var xLocationForExtras = textSize.X + 5;
                 var cameraSpeedTextWidth = Style.Current.FontMedium.MeasureText("0.00").X;
 
-                // Camera settings widget
+                // Camera Settings Widget
                 _cameraWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
 
-                // Camera settings menu
+                // Camera Settings Menu
                 var cameraCM = new ContextMenu();
                 _cameraButton = new ViewportWidgetButton(string.Format(MovementSpeedTextFormat, _movementSpeed), Editor.Instance.Icons.Camera64, cameraCM, false, cameraSpeedTextWidth)
                 {
@@ -559,7 +559,7 @@ namespace FlaxEditor.Viewport
                 };
                 _cameraWidget.Parent = this;
 
-                // Toggle orthographic mode widget
+                // Orthographic/Perspective Mode Widget
                 _orthographicModeButton = new ViewportWidgetButton(string.Empty, Editor.Instance.Icons.CamSpeed32, null, true)
                 {
                     Checked = !_isOrtho,
@@ -568,7 +568,7 @@ namespace FlaxEditor.Viewport
                 };
                 _orthographicModeButton.Toggled += OnOrthographicModeToggled;
 
-                // Camera speed
+                // Camera Speed
                 var camSpeedButton = cameraCM.AddButton("Camera Speed");
                 camSpeedButton.CloseMenuOnClick = false;
                 var camSpeedValue = new FloatValueBox(_movementSpeed, xLocationForExtras, 2, 70.0f, _minMovementSpeed, _maxMovementSpeed, 0.5f)
@@ -579,7 +579,7 @@ namespace FlaxEditor.Viewport
                 camSpeedValue.ValueChanged += () => OnMovementSpeedChanged(camSpeedValue);
                 cameraCM.VisibleChanged += control => camSpeedValue.Value = _movementSpeed;
 
-                // Minimum & maximum camera speed
+                // Minimum & Maximum Camera Speed
                 var minCamSpeedButton = cameraCM.AddButton("Min Cam Speed");
                 minCamSpeedButton.CloseMenuOnClick = false;
                 var minCamSpeedValue = new FloatValueBox(_minMovementSpeed, xLocationForExtras, 2, 70.0f, 0.05f, _maxMovementSpeed, 0.5f)
@@ -614,7 +614,7 @@ namespace FlaxEditor.Viewport
                 };
                 cameraCM.VisibleChanged += control => maxCamSpeedValue.Value = _maxMovementSpeed;
 
-                // Camera easing
+                // Camera Easing
                 {
                     var useCameraEasing = cameraCM.AddButton("Camera Easing");
                     useCameraEasing.CloseMenuOnClick = false;
@@ -627,7 +627,7 @@ namespace FlaxEditor.Viewport
                     cameraCM.VisibleChanged += control => useCameraEasingValue.Checked = _useCameraEasing;
                 }
 
-                // Panning speed
+                // Panning Speed
                 {
                     var panningSpeed = cameraCM.AddButton("Panning Speed");
                     panningSpeed.CloseMenuOnClick = false;
@@ -644,7 +644,7 @@ namespace FlaxEditor.Viewport
                     };
                 }
 
-                // Relative panning
+                // Relative Panning
                 {
                     var relativePanning = cameraCM.AddButton("Relative Panning");
                     relativePanning.CloseMenuOnClick = false;
@@ -664,7 +664,7 @@ namespace FlaxEditor.Viewport
                     cameraCM.VisibleChanged += control => relativePanningValue.Checked = _relativePanning;
                 }
 
-                // Invert panning
+                // Invert Panning
                 {
                     var invertPanning = cameraCM.AddButton("Invert Panning");
                     invertPanning.CloseMenuOnClick = false;
@@ -679,7 +679,7 @@ namespace FlaxEditor.Viewport
 
                 cameraCM.AddSeparator();
 
-                // Camera viewpoints
+                // Camera Viewpoints
                 {
                     var cameraView = cameraCM.AddChildMenu("Viewpoints").ContextMenu;
                     for (int i = 0; i < EditorViewportCameraViewpointValues.Length; i++)
@@ -692,7 +692,7 @@ namespace FlaxEditor.Viewport
                     cameraView.ButtonClicked += OnViewpointChanged;
                 }
 
-                // Orthographic mode
+                // Orthographic Mode
                 {
                     var ortho = cameraCM.AddButton("Orthographic");
                     ortho.CloseMenuOnClick = false;
@@ -712,7 +712,7 @@ namespace FlaxEditor.Viewport
                     cameraCM.VisibleChanged += control => orthoValue.Checked = _isOrtho;
                 }
 
-                // Field of view
+                // Field of View
                 {
                     var fov = cameraCM.AddButton("Field Of View");
                     fov.CloseMenuOnClick = false;
@@ -729,7 +729,7 @@ namespace FlaxEditor.Viewport
                     };
                 }
 
-                // Orthographic scale
+                // Orthographic Scale
                 {
                     var orthoSize = cameraCM.AddButton("Ortho Scale");
                     orthoSize.CloseMenuOnClick = false;
@@ -746,7 +746,7 @@ namespace FlaxEditor.Viewport
                     };
                 }
 
-                // Near plane
+                // Near Plane
                 {
                     var nearPlane = cameraCM.AddButton("Near Plane");
                     nearPlane.CloseMenuOnClick = false;
@@ -759,7 +759,7 @@ namespace FlaxEditor.Viewport
                     cameraCM.VisibleChanged += control => nearPlaneValue.Value = _nearPlane;
                 }
 
-                // Far plane
+                // Far Plane
                 {
                     var farPlane = cameraCM.AddButton("Far Plane");
                     farPlane.CloseMenuOnClick = false;
@@ -774,14 +774,16 @@ namespace FlaxEditor.Viewport
 
                 cameraCM.AddSeparator();
 
-                // Reset button
+                // Reset Button
                 {
                     var reset = cameraCM.AddButton("Reset to default");
                     reset.ButtonClicked += button =>
                     {
                         SetupViewportOptions();
 
-                        // trigger UI update
+                        // if the context menu is opened without triggering the value changes beforehand,
+                        // the movement speed will not be correctly reset to its default value in certain cases
+                        // therefore, a UI update needs to be triggered here
                         minCamSpeedValue.Value = _minMovementSpeed;
                         camSpeedValue.Value = _movementSpeed;
                         maxCamSpeedValue.Value = _maxMovementSpeed;
@@ -815,7 +817,7 @@ namespace FlaxEditor.Viewport
                     }
                 }
 
-                // View flags
+                // View Flags
                 {
                     var viewFlags = ViewWidgetButtonMenu.AddChildMenu("View Flags").ContextMenu;
                     viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = Editor.Instance.Icons.Rotate32;
@@ -839,7 +841,7 @@ namespace FlaxEditor.Viewport
                     viewFlags.VisibleChanged += WidgetViewFlagsShowHide;
                 }
 
-                // Debug view
+                // Debug View
                 {
                     var debugView = ViewWidgetButtonMenu.AddChildMenu("Debug View").ContextMenu;
                     for (int i = 0; i < EditorViewportViewModeValues.Length; i++)
