@@ -496,7 +496,7 @@ namespace FlaxEditor.SceneGraph.GUI
                 // Restore links
                 for (int i = 0; i < _actorsCount; i++)
                 {
-                    var actor = Object.Find<Actor>(ref _ids[i]);
+                    var actor = Object.Find<Actor>(in _ids[i]);
                     if (actor != null && _prefabIds[i] != Guid.Empty)
                     {
                         Actor.Internal_LinkPrefab(Object.GetUnmanagedPtr(actor), ref _prefabIds[i], ref _prefabObjectIds[i]);
@@ -504,7 +504,7 @@ namespace FlaxEditor.SceneGraph.GUI
                 }
                 for (int i = _actorsCount; i < _ids.Length; i++)
                 {
-                    var script = Object.Find<Script>(ref _ids[i]);
+                    var script = Object.Find<Script>(in _ids[i]);
                     if (script != null && _prefabIds[i] != Guid.Empty)
                     {
                         Script.Internal_LinkPrefab(Object.GetUnmanagedPtr(script), ref _prefabIds[i], ref _prefabObjectIds[i]);

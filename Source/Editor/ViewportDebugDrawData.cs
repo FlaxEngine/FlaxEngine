@@ -126,7 +126,7 @@ namespace FlaxEditor
                     {
                         if (lod.Meshes[meshIndex].MaterialSlotIndex == highlight.EntryIndex)
                         {
-                            lod.Meshes[meshIndex].Draw(ref renderContext, _highlightMaterial, ref world);
+                            lod.Meshes[meshIndex].Draw(in renderContext, _highlightMaterial, in world);
                         }
                     }
                 }
@@ -145,7 +145,7 @@ namespace FlaxEditor
                 }
 
                 world = Matrix.Identity;
-                mesh.Draw(ref renderContext, _highlightMaterial, ref world);
+                mesh.Draw(in renderContext, _highlightMaterial, in world);
             }
 
             Profiler.EndEvent();

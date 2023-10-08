@@ -37,8 +37,8 @@ namespace FlaxEditor.Windows.Assets
 
             private void Set(Guid oldRootId, Guid newRootId)
             {
-                var oldRoot = Object.Find<Actor>(ref oldRootId);
-                var newRoot = Object.Find<Actor>(ref newRootId);
+                var oldRoot = Object.Find<Actor>(in oldRootId);
+                var newRoot = Object.Find<Actor>(in newRootId);
 
                 _window.Graph.MainActor = null;
                 _window.Viewport.Instance = null;

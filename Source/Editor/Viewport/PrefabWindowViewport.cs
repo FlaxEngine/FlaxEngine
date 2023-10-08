@@ -735,7 +735,7 @@ namespace FlaxEditor.Viewport
                     {
                         var staticModel = (StaticModel)staticModelNode.Actor;
                         var ray = ConvertMouseToRay(ref location);
-                        if (staticModel.IntersectsEntry(ref ray, out _, out _, out var entryIndex))
+                        if (staticModel.IntersectsEntry(in ray, out _, out _, out var entryIndex))
                         {
                             var material = FlaxEngine.Content.LoadAsync<MaterialBase>(item.ID);
                             using (new UndoBlock(Undo, staticModel, "Change material"))

@@ -71,7 +71,7 @@ namespace FlaxEditor.Tools.Terrain.Undo
             get
             {
                 var terrainId = _terrain;
-                return FlaxEngine.Object.Find<FlaxEngine.Terrain>(ref terrainId);
+                return FlaxEngine.Object.Find<FlaxEngine.Terrain>(in terrainId);
             }
         }
 

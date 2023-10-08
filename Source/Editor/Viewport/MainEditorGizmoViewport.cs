@@ -945,7 +945,7 @@ namespace FlaxEditor.Viewport
                 {
                     _previewStaticModel = (StaticModel)staticModelNode.Actor;
                     var ray = ConvertMouseToRay(ref location);
-                    _previewStaticModel.IntersectsEntry(ref ray, out _, out _, out _previewModelEntryIndex);
+                    _previewStaticModel.IntersectsEntry(in ray, out _, out _, out _previewModelEntryIndex);
                 }
                 else if (hit is BoxBrushNode.SideLinkNode brushSurfaceNode)
                 {
@@ -1078,7 +1078,7 @@ namespace FlaxEditor.Viewport
                 {
                     var staticModel = (StaticModel)staticModelNode.Actor;
                     var ray = ConvertMouseToRay(ref location);
-                    if (staticModel.IntersectsEntry(ref ray, out _, out _, out var entryIndex))
+                    if (staticModel.IntersectsEntry(in ray, out _, out _, out var entryIndex))
                     {
                         using (new UndoBlock(Undo, staticModel, "Change material"))
                             staticModel.SetMaterial(entryIndex, material);

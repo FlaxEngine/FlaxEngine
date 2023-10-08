@@ -38,7 +38,7 @@ namespace FlaxEditor.Tools.Foliage.Undo
         public void RecordEnd()
         {
             var foliageId = _foliageId;
-            var foliage = FlaxEngine.Object.Find<FlaxEngine.Foliage>(ref foliageId);
+            var foliage = FlaxEngine.Object.Find<FlaxEngine.Foliage>(in foliageId);
 
             _after = foliage.ToJson();
 
@@ -70,7 +70,7 @@ namespace FlaxEditor.Tools.Foliage.Undo
         private void Set(string data)
         {
             var foliageId = _foliageId;
-            var foliage = FlaxEngine.Object.Find<FlaxEngine.Foliage>(ref foliageId);
+            var foliage = FlaxEngine.Object.Find<FlaxEngine.Foliage>(in foliageId);
 
             foliage.FromJson(data);
 

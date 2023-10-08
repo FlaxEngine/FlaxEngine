@@ -66,7 +66,7 @@ namespace FlaxEditor.Actions
         /// <inheritdoc />
         public void Do()
         {
-            var script = FlaxEngine.Object.Find<Script>(ref _scriptId);
+            var script = FlaxEngine.Object.Find<Script>(in _scriptId);
             if (script == null)
                 return;
             script.Enabled = _enableB;
@@ -76,7 +76,7 @@ namespace FlaxEditor.Actions
         /// <inheritdoc />
         public void Undo()
         {
-            var script = FlaxEngine.Object.Find<Script>(ref _scriptId);
+            var script = FlaxEngine.Object.Find<Script>(in _scriptId);
             if (script == null)
                 return;
             script.Enabled = _enableA;
@@ -91,7 +91,7 @@ namespace FlaxEditor.Actions
         /// <inheritdoc />
         public void MarkSceneEdited(SceneModule sceneModule)
         {
-            var script = FlaxEngine.Object.Find<Script>(ref _scriptId);
+            var script = FlaxEngine.Object.Find<Script>(in _scriptId);
             if (script != null)
                 sceneModule.MarkSceneEdited(script.Scene);
         }

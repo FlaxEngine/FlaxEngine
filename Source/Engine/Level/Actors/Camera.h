@@ -161,7 +161,7 @@ public:
     /// <param name="worldSpaceLocation">The input world-space location (XYZ in world).</param>
     /// <param name="cameraViewportSpaceLocation">The output camera viewport-space location (XY in screen pixels).</param>
     /// <param name="viewport">The viewport.</param>
-    API_FUNCTION() void ProjectPoint(const Vector3& worldSpaceLocation, API_PARAM(Out) Float2& cameraViewportSpaceLocation, API_PARAM(Ref) const Viewport& viewport) const;
+    API_FUNCTION() void ProjectPoint(const Vector3& worldSpaceLocation, API_PARAM(Out) Float2& cameraViewportSpaceLocation, API_PARAM(In) const Viewport& viewport) const;
 
     /// <summary>
     /// Converts a game window-space point into a corresponding point in world space.
@@ -178,7 +178,7 @@ public:
     /// <param name="depth">The input camera-relative depth position (eg. clipping plane).</param>
     /// <param name="worldSpaceLocation">The output world-space location (XYZ in world).</param>
     /// <param name="viewport">The viewport.</param>
-    API_FUNCTION() void UnprojectPoint(const Float2& cameraViewportSpaceLocation, float depth, API_PARAM(Out) Vector3& worldSpaceLocation, API_PARAM(Ref) const Viewport& viewport) const;
+    API_FUNCTION() void UnprojectPoint(const Float2& cameraViewportSpaceLocation, float depth, API_PARAM(Out) Vector3& worldSpaceLocation, API_PARAM(In) const Viewport& viewport) const;
 
     /// <summary>
     /// Checks if the 3d point of the world is in the camera's field of view.
@@ -200,7 +200,7 @@ public:
     /// <param name="mousePosition">The mouse position.</param>
     /// <param name="viewport">The viewport.</param>
     /// <returns>Mouse ray</returns>
-    API_FUNCTION() Ray ConvertMouseToRay(const Float2& mousePosition, API_PARAM(Ref) const Viewport& viewport) const;
+    API_FUNCTION() Ray ConvertMouseToRay(const Float2& mousePosition, API_PARAM(In) const Viewport& viewport) const;
 
     /// <summary>
     /// Gets the camera viewport.
@@ -220,7 +220,7 @@ public:
     /// <param name="view">The result camera view matrix.</param>
     /// <param name="projection">The result camera projection matrix.</param>
     /// <param name="viewport">The custom output viewport.</param>
-    API_FUNCTION() void GetMatrices(API_PARAM(Out) Matrix& view, API_PARAM(Out) Matrix& projection, API_PARAM(Ref) const Viewport& viewport) const;
+    API_FUNCTION() void GetMatrices(API_PARAM(Out) Matrix& view, API_PARAM(Out) Matrix& projection, API_PARAM(In) const Viewport& viewport) const;
 
     /// <summary>
     /// Calculates the view and the projection matrices for the camera. Support using custom viewport and view origin.
@@ -229,11 +229,11 @@ public:
     /// <param name="projection">The result camera projection matrix.</param>
     /// <param name="viewport">The custom output viewport.</param>
     /// <param name="origin">The rendering view origin (for relative-to-camera rendering).</param>
-    API_FUNCTION() void GetMatrices(API_PARAM(Out) Matrix& view, API_PARAM(Out) Matrix& projection, API_PARAM(Ref) const Viewport& viewport, API_PARAM(Ref) const Vector3& origin) const;
+    API_FUNCTION() void GetMatrices(API_PARAM(Out) Matrix& view, API_PARAM(Out) Matrix& projection, API_PARAM(In) const Viewport& viewport, API_PARAM(In) const Vector3& origin) const;
 
 #if USE_EDITOR
     // Intersection check for editor picking the camera
-    API_FUNCTION() bool IntersectsItselfEditor(API_PARAM(Ref) const Ray& ray, API_PARAM(Out) Real& distance);
+    API_FUNCTION() bool IntersectsItselfEditor(API_PARAM(In) const Ray& ray, API_PARAM(Out) Real& distance);
 #endif
 
 private:

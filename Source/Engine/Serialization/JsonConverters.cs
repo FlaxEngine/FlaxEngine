@@ -27,7 +27,7 @@ namespace FlaxEngine.Json
             if (reader.TokenType == JsonToken.String)
             {
                 JsonSerializer.ParseID((string)reader.Value, out var id);
-                return Object.Find(ref id, objectType);
+                return Object.Find(in id, objectType);
             }
             return null;
         }

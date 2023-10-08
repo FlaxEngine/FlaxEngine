@@ -105,19 +105,19 @@ namespace FlaxEditor.SceneGraph.Actors
 
                 public void Do()
                 {
-                    var spline = Object.Find<Spline>(ref SplineId);
+                    var spline = Object.Find<Spline>(in SplineId);
                     spline.InsertSplineLocalPoint(Index, Time, Value);
                 }
 
                 public void Undo()
                 {
-                    var spline = Object.Find<Spline>(ref SplineId);
+                    var spline = Object.Find<Spline>(in SplineId);
                     spline.RemoveSplinePoint(Index);
                 }
 
                 public void MarkSceneEdited(SceneModule sceneModule)
                 {
-                    var spline = Object.Find<Spline>(ref SplineId);
+                    var spline = Object.Find<Spline>(in SplineId);
                     sceneModule.MarkSceneEdited(spline.Scene);
                     OnSplineEdited(spline);
                 }
@@ -212,7 +212,7 @@ namespace FlaxEditor.SceneGraph.Actors
             public static SceneGraphNode Create(StateData state)
             {
                 var data = JsonSerializer.Deserialize<Data>(state.State);
-                var spline = Object.Find<Spline>(ref data.Spline);
+                var spline = Object.Find<Spline>(in data.Spline);
                 spline.InsertSplineLocalPoint(data.Index, data.Keyframe.Time, data.Keyframe.Value, false);
                 spline.SetSplineKeyframe(data.Index, data.Keyframe);
                 var splineNode = (SplineNode)SceneGraphFactory.FindNode(data.Spline);

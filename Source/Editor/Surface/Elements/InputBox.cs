@@ -1550,7 +1550,7 @@ namespace FlaxEditor.Surface.Elements
                 if (text.Length != 32)
                     return false;
                 JsonSerializer.ParseID(text, out var id);
-                obj = FlaxEngine.Object.Find<FlaxEngine.Object>(ref id);
+                obj = FlaxEngine.Object.Find<FlaxEngine.Object>(in id);
             }
             else
             {

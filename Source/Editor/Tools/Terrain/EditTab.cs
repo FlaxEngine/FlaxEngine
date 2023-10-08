@@ -152,7 +152,7 @@ namespace FlaxEditor.Tools.Terrain
             /// <inheritdoc />
             public void Do()
             {
-                var terrain = Object.Find<FlaxEngine.Terrain>(ref _terrainId);
+                var terrain = Object.Find<FlaxEngine.Terrain>(in _terrainId);
                 if (terrain == null)
                 {
                     Editor.LogError("Missing terrain actor.");
@@ -167,7 +167,7 @@ namespace FlaxEditor.Tools.Terrain
             /// <inheritdoc />
             public void Undo()
             {
-                var terrain = Object.Find<FlaxEngine.Terrain>(ref _terrainId);
+                var terrain = Object.Find<FlaxEngine.Terrain>(in _terrainId);
                 if (terrain == null)
                 {
                     Editor.LogError("Missing terrain actor.");
@@ -270,7 +270,7 @@ namespace FlaxEditor.Tools.Terrain
 
             private void Set(ref Guid id)
             {
-                var terrain = Object.Find<FlaxEngine.Terrain>(ref _terrainId);
+                var terrain = Object.Find<FlaxEngine.Terrain>(in _terrainId);
                 if (terrain == null)
                 {
                     Editor.LogError("Missing terrain actor.");

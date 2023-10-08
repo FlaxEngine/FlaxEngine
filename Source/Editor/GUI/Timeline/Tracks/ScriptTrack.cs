@@ -52,7 +52,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// </summary>
         public Script Script
         {
-            get => FlaxEngine.Object.TryFind<Script>(ref ScriptID);
+            get => FlaxEngine.Object.TryFind<Script>(in ScriptID);
             set => ScriptID = value?.ID ?? Guid.Empty;
         }
 

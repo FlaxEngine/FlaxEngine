@@ -114,7 +114,7 @@ namespace FlaxEditor.CustomEditors.Editors
         public Guid ValueID
         {
             get => _value ? _value.ID : Guid.Empty;
-            set => Value = Object.Find<Object>(ref value);
+            set => Value = Object.Find<Object>(in value);
         }
 
         /// <summary>
@@ -404,7 +404,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
             // Load or get asset
             var id = assetItem.ID;
-            var obj = Object.Find<Asset>(ref id);
+            var obj = Object.Find<Asset>(in id);
             if (obj == null)
                 return false;
 

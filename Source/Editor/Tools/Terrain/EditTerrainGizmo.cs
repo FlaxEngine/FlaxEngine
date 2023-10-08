@@ -96,7 +96,7 @@ namespace FlaxEditor.Tools.Terrain
                                    Matrix.Scaling(terrain.Scale) *
                                    Matrix.RotationQuaternion(terrain.Orientation) *
                                    Matrix.Translation(terrain.Position - renderContext.View.Origin);
-                    _planeModel.Draw(ref renderContext, _highlightMaterial, ref world);
+                    _planeModel.Draw(in renderContext, _highlightMaterial, in world);
                 }
 
                 break;
@@ -166,7 +166,7 @@ namespace FlaxEditor.Tools.Terrain
             /// <inheritdoc />
             public void Do()
             {
-                var terrain = Object.Find<FlaxEngine.Terrain>(ref _terrainId);
+                var terrain = Object.Find<FlaxEngine.Terrain>(in _terrainId);
                 if (terrain == null)
                 {
                     Editor.LogError("Missing terrain actor.");
@@ -185,7 +185,7 @@ namespace FlaxEditor.Tools.Terrain
             /// <inheritdoc />
             public void Undo()
             {
-                var terrain = Object.Find<FlaxEngine.Terrain>(ref _terrainId);
+                var terrain = Object.Find<FlaxEngine.Terrain>(in _terrainId);
                 if (terrain == null)
                 {
                     Editor.LogError("Missing terrain actor.");

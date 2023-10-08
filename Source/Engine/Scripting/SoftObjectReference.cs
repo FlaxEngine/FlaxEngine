@@ -35,7 +35,7 @@ namespace FlaxEngine
         public T Get<T>() where T : Object
         {
             if (!_object)
-                _object = Object.Find(ref _id, typeof(T));
+                _object = Object.Find(in _id, typeof(T));
             return _object as T;
         }
 

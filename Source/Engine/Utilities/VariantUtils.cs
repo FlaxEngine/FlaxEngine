@@ -472,12 +472,12 @@ namespace FlaxEngine.Utilities
             case VariantType.Object:
             {
                 var id = stream.ReadGuid();
-                return FlaxEngine.Object.Find(ref id, type ?? typeof(FlaxEngine.Object));
+                return FlaxEngine.Object.Find(in id, type ?? typeof(FlaxEngine.Object));
             }
             case VariantType.Asset:
             {
                 var id = stream.ReadGuid();
-                return FlaxEngine.Object.Find(ref id, type ?? typeof(Asset));
+                return FlaxEngine.Object.Find(in id, type ?? typeof(Asset));
             }
             case VariantType.Blob: return stream.ReadBytes(stream.ReadInt32());
             case VariantType.Enum:

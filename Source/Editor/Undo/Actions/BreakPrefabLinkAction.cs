@@ -104,7 +104,7 @@ namespace FlaxEditor.Actions
             if (_prefabObjectIds == null)
                 throw new Exception("Cannot link prefab. Missing objects Ids mapping.");
 
-            var actor = Object.Find<Actor>(ref _actorId);
+            var actor = Object.Find<Actor>(in _actorId);
             if (actor == null)
                 throw new Exception("Cannot link prefab. Missing actor.");
 
@@ -114,7 +114,7 @@ namespace FlaxEditor.Actions
                 var objId = e.Key;
                 var prefabObjId = e.Value;
 
-                var obj = Object.Find<Object>(ref objId);
+                var obj = Object.Find<Object>(in objId);
                 if (obj is Actor)
                 {
                     Actor.Internal_LinkPrefab(Object.GetUnmanagedPtr(obj), ref _prefabId, ref prefabObjId);
@@ -147,7 +147,7 @@ namespace FlaxEditor.Actions
 
         private void DoBreak()
         {
-            var actor = Object.Find<Actor>(ref _actorId);
+            var actor = Object.Find<Actor>(in _actorId);
             if (actor == null)
                 throw new Exception("Cannot break prefab link. Missing actor.");
             if (!actor.HasPrefabLink)

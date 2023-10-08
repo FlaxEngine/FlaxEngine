@@ -99,7 +99,7 @@ namespace FlaxEditor.SceneGraph
             Nodes.TryGetValue(id, out SceneGraphNode result);
             if (result == null)
             {
-                var actor = Object.TryFind<Actor>(ref id);
+                var actor = Object.TryFind<Actor>(in id);
                 if (actor != null)
                 {
                     result = BuildActorNode(actor);

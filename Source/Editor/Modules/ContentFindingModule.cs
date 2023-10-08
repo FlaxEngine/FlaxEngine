@@ -228,7 +228,7 @@ namespace FlaxEditor.Modules
                         new SearchResult { Name = item.ShortName, Type = assetItem.TypeName, Item = item }
                     };
                 }
-                var actor = FlaxEngine.Object.Find<Actor>(ref id);
+                var actor = FlaxEngine.Object.Find<Actor>(in id);
                 if (actor != null)
                 {
                     return new List<SearchResult>

@@ -218,7 +218,7 @@ namespace FlaxEditor.Tools.Foliage
             {
                 var transform = foliage.Transform.LocalToWorld(instance.Transform);
                 renderContext.View.GetWorldMatrix(ref transform, out var world);
-                model.Draw(ref renderContext, _highlightMaterial, ref world, StaticFlags.None, false);
+                model.Draw(in renderContext, _highlightMaterial, in world, StaticFlags.None, false);
             }
         }
 

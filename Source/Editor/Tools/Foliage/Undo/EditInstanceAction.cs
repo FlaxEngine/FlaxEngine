@@ -42,7 +42,7 @@ namespace FlaxEditor.Tools.Foliage.Undo
         public void RecordEnd()
         {
             var foliageId = _foliageId;
-            var foliage = FlaxEngine.Object.Find<FlaxEngine.Foliage>(ref foliageId);
+            var foliage = FlaxEngine.Object.Find<FlaxEngine.Foliage>(in foliageId);
             _after = foliage.GetInstance(_index).Transform;
             Editor.Instance.Scene.MarkSceneEdited(foliage.Scene);
         }
@@ -54,7 +54,7 @@ namespace FlaxEditor.Tools.Foliage.Undo
         public void Do()
         {
             var foliageId = _foliageId;
-            var foliage = FlaxEngine.Object.Find<FlaxEngine.Foliage>(ref foliageId);
+            var foliage = FlaxEngine.Object.Find<FlaxEngine.Foliage>(in foliageId);
             foliage.SetInstanceTransform(_index, ref _after);
             foliage.RebuildClusters();
             Editor.Instance.Scene.MarkSceneEdited(foliage.Scene);
@@ -64,7 +64,7 @@ namespace FlaxEditor.Tools.Foliage.Undo
         public void Undo()
         {
             var foliageId = _foliageId;
-            var foliage = FlaxEngine.Object.Find<FlaxEngine.Foliage>(ref foliageId);
+            var foliage = FlaxEngine.Object.Find<FlaxEngine.Foliage>(in foliageId);
             foliage.SetInstanceTransform(_index, ref _before);
             foliage.RebuildClusters();
             Editor.Instance.Scene.MarkSceneEdited(foliage.Scene);

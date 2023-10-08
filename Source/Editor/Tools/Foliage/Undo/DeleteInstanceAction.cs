@@ -39,7 +39,7 @@ namespace FlaxEditor.Tools.Foliage.Undo
         public void Do()
         {
             var foliageId = _foliageId;
-            var foliage = FlaxEngine.Object.Find<FlaxEngine.Foliage>(ref foliageId);
+            var foliage = FlaxEngine.Object.Find<FlaxEngine.Foliage>(in foliageId);
 
             _instance = foliage.GetInstance(_index);
             foliage.RemoveInstance(_index);
@@ -52,7 +52,7 @@ namespace FlaxEditor.Tools.Foliage.Undo
         public void Undo()
         {
             var foliageId = _foliageId;
-            var foliage = FlaxEngine.Object.Find<FlaxEngine.Foliage>(ref foliageId);
+            var foliage = FlaxEngine.Object.Find<FlaxEngine.Foliage>(in foliageId);
 
             _index = foliage.InstancesCount;
             foliage.AddInstance(ref _instance);

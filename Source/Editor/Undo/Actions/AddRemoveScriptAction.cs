@@ -136,7 +136,7 @@ namespace FlaxEditor.Actions
         private void DoRemove()
         {
             // Remove script (it could be removed by sth else, just check it)
-            var script = Object.Find<Script>(ref _scriptId);
+            var script = Object.Find<Script>(in _scriptId);
             if (!script)
             {
                 Editor.LogWarning("Missing script.");
@@ -150,7 +150,7 @@ namespace FlaxEditor.Actions
         private void DoAdd()
         {
             // Restore script
-            var parentActor = Object.Find<Actor>(ref _parentId);
+            var parentActor = Object.Find<Actor>(in _parentId);
             if (parentActor == null)
             {
                 Editor.LogWarning("Missing parent actor.");
@@ -168,7 +168,7 @@ namespace FlaxEditor.Actions
                 Editor.LogWarning("Cannot create script of type " + _scriptTypeName);
                 return;
             }
-            Object.Internal_ChangeID(Object.GetUnmanagedPtr(script), ref _scriptId);
+            Object.Internal_ChangeID(Object.GetUnmanagedPtr(script), in _scriptId);
             if (_scriptData != null)
                 FlaxEngine.Json.JsonSerializer.Deserialize(script, _scriptData);
             script.Enabled = _enabled;

@@ -773,7 +773,7 @@ namespace FlaxEditor.Surface.Archetypes
             private void UpdateOutputBox()
             {
                 var id = (Guid)Values[0];
-                var actor = FlaxEngine.Object.Find<Actor>(ref id);
+                var actor = FlaxEngine.Object.Find<Actor>(in id);
                 var box = (OutputBox)GetBox(0);
                 box.CurrentType = new ScriptType(actor != null ? actor.GetType() : typeof(Actor));
             }
