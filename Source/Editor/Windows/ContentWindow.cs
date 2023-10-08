@@ -329,7 +329,7 @@ namespace FlaxEditor.Windows
                 b.Checked = ShowPluginsFiles;
                 b.CloseMenuOnClick = false;
                 b.AutoCheck = true;
-                
+
                 b = show.ContextMenu.AddButton("Generated files", () => ShowGeneratedFiles = !ShowGeneratedFiles);
                 b.TooltipText = "Shows generated files";
                 b.Checked = ShowGeneratedFiles;
@@ -756,7 +756,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
-        /// Stars creating the folder.
+        /// Starts creating the folder.
         /// </summary>
         public void NewFolder()
         {
