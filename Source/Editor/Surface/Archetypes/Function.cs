@@ -745,12 +745,12 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnDestroy();
             }
 
-            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 return false;
             }
 
-            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 return inputType.IsVoid;
             }
@@ -1162,7 +1162,7 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnDestroy();
             }
 
-            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 if (nodeArch.Tag is not ScriptMemberInfo memberInfo)
                     return false;
@@ -1188,7 +1188,7 @@ namespace FlaxEditor.Surface.Archetypes
                 return false;
             }
 
-            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 if (nodeArch.Tag is not ScriptMemberInfo memberInfo)
                     return false;
@@ -1836,12 +1836,12 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnDestroy();
             }
 
-            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 return false;
             }
 
-            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 return inputType.IsVoid;
             }
@@ -1982,7 +1982,7 @@ namespace FlaxEditor.Surface.Archetypes
                 UpdateSignature();
             }
 
-            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 var scriptType = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
                 if (scriptType == ScriptType.Null)
@@ -2011,7 +2011,7 @@ namespace FlaxEditor.Surface.Archetypes
                 return false;
             }
 
-            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 var scriptType = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
                 if (scriptType == ScriptType.Null)
@@ -2093,7 +2093,7 @@ namespace FlaxEditor.Surface.Archetypes
                 UpdateSignature();
             }
 
-            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 if (outputType.IsVoid)
                     return true;
@@ -2130,7 +2130,7 @@ namespace FlaxEditor.Surface.Archetypes
                 return false;
             }
 
-            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 return inputType.IsVoid;
             }
@@ -2353,7 +2353,7 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnDestroy();
             }
 
-            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 // Event based nodes always have a pulse input, so it's always compatible with void
                 if (outputType.IsVoid)
@@ -2373,7 +2373,7 @@ namespace FlaxEditor.Surface.Archetypes
                 return false;
             }
 
-            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 // Event based nodes always have a pulse output, so it's always compatible with void
                 if (inputType.IsVoid)
