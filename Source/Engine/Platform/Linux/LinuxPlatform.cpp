@@ -945,7 +945,7 @@ const char* ButtonCodeToKeyName(KeyboardKeys code)
 		// Row #6
 	case KeyboardKeys::Control:	return "LCTL"; // Left Control
 	case KeyboardKeys::LeftWindows: return "LWIN";
-	case KeyboardKeys::LeftMenu: return "LALT";
+	case KeyboardKeys::Alt: return "LALT";
 	case KeyboardKeys::Spacebar: return "SPCE";
 	case KeyboardKeys::RightMenu: return "RALT";
 	case KeyboardKeys::RightWindows: return "RWIN";
