@@ -54,21 +54,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override bool CanDrawThumbnail(ThumbnailRequest request)
         {
-            if (!_preview.HasLoadedAssets)
-                return false;
-
-            // Check if asset is streamed enough
-            var asset = (SkinnedModel)request.Asset;
-            var lods = asset.LODs.Length;
-            if (asset.IsLoaded && lods == 0)
-                return true; // Skeleton-only model
-            var slots = asset.MaterialSlots;
-            foreach (var slot in slots)
-            {
-                if (slot.Material && !slot.Material.IsLoaded)
-                    return false;
-            }
-            return asset.LoadedLODs >= Mathf.Max(1, (int)(lods * ThumbnailsModule.MinimumRequiredResourcesQuality));
+            return _preview.HasLoadedAssets && ThumbnailsModule.HasMinimumQuality((SkinnedModel)request.Asset);
         }
 
         /// <inheritdoc />
