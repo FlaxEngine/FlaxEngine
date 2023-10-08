@@ -1126,12 +1126,9 @@ bool TerrainPatch::InitializeHeightMap()
 float* TerrainPatch::GetHeightmapData()
 {
     PROFILE_CPU_NAMED("Terrain.GetHeightmapData");
-
     if (_cachedHeightMap.HasItems())
         return _cachedHeightMap.Get();
-
     CacheHeightData();
-
     return _cachedHeightMap.Get();
 }
 
@@ -1144,12 +1141,9 @@ void TerrainPatch::ClearHeightmapCache()
 byte* TerrainPatch::GetHolesMaskData()
 {
     PROFILE_CPU_NAMED("Terrain.GetHolesMaskData");
-
     if (_cachedHolesMask.HasItems())
         return _cachedHolesMask.Get();
-
     CacheHeightData();
-
     return _cachedHolesMask.Get();
 }
 
@@ -1161,15 +1155,11 @@ void TerrainPatch::ClearHolesMaskCache()
 
 Color32* TerrainPatch::GetSplatMapData(int32 index)
 {
-    ASSERT(index >= 0 && index < TERRAIN_MAX_SPLATMAPS_COUNT);
-
+    CHECK_RETURN(index >= 0 && index < TERRAIN_MAX_SPLATMAPS_COUNT, nullptr);
     PROFILE_CPU_NAMED("Terrain.GetSplatMapData");
-
     if (_cachedSplatMap[index].HasItems())
         return _cachedSplatMap[index].Get();
-
     CacheSplatData();
-
     return _cachedSplatMap[index].Get();
 }
 
