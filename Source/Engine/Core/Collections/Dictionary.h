@@ -309,7 +309,7 @@ public:
 
         FORCE_INLINE bool operator==(const Iterator& v) const
         {
-            return _index == v._index && &_collection == &v._collection;
+            return _index == v._index && _collection == v._collection;
         }
 
         FORCE_INLINE bool operator!=(const Iterator& v) const
