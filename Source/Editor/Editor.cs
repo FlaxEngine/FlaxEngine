@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using FlaxEditor.Content;
-using FlaxEditor.Content.Import;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.Content.Thumbnails;
 using FlaxEditor.Modules;
@@ -154,12 +153,12 @@ namespace FlaxEditor
         public ContentFindingModule ContentFinding;
 
         /// <summary>
-        /// The scripts editing
+        /// The scripts editing.
         /// </summary>
         public CodeEditingModule CodeEditing;
 
         /// <summary>
-        /// The scripts documentation
+        /// The scripts documentation.
         /// </summary>
         public CodeDocsModule CodeDocs;
 
@@ -179,7 +178,7 @@ namespace FlaxEditor
         public ProjectCacheModule ProjectCache;
 
         /// <summary>
-        /// The undo/redo
+        /// The undo/redo.
         /// </summary>
         public EditorUndo Undo;
 
