@@ -62,6 +62,12 @@ namespace FlaxEditor.Content
             var lods = asset.LODs.Length;
             if (asset.IsLoaded && lods == 0)
                 return true; // Skeleton-only model
+            var slots = asset.MaterialSlots;
+            foreach (var slot in slots)
+            {
+                if (slot.Material && !slot.Material.IsLoaded)
+                    return false;
+            }
             return asset.LoadedLODs >= Mathf.Max(1, (int)(lods * ThumbnailsModule.MinimumRequiredResourcesQuality));
         }
 
