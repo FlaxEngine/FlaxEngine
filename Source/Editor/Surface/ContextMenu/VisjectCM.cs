@@ -618,7 +618,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     Archetypes = archetypes
                 };
 
-                var group = CreateGroup(groupArchetype);
+                var group = CreateGroup(groupArchetype, false);
                 group.ArrowImageOpened = new SpriteBrush(Style.Current.ArrowDown);
                 group.ArrowImageClosed = new SpriteBrush(Style.Current.ArrowRight);
                 group.Close(false);
