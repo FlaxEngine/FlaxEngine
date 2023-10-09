@@ -138,13 +138,13 @@ namespace FlaxEditor.Gizmo
                 switch (_activeAxis)
                 {
                     case Axis.X:
-                        resources._materialCenter.SetParameterValue("MainColor", Resources.XAxisColor, true);
+                        resources._materialCenter.SetParameterValue("Color", Resources.XAxisColor, true);
                         break;
                     case Axis.Y:
-                        resources._materialCenter.SetParameterValue("MainColor", Resources.YAxisColor, true);
+                        resources._materialCenter.SetParameterValue("Color", Resources.YAxisColor, true);
                         break;
                     case Axis.Z:
-                        resources._materialCenter.SetParameterValue("MainColor", Resources.ZAxisColor, true);
+                        resources._materialCenter.SetParameterValue("Color", Resources.ZAxisColor, true);
                         break;
                 }
             }
@@ -158,7 +158,7 @@ namespace FlaxEditor.Gizmo
             if (_isTransforming)
             {
                 resources._materialCenter.SetParameterValue("RotacionStartEnd", new Float2(0f, 0f), true);
-                resources._materialCenter.SetParameterValue("MainColor", Resources.CenterColor, true);
+                resources._materialCenter.SetParameterValue("Color", Resources.CenterColor, true);
                 EndRot = 0f;
                 _isTransforming = false;
                 _isDuplicating = false;

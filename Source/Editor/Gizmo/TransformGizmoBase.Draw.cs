@@ -28,11 +28,9 @@ namespace FlaxEditor.Gizmo
         /// <inheritdoc />
         public override void Draw(ref RenderContext renderContext)
         {
-            bool flag = !IsActive || SelectionCount == 0;
-            if (!flag)
+            if (IsActive && SelectionCount != 0)
             {
-                bool isTransforming = _isTransforming;
-                if (isTransforming)
+                if (_isTransforming)
                 {
                     Vector3 dir = Vector3.Zero;
                     switch (_activeAxis)
@@ -62,11 +60,9 @@ namespace FlaxEditor.Gizmo
                             DebugDraw.DrawLine(Vector3.Up * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Vector3.Down * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Resources.ZAxisColor, 0f, true);
                             break;
                     }
-                    bool flag2 = _activeMode == Mode.Rotate;
-                    if (flag2)
+                    if (_activeMode == Mode.Rotate)
                     {
-                        bool flag3 = !dir.IsZero;
-                        if (flag3)
+                        if (!dir.IsZero)
                         {
                             Center.Orientation = Quaternion.FromDirection(dir);
                         }
@@ -94,9 +90,9 @@ namespace FlaxEditor.Gizmo
                             break;
                         case Mode.Rotate:
                             DrawRHandle(ref renderContext);
-                            resources._materialAxisRotX.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.X), true);
-                            resources._materialAxisRotY.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Y), true);
-                            resources._materialAxisRotZ.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Z), true);
+                            resources._materialAxisX.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.X), true);
+                            resources._materialAxisY.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Y), true);
+                            resources._materialAxisZ.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Z), true);
                             resources._materialCenter.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.View), true);
                             resources._materialCenter.SetParameterValue("SnapingValue", RotationSnapEnabled ? RotationSnapValue : 0f, true);
                             resources._materialRotCenter.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Center), true);
@@ -143,9 +139,9 @@ namespace FlaxEditor.Gizmo
             Matrix mZ = Z.GetWorld();
             Matrix mCenter = Center.GetWorld();
             Matrix mRotCenter = RotCenter.GetWorld();
-            Resources._modelRotationAxis.Draw(ref renderContext, resources._materialAxisRotX, ref mX, StaticFlags.None, false, 0);
-            Resources._modelRotationAxis.Draw(ref renderContext, resources._materialAxisRotY, ref mY, StaticFlags.None, false, 0);
-            Resources._modelRotationAxis.Draw(ref renderContext, resources._materialAxisRotZ, ref mZ, StaticFlags.None, false, 0);
+            Resources._modelRotationAxis.Draw(ref renderContext, resources._materialAxisX, ref mX, StaticFlags.None, false, 0);
+            Resources._modelRotationAxis.Draw(ref renderContext, resources._materialAxisY, ref mY, StaticFlags.None, false, 0);
+            Resources._modelRotationAxis.Draw(ref renderContext, resources._materialAxisZ, ref mZ, StaticFlags.None, false, 0);
             Resources._modelPlane.Draw(ref renderContext, resources._materialCenter, ref mCenter, StaticFlags.None, false, 0);
             Resources._modelSphere.Draw(ref renderContext, resources._materialRotCenter, ref mRotCenter, StaticFlags.None, false, 0);
         }
@@ -154,13 +150,12 @@ namespace FlaxEditor.Gizmo
         /// computes all component of the transform
         /// </summary>
 
-        internal void ComputeNewTransform(Mode curentMode, TransformSpace curentTransformSpace)
+        internal void ComputeNewTransform(in Mode curentMode,in TransformSpace curentTransformSpace)
         {
             Quaternion WorldTransformOrientationI = WorldTransform.Orientation;
-            bool flag = curentMode == Mode.Rotate;
-            if (flag)
+            if (curentMode == Mode.Rotate)
             {
-                resources._materialCenter.SetParameterValue("Line Thickness", 0.1f, true);
+                resources._materialCenter.SetParameterValue("Line Thickness", 0.005f, true);
                 Float3 Scale = WorldTransform.Scale * 0.8f;
                 X = new Transform(WorldTransform.Translation, WorldTransformOrientationI * RotXOrientationOffset, Scale);
                 Y = new Transform(WorldTransform.Translation, WorldTransformOrientationI, Scale);
@@ -168,16 +163,16 @@ namespace FlaxEditor.Gizmo
                 RotCenter = new Transform(WorldTransform.Translation, Quaternion.Identity, Scale);
                 Center.Scale = WorldTransform.Scale;
                 Center.Translation = WorldTransform.Translation;
+                return;
             }
             else
             {
-                resources._materialCenter.SetParameterValue("Line Thickness", 1f, true);
+                resources._materialCenter.SetParameterValue("Line Thickness", 0.05f, true);
                 Quaternion OrientationXAxis = XOrientationOffset;
                 Quaternion OrientationYAxis = YOrientationOffset;
                 Quaternion OrientationZAxis = ZOrientationOffset;
                 Float3 PlaneScale = WorldTransform.Scale * 0.1f;
-                bool flag2 = curentTransformSpace == TransformSpace.Local;
-                if (flag2)
+                if (curentTransformSpace == TransformSpace.Local)
                 {
                     PlaneX = new Transform(new Vector3(0f, 20f, 20f) * WorldTransformOrientationI * WorldTransform.Scale + WorldTransform.Translation, WorldTransformOrientationI * PlaneXOrientationOffset, PlaneScale);
                     PlaneZ = new Transform(new Vector3(20f, 20f, 0f) * WorldTransformOrientationI * WorldTransform.Scale + WorldTransform.Translation, WorldTransformOrientationI * PlaneYOrientationOffset, PlaneScale);
@@ -207,10 +202,9 @@ namespace FlaxEditor.Gizmo
         /// computes only scale and need Translation of transform
         /// </summary>
 
-        internal void ComputeNewTransformScale(Mode curentMode, TransformSpace curentTransformSpace)
+        internal void ComputeNewTransformScale(in Mode curentMode,in TransformSpace curentTransformSpace)
         {
-            bool flag = curentMode == Mode.Rotate;
-            if (flag)
+            if (curentMode == Mode.Rotate)
             {
                 Float3 Scale = WorldTransform.Scale * 0.8f;
                 X.Scale = Scale;
@@ -218,6 +212,7 @@ namespace FlaxEditor.Gizmo
                 Z.Scale = Scale;
                 Center.Scale = WorldTransform.Scale;
                 RotCenter.Scale = Scale;
+                return;
             }
             else
             {
@@ -259,7 +254,7 @@ namespace FlaxEditor.Gizmo
 
         internal void ComputeCenterRotacion(IGizmoOwner owner)
         {
-            Center.Orientation = Quaternion.FromDirection((WorldTransform.Translation - owner.ViewPosition).Normalized);
+            Center.Orientation = Quaternion.FromDirection(-(WorldTransform.Translation - owner.ViewPosition).Normalized);
         }
     }
 }
