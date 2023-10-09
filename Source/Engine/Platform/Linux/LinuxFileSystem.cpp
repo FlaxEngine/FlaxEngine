@@ -69,7 +69,30 @@ bool LinuxFileSystem::ShowOpenFileDialog(Window* parentWindow, const StringView&
     }
     FILE* f = popen(cmd, "r");
     char buf[2048];
-    fgets(buf, ARRAY_COUNT(buf), f); 
+    char* writePointer = buf;
+    int remainingCapacity = ARRAY_COUNT(buf);
+    // make sure we read all output from kdialog
+    while (remainingCapacity > 0 && fgets(writePointer, remainingCapacity, f))
+    {
+        int r = strlen(writePointer);
+        writePointer += r;
+        remainingCapacity -= r;
+    }
+    if (remainingCapacity <= 0)
+    {
+        LOG(Error, "You selected more files than an internal buffer can hold. Try selecting fewer files at a time.");
+        // in case of an overflow we miss the closing null byte, add it after the rightmost linefeed
+        while (*writePointer != '\n')
+        {
+            writePointer--;
+            if (writePointer == buf)
+            {
+                *buf = 0;
+                break;
+            }
+        }
+        *(++writePointer) = 0;
+    }
     int result = pclose(f);
     if (result != 0)
     {
