@@ -1218,10 +1218,9 @@ bool LevelImpl::saveScene(Scene* scene, rapidjson_flax::StringBuffer& outBuffer,
         // Json resource data
         writer.JKEY("Data");
         writer.StartArray();
+        SceneObject** objects = allObjects.Get();
         for (int32 i = 0; i < allObjects.Count(); i++)
-        {
-            writer.SceneObject(allObjects[i]);
-        }
+            writer.SceneObject(objects[i]);
         writer.EndArray();
     }
     writer.EndObject();

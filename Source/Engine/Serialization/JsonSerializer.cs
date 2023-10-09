@@ -73,6 +73,7 @@ namespace FlaxEngine.Json
                 if (IsWriting)
                 {
                     // Reset writing state (eg if previous serialization got exception)
+                    SerializerWriter = new JsonSerializerInternalWriter(JsonSerializer);
                     JsonWriter = new JsonTextWriter(StringWriter)
                     {
                         IndentChar = '\t',
