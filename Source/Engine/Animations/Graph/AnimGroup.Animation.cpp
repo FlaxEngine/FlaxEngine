@@ -530,7 +530,7 @@ void AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const 
             transitionData.Position = 0;
             transitionData.Length = ZeroTolerance;
         }
-        
+
         const bool useDefaultRule = EnumHasAnyFlags(transition.Flags, AnimGraphStateTransition::FlagTypes::UseDefaultRule);
         if (transition.RuleGraph && !useDefaultRule)
         {
@@ -765,10 +765,10 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
 
             // Override animation when animation reference box is connected
             auto animationAssetBox = node->GetBox(8);
-            if(animationAssetBox->HasConnection())
+            if (animationAssetBox->HasConnection())
             {
                 const Value assetBoxValue = tryGetValue(animationAssetBox, Value::Null);
-                if(assetBoxValue != Value::Null)
+                if (assetBoxValue != Value::Null)
                     anim = (Animation*)assetBoxValue.AsAsset;
                 else
                     anim = nullptr;

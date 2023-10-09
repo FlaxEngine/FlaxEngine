@@ -299,7 +299,7 @@ namespace FlaxEditor.Modules
             else
                 text = "Ready";
 
-            if(ProgressVisible)
+            if (ProgressVisible)
             {
                 color = Style.Current.Statusbar.Loading;
             }
@@ -402,7 +402,7 @@ namespace FlaxEditor.Modules
             {
                 UpdateStatusBar();
             }
-            else if(ProgressVisible)
+            else if (ProgressVisible)
             {
                 UpdateStatusBar();
             }
@@ -557,7 +557,7 @@ namespace FlaxEditor.Modules
             cm.AddButton("Game Settings", () =>
             {
                 var item = Editor.ContentDatabase.Find(GameSettings.GameSettingsAssetPath);
-                if(item != null)
+                if (item != null)
                     Editor.ContentEditing.Open(item);
             });
 

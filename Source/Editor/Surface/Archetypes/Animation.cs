@@ -78,7 +78,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.ConnectionTick(box);
 
-                if(box.ID != _assetBox.ID)
+                if (box.ID != _assetBox.ID)
                     return;
 
                 _assetSelect.Visible = !box.HasAnyConnection;
