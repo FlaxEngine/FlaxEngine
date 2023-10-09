@@ -750,7 +750,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     // Animation
     case 2:
     {
-        const auto anim = node->Assets[0].As<Animation>();
+        auto anim = node->Assets[0].As<Animation>();
         auto& bucket = context.Data->State[node->BucketIndex].Animation;
 
         switch (box->ID)
@@ -762,6 +762,18 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             const float speed = (float)tryGetValue(node->GetBox(5), node->Values[1]);
             const bool loop = (bool)tryGetValue(node->GetBox(6), node->Values[2]);
             const float startTimePos = (float)tryGetValue(node->GetBox(7), node->Values[3]);
+
+            // Override animation when animation reference box is connected
+            auto animationAssetBox = node->GetBox(8);
+            if(animationAssetBox->HasConnection())
+            {
+                const Value assetBoxValue = tryGetValue(animationAssetBox, Value::Null);
+                if(assetBoxValue != Value::Null)
+                    anim = (Animation*)assetBoxValue.AsAsset;
+                else
+                    anim = nullptr;
+            }
+
             const float length = anim ? anim->GetLength() : 0.0f;
 
             // Calculate new time position
