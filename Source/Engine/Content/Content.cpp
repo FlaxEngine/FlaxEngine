@@ -125,16 +125,12 @@ void ContentService::LateUpdate()
     if (timeNow - LastUnloadCheckTime < Content::AssetsUpdateInterval)
         return;
     LastUnloadCheckTime = timeNow;
-
-    Asset* asset;
-    ScopeLock lock(AssetsLocker);
-
-    // TODO: maybe it would be better to link for asset remove ref event and cache only assets with no references - test it with millions of assets?
+    AssetsLocker.Lock();
 
     // Verify all assets
     for (auto i = Assets.Begin(); i.IsNotEnd(); ++i)
     {
-        asset = i->Value;
+        Asset* asset = i->Value;
 
         // Check if has no references and is not during unloading
         if (asset->GetReferencesCount() <= 0 && !UnloadQueue.ContainsKey(asset))
@@ -158,7 +154,7 @@ void ContentService::LateUpdate()
     // Unload marked assets
     for (int32 i = 0; i < ToUnload.Count(); i++)
     {
-        asset = ToUnload[i];
+        Asset*  asset = ToUnload[i];
 
         // Check if has no references
         if (asset->GetReferencesCount() <= 0)
@@ -169,6 +165,8 @@ void ContentService::LateUpdate()
         // Remove from unload queue
         UnloadQueue.Remove(asset);
     }
+
+    AssetsLocker.Unlock();
 
     // Update cache (for longer sessions it will help to reduce cache misses)
     Cache.Save();
@@ -212,7 +210,6 @@ bool FindAssets(const ProjectInfo* project, HashSet<const ProjectInfo*>& project
 {
     if (projects.Contains(project))
         return false;
-
     projects.Add(project);
     bool found = findAsset(id, project->ProjectFolderPath / TEXT("Content"), tmpCache, info);
     for (const auto& reference : project->References)
@@ -220,7 +217,6 @@ bool FindAssets(const ProjectInfo* project, HashSet<const ProjectInfo*>& project
         if (reference.Project)
             found |= FindAssets(reference.Project, projects, id, tmpCache, info);
     }
-
     return found;
 }
 
@@ -232,7 +228,6 @@ bool Content::GetAssetInfo(const Guid& id, AssetInfo& info)
         return false;
 
 #if ENABLE_ASSETS_DISCOVERY
-
     // Find asset in registry
     if (Cache.FindAsset(id, info))
         return true;
@@ -270,19 +265,15 @@ bool Content::GetAssetInfo(const Guid& id, AssetInfo& info)
 
     //LOG(Warning, "Cannot find {0}.", id);
     return false;
-
 #else
-
     // Find asset in registry
     return Cache.FindAsset(id, info);
-
 #endif
 }
 
 bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
 {
 #if ENABLE_ASSETS_DISCOVERY
-
     // Find asset in registry
     if (Cache.FindAsset(path, info))
         return true;
@@ -326,12 +317,9 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
     }
 
     return false;
-
 #else
-
     // Find asset in registry
     return Cache.FindAsset(path, info);
-
 #endif
 }
 

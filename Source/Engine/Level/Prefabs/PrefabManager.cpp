@@ -332,6 +332,8 @@ bool PrefabManager::CreatePrefab(Actor* targetActor, const StringView& outputPat
     // Serialize to json data
     ASSERT(!IsCreatingPrefab);
     IsCreatingPrefab = true;
+    const Guid targetPrefabId = targetActor->GetPrefabID();
+    const bool hasTargetPrefabId = targetPrefabId.IsValid();
     rapidjson_flax::StringBuffer actorsDataBuffer;
     {
         CompactJsonWriter writerObj(actorsDataBuffer);
@@ -340,7 +342,27 @@ bool PrefabManager::CreatePrefab(Actor* targetActor, const StringView& outputPat
         for (int32 i = 0; i < sceneObjects->Count(); i++)
         {
             SceneObject* obj = sceneObjects->At(i);
+
+            // Detect when creating prefab from object that is already part of prefab then serialize it as unlinked
+            const Guid prefabId = obj->GetPrefabID();
+            const Guid prefabObjectId = obj->GetPrefabObjectID();
+            bool isObjectFromPrefab = targetPrefabId == prefabId && prefabId.IsValid(); // Allow to use other nested prefabs properly (ignore only root object's prefab link)
+            if (isObjectFromPrefab)
+            {
+                //obj->BreakPrefabLink();
+                obj->_prefabID = Guid::Empty;
+                obj->_prefabObjectID = Guid::Empty;
+            }
+
             writer.SceneObject(obj);
+
+            // Restore broken link
+            if (hasTargetPrefabId)
+            {
+                //obj->LinkPrefab(prefabId, prefabObjectId);
+                obj->_prefabID = prefabId;
+                obj->_prefabObjectID = prefabObjectId;
+            }
         }
         writer.EndArray();
     }
@@ -406,7 +428,6 @@ bool PrefabManager::CreatePrefab(Actor* targetActor, const StringView& outputPat
         {
             SceneObject* obj = sceneObjects->At(i);
             Guid prefabObjectId;
-
             if (objectInstanceIdToPrefabObjectId.TryGet(obj->GetSceneObjectId(), prefabObjectId))
             {
                 obj->LinkPrefab(assetInfo.ID, prefabObjectId);

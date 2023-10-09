@@ -886,6 +886,14 @@ void Actor::EndPlay()
         OnDisable();
     }
 
+    for (auto* script : Scripts)
+    {
+        CHECK_EXECUTE_IN_EDITOR
+        {
+            script->OnDestroy();
+        }
+    }
+
     OnEndPlay();
 
     // Clear flag
@@ -897,15 +905,6 @@ void Actor::EndPlay()
         auto e = Children.Get()[i];
         if (e->IsDuringPlay())
             e->EndPlay();
-    }
-
-    // Fire event for scripting
-    for (auto* script : Scripts)
-    {
-        CHECK_EXECUTE_IN_EDITOR
-        {
-            script->OnDestroy();
-        }
     }
 
     // Inform attached scripts

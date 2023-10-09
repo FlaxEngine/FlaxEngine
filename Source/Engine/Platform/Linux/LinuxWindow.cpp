@@ -41,8 +41,10 @@ extern Dictionary<StringAnsi, X11::KeyCode> KeyNameMap;
 extern Array<KeyboardKeys> KeyCodeMap;
 extern X11::Cursor Cursors[(int32)CursorType::MAX];
 
-static const uint32 MouseDoubleClickTime = 500;
+static constexpr uint32 MouseDoubleClickTime = 500;
+static constexpr uint32 MaxDoubleClickDistanceSquared = 10;
 static X11::Time MouseLastButtonPressTime = 0;
+static Float2 OldMouseClickPosition;
 
 LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	: WindowBase(settings)
@@ -153,7 +155,11 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 		hints.max_height = (int)settings.MaximumSize.Y;
 		hints.flags |= USSize;
 	}
-	X11::XSetNormalHints(display, window, &hints);
+    // honor the WM placement except for manual (overriding) placements
+    if (settings.StartPosition == WindowStartPosition::Manual)
+    {
+        X11::XSetNormalHints(display, window, &hints);
+    }
 
 	// Ensures the child window is always on top of the parent window
 	if (settings.Parent)
@@ -595,15 +601,19 @@ void LinuxWindow::OnButtonPress(void* event)
 	// Handle double-click
 	if (buttonEvent->button == Button1)
 	{
-		if (buttonEvent->time < (MouseLastButtonPressTime + MouseDoubleClickTime))
+		if (
+			buttonEvent->time < (MouseLastButtonPressTime + MouseDoubleClickTime) &&
+			Float2::DistanceSquared(mousePos, OldMouseClickPosition) < MaxDoubleClickDistanceSquared)
 		{
 			Input::Mouse->OnMouseDoubleClick(ClientToScreen(mousePos), mouseButton, this);
 			MouseLastButtonPressTime = 0;
+			OldMouseClickPosition = mousePos;
 			return;
 		}
 		else
 		{
 			MouseLastButtonPressTime = buttonEvent->time;
+			OldMouseClickPosition = mousePos;
 		}
 	}
 

@@ -217,7 +217,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
             }
 
-            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 var typeName = (string)nodeArch.DefaultValues[0];
                 var type = TypeUtils.GetType(typeName);
@@ -234,7 +234,7 @@ namespace FlaxEditor.Surface.Archetypes
                 return false;
             }
 
-            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 var typeName = (string)nodeArch.DefaultValues[0];
                 var type = TypeUtils.GetType(typeName);
@@ -255,7 +255,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
             }
 
-            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 var typeName = (string)nodeArch.DefaultValues[0];
                 var type = TypeUtils.GetType(typeName);
@@ -267,7 +267,7 @@ namespace FlaxEditor.Surface.Archetypes
                 return false;
             }
 
-            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 var typeName = (string)nodeArch.DefaultValues[0];
                 var type = TypeUtils.GetType(typeName);

@@ -520,8 +520,8 @@ namespace FlaxEditor.Content.GUI
             {
                 int min = _selection.Min(x => x.IndexInParent);
                 int max = _selection.Max(x => x.IndexInParent);
-                min = Mathf.Min(min, item.IndexInParent);
-                max = Mathf.Max(max, item.IndexInParent);
+                min = Mathf.Max(Mathf.Min(min, item.IndexInParent), 0);
+                max = Mathf.Min(Mathf.Max(max, item.IndexInParent), _children.Count - 1);
                 var selection = new List<ContentItem>(_selection);
                 for (int i = min; i <= max; i++)
                 {
