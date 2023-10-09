@@ -76,6 +76,11 @@ namespace FlaxEditor.Modules
         /// </summary>
         public event Action ImportingQueueEnd;
 
+        /// <summary>
+        /// Occurs when an asset is about to be imported (before dialog prompt opens) and allows you to modify the settings object.
+        /// </summary>
+        public event Func<string, string, object, ImportFileEntry, Tuple<object, bool>> OnAssetImport;
+
         /// <inheritdoc />
         internal ContentImportingModule(Editor editor)
         : base(editor)
@@ -407,9 +412,47 @@ namespace FlaxEditor.Modules
                         var entry = ImportFileEntry.CreateEntry(ref request);
                         if (entry != null)
                         {
+                            // Editor automation hook.
+                            object newSettings = null;
+                            bool automationSkipsDialog = false;
+                            foreach (Delegate assetImportDelegate in OnAssetImport.GetInvocationList())
+                            {
+                                Tuple<object, bool> importModificationInfo;
+                                object uncastedModificationInfo = assetImportDelegate.DynamicInvoke(request.InputPath, request.OutputPath, request.Settings, entry);
+                                if (uncastedModificationInfo == null)
+                                {
+                                    continue;
+                                }
+
+                                importModificationInfo = (Tuple<object, bool>)uncastedModificationInfo;
+                                if (importModificationInfo.Item1 != null)
+                                {
+                                    if (newSettings != null)
+                                    {
+                                        Debug.LogWarning($"Multiple automation workflows returned new settings for {request.InputPath}.");
+                                    }
+                                    newSettings = importModificationInfo.Item1;
+                                }
+
+                                automationSkipsDialog |= importModificationInfo.Item2;
+                            }
+                            bool automationRan = newSettings != null;
+                            if (automationRan)
+                            {
+                                if (automationSkipsDialog)
+                                {
+                                    request.SkipSettingsDialog = true;
+                                }
+                                request.Settings = newSettings;
+                            }
+
                             if (request.Settings != null && entry.TryOverrideSettings(request.Settings))
                             {
                                 // Use overridden settings
+                                if (!request.SkipSettingsDialog && !automationSkipsDialog && automationRan)
+                                {
+                                    needSettingsDialog = true;
+                                }
                             }
                             else if (!request.SkipSettingsDialog)
                             {
