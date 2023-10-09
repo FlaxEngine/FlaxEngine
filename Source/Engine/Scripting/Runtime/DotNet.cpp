@@ -25,6 +25,7 @@
 #include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Scripting/Scripting.h"
+#include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/Threading.h"
@@ -636,7 +637,7 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
 #if TRACY_ENABLE
     ZoneText(*_name, _name.Length());
 #endif
-    ScopeLock lock(_locker);
+    ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedClasses)
         return _classes;
     ASSERT(_classes.IsEmpty());
@@ -941,6 +942,9 @@ const Array<MMethod*>& MClass::GetMethods() const
 {
     if (_hasCachedMethods)
         return _methods;
+    ScopeLock lock(BinaryModule::Locker);
+    if (_hasCachedMethods)
+        return _methods;
 
     NativeMethodDefinitions* methods;
     int methodsCount;
@@ -972,6 +976,9 @@ MField* MClass::GetField(const char* name) const
 
 const Array<MField*>& MClass::GetFields() const
 {
+    if (_hasCachedFields)
+        return _fields;
+    ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedFields)
         return _fields;
 
@@ -1018,6 +1025,9 @@ const Array<MProperty*>& MClass::GetProperties() const
 {
     if (_hasCachedProperties)
         return _properties;
+    ScopeLock lock(BinaryModule::Locker);
+    if (_hasCachedProperties)
+        return _properties;
 
     NativePropertyDefinitions* foundProperties;
     int numProperties;
@@ -1038,6 +1048,9 @@ const Array<MProperty*>& MClass::GetProperties() const
 
 const Array<MClass*>& MClass::GetInterfaces() const
 {
+    if (_hasCachedInterfaces)
+        return _interfaces;
+    ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedInterfaces)
         return _interfaces;
 
@@ -1073,6 +1086,9 @@ MObject* MClass::GetAttribute(const MClass* monoClass) const
 
 const Array<MObject*>& MClass::GetAttributes() const
 {
+    if (_hasCachedAttributes)
+        return _attributes;
+    ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedAttributes)
         return _attributes;
 

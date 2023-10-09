@@ -194,7 +194,7 @@ namespace FlaxEditor.Surface
                 var bezierStartPoint = new Float2(upperRight.X + offsetX * 0.75f, (upperRight.Y + bottomRight.Y) * 0.5f);
                 var bezierEndPoint = inputBracket.Box.ParentNode.PointToParent(_rootControl.Parent, inputBracket.Box.Center);
 
-                Elements.OutputBox.DrawConnection(ref bezierStartPoint, ref bezierEndPoint, ref fadedColor);
+                Elements.OutputBox.DrawConnection(Style, ref bezierStartPoint, ref bezierEndPoint, ref fadedColor);
 
                 // Debug Area
                 //Rectangle drawRect = Rectangle.FromPoints(upperLeft, bottomRight);

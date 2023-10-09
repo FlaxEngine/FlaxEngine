@@ -785,12 +785,11 @@ public:
     /// <param name="other">The other collection to clone.</param>
     void Clone(const Dictionary& other)
     {
+        // TODO: if both key and value are POD types then use raw memory copy for buckets
         Clear();
-        SetCapacity(other.Capacity(), false);
+        EnsureCapacity(other.Capacity(), false);
         for (Iterator i = other.Begin(); i != other.End(); ++i)
             Add(i);
-        ASSERT(Count() == other.Count());
-        ASSERT(Capacity() == other.Capacity());
     }
 
     /// <summary>

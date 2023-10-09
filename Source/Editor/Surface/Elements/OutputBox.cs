@@ -27,12 +27,19 @@ namespace FlaxEditor.Surface.Elements
         /// <summary>
         /// Draws the connection between two boxes.
         /// </summary>
+        /// <param name="style">The Visject surface style.</param>
         /// <param name="start">The start location.</param>
         /// <param name="end">The end location.</param>
         /// <param name="color">The connection color.</param>
         /// <param name="thickness">The connection thickness.</param>
-        public static void DrawConnection(ref Float2 start, ref Float2 end, ref Color color, float thickness = 1)
+        public static void DrawConnection(SurfaceStyle style, ref Float2 start, ref Float2 end, ref Color color, float thickness = 1)
         {
+            if (style.DrawConnection != null)
+            {
+                style.DrawConnection(start, end, color, thickness);
+                return;
+            }
+
             // Calculate control points
             CalculateBezierControlPoints(start, end, out var control1, out var control2);
 
@@ -71,8 +78,8 @@ namespace FlaxEditor.Surface.Elements
         /// <param name="mousePosition">The mouse position</param>
         public bool IntersectsConnection(Box targetBox, ref Float2 mousePosition)
         {
-            var startPos = Parent.PointToParent(Center);
-            var endPos = targetBox.Parent.PointToParent(targetBox.Center);
+            var startPos = ConnectionOrigin;
+            var endPos = targetBox.ConnectionOrigin;
             return IntersectsConnection(ref startPos, ref endPos, ref mousePosition, MouseOverConnectionDistance);
         }
 
@@ -135,14 +142,15 @@ namespace FlaxEditor.Surface.Elements
         /// </summary>
         public void DrawConnections(ref Float2 mousePosition)
         {
-            float mouseOverDistance = MouseOverConnectionDistance;
             // Draw all the connections
-            var startPos = Parent.PointToParent(Center);
+            var style = Surface.Style;
+            var mouseOverDistance = MouseOverConnectionDistance;
+            var startPos = ConnectionOrigin;
             var startHighlight = ConnectionsHighlightIntensity;
             for (int i = 0; i < Connections.Count; i++)
             {
                 Box targetBox = Connections[i];
-                var endPos = targetBox.Parent.PointToParent(targetBox.Center);
+                var endPos = targetBox.ConnectionOrigin;
                 var highlight = 1 + Mathf.Max(startHighlight, targetBox.ConnectionsHighlightIntensity);
                 var color = _currentTypeColor * highlight;
 
@@ -152,7 +160,7 @@ namespace FlaxEditor.Surface.Elements
                     highlight += 0.5f;
                 }
 
-                DrawConnection(ref startPos, ref endPos, ref color, highlight);
+                DrawConnection(style, ref startPos, ref endPos, ref color, highlight);
             }
         }
 
@@ -162,9 +170,9 @@ namespace FlaxEditor.Surface.Elements
         public void DrawSelectedConnection(Box targetBox)
         {
             // Draw all the connections
-            var startPos = Parent.PointToParent(Center);
-            var endPos = targetBox.Parent.PointToParent(targetBox.Center);
-            DrawConnection(ref startPos, ref endPos, ref _currentTypeColor, 2.5f);
+            var startPos = ConnectionOrigin;
+            var endPos = targetBox.ConnectionOrigin;
+            DrawConnection(Surface.Style, ref startPos, ref endPos, ref _currentTypeColor, 2.5f);
         }
 
         /// <inheritdoc />
@@ -176,7 +184,7 @@ namespace FlaxEditor.Surface.Elements
             base.Draw();
 
             // Box
-            DrawBox();
+            Surface.Style.DrawBox(this);
 
             // Draw text
             var style = Style.Current;

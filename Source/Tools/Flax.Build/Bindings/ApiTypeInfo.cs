@@ -22,6 +22,7 @@ namespace Flax.Build.Bindings
         public string[] Comment;
         public bool IsInBuild;
         public bool IsDeprecated;
+        public string MarshalAs;
         internal bool IsInited;
         internal TypedefInfo Instigator;
 
@@ -151,6 +152,7 @@ namespace Flax.Build.Bindings
             BindingsGenerator.Write(writer, Namespace);
             BindingsGenerator.Write(writer, Attributes);
             BindingsGenerator.Write(writer, Comment);
+            BindingsGenerator.Write(writer, MarshalAs);
             writer.Write(IsInBuild);
             writer.Write(IsDeprecated);
             BindingsGenerator.Write(writer, Tags);
@@ -164,6 +166,7 @@ namespace Flax.Build.Bindings
             Namespace = BindingsGenerator.Read(reader, Namespace);
             Attributes = BindingsGenerator.Read(reader, Attributes);
             Comment = BindingsGenerator.Read(reader, Comment);
+            MarshalAs = BindingsGenerator.Read(reader, MarshalAs);
             IsInBuild = reader.ReadBoolean();
             IsDeprecated = reader.ReadBoolean();
             Tags = BindingsGenerator.Read(reader, Tags);

@@ -125,6 +125,74 @@ namespace FlaxEditor.Content.Thumbnails
             }
         }
 
+        internal static bool HasMinimumQuality(TextureBase asset)
+        {
+            var mipLevels = asset.MipLevels;
+            var minMipLevels = Mathf.Min(mipLevels, 7);
+            return asset.IsLoaded && asset.ResidentMipLevels >= Mathf.Max(minMipLevels, (int)(mipLevels * MinimumRequiredResourcesQuality));
+        }
+
+        internal static bool HasMinimumQuality(Model asset)
+        {
+            if (!asset.IsLoaded)
+                return false;
+            var lods = asset.LODs.Length;
+            var slots = asset.MaterialSlots;
+            foreach (var slot in slots)
+            {
+                if (slot.Material && !HasMinimumQuality(slot.Material))
+                    return false;
+            }
+            return asset.LoadedLODs >= Mathf.Max(1, (int)(lods * MinimumRequiredResourcesQuality));
+        }
+
+        internal static bool HasMinimumQuality(SkinnedModel asset)
+        {
+            var lods = asset.LODs.Length;
+            if (asset.IsLoaded && lods == 0)
+                return true; // Skeleton-only model
+            var slots = asset.MaterialSlots;
+            foreach (var slot in slots)
+            {
+                if (slot.Material && !HasMinimumQuality(slot.Material))
+                    return false;
+            }
+            return asset.LoadedLODs >= Mathf.Max(1, (int)(lods * MinimumRequiredResourcesQuality));
+        }
+
+        internal static bool HasMinimumQuality(MaterialBase asset)
+        {
+            if (asset is MaterialInstance asInstance)
+                return HasMinimumQuality(asInstance);
+            return HasMinimumQualityInternal(asset);
+        }
+
+        internal static bool HasMinimumQuality(Material asset)
+        {
+            return HasMinimumQualityInternal(asset);
+        }
+
+        internal static bool HasMinimumQuality(MaterialInstance asset)
+        {
+            if (!HasMinimumQualityInternal(asset))
+                return false;
+            var baseMaterial = asset.BaseMaterial;
+            return baseMaterial == null || HasMinimumQualityInternal(baseMaterial);
+        }
+
+        private static bool HasMinimumQualityInternal(MaterialBase asset)
+        {
+            if (!asset.IsLoaded)
+                return false;
+            var parameters = asset.Parameters;
+            foreach (var parameter in parameters)
+            {
+                if (parameter.Value is TextureBase asTexture && !HasMinimumQuality(asTexture))
+                    return false;
+            }
+            return true;
+        }
+
         #region IContentItemOwner
 
         /// <inheritdoc />
@@ -368,7 +436,6 @@ namespace FlaxEditor.Content.Thumbnails
             // Create atlas
             if (PreviewsCache.Create(path))
             {
-                // Error
                 Editor.LogError("Failed to create thumbnails atlas.");
                 return null;
             }
@@ -377,7 +444,6 @@ namespace FlaxEditor.Content.Thumbnails
             var atlas = FlaxEngine.Content.LoadAsync<PreviewsCache>(path);
             if (atlas == null)
             {
-                // Error
                 Editor.LogError("Failed to load thumbnails atlas.");
                 return null;
             }

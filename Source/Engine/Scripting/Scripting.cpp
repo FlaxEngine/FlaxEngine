@@ -128,11 +128,6 @@ bool ScriptingService::Init()
 {
     const auto startTime = DateTime::NowUTC();
 
-    // Link for assemblies events
-    auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
-    engineAssembly->Loaded.Bind(onEngineLoaded);
-    engineAssembly->Unloading.Bind(onEngineUnloading);
-
     // Initialize managed runtime
     if (MCore::LoadEngine())
     {
@@ -485,6 +480,8 @@ bool Scripting::Load()
         return true;
     }
 
+    onEngineLoaded(flaxEngineModule->Assembly);
+
     // Insert type aliases for vector types that don't exist in C++ but are just typedef (properly redirect them to actual types)
     // TODO: add support for automatic typedef aliases setup for scripting module to properly lookup type from the alias typename
 #if USE_LARGE_WORLDS
@@ -586,6 +583,9 @@ void Scripting::Release()
 
         asset->DeleteObjectNow();
     }
+
+    auto* flaxEngineModule = (NativeBinaryModule*)GetBinaryModuleFlaxEngine();
+    onEngineUnloading(flaxEngineModule->Assembly);
 
     // Unload assemblies (from back to front)
     {
@@ -821,6 +821,28 @@ ScriptingObject* Scripting::NewObject(const MClass* type)
 FLAXENGINE_API ScriptingObject* FindObject(const Guid& id, MClass* type)
 {
     return Scripting::FindObject(id, type);
+}
+
+void ScriptingObjectReferenceBase::OnSet(ScriptingObject* object)
+{
+    auto e = _object;
+    if (e != object)
+    {
+        if (e)
+            e->Deleted.Unbind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
+        _object = e = object;
+        if (e)
+            e->Deleted.Bind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
+        Changed();
+    }
+}
+
+void ScriptingObjectReferenceBase::OnDeleted(ScriptingObject* obj)
+{
+    ASSERT(_object == obj);
+    _object->Deleted.Unbind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
+    _object = nullptr;
+    Changed();
 }
 
 ScriptingObject* Scripting::FindObject(Guid id, MClass* type)

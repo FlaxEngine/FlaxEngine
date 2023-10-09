@@ -26,7 +26,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// Describes object property/field information for custom editors pipeline.
         /// </summary>
         /// <seealso cref="System.IComparable" />
-        protected class ItemInfo : IComparable
+        public class ItemInfo : IComparable
         {
             private Options.GeneralOptions.MembersOrder _membersOrder;
 
@@ -248,7 +248,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <param name="useProperties">True if use type properties.</param>
         /// <param name="useFields">True if use type fields.</param>
         /// <returns>The items.</returns>
-        protected List<ItemInfo> GetItemsForType(ScriptType type, bool useProperties, bool useFields)
+        public static List<ItemInfo> GetItemsForType(ScriptType type, bool useProperties, bool useFields)
         {
             var items = new List<ItemInfo>();
 

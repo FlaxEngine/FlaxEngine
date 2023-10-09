@@ -106,7 +106,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override bool CanDrawThumbnail(ThumbnailRequest request)
         {
-            return _preview.HasLoadedAssets;
+            return _preview.HasLoadedAssets && ThumbnailsModule.HasMinimumQuality((Material)request.Asset);
         }
 
         /// <inheritdoc />

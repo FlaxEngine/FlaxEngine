@@ -35,7 +35,6 @@ private:
     mutable int32 _hasCachedClasses : 1;
 
     mutable ClassesDictionary _classes;
-    CriticalSection _locker;
 
     int32 _reloadCount;
     StringAnsi _name;

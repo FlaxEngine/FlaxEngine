@@ -7,7 +7,6 @@ using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.GUI.Tree;
-using FlaxEditor.Scripting;
 using FlaxEditor.Surface;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
@@ -63,11 +62,7 @@ namespace FlaxEditor.Windows
                             }
                         }
                         if (vsWindow == null)
-                        {
-                            var item = Editor.Instance.ContentDatabase.FindAsset(nodeInfo.Script.ID);
-                            if (item != null)
-                                vsWindow = Editor.Instance.ContentEditing.Open(item) as VisualScriptWindow;
-                        }
+                            vsWindow = Editor.Instance.ContentEditing.Open(nodeInfo.Script) as VisualScriptWindow;
                         return vsWindow?.Surface.FindNode(nodeInfo.NodeId);
                     }
                     return null;

@@ -366,6 +366,11 @@ MaterialBase* SplineModel::GetMaterial(int32 entryIndex)
     return material;
 }
 
+void SplineModel::UpdateBounds()
+{
+    OnSplineUpdated();
+}
+
 bool SplineModel::HasContentLoaded() const
 {
     return (Model == nullptr || Model->IsLoaded()) && Entries.HasContentLoaded();
@@ -513,14 +518,6 @@ void SplineModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     // [Deprecated on 27.04.2022, expires on 27.04.2024]
     if (modifier->EngineBuild <= 6331)
         DrawModes |= DrawPass::GlobalSurfaceAtlas;
-}
-
-void SplineModel::OnTransformChanged()
-{
-    // Base
-    ModelInstanceActor::OnTransformChanged();
-
-    OnSplineUpdated();
 }
 
 void SplineModel::OnActiveInTreeChanged()

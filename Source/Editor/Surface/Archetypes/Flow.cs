@@ -25,9 +25,9 @@ namespace FlaxEditor.Surface.Archetypes
             {
             }
 
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 // Restore saved output boxes layout
                 var count = (int)Values[0];
@@ -35,9 +35,9 @@ namespace FlaxEditor.Surface.Archetypes
                     AddBox(true, i + 1, i, string.Empty, new ScriptType(typeof(void)), true);
             }
 
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 _removeButton = new Button(0, 0, 20, 20)
                 {
@@ -107,9 +107,9 @@ namespace FlaxEditor.Surface.Archetypes
             {
             }
 
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 // Restore saved output boxes layout
                 if (Values[0] is byte[] data)
@@ -119,9 +119,9 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 UpdateBoxes();
                 GetBox(1).CurrentTypeChanged += box => UpdateBoxes();

@@ -535,7 +535,6 @@ namespace FlaxEditor.Windows
             // Ensure has parent
             if (item.ParentFolder == null)
             {
-                // Error
                 Editor.LogWarning("Cannot rename root items. " + item.Path);
                 return;
             }

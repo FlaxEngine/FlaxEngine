@@ -65,10 +65,10 @@ public:
     template<typename AllocationType = HeapAllocation>
     void GetValues(Array<T, AllocationType>& result) const
     {
-        result.EnsureCapacity(MaxThreads);
         for (int32 i = 0; i < MaxThreads; i++)
         {
-            result.Add(_buckets[i].Value);
+            if (Platform::AtomicRead((int64 volatile*)&_buckets[i].ThreadID) != 0)
+                result.Add(_buckets[i].Value);
         }
     }
 

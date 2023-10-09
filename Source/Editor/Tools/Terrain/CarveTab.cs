@@ -200,13 +200,13 @@ namespace FlaxEditor.Tools.Terrain
             switch (_modes.SelectedTabIndex)
             {
             case 0:
-                Editor.Windows.EditWin.Viewport.SetActiveMode<SculptTerrainGizmoMode>();
+                Editor.Windows.EditWin.Viewport.Gizmos.SetActiveMode<SculptTerrainGizmoMode>();
                 break;
             case 1:
-                Editor.Windows.EditWin.Viewport.SetActiveMode<PaintTerrainGizmoMode>();
+                Editor.Windows.EditWin.Viewport.Gizmos.SetActiveMode<PaintTerrainGizmoMode>();
                 break;
             case 2:
-                Editor.Windows.EditWin.Viewport.SetActiveMode<EditTerrainGizmoMode>();
+                Editor.Windows.EditWin.Viewport.Gizmos.SetActiveMode<EditTerrainGizmoMode>();
                 break;
             default: throw new IndexOutOfRangeException("Invalid carve tab mode.");
             }

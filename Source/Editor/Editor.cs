@@ -725,8 +725,8 @@ namespace FlaxEditor
 
             // Cleanup
             Undo.Dispose();
-            Surface.VisualScriptSurface.NodesCache.Clear();
-            Surface.AnimGraphSurface.NodesCache.Clear();
+            foreach (var cache in Surface.VisjectSurface.NodesCache.Caches.ToArray())
+                cache.Clear();
             Instance = null;
 
             // Invoke new instance if need to open a project
@@ -796,7 +796,6 @@ namespace FlaxEditor
         {
             if (projectFilePath == null || !File.Exists(projectFilePath))
             {
-                // Error
                 MessageBox.Show("Missing project");
                 return;
             }
@@ -932,6 +931,11 @@ namespace FlaxEditor
             /// The <see cref="FlaxEngine.Animation"/>.
             /// </summary>
             Animation = 11,
+
+            /// <summary>
+            /// The <see cref="FlaxEngine.BehaviorTree"/>.
+            /// </summary>
+            BehaviorTree = 12,
         }
 
         /// <summary>

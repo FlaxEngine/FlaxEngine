@@ -1438,7 +1438,7 @@ namespace FlaxEditor.Surface.Elements
             base.Draw();
 
             // Box
-            DrawBox();
+            Surface.Style.DrawBox(this);
 
             // Draw text
             var style = Style.Current;

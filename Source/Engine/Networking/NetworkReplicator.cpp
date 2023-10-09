@@ -803,7 +803,7 @@ void InvokeObjectSpawn(const NetworkMessageObjectSpawn& msgData, const NetworkMe
                 NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to find prefab {}", msgData.PrefabId.ToString());
                 return;
             }
-            prefabInstance = PrefabManager::SpawnPrefab(prefab, nullptr, nullptr);
+            prefabInstance = PrefabManager::SpawnPrefab(prefab, Transform::Identity, nullptr, nullptr);
             if (!prefabInstance)
             {
                 NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to spawn object type {}", msgData.PrefabId.ToString());
@@ -1777,7 +1777,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
 
             // Send object to clients
             const uint32 size = stream->GetPosition();
-            ASSERT(size <= MAX_uint16)
+            ASSERT(size <= MAX_uint16);
             NetworkMessageObjectReplicate msgData;
             msgData.OwnerFrame = NetworkManager::Frame;
             msgData.ObjectId = item.ObjectId;
@@ -1806,7 +1806,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
             }
             else
                 dataStart += size;
-            ASSERT(partsCount <= MAX_uint8)
+            ASSERT(partsCount <= MAX_uint8);
             msgData.PartsCount = partsCount;
             NetworkMessage msg = peer->BeginSendMessage();
             msg.WriteStructure(msgData);

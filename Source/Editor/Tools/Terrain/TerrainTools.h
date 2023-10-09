@@ -68,7 +68,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(TerrainTools);
     /// <param name="offset">The offset from the first row and column of the heightmap data (offset destination x and z start position).</param>
     /// <param name="size">The size of the heightmap to modify (x and z). Amount of samples in each direction.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() static bool ModifyHeightMap(Terrain* terrain, API_PARAM(Ref) const Int2& patchCoord, float* samples, API_PARAM(Ref) const Int2& offset, API_PARAM(Ref) const Int2& size);
+    API_FUNCTION() static bool ModifyHeightMap(Terrain* terrain, API_PARAM(Ref) const Int2& patchCoord, const float* samples, API_PARAM(Ref) const Int2& offset, API_PARAM(Ref) const Int2& size);
 
     /// <summary>
     /// Modifies the terrain patch holes mask with the given samples.
@@ -79,7 +79,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(TerrainTools);
     /// <param name="offset">The offset from the first row and column of the mask data (offset destination x and z start position).</param>
     /// <param name="size">The size of the mask to modify (x and z). Amount of samples in each direction.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() static bool ModifyHolesMask(Terrain* terrain, API_PARAM(Ref) const Int2& patchCoord, byte* samples, API_PARAM(Ref) const Int2& offset, API_PARAM(Ref) const Int2& size);
+    API_FUNCTION() static bool ModifyHolesMask(Terrain* terrain, API_PARAM(Ref) const Int2& patchCoord, const byte* samples, API_PARAM(Ref) const Int2& offset, API_PARAM(Ref) const Int2& size);
 
     /// <summary>
     /// Modifies the terrain patch splat map (layers mask) with the given samples.
@@ -91,7 +91,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(TerrainTools);
     /// <param name="offset">The offset from the first row and column of the splatmap data (offset destination x and z start position).</param>
     /// <param name="size">The size of the splatmap to modify (x and z). Amount of samples in each direction.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() static bool ModifySplatMap(Terrain* terrain, API_PARAM(Ref) const Int2& patchCoord, int32 index, Color32* samples, API_PARAM(Ref) const Int2& offset, API_PARAM(Ref) const Int2& size);
+    API_FUNCTION() static bool ModifySplatMap(Terrain* terrain, API_PARAM(Ref) const Int2& patchCoord, int32 index, const Color32* samples, API_PARAM(Ref) const Int2& offset, API_PARAM(Ref) const Int2& size);
 
     /// <summary>
     /// Gets the raw pointer to the heightmap data (cached internally by the c++ core in editor).

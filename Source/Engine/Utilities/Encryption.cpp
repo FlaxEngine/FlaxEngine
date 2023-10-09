@@ -5,15 +5,10 @@
 
 namespace
 {
-    const char* base64_chars =
+    const char* Base64Chars =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
             "abcdefghijklmnopqrstuvwxyz"
             "0123456789+/";
-
-    bool is_base64(byte c)
-    {
-        return StringUtils::IsAlnum((char)c) || c == '+' || c == '/';
-    }
 
     // @formatter:off
     const int32 B64index[256] =
@@ -76,23 +71,23 @@ void Encryption::Base64Encode(const byte* bytes, int32 size, char* encoded)
     int32 i;
     for (i = 0; i < size - 2; i += 3)
     {
-        *encoded++ = base64_chars[bytes[i] >> 2 & 0x3F];
-        *encoded++ = base64_chars[(bytes[i] & 0x3) << 4 | (int32)(bytes[i + 1] & 0xF0) >> 4];
-        *encoded++ = base64_chars[(bytes[i + 1] & 0xF) << 2 | (int32)(bytes[i + 2] & 0xC0) >> 6];
-        *encoded++ = base64_chars[bytes[i + 2] & 0x3F];
+        *encoded++ = Base64Chars[bytes[i] >> 2 & 0x3F];
+        *encoded++ = Base64Chars[(bytes[i] & 0x3) << 4 | (int32)(bytes[i + 1] & 0xF0) >> 4];
+        *encoded++ = Base64Chars[(bytes[i + 1] & 0xF) << 2 | (int32)(bytes[i + 2] & 0xC0) >> 6];
+        *encoded++ = Base64Chars[bytes[i + 2] & 0x3F];
     }
     if (i < size)
     {
-        *encoded++ = base64_chars[bytes[i] >> 2 & 0x3F];
+        *encoded++ = Base64Chars[bytes[i] >> 2 & 0x3F];
         if (i == size - 1)
         {
-            *encoded++ = base64_chars[((bytes[i] & 0x3) << 4)];
+            *encoded++ = Base64Chars[((bytes[i] & 0x3) << 4)];
             *encoded++ = '=';
         }
         else
         {
-            *encoded++ = base64_chars[(bytes[i] & 0x3) << 4 | (int32)(bytes[i + 1] & 0xF0) >> 4];
-            *encoded++ = base64_chars[((bytes[i + 1] & 0xF) << 2)];
+            *encoded++ = Base64Chars[(bytes[i] & 0x3) << 4 | (int32)(bytes[i + 1] & 0xF0) >> 4];
+            *encoded++ = Base64Chars[((bytes[i + 1] & 0xF) << 2)];
         }
         *encoded = '=';
     }

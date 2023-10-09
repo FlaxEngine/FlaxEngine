@@ -385,7 +385,12 @@ namespace FlaxEngine.Utilities
             return type.IsValueType && !type.IsEnum && !type.IsPrimitive;
         }
 
-        internal static bool IsDelegate(Type type)
+        /// <summary>
+        /// Checks if the input type represents a delegate.
+        /// </summary>
+        /// <param name="type">The input type of the object to check.</param>
+        /// <returns>Returns true if the input type represents a delegate.</returns>
+        public static bool IsDelegate(this Type type)
         {
             return typeof(MulticastDelegate).IsAssignableFrom(type.BaseType);
         }

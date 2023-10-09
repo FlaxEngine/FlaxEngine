@@ -180,6 +180,11 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         /// </summary>
         public readonly CachedCustomAnimGraphNodesCollection AnimGraphNodes = new CachedCustomAnimGraphNodesCollection(32, new ScriptType(typeof(AnimationGraph.CustomNodeArchetypeFactoryAttribute)), IsTypeValidScriptingType, HasAssemblyValidScriptingTypes);
 
+        /// <summary>
+        /// The Behavior Tree custom nodes collection.
+        /// </summary>
+        public readonly CachedTypesCollection BehaviorTreeNodes = new CachedTypesCollection(64, new ScriptType(typeof(BehaviorTreeNode)), IsTypeValidScriptingType, HasAssemblyValidScriptingTypes);
+
         internal CodeEditingModule(Editor editor)
         : base(editor)
         {
@@ -435,6 +440,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             Scripts.ClearTypes();
             Controls.ClearTypes();
             AnimGraphNodes.ClearTypes();
+            BehaviorTreeNodes.ClearTypes();
             TypesCleared?.Invoke();
         }
 

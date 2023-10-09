@@ -50,9 +50,9 @@ namespace FlaxEditor.Surface.Archetypes
             {
             }
 
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 // Restore saved input boxes layout
                 if (Values[0] is byte[] data)
@@ -62,9 +62,9 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 UpdateBoxes();
                 GetBox(0).CurrentTypeChanged += box => UpdateBoxes();

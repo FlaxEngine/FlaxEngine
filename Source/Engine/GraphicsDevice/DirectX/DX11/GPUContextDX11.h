@@ -61,6 +61,7 @@ private:
     GPUShaderProgramPSDX11* CurrentPS;
     GPUShaderProgramCSDX11* CurrentCS;
     D3D11_PRIMITIVE_TOPOLOGY CurrentPrimitiveTopology;
+    uint32 CurrentStencilRef;
     Float4 CurrentBlendFactor;
 
 public:
@@ -117,6 +118,7 @@ public:
     void SetRenderTarget(GPUTextureView* depthBuffer, GPUTextureView* rt) override;
     void SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPUTextureView*>& rts) override;
     void SetBlendFactor(const Float4& value) override;
+    void SetStencilRef(uint32 value) override;
     void ResetSR() override;
     void ResetUA() override;
     void ResetCB() override;

@@ -1044,7 +1044,7 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
     const StringAnsiView monoImageName(mono_image_get_name(_monoImage));
     ZoneText(*monoImageName, monoImageName.Length());
 #endif
-    ScopeLock lock(_locker);
+    ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedClasses)
         return _classes;
     ASSERT(_classes.IsEmpty());

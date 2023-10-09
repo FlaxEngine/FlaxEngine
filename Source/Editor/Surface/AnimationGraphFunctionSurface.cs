@@ -35,7 +35,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override bool CanUseNodeType(NodeArchetype nodeArchetype)
+        public override bool CanUseNodeType(GroupArchetype groupArchetype, NodeArchetype nodeArchetype)
         {
             if (nodeArchetype.Title == "Function Input")
                 return true;
@@ -44,7 +44,7 @@ namespace FlaxEditor.Surface
             if (Context == RootContext && nodeArchetype.Title == "Function Output")
                 return true;
 
-            return base.CanUseNodeType(nodeArchetype);
+            return base.CanUseNodeType(groupArchetype, nodeArchetype);
         }
 
         /// <inheritdoc />

@@ -1,6 +1,8 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using FlaxEditor.Gizmo;
+using FlaxEditor.SceneGraph;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -12,7 +14,7 @@ namespace FlaxEditor.Viewport
     /// </summary>
     /// <seealso cref="FlaxEditor.Viewport.EditorViewport" />
     /// <seealso cref="IGizmoOwner" />
-    public class EditorGizmoViewport : EditorViewport, IGizmoOwner
+    public abstract class EditorGizmoViewport : EditorViewport, IGizmoOwner
     {
         private UpdateDelegate _update;
 
@@ -27,6 +29,7 @@ namespace FlaxEditor.Viewport
         {
             Undo = undo;
             SceneGraphRoot = sceneGraphRoot;
+            Gizmos = new GizmosCollection(this);
 
             SetUpdate(ref _update, OnUpdate);
         }
@@ -40,7 +43,7 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
-        public GizmosCollection Gizmos { get; } = new GizmosCollection();
+        public GizmosCollection Gizmos { get; }
 
         /// <inheritdoc />
         public SceneRenderTask RenderTask => Task;
@@ -79,6 +82,9 @@ namespace FlaxEditor.Viewport
         public SceneGraph.RootNode SceneGraphRoot { get; }
 
         /// <inheritdoc />
+        public abstract void Select(List<SceneGraphNode> nodes);
+
+        /// <inheritdoc />
         protected override bool IsControllingMouse => Gizmos.Active?.IsControllingMouse ?? false;
 
         /// <inheritdoc />
@@ -95,6 +101,17 @@ namespace FlaxEditor.Viewport
             base.RemoveUpdateCallbacks(root);
 
             root.UpdateCallbacksToRemove.Add(_update);
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            if (IsDisposing)
+                return;
+
+            Gizmos.Clear();
+
+            base.OnDestroy();
         }
     }
 }

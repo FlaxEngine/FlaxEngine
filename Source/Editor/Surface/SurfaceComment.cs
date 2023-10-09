@@ -59,9 +59,9 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override void OnSurfaceLoaded()
+        public override void OnSurfaceLoaded(SurfaceNodeActions action)
         {
-            base.OnSurfaceLoaded();
+            base.OnSurfaceLoaded(action);
 
             // Read node data
             Title = TitleValue;
@@ -70,9 +70,9 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override void OnSpawned()
+        public override void OnSpawned(SurfaceNodeActions action)
         {
-            base.OnSpawned();
+            base.OnSpawned(action);
 
             // Randomize color
             Color = ColorValue = Color.FromHSV(new Random().NextFloat(0, 360), 0.7f, 0.25f, 0.8f);
