@@ -1055,6 +1055,23 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Moves a value current towards target.
+        /// </summary>
+        /// <param name="current">The position to move from.</param>
+        /// <param name="target">The position to move towards.</param>
+        /// <param name="maxDistanceDelta">The maximum distance that can be applied to the value.</param>
+        /// <returns>The new position.</returns>
+        public static Double3 MoveTowards(Double3 current, Double3 target, double maxDistanceDelta)
+        {
+            var to = target - current;
+            var distanceSq = to.LengthSquared;
+            if (distanceSq == 0 || (maxDistanceDelta >= 0 && distanceSq <= maxDistanceDelta * maxDistanceDelta))
+                return target;
+            var scale = maxDistanceDelta / Mathd.Sqrt(distanceSq);
+            return new Double3(current.X + to.X * scale, current.Y + to.Y * scale, current.Z + to.Z * scale);
+        }
+
+        /// <summary>
         /// Performs a Hermite spline interpolation.
         /// </summary>
         /// <param name="value1">First source position vector.</param>

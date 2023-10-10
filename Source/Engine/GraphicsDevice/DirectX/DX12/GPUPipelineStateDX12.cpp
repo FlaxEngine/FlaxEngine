@@ -9,6 +9,31 @@
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 
+static D3D12_STENCIL_OP ToStencilOp(StencilOperation value)
+{
+    switch (value)
+    {
+    case StencilOperation::Keep:
+        return D3D12_STENCIL_OP_KEEP;
+    case StencilOperation::Zero:
+        return D3D12_STENCIL_OP_ZERO;
+    case StencilOperation::Replace:
+        return D3D12_STENCIL_OP_REPLACE;
+    case StencilOperation::IncrementSaturated:
+        return D3D12_STENCIL_OP_INCR_SAT;
+    case StencilOperation::DecrementSaturated:
+        return D3D12_STENCIL_OP_DECR_SAT;
+    case StencilOperation::Invert:
+        return D3D12_STENCIL_OP_INVERT;
+    case StencilOperation::Increment:
+        return D3D12_STENCIL_OP_INCR;
+    case StencilOperation::Decrement:
+        return D3D12_STENCIL_OP_DECR;
+    default:
+        return D3D12_STENCIL_OP_KEEP;
+    };
+}
+
 GPUPipelineStateDX12::GPUPipelineStateDX12(GPUDeviceDX12* device)
     : GPUResourceDX12(device, StringView::Empty)
     , _states(16)
@@ -65,42 +90,36 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     if (FAILED(result))
         return nullptr;
 #if GPU_ENABLE_RESOURCE_NAMING && BUILD_DEBUG
-    char name[200];
-    int32 nameLen = 0;
+    Array<char, InlinedAllocation<200>> name;
     if (DebugDesc.VS)
     {
-        Platform::MemoryCopy(name + nameLen, *DebugDesc.VS->GetName(), DebugDesc.VS->GetName().Length());
-        nameLen += DebugDesc.VS->GetName().Length();
-        name[nameLen++] = '+';
+        name.Add(*DebugDesc.VS->GetName(), DebugDesc.VS->GetName().Length());
+        name.Add('+');
     }
     if (DebugDesc.HS)
     {
-        Platform::MemoryCopy(name + nameLen, *DebugDesc.HS->GetName(), DebugDesc.HS->GetName().Length());
-        nameLen += DebugDesc.HS->GetName().Length();
-        name[nameLen++] = '+';
+        name.Add(*DebugDesc.HS->GetName(), DebugDesc.HS->GetName().Length());
+        name.Add('+');
     }
     if (DebugDesc.DS)
     {
-        Platform::MemoryCopy(name + nameLen, *DebugDesc.DS->GetName(), DebugDesc.DS->GetName().Length());
-        nameLen += DebugDesc.DS->GetName().Length();
-        name[nameLen++] = '+';
+        name.Add(*DebugDesc.DS->GetName(), DebugDesc.DS->GetName().Length());
+        name.Add('+');
     }
     if (DebugDesc.GS)
     {
-        Platform::MemoryCopy(name + nameLen, *DebugDesc.GS->GetName(), DebugDesc.GS->GetName().Length());
-        nameLen += DebugDesc.GS->GetName().Length();
-        name[nameLen++] = '+';
+        name.Add(*DebugDesc.GS->GetName(), DebugDesc.GS->GetName().Length());
+        name.Add('+');
     }
     if (DebugDesc.PS)
     {
-        Platform::MemoryCopy(name + nameLen, *DebugDesc.PS->GetName(), DebugDesc.PS->GetName().Length());
-        nameLen += DebugDesc.PS->GetName().Length();
-        name[nameLen++] = '+';
+        name.Add(*DebugDesc.PS->GetName(), DebugDesc.PS->GetName().Length());
+        name.Add('+');
     }
-    if (nameLen && name[nameLen - 1] == '+')
-        nameLen--;
-    name[nameLen] = '\0';
-    SetDebugObjectName(state, name);
+    if (name.Count() != 0 && name[name.Count() - 1] == '+')
+        name.RemoveLast();
+    name.Add('\0');
+    SetDebugObjectName(state, name.Get(), name.Count() - 1);
 #endif
 
     // Cache it
@@ -163,24 +182,26 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
         D3D_PRIMITIVE_TOPOLOGY_LINELIST,
         D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
     };
-    psDesc.PrimitiveTopologyType = primTypes1[(int32)desc.PrimitiveTopologyType];
-    PrimitiveTopologyType = primTypes2[(int32)desc.PrimitiveTopologyType];
+    psDesc.PrimitiveTopologyType = primTypes1[(int32)desc.PrimitiveTopology];
+    PrimitiveTopology = primTypes2[(int32)desc.PrimitiveTopology];
     if (desc.HS)
     {
         psDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
-        PrimitiveTopologyType = (D3D_PRIMITIVE_TOPOLOGY)((int32)D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + (desc.HS->GetControlPointsCount() - 1));
+        PrimitiveTopology = (D3D_PRIMITIVE_TOPOLOGY)((int32)D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + (desc.HS->GetControlPointsCount() - 1));
     }
 
     // Depth State
     psDesc.DepthStencilState.DepthEnable = !!desc.DepthEnable;
     psDesc.DepthStencilState.DepthWriteMask = desc.DepthWriteEnable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
     psDesc.DepthStencilState.DepthFunc = static_cast<D3D12_COMPARISON_FUNC>(desc.DepthFunc);
-    psDesc.DepthStencilState.StencilEnable = FALSE;
-    psDesc.DepthStencilState.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
-    psDesc.DepthStencilState.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
-    const D3D12_DEPTH_STENCILOP_DESC defaultStencilOp = { D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
-    psDesc.DepthStencilState.FrontFace = defaultStencilOp;
-    psDesc.DepthStencilState.BackFace = defaultStencilOp;
+    psDesc.DepthStencilState.StencilEnable = !!desc.StencilEnable;
+    psDesc.DepthStencilState.StencilReadMask = desc.StencilReadMask;
+    psDesc.DepthStencilState.StencilWriteMask = desc.StencilWriteMask;
+    psDesc.DepthStencilState.FrontFace.StencilFailOp = ToStencilOp(desc.StencilFailOp);
+    psDesc.DepthStencilState.FrontFace.StencilDepthFailOp = ToStencilOp(desc.StencilDepthFailOp);
+    psDesc.DepthStencilState.FrontFace.StencilPassOp = ToStencilOp(desc.StencilPassOp);
+    psDesc.DepthStencilState.FrontFace.StencilFunc = static_cast<D3D12_COMPARISON_FUNC>(desc.StencilFunc);
+    psDesc.DepthStencilState.BackFace = psDesc.DepthStencilState.FrontFace;
 
     // Rasterizer State
     psDesc.RasterizerState.FillMode = desc.Wireframe ? D3D12_FILL_MODE_WIREFRAME : D3D12_FILL_MODE_SOLID;

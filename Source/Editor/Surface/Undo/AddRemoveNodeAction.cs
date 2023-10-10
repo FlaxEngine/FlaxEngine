@@ -67,8 +67,8 @@ namespace FlaxEditor.Surface.Undo
             else if (_nodeValues != null && _nodeValues.Length != 0)
                 throw new InvalidOperationException("Invalid node values.");
             node.Location = _nodeLocation;
-            context.OnControlLoaded(node);
-            node.OnSurfaceLoaded();
+            context.OnControlLoaded(node, SurfaceNodeActions.Undo);
+            node.OnSurfaceLoaded(SurfaceNodeActions.Undo);
 
             context.MarkAsModified();
         }
@@ -89,7 +89,7 @@ namespace FlaxEditor.Surface.Undo
 
             // Remove node
             context.Nodes.Remove(node);
-            context.OnControlDeleted(node);
+            context.OnControlDeleted(node, SurfaceNodeActions.Undo);
 
             context.MarkAsModified();
         }

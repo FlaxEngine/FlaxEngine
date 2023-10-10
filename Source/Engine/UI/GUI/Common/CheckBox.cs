@@ -278,6 +278,27 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
+        {
+            if (button == MouseButton.Left && !_isPressed)
+            {
+                OnPressBegin();
+                return true;
+            }
+            
+            if (button == MouseButton.Left && _isPressed)
+            {
+                OnPressEnd();
+                if (_box.Contains(ref location))
+                {
+                    OnClick();
+                    return true;
+                }
+            }
+            return base.OnMouseDoubleClick(location, button);
+        }
+
+        /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left && _isPressed)

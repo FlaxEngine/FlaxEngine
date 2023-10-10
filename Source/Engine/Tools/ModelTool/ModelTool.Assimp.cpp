@@ -6,7 +6,9 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/DeleteMe.h"
 #include "Engine/Core/Math/Matrix.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/File.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 
 // Import Assimp library
@@ -515,8 +517,47 @@ bool ImportTexture(ImportedModelData& result, AssimpImporterData& data, aiString
 bool ImportMaterialTexture(ImportedModelData& result, AssimpImporterData& data, const aiMaterial* aMaterial, aiTextureType aTextureType, int32& textureIndex, TextureEntry::TypeHint type)
 {
     aiString aFilename;
-    return aMaterial->GetTexture(aTextureType, 0, &aFilename, nullptr, nullptr, nullptr, nullptr) == AI_SUCCESS &&
-            ImportTexture(result, data, aFilename, textureIndex, type);
+    if (aMaterial->GetTexture(aTextureType, 0, &aFilename, nullptr, nullptr, nullptr, nullptr) == AI_SUCCESS)
+    {
+        // Check for embedded textures
+        String filename = String(aFilename.C_Str()).TrimTrailing();
+        if (filename.StartsWith(TEXT(AI_EMBEDDED_TEXNAME_PREFIX)))
+        {
+            const aiTexture* aTex = data.Scene->GetEmbeddedTexture(aFilename.C_Str());
+            const StringView texIndexName(filename.Get() + (ARRAY_COUNT(AI_EMBEDDED_TEXNAME_PREFIX) - 1));
+            uint32 texIndex;
+            if (!aTex && !StringUtils::Parse(texIndexName.Get(), texIndexName.Length(), &texIndex) && texIndex >= 0 && texIndex < data.Scene->mNumTextures)
+                aTex = data.Scene->mTextures[texIndex];
+            if (aTex && aTex->mHeight == 0 && aTex->mWidth > 0)
+            {
+                // Export embedded texture to temporary file
+                filename = String::Format(TEXT("{0}_tex_{1}.{2}"), StringUtils::GetFileNameWithoutExtension(data.Path), texIndexName, String(aTex->achFormatHint));
+                File::WriteAllBytes(String(StringUtils::GetDirectoryName(data.Path)) / filename, (const byte*)aTex->pcData, (int32)aTex->mWidth);
+            }
+        }
+
+        // Find texture file path
+        String path;
+        if (ModelTool::FindTexture(data.Path, filename, path))
+            return true;
+
+        // Check if already used
+        textureIndex = 0;
+        while (textureIndex < result.Textures.Count())
+        {
+            if (result.Textures[textureIndex].FilePath == path)
+                return true;
+            textureIndex++;
+        }
+
+        // Import texture
+        auto& texture = result.Textures.AddOne();
+        texture.FilePath = path;
+        texture.Type = type;
+        texture.AssetID = Guid::Empty;
+        return true;
+    }
+    return false;
 }
 
 bool ImportMaterials(ImportedModelData& result, AssimpImporterData& data, String& errorMsg)

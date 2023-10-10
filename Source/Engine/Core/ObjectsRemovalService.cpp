@@ -73,28 +73,22 @@ void ObjectsRemovalService::Flush(float dt, float gameDelta)
 
     PoolLocker.Lock();
 
-    int32 itemsLeft;
-    do
+    // Update timeouts and delete objects that timed out
+    for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
     {
-        // Update timeouts and delete objects that timed out
-        itemsLeft = Pool.Count();
-        for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
+        auto& bucket = *i;
+        Object* obj = bucket.Key;
+        const float ttl = bucket.Value - ((obj->Flags & ObjectFlags::UseGameTimeForDelete) != ObjectFlags::None ? gameDelta : dt);
+        if (ttl <= 0.0f)
         {
-            Object* obj = i->Key;
-            const float ttl = i->Value - ((obj->Flags & ObjectFlags::UseGameTimeForDelete) != ObjectFlags::None ? gameDelta : dt);
-            if (ttl <= 0.0f)
-            {
-                Pool.Remove(i);
-                obj->OnDeleteObject();
-                itemsLeft--;
-            }
-            else
-            {
-                i->Value = ttl;
-            }
+            Pool.Remove(i);
+            obj->OnDeleteObject();
+        }
+        else
+        {
+            bucket.Value = ttl;
         }
     }
-    while (itemsLeft != Pool.Count()); // Continue removing if any new item was added during removing (eg. sub-object delete with 0 timeout)
 
     PoolLocker.Unlock();
 }

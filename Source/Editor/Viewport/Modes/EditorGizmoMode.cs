@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEditor.Gizmo;
 using FlaxEngine;
 
 namespace FlaxEditor.Viewport.Modes
@@ -14,12 +15,12 @@ namespace FlaxEditor.Viewport.Modes
     [HideInEditor]
     public abstract class EditorGizmoMode
     {
-        private MainEditorGizmoViewport _viewport;
+        private IGizmoOwner _owner;
 
         /// <summary>
-        /// Gets the viewport.
+        /// Gets the gizmos owner viewport.
         /// </summary>
-        public MainEditorGizmoViewport Viewport => _viewport;
+        public IGizmoOwner Owner => _owner;
 
         /// <summary>
         /// Occurs when mode gets activated.
@@ -34,10 +35,10 @@ namespace FlaxEditor.Viewport.Modes
         /// <summary>
         /// Initializes the specified mode and links it to the viewport.
         /// </summary>
-        /// <param name="viewport">The viewport.</param>
-        public virtual void Init(MainEditorGizmoViewport viewport)
+        /// <param name="owner">The gizmos owner.</param>
+        public virtual void Init(IGizmoOwner owner)
         {
-            _viewport = viewport;
+            _owner = owner;
         }
 
         /// <summary>
@@ -45,7 +46,7 @@ namespace FlaxEditor.Viewport.Modes
         /// </summary>
         public virtual void Dispose()
         {
-            _viewport = null;
+            _owner = null;
         }
 
         /// <summary>

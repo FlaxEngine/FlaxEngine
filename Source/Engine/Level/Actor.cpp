@@ -190,10 +190,10 @@ void Actor::OnDeleteObject()
 #endif
     for (int32 i = 0; i < Children.Count(); i++)
     {
-        auto child = Children[i];
-        ASSERT(child->_parent == this);
-        child->_parent = nullptr;
-        child->DeleteObject();
+        auto e = Children[i];
+        ASSERT(e->_parent == this);
+        e->_parent = nullptr;
+        e->DeleteObject();
     }
 #if BUILD_DEBUG
     ASSERT(callsCheck == Children.Count());
@@ -206,10 +206,10 @@ void Actor::OnDeleteObject()
 #endif
     for (int32 i = 0; i < Scripts.Count(); i++)
     {
-        auto script = Scripts[i];
-        ASSERT(script->_parent == this);
-        script->_parent = nullptr;
-        script->DeleteObject();
+        auto e = Scripts[i];
+        ASSERT(e->_parent == this);
+        e->_parent = nullptr;
+        e->DeleteObject();
     }
 #if BUILD_DEBUG
     ASSERT(callsCheck == Scripts.Count());
@@ -401,8 +401,9 @@ Actor* Actor::GetChild(const StringView& name) const
 {
     for (int32 i = 0; i < Children.Count(); i++)
     {
-        if (Children[i]->GetName() == name)
-            return Children[i];
+        auto e = Children.Get()[i];
+        if (e->GetName() == name)
+            return e;
     }
     return nullptr;
 }
@@ -852,15 +853,17 @@ void Actor::BeginPlay(SceneBeginData* data)
     // Update scripts
     for (int32 i = 0; i < Scripts.Count(); i++)
     {
-        if (!Scripts[i]->IsDuringPlay())
-            Scripts[i]->BeginPlay(data);
+        auto e = Scripts.Get()[i];
+        if (!e->IsDuringPlay())
+            e->BeginPlay(data);
     }
 
     // Update children
     for (int32 i = 0; i < Children.Count(); i++)
     {
-        if (!Children[i]->IsDuringPlay())
-            Children[i]->BeginPlay(data);
+        auto e = Children.Get()[i];
+        if (!e->IsDuringPlay())
+            e->BeginPlay(data);
     }
 
     // Fire events for scripting
@@ -883,19 +886,6 @@ void Actor::EndPlay()
         OnDisable();
     }
 
-    OnEndPlay();
-
-    // Clear flag
-    Flags &= ~ObjectFlags::IsDuringPlay;
-
-    // Call event deeper
-    for (int32 i = 0; i < Children.Count(); i++)
-    {
-        if (Children[i]->IsDuringPlay())
-            Children[i]->EndPlay();
-    }
-
-    // Fire event for scripting
     for (auto* script : Scripts)
     {
         CHECK_EXECUTE_IN_EDITOR
@@ -904,11 +894,25 @@ void Actor::EndPlay()
         }
     }
 
+    OnEndPlay();
+
+    // Clear flag
+    Flags &= ~ObjectFlags::IsDuringPlay;
+
+    // Call event deeper
+    for (int32 i = 0; i < Children.Count(); i++)
+    {
+        auto e = Children.Get()[i];
+        if (e->IsDuringPlay())
+            e->EndPlay();
+    }
+
     // Inform attached scripts
     for (int32 i = 0; i < Scripts.Count(); i++)
     {
-        if (Scripts[i]->IsDuringPlay())
-            Scripts[i]->EndPlay();
+        auto e = Scripts.Get()[i];
+        if (e->IsDuringPlay())
+            e->EndPlay();
     }
 
     // Cleanup managed object

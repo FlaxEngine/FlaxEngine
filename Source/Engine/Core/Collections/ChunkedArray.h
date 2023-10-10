@@ -136,13 +136,11 @@ public:
     public:
         bool IsEnd() const
         {
-            ASSERT(_collection);
             return Index() == _collection->Count();
         }
 
         bool IsNotEnd() const
         {
-            ASSERT(_collection);
             return Index() != _collection->Count();
         }
 
@@ -171,8 +169,6 @@ public:
     public:
         Iterator& operator++()
         {
-            ASSERT(_collection);
-
             // Check if it is not at end
             const int32 end = _collection->Count();
             if (Index() != end)
@@ -188,38 +184,18 @@ public:
                     _index = 0;
                 }
             }
-
             return *this;
         }
 
         Iterator operator++(int)
         {
-            ASSERT(_collection);
             Iterator temp = *this;
-
-            // Check if it is not at end
-            const int32 end = _collection->Count();
-            if (Index() != end)
-            {
-                // Move forward within chunk
-                _index++;
-
-                // Check if need to change chunk
-                if (_index == ChunkSize && _chunkIndex < _collection->_chunks.Count() - 1)
-                {
-                    // Move to next chunk
-                    _chunkIndex++;
-                    _index = 0;
-                }
-            }
-
+            ++temp;
             return temp;
         }
 
         Iterator& operator--()
         {
-            ASSERT(_collection);
-
             // Check if it's not at beginning
             if (_index != 0 || _chunkIndex != 0)
             {
@@ -236,32 +212,13 @@ public:
                     _index--;
                 }
             }
-
             return *this;
         }
 
         Iterator operator--(int)
         {
-            ASSERT(_collection);
             Iterator temp = *this;
-
-            // Check if it's not at beginning
-            if (_index != 0 || _chunkIndex != 0)
-            {
-                // Check if need to change chunk
-                if (_index == 0)
-                {
-                    // Move to previous chunk
-                    _chunkIndex--;
-                    _index = ChunkSize - 1;
-                }
-                else
-                {
-                    // Move backward within chunk
-                    _index--;
-                }
-            }
-
+            --temp;
             return temp;
         }
     };

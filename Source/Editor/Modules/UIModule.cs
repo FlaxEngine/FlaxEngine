@@ -553,6 +553,13 @@ namespace FlaxEditor.Modules
             cm.AddSeparator();
             _menuEditSelectAll = cm.AddButton("Select all", inputOptions.SelectAll, Editor.SceneEditing.SelectAllScenes);
             _menuEditFind = cm.AddButton("Find", inputOptions.Search, Editor.Windows.SceneWin.Search);
+            cm.AddSeparator();
+            cm.AddButton("Game Settings", () =>
+            {
+                var item = Editor.ContentDatabase.Find(GameSettings.GameSettingsAssetPath);
+                if(item != null)
+                    Editor.ContentEditing.Open(item);
+            });
 
             // Scene
             MenuScene = MainMenu.AddButton("Scene");

@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Utilities;
 using FlaxEngine;
@@ -56,7 +57,7 @@ namespace FlaxEditor.Surface.ContextMenu
         /// <param name="groupArchetype">The group archetype.</param>
         /// <param name="archetype">The archetype.</param>
         public VisjectCMItem(VisjectCMGroup group, GroupArchetype groupArchetype, NodeArchetype archetype)
-        : base(0, 0, 120, 12)
+        : base(0, 0, 120, 14)
         {
             Group = group;
             _groupArchetype = groupArchetype;
@@ -77,7 +78,7 @@ namespace FlaxEditor.Surface.ContextMenu
             if (!Visible)
                 return;
 
-            if (selectedBox != null && CanConnectTo(selectedBox, NodeArchetype))
+            if (selectedBox != null && CanConnectTo(selectedBox))
                 SortScore += 1;
             if (Data != null)
                 SortScore += 1;
@@ -92,35 +93,93 @@ namespace FlaxEditor.Surface.ContextMenu
             textRect = new Rectangle(22, 0, Width - 24, Height);
         }
 
-        private bool CanConnectTo(Box startBox, NodeArchetype nodeArchetype)
+        /// <summary>
+        /// Checks if this context menu item can be connected to a given box, before a node is actually spawned.
+        /// </summary>
+        /// <param name="startBox">The connected box</param>
+        /// <returns>True if the connected box is compatible with this item</returns>
+        public bool CanConnectTo(Box startBox)
         {
+            // Is compatible if box is null for reset reasons
             if (startBox == null)
-                return false;
-            if (!startBox.IsOutput)
-                return false; // For now, I'm only handing the output box case
+                return true;
 
-            if (nodeArchetype.Elements != null)
+            if (_archetype == null)
+                return false;
+
+            bool isCompatible = false;
+            if (startBox.IsOutput && _archetype.IsInputCompatible != null)
             {
-                for (int i = 0; i < nodeArchetype.Elements.Length; i++)
-                {
-                    if (nodeArchetype.Elements[i].Type == NodeElementType.Input &&
-                        startBox.CanUseType(nodeArchetype.Elements[i].ConnectionsType))
-                    {
-                        return true;
-                    }
-                }
+                isCompatible |= _archetype.IsInputCompatible.Invoke(_archetype, startBox.CurrentType, _archetype.ConnectionsHints, startBox.ParentNode.Context);
             }
-            return false;
+            else if (!startBox.IsOutput && _archetype.IsOutputCompatible != null)
+            {
+                isCompatible |= _archetype.IsOutputCompatible.Invoke(_archetype, startBox.CurrentType, startBox.ParentNode.Archetype.ConnectionsHints, startBox.ParentNode.Context);
+            }
+            else if (_archetype.Elements != null)
+            {
+                // Check compatibility based on the defined elements in the archetype. This handles all the default groups and items
+                isCompatible = CheckElementsCompatibility(startBox);
+            }
+
+            return isCompatible;
+        }
+
+        private bool CheckElementsCompatibility(Box startBox)
+        {
+            bool isCompatible = false;
+            foreach (NodeElementArchetype element in _archetype.Elements)
+            {
+                // Ignore all elements that aren't inputs or outputs (e.g. input fields)
+                if (element.Type != NodeElementType.Output && element.Type != NodeElementType.Input)
+                    continue;
+
+                // Ignore elements with the same direction as the box
+                if ((startBox.IsOutput && element.Type == NodeElementType.Output) || (!startBox.IsOutput && element.Type == NodeElementType.Input))
+                    continue;
+
+                ScriptType fromType;
+                ScriptType toType;
+                ConnectionsHint hint;
+                if (startBox.IsOutput)
+                {
+                    fromType = element.ConnectionsType;
+                    toType = startBox.CurrentType;
+                    hint = _archetype.ConnectionsHints;
+                }
+                else
+                {
+                    fromType = startBox.CurrentType;
+                    toType = element.ConnectionsType;
+                    hint = startBox.ParentNode.Archetype.ConnectionsHints;
+                }
+
+                isCompatible |= VisjectSurface.FullCastCheck(fromType, toType, hint);
+            }
+
+            return isCompatible;
         }
 
         /// <summary>
         /// Updates the filter.
         /// </summary>
         /// <param name="filterText">The filter text.</param>
-        public void UpdateFilter(string filterText)
+        /// <param name="selectedBox">The optionally selected box to show hints for it.</param>
+        /// <param name="groupHeaderMatches">True if item's group header got a filter match and item should stay visible.</param>
+        public void UpdateFilter(string filterText, Box selectedBox, bool groupHeaderMatches = false)
         {
+            if (selectedBox != null)
+            {
+                Visible = CanConnectTo(selectedBox);
+                if (!Visible)
+                {
+                    _highlights?.Clear();
+                    return;
+                }
+            }
+
             _isStartsWithMatch = _isFullMatch = false;
-            if (filterText == null)
+            if (string.IsNullOrEmpty(filterText))
             {
                 // Clear filter
                 _highlights?.Clear();
@@ -184,7 +243,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
                     Data = data;
                 }
-                else
+                else if (!groupHeaderMatches)
                 {
                     // Hide
                     _highlights?.Clear();

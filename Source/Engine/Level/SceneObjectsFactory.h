@@ -4,6 +4,8 @@
 
 #include "SceneObject.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Platform/CriticalSection.h"
+#include "Engine/Threading/ThreadLocal.h"
 
 /// <summary>
 /// Helper class for scene objects creation and deserialization utilities.
@@ -21,13 +23,17 @@ public:
     struct Context
     {
         ISerializeModifier* Modifier;
-        int32 CurrentInstance = -1;
+        bool Async = false;
         Array<PrefabInstance> Instances;
         Dictionary<Guid, int32> ObjectToInstance;
+        CriticalSection Locker;
+        ThreadLocal<ISerializeModifier*> Modifiers;
 
         Context(ISerializeModifier* modifier);
+        ~Context();
 
-        void SetupIdsMapping(const SceneObject* obj);
+        ISerializeModifier* GetModifier();
+        void SetupIdsMapping(const SceneObject* obj, ISerializeModifier* modifier);
     };
 
     /// <summary>

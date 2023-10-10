@@ -301,7 +301,7 @@ void ShadersCompilation::RegisterForShaderReloads(Asset* asset, const String& in
     {
         // Create a directory watcher to track the included file changes
         const String directory = StringUtils::GetDirectoryName(includedPath);
-        if (!ShaderIncludesWatcher.ContainsKey(directory))
+        if (FileSystem::DirectoryExists(directory) && !ShaderIncludesWatcher.ContainsKey(directory))
         {
             auto watcher = New<FileSystemWatcher>(directory, false);
             watcher->OnEvent.Bind<OnShaderIncludesWatcherEvent>();

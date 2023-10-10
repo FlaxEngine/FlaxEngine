@@ -377,6 +377,13 @@ namespace Flax.Build.Bindings
             // Find API type info
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
             var typeName = typeInfo.Type.Replace("::", ".");
+            if (typeInfo.GenericArgs != null)
+            {
+                typeName += '<';
+                foreach (var arg in typeInfo.GenericArgs)
+                    typeName += GenerateCSharpNativeToManaged(buildData, arg, caller);
+                typeName += '>';
+            }
             if (apiType != null)
             {
                 // Add reference to the namespace
@@ -422,6 +429,8 @@ namespace Flax.Build.Bindings
                     apiTypeParent = apiTypeParent.Parent;
                 }
 
+                if (apiType.MarshalAs != null)
+                    return GenerateCSharpManagedToNativeType(buildData, new TypeInfo(apiType.MarshalAs), caller);
                 if (apiType.IsScriptingObject || apiType.IsInterface)
                     return "IntPtr";
             }
@@ -511,7 +520,11 @@ namespace Flax.Build.Bindings
             }
             else
             {
-                returnValueType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType, caller);
+                var apiType = FindApiTypeInfo(buildData, functionInfo.ReturnType, caller);
+                if (apiType != null && apiType.MarshalAs != null)
+                    returnValueType = GenerateCSharpNativeToManaged(buildData, new TypeInfo(apiType.MarshalAs), caller);
+                else
+                    returnValueType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType, caller);
             }
 
 #if USE_NETCORE
@@ -862,6 +875,8 @@ namespace Flax.Build.Bindings
                 return "protected ";
             if (access == AccessLevel.Private)
                 return "private ";
+            if (access == AccessLevel.Internal)
+                return "internal ";
             return "public ";
         }
 
@@ -1318,7 +1333,7 @@ namespace Flax.Build.Bindings
                 contents.AppendLine(string.Join("\n" + indent, (indent + $$"""
                 /// <summary>
                 /// Marshaller for type <see cref="{{classInfo.Name}}"/>.
-                /// </summary>");
+                /// </summary>
                 #if FLAX_EDITOR
                 [HideInEditor]
                 #endif
@@ -1459,13 +1474,7 @@ namespace Flax.Build.Bindings
                         else
                             originalType = type = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
 
-                        contents.Append(indent);
-                        if (fieldInfo.Access == AccessLevel.Public)
-                            contents.Append("public ");
-                        else if (fieldInfo.Access == AccessLevel.Protected)
-                            contents.Append("protected ");
-                        else if (fieldInfo.Access == AccessLevel.Private)
-                            contents.Append("private ");
+                        contents.Append(indent).Append(GenerateCSharpAccessLevel(fieldInfo.Access));
                         if (fieldInfo.IsConstexpr)
                             contents.Append("const ");
                         else if (fieldInfo.IsStatic)
@@ -1482,13 +1491,7 @@ namespace Flax.Build.Bindings
                             {
                                 contents.AppendLine();
                                 GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic);
-                                contents.Append(indent);
-                                if (fieldInfo.Access == AccessLevel.Public)
-                                    contents.Append("public ");
-                                else if (fieldInfo.Access == AccessLevel.Protected)
-                                    contents.Append("protected ");
-                                else if (fieldInfo.Access == AccessLevel.Private)
-                                    contents.Append("private ");
+                                contents.Append(indent).Append(GenerateCSharpAccessLevel(fieldInfo.Access));
                                 if (fieldInfo.IsStatic)
                                     contents.Append("static ");
                                 contents.Append(type).Append(' ').Append(fieldInfo.Name + i).Append(';').AppendLine();

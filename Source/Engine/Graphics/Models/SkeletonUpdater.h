@@ -20,8 +20,7 @@ public:
     struct Node
     {
         /// <summary>
-        /// The parent node index.
-        /// The parent bone index. The root node uses value -1.
+        /// The parent node index. The root node uses value -1.
         /// </summary>
         int32 ParentIndex;
 

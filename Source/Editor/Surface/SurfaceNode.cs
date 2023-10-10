@@ -62,7 +62,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// The node archetype.
         /// </summary>
-        public readonly NodeArchetype Archetype;
+        public NodeArchetype Archetype;
 
         /// <summary>
         /// The group archetype.
@@ -165,19 +165,16 @@ namespace FlaxEditor.Surface
         {
             if (Surface == null)
                 return;
-            Size = CalculateNodeSize(width, height);
 
-            // Update boxes on width change
-            //if (!Mathf.NearEqual(prevSize.X, Size.X))
+            for (int i = 0; i < Elements.Count; i++)
             {
-                for (int i = 0; i < Elements.Count; i++)
+                if (Elements[i] is OutputBox box)
                 {
-                    if (Elements[i] is OutputBox box)
-                    {
-                        box.Location = box.Archetype.Position + new Float2(width, 0);
-                    }
+                    box.Location = box.Archetype.Position + new Float2(width, 0);
                 }
             }
+
+            Size = CalculateNodeSize(width, height);
         }
 
         private Float2 GetBoxControlWidthHeight(Control control, Font boxLabelFont)
@@ -216,7 +213,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Automatically resizes the node to match the title size and all the elements for best fit of the node dimensions.
         /// </summary>
-        public void ResizeAuto()
+        public virtual void ResizeAuto()
         {
             if (Surface == null)
                 return;
@@ -251,8 +248,16 @@ namespace FlaxEditor.Surface
                 }
                 else
                 {
-                    width = Mathf.Max(width, boxSize.X);
-                    height = Mathf.Max(height, boxSize.Y);
+                    if (control.AnchorPreset == AnchorPresets.TopLeft)
+                    {
+                        width = Mathf.Max(width, boxSize.X);
+                        height = Mathf.Max(height, boxSize.Y);
+                    }
+                    else if (!_headerRect.Intersects(control.Bounds))
+                    {
+                        width = Mathf.Max(width, boxSize.X);
+                        height = Mathf.Max(height, boxSize.Y);
+                    }
                 }
             }
 
@@ -423,6 +428,19 @@ namespace FlaxEditor.Surface
             }
 
             UpdateBoxesTypes();
+        }
+
+        /// <summary>
+        /// Array of nodes that are sealed to this node - sealed nodes are duplicated/copied/pasted/removed in a batch. Null if unused.
+        /// </summary>
+        public virtual SurfaceNode[] SealedNodes => null;
+
+        /// <summary>
+        /// Called after adding the control to the surface after paste.
+        /// </summary>
+        /// <param name="idsMapping">The nodes IDs mapping (original node ID to pasted node ID). Can be sued to update internal node's data after paste operation from the original data.</param>
+        public virtual void OnPasted(System.Collections.Generic.Dictionary<uint, uint> idsMapping)
+        {
         }
 
         /// <summary>
@@ -914,9 +932,9 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override void OnSurfaceLoaded()
+        public override void OnSurfaceLoaded(SurfaceNodeActions action)
         {
-            base.OnSurfaceLoaded();
+            base.OnSurfaceLoaded(action);
 
             UpdateBoxesTypes();
 
@@ -928,11 +946,11 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override void OnDeleted()
+        public override void OnDeleted(SurfaceNodeActions action)
         {
             RemoveConnections();
 
-            base.OnDeleted();
+            base.OnDeleted(action);
         }
 
         /// <summary>
@@ -958,7 +976,7 @@ namespace FlaxEditor.Surface
             OnValuesChanged();
             Surface?.MarkAsEdited(graphEdited);
 
-            if (Surface?.Undo != null)
+            if (Surface != null)
                 Surface.AddBatchedUndoAction(new EditNodeValuesAction(this, before, graphEdited));
 
             _isDuringValuesEditing = false;
@@ -985,7 +1003,7 @@ namespace FlaxEditor.Surface
             OnValuesChanged();
             Surface.MarkAsEdited(graphEdited);
 
-            if (Surface?.Undo != null)
+            if (Surface != null)
                 Surface.AddBatchedUndoAction(new EditNodeValuesAction(this, before, graphEdited));
 
             _isDuringValuesEditing = false;
@@ -1052,9 +1070,9 @@ namespace FlaxEditor.Surface
             Render2D.DrawText(style.FontLarge, Title, _headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
 
             // Close button
-            if ((Archetype.Flags & NodeFlags.NoCloseButton) == 0)
+            if ((Archetype.Flags & NodeFlags.NoCloseButton) == 0 && Surface.CanEdit)
             {
-                Render2D.DrawSprite(style.Cross, _closeButtonRect, _closeButtonRect.Contains(_mousePosition) && Surface.CanEdit ? style.Foreground : style.ForegroundGrey);
+                Render2D.DrawSprite(style.Cross, _closeButtonRect, _closeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
             }
 
             // Footer

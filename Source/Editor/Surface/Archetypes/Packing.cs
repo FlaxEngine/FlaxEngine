@@ -30,9 +30,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 _in0 = (InputBox)GetBox(0);
                 _in1 = (InputBox)GetBox(1);
@@ -111,9 +111,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 // Update title and the tooltip
                 var typeName = (string)Values[0];
@@ -216,6 +216,35 @@ namespace FlaxEditor.Surface.Archetypes
             : base(id, context, nodeArch, groupArch, false)
             {
             }
+
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
+            {
+                var typeName = (string)nodeArch.DefaultValues[0];
+                var type = TypeUtils.GetType(typeName);
+                if (type)
+                {
+                    var fields = type.GetMembers(BindingFlags.Public | BindingFlags.Instance).Where(x => x.IsField).ToArray();
+                    var fieldsLength = fields.Length;
+                    for (var i = 0; i < fieldsLength; i++)
+                    {
+                        if (VisjectSurface.FullCastCheck(fields[i].ValueType, outputType, hint))
+                            return true;
+                    }
+                }
+                return false;
+            }
+
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
+            {
+                var typeName = (string)nodeArch.DefaultValues[0];
+                var type = TypeUtils.GetType(typeName);
+                if (type)
+                {
+                    if (VisjectSurface.FullCastCheck(type, inputType, hint))
+                        return true;
+                }
+                return false;
+            }
         }
 
         private sealed class UnpackStructureNode : StructureNode
@@ -224,6 +253,35 @@ namespace FlaxEditor.Surface.Archetypes
             public UnpackStructureNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch, true)
             {
+            }
+
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
+            {
+                var typeName = (string)nodeArch.DefaultValues[0];
+                var type = TypeUtils.GetType(typeName);
+                if (type)
+                {
+                    if (VisjectSurface.FullCastCheck(type, outputType, hint))
+                        return true;
+                }
+                return false;
+            }
+
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
+            {
+                var typeName = (string)nodeArch.DefaultValues[0];
+                var type = TypeUtils.GetType(typeName);
+                if (type)
+                {
+                    var fields = type.GetMembers(BindingFlags.Public | BindingFlags.Instance).Where(x => x.IsField).ToArray();
+                    var fieldsLength = fields.Length;
+                    for (var i = 0; i < fieldsLength; i++)
+                    {
+                        if (VisjectSurface.FullCastCheck(fields[i].ValueType, inputType, hint))
+                            return true;
+                    }
+                }
+                return false;
             }
         }
 
@@ -351,6 +409,8 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 26,
                 Title = "Pack Structure",
                 Create = (id, context, arch, groupArch) => new PackStructureNode(id, context, arch, groupArch),
+                IsInputCompatible = PackStructureNode.IsInputCompatible,
+                IsOutputCompatible = PackStructureNode.IsOutputCompatible,
                 Description = "Makes the structure data to from the components.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaGUI,
                 Size = new Float2(180, 20),
@@ -461,6 +521,8 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 36,
                 Title = "Unpack Structure",
                 Create = (id, context, arch, groupArch) => new UnpackStructureNode(id, context, arch, groupArch),
+                IsInputCompatible = UnpackStructureNode.IsInputCompatible,
+                IsOutputCompatible = UnpackStructureNode.IsOutputCompatible,
                 Description = "Breaks the structure data to allow extracting components from it.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaGUI,
                 Size = new Float2(180, 20),

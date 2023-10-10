@@ -31,6 +31,7 @@
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/ContentImporters/CreateMaterial.h"
+#include "Engine/ContentImporters/CreateMaterialInstance.h"
 #include "Engine/ContentImporters/CreateCollisionData.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Editor/Utilities/EditorUtilities.h"
@@ -387,6 +388,8 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(SloppyOptimization);
     SERIALIZE(LODTargetError);
     SERIALIZE(ImportMaterials);
+    SERIALIZE(ImportMaterialsAsInstances);
+    SERIALIZE(InstanceToImportAs);
     SERIALIZE(ImportTextures);
     SERIALIZE(RestoreMaterialsOnReimport);
     SERIALIZE(GenerateSDF);
@@ -430,6 +433,8 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(SloppyOptimization);
     DESERIALIZE(LODTargetError);
     DESERIALIZE(ImportMaterials);
+    DESERIALIZE(ImportMaterialsAsInstances);
+    DESERIALIZE(InstanceToImportAs);
     DESERIALIZE(ImportTextures);
     DESERIALIZE(RestoreMaterialsOnReimport);
     DESERIALIZE(GenerateSDF);
@@ -503,11 +508,11 @@ bool ModelTool::ImportData(const String& path, ImportedModelData& data, Options&
     if (ImportDataAssimp(importPath.Get(), data, options, errorMsg))
         return true;
 #elif USE_AUTODESK_FBX_SDK
-	if (ImportDataAutodeskFbxSdk(importPath.Get(), data, options, errorMsg))
-		return true;
+    if (ImportDataAutodeskFbxSdk(importPath.Get(), data, options, errorMsg))
+        return true;
 #elif USE_OPEN_FBX
-	if (ImportDataOpenFBX(importPath.Get(), data, options, errorMsg))
-		return true;
+    if (ImportDataOpenFBX(importPath.Get(), data, options, errorMsg))
+        return true;
 #else
     LOG(Error, "Compiled without model importing backend.");
     return true;
@@ -620,62 +625,62 @@ bool ModelTool::ImportData(const String& path, ImportedModelData& data, Options&
 
 bool SortDepths(const Pair<int32, int32>& a, const Pair<int32, int32>& b)
 {
-	return a.First < b.First;
+    return a.First < b.First;
 }
 
 void CreateLinearListFromTree(Array<SkeletonNode>& nodes, Array<int32>& mapping)
 {
     // Customized breadth first tree algorithm (each node has no direct reference to the children so we build the cache for the nodes depth level)
-	const int32 count = nodes.Count();
-	Array<Pair<int32, int32>> depths(count); // Pair.First = Depth, Pair.Second = Node Index
-	depths.SetSize(count);
-	depths.Set(-1);
-	for (int32 i = 0; i < count; i++)
-	{
-		// Skip evaluated nodes
-		if (depths[i].First != -1)
-			continue;
+    const int32 count = nodes.Count();
+    Array<Pair<int32, int32>> depths(count); // Pair.First = Depth, Pair.Second = Node Index
+    depths.Resize(count);
+    depths.SetAll(-1);
+    for (int32 i = 0; i < count; i++)
+    {
+        // Skip evaluated nodes
+        if (depths[i].First != -1)
+            continue;
 
-		// Find the first node with calculated depth and get the distance to it
-		int32 end = i;
-		int32 lastDepth;
-		int32 relativeDepth = 0;
-		do
-		{
-			lastDepth = depths[end].First;
-			end = nodes[end].ParentIndex;
-			relativeDepth++;
-		} while (end != -1 && lastDepth == -1);
+        // Find the first node with calculated depth and get the distance to it
+        int32 end = i;
+        int32 lastDepth;
+        int32 relativeDepth = 0;
+        do
+        {
+            lastDepth = depths[end].First;
+            end = nodes[end].ParentIndex;
+            relativeDepth++;
+        } while (end != -1 && lastDepth == -1);
 
-		// Set the depth (second item is the node index)
-		depths[i] = MakePair(lastDepth + relativeDepth, i);
-	}
-	for (int32 i = 0; i < count; i++)
-	{
-		// Strange divide by 2 but works
-		depths[i].First = depths[i].First >> 1;
-	}
+        // Set the depth (second item is the node index)
+        depths[i] = ToPair(lastDepth + relativeDepth, i);
+    }
+    for (int32 i = 0; i < count; i++)
+    {
+        // Strange divide by 2 but works
+        depths[i].First = depths[i].First >> 1;
+    }
 
-	// Order nodes by depth O(n*log(n))
-	depths.Sort(SortDepths);
+    // Order nodes by depth O(n*log(n))
+    depths.Sort(SortDepths);
 
-	// Extract nodes mapping O(n^2)
-	mapping.EnsureCapacity(count, false);
-	mapping.SetSize(count);
-	for (int32 i = 0; i < count; i++)
-	{
-		int32 newIndex = -1;
-		for (int32 j = 0; j < count; j++)
-		{
-			if (depths[j].Second == i)
-			{
-				newIndex = j;
-				break;
-			}
-		}
-		ASSERT(newIndex != -1);
-		mapping[i] = newIndex;
-	}
+    // Extract nodes mapping O(n^2)
+    mapping.EnsureCapacity(count, false);
+    mapping.Resize(count);
+    for (int32 i = 0; i < count; i++)
+    {
+        int32 newIndex = -1;
+        for (int32 j = 0; j < count; j++)
+        {
+            if (depths[j].Second == i)
+            {
+                newIndex = j;
+                break;
+            }
+        }
+        ASSERT(newIndex != -1);
+        mapping[i] = newIndex;
+    }
 }
 
 #endif
@@ -841,18 +846,34 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             const auto mesh = data.LODs[0].Meshes[i];
             if (mesh->BlendIndices.IsEmpty() || mesh->BlendWeights.IsEmpty())
             {
-                LOG(Warning, "Imported mesh \'{0}\' has missing skinning data. It may result in invalid rendering.", mesh->Name);
-
                 auto indices = Int4::Zero;
                 auto weights = Float4::UnitX;
 
                 // Check if use a single bone for skinning
                 auto nodeIndex = data.Skeleton.FindNode(mesh->Name);
                 auto boneIndex = data.Skeleton.FindBone(nodeIndex);
-                if (boneIndex != -1)
+                if (boneIndex == -1 && nodeIndex != -1 && data.Skeleton.Bones.Count() < MAX_BONES_PER_MODEL)
                 {
-                    LOG(Warning, "Using auto-detected bone {0} (index {1})", data.Skeleton.Nodes[nodeIndex].Name, boneIndex);
+                    // Add missing bone to be used by skinned model from animated nodes pose
+                    boneIndex = data.Skeleton.Bones.Count();
+                    auto& bone = data.Skeleton.Bones.AddOne();
+                    bone.ParentIndex = -1;
+                    bone.NodeIndex = nodeIndex;
+                    bone.LocalTransform = CombineTransformsFromNodeIndices(data.Nodes, -1, nodeIndex);
+                    CalculateBoneOffsetMatrix(data.Skeleton.Nodes, bone.OffsetMatrix, bone.NodeIndex);
+                    LOG(Warning, "Using auto-created bone {0} (index {1}) for mesh \'{2}\'", data.Skeleton.Nodes[nodeIndex].Name, boneIndex, mesh->Name);
                     indices.X = boneIndex;
+                }
+                else if (boneIndex != -1)
+                {
+                    // Fallback to already added bone
+                    LOG(Warning, "Using auto-detected bone {0} (index {1}) for mesh \'{2}\'", data.Skeleton.Nodes[nodeIndex].Name, boneIndex, mesh->Name);
+                    indices.X = boneIndex;
+                }
+                else
+                {
+                    // No bone
+                    LOG(Warning, "Imported mesh \'{0}\' has missing skinning data. It may result in invalid rendering.", mesh->Name);
                 }
 
                 mesh->BlendIndices.Resize(mesh->Positions.Count());
@@ -978,23 +999,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         importedFileNames.Add(filename);
 #if COMPILE_WITH_ASSETS_IMPORTER
         auto assetPath = autoImportOutput / filename + ASSET_FILES_EXTENSION_WITH_DOT;
-        CreateMaterial::Options materialOptions;
-        materialOptions.Diffuse.Color = material.Diffuse.Color;
-        if (material.Diffuse.TextureIndex != -1)
-            materialOptions.Diffuse.Texture = data.Textures[material.Diffuse.TextureIndex].AssetID;
-        materialOptions.Diffuse.HasAlphaMask = material.Diffuse.HasAlphaMask;
-        materialOptions.Emissive.Color = material.Emissive.Color;
-        if (material.Emissive.TextureIndex != -1)
-            materialOptions.Emissive.Texture = data.Textures[material.Emissive.TextureIndex].AssetID;
-        materialOptions.Opacity.Value = material.Opacity.Value;
-        if (material.Opacity.TextureIndex != -1)
-            materialOptions.Opacity.Texture = data.Textures[material.Opacity.TextureIndex].AssetID;
-        if (material.Normals.TextureIndex != -1)
-            materialOptions.Normals.Texture = data.Textures[material.Normals.TextureIndex].AssetID;
-        if (material.TwoSided || material.Diffuse.HasAlphaMask)
-            materialOptions.Info.CullMode = CullMode::TwoSided;
-        if (!Math::IsOne(material.Opacity.Value) || material.Opacity.TextureIndex != -1)
-            materialOptions.Info.BlendMode = MaterialBlendMode::Transparent;
 
         // When splitting imported meshes allow only the first mesh to import assets (mesh[0] is imported after all following ones so import assets during mesh[1])
         if (!options.SplitObjects && options.ObjectIndex != 1 && options.ObjectIndex != -1)
@@ -1006,7 +1010,42 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             continue;
         }
 
-        AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialTag, assetPath, material.AssetID, &materialOptions);
+        if (options.ImportMaterialsAsInstances)
+        {
+            // Create material instance
+            AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialInstanceTag, assetPath, material.AssetID);
+            if (MaterialInstance* materialInstance = Content::Load<MaterialInstance>(assetPath))
+            {
+                materialInstance->SetBaseMaterial(options.InstanceToImportAs);
+                materialInstance->Save();
+            }
+            else
+            {
+                LOG(Error, "Failed to load material instance after creation. ({0})", assetPath);
+            }
+        }
+        else
+        {
+            // Create material
+            CreateMaterial::Options materialOptions;
+            materialOptions.Diffuse.Color = material.Diffuse.Color;
+            if (material.Diffuse.TextureIndex != -1)
+                materialOptions.Diffuse.Texture = data.Textures[material.Diffuse.TextureIndex].AssetID;
+            materialOptions.Diffuse.HasAlphaMask = material.Diffuse.HasAlphaMask;
+            materialOptions.Emissive.Color = material.Emissive.Color;
+            if (material.Emissive.TextureIndex != -1)
+                materialOptions.Emissive.Texture = data.Textures[material.Emissive.TextureIndex].AssetID;
+            materialOptions.Opacity.Value = material.Opacity.Value;
+            if (material.Opacity.TextureIndex != -1)
+                materialOptions.Opacity.Texture = data.Textures[material.Opacity.TextureIndex].AssetID;
+            if (material.Normals.TextureIndex != -1)
+                materialOptions.Normals.Texture = data.Textures[material.Normals.TextureIndex].AssetID;
+            if (material.TwoSided || material.Diffuse.HasAlphaMask)
+                materialOptions.Info.CullMode = CullMode::TwoSided;
+            if (!Math::IsOne(material.Opacity.Value) || material.Opacity.TextureIndex != -1)
+                materialOptions.Info.BlendMode = MaterialBlendMode::Transparent;
+            AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialTag, assetPath, material.AssetID, &materialOptions);
+        }
 #endif
     }
 
@@ -1091,7 +1130,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
 #if COMPILE_WITH_PHYSICS_COOKING
                 // Create collision
                 CollisionCooking::Argument arg;
-                arg.Type = CollisionDataType::TriangleMesh;
+                arg.Type = options.CollisionType;
                 arg.OverrideModelData = &collisionModel;
                 auto assetPath = autoImportOutput / StringUtils::GetFileNameWithoutExtension(path) + TEXT("Collision") ASSET_FILES_EXTENSION_WITH_DOT;
                 if (CreateCollisionData::CookMeshCollision(assetPath, arg))
@@ -1320,14 +1359,17 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                 }
             }
 
-            // Apply import transform on root bones
-            for (int32 i = 0; i < data.Skeleton.Bones.Count(); i++)
+            // Apply import transform on bones
+            Matrix importMatrixInv;
+            importTransform.GetWorld(importMatrixInv);
+            importMatrixInv.Invert();
+            for (SkeletonBone& bone : data.Skeleton.Bones)
             {
-                auto& bone = data.Skeleton.Bones.Get()[i];
                 if (bone.ParentIndex == -1)
                 {
                     bone.LocalTransform = importTransform.LocalToWorld(bone.LocalTransform);
                 }
+                bone.OffsetMatrix = importMatrixInv * bone.OffsetMatrix;
             }
         }
 
@@ -1363,41 +1405,32 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         // use SkeletonMapping<SkeletonBone> to map bones?
 
         // Calculate offset matrix (inverse bind pose transform) for every bone manually
+        /*for (SkeletonBone& bone : data.Skeleton.Bones)
         {
-            for (int32 i = 0; i < data.Skeleton.Bones.Count(); i++)
-            {
-                Matrix t = Matrix::Identity;
-                int32 idx = data.Skeleton.Bones[i].NodeIndex;
-                do
-                {
-                    t *= data.Skeleton.Nodes[idx].LocalTransform.GetWorld();
-                    idx = data.Skeleton.Nodes[idx].ParentIndex;
-                } while (idx != -1);
-                t.Invert();
-                data.Skeleton.Bones[i].OffsetMatrix = t;
-            }
-        }
+            CalculateBoneOffsetMatrix(data.Skeleton.Nodes, bone.OffsetMatrix, bone.NodeIndex);
+        }*/
 
 #if USE_SKELETON_NODES_SORTING
         // Sort skeleton nodes and bones hierarchy (parents first)
-		// Then it can be used with a simple linear loop update
-		{
-			const int32 nodesCount = data.Skeleton.Nodes.Count();
-			const int32 bonesCount = data.Skeleton.Bones.Count();
-			Array<int32> mapping;
-			CreateLinearListFromTree(data.Skeleton.Nodes, mapping);
-			for (int32 i = 0; i < nodesCount; i++)
-			{
-				auto& node = data.Skeleton.Nodes[i];
-				node.ParentIndex = mapping[node.ParentIndex];
-			}
-			for (int32 i = 0; i < bonesCount; i++)
-			{
-				auto& bone = data.Skeleton.Bones[i];
-				bone.NodeIndex = mapping[bone.NodeIndex];
-			}
-		}
-		reorder_nodes_and_test_it_out!
+        // Then it can be used with a simple linear loop update
+        {
+            const int32 nodesCount = data.Skeleton.Nodes.Count();
+            const int32 bonesCount = data.Skeleton.Bones.Count();
+            Array<int32> mapping;
+            CreateLinearListFromTree(data.Skeleton.Nodes, mapping);
+            for (int32 i = 0; i < nodesCount; i++)
+            {
+                auto& node = data.Skeleton.Nodes[i];
+                node.ParentIndex = mapping[node.ParentIndex];
+            }
+            for (int32 i = 0; i < bonesCount; i++)
+            {
+                auto& bone = data.Skeleton.Bones[i];
+                bone.NodeIndex = mapping[bone.NodeIndex];
+            }
+        }
+        reorder_nodes_and_test_it_out
+        !
 #endif
     }
     else if (options.Type == ModelType::Animation)
@@ -1751,6 +1784,19 @@ bool ModelTool::FindTexture(const String& sourcePath, const String& file, String
     }
     FileSystem::NormalizePath(path);
     return false;
+}
+
+void ModelTool::CalculateBoneOffsetMatrix(const Array<SkeletonNode>& nodes, Matrix& offsetMatrix, int32 nodeIndex)
+{
+    offsetMatrix = Matrix::Identity;
+    int32 idx = nodeIndex;
+    do
+    {
+        const SkeletonNode& node = nodes[idx];
+        offsetMatrix *= node.LocalTransform.GetWorld();
+        idx = node.ParentIndex;
+    } while (idx != -1);
+    offsetMatrix.Invert();
 }
 
 #endif

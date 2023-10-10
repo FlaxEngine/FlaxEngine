@@ -2,6 +2,8 @@
 
 #include "ModelData.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/BoundingBox.h"
+#include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Animations/CurveSerialization.h"
 #include "Engine/Serialization/WriteStream.h"
 #include "Engine/Debug/Exceptions/ArgumentNullException.h"

@@ -84,6 +84,7 @@ namespace FlaxEditor.Viewport
             _dragAssets = new DragAssets(ValidateDragItem);
             ShowDebugDraw = true;
             ShowEditorPrimitives = true;
+            Gizmos = new GizmosCollection(this);
             var inputOptions = window.Editor.Options.Options.Input;
 
             // Prepare rendering task
@@ -302,12 +303,12 @@ namespace FlaxEditor.Viewport
         /// </summary>
         public void ShowSelectedActors()
         {
-            var orient = Viewport.ViewOrientation;
+            var orient = ViewOrientation;
             ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orient);
         }
 
         /// <inheritdoc />
-        public GizmosCollection Gizmos { get; } = new GizmosCollection();
+        public GizmosCollection Gizmos { get; }
 
         /// <inheritdoc />
         public SceneRenderTask RenderTask => Task;
@@ -346,7 +347,10 @@ namespace FlaxEditor.Viewport
         public RootNode SceneGraphRoot => _window.Graph.Root;
 
         /// <inheritdoc />
-        public EditorViewport Viewport => this;
+        public void Select(List<SceneGraphNode> nodes)
+        {
+            _window.Select(nodes);
+        }
 
         /// <inheritdoc />
         protected override bool IsControllingMouse => Gizmos.Active?.IsControllingMouse ?? false;

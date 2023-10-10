@@ -2,6 +2,7 @@
 
 using System;
 using System.Linq;
+using FlaxEditor.Content.Settings;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
@@ -9,6 +10,8 @@ using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Widgets;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Newtonsoft.Json;
+using JsonSerializer = FlaxEngine.Json.JsonSerializer;
 
 namespace FlaxEditor.Viewport
 {
@@ -486,10 +489,63 @@ namespace FlaxEditor.Viewport
                     }
                 }
 
+                // View Layers
+                {
+                    var viewLayers = ViewWidgetButtonMenu.AddChildMenu("View Layers").ContextMenu;
+                    viewLayers.AddButton("Copy layers", () => Clipboard.Text = JsonSerializer.Serialize(Task.View.RenderLayersMask));
+                    viewLayers.AddButton("Paste layers", () =>
+                    {
+                        try
+                        {
+                            Task.ViewLayersMask = JsonSerializer.Deserialize<LayersMask>(Clipboard.Text);
+                        }
+                        catch
+                        {
+                        }
+                    });
+                    viewLayers.AddButton("Reset layers", () => Task.ViewLayersMask = LayersMask.Default).Icon = Editor.Instance.Icons.Rotate32;
+                    viewLayers.AddButton("Disable layers", () => Task.ViewLayersMask = new LayersMask(0)).Icon = Editor.Instance.Icons.Rotate32;
+                    viewLayers.AddSeparator();
+                    var layers = LayersAndTagsSettings.GetCurrentLayers();
+                    if (layers != null && layers.Length > 0)
+                    {
+                        for (int i = 0; i < layers.Length; i++)
+                        {
+                            var layer = layers[i];
+                            var button = viewLayers.AddButton(layer);
+                            button.CloseMenuOnClick = false;
+                            button.Tag = 1 << i;
+                        }
+                    }
+                    viewLayers.ButtonClicked += button =>
+                    {
+                        if (button.Tag != null)
+                        {
+                            int layerIndex = (int)button.Tag;
+                            LayersMask mask = new LayersMask(layerIndex);
+                            Task.ViewLayersMask ^= mask;
+                            button.Icon = (Task.ViewLayersMask & mask) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                        }
+                    };
+                    viewLayers.VisibleChanged += WidgetViewLayersShowHide;
+                }
+
                 // View Flags
                 {
                     var viewFlags = ViewWidgetButtonMenu.AddChildMenu("View Flags").ContextMenu;
+                    viewFlags.AddButton("Copy flags", () => Clipboard.Text = JsonSerializer.Serialize(Task.ViewFlags));
+                    viewFlags.AddButton("Paste flags", () =>
+                    {
+                        try
+                        {
+                            Task.ViewFlags = JsonSerializer.Deserialize<ViewFlags>(Clipboard.Text);
+                        }
+                        catch
+                        {
+                        }
+                    });
                     viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = Editor.Instance.Icons.Rotate32;
+                    viewFlags.AddButton("Disable flags", () => Task.ViewFlags = ViewFlags.None).Icon = Editor.Instance.Icons.Rotate32;
                     viewFlags.AddSeparator();
                     for (int i = 0; i < EditorViewportViewFlagsValues.Length; i++)
                     {
@@ -504,7 +560,7 @@ namespace FlaxEditor.Viewport
                         {
                             var v = (ViewFlags)button.Tag;
                             Task.ViewFlags ^= v;
-                            button.Icon = (Task.View.Flags & v) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                            button.Icon = (Task.ViewFlags & v) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
                         }
                     };
                     viewFlags.VisibleChanged += WidgetViewFlagsShowHide;
@@ -513,6 +569,18 @@ namespace FlaxEditor.Viewport
                 // Debug View
                 {
                     var debugView = ViewWidgetButtonMenu.AddChildMenu("Debug View").ContextMenu;
+                    debugView.AddButton("Copy view", () => Clipboard.Text = JsonSerializer.Serialize(Task.ViewMode));
+                    debugView.AddButton("Paste view", () =>
+                    {
+                        try
+                        {
+                            Task.ViewMode = JsonSerializer.Deserialize<ViewMode>(Clipboard.Text);
+                        }
+                        catch
+                        {
+                        }
+                    });
+                    debugView.AddSeparator();
                     for (int i = 0; i < EditorViewportViewModeValues.Length; i++)
                     {
                         ref var v = ref EditorViewportViewModeValues[i];
@@ -954,7 +1022,7 @@ namespace FlaxEditor.Viewport
 
             // Center mouse position if it's too close to the edge
             var size = Size;
-            var center = size * 0.5f;
+            var center = Float2.Round(size * 0.5f);
             if (Mathf.Abs(_viewMousePos.X - center.X) > center.X * 0.8f || Mathf.Abs(_viewMousePos.Y - center.Y) > center.Y * 0.8f)
             {
                 _viewMousePos = center;
@@ -1084,9 +1152,9 @@ namespace FlaxEditor.Viewport
                     _isVirtualMouseRightDown = false; // Cancel when mouse right or escape is pressed
                 if (_wasVirtualMouseRightDown)
                     wasControllingMouse = true;
-                if (_isVirtualMouseRightDown) 
+                if (_isVirtualMouseRightDown)
                     _isControllingMouse = _isVirtualMouseRightDown;
-                
+
                 if (wasControllingMouse != _isControllingMouse)
                 {
                     if (_isControllingMouse)
@@ -1587,6 +1655,24 @@ namespace FlaxEditor.Viewport
                     b.Icon = (Task.View.Flags & v) != 0
                              ? Style.Current.CheckBoxTick
                              : SpriteHandle.Invalid;
+                }
+            }
+        }
+
+        private void WidgetViewLayersShowHide(Control cm)
+        {
+            if (cm.Visible == false)
+                return;
+
+            var ccm = (ContextMenu)cm;
+            var layersMask = Task.ViewLayersMask;
+            foreach (var e in ccm.Items)
+            {
+                if (e is ContextMenuButton b && b != null && b.Tag != null)
+                {
+                    int layerIndex = (int)b.Tag;
+                    LayersMask mask = new LayersMask(layerIndex);
+                    b.Icon = (layersMask & mask) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
                 }
             }
         }

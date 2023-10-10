@@ -127,9 +127,9 @@ namespace FlaxEditor.Windows
                 Nodes.AddRange(nodes);
                 foreach (var node in nodes)
                 {
-                    Context.OnControlLoaded(node);
-                    node.OnSurfaceLoaded();
-                    Context.OnControlSpawned(node);
+                    Context.OnControlLoaded(node, SurfaceNodeActions.Load);
+                    node.OnSurfaceLoaded(SurfaceNodeActions.Load);
+                    Context.OnControlSpawned(node, SurfaceNodeActions.Load);
                 }
                 ShowWholeGraph();
                 UnlockChildrenRecursive();

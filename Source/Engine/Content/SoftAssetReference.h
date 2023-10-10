@@ -143,7 +143,7 @@ public:
     }
     FORCE_INLINE SoftAssetReference& operator=(T* other)
     {
-        OnSet(other);
+        OnSet((Asset*)other);
         return *this;
     }
     FORCE_INLINE SoftAssetReference& operator=(const Guid& id)

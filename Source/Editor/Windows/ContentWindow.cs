@@ -329,7 +329,7 @@ namespace FlaxEditor.Windows
                 b.Checked = ShowPluginsFiles;
                 b.CloseMenuOnClick = false;
                 b.AutoCheck = true;
-                
+
                 b = show.ContextMenu.AddButton("Generated files", () => ShowGeneratedFiles = !ShowGeneratedFiles);
                 b.TooltipText = "Shows generated files";
                 b.Checked = ShowGeneratedFiles;
@@ -535,7 +535,6 @@ namespace FlaxEditor.Windows
             // Ensure has parent
             if (item.ParentFolder == null)
             {
-                // Error
                 Editor.LogWarning("Cannot rename root items. " + item.Path);
                 return;
             }
@@ -756,7 +755,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
-        /// Stars creating the folder.
+        /// Starts creating the folder.
         /// </summary>
         public void NewFolder()
         {
@@ -989,7 +988,7 @@ namespace FlaxEditor.Windows
                 }
                 _view.ShowItems(items, _sortType, false, true);
             }
-            else
+            else if (target != null)
             {
                 // Show folder contents
                 var items = target.Folder.Children;

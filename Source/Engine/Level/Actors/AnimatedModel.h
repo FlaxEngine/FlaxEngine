@@ -17,7 +17,7 @@ class FLAXENGINE_API AnimatedModel : public ModelInstanceActor
 {
     DECLARE_SCENE_OBJECT(AnimatedModel);
     friend class AnimationsSystem;
-public:
+
     /// <summary>
     /// Describes the animation graph updates frequency for the animated model.
     /// </summary>
@@ -55,6 +55,13 @@ public:
     };
 
 private:
+    struct BlendShapeMesh
+    {
+        uint16 LODIndex;
+        uint16 MeshIndex;
+        uint32 Usages;
+    };
+
     GeometryDrawStateData _drawState;
     SkinnedMeshDrawData _skinningData;
     AnimationUpdateMode _actualMode;
@@ -62,10 +69,14 @@ private:
     Real _lastMinDstSqr;
     bool _isDuringUpdateEvent = false;
     uint64 _lastUpdateFrame;
-    BlendShapesInstance _blendShapes;
+    mutable MeshDeformation* _deformation = nullptr;
     ScriptingObjectReference<AnimatedModel> _masterPose;
+    Array<Pair<String, float>> _blendShapeWeights;
+    Array<BlendShapeMesh> _blendShapeMeshes;
 
 public:
+    ~AnimatedModel();
+
     /// <summary>
     /// The skinned model asset used for rendering.
     /// </summary>
@@ -292,7 +303,7 @@ public:
     API_FUNCTION() void SetBlendShapeWeight(const StringView& name, float value);
 
     /// <summary>
-    /// Clears the weights of the blend shapes (disabled any used blend shapes).
+    /// Clears the weights of the blend shapes (disables any used blend shapes).
     /// </summary>
     API_FUNCTION() void ClearBlendShapeWeights();
 
@@ -347,9 +358,9 @@ public:
 private:
     void ApplyRootMotion(const Transform& rootMotionDelta);
     void SyncParameters();
+    void RunBlendShapeDeformer(const MeshBase* mesh, struct MeshDeformationData& deformation);
 
     void Update();
-    void UpdateBounds();
     void UpdateSockets();
     void OnAnimationUpdated_Async();
     void OnAnimationUpdated_Sync();
@@ -377,6 +388,9 @@ public:
     MaterialBase* GetMaterial(int32 entryIndex) override;
     bool IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal) override;
     bool IntersectsEntry(const Ray& ray, Real& distance, Vector3& normal, int32& entryIndex) override;
+    bool GetMeshData(const MeshReference& mesh, MeshBufferType type, BytesContainer& result, int32& count) const override;
+    void UpdateBounds() override;
+    MeshDeformation* GetMeshDeformation() const override;
     void OnDeleteObject() override;
 
 protected:
@@ -386,6 +400,5 @@ protected:
     void OnEnable() override;
     void OnDisable() override;
     void OnActiveInTreeChanged() override;
-    void OnTransformChanged() override;
     void WaitForModelLoad() override;
 };

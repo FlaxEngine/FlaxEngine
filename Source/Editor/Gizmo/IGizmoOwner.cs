@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using FlaxEngine;
 
 namespace FlaxEditor.Gizmo
@@ -94,5 +95,11 @@ namespace FlaxEditor.Gizmo
         /// Gets the root tree node for the scene graph.
         /// </summary>
         SceneGraph.RootNode SceneGraphRoot { get; }
+
+        /// <summary>
+        /// Selects the scene objects.
+        /// </summary>
+        /// <param name="nodes">The nodes to select</param>
+        void Select(List<SceneGraph.SceneGraphNode> nodes);
     }
 }

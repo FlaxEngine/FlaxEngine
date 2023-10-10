@@ -2,8 +2,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using FlaxEditor.Options;
 using FlaxEditor.Scripting;
 using FlaxEngine;
@@ -178,6 +180,11 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         /// </summary>
         public readonly CachedCustomAnimGraphNodesCollection AnimGraphNodes = new CachedCustomAnimGraphNodesCollection(32, new ScriptType(typeof(AnimationGraph.CustomNodeArchetypeFactoryAttribute)), IsTypeValidScriptingType, HasAssemblyValidScriptingTypes);
 
+        /// <summary>
+        /// The Behavior Tree custom nodes collection.
+        /// </summary>
+        public readonly CachedTypesCollection BehaviorTreeNodes = new CachedTypesCollection(64, new ScriptType(typeof(BehaviorTreeNode)), IsTypeValidScriptingType, HasAssemblyValidScriptingTypes);
+
         internal CodeEditingModule(Editor editor)
         : base(editor)
         {
@@ -325,6 +332,78 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             Editor.Instance.CodeEditing.SelectedEditor = editor;
         }
 
+        /// <summary>
+        /// Starts creating a new module
+        /// </summary>
+        internal void CreateModule(string path, string moduleName, bool editorModule, bool cpp)
+        {
+            if (string.IsNullOrEmpty(moduleName) || string.IsNullOrEmpty(path))
+            {
+                Editor.LogWarning("Failed to create module due to no name");
+                return;
+            }
+
+            // Create folder
+            var moduleFolderPath = Path.Combine(path, moduleName);
+            Directory.CreateDirectory(moduleFolderPath);
+
+            // Create module
+            var moduleText = "using Flax.Build;\n" +
+                             "using Flax.Build.NativeCpp;\n" +
+                             $"\npublic class {moduleName} : Game{(editorModule ? "Editor" : "")}Module\n" +
+                             "{\n    " +
+                             "/// <inheritdoc />\n" +
+                             "    public override void Init()\n" +
+                             "    {\n" +
+                             "        base.Init();\n" +
+                             "\n" +
+                             "        // C#-only scripting if false\n" +
+                             $"        BuildNativeCode = {(cpp ? "true" : "false")};\n" +
+                             "    }\n" +
+                             "\n" +
+                             "    /// <inheritdoc />\n" +
+                             "    public override void Setup(BuildOptions options)\n" +
+                             "    {" +
+                             "\n" +
+                             "        base.Setup(options);\n" +
+                             "\n" +
+                             "        options.ScriptingAPI.IgnoreMissingDocumentationWarnings = true;\n" +
+                             "\n" +
+                             "        // Here you can modify the build options for your game module\n" +
+                             "        // To reference another module use: options.PublicDependencies.Add(\"Audio\");\n" +
+                             "        // To add C++ define use: options.PublicDefinitions.Add(\"COMPILE_WITH_FLAX\");\n" +
+                             "        // To learn more see scripting documentation.\n" +
+                             "    }\n" +
+                             "}";
+            moduleText = Encoding.UTF8.GetString(Encoding.Default.GetBytes(moduleText));
+            var modulePath = Path.Combine(moduleFolderPath, $"{moduleName}.Build.cs");
+            File.WriteAllText(modulePath, moduleText);
+            Editor.Log($"Module created at {modulePath}");
+
+            // Get editor target and target files and add module
+            var files = Directory.GetFiles(path);
+            var targetModuleText = $"Modules.Add(\"{moduleName}\");\n        ";
+            foreach (var file in files)
+            {
+                if (!file.Contains(".Build.cs", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                var targetText = File.ReadAllText(file);
+
+                // Skip game project if it is suppose to be an editor module
+                if (editorModule && targetText.Contains("GameProjectTarget", StringComparison.Ordinal))
+                    continue;
+
+                // TODO: Handle edge case when there are no modules in a target
+                var index = targetText.IndexOf("Modules.Add");
+                if (index != -1)
+                {
+                    var newText = targetText.Insert(index, targetModuleText);
+                    File.WriteAllText(file, newText);
+                    Editor.Log($"Module added to Target: {file}");
+                }
+            }
+        }
+
         /// <inheritdoc />
         public override void OnUpdate()
         {
@@ -361,6 +440,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             Scripts.ClearTypes();
             Controls.ClearTypes();
             AnimGraphNodes.ClearTypes();
+            BehaviorTreeNodes.ClearTypes();
             TypesCleared?.Invoke();
         }
 

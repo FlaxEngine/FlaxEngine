@@ -298,7 +298,7 @@ PX_FORCE_INLINE bool isFiniteQuatV(const QuatV q)
 	return isFiniteVec4V(q);
 }
 
-#if PX_CLANG
+#if PX_CLANG && __clang_major__ >= 12
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wbitwise-instead-of-logical" // bitwise intentionally chosen for performance
 #endif
@@ -319,7 +319,7 @@ PX_FORCE_INLINE bool isSaneQuatV(const QuatV q)
 	return isFiniteVec4V(q) & (BAllEqTTTT(con) == 1);
 }
 
-#if PX_CLANG
+#if PX_CLANG && __clang_major__ >= 12
 #pragma clang diagnostic pop
 #endif
 

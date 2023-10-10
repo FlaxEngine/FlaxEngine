@@ -125,7 +125,7 @@ namespace FlaxEditor.CustomEditors.Editors
             }
 
             // Value
-            var values = new CustomValueContainer(type, (instance, index) => instance, (instance, index, value) => { });
+            var values = new CustomValueContainer(type, (instance, index) => instance);
             values.AddRange(Values);
             var editor = CustomEditorsUtil.CreateEditor(type);
             var style = editor.Style;
@@ -160,7 +160,6 @@ namespace FlaxEditor.CustomEditors.Editors
                 var option = _options[comboBox.SelectedIndex];
                 if (option.Type != null)
                     value = option.Creator(option.Type);
-
             }
             SetValue(value);
             RebuildLayoutOnRefresh();

@@ -19,7 +19,7 @@ namespace FlaxEditor.Windows.Assets
     /// </summary>
     /// <seealso cref="Prefab" />
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
-    public sealed partial class PrefabWindow : AssetEditorWindowBase<Prefab>
+    public sealed partial class PrefabWindow : AssetEditorWindowBase<Prefab>, IPresenterOwner
     {
         private readonly SplitPanel _split1;
         private readonly SplitPanel _split2;
@@ -52,6 +52,11 @@ namespace FlaxEditor.Windows.Assets
         /// Gets the viewport.
         /// </summary>
         public PrefabWindowViewport Viewport => _viewport;
+
+        /// <summary>
+        /// Gets the prefab objects properties editor.
+        /// </summary>
+        public CustomEditorPresenter Presenter => _propertiesEditor;
 
         /// <summary>
         /// Gets the undo system used by this window for changes tracking.
@@ -146,7 +151,7 @@ namespace FlaxEditor.Windows.Assets
             Graph = new LocalSceneGraph(new CustomRootNode(this));
             _tree = new PrefabTree
             {
-                Margin = new Margin(0.0f, 0.0f, -16.0f, 0.0f), // Hide root node
+                Margin = new Margin(0.0f, 0.0f, -16.0f, _treePanel.ScrollBarsSize), // Hide root node
                 IsScrollable = true,
             };
             _tree.AddChild(Graph.Root.TreeNode);
@@ -520,5 +525,8 @@ namespace FlaxEditor.Windows.Assets
 
             base.OnDestroy();
         }
+
+        /// <inheritdoc />
+        public EditorViewport PresenterViewport => _viewport;
     }
 }

@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEditor.Gizmo;
 using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Viewport;
 using FlaxEditor.Viewport.Modes;
@@ -60,11 +61,11 @@ namespace FlaxEditor.Tools.Foliage
         public event Action SelectedInstanceIndexChanged;
 
         /// <inheritdoc />
-        public override void Init(MainEditorGizmoViewport viewport)
+        public override void Init(IGizmoOwner owner)
         {
-            base.Init(viewport);
+            base.Init(owner);
 
-            Gizmo = new EditFoliageGizmo(viewport, this);
+            Gizmo = new EditFoliageGizmo(owner, this);
             SelectionOutline = FlaxEngine.Object.New<EditFoliageSelectionOutline>();
             SelectionOutline.GizmoMode = this;
         }
@@ -82,15 +83,15 @@ namespace FlaxEditor.Tools.Foliage
         {
             base.OnActivated();
 
-            Viewport.Gizmos.Active = Gizmo;
-            Viewport.OverrideSelectionOutline(SelectionOutline);
+            Owner.Gizmos.Active = Gizmo;
+            ((MainEditorGizmoViewport)Owner).OverrideSelectionOutline(SelectionOutline);
             SelectedInstanceIndex = -1;
         }
 
         /// <inheritdoc />
         public override void OnDeactivated()
         {
-            Viewport.OverrideSelectionOutline(null);
+            ((MainEditorGizmoViewport)Owner).OverrideSelectionOutline(null);
 
             base.OnDeactivated();
         }

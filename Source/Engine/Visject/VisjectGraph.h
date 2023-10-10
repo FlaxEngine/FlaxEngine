@@ -216,7 +216,7 @@ public:
     typedef void (VisjectExecutor::*ProcessBoxHandler)(Box*, Node*, Value&);
 
 protected:
-    ProcessBoxHandler _perGroupProcessCall[19];
+    ProcessBoxHandler _perGroupProcessCall[20];
 
 public:
     /// <summary>

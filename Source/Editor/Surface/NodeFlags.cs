@@ -69,8 +69,13 @@ namespace FlaxEditor.Surface
         NoSpawnViaPaste = 512,
 
         /// <summary>
+        /// Node can be used in the Behavior Tree graphs.
+        /// </summary>
+        BehaviorTreeGraph = 1024,
+
+        /// <summary>
         /// Node can be used in the all visual graphs.
         /// </summary>
-        AllGraphs = MaterialGraph | ParticleEmitterGraph | AnimGraph | VisualScriptGraph,
+        AllGraphs = MaterialGraph | ParticleEmitterGraph | AnimGraph | VisualScriptGraph | BehaviorTreeGraph,
     }
 }
