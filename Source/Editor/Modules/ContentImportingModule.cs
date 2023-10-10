@@ -371,7 +371,15 @@ namespace FlaxEditor.Modules
                         ImportFileEnd?.Invoke(entry, failed);
                         if (!failed)
                         {
-                            OnAssetImportComplete?.Invoke(entry);
+                            try
+                            {
+                                OnAssetImportComplete?.Invoke(entry);
+                            }
+                            catch (Exception ex)
+                            {
+                                Editor.LogWarning("Failed to execution workflow for OnAssetImportComplete:");
+                                Editor.LogWarning(ex);
+                            }
                         }
                     }
                 }
