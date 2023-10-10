@@ -158,6 +158,14 @@ namespace FlaxEditor.Tools.Terrain
                 return;
             }
 
+            // Increase or decrease brush size with scroll
+            if (Input.GetKey(KeyboardKeys.Shift))
+            {
+                var currentBrush = Mode.CurrentBrush;
+                currentBrush.Size += dt * currentBrush.Size * Input.Mouse.ScrollDelta * 5f;
+                Mode.CurrentBrush = currentBrush;
+            }
+
             // Check if selected terrain was changed during painting
             if (terrain != _paintTerrain && IsPainting)
             {

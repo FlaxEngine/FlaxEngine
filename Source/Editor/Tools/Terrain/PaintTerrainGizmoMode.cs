@@ -139,9 +139,9 @@ namespace FlaxEditor.Tools.Terrain
         }
 
         /// <summary>
-        /// Gets the current brush.
+        /// Gets or set the current brush.
         /// </summary>
-        public Brush CurrentBrush => _brushes[(int)_brushType];
+        public Brush CurrentBrush { get => _brushes[(int)_brushType]; set => _brushes[(int)_brushType] = value; }
 
         /// <summary>
         /// Gets the circle brush instance.
