@@ -187,11 +187,13 @@ namespace FlaxEditor.Surface
                 boxWidth = boxLabelFont.MeasureText(inputBox.Text).X + 24;
                 boxWidth += inputBox.GetValueEditorSize().X + 8;
                 boxHeight = inputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f;
+                Debug.Log($"InputBox {control.GetType().Name}: {boxWidth}, {boxHeight}");
             }
             else if (control is OutputBox outputBox)
             {
                 boxWidth = boxLabelFont.MeasureText(outputBox.Text).X + 24;
                 boxHeight = outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f;
+                Debug.Log($"OutputBox {control.GetType().Name}: {boxWidth}, {boxHeight}");
             }
             else if (control is Control defaultControl)
             {
@@ -205,6 +207,10 @@ namespace FlaxEditor.Surface
                     boxWidth = defaultControl.Width + 4;
                     boxHeight = defaultControl.Height + 4;
                 }
+                Debug.Log($"Control {control.GetType().Name}: {boxWidth}, {boxHeight}");
+            } else
+            {
+                Debug.Log($"Control (filtered) {control.GetType().Name}: {boxWidth}, {boxHeight}");
             }
 
             return new Float2(boxWidth, boxHeight);
@@ -343,6 +349,7 @@ namespace FlaxEditor.Surface
         public void AddElement(ISurfaceNodeElement element)
         {
             Elements.Add(element);
+            Debug.Log($"Element: {element.Archetype.Type}");
             if (element is Control control)
                 AddChild(control);
 
