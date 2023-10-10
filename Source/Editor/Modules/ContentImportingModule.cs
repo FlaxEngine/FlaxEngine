@@ -78,9 +78,26 @@ namespace FlaxEditor.Modules
         public event Action ImportingQueueEnd;
 
         /// <summary>
+        /// On Asset Import delegate.
+        /// </summary>
+        /// <param name="importState">The current state of the asset's import settings to be used.</param>
+        public delegate void OnAssetImportDelegate(ImportModificationsInfo importState);
+
+        /// <summary>
         /// Occurs when an asset is about to be imported (before dialog prompt opens) and allows you to modify the settings object.
         /// </summary>
-        public event Action<ImportModificationsInfo> OnAssetImport;
+        public event OnAssetImportDelegate OnAssetImport;
+
+        /// <summary>
+        /// On Asset Import Complete delegate.
+        /// </summary>
+        /// <param name="entry">The imported file entry.</param>
+        public delegate void OnAssetImportCompleteDelegate(IFileEntryAction entry);
+
+        /// <summary>
+        /// Occurs when asset imports successfully.
+        /// </summary>
+        public event OnAssetImportCompleteDelegate OnAssetImportComplete;
 
         /// <summary>
         /// Holds the current state of the asset importing settings as they are changed.
@@ -352,6 +369,10 @@ namespace FlaxEditor.Modules
 
                         _importBatchDone++;
                         ImportFileEnd?.Invoke(entry, failed);
+                        if (!failed)
+                        {
+                            OnAssetImportComplete?.Invoke(entry);
+                        }
                     }
                 }
                 else
