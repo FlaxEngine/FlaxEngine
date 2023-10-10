@@ -49,7 +49,14 @@ namespace FlaxEditor.Actions
             _scriptTypeName = script.TypeName;
             _prefabId = script.PrefabID;
             _prefabObjectId = script.PrefabObjectID;
-            _scriptData = FlaxEngine.Json.JsonSerializer.Serialize(script);
+            try
+            {
+                _scriptData = FlaxEngine.Json.JsonSerializer.Serialize(script);
+            }
+            catch
+            {
+                _scriptData = null;
+            }
             _parentId = script.Actor.ID;
             _orderInParent = script.OrderInParent;
             _enabled = script.Enabled;
