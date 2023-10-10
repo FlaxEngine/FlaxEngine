@@ -429,6 +429,9 @@ namespace FlaxEngine.Interop
             /// </summary>
             internal static int GetFieldOffset(FieldInfo field, Type type)
             {
+                if (field.IsLiteral)
+                    return 0;
+
                 // Get the address of the field, source: https://stackoverflow.com/a/56512720
                 int fieldOffset = Unsafe.Read<int>((field.FieldHandle.Value + 4 + IntPtr.Size).ToPointer()) & 0xFFFFFF;
                 if (!type.IsValueType)
@@ -1308,7 +1311,7 @@ namespace FlaxEngine.Interop
 
             internal object CreateScriptingObject(IntPtr unmanagedPtr, IntPtr idPtr)
             {
-                object obj = CreateObject();
+                object obj = RuntimeHelpers.GetUninitializedObject(wrappedType);
                 if (obj is Object)
                 {
                     {
@@ -1332,7 +1335,7 @@ namespace FlaxEngine.Interop
                 return obj;
             }
 
-            public static implicit operator Type(TypeHolder holder) => holder?.type ?? null;
+            public static implicit operator Type(TypeHolder holder) => holder?.type;
             public bool Equals(TypeHolder other) => type == other.type;
             public bool Equals(Type other) => type == other;
             public override int GetHashCode() => type.GetHashCode();
