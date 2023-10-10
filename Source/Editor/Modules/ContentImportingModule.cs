@@ -454,12 +454,7 @@ namespace FlaxEditor.Modules
                         if (entry != null)
                         {
                             // Editor automation hook.
-                            object settingsToUse = request.Settings;
-                            if (settingsToUse == null)
-                            {
-                                settingsToUse = entry.Settings;
-                            }
-                            ImportModificationsInfo importState = new ImportModificationsInfo(needSettingsDialog, settingsToUse, entry,
+                            ImportModificationsInfo importState = new ImportModificationsInfo(needSettingsDialog, request.Settings, entry,
                                 request.InputPath, request.OutputPath);
                             try
                             {
@@ -481,7 +476,10 @@ namespace FlaxEditor.Modules
                                     Editor.LogWarning($"Failed to apply settings created by automation workflow for asset: {request.InputPath}.");
                                 }
                             }
-                            needSettingsDialog |= !request.SkipSettingsDialog && !importState.SkipDialog && entry.HasSettings;
+                            else
+                            {
+                                needSettingsDialog |= !request.SkipSettingsDialog && !importState.SkipDialog && entry.HasSettings;
+                            }
 
                             entries.Add(entry);
                         }
