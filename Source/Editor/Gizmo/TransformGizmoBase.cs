@@ -243,13 +243,12 @@ namespace FlaxEditor.Gizmo
                 case Axis.X:
                     {
                         Plane plane = (planeDotXY > planeDotZX) ? planeXY : planeZX;
-                        float intersection;
-                        bool flag = ray.Intersects(ref plane, out intersection);
-                        if (flag)
+
+                        if (ray.Intersects(ref plane, out float intersection))
                         {
                             _intersectPosition = ray.Position + ray.Direction * intersection;
-                            bool flag2 = _lastIntersectionPosition != Vector3.Zero;
-                            if (flag2)
+
+                            if (_lastIntersectionPosition != Vector3.Zero)
                             {
                                 _tDelta = _intersectPosition - _lastIntersectionPosition;
                             }
@@ -260,13 +259,11 @@ namespace FlaxEditor.Gizmo
                 case Axis.Y:
                     {
                         Plane plane2 = (planeDotXY > planeDotYZ) ? planeXY : planeYZ;
-                        float intersection;
-                        bool flag3 = ray.Intersects(ref plane2, out intersection);
-                        if (flag3)
+
+                        if (ray.Intersects(ref plane2, out float intersection))
                         {
                             _intersectPosition = ray.Position + ray.Direction * intersection;
-                            bool flag4 = _lastIntersectionPosition != Vector3.Zero;
-                            if (flag4)
+                            if (_lastIntersectionPosition != Vector3.Zero)
                             {
                                 _tDelta = _intersectPosition - _lastIntersectionPosition;
                             }
@@ -276,13 +273,11 @@ namespace FlaxEditor.Gizmo
                     }
                 case Axis.XY:
                     {
-                        float intersection;
-                        bool flag5 = ray.Intersects(ref planeXY, out intersection);
-                        if (flag5)
+
+                        if (ray.Intersects(ref planeXY, out float intersection))
                         {
                             _intersectPosition = ray.Position + ray.Direction * intersection;
-                            bool flag6 = _lastIntersectionPosition != Vector3.Zero;
-                            if (flag6)
+                            if (_lastIntersectionPosition != Vector3.Zero)
                             {
                                 _tDelta = _intersectPosition - _lastIntersectionPosition;
                             }
@@ -293,13 +288,11 @@ namespace FlaxEditor.Gizmo
                 case Axis.Z:
                     {
                         Plane plane3 = (planeDotZX > planeDotYZ) ? planeZX : planeYZ;
-                        float intersection;
-                        bool flag7 = ray.Intersects(ref plane3, out intersection);
-                        if (flag7)
+
+                        if (ray.Intersects(ref plane3, out float intersection))
                         {
                             _intersectPosition = ray.Position + ray.Direction * intersection;
-                            bool flag8 = _lastIntersectionPosition != Vector3.Zero;
-                            if (flag8)
+                            if (_lastIntersectionPosition != Vector3.Zero)
                             {
                                 _tDelta = _intersectPosition - _lastIntersectionPosition;
                             }
@@ -309,13 +302,10 @@ namespace FlaxEditor.Gizmo
                     }
                 case Axis.ZX:
                     {
-                        float intersection;
-                        bool flag9 = ray.Intersects(ref planeZX, out intersection);
-                        if (flag9)
+                        if (ray.Intersects(ref planeZX, out float intersection))
                         {
                             _intersectPosition = ray.Position + ray.Direction * intersection;
-                            bool flag10 = _lastIntersectionPosition != Vector3.Zero;
-                            if (flag10)
+                            if (_lastIntersectionPosition != Vector3.Zero)
                             {
                                 _tDelta = _intersectPosition - _lastIntersectionPosition;
                             }
@@ -325,13 +315,10 @@ namespace FlaxEditor.Gizmo
                     }
                 case Axis.YZ:
                     {
-                        float intersection;
-                        bool flag11 = ray.Intersects(ref planeYZ, out intersection);
-                        if (flag11)
+                        if (ray.Intersects(ref planeYZ, out float intersection))
                         {
                             _intersectPosition = ray.Position + ray.Direction * intersection;
-                            bool flag12 = _lastIntersectionPosition != Vector3.Zero;
-                            if (flag12)
+                            if (_lastIntersectionPosition != Vector3.Zero)
                             {
                                 _tDelta = _intersectPosition - _lastIntersectionPosition;
                             }
@@ -342,15 +329,13 @@ namespace FlaxEditor.Gizmo
                 default:
                     if (axis == Axis.View)
                     {
-                        Vector3 gizmoToView = Position - base.Owner.ViewPosition;
+                        Vector3 gizmoToView = Position - Owner.ViewPosition;
                         Plane plane4 = new Plane(-Vector3.Normalize(gizmoToView), gizmoToView.Length);
                         float intersection;
-                        bool flag13 = ray.Intersects(ref plane4, out intersection);
-                        if (flag13)
+                        if (ray.Intersects(ref plane4, out intersection))
                         {
                             _intersectPosition = ray.Position + ray.Direction * intersection;
-                            bool flag14 = _lastIntersectionPosition != Vector3.Zero;
-                            if (flag14)
+                            if (_lastIntersectionPosition != Vector3.Zero)
                             {
                                 _tDelta = _intersectPosition - _lastIntersectionPosition;
                             }
@@ -359,29 +344,25 @@ namespace FlaxEditor.Gizmo
                     }
                     break;
             }
-            bool flag15 = isScaling;
-            if (flag15)
+            if (isScaling)
             {
                 delta *= 0.01f;
             }
-            bool isAltKeyDown = base.Owner.IsAltKeyDown;
-            if (isAltKeyDown)
+            if (Owner.IsAltKeyDown)
             {
                 delta *= 0.5f;
             }
-            bool flag16 = (isScaling ? ScaleSnapEnabled : TranslationSnapEnable) || base.Owner.UseSnapping;
-            if (flag16)
+            if ((isScaling ? ScaleSnapEnabled : TranslationSnapEnable) || base.Owner.UseSnapping)
             {
                 Vector3 snapValue = new Vector3(isScaling ? ScaleSnapValue : TranslationSnapValue);
                 _translationScaleSnapDelta += delta;
-                bool flag17 = !isScaling && snapValue.X < 0f;
-                if (flag17)
+                if (!isScaling && snapValue.X < 0f)
                 {
                     BoundingBox b;
                     bool flag18;
                     GetSelectedObjectsBounds(out b, out flag18);
-                    bool flag19 = b.Minimum.X < 0f;
-                    if (flag19)
+
+                    if (b.Minimum.X < 0f)
                     {
                         snapValue.X = Math.Abs(b.Minimum.X) + b.Maximum.X;
                     }
@@ -389,8 +370,8 @@ namespace FlaxEditor.Gizmo
                     {
                         snapValue.X = b.Minimum.X - b.Maximum.X;
                     }
-                    bool flag20 = b.Minimum.Y < 0f;
-                    if (flag20)
+
+                    if (b.Minimum.Y < 0f)
                     {
                         snapValue.Y = Math.Abs(b.Minimum.Y) + b.Maximum.Y;
                     }
@@ -398,8 +379,7 @@ namespace FlaxEditor.Gizmo
                     {
                         snapValue.Y = b.Minimum.Y - b.Maximum.Y;
                     }
-                    bool flag21 = b.Minimum.Z < 0f;
-                    if (flag21)
+                    if (b.Minimum.Z < 0f)
                     {
                         snapValue.Z = Math.Abs(b.Minimum.Z) + b.Maximum.Z;
                     }
@@ -411,16 +391,14 @@ namespace FlaxEditor.Gizmo
                 delta = new Vector3((float)((int)(_translationScaleSnapDelta.X / snapValue.X)) * snapValue.X, (float)((int)(_translationScaleSnapDelta.Y / snapValue.Y)) * snapValue.Y, (float)((int)(_translationScaleSnapDelta.Z / snapValue.Z)) * snapValue.Z);
                 _translationScaleSnapDelta -= delta;
             }
-            bool flag22 = _activeMode == Mode.Translate;
-            if (flag22)
+            if (_activeMode == Mode.Translate)
             {
                 delta = Vector3.Transform(delta, rotationMatrix);
                 _translationDelta = delta;
             }
             else
             {
-                bool flag23 = _activeMode == Mode.Scale;
-                if (flag23)
+                if (_activeMode == Mode.Scale)
                 {
                     _scaleDelta = delta;
                 }
@@ -434,7 +412,7 @@ namespace FlaxEditor.Gizmo
 
         private void UpdateRotate(float dt)
         {
-            float mouseDelta = (_activeAxis == Axis.Y) ? (-base.Owner.MouseDelta.X) : base.Owner.MouseDelta.X;
+            float mouseDelta = (_activeAxis == Axis.Y) ? (-Owner.MouseDelta.X) : Owner.MouseDelta.X;
             float delta = mouseDelta * dt;
             bool rotationSnaping = RotationSnaping;
             if (rotationSnaping)
@@ -469,8 +447,7 @@ namespace FlaxEditor.Gizmo
                     {
                         _lastIntersectionPosition = _intersectPosition;
                         _intersectPosition = Vector3.Zero;
-                        bool flag3 = isLeftBtnDown && _activeAxis > Axis.None;
-                        if (flag3)
+                        if (isLeftBtnDown && _activeAxis > Axis.None)
                         {
                             switch (_activeMode)
                             {
@@ -485,43 +462,39 @@ namespace FlaxEditor.Gizmo
                         }
                         else
                         {
-                            bool flag4 = !isLeftBtnDown && !base.Owner.IsRightMouseButtonDown;
-                            if (flag4)
+                            if (!isLeftBtnDown && !Owner.IsRightMouseButtonDown)
                             {
                                 SelectAxis();
                             }
                         }
                         UpdateGizmoPosition();
-                        bool flag5 = isLeftBtnDown;
-                        if (flag5)
+
+                        if (isLeftBtnDown)
                         {
                             bool anyValid = false;
                             Vector3 translationDelta = Vector3.Zero;
-                            bool flag6 = _translationDelta.LengthSquared > 1E-06f;
-                            if (flag6)
+
+                            if (_translationDelta.LengthSquared > 1E-06f)
                             {
                                 anyValid = true;
                                 translationDelta = _translationDelta;
                                 _translationDelta = Vector3.Zero;
                                 Vector3 prevMoveDelta = _accMoveDelta;
                                 _accMoveDelta += _translationDelta;
-                                bool flag7 = _accMoveDelta.Length > base.Owner.ViewFarPlane * 0.7f;
-                                if (flag7)
+                                if (_accMoveDelta.Length > base.Owner.ViewFarPlane * 0.7f)
                                 {
                                     _accMoveDelta = prevMoveDelta;
                                 }
                             }
                             Quaternion rotationDelta = Quaternion.Identity;
-                            bool flag8 = !_rotationDelta.IsIdentity;
-                            if (flag8)
+                            if (!_rotationDelta.IsIdentity)
                             {
                                 anyValid = true;
                                 rotationDelta = _rotationDelta;
                                 _rotationDelta = Quaternion.Identity;
                             }
                             Vector3 scaleDelta = Vector3.Zero;
-                            bool flag9 = _scaleDelta.LengthSquared > 1E-06f;
-                            if (flag9)
+                            if (_scaleDelta.LengthSquared > 1E-06f)
                             {
                                 anyValid = true;
                                 scaleDelta = _scaleDelta;
@@ -532,8 +505,7 @@ namespace FlaxEditor.Gizmo
                                     scaleDelta = new Vector3(scaleDelta.AvgValue);
                                 }
                             }
-                            bool flag11 = anyValid || (_isTransforming && base.Owner.UseDuplicate);
-                            if (flag11)
+                            if (anyValid || (_isTransforming && base.Owner.UseDuplicate))
                             {
                                 StartTransforming();
                                 LastDelta = new Transform(translationDelta, rotationDelta, scaleDelta);
@@ -547,16 +519,14 @@ namespace FlaxEditor.Gizmo
                         }
                     }
                 }
-                bool flag12 = SelectionCount == 0;
-                if (flag12)
+                if (SelectionCount == 0)
                 {
                     _isActive = false;
                     _activeAxis = Axis.None;
                 }
                 else
                 {
-                    bool flag13 = !_isActive;
-                    if (flag13)
+                    if (!_isActive)
                     {
                         UpdateGizmoPosition();
                     }
