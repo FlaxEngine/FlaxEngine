@@ -463,7 +463,7 @@ namespace FlaxEditor.Modules
                                 request.InputPath, request.OutputPath);
                             try
                             {
-                                OnAssetImport(importState);
+                                OnAssetImport?.Invoke(importState);
                             }
                             catch (Exception ex)
                             {
