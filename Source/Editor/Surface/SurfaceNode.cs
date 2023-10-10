@@ -248,12 +248,12 @@ namespace FlaxEditor.Surface
                 }
                 else
                 {
-                    if (control.AnchorPreset == AnchorPresets.TopLeft)
+                    if (child.AnchorPreset == AnchorPresets.TopLeft)
                     {
                         width = Mathf.Max(width, boxSize.X);
                         height = Mathf.Max(height, boxSize.Y);
                     }
-                    else if (!_headerRect.Intersects(control.Bounds))
+                    else if (!_headerRect.Intersects(child.Bounds))
                     {
                         width = Mathf.Max(width, boxSize.X);
                         height = Mathf.Max(height, boxSize.Y);
