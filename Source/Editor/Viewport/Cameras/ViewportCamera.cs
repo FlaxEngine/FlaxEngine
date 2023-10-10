@@ -282,7 +282,7 @@ namespace FlaxEditor.Viewport.Cameras
         public virtual void Update(float deltaTime)
         {
             EditorViewport.ViewportInput input = _viewport.Input;
-            bool cameramoved;
+            bool cameramoved = false;
             if (input.IsZooming)
             {
                 OrbitRadius = Mathf.Max(OrbitRadius - input.MouseWheelDelta * (OrbitRadius * 0.25f), 0.001f);
