@@ -103,7 +103,7 @@ namespace FlaxEditor.Windows.Assets
             public SpriteEntry[] Sprites;
 
             [EditorOrder(1000), EditorDisplay("Import Settings", EditorDisplayAttribute.InlineStyle)]
-            public FlaxEngine.Tools.TextureTool.Options ImportSettings = new();
+            public TextureImportSettings ImportSettings = new();
 
             public sealed class ProxyEditor : GenericEditor
             {
@@ -183,7 +183,7 @@ namespace FlaxEditor.Windows.Assets
                 UpdateSprites();
 
                 // Try to restore target asset texture import options (useful for fast reimport)
-                Editor.TryRestoreImportOptions(ref ImportSettings, win.Item.Path);
+                Editor.TryRestoreImportOptions(ref ImportSettings.Settings, win.Item.Path);
 
                 // Prepare restore data
                 PeekState();
@@ -201,7 +201,7 @@ namespace FlaxEditor.Windows.Assets
             /// </summary>
             public void Reimport()
             {
-                ImportSettings.Sprites = null; // Don't override sprites (use sprites from asset)
+                ImportSettings.Settings.Sprites = null; // Don't override sprites (use sprites from asset)
                 Editor.Instance.ContentImporting.Reimport((BinaryAssetItem)_window.Item, ImportSettings, true);
             }
 

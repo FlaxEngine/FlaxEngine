@@ -27,7 +27,7 @@ namespace FlaxEditor.Windows.Assets
             private CubeTextureWindow _window;
 
             [EditorOrder(1000), EditorDisplay("Import Settings", EditorDisplayAttribute.InlineStyle)]
-            public FlaxEngine.Tools.TextureTool.Options ImportSettings = new();
+            public TextureImportSettings ImportSettings = new();
 
             public sealed class ProxyEditor : GenericEditor
             {
@@ -69,7 +69,7 @@ namespace FlaxEditor.Windows.Assets
                 _window = window;
 
                 // Try to restore target asset texture import options (useful for fast reimport)
-                Editor.TryRestoreImportOptions(ref ImportSettings, window.Item.Path);
+                Editor.TryRestoreImportOptions(ref ImportSettings.Settings, window.Item.Path);
 
                 // Prepare restore data
                 PeekState();
