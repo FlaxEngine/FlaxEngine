@@ -1210,16 +1210,16 @@ void GPUContextVulkan::ResolveMultisample(GPUTexture* sourceMultisampleTexture, 
 
 void GPUContextVulkan::DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex)
 {
-    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     OnDrawCall();
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     vkCmdDraw(cmdBuffer->GetHandle(), verticesCount, instanceCount, startVertex, startInstance);
     RENDER_STAT_DRAW_CALL(verticesCount * instanceCount, verticesCount * instanceCount / 3);
 }
 
 void GPUContextVulkan::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex)
 {
-    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     OnDrawCall();
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     vkCmdDrawIndexed(cmdBuffer->GetHandle(), indicesCount, instanceCount, startIndex, startVertex, startInstance);
     RENDER_STAT_DRAW_CALL(0, indicesCount / 3 * instanceCount);
 }
@@ -1227,10 +1227,9 @@ void GPUContextVulkan::DrawIndexedInstanced(uint32 indicesCount, uint32 instance
 void GPUContextVulkan::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
     ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
-
+    OnDrawCall();
     auto bufferForArgsVK = (GPUBufferVulkan*)bufferForArgs;
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-    OnDrawCall();
     vkCmdDrawIndirect(cmdBuffer->GetHandle(), bufferForArgsVK->GetHandle(), (VkDeviceSize)offsetForArgs, 1, sizeof(VkDrawIndirectCommand));
     RENDER_STAT_DRAW_CALL(0, 0);
 }
@@ -1238,10 +1237,9 @@ void GPUContextVulkan::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 of
 void GPUContextVulkan::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
     ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
-
+    OnDrawCall();
     auto bufferForArgsVK = (GPUBufferVulkan*)bufferForArgs;
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-    OnDrawCall();
     vkCmdDrawIndexedIndirect(cmdBuffer->GetHandle(), bufferForArgsVK->GetHandle(), (VkDeviceSize)offsetForArgs, 1, sizeof(VkDrawIndexedIndirectCommand));
     RENDER_STAT_DRAW_CALL(0, 0);
 }
