@@ -33,33 +33,23 @@ namespace FlaxEditor.Gizmo
                 if (_isTransforming)
                 {
                     Vector3 dir = Vector3.Zero;
-                    switch (_activeAxis)
+                    //draw axis lines when trasforming
+                    if (_activeAxis.HasFlag(Axis.X))
                     {
-                        case Axis.X:
-                            dir = WorldTransform.Right;
-                            DebugDraw.DrawLine(Vector3.Right * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Vector3.Left * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Resources.XAxisColor, 0f, true);
-                            break;
-                        case Axis.Y:
-                            dir = WorldTransform.Up;
-                            DebugDraw.DrawLine(Vector3.Up * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Vector3.Down * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Resources.YAxisColor, 0f, true);
-                            break;
-                        case Axis.XY:
-                            DebugDraw.DrawLine(Vector3.Right * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Vector3.Left * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Resources.XAxisColor, 0f, true);
-                            DebugDraw.DrawLine(Vector3.Up * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Vector3.Down * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Resources.YAxisColor, 0f, true);
-                            break;
-                        case Axis.Z:
-                            dir = WorldTransform.Forward;
-                            DebugDraw.DrawLine(Vector3.Forward * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Vector3.Backward * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Resources.ZAxisColor, 0f, true);
-                            break;
-                        case Axis.ZX:
-                            DebugDraw.DrawLine(Vector3.Right * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Vector3.Left * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Resources.XAxisColor, 0f, true);
-                            DebugDraw.DrawLine(Vector3.Forward * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Vector3.Backward * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Resources.ZAxisColor, 0f, true);
-                            break;
-                        case Axis.YZ:
-                            DebugDraw.DrawLine(Vector3.Forward * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Vector3.Backward * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Resources.YAxisColor, 0f, true);
-                            DebugDraw.DrawLine(Vector3.Up * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Vector3.Down * WorldTransform.Orientation * 100000f + WorldTransform.Translation, Resources.ZAxisColor, 0f, true);
-                            break;
+                        dir = WorldTransform.Right;
+                        DebugDraw.DrawLine(WorldTransform.Right * 100000f + WorldTransform.Translation, WorldTransform.Left * 100000f + WorldTransform.Translation, Resources.XAxisColor, 0f, true);
                     }
+                    if (_activeAxis.HasFlag(Axis.Y))
+                    {
+                        dir = WorldTransform.Up;
+                        DebugDraw.DrawLine(WorldTransform.Up * 100000f + WorldTransform.Translation, WorldTransform.Down * 100000f + WorldTransform.Translation, Resources.YAxisColor, 0f, true);
+                    }
+                    if (_activeAxis.HasFlag(Axis.Z))
+                    {
+                        dir = WorldTransform.Forward;
+                        DebugDraw.DrawLine(WorldTransform.Forward * 100000f + WorldTransform.Translation, WorldTransform.Backward * 100000f + WorldTransform.Translation, Resources.ZAxisColor, 0f, true);
+                    }
+
                     if (_activeMode == Mode.Rotate)
                     {
                         if (!dir.IsZero)
@@ -70,6 +60,34 @@ namespace FlaxEditor.Gizmo
                         Matrix mCenter = Center.GetWorld();
                         Resources._modelPlane.Draw(ref renderContext, resources._materialCenter, ref mCenter, StaticFlags.None, false, 0);
                     }
+                    else
+                    {
+                        //simple bilboard
+                        var q = Owner.Viewport.Camera.Orientation * Quaternion.Euler(0, 180, 0);
+
+                        var distance = StartWorldTransform.Translation - WorldTransform.Translation;
+                        var scale = WorldTransform.Scale * 0.1f;
+
+                        if (_activeAxis.HasFlag(Axis.X))
+                        {
+                            var TextX = new Transform(distance * WorldTransform.Right + WorldTransform.Translation, q, scale);
+                            DebugDraw.DrawText(distance.X.ToString(), TextX, Resources.XAxisColor);
+                        }
+                        if (_activeAxis.HasFlag(Axis.Y))
+                        {
+                            var TextY = new Transform(distance * WorldTransform.Up + WorldTransform.Translation, q, scale);
+                            DebugDraw.DrawText(distance.Y.ToString(), TextY, Resources.YAxisColor);
+                            DebugDraw.DrawLine(WorldTransform.Up * 100000f + WorldTransform.Translation, WorldTransform.Down * 100000f + WorldTransform.Translation, Resources.YAxisColor, 0f, true);
+                        }
+                        if (_activeAxis.HasFlag(Axis.Z))
+                        {
+                            var TextZ = new Transform(distance * WorldTransform.Forward + WorldTransform.Translation, q, scale);
+                            DebugDraw.DrawText(distance.Z.ToString(), TextZ, Resources.ZAxisColor);
+                            DebugDraw.DrawLine(WorldTransform.Forward * 100000f + WorldTransform.Translation, WorldTransform.Backward * 100000f + WorldTransform.Translation, Resources.ZAxisColor, 0f, true);
+                        }
+                    }
+
+                    DebugDraw.DrawLine(StartWorldTransform.Translation, WorldTransform.Translation, Resources.CenterColor, 0f, true);
                 }
                 else
                 {

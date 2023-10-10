@@ -282,10 +282,11 @@ namespace FlaxEditor.Viewport.Cameras
         public virtual void Update(float deltaTime)
         {
             EditorViewport.ViewportInput input = _viewport.Input;
-            
+            bool cameramoved;
             if (input.IsZooming)
             {
                 OrbitRadius = Mathf.Max(OrbitRadius - input.MouseWheelDelta * (OrbitRadius * 0.25f), 0.001f);
+                cameramoved = true;
             }
             if (IsMovable)
             {
@@ -303,6 +304,7 @@ namespace FlaxEditor.Viewport.Cameras
                         axis *= new Float3(1f, 1f, 0f);
                     }
                     OrbitCenter += axis * Orientation * deltaTime;
+                    cameramoved = true;
                 }
                 if (input.IsRotating)
                 {
@@ -322,11 +324,13 @@ namespace FlaxEditor.Viewport.Cameras
                             input.Roll * Mathf.PiOverTwo * MouseSensitivity * deltaTime
                         );
                     }
+                    cameramoved = true;
                     _orbitCenter = Translation + Forward * _orbitRadius;
                 }
                 if (input.IsPanning)
                 {
                     OrbitCenter += new Vector3(input.MouseDelta.X * MouseSensitivity, (InvertPanning ? input.MouseDelta.Y : -input.MouseDelta.Y) * MouseSensitivity, 0) * Orientation;
+                    cameramoved = true;
                 }
             }
 
@@ -346,13 +350,12 @@ namespace FlaxEditor.Viewport.Cameras
                         input.Roll * Mathf.PiOverTwo * MouseSensitivity * deltaTime
                     );
                 }
+                cameramoved = true;
                 Vector3 position = _orbitCenter + Forward * -_orbitRadius;
                 SetView(position);
             }
-            bool StopAnimated = false;
             if (_recalculateViewMatrix)
             {
-                StopAnimated = true;
                 CalculateViewMatrix();
             }
             if (_recalculateprojectionMatrix)
@@ -361,9 +364,13 @@ namespace FlaxEditor.Viewport.Cameras
             }
             if (AnimatedActions.Count != 0)
             {
-                if (ProccesAction(AnimatedActions[0],deltaTime) || StopAnimated)
+                if (ProccesAction(AnimatedActions[0],deltaTime))
                 {
                     AnimatedActions.RemoveAt(0);
+                }
+                if (cameramoved)
+                {
+                    AnimatedActions.Clear();
                 }
             }
         }

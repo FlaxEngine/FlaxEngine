@@ -169,6 +169,9 @@ namespace FlaxEditor.Viewport
         protected virtual void OnEditorViewportUpdate(float deltaTime)
         {
             Profiler.BeginEvent("EditorViewportUpdate");
+            Profiler.BeginEvent("Input.Update.ProccesInput");
+            _input.ProccesInput(this);
+            Profiler.EndEvent();
             Profiler.BeginEvent("Gizmos.Update");
             GizmosCollection gizmos = Gizmos;
             if (gizmos != null)
@@ -184,11 +187,7 @@ namespace FlaxEditor.Viewport
                 _camera.Update(deltaTime);
                 Profiler.EndEvent();
             }
-            Profiler.BeginEvent("Input.Update");
-            _input.ConsumeInput();
-
-            _input.ProccesInput(this);
-
+            Profiler.BeginEvent("Input.Update.MouseCapture");
             if (IsGizmoControllingMouse)
             {
                 CaptureMouse();
@@ -201,6 +200,9 @@ namespace FlaxEditor.Viewport
             {
                 ReliseMouse();
             }
+            Profiler.EndEvent();
+            Profiler.BeginEvent("Input.Update.ConsumeInput");
+            _input.ConsumeInput();
             Profiler.EndEvent();
             Profiler.EndEvent();
         }
