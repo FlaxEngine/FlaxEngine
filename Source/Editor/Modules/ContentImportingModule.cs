@@ -454,9 +454,22 @@ namespace FlaxEditor.Modules
                         if (entry != null)
                         {
                             // Editor automation hook.
-                            ImportModificationsInfo importState = new ImportModificationsInfo(needSettingsDialog, entry.Settings, entry,
+                            object settingsToUse = request.Settings;
+                            if (settingsToUse == null)
+                            {
+                                settingsToUse = entry.Settings;
+                            }
+                            ImportModificationsInfo importState = new ImportModificationsInfo(needSettingsDialog, settingsToUse, entry,
                                 request.InputPath, request.OutputPath);
-                            OnAssetImport(importState);
+                            try
+                            {
+                                OnAssetImport(importState);
+                            }
+                            catch (Exception ex)
+                            {
+                                Editor.LogWarning("Automation workflow failed to run:");
+                                Editor.LogWarning(ex);
+                            }
 
                             request.Settings = importState.Settings != null ? importState.Settings : request.Settings;
                             if (request.Settings != null)
