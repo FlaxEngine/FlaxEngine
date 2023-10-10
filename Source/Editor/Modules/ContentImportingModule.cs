@@ -7,6 +7,7 @@ using FlaxEditor.Content;
 using FlaxEditor.Content.Create;
 using FlaxEditor.Content.Import;
 using FlaxEngine;
+using Newtonsoft.Json;
 
 namespace FlaxEditor.Modules
 {
@@ -79,7 +80,47 @@ namespace FlaxEditor.Modules
         /// <summary>
         /// Occurs when an asset is about to be imported (before dialog prompt opens) and allows you to modify the settings object.
         /// </summary>
-        public event Func<string, string, object, ImportFileEntry, Tuple<object, bool>> OnAssetImport;
+        public event Action<ImportModificationsInfo> OnAssetImport;
+
+        /// <summary>
+        /// Holds the current state of the asset importing settings as they are changed.
+        /// </summary>
+        public class ImportModificationsInfo
+        {
+            public ImportModificationsInfo(bool skipDialog, object settings, ImportFileEntry fileEntry, string inputPath, string outputPath)
+            {
+                SkipDialog = skipDialog;
+                Settings = settings;
+                FileEntry = fileEntry;
+                InputPath = inputPath;
+                OutputPath = outputPath;
+            }
+
+            /// <summary>
+            /// Specifies if the dialog should be skipped
+            /// </summary>
+            public bool SkipDialog;
+
+            /// <summary>
+            /// The current state of the the settings object for this import.
+            /// </summary>
+            public object Settings;
+
+            /// <summary>
+            /// The file entry for this import.
+            /// </summary>
+            public ImportFileEntry FileEntry;
+
+            /// <summary>
+            /// The import source path for the asset.
+            /// </summary>
+            public string InputPath { get; private set; }
+
+            /// <summary>
+            /// The import output path for the asset.
+            /// </summary>
+            public string OutputPath { get; private set; }
+        }
 
         /// <inheritdoc />
         internal ContentImportingModule(Editor editor)
@@ -413,51 +454,21 @@ namespace FlaxEditor.Modules
                         if (entry != null)
                         {
                             // Editor automation hook.
-                            object newSettings = null;
-                            bool automationSkipsDialog = false;
-                            foreach (Delegate assetImportDelegate in OnAssetImport.GetInvocationList())
-                            {
-                                Tuple<object, bool> importModificationInfo;
-                                object uncastedModificationInfo = assetImportDelegate.DynamicInvoke(request.InputPath, request.OutputPath, request.Settings, entry);
-                                if (uncastedModificationInfo == null)
-                                {
-                                    continue;
-                                }
+                            ImportModificationsInfo importState = new ImportModificationsInfo(needSettingsDialog, entry.Settings, entry,
+                                request.InputPath, request.OutputPath);
+                            OnAssetImport(importState);
 
-                                importModificationInfo = (Tuple<object, bool>)uncastedModificationInfo;
-                                if (importModificationInfo.Item1 != null)
-                                {
-                                    if (newSettings != null)
-                                    {
-                                        Debug.LogWarning($"Multiple automation workflows returned new settings for {request.InputPath}.");
-                                    }
-                                    newSettings = importModificationInfo.Item1;
-                                }
-
-                                automationSkipsDialog |= importModificationInfo.Item2;
-                            }
-                            bool automationRan = newSettings != null;
-                            if (automationRan)
-                            {
-                                if (automationSkipsDialog)
-                                {
-                                    request.SkipSettingsDialog = true;
-                                }
-                                request.Settings = newSettings;
-                            }
-
-                            if (request.Settings != null && entry.TryOverrideSettings(request.Settings))
+                            request.Settings = importState.Settings != null ? importState.Settings : request.Settings;
+                            if (request.Settings != null)
                             {
                                 // Use overridden settings
-                                if (!request.SkipSettingsDialog && !automationSkipsDialog && automationRan)
+                                bool success = entry.TryOverrideSettings(request.Settings);
+                                if (!success && importState.Settings != null)
                                 {
-                                    needSettingsDialog = true;
+                                    Editor.LogWarning($"Failed to apply settings created by automation workflow for asset: {request.InputPath}.");
                                 }
                             }
-                            else if (!request.SkipSettingsDialog)
-                            {
-                                needSettingsDialog |= entry.HasSettings;
-                            }
+                            needSettingsDialog |= !request.SkipSettingsDialog && !importState.SkipDialog && entry.HasSettings;
 
                             entries.Add(entry);
                         }
