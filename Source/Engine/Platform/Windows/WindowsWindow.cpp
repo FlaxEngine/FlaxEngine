@@ -108,8 +108,7 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
             style |= WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU | WS_THICKFRAME | WS_GROUP;
 #elif WINDOWS_USE_NEWER_BORDER_LESS
         if (settings.IsRegularWindow)
-            style |= WS_THICKFRAME | WS_SYSMENU;
-        style |= WS_CAPTION;
+            style |= WS_THICKFRAME | WS_SYSMENU | WS_CAPTION;
 #endif
         exStyle |= WS_EX_WINDOWEDGE;
     }
