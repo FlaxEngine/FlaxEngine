@@ -241,7 +241,7 @@ ScriptingObject* ScriptingObject::ToNative(MObject* obj)
 #if USE_CSHARP
     if (obj)
     {
-#if USE_MONO
+#if USE_MONO || USE_MONO_AOT
         const auto ptrField = MCore::Object::GetClass(obj)->GetField(ScriptingObject_unmanagedPtr);
         CHECK_RETURN(ptrField, nullptr);
         ptrField->GetValue(obj, &ptr);

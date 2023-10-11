@@ -186,7 +186,7 @@ void* GetStaticMethodPointer(const String& methodName);
 /// Calls the managed static method in NativeInterop class with given parameters.
 /// </summary>
 template<typename RetType, typename... Args>
-inline RetType CallStaticMethodByName(const String& methodName, Args... args)
+FORCE_INLINE RetType CallStaticMethodByName(const String& methodName, Args... args)
 {
     typedef RetType (CORECLR_DELEGATE_CALLTYPE* fun)(Args...);
     return ((fun)GetStaticMethodPointer(methodName))(args...);
@@ -196,7 +196,7 @@ inline RetType CallStaticMethodByName(const String& methodName, Args... args)
 /// Calls the managed static method with given parameters.
 /// </summary>
 template<typename RetType, typename... Args>
-inline RetType CallStaticMethod(void* methodPtr, Args... args)
+FORCE_INLINE RetType CallStaticMethod(void* methodPtr, Args... args)
 {
     typedef RetType (CORECLR_DELEGATE_CALLTYPE* fun)(Args...);
     return ((fun)methodPtr)(args...);
@@ -629,14 +629,33 @@ bool MCore::Type::IsReference(MType* type)
 
 void MCore::ScriptingObject::SetInternalValues(MClass* klass, MObject* object, void* unmanagedPtr, const Guid* id)
 {
+#if PLATFORM_DESKTOP && !USE_MONO_AOT
     static void* ScriptingObjectSetInternalValuesPtr = GetStaticMethodPointer(TEXT("ScriptingObjectSetInternalValues"));
     CallStaticMethod<void, MObject*, void*, const Guid*>(ScriptingObjectSetInternalValuesPtr, object, unmanagedPtr, id);
+#else
+    const MField* monoUnmanagedPtrField = klass->GetField("__unmanagedPtr");
+    if (monoUnmanagedPtrField)
+        monoUnmanagedPtrField->SetValue(object, &unmanagedPtr);
+    const MField* monoIdField = klass->GetField("__internalId");
+    if (id != nullptr && monoIdField)
+        monoIdField->SetValue(object, (void*)id);
+#endif
 }
 
 MObject* MCore::ScriptingObject::CreateScriptingObject(MClass* klass, void* unmanagedPtr, const Guid* id)
 {
+#if PLATFORM_DESKTOP && !USE_MONO_AOT
     static void* ScriptingObjectSetInternalValuesPtr = GetStaticMethodPointer(TEXT("ScriptingObjectCreate"));
     return CallStaticMethod<MObject*, void*, void*, const Guid*>(ScriptingObjectSetInternalValuesPtr, klass->_handle, unmanagedPtr, id);
+#else
+    MObject* object = MCore::Object::New(klass);
+    if (object)
+    {
+        MCore::ScriptingObject::SetInternalValues(klass, object, unmanagedPtr, id);
+        MCore::Object::Init(object);
+    }
+    return object;
+#endif
 }
 
 const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
@@ -1253,8 +1272,8 @@ void MField::GetValue(MObject* instance, void* result) const
 
 void MField::GetValueReference(MObject* instance, void* result) const
 {
-    static void* FieldGetValueReferencePtr = GetStaticMethodPointer(TEXT("FieldGetValueReferenceWithOffset"));
-    CallStaticMethod<void, void*, int, void*>(FieldGetValueReferencePtr, instance, _fieldOffset, result);
+    static void* FieldGetValueReferencePtr = GetStaticMethodPointer(TEXT("FieldGetValueReference"));
+    CallStaticMethod<void, void*, void*, int, void*>(FieldGetValueReferencePtr, instance, _handle, _fieldOffset, result);
 }
 
 MObject* MField::GetValueBoxed(MObject* instance) const
