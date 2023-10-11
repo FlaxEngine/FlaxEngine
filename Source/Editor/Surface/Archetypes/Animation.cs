@@ -59,8 +59,11 @@ namespace FlaxEditor.Surface.Archetypes
                 if (Surface != null)
                 {
                     _assetSelect = GetChild<AssetSelect>();
-                    _assetBox = GetBox(8);
-                    _assetSelect.Visible = !_assetBox.HasAnyConnection;
+                    if (TryGetBox(8, out var box))
+                    {
+                        _assetBox = box;
+                        _assetSelect.Visible = !_assetBox.HasAnyConnection;
+                    }
                     UpdateTitle();
                 }
             }
@@ -68,7 +71,11 @@ namespace FlaxEditor.Surface.Archetypes
             private void UpdateTitle()
             {
                 var asset = Editor.Instance.ContentDatabase.Find((Guid)Values[0]);
-                Title = _assetBox.HasAnyConnection || asset == null ? "Animation" : asset.ShortName;
+                if (_assetBox != null)
+                    Title = _assetBox.HasAnyConnection || asset == null ? "Animation" : asset.ShortName;
+                else
+                    Title = asset?.ShortName ?? "Animation";
+                
                 var style = Style.Current;
                 Resize(Mathf.Max(230, style.FontLarge.MeasureText(Title).X + 30), 160);
             }
@@ -78,8 +85,11 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.ConnectionTick(box);
 
-                if (box.ID != _assetBox.ID)
-                    return;
+                if (_assetBox != null)
+                {
+                    if (box.ID != _assetBox.ID)
+                        return;
+                }
 
                 _assetSelect.Visible = !box.HasAnyConnection;
                 UpdateTitle();
