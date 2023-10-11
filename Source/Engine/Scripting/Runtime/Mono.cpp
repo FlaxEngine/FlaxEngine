@@ -2157,7 +2157,7 @@ MObject* MCore::ScriptingObject::CreateScriptingObject(MClass* klass, void* unma
     if (managedInstance)
     {
         // Set unmanaged object handle and id
-        MCore::ScriptingObject::SetInternalValues(klass, managedInstance, unmanagedPtr, _id);
+        MCore::ScriptingObject::SetInternalValues(klass, managedInstance, unmanagedPtr, id);
 
         // Initialize managed instance (calls constructor)
         MCore::Object::Init(managedInstance);
