@@ -161,9 +161,7 @@ namespace FlaxEditor.Tools.Terrain
             // Increase or decrease brush size with scroll
             if (Input.GetKey(KeyboardKeys.Shift))
             {
-                var currentBrush = Mode.CurrentBrush;
-                currentBrush.Size += dt * currentBrush.Size * Input.Mouse.ScrollDelta * 5f;
-                Mode.CurrentBrush = currentBrush;
+                Mode.CurrentBrush.Size += dt * Mode.CurrentBrush.Size * Input.Mouse.ScrollDelta * 5f;
             }
 
             // Check if selected terrain was changed during painting
