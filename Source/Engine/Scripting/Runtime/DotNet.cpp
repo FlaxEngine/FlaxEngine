@@ -41,12 +41,18 @@
 #include <mono/jit/mono-private-unstable.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/appdomain.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/metadata.h>
+#include <mono/metadata/threads.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/mono-private-unstable.h>
 typedef char char_t;
 #define DOTNET_HOST_MONO_DEBUG 0
+#ifdef USE_MONO_AOT_MODULE
+void* MonoAotModuleHandle = nullptr;
+#endif
+MonoDomain* MonoDomainHandle = nullptr;
 #else
 #error "Unknown .NET runtime host."
 #endif
@@ -516,6 +522,12 @@ void MCore::GC::FreeMemory(void* ptr, bool coTaskMem)
 
 void MCore::Thread::Attach()
 {
+#if DOTNET_HOST_MONO
+    if (!IsInMainThread() && !mono_domain_get())
+    {
+        mono_thread_attach(MonoDomainHandle);
+    }
+#endif
 }
 
 void MCore::Thread::Exit()
@@ -1766,11 +1778,6 @@ void* GetStaticMethodPointer(const String& methodName)
 }
 
 #elif DOTNET_HOST_MONO
-
-#ifdef USE_MONO_AOT_MODULE
-void* MonoAotModuleHandle = nullptr;
-#endif
-MonoDomain* MonoDomainHandle = nullptr;
 
 void OnLogCallback(const char* logDomain, const char* logLevel, const char* message, mono_bool fatal, void* userData)
 {
