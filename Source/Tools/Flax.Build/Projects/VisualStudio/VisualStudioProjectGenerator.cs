@@ -518,7 +518,15 @@ namespace Flax.Build.Projects.VisualStudio
                             else if (firstFullMatch != -1)
                             {
                                 projectConfiguration = configuration;
-                                build = solution.MainProject == project || (solution.MainProject == null && project.Name == solution.Name);
+
+                                // Always build the main project
+                                build = solution.MainProject == project;
+
+                                // Build C# projects (needed for Rider solution wide analysis)
+                                build |= project.Type == TargetType.DotNetCore;
+
+                                // 
+                                build |= solution.MainProject == null && project.Name == solution.Name;
                             }
                             else if (firstPlatformMatch != -1 && !configuration.Name.StartsWith("Editor."))
                             {
