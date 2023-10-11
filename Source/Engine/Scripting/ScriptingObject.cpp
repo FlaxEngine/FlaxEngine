@@ -6,6 +6,7 @@
 #include "BinaryModule.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/Pair.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Content/Content.h"
@@ -25,7 +26,8 @@
 #define ScriptingObject_id "__internalId"
 
 // TODO: don't leak memory (use some kind of late manual GC for those wrapper objects)
-Dictionary<ScriptingObject*, void*> ScriptingObjectsInterfaceWrappers;
+typedef Pair<ScriptingObject*, ScriptingTypeHandle> ScriptingObjectsInterfaceKey;
+Dictionary<ScriptingObjectsInterfaceKey, void*> ScriptingObjectsInterfaceWrappers;
 
 SerializableScriptingObject::SerializableScriptingObject(const SpawnParams& params)
     : ScriptingObject(params)
@@ -202,10 +204,10 @@ ScriptingObject* ScriptingObject::FromInterface(void* interfaceObj, const Script
     }
 
     // Special case for interface wrapper object
-    for (auto& e : ScriptingObjectsInterfaceWrappers)
+    for (const auto& e : ScriptingObjectsInterfaceWrappers)
     {
         if (e.Value == interfaceObj)
-            return e.Key;
+            return e.Key.First;
     }
 
     return nullptr;
@@ -226,10 +228,11 @@ void* ScriptingObject::ToInterface(ScriptingObject* obj, const ScriptingTypeHand
     else if (interface)
     {
         // Interface implemented in scripting (eg. C# class inherits C++ interface)
-        if (!ScriptingObjectsInterfaceWrappers.TryGet(obj, result))
+        const ScriptingObjectsInterfaceKey key(obj, interfaceType);
+        if (!ScriptingObjectsInterfaceWrappers.TryGet(key, result))
         {
             result = interfaceType.GetType().Interface.GetInterfaceWrapper(obj);
-            ScriptingObjectsInterfaceWrappers.Add(obj, result);
+            ScriptingObjectsInterfaceWrappers.Add(key, result);
         }
     }
     return result;
