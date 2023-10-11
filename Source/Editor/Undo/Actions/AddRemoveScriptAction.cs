@@ -53,9 +53,11 @@ namespace FlaxEditor.Actions
             {
                 _scriptData = FlaxEngine.Json.JsonSerializer.Serialize(script);
             }
-            catch
+            catch (Exception ex)
             {
                 _scriptData = null;
+                Debug.LogError("Failed to serialize script data for Undo due to exception");
+                Debug.LogException(ex);
             }
             _parentId = script.Actor.ID;
             _orderInParent = script.OrderInParent;
