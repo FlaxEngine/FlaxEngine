@@ -6,24 +6,8 @@ namespace FlaxEditor.Gizmo
 {
     public partial class TransformGizmoBase
     {
-
-        internal Transform X;
-        internal Transform Y;
-        internal Transform Z;
-        internal Transform PlaneX;
-        internal Transform PlaneZ;
-        internal Transform PlaneY;
-        internal Transform Center;
-        internal Transform RotCenter;
-
-        private static readonly Quaternion PlaneXOrientationOffset = Quaternion.Euler(0f, 90f, 0f);
-        private static readonly Quaternion PlaneYOrientationOffset = Quaternion.Euler(0f, 0f, -90f);
-        private static readonly Quaternion PlaneZOrientationOffset = Quaternion.Euler(-90f, 0f, 0f);
-        private static readonly Quaternion XOrientationOffset = Quaternion.Euler(0f, -90f, 0f);
-        private static readonly Quaternion YOrientationOffset = Quaternion.Euler(90f, 0f, 0f);
-        private static readonly Quaternion ZOrientationOffset = Quaternion.Euler(0f, 180f, 0f);
-        private static readonly Quaternion RotXOrientationOffset = Quaternion.Euler(90f, -90f, 0f);
-        private static readonly Quaternion RotZOrientationOffset = Quaternion.Euler(90f, 180f, 0f);
+        internal Matrix MatrixCenter;
+        internal Matrix MatrixGizmoTransform;
 
         /// <inheritdoc />
         public override void Draw(ref RenderContext renderContext)
@@ -37,28 +21,27 @@ namespace FlaxEditor.Gizmo
                     if (_activeAxis.HasFlag(Axis.X))
                     {
                         dir = WorldTransform.Right;
-                        DebugDraw.DrawLine(WorldTransform.Right * 100000f + WorldTransform.Translation, WorldTransform.Left * 100000f + WorldTransform.Translation, Resources.XAxisColor, 0f, true);
+                        DebugDraw.DrawLine(WorldTransform.Right * 100000f + WorldTransform.Translation, WorldTransform.Left * 100000f + WorldTransform.Translation, XAxisColor, 0f, true);
                     }
                     if (_activeAxis.HasFlag(Axis.Y))
                     {
                         dir = WorldTransform.Up;
-                        DebugDraw.DrawLine(WorldTransform.Up * 100000f + WorldTransform.Translation, WorldTransform.Down * 100000f + WorldTransform.Translation, Resources.YAxisColor, 0f, true);
+                        DebugDraw.DrawLine(WorldTransform.Up * 100000f + WorldTransform.Translation, WorldTransform.Down * 100000f + WorldTransform.Translation, YAxisColor, 0f, true);
                     }
                     if (_activeAxis.HasFlag(Axis.Z))
                     {
                         dir = WorldTransform.Forward;
-                        DebugDraw.DrawLine(WorldTransform.Forward * 100000f + WorldTransform.Translation, WorldTransform.Backward * 100000f + WorldTransform.Translation, Resources.ZAxisColor, 0f, true);
+                        DebugDraw.DrawLine(WorldTransform.Forward * 100000f + WorldTransform.Translation, WorldTransform.Backward * 100000f + WorldTransform.Translation, ZAxisColor, 0f, true);
                     }
 
                     if (_activeMode == Mode.Rotate)
                     {
                         if (!dir.IsZero)
                         {
-                            Center.Orientation = Quaternion.FromDirection(dir);
+                            ComputeCenterMatrix(Quaternion.FromDirection(dir));
                         }
-                        resources._materialCenter.SetParameterValue("RotacionStartEnd", new Float2(Vector3.Angle(StartWorldTransform.Up, dir), EndRot), true);
-                        Matrix mCenter = Center.GetWorld();
-                        Resources._modelPlane.Draw(ref renderContext, resources._materialCenter, ref mCenter, StaticFlags.None, false, 0);
+                        _materialCenter.SetParameterValue("RotacionStartEnd", new Float2(Vector3.Angle(StartWorldTransform.Up, dir), EndRot), true);
+                        _modelPlane.Draw(ref renderContext, _materialCenter, ref MatrixCenter, StaticFlags.None, false, 0);
                     }
                     else
                     {
@@ -71,208 +54,126 @@ namespace FlaxEditor.Gizmo
                         if (_activeAxis.HasFlag(Axis.X))
                         {
                             var TextX = new Transform(distance * WorldTransform.Right + WorldTransform.Translation, q, scale);
-                            DebugDraw.DrawText(distance.X.ToString(), TextX, Resources.XAxisColor);
+                            DebugDraw.DrawText(distance.X.ToString(), TextX, XAxisColor);
                         }
                         if (_activeAxis.HasFlag(Axis.Y))
                         {
                             var TextY = new Transform(distance * WorldTransform.Up + WorldTransform.Translation, q, scale);
-                            DebugDraw.DrawText(distance.Y.ToString(), TextY, Resources.YAxisColor);
-                            DebugDraw.DrawLine(WorldTransform.Up * 100000f + WorldTransform.Translation, WorldTransform.Down * 100000f + WorldTransform.Translation, Resources.YAxisColor, 0f, true);
+                            DebugDraw.DrawText(distance.Y.ToString(), TextY, YAxisColor);
+                            DebugDraw.DrawLine(WorldTransform.Up * 100000f + WorldTransform.Translation, WorldTransform.Down * 100000f + WorldTransform.Translation, YAxisColor, 0f, true);
                         }
                         if (_activeAxis.HasFlag(Axis.Z))
                         {
                             var TextZ = new Transform(distance * WorldTransform.Forward + WorldTransform.Translation, q, scale);
-                            DebugDraw.DrawText(distance.Z.ToString(), TextZ, Resources.ZAxisColor);
-                            DebugDraw.DrawLine(WorldTransform.Forward * 100000f + WorldTransform.Translation, WorldTransform.Backward * 100000f + WorldTransform.Translation, Resources.ZAxisColor, 0f, true);
+                            DebugDraw.DrawText(distance.Z.ToString(), TextZ, ZAxisColor);
+                            DebugDraw.DrawLine(WorldTransform.Forward * 100000f + WorldTransform.Translation, WorldTransform.Backward * 100000f + WorldTransform.Translation, ZAxisColor, 0f, true);
                         }
                     }
 
-                    DebugDraw.DrawLine(StartWorldTransform.Translation, WorldTransform.Translation, Resources.CenterColor, 0f, true);
+                    DebugDraw.DrawLine(StartWorldTransform.Translation, WorldTransform.Translation, CenterColor, 0f, true);
                 }
                 else
                 {
-                    ComputeNewTransform(_activeMode, _activeTransformSpace);
-                    ComputeCenterRotacion(base.Owner);
+                    ComputeNewMatrixis();
                     switch (_activeMode)
                     {
                         case Mode.Translate:
-                            DrawTSHandle(Resources._modelTranslationAxis, ref renderContext);
-                            resources._materialAxisX.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.X), true);
-                            resources._materialAxisY.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Y), true);
-                            resources._materialAxisZ.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Z), true);
-                            resources._materialAxisPlaneX.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.YZ), true);
-                            resources._materialAxisPlaneY.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.ZX), true);
-                            resources._materialAxisPlaneZ.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.XY), true);
-                            resources._materialCenter.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.View), true);
-                            resources._materialCenter.SetParameterValue("SnapingValue", 0, true);
+                            DrawTranslationGizmo(ref renderContext);
+                            _materialAxis[0].SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.X), true);
+                            _materialAxis[1].SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Y), true);
+                            _materialAxis[2].SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Z), true);
+                            _materialAxisPlane[0].SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.YZ), true);
+                            _materialAxisPlane[1].SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.ZX), true);
+                            _materialAxisPlane[2].SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.XY), true);
+                            _materialCenter.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.View), true);
+                            _materialCenter.SetParameterValue("SnapingValue", 0, true);
                             break;
                         case Mode.Rotate:
-                            DrawRHandle(ref renderContext);
-                            resources._materialAxisX.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.X), true);
-                            resources._materialAxisY.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Y), true);
-                            resources._materialAxisZ.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Z), true);
-                            resources._materialCenter.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.View), true);
-                            resources._materialCenter.SetParameterValue("SnapingValue", RotationSnapEnabled ? RotationSnapValue : 0f, true);
-                            resources._materialRotCenter.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Center), true);
+                            DrawRotationGizmo(ref renderContext);
+                            _materialAxis[0].SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.X), true);
+                            _materialAxis[1].SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Y), true);
+                            _materialAxis[2].SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Z), true);
+                            _materialCenter.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.View), true);
+                            _materialCenter.SetParameterValue("SnapingValue", RotationSnapEnabled ? RotationSnapValue : 0f, true);
+                            _materialRotCenter.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Center), true);
                             break;
                         case Mode.Scale:
-                            DrawTSHandle(Resources._modelScaleAxis, ref renderContext);
-                            resources._materialAxisX.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.X), true);
-                            resources._materialAxisY.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Y), true);
-                            resources._materialAxisZ.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Z), true);
-                            resources._materialAxisPlaneX.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.YZ), true);
-                            resources._materialAxisPlaneY.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.ZX), true);
-                            resources._materialAxisPlaneZ.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.XY), true);
-                            resources._materialCenter.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.View), true);
-                            resources._materialCenter.SetParameterValue("SnapingValue", 0, true);
+                            DrawScaleGizmo(ref renderContext);
+                            _materialAxis[0].SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.X), true);
+                            _materialAxis[1].SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Y), true);
+                            _materialAxis[2].SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.Z), true);
+                            _materialAxisPlane[0].SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.YZ), true);
+                            _materialAxisPlane[1].SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.ZX), true);
+                            _materialAxisPlane[2].SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.XY), true);
+                            _materialCenter.SetParameterValue("IsSelected", _activeAxis.HasFlag(Axis.View), true);
+                            _materialCenter.SetParameterValue("SnapingValue", 0, true);
                             break;
                     }
                 }
             }
         }
 
-
-        private void DrawTSHandle(Model AxisModel, ref RenderContext renderContext)
+        private void DrawTranslationGizmo(ref RenderContext renderContext)
         {
-            Matrix mY = Y.GetWorld();
-            Matrix mX = X.GetWorld();
-            Matrix mZ = Z.GetWorld();
-            Matrix mPlaneX = PlaneX.GetWorld();
-            Matrix mPlaneY = PlaneY.GetWorld();
-            Matrix mPlaneZ = PlaneZ.GetWorld();
-            Matrix mCenter = Center.GetWorld();
-            AxisModel.Draw(ref renderContext, resources._materialAxisX, ref mX, StaticFlags.None, false, 0);
-            AxisModel.Draw(ref renderContext, resources._materialAxisY, ref mY, StaticFlags.None, false, 0);
-            AxisModel.Draw(ref renderContext, resources._materialAxisZ, ref mZ, StaticFlags.None, false, 0);
-            Resources._modelPlane.Draw(ref renderContext, resources._materialAxisPlaneX, ref mPlaneX, StaticFlags.None, false, 0);
-            Resources._modelPlane.Draw(ref renderContext, resources._materialAxisPlaneY, ref mPlaneY, StaticFlags.None, false, 0);
-            Resources._modelPlane.Draw(ref renderContext, resources._materialAxisPlaneZ, ref mPlaneZ, StaticFlags.None, false, 0);
-            Resources._modelPlane.Draw(ref renderContext, resources._materialCenter, ref mCenter, StaticFlags.None, false, 0);
+                _modelPlaneAxisGizmo.Draw(ref renderContext, _materialAxisPlane[0], ref MatrixGizmoTransform, StaticFlags.None, false, 0);
+                _modelLocationAxisGizmo.Draw(ref renderContext, null, ref MatrixGizmoTransform, StaticFlags.None, false, 0);
+            for (int i = 0; i < _materialAxis.Count; i++)
+            {
+            }
+            DrawCenterPlane(ref renderContext);
         }
-
-        private void DrawRHandle(ref RenderContext renderContext)
+        private void DrawScaleGizmo(ref RenderContext renderContext)
         {
-            Matrix mY = Y.GetWorld();
-            Matrix mX = X.GetWorld();
-            Matrix mZ = Z.GetWorld();
-            Matrix mCenter = Center.GetWorld();
-            Matrix mRotCenter = RotCenter.GetWorld();
-            Resources._modelRotationAxis.Draw(ref renderContext, resources._materialAxisX, ref mX, StaticFlags.None, false, 0);
-            Resources._modelRotationAxis.Draw(ref renderContext, resources._materialAxisY, ref mY, StaticFlags.None, false, 0);
-            Resources._modelRotationAxis.Draw(ref renderContext, resources._materialAxisZ, ref mZ, StaticFlags.None, false, 0);
-            Resources._modelPlane.Draw(ref renderContext, resources._materialCenter, ref mCenter, StaticFlags.None, false, 0);
-            Resources._modelSphere.Draw(ref renderContext, resources._materialRotCenter, ref mRotCenter, StaticFlags.None, false, 0);
+            
+            _modelPlaneAxisGizmo.Draw(ref renderContext, _materialAxisPlane[0], ref MatrixGizmoTransform, StaticFlags.None, false, 0);
+            for (int i = 0; i < _materialAxis.Count; i++)
+            {
+                _modelPlaneAxisGizmo.LODs[0].Meshes[i].Draw(ref renderContext, _materialAxisPlane[i], ref MatrixGizmoTransform, StaticFlags.None, false, 0);
+                _modelScaleAxisGizmo.LODs[0].Meshes[i].Draw(ref renderContext, _materialAxis[i], ref MatrixGizmoTransform, StaticFlags.None, false, 0);
+            }
+            DrawCenterPlane(ref renderContext);
+        }
+        private void DrawRotationGizmo(ref RenderContext renderContext)
+        {
+            for (int i = 0; i < _materialAxis.Count; i++)
+            {
+                _modelRotationAxisGizmo.LODs[0].Meshes[i].Draw(ref renderContext, _materialAxis[i], ref MatrixGizmoTransform, StaticFlags.None, false, 0);
+            }
+            _modelSphere.Draw(ref renderContext, _materialRotCenter, ref MatrixGizmoTransform, StaticFlags.None, false, 0);
+            DrawCenterPlane(ref renderContext);
+        }
+        private void DrawCenterPlane(ref RenderContext renderContext)
+        {
+            _modelPlane.Draw(ref renderContext, _materialCenter, ref MatrixCenter, StaticFlags.None, false, 0);
         }
 
         /// <summary>
-        /// computes all component of the transform
+        /// computes matrixes for drawing
         /// </summary>
 
-        internal void ComputeNewTransform(in Mode curentMode,in TransformSpace curentTransformSpace)
+        internal void ComputeNewMatrixis()
         {
-            Quaternion WorldTransformOrientationI = WorldTransform.Orientation;
-            if (curentMode == Mode.Rotate)
+            var Scale = new Float3(_screenScale);
+            if (_activeMode == Mode.Rotate)
             {
-                resources._materialCenter.SetParameterValue("Line Thickness", 0.005f, true);
-                Float3 Scale = WorldTransform.Scale * 0.8f;
-                X = new Transform(WorldTransform.Translation, WorldTransformOrientationI * RotXOrientationOffset, Scale);
-                Y = new Transform(WorldTransform.Translation, WorldTransformOrientationI, Scale);
-                Z = new Transform(WorldTransform.Translation, WorldTransformOrientationI * RotZOrientationOffset, Scale);
-                RotCenter = new Transform(WorldTransform.Translation, Quaternion.Identity, Scale);
-                Center.Scale = WorldTransform.Scale;
-                Center.Translation = WorldTransform.Translation;
+                var sScale = WorldTransform.Scale * 0.8f;
+                _materialCenter.SetParameterValue("Line Thickness", 0.005f, true);
+                MatrixGizmoTransform = WorldTransform.GetWorld();
+                MatrixCenter = MatrixGizmoTransform;
+                MatrixGizmoTransform.ScaleVector *= 0.8f;
                 return;
             }
             else
             {
-                resources._materialCenter.SetParameterValue("Line Thickness", 0.05f, true);
-                Quaternion OrientationXAxis = XOrientationOffset;
-                Quaternion OrientationYAxis = YOrientationOffset;
-                Quaternion OrientationZAxis = ZOrientationOffset;
-                Float3 PlaneScale = WorldTransform.Scale * 0.1f;
-                if (curentTransformSpace == TransformSpace.Local)
-                {
-                    PlaneX = new Transform(new Vector3(0f, 20f, 20f) * WorldTransformOrientationI * WorldTransform.Scale + WorldTransform.Translation, WorldTransformOrientationI * PlaneXOrientationOffset, PlaneScale);
-                    PlaneZ = new Transform(new Vector3(20f, 20f, 0f) * WorldTransformOrientationI * WorldTransform.Scale + WorldTransform.Translation, WorldTransformOrientationI * PlaneYOrientationOffset, PlaneScale);
-                    PlaneY = new Transform(new Vector3(20f, 0f, 20f) * WorldTransformOrientationI * WorldTransform.Scale + WorldTransform.Translation, WorldTransformOrientationI * PlaneZOrientationOffset, PlaneScale);
-                    OrientationXAxis = WorldTransformOrientationI * OrientationXAxis;
-                    OrientationYAxis = WorldTransformOrientationI * OrientationYAxis;
-                    OrientationZAxis = WorldTransformOrientationI * OrientationZAxis;
-                }
-                else
-                {
-                    PlaneX = new Transform(new Vector3(0f, 20f, 20f) * WorldTransform.Scale + WorldTransform.Translation, WorldTransformOrientationI * PlaneXOrientationOffset, PlaneScale);
-                    PlaneZ = new Transform(new Vector3(20f, 20f, 0f) * WorldTransform.Scale + WorldTransform.Translation, WorldTransformOrientationI * PlaneYOrientationOffset, PlaneScale);
-                    PlaneY = new Transform(new Vector3(20f, 0f, 20f) * WorldTransform.Scale + WorldTransform.Translation, WorldTransformOrientationI * PlaneZOrientationOffset, PlaneScale);
-                }
-                Vector3 TranslationXAxis = new Vector3(WorldTransform.Scale.X * 0.1f, 0f, 0f) * OrientationXAxis;
-                Vector3 TranslationYAxis = new Vector3(WorldTransform.Scale.X * 0.1f, 0f, 0f) * OrientationYAxis;
-                Vector3 TranslationZAxis = new Vector3(WorldTransform.Scale.X * 0.1f, 0f, 0f) * OrientationZAxis;
-                X = new Transform(WorldTransform.Translation + TranslationXAxis, OrientationXAxis, WorldTransform.Scale);
-                Y = new Transform(WorldTransform.Translation + TranslationYAxis, OrientationYAxis, WorldTransform.Scale);
-                Z = new Transform(WorldTransform.Translation + TranslationZAxis, OrientationZAxis, WorldTransform.Scale);
-                Center.Scale = PlaneScale;
-                Center.Translation = WorldTransform.Translation;
+                MatrixGizmoTransform = WorldTransform.GetWorld();
+                _materialCenter.SetParameterValue("Line Thickness", 0.05f, true);
             }
+            ComputeCenterMatrix(Quaternion.FromDirection(-(WorldTransform.Translation - Owner.ViewPosition).Normalized));
         }
 
-        /// <summary>
-        /// computes only scale and need Translation of transform
-        /// </summary>
-
-        internal void ComputeNewTransformScale(in Mode curentMode,in TransformSpace curentTransformSpace)
+        internal void ComputeCenterMatrix(Quaternion q)
         {
-            if (curentMode == Mode.Rotate)
-            {
-                Float3 Scale = WorldTransform.Scale * 0.8f;
-                X.Scale = Scale;
-                Y.Scale = Scale;
-                Z.Scale = Scale;
-                Center.Scale = WorldTransform.Scale;
-                RotCenter.Scale = Scale;
-                return;
-            }
-            else
-            {
-                Quaternion OrientationXAxis = XOrientationOffset;
-                Quaternion OrientationYAxis = YOrientationOffset;
-                Quaternion OrientationZAxis = ZOrientationOffset;
-                bool flag2 = curentTransformSpace == TransformSpace.Local;
-                if (flag2)
-                {
-                    OrientationXAxis *= WorldTransform.Orientation;
-                    OrientationYAxis *= WorldTransform.Orientation;
-                    OrientationZAxis *= WorldTransform.Orientation;
-                    PlaneX.Translation = new Vector3(0f, 20f, 20f) * WorldTransform.Scale * WorldTransform.Orientation + WorldTransform.Translation;
-                    PlaneZ.Translation = new Vector3(20f, 20f, 0f) * WorldTransform.Scale * WorldTransform.Orientation + WorldTransform.Translation;
-                    PlaneY.Translation = new Vector3(20f, 0f, 20f) * WorldTransform.Scale * WorldTransform.Orientation + WorldTransform.Translation;
-                }
-                else
-                {
-                    PlaneX.Translation = new Vector3(0f, 20f, 20f) * WorldTransform.Scale + WorldTransform.Translation;
-                    PlaneZ.Translation = new Vector3(20f, 20f, 0f) * WorldTransform.Scale + WorldTransform.Translation;
-                    PlaneY.Translation = new Vector3(20f, 0f, 20f) * WorldTransform.Scale + WorldTransform.Translation;
-                }
-                Vector3 TranslationXAxis = new Vector3(WorldTransform.Scale.X * 0.1f, 0f, 0f) * OrientationXAxis;
-                Vector3 TranslationYAxis = new Vector3(WorldTransform.Scale.X * 0.1f, 0f, 0f) * OrientationYAxis;
-                Vector3 TranslationZAxis = new Vector3(WorldTransform.Scale.X * 0.1f, 0f, 0f) * OrientationZAxis;
-                Float3 PlaneScale = WorldTransform.Scale * 0.1f;
-                X.Translation = WorldTransform.Translation + TranslationXAxis;
-                Y.Translation = WorldTransform.Translation + TranslationYAxis;
-                Z.Translation = WorldTransform.Translation + TranslationZAxis;
-                X.Scale = WorldTransform.Scale;
-                Y.Scale = WorldTransform.Scale;
-                Z.Scale = WorldTransform.Scale;
-                PlaneX.Scale = PlaneScale;
-                PlaneZ.Scale = PlaneScale;
-                PlaneY.Scale = PlaneScale;
-                Center.Scale = PlaneScale;
-            }
-        }
-
-        internal void ComputeCenterRotacion(IGizmoOwner owner)
-        {
-            Center.Orientation = Quaternion.FromDirection(-(WorldTransform.Translation - owner.ViewPosition).Normalized);
+            MatrixCenter = new Transform(WorldTransform.Translation, q, new Float3(_screenScale)).GetWorld();
         }
     }
 }

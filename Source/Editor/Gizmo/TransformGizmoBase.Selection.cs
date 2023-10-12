@@ -98,11 +98,11 @@ namespace FlaxEditor.Gizmo
                     _activeAxis = Axis.Z;
                     closestIntersection = intersection;
                 }
-                if (IntersectsRotateCircle(Center.Forward, 0, CenterRotateCircleMin, ref localRay, out intersection) && intersection < closestIntersection)
+                if (IntersectsRotateCircle(MatrixCenter.Forward, 0, CenterRotateCircleMin, ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.Center;
                 }
-                else if (IntersectsRotateCircle(Center.Forward, CenterRotateCircleMin, CenterRotateCircleMax, ref localRay, out intersection) && intersection < closestIntersection)
+                else if (IntersectsRotateCircle(MatrixCenter.Forward, CenterRotateCircleMin, CenterRotateCircleMax, ref localRay, out intersection) && intersection < closestIntersection)
                     {
                         _activeAxis = Axis.View;
                     closestIntersection = intersection;
@@ -147,7 +147,7 @@ namespace FlaxEditor.Gizmo
                     _activeAxis = Axis.YZ;
                     closestIntersection = intersection;
                 }
-                if (IntersectsRotateCircle(RotCenter.Forward, CenterRotateCircleMin, CenterRotateCircleMax, ref localRay, out intersection) && intersection < closestIntersection)
+                if (IntersectsRotateCircle(MatrixGizmoTransform.Forward, CenterRotateCircleMin, CenterRotateCircleMax, ref localRay, out intersection) && intersection < closestIntersection)
                 {
                     _activeAxis = Axis.View;
                 }

@@ -95,14 +95,14 @@ namespace FlaxEditor.Gizmo
         protected abstract int SelectionCount { get; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="T:FlaxEditor.Gizmo.TransformGizmoBase" /> class.
+        /// Initializes a new instance of the <see cref="TransformGizmoBase" /> class.
         /// </summary>
         /// <param name="owner">The gizmos owner.</param>
         public TransformGizmoBase(IGizmoOwner owner) : base(owner)
         {
-            resources = Resources.Load();
+            Load();
             ModeChanged = (Action)Delegate.Combine(ModeChanged, new Action(ResetTranslationScale));
-            Owner.Viewport.OnCameraMoved += () => ComputeNewTransformScale(_activeMode, _activeTransformSpace); ;
+            Owner.Viewport.OnCameraMoved += () => ComputeNewMatrixis();
         }
 
         /// <summary>
@@ -134,17 +134,16 @@ namespace FlaxEditor.Gizmo
                 StartWorldTransform = WorldTransform;
                 _isTransforming = true;
                 OnStartTransforming();
-                ComputeCenterRotacion(Owner);
                 switch (_activeAxis)
                 {
                     case Axis.X:
-                        resources._materialCenter.SetParameterValue("Color", Resources.XAxisColor, true);
+                        _materialCenter.SetParameterValue("Color", XAxisColor, true);
                         break;
                     case Axis.Y:
-                        resources._materialCenter.SetParameterValue("Color", Resources.YAxisColor, true);
+                        _materialCenter.SetParameterValue("Color", YAxisColor, true);
                         break;
                     case Axis.Z:
-                        resources._materialCenter.SetParameterValue("Color", Resources.ZAxisColor, true);
+                        _materialCenter.SetParameterValue("Color", ZAxisColor, true);
                         break;
                 }
             }
@@ -157,8 +156,8 @@ namespace FlaxEditor.Gizmo
         {
             if (_isTransforming)
             {
-                resources._materialCenter.SetParameterValue("RotacionStartEnd", new Float2(0f, 0f), true);
-                resources._materialCenter.SetParameterValue("Color", Resources.CenterColor, true);
+                _materialCenter.SetParameterValue("RotacionStartEnd", new Float2(0f, 0f), true);
+                _materialCenter.SetParameterValue("Color", CenterColor, true);
                 EndRot = 0f;
                 _isTransforming = false;
                 _isDuplicating = false;
@@ -412,19 +411,48 @@ namespace FlaxEditor.Gizmo
 
         private void UpdateRotate(float dt)
         {
-            float mouseDelta = (_activeAxis == Axis.Y) ? (-Owner.MouseDelta.X) : Owner.MouseDelta.X;
+            float mouseDelta = _activeAxis == Axis.Y ? -Owner.MouseDelta.X : Owner.MouseDelta.X;
+
             float delta = mouseDelta * dt;
-            bool rotationSnaping = RotationSnaping;
-            if (rotationSnaping)
+
+            if (RotationSnapEnabled || Owner.UseSnapping)
             {
                 float snapValue = RotationSnapValue * Mathf.DegreesToRadians;
                 _rotationSnapDelta += delta;
+
                 float snapped = Mathf.Round(_rotationSnapDelta / snapValue) * snapValue;
                 _rotationSnapDelta -= snapped;
+
                 delta = snapped;
             }
-            Float3 dir = Center.Forward;
-            Quaternion.RotationAxis(ref dir, delta, out _rotationDelta);
+
+            switch (_activeAxis)
+            {
+                case Axis.X:
+                case Axis.Y:
+                case Axis.Z:
+                    {
+                        Float3 dir;
+                        if (_activeAxis == Axis.X)
+                            dir = Float3.Right * WorldTransform.Orientation;
+                        else if (_activeAxis == Axis.Y)
+                            dir = Float3.Up * WorldTransform.Orientation;
+                        else
+                            dir = Float3.Forward * WorldTransform.Orientation;
+
+                        Float3 viewDir = Owner.ViewPosition - Position;
+                        Float3.Dot(ref viewDir, ref dir, out float dot);
+                        if (dot < 0.0f)
+                            delta *= -1;
+
+                        Quaternion.RotationAxis(ref dir, delta, out _rotationDelta);
+                        break;
+                    }
+
+                default:
+                    _rotationDelta = Quaternion.Identity;
+                    break;
+            }
             EndRot -= delta * Mathf.RadiansToDegrees;
         }
 
