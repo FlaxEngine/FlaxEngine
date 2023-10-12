@@ -19,7 +19,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = desc,
                 AlternativeTitles = altTitles,
                 Flags = NodeFlags.AllGraphs,
-                Size = new Float2(160, 20),
+                Size = new Float2(140, 20),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "A", true, typeof(int), 0),
@@ -37,7 +37,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = desc,
                 AlternativeTitles = altTitles,
                 Flags = NodeFlags.AllGraphs,
-                Size = new Float2(160, 40),
+                Size = new Float2(140, 40),
                 DefaultValues = new object[]
                 {
                     0,
