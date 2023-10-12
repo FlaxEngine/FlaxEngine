@@ -153,12 +153,12 @@ private:
 
     bool IsLocalSimulationSpace() const
     {
-        return ((ParticleEmitterGraphGPU*)_graphStack.Peek())->SimulationSpace == ParticlesSimulationSpace::Local;
+        return GetRootGraph()->SimulationSpace == ParticlesSimulationSpace::Local;
     }
 
     bool IsWorldSimulationSpace() const
     {
-        return ((ParticleEmitterGraphGPU*)_graphStack.Peek())->SimulationSpace == ParticlesSimulationSpace::World;
+        return GetRootGraph()->SimulationSpace == ParticlesSimulationSpace::World;
     }
 };
 

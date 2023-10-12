@@ -342,10 +342,11 @@ void ParticleEmitterGPUGenerator::clearCache()
 void ParticleEmitterGPUGenerator::WriteParticleAttributesWrites()
 {
     bool hadAnyWrite = false;
+    ParticleEmitterGraphGPU* graph = GetRootGraph();
     for (int32 i = 0; i < _attributeValues.Count(); i++)
     {
         auto& value = _attributeValues[i];
-        auto& attribute = ((ParticleEmitterGraphGPU*)_graphStack.Peek())->Layout.Attributes[i];
+        auto& attribute = graph->Layout.Attributes[i];
 
         // Skip not used attributes or read-only attributes
         if (value.Variable.Type == VariantType::Null || ((int)value.Access & (int)AccessMode::Write) == 0)
