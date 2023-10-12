@@ -75,41 +75,28 @@ public class MissingScriptEditor : GenericEditor
         base.Initialize(layout);
     }
 
-    private List<MissingScript> FindActorsWithMatchingMissingScript(Actor parent = null)
+    private List<MissingScript> FindActorsWithMatchingMissingScript()
     {
         List<MissingScript> missingScripts = new List<MissingScript>();
-        if (parent != null)
+
+        foreach (Actor actor in Level.GetActors<Actor>())
         {
-            for (int child = 0; child < parent.ChildrenCount; child++)
+            for (int scriptIndex = 0; scriptIndex < actor.ScriptsCount; scriptIndex++)
             {
-                Actor actor = parent.Children[child];
-                for (int scriptIndex = 0; scriptIndex < actor.ScriptsCount; scriptIndex++)
+                Script actorScript = actor.Scripts[scriptIndex];
+                if (actorScript is not MissingScript missingActorScript)
                 {
-                    Script actorScript = actor.Scripts[scriptIndex];
-                    if (actorScript is not MissingScript missingActorScript)
-                    {
-                        continue;
-                    }
-
-                    MissingScript currentMissing = Values[0] as MissingScript;
-                    if (missingActorScript.MissingTypeName != currentMissing.MissingTypeName)
-                    {
-                        continue;
-                    }
-
-                    Debug.Log($"Found correct missing script: {actor.Name}, {missingActorScript}, {missingScripts.Count}.");
-
-                    // Matching MissingScript.
-                    missingScripts.Add(missingActorScript);
+                    continue;
                 }
 
-                missingScripts.AddRange(FindActorsWithMatchingMissingScript(actor));
-            }
-        } else
-        {
-            foreach (Actor actor in Level.GetActors<Actor>())
-            {
-                missingScripts.AddRange(FindActorsWithMatchingMissingScript(actor));
+                MissingScript currentMissing = Values[0] as MissingScript;
+                if (missingActorScript.MissingTypeName != currentMissing.MissingTypeName)
+                {
+                    continue;
+                }
+
+                // Matching MissingScript.
+                missingScripts.Add(missingActorScript);
             }
         }
 
