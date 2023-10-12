@@ -1652,35 +1652,5 @@ namespace FlaxEditor.Surface.Elements
                 }
             }
         }
-
-        /// <summary>
-        /// Get the size of the value editor for this box.
-        /// </summary>
-        /// <returns>The size of the value editor for this box.</returns>
-        public Float2 GetValueEditorSize()
-        {
-            if (!HasValue)
-                return Float2.Zero;
-
-            if (_defaultValueEditor != null)
-                return _defaultValueEditor.Bounds.Size;
-
-            for (int i = 0; i < DefaultValueEditors.Count; i++)
-            {
-                if (DefaultValueEditors[i].CanUse(this, ref _currentType))
-                {
-                    var bounds = new Rectangle(X + Width + 8 + Style.Current.FontSmall.MeasureText(Text).X, Y, 90, Height);
-                    _editor = DefaultValueEditors[i];
-
-                    // TODO: Find a better way to evaluate the size than using existing create code to resolve the size for each editor type.
-                    var tempEditor = _editor.Create(this, ref bounds);
-                    Float2 editorSize = tempEditor.Size;
-                    tempEditor.Dispose();
-                    return editorSize;
-                }
-            }
-
-            return Float2.Zero;
-        }
     }
 }
