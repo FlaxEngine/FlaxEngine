@@ -14,6 +14,11 @@ namespace FlaxEditor.Gizmo
         /// <summary>
         /// Gets the gizmos collection.
         /// </summary>
+        FlaxEditor.Viewport.EditorViewport Viewport { get; }
+
+        /// <summary>
+        /// Gets the gizmos collection.
+        /// </summary>
         GizmosCollection Gizmos { get; }
 
         /// <summary>
