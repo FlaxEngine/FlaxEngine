@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "AnimGraph.h"
+#include "Engine/Core/Types/VariantValueCast.h"
 #include "Engine/Content/Assets/Animation.h"
 #include "Engine/Content/Assets/SkeletonMask.h"
 #include "Engine/Content/Assets/AnimationGraphFunction.h"
@@ -753,6 +754,13 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         auto anim = node->Assets[0].As<Animation>();
         auto& bucket = context.Data->State[node->BucketIndex].Animation;
 
+        // Override animation when animation reference box is connected
+        auto animationAssetBox = node->TryGetBox(8);
+        if (animationAssetBox && animationAssetBox->HasConnection())
+        {
+            anim = TVariantValueCast<Animation*>::Cast(tryGetValue(animationAssetBox, Value::Null));
+        }
+
         switch (box->ID)
         {
         // Animation
@@ -762,18 +770,6 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             const float speed = (float)tryGetValue(node->GetBox(5), node->Values[1]);
             const bool loop = (bool)tryGetValue(node->GetBox(6), node->Values[2]);
             const float startTimePos = (float)tryGetValue(node->GetBox(7), node->Values[3]);
-
-            // Override animation when animation reference box is connected
-            auto animationAssetBox = node->GetBox(8);
-            if (animationAssetBox->HasConnection())
-            {
-                const Value assetBoxValue = tryGetValue(animationAssetBox, Value::Null);
-                if (assetBoxValue != Value::Null)
-                    anim = (Animation*)assetBoxValue.AsAsset;
-                else
-                    anim = nullptr;
-            }
-
             const float length = anim ? anim->GetLength() : 0.0f;
 
             // Calculate new time position

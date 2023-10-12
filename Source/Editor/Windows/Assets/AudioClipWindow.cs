@@ -336,6 +336,22 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            if (base.OnKeyDown(key))
+                return true;
+
+            if (key == KeyboardKeys.Spacebar)
+            {
+                if (_previewSource?.State == AudioSource.States.Playing)
+                    OnPause();
+                else
+                    OnPlay();
+            }
+            return false;
+        }
+
+        /// <inheritdoc />
         public override bool UseLayoutData => true;
 
         /// <inheritdoc />

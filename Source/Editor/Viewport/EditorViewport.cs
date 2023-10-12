@@ -1119,7 +1119,12 @@ namespace FlaxEditor.Viewport
             var win = (WindowRootControl)Root;
 
             // Get current mouse position in the view
-            _viewMousePos = PointFromWindow(win.MousePosition);
+            {
+                // When the window is not focused, the position in window does not return sane values
+                Float2 pos = PointFromWindow(win.MousePosition);
+                if (!float.IsInfinity(pos.LengthSquared))
+                    _viewMousePos = pos;
+            }
 
             // Update input
             var window = win.Window;
