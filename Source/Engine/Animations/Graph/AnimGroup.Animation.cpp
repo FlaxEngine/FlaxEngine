@@ -764,14 +764,17 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             const float startTimePos = (float)tryGetValue(node->GetBox(7), node->Values[3]);
 
             // Override animation when animation reference box is connected
-            auto animationAssetBox = node->GetBox(8);
-            if (animationAssetBox->HasConnection())
+            auto animationAssetBox = node->TryGetBox(8);
+            if (animationAssetBox)
             {
-                const Value assetBoxValue = tryGetValue(animationAssetBox, Value::Null);
-                if (assetBoxValue != Value::Null)
-                    anim = (Animation*)assetBoxValue.AsAsset;
-                else
-                    anim = nullptr;
+                if (animationAssetBox->HasConnection())
+                {
+                    const Value assetBoxValue = tryGetValue(animationAssetBox, Value::Null);
+                    if (assetBoxValue != Value::Null)
+                        anim = (Animation*)assetBoxValue.AsAsset;
+                    else
+                        anim = nullptr;
+                }
             }
 
             const float length = anim ? anim->GetLength() : 0.0f;
