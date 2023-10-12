@@ -94,7 +94,6 @@ public:
     /// <summary>
     /// Gets the root graph.
     /// </summary>
-    /// <returns>The base graph.</returns>
     FORCE_INLINE ParticleEmitterGraphGPU* GetRootGraph() const
     {
         return _graphs.First();
