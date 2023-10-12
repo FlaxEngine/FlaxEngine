@@ -128,7 +128,7 @@ namespace FlaxEditor.Windows.Profiler
                 _tableRep.IsLayoutLocked = true;
                 RecycleTableRows(_tableRpc, _tableRowsCache);
                 RecycleTableRows(_tableRep, _tableRowsCache);
-                
+
                 var events = _events.Get(selectedFrame);
                 var rowCount = Int2.Zero;
                 if (events != null && events.Length != 0)
@@ -186,7 +186,7 @@ namespace FlaxEditor.Windows.Profiler
                 _tableRep.Visible = rowCount.Y != 0;
                 _tableRpc.Children.Sort(SortRows);
                 _tableRep.Children.Sort(SortRows);
-                
+
                 _tableRpc.UnlockChildrenRecursive();
                 _tableRpc.PerformLayout();
                 _tableRep.UnlockChildrenRecursive();

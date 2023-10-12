@@ -56,6 +56,7 @@ UICanvas::UICanvas(const SpawnParams& params)
         UICanvas_EndPlay = mclass->GetMethod("EndPlay");
         UICanvas_ParentChanged = mclass->GetMethod("ParentChanged");
         UICanvas_Serialize = mclass->GetMethod("Serialize");
+        Platform::MemoryBarrier();
     }
 #endif
 }
