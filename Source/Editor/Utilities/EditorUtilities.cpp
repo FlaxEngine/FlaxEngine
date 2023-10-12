@@ -394,7 +394,12 @@ bool EditorUtilities::UpdateExeIcon(const String& path, const TextureData& icon)
     //    - icon/cursor/etc data
 
     std::fstream stream;
+#if PLATFORM_WINDOWS
     stream.open(path.Get(), std::ios::in | std::ios::out | std::ios::binary);
+#else
+    StringAsANSI<> pathAnsi(path.Get());
+    stream.open(pathAnsi.Get(), std::ios::in | std::ios::out | std::ios::binary);
+#endif
     if (!stream.is_open())
     {
         LOG(Warning, "Cannot open file");
