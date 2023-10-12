@@ -207,7 +207,7 @@ namespace FlaxEditor.Windows.Assets
             InputActions.Add(options => options.Rename, Rename);
             InputActions.Add(options => options.FocusSelection, _viewport.FocusSelection);
         }
-        
+
         /// <summary>
         /// Enables or disables vertical and horizontal scrolling on the tree panel.
         /// </summary>
@@ -257,7 +257,7 @@ namespace FlaxEditor.Windows.Assets
         {
             if (base.OnMouseUp(location, button))
                 return true;
-            
+
             if (button == MouseButton.Right && _treePanel.ContainsPoint(ref location))
             {
                 _tree.Deselect();

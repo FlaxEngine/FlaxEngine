@@ -340,7 +340,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
         break;
     }
     _descRasterization.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    _descRasterization.depthClampEnable = !desc.DepthClipEnable;
+    _descRasterization.depthClampEnable = !desc.DepthClipEnable && _device->Limits.HasDepthClip;
     _descRasterization.lineWidth = 1.0f;
     _desc.pRasterizationState = &_descRasterization;
 

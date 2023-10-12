@@ -108,8 +108,7 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
             style |= WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU | WS_THICKFRAME | WS_GROUP;
 #elif WINDOWS_USE_NEWER_BORDER_LESS
         if (settings.IsRegularWindow)
-            style |= WS_THICKFRAME | WS_SYSMENU;
-        style |= WS_CAPTION;
+            style |= WS_THICKFRAME | WS_SYSMENU | WS_CAPTION;
 #endif
         exStyle |= WS_EX_WINDOWEDGE;
     }
@@ -220,12 +219,6 @@ void WindowsWindow::Show()
         if (!_settings.HasBorder)
         {
             SetWindowPos(_handle, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
-            if (!_settings.IsRegularWindow && _settings.ShowAfterFirstPaint && _settings.StartPosition == WindowStartPosition::Manual)
-            {
-                int32 x = Math::TruncToInt(_settings.Position.X);
-                int32 y = Math::TruncToInt(_settings.Position.Y);
-                SetWindowPos(_handle, nullptr, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
-            }
         }
 #endif
 

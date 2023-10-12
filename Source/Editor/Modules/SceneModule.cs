@@ -332,7 +332,7 @@ namespace FlaxEditor.Modules
                     continue;
                 scenes.Add(s);
             }
-            
+
             // In play-mode Editor mocks the level streaming script
             if (Editor.IsPlayMode)
             {

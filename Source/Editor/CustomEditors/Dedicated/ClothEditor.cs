@@ -36,7 +36,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 return;
             var gizmos = gizmoOwner.Gizmos;
             _gizmoMode = new ClothPaintingGizmoMode();
-            
+
             var projectCache = Editor.Instance.ProjectCache;
             if (projectCache.TryGetCustomData("ClothGizmoPaintValue", out var cachedPaintValue))
                 _gizmoMode.PaintValue = JsonSerializer.Deserialize<float>(cachedPaintValue);
@@ -48,7 +48,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 _gizmoMode.BrushSize = JsonSerializer.Deserialize<float>(cachedBrushSize);
             if (projectCache.TryGetCustomData("ClothGizmoBrushStrength", out var cachedBrushStrength))
                 _gizmoMode.BrushStrength = JsonSerializer.Deserialize<float>(cachedBrushStrength);
-            
+
             gizmos.AddMode(_gizmoMode);
             _prevMode = gizmos.ActiveMode;
             gizmos.ActiveMode = _gizmoMode;
