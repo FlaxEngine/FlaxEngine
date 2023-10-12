@@ -27,14 +27,14 @@
 #define MAX_INPUT_CHANNELS 2
 #define MAX_OUTPUT_CHANNELS 8
 #define MAX_CHANNELS_MATRIX_SIZE (MAX_INPUT_CHANNELS*MAX_OUTPUT_CHANNELS)
-#if BUILD_RELEASE
-#define XAUDIO2_CHECK_ERROR(method)
-#else
+#if ENABLE_ASSERTION
 #define XAUDIO2_CHECK_ERROR(method) \
     if (hr != 0) \
     { \
         LOG(Error, "XAudio2 method {0} failed with error 0x{1:X} (at line {2})", TEXT(#method), hr, __LINE__ - 1); \
     }
+#else
+#define XAUDIO2_CHECK_ERROR(method)
 #endif
 #define FLAX_COORD_SCALE 0.01f // units are meters
 #define FLAX_DST_TO_XAUDIO(x) x * FLAX_COORD_SCALE
@@ -112,7 +112,9 @@ namespace XAudio2
 
         COM_DECLSPEC_NOTHROW void STDMETHODCALLTYPE OnVoiceError(THIS_ void* pBufferContext, HRESULT Error) override
         {
+#if ENABLE_ASSERTION
             LOG(Warning, "IXAudio2VoiceCallback::OnVoiceError! Error: 0x{0:x}", Error);
+#endif
         }
 
     public:
