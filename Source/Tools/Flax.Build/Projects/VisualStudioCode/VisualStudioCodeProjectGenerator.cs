@@ -389,7 +389,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                                         json.AddField("type", "coreclr");
                                         json.AddField("name", name);
                                         json.AddField("request", "launch");
-                                        json.AddField("preLaunchTask", solution.Name + '|' + configuration.Name);
+                                        json.AddField("preLaunchTask", project.Name + '|' + configuration.Name);
                                         json.AddField("cwd", buildToolWorkspace);
                                         if (configuration.Platform == Platform.BuildPlatform.Target)
                                         {
