@@ -31,7 +31,7 @@
 #define XAUDIO2_CHECK_ERROR(method) \
     if (hr != 0) \
     { \
-        LOG(Error, "XAudio2 method {0} failed with error 0x{1:X} (at line {2})", TEXT(#method), hr, __LINE__ - 1); \
+        LOG(Error, "XAudio2 method {0} failed with error 0x{1:X} (at line {2})", TEXT(#method), (uint32)hr, __LINE__ - 1); \
     }
 #else
 #define XAUDIO2_CHECK_ERROR(method)
@@ -131,7 +131,8 @@ namespace XAudio2
         XAUDIO2_SEND_DESCRIPTOR Destination;
         float Pitch;
         float Pan;
-        float StartTime;
+        float StartTimeForQueueBuffer;
+        float LastBufferStartTime;
         float DopplerFactor;
         uint64 LastBufferStartSamplesPlayed;
         int32 BuffersProcessed;
@@ -155,7 +156,8 @@ namespace XAudio2
             Destination.pOutputVoice = nullptr;
             Pitch = 1.0f;
             Pan = 0.0f;
-            StartTime = 0.0f;
+            StartTimeForQueueBuffer = 0.0f;
+            LastBufferStartTime = 0.0f;
             IsDirty = false;
             Is3D = false;
             IsPlaying = false;
@@ -265,11 +267,14 @@ namespace XAudio2
         buffer.pAudioData = aBuffer->Data.Get();
         buffer.AudioBytes = aBuffer->Data.Count();
 
-        if (aSource->StartTime > ZeroTolerance)
+        if (aSource->StartTimeForQueueBuffer > ZeroTolerance)
         {
-            buffer.PlayBegin = (UINT32)(aSource->StartTime * (aBuffer->Info.SampleRate * aBuffer->Info.NumChannels));
-            buffer.PlayLength = aBuffer->Info.NumSamples / aBuffer->Info.NumChannels - buffer.PlayBegin;
-            aSource->StartTime = 0;
+            // Offset start position when playing buffer with a custom time offset
+            const uint32 bytesPerSample = aBuffer->Info.BitDepth / 8 * aBuffer->Info.NumChannels;
+            buffer.PlayBegin = (UINT32)(aSource->StartTimeForQueueBuffer * aBuffer->Info.SampleRate);
+            buffer.PlayLength = (buffer.AudioBytes / bytesPerSample) - buffer.PlayBegin;
+            aSource->LastBufferStartTime = aSource->StartTimeForQueueBuffer;
+            aSource->StartTimeForQueueBuffer = 0;
         }
 
         const HRESULT hr = aSource->Voice->SubmitSourceBuffer(&buffer);
@@ -512,6 +517,7 @@ void AudioBackendXAudio2::Source_IsLoopingChanged(AudioSource* source)
     hr = aSource->Voice->FlushSourceBuffers();
     XAUDIO2_CHECK_ERROR(FlushSourceBuffers);
     aSource->LastBufferStartSamplesPlayed = 0;
+    aSource->LastBufferStartTime = 0;
     aSource->BuffersProcessed = 0;
 
     XAUDIO2_BUFFER buffer = { 0 };
@@ -524,7 +530,7 @@ void AudioBackendXAudio2::Source_IsLoopingChanged(AudioSource* source)
     const UINT32 totalSamples = aBuffer->Info.NumSamples / aBuffer->Info.NumChannels;
     buffer.PlayBegin = state.SamplesPlayed % totalSamples;
     buffer.PlayLength = totalSamples - buffer.PlayBegin;
-    aSource->StartTime = 0;
+    aSource->StartTimeForQueueBuffer = 0;
 
     XAudio2::QueueBuffer(aSource, source, bufferId, buffer);
 
@@ -610,7 +616,8 @@ void AudioBackendXAudio2::Source_Stop(AudioSource* source)
     auto aSource = XAudio2::GetSource(source);
     if (aSource && aSource->Voice)
     {
-        aSource->StartTime = 0.0f;
+        aSource->StartTimeForQueueBuffer = 0.0f;
+        aSource->LastBufferStartTime = 0.0f;
 
         // Pause
         HRESULT hr = aSource->Voice->Stop();
@@ -620,6 +627,7 @@ void AudioBackendXAudio2::Source_Stop(AudioSource* source)
         // Unset streaming buffers to rewind
         hr = aSource->Voice->FlushSourceBuffers();
         XAUDIO2_CHECK_ERROR(FlushSourceBuffers);
+        Platform::Sleep(10); // TODO: find a better way to handle case when VoiceCallback::OnBufferEnd is called after source was stopped thus BuffersProcessed != 0, probably via buffers contexts ptrs
         aSource->BuffersProcessed = 0;
         aSource->Callback.PeekSamples();
     }
@@ -631,7 +639,7 @@ void AudioBackendXAudio2::Source_SetCurrentBufferTime(AudioSource* source, float
     if (aSource)
     {
         // Store start time so next buffer submitted will start from here (assumes audio is stopped)
-        aSource->StartTime = value;
+        aSource->StartTimeForQueueBuffer = value;
     }
 }
 
@@ -647,8 +655,9 @@ float AudioBackendXAudio2::Source_GetCurrentBufferTime(const AudioSource* source
         aSource->Voice->GetState(&state);
         const uint32 numChannels = clipInfo.NumChannels;
         const uint32 totalSamples = clipInfo.NumSamples / numChannels;
+        const uint32 sampleRate = clipInfo.SampleRate;// / clipInfo.NumChannels;
         state.SamplesPlayed -= aSource->LastBufferStartSamplesPlayed % totalSamples; // Offset by the last buffer start to get time relative to its begin
-        time = aSource->StartTime + (state.SamplesPlayed % totalSamples) / static_cast<float>(Math::Max(1U, clipInfo.SampleRate));
+        time = aSource->LastBufferStartTime + (state.SamplesPlayed % totalSamples) / static_cast<float>(Math::Max(1U, sampleRate));
     }
     return time;
 }
@@ -765,8 +774,7 @@ void AudioBackendXAudio2::Buffer_Write(uint32 bufferId, byte* samples, const Aud
     XAudio2::Buffer* aBuffer = XAudio2::Buffers[bufferId - 1];
     XAudio2::Locker.Unlock();
 
-    const uint32 bytesPerSample = info.BitDepth / 8;
-    const int32 samplesLength = info.NumSamples * bytesPerSample;
+    const uint32 samplesLength = info.NumSamples * info.BitDepth / 8;
 
     aBuffer->Info = info;
     aBuffer->Data.Set(samples, samplesLength);
