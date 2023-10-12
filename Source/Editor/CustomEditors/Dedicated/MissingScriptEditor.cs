@@ -1,12 +1,10 @@
 using FlaxEditor.Actions;
 using FlaxEditor.CustomEditors.Editors;
-using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using System;
 using System.Collections.Generic;
 
 namespace FlaxEditor.CustomEditors.Dedicated;
