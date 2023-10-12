@@ -202,10 +202,10 @@ FORCE_INLINE RetType CallStaticMethod(void* methodPtr, Args... args)
     return ((fun)methodPtr)(args...);
 }
 
-void RegisterNativeLibrary(const char* moduleName, const char* modulePath)
+void RegisterNativeLibrary(const char* moduleName, const Char* modulePath)
 {
     static void* RegisterNativeLibraryPtr = GetStaticMethodPointer(TEXT("RegisterNativeLibrary"));
-    CallStaticMethod<void, const char*, const char*>(RegisterNativeLibraryPtr, moduleName, modulePath);
+    CallStaticMethod<void, const char*, const Char*>(RegisterNativeLibraryPtr, moduleName, modulePath);
 }
 
 bool InitHostfxr();
@@ -287,7 +287,7 @@ bool MCore::LoadEngine()
         flaxLibraryPath = ::String(StringUtils::GetDirectoryName(Platform::GetExecutableFilePath())) / StringUtils::GetFileName(flaxLibraryPath);
     }
 #endif
-    RegisterNativeLibrary("FlaxEngine", StringAnsi(flaxLibraryPath).Get());
+    RegisterNativeLibrary("FlaxEngine", flaxLibraryPath.Get());
 
     MRootDomain = New<MDomain>("Root");
     MDomains.Add(MRootDomain);
@@ -730,7 +730,6 @@ DEFINE_INTERNAL_CALL(void) NativeInterop_CreateClass(NativeClassDefinitions* man
         StringAnsi assemblyName;
         StringAnsi assemblyFullName;
         GetAssemblyName(assemblyHandle, assemblyName, assemblyFullName);
-
         assembly = New<MAssembly>(nullptr, assemblyName, assemblyFullName, assemblyHandle);
         CachedAssemblyHandles.Add(assemblyHandle, assembly);
     }
@@ -797,7 +796,7 @@ bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePa
     if (nativePath.HasChars())
     {
         StringAnsi nativeName = _name.EndsWith(".CSharp") ? StringAnsi(_name.Get(), _name.Length() - 7) : StringAnsi(_name);
-        RegisterNativeLibrary(nativeName.Get(), StringAnsi(nativePath).Get());
+        RegisterNativeLibrary(nativeName.Get(), nativePath.Get());
     }
 #if USE_EDITOR
     // Register the editor module location for Assembly resolver
@@ -1223,9 +1222,9 @@ MException::~MException()
 MField::MField(MClass* parentClass, void* handle, const char* name, void* type, int fieldOffset, MFieldAttributes attributes)
     : _handle(handle)
     , _type(type)
+    , _fieldOffset(fieldOffset)
     , _parentClass(parentClass)
     , _name(name)
-    , _fieldOffset(fieldOffset)
     , _hasCachedAttributes(false)
 {
     switch (attributes & MFieldAttributes::FieldAccessMask)
@@ -1366,19 +1365,22 @@ MMethod::MMethod(MClass* parentClass, StringAnsi&& name, void* handle, int32 par
 
 void MMethod::CacheSignature() const
 {
-    _hasCachedSignature = true;
+    ScopeLock lock(BinaryModule::Locker);
+    if (_hasCachedSignature)
+        return;
 
     static void* GetMethodReturnTypePtr = GetStaticMethodPointer(TEXT("GetMethodReturnType"));
     static void* GetMethodParameterTypesPtr = GetStaticMethodPointer(TEXT("GetMethodParameterTypes"));
-
     _returnType = CallStaticMethod<void*, void*>(GetMethodReturnTypePtr, _handle);
+    if (_paramsCount != 0)
+    {
+        void** parameterTypeHandles;
+        CallStaticMethod<void, void*, void***>(GetMethodParameterTypesPtr, _handle, &parameterTypeHandles);
+        _parameterTypes.Set(parameterTypeHandles, _paramsCount);
+        MCore::GC::FreeMemory(parameterTypeHandles);
+    }
 
-    if (_paramsCount == 0)
-        return;
-    void** parameterTypeHandles;
-    CallStaticMethod<void, void*, void***>(GetMethodParameterTypesPtr, _handle, &parameterTypeHandles);
-    _parameterTypes.Set(parameterTypeHandles, _paramsCount);
-    MCore::GC::FreeMemory(parameterTypeHandles);
+    _hasCachedSignature = true;
 }
 
 MObject* MMethod::Invoke(void* instance, void** params, MObject** exception) const
@@ -1434,7 +1436,7 @@ MType* MMethod::GetParameterType(int32 paramIdx) const
     if (!_hasCachedSignature)
         CacheSignature();
     ASSERT_LOW_LAYER(paramIdx >= 0 && paramIdx < _paramsCount);
-    return (MType*)_parameterTypes[paramIdx];
+    return (MType*)_parameterTypes.Get()[paramIdx];
 }
 
 bool MMethod::GetParameterIsOut(int32 paramIdx) const
