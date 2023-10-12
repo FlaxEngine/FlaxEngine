@@ -103,25 +103,8 @@ public class MissingScriptEditor : GenericEditor
         return missingScripts;
     }
 
-    private void ReplaceScript(ScriptType script, bool replaceAllInScene)
+    private void RunReplacementMulticast(List<IUndoAction> actions)
     {
-        var actions = new List<IUndoAction>(4);
-
-        List<MissingScript> missingScripts = new List<MissingScript>();
-        if (!replaceAllInScene)
-        {
-            missingScripts.Add(Values[0] as MissingScript);
-        } else
-        {
-            missingScripts.AddRange(FindActorsWithMatchingMissingScript());
-        }
-
-        foreach (MissingScript missingScript in missingScripts)
-        {
-            actions.Add(AddRemoveScript.Add(missingScript.Actor, script));
-            actions.Add(AddRemoveScript.Remove(missingScript));
-        }
-
         if (actions.Count == 0)
         {
             Editor.LogWarning("Failed to replace scripts!");
@@ -136,6 +119,43 @@ public class MissingScriptEditor : GenericEditor
             presenter.Undo.AddAction(multiAction);
             presenter.Control.Focus();
         }
+    }
+
+    private void ReplaceScript(ScriptType script, bool replaceAllInScene)
+    {
+        var actions = new List<IUndoAction>(4);
+
+        List<MissingScript> missingScripts = new List<MissingScript>();
+        if (!replaceAllInScene)
+        {
+            missingScripts.Add(Values[0] as MissingScript);
+        } else
+        {
+            missingScripts = FindActorsWithMatchingMissingScript();
+        }
+
+        foreach (MissingScript missingScript in missingScripts)
+        {
+            AddRemoveScript addReplacementScriptAction = AddRemoveScript.Add(missingScript.Actor, script);
+            actions.Add(addReplacementScriptAction);
+        }
+        RunReplacementMulticast(actions);
+
+        for (int actionIdx = 0; actionIdx < actions.Count; actionIdx++)
+        {
+            AddRemoveScript addRemoveScriptAction = (AddRemoveScript) actions[actionIdx];
+            int orderInParent = addRemoveScriptAction.GetOrderInParent();
+
+            Script newScript = missingScripts[actionIdx].Actor.Scripts[orderInParent];
+            missingScripts[actionIdx].ReferenceScript = newScript;
+        }
+        actions.Clear();
+
+        foreach (MissingScript missingScript in missingScripts)
+        {
+            actions.Add(AddRemoveScript.Remove(missingScript));
+        }
+        RunReplacementMulticast(actions);
     }
 
     private void OnReplaceScriptButtonClicked()
