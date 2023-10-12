@@ -97,7 +97,7 @@ public class MissingScriptEditor : GenericEditor
                         continue;
                     }
 
-                    Debug.Log("Found correct missing script.");
+                    Debug.Log($"Found correct missing script: {actor.Name}, {missingActorScript}, {missingScripts.Count}.");
 
                     // Matching MissingScript.
                     missingScripts.Add(missingActorScript);
