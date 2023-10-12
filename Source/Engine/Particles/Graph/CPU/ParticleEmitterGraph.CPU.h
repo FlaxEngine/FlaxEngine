@@ -119,6 +119,7 @@ struct ParticleEmitterGraphCPUContext
     class SceneRenderTask* ViewTask;
     Array<ParticleEmitterGraphCPU*, FixedAllocation<32>> GraphStack;
     Dictionary<VisjectExecutor::Node*, ParticleEmitterGraphCPU*> Functions;
+    byte AttributesRemappingTable[PARTICLE_ATTRIBUTES_MAX_COUNT]; // Maps node attribute indices to the current particle layout (used to support accessing particle data from function graph which has different layout).
     int32 CallStackSize = 0;
     VisjectExecutor::Node* CallStack[PARTICLE_EMITTER_MAX_CALL_STACK];
 };

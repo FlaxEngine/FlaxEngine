@@ -175,6 +175,13 @@ namespace FlaxEditor.Surface
                 Color = new Color(110, 180, 81),
                 Archetypes = Archetypes.Collections.Nodes
             },
+            new GroupArchetype
+            {
+                GroupID = 19,
+                Name = "Behavior Tree",
+                Color = new Color(70, 220, 181),
+                Archetypes = Archetypes.BehaviorTree.Nodes
+            },
         };
 
         /// <summary>

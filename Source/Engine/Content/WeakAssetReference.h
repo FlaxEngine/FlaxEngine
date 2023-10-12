@@ -127,13 +127,13 @@ public:
 
     FORCE_INLINE WeakAssetReference& operator=(T* other)
     {
-        OnSet(other);
+        OnSet((Asset*)other);
         return *this;
     }
 
     FORCE_INLINE WeakAssetReference& operator=(const Guid& id)
     {
-        OnSet((T*)::LoadAsset(id, T::TypeInitializer));
+        OnSet((Asset*)::LoadAsset(id, T::TypeInitializer));
         return *this;
     }
 

@@ -117,9 +117,9 @@ public:
     void OnParentChanged() override;
     const Span<MaterialSlot> GetMaterialSlots() const override;
     MaterialBase* GetMaterial(int32 entryIndex) override;
+    void UpdateBounds() override;
 
 protected:
     // [ModelInstanceActor]
-    void OnTransformChanged() override;
     void OnActiveInTreeChanged() override;
 };

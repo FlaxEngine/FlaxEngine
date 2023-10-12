@@ -115,15 +115,23 @@ namespace FlaxEditor.Surface
             var p1 = _rootControl.PointFromParent(ref _leftMouseDownPos);
             var p2 = _rootControl.PointFromParent(ref _mousePos);
             var selectionRect = Rectangle.FromPoints(p1, p2);
+            var selectionChanged = false;
 
             // Find controls to select
             for (int i = 0; i < _rootControl.Children.Count; i++)
             {
                 if (_rootControl.Children[i] is SurfaceControl control)
                 {
-                    control.IsSelected = control.IsSelectionIntersecting(ref selectionRect);
+                    var select = control.IsSelectionIntersecting(ref selectionRect);
+                    if (select != control.IsSelected)
+                    {
+                        control.IsSelected = select;
+                        selectionChanged = true;
+                    }
                 }
             }
+            if (selectionChanged)
+                SelectionChanged?.Invoke();
         }
 
         private void OnSurfaceControlSpawned(SurfaceControl control)
@@ -252,8 +260,11 @@ namespace FlaxEditor.Surface
                             node.Location += delta;
                         _leftMouseDownPos = location;
                         _movingNodesDelta += delta;
-                        Cursor = CursorType.SizeAll;
-                        MarkAsEdited(false);
+                        if (_movingNodes.Count > 0)
+                        {
+                            Cursor = CursorType.SizeAll;
+                            MarkAsEdited(false);
+                        }
                     }
 
                     // Handled
@@ -343,12 +354,12 @@ namespace FlaxEditor.Surface
             if (!handled)
                 CustomMouseDoubleClick?.Invoke(ref location, button, ref handled);
 
-            if (!handled && CanEdit)
+            // Insert reroute node
+            if (!handled && CanEdit && CanUseNodeType(7, 29))
             {
                 var mousePos = _rootControl.PointFromParent(ref _mousePos);
                 if (IntersectsConnection(mousePos, out InputBox inputBox, out OutputBox outputBox) && GetControlUnderMouse() == null)
                 {
-                    // Insert reroute node
                     if (Undo != null)
                     {
                         bool undoEnabled = Undo.Enabled;

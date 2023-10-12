@@ -105,12 +105,12 @@ public:
     /// <param name="other">The other.</param>
     AssetReference(const AssetReference& other)
     {
-        OnSet(other.Get());
+        OnSet(other._asset);
     }
 
     AssetReference(AssetReference&& other)
     {
-        OnSet(other.Get());
+        OnSet(other._asset);
         other.OnSet(nullptr);
     }
 
@@ -118,7 +118,7 @@ public:
     {
         if (&other != this)
         {
-            OnSet(other.Get());
+            OnSet(other._asset);
             other.OnSet(nullptr);
         }
         return *this;
@@ -134,19 +134,19 @@ public:
 public:
     FORCE_INLINE AssetReference& operator=(const AssetReference& other)
     {
-        OnSet(other.Get());
+        OnSet(other._asset);
         return *this;
     }
 
     FORCE_INLINE AssetReference& operator=(T* other)
     {
-        OnSet(other);
+        OnSet((Asset*)other);
         return *this;
     }
 
     FORCE_INLINE AssetReference& operator=(const Guid& id)
     {
-        OnSet((T*)::LoadAsset(id, T::TypeInitializer));
+        OnSet(::LoadAsset(id, T::TypeInitializer));
         return *this;
     }
 

@@ -113,7 +113,7 @@ void SpriteRender::Draw(RenderContext& renderContext)
     auto model = _quadModel.As<Model>();
     if (model->GetLoadedLODs() == 0)
         return;
-    const auto& view = renderContext.View;
+    const auto& view = (renderContext.LodProxyView ? *renderContext.LodProxyView : renderContext.View);
     Matrix m1, m2, m3, world;
     Matrix::Scaling(_size.X, _size.Y, 1.0f, m2);
     Matrix::RotationY(PI, m3);

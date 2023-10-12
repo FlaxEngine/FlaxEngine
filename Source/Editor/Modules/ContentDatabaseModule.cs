@@ -373,7 +373,6 @@ namespace FlaxEditor.Modules
                 // Note: we use content backend because file may be in use or sth, it's safe
                 if (FlaxEngine.Content.RenameAsset(oldPath, newPath))
                 {
-                    // Error
                     Editor.LogError(string.Format("Cannot rename asset \'{0}\' to \'{1}\'", oldPath, newPath));
                     return true;
                 }
@@ -387,7 +386,6 @@ namespace FlaxEditor.Modules
                 }
                 catch (Exception ex)
                 {
-                    // Error
                     Editor.LogWarning(ex);
                     Editor.LogError(string.Format("Cannot rename asset \'{0}\' to \'{1}\'", oldPath, newPath));
                     return true;
@@ -418,7 +416,6 @@ namespace FlaxEditor.Modules
                 }
                 catch (Exception ex)
                 {
-                    // Error
                     Editor.LogWarning(ex);
                     Editor.LogError(string.Format("Cannot move folder \'{0}\' to \'{1}\'", oldPath, newPath));
                     return;
@@ -479,7 +476,6 @@ namespace FlaxEditor.Modules
 
             if (item.IsFolder && Directory.Exists(newPath))
             {
-                // Error
                 MessageBox.Show("Cannot move folder. Target location already exists.");
                 return;
             }
@@ -489,7 +485,6 @@ namespace FlaxEditor.Modules
             var newParent = Find(newDirPath) as ContentFolder;
             if (newParent == null)
             {
-                // Error
                 MessageBox.Show("Cannot move item. Missing target location.");
                 return;
             }
@@ -511,7 +506,6 @@ namespace FlaxEditor.Modules
                     }
                     catch (Exception ex)
                     {
-                        // Error
                         Editor.LogWarning(ex);
                         Editor.LogError(string.Format("Cannot move folder \'{0}\' to \'{1}\'", oldPath, newPath));
                         return;
@@ -531,7 +525,6 @@ namespace FlaxEditor.Modules
                     }
                     catch (Exception ex)
                     {
-                        // Error
                         Editor.LogWarning(ex);
                         Editor.LogWarning(string.Format("Cannot remove folder \'{0}\'", oldPath));
                         return;
@@ -566,7 +559,6 @@ namespace FlaxEditor.Modules
         {
             if (item == null || !item.Exists)
             {
-                // Error
                 MessageBox.Show("Cannot move item. It's missing.");
                 return;
             }
@@ -590,7 +582,6 @@ namespace FlaxEditor.Modules
                         }
                         catch (Exception ex)
                         {
-                            // Error
                             Editor.LogWarning(ex);
                             Editor.LogError(string.Format("Cannot copy folder \'{0}\' to \'{1}\'", sourcePath, targetPath));
                             return;
@@ -615,7 +606,6 @@ namespace FlaxEditor.Modules
                         // Note: we use content backend because file may be in use or sth, it's safe
                         if (Editor.ContentEditing.CloneAssetFile(sourcePath, targetPath, Guid.NewGuid()))
                         {
-                            // Error
                             Editor.LogError(string.Format("Cannot copy asset \'{0}\' to \'{1}\'", sourcePath, targetPath));
                             return;
                         }
@@ -629,7 +619,6 @@ namespace FlaxEditor.Modules
                         }
                         catch (Exception ex)
                         {
-                            // Error
                             Editor.LogWarning(ex);
                             Editor.LogError(string.Format("Cannot copy asset \'{0}\' to \'{1}\'", sourcePath, targetPath));
                             return;
@@ -681,7 +670,6 @@ namespace FlaxEditor.Modules
                     }
                     catch (Exception ex)
                     {
-                        // Error
                         Editor.LogWarning(ex);
                         Editor.LogWarning(string.Format("Cannot remove folder \'{0}\'", path));
                         return;
@@ -1072,6 +1060,7 @@ namespace FlaxEditor.Modules
             Proxy.Add(new SkeletonMaskProxy());
             Proxy.Add(new GameplayGlobalsProxy());
             Proxy.Add(new VisualScriptProxy());
+            Proxy.Add(new BehaviorTreeProxy());
             Proxy.Add(new LocalizedStringTableProxy());
             Proxy.Add(new FileProxy());
             Proxy.Add(new SpawnableJsonAssetProxy<PhysicalMaterial>());

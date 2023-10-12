@@ -25,6 +25,7 @@
 #include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Scripting/Scripting.h"
+#include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/Threading.h"
@@ -40,12 +41,18 @@
 #include <mono/jit/mono-private-unstable.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/appdomain.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/metadata.h>
+#include <mono/metadata/threads.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/mono-private-unstable.h>
 typedef char char_t;
 #define DOTNET_HOST_MONO_DEBUG 0
+#ifdef USE_MONO_AOT_MODULE
+void* MonoAotModuleHandle = nullptr;
+#endif
+MonoDomain* MonoDomainHandle = nullptr;
 #else
 #error "Unknown .NET runtime host."
 #endif
@@ -179,7 +186,7 @@ void* GetStaticMethodPointer(const String& methodName);
 /// Calls the managed static method in NativeInterop class with given parameters.
 /// </summary>
 template<typename RetType, typename... Args>
-inline RetType CallStaticMethodByName(const String& methodName, Args... args)
+FORCE_INLINE RetType CallStaticMethodByName(const String& methodName, Args... args)
 {
     typedef RetType (CORECLR_DELEGATE_CALLTYPE* fun)(Args...);
     return ((fun)GetStaticMethodPointer(methodName))(args...);
@@ -189,7 +196,7 @@ inline RetType CallStaticMethodByName(const String& methodName, Args... args)
 /// Calls the managed static method with given parameters.
 /// </summary>
 template<typename RetType, typename... Args>
-inline RetType CallStaticMethod(void* methodPtr, Args... args)
+FORCE_INLINE RetType CallStaticMethod(void* methodPtr, Args... args)
 {
     typedef RetType (CORECLR_DELEGATE_CALLTYPE* fun)(Args...);
     return ((fun)methodPtr)(args...);
@@ -515,6 +522,12 @@ void MCore::GC::FreeMemory(void* ptr, bool coTaskMem)
 
 void MCore::Thread::Attach()
 {
+#if DOTNET_HOST_MONO
+    if (!IsInMainThread() && !mono_domain_get())
+    {
+        mono_thread_attach(MonoDomainHandle);
+    }
+#endif
 }
 
 void MCore::Thread::Exit()
@@ -616,14 +629,33 @@ bool MCore::Type::IsReference(MType* type)
 
 void MCore::ScriptingObject::SetInternalValues(MClass* klass, MObject* object, void* unmanagedPtr, const Guid* id)
 {
+#if PLATFORM_DESKTOP && !USE_MONO_AOT
     static void* ScriptingObjectSetInternalValuesPtr = GetStaticMethodPointer(TEXT("ScriptingObjectSetInternalValues"));
     CallStaticMethod<void, MObject*, void*, const Guid*>(ScriptingObjectSetInternalValuesPtr, object, unmanagedPtr, id);
+#else
+    const MField* monoUnmanagedPtrField = klass->GetField("__unmanagedPtr");
+    if (monoUnmanagedPtrField)
+        monoUnmanagedPtrField->SetValue(object, &unmanagedPtr);
+    const MField* monoIdField = klass->GetField("__internalId");
+    if (id != nullptr && monoIdField)
+        monoIdField->SetValue(object, (void*)id);
+#endif
 }
 
 MObject* MCore::ScriptingObject::CreateScriptingObject(MClass* klass, void* unmanagedPtr, const Guid* id)
 {
+#if PLATFORM_DESKTOP && !USE_MONO_AOT
     static void* ScriptingObjectSetInternalValuesPtr = GetStaticMethodPointer(TEXT("ScriptingObjectCreate"));
     return CallStaticMethod<MObject*, void*, void*, const Guid*>(ScriptingObjectSetInternalValuesPtr, klass->_handle, unmanagedPtr, id);
+#else
+    MObject* object = MCore::Object::New(klass);
+    if (object)
+    {
+        MCore::ScriptingObject::SetInternalValues(klass, object, unmanagedPtr, id);
+        MCore::Object::Init(object);
+    }
+    return object;
+#endif
 }
 
 const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
@@ -636,7 +668,7 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
 #if TRACY_ENABLE
     ZoneText(*_name, _name.Length());
 #endif
-    ScopeLock lock(_locker);
+    ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedClasses)
         return _classes;
     ASSERT(_classes.IsEmpty());
@@ -941,6 +973,9 @@ const Array<MMethod*>& MClass::GetMethods() const
 {
     if (_hasCachedMethods)
         return _methods;
+    ScopeLock lock(BinaryModule::Locker);
+    if (_hasCachedMethods)
+        return _methods;
 
     NativeMethodDefinitions* methods;
     int methodsCount;
@@ -972,6 +1007,9 @@ MField* MClass::GetField(const char* name) const
 
 const Array<MField*>& MClass::GetFields() const
 {
+    if (_hasCachedFields)
+        return _fields;
+    ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedFields)
         return _fields;
 
@@ -1018,6 +1056,9 @@ const Array<MProperty*>& MClass::GetProperties() const
 {
     if (_hasCachedProperties)
         return _properties;
+    ScopeLock lock(BinaryModule::Locker);
+    if (_hasCachedProperties)
+        return _properties;
 
     NativePropertyDefinitions* foundProperties;
     int numProperties;
@@ -1038,6 +1079,9 @@ const Array<MProperty*>& MClass::GetProperties() const
 
 const Array<MClass*>& MClass::GetInterfaces() const
 {
+    if (_hasCachedInterfaces)
+        return _interfaces;
+    ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedInterfaces)
         return _interfaces;
 
@@ -1073,6 +1117,9 @@ MObject* MClass::GetAttribute(const MClass* monoClass) const
 
 const Array<MObject*>& MClass::GetAttributes() const
 {
+    if (_hasCachedAttributes)
+        return _attributes;
+    ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedAttributes)
         return _attributes;
 
@@ -1225,8 +1272,8 @@ void MField::GetValue(MObject* instance, void* result) const
 
 void MField::GetValueReference(MObject* instance, void* result) const
 {
-    static void* FieldGetValueReferencePtr = GetStaticMethodPointer(TEXT("FieldGetValueReferenceWithOffset"));
-    CallStaticMethod<void, void*, int, void*>(FieldGetValueReferencePtr, instance, _fieldOffset, result);
+    static void* FieldGetValueReferencePtr = GetStaticMethodPointer(TEXT("FieldGetValueReference"));
+    CallStaticMethod<void, void*, void*, int, void*>(FieldGetValueReferencePtr, instance, _handle, _fieldOffset, result);
 }
 
 MObject* MField::GetValueBoxed(MObject* instance) const
@@ -1750,11 +1797,6 @@ void* GetStaticMethodPointer(const String& methodName)
 }
 
 #elif DOTNET_HOST_MONO
-
-#ifdef USE_MONO_AOT_MODULE
-void* MonoAotModuleHandle = nullptr;
-#endif
-MonoDomain* MonoDomainHandle = nullptr;
 
 void OnLogCallback(const char* logDomain, const char* logLevel, const char* message, mono_bool fatal, void* userData)
 {

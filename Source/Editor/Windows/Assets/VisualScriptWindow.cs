@@ -993,11 +993,7 @@ namespace FlaxEditor.Windows.Assets
                     }
                 }
                 if (vsWindow == null)
-                {
-                    var item = Editor.Instance.ContentDatabase.FindAsset(frame.Script.ID);
-                    if (item != null)
-                        vsWindow = Editor.Instance.ContentEditing.Open(item) as VisualScriptWindow;
-                }
+                    vsWindow = Editor.Instance.ContentEditing.Open(frame.Script) as VisualScriptWindow;
                 var node = vsWindow?.Surface.FindNode(frame.NodeId);
                 _debugStepOutNodesIds.Add(new KeyValuePair<VisualScript, uint>(frame.Script, frame.NodeId));
                 if (node != null)
@@ -1135,9 +1131,8 @@ namespace FlaxEditor.Windows.Assets
                 // Save data to the asset
                 if (_asset.SaveSurface(value, ref meta))
                 {
-                    // Error
                     _surface.MarkAsEdited();
-                    Editor.LogError("Failed to save Visual Script surface data");
+                    Editor.LogError("Failed to save surface data");
                 }
                 _asset.Reload();
                 SaveBreakpoints();
@@ -1196,7 +1191,6 @@ namespace FlaxEditor.Windows.Assets
             // Load surface graph
             if (_surface.Load())
             {
-                // Error
                 Editor.LogError("Failed to load Visual Script surface.");
                 return true;
             }
@@ -1221,11 +1215,7 @@ namespace FlaxEditor.Windows.Assets
             _canEdit = canEdit;
             _undo.Enabled = canEdit;
             _surface.CanEdit = canEdit;
-            foreach (var child in _propertiesEditor.Panel.Children)
-            {
-                if (!(child is ScrollBar))
-                    child.Enabled = canEdit;
-            }
+            _propertiesEditor.ReadOnly = !canEdit;
             UpdateToolstrip();
         }
 

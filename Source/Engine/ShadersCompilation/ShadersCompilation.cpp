@@ -143,9 +143,20 @@ bool ShadersCompilation::Compile(ShaderCompilationOptions& options)
 #endif
     }
 
-    // Print info if succeed
-    if (result == false)
+    if (result)
     {
+        // Output shader source to easily investigate errors (eg. for generated shaders like materials or particles)
+        const String outputSourceFolder = Globals::ProjectCacheFolder / TEXT("/Shaders/Source");
+        const String outputSourcePath = outputSourceFolder / options.TargetName + TEXT(".hlsl");
+        if (!FileSystem::DirectoryExists(outputSourceFolder))
+            FileSystem::CreateDirectory(outputSourceFolder);
+        File::WriteAllBytes(outputSourcePath, (const byte*)options.Source, options.SourceLength);
+        LOG(Error, "Shader compilation '{0}' failed (profile: {1})", options.TargetName, ::ToString(options.Profile));
+        LOG(Error, "Source: {0}", outputSourcePath);
+    }
+    else
+    {
+        // Success
         const DateTime endTime = DateTime::NowUTC();
         LOG(Info, "Shader compilation '{0}' succeed in {1} ms (profile: {2})", options.TargetName, Math::CeilToInt(static_cast<float>((endTime - startTime).GetTotalMilliseconds())), ::ToString(options.Profile));
     }
@@ -301,7 +312,7 @@ void ShadersCompilation::RegisterForShaderReloads(Asset* asset, const String& in
     {
         // Create a directory watcher to track the included file changes
         const String directory = StringUtils::GetDirectoryName(includedPath);
-        if (!ShaderIncludesWatcher.ContainsKey(directory))
+        if (FileSystem::DirectoryExists(directory) && !ShaderIncludesWatcher.ContainsKey(directory))
         {
             auto watcher = New<FileSystemWatcher>(directory, false);
             watcher->OnEvent.Bind<OnShaderIncludesWatcherEvent>();

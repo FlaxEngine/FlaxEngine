@@ -128,7 +128,6 @@ namespace FlaxEngine.Json
             var result = new SoftTypeReference();
             if (reader.TokenType == JsonToken.String)
                 result.TypeName = (string)reader.Value;
-
             return result;
         }
 
@@ -136,6 +135,34 @@ namespace FlaxEngine.Json
         public override bool CanConvert(Type objectType)
         {
             return objectType == typeof(SoftTypeReference);
+        }
+    }
+
+    /// <summary>
+    /// Serialize <see cref="BehaviorKnowledgeSelectorAny"/> as path string in internal format.
+    /// </summary>
+    /// <seealso cref="Newtonsoft.Json.JsonConverter" />
+    internal class BehaviorKnowledgeSelectorAnyConverter : JsonConverter
+    {
+        /// <inheritdoc />
+        public override void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            writer.WriteValue(((BehaviorKnowledgeSelectorAny)value).Path);
+        }
+
+        /// <inheritdoc />
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            var result = new BehaviorKnowledgeSelectorAny();
+            if (reader.TokenType == JsonToken.String)
+                result.Path = (string)reader.Value;
+            return result;
+        }
+
+        /// <inheritdoc />
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(BehaviorKnowledgeSelectorAny);
         }
     }
 

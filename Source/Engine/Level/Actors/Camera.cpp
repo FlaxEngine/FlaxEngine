@@ -332,6 +332,7 @@ void Camera::Draw(RenderContext& renderContext)
         draw.Buffer = &_previewModelBuffer;
         draw.World = &world;
         draw.DrawState = &drawState;
+        draw.Deformation = nullptr;
         draw.Lightmap = nullptr;
         draw.LightmapUVs = nullptr;
         draw.Flags = StaticFlags::Transform;

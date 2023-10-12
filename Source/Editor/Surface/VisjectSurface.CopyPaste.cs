@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Surface.Undo;
 using FlaxEngine;
@@ -64,6 +63,25 @@ namespace FlaxEditor.Surface
             {
                 Clipboard.Text = string.Empty;
                 return;
+            }
+
+            // Collect sealed nodes to be copied as well
+            foreach (var control in selection.ToArray())
+            {
+                if (control is SurfaceNode node)
+                {
+                    var sealedNodes = node.SealedNodes;
+                    if (sealedNodes != null)
+                    {
+                        foreach (var sealedNode in sealedNodes)
+                        {
+                            if (sealedNode != null && !selection.Contains(sealedNode))
+                            {
+                                selection.Add(sealedNode);
+                            }
+                        }
+                    }
+                }
             }
 
             var dataModel = new DataModel();
@@ -254,7 +272,7 @@ namespace FlaxEditor.Surface
                         throw new InvalidOperationException("Unknown node type.");
 
                     // Validate given node type
-                    if (!CanUseNodeType(nodeArchetype))
+                    if (!CanUseNodeType(groupArchetype, nodeArchetype))
                         continue;
 
                     // Create
@@ -355,7 +373,7 @@ namespace FlaxEditor.Surface
                         }
                     }
 
-                    Context.OnControlLoaded(node);
+                    Context.OnControlLoaded(node, SurfaceNodeActions.Paste);
                 }
 
                 // Setup connections
@@ -395,11 +413,15 @@ namespace FlaxEditor.Surface
                 // Post load
                 foreach (var node in nodes)
                 {
-                    node.Value.OnSurfaceLoaded();
+                    node.Value.OnSurfaceLoaded(SurfaceNodeActions.Paste);
                 }
                 foreach (var node in nodes)
                 {
-                    node.Value.OnSpawned();
+                    node.Value.OnSpawned(SurfaceNodeActions.Paste);
+                }
+                foreach (var node in nodes)
+                {
+                    node.Value.OnPasted(idsMapping);
                 }
 
                 // Add undo action

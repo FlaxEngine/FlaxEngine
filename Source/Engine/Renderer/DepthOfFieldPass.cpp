@@ -157,7 +157,7 @@ bool DepthOfFieldPass::setupResources()
             psDesc.GS = shader->GetGS("GS_Bokeh");
             psDesc.PS = shader->GetPS("PS_Bokeh");
             psDesc.BlendMode = BlendingMode::Additive;
-            psDesc.PrimitiveTopologyType = PrimitiveTopologyType::Point;
+            psDesc.PrimitiveTopology = PrimitiveTopologyType::Point;
             if (_psBokeh->Init(psDesc))
                 return true;
         }

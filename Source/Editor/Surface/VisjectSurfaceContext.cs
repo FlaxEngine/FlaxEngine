@@ -315,9 +315,9 @@ namespace FlaxEditor.Surface
             }
 
             // Initialize
-            OnControlLoaded(comment);
-            comment.OnSurfaceLoaded();
-            OnControlSpawned(comment);
+            OnControlLoaded(comment, SurfaceNodeActions.User);
+            comment.OnSurfaceLoaded(SurfaceNodeActions.User);
+            OnControlSpawned(comment, SurfaceNodeActions.User);
 
             MarkAsModified();
 
@@ -361,7 +361,7 @@ namespace FlaxEditor.Surface
             var flags = nodeArchetype.Flags;
             nodeArchetype.Flags &= ~NodeFlags.NoSpawnViaGUI;
             nodeArchetype.Flags &= ~NodeFlags.NoSpawnViaPaste;
-            if (_surface != null && !_surface.CanUseNodeType(nodeArchetype))
+            if (_surface != null && !_surface.CanUseNodeType(groupArchetype, nodeArchetype))
             {
                 nodeArchetype.Flags = flags;
                 Editor.LogWarning("Cannot spawn given node type. Title: " + nodeArchetype.Title);
@@ -389,14 +389,14 @@ namespace FlaxEditor.Surface
                     throw new InvalidOperationException("Invalid node custom values.");
             }
             node.Location = location;
-            OnControlLoaded(node);
+            OnControlLoaded(node, SurfaceNodeActions.User);
             beforeSpawned?.Invoke(node);
-            node.OnSurfaceLoaded();
-            OnControlSpawned(node);
+            node.OnSurfaceLoaded(SurfaceNodeActions.User);
+            OnControlSpawned(node, SurfaceNodeActions.User);
 
             // Undo action
-            if (Surface != null && Surface.Undo != null)
-                Surface.Undo.AddAction(new AddRemoveNodeAction(node, true));
+            if (Surface != null)
+                Surface.AddBatchedUndoAction(new AddRemoveNodeAction(node, true));
 
             MarkAsModified();
 

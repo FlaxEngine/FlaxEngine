@@ -101,6 +101,13 @@ namespace FlaxEditor.Gizmo
         /// <summary>
         /// Gets a value indicating whether duplicate objects during gizmo operation (eg. when transforming).
         /// </summary>
+        SceneGraph.RootNode SceneGraphRoot { get; }
+
+        /// <summary>
+        /// Selects the scene objects.
+        /// </summary>
+        /// <param name="nodes">The nodes to select</param>
+        void Select(List<SceneGraph.SceneGraphNode> nodes);
         bool UseDuplicate => Viewport.Root.GetKey(KeyboardKeys.Shift);
     }
 }

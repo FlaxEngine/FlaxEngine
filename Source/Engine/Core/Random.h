@@ -14,4 +14,15 @@ namespace Random
     {
         return (float)rand() / (float)RAND_MAX;
     }
+
+    /// <summary>
+    /// Generates a pseudo-random number from specific range.
+    /// </summary>
+    /// <param name="min">The minimum value (inclusive).</param>
+    /// <param name="max">The maximum value (inclusive).</param>
+    /// <returns>The random number.</returns>
+    inline float RandRange(float min, float max)
+    {
+        return min + (max - min) * Rand();
+    }
 }

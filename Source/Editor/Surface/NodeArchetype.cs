@@ -92,7 +92,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Checks if the given type is compatible with the given node archetype. Used for custom nodes
         /// </summary>
-        public delegate bool IsCompatible(NodeArchetype nodeArch, ScriptType portType, ConnectionsHint hint);
+        public delegate bool IsCompatible(NodeArchetype nodeArch, ScriptType portType, ConnectionsHint hint, VisjectSurfaceContext context);
 
         /// <summary>
         /// Unique node type ID within a single group.

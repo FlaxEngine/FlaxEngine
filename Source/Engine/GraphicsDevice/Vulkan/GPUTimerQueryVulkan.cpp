@@ -16,7 +16,7 @@ void GPUTimerQueryVulkan::Interrupt(CmdBufferVulkan* cmdBuffer)
     if (!_interrupted)
     {
         _interrupted = true;
-        WriteTimestamp(cmdBuffer, _queries[_queryIndex].End);
+        WriteTimestamp(cmdBuffer, _queries[_queryIndex].End, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
     }
 }
 
@@ -28,7 +28,7 @@ void GPUTimerQueryVulkan::Resume(CmdBufferVulkan* cmdBuffer)
     e.End.Pool = nullptr;
 
     _interrupted = false;
-    WriteTimestamp(cmdBuffer, e.Begin);
+    WriteTimestamp(cmdBuffer, e.Begin, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
     _queries.Add(e);
     _queryIndex++;
@@ -56,13 +56,13 @@ bool GPUTimerQueryVulkan::GetResult(Query& query)
     return false;
 }
 
-void GPUTimerQueryVulkan::WriteTimestamp(CmdBufferVulkan* cmdBuffer, Query& query) const
+void GPUTimerQueryVulkan::WriteTimestamp(CmdBufferVulkan* cmdBuffer, Query& query, VkPipelineStageFlagBits stage) const
 {
     auto pool = _device->FindAvailableTimestampQueryPool();
     uint32 index;
     pool->AcquireQuery(index);
 
-    vkCmdWriteTimestamp(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool->GetHandle(), index);
+    vkCmdWriteTimestamp(cmdBuffer->GetHandle(), stage, pool->GetHandle(), index);
     pool->MarkQueryAsStarted(index);
 
     query.Pool = pool;
@@ -168,7 +168,7 @@ void GPUTimerQueryVulkan::Begin()
 
         _queryIndex = 0;
         _interrupted = false;
-        WriteTimestamp(cmdBuffer, e.Begin);
+        WriteTimestamp(cmdBuffer, e.Begin, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
         context->GetCmdBufferManager()->OnQueryBegin(this);
 
         ASSERT(_queries.IsEmpty());
@@ -193,7 +193,7 @@ void GPUTimerQueryVulkan::End()
 
         if (!_interrupted)
         {
-            WriteTimestamp(cmdBuffer, _queries[_queryIndex].End);
+            WriteTimestamp(cmdBuffer, _queries[_queryIndex].End, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
         }
         context->GetCmdBufferManager()->OnQueryEnd(this);
     }

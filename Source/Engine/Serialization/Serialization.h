@@ -589,16 +589,6 @@ namespace Serialization
     template<typename T, typename AllocationType = HeapAllocation>
     inline void Deserialize(ISerializable::DeserializeStream& stream, Array<T, AllocationType>& v, ISerializeModifier* modifier)
     {
-        if (!stream.IsArray())
-            return;
-        const auto& streamArray = stream.GetArray();
-        v.Resize(streamArray.Size());
-        for (int32 i = 0; i < v.Count(); i++)
-            Deserialize(streamArray[i], (T&)v[i], modifier);
-    }
-    template<typename AllocationType = HeapAllocation>
-    inline void Deserialize(ISerializable::DeserializeStream& stream, Array<byte, AllocationType>& v, ISerializeModifier* modifier)
-    {
         if (stream.IsArray())
         {
             const auto& streamArray = stream.GetArray();
@@ -606,12 +596,12 @@ namespace Serialization
             for (int32 i = 0; i < v.Count(); i++)
                 Deserialize(streamArray[i], v[i], modifier);
         }
-        else if (stream.IsString())
+        else if (TIsPODType<T>::Value && stream.IsString())
         {
-            // byte[] encoded as Base64
+            // T[] encoded as Base64
             const StringAnsiView streamView(stream.GetStringAnsiView());
-            v.Resize(Encryption::Base64DecodeLength(*streamView, streamView.Length()));
-            Encryption::Base64Decode(*streamView, streamView.Length(), v.Get());
+            v.Resize(Encryption::Base64DecodeLength(*streamView, streamView.Length()) / sizeof(T));
+            Encryption::Base64Decode(*streamView, streamView.Length(), (byte*)v.Get());
         }
     }
 

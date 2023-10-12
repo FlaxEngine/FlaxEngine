@@ -10,6 +10,7 @@ using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Cameras;
+using FlaxEditor.Viewport.Modes;
 using FlaxEditor.Viewport.Widgets;
 using FlaxEditor.Windows;
 using FlaxEngine;
@@ -184,6 +185,31 @@ namespace FlaxEditor.Viewport
             get => _showNavigationButton.Checked;
             set => _showNavigationButton.Checked = value;
         }
+
+        /// <summary>
+        /// The sculpt terrain gizmo.
+        /// </summary>
+        public Tools.Terrain.SculptTerrainGizmoMode SculptTerrainGizmo;
+
+        /// <summary>
+        /// The paint terrain gizmo.
+        /// </summary>
+        public Tools.Terrain.PaintTerrainGizmoMode PaintTerrainGizmo;
+
+        /// <summary>
+        /// The edit terrain gizmo.
+        /// </summary>
+        public Tools.Terrain.EditTerrainGizmoMode EditTerrainGizmo;
+
+        /// <summary>
+        /// The paint foliage gizmo.
+        /// </summary>
+        public Tools.Foliage.PaintFoliageGizmoMode PaintFoliageGizmo;
+
+        /// <summary>
+        /// The edit foliage gizmo.
+        /// </summary>
+        public Tools.Foliage.EditFoliageGizmoMode EditFoliageGizmo;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MainEditorGizmoViewport"/> class.
@@ -385,7 +411,20 @@ namespace FlaxEditor.Viewport
             DragHandlers.Add(_dragActorType);
             DragHandlers.Add(_dragAssets);
 
-            InitModes();
+            // Init gizmo modes
+            {
+                // Add default modes used by the editor
+                Gizmos.AddMode(new TransformGizmoMode());
+                Gizmos.AddMode(new NoGizmoMode());
+                Gizmos.AddMode(SculptTerrainGizmo = new Tools.Terrain.SculptTerrainGizmoMode());
+                Gizmos.AddMode(PaintTerrainGizmo = new Tools.Terrain.PaintTerrainGizmoMode());
+                Gizmos.AddMode(EditTerrainGizmo = new Tools.Terrain.EditTerrainGizmoMode());
+                Gizmos.AddMode(PaintFoliageGizmo = new Tools.Foliage.PaintFoliageGizmoMode());
+                Gizmos.AddMode(EditFoliageGizmo = new Tools.Foliage.EditFoliageGizmoMode());
+
+                // Activate transform mode first
+                Gizmos.SetActiveMode<TransformGizmoMode>();
+            }
 
             // Setup input actions
             InputActions.Add(options => options.TranslateMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);
@@ -1165,12 +1204,17 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
+        public override void Select(List<SceneGraphNode> nodes)
+        {
+            _editor.SceneEditing.Select(nodes);
+        }
+
+        /// <inheritdoc />
         public override void OnDestroy()
         {
             if (IsDisposing)
                 return;
 
-            DisposeModes();
             _debugDrawData.Dispose();
             if (_task != null)
             {

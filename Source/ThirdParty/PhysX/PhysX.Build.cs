@@ -38,7 +38,7 @@ public class PhysX : DepsModule
 
         bool useDynamicLinking = false;
         bool usePVD = false;
-        bool useVehicle = true;
+        bool useVehicle = Physics.WithVehicle;
         bool usePhysicsCooking = Physics.WithCooking;
 
         var depsRoot = options.DepsFolder;

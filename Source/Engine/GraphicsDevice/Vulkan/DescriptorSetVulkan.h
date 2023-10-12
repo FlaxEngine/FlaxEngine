@@ -26,70 +26,21 @@ namespace DescriptorSet
     {
         // Vertex shader stage
         Vertex = 0,
-
         // Pixel shader stage
         Pixel = 1,
-
         // Geometry shader stage
         Geometry = 2,
-
         // Hull shader stage
         Hull = 3,
-
         // Domain shader stage
         Domain = 4,
-
         // Graphics pipeline stages count
         GraphicsStagesCount = 5,
-
         // Compute pipeline slot
         Compute = 0,
-
         // The maximum amount of slots for all stages
         Max = 5,
     };
-
-    inline Stage GetSetForFrequency(ShaderStage stage)
-    {
-        switch (stage)
-        {
-        case ShaderStage::Vertex:
-            return Vertex;
-        case ShaderStage::Hull:
-            return Hull;
-        case ShaderStage::Domain:
-            return Domain;
-        case ShaderStage::Pixel:
-            return Pixel;
-        case ShaderStage::Geometry:
-            return Geometry;
-        case ShaderStage::Compute:
-            return Compute;
-        default:
-        CRASH;
-            return Max;
-        }
-    }
-
-    inline ShaderStage GetFrequencyForGfxSet(Stage stage)
-    {
-        switch (stage)
-        {
-        case Vertex:
-            return ShaderStage::Vertex;
-        case Hull:
-            return ShaderStage::Hull;
-        case Domain:
-            return ShaderStage::Domain;
-        case Pixel:
-            return ShaderStage::Pixel;
-        case Geometry:
-            return ShaderStage::Geometry;
-        default:
-        CRASH;
-            return (ShaderStage)ShaderStage_Count;
-        }
-    }
 
     template<typename T>
     inline bool CopyAndReturnNotEqual(T& a, T b)

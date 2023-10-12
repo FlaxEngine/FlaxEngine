@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using FlaxEditor.Content;
-using FlaxEditor.Content.Import;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.Content.Thumbnails;
 using FlaxEditor.Modules;
@@ -153,12 +152,12 @@ namespace FlaxEditor
         public ContentFindingModule ContentFinding;
 
         /// <summary>
-        /// The scripts editing
+        /// The scripts editing.
         /// </summary>
         public CodeEditingModule CodeEditing;
 
         /// <summary>
-        /// The scripts documentation
+        /// The scripts documentation.
         /// </summary>
         public CodeDocsModule CodeDocs;
 
@@ -178,7 +177,7 @@ namespace FlaxEditor
         public ProjectCacheModule ProjectCache;
 
         /// <summary>
-        /// The undo/redo
+        /// The undo/redo.
         /// </summary>
         public EditorUndo Undo;
 
@@ -369,7 +368,7 @@ namespace FlaxEditor
             {
                 foreach (var preview in activePreviews)
                 {
-                    if (preview == loadingPreview || 
+                    if (preview == loadingPreview ||
                         (preview.Instance != null && (preview.Instance == control || preview.Instance.HasActorInHierarchy(control))))
                     {
                         // Link it to the prefab preview to see it in the editor
@@ -726,8 +725,8 @@ namespace FlaxEditor
 
             // Cleanup
             Undo.Dispose();
-            Surface.VisualScriptSurface.NodesCache.Clear();
-            Surface.AnimGraphSurface.NodesCache.Clear();
+            foreach (var cache in Surface.VisjectSurface.NodesCache.Caches.ToArray())
+                cache.Clear();
             Instance = null;
 
             // Invoke new instance if need to open a project
@@ -797,7 +796,6 @@ namespace FlaxEditor
         {
             if (projectFilePath == null || !File.Exists(projectFilePath))
             {
-                // Error
                 MessageBox.Show("Missing project");
                 return;
             }
@@ -933,6 +931,11 @@ namespace FlaxEditor
             /// The <see cref="FlaxEngine.Animation"/>.
             /// </summary>
             Animation = 11,
+
+            /// <summary>
+            /// The <see cref="FlaxEngine.BehaviorTree"/>.
+            /// </summary>
+            BehaviorTree = 12,
         }
 
         /// <summary>

@@ -17,9 +17,7 @@
 #include "Editor/ProjectInfo.h"
 #include "Editor/Cooker/GameCooker.h"
 #include "Editor/Utilities/EditorUtilities.h"
-
-#include "pugixml/pugixml_extra.hpp"
-
+#include <ThirdParty/pugixml/pugixml_extra.hpp>
 using namespace pugi;
 
 IMPLEMENT_SETTINGS_GETTER(MacPlatformSettings, MacPlatform);

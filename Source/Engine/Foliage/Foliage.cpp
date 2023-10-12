@@ -1180,6 +1180,7 @@ void Foliage::Draw(RenderContext& renderContext)
         draw.Buffer = &type.Entries;
         draw.World = &world;
         draw.DrawState = &instance.DrawState;
+        draw.Deformation = nullptr;
         draw.Bounds = instance.Bounds;
         draw.PerInstanceRandom = instance.Random;
         draw.DrawModes = type.DrawModes & view.Pass & view.GetShadowsDrawPassMask(type.ShadowsMode);

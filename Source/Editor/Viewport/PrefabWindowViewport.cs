@@ -83,6 +83,7 @@ namespace FlaxEditor.Viewport
             _dragAssets = new DragAssets(ValidateDragItem);
             ShowDebugDraw = true;
             ShowEditorPrimitives = true;
+            Gizmos = new GizmosCollection(this);
             var inputOptions = window.Editor.Options.Options.Input;
 
             // Prepare rendering task

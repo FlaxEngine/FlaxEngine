@@ -28,6 +28,12 @@
 #include "Engine/Utilities/Crc.h"
 #include "Engine/Utilities/StringConverter.h"
 
+#if USE_NETCORE
+#define MANAGED_GC_HANDLE AsUint64
+#else
+#define MANAGED_GC_HANDLE AsUint
+#endif
+
 namespace
 {
     const char* InBuiltTypesTypeNames[40] =
@@ -124,13 +130,6 @@ VariantType::VariantType(Types type, MClass* klass)
 
 VariantType::VariantType(const StringAnsiView& typeName)
 {
-    // Check case for array
-    if (typeName.EndsWith(StringAnsiView("[]"), StringSearchCase::CaseSensitive))
-    {
-        new(this) VariantType(Array, StringAnsiView(typeName.Get(), typeName.Length() - 2));
-        return;
-    }
-
     // Try using in-built type
     for (uint32 i = 0; i < ARRAY_COUNT(InBuiltTypesTypeNames); i++)
     {
@@ -139,6 +138,13 @@ VariantType::VariantType(const StringAnsiView& typeName)
             new(this) VariantType((Types)i);
             return;
         }
+    }
+
+    // Check case for array
+    if (typeName.EndsWith(StringAnsiView("[]"), StringSearchCase::CaseSensitive))
+    {
+        new(this) VariantType(Array, StringAnsiView(typeName.Get(), typeName.Length() - 2));
+        return;
     }
 
     // Try using scripting type
@@ -166,7 +172,10 @@ VariantType::VariantType(const StringAnsiView& typeName)
 #if USE_CSHARP
     if (const auto mclass = Scripting::FindClass(typeName))
     {
-        new(this) VariantType(ManagedObject, typeName);
+        if (mclass->IsEnum())
+            new(this) VariantType(Enum, typeName);
+        else
+            new(this) VariantType(ManagedObject, typeName);
         return;
     }
 #endif
@@ -244,6 +253,13 @@ bool VariantType::operator==(const VariantType& other) const
         return true;
     }
     return false;
+}
+
+bool VariantType::operator==(const ScriptingTypeHandle& type) const
+{
+    if (Type == Null)
+        return !type;
+    return type && type.GetType().Fullname == GetTypeName();
 }
 
 void VariantType::SetTypeName(const StringView& typeName)
@@ -495,13 +511,8 @@ Variant::Variant(Variant&& other) noexcept
         other.AsDictionary = nullptr;
         break;
     case VariantType::ManagedObject:
-#if USE_NETCORE
-        AsUint64 = other.AsUint64;
-        other.AsUint64 = 0;
-#elif USE_MONO
-        AsUint = other.AsUint;
-        other.AsUint = 0;
-#endif
+        MANAGED_GC_HANDLE = other.MANAGED_GC_HANDLE;
+        other.MANAGED_GC_HANDLE = 0;
         break;
     case VariantType::Null:
     case VariantType::Void:
@@ -603,7 +614,10 @@ Variant::Variant(ScriptingObject* v)
 {
     AsObject = v;
     if (v)
+    {
+        Type.SetTypeName(v->GetType().Fullname);
         v->Deleted.Bind<Variant, &Variant::OnObjectDeleted>(this);
+    }
 }
 
 Variant::Variant(Asset* v)
@@ -612,6 +626,7 @@ Variant::Variant(Asset* v)
     AsAsset = v;
     if (v)
     {
+        Type.SetTypeName(v->GetType().Fullname);
         v->AddReference();
         v->OnUnloaded.Bind<Variant, &Variant::OnAssetUnloaded>(this);
     }
@@ -622,11 +637,7 @@ Variant::Variant(Asset* v)
 Variant::Variant(MObject* v)
     : Type(VariantType::ManagedObject, v ? MCore::Object::GetClass(v) : nullptr)
 {
-#if USE_NETCORE
-    AsUint64 = v ? MCore::GCHandle::New(v) : 0;
-#else
-    AsUint = v ? MCore::GCHandle::New(v) : 0;
-#endif
+    MANAGED_GC_HANDLE = v ? MCore::GCHandle::New(v) : 0;
 }
 
 #else
@@ -965,13 +976,8 @@ Variant::~Variant()
         Delete(AsDictionary);
         break;
     case VariantType::ManagedObject:
-#if USE_NETCORE
-        if (AsUint64)
-            MCore::GCHandle::Free(AsUint64);
-#elif USE_MONO
-        if (AsUint)
-            MCore::GCHandle::Free(AsUint);
-#endif
+        if (MANAGED_GC_HANDLE)
+            MCore::GCHandle::Free(MANAGED_GC_HANDLE);
         break;
     default: ;
     }
@@ -1024,13 +1030,8 @@ Variant& Variant::operator=(Variant&& other)
         other.AsDictionary = nullptr;
         break;
     case VariantType::ManagedObject:
-#if USE_NETCORE
-        AsUint64 = other.AsUint64;
-        other.AsUint64 = 0;
-#elif USE_MONO
-        AsUint = other.AsUint;
-        other.AsUint = 0;
-#endif
+        MANAGED_GC_HANDLE = other.MANAGED_GC_HANDLE;
+        other.MANAGED_GC_HANDLE = 0;
         break;
     case VariantType::Null:
     case VariantType::Void:
@@ -1082,9 +1083,7 @@ Variant& Variant::operator=(const Variant& other)
     case VariantType::Object:
         AsObject = other.AsObject;
         if (other.AsObject)
-        {
             AsObject->Deleted.Bind<Variant, &Variant::OnObjectDeleted>(this);
-        }
         break;
     case VariantType::Asset:
         AsAsset = other.AsAsset;
@@ -1104,11 +1103,7 @@ Variant& Variant::operator=(const Variant& other)
             AsDictionary = New<Dictionary<Variant, Variant>>(*other.AsDictionary);
         break;
     case VariantType::ManagedObject:
-#if USE_NETCORE
-        AsUint64 = other.AsUint64 ? MCore::GCHandle::New(MCore::GCHandle::GetTarget(other.AsUint64)) : 0;
-#elif USE_MONO
-        AsUint = other.AsUint ? MCore::GCHandle::New(MCore::GCHandle::GetTarget(other.AsUint)) : 0;
-#endif
+        MANAGED_GC_HANDLE = other.MANAGED_GC_HANDLE ? MCore::GCHandle::New(MCore::GCHandle::GetTarget(other.MANAGED_GC_HANDLE)) : 0;
         break;
     case VariantType::Null:
     case VariantType::Void:
@@ -1233,11 +1228,9 @@ bool Variant::operator==(const Variant& other) const
                 return false;
             return AsBlob.Length == other.AsBlob.Length && StringUtils::Compare(static_cast<const char*>(AsBlob.Data), static_cast<const char*>(other.AsBlob.Data), AsBlob.Length - 1) == 0;
         case VariantType::ManagedObject:
-#if USE_NETCORE
+#if USE_CSHARP
             // TODO: invoke C# Equality logic?
-            return AsUint64 == other.AsUint64 || MCore::GCHandle::GetTarget(AsUint64) == MCore::GCHandle::GetTarget(other.AsUint64);
-#elif USE_MONO
-            return AsUint == other.AsUint || MCore::GCHandle::GetTarget(AsUint) == MCore::GCHandle::GetTarget(other.AsUint);
+            return MANAGED_GC_HANDLE == other.MANAGED_GC_HANDLE || MCore::GCHandle::GetTarget(MANAGED_GC_HANDLE) == MCore::GCHandle::GetTarget(other.MANAGED_GC_HANDLE);
 #else
             return false;
 #endif
@@ -1330,10 +1323,8 @@ Variant::operator bool() const
     case VariantType::Asset:
         return AsAsset != nullptr;
     case VariantType::ManagedObject:
-#if USE_NETCORE
-        return AsUint64 != 0 && MCore::GCHandle::GetTarget(AsUint64) != nullptr;
-#elif USE_MONO
-        return AsUint != 0 && MCore::GCHandle::GetTarget(AsUint) != nullptr;
+#if USE_CSHARP
+        return MANAGED_GC_HANDLE != 0 && MCore::GCHandle::GetTarget(MANAGED_GC_HANDLE) != nullptr;
 #else
         return false;
 #endif
@@ -1526,6 +1517,7 @@ Variant::operator float() const
     case VariantType::Float3:
         return AsFloat3().X;
     case VariantType::Float4:
+    case VariantType::Color:
         return AsFloat4().X;
     case VariantType::Double2:
         return (float)AsDouble2().X;
@@ -1539,6 +1531,16 @@ Variant::operator float() const
         return (float)AsInt3().X;
     case VariantType::Int4:
         return (float)AsInt4().X;
+    case VariantType::Pointer:
+        return AsPointer ? 1.0f : 0.0f;
+    case VariantType::Object:
+        return AsObject ? 1.0f : 0.0f;
+    case VariantType::Asset:
+        return AsAsset ? 1.0f : 0.0f;
+    case VariantType::Blob:
+        return AsBlob.Length > 0 ? 1.0f : 0.0f;
+    case VariantType::ManagedObject:
+        return MANAGED_GC_HANDLE ? 1.0f : 0.0f;
     default:
         return 0;
     }
@@ -1604,10 +1606,8 @@ Variant::operator void*() const
     case VariantType::Blob:
         return AsBlob.Data;
     case VariantType::ManagedObject:
-#if USE_NETCORE
-        return AsUint64 ? MCore::GCHandle::GetTarget(AsUint64) : nullptr;
-#elif USE_MONO
-        return AsUint ? MCore::GCHandle::GetTarget(AsUint) : nullptr;
+#if USE_CSHARP
+        return MANAGED_GC_HANDLE ? MCore::GCHandle::GetTarget(MANAGED_GC_HANDLE) : nullptr;
 #else
         return nullptr;
 #endif
@@ -1653,10 +1653,8 @@ Variant::operator ScriptingObject*() const
 
 Variant::operator MObject*() const
 {
-#if USE_NETCORE
-    return Type.Type == VariantType::ManagedObject && AsUint64 ? MCore::GCHandle::GetTarget(AsUint64) : nullptr;
-#elif USE_MONO
-    return Type.Type == VariantType::ManagedObject && AsUint ? MCore::GCHandle::GetTarget(AsUint) : nullptr;
+#if USE_CSHARP
+    return Type.Type == VariantType::ManagedObject && MANAGED_GC_HANDLE ? MCore::GCHandle::GetTarget(MANAGED_GC_HANDLE) : nullptr;
 #else
     return nullptr;
 #endif
@@ -2369,12 +2367,9 @@ void Variant::SetType(const VariantType& type)
             Delete(AsDictionary);
         break;
     case VariantType::ManagedObject:
-#if USE_NETCORE
-        if (AsUint64)
-            MCore::GCHandle::Free(AsUint64);
-#elif USE_MONO
-        if (AsUint)
-            MCore::GCHandle::Free(AsUint);
+#if USE_CSHARP
+        if (MANAGED_GC_HANDLE)
+            MCore::GCHandle::Free(MANAGED_GC_HANDLE);
 #endif
         break;
     default: ;
@@ -2429,10 +2424,8 @@ void Variant::SetType(const VariantType& type)
         AsDictionary = New<Dictionary<Variant, Variant>>();
         break;
     case VariantType::ManagedObject:
-#if USE_NETCORE
-        AsUint64 = 0;
-#elif USE_MONO
-        AsUint = 0;
+#if USE_CSHARP
+        MANAGED_GC_HANDLE = 0;
 #endif
         break;
     case VariantType::Structure:
@@ -2486,12 +2479,9 @@ void Variant::SetType(VariantType&& type)
             Delete(AsDictionary);
         break;
     case VariantType::ManagedObject:
-#if USE_NETCORE
-        if (AsUint64)
-            MCore::GCHandle::Free(AsUint64);
-#elif USE_MONO
-        if (AsUint)
-            MCore::GCHandle::Free(AsUint);
+#if USE_CSHARP
+        if (MANAGED_GC_HANDLE)
+            MCore::GCHandle::Free(MANAGED_GC_HANDLE);
 #endif
         break;
     default: ;
@@ -2546,10 +2536,8 @@ void Variant::SetType(VariantType&& type)
         AsDictionary = New<Dictionary<Variant, Variant>>();
         break;
     case VariantType::ManagedObject:
-#if USE_NETCORE
-        AsUint64 = 0;
-#elif USE_MONO
-        AsUint = 0;
+#if USE_CSHARP
+        MANAGED_GC_HANDLE = 0;
 #endif
         break;
     case VariantType::Structure:
@@ -2679,21 +2667,13 @@ void Variant::SetManagedObject(MObject* object)
     {
         if (Type.Type != VariantType::ManagedObject)
             SetType(VariantType(VariantType::ManagedObject, MCore::Object::GetClass(object)));
-#if USE_NETCORE
-        AsUint64 = MCore::GCHandle::New(object);
-#else
-        AsUint = MCore::GCHandle::New(object);
-#endif
+        MANAGED_GC_HANDLE = MCore::GCHandle::New(object);
     }
     else
     {
         if (Type.Type != VariantType::ManagedObject || Type.TypeName)
             SetType(VariantType(VariantType::ManagedObject));
-#if USE_NETCORE
-        AsUint64 = 0;
-#elif USE_MONO
-        AsUint = 0;
-#endif
+        MANAGED_GC_HANDLE = 0;
     }
 #endif
 }
@@ -2806,10 +2786,8 @@ String Variant::ToString() const
     case VariantType::Typename:
         return String((const char*)AsBlob.Data, AsBlob.Length ? AsBlob.Length - 1 : 0);
     case VariantType::ManagedObject:
-#if USE_NETCORE
-        return AsUint64 ? String(MUtils::ToString(MCore::Object::ToString(MCore::GCHandle::GetTarget(AsUint64)))) : TEXT("null");
-#elif USE_MONO
-        return AsUint ? String(MUtils::ToString(MCore::Object::ToString(MCore::GCHandle::GetTarget(AsUint)))) : TEXT("null");
+#if USE_CSHARP
+        return MANAGED_GC_HANDLE ? String(MUtils::ToString(MCore::Object::ToString(MCore::GCHandle::GetTarget(MANAGED_GC_HANDLE)))) : TEXT("null");
 #else
         return String::Empty;
 #endif
@@ -2932,6 +2910,84 @@ void Variant::Inline()
             break;
         }
     }
+}
+
+Variant Variant::NewValue(const StringAnsiView& typeName)
+{
+    Variant v;
+    const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeName);
+    if (typeHandle)
+    {
+        const ScriptingType& type = typeHandle.GetType();
+        switch (type.Type)
+        {
+        case ScriptingTypes::Script:
+            v.SetType(VariantType(VariantType::Object, typeName));
+            v.AsObject = type.Script.Spawn(ScriptingObjectSpawnParams(Guid::New(), typeHandle));
+            if (v.AsObject)
+                v.AsObject->Deleted.Bind<Variant, &Variant::OnObjectDeleted>(&v);
+            break;
+        case ScriptingTypes::Structure:
+            v.SetType(VariantType(VariantType::Structure, typeName));
+            break;
+        case ScriptingTypes::Enum:
+            v.SetType(VariantType(VariantType::Enum, typeName));
+            v.AsUint64 = 0;
+            break;
+        default:
+            LOG(Error, "Unsupported scripting type '{}' for Variant", typeName.ToString());
+            break;
+        }
+    }
+#if USE_CSHARP
+    else if (const auto mclass = Scripting::FindClass(typeName))
+    {
+        // Fallback to C#-only types
+        if (mclass->IsEnum())
+        {
+            v.SetType(VariantType(VariantType::Enum, typeName));
+            v.AsUint64 = 0;
+        }
+        else if (mclass->IsValueType())
+        {
+            v.SetType(VariantType(VariantType::Structure, typeName));
+        }
+        else
+        {
+            v.SetType(VariantType(VariantType::ManagedObject, typeName));
+            MObject* instance = mclass->CreateInstance();
+            if (instance)
+            {
+                v.MANAGED_GC_HANDLE = MCore::GCHandle::New(instance);
+            }
+        }
+    }
+#endif
+    else if (typeName.HasChars())
+    {
+        LOG(Warning, "Missing scripting type \'{0}\'", String(typeName));
+    }
+    v.Inline(); // Wrap in-built types
+    return MoveTemp(v);
+}
+
+void Variant::DeleteValue()
+{
+    // Delete any object owned by the Variant
+    switch (Type.Type)
+    {
+    case VariantType::Object:
+        if (AsObject)
+        {
+            AsObject->Deleted.Unbind<Variant, &Variant::OnObjectDeleted>(this);
+            AsObject->DeleteObject();
+            AsObject = nullptr;
+        }
+        break;
+    }
+
+    // Go back to null
+    SetType(VariantType(VariantType::Null));
 }
 
 bool Variant::CanCast(const Variant& v, const VariantType& to)
@@ -3847,12 +3903,7 @@ void Variant::AllocStructure()
             Platform::MemoryCopy(AsBlob.Data, data, AsBlob.Length);
 #else
             Type.Type = VariantType::ManagedObject;
-
-#if USE_NETCORE
-            AsUint64 = MCore::GCHandle::New(instance);
-#else
-            AsUint = MCore::GCHandle::New(instance);
-#endif
+            MANAGED_GC_HANDLE = MCore::GCHandle::New(instance);
 #endif
         }
         else
@@ -3944,10 +3995,8 @@ uint32 GetHash(const Variant& key)
     case VariantType::Typename:
         return GetHash((const char*)key.AsBlob.Data);
     case VariantType::ManagedObject:
-#if USE_NETCORE
-        return key.AsUint64 ? (uint32)MCore::Object::GetHashCode(MCore::GCHandle::GetTarget(key.AsUint64)) : 0;
-#elif USE_MONO
-        return key.AsUint ? (uint32)MCore::Object::GetHashCode(MCore::GCHandle::GetTarget(key.AsUint)) : 0;
+#if USE_CSHARP
+        return key.MANAGED_GC_HANDLE ? (uint32)MCore::Object::GetHashCode(MCore::GCHandle::GetTarget(key.MANAGED_GC_HANDLE)) : 0;
 #else
         return 0;
 #endif

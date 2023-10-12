@@ -43,9 +43,9 @@ namespace FlaxEditor.Surface.Archetypes
                 box.CurrentType = new ScriptType(Values[0].GetType());
             }
 
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 var box = (OutputBox)GetBox(0);
                 if (Values[0] == null)
@@ -100,9 +100,9 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnValuesChanged();
             }
 
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 _output = (OutputBox)Elements[0];
                 _typePicker = new TypePickerControl
@@ -238,9 +238,9 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnValuesChanged();
             }
 
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 _output = (OutputBox)Elements[0];
                 _keyTypePicker = new TypePickerControl

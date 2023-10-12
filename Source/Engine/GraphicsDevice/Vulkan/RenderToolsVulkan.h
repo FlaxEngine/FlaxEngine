@@ -43,26 +43,8 @@ private:
 public:
 
 #if GPU_ENABLE_RESOURCE_NAMING
-
     static void SetObjectName(VkDevice device, uint64 objectHandle, VkObjectType objectType, const String& name);
-
-    static void SetObjectName(VkDevice device, uint64 objectHandle, VkObjectType objectType, const char* name)
-    {
-#if VK_EXT_debug_utils
-        // Check for valid function pointer (may not be present if not running in a debugging application)
-        if (vkSetDebugUtilsObjectNameEXT != nullptr && name != nullptr && *name != 0)
-        {
-            VkDebugUtilsObjectNameInfoEXT objectNameInfo;
-            ZeroStruct(objectNameInfo, VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT);
-            objectNameInfo.objectType = objectType;
-            objectNameInfo.objectHandle = objectHandle;
-            objectNameInfo.pObjectName = name;
-            const VkResult result = vkSetDebugUtilsObjectNameEXT(device, &objectNameInfo);
-            LOG_VULKAN_RESULT(result);
-        }
-#endif
-    }
-
+    static void SetObjectName(VkDevice device, uint64 objectHandle, VkObjectType objectType, const char* name);
 #endif
 
     static String GetVkErrorString(VkResult result);
