@@ -279,6 +279,8 @@ namespace FlaxEditor.Content.GUI
             // Sort items depending on sortMethod parameter
             _children.Sort(((control, control1) =>
                                {
+                                   if (control == null || control1 == null)
+                                       return 0;
                                    if (sortType == SortType.AlphabeticReverse)
                                    {
                                        if (control.CompareTo(control1) > 0)

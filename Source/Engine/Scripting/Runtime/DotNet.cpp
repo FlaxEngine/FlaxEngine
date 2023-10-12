@@ -802,7 +802,7 @@ bool MAssembly::LoadImage(const String& assemblyPath, const StringView& nativePa
     // Register the editor module location for Assembly resolver
     else
     {
-        RegisterNativeLibrary(_name.Get(), StringAnsi(assemblyPath).Get());
+        RegisterNativeLibrary(_name.Get(), assemblyPath.Get());
     }
 #endif
 
