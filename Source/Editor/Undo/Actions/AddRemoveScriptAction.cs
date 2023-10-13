@@ -49,7 +49,16 @@ namespace FlaxEditor.Actions
             _scriptTypeName = script.TypeName;
             _prefabId = script.PrefabID;
             _prefabObjectId = script.PrefabObjectID;
-            _scriptData = FlaxEngine.Json.JsonSerializer.Serialize(script);
+            try
+            {
+                _scriptData = FlaxEngine.Json.JsonSerializer.Serialize(script);
+            }
+            catch (Exception ex)
+            {
+                _scriptData = null;
+                Debug.LogError("Failed to serialize script data for Undo due to exception");
+                Debug.LogException(ex);
+            }
             _parentId = script.Actor.ID;
             _orderInParent = script.OrderInParent;
             _enabled = script.Enabled;

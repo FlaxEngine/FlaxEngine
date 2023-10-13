@@ -71,7 +71,7 @@ public:
     /// <param name="g">The green channel value.</param>
     /// <param name="b">The blue channel value.</param>
     /// <param name="a">The alpha channel value.</param>
-    Color(float r, float g, float b, float a = 1)
+    FORCE_INLINE Color(float r, float g, float b, float a = 1)
         : R(r)
         , G(g)
         , B(b)
@@ -203,7 +203,7 @@ public:
         return Color(R - b.R, G - b.G, B - b.B, A - b.A);
     }
 
-    Color operator*(const Color& b) const
+    FORCE_INLINE Color operator*(const Color& b) const
     {
         return Color(R * b.R, G * b.G, B * b.B, A * b.A);
     }

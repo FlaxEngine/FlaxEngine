@@ -28,6 +28,8 @@
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/Platform/FileSystemWatcher.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/File.h"
+#include "Engine/Engine/Globals.h"
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
 #endif
@@ -143,9 +145,22 @@ bool ShadersCompilation::Compile(ShaderCompilationOptions& options)
 #endif
     }
 
-    // Print info if succeed
-    if (result == false)
+    if (result)
     {
+#if USE_EDITOR
+        // Output shader source to easily investigate errors (eg. for generated shaders like materials or particles)
+        const String outputSourceFolder = Globals::ProjectCacheFolder / TEXT("/Shaders/Source");
+        const String outputSourcePath = outputSourceFolder / options.TargetName + TEXT(".hlsl");
+        if (!FileSystem::DirectoryExists(outputSourceFolder))
+            FileSystem::CreateDirectory(outputSourceFolder);
+        File::WriteAllBytes(outputSourcePath, (const byte*)options.Source, options.SourceLength);
+        LOG(Error, "Shader compilation '{0}' failed (profile: {1})", options.TargetName, ::ToString(options.Profile));
+        LOG(Error, "Source: {0}", outputSourcePath);
+#endif
+    }
+    else
+    {
+        // Success
         const DateTime endTime = DateTime::NowUTC();
         LOG(Info, "Shader compilation '{0}' succeed in {1} ms (profile: {2})", options.TargetName, Math::CeilToInt(static_cast<float>((endTime - startTime).GetTotalMilliseconds())), ::ToString(options.Profile));
     }

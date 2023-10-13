@@ -56,7 +56,7 @@ namespace FlaxEditor.Modules
         public event Action ImportingQueueBegin;
 
         /// <summary>
-        /// Occurs when file is being imported.
+        /// Occurs when file is being imported. Can be called on non-main thread.
         /// </summary>
         public event Action<IFileEntryAction> ImportFileBegin;
 
@@ -68,12 +68,12 @@ namespace FlaxEditor.Modules
         public delegate void ImportFileEndDelegate(IFileEntryAction entry, bool failed);
 
         /// <summary>
-        /// Occurs when file importing end.
+        /// Occurs when file importing end. Can be called on non-main thread.
         /// </summary>
         public event ImportFileEndDelegate ImportFileEnd;
 
         /// <summary>
-        /// Occurs when assets importing ends.
+        /// Occurs when assets importing ends. Can be called on non-main thread.
         /// </summary>
         public event Action ImportingQueueEnd;
 

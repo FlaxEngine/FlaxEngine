@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Engine/Core/Config/Settings.h"
-#include "Engine/Serialization/Serialization.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Content/SceneReference.h"
@@ -14,6 +13,7 @@
 API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API BuildSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(BuildSettings);
+    API_AUTO_SERIALIZATION();
 
 public:
     /// <summary>
@@ -77,6 +77,12 @@ public:
     bool ShadersGenerateDebugData = false;
 
     /// <summary>
+    /// If checked, skips bundling default engine fonts for UI. Use if to reduce build size if you don't use default engine fonts but custom ones only.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2100), EditorDisplay(\"Content\")")
+    bool SkipDefaultFonts = false;
+
+    /// <summary>
     /// If checked, .NET Runtime won't be packaged with a game and will be required by user to be installed on system upon running game build. Available only on supported platforms such as Windows, Linux and macOS.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(3000), EditorDisplay(\"Scripting\", \"Skip .NET Runtime Packaging\")")
@@ -93,20 +99,4 @@ public:
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
     /// </summary>
     static BuildSettings* Get();
-
-    // [SettingsBase]
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override
-    {
-        DESERIALIZE(MaxAssetsPerPackage);
-        DESERIALIZE(MaxPackageSizeMB);
-        DESERIALIZE(ContentKey);
-        DESERIALIZE(ForDistribution);
-        DESERIALIZE(SkipPackaging);
-        DESERIALIZE(AdditionalAssets);
-        DESERIALIZE(AdditionalAssetFolders);
-        DESERIALIZE(ShadersNoOptimize);
-        DESERIALIZE(ShadersGenerateDebugData);
-        DESERIALIZE(SkipDotnetPackaging);
-        DESERIALIZE(SkipUnusedDotnetLibsPackaging);
-    }
 };

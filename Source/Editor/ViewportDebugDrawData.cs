@@ -97,7 +97,7 @@ namespace FlaxEditor
             if (_highlightMaterial == null
                 || (_highlights.Count == 0 && _highlightTriangles.Count == 0)
                 || renderContext.View.Pass == DrawPass.Depth
-            )
+               )
                 return;
             Profiler.BeginEvent("ViewportDebugDrawData.OnDraw");
 

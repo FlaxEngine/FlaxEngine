@@ -482,8 +482,8 @@ namespace FlaxEditor.GUI
                             Focus();
                         });
                         if (_selected != null)
-                        { 
-                            var selectedAssetName = Path.GetFileNameWithoutExtension(_selected.Path); 
+                        {
+                            var selectedAssetName = Path.GetFileNameWithoutExtension(_selected.Path);
                             popup.ScrollToAndHighlightItemByName(selectedAssetName);
                         }
                     }

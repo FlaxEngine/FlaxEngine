@@ -521,36 +521,32 @@ Asset* Content::GetAsset(const Guid& id)
 
 void Content::DeleteAsset(Asset* asset)
 {
-    ScopeLock locker(AssetsLocker);
-
-    // Validate
     if (asset == nullptr || asset->_deleteFileOnUnload)
-    {
-        // Back
         return;
-    }
 
     LOG(Info, "Deleting asset {0}...", asset->ToString());
+
+    // Ensure that asset is loaded (easier than cancel in-flight loading)
+    asset->WaitForLoaded();
 
     // Mark asset for delete queue (delete it after auto unload)
     asset->_deleteFileOnUnload = true;
 
     // Unload
-    UnloadAsset(asset);
+    asset->DeleteObject();
 }
 
 void Content::DeleteAsset(const StringView& path)
 {
-    ScopeLock locker(AssetsLocker);
-
-    // Check if is loaded
+    // Try to delete already loaded asset
     Asset* asset = GetAsset(path);
     if (asset != nullptr)
     {
-        // Delete asset
         DeleteAsset(asset);
         return;
     }
+
+    ScopeLock locker(AssetsLocker);
 
     // Remove from registry
     AssetInfo info;
@@ -573,7 +569,6 @@ void Content::deleteFileSafety(const StringView& path, const Guid& id)
     // Check if given id is invalid
     if (!id.IsValid())
     {
-        // Cancel operation
         LOG(Warning, "Cannot remove file \'{0}\'. Given ID is invalid.", path);
         return;
     }
@@ -585,7 +580,6 @@ void Content::deleteFileSafety(const StringView& path, const Guid& id)
         storage->CloseFileHandles(); // Close file handle to allow removing it
         if (!storage->HasAsset(id))
         {
-            // Skip removing
             LOG(Warning, "Cannot remove file \'{0}\'. It doesn\'t contain asset {1}.", path, id);
             return;
         }
@@ -790,10 +784,8 @@ bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPat
 
 void Content::UnloadAsset(Asset* asset)
 {
-    // Check input
     if (asset == nullptr)
         return;
-
     asset->DeleteObject();
 }
 

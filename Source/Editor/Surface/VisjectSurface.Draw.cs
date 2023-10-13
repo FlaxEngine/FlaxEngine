@@ -141,7 +141,7 @@ namespace FlaxEditor.Surface
 
             if (_connectionInstigator is Archetypes.Tools.RerouteNode)
             {
-                if (endPos.X < startPos.X && _lastInstigatorUnderMouse is null or Box { IsOutput: true})
+                if (endPos.X < startPos.X && _lastInstigatorUnderMouse is null or Box { IsOutput: true })
                 {
                     actualStartPos = endPos;
                     actualEndPos = startPos;

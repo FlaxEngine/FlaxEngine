@@ -510,7 +510,7 @@ namespace FlaxEditor.Surface.Archetypes
 
                 for (var i = 0; i < elements.Length; i++)
                 {
-                    if(elements[i].Type != NodeElementType.Output)
+                    if (elements[i].Type != NodeElementType.Output)
                         continue;
 
                     if (VisjectSurface.FullCastCheck(elements[i].ConnectionsType, inputType, hint))
@@ -533,7 +533,7 @@ namespace FlaxEditor.Surface.Archetypes
 
                 for (var i = 0; i < elements.Length; i++)
                 {
-                    if(elements[i].Type != NodeElementType.Input)
+                    if (elements[i].Type != NodeElementType.Input)
                         continue;
                     if (VisjectSurface.FullCastCheck(elements[i].ConnectionsType, outputType, hint))
                         return true;
@@ -725,7 +725,7 @@ namespace FlaxEditor.Surface.Archetypes
 
             /// <inheritdoc />
             protected override bool UseNormalMaps => false;
-            
+
             internal new static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 if (inputType == ScriptType.Object)
@@ -743,7 +743,7 @@ namespace FlaxEditor.Surface.Archetypes
 
                 for (var i = 0; i < elements.Length; i++)
                 {
-                    if(elements[i].Type != NodeElementType.Output)
+                    if (elements[i].Type != NodeElementType.Output)
                         continue;
                     if (VisjectSurface.FullCastCheck(elements[i].ConnectionsType, inputType, hint))
                         return true;
@@ -765,7 +765,7 @@ namespace FlaxEditor.Surface.Archetypes
 
                 for (var i = 0; i < elements.Length; i++)
                 {
-                    if(elements[i].Type != NodeElementType.Input)
+                    if (elements[i].Type != NodeElementType.Input)
                         continue;
                     if (VisjectSurface.FullCastCheck(elements[i].ConnectionsType, outputType, hint))
                         return true;
@@ -789,7 +789,7 @@ namespace FlaxEditor.Surface.Archetypes
 
             /// <inheritdoc />
             protected override bool UseNormalMaps => false;
-            
+
             internal new static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 if (inputType == ScriptType.Object)
@@ -987,7 +987,7 @@ namespace FlaxEditor.Surface.Archetypes
                     _combobox.Width = Width - 50;
                 }
             }
-            
+
             internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 return inputType == ScriptType.Void;
@@ -997,7 +997,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 if (outputType == ScriptType.Void)
                     return true;
-                
+
                 SurfaceParameter parameter = context.GetParameter((Guid)nodeArch.DefaultValues[0]);
                 ScriptType type = parameter?.Type ?? ScriptType.Null;
 

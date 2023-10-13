@@ -1,9 +1,8 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "Engine/Scripting/Types.h"
-
 #if !USE_CSHARP
-
+#include "Engine/Core/Types/Span.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ManagedCLR/MDomain.h"
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
