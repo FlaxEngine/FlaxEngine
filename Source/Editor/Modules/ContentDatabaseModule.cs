@@ -649,8 +649,6 @@ namespace FlaxEditor.Modules
             // Special case for folders
             if (item is ContentFolder folder)
             {
-                // TODO: maybe don't remove folders recursive but at once?
-
                 // Delete all children
                 if (folder.Children.Count > 0)
                 {
@@ -664,6 +662,9 @@ namespace FlaxEditor.Modules
                 // Remove directory
                 if (deletedByUser && Directory.Exists(path))
                 {
+                    // Flush files removal before removing folder (loaded assets remove file during object destruction in Asset::OnDeleteObject)
+                    FlaxEngine.Scripting.FlushRemovedObjects();
+
                     try
                     {
                         Directory.Delete(path, true);
@@ -1134,17 +1135,19 @@ namespace FlaxEditor.Modules
 
             RebuildInternal();
 
-            Editor.ContentImporting.ImportFileEnd += ContentImporting_ImportFileDone;
+            Editor.ContentImporting.ImportFileEnd += (obj, failed) =>
+            {
+                var path = obj.ResultUrl;
+                if (!failed)
+                    FlaxEngine.Scripting.InvokeOnUpdate(() => OnImportFileDone(path));
+            };
             _enableEvents = true;
         }
 
-        private void ContentImporting_ImportFileDone(IFileEntryAction obj, bool failed)
+        private void OnImportFileDone(string path)
         {
-            if (failed)
-                return;
-
             // Check if already has that element
-            var item = Find(obj.ResultUrl);
+            var item = Find(path);
             if (item is BinaryAssetItem binaryAssetItem)
             {
                 // Get asset info from the registry (content layer will update cache it just after import)

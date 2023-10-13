@@ -8,6 +8,7 @@
 #include "Engine/Platform/Windows/ComPtr.h"
 #include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Core/Types/StringView.h"
+#include "Engine/Core/Collections/Array.h"
 #include "../Win32/IncludeWindowsHeaders.h"
 
 // Hack this stuff (the problem is that GDI has function named Rectangle -> like one of the Flax core types)
