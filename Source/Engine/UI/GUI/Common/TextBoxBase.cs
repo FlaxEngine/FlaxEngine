@@ -1399,6 +1399,12 @@ namespace FlaxEngine.GUI
             }
             case KeyboardKeys.Escape:
             {
+                if (IsReadOnly)
+                {
+                    SetSelection(_selectionEnd);
+                    return true;
+                }
+
                 RestoreTextFromStart();
 
                 if (!IsNavFocused)
