@@ -81,7 +81,7 @@ namespace FlaxEditor.Modules
         /// On Asset Import delegate.
         /// </summary>
         /// <param name="importState">The current state of the asset's import settings to be used.</param>
-        public delegate void OnAssetImportDelegate(ImportModificationsInfo importState);
+        public delegate void OnAssetImportDelegate(ImportSettingsContext importState);
 
         /// <summary>
         /// Occurs when an asset is about to be imported (before dialog prompt opens) and allows you to modify the settings object.
@@ -102,9 +102,9 @@ namespace FlaxEditor.Modules
         /// <summary>
         /// Holds the current state of the asset importing settings as they are changed.
         /// </summary>
-        public class ImportModificationsInfo
+        public class ImportSettingsContext
         {
-            public ImportModificationsInfo(bool skipDialog, object settings, ImportFileEntry fileEntry, string inputPath, string outputPath)
+            public ImportSettingsContext(bool skipDialog, object settings, ImportFileEntry fileEntry, string inputPath, string outputPath)
             {
                 SkipDialog = skipDialog;
                 Settings = settings;
@@ -483,7 +483,7 @@ namespace FlaxEditor.Modules
                         if (entry != null)
                         {
                             // Editor automation hook.
-                            ImportModificationsInfo importState = new ImportModificationsInfo(needSettingsDialog, request.Settings, entry,
+                            ImportSettingsContext importState = new ImportSettingsContext(needSettingsDialog, request.Settings, entry,
                                 request.InputPath, request.OutputPath);
                             try
                             {

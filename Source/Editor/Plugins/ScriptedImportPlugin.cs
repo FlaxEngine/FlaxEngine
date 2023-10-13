@@ -8,26 +8,26 @@ namespace FlaxEditor
     public class ScriptedImportPlugin : EditorPlugin
     {
         /// <inheritdoc />
-        public override void Initialize()
+        public override void InitializeEditor()
         {
-            base.Initialize();
+            base.InitializeEditor();
             Editor.ContentImporting.OnAssetImport += OnAssetImport;
             Editor.ContentImporting.OnAssetImportComplete += OnAssetImportComplete;
         }
 
         /// <inheritdoc />
-        public override void Deinitialize()
+        public override void DeinitializeEditor()
         {
             Editor.ContentImporting.OnAssetImportComplete -= OnAssetImportComplete;
             Editor.ContentImporting.OnAssetImport -= OnAssetImport;
-            base.Deinitialize();
+            base.DeinitializeEditor();
         }
 
         /// <summary>
         /// Called when the importing of any asset is started, before the user is shown any dialogs.
         /// </summary>
         /// <param name="importContext">The current state of the import context as it is modified.</param>
-        public virtual void OnAssetImport(FlaxEditor.Modules.ContentImportingModule.ImportModificationsInfo importContext)
+        public virtual void OnAssetImport(FlaxEditor.Modules.ContentImportingModule.ImportSettingsContext importContext)
         {}
 
         /// <summary>
