@@ -29,10 +29,10 @@ namespace FlaxEditor.Modules.SourceCodeEditing
 
             private static bool CheckFunc(ScriptType scriptType)
             {
-                if (scriptType.IsStatic || 
-                    scriptType.IsGenericType || 
-                    !scriptType.IsPublic || 
-                    scriptType.HasAttribute(typeof(HideInEditorAttribute), true) || 
+                if (scriptType.IsStatic ||
+                    scriptType.IsGenericType ||
+                    !scriptType.IsPublic ||
+                    scriptType.HasAttribute(typeof(HideInEditorAttribute), true) ||
                     scriptType.HasAttribute(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute), false))
                     return false;
                 var managedType = TypeUtils.GetType(scriptType);

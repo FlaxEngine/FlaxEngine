@@ -104,7 +104,7 @@ namespace FlaxEditor.Modules
                     hint = "Too long name.";
                     return false;
                 }
-                
+
                 if (item.IsFolder && shortName.EndsWith("."))
                 {
                     hint = "Name cannot end with '.'";

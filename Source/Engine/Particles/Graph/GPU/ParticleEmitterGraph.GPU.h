@@ -94,7 +94,6 @@ public:
     /// <summary>
     /// Gets the root graph.
     /// </summary>
-    /// <returns>The base graph.</returns>
     FORCE_INLINE ParticleEmitterGraphGPU* GetRootGraph() const
     {
         return _graphs.First();
@@ -154,12 +153,12 @@ private:
 
     bool IsLocalSimulationSpace() const
     {
-        return ((ParticleEmitterGraphGPU*)_graphStack.Peek())->SimulationSpace == ParticlesSimulationSpace::Local;
+        return GetRootGraph()->SimulationSpace == ParticlesSimulationSpace::Local;
     }
 
     bool IsWorldSimulationSpace() const
     {
-        return ((ParticleEmitterGraphGPU*)_graphStack.Peek())->SimulationSpace == ParticlesSimulationSpace::World;
+        return GetRootGraph()->SimulationSpace == ParticlesSimulationSpace::World;
     }
 };
 

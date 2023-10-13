@@ -381,6 +381,7 @@ bool GPUDeviceDX12::Init()
         limits.HasAppendConsumeBuffers = true;
         limits.HasSeparateRenderTargetBlendState = true;
         limits.HasDepthAsSRV = true;
+        limits.HasDepthClip = true;
         limits.HasReadOnlyDepth = true;
         limits.HasMultisampleDepthAsSRV = true;
         limits.HasTypedUAVLoad = options.TypedUAVLoadAdditionalFormats != 0;

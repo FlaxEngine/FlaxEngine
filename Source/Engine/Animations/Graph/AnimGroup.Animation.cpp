@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "AnimGraph.h"
+#include "Engine/Core/Types/VariantValueCast.h"
 #include "Engine/Content/Assets/Animation.h"
 #include "Engine/Content/Assets/SkeletonMask.h"
 #include "Engine/Content/Assets/AnimationGraphFunction.h"
@@ -530,7 +531,7 @@ void AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const 
             transitionData.Position = 0;
             transitionData.Length = ZeroTolerance;
         }
-        
+
         const bool useDefaultRule = EnumHasAnyFlags(transition.Flags, AnimGraphStateTransition::FlagTypes::UseDefaultRule);
         if (transition.RuleGraph && !useDefaultRule)
         {
@@ -750,8 +751,15 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     // Animation
     case 2:
     {
-        const auto anim = node->Assets[0].As<Animation>();
+        auto anim = node->Assets[0].As<Animation>();
         auto& bucket = context.Data->State[node->BucketIndex].Animation;
+
+        // Override animation when animation reference box is connected
+        auto animationAssetBox = node->TryGetBox(8);
+        if (animationAssetBox && animationAssetBox->HasConnection())
+        {
+            anim = TVariantValueCast<Animation*>::Cast(tryGetValue(animationAssetBox, Value::Null));
+        }
 
         switch (box->ID)
         {

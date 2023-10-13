@@ -293,7 +293,7 @@ namespace FlaxEditor.GUI.Dialogs
                 if (Root != null)
                 {
                     bool shiftDown = Root.GetKey(KeyboardKeys.Shift);
-                    Root.Navigate(shiftDown ? NavDirection.Previous : NavDirection.Next);   
+                    Root.Navigate(shiftDown ? NavDirection.Previous : NavDirection.Next);
                 }
                 return true;
             }
