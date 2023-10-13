@@ -1,7 +1,6 @@
-using FlaxEditor;
 using FlaxEditor.Content;
 
-namespace FlaxEditor.Plugins
+namespace FlaxEditor
 {
     /// <summary>
     /// A plugin that allows you to script how assets are imported.
