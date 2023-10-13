@@ -4,8 +4,12 @@ using static FlaxEditor.Modules.ContentImportingModule;
 
 namespace FlaxEngine.Editor.Plugins
 {
+    /// <summary>
+    /// A plugin that allows you to script how assets are imported.
+    /// </summary>
     public class ScriptedImportPlugin : EditorPlugin
     {
+        /// <inheritdoc />
         public override void Initialize()
         {
             base.Initialize();
@@ -13,6 +17,7 @@ namespace FlaxEngine.Editor.Plugins
             Editor.ContentImporting.OnAssetImportComplete += OnAssetImportComplete;
         }
 
+        /// <inheritdoc />
         public override void Deinitialize()
         {
             Editor.ContentImporting.OnAssetImportComplete -= OnAssetImportComplete;
