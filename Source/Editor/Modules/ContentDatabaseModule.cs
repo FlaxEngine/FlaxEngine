@@ -649,8 +649,6 @@ namespace FlaxEditor.Modules
             // Special case for folders
             if (item is ContentFolder folder)
             {
-                // TODO: maybe don't remove folders recursive but at once?
-
                 // Delete all children
                 if (folder.Children.Count > 0)
                 {
@@ -664,6 +662,9 @@ namespace FlaxEditor.Modules
                 // Remove directory
                 if (deletedByUser && Directory.Exists(path))
                 {
+                    // Flush files removal before removing folder (loaded assets remove file during object destruction in Asset::OnDeleteObject)
+                    FlaxEngine.Scripting.FlushRemovedObjects();
+
                     try
                     {
                         Directory.Delete(path, true);
