@@ -1,8 +1,7 @@
 using FlaxEditor;
 using FlaxEditor.Content;
-using static FlaxEditor.Modules.ContentImportingModule;
 
-namespace FlaxEngine.Editor.Plugins
+namespace FlaxEditor.Plugins
 {
     /// <summary>
     /// A plugin that allows you to script how assets are imported.
@@ -29,7 +28,7 @@ namespace FlaxEngine.Editor.Plugins
         /// Called when the importing of any asset is started, before the user is shown any dialogs.
         /// </summary>
         /// <param name="importContext">The current state of the import context as it is modified.</param>
-        public virtual void OnAssetImport(ImportModificationsInfo importContext)
+        public virtual void OnAssetImport(FlaxEditor.Modules.ContentImportingModule.ImportModificationsInfo importContext)
         {}
 
         /// <summary>
