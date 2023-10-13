@@ -10,7 +10,7 @@
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Graphics/GPUDevice.h"
 
-const SpriteHandle SpriteHandle::Invalid = { nullptr, INVALID_INDEX };
+const SpriteHandle SpriteHandle::Invalid = { nullptr, Guid::Empty };
 
 REGISTER_BINARY_ASSET_WITH_UPGRADER(SpriteAtlas, "FlaxEngine.SpriteAtlas", TextureAssetUpgrader, true);
 
@@ -18,15 +18,16 @@ bool SpriteHandle::GetSprite(Sprite* result) const
 {
     if (IsValid())
     {
-        *result = Atlas->Sprites[Index];
-        return true;
+        Atlas->Sprites.TryGet(Id, *result);
+        return result != nullptr;
     }
     return false;
 }
 
 bool SpriteHandle::IsValid() const
 {
-    return Atlas && Index >= 0 && Atlas->Sprites.Count() > Index;
+    // TODO: Check that Guid is valid by making sure it's part of the Atlas?
+    return Atlas && Id != Guid::Empty;
 }
 
 GPUTexture* SpriteHandle::GetAtlasTexture() const
@@ -45,26 +46,26 @@ int32 SpriteAtlas::GetSpritesCount() const
     return Sprites.Count();
 }
 
-Sprite SpriteAtlas::GetSprite(int32 index) const
+Sprite SpriteAtlas::GetSprite(Guid id) const
 {
-    CHECK_RETURN(index >= 0 && index < Sprites.Count(), Sprite())
-    return Sprites.Get()[index];
+    CHECK_RETURN(Sprites.ContainsKey(id), Sprite())
+    return Sprites.At(id);
 }
 
-void SpriteAtlas::SetSprite(int32 index, const Sprite& value)
+void SpriteAtlas::SetSprite(Guid id, const Sprite& value)
 {
-    CHECK(index >= 0 && index < Sprites.Count());
-    Sprites.Get()[index] = value;
+    CHECK(Sprites.ContainsKey(id))
+    Sprites.At(id) = value;
 }
 
 SpriteHandle SpriteAtlas::FindSprite(const StringView& name) const
 {
-    SpriteHandle result(const_cast<SpriteAtlas*>(this), -1);
-    for (int32 i = 0; i < Sprites.Count(); i++)
+    SpriteHandle result(const_cast<SpriteAtlas*>(this), Guid::Empty);
+    for (const auto &pair : Sprites)
     {
-        if (name == Sprites[i].Name)
+        if (name == pair.Value.Name)
         {
-            result.Index = i;
+            result.Id = pair.Key;
             break;
         }
     }
@@ -73,14 +74,13 @@ SpriteHandle SpriteAtlas::FindSprite(const StringView& name) const
 
 SpriteHandle SpriteAtlas::AddSprite(const Sprite& sprite)
 {
-    const int32 index = Sprites.Count();
-    Sprites.Add(sprite);
-    return SpriteHandle(this, index);
+    Sprites[sprite.Id] = sprite;
+    return SpriteHandle(this, sprite.Id);
 }
 
-void SpriteAtlas::RemoveSprite(int32 index)
+void SpriteAtlas::RemoveSprite(Guid id)
 {
-    Sprites.RemoveAt(index);
+    Sprites.Remove(id);
 }
 
 #if USE_EDITOR
@@ -102,12 +102,18 @@ bool SpriteAtlas::SaveSprites()
 
     // Write sprites data
     MemoryWriteStream stream(1024);
-    stream.WriteInt32(1); // Version
+    stream.WriteInt32(2); // Version
     stream.WriteInt32(Sprites.Count()); // Sprites Count
-    for (Sprite& t : Sprites)
+    for (const auto &pair : Sprites)
     {
+        const Sprite &t = pair.Value;
+
         stream.Write(t.Area);
         stream.WriteString(t.Name, 49);
+        stream.WriteUint32(t.Id.Values[0]);
+        stream.WriteUint32(t.Id.Values[1]);
+        stream.WriteUint32(t.Id.Values[2]);
+        stream.WriteUint32(t.Id.Values[3]);
     }
 
     // Link sprites data (unlink after safe)
@@ -143,7 +149,7 @@ bool SpriteAtlas::LoadSprites(ReadStream& stream)
 
     int32 tilesVersion, tilesCount;
     stream.ReadInt32(&tilesVersion);
-    if (tilesVersion != 1)
+    if (tilesVersion > 2)
     {
 #if USE_EDITOR
         if (gpuDevice)
@@ -153,11 +159,26 @@ bool SpriteAtlas::LoadSprites(ReadStream& stream)
         return true;
     }
     stream.ReadInt32(&tilesCount);
-    Sprites.Resize(tilesCount);
-    for (Sprite& t : Sprites)
+    Sprites.EnsureCapacity(tilesCount);
+    for (int i = 0; i < tilesCount; ++i)
     {
+        Sprite t{};
+
         stream.Read(t.Area);
         stream.ReadString(&t.Name, 49);
+        if (tilesVersion >= 2)
+        {
+            stream.ReadUint32(&t.Id.Values[0]);
+            stream.ReadUint32(&t.Id.Values[1]);
+            stream.ReadUint32(&t.Id.Values[2]);
+            stream.ReadUint32(&t.Id.Values[3]);
+        }
+        else
+        {
+            t.Id = Guid::New();
+        }
+
+        Sprites[t.Id] = t;
     }
 
 #if USE_EDITOR
@@ -185,7 +206,7 @@ Asset::LoadResult SpriteAtlas::load()
 
 void SpriteAtlas::unload(bool isReloading)
 {
-    Sprites.Resize(0);
+    Sprites.Clear();
 
     // Base
     TextureBase::unload(isReloading);

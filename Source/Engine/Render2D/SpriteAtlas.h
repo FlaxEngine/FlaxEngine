@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/ISerializable.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Math/Rectangle.h"
@@ -28,6 +29,11 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(Sprite);
     /// The sprite name.
     /// </summary>
     API_FIELD() String Name;
+
+    /// <summary>
+    /// The sprite id.
+    /// </summary>
+    API_FIELD() Guid Id;
 };
 
 /// <summary>
@@ -51,25 +57,25 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(SpriteHandle);
     /// <summary>
     /// The atlas sprites array index.
     /// </summary>
-    API_FIELD() int32 Index;
+    API_FIELD() Guid Id;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SpriteHandle"/> struct.
     /// </summary>
     SpriteHandle()
     {
-        Index = -1;
+        Id = Guid::Empty;
     }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SpriteHandle"/> struct.
     /// </summary>
     /// <param name="atlas">The sprite atlas.</param>
-    /// <param name="index">The sprite slot index.</param>
-    SpriteHandle(SpriteAtlas* atlas, int32 index)
+    /// <param name="id">The sprite id.</param>
+    SpriteHandle(SpriteAtlas* atlas, Guid id)
         : Atlas(atlas)
     {
-        Index = index;
+        Id = id;
     }
 
     /// <summary>
@@ -104,7 +110,7 @@ public:
     /// <summary>
     /// List with all tiles in the sprite atlas.
     /// </summary>
-    API_FIELD() Array<Sprite> Sprites;
+    API_FIELD() Dictionary<Guid, Sprite> Sprites;
 
 public:
 
@@ -116,16 +122,17 @@ public:
     /// <summary>
     /// Gets the sprite data.
     /// </summary>
-    /// <param name="index">The index.</param>
+    /// <param name="id">The id.</param>
     /// <returns>The sprite data.</returns>
-    API_FUNCTION() Sprite GetSprite(int32 index) const;
+    // FIXME: This should probably be Optional, or pointer so nullptr is "not existing"
+    API_FUNCTION() Sprite GetSprite(Guid id) const;
 
     /// <summary>
     /// Sets the sprite data.
     /// </summary>
-    /// <param name="index">The index.</param>
+    /// <param name="id">The id.</param>
     /// <param name="value">The sprite data.</param>
-    API_FUNCTION() void SetSprite(int32 index, API_PARAM(Ref) const Sprite& value);
+    API_FUNCTION() void SetSprite(Guid id, API_PARAM(Ref) const Sprite& value);
 
     /// <summary>
     /// Finds the sprite by the name.
@@ -145,7 +152,7 @@ public:
     /// Removes the sprite.
     /// </summary>
     /// <param name="index">The sprite index.</param>
-    API_FUNCTION() void RemoveSprite(int32 index);
+    API_FUNCTION() void RemoveSprite(Guid id);
 
 #if USE_EDITOR
 

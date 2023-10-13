@@ -16,16 +16,16 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="atlas">The atlas.</param>
         /// <param name="index">The index.</param>
-        public SpriteHandle(SpriteAtlas atlas, int index)
+        public SpriteHandle(SpriteAtlas atlas, Guid id)
         {
             Atlas = atlas;
-            Index = index;
+            Id = id;
         }
 
         /// <summary>
         /// Returns true if sprite is valid.
         /// </summary>
-        public bool IsValid => Atlas != null && Index != -1;
+        public bool IsValid => Atlas != null && Id != Guid.Empty;
 
         /// <summary>
         /// Gets or sets the sprite name.
@@ -37,15 +37,15 @@ namespace FlaxEngine
             {
                 if (Atlas == null)
                     throw new InvalidOperationException("Cannot use invalid sprite.");
-                return Atlas.GetSprite(Index).Name;
+                return Atlas.GetSprite(Id).Name;
             }
             set
             {
                 if (Atlas == null)
                     throw new InvalidOperationException("Cannot use invalid sprite.");
-                var sprite = Atlas.GetSprite(Index);
+                var sprite = Atlas.GetSprite(Id);
                 sprite.Name = value;
-                Atlas.SetSprite(Index, ref sprite);
+                Atlas.SetSprite(Id, ref sprite);
             }
         }
 
@@ -89,15 +89,15 @@ namespace FlaxEngine
             {
                 if (Atlas == null)
                     throw new InvalidOperationException("Cannot use invalid sprite.");
-                return Atlas.GetSprite(Index).Area;
+                return Atlas.GetSprite(Id).Area;
             }
             set
             {
                 if (Atlas == null)
                     throw new InvalidOperationException("Cannot use invalid sprite.");
-                var sprite = Atlas.GetSprite(Index);
+                var sprite = Atlas.GetSprite(Id);
                 sprite.Area = value;
-                Atlas.SetSprite(Index, ref sprite);
+                Atlas.SetSprite(Id, ref sprite);
             }
         }
     }

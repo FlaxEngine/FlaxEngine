@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using FlaxEditor.Utilities;
 using FlaxEngine;
+using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
 using Object = FlaxEngine.Object;
 
@@ -438,6 +439,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         private SceneRenderTask _task;
         private GPUTexture _output;
         private List<Atlas> _atlases;
+        private Dictionary<Guid, int> _guid2index;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CameraCutThumbnailRenderer"/> class.
@@ -486,7 +488,10 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 if (atlas.Texture == sprite.Atlas)
                 {
                     atlas.Count--;
-                    atlas.SlotsUsage[sprite.Index] = false;
+
+                    Assert.IsTrue(_guid2index.ContainsKey(sprite.Id));
+                    atlas.SlotsUsage[_guid2index[sprite.Id]] = false;
+                    _guid2index.Remove(sprite.Id);
 
                     _atlases[i] = atlas;
                     break;
@@ -500,6 +505,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         public void Dispose()
         {
             FlaxEngine.Scripting.Update -= OnUpdate;
+            _guid2index.Clear();
+            _guid2index = null;
             _queue.Clear();
             _queue = null;
             Object.Destroy(ref _task);
@@ -632,11 +639,16 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     break;
                 }
             }
+
+            _guid2index ??= new Dictionary<Guid, int>();
+            var id = Guid.NewGuid();
+            _guid2index[id] = spriteIndex;
+
             if (spriteIndex == -1)
                 throw new Exception();
             atlas.Count++;
             _atlases[atlasIndex] = atlas;
-            var sprite = new SpriteHandle(atlas.Texture, spriteIndex);
+            var sprite = new SpriteHandle(atlas.Texture, id);
 
             // Copy output frame to the sprite atlas slot
             var spriteLocation = sprite.Location;

@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Linq;
 using System.Xml;
 using FlaxEditor.Content;
@@ -42,13 +43,10 @@ namespace FlaxEditor.Windows.Assets
 
                 if (Asset && Asset.IsLoaded)
                 {
-                    var count = Asset.SpritesCount;
                     var style = Style.Current;
 
                     // Draw all splits
-                    for (int i = 0; i < count; i++)
-                    {
-                        var sprite = Asset.GetSprite(i);
+                    foreach (var (id, sprite) in Asset.Sprites) {
                         var area = sprite.Area;
                         var position = area.Location * rect.Size + rect.Location;
                         var size = area.Size * rect.Size;
@@ -71,9 +69,9 @@ namespace FlaxEditor.Windows.Assets
                 [HideInEditor]
                 public SpriteHandle Sprite;
 
-                public SpriteEntry(SpriteAtlas atlas, int index)
+                public SpriteEntry(SpriteAtlas atlas, Guid id)
                 {
-                    Sprite = new SpriteHandle(atlas, index);
+                    Sprite = new SpriteHandle(atlas, id);
                 }
 
                 [EditorOrder(0)]
@@ -130,7 +128,7 @@ namespace FlaxEditor.Windows.Assets
                         for (int i = 0; i < sprites.Length; i++)
                         {
                             var group = layout.Group(sprites[i].Name);
-                            group.Panel.Tag = i;
+                            group.Panel.Tag = sprites[i].Sprite.Id;
                             group.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
                             group.Object(new ListValueContainer(elementType, i, Values));
                         }
@@ -151,8 +149,8 @@ namespace FlaxEditor.Windows.Assets
                 private void OnDeleteSpriteClicked(ContextMenuButton button)
                 {
                     var window = ((PropertiesProxy)ParentEditor.Values[0])._window;
-                    var index = (int)button.Tag;
-                    window.Asset.RemoveSprite(index);
+                    var id = (Guid)button.Tag;
+                    window.Asset.RemoveSprite(id);
                     window.MarkAsEdited();
                     window._properties.UpdateSprites();
                     window._propertiesEditor.BuildLayout();
@@ -166,10 +164,15 @@ namespace FlaxEditor.Windows.Assets
             {
                 var atlas = _window.Asset;
                 Sprites = new SpriteEntry[atlas.SpritesCount];
-                for (int i = 0; i < Sprites.Length; i++)
-                {
-                    Sprites[i] = new SpriteEntry(atlas, i);
+                var idx = 0;
+                foreach (var (id, _) in atlas.Sprites) {
+                    Sprites[idx++] = new SpriteEntry(atlas, id);
                 }
+                Array.Sort(Sprites, (s0, s1) => {
+                    var xComp = s0.Location.X.CompareTo(s1.Location.X);
+
+                    return xComp == 0 ? s0.Location.Y.CompareTo(s1.Location.Y) : xComp;
+                });
             }
 
             /// <summary>
@@ -265,7 +268,8 @@ namespace FlaxEditor.Windows.Assets
             {
                 var sprite = new Sprite
                 {
-                    Name = Utilities.Utils.IncrementNameNumber("New Sprite", name => Asset.Sprites.All(s => s.Name != name)),
+                    Id = Guid.NewGuid(),
+                    Name = Utilities.Utils.IncrementNameNumber("New Sprite", name => Asset.Sprites.All(pair => pair.Value.Name != name)),
                     Area = new Rectangle(Float2.Zero, Float2.One),
                 };
                 Asset.AddSprite(sprite);
@@ -291,6 +295,9 @@ namespace FlaxEditor.Windows.Assets
 
             ClearEditedFlag();
             _item.RefreshThumbnail();
+
+            _properties.UpdateSprites();
+            _propertiesEditor.BuildLayout();
         }
 
         /// <inheritdoc />
