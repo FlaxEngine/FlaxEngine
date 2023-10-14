@@ -1,3 +1,5 @@
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+
 using FlaxEditor.Actions;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI;
@@ -15,10 +17,9 @@ namespace FlaxEditor.CustomEditors.Dedicated;
 [CustomEditor(typeof(MissingScript)), DefaultEditor]
 public class MissingScriptEditor : GenericEditor
 {
-    DropPanel _dropPanel;
-    Button _replaceScriptButton;
-    CheckBox _shouldReplaceAllCheckbox;
-    CustomEditor _propertiesEditor;
+    private DropPanel _dropPanel;
+    private Button _replaceScriptButton;
+    private CheckBox _shouldReplaceAllCheckbox;
 
     /// <inheritdoc />
     public override void Initialize(LayoutElementsContainer layout)
@@ -31,7 +32,7 @@ public class MissingScriptEditor : GenericEditor
         _dropPanel = dropPanel;
         _dropPanel.HeaderTextColor = Color.OrangeRed;
 
-        Panel replaceScriptPanel = new Panel
+        var replaceScriptPanel = new Panel
         {
             Parent = _dropPanel,
             Height = 64,
@@ -40,6 +41,7 @@ public class MissingScriptEditor : GenericEditor
         _replaceScriptButton = new Button
         {
             Text = "Replace Script",
+            TooltipText = "Replaces the missing script with a given script type",
             AnchorPreset = AnchorPresets.TopCenter,
             Width = 240,
             Height = 24,
@@ -49,9 +51,10 @@ public class MissingScriptEditor : GenericEditor
         };
         _replaceScriptButton.Clicked += OnReplaceScriptButtonClicked;
 
-        Label replaceAllLabel = new Label
+        var replaceAllLabel = new Label
         {
-            Text = "Replace All of Same Type",
+            Text = "Replace all matching missing scripts",
+            TooltipText = "Whether or not to apply this script change to all scripts missing the same type.",
             AnchorPreset = AnchorPresets.BottomCenter,
             Y = -34,
             Parent = replaceScriptPanel,
@@ -60,7 +63,7 @@ public class MissingScriptEditor : GenericEditor
 
         _shouldReplaceAllCheckbox = new CheckBox
         {
-            TooltipText = "Wether or not to apply this script change to all scripts missing the same type.",
+            TooltipText = replaceAllLabel.TooltipText,
             AnchorPreset = AnchorPresets.BottomCenter,
             Y = -34,
             Parent = replaceScriptPanel,
@@ -73,35 +76,26 @@ public class MissingScriptEditor : GenericEditor
         base.Initialize(layout);
     }
 
-    private List<MissingScript> FindActorsWithMatchingMissingScript()
+    private void FindActorsWithMatchingMissingScript(List<MissingScript> missingScripts)
     {
-        List<MissingScript> missingScripts = new List<MissingScript>();
-
-        foreach (Actor actor in Level.GetActors<Actor>())
+        foreach (Actor actor in Level.GetActors(typeof(Actor)))
         {
             for (int scriptIndex = 0; scriptIndex < actor.ScriptsCount; scriptIndex++)
             {
                 Script actorScript = actor.Scripts[scriptIndex];
                 if (actorScript is not MissingScript missingActorScript)
-                {
                     continue;
-                }
 
                 MissingScript currentMissing = Values[0] as MissingScript;
                 if (missingActorScript.MissingTypeName != currentMissing.MissingTypeName)
-                {
                     continue;
-                }
 
-                // Matching MissingScript.
                 missingScripts.Add(missingActorScript);
             }
         }
-
-        return missingScripts;
     }
 
-    private void RunReplacementMulticast(List<IUndoAction> actions)
+    private void RunReplacementMultiCast(List<IUndoAction> actions)
     {
         if (actions.Count == 0)
         {
@@ -123,25 +117,19 @@ public class MissingScriptEditor : GenericEditor
     {
         var actions = new List<IUndoAction>(4);
 
-        List<MissingScript> missingScripts = new List<MissingScript>();
+        var missingScripts = new List<MissingScript>();
         if (!replaceAllInScene)
-        {
-            missingScripts.Add(Values[0] as MissingScript);
-        } else
-        {
-            missingScripts = FindActorsWithMatchingMissingScript();
-        }
+            missingScripts.Add((MissingScript)Values[0]);
+        else
+            FindActorsWithMatchingMissingScript(missingScripts);
 
-        foreach (MissingScript missingScript in missingScripts)
-        {
-            AddRemoveScript addReplacementScriptAction = AddRemoveScript.Add(missingScript.Actor, script);
-            actions.Add(addReplacementScriptAction);
-        }
-        RunReplacementMulticast(actions);
+        foreach (var missingScript in missingScripts)
+            actions.Add(AddRemoveScript.Add(missingScript.Actor, script));
+        RunReplacementMultiCast(actions);
 
         for (int actionIdx = 0; actionIdx < actions.Count; actionIdx++)
         {
-            AddRemoveScript addRemoveScriptAction = (AddRemoveScript) actions[actionIdx];
+            AddRemoveScript addRemoveScriptAction = (AddRemoveScript)actions[actionIdx];
             int orderInParent = addRemoveScriptAction.GetOrderInParent();
 
             Script newScript = missingScripts[actionIdx].Actor.Scripts[orderInParent];
@@ -149,11 +137,9 @@ public class MissingScriptEditor : GenericEditor
         }
         actions.Clear();
 
-        foreach (MissingScript missingScript in missingScripts)
-        {
+        foreach (var missingScript in missingScripts)
             actions.Add(AddRemoveScript.Remove(missingScript));
-        }
-        RunReplacementMulticast(actions);
+        RunReplacementMultiCast(actions);
     }
 
     private void OnReplaceScriptButtonClicked()
@@ -171,12 +157,7 @@ public class MissingScriptEditor : GenericEditor
         // Show context menu with list of scripts to add
         var cm = new ItemsListContextMenu(180);
         for (int i = 0; i < scripts.Count; i++)
-        {
             cm.AddItem(new TypeSearchPopup.TypeItemView(scripts[i]));
-        }
-        // Get the parent (actor properties editor) of the parent (Scripts Editor) of our editor.
-        _propertiesEditor = ParentEditor.ParentEditor;
-
         cm.ItemClicked += item => ReplaceScript((ScriptType)item.Tag, _shouldReplaceAllCheckbox.Checked);
         cm.SortItems();
         cm.Show(_dropPanel, _replaceScriptButton.BottomLeft - new Float2((cm.Width - _replaceScriptButton.Width) / 2, 0));
