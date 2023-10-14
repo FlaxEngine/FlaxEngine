@@ -127,6 +127,8 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
                 const auto& mesh = *meshes[i];
                 if ((arg.MaterialSlotsMask & (1 << mesh.GetMaterialSlotIndex())) == 0)
                     continue;
+                if (mesh.GetVertexCount() == 0)
+                    continue;
 
                 int32 count;
                 if (mesh.DownloadDataCPU(MeshBufferType::Vertex0, vertexBuffers[i], count))
@@ -158,6 +160,8 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
             {
                 const auto& mesh = *meshes[i];
                 if ((arg.MaterialSlotsMask & (1 << mesh.GetMaterialSlotIndex())) == 0)
+                    continue;
+                if (mesh.GetVertexCount() == 0)
                     continue;
 
                 auto task = mesh.DownloadDataGPUAsync(MeshBufferType::Vertex0, vertexBuffers[i]);
@@ -208,6 +212,8 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
 
             const int32 firstVertexIndex = vertexCounter;
             const int32 vertexCount = vertexCounts[i];
+            if (vertexCount == 0)
+                continue;
             Platform::MemoryCopy(finalVertexData.Get() + firstVertexIndex, vData.Get(), vertexCount * sizeof(Float3));
             vertexCounter += vertexCount;
 
