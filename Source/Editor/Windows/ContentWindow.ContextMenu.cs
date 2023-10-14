@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
@@ -248,6 +249,10 @@ namespace FlaxEditor.Windows
                     Editor.ContentImporting.ShowImportFileDialog(CurrentViewFolder);
                 });
             }
+
+            // Remove any leftover separator
+            if (cm.ItemsContainer.Children.LastOrDefault() is ContextMenuSeparator)
+                cm.ItemsContainer.Children.Last().Dispose();
 
             // Show it
             cm.Show(this, location);
