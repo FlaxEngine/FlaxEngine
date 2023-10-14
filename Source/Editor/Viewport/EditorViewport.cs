@@ -593,12 +593,14 @@ namespace FlaxEditor.Viewport
                             {
                                 ref var vv = ref v.Options[j];
                                 var button = childMenu.AddButton(vv.Name);
+                                button.CloseMenuOnClick = false;
                                 button.Tag = vv.Mode;
                             }
                         }
                         else
                         {
                             var button = debugView.AddButton(v.Name);
+                            button.CloseMenuOnClick = false;
                             button.Tag = v.Mode;
                         }
                     }
@@ -1587,7 +1589,14 @@ namespace FlaxEditor.Viewport
         private void WidgetViewModeShowHideClicked(ContextMenuButton button)
         {
             if (button.Tag is ViewMode v)
+            {
                 Task.ViewMode = v;
+                var cm = button.ParentContextMenu;
+                WidgetViewModeShowHide(cm);
+                var mainCM = ViewWidgetButtonMenu.GetChildMenu("Debug View").ContextMenu;
+                if (mainCM != null && cm != mainCM)
+                    WidgetViewModeShowHide(mainCM);
+            }
         }
 
         private void WidgetViewModeShowHide(Control cm)
@@ -1599,7 +1608,7 @@ namespace FlaxEditor.Viewport
             foreach (var e in ccm.Items)
             {
                 if (e is ContextMenuButton b && b.Tag is ViewMode v)
-                    b.Icon = Task.View.Mode == v ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                    b.Icon = Task.ViewMode == v ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
             }
         }
 
