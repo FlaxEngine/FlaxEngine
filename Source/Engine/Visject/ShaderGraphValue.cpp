@@ -138,6 +138,29 @@ bool ShaderGraphValue::IsOne() const
     }
 }
 
+bool ShaderGraphValue::IsLiteral() const
+{
+    switch (Type)
+    {
+    case VariantType::Types::Bool:
+    case VariantType::Types::Int:
+    case VariantType::Types::Uint:
+    case VariantType::Types::Float:
+        if (Value.HasChars())
+        {
+            for (int32 i = 0; i < Value.Length(); i++)
+            {
+                const Char c = Value[i];
+                if (!StringUtils::IsDigit(c) && c != '.')
+                    return false;
+            }
+            return true;
+        }
+    default:
+        return false;
+    }
+}
+
 ShaderGraphValue ShaderGraphValue::InitForZero(VariantType::Types type)
 {
     const Char* v;
