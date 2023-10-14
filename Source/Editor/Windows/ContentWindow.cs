@@ -631,7 +631,7 @@ namespace FlaxEditor.Windows
 
             // Sort items to remove files first, then folders
             var toDelete = new List<ContentItem>(items);
-            toDelete.Sort((a, b) => a.IsFolder ? 1 : -1);
+            toDelete.Sort((a, b) => a.IsFolder ? 1 : b.IsFolder ? -1 : a.Compare(b));
 
             string msg = toDelete.Count == 1
                          ? string.Format("Are you sure to delete \'{0}\'?\nThis action cannot be undone. Files will be deleted permanently.", items[0].Path)
