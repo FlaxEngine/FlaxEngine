@@ -132,7 +132,7 @@ class LevelService : public EngineService
 {
 public:
     LevelService()
-        : EngineService(TEXT("Scene Manager"), 30)
+        : EngineService(TEXT("Scene Manager"), 200)
     {
     }
 
