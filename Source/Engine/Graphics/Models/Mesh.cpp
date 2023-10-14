@@ -609,7 +609,7 @@ bool Mesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& c
         ScopeLock lock(model->Locker);
         if (model->IsVirtual())
         {
-            LOG(Error, "Cannot access CPU data of virtual models. Use GPU data download");
+            LOG(Error, "Cannot access CPU data of virtual models. Use GPU data download.");
             return true;
         }
 

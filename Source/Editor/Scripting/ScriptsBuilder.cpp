@@ -266,7 +266,7 @@ bool ScriptsBuilder::RunBuildTool(const StringView& args, const StringView& work
 
 bool ScriptsBuilder::GenerateProject(const StringView& customArgs)
 {
-    String args(TEXT("-log -genproject "));
+    String args(TEXT("-log -mutex -genproject "));
     args += customArgs;
     _wasProjectStructureChanged = false;
     return RunBuildTool(args);

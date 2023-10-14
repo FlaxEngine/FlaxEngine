@@ -29,7 +29,7 @@ class PrefabManagerService : public EngineService
 {
 public:
     PrefabManagerService()
-        : EngineService(TEXT("Prefab Manager"), 110)
+        : EngineService(TEXT("Prefab Manager"))
     {
     }
 };
