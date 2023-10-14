@@ -532,6 +532,12 @@ Float2 WindowsWindow::ClientToScreen(const Float2& clientPos) const
 {
     ASSERT(HasHWND());
 
+    if (_minimized)
+    {
+        // Return cached position when window is not on screen
+        return _minimizedScreenPosition + clientPos;
+    }
+
     POINT p;
     p.x = static_cast<LONG>(clientPos.X);
     p.y = static_cast<LONG>(clientPos.Y);
@@ -1109,6 +1115,28 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
     {
         if (SIZE_MINIMIZED == wParam)
         {
+            // Get the minimized window position in workspace coordinates
+            WINDOWPLACEMENT placement;
+            placement.length = sizeof(WINDOWPLACEMENT);
+            GetWindowPlacement(_handle, &placement);
+
+            // Calculate client offsets from window borders and title bar
+            RECT winRect = { 0, 0, static_cast<LONG>(_clientSize.X), static_cast<LONG>(_clientSize.Y) };
+            LONG style = GetWindowLong(_handle, GWL_STYLE);
+            LONG exStyle = GetWindowLong(_handle, GWL_EXSTYLE);
+            AdjustWindowRectEx(&winRect, style, FALSE, exStyle);
+
+            // Calculate monitor offsets from taskbar position
+            const HMONITOR monitor = MonitorFromWindow(_handle, MONITOR_DEFAULTTONEAREST);
+            MONITORINFO monitorInfo;
+            monitorInfo.cbSize = sizeof(MONITORINFO);
+            GetMonitorInfoW(monitor, &monitorInfo);
+
+            // Convert the workspace coordinates to screen space and store it
+            _minimizedScreenPosition = Float2(
+                static_cast<float>(placement.rcNormalPosition.left + monitorInfo.rcWork.left - monitorInfo.rcMonitor.left - winRect.left),
+                static_cast<float>(placement.rcNormalPosition.top + monitorInfo.rcWork.top - monitorInfo.rcMonitor.top - winRect.top));
+
             _minimized = true;
             _maximized = false;
         }
