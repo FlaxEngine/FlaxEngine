@@ -472,19 +472,13 @@ namespace FlaxEditor.Modules
         {
             writer.WriteStartElement("Bounds");
             {
-                var isMaximized = win.IsMaximized;
-                var isMinimized = win.IsMinimized;
-                if (isMinimized)
-                    win.Restore(); // Restore window back to desktop to get proper client bounds
                 var bounds = win.ClientBounds;
-                if (isMinimized)
-                    win.Minimize();
                 writer.WriteAttributeString("X", bounds.X.ToString(CultureInfo.InvariantCulture));
                 writer.WriteAttributeString("Y", bounds.Y.ToString(CultureInfo.InvariantCulture));
                 writer.WriteAttributeString("Width", bounds.Width.ToString(CultureInfo.InvariantCulture));
                 writer.WriteAttributeString("Height", bounds.Height.ToString(CultureInfo.InvariantCulture));
-                writer.WriteAttributeString("IsMaximized", isMaximized.ToString());
-                writer.WriteAttributeString("IsMinimized", isMinimized.ToString());
+                writer.WriteAttributeString("IsMaximized", win.IsMaximized.ToString());
+                writer.WriteAttributeString("IsMinimized", win.IsMinimized.ToString());
             }
             writer.WriteEndElement();
         }
