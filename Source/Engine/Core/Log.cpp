@@ -3,7 +3,7 @@
 #include "Log.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Core/Types/DateTime.h"
-#include "Engine/Core/Collections/Sorting.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Platform/FileSystem.h"
@@ -11,7 +11,7 @@
 #include "Engine/Serialization/FileWriteStream.h"
 #include "Engine/Debug/Exceptions/Exceptions.h"
 #if USE_EDITOR
-#include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Collections/Sorting.h"
 #endif
 #include <iostream>
 
