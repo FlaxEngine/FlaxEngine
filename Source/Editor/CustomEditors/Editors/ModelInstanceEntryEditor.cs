@@ -4,6 +4,7 @@ using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.Scripting;
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.CustomEditors.Editors
 {
@@ -13,7 +14,7 @@ namespace FlaxEditor.CustomEditors.Editors
     [CustomEditor(typeof(ModelInstanceEntry)), DefaultEditor]
     public sealed class ModelInstanceEntryEditor : GenericEditor
     {
-        private GroupElement _group;
+        private DropPanel _mainPanel;
         private bool _updateName;
         private int _entryIndex;
         private bool _isRefreshing;
@@ -25,8 +26,11 @@ namespace FlaxEditor.CustomEditors.Editors
         public override void Initialize(LayoutElementsContainer layout)
         {
             _updateName = true;
-            var group = layout.Group("Entry");
-            _group = group;
+            if (layout.ContainerControl.Parent is DropPanel panel)
+            {
+                _mainPanel = panel;
+                _mainPanel.HeaderText = "Entry";
+            }
 
             if (ParentEditor == null)
                 return;
@@ -56,14 +60,14 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 // Create material picker
                 var materialValue = new CustomValueContainer(new ScriptType(typeof(MaterialBase)), _material, (instance, index) => _material, (instance, index, value) => _material = value as MaterialBase);
-                var materialEditor = (AssetRefEditor)_group.Property(materialLabel, materialValue);
+                var materialEditor = (AssetRefEditor)layout.Property(materialLabel, materialValue);
                 materialEditor.Values.SetDefaultValue(defaultValue);
                 materialEditor.RefreshDefaultValue();
                 materialEditor.Picker.SelectedItemChanged += OnSelectedMaterialChanged;
                 _materialEditor = materialEditor;
             }
 
-            base.Initialize(group);
+            base.Initialize(layout);
         }
 
         private void OnSelectedMaterialChanged()
@@ -116,7 +120,7 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             // Update panel title to match material slot name
             if (_updateName &&
-                _group != null &&
+                _mainPanel != null &&
                 ParentEditor?.ParentEditor != null &&
                 ParentEditor.ParentEditor.Values.Count > 0)
             {
@@ -127,7 +131,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     if (slots != null && slots.Length > entryIndex)
                     {
                         _updateName = false;
-                        _group.Panel.HeaderText = "Entry " + slots[entryIndex].Name;
+                        _mainPanel.HeaderText = "Entry " + slots[entryIndex].Name;
                     }
                 }
             }
