@@ -52,7 +52,6 @@ namespace FlaxEditor.CustomEditors.Editors
                 var icons = FlaxEditor.Editor.Instance.Icons;
                 var style = FlaxEngine.GUI.Style.Current;
                 var imageSize = 18;
-                var indexAmount = Index == 0 ? 2 : 0;
                 _moveDownImage = new Image
                 {
                     Brush = new SpriteBrush(icons.Down32),
