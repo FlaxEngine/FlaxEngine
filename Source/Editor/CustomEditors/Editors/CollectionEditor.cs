@@ -50,30 +50,29 @@ namespace FlaxEditor.CustomEditors.Editors
                 Index = index;
 
                 var icons = FlaxEditor.Editor.Instance.Icons;
-                
                 var style = FlaxEngine.GUI.Style.Current;
-                var imageSize = 18 - Margin.Height;
+                var imageSize = 18;
+                var indexAmount = Index == 0 ? 2 : 0;
                 _moveDownImage = new Image
                 {
                     Brush = new SpriteBrush(icons.Down32),
                     TooltipText = "Move down",
                     IsScrollable = false,
-                    AnchorPreset = AnchorPresets.MiddleLeft,
-                    Bounds = new Rectangle(imageSize + 2, -Height * 0.5f, imageSize, imageSize),
+                    AnchorPreset = AnchorPresets.MiddleRight,
+                    Bounds = new Rectangle(-imageSize, -Height * 0.5f, imageSize, imageSize),
                     Color = style.ForegroundGrey,
                     Margin = new Margin(1),
                     Parent = this,
                 };
                 _moveDownImage.Clicked += MoveDownImageOnClicked;
                 _moveDownImage.Enabled = Index + 1 < Editor.Count;
-            
                 _moveUpImage = new Image
                 {
                     Brush = new SpriteBrush(icons.Up32),
                     TooltipText = "Move up",
                     IsScrollable = false,
-                    AnchorPreset = AnchorPresets.MiddleLeft,
-                    Bounds = new Rectangle(0, -Height * 0.5f, imageSize, imageSize),
+                    AnchorPreset = AnchorPresets.MiddleRight,
+                    Bounds = new Rectangle(-(imageSize * 2 + 2), -Height * 0.5f, imageSize, imageSize),
                     Color = style.ForegroundGrey,
                     Margin = new Margin(1),
                     Parent = this,
@@ -81,7 +80,6 @@ namespace FlaxEditor.CustomEditors.Editors
                 _moveUpImage.Clicked += MoveUpImageOnClicked;
                 _moveUpImage.Enabled = Index > 0;
 
-                Margin = new Margin(_moveDownImage.Right + 2, Margin.Right, Margin.Top, Margin.Bottom);
                 SetupContextMenu += OnSetupContextMenu;
             }
             
@@ -174,7 +172,8 @@ namespace FlaxEditor.CustomEditors.Editors
                         Brush = new SpriteBrush(icons.Down32),
                         TooltipText = "Move down",
                         IsScrollable = false,
-                        Bounds = new Rectangle(imageSize * 2 + ItemsMargin.Left + 2, -HeaderHeight, imageSize, imageSize),
+                        AnchorPreset = AnchorPresets.TopRight,
+                        Bounds = new Rectangle(-(imageSize + ItemsMargin.Right + 2), -HeaderHeight, imageSize, imageSize),
                         Color = style.ForegroundGrey,
                         Margin = new Margin(1),
                         Parent = this,
@@ -187,15 +186,14 @@ namespace FlaxEditor.CustomEditors.Editors
                         Brush = new SpriteBrush(icons.Up32),
                         TooltipText = "Move up",
                         IsScrollable = false,
-                        Bounds = new Rectangle(imageSize + ItemsMargin.Left, -HeaderHeight, imageSize, imageSize),
+                        AnchorPreset = AnchorPresets.TopRight,
+                        Bounds = new Rectangle(-(imageSize * 2 + ItemsMargin.Right + 2), -HeaderHeight, imageSize, imageSize),
                         Color = style.ForegroundGrey,
                         Margin = new Margin(1),
                         Parent = this,
                     };
                     _moveUpImage.Clicked += MoveUpImageOnClicked;
                     _moveUpImage.Enabled = Index > 0;
-                    
-                    HeaderTextMargin = new Margin(_moveDownImage.Right - 12, HeaderTextMargin.Right, HeaderTextMargin.Top, HeaderTextMargin.Bottom);
                 }
             }
 
@@ -349,6 +347,7 @@ namespace FlaxEditor.CustomEditors.Editors
             if (size > 0)
             {
                 var panel = layout.VerticalPanel();
+                panel.Panel.Offsets = new Margin(7, 7, 0, 0);
                 panel.Panel.BackgroundColor = _background;
                 var elementType = ElementType;
                 bool single = elementType.IsPrimitive ||
@@ -359,15 +358,12 @@ namespace FlaxEditor.CustomEditors.Editors
                               elementType.Equals(new ScriptType(typeof(JsonAsset))) ||
                               elementType.Equals(new ScriptType(typeof(SettingsBase)));
 
-                // Use separate layout cells for each collection items to improve layout updates for them in separation
-                var useSharedLayout = elementType.IsPrimitive || elementType.IsEnum;
-
                 for (int i = 0; i < size; i++)
                 {
+                    // Apply spacing
                     if (i > 0 && i < size && spacing > 0)
-                    {
                         panel.Space(spacing);
-                    }
+                    
                     var overrideEditor = overrideEditorType != null ? (CustomEditor)Activator.CreateInstance(overrideEditorType) : null;
                     if (_displayType == CollectionAttribute.DisplayType.Inline || (collection == null && single) || (_displayType == CollectionAttribute.DisplayType.Default && single))
                     {
@@ -377,15 +373,14 @@ namespace FlaxEditor.CustomEditors.Editors
                         else
                             itemLabel = new PropertyNameLabel("Element " + i);
                         var property = panel.AddPropertyItem(itemLabel);
-                        var itemLayout = useSharedLayout ? (LayoutElementsContainer)property : property.VerticalPanel();
+                        var itemLayout = property.VerticalPanel();
                         itemLabel.LinkedEditor = itemLayout.Object(new ListValueContainer(elementType, i, Values, attributes), overrideEditor);
-                        itemLabel.Parent.Offsets = new Margin(7, 7, 0, 0);
                     }
                     else if (_displayType == CollectionAttribute.DisplayType.Header || (_displayType == CollectionAttribute.DisplayType.Default && !single))
                     {
                         var cdp = panel.CustomContainer<CollectionDropPanel>();
                         cdp.CustomControl.Setup(this, i, _canReorderItems);
-                        var itemLayout = useSharedLayout ? (LayoutElementsContainer)cdp : cdp.VerticalPanel();
+                        var itemLayout = cdp.VerticalPanel();
                         cdp.CustomControl.LinkedEditor = itemLayout.Object(new ListValueContainer(elementType, i, Values, attributes), overrideEditor);
                     }
                 }
