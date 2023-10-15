@@ -218,6 +218,7 @@ namespace FlaxEditor.GUI.Dialogs
 
         private void OnColorPicked(Color32 colorPicked)
         {
+            Editor.Log("OnColorPicked " + colorPicked + ", _active eye dropper=" + _activeEyedropper);
             if (_activeEyedropper)
             {
                 _activeEyedropper = false;
@@ -319,7 +320,7 @@ namespace FlaxEditor.GUI.Dialogs
         protected override void OnShow()
         {
             // Auto cancel on lost focus
-            ((WindowRootControl)Root).Window.LostFocus += OnCancel;
+            //((WindowRootControl)Root).Window.LostFocus += OnCancel;
 
             base.OnShow();
         }
