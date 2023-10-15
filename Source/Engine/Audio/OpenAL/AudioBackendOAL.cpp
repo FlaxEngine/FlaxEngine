@@ -33,7 +33,8 @@
         int alError = alGetError(); \
         if (alError != 0) \
         { \
-        LOG(Error, "OpenAL method {0} failed with error 0x{1:X} (at line {2})", TEXT(#method), alError, __LINE__ - 1); \
+            const Char* errorStr = GetOpenALErrorString(alError); \
+            LOG(Error, "OpenAL method {0} failed with error 0x{1:X}:{2} (at line {3})", TEXT(#method), alError, errorStr, __LINE__ - 1); \
         } \
     }
 #endif
@@ -288,6 +289,28 @@ ALenum GetOpenALBufferFormat(uint32 numChannels, uint32 bitDepth)
         }
     }
     return 0;
+}
+
+const Char* GetOpenALErrorString(int error)
+{
+    switch (error)
+    {
+    case AL_NO_ERROR:
+        return TEXT("AL_NO_ERROR");
+    case AL_INVALID_NAME:
+        return TEXT("AL_INVALID_NAME");
+    case AL_INVALID_ENUM:
+        return TEXT("AL_INVALID_ENUM");
+    case AL_INVALID_VALUE:
+        return TEXT("AL_INVALID_VALUE");
+    case AL_INVALID_OPERATION:
+        return TEXT("AL_INVALID_OPERATION");
+    case AL_OUT_OF_MEMORY:
+        return TEXT("AL_OUT_OF_MEMORY");
+    default:
+        break;
+    }
+    return TEXT("???");
 }
 
 void AudioBackendOAL::Listener_OnAdd(AudioListener* listener)
@@ -838,7 +861,11 @@ bool AudioBackendOAL::Base_Init()
     // Init
     Base_SetDopplerFactor(AudioSettings::Get()->DopplerFactor);
     alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED); // Default attenuation model
-    ALC::RebuildContexts(true);
+    int32 clampedIndex = Math::Clamp(activeDeviceIndex, -1, Audio::Devices.Count() - 1);
+    if (clampedIndex == Audio::GetActiveDeviceIndex())
+    {
+        ALC::RebuildContexts(true);
+    }
     Audio::SetActiveDeviceIndex(activeDeviceIndex);
 #ifdef AL_SOFT_source_spatialize
     if (ALC::IsExtensionSupported("AL_SOFT_source_spatialize"))
