@@ -319,7 +319,9 @@ namespace FlaxEditor.GUI.Dialogs
         protected override void OnShow()
         {
             // Auto cancel on lost focus
-            //((WindowRootControl)Root).Window.LostFocus += OnCancel;
+#if !PLATFORM_LINUX
+            ((WindowRootControl)Root).Window.LostFocus += OnCancel;
+#endif
 
             base.OnShow();
         }
