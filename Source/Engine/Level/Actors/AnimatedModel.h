@@ -128,7 +128,7 @@ public:
     /// <summary>
     /// The custom bounds(in actor local space). If set to empty bounds then source skinned model bind pose bounds will be used.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(70), EditorDisplay(\"Skinned Model\")")
+    API_FIELD(Attributes="EditorOrder(70), EditorDisplay(\"AnimatedModel\")")
     BoundingBox CustomBounds = BoundingBox::Zero;
 
     /// <summary>
