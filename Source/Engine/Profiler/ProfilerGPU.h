@@ -20,6 +20,8 @@ class GPUTimerQuery;
 API_CLASS(Static) class FLAXENGINE_API ProfilerGPU
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(ProfilerGPU);
+    friend class Engine;
+    friend class GPUDevice;
 public:
     /// <summary>
     /// Represents single CPU profiling event data.
@@ -68,6 +70,11 @@ public:
         /// The index of the frame buffer was used for recording events (for the last time).
         /// </summary>
         uint64 FrameIndex;
+
+        /// <summary>
+        /// Sum of all present events duration on CPU during this frame (in milliseconds).
+        /// </summary>
+        float PresentTime;
 
         /// <summary>
         /// Determines whether this buffer has ready data (resolved and not empty).
@@ -152,31 +159,19 @@ public:
     static void EndEvent(int32 index);
 
     /// <summary>
-    /// Begins the new frame rendering. Called by the engine to sync profiling data.
-    /// </summary>
-    static void BeginFrame();
-
-    /// <summary>
-    /// Called when just before flushing current frame GPU commands (via Present or Flush). Call active timer queries should be ended now.
-    /// </summary>
-    static void OnPresent();
-
-    /// <summary>
-    /// Ends the frame rendering. Called by the engine to sync profiling data.
-    /// </summary>
-    static void EndFrame();
-
-    /// <summary>
     /// Tries to get the rendering stats from the last frame drawing (that has been resolved and has valid data).
     /// </summary>
     /// <param name="drawTimeMs">The draw execution time on a GPU (in milliseconds).</param>
+    /// <param name="presentTimeMs">The final frame present time on a CPU (in milliseconds). Time game waited for vsync or GPU to finish previous frame rendering.</param>
     /// <param name="statsData">The rendering stats data.</param>
     /// <returns>True if got the data, otherwise false.</returns>
-    static bool GetLastFrameData(float& drawTimeMs, RenderStatsData& statsData);
+    API_FUNCTION() static bool GetLastFrameData(float& drawTimeMs, float& presentTimeMs, RenderStatsData& statsData);
 
-    /// <summary>
-    /// Releases resources. Calls to the profiling API after Dispose are not valid
-    /// </summary>
+private:
+    static void BeginFrame();
+    static void OnPresent();
+    static void OnPresentTime(float time);
+    static void EndFrame();
     static void Dispose();
 };
 
