@@ -14,6 +14,9 @@
 #include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/ThreadLocal.h"
+#if !BUILD_RELEASE || USE_EDITOR
+#include "Engine/Level/Level.h"
+#endif
 
 SceneObjectsFactory::Context::Context(ISerializeModifier* modifier)
     : Modifier(modifier)
@@ -254,6 +257,10 @@ void SceneObjectsFactory::Deserialize(Context& context, SceneObject* obj, ISeria
 
 void SceneObjectsFactory::HandleObjectDeserializationError(const ISerializable::DeserializeStream& value)
 {
+#if !BUILD_RELEASE || USE_EDITOR
+    // Prevent race-conditions when logging missing objects (especially when adding dummy MissingScript)
+    ScopeLock lock(Level::ScenesLock);
+
     // Print invalid object data contents
     rapidjson_flax::StringBuffer buffer;
     PrettyJsonWriter writer(buffer);
@@ -280,6 +287,7 @@ void SceneObjectsFactory::HandleObjectDeserializationError(const ISerializable::
             LOG(Warning, "Parent actor of the missing object: {0}", parent->GetName());
         }
     }
+#endif
 }
 
 Actor* SceneObjectsFactory::CreateActor(int32 typeId, const Guid& id)
