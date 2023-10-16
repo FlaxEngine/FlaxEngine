@@ -369,14 +369,14 @@ SceneObjectsFactory::PrefabSyncData::PrefabSyncData(Array<SceneObject*>& sceneOb
 {
 }
 
-void SceneObjectsFactory::SetupPrefabInstances(Context& context, PrefabSyncData& data)
+void SceneObjectsFactory::SetupPrefabInstances(Context& context, const PrefabSyncData& data)
 {
     PROFILE_CPU_NAMED("SetupPrefabInstances");
     const int32 count = data.Data.Size();
     ASSERT(count <= data.SceneObjects.Count());
     for (int32 i = 0; i < count; i++)
     {
-        SceneObject* obj = data.SceneObjects[i];
+        const SceneObject* obj = data.SceneObjects[i];
         if (!obj)
             continue;
         const auto& stream = data.Data[i];
@@ -417,6 +417,21 @@ void SceneObjectsFactory::SetupPrefabInstances(Context& context, PrefabSyncData&
         // Add to the prefab instance IDs mapping
         auto& prefabInstance = context.Instances[index];
         prefabInstance.IdsMapping[prefabObjectId] = id;
+
+        // Walk over nested prefabs to link any subobjects into this object (eg. if nested prefab uses cross-object references to link them correctly)
+    NESTED_PREFAB_WALK:
+        const ISerializable::DeserializeStream* prefabData;
+        if (prefab->ObjectsDataCache.TryGet(prefabObjectId, prefabData) && JsonTools::GetGuidIfValid(prefabObjectId, *prefabData, "PrefabObjectID"))
+        {
+            prefabId = JsonTools::GetGuid(stream, "PrefabID");
+            prefab = Content::LoadAsync<Prefab>(prefabId);
+            if (prefab && !prefab->WaitForLoaded())
+            {
+                // Map prefab object ID to the deserialized instance ID
+                prefabInstance.IdsMapping[prefabObjectId] = id;
+                goto NESTED_PREFAB_WALK;
+            }
+        }
     }
 }
 
