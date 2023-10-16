@@ -125,7 +125,7 @@ public:
     /// <summary>
     /// True if GPU profiling is enabled, otherwise false to disable events collecting and GPU timer queries usage. Can be changed during rendering.
     /// </summary>
-    static bool Enabled;
+    API_FIELD() static bool Enabled;
 
     /// <summary>
     /// The current frame buffer to collect events.
