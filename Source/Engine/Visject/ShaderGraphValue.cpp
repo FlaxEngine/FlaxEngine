@@ -40,11 +40,15 @@ ShaderGraphValue::ShaderGraphValue(const Variant& v)
         break;
     case VariantType::Float:
         Type = VariantType::Types::Float;
-        Value = String::Format(TEXT("{:.8f}"), v.AsFloat);
+        Value = String::Format(TEXT("{}"), v.AsFloat);
+        if (Value.Find('.') == -1)
+            Value = String::Format(TEXT("{:.1f}"), v.AsFloat);
         break;
     case VariantType::Double:
         Type = VariantType::Types::Float;
-        Value = String::Format(TEXT("{:.8f}"), (float)v.AsDouble);
+        Value = String::Format(TEXT("{}"), (float)v.AsDouble);
+        if (Value.Find('.') == -1)
+            Value = String::Format(TEXT("{:.1f}"), (float)v.AsDouble);
         break;
     case VariantType::Float2:
     {
@@ -129,6 +133,29 @@ bool ShaderGraphValue::IsOne() const
     case VariantType::Types::Uint:
     case VariantType::Types::Float:
         return Value == TEXT("1") || Value == TEXT("1.0");
+    default:
+        return false;
+    }
+}
+
+bool ShaderGraphValue::IsLiteral() const
+{
+    switch (Type)
+    {
+    case VariantType::Types::Bool:
+    case VariantType::Types::Int:
+    case VariantType::Types::Uint:
+    case VariantType::Types::Float:
+        if (Value.HasChars())
+        {
+            for (int32 i = 0; i < Value.Length(); i++)
+            {
+                const Char c = Value[i];
+                if (!StringUtils::IsDigit(c) && c != '.')
+                    return false;
+            }
+            return true;
+        }
     default:
         return false;
     }

@@ -706,13 +706,12 @@ void AnimatedModel::UpdateBounds()
             const int32 bonesCount = skeleton.Bones.Count();
             for (int32 boneIndex = 0; boneIndex < bonesCount; boneIndex++)
                 box.Merge(_transform.LocalToWorld(GraphInstance.NodesPose[skeleton.Bones.Get()[boneIndex].NodeIndex].GetTranslation()));
-            _box = box;
         }
 
         // Apply margin based on model dimensions
         const Vector3 modelBoxSize = modelBox.GetSize();
-        const Vector3 center = _box.GetCenter();
-        const Vector3 sizeHalf = Vector3::Max(_box.GetSize() + modelBoxSize * 0.2f, modelBoxSize) * 0.5f;
+        const Vector3 center = box.GetCenter();
+        const Vector3 sizeHalf = Vector3::Max(box.GetSize() + modelBoxSize * 0.2f, modelBoxSize) * 0.5f;
         _box = BoundingBox(center - sizeHalf, center + sizeHalf);
     }
     else

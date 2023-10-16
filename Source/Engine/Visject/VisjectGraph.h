@@ -262,11 +262,11 @@ protected:
 
     FORCE_INLINE Value tryGetValue(Box* box)
     {
-        return box && box->HasConnection() ? eatBox(box->GetParent<Node>(), box->FirstConnection()) : Value::Zero;
+        return box && box->Connections.HasItems() ? eatBox(box->GetParent<Node>(), (VisjectGraphBox*)box->Connections.Get()[0]) : Value::Zero;
     }
 
     FORCE_INLINE Value tryGetValue(Box* box, const Value& defaultValue)
     {
-        return box && box->HasConnection() ? eatBox(box->GetParent<Node>(), box->FirstConnection()) : defaultValue;
+        return box && box->Connections.HasItems() ? eatBox(box->GetParent<Node>(), (VisjectGraphBox*)box->Connections.Get()[0]) : defaultValue;
     }
 };

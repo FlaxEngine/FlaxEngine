@@ -174,6 +174,8 @@ bool ForwardMaterialShader::Load()
 
     // Forward Pass
     psDesc.VS = _shader->GetVS("VS");
+    if (psDesc.VS == nullptr)
+        return true;
     psDesc.PS = _shader->GetPS("PS_Forward");
     psDesc.DepthWriteEnable = false;
     psDesc.BlendMode = BlendingMode::AlphaBlend;

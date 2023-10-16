@@ -593,12 +593,14 @@ namespace FlaxEditor.Viewport
                             {
                                 ref var vv = ref v.Options[j];
                                 var button = childMenu.AddButton(vv.Name);
+                                button.CloseMenuOnClick = false;
                                 button.Tag = vv.Mode;
                             }
                         }
                         else
                         {
                             var button = debugView.AddButton(v.Name);
+                            button.CloseMenuOnClick = false;
                             button.Tag = v.Mode;
                         }
                     }
@@ -1119,7 +1121,12 @@ namespace FlaxEditor.Viewport
             var win = (WindowRootControl)Root;
 
             // Get current mouse position in the view
-            _viewMousePos = PointFromWindow(win.MousePosition);
+            {
+                // When the window is not focused, the position in window does not return sane values
+                Float2 pos = PointFromWindow(win.MousePosition);
+                if (!float.IsInfinity(pos.LengthSquared))
+                    _viewMousePos = pos;
+            }
 
             // Update input
             var window = win.Window;
@@ -1582,7 +1589,14 @@ namespace FlaxEditor.Viewport
         private void WidgetViewModeShowHideClicked(ContextMenuButton button)
         {
             if (button.Tag is ViewMode v)
+            {
                 Task.ViewMode = v;
+                var cm = button.ParentContextMenu;
+                WidgetViewModeShowHide(cm);
+                var mainCM = ViewWidgetButtonMenu.GetChildMenu("Debug View").ContextMenu;
+                if (mainCM != null && cm != mainCM)
+                    WidgetViewModeShowHide(mainCM);
+            }
         }
 
         private void WidgetViewModeShowHide(Control cm)
@@ -1594,7 +1608,7 @@ namespace FlaxEditor.Viewport
             foreach (var e in ccm.Items)
             {
                 if (e is ContextMenuButton b && b.Tag is ViewMode v)
-                    b.Icon = Task.View.Mode == v ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                    b.Icon = Task.ViewMode == v ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
             }
         }
 

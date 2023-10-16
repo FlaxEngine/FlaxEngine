@@ -629,8 +629,9 @@ namespace FlaxEditor.Windows
             if (items.Count == 0)
                 return;
 
-            // TODO: remove items that depend on different items in the list: use wants to remove `folderA` and `folderA/asset.x`, we should just remove `folderA`
+            // Sort items to remove files first, then folders
             var toDelete = new List<ContentItem>(items);
+            toDelete.Sort((a, b) => a.IsFolder ? 1 : b.IsFolder ? -1 : a.Compare(b));
 
             string msg = toDelete.Count == 1
                          ? string.Format("Are you sure to delete \'{0}\'?\nThis action cannot be undone. Files will be deleted permanently.", items[0].Path)

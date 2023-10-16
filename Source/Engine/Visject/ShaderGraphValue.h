@@ -143,8 +143,7 @@ public:
     /// <summary>
     /// Returns true if value is valid.
     /// </summary>
-    /// <returns>True if is valid, otherwise false.</returns>
-    bool IsValid() const
+    FORCE_INLINE bool IsValid() const
     {
         return Type != VariantType::Types::Null;
     }
@@ -152,8 +151,7 @@ public:
     /// <summary>
     /// Returns true if value is invalid.
     /// </summary>
-    /// <returns>True if is invalid, otherwise false.</returns>
-    bool IsInvalid() const
+    FORCE_INLINE bool IsInvalid() const
     {
         return Type == VariantType::Types::Null;
     }
@@ -161,14 +159,17 @@ public:
     /// <summary>
     /// Checks if value contains static part with zero.
     /// </summary>
-    /// <returns>True if contains zero number.</returns>
     bool IsZero() const;
 
     /// <summary>
     /// Checks if value contains static part with one.
     /// </summary>
-    /// <returns>True if contains one number.</returns>
     bool IsOne() const;
+
+    /// <summary>
+    /// Checks if value is a compile-time constant literal (eg. int, bool or float).
+    /// </summary>
+    bool IsLiteral() const;
 
     /// <summary>
     /// Clears this instance.

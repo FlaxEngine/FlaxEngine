@@ -244,11 +244,11 @@ namespace FlaxEditor.Options
                 CollectionBackgroundColor = Color.FromBgra(0x14CCCCCC),
                 ProgressNormal = Color.FromBgra(0xFF0ad328),
 
-                Statusbar = new Style.StatusbarStyle()
+                Statusbar = new Style.StatusbarStyle
                 {
                     PlayMode = Color.FromBgra(0xFF2F9135),
                     Failed = Color.FromBgra(0xFF9C2424),
-                    Loading = Color.FromBgra(0xFF2D2D30)
+                    Loading = Color.FromBgra(0xFF2D2D30),
                 },
 
                 // Fonts
@@ -271,7 +271,7 @@ namespace FlaxEditor.Options
                 Scale = Editor.Icons.Scale32,
                 Scalar = Editor.Icons.Scalar32,
 
-                SharedTooltip = new Tooltip()
+                SharedTooltip = new Tooltip(),
             };
             style.DragWindow = style.BackgroundSelected * 0.7f;
 

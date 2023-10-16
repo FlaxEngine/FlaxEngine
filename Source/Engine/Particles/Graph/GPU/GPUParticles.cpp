@@ -6,6 +6,7 @@
 #include "Engine/Particles/ParticleEmitter.h"
 #include "Engine/Particles/ParticleEffect.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/GPUContext.h"
@@ -168,7 +169,7 @@ void GPUParticles::Execute(GPUContext* context, ParticleEmitter* emitter, Partic
     if (viewTask)
     {
         bindMeta.Buffers = viewTask->Buffers;
-        bindMeta.CanSampleDepth = bindMeta.CanSampleGBuffer = true;
+        bindMeta.CanSampleDepth = bindMeta.CanSampleGBuffer = bindMeta.Buffers && bindMeta.Buffers->GetWidth() != 0;
     }
     else
     {
@@ -179,7 +180,7 @@ void GPUParticles::Execute(GPUContext* context, ParticleEmitter* emitter, Partic
     for (int32 i = 0; i < data.Parameters.Count(); i++)
     {
         // Copy instance parameters values
-        _params[i].SetValue(data.Parameters[i]);
+        _params[i].SetValue(data.Parameters.Get()[i]);
     }
     MaterialParamsLink link;
     link.This = &_params;

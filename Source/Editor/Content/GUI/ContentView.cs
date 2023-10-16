@@ -220,8 +220,9 @@ namespace FlaxEditor.Content.GUI
             // Remove references and unlink items
             for (int i = 0; i < _items.Count; i++)
             {
-                _items[i].Parent = null;
-                _items[i].RemoveReference(this);
+                var item = _items[i];
+                item.Parent = null;
+                item.RemoveReference(this);
             }
             _items.Clear();
 
@@ -263,11 +264,12 @@ namespace FlaxEditor.Content.GUI
             // Add references and link items
             for (int i = 0; i < items.Count; i++)
             {
-                if (items[i].Visible)
+                var item = items[i];
+                if (item.Visible && !_items.Contains(item))
                 {
-                    items[i].Parent = this;
-                    items[i].AddReference(this);
-                    _items.Add(items[i]);
+                    item.Parent = this;
+                    item.AddReference(this);
+                    _items.Add(item);
                 }
             }
             if (selection != null)
@@ -279,6 +281,8 @@ namespace FlaxEditor.Content.GUI
             // Sort items depending on sortMethod parameter
             _children.Sort(((control, control1) =>
                                {
+                                   if (control == null || control1 == null)
+                                       return 0;
                                    if (sortType == SortType.AlphabeticReverse)
                                    {
                                        if (control.CompareTo(control1) > 0)

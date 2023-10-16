@@ -23,10 +23,14 @@ CollisionData::CollisionData(const SpawnParams& params, const AssetInfo* info)
 
 bool CollisionData::CookCollision(CollisionDataType type, ModelBase* modelObj, int32 modelLodIndex, uint32 materialSlotsMask, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
 {
-    // Validate state
     if (!IsVirtual())
     {
         LOG(Warning, "Only virtual assets can be modified at runtime.");
+        return true;
+    }
+    if (IsInMainThread() && modelObj && modelObj->IsVirtual())
+    {
+        LOG(Error, "Cannot cook collision data for virtual models on a main thread (virtual models data is stored on GPU only). Use thread pool or async task.");
         return true;
     }
 
@@ -43,18 +47,12 @@ bool CollisionData::CookCollision(CollisionDataType type, ModelBase* modelObj, i
     SerializedOptions options;
     BytesContainer outputData;
     if (CollisionCooking::CookCollision(arg, options, outputData))
-    {
         return true;
-    }
-
-    // Clear state
-    unload(true);
 
     // Load data
+    unload(true);
     if (load(&options, outputData.Get(), outputData.Length()) != LoadResult::Ok)
-    {
         return true;
-    }
 
     // Mark as loaded (eg. Mesh Colliders using this asset will update shape for physics simulation)
     onLoaded();

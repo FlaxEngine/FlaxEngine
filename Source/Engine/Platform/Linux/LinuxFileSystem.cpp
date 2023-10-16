@@ -9,6 +9,7 @@
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/TimeSpan.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Utilities/StringConverter.h"

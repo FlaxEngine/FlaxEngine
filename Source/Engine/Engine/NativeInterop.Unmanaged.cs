@@ -188,7 +188,7 @@ namespace FlaxEngine.Interop
         internal static void RegisterNativeLibrary(IntPtr moduleNamePtr, IntPtr modulePathPtr)
         {
             string moduleName = Marshal.PtrToStringAnsi(moduleNamePtr);
-            string modulePath = Marshal.PtrToStringAnsi(modulePathPtr);
+            string modulePath = Marshal.PtrToStringUni(modulePathPtr);
             libraryPaths[moduleName] = modulePath;
         }
 

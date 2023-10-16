@@ -306,6 +306,8 @@ namespace FlaxEditor.Viewport
             var orient = ViewOrientation;
             ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orient);
         }
+        /// <inheritdoc />
+        public EditorViewport Viewport => this;
 
         /// <inheritdoc />
         public GizmosCollection Gizmos { get; }
