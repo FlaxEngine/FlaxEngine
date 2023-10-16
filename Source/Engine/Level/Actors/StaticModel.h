@@ -8,7 +8,7 @@
 #include "Engine/Renderer/Lightmaps.h"
 
 /// <summary>
-/// Renders model on the screen.
+/// An actor that renders a model.
 /// </summary>
 API_CLASS(Attributes="ActorContextMenu(\"New/Model\"), ActorToolbox(\"Visuals\")")
 class FLAXENGINE_API StaticModel : public ModelInstanceActor
@@ -37,13 +37,13 @@ public:
     /// <summary>
     /// The model asset to draw.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(20), DefaultValue(null), EditorDisplay(\"Model\")")
+    API_FIELD(Attributes="EditorOrder(20), DefaultValue(null), EditorDisplay(\"StaticModel\")")
     AssetReference<Model> Model;
 
     /// <summary>
     /// The draw passes to use for rendering this object.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(15), DefaultValue(DrawPass.Default), EditorDisplay(\"Model\")")
+    API_FIELD(Attributes="EditorOrder(15), DefaultValue(DrawPass.Default), EditorDisplay(\"StaticModel\")")
     DrawPass DrawModes = DrawPass::Default;
 
     /// <summary>
@@ -55,7 +55,7 @@ public:
     /// <summary>
     /// Gets the model scale in lightmap (applied to all the meshes).
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(10), DefaultValue(1.0f), EditorDisplay(\"Model\", \"Scale In Lightmap\"), Limit(0, 1000.0f, 0.1f)")
+    API_PROPERTY(Attributes="EditorOrder(10), DefaultValue(1.0f), EditorDisplay(\"StaticModel\", \"Scale In Lightmap\"), Limit(0, 1000.0f, 0.1f)")
     float GetScaleInLightmap() const;
 
     /// <summary>
@@ -66,7 +66,7 @@ public:
     /// <summary>
     /// Gets the model bounds scale. It is useful when using Position Offset to animate the vertices of the object outside of its bounds. Increasing the bounds of an object will reduce performance.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(12), DefaultValue(1.0f), EditorDisplay(\"Model\"), Limit(0, 10.0f, 0.1f)")
+    API_PROPERTY(Attributes="EditorOrder(12), DefaultValue(1.0f), EditorDisplay(\"StaticModel\"), Limit(0, 10.0f, 0.1f)")
     float GetBoundsScale() const;
 
     /// <summary>
@@ -77,7 +77,7 @@ public:
     /// <summary>
     /// Gets the model Level Of Detail bias value. Allows to increase or decrease rendered model quality.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(40), DefaultValue(0), Limit(-100, 100, 0.1f), EditorDisplay(\"Model\", \"LOD Bias\")")
+    API_PROPERTY(Attributes="EditorOrder(40), DefaultValue(0), Limit(-100, 100, 0.1f), EditorDisplay(\"StaticModel\", \"LOD Bias\")")
     int32 GetLODBias() const;
 
     /// <summary>
@@ -88,7 +88,7 @@ public:
     /// <summary>
     /// Gets the model forced Level Of Detail index. Allows to bind the given model LOD to show. Value -1 disables this feature.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(-1), Limit(-1, 100, 0.1f), EditorDisplay(\"Model\", \"Forced LOD\")")
+    API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(-1), Limit(-1, 100, 0.1f), EditorDisplay(\"StaticModel\", \"Forced LOD\")")
     int32 GetForcedLOD() const;
 
     /// <summary>
@@ -99,7 +99,7 @@ public:
     /// <summary>
     /// Gets the model sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be use to control transparency drawing.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(0), EditorDisplay(\"Model\")")
+    API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(0), EditorDisplay(\"StaticModel\")")
     int32 GetSortOrder() const;
 
     /// <summary>
