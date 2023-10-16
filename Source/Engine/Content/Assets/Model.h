@@ -9,7 +9,7 @@ class Mesh;
 class StreamModelLODTask;
 
 /// <summary>
-/// An asset from disk that stores static model data, which can be rendered on the GPU.
+/// An asset that stores static model data, which can be rendered on the GPU.
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API Model : public ModelBase
 {

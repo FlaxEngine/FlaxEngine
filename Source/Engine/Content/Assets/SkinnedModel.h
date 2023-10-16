@@ -11,7 +11,7 @@
 class StreamSkinnedModelLODTask;
 
 /// <summary>
-/// An asset from disk that stores skinned model data, which can have animations applied to it.
+/// An asset that stores skinned model data, which can have animations applied to it.
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedModel : public ModelBase
 {
