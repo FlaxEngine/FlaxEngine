@@ -381,6 +381,7 @@ namespace FlaxEditor.Surface.Archetypes
                     return;   
                 }
 
+                // Add parameter to editor
                 var paramIndex = Surface.Parameters.Count;
                 var paramAction = new AddRemoveParamAction
                 {
@@ -402,6 +403,26 @@ namespace FlaxEditor.Surface.Archetypes
 
                 if (node is not Parameters.SurfaceNodeParamsGet getNode)
                     throw new Exception("Node is not a ParamsGet node!");
+                
+                // Recreate connections of constant node
+                // Constant nodes and parameter nodes should have the same ports, so we can just iterate through the connections
+                var boxes = GetBoxes();
+                for (int i = 0;i < boxes.Count; i++)
+                {
+                    Box box = boxes[i];
+                    if (!box.HasAnyConnection)
+                        continue;
+
+                    if (!getNode.TryGetBox(i, out Box paramBox))
+                        continue;
+                    
+                    // Iterating backwards, because the CreateConnection method deletes entries from the box connections when target box IsSingle is set to true
+                    for (int k = box.Connections.Count-1; k >= 0; k--)
+                    {
+                        Box connectedBox = box.Connections[k];
+                        paramBox.CreateConnection(connectedBox);
+                    }
+                }
                 
                 var spawnNodeAction = new AddRemoveNodeAction(getNode, true);
                 var removeConstantAction = new AddRemoveNodeAction(this, false);
