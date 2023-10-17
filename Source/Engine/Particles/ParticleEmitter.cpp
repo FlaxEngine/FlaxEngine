@@ -19,6 +19,7 @@
 #include "Engine/Particles/Graph/GPU/ParticleEmitterGraph.GPU.h"
 #if BUILD_DEBUG
 #include "Engine/Engine/Globals.h"
+#include "Engine/Scripting/BinaryModule.h"
 #endif
 #endif
 #if COMPILE_WITH_GPU_PARTICLES
@@ -185,7 +186,9 @@ Asset::LoadResult ParticleEmitter::load()
 
 #if BUILD_DEBUG && USE_EDITOR
         // Dump generated shader source to the temporary file
+        BinaryModule::Locker.Lock();
         source.SaveToFile(Globals::ProjectCacheFolder / TEXT("particle_emitter.txt"));
+        BinaryModule::Locker.Unlock();
 #endif
 
         // Encrypt source code
