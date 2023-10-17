@@ -133,18 +133,16 @@ public:
             return _chunkIndex * ChunkSize + _index;
         }
 
-    public:
-        bool IsEnd() const
+        FORCE_INLINE bool IsEnd() const
         {
-            return Index() == _collection->Count();
+            return (_chunkIndex * ChunkSize + _index) == _collection->_count;
         }
 
-        bool IsNotEnd() const
+        FORCE_INLINE bool IsNotEnd() const
         {
-            return Index() != _collection->Count();
+            return (_chunkIndex * ChunkSize + _index) != _collection->_count;
         }
 
-    public:
         FORCE_INLINE T& operator*() const
         {
             return _collection->_chunks[_chunkIndex]->At(_index);
@@ -155,7 +153,6 @@ public:
             return &_collection->_chunks[_chunkIndex]->At(_index);
         }
 
-    public:
         FORCE_INLINE bool operator==(const Iterator& v) const
         {
             return _collection == v._collection && _chunkIndex == v._chunkIndex && _index == v._index;
@@ -166,7 +163,6 @@ public:
             return _collection != v._collection || _chunkIndex != v._chunkIndex || _index != v._index;
         }
 
-    public:
         Iterator& operator++()
         {
             // Check if it is not at end
