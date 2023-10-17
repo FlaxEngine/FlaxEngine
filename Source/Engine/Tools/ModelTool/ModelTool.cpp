@@ -22,6 +22,7 @@
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Types/Pair.h"
+#include "Engine/Core/Types/Variant.h"
 #include "Engine/Graphics/Models/SkeletonUpdater.h"
 #include "Engine/Graphics/Models/SkeletonMapping.h"
 #include "Engine/Core/Utilities.h"
@@ -746,6 +747,32 @@ void MeshOptDeallocate(void* ptr)
     Allocator::Free(ptr);
 }
 
+void TrySetupMaterialParameter(MaterialInstance* instance, Span<const Char*> paramNames, const Variant& value, MaterialParameterType type)
+{
+    for (const Char* name : paramNames)
+    {
+        for (MaterialParameter& param : instance->Params)
+        {
+            const MaterialParameterType paramType = param.GetParameterType();
+            if (type != paramType)
+            {
+                if (type == MaterialParameterType::Color)
+                {
+                    if (paramType != MaterialParameterType::Vector3 || 
+                        paramType != MaterialParameterType::Vector4)
+                        continue;
+                }
+                else
+                    continue;
+            }
+            if (StringUtils::CompareIgnoreCase(name, param.GetName().Get()) != 0)
+                continue;
+            param.SetValue(value);
+            return;
+        }
+    }
+}
+
 bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& options, String& errorMsg, const String& autoImportOutput)
 {
     LOG(Info, "Importing model from \'{0}\'", path);
@@ -1016,9 +1043,18 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         {
             // Create material instance
             AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialInstanceTag, assetPath, material.AssetID);
-            if (MaterialInstance* materialInstance = Content::Load<MaterialInstance>(assetPath))
+            if (auto* materialInstance = Content::Load<MaterialInstance>(assetPath))
             {
                 materialInstance->SetBaseMaterial(options.InstanceToImportAs);
+
+                // Customize base material based on imported material (blind guess based on the common names used in materials)
+                const Char* diffuseColorNames[] = { TEXT("color"), TEXT("col"), TEXT("diffuse"), TEXT("basecolor"), TEXT("base color") };
+                TrySetupMaterialParameter(materialInstance, ToSpan(diffuseColorNames, ARRAY_COUNT(diffuseColorNames)), material.Diffuse.Color, MaterialParameterType::Color);
+                const Char* emissiveColorNames[] = { TEXT("emissive"), TEXT("emission"), TEXT("light") };
+                TrySetupMaterialParameter(materialInstance, ToSpan(emissiveColorNames, ARRAY_COUNT(emissiveColorNames)), material.Emissive.Color, MaterialParameterType::Color);
+                const Char* opacityValueNames[] = { TEXT("opacity"), TEXT("alpha") };
+                TrySetupMaterialParameter(materialInstance, ToSpan(opacityValueNames, ARRAY_COUNT(opacityValueNames)), material.Opacity.Value, MaterialParameterType::Float);
+
                 materialInstance->Save();
             }
             else
