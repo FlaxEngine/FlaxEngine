@@ -31,10 +31,13 @@ public:
         if (Asset)
         {
             Asset->Locker.Lock();
-            Asset->_loadFailed = true;
-            Asset->_isLoaded = false;
-            LOG(Error, "Loading asset \'{0}\' result: {1}.", ToString(), ToString(Result::TaskFailed));
-            Asset->_loadingTask = nullptr;
+            if (Asset->_loadingTask == this)
+            {
+                Asset->_loadFailed = true;
+                Asset->_isLoaded = false;
+                LOG(Error, "Loading asset \'{0}\' result: {1}.", ToString(), ToString(Result::TaskFailed));
+                Asset->_loadingTask = nullptr;
+            }
             Asset->Locker.Unlock();
         }
     }
@@ -73,7 +76,10 @@ protected:
     {
         if (Asset)
         {
-            Asset->_loadingTask = nullptr;
+            Asset->Locker.Lock();
+            if (Asset->_loadingTask == this)
+                Asset->_loadingTask = nullptr;
+            Asset->Locker.Unlock();
             Asset = nullptr;
         }
 
@@ -84,7 +90,10 @@ protected:
     {
         if (Asset)
         {
-            Asset->_loadingTask = nullptr;
+            Asset->Locker.Lock();
+            if (Asset->_loadingTask == this)
+                Asset->_loadingTask = nullptr;
+            Asset->Locker.Unlock();
             Asset = nullptr;
         }
 

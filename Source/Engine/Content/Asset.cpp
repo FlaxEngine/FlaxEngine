@@ -538,11 +538,7 @@ ContentLoadTask* Asset::createLoadingTask()
 
 void Asset::startLoading()
 {
-    // Check if is already loaded
-    if (IsLoaded())
-        return;
-
-    // Start loading (using async tasks)
+    ASSERT(!IsLoaded());
     ASSERT(_loadingTask == nullptr);
     _loadingTask = createLoadingTask();
     ASSERT(_loadingTask != nullptr);

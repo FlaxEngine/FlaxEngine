@@ -154,7 +154,7 @@ void ContentService::LateUpdate()
     // Unload marked assets
     for (int32 i = 0; i < ToUnload.Count(); i++)
     {
-        Asset*  asset = ToUnload[i];
+        Asset* asset = ToUnload[i];
 
         // Check if has no references
         if (asset->GetReferencesCount() <= 0)
@@ -965,7 +965,7 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
     // Get cached asset info (from registry)
     if (!GetAssetInfo(id, assetInfo))
     {
-        LOG(Warning, "Invalid or missing asset ({0}, {1}).", id.ToString(Guid::FormatType::N), type.ToString());
+        LOG(Warning, "Invalid or missing asset ({0}, {1}).", id, type.ToString());
         return nullptr;
     }
 
@@ -1009,10 +1009,12 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
     ASSERT(!Assets.ContainsKey(id));
 #endif
     Assets.Add(id, result);
-    AssetsLocker.Unlock();
 
     // Start asset loading
+    // TODO: refactor this to create asset loading task-chain before AssetsLocker.Lock() to allow better parallelization
     result->startLoading();
+
+    AssetsLocker.Unlock();
 
     return result;
 }

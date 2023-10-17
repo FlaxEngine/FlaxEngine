@@ -74,6 +74,7 @@ void ProfilerGPU::EventBuffer::Clear()
     _data.Clear();
     _isResolved = false;
     FrameIndex = 0;
+    PresentTime = 0.0f;
 }
 
 GPUTimerQuery* ProfilerGPU::GetTimerQuery()
@@ -133,7 +134,9 @@ void ProfilerGPU::BeginFrame()
     // Clear stats
     RenderStatsData::Counter = RenderStatsData();
     _depth = 0;
-    Buffers[CurrentBuffer].FrameIndex = Engine::FrameCount;
+    auto& buffer = Buffers[CurrentBuffer];
+    buffer.FrameIndex = Engine::FrameCount;
+    buffer.PresentTime = 0.0f;
 
     // Try to resolve previous frames
     for (int32 i = 0; i < PROFILER_GPU_EVENTS_FRAMES; i++)
@@ -147,6 +150,12 @@ void ProfilerGPU::OnPresent()
     // End all current frame queries to prevent invalid event duration values
     auto& buffer = Buffers[CurrentBuffer];
     buffer.EndAll();
+}
+
+void ProfilerGPU::OnPresentTime(float time)
+{
+    auto& buffer = Buffers[CurrentBuffer];
+    buffer.PresentTime += time;
 }
 
 void ProfilerGPU::EndFrame()
@@ -164,7 +173,7 @@ void ProfilerGPU::EndFrame()
     buffer.Clear();
 }
 
-bool ProfilerGPU::GetLastFrameData(float& drawTimeMs, RenderStatsData& statsData)
+bool ProfilerGPU::GetLastFrameData(float& drawTimeMs, float& presentTimeMs, RenderStatsData& statsData)
 {
     uint64 maxFrame = 0;
     int32 maxFrameIndex = -1;
@@ -177,17 +186,19 @@ bool ProfilerGPU::GetLastFrameData(float& drawTimeMs, RenderStatsData& statsData
             maxFrameIndex = i;
         }
     }
-
     if (maxFrameIndex != -1)
     {
         auto& frame = frames[maxFrameIndex];
         const auto root = frame.Get(0);
         drawTimeMs = root->Time;
+        presentTimeMs = frame.PresentTime;
         statsData = root->Stats;
         return true;
     }
 
+    // No data
     drawTimeMs = 0.0f;
+    presentTimeMs = 0.0f;
     Platform::MemoryClear(&statsData, sizeof(statsData));
     return false;
 }

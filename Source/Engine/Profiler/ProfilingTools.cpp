@@ -48,7 +48,9 @@ void ProfilingToolsService::Update()
         stats.PhysicsTimeMs = static_cast<float>(Time::Physics.LastLength * 1000.0);
         stats.DrawCPUTimeMs = static_cast<float>(Time::Draw.LastLength * 1000.0);
 
-        ProfilerGPU::GetLastFrameData(stats.DrawGPUTimeMs, stats.DrawStats);
+        float presentTime;
+        ProfilerGPU::GetLastFrameData(stats.DrawGPUTimeMs, presentTime, stats.DrawStats);
+        stats.DrawCPUTimeMs = Math::Max(stats.DrawCPUTimeMs - presentTime, 0.0f); // Remove swapchain present wait time to exclude from drawing on CPU
     }
 
     // Extract CPU profiler events
