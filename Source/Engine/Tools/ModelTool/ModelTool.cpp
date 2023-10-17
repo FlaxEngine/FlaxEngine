@@ -396,6 +396,7 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(SDFResolution);
     SERIALIZE(SplitObjects);
     SERIALIZE(ObjectIndex);
+    SERIALIZE(SubAssetFolder);
 }
 
 void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -441,6 +442,7 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(SDFResolution);
     DESERIALIZE(SplitObjects);
     DESERIALIZE(ObjectIndex);
+    DESERIALIZE(SubAssetFolder);
 
     // [Deprecated on 23.11.2021, expires on 21.11.2023]
     int32 AnimationIndex = -1;

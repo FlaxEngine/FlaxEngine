@@ -370,6 +370,12 @@ public:
         API_FIELD(Attributes="EditorOrder(2010), EditorDisplay(\"Splitting\")")
         int32 ObjectIndex = -1;
 
+    public: // Other
+
+        // If specified, will be used as sub-directory name for automatically imported sub assets such as textures and materials. Set to whitespace (single space) to import to the same directory.
+        API_FIELD(Attributes="EditorOrder(3030), EditorDisplay(\"Other\")")
+        String SubAssetFolder = TEXT("");
+
         // Runtime data for objects splitting during import (used internally)
         void* SplitContext = nullptr;
         Function<bool(Options& splitOptions, const String& objectName)> OnSplitImport;
