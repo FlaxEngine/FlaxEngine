@@ -117,7 +117,7 @@ namespace FlaxEditor.Options
         /// <summary>
         /// Gets or sets the sequence of actions to perform when using Build Scenes button. Can be used to configure this as button (eg. compile code or just update navmesh).
         /// </summary>
-        [EditorDisplay("General"), EditorOrder(200), Tooltip("The sequence of actions to perform when using Build Scenes button. Can be used to configure this as button (eg. compile code or just update navmesh).")]
+        [EditorDisplay("General"), EditorOrder(200), ExpandGroups, Tooltip("The sequence of actions to perform when using Build Scenes button. Can be used to configure this as button (eg. compile code or just update navmesh).")]
         public BuildAction[] BuildActions { get; set; } =
         {
             BuildAction.CSG,
