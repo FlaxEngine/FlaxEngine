@@ -47,8 +47,14 @@ int32 SpriteAtlas::GetSpritesCount() const
 
 Sprite SpriteAtlas::GetSprite(int32 index) const
 {
-    CHECK_RETURN(index >= 0 && index < Sprites.Count(), Sprite())
+    CHECK_RETURN(index >= 0 && index < Sprites.Count(), Sprite());
     return Sprites.Get()[index];
+}
+
+void SpriteAtlas::GetSpriteArea(int32 index, Rectangle& result) const
+{
+    CHECK(index >= 0 && index < Sprites.Count());
+    result = Sprites.Get()[index].Area;
 }
 
 void SpriteAtlas::SetSprite(int32 index, const Sprite& value)
