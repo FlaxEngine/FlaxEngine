@@ -406,18 +406,16 @@ namespace FlaxEditor.Content.Thumbnails
             for (int i = 0; i < maxChecks; i++)
             {
                 var request = _requests[i];
-
                 try
                 {
                     if (request.IsReady)
-                    {
                         return request;
-                    }
                 }
                 catch (Exception ex)
                 {
-                    Editor.LogWarning(ex);
                     Editor.LogWarning($"Failed to prepare thumbnail rendering for {request.Item.ShortName}.");
+                    Editor.LogWarning(ex);
+                    _requests.RemoveAt(i--);
                 }
             }
 
@@ -515,7 +513,6 @@ namespace FlaxEditor.Content.Thumbnails
                     for (int i = 0; i < checks; i++)
                     {
                         var request = _requests[i];
-
                         try
                         {
                             if (request.IsReady)
@@ -529,8 +526,9 @@ namespace FlaxEditor.Content.Thumbnails
                         }
                         catch (Exception ex)
                         {
-                            Editor.LogWarning(ex);
                             Editor.LogWarning($"Failed to prepare thumbnail rendering for {request.Item.ShortName}.");
+                            Editor.LogWarning(ex);
+                            _requests.RemoveAt(i--);
                         }
                     }
 
