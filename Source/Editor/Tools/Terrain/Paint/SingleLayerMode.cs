@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
-using System;
 using FlaxEngine;
 
 namespace FlaxEditor.Tools.Terrain.Paint
@@ -87,32 +86,15 @@ namespace FlaxEditor.Tools.Terrain.Paint
 
                     var samplePositionLocal = p.PatchPositionLocal + new Vector3(xx * FlaxEngine.Terrain.UnitsPerVertex, 0, zz * FlaxEngine.Terrain.UnitsPerVertex);
                     Vector3.Transform(ref samplePositionLocal, ref p.TerrainWorld, out Vector3 samplePositionWorld);
+                    
+                    var sample = Mathf.Clamp(p.Brush.Sample(ref brushPosition, ref samplePositionWorld), 0f, 1f);
+                    var paintAmount = sample * strength * (1f - src[layerComponent] / 255f);
 
-                    var paintAmount = p.Brush.Sample(ref brushPosition, ref samplePositionWorld) * strength;
-
-                    // Extract layer weight
-                    byte* srcPtr = &src.R;
-                    var srcWeight = *(srcPtr + layerComponent) / 255.0f;
-
-                    // Accumulate weight
-                    float dstWeight = srcWeight + paintAmount;
-
-                    // Check for solid layer case
-                    if (dstWeight >= 1.0f)
-                    {
-                        // Erase other layers
-                        // TODO: maybe erase only the higher layers?
-                        // TODO: need to erase also weights form the other splatmaps
-                        src = Color32.Transparent;
-
-                        // Use limit value
-                        dstWeight = 1.0f;
-                    }
-
-                    // Modify packed weight
-                    *(srcPtr + layerComponent) = (byte)(dstWeight * 255.0f);
-
-                    // Write back
+                    src[layerComponent] = (byte)Mathf.Clamp(src[layerComponent] + paintAmount * 255, 0, 255);
+                    src[(layerComponent + 1) % 4] = (byte)Mathf.Clamp(src[(layerComponent + 1) % 4] - paintAmount * 255, 0, 255);
+                    src[(layerComponent + 2) % 4] = (byte)Mathf.Clamp(src[(layerComponent + 2) % 4] - paintAmount * 255, 0, 255);
+                    src[(layerComponent + 3) % 4] = (byte)Mathf.Clamp(src[(layerComponent + 3) % 4] - paintAmount * 255, 0, 255);
+                    
                     p.TempBuffer[z * p.ModifiedSize.X + x] = src;
                 }
             }
