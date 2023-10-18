@@ -241,7 +241,7 @@ namespace FlaxEditor.GUI
         {
             DoubleClick?.Invoke();
             RowDoubleClick?.Invoke(this);
-            
+
             return base.OnMouseDoubleClick(location, button);
         }
 

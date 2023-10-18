@@ -364,7 +364,7 @@ namespace FlaxEditor
             {
                 foreach (var preview in activePreviews)
                 {
-                    if (preview == loadingPreview || 
+                    if (preview == loadingPreview ||
                         (preview.Instance != null && (preview.Instance == control || preview.Instance.HasActorInHierarchy(control))))
                     {
                         // Link it to the prefab preview to see it in the editor

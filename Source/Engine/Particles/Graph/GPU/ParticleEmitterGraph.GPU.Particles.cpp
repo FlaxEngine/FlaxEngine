@@ -40,7 +40,7 @@ namespace
 ParticleEmitterGPUGenerator::Value ParticleEmitterGPUGenerator::AccessParticleAttribute(Node* caller, const StringView& name, ParticleAttribute::ValueTypes valueType, AccessMode mode)
 {
     // Find this attribute
-    return AccessParticleAttribute(caller, ((ParticleEmitterGraphGPU*)_graphStack.Peek())->Layout.FindAttribute(name, valueType), mode);
+    return AccessParticleAttribute(caller, GetRootGraph()->Layout.FindAttribute(name, valueType), mode);
 }
 
 ParticleEmitterGPUGenerator::Value ParticleEmitterGPUGenerator::AccessParticleAttribute(Node* caller, int32 index, AccessMode mode)
@@ -55,7 +55,7 @@ ParticleEmitterGPUGenerator::Value ParticleEmitterGPUGenerator::AccessParticleAt
     if (value.Variable.Type != VariantType::Null)
         return value.Variable;
 
-    auto& attribute = ((ParticleEmitterGraphGPU*)_graphStack.Peek())->Layout.Attributes[index];
+    auto& attribute = GetRootGraph()->Layout.Attributes[index];
     const VariantType::Types type = GetValueType(attribute.ValueType);
 
     // Generate local variable name that matches the attribute name for easier shader source debugging
@@ -77,7 +77,7 @@ ParticleEmitterGPUGenerator::Value ParticleEmitterGPUGenerator::AccessParticleAt
     else if (_contextType == ParticleContextType::Initialize)
     {
         // Initialize with default value
-        const Value defaultValue(((ParticleEmitterGraphGPU*)_graphStack.Peek())->AttributesDefaults[index]);
+        const Value defaultValue(GetRootGraph()->AttributesDefaults[index]);
         value.Variable = writeLocal(type, defaultValue.Value, caller, localName);
     }
     else
@@ -251,10 +251,10 @@ void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Va
     {
         const Char* format;
         auto valueType = static_cast<ParticleAttribute::ValueTypes>(node->Values[1].AsInt);
-        const int32 attributeIndex = ((ParticleEmitterGraphGPU*)_graphStack.Peek())->Layout.FindAttribute((StringView)node->Values[0], valueType);
+        const int32 attributeIndex = GetRootGraph()->Layout.FindAttribute((StringView)node->Values[0], valueType);
         if (attributeIndex == -1)
             return;
-        auto& attribute = ((ParticleEmitterGraphGPU*)_graphStack.Peek())->Layout.Attributes[attributeIndex];
+        auto& attribute = GetRootGraph()->Layout.Attributes[attributeIndex];
         const auto particleIndex = Value::Cast(tryGetValue(node->GetBox(1), Value(VariantType::Uint, TEXT("context.ParticleIndex"))), VariantType::Uint);
         switch (valueType)
         {

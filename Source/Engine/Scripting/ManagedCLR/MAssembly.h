@@ -25,8 +25,8 @@ private:
     MonoAssembly* _monoAssembly = nullptr;
     MonoImage* _monoImage = nullptr;
 #elif USE_NETCORE
-    StringAnsi _fullname;
     void* _handle = nullptr;
+    StringAnsi _fullname;
 #endif
     MDomain* _domain;
 
@@ -50,6 +50,7 @@ public:
     /// <param name="name">The assembly name.</param>
     MAssembly(MDomain* domain, const StringAnsiView& name);
 
+#if USE_NETCORE
     /// <summary>
     /// Initializes a new instance of the <see cref="MAssembly"/> class.
     /// </summary>
@@ -58,6 +59,7 @@ public:
     /// <param name="fullname">The assembly full name.</param>
     /// <param name="handle">The managed handle of the assembly.</param>
     MAssembly(MDomain* domain, const StringAnsiView& name, const StringAnsiView& fullname, void* handle);
+#endif
 
     /// <summary>
     /// Finalizes an instance of the <see cref="MAssembly"/> class.

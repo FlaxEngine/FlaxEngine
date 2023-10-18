@@ -2,7 +2,6 @@
 
 using System;
 using System.IO;
-using System.Linq;
 using System.Collections.Generic;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI;
@@ -11,7 +10,6 @@ using FlaxEditor.GUI.Dialogs;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Progress.Handlers;
 using FlaxEditor.SceneGraph;
-using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Utilities;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Windows;
@@ -208,6 +206,7 @@ namespace FlaxEditor.Modules
             _toolStripScale.Checked = gizmoMode == TransformGizmoBase.Mode.Scale;
             //
             _toolStripBuildScenes.Enabled = (canEditScene && !isPlayMode) || Editor.StateMachine.BuildingScenesState.IsActive;
+            _toolStripBuildScenes.Visible = Editor.Options.Options.General.BuildActions?.Length != 0;
             _toolStripCook.Enabled = Editor.Windows.GameCookerWin.CanBuild(Platform.PlatformType) && !GameCooker.IsRunning;
             //
             var play = _toolStripPlay;
@@ -299,7 +298,7 @@ namespace FlaxEditor.Modules
             else
                 text = "Ready";
 
-            if(ProgressVisible)
+            if (ProgressVisible)
             {
                 color = Style.Current.Statusbar.Loading;
             }
@@ -402,7 +401,7 @@ namespace FlaxEditor.Modules
             {
                 UpdateStatusBar();
             }
-            else if(ProgressVisible)
+            else if (ProgressVisible)
             {
                 UpdateStatusBar();
             }
@@ -557,7 +556,7 @@ namespace FlaxEditor.Modules
             cm.AddButton("Game Settings", () =>
             {
                 var item = Editor.ContentDatabase.Find(GameSettings.GameSettingsAssetPath);
-                if(item != null)
+                if (item != null)
                     Editor.ContentEditing.Open(item);
             });
 
@@ -653,7 +652,7 @@ namespace FlaxEditor.Modules
             cm.AddButton("Information about Flax", () => new AboutDialog().Show());
         }
 
-        private void OnOptionsChanged(FlaxEditor.Options.EditorOptions options)
+        private void OnOptionsChanged(EditorOptions options)
         {
             var inputOptions = options.Input;
 
@@ -688,6 +687,8 @@ namespace FlaxEditor.Modules
             _menuToolsTakeScreenshot.ShortKeys = inputOptions.TakeScreenshot.ToString();
 
             MainMenuShortcutKeysUpdated?.Invoke();
+
+            UpdateToolstrip();
         }
 
         private void InitToolstrip(RootControl mainWindow)
@@ -709,11 +710,11 @@ namespace FlaxEditor.Modules
             _toolStripScale = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Scale32, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale).LinkTooltip($"Change Gizmo tool mode to Scale ({inputOptions.ScaleMode})");
             ToolStrip.AddSeparator();
 
-            // Cook scenes
+            // Build scenes
             _toolStripBuildScenes = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Build64, Editor.BuildScenesOrCancel).LinkTooltip($"Build scenes data - CSG, navmesh, static lighting, env probes - configurable via Build Actions in editor options ({inputOptions.BuildScenesData})");
 
             // Cook and run
-            _toolStripCook = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.ShipIt64, Editor.Windows.GameCookerWin.BuildAndRun).LinkTooltip($"Cook & Run - build game for the current platform and run it locally ({inputOptions.Play})");
+            _toolStripCook = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.ShipIt64, Editor.Windows.GameCookerWin.BuildAndRun).LinkTooltip($"Cook & Run - build game for the current platform and run it locally ({inputOptions.CookAndRun})");
             _toolStripCook.ContextMenu = new ContextMenu();
             _toolStripCook.ContextMenu.AddButton("Run cooked game", Editor.Windows.GameCookerWin.RunCooked);
             _toolStripCook.ContextMenu.AddSeparator();

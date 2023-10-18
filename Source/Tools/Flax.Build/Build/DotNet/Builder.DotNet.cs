@@ -128,7 +128,7 @@ namespace Flax.Build
                 sourceFiles.Sort();
 
                 // Build assembly
-                BuildDotNet(graph, buildData, targetBuildOptions, target.OutputName, sourceFiles);
+                BuildDotNet(graph, buildData, targetBuildOptions, target.OutputName, sourceFiles, optimizeAssembly: buildData.TargetOptions.ScriptingAPI.Optimization);
             }
 
             // Deploy files
@@ -152,7 +152,7 @@ namespace Flax.Build
             }
         }
 
-        private static void BuildDotNet(TaskGraph graph, BuildData buildData, BuildOptions buildOptions, string name, List<string> sourceFiles, HashSet<string> fileReferences = null, IGrouping<string, Module> binaryModule = null)
+        private static void BuildDotNet(TaskGraph graph, BuildData buildData, BuildOptions buildOptions, string name, List<string> sourceFiles, HashSet<string> fileReferences = null, IGrouping<string, Module> binaryModule = null, bool? optimizeAssembly = null)
         {
             // Setup build options
             var buildPlatform = Platform.BuildTargetPlatform;
@@ -257,10 +257,8 @@ namespace Flax.Build
             if (buildOptions.ScriptingAPI.IgnoreMissingDocumentationWarnings)
                 args.Add("-nowarn:1591");
 
-            // Optimizations prevent debugging, only enable in release builds
-            var optimize = buildData.Configuration == TargetConfiguration.Release;
-            if (buildData.TargetOptions.ScriptingAPI.Optimization.HasValue)
-                optimize = buildData.TargetOptions.ScriptingAPI.Optimization.Value;
+            // Optimizations prevent debugging, only enable in release builds by default
+            var optimize = optimizeAssembly.HasValue ? optimizeAssembly.Value : buildData.Configuration == TargetConfiguration.Release;
             args.Add(optimize ? "/optimize+" : "/optimize-");
 #if !USE_NETCORE
             args.Add(string.Format("/reference:\"{0}mscorlib.dll\"", referenceAssemblies));
@@ -374,10 +372,14 @@ namespace Flax.Build
 
                     // Get references
                     fileReferences.Clear();
+                    bool? optimizeAssembly = null;
                     foreach (var module in binaryModule)
                     {
                         if (!buildData.Modules.TryGetValue(module, out var moduleBuildOptions))
                             continue;
+
+                        if (moduleBuildOptions.ScriptingAPI.Optimization.HasValue)
+                            optimizeAssembly |= moduleBuildOptions.ScriptingAPI.Optimization;
 
                         // Find references based on the modules dependencies
                         foreach (var dependencyName in moduleBuildOptions.PublicDependencies.Concat(moduleBuildOptions.PrivateDependencies))
@@ -408,7 +410,7 @@ namespace Flax.Build
                     }
 
                     // Build assembly
-                    BuildDotNet(graph, buildData, buildOptions, binaryModuleName + ".CSharp", sourceFiles, fileReferences, binaryModule);
+                    BuildDotNet(graph, buildData, buildOptions, binaryModuleName + ".CSharp", sourceFiles, fileReferences, binaryModule, optimizeAssembly);
                 }
             }
         }

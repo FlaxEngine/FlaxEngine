@@ -191,6 +191,8 @@ namespace FlaxEditor.GUI.Tabs
             get => _autoTabsSizeAuto;
             set
             {
+                if (_autoTabsSizeAuto == value)
+                    return;
                 _autoTabsSizeAuto = value;
                 PerformLayout();
             }
@@ -204,11 +206,11 @@ namespace FlaxEditor.GUI.Tabs
             get => _orientation;
             set
             {
+                if (_orientation == value)
+                    return;
                 _orientation = value;
-
                 if (UseScroll)
                     TabsPanel.ScrollBars = _orientation == Orientation.Horizontal ? ScrollBars.Horizontal : ScrollBars.Vertical;
-
                 PerformLayout();
             }
         }
@@ -401,6 +403,14 @@ namespace FlaxEditor.GUI.Tabs
                     if (TabsPanel.Children[i] is TabHeader tabHeader)
                         tabHeader.Size = tabsSize;
                 }
+            }
+            else if (UseScroll)
+            {
+                // If scroll bar is visible it covers part of the tab header so include this in tab size to improve usability
+                if (_orientation == Orientation.Horizontal && TabsPanel.HScrollBar.Visible)
+                    tabsSize.Y += TabsPanel.HScrollBar.Height;
+                else if (_orientation == Orientation.Vertical && TabsPanel.VScrollBar.Visible)
+                    tabsSize.X += TabsPanel.VScrollBar.Width;
             }
 
             // Fit the tabs panel

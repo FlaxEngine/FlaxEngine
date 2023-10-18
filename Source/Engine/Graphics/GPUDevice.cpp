@@ -503,6 +503,9 @@ void GPUDevice::DrawEnd()
     // Call present on all used tasks
     int32 presentCount = 0;
     bool anyVSync = false;
+#if COMPILE_WITH_PROFILER
+    const double presentStart = Platform::GetTimeSeconds();
+#endif
     for (int32 i = 0; i < RenderTask::Tasks.Count(); i++)
     {
         const auto task = RenderTask::Tasks[i];
@@ -537,6 +540,10 @@ void GPUDevice::DrawEnd()
 #endif
         GetMainContext()->Flush();
     }
+#if COMPILE_WITH_PROFILER
+    const double presentEnd = Platform::GetTimeSeconds();
+    ProfilerGPU::OnPresentTime((float)((presentEnd - presentStart) * 1000.0));
+#endif
 
     _wasVSyncUsed = anyVSync;
     _isRendering = false;

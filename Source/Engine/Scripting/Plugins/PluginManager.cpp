@@ -90,7 +90,7 @@ class PluginManagerService : public EngineService
 {
 public:
     PluginManagerService()
-        : EngineService(TEXT("Plugin Manager"), 130)
+        : EngineService(TEXT("Plugin Manager"), 100)
     {
     }
 

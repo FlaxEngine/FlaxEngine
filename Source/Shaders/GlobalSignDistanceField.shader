@@ -211,7 +211,7 @@ float SampleSDF(uint3 voxelCoordMip, int3 offset)
 	float result = GlobalSDFTex[voxelCoordMip].r;
 
 	// Extend by distance to the sampled texel location
-	float distanceInWorldUnits = length(offset) * (MaxDistance / (float)GenerateMipTexResolution);
+	float distanceInWorldUnits = length((float3)offset) * (MaxDistance / (float)GenerateMipTexResolution);
 	float distanceToVoxel = distanceInWorldUnits / MaxDistance;
 	result = CombineDistanceToSDF(result, distanceToVoxel);
 

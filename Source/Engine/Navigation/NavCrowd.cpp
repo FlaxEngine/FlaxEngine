@@ -3,6 +3,9 @@
 #include "NavCrowd.h"
 #include "NavMesh.h"
 #include "NavMeshRuntime.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Level/Level.h"
+#include "Engine/Level/Scene/Scene.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include <ThirdParty/recastnavigation/DetourCrowd.h>
 
@@ -26,6 +29,15 @@ bool NavCrowd::Init(float maxAgentRadius, int32 maxAgents, NavMesh* navMesh)
 bool NavCrowd::Init(const NavAgentProperties& agentProperties, int32 maxAgents)
 {
     NavMeshRuntime* navMeshRuntime = NavMeshRuntime::Get(agentProperties);
+#if !BUILD_RELEASE
+    if (!navMeshRuntime)
+    {
+        if (NavMeshRuntime::Get())
+            LOG(Error, "Cannot create crowd. Failed to find a navmesh that matches a given agent properties.");
+        else
+            LOG(Error, "Cannot create crowd. No navmesh is loaded.");
+    }
+#endif
     return Init(agentProperties.Radius * 3.0f, maxAgents, navMeshRuntime);
 }
 
@@ -33,6 +45,41 @@ bool NavCrowd::Init(float maxAgentRadius, int32 maxAgents, NavMeshRuntime* navMe
 {
     if (!_crowd || !navMesh)
         return true;
+
+    // This can happen on game start when no navmesh is loaded yet (eg. navmesh tiles data is during streaming) so wait for navmesh
+    if (navMesh->GetNavMesh() == nullptr)
+    {
+        PROFILE_CPU_NAMED("WaitForNavMesh");
+        if (IsInMainThread())
+        {
+            // Wait for any navmesh data load
+            for (const Scene* scene : Level::Scenes)
+            {
+                for (const NavMesh* actor : scene->Navigation.Meshes)
+                {
+                    if (actor->DataAsset)
+                    {
+                        actor->DataAsset->WaitForLoaded();
+                        if (navMesh->GetNavMesh())
+                            break;
+                    }
+                }
+                if (navMesh->GetNavMesh())
+                    break;
+            }
+        }
+        else
+        {
+            while (navMesh->GetNavMesh() == nullptr)
+                Platform::Sleep(1);
+        }
+        if (navMesh->GetNavMesh() == nullptr)
+        {
+            LOG(Error, "Cannot create crowd. Navmesh is not yet laoded.");
+            return true;
+        }
+    }
+
     return !_crowd->init(maxAgents, maxAgentRadius, navMesh->GetNavMesh());
 }
 
@@ -48,7 +95,7 @@ Vector3 NavCrowd::GetAgentPosition(int32 id) const
 {
     Vector3 result = Vector3::Zero;
     const dtCrowdAgent* agent = _crowd->getAgent(id);
-    if (agent && agent->state != DT_CROWDAGENT_STATE_INVALID)
+    if (agent)
     {
         result = Float3(agent->npos);
     }
@@ -59,7 +106,7 @@ Vector3 NavCrowd::GetAgentVelocity(int32 id) const
 {
     Vector3 result = Vector3::Zero;
     const dtCrowdAgent* agent = _crowd->getAgent(id);
-    if (agent && agent->state != DT_CROWDAGENT_STATE_INVALID)
+    if (agent)
     {
         result = Float3(agent->vel);
     }

@@ -187,7 +187,6 @@ float AudioSource::GetTime() const
         return 0.0f;
 
     float time = AudioBackend::Source::GetCurrentBufferTime(this);
-    ASSERT(time >= 0.0f && time <= Clip->GetLength());
 
     if (UseStreaming())
     {
