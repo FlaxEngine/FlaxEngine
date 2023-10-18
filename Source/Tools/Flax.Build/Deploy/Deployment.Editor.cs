@@ -164,6 +164,15 @@ namespace Flax.Deploy
                     var defaultEditorConfig = "Development";
                     var ediotrBinariesPath = Path.Combine(appContentsPath, "Binaries/Editor/Mac", defaultEditorConfig);
                     Utilities.DirectoryCopy(ediotrBinariesPath, appBinariesPath, true, true);
+
+                    // Build a disk image
+                    var dmgPath = Path.Combine(Deployer.PackageOutputPath, "FlaxEditor.dmg");
+                    Log.Info("Building disk image...");
+                    if (File.Exists(dmgPath))
+                        File.Delete(dmgPath);
+                    Utilities.Run("hdiutil", $"create -srcFolder \"{appPath}\" -o \"{dmgPath}\"", null, null, Utilities.RunOptions.Default | Utilities.RunOptions.ThrowExceptionOnError);
+                    CodeSign(dmgPath);
+                    Log.Info("Output disk image size: " + Utilities.GetFileSize(dmgPath));
                 }
 
                 // Compress
