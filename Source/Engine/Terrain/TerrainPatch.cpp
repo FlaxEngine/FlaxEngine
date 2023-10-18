@@ -41,6 +41,11 @@ struct TerrainCollisionDataHeader
     float ScaleXZ;
 };
 
+TerrainPatch::TerrainPatch(const SpawnParams& params)
+    : ScriptingObject(params)
+{
+}
+
 void TerrainPatch::Init(Terrain* terrain, int16 x, int16 z)
 {
     ScopeLock lock(_collisionLocker);

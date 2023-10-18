@@ -17,8 +17,9 @@ struct RenderContext;
 /// <summary>
 /// Represents a single terrain chunk.
 /// </summary>
-class FLAXENGINE_API TerrainChunk : public ISerializable
+API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API TerrainChunk : public ScriptingObject, public ISerializable
 {
+    DECLARE_SCRIPTING_TYPE(TerrainChunk);
     friend Terrain;
     friend TerrainPatch;
     friend TerrainChunk;
@@ -45,7 +46,7 @@ public:
     /// <summary>
     /// The material to override the terrain default one for this chunk.
     /// </summary>
-    AssetReference<MaterialBase> OverrideMaterial;
+    API_FIELD() AssetReference<MaterialBase> OverrideMaterial;
 
     /// <summary>
     /// The baked lightmap entry info for this chunk.
@@ -57,7 +58,7 @@ public:
     /// <summary>
     /// Gets the x coordinate.
     /// </summary>
-    FORCE_INLINE int32 GetX() const
+    API_FUNCTION() FORCE_INLINE int32 GetX() const
     {
         return _x;
     }
@@ -65,7 +66,7 @@ public:
     /// <summary>
     /// Gets the z coordinate.
     /// </summary>
-    FORCE_INLINE int32 GetZ() const
+    API_FUNCTION() FORCE_INLINE int32 GetZ() const
     {
         return _z;
     }
@@ -73,7 +74,7 @@ public:
     /// <summary>
     /// Gets the patch.
     /// </summary>
-    FORCE_INLINE TerrainPatch* GetPatch() const
+    API_FUNCTION() FORCE_INLINE TerrainPatch* GetPatch() const
     {
         return _patch;
     }
@@ -81,7 +82,7 @@ public:
     /// <summary>
     /// Gets the chunk world bounds.
     /// </summary>
-    FORCE_INLINE const BoundingBox& GetBounds() const
+    API_FUNCTION() FORCE_INLINE const BoundingBox& GetBounds() const
     {
         return _bounds;
     }
@@ -89,7 +90,7 @@ public:
     /// <summary>
     /// Gets the chunk transformation (world to local).
     /// </summary>
-    FORCE_INLINE const Transform& GetTransform() const
+    API_FUNCTION() FORCE_INLINE const Transform& GetTransform() const
     {
         return _transform;
     }
@@ -97,16 +98,15 @@ public:
     /// <summary>
     /// Gets the scale (in XY) and bias (in ZW) applied to the vertex UVs to get the chunk coordinates.
     /// </summary>
-    /// <param name="result">The result.</param>
-    FORCE_INLINE void GetHeightmapUVScaleBias(Float4* result) const
+    API_FUNCTION() FORCE_INLINE const Float4& GetHeightmapUVScaleBias() const
     {
-        *result = _heightmapUVScaleBias;
+        return _heightmapUVScaleBias;
     }
 
     /// <summary>
     /// Determines whether this chunk has valid lightmap data.
     /// </summary>
-    FORCE_INLINE bool HasLightmap() const
+    API_FUNCTION() FORCE_INLINE bool HasLightmap() const
     {
         return Lightmap.TextureIndex != INVALID_INDEX;
     }
@@ -114,7 +114,7 @@ public:
     /// <summary>
     /// Removes the lightmap data from the chunk.
     /// </summary>
-    FORCE_INLINE void RemoveLightmap()
+    API_FUNCTION() FORCE_INLINE void RemoveLightmap()
     {
         Lightmap.TextureIndex = INVALID_INDEX;
     }
@@ -126,13 +126,13 @@ public:
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     /// <returns>True if draw chunk, otherwise false.</returns>
-    bool PrepareDraw(const RenderContext& renderContext);
+    API_FUNCTION() bool PrepareDraw(API_PARAM(Ref) const RenderContext& renderContext);
 
     /// <summary>
     /// Draws the chunk (adds the draw call). Must be called after PrepareDraw.
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
-    void Draw(const RenderContext& renderContext) const;
+    API_FUNCTION() void Draw(API_PARAM(Ref) const RenderContext& renderContext) const;
 
     /// <summary>
     /// Draws the terrain chunk.
@@ -140,7 +140,7 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="material">The material to use for rendering.</param>
     /// <param name="lodIndex">The LOD index.</param>
-    void Draw(const RenderContext& renderContext, MaterialBase* material, int32 lodIndex = 0) const;
+    API_FUNCTION() void Draw(API_PARAM(Ref) const RenderContext& renderContext, MaterialBase* material, int32 lodIndex = 0) const;
 
     /// <summary>
     /// Determines if there is an intersection between the terrain chunk and a point
@@ -148,22 +148,22 @@ public:
     /// <param name="ray">The ray.</param>
     /// <param name="distance">The output distance.</param>
     /// <returns>True if chunk intersects with the ray, otherwise false.</returns>
-    bool Intersects(const Ray& ray, Real& distance);
+    API_FUNCTION() bool Intersects(const Ray& ray, API_PARAM(Out) Real& distance);
 
     /// <summary>
     /// Updates the cached bounds of the chunk.
     /// </summary>
-    void UpdateBounds();
+    API_FUNCTION() void UpdateBounds();
 
     /// <summary>
     /// Updates the cached transform of the chunk.
     /// </summary>
-    void UpdateTransform();
+    API_FUNCTION() void UpdateTransform();
 
     /// <summary>
     /// Caches the neighbor chunks of this chunk.
     /// </summary>
-    void CacheNeighbors();
+    API_FUNCTION() void CacheNeighbors();
 
 public:
 

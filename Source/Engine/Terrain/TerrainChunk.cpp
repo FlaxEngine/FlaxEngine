@@ -13,6 +13,12 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/Prefabs/PrefabManager.h"
 
+
+TerrainChunk::TerrainChunk(const SpawnParams& params)
+    : ScriptingObject(params)
+{
+}
+
 void TerrainChunk::Init(TerrainPatch* patch, uint16 x, uint16 z)
 {
     // Initialize chunk properties

@@ -219,7 +219,7 @@ public:
     /// </summary>
     /// <param name="patchCoord">The patch location (x and z).</param>
     /// <returns>The patch.</returns>
-    TerrainPatch* GetPatch(const Int2& patchCoord) const;
+    API_FUNCTION() TerrainPatch* GetPatch(API_PARAM(Ref) const Int2& patchCoord) const;
 
     /// <summary>
     /// Gets the patch at the given location.
@@ -227,7 +227,7 @@ public:
     /// <param name="x">The patch location x.</param>
     /// <param name="z">The patch location z.</param>
     /// <returns>The patch.</returns>
-    TerrainPatch* GetPatch(int32 x, int32 z) const;
+    API_FUNCTION() TerrainPatch* GetPatch(int32 x, int32 z) const;
 
     /// <summary>
     /// Gets the zero-based index of the terrain patch in the terrain patches collection.
@@ -241,7 +241,7 @@ public:
     /// </summary>
     /// <param name="index">The index.</param>
     /// <returns>The patch.</returns>
-    FORCE_INLINE TerrainPatch* GetPatch(int32 index) const
+    API_FUNCTION() FORCE_INLINE TerrainPatch* GetPatch(int32 index) const
     {
         return _patches[index];
     }
@@ -344,22 +344,22 @@ public:
     /// <summary>
     /// Updates the cached bounds of the actor. Updates the cached world bounds for every patch and chunk.
     /// </summary>
-    void UpdateBounds();
+    API_FUNCTION() void UpdateBounds();
 
     /// <summary>
     /// Caches the neighbor chunks of this terrain.
     /// </summary>
-    void CacheNeighbors();
+    API_FUNCTION() void CacheNeighbors();
 
     /// <summary>
     /// Updates the collider shapes collisions/queries layer mask bits.
     /// </summary>
-    void UpdateLayerBits();
+    API_FUNCTION() void UpdateLayerBits();
 
     /// <summary>
     /// Removes the lightmap data from the terrain.
     /// </summary>
-    void RemoveLightmap();
+    API_FUNCTION() void RemoveLightmap();
 
 public:
 
@@ -371,7 +371,7 @@ public:
     /// <param name="resultHitDistance">The raycast result hit position distance from the ray origin. Valid only if raycast hits anything.</param>
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <returns>True if ray hits an object, otherwise false.</returns>
-    API_FUNCTION() bool RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, float maxDistance = MAX_float) const;
+    API_FUNCTION() bool RayCast(const Vector3& origin, const Vector3& direction, API_PARAM(Out) float& resultHitDistance, float maxDistance = MAX_float) const;
 
     /// <summary>
     /// Performs a raycast against this terrain collision shape. Returns the hit chunk.
@@ -382,7 +382,7 @@ public:
     /// <param name="resultChunk">The raycast result hit chunk. Valid only if raycast hits anything.</param>
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <returns>True if ray hits an object, otherwise false.</returns>
-    bool RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, TerrainChunk*& resultChunk, float maxDistance = MAX_float) const;
+    API_FUNCTION() bool RayCast(const Vector3& origin, const Vector3& direction, API_PARAM(Out) float& resultHitDistance, API_PARAM(Out) TerrainChunk*& resultChunk, float maxDistance = MAX_float) const;
 
     /// <summary>
     /// Performs a raycast against this terrain collision shape. Returns the hit chunk.

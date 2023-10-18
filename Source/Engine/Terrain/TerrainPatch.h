@@ -15,17 +15,27 @@ class TerrainMaterialShader;
 /// <summary>
 /// Represents single terrain patch made of 16 terrain chunks.
 /// </summary>
-class FLAXENGINE_API TerrainPatch : public ISerializable
+API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API TerrainPatch : public ScriptingObject, public ISerializable
 {
+    DECLARE_SCRIPTING_TYPE(TerrainPatch);
     friend Terrain;
     friend TerrainPatch;
     friend TerrainChunk;
 
 public:
 
-    enum
+    /// <summary>
+    /// Various defines regarding maximum chunk counts
+    /// </summary>
+    API_ENUM() enum ChunksCount
     {
+        /// <summary>
+        /// The maximum allowed amount of chunks per patch
+        /// </summary>
         CHUNKS_COUNT = 16,
+        /// <summary>
+        /// The maximum allowed amount of chunks per chunk
+        /// </summary>
         CHUNKS_COUNT_EDGE = 4,
     };
 
@@ -73,12 +83,12 @@ public:
     /// <summary>
     /// The chunks contained within the patch. Organized in 4x4 square.
     /// </summary>
-    TerrainChunk Chunks[CHUNKS_COUNT];
+    TerrainChunk Chunks[ChunksCount::CHUNKS_COUNT];
 
     /// <summary>
     /// The heightmap texture.
     /// </summary>
-    AssetReference<Texture> Heightmap;
+    API_FIELD() AssetReference<Texture> Heightmap;
 
     /// <summary>
     /// The splatmap textures.
@@ -91,7 +101,7 @@ public:
     /// Gets the Y axis heightmap offset from terrain origin.
     /// </summary>
     /// <returns>The offset.</returns>
-    FORCE_INLINE float GetOffsetY() const
+    API_FUNCTION() FORCE_INLINE float GetOffsetY() const
     {
         return _yOffset;
     }
@@ -100,7 +110,7 @@ public:
     /// Gets the Y axis heightmap height.
     /// </summary>
     /// <returns>The height.</returns>
-    FORCE_INLINE float GetHeightY() const
+    API_FUNCTION() FORCE_INLINE float GetHeightY() const
     {
         return _yHeight;
     }
@@ -109,7 +119,7 @@ public:
     /// Gets the x coordinate.
     /// </summary>
     /// <returns>The x position.</returns>
-    FORCE_INLINE int32 GetX() const
+    API_FUNCTION() FORCE_INLINE int32 GetX() const
     {
         return _x;
     }
@@ -118,7 +128,7 @@ public:
     /// Gets the z coordinate.
     /// </summary>
     /// <returns>The z position.</returns>
-    FORCE_INLINE int32 GetZ() const
+    API_FUNCTION() FORCE_INLINE int32 GetZ() const
     {
         return _z;
     }
@@ -127,7 +137,7 @@ public:
     /// Gets the terrain.
     /// </summary>
     /// <returns>The terrain,</returns>
-    FORCE_INLINE Terrain* GetTerrain() const
+    API_FUNCTION() FORCE_INLINE Terrain* GetTerrain() const
     {
         return _terrain;
     }
@@ -137,7 +147,7 @@ public:
     /// </summary>
     /// <param name="index">The chunk zero-based index.</param>
     /// <returns>The chunk.</returns>
-    TerrainChunk* GetChunk(int32 index)
+    API_FUNCTION() TerrainChunk* GetChunk(int32 index)
     {
         if (index < 0 || index >= CHUNKS_COUNT)
             return nullptr;
@@ -149,7 +159,7 @@ public:
     /// </summary>
     /// <param name="chunkCoord">The chunk location (x and z).</param>
     /// <returns>The chunk.</returns>
-    TerrainChunk* GetChunk(const Int2& chunkCoord)
+    API_FUNCTION() TerrainChunk* GetChunk(API_PARAM(Ref) const Int2& chunkCoord)
     {
         return GetChunk(chunkCoord.Y * CHUNKS_COUNT_EDGE + chunkCoord.X);
     }
@@ -160,16 +170,28 @@ public:
     /// <param name="x">The chunk location x.</param>
     /// <param name="z">The chunk location z.</param>
     /// <returns>The chunk.</returns>
-    TerrainChunk* GetChunk(int32 x, int32 z)
+    API_FUNCTION() TerrainChunk* GetChunk(int32 x, int32 z)
     {
         return GetChunk(z * CHUNKS_COUNT_EDGE + x);
+    }
+
+    /// <summary>
+    /// Gets the splatmap assigned to this patch.
+    /// </summary>
+    /// <param name="index">Splatmap index.</param>
+    /// <returns>Splatmap texture.</returns>
+    API_FUNCTION() AssetReference<Texture> GetSplatmap(int32 index)
+    {
+        if (index < 0 || index >= TERRAIN_MAX_SPLATMAPS_COUNT)
+            return nullptr;
+        return Splatmap[index];
     }
 
     /// <summary>
     /// Gets the patch world bounds.
     /// </summary>
     /// <returns>The bounding box.</returns>
-    FORCE_INLINE const BoundingBox& GetBounds() const
+    API_FUNCTION() FORCE_INLINE const BoundingBox& GetBounds() const
     {
         return _bounds;
     }
@@ -179,17 +201,28 @@ public:
     /// <summary>
     /// Removes the lightmap data from the terrain patch.
     /// </summary>
-    void RemoveLightmap();
+    API_FUNCTION() void RemoveLightmap();
 
     /// <summary>
     /// Updates the cached bounds of the patch and child chunks.
     /// </summary>
-    void UpdateBounds();
+    API_FUNCTION() void UpdateBounds();
 
     /// <summary>
     /// Updates the cached transform of the patch and child chunks.
     /// </summary>
-    void UpdateTransform();
+    API_FUNCTION() void UpdateTransform();
+
+    /// <summary>
+    /// Assigns a splatmap to this patch.
+    /// </summary>
+    /// <param name="index">Splatmap index.</param>
+    /// <param name="splatMap">Splatmap texture.</param>
+    API_FUNCTION() void SetSplatmap(int32 index, const AssetReference<Texture>& splatMap)
+    {
+        if (index >= 0 && index < TERRAIN_MAX_SPLATMAPS_COUNT)
+            Splatmap[index] = splatMap;
+    }
 
 #if TERRAIN_EDITING
 
@@ -197,7 +230,7 @@ public:
     /// Initializes the patch heightmap and collision to the default flat level.
     /// </summary>
     /// <returns>True if failed, otherwise false.</returns>
-    bool InitializeHeightMap();
+    API_FUNCTION() bool InitializeHeightMap();
 
     /// <summary>
     /// Setups the terrain patch using the specified heightmap data.
@@ -207,7 +240,7 @@ public:
     /// <param name="holesMask">The holes mask (optional). Normalized to 0-1 range values with holes mask per-vertex. Must match the heightmap dimensions.</param>
     /// <param name="forceUseVirtualStorage">If set to <c>true</c> patch will use virtual storage by force. Otherwise it can use normal texture asset storage on drive (valid only during Editor). Runtime-created terrain can only use virtual storage (in RAM).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool SetupHeightMap(int32 heightMapLength, const float* heightMap, const byte* holesMask = nullptr, bool forceUseVirtualStorage = false);
+    API_FUNCTION() bool SetupHeightMap(int32 heightMapLength, API_PARAM(Ref) const float* heightMap, API_PARAM(Ref) const byte* holesMask = nullptr, bool forceUseVirtualStorage = false);
 
     /// <summary>
     /// Setups the terrain patch layer weights using the specified splatmaps data.
@@ -217,7 +250,7 @@ public:
     /// <param name="splatMap">The splat map. Each array item contains 4 layer weights.</param>
     /// <param name="forceUseVirtualStorage">If set to <c>true</c> patch will use virtual storage by force. Otherwise it can use normal texture asset storage on drive (valid only during Editor). Runtime-created terrain can only use virtual storage (in RAM).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool SetupSplatMap(int32 index, int32 splatMapLength, const Color32* splatMap, bool forceUseVirtualStorage = false);
+    API_FUNCTION() bool SetupSplatMap(int32 index, int32 splatMapLength, API_PARAM(Ref) const Color32* splatMap, bool forceUseVirtualStorage = false);
 
 #endif
 
@@ -227,40 +260,40 @@ public:
     /// Gets the raw pointer to the heightmap data.
     /// </summary>
     /// <returns>The heightmap data.</returns>
-    float* GetHeightmapData();
+    API_FUNCTION() float* GetHeightmapData();
 
     /// <summary>
     /// Clears cache of the heightmap data.
     /// </summary>
-    void ClearHeightmapCache();
+    API_FUNCTION() void ClearHeightmapCache();
 
     /// <summary>
     /// Gets the raw pointer to the holes mask data.
     /// </summary>
     /// <returns>The holes mask data.</returns>
-    byte* GetHolesMaskData();
+    API_FUNCTION() byte* GetHolesMaskData();
 
     /// <summary>
     /// Clears cache of the holes mask data.
     /// </summary>
-    void ClearHolesMaskCache();
+    API_FUNCTION() void ClearHolesMaskCache();
 
     /// <summary>
     /// Gets the raw pointer to the splat map data.
     /// </summary>
     /// <param name="index">The zero-based index of the splatmap texture.</param>
     /// <returns>The splat map data.</returns>
-    Color32* GetSplatMapData(int32 index);
+    API_FUNCTION() Color32* GetSplatMapData(int32 index);
 
     /// <summary>
     /// Clears cache of the splat map data.
     /// </summary>
-    void ClearSplatMapCache();
+    API_FUNCTION() void ClearSplatMapCache();
 
     /// <summary>
     /// Clears all caches.
     /// </summary>
-    void ClearCache();
+    API_FUNCTION() void ClearCache();
 
     /// <summary>
     /// Modifies the terrain patch heightmap with the given samples.
@@ -269,7 +302,7 @@ public:
     /// <param name="modifiedOffset">The offset from the first row and column of the heightmap data (offset destination x and z start position).</param>
     /// <param name="modifiedSize">The size of the heightmap to modify (x and z). Amount of samples in each direction.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool ModifyHeightMap(const float* samples, const Int2& modifiedOffset, const Int2& modifiedSize);
+    API_FUNCTION() bool ModifyHeightMap(API_PARAM(Ref) const float* samples, API_PARAM(Ref) const Int2& modifiedOffset, API_PARAM(Ref) const Int2& modifiedSize);
 
     /// <summary>
     /// Modifies the terrain patch holes mask with the given samples.
@@ -278,7 +311,7 @@ public:
     /// <param name="modifiedOffset">The offset from the first row and column of the holes map data (offset destination x and z start position).</param>
     /// <param name="modifiedSize">The size of the holes map to modify (x and z). Amount of samples in each direction.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool ModifyHolesMask(const byte* samples, const Int2& modifiedOffset, const Int2& modifiedSize);
+    API_FUNCTION() bool ModifyHolesMask(API_PARAM(Ref) const byte* samples, API_PARAM(Ref) const Int2& modifiedOffset, API_PARAM(Ref) const Int2& modifiedSize);
 
     /// <summary>
     /// Modifies the terrain patch splat map (layers mask) with the given samples.
@@ -288,7 +321,7 @@ public:
     /// <param name="modifiedOffset">The offset from the first row and column of the splat map data (offset destination x and z start position).</param>
     /// <param name="modifiedSize">The size of the splat map to modify (x and z). Amount of samples in each direction.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool ModifySplatMap(int32 index, const Color32* samples, const Int2& modifiedOffset, const Int2& modifiedSize);
+    API_FUNCTION() bool ModifySplatMap(int32 index, API_PARAM(Ref) const Color32* samples, API_PARAM(Ref) const Int2& modifiedOffset, API_PARAM(Ref) const Int2& modifiedSize);
 
 private:
 
@@ -311,7 +344,7 @@ public:
     /// <param name="resultHitDistance">The raycast result hit position distance from the ray origin. Valid only if raycast hits anything.</param>
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <returns>True if ray hits an object, otherwise false.</returns>
-    bool RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, float maxDistance = MAX_float) const;
+    API_FUNCTION() bool RayCast(const Vector3& origin, const Vector3& direction, API_PARAM(Out) float& resultHitDistance, float maxDistance = MAX_float) const;
 
     /// <summary>
     /// Performs a raycast against this terrain collision shape.
@@ -322,7 +355,7 @@ public:
     /// <param name="resultHitNormal">The raycast result hit position normal vector. Valid only if raycast hits anything.</param>
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <returns>True if ray hits an object, otherwise false.</returns>
-    bool RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, Vector3& resultHitNormal, float maxDistance = MAX_float) const;
+    API_FUNCTION() bool RayCast(const Vector3& origin, const Vector3& direction, API_PARAM(Out) float& resultHitDistance, API_PARAM(Out) Vector3& resultHitNormal, float maxDistance = MAX_float) const;
 
     /// <summary>
     /// Performs a raycast against this terrain collision shape. Returns the hit chunk.
@@ -333,7 +366,7 @@ public:
     /// <param name="resultChunk">The raycast result hit chunk. Valid only if raycast hits anything.</param>
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <returns>True if ray hits an object, otherwise false.</returns>
-    bool RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, TerrainChunk*& resultChunk, float maxDistance = MAX_float) const;
+    API_FUNCTION() bool RayCast(const Vector3& origin, const Vector3& direction, API_PARAM(Out) float& resultHitDistance, API_PARAM(Out) TerrainChunk*& resultChunk, float maxDistance = MAX_float) const;
 
     /// <summary>
     /// Performs a raycast against terrain collision, returns results in a RaycastHit structure.
@@ -343,21 +376,21 @@ public:
     /// <param name="hitInfo">The result hit information. Valid only when method returns true.</param>
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <returns>True if ray hits an object, otherwise false.</returns>
-    bool RayCast(const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, float maxDistance = MAX_float) const;
+    API_FUNCTION() bool RayCast(const Vector3& origin, const Vector3& direction, API_PARAM(Out) RayCastHit& hitInfo, float maxDistance = MAX_float) const;
 
     /// <summary>
     /// Gets a point on the terrain collider that is closest to a given location. Can be used to find a hit location or position to apply explosion force or any other special effects.
     /// </summary>
     /// <param name="position">The position to find the closest point to it.</param>
     /// <param name="result">The result point on the collider that is closest to the specified location.</param>
-    void ClosestPoint(const Vector3& position, Vector3& result) const;
+    API_FUNCTION() void ClosestPoint(API_PARAM(Ref) const Vector3& position, API_PARAM(Out) Vector3& result) const;
 
 #if USE_EDITOR
 
     /// <summary>
     /// Updates the patch data after manual deserialization called at runtime (eg. by editor undo).
     /// </summary>
-    void UpdatePostManualDeserialization();
+    API_FUNCTION() void UpdatePostManualDeserialization();
 
 #endif
 
@@ -369,14 +402,14 @@ public:
     /// Gets the collision mesh triangles array (3 vertices per triangle in linear list). Cached internally to reuse data.
     /// </summary>
     /// <returns>The collision triangles vertices list (in world-space).</returns>
-    const Array<Vector3>& GetCollisionTriangles();
+    API_FUNCTION() const Array<Vector3>& GetCollisionTriangles();
 
     /// <summary>
     /// Gets the collision mesh triangles array (3 vertices per triangle in linear list) that intersect with the given bounds.
     /// </summary>
     /// <param name="bounds">The world-space bounds to find terrain triangles that intersect with it.</param>
     /// <param name="result">The result triangles that intersect with the given bounds (in world-space).</param>
-    void GetCollisionTriangles(const BoundingSphere& bounds, Array<Vector3>& result);
+    API_FUNCTION() void GetCollisionTriangles(API_PARAM(Ref) const BoundingSphere& bounds, API_PARAM(Out) Array<Vector3>& result);
 
 #endif
 
@@ -385,7 +418,7 @@ public:
     /// </summary>
     /// <param name="vertexBuffer">The output vertex buffer.</param>
     /// <param name="indexBuffer">The output index buffer.</param>
-    void ExtractCollisionGeometry(Array<Float3>& vertexBuffer, Array<int32>& indexBuffer);
+    API_FUNCTION() void ExtractCollisionGeometry(API_PARAM(Out) Array<Float3>& vertexBuffer, API_PARAM(Out) Array<int32>& indexBuffer);
 
 private:
 
