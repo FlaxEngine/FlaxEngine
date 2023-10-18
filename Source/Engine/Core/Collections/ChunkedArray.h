@@ -100,7 +100,7 @@ public:
         int32 _chunkIndex;
         int32 _index;
 
-        Iterator(ChunkedArray const* collection, const int32 index)
+        Iterator(const ChunkedArray* collection, const int32 index)
             : _collection(const_cast<ChunkedArray*>(collection))
             , _chunkIndex(index / ChunkSize)
             , _index(index % ChunkSize)
@@ -122,12 +122,14 @@ public:
         {
         }
 
-    public:
-        FORCE_INLINE ChunkedArray* GetChunkedArray() const
+        Iterator(Iterator&& i)
+            : _collection(i._collection)
+            , _chunkIndex(i._chunkIndex)
+            , _index(i._index)
         {
-            return _collection;
         }
 
+    public:
         FORCE_INLINE int32 Index() const
         {
             return _chunkIndex * ChunkSize + _index;
@@ -163,16 +165,22 @@ public:
             return _collection != v._collection || _chunkIndex != v._chunkIndex || _index != v._index;
         }
 
+        Iterator& operator=(const Iterator& v)
+        {
+            _collection = v._collection;
+            _chunkIndex = v._chunkIndex;
+            _index = v._index;
+            return *this;
+        }
+
         Iterator& operator++()
         {
             // Check if it is not at end
-            const int32 end = _collection->Count();
-            if (Index() != end)
+            if ((_chunkIndex * ChunkSize + _index) != _collection->_count)
             {
                 // Move forward within chunk
                 _index++;
 
-                // Check if need to change chunk
                 if (_index == ChunkSize && _chunkIndex < _collection->_chunks.Count() - 1)
                 {
                     // Move to next chunk
@@ -185,9 +193,9 @@ public:
 
         Iterator operator++(int)
         {
-            Iterator temp = *this;
-            ++temp;
-            return temp;
+            Iterator i = *this;
+            ++i;
+            return i;
         }
 
         Iterator& operator--()
@@ -195,7 +203,6 @@ public:
             // Check if it's not at beginning
             if (_index != 0 || _chunkIndex != 0)
             {
-                // Check if need to change chunk
                 if (_index == 0)
                 {
                     // Move to previous chunk
@@ -213,9 +220,9 @@ public:
 
         Iterator operator--(int)
         {
-            Iterator temp = *this;
-            --temp;
-            return temp;
+            Iterator i = *this;
+            --i;
+            return i;
         }
     };
 
@@ -290,7 +297,7 @@ public:
     {
         if (IsEmpty())
             return;
-        ASSERT(i.GetChunkedArray() == this);
+        ASSERT(i._collection == this);
         ASSERT(i._chunkIndex < _chunks.Count() && i._index < ChunkSize);
         ASSERT(i.Index() < Count());
 
@@ -428,11 +435,31 @@ public:
 
     Iterator End() const
     {
-        return Iterator(this, Count());
+        return Iterator(this, _count);
     }
 
     Iterator IteratorAt(int32 index) const
     {
         return Iterator(this, index);
+    }
+
+    FORCE_INLINE Iterator begin()
+    {
+        return Iterator(this, 0);
+    }
+
+    FORCE_INLINE Iterator end()
+    {
+        return Iterator(this, _count);
+    }
+
+    FORCE_INLINE const Iterator begin() const
+    {
+        return Iterator(this, 0);
+    }
+
+    FORCE_INLINE const Iterator end() const
+    {
+        return Iterator(this, _count);
     }
 };

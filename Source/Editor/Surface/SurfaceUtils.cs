@@ -295,8 +295,6 @@ namespace FlaxEditor.Surface
                     continue;
                 var tag = e.Tag;
                 var parameter = e.Parameter;
-                if (parameter == null)
-                    continue;
 
                 // Editor Display
                 var itemLayout = CustomEditors.Editors.GenericEditor.OnGroup(layout, e.Display);
