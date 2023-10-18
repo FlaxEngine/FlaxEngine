@@ -107,6 +107,26 @@ public:
         ASSERT(index >= 0 && index < _length);
         return _data[index];
     }
+
+    FORCE_INLINE T* begin()
+    {
+        return _data;
+    }
+
+    FORCE_INLINE T* end()
+    {
+        return _data + _length;
+    }
+
+    FORCE_INLINE const T* begin() const
+    {
+        return _data;
+    }
+
+    FORCE_INLINE const T* end() const
+    {
+        return _data + _length;
+    }
 };
 
 template<typename T>
