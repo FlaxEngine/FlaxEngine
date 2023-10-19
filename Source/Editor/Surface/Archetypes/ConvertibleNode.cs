@@ -9,15 +9,15 @@ using FlaxEngine;
 namespace FlaxEditor.Surface.Archetypes;
 
 /// <summary>
-/// 
+/// A special type of node that adds the functionality to convert nodes to parameters
 /// </summary>
-internal class ConvertableNode : SurfaceNode
+internal class ConvertibleNode : SurfaceNode
 { 
-    private ScriptType _type;
-    private Func<object[], object> _convertFunction;
+    private readonly ScriptType _type;
+    private readonly Func<object[], object> _convertFunction;
     
     /// <inheritdoc />
-    public ConvertableNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch, ScriptType type, Func<object[], object> convertFunction = null) 
+    public ConvertibleNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch, ScriptType type, Func<object[], object> convertFunction = null) 
     : base(id, context, nodeArch, groupArch)
     {
         _type = type;
@@ -37,7 +37,7 @@ internal class ConvertableNode : SurfaceNode
     {
         if(Surface.Owner is not IVisjectSurfaceWindow window)
             throw new Exception("Surface owner is not a Visject Surface Window");
-        
+
         Asset asset = Surface.Owner.SurfaceAsset;
         if (asset == null || !asset.IsLoaded)
         {
@@ -60,7 +60,7 @@ internal class ConvertableNode : SurfaceNode
         paramAction.Do();
 
         Guid parameterGuid = Surface.Parameters[paramIndex].ID;
-        
+
         bool undoEnabled = Surface.Undo.Enabled;
         Surface.Undo.Enabled = false;
         NodeArchetype arch = Surface.GetParameterGetterNodeArchetype(out var groupId);
@@ -69,7 +69,7 @@ internal class ConvertableNode : SurfaceNode
 
         if (node is not Parameters.SurfaceNodeParamsGet getNode)
             throw new Exception("Node is not a ParamsGet node!");
-        
+
         // Recreate connections of constant node
         // Constant nodes and parameter nodes should have the same ports, so we can just iterate through the connections
         var boxes = GetBoxes();
@@ -81,7 +81,7 @@ internal class ConvertableNode : SurfaceNode
 
             if (!getNode.TryGetBox(i, out Box paramBox))
                 continue;
-            
+
             // Iterating backwards, because the CreateConnection method deletes entries from the box connections when target box IsSingle is set to true
             for (int k = box.Connections.Count-1; k >= 0; k--)
             {
@@ -89,14 +89,14 @@ internal class ConvertableNode : SurfaceNode
                 paramBox.CreateConnection(connectedBox);
             }
         }
-        
+
         var spawnNodeAction = new AddRemoveNodeAction(getNode, true);
         var removeConstantAction = new AddRemoveNodeAction(this, false);
-        
+
         Surface.AddBatchedUndoAction(new MultiUndoAction(paramAction, spawnNodeAction, removeConstantAction));
         removeConstantAction.Do();
     }
-    
+
     private bool OnParameterRenameValidate(RenamePopup popup, string value)
     {
         if(Surface.Owner is not IVisjectSurfaceWindow window)
