@@ -3,6 +3,7 @@
 using System;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.GUI;
+using FlaxEditor.Scripting;
 using FlaxEngine;
 
 namespace FlaxEditor.Surface.Archetypes
@@ -95,6 +96,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 1,
                 Title = "Texture",
+                Create = (id, context, arch, groupArch) => new ConvertableNode(id, context, arch, groupArch, new ScriptType(typeof(Texture))),
                 Description = "Two dimensional texture object",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(140, 120),
@@ -131,6 +133,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 3,
                 Title = "Cube Texture",
+                Create = (id, context, arch, groupArch) => new ConvertableNode(id, context, arch, groupArch, new ScriptType(typeof(CubeTexture))),
                 Description = "Set of 6 textures arranged in a cube",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(140, 120),
@@ -154,6 +157,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 4,
                 Title = "Normal Map",
+                Create = (id, context, arch, groupArch) => new ConvertableNode(id, context, arch, groupArch, new ScriptType(typeof(NormalMap))),
                 Description = "Two dimensional texture object sampled as a normal map",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(140, 120),
