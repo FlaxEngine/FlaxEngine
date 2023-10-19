@@ -66,7 +66,8 @@ namespace FlaxEditor.SceneGraph.GUI
                 _orderInParent = actor.OrderInParent;
                 Visible = (actor.HideFlags & HideFlags.HideInHierarchy) == 0;
 
-                var id = actor.ID;
+                // Pick the correct id when inside a prefab window.
+                var id = actor.HasPrefabLink && actor.Scene == null ? actor.PrefabObjectID : actor.ID;
                 if (Editor.Instance.ProjectCache.IsExpandedActor(ref id))
                 {
                     Expand(true);
@@ -171,7 +172,8 @@ namespace FlaxEditor.SceneGraph.GUI
             // Restore cached state on query filter clear
             if (noFilter && actor != null)
             {
-                var id = actor.ID;
+                // Pick the correct id when inside a prefab window.
+                var id = actor.HasPrefabLink && actor.Scene.Scene == null ? actor.PrefabObjectID : actor.ID;
                 isExpanded = Editor.Instance.ProjectCache.IsExpandedActor(ref id);
             }
 
@@ -301,10 +303,12 @@ namespace FlaxEditor.SceneGraph.GUI
         protected override void OnExpandedChanged()
         {
             base.OnExpandedChanged();
+            var actor = Actor;
 
-            if (!IsLayoutLocked && Actor)
+            if (!IsLayoutLocked && actor)
             {
-                var id = Actor.ID;
+                // Pick the correct id when inside a prefab window.
+                var id = actor.HasPrefabLink && actor.Scene == null ? actor.PrefabObjectID : actor.ID;
                 Editor.Instance.ProjectCache.SetExpandedActor(ref id, IsExpanded);
             }
         }
