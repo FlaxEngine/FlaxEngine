@@ -127,6 +127,33 @@ namespace Flax.Deploy
                 // Deploy project
                 DeployFile(RootPath, OutputPath, "Flax.flaxproj");
 
+                // When deploying Editor with Platforms at once then bundle them inside it
+                if (Configuration.DeployPlatforms && Platforms.PackagedPlatforms != null)
+                {
+                    foreach (var platform in Platforms.PackagedPlatforms)
+                    {
+                        Log.Info(string.Empty);
+                        Log.Info($"Bunding {platform} platform with Editor");
+                        Log.Info(string.Empty);
+
+                        string platformName = platform.ToString();
+                        string platformFiles = Path.Combine(Deployer.PackageOutputPath, platformName);
+                        string platformData = Path.Combine(OutputPath, "Source", "Platforms", platformName);
+                        if (Directory.Exists(platformFiles))
+                        {
+                            // Copy deployed files
+                            Utilities.DirectoryCopy(platformFiles, platformData);
+                        }
+                        else
+                        {
+                            // Extract deployed files
+                            var packageZipPath = Path.Combine(Deployer.PackageOutputPath, platformName + ".zip");
+                            Log.Verbose(packageZipPath + " -> " + platformData);
+                            System.IO.Compression.ZipFile.ExtractToDirectory(packageZipPath, platformData, true);
+                        }
+                    }
+                }
+
                 // Package Editor into macOS app
                 if (Platform.BuildTargetPlatform == TargetPlatform.Mac)
                 {
@@ -167,6 +194,7 @@ namespace Flax.Deploy
 
                     // Build a disk image
                     var dmgPath = Path.Combine(Deployer.PackageOutputPath, "FlaxEditor.dmg");
+                    Log.Info(string.Empty);
                     Log.Info("Building disk image...");
                     if (File.Exists(dmgPath))
                         File.Delete(dmgPath);
@@ -178,7 +206,6 @@ namespace Flax.Deploy
                 // Compress
                 if (Configuration.DontCompress)
                     return;
-
                 Log.Info(string.Empty);
                 Log.Info("Compressing editor files...");
                 string editorPackageZipPath;

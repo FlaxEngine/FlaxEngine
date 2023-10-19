@@ -10,8 +10,13 @@ namespace Flax.Deploy
     {
         public class Platforms
         {
+            internal static List<TargetPlatform> PackagedPlatforms;
+
             public static void Package(TargetPlatform platform)
             {
+                if (PackagedPlatforms == null)
+                    PackagedPlatforms = new List<TargetPlatform>();
+                PackagedPlatforms.Add(platform);
                 var platformsRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms");
 
                 Log.Info(string.Empty);

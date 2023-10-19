@@ -66,12 +66,6 @@ namespace Flax.Deploy
             {
                 Initialize();
 
-                if (Configuration.DeployEditor)
-                {
-                    BuildEditor();
-                    Deployment.Editor.Package();
-                }
-
                 if (Configuration.DeployPlatforms)
                 {
                     if (Configuration.BuildPlatforms == null || Configuration.BuildPlatforms.Length == 0)
@@ -93,6 +87,12 @@ namespace Flax.Deploy
                             BuildPlatform(platform, architectures);
                         }
                     }
+                }
+
+                if (Configuration.DeployEditor)
+                {
+                    BuildEditor();
+                    Deployment.Editor.Package();
                 }
             }
             catch (Exception ex)
@@ -183,6 +183,10 @@ namespace Flax.Deploy
             {
                 if (Platform.IsPlatformSupported(platform, architecture))
                 {
+                    Log.Info(string.Empty);
+                    Log.Info($"Build {platform} {architecture} platform");
+                    Log.Info(string.Empty);
+
                     foreach (var configuration in Configurations)
                     {
                         FlaxBuild.Build(Globals.EngineRoot, "FlaxGame", platform, architecture, configuration);
