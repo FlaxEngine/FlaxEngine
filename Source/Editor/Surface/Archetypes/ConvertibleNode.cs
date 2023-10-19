@@ -59,8 +59,8 @@ namespace FlaxEditor.Surface.Archetypes
             };
             paramAction.Do();
 
+            // Spawn Get Parameter Node based on the added parameter
             Guid parameterGuid = Surface.Parameters[paramIndex].ID;
-
             bool undoEnabled = Surface.Undo.Enabled;
             Surface.Undo.Enabled = false;
             NodeArchetype arch = Surface.GetParameterGetterNodeArchetype(out var groupId);
@@ -90,6 +90,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
+            // Add undo actions and remove constant node
             var spawnNodeAction = new AddRemoveNodeAction(getNode, true);
             var removeConstantAction = new AddRemoveNodeAction(this, false);
 
