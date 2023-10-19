@@ -64,7 +64,7 @@ namespace FlaxEditor.Surface.Archetypes
             bool undoEnabled = Surface.Undo.Enabled;
             Surface.Undo.Enabled = false;
             NodeArchetype arch = Surface.GetParameterGetterNodeArchetype(out var groupId);
-            SurfaceNode node = Surface.Context.SpawnNode(groupId, arch.TypeID, this.Location, new object[] { parameterGuid }); // 1 Visject, 2 particle, 3 VS
+            SurfaceNode node = Surface.Context.SpawnNode(groupId, arch.TypeID, this.Location, new object[] { parameterGuid });
             Surface.Undo.Enabled = undoEnabled;
 
             if (node is not Parameters.SurfaceNodeParamsGet getNode)
@@ -79,7 +79,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (!box.HasAnyConnection)
                     continue;
 
-                if (!getNode.TryGetBox(i, out Box paramBox))
+                if (!getNode.TryGetBox(box.ID, out Box paramBox))
                     continue;
 
                 // Iterating backwards, because the CreateConnection method deletes entries from the box connections when target box IsSingle is set to true
