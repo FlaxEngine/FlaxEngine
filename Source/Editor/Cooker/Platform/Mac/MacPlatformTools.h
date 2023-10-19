@@ -27,6 +27,7 @@ public:
     bool IsNativeCodeFile(CookingData& data, const String& file) override;
     void OnBuildStarted(CookingData& data) override;
     bool OnPostProcess(CookingData& data) override;
+    void OnRun(CookingData& data, String& executableFile, String& commandLineFormat, String& workingDir) override;
 };
 
 #endif

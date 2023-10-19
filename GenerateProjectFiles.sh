@@ -14,4 +14,4 @@ bash ./Development/Scripts/Linux/CallBuildTool.sh --genproject "$@"
 # Build bindings for all editor configurations
 echo Building C# bindings...
 # TODO: Detect the correct architecture here
-Binaries/Tools/Flax.Build -build -BuildBindingsOnly -arch=x64 -platform=Linux --buildTargets=FlaxEditor,FlaxGame
+Binaries/Tools/Flax.Build -build -BuildBindingsOnly -arch=x64 -platform=Linux --buildTargets=FlaxEditor

@@ -54,7 +54,7 @@ namespace Utilities
             dblSUnits = units / static_cast<double>(divider);
         if (i >= sizes.Length())
             i = 0;
-        return String::Format(TEXT("{0} {1}"), RoundTo2DecimalPlaces(dblSUnits), sizes[i]);
+        return String::Format(TEXT("{0:.2f} {1}"), RoundTo2DecimalPlaces(dblSUnits), sizes[i]);
     }
 
     // Converts size of the file (in bytes) to the best fitting string

@@ -53,10 +53,19 @@ namespace Flax.Build.Platforms
         /// <param name="signIdenity">App code signing idenity name (from local Mac keychain). Use 'security find-identity -v -p codesigning' to list possible options.</param>
         public static void CodeSign(string file, string signIdenity)
         {
-            if (!File.Exists(file))
+            var isDirectory = Directory.Exists(file);
+            if (!isDirectory && !File.Exists(file))
                 throw new FileNotFoundException("Missing file to sign.", file);
             string cmdLine = string.Format("--force --timestamp -s \"{0}\" \"{1}\"", signIdenity, file);
-            if (string.IsNullOrEmpty(Path.GetExtension(file)))
+            if (isDirectory)
+            {
+                // Automatically sign contents
+                cmdLine += " --deep";
+            }
+            {
+                // Enable the hardened runtime
+                cmdLine += " --options=runtime";
+            }
             {
                 // Add entitlements file with some settings for the app execution
                 cmdLine += string.Format(" --entitlements \"{0}\"", Path.Combine(Globals.EngineRoot, "Source/Platforms/Mac/Default.entitlements"));
