@@ -204,6 +204,16 @@ namespace Flax.Deploy
                     Utilities.Run("hdiutil", $"create -srcFolder \"{appPath}\" -o \"{dmgPath}\"", null, null, Utilities.RunOptions.Default | Utilities.RunOptions.ThrowExceptionOnError);
                     CodeSign(dmgPath);
                     Log.Info("Output disk image size: " + Utilities.GetFileSize(dmgPath));
+
+                    // Notarize disk image
+                    if (!string.IsNullOrEmpty(Configuration.DeployKeychainProfile))
+                    {
+                        Log.Info(string.Empty);
+                        Log.Info("Notarizing disk image...");
+                        Utilities.Run("xcrun", $"notarytool submit \"{dmgPath}\" --wait --keychain-profile \"{Configuration.DeployKeychainProfile}\"", null, null, Utilities.RunOptions.Default | Utilities.RunOptions.ThrowExceptionOnError);
+                        Utilities.Run("xcrun", $"stapler staple \"{dmgPath}\"", null, null, Utilities.RunOptions.Default | Utilities.RunOptions.ThrowExceptionOnError);
+                        Log.Info("App notarized for macOS distribution!");
+                    }
                 }
 
                 // Compress

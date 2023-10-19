@@ -63,6 +63,10 @@ namespace Flax.Build.Platforms
                 cmdLine += " --deep";
             }
             {
+                // Enable the hardened runtime
+                cmdLine += " --options=runtime";
+            }
+            {
                 // Add entitlements file with some settings for the app execution
                 cmdLine += string.Format(" --entitlements \"{0}\"", Path.Combine(Globals.EngineRoot, "Source/Platforms/Mac/Default.entitlements"));
             }

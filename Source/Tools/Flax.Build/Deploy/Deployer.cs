@@ -44,6 +44,12 @@ namespace Flax.Build
         /// </summary>
         [CommandLine("deployCertPass", "Certificate file password for binaries signing.")]
         public static string DeployCertPass;
+
+        /// <summary>
+        /// Apple keychain profile name to use for app notarize action (installed locally).
+        /// </summary>
+        [CommandLine("deployKeychainProfile", "Apple keychain profile name to use for app notarize action (installed locally).")]
+        public static string DeployKeychainProfile;
     }
 }
 
