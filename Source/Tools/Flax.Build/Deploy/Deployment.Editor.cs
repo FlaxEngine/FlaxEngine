@@ -192,6 +192,9 @@ namespace Flax.Deploy
                     var ediotrBinariesPath = Path.Combine(appContentsPath, "Binaries/Editor/Mac", defaultEditorConfig);
                     Utilities.DirectoryCopy(ediotrBinariesPath, appBinariesPath, true, true);
 
+                    // Sign app resources
+                    CodeSign(appPath);
+
                     // Build a disk image
                     var dmgPath = Path.Combine(Deployer.PackageOutputPath, "FlaxEditor.dmg");
                     Log.Info(string.Empty);
@@ -335,6 +338,7 @@ namespace Flax.Deploy
                     Utilities.Run("strip", "FlaxEditor.dylib", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("strip", "libMoltenVK.dylib", null, dst, Utilities.RunOptions.None);
 
+                    // Sign binaries
                     CodeSign(Path.Combine(dst, "FlaxEditor"));
                     CodeSign(Path.Combine(dst, "FlaxEditor.dylib"));
                     CodeSign(Path.Combine(dst, "libMoltenVK.dylib"));
