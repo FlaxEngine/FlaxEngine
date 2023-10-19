@@ -59,11 +59,12 @@ internal class ConvertableNode : SurfaceNode
         };
         paramAction.Do();
 
-        var parameterGuid = Surface.Parameters[paramIndex].ID;
+        Guid parameterGuid = Surface.Parameters[paramIndex].ID;
         
         bool undoEnabled = Surface.Undo.Enabled;
         Surface.Undo.Enabled = false;
-        SurfaceNode node = Surface.Context.SpawnNode(6, 1, this.Location, new object[] {parameterGuid});
+        NodeArchetype arch = Surface.GetParameterGetterNodeArchetype(out var groupId);
+        SurfaceNode node = Surface.Context.SpawnNode(groupId, arch.TypeID, this.Location, new object[] {parameterGuid}); // 1 Visject, 2 particle, 3 VS
         Surface.Undo.Enabled = undoEnabled;
 
         if (node is not Parameters.SurfaceNodeParamsGet getNode)
