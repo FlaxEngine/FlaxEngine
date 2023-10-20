@@ -38,15 +38,15 @@ namespace FlaxEditor.CustomEditors.Elements
             {
                 var group = Group(name, editor, true);
                 group.Panel.Open();
-                return group.Object(values, editor);
+                return group.Object(values:values, overrideEditor:editor);
             }
-            return Object(values, editor);
+            return Object(values:values, overrideEditor:editor);
         }
 
         /// <inheritdoc />
         public override CustomEditor Property(string name, ValueContainer values)
         {
-            var element = Property(name, values, overrideEditor: null);
+            var element = Property(name:name, values:values, overrideEditor: null);
             return element;
         }
 

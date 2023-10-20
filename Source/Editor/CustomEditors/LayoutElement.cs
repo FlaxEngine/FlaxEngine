@@ -15,5 +15,12 @@ namespace FlaxEditor.CustomEditors
         /// Gets the control represented by this element.
         /// </summary>
         public abstract Control Control { get; }
+
+        /// <summary>
+        /// Implicit cast using LayoutElement.Control
+        /// </summary>
+        /// <param name="layoutElement"></param>
+        public static implicit operator Control(LayoutElement layoutElement) => layoutElement?.Control;
+
     }
 }

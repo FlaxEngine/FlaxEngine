@@ -210,6 +210,31 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Creates a new control and adds it to the container.
+        /// </summary>
+        /// <param name="onAdd">Invoke after child is added.</param>
+        /// <returns>The added control.</returns>
+        public T AddChild<T>(Action<T> onAdd) where T : Control
+        {
+            var child = AddChild<T>();
+            onAdd?.Invoke(child);
+            return child;
+        }
+
+        /// <summary>
+        /// Adds the control to the container.
+        /// </summary>
+        /// <param name="child">The control to add.</param>
+        /// <param name="onAdd">Invoke after child is added.</param>
+        /// <returns>The added control.</returns>
+        public T AddChild<T>(T child, Action<T> onAdd) where T : Control
+        {
+            AddChild<T>(child);
+            onAdd?.Invoke(child);
+            return child;
+        }
+
+        /// <summary>
         /// Removes control from the container.
         /// </summary>
         /// <param name="child">The control to remove.</param>
