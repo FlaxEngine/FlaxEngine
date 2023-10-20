@@ -369,7 +369,7 @@ namespace FlaxEditor.Windows
                 }
 
                 var pluginPath = Path.Combine(Globals.ProjectFolder, "Source", nameTextBox.Text);
-                if (Directory.Exists(pluginPath))
+                if (!IsValidModuleName(nameTextBox.Text) || Directory.Exists(pluginPath))
                 {
                     nameTextBox.BorderColor = Color.Red;
                     nameTextBox.BorderSelectedColor = Color.Red;
@@ -429,6 +429,12 @@ namespace FlaxEditor.Windows
             submitButton.Clicked += () =>
             {
                 // TODO: Check all modules in project including plugins
+                if (!IsValidModuleName(nameTextBox.Text))
+                {
+                    Editor.LogWarning("Invalid module name. Module names cannot contain spaces, start with a number or contain non-alphanumeric characters.");
+                    return;
+                }
+                
                 if (Directory.Exists(Path.Combine(Globals.ProjectFolder, "Source", nameTextBox.Text)))
                 {
                     Editor.LogWarning("Cannot create module due to name conflict.");
@@ -459,6 +465,17 @@ namespace FlaxEditor.Windows
                 popup.Hide();
                 button.ParentContextMenu.Hide();
             };
+        }
+
+        private static bool IsValidModuleName(string text)
+        {
+            if (text.Contains(' '))
+                return false;
+            if (char.IsDigit(text[0]))
+                return false;
+            if (text.Any(c => !char.IsLetterOrDigit(c) && c != '_'))
+                return false;
+            return true;
         }
     }
 }
