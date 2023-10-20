@@ -195,7 +195,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     bool useLensFlares = EnumHasAnyFlags(view.Flags, ViewFlags::LensFlares) && settings.LensFlares.Intensity > 0.0f && useBloom;
 
     // Ensure to have valid data and if at least one effect should be applied
-    if (checkIfSkipPass() || !(useBloom || useToneMapping || useCameraArtifacts))
+    if (!(useBloom || useToneMapping || useCameraArtifacts) || checkIfSkipPass())
     {
         // Resources are missing. Do not perform rendering. Just copy raw frame
         context->SetViewportAndScissors((float)output->Width(), (float)output->Height());

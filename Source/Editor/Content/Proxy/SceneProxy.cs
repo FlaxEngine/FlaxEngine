@@ -31,6 +31,12 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
+        public override bool AcceptsAsset(string typeName, string path)
+        {
+            return (typeName == Scene.AssetTypename || typeName == Scene.EditorPickerTypename) && path.EndsWith(FileExtension, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <inheritdoc />
         public override bool CanCreate(ContentFolder targetLocation)
         {
             return targetLocation.CanHaveAssets;

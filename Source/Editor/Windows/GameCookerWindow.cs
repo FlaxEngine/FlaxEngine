@@ -155,29 +155,42 @@ namespace FlaxEditor.Windows
 
                 public virtual void OnNotAvailableLayout(LayoutElementsContainer layout)
                 {
-                    layout.Label("Missing platform data tools for the target platform.", TextAlignment.Center);
+                    string text = "Missing platform data tools for the target platform.";
                     if (FlaxEditor.Editor.IsOfficialBuild())
                     {
                         switch (BuildPlatform)
                         {
+#if PLATFORM_WINDOWS
                         case BuildPlatform.Windows32:
                         case BuildPlatform.Windows64:
                         case BuildPlatform.UWPx86:
                         case BuildPlatform.UWPx64:
                         case BuildPlatform.LinuxX64:
                         case BuildPlatform.AndroidARM64:
-                            layout.Label("Use Flax Launcher and download the required package.", TextAlignment.Center);
+                            text += "\nUse Flax Launcher and download the required package.";
                             break;
+#endif
                         default:
-                            layout.Label("Engine source is required to target this platform.", TextAlignment.Center);
+                            text += "\nEngine source is required to target this platform.";
                             break;
                         }
                     }
                     else
                     {
-                        var label = layout.Label("To target this platform separate engine source package is required.\nTo get access please contact via https://flaxengine.com/contact", TextAlignment.Center);
-                        label.Label.AutoHeight = true;
+                        text += "\nTo target this platform separate engine source package is required.";
+                        switch (BuildPlatform)
+                        {
+                        case BuildPlatform.XboxOne:
+                        case BuildPlatform.XboxScarlett:
+                        case BuildPlatform.PS4:
+                        case BuildPlatform.PS5:
+                        case BuildPlatform.Switch:
+                            text += "\nTo get access please contact via https://flaxengine.com/contact";
+                            break;
+                        }
                     }
+                    var label = layout.Label(text, TextAlignment.Center);
+                    label.Label.AutoHeight = true;
                 }
 
                 public virtual void Build()
