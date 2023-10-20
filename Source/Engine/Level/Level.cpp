@@ -975,6 +975,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
         SceneObject** objects = sceneObjects->Get();
         if (context.Async)
         {
+            ScenesLock.Unlock(); // Unlock scenes from Main Thread so Job Threads can use it to safely setup actors hierarchy (see Actor::Deserialize)
             JobSystem::Execute([&](int32 i)
             {
                 i++; // Start from 1. at index [0] was scene
@@ -992,6 +993,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
                 else
                     SceneObjectsFactory::HandleObjectDeserializationError(stream);
             }, objectsCount - 1);
+            ScenesLock.Lock();
         }
         else
         {

@@ -172,7 +172,7 @@ namespace Flax.Build.Projects.VisualStudioCode
 
                                 json.AddField("label", name);
 
-                                bool isDefaultTask = defaultTask && configuration.Configuration == TargetConfiguration.Development && configuration.Platform == Platform.BuildPlatform.Target;
+                                bool isDefaultTask = defaultTask && configuration.Configuration == TargetConfiguration.Development && configuration.Platform == Platform.BuildPlatform.Target && configuration.Architecture == Platform.BuildTargetArchitecture;
 
                                 json.BeginObject("group");
                                 {
