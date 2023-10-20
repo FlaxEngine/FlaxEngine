@@ -51,10 +51,14 @@ namespace Utilities
         int32 i = 0;
         double dblSUnits = static_cast<double>(units);
         for (; static_cast<uint64>(units / static_cast<double>(divider)) > 0; i++, units /= divider)
-            dblSUnits = units / static_cast<double>(divider);
+            dblSUnits = (double)units / (double)divider;
         if (i >= sizes.Length())
             i = 0;
-        return String::Format(TEXT("{0:.2f} {1}"), RoundTo2DecimalPlaces(dblSUnits), sizes[i]);
+        String text = String::Format(TEXT("{}"), RoundTo2DecimalPlaces(dblSUnits));
+        const int32 dot = text.FindLast('.');
+        if (dot != -1)
+            text = text.Left(dot + 3);
+        return String::Format(TEXT("{0} {1}"), text, sizes[i]);
     }
 
     // Converts size of the file (in bytes) to the best fitting string
