@@ -63,6 +63,13 @@ namespace FlaxEditor
                     OnTextureImport(importContext);
                 }
             }
+            else if (importContext.FileEntry is AudioImportEntry)
+            {
+                if (EnsureImportSettings<AudioImportSettings>(importContext))
+                {
+                    OnAudioImport(importContext);
+                }
+            }
         }
 
         /// <summary>
@@ -85,6 +92,13 @@ namespace FlaxEditor
         /// </summary>
         /// <param name="importContext">The current import context. The Settings field can be assumed to be non-null and an instance of TextureImportSettings.</param>
         public virtual void OnTextureImport(Modules.ContentImportingModule.ImportSettingsContext importContext)
+        {}
+
+        /// <summary>
+        /// Called when the importing of any audio asset begins.
+        /// </summary>
+        /// <param name="importContext">The current import context. The Settings field can be assumed to be non-null and an instance of AudioImportSettings.</param>
+        public virtual void OnAudioImport(Modules.ContentImportingModule.ImportSettingsContext importContext)
         {}
     }
 }
