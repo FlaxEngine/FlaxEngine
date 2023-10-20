@@ -149,6 +149,7 @@ namespace FlaxEditor.Windows.Assets
 
             // Prefab structure tree
             Graph = new LocalSceneGraph(new CustomRootNode(this));
+            Graph.Root.TreeNode.Expand(true);
             _tree = new PrefabTree
             {
                 Margin = new Margin(0.0f, 0.0f, -16.0f, _treePanel.ScrollBarsSize), // Hide root node
@@ -317,7 +318,7 @@ namespace FlaxEditor.Windows.Assets
             Graph.MainActor = _viewport.Instance;
             Selection.Clear();
             Select(Graph.Main);
-            Graph.Root.TreeNode.ExpandAll(true);
+            Graph.Root.TreeNode.Expand(true);
             _undo.Clear();
             ClearEditedFlag();
         }
@@ -413,7 +414,7 @@ namespace FlaxEditor.Windows.Assets
             _focusCamera = true;
             Selection.Clear();
             Select(Graph.Main);
-            Graph.Root.TreeNode.ExpandAll(true);
+            Graph.Root.TreeNode.Expand(true);
 
             _undo.Clear();
             ClearEditedFlag();
