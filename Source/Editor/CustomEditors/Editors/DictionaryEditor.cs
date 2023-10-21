@@ -46,10 +46,15 @@ namespace FlaxEditor.CustomEditors.Editors
 
             private void OnSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkedEditor)
             {
-                if (menu.Items.Any())
-                    menu.AddSeparator();
-                menu.AddButton("Remove", OnRemoveClicked).Enabled = !_editor._readOnly;
+                menu.ItemsContainer.RemoveChildren();
+
+                menu.AddButton("Copy", linkedEditor.Copy);
+                var paste = menu.AddButton("Paste", linkedEditor.Paste);
+                paste.Enabled = linkedEditor.CanPaste;
+                menu.AddSeparator();
+
                 menu.AddButton("Edit", OnEditClicked).Enabled = _editor._canEditKeys;
+                menu.AddButton("Remove", OnRemoveClicked).Enabled = !_editor._readOnly;
             }
 
             private void OnRemoveClicked(ContextMenuButton button)
@@ -138,6 +143,155 @@ namespace FlaxEditor.CustomEditors.Editors
                 }
 
                 return base.OnMouseDoubleClick(location, button);
+            }
+
+            /// <inheritdoc />
+            public override void OnDestroy()
+            {
+                _editor = null;
+                _key = null;
+
+                base.OnDestroy();
+            }
+        }
+        
+         private class DictionaryDropPanel : DropPanel
+        {
+            /// <summary>
+            /// The dictionary editor.
+            /// </summary>
+            private DictionaryEditor _editor;
+            
+            private object _key;
+
+            /// <summary>
+            /// The linked editor.
+            /// </summary>
+            public CustomEditor LinkedEditor;
+
+            public void Setup(DictionaryEditor editor, object key)
+            {
+                HeaderHeight = 18;
+                EnableDropDownIcon = true;
+                var icons = FlaxEditor.Editor.Instance.Icons;
+                ArrowImageClosed = new SpriteBrush(icons.ArrowRight12);
+                ArrowImageOpened = new SpriteBrush(icons.ArrowDown12);
+                HeaderText = key?.ToString() ?? "<null>";
+                IsClosed = false;
+                _editor = editor;
+                _key = key;
+                Offsets = new Margin(7, 7, 0, 0);
+                
+                MouseButtonRightClicked += OnMouseButtonRightClicked;
+            }
+
+            private void OnMouseButtonRightClicked(DropPanel panel, Float2 location)
+            {
+                if (LinkedEditor == null)
+                    return;
+                var linkedEditor = LinkedEditor;
+                var menu = new ContextMenu();
+
+                menu.AddButton("Copy", linkedEditor.Copy);
+                var paste = menu.AddButton("Paste", linkedEditor.Paste);
+                paste.Enabled = linkedEditor.CanPaste;
+                menu.AddSeparator();
+
+                menu.AddButton("Edit", OnEditClicked).Enabled = _editor._canEditKeys;
+                menu.AddButton("Remove", OnRemoveClicked).Enabled = !_editor._readOnly;
+
+                menu.Show(panel, location);
+            }
+
+            private void OnRemoveClicked(ContextMenuButton button)
+            {
+                _editor.Remove(_key);
+            }
+
+            private void OnEditClicked(ContextMenuButton button)
+            {
+                var keyType = _editor.Values.Type.GetGenericArguments()[0];
+                var bounds = new Rectangle(Location.X, Location.Y, HeaderRectangle.Size);
+                if (keyType == typeof(string) || keyType.IsPrimitive)
+                {
+                    // Edit as text
+                    var popup = RenamePopup.Show(Parent, Rectangle.Margin(bounds, HeaderTextMargin), HeaderText, false);
+                    popup.Validate += (renamePopup, value) =>
+                    {
+                        object newKey;
+                        if (keyType.IsPrimitive)
+                            newKey = JsonSerializer.Deserialize(value, keyType);
+                        else
+                            newKey = value;
+                        return !((IDictionary)_editor.Values[0]).Contains(newKey);
+                    };
+                    popup.Renamed += renamePopup =>
+                    {
+                        object newKey;
+                        if (keyType.IsPrimitive)
+                            newKey = JsonSerializer.Deserialize(renamePopup.Text, keyType);
+                        else
+                            newKey = renamePopup.Text;
+                        _editor.ChangeKey(_key, newKey);
+                        _key = newKey;
+                        HeaderText = _key.ToString();
+                    };
+                }
+                else if (keyType.IsEnum)
+                {
+                    // Edit via enum picker
+                    var popup = RenamePopup.Show(Parent, Rectangle.Margin(bounds, HeaderTextMargin), HeaderText, false);
+                    var picker = new EnumComboBox(keyType)
+                    {
+                        AnchorPreset = AnchorPresets.StretchAll,
+                        Offsets = Margin.Zero,
+                        Parent = popup,
+                        EnumTypeValue = _key,
+                    };
+                    picker.ValueChanged += () =>
+                    {
+                        popup.Hide();
+                        object newKey = picker.EnumTypeValue;
+                        if (!((IDictionary)_editor.Values[0]).Contains(newKey))
+                        {
+                            _editor.ChangeKey(_key, newKey);
+                            _key = newKey;
+                            HeaderText = _key.ToString();
+                        }
+                    };
+                }
+                else
+                {
+                    // Generic editor
+                    var popup = ContextMenuBase.ShowEmptyMenu(Parent, Rectangle.Margin(bounds, HeaderTextMargin));
+                    var presenter = new CustomEditorPresenter(null);
+                    presenter.Panel.AnchorPreset = AnchorPresets.StretchAll;
+                    presenter.Panel.IsScrollable = false;
+                    presenter.Panel.Parent = popup;
+                    presenter.Select(_key);
+                    presenter.Modified += () =>
+                    {
+                        popup.Hide();
+                        object newKey = presenter.Selection[0];
+                        _editor.ChangeKey(_key, newKey);
+                        _key = newKey;
+                        HeaderText = _key?.ToString();
+                    };
+                }
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left)
+                {
+                    _mouseButtonLeftDown = false;
+                    Open();
+                    OnEditClicked(null);
+                    return true;
+                }
+                return false;
+                //return base.OnMouseDoubleClick(location, button);
             }
 
             /// <inheritdoc />
@@ -254,15 +408,24 @@ namespace FlaxEditor.CustomEditors.Editors
                 for (int i = 0; i < size; i++)
                 {
                     if (i > 0 && i < size && spacing > 0)
-                    {
                         panel.Space(spacing);
-                    }
 
                     var key = keys.ElementAt(i);
                     var overrideEditor = overrideEditorType != null ? (CustomEditor)Activator.CreateInstance(overrideEditorType) : null;
-                    var property = panel.AddPropertyItem(new DictionaryItemLabel(this, key));
-                    var itemLayout = useSharedLayout ? (LayoutElementsContainer)property : property.VerticalPanel();
-                    itemLayout.Object(new DictionaryValueContainer(valuesType, key, Values), overrideEditor);
+                    if (_displayType == CollectionAttribute.DisplayType.Inline || (collection == null && single) || (_displayType == CollectionAttribute.DisplayType.Default && single))
+                    {
+                        PropertyNameLabel itemLabel = new DictionaryItemLabel(this, key);
+                        var property = panel.AddPropertyItem(itemLabel);
+                        var itemLayout = useSharedLayout ? (LayoutElementsContainer)property : property.VerticalPanel();
+                        itemLabel.LinkedEditor = itemLayout.Object(new DictionaryValueContainer(valuesType, key, Values), overrideEditor);
+                    }
+                    else if (_displayType == CollectionAttribute.DisplayType.Header || (_displayType == CollectionAttribute.DisplayType.Default && !single))
+                    {
+                        var cdp = panel.CustomContainer<DictionaryDropPanel>();
+                        cdp.CustomControl.Setup(this, key);
+                        var itemLayout = cdp.VerticalPanel();
+                        cdp.CustomControl.LinkedEditor = itemLayout.Object(new DictionaryValueContainer(valuesType, key, Values), overrideEditor);
+                    }
                 }
             }
             _elementsCount = size;
