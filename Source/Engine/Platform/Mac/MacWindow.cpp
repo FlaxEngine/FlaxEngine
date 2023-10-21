@@ -6,6 +6,12 @@
 #include "Engine/Platform/Apple/AppleUtils.h"
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/IGuiData.h"
+#if USE_EDITOR
+#include "Engine/Platform/CriticalSection.h"
+#include "Engine/Threading/ThreadPoolTask.h"
+#include "Engine/Threading/ThreadPool.h"
+#include "Engine/Engine/Engine.h"
+#endif
 #include "Engine/Core/Log.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
@@ -14,6 +20,29 @@
 #include <Cocoa/Cocoa.h>
 #include <AppKit/AppKit.h>
 #include <QuartzCore/CAMetalLayer.h>
+
+#if USE_EDITOR
+// Data for drawing window while doing drag&drop on Mac (engine is paused during platform tick)
+CriticalSection MacDragLocker;
+NSDraggingSession* MacDragSession = nullptr;
+class DoDragDropJob* MacDragJob = nullptr;
+
+class DoDragDropJob : public ThreadPoolTask
+{
+public:
+    int64 ExitFlag = 0;
+
+    bool Run() override
+    {
+        while (Platform::AtomicRead(&ExitFlag) == 0)
+        {
+            Engine::OnDraw();
+            Platform::Sleep(20);
+        }
+        return false;
+    }
+};
+#endif
 
 inline bool IsWindowInvalid(Window* win)
 {
@@ -323,7 +352,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 @end
 
-@interface MacViewImpl : NSView
+@interface MacViewImpl : NSView <NSDraggingSource, NSPasteboardItemDataProvider>
 {
     MacWindow* Window;
     NSTrackingArea* TrackingArea;
@@ -632,6 +661,34 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     Window->OnDragLeave();
 }
 
+- (NSDragOperation)draggingSession:(NSDraggingSession*)session sourceOperationMaskForDraggingContext:(NSDraggingContext)context
+{
+    if (IsWindowInvalid(Window)) return NSDragOperationNone;
+    return NSDragOperationMove;
+}
+
+- (void)draggingSession:(NSDraggingSession*)session endedAtPoint:(NSPoint)screenPoint operation:(NSDragOperation)operation
+{
+#if USE_EDITOR
+    // Stop background worker once the drag ended
+    MacDragLocker.Lock();
+    if (MacDragSession && MacDragSession == session)
+    {
+        Platform::AtomicStore(&MacDragJob->ExitFlag, 1);
+        MacDragJob->Wait();
+        MacDragSession = nullptr;
+        MacDragJob = nullptr;
+    }
+    MacDragLocker.Unlock();
+#endif
+}
+
+- (void)pasteboard:(nullable NSPasteboard*)pasteboard item:(NSPasteboardItem*)item provideDataForType:(NSPasteboardType)type
+{
+    if (IsWindowInvalid(Window)) return;
+    [pasteboard setString:(NSString*)AppleUtils::ToString(Window->GetDragText()) forType:NSPasteboardTypeString];
+}
+
 @end
 
 MacWindow::MacWindow(const CreateWindowSettings& settings)
@@ -682,6 +739,7 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     [window setAcceptsMouseMovedEvents:YES];
     [window setDelegate:window];
     _window = window;
+    _view = view;
     if (settings.AllowDragAndDrop)
     {
         [view registerForDraggedTypes:@[NSPasteboardTypeFileURL, NSPasteboardTypeString]];
@@ -705,6 +763,7 @@ MacWindow::~MacWindow()
     [window close];
     [window release];
     _window = nullptr;
+    _view = nullptr;
 }
 
 void MacWindow::CheckForResize(float width, float height)
@@ -938,8 +997,46 @@ void MacWindow::SetTitle(const StringView& title)
 
 DragDropEffect MacWindow::DoDragDrop(const StringView& data)
 {
-    // TODO: implement using beginDraggingSession and NSDraggingSource
-    return DragDropEffect::None;
+    NSWindow* window = (NSWindow*)_window;
+    MacViewImpl* view = (MacViewImpl*)_view;
+    _dragText = data;
+
+    // Create mouse drag event
+    NSEvent* event = [NSEvent
+        mouseEventWithType:NSEventTypeLeftMouseDragged
+        location:window.mouseLocationOutsideOfEventStream
+        modifierFlags:0
+        timestamp:NSApp.currentEvent.timestamp
+        windowNumber:window.windowNumber
+        context:nil
+        eventNumber:0
+        clickCount:1
+        pressure:1.0];
+
+    // Create drag item
+    NSPasteboardItem* pasteItem = [NSPasteboardItem new];
+    [pasteItem setDataProvider:view forTypes:[NSArray arrayWithObjects:NSPasteboardTypeString, nil]];
+    NSDraggingItem* dragItem = [[NSDraggingItem alloc] initWithPasteboardWriter:pasteItem];
+    [dragItem setDraggingFrame:NSMakeRect(event.locationInWindow.x, event.locationInWindow.y, 1, 1) contents:nil];
+
+    // Start dragging session
+    NSDraggingSession* draggingSession = [view beginDraggingSessionWithItems:[NSArray arrayWithObject:dragItem] event:event source:view];
+    DragDropEffect result = DragDropEffect::None;
+
+#if USE_EDITOR
+    // Create background worker that will keep updating GUI (perform rendering)
+    MacDragLocker.Lock();
+    ASSERT(!MacDragSession && !MacDragJob);
+    MacDragSession = draggingSession;
+    MacDragJob = New<DoDragDropJob>();
+    Task::StartNew(MacDragJob);
+    MacDragLocker.Unlock();
+    while (MacDragJob->GetState() == TaskState::Queued)
+        Platform::Sleep(1);
+    // TODO: maybe wait for the drag end to return result?
+#endif
+
+    return result;
 }
 
 void MacWindow::SetCursor(CursorType type)
